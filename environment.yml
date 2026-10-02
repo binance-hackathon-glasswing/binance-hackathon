@@ -1,0 +1,30 @@
+name: binance-hackathon
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - pip
+
+  - pip:
+      # Binance API requests
+      - requests
+
+      # Load API keys from .env
+      - python-dotenv
+
+      # Ethereum / Web3 interaction
+      - web3
+      - eth-account
+
+      # Useful for data processing
+      - pandas
+      - numpy
+
+      # Backend API, if your agent/app exposes endpoints
+      - fastapi
+      - uvicorn
+
+      # Data validation / structured models
+      - pydantic
