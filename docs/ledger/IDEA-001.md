@@ -1,59 +1,100 @@
-# IDEA-001 — Event-driven news ingestion with local sentiment screening
+# IDEA-001 — Decision-model training set: sources, size and build workflow
 
-- Date / author: 2026-10-04 / Keith (idea); Codex (research and assessment)
-- Status: open — reasonable engineering hypothesis; trading benefit unvalidated
-- What: Monitor an approved set of news sources and run a small local model when a new article is detected. The original suggestion is a model below 100B parameters for fast sentiment analysis and immediate trading; the proposed first evaluation is event-driven screening feeding LARP's existing verified evidence and decision pipeline.
-- Why it might help: Reduce time spent discovering and screening relevant catalysts, avoid hosted-call overhead for easy classification, and reserve more expensive evidence processing for material or ambiguous events. These are hypotheses, not measured benefits.
-- Cost / risk: Source access and retention rights, publication delays, article parsing, duplicate events, entity attribution, inference hardware and burst queues; sentiment can be correct while the trade loses after costs.
-- Links: D-03, D-06, D-07/D-08; T-12; I-37/I-38/I-50/I-63; G-03–G-06, G-25/G-26, G-36, G-42, G-50–G-54; H-02 / [EXP-001](EXP-001.md); [incomplete work](../INCOMPLETE_WORK.md) GAP-21 and GAP-23–GAP-28.
+- Date / author: 2026-10-03 / SYZ (drafted with Claude)
+- Status: open
+- What: build the point-in-time, labelled event dataset that trains, calibrates and evaluates the decision model (P(UP), P(FLAT), P(DOWN) over the next [5] US sessions; I-63), and the matched no-evidence panel for the H-02 baseline (EXP-001, D-07).
+- Why it might help: the decision model is near chance zero-shot and ships over-confident (E-51), so fine-tuning, calibration and thresholds all depend on this dataset. EXP-001 cannot be pre-registered until the data, periods and sample size are fixed.
+- Cost / risk: about 1 week of data work for one person plus an LLM batch pass. Main risks: LLM memorisation leaking into training inputs (I-37), price-data rights (F-71), and too few post-cutoff events for a conclusive test (H-02).
+- Links: I-37, I-38, I-63, H-02, D-03, D-06, D-07, D-08, G-05, G-41, G-42, Q-19, Q-30, EXP-001
 
-## Assessment and relationship to the existing plan
+## 1. What one training example is
+- **Unit:** one catalyst event for one underlying at decision time `t` = source acceptance time + [15] min of processing latency.
+- **Input (state):** only items with `source_ts ≤ t` and `fetched_ts` recorded (the same G-05 filter code as live): the structured evidence assessment after claim verification, point-in-time price/volatility features, the regime state and the macro calendar context.
+- **Label:** the underlying share's return from the entry reference to the close [5] sessions later. Entry reference = the next regular-session open after `t`, or that day's close if `t` falls inside the session (conservative: never earlier than `t`). Classes: UP if r > c + b, DOWN if r < −(c + b), FLAT otherwise; c = round-trip cost assumption, b = buffer (D-06). Store both absolute and index-relative (minus QQQ) returns, and pick one in D-06.
+- **The declared values are not calibrated** (`skill/larp/plan.md`, "Declared values"). Three of them shape this dataset:
+  - h = 5 sessions: choose or confirm it on the train and calibration blocks only.
+  - The 50 bp cost / 50 bp buffer: keep c + b a parameter in the label code until Web3 quote costs are measured (from Oct 12).
+  - The 6-call / 60 s evidence budget: the historical evidence pass uses the same budget.
+- **No-evidence panel (V0):** the same names sampled every 5th session, without the evidence fields, so labels do not overlap.
 
-**INFERENCE — reasonable to investigate, not sufficient to authorize immediate sentiment-driven trades.** Small models are credible for sentiment classification (R1/R2 below). Whether faster classification improves executable returns remains a separate hypothesis. A news article can describe higher profits while reporting results below expectations; a positive article may also repeat an event already reflected in quotes. Sentiment probabilities are not calibrated probabilities of a future price increase.
+## 2. Sources and access check (run 2026-10-03 from the team's Singapore network; no VPN)
 
-T-12 and the reference architecture already include local FinBERT sentiment/relevance screening. The additions here are explicit event-driven ingestion, measured latency budgets, and comparison of a local model with the hosted evidence step. G-36 already allows event triggers; this need not mean frequent trading.
+| Need | Source | Reachable? | Rights / notes | Use |
+|---|---|---|---|---|
+| Catalyst events + timestamps | SEC EDGAR `data.sec.gov` submissions API | Yes. `acceptanceDateTime` and 8-K item codes are present; filing documents (e.g. the earnings press-release exhibit) download | US government data; fair-access rules: declared User-Agent, ≤ 10 req/s | Primary event source |
+| Fundamentals as reported | EDGAR XBRL `companyfacts` | Yes | As above | Optional features |
+| Filing full-text search | `efts.sec.gov` | Yes | As above | Optional |
+| Second independent source | GDELT 2.0 raw 15-min files (events, mentions, GKG) since 2015-02 | Yes (files; 2025 sample downloaded) | Open use with citation | Second source and news events |
+| — | GDELT DOC API | Timed out; it covers only ~3 months anyway | — | Not used for history |
+| Macro values | FRED `fredgraph.csv` | Yes (no key) | FRED terms; some series are third-party copyright, so use BLS/BEA/Fed series only | Features |
+| Macro vintages | ALFRED API | **Needs a free API key** (returns 400 without one) | FRED API terms | Point-in-time macro. **⚠ RECOMMENDED — NOT DECIDED:** not needed if macro *values* stay out of v1.0 model inputs; macro events enter as dates from BLS/BEA/Fed calendars. The Web3 API has no macro data |
+| Underlying daily OHLC, adjusted, with corporate actions | **Licensed vendor (not chosen)** | Not tested: Tiingo needs a key (403); Alpha Vantage demo key works only for IBM | Proposal declares "licensed historical daily prices"; the vendor is to be declared at onboarding (F-12) | **Labels** |
+| — | Yahoo chart endpoint | Reachable (NVDA from 1999) | **No licence; unofficial endpoint. Do not use for labels or features (F-71, G-42).** | None |
+| — | Stooq CSV | Blocked by a JavaScript bot check | — | None |
+| — | Nasdaq earnings-calendar API | Reachable | Unofficial endpoint, no licence | None; earnings timing comes from 8-K item 2.02 acceptance times |
+| Token vs share history | Binance spot public klines (`api.binance.com`, `data.binance.vision`) | **Yes.** bStocks are listed on Binance spot as `<TICKER>BUSDT`; NVDABUSDT has daily bars from 2026-06-11 and 1-minute bars | Public market data, not Binance-internal (F-63). **Open question:** Binance.com does not serve Singapore users (E-16), so ask organisers before relying on it (proposed Q-31) | Basis-risk check only |
+| — | BNB Smart Chain public RPC | Yes | Public chain data | Fallback for token prices (swap logs) |
+| Live executable quotes | Binance Web3 API | **Yes (2026-10-03 15:42 UTC, team key, Singapore network, no VPN):** signed GET `/api/v1/dex/aggregator/supported/chain?binanceChainId=56` → HTTP 200, `code 0`, chain 56 = BNB Smart Chain. Without credentials it returns 401. This shows read access from Singapore only; trading bStocks from Singapore is still open (Q-12) | Whoever holds the Developer Portal keys runs `binance_test.py` | Not training; H-01 forward logging from Oct 12 |
+| Decision model base | Hugging Face `convaiinnovations/laya` | Yes. Not gated, apache-2.0, revision `55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851` (2026-09-24) | The repo ships `.py` files (`rl_agent_api.py`, `rl_common.py`, `email_utils.py`). Reviewed 2026-10-04 at the pinned revision: imports only torch, transformers, safetensors, numpy and the standard library; no network, exec or subprocess calls. Base-model choice: see Q-30 (⚠ recommended: ModernBERT-large) | Pin this revision |
 
-This idea relates to §6.4, especially D-03's evidence-model choice. It does not settle D-03/Q-16: a sentiment classifier produces no reasoning trace, and local hosting alone does not establish that winner-deliverable requirements are met. A generated explanation must not be represented as a faithful internal reasoning trace. It also does not settle D-06's target or replace the calibrated decision model. Prompt collection, source verification, novelty, thesis memory and falsifiers remain separate requirements.
+## 3. Universe and event counts (measured 2026-10-03)
+- Binance spot lists **86** `…BUSDT` bStock pairs. This is a candidate list only; the official eligible list arrives at onboarding (Q-19).
+  - 6 leveraged or inverse pairs are excluded (G-02): SOXLB, SOXSB, TQQQB, SQQQB, MUUB, KORUB.
+  - 5 ETFs: QQQB, SPYB, SMHB, EWYB, DRAMB.
+  - 72 single names map to an SEC CIK by ticker (unverified: some, e.g. CBRS, QNT, SHAZ, CYPH, AGPU, FWDI, SPCX, may be mis-mapped). 3 do not map: INTW, MVLL, SNXX. 8 are foreign filers that file 6-K/20-F rather than 8-K: ARM, ASML, BABA, NBIS, NOK, PDD, SKHY, TSM.
+- Catalyst filings by the 72 names, by acceptance year:
 
-## Research evidence
+| Form | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 (to Oct 3) | Total |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 8-K | 518 | 583 | 620 | 671 | 614 | 639 | 712 | 958 | 830 | 6,145 |
+| 10-Q | 112 | 130 | 132 | 149 | 161 | 162 | 167 | 178 | 135 | 1,326 |
+| 10-K | 37 | 41 | 44 | 47 | 54 | 53 | 53 | 59 | 52 | 440 |
+| 6-K | 135 | 141 | 140 | 149 | 196 | 194 | 259 | 265 | 183 | 1,662 |
+| 20-F | 6 | 6 | 6 | 6 | 7 | 7 | 8 | 7 | 7 | 60 |
 
-Sources checked 2026-10-04. R-identifiers below are local to IDEA-001, not new global E/L IDs. No model, crawler or trading experiment was run.
+- [ESTIMATE] Keeping material 8-K items (2.02, 1.01, 2.01, 2.05, 2.06, 4.02, 5.02, 7.01, 8.01) and merging events for the same name within 5 sessions leaves roughly 50–65% of these, i.e. about **500–800 usable events a year**: ~4.5–6k for 2018–2025 and ~400–600 for 2026.
 
-| ID / grade | Source and scope checked | Finding and limitation |
-|---|---|---|
-| R1 — PRIMARY | [FinBERT paper](https://arxiv.org/html/1908.10063), methods and task description; [Prosus model card](https://huggingface.co/ProsusAI/finbert), model description | Financial sentiment can use a BERT encoder and classification head; the card exposes positive/negative/neutral scores. The paper describes BERT-base at 110M parameters. Sentence sentiment results do not establish full-article event understanding, local latency or profitable trading. |
-| R2 — PRIMARY, research paper | [Reasoning or Overthinking (2025)](https://arxiv.org/html/2506.04574v1), methods, results and limitations | Direct classification outperformed explicit reasoning prompts in this Financial PhraseBank study. General LLMs handled some ambiguous or compositional examples better than the smaller out-of-domain classifier. FinBERT-Prosus had training overlap with the evaluation data, so its headline score is not a clean generalization comparison. This is sentiment evidence, not a trading test. |
-| R3 — PRIMARY, research paper | [Lopez-Lira and Tang](https://arxiv.org/abs/2304.07619), abstract only; related to existing L-22 | Reports headline-based return predictability, stronger for smaller stocks and negative news, and argues that complex interpretation needs capable models. Does not establish a low-latency advantage in LARP's long-only bStocks universe or our achievable after-cost returns. |
-| R4 — PRIMARY, publisher claim | [Qwen3-4B-Instruct-2507 model card](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507), overview and license metadata | A concrete 4B local generative candidate, with Apache-2.0 metadata and non-thinking output. Candidate for structured extraction, not a demonstrated financial sentiment winner. Pin and verify the exact artifacts and rights before use. |
-| R5 — PRIMARY | [SEC webmaster FAQ](https://www.sec.gov/about/webmaster-frequently-asked-questions), filing availability and scripted access; [SEC API documentation](https://www.sec.gov/search-filings/edgar-application-programming-interfaces), update schedule | The FAQ describes document availability often 1–3 minutes after acceptance, without a guarantee; the API page describes typically sub-second submissions-API processing as filings are disseminated. These measure different stages. Neither guarantees acceptance-to-agent latency. Measure it; follow source access limits. |
+## 4. How much data
+- [ESTIMATE] **Tier A (bStock underlyings only):** ~5–6.5k events. Split by anchored walk-forward with a [5]-session embargo between blocks:
 
-## Proposed design, not adopted
+| Block | Period | Events (approx.) | Purpose |
+|---|---|---|---|
+| Train | 2018-01 → 2023-12 | 3–4k | fit |
+| Calibration | 2024 | ~0.7k | temperature scaling |
+| Threshold selection | 2025-01 → [evidence-LLM cutoff] | ~0.6–0.8k | θ, m (G-25) |
+| Final evaluation (used once) | [cutoff] → 2026-09 | ~0.3–0.6k, depending on the cutoff | EXP-001 |
 
-1. Prefer permitted publisher APIs, RSS/Atom, issuer releases and EDGAR interfaces where available. Use HTML crawling only for sources whose access and content-use terms permit the planned use. The source list, access method, polling policy and rights must be registered; public readability alone does not establish retention or redistribution rights under F-71.
-2. Save publication time, first-seen/fetch time, source URL, content hash and revision identity. Deduplicate syndicated copies and cluster updates to the same catalyst. Preserve the version actually available at each decision; later corrections must not rewrite history.
-3. Resolve each affected company to eligible instruments, then run a warm local classifier over relevant passages. Define chunking and aggregation for full articles rather than silently truncating or averaging unrelated companies. Neutral, duplicate or irrelevant news can avoid an expensive call, but held-position falsifier checks must not be starved by this filter.
-4. For relevant events, produce a bounded structured assessment with company, event type, sentiment, source spans, novelty and missing/uncertain fields. Any local generative replacement must also pass LARP's tool-use and verification tests. Unsupported figures or missing expectations remain unknown; the model must not invent them.
-5. Feed verified evidence into the calibrated decision model, selection policy, fresh-quote cost checks, deterministic risk controls, write-ahead logging and signer. For ambiguous evidence, escalate within G-50's budget or abstain. No raw sentiment-to-signer path is proposed.
+- **Why that is thin:** returns over 5 sessions are mostly noise. At 10–20% coverage the threshold block yields ~60–160 traded cases and the final block ~30–120. A reliability estimate for the traded bin needs ≥ ~100 cases, so EXP-001 is likely to come out inconclusive (H-02 already expects this).
+- **Tier B (recommended lever):** the training universe does not have to equal the trading universe. Adding ~400–500 large US filers gives ~10× the events (~40–50k). Labels stay in the same domain (US shares). Cost: survivorship bias unless membership is point-in-time. A free proxy is the XBRL `dei:EntityPublicFloat` as filed before `t`. Use Tier B for train/calibration only; thresholds and final evaluation stay on Tier A names.
+- **Model size versus data:** fully fine-tuning 395M parameters on 3–4k noisy labels will overfit. Freeze the backbone, or fine-tune the head plus the top layers (or LoRA). Always fit a logistic-regression/GBM baseline on the same structured fields; if the encoder does not beat it on the calibration block, ship the simpler model (F-31 allows classical ML).
+- **No-evidence panel (V0):** 72 names × ~250 sessions × 8 years ÷ 5 ≈ 29k non-overlapping rows (Tier A).
 
-**INFERENCE — model sizing:** Start with the existing FinBERT baseline and one roughly 4B–8B instruction model for extraction/context, rather than treating every model below 100B as small. R4 is one concrete candidate, not a claim about the best current model. Benchmark on the intended hardware before choosing. A larger model may improve interpretation but worsen resource use; a local model is not automatically faster than a hosted one.
+## 5. The memorisation problem in training inputs (now I-67 in skill/larp/plan.md)
+- I-37 covers evaluation. It also bites in **training**: if the evidence LLM writes the assessment for a 2021 event and already knows the outcome, judgement fields (durability, novelty, strength) carry future information into the inputs, and the decision model learns to over-trust them.
+- Proposed rule: in pre-cutoff training data, feed the decision model only **extractive fields** (catalyst type and 8-K item, reported figure vs prior figure, guidance direction, source agreement) plus anonymised text. Judgement fields enter the model only if they help on post-cutoff data. Run the "name the firm" probe on a sample of each block (G-39).
+- The evidence LLM (D-03) must be chosen before the evidence pass, because its training cutoff sets the threshold/final split.
 
-**ESTIMATE — weight memory only:** For a dense 70B model, 16-bit weights occupy about 140 GB; ideal 4-bit packing is about 35 GB. Arithmetic: parameter count × bits / 8, decimal GB. Runtime buffers, quantization metadata and KV cache add memory. No inference-speed claim follows from these estimates. Hardware, VRAM/unified memory, input lengths and burst rate are not yet supplied.
+## 6. Build workflow
+| Step | What | Output | Owner (proposed) | By |
+|---|---|---|---|---|
+| 0 | Freeze D-06 target items (h, c + b, absolute vs index-relative); choose price vendor and evidence LLM (D-03); pre-register EXP-001 periods and n | Ledger commit | Yao Zhu + Isaac | Oct 10 |
+| 1 | Universe table: bStock → ticker → CIK, verified by hand; replace with the official list at onboarding | `universe` table + hash | Isaac | Oct 6 |
+| 2 | Raw ingest, append-only, each item stamped with `source_ts`, `fetched_ts`, URI, sha256: EDGAR submissions + primary docs/exhibits; GDELT files filtered to universe names; ALFRED vintages (only if macro values are used, see §2); release calendars; vendor prices; bStock klines (if Q-31 allows) | Raw store **outside the repo** | Isaac | Oct 10 |
+| 3 | Event table: filter items, merge within 5 sessions, set `t` | `events` | Isaac | Oct 11 |
+| 4 | State builder = the live G-05 point-in-time code path, run in historical mode | `states` | Yao Zhu | Oct 13 |
+| 5 | Evidence + verification pass on anonymised inputs, batch API, full I/O logged (G-06) | `assessments` | Yao Zhu | Oct 15 |
+| 6 | Labels from vendor prices; corporate-action check; token-vs-share basis report on bStock history | `labels`, basis report | Isaac | Oct 12 |
+| 7 | Splits + embargo; snapshot hash recorded in EXP-001 | frozen snapshot | Isaac | Oct 15 |
+| 8 | Train baseline vs encoder; calibrate; pick thresholds | checkpoints + hashes (G-47) | Yao Zhu | Oct 18 |
+| 9 | Final evaluation once → EXP-001 result; D-07/D-08 | ledger result | Yao Zhu | Oct 19–22 |
 
-**INFERENCE — measure the whole path:** End-to-end delay includes source publication/dissemination, detection/polling, download/parse, queueing, inference, verification, quote/build, signing and settlement. Record p50/p95/p99 for the stages; separately report published-to-first-seen and first-seen-to-action. Keep models loaded. Source delays may dominate the inference saving (R5), and shortening inference does not show that a tradable price gap remains.
+- [ESTIMATE] Evidence-pass volume for Tier A: ~6k events × ~10k input tokens (filing excerpt + second source) ≈ 60M input and ~6M output tokens. Tier B under the same pass is ~10× that, so for Tier B use a smaller model or extractive fields only. Price it against the chosen provider's current batch rates.
+- Code that builds the dataset or trains the model goes in the repo (F-61). The data itself stays out (F-61, G-41): add `data/` to `.gitignore` and reference snapshots by hash only.
 
-## Validation to pre-register before running
-
-This is an idea record, not a frozen experiment. Create an EXP entry with an owner, dataset hashes, dates, model revisions, hardware/config, numeric thresholds and pass/not-supported/inconclusive rules before any benchmark. Commit and push decision/logging-affecting code before execution under G-03/F-61.
-
-- **Separate the changes.** Compare ingestion methods with the same model, then compare the existing FinBERT-plus-evidence path with a local evidence replacement using identical events and downstream controls. A sentiment-only trading policy, if investigated offline, is a separate strategy ablation; its outcome must not be inferred from a latency win.
-- **Quality:** Use an unseen, licensed corpus representative of eligible issuers; group syndicated articles by event across splits and address model cutoffs under I-37. Measure entity attribution, sentiment macro-F1, material-event recall, numerical extraction, supported-claim precision, abstention coverage and schema failures. Include multi-company stories, rumors, corrections, negation, earnings surprises and stale reposts. Model confidence must be calibrated, not trusted because it is high.
-- **Latency and reliability:** Test real article lengths, warm/cold starts and realistic bursts on target hardware; count dropped events, duplicates, queue growth and stale assessments. Freeze a p95 latency budget and quality non-inferiority margin before comparing models. Do not claim a speedup without measured end-to-end improvement.
-- **Economic value:** Separately test whether the faster path preserves or improves after-cost outcomes at matched coverage with unchanged risk/sizing rules. Use executable quotes available only after the measured detection and processing delay; include exit costs, failed/missing quotes, gas and slippage. Fix the horizon and clustered uncertainty method before evaluation. Positive sentiment accuracy does not pass this gate. Do not tune on development/scored-run P&L (G-46); quote simulation is not realized execution.
-- **Promotion gate:** Adopt screening only if its latency gain meets the frozen budget while quality/recall remain within the frozen bounds. Replace the evidence LLM only if the full structured-evidence, verification, audit and operational requirements also pass. Require the independently pre-registered economic gate for a trading-policy change. Insufficient samples remain inconclusive, retaining the existing declared design/default rather than enabling an untested shortcut.
-
-## Open dependencies and disposition
-
-- Hardware and operating budget; exact sources and their rights; model/checkpoint selection; entity/event dataset and post-cutoff coverage; detection and execution latency measurements; target horizon (D-06); thinking-output acceptance (D-03/Q-16).
-- Suggested functional owners, not assignments: Agent/Model lead for classifier/extraction benchmarks; Markets/Data/Risk lead for source selection and labels; Execution/Security lead for quote timing; Platform/Audit lead for ingestion durability and latency traces.
-- Decision: retain as an **open potential idea**. No active design, model declaration, risk limit or experiment criterion is changed. No incomplete-work item is closed by this research alone.
-- Notes / corrections: none.
+## 7. Open items raised here
+- Proposed **Q-31**: may we use Binance spot public market data (bStock klines) from Singapore, given that Binance.com does not serve SG users (E-16)? Until answered, use BSC on-chain swap logs for the basis check.
+- **D-09** (now in skill/larp/plan.md §6.4, with a ⚠ RECOMMENDED — NOT DECIDED test plan): price vendor for labels. Aim to decide by Oct 6 so labels can be built in onboarding week.
+- ALFRED API key: only if the team keeps macro values as model features (⚠ recommended: leave them out of v1.0; team to discuss).
+- Web3 API: the team has a Developer Portal key pair. Each member holds the secret in their own local `.env` (gitignored; template in `.env.example`); it is never shared with Claude or written in the repo. Any member runs `binance_test.py` on the Singapore network. First run on 2026-10-03 returned 200 (see §2), so read access works from Singapore; E-15's 40304 report did not reproduce for this endpoint. Wait for the official endpoint docs before trying token-list or quote endpoints.
+- Participant kit expected Oct 5 (team statement; the official onboarding documents per F-18). Before step 2 ingest, check it for: the eligible list (Q-19, replaces §3's candidate universe); data rules (F-73); the valuation source (Q-04, which may affect the label price series); historical-data endpoints in the Web3 API docs; and whether the current key is the challenge's development credential or needs re-issuing (G-09).
+- Promote this idea to an EXP entry once step 0 is frozen.

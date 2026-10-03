@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+# Training/label data and raw source snapshots: never committed (F-61, G-41); reference by hash
+data/

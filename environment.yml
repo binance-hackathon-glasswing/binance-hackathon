@@ -8,23 +8,6 @@ dependencies:
   - pip
 
   - pip:
-      # Binance API requests
-      - requests
-
-      # Load API keys from .env
-      - python-dotenv
-
-      # Ethereum / Web3 interaction
-      - web3
-      - eth-account
-
-      # Useful for data processing
-      - pandas
-      - numpy
-
-      # Backend API, if your agent/app exposes endpoints
-      - fastapi
-      - uvicorn
-
-      # Data validation / structured models
-      - pydantic
+      # Exact versions live in requirements.lock (generated from requirements.in).
+      # Pins are part of the version manifest: changing one is a version event (G-03, G-12).
+      - -r requirements.lock

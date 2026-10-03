@@ -1,8 +1,8 @@
 ---
 name: binance-agentic-ai-challenge
 description: Core skill file for "Beyond the Benchmark: The Binance Agentic AI Challenge" (DoraHacks, Sep–Nov 2026) — official facts, hard guardrails, the never-do list and ranked open questions. Load it for any rule-compliance, design, risk, logging/versioning or planning question on this challenge, then load the reference/larp file the file index points to when you need E/I/L/T/H/P/D/S detail.
-version: 0.5.2 (archive retired to git history; ledger index + reading budget)
-revised: 2026-10-03 (SGT, UTC+8)
+version: 0.5.4 (recommendations for D-03/D-07/D-08/D-09/Q-30, marked not decided; I-67)
+revised: 2026-10-04 (SGT, UTC+8)
 source_verification:
   - official DoraHacks page re-checked 2026-09-30 (body text, timeline image, banner) — unchanged since the 2026-09-27 capture
   - Laya model card (Hugging Face) checked 2026-09-30 — card text only (E-51)
@@ -59,7 +59,7 @@ Each line summarises the cited items; the items govern.
 3. Never add own or external funds, withdraw, transfer wallet-to-wallet, bridge, or make unrelated swaps or arbitrary contract calls. (F-25, F-64, G-01, G-13)
 4. Never use leverage, shorting, derivatives, or leveraged/inverse ETF tokens (unless explicitly eligible and confirmed). (F-64, G-02)
 5. Never let anything trade unless its version is committed, pushed to the registered repo, manifested and logged in a version event, with a hash equal to the active manifest. (F-60, F-61, G-03, G-12)
-6. Never force-push, rebase or rewrite the challenge branch. (F-61, G-40)
+6. Never force-push, rebase or rewrite the challenge branch; fix mistakes with a new commit. GitHub does not enforce this on our plan (no branch protection, checked 2026-10-03), so the rule itself is the guard. (F-61, G-40)
 7. Never put secrets, keys or credentials in the repo or in logs, or private training/label data in the repo [RULE: F-61]. (F-61, F-62, G-06, G-41)
 8. Never use future, non-public, Binance-internal, other teams' private or unlicensed data. (F-63, F-71, G-05, G-10, G-42)
 9. Never backfill or rewrite logs; upload daily to write-once storage and buffer locally during outages. (F-62, G-07)
@@ -191,7 +191,7 @@ Guardrails G-20..G-47 (mostly POLICY; G-40–G-42 RULE; G-43–G-44 RULE-DERIVED
 
 Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must work either way.
 1. Q-26 Is a KYC-verified Binance (exchange) account required, and can Singapore-based participants obtain/use one for this challenge? (T-03) [UNRESOLVED]
-2. Q-12 Can Singapore-based participants use the Web3 API/Developer Portal and trade bStocks, and host in Singapore? (E-14, E-15) [UNRESOLVED; never bypass]
+2. Q-12 Can Singapore-based participants use the Web3 API/Developer Portal and trade bStocks, and host in Singapore? (E-14, E-15) [UNRESOLVED; never bypass] Partial evidence 2026-10-04 (IDEA-001 §2): a signed read-only Web3 API call (supported-chain endpoint) from the team's Singapore network returned 200 with no VPN, so read access works. Trading bStocks from Singapore and hosting there remain unresolved.
 3. Q-03 Opening asset(s); is BNB for gas provided; does BNB count in equity? [UNRESOLVED]
 4. Q-08 May the agent swap into BNB for gas? [Assume no until confirmed.]
 5. Q-04 What is the valuation source and valuation instant? [UNRESOLVED]
@@ -205,7 +205,7 @@ Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must
 13. Q-20 Treatment of dividend Multiplier, splits, unsolicited tokens and the funding transfer for equity and "unexplained transfers". [Log all; never touch unsolicited tokens.]
 14. Q-29 What off-hours liquidity (spreads/depth, RFQ availability) will the challenge path expose? (H-01)
 15. Q-27 Is the "Laya" checkpoint (or any self-hosted model) acceptable, and what licence evidence is needed? (I-38, E-51)
-16. Q-30 (internal, for the team) Laya: licence (publisher-stated Apache-2.0; confirm file-level licence at the pinned revision), training-data cutoff, redistribution rights under F-49c. [UNRESOLVED; decide by the onboarding declaration (D-03): if still unanswered, either don't run Laya or declare exactly the model that will run; never run an undeclared principal model (F-12, F-66).]
+16. Q-30 (internal, for the team) Laya: licence (publisher-stated Apache-2.0; confirm file-level licence at the pinned revision), training-data cutoff, redistribution rights under F-49c. [UNRESOLVED; decide by the onboarding declaration (D-03): if still unanswered, either don't run Laya or declare exactly the model that will run; never run an undeclared principal model (F-12, F-66).] Checked 2026-10-04 (HF API, card metadata only): Laya was published 2026-09-18, its training data is not stated (so its cutoff could run to Sep 2026 and overlap our clean evaluation window, I-67), it has 0 downloads, and there is no LICENSE file (the apache-2.0 tag is metadata only). Its backbone, `answerdotai/ModernBERT-large`, is apache-2.0 (also metadata only), was published 2024-12-11 (cutoff ≤ Dec 2024) and describes its pre-training data. **⚠ RECOMMENDED — NOT DECIDED (team to discuss):** declare ModernBERT-large + our own typed decision head as the base. The proposal's "bidirectional encoder with a typed decision head" still holds, and the proposal never names Laya (I-38). Laya becomes an offline challenger: it enters only if it beats ModernBERT on the calibration block and its provenance is cleared, then via re-declaration (Q-22).
 17. Q-11 Equity sampling frequency for the max-drawdown tie-break.
 18. Q-13 Do prompt/config-only changes require a full version event? [Yes.]
 19. Q-14 Grace window for delayed trace uploads. [UNRESOLVED]
@@ -219,6 +219,7 @@ Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must
 27. Q-18 Is a DoraHacks BUIDL submission required by "2026/11/13 22:59"? Time zone resolved: 22:59 UTC+8 = 14:59 UTC (F-07). [Whether any BUIDL submission is required remains open (I-60).]
 28. Q-24 Sharing/confidentiality terms for winner deliverables.
 29. Q-25 Does "non-public information about … the instruments involved" exclude employees of issuers of eligible bStocks?
+30. Q-31 May we use Binance spot public market data (bStock `…BUSDT` klines, `api.binance.com` / `data.binance.vision`) from Singapore, given that Binance.com does not serve Singapore users (E-16)? Reachable from Singapore without a VPN (IDEA-001 §2), and public rather than Binance-internal (F-63). [Until answered, use BSC on-chain swap logs for the token-vs-share basis check.]
 
 ---
 
@@ -248,17 +249,18 @@ Official onboarding documents take precedence over everything here (§0.2). Reco
 |---|---|---|
 | `F-01`–`F-80` | SKILL.md | §1 |
 | `G-01`–`G-18` | SKILL.md | §7.1 |
-| `Q-01`–`Q-30` | SKILL.md | §11 |
+| `Q-01`–`Q-31` | SKILL.md | §11 |
 | `E-01`–`E-52` | reference/environment.md | §3 (E-51: §3.6 Models; E-52: §3.5) |
 | `I-01`–`I-09` (I-02 moved to S-01), `I-20`–`I-36`, `I-39`–`I-42`, `I-54`, `I-60`, `I-70` | reference/inferences.md | §4 |
 | `L-01`–`L-54` (incl. `L-31b`) | reference/literature.md | §12 |
 | `T-01`–`T-19` | larp/plan.md | §2 |
 | operating plan | larp/plan.md | §9 |
-| `D-02`–`D-08` | larp/plan.md | §6.4 |
+| `D-02`–`D-09` | larp/plan.md | §6.4 |
 | v1.0 adopted scope (status table) | larp/plan.md | top |
+| declared values from the submitted proposal (uncalibrated) | larp/plan.md | top, after the scope table |
 | concept, `G-50`–`G-54`, `P-01`–`P-17` | larp/plan.md | §6.1–§6.3 |
 | reference architecture | larp/plan.md | §8 |
-| `I-37`, `I-38`, `I-50`–`I-53`, `I-55`, `I-56`, `I-58`, `I-59`, `I-61`–`I-66` | larp/plan.md | §4 |
+| `I-37`, `I-38`, `I-50`–`I-53`, `I-55`, `I-56`, `I-58`, `I-59`, `I-61`–`I-67` | larp/plan.md | §4 |
 | `H-01`–`H-03` | larp/plan.md | §5 |
 | `G-20`–`G-47` | larp/plan.md | §7.2–§7.4 |
 | `S-01`–`S-07` | larp/strategy-opinions.md | Appendix A |
@@ -276,4 +278,6 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - v0.5 (2026-09-30): external reviews A (proposal brief) and B (technical review of v0.3) red-teamed and applied. **Laya corrected via the model card** (new E-51): non-autoregressive, never generates text, Apache-2.0; base checkpoint near chance zero-shot and over-confident; the 0.766 figure belongs to `laya-typed-decisions`. **Accepted:** §8 diagram (decision model → selection gate; rule-defined regime governor; memory written only after verification; recovery by observable identifiers); §6.1 canonical flow and planning-claim caveat; archive §10 framing, originality wording, Say/Avoid changes, model row, priority-1 header. **Partial:** I-65 (three gate kinds rather than B's two); status field (legend + adopted-scope table only); verification metadata (frontmatter + §0.2 rule); "different clocks" (motivation OK, edge claim not). **Rewritten:** G-18, G-25, G-41, G-42, G-47, G-51, G-53, I-04, I-20, I-29, I-38, I-50, I-57, I-64, I-65, I-66, H-01, H-02, H-03, D-05, D-06, P-05, T-04, E-33, Q-27, Q-30; notes only on T-12, T-14, T-18, T-20, §9. **New:** E-51, D-07, Status legend (§0.1), `revised`/`source_verification` frontmatter, priority by deadline (§0.4), v1.0 adopted scope table (larp/plan.md). **Not applied:** per-claim verification table (bloat); three-part template for every G item (only G-41, G-42); heavy resampling machinery for H-01; review A's "exactly-once signing" (replaced by at-most-once signing + reconciliation, G-18); review A's "archive the submitted version" (already in §9).
 - v0.5.1 (2026-09-30): final red-team fixes. **High:** §9 dev-wallet txs only from versioned test-mode code via decision records; G-03 start-up gate for every deployable + third-party services in the manifest; G-01 approve logic (token contract `to`, spender allow-listed); G-18 (h) no nonce-replacement cancellation, (i) router `deadline` check, "confirmed holdings" defined. **Medium:** never-do #1 / G-08 / Q-09 human actions (HALT, restart after reconciliation, version deploys); G-23 rule-based event policy; D-06 proposal sub-items moved to priority 1 (§0.4); D-07 split into D-07 (baseline V0) and new D-08 (inconclusive default), H-02 and §10 updated; §7.1 footer tags; G-41 / never-do #7 private training/label data; F-80 API details moved to new E-52, F-07 and I-60 cite it; G-53 held names still reach the decision model; Q-30 declaration rule; team_sources note. **Low:** F-42 intro quote; I-62/D-06 drafts-differ wording; D-01 ≈36%; G-50 ≤ [6] calls / ≤3 tool types; E-33 ↔ I-29 aligned; "classifier" → "decision model" (G-31, G-50, D-03, I-37, I-50, I-51, I-63 title, H-02, Q-16); §8 diagram (regime governor → risk governor, HOLD record paths, risk-limit exit bypass); I-65 / §10 three gate kinds; proposal-phase header; §0.4 team actions; file index notes (I-02 → S-01, SKILL_v0.3 location); §0.2 precedence; checklist placeholders.
 - v0.5.2 (2026-10-03): finalist status recorded (§0.4); archive retired (proposal-phase.md, SKILL_v0.3.md → git history, commit 2985af5); ledger split into an index (`../LEDGER.md`) plus per-entry files; reading-budget rule added (§0.2); file index updated.
+- v0.5.3 (2026-10-03): never-do #6 and G-40 record that GitHub branch protection is unavailable on our plan, so the no-rewrite rule is procedural; larp/plan.md gains a "Declared values" table (proposal numbers are declared defaults, not calibrated; which ones shape training) and a D-06 update; IDEA-001 (training-set plan and source access check) added to the ledger.
+- v0.5.4 (2026-10-04): **recommendations only, marked ⚠ RECOMMENDED — NOT DECIDED** (team to test/discuss) on D-03 (evidence LLM), D-07 (V0 baseline), D-08 (inconclusive ladder), new D-09 (price vendor) and Q-30; Q-31 (Binance spot data from Singapore) added; Q-12 partial evidence (Web3 API read access works from Singapore); §9 skeleton row deferred by team decision (ModernBERT-large as base, Laya as challenger); new I-67 (memorisation contaminates training inputs); IDEA-001: ALFRED only if macro values are model features.
 - Next update: after finalists (Oct 2) and after onboarding documents (Oct 5–10) — run the checklist above.
