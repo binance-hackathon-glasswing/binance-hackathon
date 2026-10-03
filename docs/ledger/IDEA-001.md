@@ -27,7 +27,7 @@
 | Second independent source | GDELT 2.0 raw 15-min files (events, mentions, GKG) since 2015-02 | Yes (files; 2025 sample downloaded) | Open use with citation | Second source and news events |
 | — | GDELT DOC API | Timed out; it covers only ~3 months anyway | — | Not used for history |
 | Macro values | FRED `fredgraph.csv` | Yes (no key) | FRED terms; some series are third-party copyright, so use BLS/BEA/Fed series only | Features |
-| Macro vintages | ALFRED API | **Needs a free API key** (returns 400 without one) | FRED API terms | Point-in-time macro |
+| Macro vintages | ALFRED API | **Needs a free API key** (returns 400 without one) | FRED API terms | Point-in-time macro. **⚠ RECOMMENDED — NOT DECIDED:** not needed if macro *values* stay out of v1.0 model inputs; macro events enter as dates from BLS/BEA/Fed calendars. The Web3 API has no macro data |
 | Underlying daily OHLC, adjusted, with corporate actions | **Licensed vendor (not chosen)** | Not tested: Tiingo needs a key (403); Alpha Vantage demo key works only for IBM | Proposal declares "licensed historical daily prices"; the vendor is to be declared at onboarding (F-12) | **Labels** |
 | — | Yahoo chart endpoint | Reachable (NVDA from 1999) | **No licence; unofficial endpoint. Do not use for labels or features (F-71, G-42).** | None |
 | — | Stooq CSV | Blocked by a JavaScript bot check | — | None |
@@ -69,7 +69,7 @@
 - **Model size versus data:** fully fine-tuning 395M parameters on 3–4k noisy labels will overfit. Freeze the backbone, or fine-tune the head plus the top layers (or LoRA). Always fit a logistic-regression/GBM baseline on the same structured fields; if the encoder does not beat it on the calibration block, ship the simpler model (F-31 allows classical ML).
 - **No-evidence panel (V0):** 72 names × ~250 sessions × 8 years ÷ 5 ≈ 29k non-overlapping rows (Tier A).
 
-## 5. The memorisation problem in training inputs (extends I-37)
+## 5. The memorisation problem in training inputs (now I-67 in skill/larp/plan.md)
 - I-37 covers evaluation. It also bites in **training**: if the evidence LLM writes the assessment for a 2021 event and already knows the outcome, judgement fields (durability, novelty, strength) carry future information into the inputs, and the decision model learns to over-trust them.
 - Proposed rule: in pre-cutoff training data, feed the decision model only **extractive fields** (catalyst type and 8-K item, reported figure vs prior figure, guidance direction, source agreement) plus anonymised text. Judgement fields enter the model only if they help on post-cutoff data. Run the "name the firm" probe on a sample of each block (G-39).
 - The evidence LLM (D-03) must be chosen before the evidence pass, because its training cutoff sets the threshold/final split.
@@ -79,7 +79,7 @@
 |---|---|---|---|---|
 | 0 | Freeze D-06 target items (h, c + b, absolute vs index-relative); choose price vendor and evidence LLM (D-03); pre-register EXP-001 periods and n | Ledger commit | Yao Zhu + Isaac | Oct 10 |
 | 1 | Universe table: bStock → ticker → CIK, verified by hand; replace with the official list at onboarding | `universe` table + hash | Isaac | Oct 6 |
-| 2 | Raw ingest, append-only, each item stamped with `source_ts`, `fetched_ts`, URI, sha256: EDGAR submissions + primary docs/exhibits; GDELT files filtered to universe names; ALFRED vintages; release calendars; vendor prices; bStock klines (if Q-31 allows) | Raw store **outside the repo** | Isaac | Oct 10 |
+| 2 | Raw ingest, append-only, each item stamped with `source_ts`, `fetched_ts`, URI, sha256: EDGAR submissions + primary docs/exhibits; GDELT files filtered to universe names; ALFRED vintages (only if macro values are used, see §2); release calendars; vendor prices; bStock klines (if Q-31 allows) | Raw store **outside the repo** | Isaac | Oct 10 |
 | 3 | Event table: filter items, merge within 5 sessions, set `t` | `events` | Isaac | Oct 11 |
 | 4 | State builder = the live G-05 point-in-time code path, run in historical mode | `states` | Yao Zhu | Oct 13 |
 | 5 | Evidence + verification pass on anonymised inputs, batch API, full I/O logged (G-06) | `assessments` | Yao Zhu | Oct 15 |
@@ -93,8 +93,8 @@
 
 ## 7. Open items raised here
 - Proposed **Q-31**: may we use Binance spot public market data (bStock klines) from Singapore, given that Binance.com does not serve SG users (E-16)? Until answered, use BSC on-chain swap logs for the basis check.
-- Proposed **D-09**: price vendor for labels (licensed, adjusted OHLC + corporate actions, terms cover this use). Due Oct 6, so labels can be built in onboarding week.
-- ALFRED API key: whoever owns data registers one (free).
+- **D-09** (now in skill/larp/plan.md §6.4, with a ⚠ RECOMMENDED — NOT DECIDED test plan): price vendor for labels. Aim to decide by Oct 6 so labels can be built in onboarding week.
+- ALFRED API key: only if the team keeps macro values as model features (⚠ recommended: leave them out of v1.0; team to discuss).
 - Web3 API: the team has a Developer Portal key pair. Each member holds the secret in their own local `.env` (gitignored; template in `.env.example`); it is never shared with Claude or written in the repo. Any member runs `binance_test.py` on the Singapore network. First run on 2026-10-03 returned 200 (see §2), so read access works from Singapore; E-15's 40304 report did not reproduce for this endpoint. Wait for the official endpoint docs before trying token-list or quote endpoints.
 - Participant kit expected Oct 5 (team statement; the official onboarding documents per F-18). Before step 2 ingest, check it for: the eligible list (Q-19, replaces §3's candidate universe); data rules (F-73); the valuation source (Q-04, which may affect the label price series); historical-data endpoints in the Web3 API docs; and whether the current key is the challenge's development credential or needs re-issuing (G-09).
 - Promote this idea to an EXP entry once step 0 is frozen.

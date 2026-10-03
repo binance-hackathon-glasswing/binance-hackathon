@@ -1,8 +1,8 @@
 ---
 name: binance-agentic-ai-challenge
 description: Core skill file for "Beyond the Benchmark: The Binance Agentic AI Challenge" (DoraHacks, Sep–Nov 2026) — official facts, hard guardrails, the never-do list and ranked open questions. Load it for any rule-compliance, design, risk, logging/versioning or planning question on this challenge, then load the reference/larp file the file index points to when you need E/I/L/T/H/P/D/S detail.
-version: 0.5.3 (declared values table; branch-protection finding)
-revised: 2026-10-03 (SGT, UTC+8)
+version: 0.5.4 (recommendations for D-03/D-07/D-08/D-09/Q-30, marked not decided; I-67)
+revised: 2026-10-04 (SGT, UTC+8)
 source_verification:
   - official DoraHacks page re-checked 2026-09-30 (body text, timeline image, banner) — unchanged since the 2026-09-27 capture
   - Laya model card (Hugging Face) checked 2026-09-30 — card text only (E-51)
@@ -205,7 +205,7 @@ Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must
 13. Q-20 Treatment of dividend Multiplier, splits, unsolicited tokens and the funding transfer for equity and "unexplained transfers". [Log all; never touch unsolicited tokens.]
 14. Q-29 What off-hours liquidity (spreads/depth, RFQ availability) will the challenge path expose? (H-01)
 15. Q-27 Is the "Laya" checkpoint (or any self-hosted model) acceptable, and what licence evidence is needed? (I-38, E-51)
-16. Q-30 (internal, for the team) Laya: licence (publisher-stated Apache-2.0; confirm file-level licence at the pinned revision), training-data cutoff, redistribution rights under F-49c. [UNRESOLVED; decide by the onboarding declaration (D-03): if still unanswered, either don't run Laya or declare exactly the model that will run; never run an undeclared principal model (F-12, F-66).]
+16. Q-30 (internal, for the team) Laya: licence (publisher-stated Apache-2.0; confirm file-level licence at the pinned revision), training-data cutoff, redistribution rights under F-49c. [UNRESOLVED; decide by the onboarding declaration (D-03): if still unanswered, either don't run Laya or declare exactly the model that will run; never run an undeclared principal model (F-12, F-66).] Checked 2026-10-04 (HF API, card metadata only): Laya was published 2026-09-18, its training data is not stated (so its cutoff could run to Sep 2026 and overlap our clean evaluation window, I-67), it has 0 downloads, and there is no LICENSE file (the apache-2.0 tag is metadata only). Its backbone, `answerdotai/ModernBERT-large`, is apache-2.0 (also metadata only), was published 2024-12-11 (cutoff ≤ Dec 2024) and describes its pre-training data. **⚠ RECOMMENDED — NOT DECIDED (team to discuss):** declare ModernBERT-large + our own typed decision head as the base. The proposal's "bidirectional encoder with a typed decision head" still holds, and the proposal never names Laya (I-38). Laya becomes an offline challenger: it enters only if it beats ModernBERT on the calibration block and its provenance is cleared, then via re-declaration (Q-22).
 17. Q-11 Equity sampling frequency for the max-drawdown tie-break.
 18. Q-13 Do prompt/config-only changes require a full version event? [Yes.]
 19. Q-14 Grace window for delayed trace uploads. [UNRESOLVED]
@@ -254,12 +254,12 @@ Official onboarding documents take precedence over everything here (§0.2). Reco
 | `L-01`–`L-54` (incl. `L-31b`) | reference/literature.md | §12 |
 | `T-01`–`T-19` | larp/plan.md | §2 |
 | operating plan | larp/plan.md | §9 |
-| `D-02`–`D-08` | larp/plan.md | §6.4 |
+| `D-02`–`D-09` | larp/plan.md | §6.4 |
 | v1.0 adopted scope (status table) | larp/plan.md | top |
 | declared values from the submitted proposal (uncalibrated) | larp/plan.md | top, after the scope table |
 | concept, `G-50`–`G-54`, `P-01`–`P-17` | larp/plan.md | §6.1–§6.3 |
 | reference architecture | larp/plan.md | §8 |
-| `I-37`, `I-38`, `I-50`–`I-53`, `I-55`, `I-56`, `I-58`, `I-59`, `I-61`–`I-66` | larp/plan.md | §4 |
+| `I-37`, `I-38`, `I-50`–`I-53`, `I-55`, `I-56`, `I-58`, `I-59`, `I-61`–`I-67` | larp/plan.md | §4 |
 | `H-01`–`H-03` | larp/plan.md | §5 |
 | `G-20`–`G-47` | larp/plan.md | §7.2–§7.4 |
 | `S-01`–`S-07` | larp/strategy-opinions.md | Appendix A |
@@ -278,4 +278,5 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - v0.5.1 (2026-09-30): final red-team fixes. **High:** §9 dev-wallet txs only from versioned test-mode code via decision records; G-03 start-up gate for every deployable + third-party services in the manifest; G-01 approve logic (token contract `to`, spender allow-listed); G-18 (h) no nonce-replacement cancellation, (i) router `deadline` check, "confirmed holdings" defined. **Medium:** never-do #1 / G-08 / Q-09 human actions (HALT, restart after reconciliation, version deploys); G-23 rule-based event policy; D-06 proposal sub-items moved to priority 1 (§0.4); D-07 split into D-07 (baseline V0) and new D-08 (inconclusive default), H-02 and §10 updated; §7.1 footer tags; G-41 / never-do #7 private training/label data; F-80 API details moved to new E-52, F-07 and I-60 cite it; G-53 held names still reach the decision model; Q-30 declaration rule; team_sources note. **Low:** F-42 intro quote; I-62/D-06 drafts-differ wording; D-01 ≈36%; G-50 ≤ [6] calls / ≤3 tool types; E-33 ↔ I-29 aligned; "classifier" → "decision model" (G-31, G-50, D-03, I-37, I-50, I-51, I-63 title, H-02, Q-16); §8 diagram (regime governor → risk governor, HOLD record paths, risk-limit exit bypass); I-65 / §10 three gate kinds; proposal-phase header; §0.4 team actions; file index notes (I-02 → S-01, SKILL_v0.3 location); §0.2 precedence; checklist placeholders.
 - v0.5.2 (2026-10-03): finalist status recorded (§0.4); archive retired (proposal-phase.md, SKILL_v0.3.md → git history, commit 2985af5); ledger split into an index (`../LEDGER.md`) plus per-entry files; reading-budget rule added (§0.2); file index updated.
 - v0.5.3 (2026-10-03): never-do #6 and G-40 record that GitHub branch protection is unavailable on our plan, so the no-rewrite rule is procedural; larp/plan.md gains a "Declared values" table (proposal numbers are declared defaults, not calibrated; which ones shape training) and a D-06 update; IDEA-001 (training-set plan and source access check) added to the ledger.
+- v0.5.4 (2026-10-04): **recommendations only, marked ⚠ RECOMMENDED — NOT DECIDED** (team to test/discuss) on D-03 (evidence LLM), D-07 (V0 baseline), D-08 (inconclusive ladder), new D-09 (price vendor) and Q-30 (ModernBERT-large as base, Laya as challenger); new I-67 (memorisation contaminates training inputs); IDEA-001: ALFRED only if macro values are model features.
 - Next update: after finalists (Oct 2) and after onboarding documents (Oct 5–10) — run the checklist above.

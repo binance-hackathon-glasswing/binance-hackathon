@@ -9,4 +9,4 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 | EXP-001 | Verified evidence vs no-evidence baseline | draft (blocked on D-07: baseline definition) | — | 2026-10-03 | [ledger/EXP-001.md](ledger/EXP-001.md) |
 | EXP-002 | Do off-hours bStocks quotes lag verified news? | draft (thresholds in brackets not frozen) | — | 2026-10-03 | [ledger/EXP-002.md](ledger/EXP-002.md) |
 | EXP-003 | Rule-based regime gating vs a simple volatility cap | draft | — | 2026-10-03 | [ledger/EXP-003.md](ledger/EXP-003.md) |
-| IDEA-001 | Decision-model training set: sources, size and build workflow | open | access checked 2026-10-03; price vendor and Q-31 pending | 2026-10-03 | [ledger/IDEA-001.md](ledger/IDEA-001.md) |
+| IDEA-001 | Decision-model training set: sources, size and build workflow | open | access checked 2026-10-03; D-09 vendor test and Q-31 pending | 2026-10-04 | [ledger/IDEA-001.md](ledger/IDEA-001.md) |
