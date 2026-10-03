@@ -1,6 +1,6 @@
 # LARP — Proposal answers (copy into the form)
 
-Fill every [bracket] before submitting. The team section has placeholders only.
+Answers prepared for the Sep 30, 2026 submission (team names added).
 
 ---
 
@@ -204,10 +204,10 @@ Onboarding gates:
 ## Team capability + intended scope
 
 Team (4):
-- [Yao Zhu] — **Agent/Model lead:** evidence loop, verification, decision model and calibration. 
-- [Isaac] — **Markets/Data/Risk lead:** point-in-time data, labels, risk and regime governors, hypothesis tests. 
-- [Keith] — **Execution/Security lead:** Web3 API adapter, signer allow-list, recovery and reconciliation. 
-- [Keegan] — **Platform/Audit lead:** versioning, manifests, logging, uploads, monitoring. 
+- Yao Zhu — **Agent/Model lead:** evidence loop, verification, decision model and calibration. 
+- Isaac — **Markets/Data/Risk lead:** point-in-time data, labels, risk and regime governors, hypothesis tests. 
+- Keith — **Execution/Security lead:** Web3 API adapter, signer allow-list, recovery and reconciliation. 
+- Keegan — **Platform/Audit lead:** versioning, manifests, logging, uploads, monitoring. 
 
 What we deliver (v1.0):
 - a bounded evidence loop (≤ 3 tool types) with claim verification,
