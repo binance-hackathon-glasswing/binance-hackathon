@@ -1,8 +1,8 @@
 ---
 name: binance-agentic-ai-challenge
 description: Core skill file for "Beyond the Benchmark: The Binance Agentic AI Challenge" (DoraHacks, Sep–Nov 2026) — official facts, hard guardrails, the never-do list and ranked open questions. Load it for any rule-compliance, design, risk, logging/versioning or planning question on this challenge, then load the reference/larp file the file index points to when you need E/I/L/T/H/P/D/S detail.
-version: 0.5.1 (external reviews A/B red-teamed and applied; Laya card verified; final red-team fixes)
-revised: 2026-09-30 (SGT, UTC+8)
+version: 0.5.2 (archive retired to git history; ledger index + reading budget)
+revised: 2026-10-03 (SGT, UTC+8)
 source_verification:
   - official DoraHacks page re-checked 2026-09-30 (body text, timeline image, banner) — unchanged since the 2026-09-27 capture
   - Laya model card (Hugging Face) checked 2026-09-30 — card text only (E-51)
@@ -15,8 +15,8 @@ reference_files:
   - reference/literature.md — L items
   - larp/plan.md — T, D, H, P items, LARP-specific I items, G-20..G-54, architecture, operating plan
   - larp/strategy-opinions.md — S items (keep out of the proposal)
-  - archive/proposal-phase.md — §10 proposal guidance, T-20, D-01, I-57
-  - archive/SKILL_v0.3.md — untouched v0.3 backup
+  - ../LEDGER.md — index of ideas and experiments (IDEA-, EXP-); full records in ../ledger/<ID>.md
+  - retired (git history, commit 2985af5): archive/proposal-phase.md (§10 proposal guidance, T-20, D-01, I-57) and archive/SKILL_v0.3.md
 team_sources: larp/proposal.md, larp/application_answers.md, larp/deployment.md, larp/team_and_delivery.md (team drafts, not official; not stored in this Project)
 ---
 
@@ -47,6 +47,7 @@ Every line carries an ID and a label. Never upgrade a label silently.
 - Precedence when items conflict: official onboarding rules > F > G[RULE] > E[PRIMARY] > G[RULE-DERIVED] > I > T > P/D/G[POLICY/PRACTICE] > H > S; L supports P/G and does not override F.
 - **Official vs internal:** the official text requires very little about *how* to trade. Almost every numeric limit, cadence rule and sizing method in this file is a team POLICY. If anyone (human or LLM) cites a POLICY as "the rules say", correct it.
 - E and L items carry source, access date and what was checked (existence / abstract / full text / docs / experiment); keep team-transcribed form fields (T) distinct from organiser text (F).
+- **Reading budget:** load this file and `../LEDGER.md` (index only). Open a reference/larp file or `../ledger/<ID>.md` only when the task names those IDs or touches their topic. When an item is settled (Q answered, D decided, I superseded, experiment closed), collapse it to one line in the file that indexes it and move or drop the reasoning; git history keeps the full text.
 - Reviewers: cite IDs. If you disagree with an inference, name the F/E item you read differently. If you add a claim, give it a label and a source.
 - Nothing here is permission to evade a rule. Where a rule is ambiguous, the conservative reading applies until organisers answer.
 - **Timezones:** the official page gives dates without timezones. Team is in Singapore (SGT = UTC+8). US Eastern is UTC−4 until Sun Nov 1, 2026, then UTC−5.
@@ -65,10 +66,10 @@ Each line summarises the cited items; the items govern.
 10. Never use a VPN or relay to get around geo-restrictions or IP checks. (F-70, F-71, G-17)
 11. Never call a POLICY a rule: only items tagged [RULE: F-xx] are required by the official text. (§0.1, §0.2; tags in §7)
 
-### 0.4 Current phase (as of 2026-09-30)
-- Applications close today, Sep 30 (F-10); submit before 23:59 SGT (Q-01). Proposal-phase material is archived in `archive/proposal-phase.md`.
-- Finalists are announced Oct 2 (F-11). Onboarding is Oct 5–10 (F-12), when the Participant Guide, Web3 Open API documentation, Audit Log Specification, scoring rules and incident policy arrive (F-18); then run the re-verification checklist at the end of this file.
-- **Priority by deadline:** today (Sep 30) = proposal — priority-1 items: larp/plan.md §8 diagram and §6.1; archive/proposal-phase.md §10; and two D-06 sub-items for the proposal text: what "reduce" means, and the drawdown wording ("new-risk halt", not "kill switch"; one exits wording, T-14 vs I-62). Before Oct 12 = team actions: define the decision target/horizon and the rest of D-06; implement G-18; classify onboarding gates (I-65); by Oct 19 define baseline V0 (D-07) and the inconclusive default (D-08). After onboarding = the re-verification checklist at the end of this file.
+### 0.4 Current phase (as of 2026-10-03)
+- The proposal was submitted by Sep 30 (F-10), and the team was selected as a finalist on Oct 2 (F-11) [team statement]. What was submitted is in `../proposal/` (answers + architecture PDF); proposal-phase guidance is retired to git history.
+- Onboarding is Oct 5–10 (F-12), when the Participant Guide, Web3 Open API documentation, Audit Log Specification, scoring rules and incident policy arrive (F-18); then run the re-verification checklist at the end of this file.
+- **Priority by deadline:** before Oct 12 = team actions: define the decision target/horizon and the rest of D-06; implement G-18; classify onboarding gates (I-65); by Oct 19 define baseline V0 (D-07) and the inconclusive default (D-08). After onboarding = the re-verification checklist at the end of this file.
 - After that: development Oct 12–26 (F-13); final activation Oct 27–29 (F-14); scored run Oct 29 – Nov 12 (F-15); provisional ranking Nov 13 (F-16); winner audit Nov 16–20 (F-17). Team plan: `larp/plan.md` §9.
 
 ---
@@ -261,8 +262,8 @@ Official onboarding documents take precedence over everything here (§0.2). Reco
 | `H-01`–`H-03` | larp/plan.md | §5 |
 | `G-20`–`G-47` | larp/plan.md | §7.2–§7.4 |
 | `S-01`–`S-07` | larp/strategy-opinions.md | Appendix A |
-| `T-20`, `I-57`, `D-01`, proposal guidance (§10) | archive/proposal-phase.md | — |
-| v0.3 as it was | archive/SKILL_v0.3.md | — (lives in the Project archive: binance-challenge/archive/SKILL_v0.3.md) |
+| ideas and experiments (`IDEA-`, `EXP-`) | ../LEDGER.md (index) → ../ledger/<ID>.md | — |
+| `T-20`, `I-57`, `D-01`, proposal guidance (§10), v0.3 as it was | retired with the proposal on Sep 30 | git history: commit 2985af5, `docs/skill/archive/` |
 Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "§9" still resolve via this table.
 
 ---
@@ -274,4 +275,5 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - v0.4 (2026-09-30): **Page re-verified** (body text, timeline image and banner unchanged). **Fixes:** F-07 (DoraHacks times are UTC+8; API timestamps); F-80 / §1.8 (second snapshot: 86 registered, participant reply on Q&A, BUIDL form disabled, 0 BUIDLs/teams/tracks/bounties); I-60 and E-50 (deadline Nov 13 14:59 UTC conflicts with Eventbrite; looks like a platform default; Confidence Low); Q-18 (time zone resolved; BUIDL requirement open); Q-01 (submit before 23:59 SGT Sep 30); §9 row Sep 29–30; G-18 moved after G-17; F-09 moved to the start of §1.2; §11 list renumbered (Q-30 no longer "15b"); source_page.md re-verification note. **Restructure:** core SKILL.md (reading contract, never-do list, current phase, F, G-01..G-18, Q, re-verification checklist, file index) plus reference/environment.md, reference/inferences.md, reference/literature.md, larp/plan.md, larp/strategy-opinions.md, archive/proposal-phase.md, archive/SKILL_v0.3.md. No IDs changed; item wording unchanged except the fixes above.
 - v0.5 (2026-09-30): external reviews A (proposal brief) and B (technical review of v0.3) red-teamed and applied. **Laya corrected via the model card** (new E-51): non-autoregressive, never generates text, Apache-2.0; base checkpoint near chance zero-shot and over-confident; the 0.766 figure belongs to `laya-typed-decisions`. **Accepted:** §8 diagram (decision model → selection gate; rule-defined regime governor; memory written only after verification; recovery by observable identifiers); §6.1 canonical flow and planning-claim caveat; archive §10 framing, originality wording, Say/Avoid changes, model row, priority-1 header. **Partial:** I-65 (three gate kinds rather than B's two); status field (legend + adopted-scope table only); verification metadata (frontmatter + §0.2 rule); "different clocks" (motivation OK, edge claim not). **Rewritten:** G-18, G-25, G-41, G-42, G-47, G-51, G-53, I-04, I-20, I-29, I-38, I-50, I-57, I-64, I-65, I-66, H-01, H-02, H-03, D-05, D-06, P-05, T-04, E-33, Q-27, Q-30; notes only on T-12, T-14, T-18, T-20, §9. **New:** E-51, D-07, Status legend (§0.1), `revised`/`source_verification` frontmatter, priority by deadline (§0.4), v1.0 adopted scope table (larp/plan.md). **Not applied:** per-claim verification table (bloat); three-part template for every G item (only G-41, G-42); heavy resampling machinery for H-01; review A's "exactly-once signing" (replaced by at-most-once signing + reconciliation, G-18); review A's "archive the submitted version" (already in §9).
 - v0.5.1 (2026-09-30): final red-team fixes. **High:** §9 dev-wallet txs only from versioned test-mode code via decision records; G-03 start-up gate for every deployable + third-party services in the manifest; G-01 approve logic (token contract `to`, spender allow-listed); G-18 (h) no nonce-replacement cancellation, (i) router `deadline` check, "confirmed holdings" defined. **Medium:** never-do #1 / G-08 / Q-09 human actions (HALT, restart after reconciliation, version deploys); G-23 rule-based event policy; D-06 proposal sub-items moved to priority 1 (§0.4); D-07 split into D-07 (baseline V0) and new D-08 (inconclusive default), H-02 and §10 updated; §7.1 footer tags; G-41 / never-do #7 private training/label data; F-80 API details moved to new E-52, F-07 and I-60 cite it; G-53 held names still reach the decision model; Q-30 declaration rule; team_sources note. **Low:** F-42 intro quote; I-62/D-06 drafts-differ wording; D-01 ≈36%; G-50 ≤ [6] calls / ≤3 tool types; E-33 ↔ I-29 aligned; "classifier" → "decision model" (G-31, G-50, D-03, I-37, I-50, I-51, I-63 title, H-02, Q-16); §8 diagram (regime governor → risk governor, HOLD record paths, risk-limit exit bypass); I-65 / §10 three gate kinds; proposal-phase header; §0.4 team actions; file index notes (I-02 → S-01, SKILL_v0.3 location); §0.2 precedence; checklist placeholders.
+- v0.5.2 (2026-10-03): finalist status recorded (§0.4); archive retired (proposal-phase.md, SKILL_v0.3.md → git history, commit 2985af5); ledger split into an index (`../LEDGER.md`) plus per-entry files; reading-budget rule added (§0.2); file index updated.
 - Next update: after finalists (Oct 2) and after onboarding documents (Oct 5–10) — run the checklist above.
