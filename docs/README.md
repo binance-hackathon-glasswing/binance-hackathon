@@ -3,6 +3,7 @@
 Reference material for "Beyond the Benchmark: The Binance Agentic AI Challenge". Code lives at the repo root; this folder is documentation only.
 
 ## Start here
+- **`INCOMPLETE_WORK.md`** — live checklist of remaining planning, implementation-contract and readiness-evidence gaps. Remove items once fully completed and verified, following `../AGENTS.md`.
 - **`LEDGER.md`** — index of every idea and experiment (one row each). Full records are in `ledger/<ID>.md`; rules and templates are in `ledger/README.md`. Write the pass criterion before you run anything.
 - **`skill/SKILL.md`** — the core reference, written for both humans and LLMs: the official facts, a "never do" list, hard guardrails (G-01..G-18), open questions, a post-onboarding checklist and a file index. Its reading rules (§0) explain the labels: F = official fact, T = team draft, E = graded external evidence, I = inference, G = guardrail tagged RULE / RULE-DERIVED / POLICY / PRACTICE, and so on. A POLICY is a team choice, not a Binance rule.
 - **`official/source_page.md`** — verbatim capture of the official DoraHacks page. It is ground truth until the onboarding documents arrive (Oct 5–10).
