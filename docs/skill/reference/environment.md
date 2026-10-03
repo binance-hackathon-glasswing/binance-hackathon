@@ -1,0 +1,59 @@
+# Binance Agentic AI Challenge — Environment evidence (E)
+
+> Graded external evidence about bStocks, the Binance Web3 API, reasoning-trace availability, the calendar and other public information (§3 of the v0.3 skill file, in full).
+> IDs are stable; see `SKILL.md` for the reading contract and label meanings.
+> Split out of SKILL.md v0.3 on 2026-09-30 (v0.4 restructure); item wording unchanged except the v0.4 and v0.5 fixes listed in SKILL.md Appendix B.
+
+## 3. ENVIRONMENT (E) — graded external evidence (audited 2026-09-29; E-51 and E-52 added 2026-09-30)
+
+Grades: [PRIMARY] [ISSUER-EDU] [SECONDARY] [DEV-REPORT] [ESTIMATE] [UNCONFIRMED] (see §0.1). Statistics that are not [PRIMARY] must not appear in the proposal.
+
+### 3.1 What bStocks are
+- E-01 [ISSUER-EDU] "tokenized securities issued by BTech Holdings Limited, a Binance group affiliate"; "standard BEP-20 tokens on BNB Smart Chain"; "backed 1:1 by the corresponding US share held at a regulated custodian"; legally "Certificates representing certain Financial Instruments" under ADGM FSMR, with prospectuses approved by ADGM's FSRA (issuer press release, 2026-06-12). "not offered to US persons"; "available only to eligible users in permitted jurisdictions" — no list of permitted jurisdictions found in the sources checked. — Binance Academy "What are bStocks" (updated 2026-06-29); PR Newswire 2026-06-12.
+- E-02 [ISSUER-EDU] Launch ~2026-06-11/12 with CRCLB, MUB, NVDAB, SNDKB, TSLAB (SPCXB pending); 15 tickers "As of 2 July 2026" incl. METAB, MSFTB, PLTRB, QQQB. [SECONDARY] +10 on 2026-07-29 incl. Apple, Amazon (Yahoo Finance; no Binance announcement found). [SECONDARY] CryptoRank (2026-09-29): 76 tokens, ~$405M market cap, including SOXLB ("Semicon Bull 3X ETF").
+- E-03 [ISSUER-EDU] "trade 24/7" (BNB Chain blog); "traded around the clock on Binance's spot market" (Academy); minimum "from as little as $5"; self-custody on Binance Wallet/Trust Wallet "powered by Native"; DeFi integrations (Venus, Lista, PancakeSwap, Aster); daily Proof of Collateral.
+- E-04 [SECONDARY — no primary located; figures attributed to Binance Research] 47% of first-15-day volume "outside U.S. trading hours" (Chainwire press release 2026-07-01); 62% of July volume "while US markets were dark" and weekend prices capturing a median 92% of the next Monday move (Crypto Briefing 2026-08-26); QQQB "regularly accounts for over 90% of all bStocks activity" (Crypto Briefing) vs ≈82% of tokenized-equity volume in July (CoinDesk Data). **Use only qualitatively: off-hours trading is substantial.**
+- E-05 [ISSUER-EDU] No cash dividends: "net dividend value is automatically reinvested… Your bStock balance increases proportionally via the Multiplier adjustment", after US withholding; splits change token quantity; "deposits, withdrawals, and conversions may be temporarily paused" during corporate actions. [SECONDARY] statutory 30% withholding for non-US persons unless reduced by treaty (OneKey blog).
+- E-06 [SECONDARY] NVDAB CEX spot volume ~$4.2M vs NVDAUSDT perp ~$418M over Jul 17–22 (both Binance CEX; wublock Substack). The ~285 bp figure in that source is a **perp vs cash-open** gap on SPCX (Aug 10), **not** a bStocks token divergence. [SECONDARY] launch-day per-token 24h volume ~$0.42–2.54M (ourcryptotalk). [UNCONFIRMED] no depeg report found in our search (absence claim).
+- E-07 [SECONDARY] BNB Chain offers free bStocks price feeds "powered by APRO Oracle", covering "at least 12 bStocks" (Crypto Briefing 2026-09-17; no official post found).
+- E-08 [ISSUER-EDU] The Web3 API is a "single point of aggregation across bStocks, Ondo or xStocks" (BNB Hack blog). The challenge text says **bStocks** only (F-20).
+
+### 3.2 Execution path: Binance Web3 API
+- E-10 [PRIMARY] Web3 API launched 2026-06-17 (Binance announcement a9f19002…): "get aggregated swap quotes from multiple vendors, execute token swaps, and broadcast transactions on-chain"; "the API returns unsigned transactions — users sign locally in their own wallets"; "Zero Service Fees and No Positive Slippage Charge (for a limited time)"; MEV "protection cannot be guaranteed in all market conditions". Portal: web3.binance.com/en/dev-portal.
+- E-11 [PRIMARY] Python SDK `binance-web3-wallet` v7.0.0 (2026-09-18); base URL `https://web3.binance.com/build`; WebSocket `wss://web3-stream.binance.com/w3w`; RSA or ED25519 signing (one dev repo reports HMAC — confirm at onboarding); official example `quote_and_build_swap_transaction(binance_chain_id="56", …, vendor="LiquidMesh")`. [UNCONFIRMED] no rate-limit table found.
+- E-12 [DEV-REPORT] Endpoints seen in hackathon repos: `rwa/tokens`, `aggregator/quote`, `aggregator/approve-transaction`, `pre-transaction/simulate` (others unconfirmed); routes "LiquidMesh SWAP" and "PcsXRfq"; quote validity ~30 s in one repo (another uses its own 60 s cutoff).
+- E-13 [DEV-REPORT] "Every bStocks and Ondo quote is LiquidMesh `SWAP`, but the filling venue switches between RFQ makers and AMM-style pools"; `referencePrice` is "token price divided by the token-to-share ratio" (oneticker README). "An RFQ fill is an EIP-712 order that a market maker settles" (ottopus issue #59, 2026-09-24).
+- E-14 [PRIMARY] Web3 API prohibited regions: US and territories, Canada, Netherlands, Iran, Cuba, North Korea, Crimea, DNR, LNR, UK, Japan (conditional). **Singapore is not listed.** "IP checks are enforced on both the Developer Portal and the API server side."
+- E-15 [DEV-REPORT] "`40304 "compliance restriction"` came back from US, Singapore and Netherlands servers, but not from a French exit" (oneticker README; date not shown).
+- E-16 [SECONDARY] Binance.com restricted Singapore users from 2021-10-26 (Forbes 2021-09-28). [ISSUER-EDU] Binance Agent OS hackathon "not available to users in … Singapore" (Binance blog 2026-09-04).
+- E-17 [PRIMARY] BSC block time "approximately 0.45 seconds" (Fermi hard fork, 2026-01-14); "0.05 Gwei standard gas price"; typical tx "around $0.005 or less"; gas paid in BNB. [ESTIMATE] a swap of 150k–300k gas × 0.05 gwei = 7.5–15 µBNB ≈ $0.008–0.02 at BNB ≈ $1,000–1,300. **Gas is small relative to spread/slippage**, but a wallet with zero BNB cannot transact.
+- E-18 [PRIMARY] The Binance Agentic Wallet ("MPC Keyless"; user-set daily limit and token scope) is a different product from the Web3 API. Binance's Aug 17–Sep 1, 2026 bStocks AI PnL contest scored realised PnL by FIFO and banned wash trades and "activity between wallets controlled by the same entity". Which wallet model this challenge uses is not stated; F-22/F-24 ("your wallets and keys", Binance does not hold keys) suggest self-custody.
+- E-19 [SECONDARY] Jeff Li (Binance VP of product): "We really cannot see the reasoning of what the user's action is." (TechCrunch 2026-08-20) — context for why F-49 asks for thinking output.
+- E-20 [SECONDARY] Binance Seeds Program (launched ~2025-04-01): Pioneer Talent Program (full-time, ≤5 years' experience) and Accelerator Program (3–6-month projects for students/graduates) (ChainCatcher). No Binance primary found.
+
+### 3.3 Reasoning-trace availability (bears on F-49a)
+- E-30 [PRIMARY] Anthropic: "No `display` setting returns the raw chain of thought." `"summarized"` returns a summary produced by a different model; `"omitted"` returns an empty thinking field (full thinking encrypted in `signature`). `"omitted"` is the default on Fable/Mythos 5.x, Opus 5.5, Opus 5, Sonnet 5.5, Sonnet 5, Opus 4.8, Opus 4.7, Mythos Preview; `"summarized"` on Opus/Sonnet 4.6 and earlier.
+- E-31 [PRIMARY] OpenAI reasoning models: "reasoning tokens are not visible via the API"; summaries via `reasoning.summary`; `encrypted_content` when not stored. gpt-oss (open weights) emits raw CoT in the `analysis` channel.
+- E-32 [PRIMARY] Gemini returns thought summaries ("synthesized versions of the model's raw thoughts"); default depends on API surface. **DeepSeek's hosted API returns CoT in `reasoning_content`.** Qwen3 open weights emit `<think>…</think>` text.
+- E-33 [UNCONFIRMED] The model name "GPT-6 Sol" and its behaviour were not checked; assume E-31 applies. With response storage disabled, OpenAI reasoning items come back as `encrypted_content` (E-31), which neither the team nor Binance can read, so they cannot serve as F-49a thinking output; readable text exists only if `reasoning.summary` is requested; a multi-turn tool loop (G-50) must pass the encrypted items back each turn and log them, because complete request/response records (F-49c) then exist only in our logs. The Laya card states it never generates text (E-51), so it contributes no thinking text; F-49a thinking text must come from the evidence step, and the decision's audit explanation is the probability vector + policy trace + verified evidence (I-29).
+
+### 3.4 Calendar (US Eastern unless noted)
+| ID | Date (2026) | Event | Grade |
+|---|---|---|---|
+| E-40 | Wed Oct 14 | CPI (Sep), 08:30 — dev phase | PRIMARY (BLS) |
+| E-41 | Oct 27–28 | FOMC; decision Oct 28, the day before the scored run | PRIMARY (Fed) |
+| E-42 | ~Oct 28 AMC | MSFT, GOOGL, META earnings | ESTIMATE (unannounced) |
+| E-43 | Thu Oct 29 | Q3 GDP advance + Personal Income & Outlays (Sep), 08:30 | PRIMARY (BEA); AAPL/AMZN AMC = ESTIMATE |
+| E-44 | Sun Nov 1 | US DST ends; 09:30 ET = 21:30 SGT before, 22:30 SGT after | PRIMARY (15 U.S.C. §260a) + ESTIMATE (conversion) |
+| E-45 | Tue Nov 3 | US midterm elections | PRIMARY (2 U.S.C. §7) |
+| E-46 | Fri Nov 6 | Jobs report (Oct), 08:30 | PRIMARY (BLS) |
+| E-47 | Tue Nov 10 | CPI (Oct), 08:30 | PRIMARY (BLS) |
+| E-48 | Wed Nov 11 | Veterans Day: NYSE open; SIFMA recommends full bond-market close | PRIMARY |
+| E-49 | ~Nov 17 | NVDA earnings (after the window) | ESTIMATE (unannounced) |
+
+### 3.5 Other public information
+- E-50 [SECONDARY] Eventbrite mirror: Sep 10 06:30 UTC → Nov 14 07:00 UTC (= Nov 13, 23:00 US Pacific). Conflicts with the DoraHacks deadline, Nov 13 14:59 UTC (F-07; see I-60). [ESTIMATE] No Binance post about this challenge found (absence). [ISSUER-EDU] "BNB Hack: Tokenized Stocks Edition" (Sep 16 – Oct 11, 2026) is a different event.
+- E-52 [PRIMARY — platform API, dorahacks.io/api/v1/hub/hackathons/binance, accessed 2026-09-30] BUIDL submission form disabled; 0 BUIDLs, 0 teams, 0 tracks, 0 bounties; timeline_start 1788710400 and timeline_end 1794581940 (converted in F-07). Checked: API JSON fields only.
+
+### 3.6 Models
+- E-51 [PRIMARY — publisher claim] **Laya** model cards https://huggingface.co/aaroncool9/laya and upstream https://huggingface.co/convaiinnovations/laya (publisher Convai Innovations; code https://github.com/NandhaKishorM/laya); licence apache-2.0 on both. Claims: "non-autoregressive System 1 decision model" that "never generates text"; ModernBERT-large backbone (395M, bidirectional, fully fine-tuned) + decision head trained from scratch; 421M parameters (English); input = a state (text/email/ticket/JSON) + typed questions → typed answers with calibrated probabilities in one forward pass. Base `laya`: "Near chance on typed-decisions zero-shot — 0.362 here and 0.352 for multilingual" (random 0.318, majority 0.461, per the red-team read); "Ships over-confident: refitting one temperature per (question type, option count) moves mean ECE 0.466 → 0.081". The 0.766 typed-decisions accuracy belongs to the separate checkpoint `laya-typed-decisions` (fine-tuned on that benchmark's train split), whose card says: "Expect it to behave like the base `laya` checkpoint, or worse, on anything else." Jev 1.13.0 (published): 0.727. Not stated: training data, pre-training cutoff, commit/revision. No financial-forecasting evidence. Accessed 2026-09-30; checked: model-card text only (weights not inspected, no experiment run).

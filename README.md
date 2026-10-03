@@ -11,3 +11,6 @@ Members
 ### Setting up
 After cloning the project to your local machine, run `conda env create -f environment.yml`
 to set up your python packages and dependencies
+
+### Docs
+Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [`docs/`](docs/README.md). Start with `docs/skill/SKILL.md`.
