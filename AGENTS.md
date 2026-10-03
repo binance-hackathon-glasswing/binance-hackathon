@@ -14,3 +14,14 @@ Do not load every doc by default.
 - Never force-push or rewrite history on the challenge branch.
 - Code affecting decisions, trades or logging must be committed and pushed before it runs.
 - Log new ideas and experiments in the ledger. Write pass criteria before running anything.
+
+## Thread handoff
+Tell the user when a session is ready to hand off to a new one. Do this when they ask, after a big piece of progress, or when the context window is nearing its limit and key details could be lost to compression.
+
+"Ready" means a strict check passes that everything from the session is kept outside the conversation:
+1. **Git:** every change is committed and pushed. `git status` is clean and `main` matches `origin/main`. List any unpushed commits.
+2. **Docs:** every decision, finding and new fact is written into the right file with an ID: `docs/skill/SKILL.md` or `docs/skill/larp/plan.md` items, or a `docs/LEDGER.md` row plus its `docs/ledger/<ID>.md` entry.
+3. **No loose ends:** no unflagged placeholders in files touched this session, no stale copies or temp files in the repo, and no secrets or `.env` committed.
+4. **Open items:** listed explicitly — what each is, who owns it, and where it is recorded.
+
+If any check fails, say what is still pending instead of declaring the session ready.
