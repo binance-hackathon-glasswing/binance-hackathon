@@ -191,7 +191,7 @@ Guardrails G-20..G-47 (mostly POLICY; G-40–G-42 RULE; G-43–G-44 RULE-DERIVED
 
 Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must work either way.
 1. Q-26 Is a KYC-verified Binance (exchange) account required, and can Singapore-based participants obtain/use one for this challenge? (T-03) [UNRESOLVED]
-2. Q-12 Can Singapore-based participants use the Web3 API/Developer Portal and trade bStocks, and host in Singapore? (E-14, E-15) [UNRESOLVED; never bypass]
+2. Q-12 Can Singapore-based participants use the Web3 API/Developer Portal and trade bStocks, and host in Singapore? (E-14, E-15) [UNRESOLVED; never bypass] Partial evidence 2026-10-04 (IDEA-001 §2): a signed read-only Web3 API call (supported-chain endpoint) from the team's Singapore network returned 200 with no VPN, so read access works. Trading bStocks from Singapore and hosting there remain unresolved.
 3. Q-03 Opening asset(s); is BNB for gas provided; does BNB count in equity? [UNRESOLVED]
 4. Q-08 May the agent swap into BNB for gas? [Assume no until confirmed.]
 5. Q-04 What is the valuation source and valuation instant? [UNRESOLVED]
@@ -219,6 +219,7 @@ Working assumption in brackets; **UNRESOLVED** = no safe assumption, design must
 27. Q-18 Is a DoraHacks BUIDL submission required by "2026/11/13 22:59"? Time zone resolved: 22:59 UTC+8 = 14:59 UTC (F-07). [Whether any BUIDL submission is required remains open (I-60).]
 28. Q-24 Sharing/confidentiality terms for winner deliverables.
 29. Q-25 Does "non-public information about … the instruments involved" exclude employees of issuers of eligible bStocks?
+30. Q-31 May we use Binance spot public market data (bStock `…BUSDT` klines, `api.binance.com` / `data.binance.vision`) from Singapore, given that Binance.com does not serve Singapore users (E-16)? Reachable from Singapore without a VPN (IDEA-001 §2), and public rather than Binance-internal (F-63). [Until answered, use BSC on-chain swap logs for the token-vs-share basis check.]
 
 ---
 
@@ -248,7 +249,7 @@ Official onboarding documents take precedence over everything here (§0.2). Reco
 |---|---|---|
 | `F-01`–`F-80` | SKILL.md | §1 |
 | `G-01`–`G-18` | SKILL.md | §7.1 |
-| `Q-01`–`Q-30` | SKILL.md | §11 |
+| `Q-01`–`Q-31` | SKILL.md | §11 |
 | `E-01`–`E-52` | reference/environment.md | §3 (E-51: §3.6 Models; E-52: §3.5) |
 | `I-01`–`I-09` (I-02 moved to S-01), `I-20`–`I-36`, `I-39`–`I-42`, `I-54`, `I-60`, `I-70` | reference/inferences.md | §4 |
 | `L-01`–`L-54` (incl. `L-31b`) | reference/literature.md | §12 |
@@ -278,5 +279,5 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - v0.5.1 (2026-09-30): final red-team fixes. **High:** §9 dev-wallet txs only from versioned test-mode code via decision records; G-03 start-up gate for every deployable + third-party services in the manifest; G-01 approve logic (token contract `to`, spender allow-listed); G-18 (h) no nonce-replacement cancellation, (i) router `deadline` check, "confirmed holdings" defined. **Medium:** never-do #1 / G-08 / Q-09 human actions (HALT, restart after reconciliation, version deploys); G-23 rule-based event policy; D-06 proposal sub-items moved to priority 1 (§0.4); D-07 split into D-07 (baseline V0) and new D-08 (inconclusive default), H-02 and §10 updated; §7.1 footer tags; G-41 / never-do #7 private training/label data; F-80 API details moved to new E-52, F-07 and I-60 cite it; G-53 held names still reach the decision model; Q-30 declaration rule; team_sources note. **Low:** F-42 intro quote; I-62/D-06 drafts-differ wording; D-01 ≈36%; G-50 ≤ [6] calls / ≤3 tool types; E-33 ↔ I-29 aligned; "classifier" → "decision model" (G-31, G-50, D-03, I-37, I-50, I-51, I-63 title, H-02, Q-16); §8 diagram (regime governor → risk governor, HOLD record paths, risk-limit exit bypass); I-65 / §10 three gate kinds; proposal-phase header; §0.4 team actions; file index notes (I-02 → S-01, SKILL_v0.3 location); §0.2 precedence; checklist placeholders.
 - v0.5.2 (2026-10-03): finalist status recorded (§0.4); archive retired (proposal-phase.md, SKILL_v0.3.md → git history, commit 2985af5); ledger split into an index (`../LEDGER.md`) plus per-entry files; reading-budget rule added (§0.2); file index updated.
 - v0.5.3 (2026-10-03): never-do #6 and G-40 record that GitHub branch protection is unavailable on our plan, so the no-rewrite rule is procedural; larp/plan.md gains a "Declared values" table (proposal numbers are declared defaults, not calibrated; which ones shape training) and a D-06 update; IDEA-001 (training-set plan and source access check) added to the ledger.
-- v0.5.4 (2026-10-04): **recommendations only, marked ⚠ RECOMMENDED — NOT DECIDED** (team to test/discuss) on D-03 (evidence LLM), D-07 (V0 baseline), D-08 (inconclusive ladder), new D-09 (price vendor) and Q-30 (ModernBERT-large as base, Laya as challenger); new I-67 (memorisation contaminates training inputs); IDEA-001: ALFRED only if macro values are model features.
+- v0.5.4 (2026-10-04): **recommendations only, marked ⚠ RECOMMENDED — NOT DECIDED** (team to test/discuss) on D-03 (evidence LLM), D-07 (V0 baseline), D-08 (inconclusive ladder), new D-09 (price vendor) and Q-30; Q-31 (Binance spot data from Singapore) added; Q-12 partial evidence (Web3 API read access works from Singapore); §9 skeleton row deferred by team decision (ModernBERT-large as base, Laya as challenger); new I-67 (memorisation contaminates training inputs); IDEA-001: ALFRED only if macro values are model features.
 - Next update: after finalists (Oct 2) and after onboarding documents (Oct 5–10) — run the checklist above.
