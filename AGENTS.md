@@ -11,7 +11,7 @@ Do not load every doc by default.
 
 ## Hard rules (summary; SKILL.md §0.3 governs)
 - Never commit secrets, keys, `.env` files or private training/label data.
-- Never force-push or rewrite history on the challenge branch.
+- Never force-push, rebase, amend pushed commits or otherwise rewrite history on the challenge branch. GitHub branch protection is not available on our plan (checked 2026-10-03), so nothing technical stops a force-push; this rule is the only guard. Never use `git push --force` / `--force-with-lease`, `git reset` on pushed commits, or history-rewriting tools on `main`. Fix mistakes with a new commit (`git revert`).
 - Code affecting decisions, trades or logging must be committed and pushed before it runs.
 - Log new ideas and experiments in the ledger. Write pass criteria before running anything.
 

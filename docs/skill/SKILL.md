@@ -1,7 +1,7 @@
 ---
 name: binance-agentic-ai-challenge
 description: Core skill file for "Beyond the Benchmark: The Binance Agentic AI Challenge" (DoraHacks, Sep–Nov 2026) — official facts, hard guardrails, the never-do list and ranked open questions. Load it for any rule-compliance, design, risk, logging/versioning or planning question on this challenge, then load the reference/larp file the file index points to when you need E/I/L/T/H/P/D/S detail.
-version: 0.5.2 (archive retired to git history; ledger index + reading budget)
+version: 0.5.3 (declared values table; branch-protection finding)
 revised: 2026-10-03 (SGT, UTC+8)
 source_verification:
   - official DoraHacks page re-checked 2026-09-30 (body text, timeline image, banner) — unchanged since the 2026-09-27 capture
@@ -59,7 +59,7 @@ Each line summarises the cited items; the items govern.
 3. Never add own or external funds, withdraw, transfer wallet-to-wallet, bridge, or make unrelated swaps or arbitrary contract calls. (F-25, F-64, G-01, G-13)
 4. Never use leverage, shorting, derivatives, or leveraged/inverse ETF tokens (unless explicitly eligible and confirmed). (F-64, G-02)
 5. Never let anything trade unless its version is committed, pushed to the registered repo, manifested and logged in a version event, with a hash equal to the active manifest. (F-60, F-61, G-03, G-12)
-6. Never force-push, rebase or rewrite the challenge branch. (F-61, G-40)
+6. Never force-push, rebase or rewrite the challenge branch; fix mistakes with a new commit. GitHub does not enforce this on our plan (no branch protection, checked 2026-10-03), so the rule itself is the guard. (F-61, G-40)
 7. Never put secrets, keys or credentials in the repo or in logs, or private training/label data in the repo [RULE: F-61]. (F-61, F-62, G-06, G-41)
 8. Never use future, non-public, Binance-internal, other teams' private or unlicensed data. (F-63, F-71, G-05, G-10, G-42)
 9. Never backfill or rewrite logs; upload daily to write-once storage and buffer locally during outages. (F-62, G-07)
@@ -256,6 +256,7 @@ Official onboarding documents take precedence over everything here (§0.2). Reco
 | operating plan | larp/plan.md | §9 |
 | `D-02`–`D-08` | larp/plan.md | §6.4 |
 | v1.0 adopted scope (status table) | larp/plan.md | top |
+| declared values from the submitted proposal (uncalibrated) | larp/plan.md | top, after the scope table |
 | concept, `G-50`–`G-54`, `P-01`–`P-17` | larp/plan.md | §6.1–§6.3 |
 | reference architecture | larp/plan.md | §8 |
 | `I-37`, `I-38`, `I-50`–`I-53`, `I-55`, `I-56`, `I-58`, `I-59`, `I-61`–`I-66` | larp/plan.md | §4 |
@@ -276,4 +277,5 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - v0.5 (2026-09-30): external reviews A (proposal brief) and B (technical review of v0.3) red-teamed and applied. **Laya corrected via the model card** (new E-51): non-autoregressive, never generates text, Apache-2.0; base checkpoint near chance zero-shot and over-confident; the 0.766 figure belongs to `laya-typed-decisions`. **Accepted:** §8 diagram (decision model → selection gate; rule-defined regime governor; memory written only after verification; recovery by observable identifiers); §6.1 canonical flow and planning-claim caveat; archive §10 framing, originality wording, Say/Avoid changes, model row, priority-1 header. **Partial:** I-65 (three gate kinds rather than B's two); status field (legend + adopted-scope table only); verification metadata (frontmatter + §0.2 rule); "different clocks" (motivation OK, edge claim not). **Rewritten:** G-18, G-25, G-41, G-42, G-47, G-51, G-53, I-04, I-20, I-29, I-38, I-50, I-57, I-64, I-65, I-66, H-01, H-02, H-03, D-05, D-06, P-05, T-04, E-33, Q-27, Q-30; notes only on T-12, T-14, T-18, T-20, §9. **New:** E-51, D-07, Status legend (§0.1), `revised`/`source_verification` frontmatter, priority by deadline (§0.4), v1.0 adopted scope table (larp/plan.md). **Not applied:** per-claim verification table (bloat); three-part template for every G item (only G-41, G-42); heavy resampling machinery for H-01; review A's "exactly-once signing" (replaced by at-most-once signing + reconciliation, G-18); review A's "archive the submitted version" (already in §9).
 - v0.5.1 (2026-09-30): final red-team fixes. **High:** §9 dev-wallet txs only from versioned test-mode code via decision records; G-03 start-up gate for every deployable + third-party services in the manifest; G-01 approve logic (token contract `to`, spender allow-listed); G-18 (h) no nonce-replacement cancellation, (i) router `deadline` check, "confirmed holdings" defined. **Medium:** never-do #1 / G-08 / Q-09 human actions (HALT, restart after reconciliation, version deploys); G-23 rule-based event policy; D-06 proposal sub-items moved to priority 1 (§0.4); D-07 split into D-07 (baseline V0) and new D-08 (inconclusive default), H-02 and §10 updated; §7.1 footer tags; G-41 / never-do #7 private training/label data; F-80 API details moved to new E-52, F-07 and I-60 cite it; G-53 held names still reach the decision model; Q-30 declaration rule; team_sources note. **Low:** F-42 intro quote; I-62/D-06 drafts-differ wording; D-01 ≈36%; G-50 ≤ [6] calls / ≤3 tool types; E-33 ↔ I-29 aligned; "classifier" → "decision model" (G-31, G-50, D-03, I-37, I-50, I-51, I-63 title, H-02, Q-16); §8 diagram (regime governor → risk governor, HOLD record paths, risk-limit exit bypass); I-65 / §10 three gate kinds; proposal-phase header; §0.4 team actions; file index notes (I-02 → S-01, SKILL_v0.3 location); §0.2 precedence; checklist placeholders.
 - v0.5.2 (2026-10-03): finalist status recorded (§0.4); archive retired (proposal-phase.md, SKILL_v0.3.md → git history, commit 2985af5); ledger split into an index (`../LEDGER.md`) plus per-entry files; reading-budget rule added (§0.2); file index updated.
+- v0.5.3 (2026-10-03): never-do #6 and G-40 record that GitHub branch protection is unavailable on our plan, so the no-rewrite rule is procedural; larp/plan.md gains a "Declared values" table (proposal numbers are declared defaults, not calibrated; which ones shape training) and a D-06 update; IDEA-001 (training-set plan and source access check) added to the ledger.
 - Next update: after finalists (Oct 2) and after onboarding documents (Oct 5–10) — run the checklist above.

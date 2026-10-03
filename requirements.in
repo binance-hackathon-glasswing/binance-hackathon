@@ -1,0 +1,30 @@
+# Top-level dependencies, pinned (G-12). Edit here, then regenerate requirements.lock (see README).
+# Changing any pin in a deployed component requires a version event (G-03, G-12).
+
+# Binance Web3 API + chain
+requests==2.34.2
+python-dotenv==1.2.4
+binance-web3-wallet==8.0.0
+web3==8.0.0
+eth-account==0.14.0
+
+# Data processing and storage
+pandas==3.0.6
+numpy==2.5.3
+pyarrow==25.0.1
+psycopg[binary]==3.3.6
+
+# Decision model (Laya encoder) and baselines
+torch==2.14.1
+transformers==5.18.0
+safetensors==0.8.0
+huggingface-hub==1.33.0  # <2.0 required by tokenizers 0.23.x
+scikit-learn==1.9.1
+
+# Services and validation
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic==2.13.5
+
+# Tests
+pytest==9.1.1

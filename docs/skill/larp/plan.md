@@ -28,6 +28,21 @@ Status legend: SKILL.md §0.1. Nothing is Implemented or Tested yet.
 | Hot standby | Proposed | D-05 |
 | ABSTAIN as an outcome class; Kelly sizing; three co-equal innovations | Superseded | I-63, P-07, I-55 |
 
+## Declared values (submitted proposal, Sep 30) — declared defaults, not calibrated
+The proposal (`../../proposal/proposal_answers.md`) put numbers on several placeholders below. They are **declared**, so G-11 makes them binding until changed by a version event with a stated reason before the v1.0 freeze. None was fitted to data: no data had been collected when they were chosen. They come from team drafts (T-14), the worked examples in I-61/I-63, or were set in the proposal itself. The `[brackets]` in the G items stay as the parameter slots; this table gives their current declared value. Recorded 2026-10-03.
+
+| Parameter | Declared value | Origin | Affects training? |
+|---|---|---|---|
+| Label horizon h (I-63) | 5 US sessions | I-63 example | **Yes:** defines every label, plus sample count and overlap |
+| Entry cost cap; buffer (G-25, T-14) | ≤ 50 bp one-way; selected cases must beat round-trip cost + 50 bp on validation | T-14 draft | **Yes:** sets the UP/DOWN cut-off (c + b), class balance and θ/m. Highest impact, least grounded; bStock costs never measured |
+| Evidence loop budget (G-50) | ≤ 6 tool calls, 60 s per decision | G-50 slots | **Yes, indirectly:** the historical evidence pass must use the same budget (train/serve parity) |
+| Sizing (G-29, I-61) | 1% of equity ÷ (2 × 5-session σ); σ = trailing 60-session daily vol × √5 | 1% from T-14; 2σ is I-61's assumed definition; 60 sessions set in the proposal | No (EXP-001 scores per-case returns); portfolio simulation only |
+| Caps (G-21) | ≤ 4 positions, ≤ 20% per name, ≤ 80% gross | T-14 draft | Indirectly: test coverage should fit within 4 slots |
+| Loss controls (G-22) | daily loss ≥ 3% (UTC day) → no new positions; drawdown ≥ 8% → no new positions, exits continue; drawdown ≥ 12% → gross cut to ≤ 40% | 3%/8% from T-14; 12%/40% set in the proposal | No; execution guard. With I-61 sizing (≈36% gross) these thresholds rarely fire (I-62) |
+| Depth cap (G-25) | order ≤ 10% of quoted depth | Set in the proposal | No; execution guard |
+
+Grounding plan: set c + b from measured Web3 API quote costs (logging starts Oct 12) and keep it a parameter in the label code until then. Choose h on the train and calibration blocks only, before the threshold or final blocks are opened (D-06, IDEA-001). The other values stay as declared unless dev-phase evidence (not P&L, G-46) gives a reason to change them.
+
 ## 2. TEAM FACTS (T) — our drafts, not the rules
 
 ### 2.1 Application form fields (as transcribed by the team in `application_answers.md`; not independently captured — the form needs Google sign-in)
@@ -69,7 +84,7 @@ Dev-wallet budget (F-65): ≤ ~30% for plumbing tests, ~20% for the dress rehear
 - D-02 **Concept scope — resolved:** LARP central capability as in §6.1.
 - D-03 **Thinking-output model plan (by onboarding declaration, Oct 5–10):** hosted LLM with summaries + decision-model probabilities vs an open-weight or DeepSeek reasoning model at the evidence step (I-29, Q-16).
 - D-05 **Infrastructure scope (before dev week 1):** two-AZ hot standby vs primary + cold standby (I-59); G-18 applies to any deployment, and its fencing part is mandatory for any standby, hot or cold (a zombie primary can keep running).
-- D-06 **Decision semantics (before Oct 12; the "reduce" definition and the drawdown wording are due Sep 30 for the proposal text):** label horizon, thresholds and price series (I-63); "reduce" is two things — (i) a model/policy action on a held name: define it or drop it (§6.1); (ii) risk-governor de-risking (G-22 deeper step, G-23 "hold / reduce / flatten" event policy), which stays regardless; failure behaviour (T-12 conflict) — recommended option from review A, not decided: failures (data/model/tool/schema) → HOLD / no new risk; exits only via deterministic risk limits with fresh quotes; daily-loss day boundary (G-22); use "new-risk halt" wording, not T-12's "kill switch" unless automatic de-risking is defined; drawdown-halt wording — T-14 records "exits still allowed" while another draft passage reads "reductions and exits remain available" (I-62): the drafts must pick one.
+- D-06 **Decision semantics (before Oct 12; the "reduce" definition and the drawdown wording are due Sep 30 for the proposal text):** label horizon, thresholds and price series (I-63); "reduce" is two things — (i) a model/policy action on a held name: define it or drop it (§6.1); (ii) risk-governor de-risking (G-22 deeper step, G-23 "hold / reduce / flatten" event policy), which stays regardless; failure behaviour (T-12 conflict) — recommended option from review A, not decided: failures (data/model/tool/schema) → HOLD / no new risk; exits only via deterministic risk limits with fresh quotes; daily-loss day boundary (G-22); use "new-risk halt" wording, not T-12's "kill switch" unless automatic de-risking is defined; drawdown-halt wording — T-14 records "exits still allowed" while another draft passage reads "reductions and exits remain available" (I-62): the drafts must pick one. **Update 2026-10-03:** the submitted proposal fixed the horizon (5 sessions), the drawdown wording ("new-risk halt, not a liquidation"; exits continue), the daily boundary (UTC day) and a deeper step (12% → gross ≤ 40%); see "Declared values" at the top of this file. Still open: the label cut-off c + b (cost convention and buffer, to be grounded in measured quote costs), absolute vs index-relative return, share vs token price series, the "reduce" policy action, and failure behaviour.
 - D-07 **H-02 baseline V0 (before Oct 19):** V0 = the no-evidence decision model at matched coverage; define its inputs, sizing and exits (H-02). Not yet decided.
 - D-08 **v1.0 inconclusive default (before Oct 19):** what v1.0 runs if H-02 is inconclusive (e.g., regime-gated cash/hold with risk-limit exits, or V0 if V0 itself passes its own criterion); recorded in the manifest (H-02). Not yet decided.
 - D-04 **End-of-window policy (after Q-04/Q-06 are answered).**
@@ -212,7 +227,7 @@ Hard constraints G-01..G-18 are in SKILL.md §7.1. Tags: **[RULE: F-xx]** requir
 - G-39 Evaluation hygiene: anonymise ticker/company/date in evidence prompts during development evaluation; report pre- vs post-cutoff results separately (I-37).
 
 ### 7.4 Team and process (MUST unless noted)
-- G-40 Protected challenge branch; no force-push or rebase [RULE: F-61]; signed commits [PRACTICE, SHOULD]; confirm branch protection works on the private-repo plan before Oct 5.
+- G-40 Protected challenge branch; no force-push or rebase [RULE: F-61]; signed commits [PRACTICE, SHOULD]. Checked 2026-10-03: the repo is private on a free GitHub organisation plan, so branch protection and rulesets are unavailable ("Upgrade to GitHub Pro or make this repository public"). The prohibition is therefore procedural (AGENTS.md, SKILL.md never-do #6). Revisit with the participant kit (Oct 5), which may specify the registered repo.
 - G-41 Never commit secrets or private training/label data [RULE: F-61]. Mechanism: secret manager + pre-commit secret scanning [PRACTICE]. Verification: CI scan on every push [TEST].
 - G-42 Hold the rights to every data source and model and declare principal services [RULE: F-71, F-12]. Mechanism: licence register, declared at onboarding [PRACTICE].
 - G-43 Reconciliation hourly [POLICY] and daily full [RULE-DERIVED: F-47, F-48]: on-chain txs ↔ execution records ↔ decision records ↔ version events ↔ non-trade balance events; any mismatch → degraded mode.
