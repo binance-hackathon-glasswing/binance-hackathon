@@ -52,7 +52,7 @@ Grounding plan: set c + b from measured Web3 API quote costs (logging starts Oct
 **Funding implications (2026-10-05, F-107: dev 100 USDT, final 200 USDT) [ESTIMATE, with the declared values above]:**
 - At 200 USDT: per-name cap 20% = 40 USDT; gross cap 80% = 160 USDT; a typical I-61 position (≈ 8.9% at 2.5% daily vol) ≈ 18 USDT.
 - Gas per approve + swap ≈ $0.02–0.035 (F-93) is ≈ 11–20 bp of an 18 USDT entry and the same again on exit, so gas alone uses a large part of the ≤ 50 bp entry-cost cap and pushes the round-trip hurdle up. Gas ≤ 50 bp needs trades ≥ ~$4–7; gas ≤ 10 bp needs ≥ ~$20–35 (GAP-50).
-- A 0.002 BNB gas reserve (≈ $1.5 at BNB ≈ $756) is ≈ 0.75% of 200 USDT; whether BNB is provided or bought from USDT is Q-03/Q-08.
+- A 0.002 BNB gas reserve (≈ $1.5 at BNB ≈ $756) is ≈ 0.75% of 200 USDT. Update 2026-10-05 (team statement): no BNB is provided; the agent buys it with the wallet's USDT, so the reserve and every gas payment come out of the score, and BNB held may not count as equity (Q-03). The very first transaction still needs BNB that the wallet does not have (Q-03, GAP-49).
 
 ## 2. TEAM FACTS (T) — our drafts, not the rules
 
