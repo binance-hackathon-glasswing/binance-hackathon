@@ -77,6 +77,32 @@ This is a live checklist. Remove an entire item once its work is fully completed
 - [ ] GAP-51 — Replace G-25's depth cap: the API returns no depth (F-96). Define a price-impact rule using `priceImpactPercent` / `priceImpactProtectionPercent`. The proposal declared "≤ 10% of quoted depth", so the change needs a stated reason (G-11; proposal vs kit: plan.md I-68).
 - [ ] GAP-52 — Final-wallet transition (Oct 27–29): generate and register the fresh wallet (F-14), get its secret (Q-35), keep separate `.ai-seeds/` directories and nonce records per wallet, and make config refuse a mismatched address (G-09).
 
+## Start now vs blocked (2026-10-05)
+
+Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Markets/Data/Risk: Isaac; Execution/Security: Keith; Platform/Audit: Keegan). They are suggestions, not assignments; owners are still GAP-37.
+
+**Start now** (no registered wallet or organiser answer needed):
+
+| Item | First step | Needs | Suggested lead |
+|---|---|---|---|
+| GAP-44 | Hourly read-only logger of `rwa/tokens` `statusInfo` for 7+ days including a weekend. Start first: it needs calendar time. | Web3 API key only; no signing, no `log()` | Isaac |
+| GAP-43 | Decide D-10; recount EDGAR events for the five names; re-estimate EXP-001's n. | — | Yao Zhu + Isaac |
+| GAP-47 | Port the kit's Python trading adapter, quote-only by default, avoiding every F-111 pitfall (`skill/reference/participant-kit.md` K5–K8, K16). | Web3 API key; live tests wait for GAP-41 and Q-03 | Keith |
+| GAP-46, GAP-48 | Write the ai-seeds logging contract and the test-log hygiene rule. No `log()` calls with the team's `AI_SEEDS_*` values until agreed. | D-03 decides the `cot` source | Keegan + Yao Zhu |
+| GAP-50, GAP-51 | Fix the minimum trade size including gas; replace the depth cap with a price-impact rule. | Quote-only calls (API key) | Isaac |
+| GAP-52 | Plan the final-wallet transition: separate `.ai-seeds/` and nonce records per wallet, address check. | — | Keith |
+| GAP-45 (rest) | `conda env create -f environment.yml` and `pip check` on a Mac. | — | Keegan |
+
+**Blocked** on onboarding or organiser answers:
+
+| Item | Blocked on |
+|---|---|
+| GAP-41 | Wallet registration and `AI_SEEDS_SECRET` from the organisers |
+| GAP-42, GAP-39 | Answers to the question list (sending it is a start-now step) |
+| GAP-49 | Q-03: how a 0-BNB wallet pays for its first transaction |
+
+GAP-01..GAP-40 (design and spec) are not organiser-blocked unless they cite an open Q-item (for example GAP-14 → Q-04); take them in the suggested order below.
+
 ## Suggested order
 
 Onboarding admin and questions (GAP-41/42) → trading-hours measurement (GAP-44, start now) → rescope for five names (GAP-43) → establish submitted commitments → reconcile the active plan → freeze target/baseline/fallback → assign onboarding gates → finish execution/audit contracts → pre-register experiments → attach readiness evidence to milestones.
