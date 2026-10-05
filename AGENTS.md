@@ -19,6 +19,7 @@ Do not load every doc by default.
 - Never force-push, rebase, amend pushed commits or otherwise rewrite history on the challenge branch. GitHub branch protection is not available on our plan (checked 2026-10-03), so nothing technical stops a force-push; this rule is the only guard. Never use `git push --force` / `--force-with-lease`, `git reset` on pushed commits, or history-rewriting tools on `main`. Fix mistakes with a new commit (`git revert`).
 - Code affecting decisions, trades or logging must be committed and pushed before it runs.
 - Log new ideas and experiments in the ledger. Write pass criteria before running anything.
+- Never edit the verbatim participant-kit copies (`docs/official/kit/`) or the vendored SDK (`vendor/`). Kit questions go to `docs/skill/reference/participant-kit.md` (via SKILL.md §1.9); corrections go there or in SKILL.md.
 
 ## Thread handoff
 Tell the user when a session is ready to hand off to a new one. Do this when they ask, after a big piece of progress, or when the context window is nearing its limit and key details could be lost to compression.

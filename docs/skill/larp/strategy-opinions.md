@@ -14,4 +14,4 @@ These concern how to *place* in a raw-return contest. They do not bear on the St
 - **S-04 (was P-02) Avoid the middle.** A diversified, always-invested book ranks near the pack. Counterpoint: "the middle" is also the most defensible posture for the audit and for recruitment.
 - **S-05 (was P-03) Exposure before selection** over 14 days (see I-05).
 - **S-06 (was P-04) Be different on purpose** (lower correlation to the field). Counterpoint: "different" without edge is just noise.
-- **S-07 Where LARP sits.** LARP's draft (T-14, I-61) behaves like a hold-heavy book: it is likely to rank well if markets fall and poorly if they rise sharply. That is a legitimate choice (D-01); it should be made knowingly, not by accident.
+- **S-07 Where LARP sits.** LARP's draft (T-14, I-61) behaves like a hold-heavy book: it is likely to rank well if markets fall and poorly if they rise sharply. That is a legitimate choice (formerly decision D-01, retired with the proposal; git 2985af5); it should be made knowingly, not by accident.

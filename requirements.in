@@ -1,12 +1,15 @@
 # Top-level dependencies, pinned (G-12). Edit here, then regenerate requirements.lock (see README).
 # Changing any pin in a deployed component requires a version event (G-03, G-12).
 
-# Binance Web3 API + chain
+# Binance Web3 Open API (signed HTTP calls) + local transaction signing. The kit calls the HTTP
+# endpoints directly; binance-web3-wallet (F-98) and web3 (no RPC node needed) were dropped 2026-10-05.
 requests==2.34.2
 python-dotenv==1.2.4
-binance-web3-wallet==8.0.0
-web3==8.0.0
 eth-account==0.14.0
+
+# ai-seeds decision-log SDK (organiser-issued, not on PyPI): vendored wheel, sha256 in
+# vendor/ai-seeds-sdk-0.3.0/README.md. Relative path: install from the repo root (conda runs pip there).
+./vendor/ai-seeds-sdk-0.3.0/ai_seeds_sdk-0.3.0-py3-none-any.whl
 
 # Data processing and storage
 pandas==3.0.6

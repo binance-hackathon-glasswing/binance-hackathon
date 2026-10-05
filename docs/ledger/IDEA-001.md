@@ -107,3 +107,4 @@
   - **Q-31:** the Guide lists the `binance` skill (public spot market data) for use (F-104); the Singapore question is still open. The Web3 `candles` endpoint is an alternative source for the token-vs-share check.
   - **D-09 (price vendor):** coverage now needed for NVDA, GOOGL, TSLA, MSFT, SKHY (or the Korean line) and any Tier B names; not ETFs.
   - **Workflow §6:** step 1 (universe table) shrinks to the five kit addresses plus the Tier B list; steps 0–1 wait on D-10.
+  - 2026-10-05 note (SYZ, drafted with Claude): two §7 lines are superseded — "Wait for the official endpoint docs before trying token-list or quote endpoints" and "Participant kit expected Oct 5". The kit arrived on Oct 5 and is now captured in the repo: compact facts in SKILL.md §1.9 (F-90..F-112), every endpoint with its parameters in skill/reference/participant-kit.md K6, verbatim copies in docs/official/kit/. The five eligible addresses for step 1 are F-91 / K3.

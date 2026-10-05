@@ -4,3 +4,10 @@ __pycache__/
 .DS_Store
 # Training/label data and raw source snapshots: never committed (F-61, G-41); reference by hash
 data/
+# Runtime state of the ai-seeds SDK and trading code: never committed (spool/batch logs, nonce, arm flag, local ledger)
+.ai-seeds/
+logs/
+.last_nonce
+.live_armed
+trades.json
+# vendor/ is committed on purpose (organiser SDK wheel); do not ignore it

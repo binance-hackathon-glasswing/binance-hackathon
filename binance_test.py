@@ -1,4 +1,5 @@
 import os
+import sys
 import hmac
 import hashlib
 import base64
@@ -31,6 +32,10 @@ if not secret_key:
 
 BASE_URL = "https://web3.binance.com/build"
 BUILD_PREFIX = "/build"
+
+# Optional X-OC-RECV-WINDOW (allowed clock skew in ms; server default 5000, max 60000).
+# Set e.g. BINANCE_RECV_WINDOW=15000 (the kit's Python demo value); unset = header not sent.
+RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
 
 
 # --------------------------------------------------
@@ -111,6 +116,8 @@ def binance_get(path, params=None):
         "X-OC-TIMESTAMP": timestamp,
         "X-OC-SIGN": signature,
     }
+    if RECV_WINDOW:
+        headers["X-OC-RECV-WINDOW"] = RECV_WINDOW
 
     # BASE_URL already contains /build
     url = BASE_URL + full_path
@@ -118,7 +125,6 @@ def binance_get(path, params=None):
     print("Timestamp:", timestamp)
     print("Request URL:", url)
     print("Signed path:", request_path)
-    print("Signature:", signature)
 
     response = requests.get(
         url,
@@ -136,16 +142,34 @@ def binance_get(path, params=None):
 # authentication documentation example.
 # --------------------------------------------------
 
-response = binance_get(
-    "/api/v1/dex/aggregator/supported/chain",
-    {
-        "binanceChainId": "56"
-    },
-)
+def main():
+    response = binance_get(
+        "/api/v1/dex/aggregator/supported/chain",
+        {
+            "binanceChainId": "56"
+        },
+    )
 
-print("\nStatus code:", response.status_code)
+    print("\nStatus code:", response.status_code)
 
-try:
-    print("Response:", response.json())
-except ValueError:
-    print("Response:", response.text)
+    try:
+        body = response.json()
+    except ValueError:
+        print("Response (not JSON):", response.text)
+        return 1
+
+    print("Response:", body)
+
+    # Only code == 0 means success; HTTP 200 can still carry an error code
+    # (SKILL.md F-94, F-108; participant-kit.md K7).
+    if not isinstance(body, dict) or body.get("code") != 0:
+        code = body.get("code") if isinstance(body, dict) else None
+        print("FAILED: code =", code)
+        return 1
+
+    print("OK: code == 0")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
