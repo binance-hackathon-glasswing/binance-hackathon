@@ -5,9 +5,9 @@ Reference material for "Beyond the Benchmark: The Binance Agentic AI Challenge".
 ## Start here
 - **`INCOMPLETE_WORK.md`** — live checklist of remaining planning, implementation-contract and readiness-evidence gaps. Remove items once fully completed and verified, following `../AGENTS.md`.
 - **`LEDGER.md`** — index of every idea and experiment (one row each). Full records are in `ledger/<ID>.md`; rules and templates are in `ledger/README.md`. Write the pass criterion before you run anything.
-- **`skill/SKILL.md`** — the core reference, written for both humans and LLMs: the official facts (official page F-01..F-80; participant kit F-90..F-105), a "never do" list, hard guardrails (G-01..G-18), open questions, a post-onboarding checklist and a file index. Its reading rules (§0) explain the labels: F = official fact, T = team draft, E = graded external evidence, I = inference, G = guardrail tagged RULE / RULE-DERIVED / POLICY / PRACTICE, and so on. A POLICY is a team choice, not a Binance rule.
+- **`skill/SKILL.md`** — the core reference, written for both humans and LLMs: the official facts (official page F-01..F-80; participant kit F-90..F-106), a "never do" list, hard guardrails (G-01..G-18), open questions, a post-onboarding checklist and a file index. Its reading rules (§0) explain the labels: F = official fact, T = team draft, E = graded external evidence, I = inference, G = guardrail tagged RULE / RULE-DERIVED / POLICY / PRACTICE, and so on. A POLICY is a team choice, not a Binance rule.
 - **`official/source_page.md`** — verbatim capture of the official DoraHacks page.
-- **Participant kit** (received 2026-10-05; Participant Guide, ai-seeds logging SDK, bStocks trading demos) — kept outside the repo; every member has a copy. Its facts are in `skill/SKILL.md` §1.9. It covers technical integration only and defers to the official competition rules (scoring rules, incident policy), which have not arrived yet.
+- **Participant kit** (received 2026-10-05; Participant Guide, ai-seeds logging SDK, bStocks trading demos) — kept outside the repo; every member has a copy. Its facts are in `skill/SKILL.md` §1.9 (F-90..F-106). It covers technical integration only and defers to the official competition rules (scoring rules, incident policy), which have not arrived yet.
 
 ## Layout
 | Path | What it is |
