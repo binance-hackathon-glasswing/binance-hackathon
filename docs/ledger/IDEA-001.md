@@ -108,3 +108,17 @@
   - **D-09 (price vendor):** coverage now needed for NVDA, GOOGL, TSLA, MSFT, SKHY (or the Korean line) and any Tier B names; not ETFs.
   - **Workflow §6:** step 1 (universe table) shrinks to the five kit addresses plus the Tier B list; steps 0–1 wait on D-10.
   - 2026-10-05 note (SYZ, drafted with Claude): two §7 lines are superseded — "Wait for the official endpoint docs before trying token-list or quote endpoints" and "Participant kit expected Oct 5". The kit arrived on Oct 5 and is now captured in the repo: compact facts in SKILL.md §1.9 (F-90..F-112), every endpoint with its parameters in skill/reference/participant-kit.md K6, verbatim copies in docs/official/kit/. The five eligible addresses for step 1 are F-91 / K3.
+- 2026-10-06 update (SYZ, drafted with Claude): **data plan decided** (D-10 (a) in skill/larp/plan.md). This supersedes §4's rule "thresholds and final evaluation stay on Tier A names":
+
+| Job | Fit | Data | Period |
+|---|---|---|---|
+| Parameters | weights (GBM/logistic baseline; encoder only if it beats it on calibration) | broad Tier B, ~400–500 US large caps, point-in-time membership via `dei:EntityPublicFloat` filed before `t`; sector + size features | 2018-01 → 2023-12 |
+| Hyperparameters | model HPs; confirm h = 5 | purged walk-forward CV inside train, [5]-session embargo | 2018-01 → 2023-12 |
+| Calibration | temperature | Tier B | 2024 |
+| Thresholds | θ, m (G-25) | Tier B; five-name slice reported, not optimised on | 2025-01 → [evidence-LLM cutoff] |
+| Generalisation (used once) | nothing | all Tier B names (primary) + five-name slice with CI; token-vs-share basis gate on bStock `candles` before live (GAP-22) | [cutoff] → 2026-09 |
+
+  - **Features:** pre-cutoff rows get extractive fields only (8-K item, reported vs prior figures, guidance direction, source agreement, price/vol, calendar); the full LLM evidence pass runs only on post-cutoff events, and judgement fields enter the model only if they help there (I-67). This also removes §6's "Tier B evidence pass is ~10× the cost" problem.
+  - Still open: SKHYB handling (D-10 (b)); price vendor with Tier B coverage including delisted names (D-09); the evidence LLM, whose cutoff sets the threshold/final boundary (D-03); the EDGAR recount (GAP-43). sec.gov was blocked by the egress policy in the 2026-10-06 session, so run the recount from a normal network.
+  - 2026-10-06 note (SYZ, drafted with Claude): red-teamed in [IDEA-003](IDEA-003.md); its fixes (RT-01..RT-29) and dataset gates (M1–M7) are recommendations, not decisions.
+  - 2026-10-06 note (SYZ, drafted with Claude): [IDEA-004](IDEA-004.md) proposes replacing the block map with pilot 2018–19 + a frozen 2020-01 → 2026-09 walk-forward, and a single primary metric (recommended, not decided).

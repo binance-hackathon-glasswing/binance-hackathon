@@ -116,6 +116,12 @@ Dev-wallet budget (F-65): ≤ ~30% for plumbing tests, ~20% for the dress rehear
   - coverage of the ~72 names + ETFs back to 2017, and delisted names if the Tier B training universe is used.
   - **Kit 2026-10-05:** the eligible list is five names (F-91), so the vendor must cover NVDA, GOOGL, TSLA and MSFT, SKHY (and, if its US history is too short, the Korean primary line) if it is in the label set, and the Tier B names if used (D-10). ETF coverage is no longer needed.
 - D-10 **Training/evaluation universe and SK Hynix (by Oct 10, before IDEA-001 steps 0–1).** The kit's eligible list has five names (F-91), not IDEA-001's ~72. Choices: (a) whether Tier B (a wider set of US large caps) becomes the training and calibration universe, with only the eligible names in threshold selection and final evaluation; (b) how SKHYB is handled — SK Hynix files 6-K/20-F, not 8-K, and its main news and disclosures are Korean: use 6-K plus a Korean disclosure source (e.g. DART) and a price history long enough for labels, or allow no catalyst-driven entries for SKHYB (held/exited only by the risk governor), or exclude it; (c) whether EXP-001's final block can reach a usable n at all, which affects D-08. Not yet decided.
+  **Decided 2026-10-06 (SYZ, Agent/Model lead; drafted with Claude) — (a) and the data plan; detail in IDEA-001 §8:**
+  - Weights are fit on **broad Tier B**: ~400–500 US large caps with point-in-time membership (XBRL `dei:EntityPublicFloat` as filed before `t`), 2018–2023, with sector and size features.
+  - Hyperparameters by purged walk-forward CV inside the train block (5-session embargo); temperature on 2024; θ/m on 2025 → evidence-LLM cutoff. All on Tier B. The five eligible names are reported as a slice and never optimised on.
+  - Generalisation test (EXP-001 final block, used once): post-cutoff → Sep 2026 on **all** Tier B names as the primary metric; five-name slice reported with a CI; the token-vs-share basis check on bStock `candles` (GAP-22) must pass before live use.
+  - Pre-cutoff rows get extractive fields only (I-67); the full LLM evidence pass runs only on post-cutoff events.
+  - Still open: (b) SKHYB handling. (c) now concerns only the five-name slice; the primary test's n comes from Tier B.
 - D-04 **End-of-window policy (after Q-04/Q-06 are answered).**
 
 ## 6. CONCEPT AND DESIGN PRINCIPLES (development phase)
