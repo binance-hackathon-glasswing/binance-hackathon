@@ -131,3 +131,7 @@ Principle: **correctness tests** are hard pass/fail and never computed from retu
 4. Onboarding declarations now: actual model stack; C1 as the default with ≤ 4 positions; plan the entry-rule version event (§5).
 5. Exposure level within declared limits, given tournament scoring (team strategy call).
 6. H-01/EXP-002: keep as a hypothesis on bStock data; GAP-44 still decides whether off-hours orders are possible.
+
+## 9. Independent review (append-only)
+
+- 2026-10-06 (Codex, requested by Keith): [IDEA-005](IDEA-005.md) independently reviews this proposal and its research. [EXP-004](EXP-004.md), pre-registered and pushed before execution, refutes the sufficiency of §3's positive-slope gate with deterministic counterexamples: slope +1 can accompany harmful vetoes; pooled +0.818182 can hide eligible-name slope −1. These are analytical examples, not market-performance results. Resolve IDEA-005 R1–R9 / GAP-54 before adoption; all original recommendations remain undecided.
