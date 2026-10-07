@@ -53,6 +53,7 @@ Grades as in §0.1. [PRIMARY] here means the paper itself was checked at abstrac
 - L-33 Kaminski & Lo (2014) — stop-losses add value only under momentum/regime-switching; Lo & Remorov (2017) — tight stops lose to costs. [PRIMARY, not re-checked]
 - L-35 Grossman & Zhou (1993) — drawdown-constrained exposure ∝ equity − floor. [PRIMARY, standard]
 - L-36 MacLean, Thorp & Ziemba (2010) — fractional Kelly and estimation error. [PRIMARY, standard] Not adopted (P-07).
+- L-37 Busseti, Ryu & Boyd (2016), "Risk-Constrained Kelly Gambling" (https://web.stanford.edu/~boyd/papers/pdf/kelly.pdf) — maximise E log wealth subject to a convex sufficient condition for Prob(W_min < α) < β: E (rᵀb)^(−λ) ≤ 1 with λ = log β / log α; beats fractional Kelly at equal drawdown risk in the paper's examples. Assumes iid returns, a known distribution and an infinite horizon. [PRIMARY, read 2026-10-06] Assessed in IDEA-006 (recommended for C1 sizing with a finite-horizon constraint; not decided).
 
 ### 12.7 Agent reliability
 - L-50 Huang et al. (ICLR 2024, arXiv:2310.01798) — no reliable self-correction without external feedback. [PRIMARY]

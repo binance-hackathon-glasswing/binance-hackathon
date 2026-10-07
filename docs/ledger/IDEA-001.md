@@ -122,3 +122,69 @@
   - Still open: SKHYB handling (D-10 (b)); price vendor with Tier B coverage including delisted names (D-09); the evidence LLM, whose cutoff sets the threshold/final boundary (D-03); the EDGAR recount (GAP-43). sec.gov was blocked by the egress policy in the 2026-10-06 session, so run the recount from a normal network.
   - 2026-10-06 note (SYZ, drafted with Claude): red-teamed in [IDEA-003](IDEA-003.md); its fixes (RT-01..RT-29) and dataset gates (M1–M7) are recommendations, not decisions.
   - 2026-10-06 note (SYZ, drafted with Claude): [IDEA-004](IDEA-004.md) proposes replacing the block map with pilot 2018–19 + a frozen 2020-01 → 2026-09 walk-forward, and a single primary metric (recommended, not decided).
+
+## 9. Data acquisition plan (2026-10-07, SYZ, drafted with Claude)
+Decided by SYZ on 2026-10-07: GDELT history via a one-pass BigQuery extract; full Korean data for SK Hynix (plan.md D-10 (b)). Recommended, awaiting SYZ's confirmation: "prices wide, events narrow". Price vendor still open (D-09). Rows, labels and model are not covered here (IDEA-004, IDEA-005).
+
+| Need | Source and access | Scope | Rights / notes | Status |
+|---|---|---|---|---|
+| Daily OHLCV, adjusted + raw, splits/dividends, delisted names | Licensed vendor (D-09): leaning EODHD, Tiingo as backup | All Tier B names (~450, point-in-time membership) + ETFs (SPY, QQQ, SMH, sector ETFs) + `SKHY` ADR + KRX 000660, 2017-01 → | Personal licences forbid group sharing; contest use not addressed → written answer first (draft below) | **Open** |
+| Filings, events, XBRL as filed | SEC EDGAR bulk `submissions.zip` and `companyfacts.zip` (nightly), plus filing documents and exhibits | Membership and size for all Tier B; events and exhibits only for the 4 US eligible names + ~40 neighbours | US government data; declared User-Agent, ≤ 10 req/s. Run from the team's network (Claude's sandboxes cannot reach sec.gov) | Ready |
+| News context | GDELT 2.0 GKG via the BigQuery sandbox (free, no card: 1 TiB of queries/month, 10 GiB storage, tables expire after 60 days) | Per-firm 15-minute and daily counts, unique domains and mean tone for the 4 + ~40 names, plus market-wide totals for normalisation, 2018-01 → 2026-09 | Open use with citation. The same GKG data as the live 15-minute files (train/serve parity) | **Decided.** Run a dry run first: one pass over DATE, V2Organizations, V2Tone and DocumentIdentifier is [ESTIMATE] 0.3–0.6 TB. If it exceeds ~0.8 TiB, split the years across two months |
+| Macro calendar | federalreserve.gov FOMC calendars; BLS (CPI, Employment Situation) and BEA (GDP, PCE) release schedules | Dates and times only, 2018 → 2026 | Public | Ready |
+| Market context | Vendor ETF prices; realised volatility computed from them | — | FRED `VIXCLS` is CBOE-sourced (third-party); keep FRED to government series (§2) | Follows D-09 |
+| SK Hynix | KRX 000660 prices (vendor); `SKHY` ADR (vendor) and SKHYB token (Web3 `candles`) for the basis check; KRW/USD from FRED `DEXKOUS` (Fed H.10); OpenDART disclosure list and documents (free API key) | 2018 → | DART is mostly Korean and gives a receipt date only → t = next KRX session (`exchange_calendars` XKRX). Korean text goes through the same verbatim-span extractor (I-67, IDEA-004 T6) | **Decided** (D-10 (b)) |
+| Token history | Web3 `candles` for the five bStocks (F-95); Binance spot klines only if Q-31 allows | Jun 2026 → | Public market data | Ready once the API key is set |
+| Live costs and trading hours | Our own quote logger (IDEA-004 T10) and `openState` logger (GAP-44) | From now on | Read-only, no signing, no `log()` | **Start now**: GAP-44 needs 7+ days including a weekend |
+
+**Neighbour rule (frozen; point in time; IDEA-005 R5).** At each yearly refit date D, take US-listed common stocks whose EDGAR SIC code is in the eligible names' industries and adjacent ones (357x computers, 367x electronic components including 3674 semiconductors, 737x software and internet services, 371x motor vehicles). Rank them by market cap at D − 1 (unadjusted close × `dei:EntityCommonStockSharesOutstanding` from the latest filing before D) and keep the top 40, excluding the eligible names. SIC codes are current-only: record this as a known look-ahead. No hand-picking after the rule is frozen.
+
+**Storage.** `data/` is already git-ignored. Layout: `data/raw/<source>/…` (append-only; every file stamped with source URI, `fetched_ts` and sha256) → `data/snapshots/<name>-<sha256>.parquet`. The ledger references snapshots by hash only (F-61, G-41).
+
+**Order of work.** 1) Vendor emails today, plus a trial key restricted to our own names to build the loader. 2) EDGAR bulk files and the Tier B membership table. 3) GDELT dry run, then extract. 4) Calendars. 5) Korean data. 6) Snapshot and hash. Logging (GAP-44, T10) runs in parallel from now on. Suggested leads, not assignments (GAP-37): Markets/Data for 1–3 and 5; Agent/Model for 4 and 6.
+
+**Draft vendor question (send to EODHD and Tiingo):** "We are a team of four university students in a prize competition run by Binance (Oct–Nov 2026). We want end-of-day US prices (including delisted names), and for EODHD Korean prices, for 2017 to the present, for about 500 symbols. We would store the data privately, use it to train and evaluate a trading model, and share it only within our four-person team. Nothing would be redistributed or published, except aggregate statistics in our competition report. Which plan and licence permit this? Is a student or personal plan enough, or do we need a commercial licence? Please confirm in writing."
+
+**Sources (checked 2026-10-07):**
+- EODHD: [pricing](https://eodhd.com/pricing), [delisted data](https://eodhd.com/financial-apis/delisted-stock-companies-data-2), [terms](https://eodhd.com/financial-apis/terms-conditions), [SKHY.US](https://eodhd.com/financial-summary/SKHY.US), [KO exchange](https://eodhd.com/exchange/KO)
+- [Tiingo pricing](https://www.tiingo.com/about/pricing)
+- [Massive pricing](https://massive.com/pricing)
+- [Sharadar via QuantRocket](https://www.quantrocket.com/pricing/data/sharadar)
+- [NUS BIZ Financial Database](https://bizfaculty.nus.edu.sg/financial-database/), [WRDS terms of use](https://wrds-www.wharton.upenn.edu/users/tou/)
+- [BigQuery sandbox](https://docs.cloud.google.com/bigquery/docs/sandbox), [GDELT size (2021)](https://blog.gdeltproject.org/?p=13324)
+
+## 10. Kit-provided data for the five names (2026-10-07, SYZ, drafted with Claude)
+SYZ's direction: build the verifiable training set from what the participant kit provides or names first; other sources (§9) come after. Measured by the read-only probe (participant-kit.md K6a).
+
+| Kit source | What it gives for the five names | History | Verifiable? |
+|---|---|---|---|
+| Web3 `candles` | Token OHLCV + trade count, 24/7 | Daily: complete since launch in one call (NVDAB/TSLAB 2026-06-12, MSFTB 07-01, SKHYB 07-14, GOOGLB 07-15): 495 token-days. Intraday: 300 bars per call, paged back with `after` → ≈ 2,000–2,800 hourly bars per token (≈ 12k in all) | Yes: contest-provided; store raw responses with fetch time and sha256 |
+| `rwa/tokens`, `rwa/price` | tokenPrice, referencePrice (derived from the token price), tokenToShareRatio, statusInfo, 24h volume, market cap, P/E | Snapshot only | From now on, by logging snapshots |
+| `rwa/underlying-market` | statusInfo + fundamentals snapshot (52-week high/low, 24h share volume, market cap, dividend, P/E, P/B) | Snapshot only | From now on, by logging |
+| `quote-and-swap` (quote only) | Executable price, price impact, route | None stored by the API | From now on: our quote logger (IDEA-004 T10) |
+| Skills named in the Guide (F-104) | `binance` spot data for `<TICKER>BUSDT`; `query-token-info` on-chain candles; `binance-tokenized-securities-info` (Ondo tokens only, not bStocks) | Not yet probed | `binance` spot data still waits on Q-31 |
+
+**What kit data can support:** volatility, correlation and sizing of the actual tokens (C1, IDEA-006); 24/7 and weekend behaviour (H-01; about 17 weekends for NVDAB/TSLAB, 12 for GOOGLB/SKHYB); liquidity by hour; and, with forward logging, costs (T10), trading hours (GAP-44) and the ratio and fundamentals snapshots.
+
+**What it cannot support on its own:** training or validating a return model (≈ 16 non-overlapping 5-session windows per name in one market period, about one earnings report each); and the token-vs-share basis check (T9), because `referencePrice` is derived from the token price and the kit has no independent share price. Both need data from outside the kit (§9).
+
+Next: a collector that pages the full candle history with `after` and stores raw responses with hashes, plus a snapshot logger for `rwa/tokens`, `rwa/price` and `rwa/underlying-market`. The quote logger and GAP-44 run alongside it.
+
+## 11. Data-source priority: kit sources first (2026-10-07, SYZ, drafted with Claude)
+**Decided by SYZ:** for now the training and validation data comes only from what the participant kit provides or names, so every dataset can be traced to a contest-sanctioned source. External sources from §9 (licensed price vendor, EDGAR, GDELT, Korean data) are on hold, not dropped.
+
+All four kit sources were probed read-only from the team network on 2026-10-07 (participant-kit.md K6a, K6b; raw responses with sha256 in `data/probe/`):
+
+| Kit source | Status | What it adds for the five names |
+|---|---|---|
+| Web3 Open API (`candles`, `rwa/*`, quotes) | Works | Primary: the traded instrument. Daily history since launch; intraday paged with `after`; snapshots and quotes logged from now on |
+| `query-token-info` | Works | Mirror of the Web3 candles (identical closes); adds on-chain trading-activity snapshots. Candles are served by `dquery.sintral.io` |
+| `binance-tokenized-securities-info` | Works | Fundamentals snapshot (`stockInfo`); **Ondo tokens for NVDA, GOOGL, TSLA, MSFT back to Jun 2025** (≈ 16 months; SKHY only since Jul 2026), plus xStocks; Ondo vs bStock daily-return correlation 0.91–0.99 |
+| `binance` skill (Binance spot `…BUSDT`) | Works from Singapore (Q-31 annotated) | A second venue for the same tokens (CEX vs on-chain), one day more history; differs from on-chain by a median 10–20 bp |
+
+**What this changes:**
+- The longest kit-sourced price history for the four US names is now the Ondo series: about 16 months of 24/7 tokenized-stock prices. Still far from the 2018–2026 panel in §4/§9, and still token prices, not share prices.
+- No kit source gives an independent share price, so the token-vs-share check (GAP-22, IDEA-004 T9) can only be done across venues and issuers for now.
+- Everything the earlier plans built on long share-price history (Tier B training, the 2020–2026 walk-forward, IDEA-004's block map) cannot be built from kit data alone. These plans stay recorded but wait until the team decides on external data.
+
+Next: a collector for the four kit sources (raw responses, fetch time, sha256; intraday paging), plus forward logging of snapshots, quotes and `openState`.
