@@ -188,3 +188,27 @@ All four kit sources were probed read-only from the team network on 2026-10-07 (
 - Everything the earlier plans built on long share-price history (Tier B training, the 2020–2026 walk-forward, IDEA-004's block map) cannot be built from kit data alone. These plans stay recorded but wait until the team decides on external data.
 
 Next: a collector for the four kit sources (raw responses, fetch time, sha256; intraday paging), plus forward logging of snapshots, quotes and `openState`.
+
+## 12. For team discussion: limits of kit-only data and the options (2026-10-07, SYZ, drafted with Claude)
+Raised by SYZ for the team. No option below is decided.
+
+**Issue 1 — no independent share price.** Every kit source prices a *token* (bStock on-chain, Binance spot, Ondo, xStocks); `referencePrice` is derived from the token price. So we cannot measure the token's premium or discount to the share. This matters most off-hours and at weekends (H-01), if the final valuation uses a share-based reference (Q-04), and when learning how the company reacts to news (the share is the clean signal; the token adds noise). Cross-venue agreement is only a partial check: all these tokens are hedged against the same share and can drift together.
+
+| Option | What it takes | Trade-off |
+|---|---|---|
+| 1A Token-only: treat the token as the instrument; check venues against each other (bStock, Binance spot, Ondo, xStocks) and flag divergence | Nothing new | Cannot see a common drift away from the share |
+| 1B Ask the organisers for the valuation source (Q-04) and whether they provide or approve share-price data | One message | Depends on their answer and its timing |
+| 1C Share prices for only the five names + a few ETFs from a free vendor tier, with the vendor's written OK (IDEA-001 §9) | One email; small download | Leaves the kit-only scope; licence is personal |
+| 1D Paid licence for one month (EODHD or Tiingo) | ~$20–50 | Leaves the kit-only scope; the team has said it does not plan to pay |
+
+**Issue 2 — no long history.** Kit data reaches back ≈ 16 months for NVDA, GOOGL, TSLA, MSFT (Ondo tokens, from Jun 2025) and 3–4 months for the bStocks themselves (SK Hynix: ≈ 3 months either way). That is ≈ 66 non-overlapping 5-session windows per name, largely one market path; it starts after the Jan 2025 DeepSeek drop and the Apr 2025 tariff sell-off, so it contains no crash or bear market; about 5 earnings reports per name. It is too little to train and validate a return model, to tune and still hold back a clean test, or to stress-test the drawdown rules.
+
+| Option | What it takes | Trade-off |
+|---|---|---|
+| 2A Rules first, no trained return model: the C1 book with parameters from published research; volatility and costs from kit data; the catalyst/LLM loop as a fixed-rule veto/exit reported descriptively | Version event for the entry rule (proposal's "pre-registered default"); declarations by Oct 10 | Little to validate; the declared calibrated decision model does not ship as a return predictor |
+| 2B Train a small model on the Ondo history (≈ 16 months) and report it as exploratory | A collector for Ondo candles | Single regime, low power; easy to overfit; must not be presented as validated |
+| 2C Add outside long history (licensed prices, EDGAR, GDELT): re-open §9 and IDEA-004's 2020–2026 walk-forward | Licence answers or payment; 8–10 person-days (IDEA-004 §7) | Leaves the kit-only scope; tight before the Oct 18 freeze |
+| 2D Simulated stress tests for the risk rules (resampled and scaled-tail scenarios, as in IDEA-006) | ≈ 1 day; no new data | Only as realistic as its assumptions |
+| 2E Combination: 2A + 2D now, 2C later only if a licence answer arrives in time | As above | Two tracks to manage |
+
+Deadlines that bear on the choice: onboarding declarations by Oct 10 (F-12: principal data and model services); model freeze Oct 18; v1.0 freeze Oct 27–29. Tracked as GAP-56.
