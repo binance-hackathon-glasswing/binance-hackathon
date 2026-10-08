@@ -4,12 +4,21 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 
 **Reading rule:** read this table; open an entry file only when the task names that ID or touches its topic.
 
+**Threads (2026-10-08).** Every row belongs to one thread; the listed backlog items (`INCOMPLETE_WORK.md`) settle it. After those decisions, mark the losing entries rejected or superseded and collapse settled rows to one line (SKILL.md §0.2). Entry files are not merged; the ledger is append-only.
+
+| Thread | Entries | Settled by |
+|---|---|---|
+| Method: what the agent trades on and how it is tested | IDEA-003 → IDEA-004 (supersedes IDEA-003 where they conflict) → IDEA-005 + EXP-004 (reviews of IDEA-004); EXP-001 is the main test | GAP-53, GAP-54 (Oct 10); EXP-001 also GAP-08, GAP-16, GAP-17 |
+| Training data and model track | IDEA-001 (sources) → IDEA-007 vs IDEA-008 (competing model tracks); IDEA-002 (news screening) is covered by IDEA-007 Track A and IDEA-008's news model | GAP-56, GAP-57 (Oct 10); GAP-23, GAP-24 |
+| Risk and sizing | IDEA-006 (exposure level), EXP-003 (regime gating) | GAP-53 (exposure level); EXP-003 also GAP-19 |
+| Off-hours pricing | EXP-002 | GAP-44 / Q-32 (trading hours), GAP-18 |
+
 | ID | Title | Status | Result (one line) | Updated | File |
 |---|---|---|---|---|---|
 | EXP-001 | Verified evidence vs no-evidence baseline | draft (blocked on D-07, D-08; final block = post-cutoff Tier B, five names as a slice, per D-10 (a)) | — | 2026-10-06 | [ledger/EXP-001.md](ledger/EXP-001.md) |
 | EXP-002 | Do off-hours bStocks quotes lag verified news? | draft (thresholds not frozen; viability depends on off-hours `openState`, Q-32) | — | 2026-10-05 | [ledger/EXP-002.md](ledger/EXP-002.md) |
 | EXP-003 | Rule-based regime gating vs a simple volatility cap | draft | — | 2026-10-03 | [ledger/EXP-003.md](ledger/EXP-003.md) |
-| IDEA-001 | Decision-model training set: sources, size and build workflow | open | kit-first scope retained; external sources on hold; source-rights review in §13; free-source register in §14: Kaggle CC0 candidates, Wikinews/EFF licensed text, FTC/DOJ conditional text, GDELT metadata; review note after §14 (see IDEA-008 §7); GAP-56–60 pending | 2026-10-08 | [ledger/IDEA-001.md](ledger/IDEA-001.md) |
+| IDEA-001 | Decision-model training set: sources, size and build workflow | open | kit-first scope retained; external sources on hold; source-rights review in §13; free-source register in §14: Kaggle CC0 candidates, Wikinews/EFF licensed text, FTC/DOJ conditional text, GDELT metadata; review note after §14 (see IDEA-008 §7); GAP-56/57 pending (GAP-58–60 merged into GAP-23/24/57 on 2026-10-08) | 2026-10-08 | [ledger/IDEA-001.md](ledger/IDEA-001.md) |
 | IDEA-002 | Event-driven news ingestion with local sentiment screening | open | Research supports investigating fast screening; immediate trading benefit unvalidated | 2026-10-05 | [ledger/IDEA-002.md](ledger/IDEA-002.md) |
 | IDEA-003 | Red team of data, labels and evaluation; "well captured" gates M1–M7 | open (all fixes recommended, not decided) | 29 findings (6 critical): filing-only rows, timezone/merge leaks, vol-blind absolute labels, no clean block for V1, under-powered test | 2026-10-06 | [ledger/IDEA-003.md](ledger/IDEA-003.md) |
 | IDEA-004 | Method v2 from literature: C1 base book + veto/exit overlay; walk-forward test; "well captured" v2 (T1–T10, D1–D5) | open (recommended, not decided; supersedes IDEA-003 where they conflict) | literature: catalyst drift ≈ 0 after costs in large caps; slope gate withdrawn after IDEA-005/EXP-004; C1 must be a rule-based trading book given organiser scoring statement (F-115) | 2026-10-06 | [ledger/IDEA-004.md](ledger/IDEA-004.md) |
