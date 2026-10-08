@@ -3,8 +3,9 @@ IDEA-001 §15).
 
 For each issuer it:
   1. reads the filing list from data.sec.gov submissions JSON (form, 8-K items, acceptanceDateTime);
-  2. for the newest N filings of the chosen forms, reads the filing's index.json and picks the document to read
-     (8-K: the Ex. 99.x press release if there is one, else the primary document; other forms: primary document);
+  2. for the newest N filings of the chosen forms, reads the filing's index page and picks the document to read:
+     from the filing index page (<accession>-index.htm, Type column): the first EX-99.x exhibit if there is one
+     (8-K press release, 6-K announcement), else the primary document;
   3. converts that document to plain text and stores it with source time (acceptanceDateTime, UTC),
      retrieval time (UTC), URL, HTTP status and sha256 — the point-in-time fields G-05 needs;
   4. optionally counts filings inside a date window (e.g. last year's equivalent of the scored run).
@@ -144,18 +145,34 @@ def rows_from(block):
     return [{k: (block.get(k) or [None] * n)[i] for k in keys} for i in range(n)]
 
 
-def pick_document(form, index_items, primary):
-    """8-K: prefer an Ex. 99.x exhibit (the press release); otherwise the primary document."""
-    names = [i.get("name", "") for i in index_items]
-    if form.startswith("8-K"):
-        ex99 = [n for n in names if re.search(r"ex-?99", n, re.I) and n.lower().endswith((".htm", ".html", ".txt"))]
-        if ex99:
-            return sorted(ex99)[0], "8-K exhibit 99.x (file name match)"
-    if form.startswith("6-K"):
-        ex99 = [n for n in names if re.search(r"(ex|dex)-?99", n, re.I) and n.lower().endswith((".htm", ".html"))]
-        if ex99:
-            return sorted(ex99)[0], "6-K exhibit 99.x (file name match)"
-    return primary, "primary document"
+def filing_documents(index_html: bytes):
+    """Rows of the filing index page (<accession>-index.htm): (type, file name, description).
+    The page's document table has columns Seq | Description | Document | Type | Size."""
+    out = []
+    html = index_html.decode("utf-8", errors="replace")
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S | re.I):
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S | re.I)
+        if len(cells) < 4:
+            continue
+        href = re.search(r'href="([^"]+)"', cells[2], re.I)
+        if not href:
+            continue
+        name = href.group(1).split("/")[-1].split("?")[0]
+        strip = lambda x: re.sub(r"<[^>]+>", "", x).strip()
+        out.append((strip(cells[3]).upper(), name, strip(cells[1])))
+    return out
+
+
+def pick_document(form, docs, primary):
+    """Prefer the first EX-99.x exhibit (press release / announcement) in HTML or text; else the primary document.
+    `docs` are (type, name, description) rows from the filing index page."""
+    readable = [d for d in docs if d[1].lower().endswith((".htm", ".html", ".txt"))]
+    ex99 = sorted((d for d in readable if d[0].startswith("EX-99")), key=lambda d: d[0])
+    if ex99:
+        return ex99[0][1], f"{ex99[0][0]} per the filing index ({ex99[0][2] or 'no description'})"
+    if not docs:  # index page unavailable: fall back to a file-name match
+        return primary, "primary document (filing index not read)"
+    return primary, "primary document (no EX-99 exhibit in the filing index)"
 
 
 def main():
@@ -216,9 +233,10 @@ def main():
             if not args.no_text:
                 acc = r["accessionNumber"].replace("-", "")
                 base = f"{ARCHIVES}{cik}/{acc}/"
-                st3, idx, err3 = get(session, base + "index.json")
-                items_list = (idx or {}).get("directory", {}).get("item", []) if not err3 else []
-                doc, why = pick_document(r["form"] or "", items_list, r["primaryDocument"])
+                st3, idx, err3 = get(session, f"{base}{r['accessionNumber']}-index.htm", want_json=False)
+                docs = filing_documents(idx) if not err3 else []
+                rec["documents_in_filing"] = docs
+                doc, why = pick_document(r["form"] or "", docs, r["primaryDocument"])
                 st4, raw, err4 = get(session, base + doc, want_json=False)
                 if err4:
                     rec["document"] = {"url": base + doc, "error": err4}

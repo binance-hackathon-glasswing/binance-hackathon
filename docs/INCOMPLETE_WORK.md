@@ -85,7 +85,6 @@ Re-dated 2026-10-08: no declaration has been requested (team statement; SKILL.md
 - [ ] GAP-50 — Minimum trade size and cost model including gas: approve + swap gas (≈ $0.02–0.035, F-93) against the ≤ 50 bp entry-cost cap (G-25). Depends on the opening value (Q-03). Update 2026-10-05: with 200 USDT final funding (F-107), a typical position is ≈ 18 USDT and gas is ≈ 11–20 bp of it each way (plan.md "Funding implications"). Remaining: fix the minimum trade size and fold gas into the cost convention (D-06, G-25). 2026-10-08: the bStock spread has never been measured and is the most valuable number to get (IDEA-009 §D.3); quote-logger spec in IDEA-009 §D.5 (quotes are free and need no balance, Guide p.7), start by Fri Oct 9 with GAP-44.
 - [ ] GAP-51 — Replace G-25's depth cap: the API returns no depth (F-96). Define a price-impact rule using `priceImpactPercent` / `priceImpactProtectionPercent`. The proposal declared "≤ 10% of quoted depth", so the change needs a stated reason (G-11; proposal vs kit: plan.md I-68).
 - [ ] GAP-52 — Final-wallet transition (Oct 27–29): generate and register the fresh wallet (F-14), get its secret (Q-35), keep separate `.ai-seeds/` directories and nonce records per wallet, and make config refuse a mismatched address (G-09).
-- [ ] GAP-61 — Run the extended Skills probe (`python tools/probe_kit_sources.py --skills-only [--wallet 0x<public address>]`, section D added 2026-10-08) from the team network and record coverage of the five bStock contracts and any timestamped history for trading-signal, crypto-market-rank, query-address-info and query-token-audit in `skill/reference/participant-kit.md` K6b (IDEA-009 §C.1, §8 #5; SYZ, by Sat Oct 10). Read-only; no keys, no signing, no `log()`.
 
 ## Start now vs blocked (2026-10-05; re-checked 2026-10-08)
 
@@ -100,7 +99,6 @@ Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Market
 | GAP-46, GAP-48 | Write the ai-seeds logging contract and the test-log hygiene rule. No `log()` calls with the team's `AI_SEEDS_*` values until agreed. | D-03 decides the `cot` source | Keegan + Yao Zhu |
 | GAP-50, GAP-51 | Fix the minimum trade size including gas; replace the depth cap with a price-impact rule. | Quote-only calls (API key) | Isaac |
 | GAP-52 | Plan the final-wallet transition: separate `.ai-seeds/` and nonce records per wallet, address check. | — | Keith |
-| GAP-61 | Run `tools/probe_kit_sources.py --skills-only` and record the results in K6b. | Team network; no keys | SYZ |
 | GAP-45 (rest) | `conda env create -f environment.yml` and `pip check` on a Mac. | — | Keegan |
 
 **Blocked** on onboarding, organiser answers or a team decision:
