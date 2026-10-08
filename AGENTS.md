@@ -9,6 +9,9 @@ This repo builds LARP, our agent for the Binance Agentic AI Challenge.
 
 Do not load every doc by default.
 
+## Answering rule questions
+Before saying what the challenge rules allow, require or leave open, check the verbatim text (`docs/official/source_page.md`, `docs/official/kit/`) and the F, K and Q items in `docs/skill/SKILL.md`, including "answered in practice" notes. Do not present a settled item as open or suggest asking the organisers about it. Say what you checked (SKILL.md §0.2).
+
 ## Incomplete-work checklist
 - When planning or completing work, check `docs/INCOMPLETE_WORK.md` for relevant outstanding items.
 - Once a checklist item is fully completed and verified, remove its entire line item from `docs/INCOMPLETE_WORK.md` in the same change. Do not leave checked-off items behind.
