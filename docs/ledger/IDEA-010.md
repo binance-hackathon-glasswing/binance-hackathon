@@ -188,6 +188,7 @@ Everything inside the declared values (≤ 4 positions, ≤ 20% per name, ≤ 80
 
 ## 10. Updates
 - 2026-10-08 (Keegan, drafted with Claude): `tools/probe_quote.py` added for the §7 action 2 VM probe and the first quote-cost sample (GAP-50): signed read with a `40304` check, clock check, `rwa/tokens` market state, buy + sell quotes per token and size, round-trip cost in bp; GET only, no signing, no ai-seeds, never reads wallet or ai-seeds secrets; raw responses to `data/probe/` (git-ignored). Tested only against mocked responses; the first real run confirms the `quote-and-swap` field names.
+- 2026-10-09 (SYZ; review drafted by Claude): reviewed in [IDEA-011](IDEA-011.md) (⚠ RECOMMENDED — NOT DECIDED). §1, §2, §3 and §5 hold; 13 findings X1–X13: capacity figure never checked (X1); rule count vs the freeze (X2); the first build collides with the Oct 29 macro rule, the post-earnings gap rule and soft blocks (X3); the Nov 9 re-size contradicts `last_buy` (X4); live MinPos gives 0 names on the dev wallet and differs between wallets (X5); 5.02/GUIDANCE_CUT EXIT ambiguity (X6); ≤ 1 EXIT + re-entry (X7); LLM runs ≈ 0–3 times, keep 10-Q/10-K triggers (X8); recipient decode as a blocking MUST (X9); `probe_quote.py` treats 401/403 as host refusal (X11). This entry's text is unchanged (append-only).
 
 ## 11. Handoff: main points of contention (2026-10-08, Keegan, drafted with Claude)
 For anyone picking this up before or at the Oct 11 meeting. Nothing here is decided.
