@@ -23,7 +23,7 @@ Reference material for "Beyond the Benchmark: The Binance Agentic AI Challenge".
 | `skill/larp/strategy-opinions.md` | Contest-strategy opinions (S items). Not evidence; keep out of official text |
 | `official/kit/` | Verbatim copies of the participant kit documents (Guide PDF, trading guide, Web3 Open API notes, logging notes, SDK README, PROTOCOL.md) with sha256s; do not edit |
 | `../vendor/ai-seeds-sdk-0.3.0/` | Vendored ai-seeds SDK wheel and `manual_push.sh` (organiser-issued; sha256s in its README) |
-| `proposal/proposal_answers.md` | Proposal answers as drafted on Sep 30. Replace with the exact submitted text if it was edited before submission |
+| `proposal/proposal_answers.md` | Proposal answers exactly as submitted on Sep 30 (team statement, SYZ 2026-10-08); do not edit |
 | `proposal/LARP_System_Architecture.pdf` | Architecture PDF uploaded with the proposal |
 
 ## Rules worth remembering
