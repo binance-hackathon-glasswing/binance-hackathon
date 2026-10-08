@@ -19,7 +19,7 @@ No keys, no signing, no ai-seeds calls. Output goes to data/edgar/<UTC stamp>/ (
 Run from the team network:
   python tools/edgar_fetch.py --user-agent "Glasswing research <contact email>"
   python tools/edgar_fetch.py --forms 8-K,6-K --per-company 3 --window 2025-10-29:2025-11-12
-  (or put SEC_USER_AGENT=... in the git-ignored .env / environment)
+  (or put SEC_USER_AGENT=... in the git-ignored .env, loaded automatically, or the environment)
 """
 import argparse
 import hashlib
@@ -33,6 +33,12 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import requests
+
+try:  # read the git-ignored .env (SEC_USER_AGENT) if python-dotenv is installed (requirements.in)
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Issuer CIKs for the five eligible bStocks (SKILL.md F-91). SK hynix: CIK 2120882, Nasdaq SKHY, files 6-K
 # (data.sec.gov submissions, checked 2026-10-08, IDEA-009 §C.2). The script checks each name in the response.
