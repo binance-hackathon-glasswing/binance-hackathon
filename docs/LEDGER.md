@@ -8,10 +8,11 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 
 | Thread | Entries | Settled by |
 |---|---|---|
-| Method: what the agent trades on and how it is tested | IDEA-003 → IDEA-004 (supersedes IDEA-003 where they conflict) → IDEA-005 + EXP-004 (reviews of IDEA-004); EXP-001 is the main test | GAP-53, GAP-54 (Oct 10); EXP-001 also GAP-08, GAP-16, GAP-17 |
-| Training data and model track | IDEA-001 (sources) → IDEA-007 vs IDEA-008 (competing model tracks); IDEA-002 (news screening) is covered by IDEA-007 Track A and IDEA-008's news model | GAP-56, GAP-57 (Oct 10); GAP-23, GAP-24 |
+| Method: what the agent trades on and how it is tested | IDEA-003 → IDEA-004 (supersedes IDEA-003 where they conflict) → IDEA-005 + EXP-004 (reviews of IDEA-004); EXP-001 is the main test | GAP-53, GAP-54 (Oct 11); EXP-001 also GAP-08, GAP-16, GAP-17 |
+| Training data and model track | IDEA-001 (sources) → IDEA-007 vs IDEA-008 (competing model tracks); IDEA-002 (news screening) is covered by IDEA-007 Track A and IDEA-008's news model | GAP-56, GAP-57 (Oct 11); GAP-23, GAP-24 |
 | Risk and sizing | IDEA-006 (exposure level), EXP-003 (regime gating) | GAP-53 (exposure level); EXP-003 also GAP-19 |
 | Off-hours pricing | EXP-002 | GAP-44 / Q-32 (trading hours), GAP-18 |
+| Direction for v1.0 (decision role, runtime data, exposure, build plan) | IDEA-009 (reviews the four threads above for the Oct 12 start) | IDEA-009 §8 decisions (Oct 9–26) |
 
 | ID | Title | Status | Result (one line) | Updated | File |
 |---|---|---|---|---|---|
@@ -27,3 +28,4 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 | IDEA-006 | Risk-constrained Kelly sizing for the C1 book (Busseti, Ryu & Boyd 2016) | open (recommended, not decided) | helps sizing, not edge; infinite-horizon bound too conservative for 10 sessions → finite-horizon drawdown constraint; synthetic illustration: efficient gross ≈ 0.4–0.6 | 2026-10-06 | [ledger/IDEA-006.md](ledger/IDEA-006.md) |
 | IDEA-007 | Training data when real data is short: web catalysts vs synthetic data; three tracks; distillation spec | open (recommended, not decided) | both ideas as stated rejected (chart-site terms, look-ahead, no new information; Anthropic AUP bans training on Claude outputs); recommend A real-text veto classifier distilled from an open-weight/DeepSeek-API teacher (§7), B scenario lab + planted-signal test, C forward data + gated Databento; FRED replaced (Board H.10 fetched, kit realised vol); Binance spot via the kit skill OK, data.binance.vision not | 2026-10-08 | [ledger/IDEA-007.md](ledger/IDEA-007.md) |
 | IDEA-008 | News semantic model + time-series signal model → trained decision model | open (proposed by Keith, not adopted; reviewed §7) | candidate sources, none cleared and external ones on hold (IDEA-001 §11): kit token candles; Wikinews/EFF text, GDELT metadata, Kaggle S&P 500/tech share data, FTC/DOJ text; review §7 (R1–R7): no timeline vs Oct 10/18, news corpus small and licence-selected, EDGAR skipped, D-10 (a) not reconciled; no training or trading results | 2026-10-08 | [ledger/IDEA-008.md](ledger/IDEA-008.md) |
+| IDEA-009 | Direction review: LLM role, runtime data, exposure, deviations, build plan | open (recommended, not decided) | recommends B5: rule base book as the proposal's pre-registered default + per-round LLM menu (CONFIRM / VETO_ENTRY / EXIT) on verified EDGAR evidence, code sizes; flat at the end (robust to both scoring readings); declared sizing (≈ 42–54% gross from measured vols); no model training in v1.0; spread unmeasured — start quote logging now; 12 decisions with owners, Oct 9–26 | 2026-10-08 | [ledger/IDEA-009.md](ledger/IDEA-009.md) |

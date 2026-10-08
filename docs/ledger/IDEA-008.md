@@ -115,3 +115,5 @@ Scope: review of commits `ab4143f` (IDEA-001 §13) and `66403bc` (this entry, ID
 | R7 | **Backlog duplication.** GAP-58 overlaps GAP-23 (licence register); GAP-24 now carries IDEA-008-specific detail and points to GAP-59. | INCOMPLETE_WORK.md | Consolidate after the Oct 10 decision (separate change) |
 
 Already correct and not re-opened here: the share-vs-token caveat (§2, GAP-22), the GOOG/GOOGL and 000660/SKHY mapping cautions, the out-of-fold and purge/embargo safeguards (§4), and the hindsight/cutoff probe requirement (I-67).
+
+- 2026-10-08 note (SYZ, drafted with Claude): Wikinews was made read-only on 2026-05-04 (Wikimedia announcement of 2026-03-30, as reported on https://en.wikipedia.org/wiki/Wikinews, fetched by a research subagent 2026-10-08). The archive stays readable for training, but it publishes nothing new, so it cannot be a runtime source. Direction review: [IDEA-009](IDEA-009.md) §E (IDEA-008 not recommended for v1.0; R1–R4 still open).
