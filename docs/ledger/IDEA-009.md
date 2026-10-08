@@ -385,3 +385,6 @@ Owners follow the proposal's roles. Named individual assignment is still GAP-37;
   - GAP-53 and GAP-54 (IDEA-004's C1 now enters as the D-08 default; R1–R4 evaluation is replaced by "not runnable before the run; report as such").
 - **participant-kit.md K6b:** add the §C.1 desk read, labelled as not probed.
 - **IDEA-008:** note that Wikinews has been read-only since May 2026.
+
+## 10. Updates
+- 2026-10-08 (SYZ): SEC EDGAR recorded as usable (IDEA-001 §15), settling the EDGAR part of §8 decision 1; the LLM-role and base-book parts are still open. Test pipeline `tools/edgar_fetch.py` added for the §C.3 filing count and the D-03 bake-off.
