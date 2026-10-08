@@ -13,7 +13,7 @@ How to keep `../LEDGER.md` (the index) and the entry files in this folder.
 2. **Pre-register before you run.** An experiment needs its hypothesis, metric, data and periods, and its pass criterion written in its entry file, and committed, *before* any result exists. The commit timestamp is the proof.
 3. **Three result states:** `supported`, `not supported`, `inconclusive`. A small sample is inconclusive, not a failure.
 4. **Results from simulated quotes are not realised fills.** Say which one each result is.
-5. **Never tune on P&L from the dev phase or the scored run.** Changes during the run must be justified by non-P&L evidence: schema errors, latency, calibration drift, incidents. (`skill/larp/plan.md` G-46, T-15)
+5. **Never tune on P&L from the dev phase or the scored run.** Changes during the dev phase must be justified by non-P&L evidence: schema errors, latency, calibration drift, incidents. No changes at all once the dev phase is over (organiser answer F-117). (`skill/larp/plan.md` G-46, T-15; `skill/SKILL.md` F-117)
 6. **If a result changes live behaviour,** it ships only through a committed, manifested version event. Record the version ID in the entry. (`skill/SKILL.md` G-03, G-11; official rule F-60)
 7. **No secrets, keys or private training/label data in this file** (official rule F-61). Link to data snapshots by name or hash.
 8. Cross-reference skill IDs (H-, D-, G-, Q-) where relevant, and update the skill file if an entry settles one of them.
