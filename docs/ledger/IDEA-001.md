@@ -212,3 +212,4 @@ Raised by SYZ for the team. No option below is decided.
 | 2E Combination: 2A + 2D now, 2C later only if a licence answer arrives in time | As above | Two tracks to manage |
 
 Deadlines that bear on the choice: onboarding declarations by Oct 10 (F-12: principal data and model services); model freeze Oct 18; v1.0 freeze Oct 27–29. Tracked as GAP-56.
+- 2026-10-08 note (SYZ, drafted with Claude): FRED's terms prohibit use "in connection with the development or training of any ... machine learning" (fred.stlouisfed.org/legal). §2's FRED/ALFRED rows and §9's `DEXKOUS` are superseded: KRW/USD now comes from the Board's H.10 page (public domain; `tools/fetch_h10_krw.py`), market volatility from kit data (`tools/realised_vol.py`). Also: data.binance.vision has its own terms (CC BY-NC-SA, §4.2 no live-trading use); use Binance spot data only via the kit-named `binance` skill / api.binance.com. See [IDEA-007](IDEA-007.md) §1, §6.
