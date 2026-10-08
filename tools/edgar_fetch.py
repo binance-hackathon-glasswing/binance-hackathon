@@ -17,7 +17,7 @@ on sec.gov is considered public information and may be copied or further distrib
 No keys, no signing, no ai-seeds calls. Output goes to data/edgar/<UTC stamp>/ (git-ignored, F-61).
 
 Run from the team network:
-  python tools/edgar_fetch.py --user-agent "LARP team research <contact email>"
+  python tools/edgar_fetch.py --user-agent "Glasswing research <contact email>"
   python tools/edgar_fetch.py --forms 8-K,6-K --per-company 3 --window 2025-10-29:2025-11-12
   (or put SEC_USER_AGENT=... in the git-ignored .env / environment)
 """
@@ -155,7 +155,7 @@ def pick_document(form, index_items, primary):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--user-agent", default=os.environ.get("SEC_USER_AGENT"),
-                    help="required by the SEC: who you are + contact, e.g. 'LARP team research you@example.com'")
+                    help="required by the SEC: who you are + contact, e.g. 'Glasswing research you@example.com' (team name: Glasswing)")
     ap.add_argument("--forms", default="8-K,6-K", help="comma-separated form types to read (default 8-K,6-K)")
     ap.add_argument("--per-company", type=int, default=2, help="newest filings per company to read (default 2)")
     ap.add_argument("--window", help="YYYY-MM-DD:YYYY-MM-DD; count filings of --forms with filingDate in it")
