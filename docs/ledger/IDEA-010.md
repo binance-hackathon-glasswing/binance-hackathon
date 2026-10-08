@@ -187,3 +187,56 @@ Everything inside the declared values (≤ 4 positions, ≤ 20% per name, ≤ 80
 7. Host after the VM probe — Keegan, Oct 11.
 
 ## 10. Updates
+- 2026-10-08 (Keegan, drafted with Claude): `tools/probe_quote.py` added for the §7 action 2 VM probe and the first quote-cost sample (GAP-50): signed read with a `40304` check, clock check, `rwa/tokens` market state, buy + sell quotes per token and size, round-trip cost in bp; GET only, no signing, no ai-seeds, never reads wallet or ai-seeds secrets; raw responses to `data/probe/` (git-ignored). Tested only against mocked responses; the first real run confirms the `quote-and-swap` field names.
+
+## 11. Handoff: main points of contention (2026-10-08, Keegan, drafted with Claude)
+For anyone picking this up before or at the Oct 11 meeting. Nothing here is decided.
+
+**Readiness.** Building can start now on the parts every direction needs: adapter (quote-only first), write-ahead journal, one log per round, version gate, signer allow-list, supervisor, quote/`openState` loggers. The decision logic (base book, LLM map, window gates) waits for the Oct 11 direction decision and the D-08 pre-registration (Oct 19).
+
+**Points of contention (team call needed):**
+
+| # | Question | Positions | Current recommendation | Decides |
+|---|---|---|---|---|
+| 1 | Who holds trade authority? | IDEA-009 B5: the LLM picks CONFIRM / VETO_ENTRY / EXIT. Reviewer A: the submitted PDF says "the LLM has no trade authority" | LLM assesses only; code maps verified adverse 8-K evidence to EXIT or an entry block (§1) | SYZ + all, Oct 11 |
+| 2 | Agentic depth vs safety | Under §1 the LLM runs only on new 8-Ks (≈ 0–0.5 qualifying filings expected in the run), so its visible role is modest; logs and repo may be assessed (F-115) | Accept, and restore the bounded tool loop (G-50, +2.5–3 pd) only if the build is green on Oct 18; the alternative is to budget it from the start and cut elsewhere | Team, Oct 11 / Oct 18 |
+| 3 | Model-layer track | None (IDEA-009 §E) vs IDEA-007 Track A (trained veto classifier, kill check Oct 17) vs IDEA-008 (Keith's three-model fusion) | None for v1.0; Track A only with spare capacity | SYZ + Keith, Oct 11 (GAP-57) |
+| 4 | Build size | IDEA-009: ≈ 20–24 pd. Reviewer C: ≈ 48–52 pd vs ≈ 38–49 capacity | Use C's estimate; adopt the §6 cut list with a deviation row per cut | Team, Oct 11 |
+| 5 | Which cuts | C: cut standby, PostgreSQL, anchoring, tool loop, thesis memory, calldata decoding. A: thesis object and recipient/min-out decode are declared or safety items | Cut the first four; keep a minimal thesis object and the recipient/min-out decode (§6) | Keegan + Keith, Oct 11 |
+| 6 | Minimum position | B: gas-based (gas per leg ÷ 25 bp ≈ 7–14 USDT; dev wallet holds 2–4 names). C: 6% of equity so the dev soak holds all four. 12.5% of equity rejected | Gas-based for the scored config; team decides whether the dev rehearsal uses a different value (§4 S.4) | Isaac, Oct 19 |
+| 7 | Run-window gates | A/C: last buy Nov 10 14:30 UTC, hard stop 15:30. B: last buy Nov 9 20:00, hard stop 15:00 | B's earlier times (§2); any organiser answer on the window end (Q-06) before the freeze replaces them | Isaac, Oct 11 |
+| 8 | Equity marks for G-22 | A: executable quotes, as declared. B/C: `tokenPrice` (quote noise could fire G-22) | Executable quotes with a `tokenPrice` fallback and sanity band (§4 S.3) | Isaac, Oct 19 |
+| 9 | Soft entry blocks | A (round 1): any flagged concern → no new entry. B/C: unbounded blocks let a noisy LLM drive the book to cash | Expire after one session, cap 6 name-sessions per run (§4 L.5) | Yao Zhu, Oct 19 |
+| 10 | 50 bp entry-cost cap | Declared, so keep it (A); but if spreads exceed ≈ 40 bp/side it blocks every buy, i.e. zero trades (B) | Keep; an Oct 19 readout above 40 bp is a team escalation, not a silent zero-trade run (§6) | Isaac, Oct 19 |
+| 11 | Regime thresholds | B: fit from data by Oct 22. C: fixed 2.0 / 3.0 / 1.5 plus a report | Fixed values + report (§4 R) | Isaac, Oct 22 |
+| 12 | GitHub branch protection | The proposal says "The challenge branch is protected"; G-40 says our plan cannot | Upgrade the plan before activation, or add a deviation row | Keegan, Oct 10 |
+
+**Risks to the deployed agent that no design choice removes** (each has an owner in §7 or §9):
+- The bStock spread is unmeasured. Run `tools/probe_quote.py` and start the logger now (Isaac).
+- First gas (BNB) for **both** wallets (Q-03) and the dev and final `AI_SEEDS_SECRET` (F-113, Q-35). Ask the organisers by Oct 9 (SYZ).
+- Host access: a cloud IP may get `40304` from the Web3 API or be blocked by the SEC. Run the VM probe by Oct 10 (Keegan); never use a VPN or relay.
+- Unanswered rules: window end (Q-06), scoring composition (Q-39), automatic restart (Q-40), off-hours trading (Q-32). The design survives either answer at a small cost.
+- The freeze (F-117): no fix is possible during the run, so the §5 must-haves and a final release candidate running ≥ 48 h unchanged are the safeguards.
+- Owners and backups are not named (GAP-37).
+
+**Ranked options** (feasibility by Oct 26 / agentic depth; opinion):
+1. This entry's assessment-only design (high / medium).
+2. Plus the bounded tool loop (medium / medium-high).
+3. IDEA-007 Track C forward data (high / low; a prerequisite).
+4. B4, rules + LLM veto (high / low-medium; the fallback).
+5. IDEA-007 Track A (low-medium / medium).
+6. IDEA-006 risk-constrained Kelly sizing (medium-high / low).
+
+Rejected for v1.0:
+- IDEA-009 B5 menu, B2 and B3: they give the LLM trade authority, which conflicts with the submitted PDF.
+- B1 / IDEA-004 fitted overlay: cannot be validated.
+- IDEA-002, IDEA-008: no rights-clear corpus or timeline.
+- H-01: `openState` unknown, sample too small.
+
+**Next steps:**
+1. Oct 9: send the organiser questions; start the loggers.
+2. Oct 10: VM probe; GitHub plan; LLM accounts.
+3. Oct 11: decide rows 1–5, 7 and 12 above, plus owners.
+4. Oct 19: pre-register the base book (D-08) with rows 6 and 8–11.
+5. Oct 22: cut line.
+6. Oct 26: freeze the v1.0 candidate.
