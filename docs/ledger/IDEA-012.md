@@ -79,3 +79,9 @@ L1 initial assessment per name at run start (include / avoid, with evidence) · 
 - **Logging:** all k samples (inputs and reasoning) go into the round's log; the vote tally and the rule outcome go in `output` (winner deliverables require complete model inputs and outputs, F-49).
 - **Checks:** dev phase (Oct 12–26) — agreement rate across the k samples, and stability when logged rounds are re-run on identical inputs (consistency, not profit). Profitability of calls cannot be told from luck in-run (11 sessions, few events); score each call afterwards against the net-of-cost return 1–5 days later.
 - Cost: 5 samples × ≈ 90 rounds is small.
+
+## 9. Open items (2026-10-09)
+- Decide: how the 4 names are chosen at run start (draft: LLM may veto with evidence, code takes the 4 highest-vol of the rest) and whether ENTER after an EXIT is allowed (draft: only on a new event with cited evidence). Owner: team (SYZ to raise).
+- Run `tools/probe_quote.py` and an `openState` logger from the team network (blocked from the Cowork VM, §1). Owner: unassigned.
+- Version events needed before Oct 26 if adopted: sizing to the declared caps (§4.3) and the −15% floor replacing the 3/8/12% ladder (§4.1).
+- Unchanged blockers: Q-03, Q-06, Q-32, Q-39, Q-40.
