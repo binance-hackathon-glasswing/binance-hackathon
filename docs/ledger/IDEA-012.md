@@ -85,3 +85,8 @@ L1 initial assessment per name at run start (include / avoid, with evidence) · 
 - Run `tools/probe_quote.py` and an `openState` logger from the team network (blocked from the Cowork VM, §1). Owner: unassigned.
 - Version events needed before Oct 26 if adopted: sizing to the declared caps (§4.3) and the −15% floor replacing the 3/8/12% ladder (§4.1).
 - Unchanged blockers: Q-03, Q-06, Q-32, Q-39, Q-40.
+
+## 10. Corrections after review (append-only)
+- 2026-10-09 correction (SYZ, drafted by Claude): IDEA-013 R4 accepted — §8.3 L2/L3 and §8.4 give the LLM trade authority, contradicting the submitted architecture PDF. Superseded by IDEA-015 A.1: assessment-only schema (no action field) + pre-registered code map M; R-VOTE counts assessment fields.
+- 2026-10-09 correction (SYZ, drafted by Claude): IDEA-013 R3 accepted — §8.1 N1's "accepted after the previous round" can lose filings. Superseded by IDEA-015 A.2: N1 = unassessed accession in a durable ingestion queue with its own cursor, overlap window and accession dedup.
+- 2026-10-09 note (SYZ, drafted by Claude): IDEA-014's voting critique partly accepted (IDEA-015 A.3): R-VOTE stays draft until checked on labelled filing fixtures. By IDEA-013 R1, §8.2 H6's floor exit is also blocked by a hard signing halt (IDEA-015 A.4).
