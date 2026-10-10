@@ -291,3 +291,14 @@ The check stays conservative: one cue anywhere in the clause rejects the event. 
 3. **Test commit `616d43b`, first run:** every test passed except the expected `test_golden` pair. unittest: 150 tests, 2 failures. pytest: 2 failed, 150 passed, 564 subtests passed. The 8 new tests (4 in `test_facts_verify`, 4 in `test_agent.HypotheticalEventTests`) pass (criterion 1).
 4. **Traces** regenerated from `616d43b` and compared leaf by leaf with the committed ones. The differences are the identity hash (`checkpoint_sha256` `d95e019f…` → `a7d44a05…`), the ids derived from it, and the new fields: `hypothetical_events: []` in both results, and `n_hypothetical_new: 0`, `n_hypothetical_repeated: 0`, `hypothetical_types_new: []` in both feature rows. Tool sequences, statuses, findings, falsifiers, theses and gates are unchanged (criterion 2). Trace SHA-256: `trace-tool-selection-thesis-revision.json` `214bfa6d…5272`, `trace-justified-abstention.json` `610d7800…c9e7`.
 5. **Evaluation at `616d43b`: PASS** (`tests/intelligence/evidence/eval-report-616d43b.json`, SHA-256 `089aca62…3cfb`). Pack digest and thresholds are unchanged. Compared leaf by leaf with `eval-report-511b403.json`, the only differences are `wall_clock_us.median` and `.max` (criterion 3).
+6. **Results commit `db17802`:**
+   - unittest **150 tests OK**; pytest **150 passed, 566 subtests passed**.
+   - A fresh `core.autocrlf=true` clone of `db17802` (macOS) passes unittest.
+   - `git diff --check 5202252..db17802` is clean (criterion 4).
+   - Mutation checks in a scratch worktree:
+     - Extracting hypothetical statements as reported events makes 28 subtests and tests fail, across the extractor, verifier and agent tests.
+     - Labelling every statement NEW makes both prior-filing comparison tests fail.
+7. **Outcome: all four §9.5 criteria PASS at `616d43b`/`db17802`** (after the first-run test error at `cfa0966`, results 1–2).
+   - Open, not built: other sources (A5), the H-04 test (A6), and any policy weight for `NEW_HYPOTHETICAL_EVENT` (Keith).
+   - The exact-match novelty marks any reworded statement NEW, which errs toward review.
+   - All tested on synthetic sentences only; real-filing precision is unmeasured until the real-data evaluation (§7).
