@@ -5,6 +5,7 @@ from larp.runtime.coordinator import Coordinator
 from larp.runtime.fixtures import FakeAssessor,FakePolicy,FakePlanner,FakeReceiver,FakeExecution,settle
 from larp.storage.postgres import doc,Conflict
 from larp.storage.backup import export,restore
+from larp.runtime.replay import replay
 from tests.support import DatabaseCase,request
 
 
@@ -46,11 +47,12 @@ class IntegratedRuntime(DatabaseCase):
         expected_head=self.store.verify('run')
         journal=self.store.journal('run')
         backup=export(self.store)
-        # Replay exact recorded batches in an empty same-identity fixture run.
+        # Re-run deterministic policy/planning/execution/accounting with captured
+        # assessment output. Do not simply reinsert the saved projections.
         with self.store.transaction() as db: db.execute('TRUNCATE runs CASCADE')
-        self.store.initialize('run','wallet',56,doc(dict(balances=dict(USDT=100,BNB=10,NVDAB=0))))
-        self.store.takeover('run',1,offline=True)
-        for batch in journal: self.store.commit(batch)
+        replay(journal,doc(dict(balances=dict(USDT=100,BNB=10,NVDAB=0))),self.store,
+               run_id='run',wallet_id='wallet',chain_id=56,version_id='synthetic',profile_hash='a'*64,
+               address='0x'+'1'*40,policy=FakePolicy(),planner=FakePlanner(),execution=FakeExecution(),reducer=settle)
         self.assertEqual(expected_head,self.store.verify('run'))
         self.assertEqual(value['projection'],self.store.load('run').read()['projection'])
         with self.store.transaction() as db: db.execute('TRUNCATE runs CASCADE')
