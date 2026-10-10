@@ -61,3 +61,16 @@ Grades as in §0.1. [PRIMARY] here means the paper itself was checked at abstrac
 - L-52 MAST (arXiv:2503.13657) — 14 multi-agent failure modes; τ-bench (arXiv:2406.12045) — pass^8 < 25% in retail. [PRIMARY]
 - L-53 Chen et al. (Anthropic, arXiv:2505.05410) — reasoning models reveal hint use often below 20% of the time. [PRIMARY]
 - L-54 LoRA; DPO. No live evidence found that fine-tuned/RL traders beat a well-harnessed frontier model. [PRIMARY, standard]
+
+### 12.9 Independent uncertain-event review (2026-10-10, IDEA-030)
+
+This qualifies L-60–65/§12.8 added on the evidence owner branch at `544df90`; those historical entries are not yet in this main-branch version. [IDEA-030 R09](../../ledger/IDEA-030.md) retains the primary links, reading depth and ten source IDs L030-01–10.
+
+- L-60 supports studying filing changes, but slow long-short returns do not validate a five-session lexical novelty flag or long-only exit policy.
+- L-61 supports risk-perception/volatility associations. The prior blanket boilerplate discount is too broad, including the author abstract's firm-versus-industry comparison.
+- L-62 concerns informativeness, not an executable trading rule. L-63's primary abstract and manuscript introduction/conclusion support rising boilerplate/stickiness, not that most of this implementation's hypothetical statements are boilerplate.
+- L-64 remains secondary. Pre-impairment underperformance does not show that a hypothetical disclosure caused or forecast the return.
+- L-65 is upgraded to publisher abstract checked; forecast explanation/price-response associations do not establish universal immediate reactions or returns available after assessment.
+- L030-06 separates initial headline reaction from subsequent returns; size, short exposure and costs limit transfer. L030-07 motivates staleness controls; L030-08 examines specialised takeover rumors; L030-09 cautions against assuming large-cap earnings drift; L030-10 motivates leakage diagnostics.
+
+Retain attributed uncertain information, but test semantic correctness, novelty, usable latency and complete after-cost portfolio value separately. Neither volatility prediction nor sentiment establishes a return advantage. H-04 remains NOT RUN; its endpoint, horizon, comparison design and inconclusive fallback require preregistration. The main-branch publication carries the review corrections without merging the owner implementations.
