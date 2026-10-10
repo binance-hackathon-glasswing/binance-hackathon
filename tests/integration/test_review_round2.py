@@ -171,7 +171,7 @@ class IncrementalVerification(Base):
         for n,(name,sql) in enumerate(cases.items()):
             with self.subTest(name):
                 run_id='case'+str(n)
-                self.store.initialize(run_id,'wallet',56,doc(INITIAL))
+                self.store.initialize(run_id,'wallet-'+run_id,56,doc(INITIAL))  # (wallet, chain) is unique
                 self.store.takeover(run_id,1,offline=True)
                 def commit(event_id,**kwargs):
                     from larp.runtime.coordinator import batch_for
