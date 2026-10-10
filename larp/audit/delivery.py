@@ -84,10 +84,13 @@ class DeliveryWorker:
         with self.store.transaction() as db:
             if self.store._run(db,run_id)['epoch']!=epoch:
                 raise Conflict('Owner changed after send; retry same bytes')
-            # An older failed request cannot undo a concurrently acknowledged row.
+            # An older failed request cannot undo a concurrently acknowledged row, and a
+            # non-ACK result only counts while its attempt is still the latest lease.
+            # An ACK always counts: the server stored these exact bytes.
             db.execute("UPDATE audit_chunks SET status=%s,last_code=%s,acknowledgement=%s "
-                       "WHERE run_id=%s AND event_id=%s AND chunk_index=%s AND status<>'ACK'",
-                       (status,str(code),doc(body).payload if ack else None,run_id,event_id,index))
+                       "WHERE run_id=%s AND event_id=%s AND chunk_index=%s AND status<>'ACK' "
+                       "AND (attempts=%s OR %s)",
+                       (status,str(code),doc(body).payload if ack else None,run_id,event_id,index,attempts,ack))
         return True
 
     def deadline_breaches(self,run_id,now_ms):

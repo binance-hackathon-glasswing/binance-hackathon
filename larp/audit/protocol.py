@@ -30,12 +30,34 @@ def _validate(log):
         value = data.get(key)
         if value is None or value == {} or value == [] or (isinstance(value,str) and not value.strip()):
             raise ContractError('Required audit content is empty')
-    if type(data['orders']) is not list:
+    check_orders(data['orders'])
+
+
+def event_id_for(run_id,address,round_id,head,timestamp_ms):
+    """Kit SDK format evt-<ms>-<12 hex>; the server de-duplicates by event ID.
+
+    The hash scopes the ID to this run, wallet, round and journal position, so a
+    re-initialised run reusing round IDs cannot collide. It is deterministic, so a
+    resend or replay of the same close reproduces the same ID.
+    """
+    if type(timestamp_ms) is not int or timestamp_ms < 0:
+        raise ContractError('Invalid event timestamp')
+    if any(type(part) is not str for part in (run_id,address,round_id,head)):
+        raise ContractError('Invalid event scope')
+    scope = hashlib.sha256('\x00'.join((run_id,address.lower(),round_id,head)).encode('utf-8')).hexdigest()
+    return f'evt-{timestamp_ms}-{scope[:12]}'
+
+
+def check_orders(orders):
+    """Orders the code decided to place, in the form the audit log accepts."""
+    if type(orders) is not list:
         raise ContractError('Orders must be a list')
-    for order in data['orders']:
-        if order['symbol'] not in SYMBOLS or order['side'] not in ('BUY','SELL'):
+    for order in orders:
+        if type(order) is not dict:
             raise ContractError('Unsupported audit order')
-        if not isinstance(order['amount'],str) or not order['amount'].strip():
+        if order.get('symbol') not in SYMBOLS or order.get('side') not in ('BUY','SELL'):
+            raise ContractError('Unsupported audit order')
+        if not isinstance(order.get('amount'),str) or not order['amount'].strip():
             raise ContractError('Amount must be an explicit unit-scaled string')
         if order.get('tx_hash') is not None and (
                 type(order['tx_hash']) is not str or not TX.fullmatch(order['tx_hash'])):

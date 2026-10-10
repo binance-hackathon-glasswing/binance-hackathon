@@ -380,3 +380,38 @@ authorized by this handoff. Full-journal verification capacity remains unproved.
 Before this handoff-only edit, the runtime worktree was clean and fully pushed;
 local main and origin/main matched. Runtime code/test evidence remains RT14/15.
 Future work must distinguish component acceptance from live-trading readiness.
+
+### RT17 — second PR #3 review: amendments and prospective criteria, 2026-10-10
+
+Source: Cookiemunchrr's second review of `34bcde3` (2026-10-10 07:15 UTC), ten inline
+comments 4236833312–4236833347. Keegan checked all ten against the code: all are
+valid. This section covers the five that could stall rounds or audit delivery (#1–#5).
+The five cleanups (#6 duplicated deadline formula, #7 read-only `load()`/`metrics()`
+row locks, #8 request/assessment serialized twice, #9 dead `backup.anchor()`, #10
+manifest built from the working tree rather than `git ls-files`) remain open for a
+later change. Note for #7: the uploader's epoch check still locks `runs`, and
+PostgreSQL requires UPDATE privilege for any row lock, so the `UPDATE(clock_ms)`
+grant cannot simply be dropped. This section, the fixes and their tests are committed
+and pushed before any affected code runs. Results: **NOT RUN** at this criteria commit;
+results are appended separately.
+
+| # | Finding | Amendment | Required regression result |
+|---|---|---|---|
+| 1 | Fallback audit can never succeed when the pre-execution failure came from orders or the round ID; the round stays OPEN and `recover()` stops at it | (a) Planner intents are checked against the audit order rules (`protocol.check_orders`: one of the five symbols, BUY/SELL, non-blank string amount) before anything is committed; an invalid plan becomes an empty plan with error `PLAN_INVALID`, no commands or reservations. (b) In the AUDIT_CONTENT_UNSUPPORTED fallback, and for a durably rejected plan, no order is placed, so the record's `orders` is `[]` (kit K11: orders are those the code finally decided to place). A non-string or empty round ID is refused before anything is written. (c) The event ID no longer embeds the round ID (#5). (d) `recover()` closes every closable round; a round that fails is reported in `RecoveryIncomplete` (raised after the loop, listing round IDs and error types) instead of blocking later rounds. | A numeric amount, a non-eligible symbol (USDT→BNB) and a round ID outside the protocol character set each close the round with an accepted audit, no commands, and replay exactly. A fallback round and a rejected round with planned intents each close with `orders: []`. A round whose close fails does not stop a later round from closing, and the failure is reported. |
+| 2 | Every write re-verifies the whole journal and outbox (O(N) per commit, O(N²) per run) | `verified_snapshot(run_id, full=False)` on the write paths (`commit`, `command`) verifies only events after this process's last verified checkpoint (sequence, head, field digests, reservation totals, outbox ID sets and chunk count). It checks the new events' hash chain, the new outbox rows byte for byte, the full reservations table and the row counts of every outbox table. The checkpoint is in process memory: a new process, `verify()`, `takeover`, restore, journal export and maintenance anchoring all run the full verification, and any checkpoint that no longer matches the database (rewound version, changed head at the checkpoint, changed initial projection) falls back to a full verification. | After one full verification, eight commits never call the full path. Each commit reads only the events after the checkpoint. Still fail closed on the incremental path: changed run projection, changed reservations, an extra or deleted audit chunk/event/command/job row, and a changed new outbox row. `verify()` still detects a changed old event or old chunk body. All existing corruption and replay tests still pass unchanged. |
+| 3 | Post-send status update has no attempt guard, so an older in-flight attempt can overwrite a newer one | A non-ACK result is written only if `attempts` still equals the attempt that sent it. An ACK is always recorded (unless the row is already ACK), because the server stored those exact bytes. | Overlapping attempts: newer 400 then older 503 stays PERMANENT; newer 503 then older 400 stays PENDING (not a false PERMANENT); newer 503 then older ACK becomes ACK. |
+| 4 | Every psycopg error becomes `Unavailable` (treated as transient), including permanent constraint violations | Integrity-constraint errors (SQLSTATE class 23) raise `IntegrityError` with the SQLSTATE and constraint name (no DSN or server message). Every other database error stays `Unavailable`, including lock and statement timeouts, so plan-rejection behaviour is unchanged. | Two rounds recording the same `tx_hash` raise `IntegrityError` naming `swap_owners_pkey`, not `Unavailable`; the synthetic disk-full fault still raises `Unavailable`. |
+| 5 | The ai-seeds event ID `round:<round_id>` is not scoped to the run; the server de-duplicates by event ID (kit K11: "unique per log", the resend de-dup key) | Event ID = `evt-<close timestamp ms>-<12 hex>`, the kit SDK's format, where the hex is the SHA-256 prefix of (run ID, wallet address, round ID, journal head before the close). It is deterministic, so retries resend the same ID and replay reproduces it. | The ID depends on each of run ID, wallet address (case-insensitively), round ID, head and timestamp. A run re-initialised with the same run ID and wallet that reuses round ID `entry` gets a new event ID; replay reproduces the event ID and journal head exactly; every ID matches the protocol pattern. |
+
+Commands after push: Linux Python 3.12.15 `python -m pytest -q -p no:cacheprovider`
+against disposable PostgreSQL 14.24 (CI `runtime` job), `pip check`, the offline demo,
+the container build, both infrastructure modules, and `git diff --check`. All 13
+foundation tests and all existing runtime tests are retained; no assertion is relaxed.
+No live service, credential, wallet or production database is involved.
+
+Known limits after these fixes: between full verifications, a change to an *old*
+journal row or an old audit chunk body is detected only at the next full verification
+(new process, takeover, restore, maintenance anchoring), not on every write. Full
+verification remains linear in journal size and must still be capacity-tested in the
+rehearsal. The committed `docs/build/evidence/runtime-offline-trace.json` still shows
+the old `round:` event IDs until it is regenerated on Linux. Cleanups #6–#10 stay open.

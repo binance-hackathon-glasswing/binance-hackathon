@@ -7,10 +7,15 @@ This store does not validate trading economics or grant a live signing capabilit
 from contextlib import contextmanager
 import hashlib
 from pathlib import Path
+import threading
 
 from larp.contracts import ContractError, Document
 
 ZERO = '0' * 64
+FIELDS = ('projection','policy_state','execution_state')
+# Outbox tables whose rows must equal the journal: (table, id column, value column, batch key).
+OUTBOXES = (('audit_events','event_id','document','audit'),('commands','command_id','payload','commands'),
+            ('jobs','job_id','document','jobs'))
 
 
 class Conflict(ContractError):
@@ -42,6 +47,10 @@ def integer(value, minimum=0):
 class PostgresStore:
     def __init__(self, dsn):
         self._dsn = dsn
+        # Per-process verified position per run (see verified_snapshot). Never persisted:
+        # a new process starts with a full verification.
+        self._checkpoints = {}
+        self._checkpoint_lock = threading.Lock()
 
     @contextmanager
     def transaction(self):
@@ -52,6 +61,12 @@ class PostgresStore:
                 connection.execute("SET LOCAL lock_timeout = '5s'")
                 connection.execute("SET LOCAL statement_timeout = '15s'")
                 yield connection
+        except psycopg.IntegrityError as exc:
+            # A constraint violation is deterministic: retrying the same write fails
+            # again, so it is not reported as a transient outage. Only the SQLSTATE and
+            # constraint name are kept; server messages can echo row data.
+            raise IntegrityError('Database constraint rejected the transaction: '
+                                 f'{exc.sqlstate} {exc.diag.constraint_name}') from None
         except psycopg.Error as exc:
             # DSNs and server messages can contain credentials; don't echo them.
             raise Unavailable('Database transaction failed; signing blocked') from None
@@ -151,7 +166,7 @@ class PostgresStore:
         if b.get('schema') != 'CommitBatch.v1':
             raise ContractError('Expected CommitBatch.v1')
         raw_hash = digest(batch.payload)
-        verified = self.verified_snapshot(b['run_id'])
+        verified = self.verified_snapshot(b['run_id'],full=False)
         with self.transaction() as db:
             run = self._run(db,b['run_id'])
             old = db.execute('SELECT batch_hash,receipt FROM events WHERE run_id=%s AND event_id=%s',
@@ -272,7 +287,7 @@ class PostgresStore:
             return Document(bytes(row[0])).read()['event'] if row else None
 
     def command(self,run_id,command_id,epoch,now_ms):
-        verified=self.verified_snapshot(run_id)
+        verified=self.verified_snapshot(run_id,full=False)
         with self.transaction() as db:
             run = self._run(db,run_id)
             self._owned(run,epoch)
@@ -291,12 +306,23 @@ class PostgresStore:
             return result
 
     @staticmethod
-    def _verify(db,run_id,run):
-        head,version,last = ZERO,0,None
-        reservations={}; audits={}; commands={}; jobs={}
+    def _verify(db,run_id,run,base=None):
+        """Verify the journal, projection, reservations and outboxes; return a checkpoint.
+
+        base=None verifies everything from the genesis. With a checkpoint from an earlier
+        verification of this run, only the events after it are re-hashed and only their
+        outbox rows are compared byte for byte; the reservations table, the run row and
+        the row counts of every outbox table are still checked in full. A change to an
+        older row is found by the next full verification, not by this one.
+        """
+        if base is None:
+            base=dict(version=0,head=ZERO,fields=None,initial=digest(bytes(run['initial'])),reservations={},
+                      ids={table:frozenset() for table,*_ in OUTBOXES},chunks=0)
+        head,version,last = base['head'],base['version'],None
+        reservations=dict(base['reservations']); new={table:{} for table,*_ in OUTBOXES}
         for raw,bhash,ehash,previous,stored,sequence in db.execute(
-                'SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events WHERE run_id=%s ORDER BY sequence',
-                (run_id,)):
+                'SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                'WHERE run_id=%s AND sequence>%s ORDER BY sequence',(run_id,base['version'])):
             raw = bytes(raw)
             b = Document(raw).read()
             if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
@@ -310,50 +336,85 @@ class PostgresStore:
             for delta in b.get('reservation_deltas',[]):
                 key=(delta['intent_id'],delta['asset'])
                 reservations[key]=reservations.get(key,0)+delta['units']
-            for audit in b.get('audit',[]): audits[audit['event_id']]=doc(audit).payload
-            for command in b.get('commands',[]): commands[command['command_id']]=doc(command).payload
-            for job in b.get('jobs',[]): jobs[job['job_id']]=doc(job).payload
+            for table,id_column,_,key in OUTBOXES:
+                for item in b.get(key,[]): new[table][item[id_column]]=doc(item).payload
         if (head,version) != (run['head'],run['version']):
             raise IntegrityError('Truncated or rewound journal')
+        if digest(bytes(run['initial']))!=base['initial']:
+            raise IntegrityError('Initial projection changed')
         if last:
-            for field in ('projection','policy_state','execution_state'):
+            for field in FIELDS:
                 if doc(last[field]).payload != bytes(run[field]):
                     raise IntegrityError('Projection does not match journal')
-        elif bytes(run['projection'])!=bytes(run['initial']):
-            raise IntegrityError('Initial projection changed')
+        elif base['fields'] is None:
+            if bytes(run['projection'])!=bytes(run['initial']):
+                raise IntegrityError('Initial projection changed')
+        elif {field:digest(bytes(run[field])) for field in FIELDS}!=base['fields']:
+            raise IntegrityError('Projection does not match journal')
         actual={(r[0],r[1]):int(r[2]) for r in db.execute(
             'SELECT intent_id,asset,units FROM reservations WHERE run_id=%s',(run_id,))}
         if actual!=reservations:
             raise IntegrityError('Reservations differ from journal')
-        for table,id_column,value_column,expected in (
-                ('audit_events','event_id','document',audits),('commands','command_id','payload',commands),
-                ('jobs','job_id','document',jobs)):
-            actual={r[0]:bytes(r[1]) for r in db.execute(
-                f'SELECT {id_column},{value_column} FROM {table} WHERE run_id=%s',(run_id,))}
-            if actual!=expected:
+        ids={}
+        for table,id_column,value_column,_ in OUTBOXES:
+            ids[table]=base['ids'][table]|frozenset(new[table])
+            # Table/column names are internal constants, never client inputs.
+            rows={r[0]:bytes(r[1]) for r in db.execute(
+                f'SELECT {id_column},{value_column} FROM {table} WHERE run_id=%s AND {id_column}=ANY(%s::text[])',
+                (run_id,list(new[table])))}
+            count=db.execute(f'SELECT count(*) FROM {table} WHERE run_id=%s',(run_id,)).fetchone()[0]
+            if rows!=new[table] or count!=len(ids[table]):
                 raise IntegrityError('Outbox/job definition differs from journal')
-        expected_chunks={}
-        for event_id,raw in audits.items():
-            for index,chunk in enumerate(Document(raw).read()['chunks']):
+        chunks,expected_chunks=base['chunks'],{}
+        for event_id,raw in new['audit_events'].items():
+            parts=Document(raw).read()['chunks']
+            if event_id not in base['ids']['audit_events']:
+                chunks+=len(parts)
+            for index,chunk in enumerate(parts):
                 expected_chunks[(event_id,index)]=chunk.encode('utf-8')
         actual_chunks={(r[0],r[1]):bytes(r[2]) for r in db.execute(
-            'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s',(run_id,))}
-        if actual_chunks!=expected_chunks:
+            'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s AND event_id=ANY(%s::text[])',
+            (run_id,list(new['audit_events'])))}
+        count=db.execute('SELECT count(*) FROM audit_chunks WHERE run_id=%s',(run_id,)).fetchone()[0]
+        if actual_chunks!=expected_chunks or count!=chunks:
             raise IntegrityError('Audit chunk bytes differ from journal')
-        return head
+        return dict(version=version,head=head,fields={field:digest(bytes(run[field])) for field in FIELDS},
+                    initial=base['initial'],reservations=reservations,ids=ids,chunks=chunks)
 
-    def verified_snapshot(self,run_id):
+    def verified_snapshot(self,run_id,*,full=True):
         """Verify one coherent MVCC snapshot without locking the wallet row.
 
         Writers compare this authority under their short row lock. Any concurrent
         state change requires a fresh verification rather than trusting stale data.
-        No cached checkpoint skips journal or outbox corruption checks.
+        full=False (the write paths) continues from this process's last verified
+        checkpoint instead of re-reading the whole journal; a checkpoint that no longer
+        matches the database is discarded and the full verification runs instead.
         """
         with self.transaction() as db:
             db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
             run=self._run(db,run_id,lock=False)
-            self._verify(db,run_id,run)
-            return run
+            base=None
+            if not full:
+                with self._checkpoint_lock:
+                    base=self._checkpoints.get(run_id)
+                if base is not None and not self._continues(db,run_id,run,base):
+                    base=None
+            checkpoint=self._verify(db,run_id,run,base)
+        with self._checkpoint_lock:
+            known=self._checkpoints.get(run_id)
+            if known is None or base is None or known['version']<=checkpoint['version']:
+                self._checkpoints[run_id]=checkpoint
+        return run
+
+    @staticmethod
+    def _continues(db,run_id,run,base):
+        """True if the database still extends the journal this checkpoint verified."""
+        if run['version']<base['version'] or digest(bytes(run['initial']))!=base['initial']:
+            return False
+        if base['version']==0:
+            return base['head']==ZERO
+        row=db.execute('SELECT head FROM events WHERE run_id=%s AND sequence=%s',(run_id,base['version'])).fetchone()
+        return row is not None and row[0]==base['head']
 
     @staticmethod
     def _same_snapshot(verified,run):

@@ -11,10 +11,10 @@ class Transactions(DatabaseCase):
         from unittest.mock import patch
         import psycopg
         verify=self.store._verify
-        def check_lock(db,run_id,run):
+        def check_lock(db,run_id,run,*rest):
             with psycopg.connect(self.store._dsn) as other:
                 other.execute('SELECT run_id FROM runs WHERE run_id=%s FOR UPDATE NOWAIT',(run_id,))
-            return verify(db,run_id,run)
+            return verify(db,run_id,run,*rest)
         batch=self.batch()
         with patch.object(self.store,'_verify',side_effect=check_lock):
             self.store.commit(batch)
