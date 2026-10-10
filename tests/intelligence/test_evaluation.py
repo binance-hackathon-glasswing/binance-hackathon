@@ -60,12 +60,13 @@ class PrecisionScoringTests(unittest.TestCase):
                 "value": [int(Fraction(value) * 10), 10], "span": {"doc": "d", "start": 0, "end": 1, "text": "x"}}
 
     def test_e01_unexpected_outputs_are_false_positives(self):
-        exact = self.run_with([self.claim("35.1"), {"kind": "EVENT", "metric": "ITEM:2.02"}],
+        event = lambda metric: {"kind": "EVENT", "metric": metric, "period": None, "unit": None, "scale_exp10": 0}
+        exact = self.run_with([self.claim("35.1"), event("ITEM:2.02")],
                               [{"event": "IMPAIRMENT", "semantics": {"assertion": "FORECAST"}}])
         self.assertEqual((exact["numerical_precision"], exact["event_precision"], exact["statement_precision"]),
                          ([1, 1], [1, 1], [1, 1]))
         extra = self.run_with([self.claim("35.1"), self.claim("1.2", metric="net_income"),
-                               {"kind": "EVENT", "metric": "ITEM:2.02"}, {"kind": "EVENT", "metric": "IMPAIRMENT"}],
+                               event("ITEM:2.02"), event("IMPAIRMENT")],
                               [{"event": "IMPAIRMENT", "semantics": {"assertion": "FORECAST"}},
                                {"event": "DELISTING", "semantics": {"assertion": "CONDITIONAL_RISK"}}])
         self.assertEqual(extra["numerical_precision"], [1, 2])

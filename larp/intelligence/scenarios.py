@@ -320,13 +320,16 @@ EVAL_CASES = [
                 "missing_prefixes": ["PRIOR_MISSING:revenue:GUIDANCE:FY2028-Q1"]}},
     {"case_id": "compact_html_table", "filings": ["EXSEMI_Q2_8K", "EXSEMI_Q3_10Q_COMPACT"],
      "refs": ["EXSEMI_Q3_10Q_COMPACT"], "issuer": EXSEMI, "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED",
+     # IDEA-031: labels enumerated from the fixture text (two table rows x two columns, no item codes, no event
+     # wording), so they are exhaustive and every other output is a false positive.
+     "labels": {"status": "ASSESSED", "exhaustive": True, "events": [], "statements": [],
                 "facts": [fact(R, "revenue", "FY2027-Q3", "35082", "USD", 6), fact(R, "revenue", "FY2026-Q3", "18120", "USD", 6),
                           fact(R, "net_income", "FY2027-Q3", "19309", "USD", 6), fact(R, "net_income", "FY2026-Q3", "9243", "USD", 6)],
                 "findings": ["REPORTED_ABOVE_PRIOR_GUIDANCE"]}},
     {"case_id": "utf8_foreign_issuer_6k", "filings": ["EXMEM_Q3_6K"], "refs": ["EXMEM_Q3_6K"], "issuer": EXMEM,
      "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED",
+     # IDEA-031: exhaustive (one prose sentence with two amounts, a 2x2 table, no item codes or event wording).
+     "labels": {"status": "ASSESSED", "exhaustive": True, "events": [], "statements": [],
                 "facts": [fact(R, "revenue", "2026-Q3", "24.45", "KRW", 12), fact(R, "operating_income", "2026-Q3", "11.38", "KRW", 12),
                           fact(R, "revenue", "2026-Q3", "24449", "KRW", 9), fact(R, "revenue", "2026-Q2", "22232", "KRW", 9),
                           fact(R, "operating_income", "2026-Q3", "11383", "KRW", 9),
