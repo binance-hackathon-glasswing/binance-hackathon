@@ -502,3 +502,66 @@ committed and pushed before they run. Results: **NOT RUN** at this commit.
 5. Every existing test still passes (CI on PR #8 is the baseline).
 
 Next (not in this commit): adapters for G1–G4 and the full thin path from PARALLEL_BUILD (filing → assessment → proposal → mandatory risk/planning → atomic commit → execution observations → settled accounting → durable audit → restart replay), each with its own prospective criteria.
+
+### RT21 — Step 1: integrated offline thin path (adapters G1–G4), prospective criteria, 2026-10-10
+
+Goal: one round through **all four real components** (Yao's evidence assessor, Keith's
+`decide`/`plan` and accounting reducer, Isaac's `Executor`, this runtime's coordinator,
+PostgreSQL store and audit outbox), with only external services faked (filings source,
+market quotes, venue, signer). Team decisions of 2026-10-10 (plan.md D-08/D-09/D-11)
+apply; strategy configuration stays the visibly synthetic offline fixture. This section,
+the adapters and the tests are committed and pushed before anything runs. Results:
+**NOT RUN** at this commit.
+
+**Adapters (`larp/integration/`, owner Keegan):**
+- G1 `StrategyContextProvider`: builds `StrategyContext.v1` from the coordinator's
+  projection (`portfolio` = Keith's `PortfolioState.v1`), injected market/series/calendar/
+  health sources, and the round's request/assessment. A bounded quote pre-pass (at most
+  three passes, pure `decide`/`plan` calls) asks the injected market port for every
+  exact-size quote the planner requests, so the coordinator's single snapshot already
+  holds them. The recorded policy input stores the context without the duplicated
+  request/assessment; replay rebuilds it from the journal, never from live sources.
+- G2 `StrategyPlanner`: Keith's `PlanResult` → coordinator intents (`decision_id`,
+  explicit decimal `amount`: USDT spent for buys, tokens sold for sells, `expires_ms`,
+  full economic intent) and per-asset store reservations (USDT, BNB, sold token); a
+  plan hook copies Keith's economic reservation into the portfolio before the atomic commit.
+- G3 `ExecutionBridge` (`ports.Execution.advance`): tracks intents per round and
+  attests `terminal_rounds` only on a final FILL or REVERT.
+- G4 `strategy_reducer`: Keith's `advance_accounting` on APPROVAL/FILL/REVERT; store
+  reservation releases (BNB as gas is consumed, the rest at the terminal event); a
+  `balances` mirror for the store's resource check; swap broadcasts map the transaction
+  hash to the round's order and decision for the audit.
+- Coordinator hooks (backward compatible; existing fixtures unchanged): optional
+  `context_provider`, `policy_identity`, `on_plan`; replay accepts the same options.
+- G6 (found while building G1): the coordinator took the decision time before the
+  assessment ran, but `consume()` requires `completed_ms` ≤ snapshot time, so with a real
+  clock every assessment would be rejected as future. The decision time becomes
+  max(round time, the assessment's `completed_ms`); the context (including market data)
+  is built at that time; it is recorded as `decision_ms` and replay derives it from the
+  recorded assessment. Without an assessment, or with an earlier `completed_ms`, nothing
+  changes for existing fixtures.
+- G5 (issuer evidence context kept in step with Yao's state) is **not** solved here; the
+  single-round path uses the empty initial context on both sides.
+
+**Prospective criteria** (CI: Linux Python 3.12.15, PostgreSQL 14.24, `pytest -q`):
+1. Thin path: Yao's assessor answers the round's request (rebound only to this run and
+   the strategy profile hash); Keith's `decide`/`plan` produce a baseline BUY; the
+   coordinator commits exactly one execution command and its reservations; Isaac's
+   `Executor` (his fake venue/signer/guards/decoder, SQLite fixture store) runs approve
+   then swap to `COMPLETED`; the observations settle through Keith's reducer; the round
+   closes with one audit event whose order carries the swap hash and whose swap mapping
+   names the intent's decision; the approve is not logged as an order.
+2. After settlement: the portfolio holds the received tokens, cash fell by exactly the
+   paid input plus fee, observed gas is recorded, all store reservations are released,
+   and no round is left open.
+3. Restart: a new coordinator on the same store sees no open work; journal replay into
+   an empty store reproduces the head exactly.
+4. C4 (RT20) passes and its `expectedFailure` marker is removed.
+4a. G6: an assessment completing after the round time is accepted by the policy
+   (`ASSESSMENT_ACCEPTED`) with the snapshot at its completion time; an assessment
+   completing before it leaves the decision time unchanged.
+5. Every existing test still passes, including all 13 foundation tests.
+
+Known limits after Step 1: fake external services only; no real quotes, signer, nonce/
+finality evidence or BNB bootstrap (Step 3); G5 open; one intent per round, as Keith's
+planner allows.

@@ -1,8 +1,7 @@
 """Cross-component integration criteria (IDEA-028 RT20).
 
-C1-C3 check boundaries that already agree; C4 records the coordinator-to-strategy
-gap as an expected failure, so it turns into an unexpected success once the
-StrategyContext and PlanResult adapters land (then remove the decorator).
+C1-C3 check boundaries that already agree; C4 checks that the coordinator commits the
+strategy's baseline intent (it was an expected failure until the RT21 adapters).
 """
 
 from dataclasses import replace
@@ -65,25 +64,13 @@ from tests.support import DatabaseCase, request as runtime_request
 
 
 class CoordinatorWithStrategy(DatabaseCase):
-    @unittest.expectedFailure  # RT20 G1/G2: no StrategyContext provider or PlanResult adapter yet
     def test_c4_coordinator_commits_strategy_baseline_intent(self):
-        """Target behaviour: a BUY-eligible round through the real coordinator, store and
-        strategy modules commits the strategy's baseline intent as an execution request."""
-        from larp.risk import planner
-        from larp.runtime.coordinator import Coordinator
-        from larp.runtime.fixtures import FakeAssessor, FakeExecution
-        from larp.strategy import policy
-
-        class Policy:
-            decide = staticmethod(policy.decide)
-
-        class Planner:
-            plan = staticmethod(planner.plan)
-
-        runtime = Coordinator(self.store, FakeAssessor(), Policy(), Planner(), execution=FakeExecution(),
-                              run_id='run', version_id='synthetic', profile_hash='a' * 64,
-                              address='0x' + '1' * 40)
-        runtime.start('r', runtime_request('BUY'), 1791590400000, defer_close=True)
+        """A BUY-eligible round through the real coordinator, store and strategy modules
+        commits the strategy's baseline intent as an execution request (RT20 C4, via RT21)."""
+        from tests.integration.test_thin_path import RUN, ThinPath
+        path = ThinPath(self.store)
+        path.initialize()
+        path.coordinator().start('r', path.request(), path.now_ms, defer_close=True)
         with self.store.transaction() as db:
-            commands = db.execute('SELECT count(*) FROM commands').fetchone()[0]
-        self.assertGreaterEqual(commands, 1)
+            commands = db.execute('SELECT count(*) FROM commands WHERE run_id=%s', (RUN,)).fetchone()[0]
+        self.assertEqual(1, commands)

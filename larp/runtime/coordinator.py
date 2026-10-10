@@ -32,14 +32,23 @@ class RecoveryIncomplete(ContractError):
 
 
 class Coordinator:
-    def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address):
+    def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address,
+                 context_provider=None,policy_identity=('fixture','PolicyState.v1'),on_plan=None):
+        """Optional integration hooks (IDEA-028 RT21); without them behaviour is unchanged.
+
+        context_provider: builds the policy/planner context (with .compact() for the record).
+        policy_identity: (policy_id, schema) of the policy state a new run starts from.
+        on_plan: pure projection update applied with an executable plan's atomic commit.
+        """
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
         self.execution=execution
+        self.context_provider,self.policy_identity,self.on_plan=context_provider,policy_identity,on_plan
 
     def snapshot(self,current,now_ms,context):
         c=current.read()
-        state=c['policy_state'] or dict(run_id=self.run_id,policy_id='fixture',schema='PolicyState.v1',version=0,data={})
+        policy_id,schema=self.policy_identity
+        state=c['policy_state'] or dict(run_id=self.run_id,policy_id=policy_id,schema=schema,version=0,data={})
         return DecisionSnapshot(self.run_id,c['wallet_id'],self.version_id,self.profile_hash,c['version'],
             datetime.fromtimestamp(now_ms/1000,timezone.utc),('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'),
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
@@ -68,16 +77,35 @@ class Coordinator:
             assessment_result(assessment,request,now_ms)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
+        # The decision happens once the assessment exists: a policy must not see evidence
+        # completed after its own snapshot time (RT21 G6). Deterministic from the record.
+        decision_ms=now_ms
+        if assessment is not None:
+            completed=assessment.read().get('completed_ms')
+            if type(completed) is int and completed>now_ms:
+                decision_ms=completed
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
                    if k not in ('round_records','closed_rounds','observations')}
         context=dict(projection=portfolio,reservations=current.read()['reservations'],
                      request=request.read(),assessment=assessment.read() if assessment else None)
-        snapshot=self.snapshot(current,now_ms,context)
+        # The policy saw `context`; its request and assessment are stored once, at the top level.
+        policy_input=dict(projection=context['projection'],reservations=context['reservations'],
+                          includes=['request','assessment'])
+        if self.context_provider is not None:
+            try:
+                context=self.context_provider.context(current.read(),request.read(),
+                    assessment.read() if assessment else None,decision_ms,lambda c:self.snapshot(current,decision_ms,c))
+                policy_input=dict(context=self.context_provider.compact(context),includes=['request','assessment'])
+            except Exception:
+                # No context means no valid policy or planner input: the round records it and
+                # the planner's own input checks keep every position unchanged.
+                errors.append('CONTEXT_UNAVAILABLE')
+        snapshot=self.snapshot(current,decision_ms,context)
         if assessment is not None:
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
-                validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
+                validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(decision_ms/1000,timezone.utc))
             except Exception:
                 errors.append('POLICY_REJECTED'); proposal=None
         # Mandatory risk is called even when there is no policy output.
@@ -100,15 +128,12 @@ class Coordinator:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
         projection=current.read()['projection']
-        # The policy saw `context`; its request and assessment are stored once, at the top level.
-        policy_input=dict(projection=context['projection'],reservations=context['reservations'],
-                          includes=['request','assessment'])
         record=dict(round_id=round_id,request=request.read(),assessment=assessment.read() if assessment else None,
                     proposal_id=proposal.proposal_id if proposal else None,plan=plan,errors=errors,
                     policy_input=policy_input,policy_state=snapshot.policy_state.record(),
                     policy_output=None if proposal is None else dict(targets=[t.record() for t in proposal.targets],
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
-                    started_ms=now_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
+                    started_ms=now_ms,decision_ms=decision_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
                         for i in plan['intents']],swap_mappings=[])
         projection.setdefault('round_records',{})[round_id]=record
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
@@ -127,6 +152,8 @@ class Coordinator:
             record['orders']=[]
             commands=[]; reservation_deltas=[]
         record['execution_pending']=bool(commands)
+        if commands and self.on_plan is not None:
+            projection=self.on_plan(projection,plan)
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
         try:
             receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
