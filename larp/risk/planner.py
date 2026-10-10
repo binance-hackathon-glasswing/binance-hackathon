@@ -1,0 +1,321 @@
+"""Independent constraints and staged exact-size quoting; requests, not authority.
+
+One immediate child intent per wallet simplifies nonce ownership. Parent reduction
+requirements retain every residual; re-plan on observed settlement, never assumed
+sell proceeds. The runtime stores requests atomically and execution revalidates.
+"""
+
+from fractions import Fraction
+
+from larp.contracts import ContractError, Document, TargetKind, validate_proposal
+from larp.strategy.schema import (ceil, equity, floor, fraction, instant, integer,
+                                  markets, profile, ratio, value)
+from .accounting import update_risk
+
+
+def _request(symbol, side, pay_units, m, mandatory):
+    return {"schema": "MarketRequest.v1", "symbol": symbol, "side": side,
+            "amount_kind": "EXACT_IN", "pay_asset": "USDT" if side == "BUY" else symbol,
+            "pay_units": pay_units, "pay_decimals": 6 if side == "BUY" else m["decimals"],
+            "mandatory": mandatory}
+
+
+def _quote_at_cap(m, side, pay_units, p, now, target_units):
+    """Walk observed smaller exact-in quotes; otherwise request the next size."""
+    rejections = []
+    quotes = m.get("quotes", [])
+    asset = "USDT" if side == "BUY" else m["symbol"]
+    for _ in range(len(quotes) + 1):
+        quote = next((x for x in quotes if type(x) is dict and x.get("side") == side
+                      and x.get("pay_asset") == asset and x.get("pay_units") == pay_units
+                      and x.get("amount_kind") == "EXACT_IN"), None)
+        if quote is None:
+            return None, pay_units, rejections, "REQUOTE_REQUIRED" if rejections else "PENDING"
+        try:
+            valid = (quote.get("route_valid") is True and type(quote["quote_id"]) is str and bool(quote["quote_id"])
+                     and instant(quote["available_at"]) <= now
+                     and 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
+                     and now < instant(quote["expires_at"])
+                     and integer(quote["slippage_bps"]) <= p["slippage_bps"]
+                     and integer(quote["impact_bps"]) <= p["impact_bps"])
+            cash, fee, gas, q, minimum = [integer(quote[k]) for k in
+                ("cash_units", "fee_units", "gas_bnb_units", "token_units", "min_receive_units")]
+            valid &= (cash == pay_units and 0 < minimum <= q) if side == "BUY" else (q == pay_units and minimum <= cash)
+        except (KeyError, ContractError, TypeError):
+            valid = False
+        if not valid:
+            return None, None, rejections + ["QUOTE_ROUTE_OR_SLIPPAGE"], "BLOCKED_QUOTE"
+        if side == "BUY" and q > target_units:
+            smaller = min(pay_units - 1, floor(Fraction(pay_units * target_units, q)))
+            rejections.append("BUY_RECEIVE_TARGET_REQUOTE")
+        elif cash + fee <= p["per_trade_cap_units"]:
+            return quote, None, rejections, "PENDING"
+        else:
+            smaller = min(pay_units - 1, floor(Fraction(pay_units * p["per_trade_cap_units"], cash + fee)))
+            rejections.append("EXECUTABLE_TRADE_CAP")
+        if smaller <= 0:
+            return None, None, rejections, "DUST_OR_UNEXECUTABLE"
+        pay_units = smaller
+    raise ContractError("Nondecreasing re-quote chain")
+
+
+def plan(snapshot, proposal_or_none):
+    c, now = snapshot.context.read(), snapshot.observed_at
+    result = {"schema": "PlanResult.v1", "snapshot_id": snapshot.snapshot_id,
+              "intents": [], "reservation_deltas": [], "requirements": [],
+              "quote_requests": [], "rejections": [], "clamps": [],
+              "next_policy_state": None, "risk_state": None,
+              "authorization": "ATOMIC_COMMIT_AND_FRESH_EXECUTION_CHECKS_REQUIRED"}
+    try:
+        p = profile(snapshot)
+        ledger = c["portfolio"]
+        market = markets(snapshot, p)
+        unvalued = sorted({s for s, pos in ledger["positions"].items()
+                           if pos["units"] and market.get(s) is None}
+                          | {v["symbol"] for v in ledger["reservations"].values()
+                             if v["side"] == "BUY" and market.get(v["symbol"]) is None})
+        E = equity(ledger, market, allow_missing=True)
+        # Incomplete valuation is not a loss observation. Preserve latches/peak;
+        # block buys and use only the disclosed lower bound for healthy-name trims.
+        risk_ledger = (ledger if unvalued else
+                       update_risk(Document.from_dict(ledger), now=now, equity_units=E).read())
+        r = risk_ledger["risk"]
+        result["risk_state"] = r
+        result.update(valuation_status="LOWER_BOUND" if unvalued else "COMPLETE",
+                      risk_equity_lower_bound_units=E, unvalued_symbols=unvalued)
+        if unvalued:
+            result["rejections"].append({"reason": "PARTIAL_VALUATION_NEW_RISK_BLOCKED", "symbols": unvalued})
+    except (KeyError, TypeError, ContractError, ValueError) as exc:
+        # Invalid valuation is explicit; terminal holdings remain outstanding.
+        result["rejections"].append({"reason": "INVALID_REQUIRED_INPUT", "detail": str(exc)})
+        for symbol, pos in c.get("portfolio", {}).get("positions", {}).items():
+            if pos.get("units", 0):
+                result["requirements"].append({"symbol": symbol, "status": "BLOCKED_INPUT",
+                                               "held_units": pos["units"],
+                                               "reason": "RISK_REEVALUATION_REQUIRED"})
+        return Document.from_dict(result)
+    targets = {}
+    if proposal_or_none is not None:
+        try:
+            targets = {t.symbol: t for t in validate_proposal(snapshot, proposal_or_none, now=now)}
+            result["next_policy_state"] = proposal_or_none.next_policy_state.record()
+        except (ContractError, TypeError, AttributeError) as exc:
+            result["rejections"].append({"reason": "INVALID_POLICY", "detail": str(exc)})
+    else:
+        result["rejections"].append({"reason": "NO_POLICY_PROPOSAL"})
+    terminal = now >= instant(p["flatten_start"])
+    cost_reserve = p["cost_reserve_units"]
+    safe_equity = max(0, E - cost_reserve)
+    gross_limit = min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
+    if r["deep_cut"]:
+        gross_limit = min(gross_limit, Fraction(2, 5))
+    positions = ledger["positions"]
+    held = {s: pos["units"] for s, pos in positions.items() if pos["units"]}
+    pending_buy = {}
+    reserved_cash = reserved_bnb = 0
+    for reservation in ledger["reservations"].values():
+        reserved_cash += integer(reservation["cash_units"])
+        reserved_bnb += integer(reservation["bnb_units"])
+        if reservation["side"] == "BUY":
+            s = reservation["symbol"]
+            pending_buy[s] = pending_buy.get(s, 0) + integer(reservation["token_units"])
+    gross = sum((value(q + pending_buy.get(s, 0), market[s]) for s, q in held.items()
+                 if market.get(s) is not None), Fraction(0))
+    gross += sum((value(q, market[s]) for s, q in pending_buy.items()
+                  if s not in held and market.get(s) is not None), Fraction(0))
+    result["worst_case_gross_units"] = None if unvalued else ceil(gross)
+    result["known_gross_units"] = ceil(gross)
+    result["available_cash_units"] = max(0, ledger["cash_units"] - reserved_cash)
+    cap_bounds = {}
+    reasons = {}
+    held_names = sorted(held)
+    for index, symbol in enumerate(held_names):
+        m, qty = market.get(symbol), held[symbol]
+        if m is None:
+            result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
+                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
+                "status": "BLOCKED_MARK"})
+            continue
+        cap = floor(Fraction(safe_equity, 5) * 10**m["decimals"] / m["price_units"])
+        reason = []
+        if qty + pending_buy.get(symbol, 0) > cap:
+            reason.append("POSITION_CAP")
+            cap = floor(fraction(p["operating_name_weight"]) * safe_equity
+                        * 10**m["decimals"] / m["price_units"])
+        else:
+            cap = qty
+        if gross > safe_equity * gross_limit:
+            cap = min(cap, floor(Fraction(qty) * safe_equity * gross_limit / gross))
+            reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
+        if index >= 4:
+            cap = 0
+            reason.append("POSITION_COUNT_CAP")
+        if terminal:
+            cap = 0
+            reason.append("TERMINAL_FLATTEN")
+        for requirement in c.get("reduction_constraints", []):
+            if requirement["symbol"] == symbol:
+                bound = integer(requirement["max_units"])
+                cap = min(cap, bound)
+                reason.append(requirement["reason"])
+        cap_bounds[symbol], reasons[symbol] = cap, reason
+        if cap < qty:
+            result["requirements"].append({"symbol": symbol, "held_units": qty,
+                                           "max_units": cap, "remaining_sell_units": qty - cap,
+                                           "reasons": reason, "status": "PENDING"})
+    # The nonce simplification also ensures pending trades cannot allocate twice.
+    global_blocks = []
+    for gate in ("integrity_ok", "journal_ok", "ownership_ok", "clock_ok"):
+        if c.get("health", {}).get(gate) is not True:
+            global_blocks.append(gate.upper())
+    if ledger["reservations"]:
+        global_blocks.append("WALLET_PENDING")
+    if now >= instant(p["signing_end"]):
+        global_blocks.append("SIGNING_END")
+    if global_blocks:
+        result["rejections"].append({"reason": "EXECUTION_BLOCKED", "gates": global_blocks})
+        for req in result["requirements"]:
+            req["status"] = "BLOCKED"
+        return Document.from_dict(result)
+
+    actions = []
+    for req in sorted(result["requirements"], key=lambda x: (-x["remaining_sell_units"], x["symbol"])):
+        actions.append((req["symbol"], "SELL", req["remaining_sell_units"], True, req["reasons"]))
+    # No discretionary action while any mandatory obligation is outstanding.
+    if not actions:
+        count = len(set(held) | set(pending_buy))
+        for symbol, t in sorted(targets.items()):
+            if t.kind is TargetKind.KEEP_QUANTITY:
+                continue
+            m = market.get(symbol)
+            if m is None:
+                result["rejections"].append({"symbol": symbol, "reason": "MISSING_MARKET"})
+                continue
+            current = held.get(symbol, 0)
+            desired = 0 if t.kind is TargetKind.EXIT else floor(
+                min(t.weight, fraction(p["operating_name_weight"])) * safe_equity
+                * 10**m["decimals"] / m["price_units"])
+            if desired == current:
+                continue
+            side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
+            if side == "BUY":
+                if (unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
+                        or now.date().isoformat() != r["day"]
+                        or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
+                    result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
+                    continue
+                if not current and count >= 4:
+                    result["rejections"].append({"symbol": symbol, "reason": "POSITION_COUNT_CAP"})
+                    continue
+                capacity = max(Fraction(0), min(gross_limit, fraction(p["operating_gross_weight"]))
+                               * safe_equity - gross)
+                q = min(q, floor(capacity * 10**m["decimals"] / m["price_units"]))
+            if c.get("last_discretionary_session") == c["session_index"]:
+                result["rejections"].append({"symbol": symbol, "reason": "DISCRETIONARY_CADENCE"})
+                continue
+            if q > 0:
+                actions.append((symbol, side, q, False, [t.reason]))
+
+    for symbol, side, quantity, mandatory, why in actions:
+        m = market.get(symbol)
+        if m is None:
+            continue
+        notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
+        q = min(quantity, floor(Fraction(notional_cap) * 10**m["decimals"] / m["price_units"]))
+        req = next((r for r in result["requirements"] if r["symbol"] == symbol), None)
+        if q <= p["dust_units"] or q <= 0:
+            if req is not None:
+                req["status"] = "DUST_OR_UNEXECUTABLE"
+            result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_UNEXECUTABLE"})
+            continue
+        if not mandatory and value(q, m) < p["minimum_trade_units"]:
+            result["rejections"].append({"symbol": symbol, "reason": "MINIMUM_TRADE"})
+            continue
+        if m.get("token_open") is not True or m.get("underlying_open") is not True:
+            if req is not None:
+                req["status"] = "BLOCKED_MARKET"
+            result["rejections"].append({"symbol": symbol, "reason": "MARKET_CLOSED_OR_UNKNOWN"})
+            continue
+        pay_units = floor(value(q, m)) if side == "BUY" else q
+        quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity)
+        result["rejections"].extend({"symbol": symbol, "reason": reason} for reason in rejected)
+        if quote is None:
+            if req is not None:
+                req["status"] = quote_status
+            if request_units is not None:
+                result["quote_requests"].append(_request(symbol, side, request_units, m, mandatory))
+            continue
+        cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
+        if q <= p["dust_units"] or (not mandatory and value(q, m) < p["minimum_trade_units"]):
+            if req is not None:
+                req["status"] = "DUST_OR_UNEXECUTABLE"
+            result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
+            continue
+        gas_value = ceil(Fraction(gas * ledger["bnb_price_units"], 10**ledger["bnb_decimals"]))
+        mark = value(q, m)
+        cost = max(Fraction(0), cash - mark if side == "BUY" else mark - cash) + fee + gas_value
+        if cost > cost_reserve and not mandatory:
+            result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
+            continue
+        if not mandatory and side == "BUY":
+            if cost * 10000 > mark * 50:
+                result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
+                continue
+            depth = quote.get("quoted_depth_units")
+            if type(depth) is not int or depth < 10 * q:
+                result["rejections"].append({"symbol": symbol, "reason": "DECLARED_DEPTH_INPUT_UNAVAILABLE"})
+                continue
+        if gas > ledger["bnb_units"] - reserved_bnb:
+            if req is not None:
+                req["status"] = "BLOCKED_GAS"
+            result["rejections"].append({"symbol": symbol, "reason": "INSUFFICIENT_GAS"})
+            continue
+        if side == "BUY":
+            spend = cash + fee
+            if (spend > ledger["cash_units"] - reserved_cash
+                    or ledger["cash_units"] - spend < ceil(Fraction(safe_equity, 5))
+                    or ledger["bnb_units"] - reserved_bnb - gas < p["exit_gas_reserve_units"]):
+                result["rejections"].append({"symbol": symbol, "reason": "CASH_OR_EXIT_RESERVE"})
+                continue
+        else:
+            spend = 0
+            if q > positions[symbol]["units"]:
+                raise ContractError("Planner oversell")
+            if fee > cash + ledger["cash_units"]:
+                if req is not None:
+                    req["status"] = "BLOCKED_EXIT_FEE"
+                result["rejections"].append({"symbol": symbol, "reason": "UNAFFORDABLE_EXIT_FEE"})
+                continue
+        if cost > cost_reserve and mandatory:
+            # Tighten bounds only after this child passes every execution gate.
+            adjusted_equity = max(0, E - ceil(cost))
+            for requirement in result["requirements"]:
+                if requirement["status"] == "BLOCKED_MARK":
+                    continue
+                old_bound = requirement["max_units"]
+                requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
+                requirement["remaining_sell_units"] = requirement["held_units"] - requirement["max_units"]
+            quantity = req["remaining_sell_units"]
+            result["clamps"].append({"symbol": symbol, "reason": "POST_QUOTE_COST_REDUCTION",
+                                     "cost_units": ceil(cost)})
+        if req is not None:
+            req["status"] = "PARTIAL_REQUIRES_POST_FILL_REPLAN" if q < quantity else "AWAITING_SETTLEMENT"
+        intent = {"symbol": symbol, "side": side, "token_units": q, "decimals": m["decimals"],
+                  "cash_units": cash, "fee_units": fee, "gas_bnb_units": gas,
+                  "mandatory": mandatory, "reasons": why, "quote_id": quote["quote_id"],
+                  "quote_expiry": quote["expires_at"], "parent_remaining_units": quantity - q,
+                  "amount_kind": "EXACT_IN", "pay_asset": quote["pay_asset"], "pay_units": quote["pay_units"],
+                  "min_receive_units": quote["min_receive_units"],
+                  "receive_decimals": m["decimals"] if side == "BUY" else 6}
+        intent_id = Document.from_dict({"snapshot_id": snapshot.snapshot_id, **intent}).digest("EconomicIntent.v1")
+        intent["intent_id"] = intent_id
+        result["intents"].append(intent)
+        result["reservation_deltas"].append({"intent_id": intent_id, "cash_units": spend,
+                                              "bnb_units": gas, "symbol": symbol,
+                                              "side": side, "token_units": q, "pay_units": intent["pay_units"],
+                                              "min_receive_units": intent["min_receive_units"]})
+        if q < quantity:
+            result["clamps"].append({"symbol": symbol, "reason": "PER_TRADE_CAP",
+                                     "requested_units": quantity, "planned_units": q})
+        break
+    return Document.from_dict(result)
