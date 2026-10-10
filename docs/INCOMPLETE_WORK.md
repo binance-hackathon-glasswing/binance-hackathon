@@ -153,3 +153,5 @@ GAP-01..GAP-40 (design and spec) are not organiser-blocked unless they cite an o
 ## Suggested order
 
 Onboarding admin and questions (GAP-41/42) → trading-hours measurement (GAP-44, start now) → rescope for five names (GAP-43) → establish submitted commitments → reconcile the active plan → freeze target/baseline/fallback → assign onboarding gates → finish execution/audit contracts → pre-register experiments → attach readiness evidence to milestones.
+
+GAP-65/67 integration-target clarification (2026-10-11): per user, PR #7 targets `codex/engine-foundation` first, with later promotion to `main` separate. Before integration, reconcile the target changes (inspected at `4554014`) and the IDEA-032 ID collision, preserve both ledger records/references, and verify the combined revision. PR owner/integrator owns this merge preparation; production activation work above remains separate. See the PR review’s IDEA-032 integration-target correction.
