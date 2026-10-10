@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from larp.execution import (Blocked, Conflict, Executor, Gates, Outcome, Signed,
                             canonical, possible_swap_hashes, validate_payload)
-from execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
+from tests.execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
                                 FakeSigner, FakeVenue, SQLiteFixture, finalized, intent)
 
 
