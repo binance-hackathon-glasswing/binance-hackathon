@@ -4,6 +4,10 @@ IDEA-031 (AC-E05): registrations are structured (EconomicRegistration.v2) and ev
 IDEA-030 R12.7 found that v1 accepted text criteria (paired_metric, kill_rule, inconclusive_rule) that the
 verdict ignored, so v1 now returns NOT_RUN.
 
+IDEA-034 (user decision 2026-10-11, goal is maximum profit): a treatment that loses money is never SUPPORTED.
+Every support rule also requires the bootstrap lower bound of the treatment's own net return (registered metric)
+to be above zero; a treatment whose upper bound is at or below zero is NOT_SUPPORTED whatever the paired result.
+
 No historical dataset is supplied here. Tests use synthetic accounting examples.
 EXP IDs/rights/splits must be coordinated with the integrator before a real run.
 """
@@ -22,9 +26,10 @@ V2_FIELDS = frozenset({
     "bootstrap_draws", "seed", "purge_sessions", "embargo_sessions", "primary_horizon_sessions",
     "secondary_horizons_sessions", "independence_basis", "windows", "fixed_parameters"})
 METRICS = ("PAIRED_NET_WALLET_RETURN", "PAIRED_NET_WALLET_RETURN_AFTER_SERVICE_COSTS")
-# The strict rule also requires the treatment's own mean net return to be positive: beating a losing baseline is not
-# enough (IDEA-033 R24). Which rule a real experiment registers is a team decision (GAP-09).
-SUPPORT_RULES = ("LOWER_BOUND_ABOVE_MARGIN", "LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE")
+# Every support rule carries the mandatory absolute condition below (IDEA-034); IDEA-033 R24's opt-in variant
+# (mean > 0) is no longer a registrable value.
+SUPPORT_RULES = ("LOWER_BOUND_ABOVE_MARGIN",)
+ABSOLUTE_RETURN_RULE = "TREATMENT_LOWER_BOUND_ABOVE_ZERO"
 KILL_RULES = ("UPPER_BOUND_BELOW_ZERO", "UPPER_BOUND_BELOW_MARGIN")
 INCONCLUSIVE_RULES = ("OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",)
 INDEPENDENCE = ("NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS",)
@@ -122,7 +127,9 @@ def evaluate(registration: Document, outcomes):
     """Paired, after-cost, cluster-bootstrap comparison evaluated exactly as registered (never a live gate).
 
     Net wallet return and off-wallet service costs are reported separately; service costs enter the metric only
-    when the registered metric says so. Incomplete outcomes are retained and keep the verdict INCONCLUSIVE.
+    when the registered metric says so, in the paired and the absolute check alike. Beating the baseline is not
+    enough: the treatment's own net return must be confidently positive (IDEA-034), and the report flags a
+    baseline that loses money. Incomplete outcomes are retained and keep the verdict INCONCLUSIVE.
     An aligned cluster count is reported, but independence is a property of the registered design, not the count.
     """
     try:
@@ -158,7 +165,7 @@ def evaluate(registration: Document, outcomes):
                                    "promotion_authorized": False})
     baseline, treatment = d["variants"]
     after_service = d["metric"] == "PAIRED_NET_WALLET_RETURN_AFTER_SERVICE_COSTS"
-    paired, absolute, incomplete = [], [], 0
+    paired, absolute, baseline_absolute, serviced, incomplete = [], [], [], [], 0
     for _, group in sorted(groups.items()):  # canonical order: the bootstrap must not depend on input order
         if set(group) != {baseline, treatment}:
             continue
@@ -172,9 +179,12 @@ def evaluate(registration: Document, outcomes):
         net = lambda o: o["wallet_net_units"] - (o["service_units"] if after_service else 0)
         paired.append(Fraction(net(b) - net(a), E))
         absolute.append(Fraction(net(b), E))
+        baseline_absolute.append(Fraction(net(a), E))
+        serviced.append(Fraction(b["wallet_net_units"] - b["service_units"], E))
     margin = d["margin_fraction"]
     result = {"schema": "EconomicReport.v2", "status": "INCONCLUSIVE", "metric": d["metric"],
-              "margin": ratio(margin), "paired_clusters": len(paired), "registered_clusters": len(windows),
+              "margin": ratio(margin), "absolute_return_rule": ABSOLUTE_RETURN_RULE,
+              "paired_clusters": len(paired), "registered_clusters": len(windows),
               "unpaired_clusters": len(groups) - len(paired), "incomplete_outcomes": incomplete,
               "summary": summary, "service_costs_reported_separately": not after_service,
               "independence": {"basis": d["independence_basis"], "note": "cluster count alone is not independence"},
@@ -183,30 +193,41 @@ def evaluate(registration: Document, outcomes):
     if len(paired) < d["minimum_clusters"] or len(paired) != len(windows):
         result["reason"] = "INSUFFICIENT_ALIGNED_REGISTERED_WINDOWS"
         return Document.from_dict(result)
+    # One set of resampled clusters serves the paired and the absolute intervals (drawn in the same order as before,
+    # so paired intervals are unchanged by IDEA-034).
     rng = random.Random(d["seed"])
-    draws = sorted(sum((paired[rng.randrange(len(paired))] for _ in paired), Fraction(0)) / len(paired)
-                   for _ in range(d["bootstrap_draws"]))
+    samples = [[rng.randrange(len(paired)) for _ in paired] for _ in range(d["bootstrap_draws"])]
     tail = Fraction(10000 - d["confidence_bps"], 20000)
-    low = draws[int(tail * len(draws))]
-    high = draws[min(len(draws) - 1, int((1 - tail) * len(draws)))]
-    treatment_mean = sum(absolute, Fraction(0)) / len(absolute)
-    result.update(paired_mean=ratio(sum(paired, Fraction(0)) / len(paired)), confidence_interval=[ratio(low), ratio(high)],
+    mean = lambda values: sum(values, Fraction(0)) / len(values)
+
+    def interval(values):
+        draws = sorted(mean([values[i] for i in sample]) for sample in samples)
+        return draws[int(tail * len(draws))], draws[min(len(draws) - 1, int((1 - tail) * len(draws)))]
+
+    low, high = interval(paired)
+    absolute_low, absolute_high = interval(absolute)
+    treatment_mean = mean(absolute)
+    warnings = [] if treatment_mean > 0 else ["TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"]
+    if treatment_mean > 0 and not after_service and mean(serviced) <= 0:
+        warnings.append("TREATMENT_NET_NOT_POSITIVE_AFTER_SERVICE_COSTS")
+    if mean(baseline_absolute) <= 0:
+        warnings.append("BASELINE_ABSOLUTE_NET_NOT_POSITIVE")
+    result.update(paired_mean=ratio(mean(paired)), confidence_interval=[ratio(low), ratio(high)],
                   treatment_absolute_mean=ratio(treatment_mean),
-                  warnings=[] if treatment_mean > 0 else ["TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"])
+                  treatment_absolute_interval=[ratio(absolute_low), ratio(absolute_high)],
+                  baseline_absolute_mean=ratio(mean(baseline_absolute)), warnings=warnings)
     kill_bound = Fraction(0) if d["kill_rule"] == "UPPER_BOUND_BELOW_ZERO" else margin
-    strict = d["support_rule"] == "LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE"
     if incomplete:
         result["reason"] = "INCOMPLETE_OUTCOMES_RETAINED"
-    elif low > margin and strict and treatment_mean <= 0:
-        # The support rule fails; only the registered kill rule can make it NOT_SUPPORTED.
-        if high < kill_bound:
-            result["status"] = "NOT_SUPPORTED"
-        else:
-            result["reason"] = "TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"
-    elif low > margin:
+    elif absolute_high <= 0:
+        # Confidently does not make money: not worth adopting whatever the paired difference (IDEA-034).
+        result.update(status="NOT_SUPPORTED", reason="TREATMENT_ABSOLUTE_NET_NOT_POSITIVE")
+    elif low > margin and absolute_low > 0:
         result["status"] = "SUPPORTED"
     elif high < kill_bound:
         result["status"] = "NOT_SUPPORTED"
+    elif low > margin:
+        result["reason"] = "TREATMENT_ABSOLUTE_LOWER_BOUND_NOT_POSITIVE"
     else:
         result["reason"] = "INTERVAL_SPANS_REGISTERED_RULES"
     return Document.from_dict(result)
