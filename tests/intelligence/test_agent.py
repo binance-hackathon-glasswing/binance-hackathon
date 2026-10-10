@@ -416,7 +416,9 @@ class StatementTests(AgentHarness):
             "claims": [{"kind": "EVENT", "metric": "STATEMENT:DELISTING", "span": cite(st, sentence),
                         "statement": {"assertion": "OCCURRED"}}]}}])
         result, _ = self.assess(["HYPOTHETICAL_BOILERPLATE"], model=model)
-        self.assert_abstains(result, "EVENT_SEMANTICS_MISMATCH")
+        self.assertEqual((result["status"], result["reasons"]), ("ABSTAIN", ["UNSUPPORTED_CLAIM"]))
+        self.assertEqual([r["reason"] for r in result["rejected_claims"]], ["EVENT_SEMANTICS_MISMATCH"])
+        self.assertEqual((result["claims"], result["proposed_thesis"], result["findings"]), ([], None, []))
         self.assertTrue(result["retained_facts"])  # supported harness facts kept for audit, status unchanged
         self.assertFalse(result["coverage"]["complete"] and result["status"] == "ASSESSED")
 

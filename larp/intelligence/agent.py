@@ -401,11 +401,11 @@ class EvidenceAssessor:
             state.missing.append(f"EVIDENCE_HARNESS_FACT_UNVERIFIED:{metric}")
         statements = [self._statement_record(state, f, novelty) for f in current if is_statement(f["metric"])]
         coverage = dict(state.coverage, documents_truncated=sorted(state.coverage["documents_truncated"]))
-        coverage["complete"] = not (coverage["documents_truncated"] or coverage["facts_truncated"]
-                                    or coverage["statements_truncated"] or coverage["prior_records_truncated"]
-                                    or coverage["statement_comparisons_truncated"] or coverage["model_input_truncated"]
-                                    or state.unread_exhibits())
-        if not coverage["complete"]:
+        coverage["truncated"] = bool(coverage["documents_truncated"] or coverage["facts_truncated"]
+                                     or coverage["statements_truncated"] or coverage["prior_records_truncated"]
+                                     or coverage["statement_comparisons_truncated"] or coverage["model_input_truncated"])
+        coverage["complete"] = not (coverage["truncated"] or state.unread_exhibits())
+        if coverage["truncated"]:
             state.missing.append("COVERAGE_TRUNCATED")
         findings = self._findings(state, current)
         thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread))
