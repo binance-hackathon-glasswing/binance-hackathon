@@ -71,3 +71,16 @@ Checked 2026-10-10. The grade says what was read.
 - L-64 FEI / Duff & Phelps goodwill impairment study (reported by FM Magazine, 2012-10-09) — 1,259 US impairment events 2005–2009; the companies trailed the S&P 500 by 4.9% in the 7–12 months before the impairment versus 1.2% in the 6 months after: the market prices impairments before they are recorded. Other studies find announcement reactions, so the evidence is mixed. [SECONDARY: practitioner study via trade press, not peer reviewed]
 - L-65 Baginski, Hassell & Kimbrough (J. Accounting Research, 2004) — management forecasts move prices at once; explained bad-news forecasts move them more. [UNCONFIRMED: search-result summary only]
 - So what: statements about possible events carry information before the event (L-61, L-62, L-64), but mostly when they are **new**; repeated boilerplate carries little (L-60, L-61, L-63). Timing differs by source: changed filing text pays off over months (L-60), forecasts at once (L-65). All samples are broad US equities; nothing here measures our five names or a 5-session horizon (H-04).
+
+### 12.9 Independent uncertain-event review (2026-10-10, IDEA-030)
+
+This qualifies L-60–65/§12.8 added on the evidence owner branch at `544df90`; those historical entries are not yet in this main-branch version. [IDEA-030 R09](../../ledger/IDEA-030.md) retains the primary links, reading depth and ten source IDs L030-01–10.
+
+- L-60 supports studying filing changes, but slow long-short returns do not validate a five-session lexical novelty flag or long-only exit policy.
+- L-61 supports risk-perception/volatility associations. The prior blanket boilerplate discount is too broad, including the author abstract's firm-versus-industry comparison.
+- L-62 concerns informativeness, not an executable trading rule. L-63's primary abstract and manuscript introduction/conclusion support rising boilerplate/stickiness, not that most of this implementation's hypothetical statements are boilerplate.
+- L-64 remains secondary. Pre-impairment underperformance does not show that a hypothetical disclosure caused or forecast the return.
+- L-65 is upgraded to publisher abstract checked; forecast explanation/price-response associations do not establish universal immediate reactions or returns available after assessment.
+- L030-06 separates initial headline reaction from subsequent returns; size, short exposure and costs limit transfer. L030-07 motivates staleness controls; L030-08 examines specialised takeover rumors; L030-09 cautions against assuming large-cap earnings drift; L030-10 motivates leakage diagnostics.
+
+Retain attributed uncertain information, but test semantic correctness, novelty, usable latency and complete after-cost portfolio value separately. Neither volatility prediction nor sentiment establishes a return advantage. H-04 remains NOT RUN; its endpoint, horizon, comparison design and inconclusive fallback require preregistration. The main-branch publication carries the review corrections without merging the owner implementations.
