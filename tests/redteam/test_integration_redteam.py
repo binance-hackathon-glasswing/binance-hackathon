@@ -256,6 +256,55 @@ class ContextAcceptanceProbes(unittest.TestCase):
 
 # ============================================================================ evidence gate (IssuerEvidenceState.v2)
 class GateProbes(unittest.TestCase):
+    def test_pr7_complete_reread_recovers_after_incomplete_revision(self):
+        st = adverse_state()
+        used = [{"record_id": "r1", "accession": "A", "revision": 1, "content_hash": "h1", "quality": "OK"}]
+        _, partial = accept(st, gate_result("partial", st, 2000, used=used, complete=False),
+                            profile_hash=P, now_ms=2000)
+        self.assertEqual(partial["records_seen"]["A"]["revision"], 1)
+        self.assertEqual(partial["evidence_gate"], "ADVERSE")
+        _, recovered = accept(partial, gate_result("complete", partial, 3000, used=used),
+                              profile_hash=P, now_ms=3000)
+        self.assertEqual(recovered["unresolved_adverse"], [])
+        self.assertEqual(recovered["evidence_gate"], "CLEAR")
+
+    def test_pr7_multi_source_corrections_accumulate_without_mutating_state(self):
+        for order in (("A", "B"), ("B", "A")):
+            with self.subTest(order=order):
+                st = initial_state("ISS", P)
+                used = [{"record_id": a + "0", "accession": a, "revision": 0,
+                         "content_hash": a + "h0", "quality": "OK"} for a in order]
+                finding = {"finding_id": "both", "type": "IMPAIRMENT", "impact": "ADVERSE",
+                           "sources": [{"accession": u["accession"], "record_id": u["record_id"]} for u in used]}
+                _, st = accept(st, gate_result("both", st, 1000, used=used, findings=[finding]),
+                               profile_hash=P, now_ms=1000)
+                for n, a in enumerate(order, 2):
+                    corrected = [{"record_id": a + "1", "accession": a, "revision": 1,
+                                  "content_hash": a + "h1", "quality": "OK"}]
+                    before = Document.from_dict(st).read()
+                    _, after = accept(st, gate_result(a, st, n * 1000, used=corrected),
+                                      profile_hash=P, now_ms=n * 1000)
+                    self.assertEqual(st, before)
+                    st = after
+                    self.assertEqual(st["evidence_gate"], "ADVERSE" if n == 2 else "CLEAR")
+                self.assertEqual(len(st["resolved_adverse"]), 1)
+
+    def test_pr7_same_version_clean_reread_does_not_clear(self):
+        st = adverse_state()
+        used = [{"record_id": "r0", "accession": "A", "revision": 0, "content_hash": "h0", "quality": "OK"}]
+        _, after = accept(st, gate_result("reread", st, 2000, used=used), profile_hash=P, now_ms=2000)
+        self.assertEqual(after["evidence_gate"], "ADVERSE")
+
+    def test_pr7_still_fired_falsifier_survives_revision(self):
+        st = initial_state("ISS", P)
+        fired = [{"falsifier_id": "F", "state": "FIRED"}]
+        for revision in (0, 1):
+            used = [{"record_id": f"r{revision}", "accession": "A", "revision": revision,
+                     "content_hash": f"h{revision}", "quality": "OK"}]
+            _, st = accept(st, gate_result(f"fired{revision}", st, 1000 * (revision + 1), used=used,
+                                           falsifiers=fired), profile_hash=P, now_ms=1000 * (revision + 1))
+        self.assertEqual(st["resolved_adverse"], [])
+
     def test_g01_latch_resolved_by_an_incomplete_assessment_of_the_revision(self):
         """P1. An ADVERSE latch (IMPAIRMENT from accession A rev 0) is resolved as CORRECTED by an ASSESSED result
         of A rev 1 whose coverage is incomplete (COVERAGE_TRUNCATED): the finding may simply not have been read.

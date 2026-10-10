@@ -82,6 +82,52 @@ class Harness(unittest.TestCase):
 
 
 class RegisterTests(Harness):
+    def test_pr7_item_limits_are_visible_for_every_listing_format(self):
+        fixtures = {
+            "ec-press": rss([("Release", f"https://ec.europa.eu/commission/presscorner/detail/en/ip_{i}",
+                              "Fri, 09 Oct 2026 10:59:00 -0400", "<p>Routine release.</p>") for i in (1, 2)]),
+            "fr-bis": fr([{"document_number": str(i), "title": "Routine rule", "publication_date": "2026-10-09"}
+                          for i in (1, 2)]),
+            "fr-public-inspection": fr([{"document_number": str(i), "title": "Routine notice"} for i in (1, 2)]),
+            "doj-press": doj([(str(i), "Routine release", "<p>Routine release.</p>", 1791500000, 1791500000)
+                              for i in (1, 2)]),
+        }
+        for source_id, body in fixtures.items():
+            with self.subTest(source=source_id):
+                source = self.register[source_id]
+                limited = replace(source, limits=dict(source.limits, max_items_per_page=1))
+                net = FakeNet({source.listing_url: [(200, {"ETag": "page-v1"}, body)]})
+                reg = {source_id: limited}
+                ingestor = self.ingestor(net, register=reg)
+                for _ in range(2):
+                    out = ingestor.poll(source_id)
+                    self.assertTrue(out["truncated"])
+                    view = coverage(reg, self.store, {"consumer": [source_id]}, T0, 3_600_000)
+                    self.assertEqual(view["sources"][source_id]["status"], "INCOMPLETE")
+                    self.assertFalse(view["consumers"]["consumer"]["complete"])
+                self.assertNotIn("If-None-Match", net.requests[-1][1])
+                unlimited = replace(limited, limits=dict(limited.limits, max_items_per_page=2))
+                reg = {source_id: unlimited}
+                self.assertFalse(self.ingestor(net, register=reg).poll(source_id)["truncated"])
+                self.assertTrue(coverage(reg, self.store, {"consumer": [source_id]}, T0, 3_600_000)
+                                ["consumers"]["consumer"]["complete"])
+
+    def test_pr7_item_truncation_survives_a_paginated_tail_and_restart(self):
+        source_id = "fr-bis"
+        source = self.register[source_id]
+        source = replace(source, limits=dict(source.limits, max_items_per_page=1, max_pages=1))
+        tail = source.listing_url + "&page=2"
+        body = fr([{"document_number": str(i), "title": "Routine rule"} for i in (1, 2)], tail)
+        net = FakeNet({source.listing_url: [(200, {"ETag": "v1"}, body)], tail: [(200, {}, fr([]))]})
+        reg = {source_id: source}
+        self.assertTrue(self.ingestor(net, register=reg).poll(source_id)["truncated"])
+        restarted = SQLiteSourceStore(self.db_path)
+        self.addCleanup(restarted.close)
+        out = self.ingestor(net, register=reg, store=restarted).poll(source_id)
+        self.assertTrue(out["truncated"])
+        self.assertFalse(coverage(reg, restarted, {"consumer": [source_id]}, T0, 3_600_000)
+                         ["consumers"]["consumer"]["complete"])
+
     def test_d01_register_enables_only_the_cleared_basket(self):
         enabled = {k for k, s in self.register.items() if s.enabled}
         self.assertEqual(enabled, {"sec-press", "fr-bis", "fr-public-inspection", "doj-press", "ec-press"})
