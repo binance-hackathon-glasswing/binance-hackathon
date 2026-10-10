@@ -1,5 +1,6 @@
 # Full pinned dependency set, generated from requirements.in by pip freeze.
-# Python 3.12, macOS arm64, 2026-10-03. Re-generate and re-check on the Linux deploy image before it runs.
+# Original Python 3.12 macOS arm64 pins retained. Fresh Linux x86_64 install checked
+# 2026-10-10; Linux-only resolver additions below are pinned from that installation.
 # 2026-10-05: binance-web3-wallet, web3 and the 12 packages only they pulled in were removed (set computed with
 # `uv pip compile --python-version 3.12 --python-platform aarch64-apple-darwin` against this lock; all other pins
 # unchanged); the vendored ai-seeds wheel was added at the end. Install from the repo root (relative path).
@@ -7,6 +8,10 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 bitarray==3.11.0
+boto3==1.43.111
+botocore==1.43.111
+jmespath==1.1.0
+s3transfer==0.19.2
 certifi==2026.7.22
 charset-normalizer==3.5.2
 ckzg==2.1.8
@@ -79,7 +84,29 @@ transformers==5.18.0
 typer==0.27.2
 typing-inspection==0.4.4
 typing_extensions==4.16.0
+tzdata==2026.4
 urllib3==2.8.0
 uvicorn==0.54.0
 wheel==0.47.0
+colorama==0.4.6; sys_platform == 'win32'
+# Linux x86_64 model dependencies; runtime-only image uses deploy/requirements-runtime.lock.
+cuda-bindings==13.4.3; sys_platform == 'linux' and platform_machine == 'x86_64'
+cuda-pathfinder==1.8.3; sys_platform == 'linux' and platform_machine == 'x86_64'
+cuda-toolkit==13.0.3.0; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cublas==13.1.1.3; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cuda-cupti==13.0.85; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cuda-nvrtc==13.0.88; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cuda-runtime==13.0.96; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cudnn-cu13==9.24.0.43; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cufft==12.0.0.61; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cufile==1.15.1.6; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-curand==10.4.0.35; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cusolver==12.0.4.66; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cusparse==12.6.3.3; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-cusparselt-cu13==0.8.1; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-nccl-cu13==2.30.7; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-nvjitlink==13.4.92; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-nvshmem-cu13==3.4.5; sys_platform == 'linux' and platform_machine == 'x86_64'
+nvidia-nvtx==13.0.85; sys_platform == 'linux' and platform_machine == 'x86_64'
+triton==3.8.0; sys_platform == 'linux' and platform_machine == 'x86_64'
 ./vendor/ai-seeds-sdk-0.3.0/ai_seeds_sdk-0.3.0-py3-none-any.whl

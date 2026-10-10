@@ -1,0 +1,38 @@
+[Unit]
+Description=LARP durable backup and hourly anchor delivery
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+ConditionPathExists=/etc/larp/operations.json
+
+[Service]
+Type=oneshot
+User=larp-archive
+Group=larp-archive
+WorkingDirectory=/opt/larp/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --config /etc/larp/operations.json
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.operations once --config /etc/larp/operations.json
+TimeoutStartSec=240
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=512M
+TasksMax=32
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
