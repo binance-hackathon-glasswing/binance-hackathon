@@ -159,7 +159,10 @@ class AuthorityTests(unittest.TestCase):
                               held={"NVDAB": held})
         ctx = context_for(s, self.state)
         c = s.context.read()
-        s = changed(s, assessments=[ctx],
+        # Isolate NVDAB: the planner emits one intent per round, and the synthetic fixture would otherwise enter
+        # other names first. Removing their basis validation removes those entries (nothing is fabricated).
+        markets = [m if m["symbol"] == "NVDAB" else dict(m, basis_verified=False) for m in c["markets"]]
+        s = changed(s, assessments=[ctx], markets=markets,
                     reduction_constraints=mandatory_reductions([ctx], c["profile"], {"NVDAB": held}), **context)
         return s
 
@@ -416,7 +419,8 @@ class Pipeline(unittest.TestCase):
         stale_state = initial_state(EXSEMI, self.h, lifecycle_policy=lifecycle_policy_from(self.w.config))
         self.w.clock.advance(1000)
         self.round(restarted, "r2", "OCCURRED_8K", state=stale_state)
-        record = self.store.journal(RUN)[-1].read()["event"]["record"]
+        record = [d.read()["event"]["record"] for d in self.store.journal(RUN)
+                  if d.read()["event"]["kind"] == "ROUND_PLANNED" and d.read()["event"]["record"]["round_id"] == "r2"][0]
         self.assertEqual(record["evidence_decisions"][0]["decision"], "REJECT_STALE_CONTEXT")
         # Correction: the filing is revised without the impairment; the latch resolves by its rule.
         spec = OCCURRED_8K
