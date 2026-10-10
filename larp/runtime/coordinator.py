@@ -37,14 +37,20 @@ class Coordinator:
             datetime.fromtimestamp(now_ms/1000,timezone.utc),('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'),
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
 
-    def start(self,round_id,request,now_ms):
+    def start(self,round_id,request,now_ms,*,defer_close=False):
         current=self.store.load(self.run_id)
         self.store.open_round(self.run_id,round_id,request,current.read()['epoch'])
         closed=self.store.receipt(self.run_id,'close:'+round_id)
         if closed:
             return closed
+        rejected=self.store.receipt(self.run_id,'rejected:'+round_id)
+        if rejected:
+            return rejected if defer_close else self.close(round_id,now_ms,'REJECTED')
         previous=self.store.receipt(self.run_id,'plan:'+round_id)
         if previous:
+            record=current.read()['projection']['round_records'][round_id]
+            if not defer_close and not record.get('execution_pending',True):
+                return self.close(round_id,now_ms,'COMPLETE')
             return previous
         assessment=None; proposal=None; errors=[]
         try:
@@ -96,6 +102,7 @@ class Coordinator:
             record['errors'].append('AUDIT_CONTENT_UNSUPPORTED')
             record['audit_fallback']=True
             commands=[]; reservation_deltas=[]
+        record['execution_pending']=bool(commands)
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
         try:
             receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
@@ -103,16 +110,21 @@ class Coordinator:
                 reservation_deltas=reservation_deltas,jobs=plan['jobs'],commands=commands))
         except Conflict:
             # Rejection is itself a durable outcome, never a silent lost round.
-            current=self.store.load(self.run_id)
             record['errors'].append('COMMIT_REJECTED')
-            projection=current.read()['projection']
-            projection.setdefault('round_records',{})[round_id]=record
-            self.store.commit(batch_for(current,'rejected:'+round_id,dict(kind='PLAN_REJECTED',record=record),
-                                         projection=projection))
-            return self.close(round_id,now_ms,'REJECTED')
-        if not commands:
+            receipt=self.record_rejection(round_id,record)
+            return receipt if defer_close else self.close(round_id,now_ms,'REJECTED')
+        if not commands and not defer_close:
             return self.close(round_id,now_ms,'COMPLETE')
         return receipt
+
+    def record_rejection(self,round_id,record):
+        """Persist an observed rejection; replay must not retry its rejected plan."""
+        current=self.store.load(self.run_id)
+        record=dict(record,execution_pending=False)
+        projection=current.read()['projection']
+        projection.setdefault('round_records',{})[round_id]=record
+        return self.store.commit(batch_for(current,'rejected:'+round_id,
+            dict(kind='PLAN_REJECTED',record=record),projection=projection))
 
     def observe(self,event_id,observation,reducer):
         expected=dict(kind='OBSERVATION',observation=observation.read())
@@ -128,6 +140,16 @@ class Coordinator:
             raise ContractError('Invalid execution transition')
         # reducer returns the owner's explicit atomic transition document.
         change=reducer(current,observation).read()
+        # Only the execution owner can attest that ALL commands for a round are
+        # terminal. Missing attestations keep its immutable audit record unsealed.
+        terminal=transition.get('terminal_rounds',[])
+        if type(terminal) is not list or any(type(r) is not str for r in terminal):
+            raise ContractError('Invalid terminal round attestation')
+        for round_id in terminal:
+            record=change['projection'].get('round_records',{}).get(round_id)
+            if record is None:
+                raise ContractError('Terminal execution has no open round record')
+            record['execution_pending']=False
         return self.store.commit(batch_for(current,event_id,expected,
             projection=change['projection'],execution_state=transition['next_state'],
             reservation_deltas=change.get('reservation_deltas',[]),commands=transition.get('commands',[])))
@@ -158,17 +180,29 @@ class Coordinator:
             return previous
         current=self.store.load(self.run_id)
         record=current.read()['projection'].get('round_records',{}).get(round_id)
+        close_event=dict(kind='ROUND_CLOSED',status=status,round_id=round_id)
         if record is None:
             request=dict(self.store.open_rounds(self.run_id))[round_id].read()
+            close_event['request']=request
             record=dict(request=request,assessment=None,proposal_id=None,plan={},errors=['PROCESS_INTERRUPTED'],
                         started_ms=now_ms,orders=[],swap_mappings=[])
+        elif record.get('execution_pending',bool(record['plan'].get('intents'))):
+            raise Conflict('Round awaits terminal execution reconciliation')
         audit=self.audit_record(record,round_id,now_ms,status)
         projection=current.read()['projection']
-        projection.setdefault('closed_rounds',[]).append(round_id)
-        return self.store.commit(batch_for(current,'close:'+round_id,dict(kind='ROUND_CLOSED',status=status),
+        projection.get('round_records',{}).pop(round_id,None)
+        projection.pop('closed_rounds',None)
+        return self.store.commit(batch_for(current,'close:'+round_id,close_event,
                                            projection=projection,audit=[audit]))
 
     def recover(self,now_ms):
         # No attempts are released or re-signed here. Isaac reconciles commands.
-        return [self.close(round_id,now_ms,'INTERRUPTED_UNRESOLVED')
-                for round_id,_ in self.store.open_rounds(self.run_id)]
+        receipts=[]
+        for round_id,_ in self.store.open_rounds(self.run_id):
+            record=self.store.load(self.run_id).read()['projection'].get('round_records',{}).get(round_id)
+            if record and record.get('execution_pending',bool(record['plan'].get('intents'))):
+                continue
+            status=('REJECTED' if self.store.receipt(self.run_id,'rejected:'+round_id) else
+                    'COMPLETE' if record else 'INTERRUPTED_UNRESOLVED')
+            receipts.append(self.close(round_id,now_ms,status))
+        return receipts

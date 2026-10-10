@@ -20,6 +20,8 @@ GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chun
 GRANT UPDATE (clock_ms) ON runs TO larp_archive, larp_uploader;
 GRANT SELECT,INSERT,UPDATE ON archive_clock,archive_outbox TO larp_archive;
 GRANT SELECT ON runs,audit_events,audit_chunks TO larp_uploader;
-GRANT UPDATE ON audit_chunks TO larp_uploader;
+-- Re-running this script must also remove the earlier broad table privilege.
+REVOKE UPDATE ON audit_chunks FROM larp_uploader;
+GRANT UPDATE (status,attempts,next_ms,last_code,acknowledgement) ON audit_chunks TO larp_uploader;
 -- No DELETE/DDL, trading command creation or wallet state mutation grants.
 -- Primary/standby/signer roles require owner-specific grants during integration.

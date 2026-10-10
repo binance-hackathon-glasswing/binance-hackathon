@@ -85,10 +85,10 @@ class PostgresStore:
                         doc({}).payload,doc({}).payload,mode))
 
     @staticmethod
-    def _run(db, run_id):
+    def _run(db, run_id, *, lock=True):
         row = db.execute('SELECT wallet_id,chain_id,version,epoch,quarantined,head,'
                          'projection,policy_state,execution_state,clock_ms,mode,initial FROM runs '
-                         'WHERE run_id=%s FOR UPDATE', (run_id,)).fetchone()
+                         'WHERE run_id=%s' + (' FOR UPDATE' if lock else ''), (run_id,)).fetchone()
         if row is None:
             raise Conflict('Unknown run')
         return dict(zip(('wallet_id','chain_id','version','epoch','quarantined','head',
@@ -151,6 +151,7 @@ class PostgresStore:
         if b.get('schema') != 'CommitBatch.v1':
             raise ContractError('Expected CommitBatch.v1')
         raw_hash = digest(batch.payload)
+        verified = self.verified_snapshot(b['run_id'])
         with self.transaction() as db:
             run = self._run(db,b['run_id'])
             old = db.execute('SELECT batch_hash,receipt FROM events WHERE run_id=%s AND event_id=%s',
@@ -160,7 +161,7 @@ class PostgresStore:
                     raise IntegrityError('Event ID reused with different bytes')
                 return Document(bytes(old[1]))
             self._owned(run,b['owner_epoch'])
-            self._verify(db,b['run_id'],run)
+            self._same_snapshot(verified,run)
             if (b['wallet_id'],b['chain_id'],b['expected_version']) != (
                     run['wallet_id'],run['chain_id'],run['version']):
                 raise Conflict('Stale version or wrong wallet/chain')
@@ -271,10 +272,11 @@ class PostgresStore:
             return Document(bytes(row[0])).read()['event'] if row else None
 
     def command(self,run_id,command_id,epoch,now_ms):
+        verified=self.verified_snapshot(run_id)
         with self.transaction() as db:
             run = self._run(db,run_id)
             self._owned(run,epoch)
-            self._verify(db,run_id,run)
+            self._same_snapshot(verified,run)
             row = db.execute('SELECT payload,epoch,state_version,status FROM commands WHERE run_id=%s AND command_id=%s',
                              (run_id,command_id)).fetchone()
             if not row or row[1] != epoch or row[2] != run['version'] or row[3] != 'PENDING':
@@ -340,13 +342,29 @@ class PostgresStore:
             raise IntegrityError('Audit chunk bytes differ from journal')
         return head
 
-    def verify(self,run_id, *, minimum_version=0, anchored_head=None):
+    def verified_snapshot(self,run_id):
+        """Verify one coherent MVCC snapshot without locking the wallet row.
+
+        Writers compare this authority under their short row lock. Any concurrent
+        state change requires a fresh verification rather than trusting stale data.
+        No cached checkpoint skips journal or outbox corruption checks.
+        """
         with self.transaction() as db:
-            run = self._run(db,run_id)
-            head = self._verify(db,run_id,run)
-            if run['version'] < minimum_version or (anchored_head is not None and head != anchored_head):
-                raise IntegrityError('Restore behind external authority/anchor')
-            return head
+            db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
+            run=self._run(db,run_id,lock=False)
+            self._verify(db,run_id,run)
+            return run
+
+    @staticmethod
+    def _same_snapshot(verified,run):
+        if any(verified[key]!=run[key] for key in verified if key!='clock_ms'):
+            raise Conflict('Authority changed during integrity verification; retry from fresh state')
+
+    def verify(self,run_id, *, minimum_version=0, anchored_head=None):
+        run=self.verified_snapshot(run_id)
+        if run['version'] < minimum_version or (anchored_head is not None and run['head'] != anchored_head):
+            raise IntegrityError('Restore behind external authority/anchor')
+        return run['head']
 
     def journal(self,run_id):
         self.verify(run_id)

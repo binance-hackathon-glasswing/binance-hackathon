@@ -1,7 +1,8 @@
 """Independent bounded lanes; expired policy work never becomes a late trade."""
 
 from datetime import datetime,timezone
-from zoneinfo import ZoneInfo,reset_tzpath
+from importlib.resources import files
+from zoneinfo import ZoneInfo
 
 from larp.contracts import ContractError,Document
 from larp.storage.postgres import Conflict,doc,integer
@@ -28,11 +29,15 @@ def utc_ms(local,zone,*,fold=0):
     """Resolve explicit fold; reject nonexistent civil times via round trip."""
     if local.tzinfo is not None:
         raise ContractError('Expected naive local calendar input')
-    # Force the version-pinned tzdata wheel rather than host OS calendar files.
-    reset_tzpath(())
-    aware=local.replace(tzinfo=ZoneInfo.no_cache(zone),fold=fold)
+    # Load the pinned wheel directly, without mutating process-global TZPATH or
+    # consulting a cache that may contain host-system timezone rules.
+    if not zone or any(part in ('','.','..') for part in zone.split('/')):
+        raise ContractError('Invalid timezone name')
+    with files('tzdata.zoneinfo').joinpath(*zone.split('/')).open('rb') as stream:
+        tz=ZoneInfo.from_file(stream,key=zone)
+    aware=local.replace(tzinfo=tz,fold=fold)
     utc=aware.astimezone(timezone.utc)
-    if utc.astimezone(ZoneInfo(zone)).replace(tzinfo=None)!=local:
+    if utc.astimezone(tz).replace(tzinfo=None)!=local:
         raise ContractError('Nonexistent local calendar time')
     return int(utc.timestamp()*1000)
 
@@ -76,6 +81,6 @@ class Scheduler:
                 integer(retry_at_ms)
             result=db.execute('UPDATE jobs SET status=%s,next_ms=%s WHERE run_id=%s AND job_id=%s '
                 "AND status='RUNNING' AND attempts=%s AND claimed_epoch=%s",
-                (status,retry_at_ms or job['due_ms'],run_id,job['job_id'],c['attempt'],c['epoch']))
+                (status,retry_at_ms if retry_at_ms is not None else job['due_ms'],run_id,job['job_id'],c['attempt'],c['epoch']))
             if result.rowcount!=1:
                 raise Conflict('Stale job completion')

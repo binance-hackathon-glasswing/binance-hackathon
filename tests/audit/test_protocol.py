@@ -15,6 +15,13 @@ def event(identity='evt',round_id='round',text='hold',orders=None,mappings=()):
 
 
 class Protocol(unittest.TestCase):
+    def test_nullable_hash_and_invalid_hash_types(self):
+        order=dict(symbol='NVDAB',side='BUY',amount='1',tx_hash=None)
+        verify_event(event(orders=[order]))
+        for value in (1,[],{},True,'bad'):
+            with self.subTest(value=value), self.assertRaises(ContractError):
+                event(orders=[dict(order,tx_hash=value)])
+
     def test_official_vectors(self):
         secret='5f3a0123456789abcdef0123456789abcdef0123456789abcdef9b2c7e1d4a6f'
         wallet='0xb843d56afc902e37a6433eed534feadc91be71b8'

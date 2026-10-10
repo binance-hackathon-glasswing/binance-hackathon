@@ -103,13 +103,21 @@ def main(argv=None):
                              max_attempts=c['max_attempts'], retry_ms=c['retry_seconds'] * 1000,
                              max_payload_bytes=c['max_archive_bytes'])
         now = int(time.time() * 1000)
+        preparation_error=None
         if args.command == 'once':
-            worker.prepare(c['run_id'], now)
+            try:
+                worker.prepare(c['run_id'], now)
+            except Exception as exc:
+                preparation_error=type(exc).__name__
             # Per invocation bound; timer supplies subsequent delivery capacity.
             for _ in range(4):
                 if not worker.once(c['run_id'], int(time.time() * 1000)):
                     break
         health = worker.health(c['run_id'], int(time.time() * 1000)).read()
+        if preparation_error:
+            health['healthy']=False
+            health['reasons']=sorted(set(health['reasons']+['ARCHIVE_PREPARATION_FAILED']))
+            health['preparation_error']=preparation_error
         publish_health(clients['cloudwatch'], c['deployment'], health['healthy'])
         print(json.dumps(health, sort_keys=True))
         return 0 if health['healthy'] else 1

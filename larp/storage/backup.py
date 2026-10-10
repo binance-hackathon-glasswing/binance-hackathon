@@ -22,6 +22,8 @@ def export(store):
     with store.transaction() as db:
         # Must precede first query; SET LOCAL statements do not start a snapshot.
         db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
+        for run_id, in db.execute('SELECT run_id FROM runs').fetchall():
+            store._verify(db,run_id,store._run(db,run_id,lock=False))
         for table in TABLES:
             cursor=db.execute(f'SELECT * FROM {table} ORDER BY 1,2')
             columns=[d.name for d in cursor.description]

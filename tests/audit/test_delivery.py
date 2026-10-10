@@ -1,11 +1,25 @@
 from larp.audit.delivery import DeliveryWorker
 from larp.runtime.fixtures import FakeReceiver
-from larp.storage.postgres import IntegrityError
+from larp.storage.postgres import IntegrityError,doc
 from tests.support import DatabaseCase
 from tests.audit.test_protocol import event
 
 
 class Delivery(DatabaseCase):
+    def test_non_object_receiver_bodies_retry_then_ack_without_crashing(self):
+        self.store.commit(self.batch(audit=[event()]))
+        class Receiver(FakeReceiver):
+            body=[]
+            def deliver(self,value): return doc(dict(status_code=200,body=self.body))
+        receiver=Receiver()
+        worker=DeliveryWorker(self.store,receiver,max_attempts=8,retry_ms=1)
+        for tick,body in enumerate(([], 'ok', None, 12)):
+            receiver.body=body
+            self.assertTrue(worker.once('run',self.epoch,tick))
+        DeliveryWorker(self.store,FakeReceiver(),retry_ms=1).once('run',self.epoch,5)
+        with self.store.transaction() as db:
+            self.assertEqual(('ACK',5),db.execute('SELECT status,attempts FROM audit_chunks').fetchone())
+
     def test_lost_ack_restart_has_one_immutable_event(self):
         e=event(text='🙂'*40000)
         self.store.commit(self.batch(audit=[e]))

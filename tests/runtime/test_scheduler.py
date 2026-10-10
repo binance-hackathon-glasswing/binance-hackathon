@@ -6,6 +6,25 @@ from tests.support import DatabaseCase,job
 
 
 class Scheduling(DatabaseCase):
+    def test_zero_retry_timestamp_is_preserved(self):
+        self.store.commit(self.batch(jobs=[job(lane='safety')]))
+        scheduler=Scheduler(self.store)
+        claim=scheduler.claim('run',self.epoch,'safety',100)
+        scheduler.finish('run',claim,retry_at_ms=0)
+        with self.store.transaction() as db:
+            self.assertEqual(0,db.execute('SELECT next_ms FROM jobs').fetchone()[0])
+
+    def test_timezone_conversion_ignores_host_cache_and_preserves_tzpath(self):
+        import zoneinfo
+        from unittest.mock import patch
+        zoneinfo.ZoneInfo('America/New_York')
+        before=zoneinfo.TZPATH
+        with patch('larp.runtime.scheduler.ZoneInfo',wraps=zoneinfo.ZoneInfo) as cls:
+            utc_ms(datetime(2026,11,1,1,30),'America/New_York')
+            cls.from_file.assert_called_once()
+            cls.assert_not_called()
+        self.assertEqual(before,zoneinfo.TZPATH)
+
     def test_duplicate_missed_and_backward_ticks(self):
         self.store.commit(self.batch(jobs=[job(),job()]))
         scheduler=Scheduler(self.store,lease_ms=10)

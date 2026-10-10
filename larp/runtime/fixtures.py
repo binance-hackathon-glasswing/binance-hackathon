@@ -37,7 +37,8 @@ class FakeExecution:
             raise ValueError('Unsupported synthetic observation')
         intents[o['round_id']]=o
         return doc(dict(schema='ExecutionTransition.v1',next_state=dict(schema='ExecutionState.v1',intents=intents),
-                        commands=[],observation_ids=[o['observation_id']]))
+                        commands=[],observation_ids=[o['observation_id']],
+                        terminal_rounds=[o['round_id']] if o['kind'] in ('FINAL_SUCCESS','FINAL_REVERT') else []))
 
 
 def assess(request):

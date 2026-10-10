@@ -37,7 +37,8 @@ def _validate(log):
             raise ContractError('Unsupported audit order')
         if not isinstance(order['amount'],str) or not order['amount'].strip():
             raise ContractError('Amount must be an explicit unit-scaled string')
-        if 'tx_hash' in order and not TX.fullmatch(order['tx_hash']):
+        if order.get('tx_hash') is not None and (
+                type(order['tx_hash']) is not str or not TX.fullmatch(order['tx_hash'])):
             raise ContractError('Malformed swap hash')
 
 
@@ -98,7 +99,7 @@ def verify_event(event):
     if (hashlib.sha256(raw).hexdigest() != e['log_sha256'] or
             chunks(raw,e['address']) != e['chunks'] or log['timestamp'] != e['timestamp_ms']):
         raise ContractError('Audit bytes or chunk boundaries changed')
-    hashes = [o['tx_hash'].lower() for o in log['data']['orders'] if 'tx_hash' in o]
+    hashes = [o['tx_hash'].lower() for o in log['data']['orders'] if o.get('tx_hash') is not None]
     mappings = e['swap_mappings']
     if (len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(m['tx_hash'].lower() for m in mappings)
             or any(m['decision_id'] not in e['decision_ids'] or m.get('step')!='swap' for m in mappings)):

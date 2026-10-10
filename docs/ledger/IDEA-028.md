@@ -260,3 +260,37 @@ execution; Keith for financial semantics; Yao Zhu for evidence/provider integrat
 team for registration, final policy/window/funding evidence and declared rehearsal.
 The supplied systemd unit has not been installed or exercised on a selected cloud
 AMI. Local recovery and mocked cloud checks do not establish production readiness.
+
+### RT14 — PR #3 review amendments and prospective criteria, 2026-10-10
+
+Source: Cookiemunchrr review 5477961701 on `4718eb5`, eleven inline comments
+4236713043–4236713066. All eleven are accepted implementation issues; no live
+authorization or financial-policy change follows. This section and the fixes/tests
+must be committed and pushed before executing affected code. Results: **NOT RUN**
+at this criteria commit; append actual results separately.
+
+| Review topic | Amendment and required regression result |
+|---|---|
+| Rejected/command-less round restart | A durable rejection never reruns assessment/planning; crash after HOLD plan closes COMPLETE, with no new commands. Both replay exactly even when closure occurs later. |
+| In-flight audit sealing | Recovery and direct close cannot seal unresolved execution. The execution owner supplies `terminal_rounds` only after all attempts/mappings/settlement are reconciled. Restart before/after broadcast stays open; final success/revert closes once with the swap hash and ownership mapping. |
+| Projection growth | Closed round records are removed from projection; complete I/O remains in journal/audit events. Eight completed HOLD rounds leave constant-size projection, with original records still retrievable and replayable. |
+| Uploader permissions | Revoke the former broad UPDATE grant on re-provisioning; allow only delivery status/attempt/ACK columns. Real PostgreSQL must reject body/identity/index updates while allowing delivery updates. |
+| Verification lock contention | Verify full coherent MVCC snapshots outside wallet row locks; commits/command reads compare verified authority under a short lock and reject a changed head/state. Slow maintenance verification must allow another primary commit; integrity corruption tests must still fail closed. Skip archive verification when that slot is already prepared. |
+| Preparation failures and quarantine | Delivery of immutable queued archive payloads proceeds even when preparation fails or the run is quarantined. Health remains unhealthy with the preparation failure; no signing authority changes. |
+| Receiver response type | JSON arrays/scalars/null cannot crash ACK handling; attempts persist, a later correct ACK succeeds, retry budgets remain bounded. |
+| Nullable transaction hash | Null means absent; other invalid types raise ContractError; non-null hashes still require unique swap ownership. |
+| Replay rejection/fallback | Replay recorded rejection without retrying the rejected economic plan. Closure has a durable request when no plan exists; oversize fallback replay uses the full local journal record. |
+| Timezone provenance | Load pinned tzdata resources directly with one ZoneInfo instance for both directions, without changing global TZPATH/cache. DST gap/fold tests continue passing with a prepopulated host cache. |
+| Zero retry timestamp | Persist explicit retry_at_ms=0 without replacing it with the original due time. |
+
+Commands after push: Linux Python 3.12 `python -m pytest -q` against disposable
+PostgreSQL, the isolated restart demo, `pip check`, and `git diff --check`; current
+head CI also checks container and unchanged infrastructure plans. No live network
+service, credential, wallet, or production database is involved. Retain all 13
+foundation tests. Add regression tests rather than relax acceptance assertions.
+
+Remaining limits: full integrity scans are still O(journal size), but run without
+the trading row lock; this is not a constant-time verifier or a rehearsal capacity
+claim. The real execution owner must implement terminal-round attestation. Final
+deployment role provisioning must reapply `roles.sql` to revoke the old grant.
+Existing cloud, provider, independent-review and rehearsal gates remain open.

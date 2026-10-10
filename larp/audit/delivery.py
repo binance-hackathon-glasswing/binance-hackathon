@@ -33,7 +33,8 @@ class HttpReceiver:
                 raw=response.read(16385)
                 if len(raw)>16384:
                     return doc(dict(status_code=502,body={}))
-                return doc(dict(status_code=response.status,body=json.loads(raw)))
+                body=json.loads(raw)
+                return doc(dict(status_code=response.status,body=body if type(body) is dict else {}))
         except urllib.error.HTTPError as exc:
             return doc(dict(status_code=exc.code,body={}))
         except (OSError,ValueError):
@@ -73,6 +74,10 @@ class DeliveryWorker:
         except Exception:
             result=dict(status_code=0,body={})
         code,body=result.get('status_code',0),result.get('body',{})
+        if type(body) is not dict:
+            body={}
+        if type(code) is not int:
+            code=0
         ack=code==200 and body.get('status')=='STORED' and body.get('eventId')==event_id and body.get('chunkIndex')==index
         permanent=400<=code<500 and code!=429
         status='ACK' if ack else ('PERMANENT' if permanent else 'PENDING')

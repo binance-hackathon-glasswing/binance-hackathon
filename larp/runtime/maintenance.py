@@ -22,24 +22,33 @@ class Maintenance:
     def prepare(self, run_id, now_ms):
         if type(now_ms) is not int or now_ms < 0:
             raise ContractError('Invalid maintenance time')
+        slot = now_ms // HOUR_MS * HOUR_MS
+        backup_slot = now_ms // self.backup_interval_ms * self.backup_interval_ms
         with self.store.transaction() as db:
-            run = self.store._run(db, run_id)
+            run = self.store._run(db, run_id, lock=False)
             if run['quarantined']:
                 raise Conflict('Quarantined runs cannot resume scheduled archival')
-            self.store._verify(db, run_id, run)
-            row = db.execute('SELECT last_ms FROM archive_clock WHERE run_id=%s', (run_id,)).fetchone()
+            db.execute('INSERT INTO archive_clock VALUES(%s,%s) ON CONFLICT DO NOTHING',(run_id,now_ms))
+            row = db.execute('SELECT last_ms FROM archive_clock WHERE run_id=%s FOR UPDATE', (run_id,)).fetchone()
             if row and now_ms < row[0]:
                 raise Conflict('Maintenance clock moved backwards')
             db.execute('INSERT INTO archive_clock VALUES(%s,%s) ON CONFLICT(run_id) '
                        'DO UPDATE SET last_ms=EXCLUDED.last_ms', (run_id, now_ms))
-            slot = now_ms // HOUR_MS * HOUR_MS
+            needs_anchor = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
+                                          "AND kind='anchor' AND slot_ms=%s", (run_id, slot)).fetchone()
+            needs_backup = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
+                                          "AND kind='backup' AND slot_ms=%s", (run_id, backup_slot)).fetchone()
+        if needs_anchor:
+            # Full verification uses a read-only snapshot, never a wallet lock.
+            # The anchor identifies that snapshot even if new rounds commit later.
+            run = self.store.verified_snapshot(run_id)
+            if run['quarantined']:
+                raise Conflict('Quarantined runs cannot prepare new anchors')
             payload = doc(dict(schema='Anchor.v2', run_id=run_id, slot_ms=slot,
                                captured_ms=now_ms, sequence=run['version'], head=run['head'],
                                owner_epoch=run['epoch']))
-            self._enqueue(db, run_id, 'anchor', slot, payload)
-            backup_slot = now_ms // self.backup_interval_ms * self.backup_interval_ms
-            needs_backup = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
-                                          "AND kind='backup' AND slot_ms=%s", (run_id, backup_slot)).fetchone()
+            with self.store.transaction() as db:
+                self._enqueue(db, run_id, 'anchor', slot, payload)
         if needs_backup:
             # Snapshot in a separate repeatable-read transaction. Competing
             # preparers keep the first persisted payload for this immutable slot.
@@ -47,7 +56,7 @@ class Maintenance:
             if len(payload.payload) > self.max_payload_bytes:
                 raise ContractError('Backup exceeds configured bound; no truncation performed')
             with self.store.transaction() as db:
-                run = self.store._run(db, run_id)
+                run = self.store._run(db, run_id, lock=False)
                 if run['quarantined']:
                     raise Conflict('Run quarantined during backup preparation')
                 self._enqueue(db, run_id, 'backup', backup_slot, payload)
@@ -60,10 +69,11 @@ class Maintenance:
 
     def once(self, run_id, now_ms):
         with self.store.transaction() as db:
-            run = self.store._run(db, run_id)
-            if run['quarantined']:
-                raise Conflict('Quarantined run')
-            clock = db.execute('SELECT last_ms FROM archive_clock WHERE run_id=%s', (run_id,)).fetchone()
+            # Sending already committed evidence cannot grant trading authority;
+            # it must remain possible during quarantine or preparation failure.
+            self.store._run(db, run_id, lock=False)
+            db.execute('INSERT INTO archive_clock VALUES(%s,%s) ON CONFLICT DO NOTHING',(run_id,now_ms))
+            clock = db.execute('SELECT last_ms FROM archive_clock WHERE run_id=%s FOR UPDATE', (run_id,)).fetchone()
             if not clock or now_ms < clock[0]:
                 raise Conflict('Maintenance clock missing or backwards')
             db.execute('UPDATE archive_clock SET last_ms=%s WHERE run_id=%s', (now_ms, run_id))
@@ -107,7 +117,7 @@ class Maintenance:
 
     def health(self, run_id, now_ms):
         with self.store.transaction() as db:
-            run = self.store._run(db, run_id)
+            run = self.store._run(db, run_id, lock=False)
             last_clock = db.execute('SELECT last_ms FROM archive_clock WHERE run_id=%s', (run_id,)).fetchone()
             counts = dict(db.execute('SELECT status,count(*) FROM archive_outbox WHERE run_id=%s GROUP BY status', (run_id,)))
             latest = dict(db.execute("SELECT kind,max(slot_ms) FROM archive_outbox WHERE run_id=%s "

@@ -57,7 +57,41 @@ class MaintenanceTests(DatabaseCase):
         self.assertEqual(size, len(export(self.store).payload))
         self.store.quarantine('run')
         with self.assertRaises(Conflict): worker.prepare('run', 25*HOUR_MS)
-        with self.assertRaises(Conflict): worker.once('run', 25*HOUR_MS)
+        self.assertTrue(worker.once('run', 25*HOUR_MS))
+        self.assertTrue(self.store.load('run').read()['quarantined'])
+
+    def test_oversized_backup_does_not_prevent_queued_anchor_delivery(self):
+        worker=self.worker(max_payload_bytes=1)
+        with self.assertRaises(ContractError): worker.prepare('run',100)
+        self.assertTrue(worker.once('run',100))
+        self.assertEqual(1,len(self.client.objects))
+        self.assertEqual(1,worker.health('run',100).read()['counts']['ACK'])
+
+    def test_slow_archive_verification_does_not_lock_out_primary_commit(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Event
+        from unittest.mock import patch
+        from larp.storage.postgres import PostgresStore
+        entered,release=Event(),Event()
+        verify=self.store._verify
+        def slow(db,run_id,run):
+            if not entered.is_set():
+                entered.set()
+                if not release.wait(4): raise AssertionError('Verification not released')
+            return verify(db,run_id,run)
+        batch=self.batch('concurrent')
+        primary=PostgresStore(self.store._dsn)
+        worker=self.worker()
+        with patch.object(self.store,'_verify',side_effect=slow), ThreadPoolExecutor(2) as pool:
+            preparation=pool.submit(worker.prepare,'run',100)
+            try:
+                self.assertTrue(entered.wait(2))
+                receipt=pool.submit(primary.commit,batch).result(timeout=2)
+                self.assertEqual(1,receipt.read()['version'])
+            finally:
+                release.set()
+            preparation.result(timeout=4)
+        self.store.verify('run')
 
     def test_archive_restore_preserves_quarantine_and_rejects_corruption(self):
         worker = self.worker()
@@ -102,6 +136,21 @@ class MaintenanceTests(DatabaseCase):
             script = script.replace('ON DATABASE larp ', 'ON DATABASE '+database+' ')
             script = script.replace('SCHEMA public ', 'SCHEMA '+self.schema+' ')
             db.execute(script)
+            # Prove upgrades revoke a pre-existing blanket uploader grant.
+            db.execute('GRANT UPDATE ON audit_chunks TO larp_uploader')
+            db.execute(script)
+            db.execute("INSERT INTO audit_events VALUES('run','role-event','role-round','{}'::bytea)")
+            db.execute("INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES('run','role-event',0,'original'::bytea)")
+            db.execute('SET LOCAL ROLE larp_uploader')
+            db.execute("UPDATE audit_chunks SET attempts=1,status='ACK',next_ms=2,last_code='200',acknowledgement='{}'::bytea")
+            for sql in ("UPDATE audit_chunks SET body='changed'::bytea",
+                        "UPDATE audit_chunks SET event_id='changed'",
+                        'UPDATE audit_chunks SET chunk_index=1'):
+                with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                    with db.transaction(): db.execute(sql)
+            db.execute('RESET ROLE')
+            db.execute("DELETE FROM audit_chunks WHERE event_id='role-event'")
+            db.execute("DELETE FROM audit_events WHERE event_id='role-event'")
             db.execute('SET LOCAL ROLE larp_archive')
             run = self.store._run(db, 'run')
             self.store._verify(db, 'run', run)

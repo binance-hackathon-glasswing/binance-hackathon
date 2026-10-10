@@ -54,6 +54,7 @@ def main():
     runtime=coordinator(); runtime.recover(now+1)
     runtime.observe('settled',doc(dict(kind='FINAL_SUCCESS',observation_id='settled',round_id='entry',
                                      tx_hash=tx,simulated=True)),settle)
+    runtime.recover(now+2)
     rejected=request.read(); rejected['job_id']='failed'; rejected['fixture_action']='HOLD'
     coordinator(SandboxAssessor(worker,'larp.runtime.fixtures:fail')).start('rejected',doc(rejected),now+2)
     receiver=FakeReceiver(lose_ack=True)

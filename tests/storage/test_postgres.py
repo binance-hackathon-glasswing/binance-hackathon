@@ -7,6 +7,26 @@ from tests.support import DatabaseCase,job
 
 
 class Transactions(DatabaseCase):
+    def test_commit_verifies_without_holding_wallet_lock(self):
+        from unittest.mock import patch
+        import psycopg
+        verify=self.store._verify
+        def check_lock(db,run_id,run):
+            with psycopg.connect(self.store._dsn) as other:
+                other.execute('SELECT run_id FROM runs WHERE run_id=%s FOR UPDATE NOWAIT',(run_id,))
+            return verify(db,run_id,run)
+        batch=self.batch()
+        with patch.object(self.store,'_verify',side_effect=check_lock):
+            self.store.commit(batch)
+
+    def test_commit_rejects_state_changed_after_read_only_verification(self):
+        from unittest.mock import patch
+        verified=self.store.verified_snapshot('run')
+        stale=self.batch('stale-snapshot')
+        self.store.commit(self.batch('winner'))
+        with patch.object(self.store,'verified_snapshot',return_value=verified), self.assertRaises(Conflict):
+            self.store.commit(stale)
+
     def test_migrations_and_immutable_retry(self):
         self.store.migrate()
         batch=self.batch(); first=self.store.commit(batch)

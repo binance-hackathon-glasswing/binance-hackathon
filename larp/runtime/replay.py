@@ -39,14 +39,24 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                 record=event['record']
                 runtime=Coordinator(target,RecordedAssessment(record['request'],record['assessment']),policy,planner,
                     execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address)
-                runtime.start(record['round_id'],doc(record['request']),record['started_ms'])
+                if kind=='PLAN_REJECTED':
+                    target.open_round(run_id,record['round_id'],doc(record['request']),current['epoch'])
+                    runtime.record_rejection(record['round_id'],record)
+                else:
+                    runtime.start(record['round_id'],doc(record['request']),record['started_ms'],defer_close=True)
             elif kind=='OBSERVATION':
                 if runtime is None: raise IntegrityError('Replay observation has no round context')
                 runtime.observe(b['event_id'],doc(event['observation']),reducer)
             elif kind=='ROUND_CLOSED':
                 audit=b['audit'][0]
+                request=event.get('request')
+                if request is not None:
+                    target.open_round(run_id,audit['round_id'],doc(request),current['epoch'])
                 if runtime is None:
-                    request=json.loads(audit['log'])['data']['input']['request']
+                    if request is None:
+                        request=json.loads(audit['log'])['data']['input'].get('request')
+                    if request is None:
+                        raise IntegrityError('Replay closure lacks its durable round request')
                     target.open_round(run_id,audit['round_id'],doc(request),current['epoch'])
                     runtime=Coordinator(target,RecordedAssessment(request,None),policy,planner,execution=execution,
                         run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address)
