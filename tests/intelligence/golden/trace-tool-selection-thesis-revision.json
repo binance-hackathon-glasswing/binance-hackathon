@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": true,
-  "assessment_key": "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84",
+  "assessment_key": "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "LOW",
@@ -38,7 +38,7 @@
   "missing_codes": [
    "PRIOR_MISSING"
   ],
-  "model_hash": "0f683fb611fb1487a7489800e4ef74af3b9c08b1a864d21b39878999f46ebcd2",
+  "model_hash": "7ad2ae8d37c118caf48c3095d86b49314698a55fe0cc9f05e2ee6b96d38a1672",
   "n_changed": 1,
   "n_conflicts": 0,
   "n_falsifiers_fired": 1,
@@ -50,7 +50,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 1,
   "n_verified_claims": 8,
-  "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+  "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
   "schema": "FeatureRow.v1",
   "severity": 2,
   "source_stale": false,
@@ -63,10 +63,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84"
+    "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37"
    ],
    "accepted_result_ids": [
-    "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493"
+    "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928"
    ],
    "assessed_until_ms": null,
    "availability": "AVAILABLE",
@@ -460,15 +460,15 @@
      "cutoff_ms": 1791590400000,
      "finding_id": "find:eb5985de58a97aa9606726c8a5d4dc65a69d08d45ae0f74dfba41fd810c83a5c",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+     "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
      "sources": [],
      "type": "GUIDANCE_LOWERED"
     },
     {
      "cutoff_ms": 1791590400000,
-     "finding_id": "falsifier:77a3f2bbac7d190f7f42a79601a31784dfadf1a7c772c93ccb0e2122bd795b8f",
+     "finding_id": "falsifier:3716b8ab6214c85da20f62e0e5d1558ec5df2d35264b9281afc50a3b50bcfef1",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+     "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
      "sources": [
       {
        "accession": "0009900001-26-000187",
@@ -483,19 +483,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:e200a76fcf19840ab23908e53159b652770ef60b99891c7a2fa8510f62faf253",
+   "batch_id": "state:041c857dd3307ced210172a09068bb39fa8d526f2442c798d86f0ebd23da5b12",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:08deb1098236cff076d5ac194b182d757e68ffcd64a4bd2633c0d02c0d488d55",
+     "job_id": "evidence:b6d09eceb5ff35b13e40b22ad56f61efcd590e7532709925b38029350a74cdcd",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84",
+      "after_assessment_key": "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -505,14 +505,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+   "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84"
+     "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37"
     ],
     "accepted_result_ids": [
-     "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493"
+     "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928"
     ],
     "assessed_until_ms": null,
     "availability": "AVAILABLE",
@@ -906,15 +906,15 @@
       "cutoff_ms": 1791590400000,
       "finding_id": "find:eb5985de58a97aa9606726c8a5d4dc65a69d08d45ae0f74dfba41fd810c83a5c",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+      "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
       "sources": [],
       "type": "GUIDANCE_LOWERED"
      },
      {
       "cutoff_ms": 1791590400000,
-      "finding_id": "falsifier:77a3f2bbac7d190f7f42a79601a31784dfadf1a7c772c93ccb0e2122bd795b8f",
+      "finding_id": "falsifier:3716b8ab6214c85da20f62e0e5d1558ec5df2d35264b9281afc50a3b50bcfef1",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+      "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
       "sources": [
        {
         "accession": "0009900001-26-000187",
@@ -928,7 +928,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:e200a76fcf19840ab23908e53159b652770ef60b99891c7a2fa8510f62faf253",
+   "batch_id": "state:041c857dd3307ced210172a09068bb39fa8d526f2442c798d86f0ebd23da5b12",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -1068,7 +1068,7 @@
   }
  },
  "result": {
-  "assessment_key": "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84",
+  "assessment_key": "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -1563,13 +1563,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+   "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "0f683fb611fb1487a7489800e4ef74af3b9c08b1a864d21b39878999f46ebcd2",
+  "model_hash": "7ad2ae8d37c118caf48c3095d86b49314698a55fe0cc9f05e2ee6b96d38a1672",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -1818,7 +1818,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+       "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2596,7 +2596,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+       "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3504,7 +3504,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+       "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4405,7 +4405,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+       "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -5298,7 +5298,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
+       "checkpoint_sha256": "2500ba19a7bfa79c6b6e63ccf500ee67663a3a518bbc1a8eb678ad1030571098",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -5751,7 +5751,7 @@
   "rationale": "Example Semiconductor Corp (8-K 0009900001-26-000187): 6 verified numerical fact(s); revenue FY2027-Q3 reported above prior guidance; revenue FY2027-Q4 guidance lowered; events ITEM:2.02. No earlier comparison point was available for gross_margin:REPORTED:FY2027-Q2, gross_margin:REPORTED:FY2027-Q3. Proposed thesis BROKEN (v4); falsifiers fired: F-REVENUE-GUIDANCE-CUT; confidence LOW (uncalibrated).",
   "reasons": [],
   "rejected_claims": [],
-  "result_id": "res:71415ff6ba5cdddc5c0ede0f8b5f7c574e643b294dc032e19b28e03dd8276493",
+  "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
   "retained_facts": [],
   "review_requests": [
    {
@@ -5759,12 +5759,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:08deb1098236cff076d5ac194b182d757e68ffcd64a4bd2633c0d02c0d488d55",
+     "job_id": "evidence:b6d09eceb5ff35b13e40b22ad56f61efcd590e7532709925b38029350a74cdcd",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "5304524ede3b16402b5bdce8609b90dee674adb2db5752abd42c3cbce9688e84",
+      "after_assessment_key": "ec1e411fa8ddd04eb39fa890e3863e85e0615229232dcd8345424e89c9598c37",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -5775,7 +5775,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:08deb1098236cff076d5ac194b182d757e68ffcd64a4bd2633c0d02c0d488d55"
+    "request_id": "evidence:b6d09eceb5ff35b13e40b22ad56f61efcd590e7532709925b38029350a74cdcd"
    }
   ],
   "run_id": "synthetic-evidence-run",
