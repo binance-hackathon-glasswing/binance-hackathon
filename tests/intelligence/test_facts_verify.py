@@ -3,7 +3,7 @@
 from fractions import Fraction
 import unittest
 
-from larp.intelligence.facts import KEYWORD_EVENTS, extract_document, item_events, normalized, parse_period, periods_in
+from larp.intelligence.facts import KEYWORD_EVENTS, extract_document, statement_key, item_events, normalized, parse_period, periods_in
 from larp.intelligence.issuers import IssuerRegistry
 from larp.intelligence.scenarios import EXMEM, EXSEMI, FILINGS, FIXTURE_REGISTRY
 from larp.intelligence.text import document_text
@@ -197,6 +197,38 @@ class NegationScopeTests(unittest.TestCase):
                 with self.subTest(sentence=sentence):
                     keyword = patterns[metric].search(sentence).group(0)
                     self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, [reason] * 2))
+
+    def test_hypothetical_events_are_kept_as_possible_events_spanning_their_clause(self):
+        patterns = dict(KEYWORD_EVENTS)
+        for metric, sentence in HYPOTHETICAL_EVENTS:
+            with self.subTest(sentence=sentence):
+                saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
+                facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
+                kept = [f for f in facts if f["metric"] == "HYPOTHETICAL:" + metric]
+                self.assertEqual([f["span"]["text"] for f in kept], [sentence])
+                keyword = patterns[metric].search(sentence).group(0)
+                self.assertEqual(self.check("HYPOTHETICAL:" + metric, sentence, sentence, keyword)[1], [None, None])
+
+    def test_a_hypothetical_claim_needs_hypothetical_wording(self):
+        for events, reason in ((NEGATED_EVENTS, "EVENT_NEGATED"), (AFFIRMED_EVENTS[:1], "EVENT_NOT_HYPOTHETICAL")):
+            for metric, sentence in events:
+                with self.subTest(sentence=sentence):
+                    found, reasons = self.check("HYPOTHETICAL:" + metric, sentence, sentence)
+                    self.assertEqual((found, reasons), (False, [reason]))
+
+    def test_one_clause_reported_and_the_next_hypothetical_gives_both(self):
+        sentence = "We recorded a goodwill impairment of $12 million; further impairments may follow."
+        saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
+        facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
+        events = {f["metric"]: f["span"]["text"] for f in facts if f["kind"] == "EVENT"}
+        self.assertEqual(events, {"IMPAIRMENT": "impairment", "HYPOTHETICAL:IMPAIRMENT": "further impairments may follow."})
+
+    def test_statement_key_ignores_case_and_spacing_but_not_wording(self):
+        def key(sentence):
+            return statement_key(sentence, sentence.lower().index("impairment"), sentence.lower().index("impairment") + 10)
+        base = key("Goodwill impairment could result if results decline.")
+        self.assertEqual(base, key("GOODWILL IMPAIRMENT   could result if results decline."))
+        self.assertNotEqual(base, key("Goodwill impairment may result if results decline."))
 
     def test_affirmed_events_still_give_a_fact_and_verify(self):
         for metric, sentence in AFFIRMED_EVENTS:

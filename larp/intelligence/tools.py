@@ -9,7 +9,7 @@ registry rejects any name outside the configured allowlist.
 import re
 
 from larp.intelligence.common import IntelligenceError, sha256_hex
-from larp.intelligence.facts import METRIC_NAMES, extract_document, item_events, values_agree
+from larp.intelligence.facts import HYPOTHETICAL_PREFIX, METRIC_NAMES, extract_document, item_events, values_agree
 from larp.intelligence.text import text_from_saved
 from larp.intelligence.verify import compare
 
@@ -114,16 +114,23 @@ def fetch_document(state, args: dict) -> dict:
             "chars": len(text), "excerpt": text[:limit], "truncated": len(text) > limit, "new_fact_ids": new}
 
 
+HYPOTHETICAL = "HYPOTHETICAL"  # prior_context(metric="HYPOTHETICAL"): every hypothetical event, in one call
+
+
+def _matches(fact: dict, metric: str) -> bool:
+    return fact["metric"].startswith(HYPOTHETICAL_PREFIX) if metric == HYPOTHETICAL else fact["metric"] == metric
+
+
 def prior_context(state, args: dict) -> dict:
-    """Facts for one metric that were available before the assessed filing(s)."""
+    """Facts for one metric, or every hypothetical event, that were available before the assessed filing(s)."""
     metric = _text_arg(args, "metric")
-    if metric not in METRIC_NAMES:
+    if metric not in METRIC_NAMES and metric != HYPOTHETICAL:
         raise ToolError("BAD_ARGUMENT:metric")
     state.queried_prior.add(metric)
     current = state.current_accessions
     first_original = min(state.index.all_by_id[r]["original_ms"] for r in state.current_records)
     found = [f["fact_id"] for f in state.context_facts
-             if f["metric"] == metric and f["source"].get("accession") not in current]
+             if _matches(f, metric) and f["source"].get("accession") not in current]
     for record in sorted(state.index.by_accession.values(), key=lambda r: (r["original_ms"], r["accession"])):
         if record["accession"] in current or record["original_ms"] >= first_original or record["quality"] == "MISSING":
             continue
@@ -131,7 +138,7 @@ def prior_context(state, args: dict) -> dict:
             if doc["status"] == "OK" and (record["accession"], doc["name"]) not in state.loaded:
                 load_document(state, record, doc)
         found += [f["fact_id"] for f in state.facts.values()
-                  if f["source"].get("accession") == record["accession"] and f["metric"] == metric]
+                  if f["source"].get("accession") == record["accession"] and _matches(f, metric)]
     found = sorted(set(found))
     state.prior_fact_ids.update(found)
     periods = sorted({state.facts[i]["period"] or "" for i in found})

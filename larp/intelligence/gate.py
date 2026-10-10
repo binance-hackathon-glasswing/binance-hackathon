@@ -5,8 +5,9 @@ It rejects results computed for an obsolete thesis context or policy profile, ex
 out-of-order results, and duplicates. Its `evidence_gate` is descriptive evidence health:
 
 - CLEAR only after an ASSESSED, fresh, conflict-free result with complete evidence, every
-  numerical fact checked against earlier filings, no untrusted instructions in the evidence
-  and no adverse finding;
+  numerical fact checked against earlier filings, no untrusted instructions in the evidence,
+  no hypothetical event statement that is new or unchecked against earlier filings, and no
+  adverse finding;
 - ADVERSE while any accepted adverse finding or fired falsifier is unresolved;
 - UNKNOWN otherwise, including after ABSTAIN, UNAVAILABLE, timeouts and stale sources.
 
@@ -100,6 +101,8 @@ def _gate(r: dict, adverse: list, availability: str) -> tuple:
     reasons = [m for m in r["missingness"] if m.startswith(INCOMPLETE)]
     if r["conflicts"]:
         reasons.append("CONFLICTS")
+    if any(h["novelty"] != "REPEATED" for h in r.get("hypothetical_events") or []):
+        reasons.append("NEW_HYPOTHETICAL_EVENT")  # a possible or planned event, not yet seen as boilerplate
     if (r.get("novelty") or {}).get("prior_not_checked"):
         reasons.append("PRIOR_NOT_CHECKED")  # a contradiction with earlier filings cannot be excluded
     if r["proposed_thesis"] is None or r["proposed_thesis"]["status"] in ("UNKNOWN",):

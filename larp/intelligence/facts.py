@@ -66,8 +66,31 @@ NOT_A_CUE = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+
                        r"\b(?-i:May)\s+(?:\d{1,2}|\d{4})\b", re.I)
 # Clause ends: a line or sentence end, a semicolon, or a contrastive join. A bare comma or ", and" does not end
 # a clause, so negation in a list ("did not identify loss, damage, and impairment") still counts.
-CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'])|(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
+CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'])|"
+                          r"(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
 PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
+
+
+HYPOTHETICAL_PREFIX = "HYPOTHETICAL:"  # "HYPOTHETICAL:IMPAIRMENT": a possible or planned event, never a finding
+
+
+def clause_bounds(text: str, start: int, end: int) -> tuple:
+    """(lo, hi) of the clause holding text[start:end], ended by CLAUSE_BREAK."""
+    lo, hi = text.rfind("\n", 0, start) + 1, len(text)
+    for m in CLAUSE_BREAK.finditer(text, lo):
+        if m.end() <= start:
+            lo = m.end()
+        elif m.start() >= end:
+            hi = m.start()
+            break
+    return lo, hi
+
+
+def statement_key(text: str, start: int, end: int) -> str:
+    """The clause holding text[start:end], case- and whitespace-normalised: two filings that carry the same
+    statement give the same key, so repeated boilerplate is told apart from a new statement."""
+    lo, hi = clause_bounds(text, start, end)
+    return " ".join(text[lo:hi].lower().split()).strip(" ,.;:")
 
 
 def unasserted(text: str, start: int, end: int):
@@ -80,13 +103,7 @@ def unasserted(text: str, start: int, end: int):
 
     Conservative: one cue anywhere in the clause rejects the event, so "recorded an impairment and did not
     record a restructuring charge" gives no IMPAIRMENT fact."""
-    lo, hi = text.rfind("\n", 0, start) + 1, len(text)
-    for m in CLAUSE_BREAK.finditer(text, lo):
-        if m.end() <= start:
-            lo = m.end()
-        elif m.start() >= end:
-            hi = m.start()
-            break
+    lo, hi = clause_bounds(text, start, end)
     clause = NOT_A_CUE.sub(" ", text[lo:hi])  # the match too: "CFO may resign" has its cue inside the match
     if NEGATION.search(clause):
         return "NEGATED"
@@ -379,16 +396,29 @@ def _cells(line: str) -> list:
 
 
 def _keyword_events(text, doc_sha):
-    facts = []
-    for event, pattern in KEYWORD_EVENTS:
+    """Reported events (one supporting span per event type per document) and hypothetical ones (one fact per
+    distinct statement, spanning its clause, so each can be compared with earlier filings). Negated: none."""
+    facts, statements = [], set()
+
+    def event(metric, start, end):
+        facts.append({"kind": "EVENT", "metric": metric, "period": None, "value": None, "range": None,
+                      "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,
+                      "security_scope": "ISSUER", "span": _span(doc_sha, text, start, end),
+                      "period_span": None, "scale_span": None, "basis": "KEYWORD_V1"})
+
+    for name, pattern in KEYWORD_EVENTS:
+        reported = False
         for m in pattern.finditer(text):
-            if unasserted(text, m.start(), m.end()):
-                continue
-            facts.append({"kind": "EVENT", "metric": event, "period": None, "value": None, "range": None,
-                          "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,
-                          "security_scope": "ISSUER", "span": _span(doc_sha, text, m.start(), m.end()),
-                          "period_span": None, "scale_span": None, "basis": "KEYWORD_V1"})
-            break  # one supporting span per event type per document
+            why = unasserted(text, m.start(), m.end())
+            if why is None and not reported:
+                event(name, m.start(), m.end())
+                reported = True
+            elif why == "HYPOTHETICAL" and (name, statement_key(text, m.start(), m.end())) not in statements:
+                statements.add((name, statement_key(text, m.start(), m.end())))
+                lo, hi = clause_bounds(text, m.start(), m.end())
+                clause = text[lo:hi]
+                lo += len(clause) - len(clause.lstrip())
+                event(HYPOTHETICAL_PREFIX + name, lo, lo + len(clause.strip()))
     return facts
 
 
@@ -396,7 +426,8 @@ def extract_document(text: str, doc_sha: str, entry, source: dict) -> list:
     raw = _sentence_facts(text, doc_sha, entry) + _table_facts(text, doc_sha, entry) + _keyword_events(text, doc_sha)
     seen, out = set(), []
     for fact in raw:
-        key = (fact["kind"], fact["metric"], fact["period"], fact["unit"], str(normalized(fact)))
+        key = (fact["kind"], fact["metric"], fact["period"], fact["unit"], str(normalized(fact)),
+               fact["span"]["text"] if fact["metric"].startswith(HYPOTHETICAL_PREFIX) else None)
         if key in seen:
             continue
         seen.add(key)

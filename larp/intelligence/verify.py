@@ -3,11 +3,12 @@
 A claim is accepted only if it is a well-formed claim object; its quoted span is the exact
 substring at the stated offsets of a loaded document; with records, that document belongs to
 the claimed source record, from which all provenance is taken; the metric/event is named in the
-span, and an event is neither negated nor hypothetical in its clause of the source text; every
-stated number (value, range bounds, tolerance) appears in the span; the scale and currency are
-stated in the span or its cited scale span; and the period parses from the cited period span.
-Period and scale spans come from the same statement: the same line for prose, and for a table
-cell its own column header and the table's scale line, read exactly as the extractor reads them
+span, and an event is neither negated nor hypothetical in its clause of the source text (a
+"HYPOTHETICAL:<event>" claim instead needs a hypothetical, non-negated mention); every stated
+number (value, range bounds, tolerance) appears in the span; the scale and currency are stated
+in the span or its cited scale span; and the period parses from the cited period span. Period
+and scale spans come from the same statement: the same line for prose, and for a table cell its
+own column header and the table's scale line, read exactly as the extractor reads them
 (per-share rows keep their unscaled amounts under an "except per share" exception). Claims
 about consensus, estimates, ratings or prices have no admissible source and are always
 rejected.
@@ -18,8 +19,8 @@ import re
 
 from larp.intelligence.common import frac
 from larp.intelligence.facts import (
-    KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, PER_SHARE_EXCEPTION, PER_SHARE_METRICS, PERCENT_METRICS, SCALES,
-    finish_fact, half_unit, normalized, parse_period, row_metric, stated_numbers, table_cell,
+    HYPOTHETICAL_PREFIX, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, PER_SHARE_EXCEPTION, PER_SHARE_METRICS,
+    PERCENT_METRICS, SCALES, finish_fact, half_unit, normalized, parse_period, row_metric, stated_numbers, table_cell,
     table_scale, table_unit, token_decimals, unasserted, values_agree,
 )
 
@@ -148,11 +149,16 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
         if claim[key]["doc"] != span["doc"]:
             return None, prefix + "SPAN_OTHER_DOCUMENT"
     if kind == "EVENT":
-        matches = list(_EVENTS[metric].finditer(text, span["start"], span["end"])) if metric in _EVENTS else []
+        hypothetical = metric is not None and metric.startswith(HYPOTHETICAL_PREFIX)
+        event = metric[len(HYPOTHETICAL_PREFIX):] if hypothetical else metric
+        matches = list(_EVENTS[event].finditer(text, span["start"], span["end"])) if event in _EVENTS else []
         if not matches:
             return None, "EVENT_NOT_IN_SPAN"
         why = [unasserted(text, m.start(), m.end()) for m in matches]
-        if all(why):  # "recorded no impairment" or "could result in an impairment" is not an impairment
+        if hypothetical:  # "could result in an impairment" is verified as a possible impairment, not an impairment
+            if "HYPOTHETICAL" not in why:
+                return None, "EVENT_NEGATED" if all(why) else "EVENT_NOT_HYPOTHETICAL"
+        elif all(why):  # "recorded no impairment" or "could result in an impairment" is not an impairment
             return None, "EVENT_NEGATED" if "NEGATED" in why else "EVENT_HYPOTHETICAL"
         return _fact(claim, record, doc_name, event=True), None
     if metric not in METRIC_NAMES or not METRIC_ONE[metric].search(span_text):

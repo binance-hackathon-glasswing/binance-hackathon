@@ -24,9 +24,11 @@ import threading
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError, assert_no_trade_fields, digest, is_hash
-from larp.intelligence.facts import METRIC_NAMES, values_agree
+from larp.intelligence.facts import (
+    HYPOTHETICAL_PREFIX, KEYWORD_EVENTS, METRIC_NAMES, statement_key, unasserted, values_agree,
+)
 from larp.intelligence.tools import (
-    EvidenceIndex, ToolError, check_allowlist, comparable_pairs, load_document, load_items, run_tool,
+    HYPOTHETICAL, EvidenceIndex, ToolError, check_allowlist, comparable_pairs, load_document, load_items, run_tool,
 )
 from larp.intelligence.models import parse_output
 from larp.intelligence.verify import detect_conflicts, fact_as_claim, verify_claim
@@ -84,6 +86,9 @@ class _State:
         for metric in metrics:
             if metric not in self.queried_prior:
                 out.append({"gap": "PRIOR_UNKNOWN", "tool": "prior_context", "args": {"metric": metric}})
+        if HYPOTHETICAL not in self.queried_prior and any(
+                f["metric"].startswith(HYPOTHETICAL_PREFIX) for f in self.current_facts()):
+            out.append({"gap": "PRIOR_UNKNOWN", "tool": "prior_context", "args": {"metric": HYPOTHETICAL}})
         for metric in metrics:
             if metric not in self.compared_metrics and comparable_pairs(self, metric):
                 out.append({"gap": "UNCOMPARED", "tool": "compare_facts", "args": {"metric": metric}})
@@ -368,6 +373,10 @@ class EvidenceAssessor:
         for fact in current:  # no earlier comparison point: recorded as missing, never invented
             if novelty["by_fact"][fact["fact_id"]] == "NO_PRIOR_AVAILABLE":
                 state.missing.append(f"PRIOR_MISSING:{fact['metric']}:{fact['kind']}:{fact['period']}")
+        hypothetical = [{"type": f["metric"], "event": f["metric"][len(HYPOTHETICAL_PREFIX):],
+                         "novelty": novelty["by_fact"][f["fact_id"]], "fact_id": f["fact_id"],
+                         "statement": f["span"]["text"]}
+                        for f in current if f["metric"].startswith(HYPOTHETICAL_PREFIX)]
         findings = self._findings(state, current)
         thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread))
         missing = sorted(set(state.missing))
@@ -391,7 +400,8 @@ class EvidenceAssessor:
             "tools": list(state.allowed_tools), "budget": r["budget"]})
         claims = [dict(f, novelty=novelty["by_fact"].get(f["fact_id"]), model_confirmed=f["fact_id"] in confirmed)
                   for f in current] if status == "ASSESSED" else []
-        reviews = self._reviews(r, entry, status, reasons, missing, key, now)
+        reviews = self._reviews(r, entry, status, reasons, missing, key, now,
+                                new_hypothetical=any(h["novelty"] != "REPEATED" for h in hypothetical))
         steps_cost = [s["response"]["cost"] for s in model_io if "response" in s]
         result = {
             "schema": "AssessmentResult.v1", "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
@@ -410,6 +420,9 @@ class EvidenceAssessor:
             # Filer item codes and keyword events verified by the harness stand even when the
             # model abstains or times out; numerical findings need an ASSESSED result.
             "event_findings": [f for f in findings if "metric" not in f],
+            # Possible or planned events ("could result in an impairment"), verified as statements. Never findings:
+            # a statement not seen in earlier filings (or not checked against them) is sent for review instead.
+            "hypothetical_events": hypothetical,
             "impact": impact if status == "ASSESSED" else "UNKNOWN",
             "severity": severity if status == "ASSESSED" else None,
             "missingness": missing, "confidence": confidence, "freshness": freshness,
@@ -446,7 +459,8 @@ class EvidenceAssessor:
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
             "evidence_used": [], "claims": [], "rejected_claims": [], "novelty": {}, "conflicts": [], "findings": [],
-            "event_findings": [], "impact": "UNKNOWN", "severity": None, "missingness": reasons,
+            "event_findings": [], "hypothetical_events": [], "impact": "UNKNOWN", "severity": None,
+            "missingness": reasons,
             "confidence": {"level": "UNKNOWN", "calibrated": False, "basis": "status UNAVAILABLE"},
             "freshness": None, "falsifiers": [], "proposed_thesis": None,
             "expiry_ms": now + self.config.p("result_ttl_ms"),
@@ -466,8 +480,13 @@ class EvidenceAssessor:
         by_fact, counts = {}, {"NEW": 0, "CHANGED": 0, "UNCHANGED": 0, "NO_PRIOR_AVAILABLE": 0,
                                "PRIOR_NOT_CHECKED": 0, "REPEATED": 0}
         known_events = {(f["metric"], f["source"].get("accession")) for f in state.context_facts if f["kind"] == "EVENT"}
+        stated_before = {(p["metric"], _statement(state, p))
+                         for p in priors if p["metric"].startswith(HYPOTHETICAL_PREFIX)}
         for fact in current:
-            if fact["kind"] == "EVENT":
+            if fact["metric"].startswith(HYPOTHETICAL_PREFIX):  # the same statement in an earlier filing: boilerplate
+                label = ("PRIOR_NOT_CHECKED" if HYPOTHETICAL not in state.queried_prior else
+                         "REPEATED" if (fact["metric"], _statement(state, fact)) in stated_before else "NEW")
+            elif fact["kind"] == "EVENT":
                 label = "REPEATED" if (fact["metric"], fact["source"].get("accession")) in known_events else "NEW"
             elif not fact["period"]:
                 label = "PRIOR_NOT_CHECKED"
@@ -490,8 +509,8 @@ class EvidenceAssessor:
         severity = self.config.severity
         findings = []
         for fact in current:
-            if fact["kind"] != "EVENT":
-                continue
+            if fact["kind"] != "EVENT" or fact["metric"].startswith(HYPOTHETICAL_PREFIX):
+                continue  # a possible or planned event is never a finding (hypothetical_events, review request)
             if fact["metric"].startswith("ITEM:"):
                 rule = severity["items"].get(fact["metric"][5:])
             else:
@@ -585,7 +604,7 @@ class EvidenceAssessor:
         return {"level": level, "calibrated": False,
                 "basis": "ordinal rule over verified-fact count, missingness and comparison coverage; not a probability"}
 
-    def _reviews(self, r, entry, status, reasons, missing, key, now):
+    def _reviews(self, r, entry, status, reasons, missing, key, now, new_hypothetical=False):
         config, wanted = self.config, []
         if status == "UNAVAILABLE":
             wanted.append(("RETRY_AFTER_UNAVAILABLE", config.p("retry_delay_ms")))
@@ -600,6 +619,8 @@ class EvidenceAssessor:
             wanted.append(("RETRY_AFTER_SOURCE_RECOVERY", config.p("retry_delay_ms")))
         if any(m.startswith(("TOOL_ERROR:", "EXHIBIT_NOT_LOADED:", "TOOL_BUDGET")) for m in missing):
             wanted.append(("COMPLETE_EVIDENCE", config.p("retry_delay_ms")))
+        if new_hypothetical:
+            wanted.append(("REVIEW_NEW_HYPOTHETICAL_EVENT", config.p("reassess_delay_ms")))
         out = []
         for reason, delay in wanted:
             payload = {"kind": "REASSESS_ISSUER", "issuer_id": entry.issuer_id, "reason": reason,
@@ -612,6 +633,17 @@ class EvidenceAssessor:
                                 "calendar_id": "UTC", "tzdata_version": "utc-only-no-tzdata",
                                 "missed": "catch_up", "payload": payload}})
         return out
+
+
+def _statement(state, fact):
+    """The normalised clause of a hypothetical event fact (facts.statement_key), from its document if loaded."""
+    span, event = fact["span"], dict(KEYWORD_EVENTS)[fact["metric"][len(HYPOTHETICAL_PREFIX):]]
+    text = state.texts.get(span["doc"])
+    if text is not None:
+        for m in event.finditer(text, span["start"], span["end"]):
+            if unasserted(text, m.start(), m.end()) == "HYPOTHETICAL":
+                return statement_key(text, m.start(), m.end())
+    return " ".join(span["text"].lower().split()).strip(" ,.;:")
 
 
 def _overall(findings):

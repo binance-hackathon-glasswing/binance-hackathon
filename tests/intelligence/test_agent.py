@@ -8,6 +8,7 @@ import unittest
 from larp.contracts import ContractError, Document
 from larp.intelligence.agent import EvidenceAssessor, context_hash
 from larp.intelligence.common import FORBIDDEN_KEYS, forbidden_key_paths
+from larp.intelligence.features import feature_row
 from larp.intelligence.gate import accept, initial_state
 from larp.intelligence.models import RuleBaselineModel, ScriptedModel
 from larp.intelligence.scenarios import (
@@ -40,6 +41,8 @@ HYPOTHETICAL_BOILERPLATE = (
     ("CYBERSECURITY_INCIDENT", "A cybersecurity incident could disrupt our operations."),
     ("OFFICER_DEPARTURE", "Our Chief Executive Officer may resign at any time."),
 )
+RISK_LINES = [HYPOTHETICAL_BOILERPLATE[0][1], HYPOTHETICAL_BOILERPLATE[5][1]]
+NEW_RISK = "We expect to record a goodwill impairment charge in the fourth quarter of fiscal 2027."
 UNASSERTED = {"NEGATED_BOILERPLATE": (NEGATED_BOILERPLATE, "EVENT_NEGATED"),
               "HYPOTHETICAL_BOILERPLATE": (HYPOTHETICAL_BOILERPLATE, "EVENT_HYPOTHETICAL")}
 
@@ -53,6 +56,10 @@ EXTRA = {
                                    [sentence for _, sentence in NEGATED_BOILERPLATE], items=("2.02",)),
     "HYPOTHETICAL_BOILERPLATE": eight_k("0009900001-26-000306", "2026-10-02T21:00:00+00:00",
                                         [sentence for _, sentence in HYPOTHETICAL_BOILERPLATE], items=("8.01",)),
+    # The same risk-factor statements a month apart, then again with one new statement.
+    "RISK_PRIOR": eight_k("0009900001-26-000307", "2026-09-01T20:00:00+00:00", RISK_LINES, items=("8.01",)),
+    "RISK_REPEATED": eight_k("0009900001-26-000308", "2026-10-03T20:00:00+00:00", RISK_LINES, items=("8.01",)),
+    "RISK_NEW": eight_k("0009900001-26-000309", "2026-10-03T21:00:00+00:00", RISK_LINES + [NEW_RISK], items=("8.01",)),
 }
 
 
@@ -353,6 +360,61 @@ class ClaimBindingTests(AgentHarness):
                              context_hash=context_hash(self.context))
                 _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
                 self.assertFalse(adverse & {a["type"] for a in after["unresolved_adverse"]})
+
+
+class HypotheticalEventTests(AgentHarness):
+    """Possible or planned events are kept as statements, never as findings; new ones are sent for review."""
+
+    def outcome(self, refs):
+        result, doc = self.assess(refs)
+        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+        _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+        return result, after, feature_row(doc, after).read()
+
+    def test_new_hypothetical_statements_are_kept_reviewed_and_never_adverse(self):
+        self.world("HYPOTHETICAL_BOILERPLATE")
+        result, after, row = self.outcome(["HYPOTHETICAL_BOILERPLATE"])
+        self.assertEqual(result["status"], "ASSESSED")
+        self.assertIn(("prior_context", "HYPOTHETICAL", "NO_PRIOR"), self.tools(result))
+        self.assertEqual(sorted((h["event"], h["novelty"]) for h in result["hypothetical_events"]),
+                         sorted((metric, "NEW") for metric, _ in HYPOTHETICAL_BOILERPLATE))
+        self.assertEqual({h["statement"] for h in result["hypothetical_events"]},
+                         {sentence for _, sentence in HYPOTHETICAL_BOILERPLATE})
+        self.assertEqual((result["findings"], result["event_findings"], after["unresolved_adverse"]), ([], [], []))
+        self.assertIn("REVIEW_NEW_HYPOTHETICAL_EVENT", {r["reason"] for r in result["review_requests"]})
+        self.assertEqual(after["evidence_gate"], "UNKNOWN")
+        self.assertIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
+        self.assertEqual((row["n_hypothetical_new"], row["n_hypothetical_repeated"]), (6, 0))
+        self.assertEqual(row["hypothetical_types_new"], sorted({m for m, _ in HYPOTHETICAL_BOILERPLATE}))
+
+    def test_boilerplate_repeated_from_an_earlier_filing_is_not_new(self):
+        self.world("RISK_PRIOR", "RISK_REPEATED")
+        result, after, row = self.outcome(["RISK_REPEATED"])
+        self.assertEqual({h["novelty"] for h in result["hypothetical_events"]}, {"REPEATED"})
+        self.assertNotIn("REVIEW_NEW_HYPOTHETICAL_EVENT", {r["reason"] for r in result["review_requests"]})
+        self.assertNotIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
+        self.assertEqual((row["n_hypothetical_new"], row["n_hypothetical_repeated"]), (0, 2))
+
+    def test_only_the_statement_absent_from_earlier_filings_is_new(self):
+        self.world("RISK_PRIOR", "RISK_NEW")
+        result, after, row = self.outcome(["RISK_NEW"])
+        new = [h for h in result["hypothetical_events"] if h["novelty"] == "NEW"]
+        self.assertEqual([(h["event"], h["statement"]) for h in new], [("IMPAIRMENT", NEW_RISK)])
+        self.assertEqual(len(result["hypothetical_events"]), 3)
+        self.assertNotIn("IMPAIRMENT", {f["type"] for f in result["event_findings"]})
+        self.assertIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
+        self.assertEqual((row["n_hypothetical_new"], row["hypothetical_types_new"]), (1, ["IMPAIRMENT"]))
+
+    def test_a_model_may_claim_a_hypothetical_event_with_its_label(self):
+        self.world("HYPOTHETICAL_BOILERPLATE")
+        sentence = HYPOTHETICAL_BOILERPLATE[3][1]
+        model = ScriptedModel(self.w.clock, [{"output": lambda st: {
+            "action": "FINISH", "notes": "x",
+            "claims": [{"kind": "EVENT", "metric": "HYPOTHETICAL:DELISTING", "span": cite(st, sentence)}]}}])
+        result, _ = self.assess(["HYPOTHETICAL_BOILERPLATE"], model=model)
+        self.assertEqual((result["status"], result["rejected_claims"]), ("ASSESSED", []))
+        self.assertIn("HYPOTHETICAL:DELISTING", {c["metric"] for c in result["claims"] if c["model_confirmed"]})
+        self.assertNotIn("DELISTING", {f["type"] for f in result["event_findings"]})
 
 
 class RequestValidationTests(AgentHarness):

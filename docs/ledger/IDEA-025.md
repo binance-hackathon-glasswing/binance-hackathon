@@ -243,3 +243,43 @@ The check stays conservative: one cue anywhere in the clause rejects the event. 
      - With the hypothetical cue check removed, the new tests fail on all eight hypothetical sentences in the extractor/verifier tests, and on all six in the agent tests.
      - With the match excluded from the clause again, the tests fail on "has not resigned" and "may resign".
 7. **Outcome: all four §9.4 criteria PASS at `511b403`/`332288b`** (after the first-run FAIL at `91db50d`, results 1–2). The remaining limits are the conservative misses described in the Change paragraph. All of this is on synthetic sentences only; precision and recall on real filings remain unmeasured until the real-data evaluation (§7).
+
+### 9.5 Hypothetical events kept as their own signal (SYZ, 2026-10-10)
+
+**Why.** §9.4 dropped hypothetical wording entirely. SYZ's correction: a statement about a possible event carries weight on its own, and markets react before the event happens, so the evidence layer must keep it. It must not treat it as a reported event, though; most such wording is risk-factor boilerplate, and a verified adverse event can force an exit (IDEA-010). SYZ asked for the assumptions behind keeping these statements to be checked before building on them.
+
+**Assumption check (2026-10-10).** Sources are in `docs/skill/reference/literature.md` §12.8 and in the code.
+
+| # | Assumption | Verdict | Evidence |
+|---|---|---|---|
+| A1 | Statements about possible events carry price-relevant information before the event | **Supported** (broad US samples) | L-61 (more risk text → higher volatility and volume around and after the filing), L-62 (reflected in risk, information asymmetry and value), L-64 (impairments priced 7–12 months before being recorded; secondary). These mostly measure risk perception, not a signed return. |
+| A2 | Most such statements are repeated boilerplate; mainly new ones inform | **Supported** | L-63 (boilerplate and stickiness rising, with risk factors a main driver), L-61 (weaker effects for boilerplate-like text), L-60 (changes are what predict) |
+| A3 | The market reacts at once | **Partly contradicted** | L-60: changed filing text has **no announcement effect**, and returns accrue over later months. Forecasts move prices at once (L-65, unconfirmed). Timing depends on the statement type. |
+| A4 | Our pipeline can tell a new statement from repeated boilerplate | **False before this change** | Event novelty was keyed on (event, accession) (`agent.py` `_novelty`), so a statement in any other filing counted as NEW and every year's boilerplate looked new. Built here. |
+| A5 | Statements can come from anywhere and the pipeline sees them | **Not covered** | The evidence agent ingests EDGAR only. Other sources need licensing (outside the build, IDEA-021 §8.1) and the G-05 source register. Not built; open. |
+| A6 | The effect holds for our five large-cap names at the 5-session label horizon | **Unverified** | No study covers it. L-32 and L-22 suggest weaker effects for large caps, and L-60's effect is slower than 5 sessions. Recorded as H-04. |
+
+**What the evidence supports building:** keep each statement, compare it with the issuer's earlier filings, flag the new ones, and assign no severity. Weighting is a policy decision (Keith) that waits on H-04.
+
+**Change.**
+- `facts._keyword_events` keeps each distinct hypothetical statement as an EVENT fact named `HYPOTHETICAL:<event>`, spanning its clause; negated mentions still give nothing. Reported events are unchanged: one span per type per document.
+- `verify.verify_claim` accepts a `HYPOTHETICAL:<event>` claim only when the span has a hypothetical, non-negated mention. Otherwise it returns `EVENT_NEGATED` or `EVENT_NOT_HYPOTHETICAL`. A plain event claim on hypothetical wording still fails `EVENT_HYPOTHETICAL`.
+- `tools.prior_context(metric="HYPOTHETICAL")` returns every hypothetical event from earlier filings in one call. The baseline requests it when the current filing has any (`gaps`).
+- Novelty: `REPEATED` if the same statement (`facts.statement_key`, the clause case- and whitespace-normalised) appears in an earlier filing, `NEW` if not, `PRIOR_NOT_CHECKED` if the lookup did not run. Exact match is stricter than L-60's similarity measure, so any edit counts as NEW and goes to review.
+- Results gain `hypothetical_events` (type, event, novelty, fact id, statement), present whatever the status. These are never findings, never fire a falsifier and never enter `unresolved_adverse`.
+- A NEW or unchecked statement adds the review request `REVIEW_NEW_HYPOTHETICAL_EVENT` and the gate reason `NEW_HYPOTHETICAL_EVENT`, which keeps the gate off CLEAR.
+- `FeatureRow.v1` gains `n_hypothetical_new`, `n_hypothetical_repeated` and `hypothetical_types_new` for the H-04 test.
+- The model prompt is unchanged: event codes come from the harness's facts.
+
+**Prospective criteria (written before any run of the changed code):**
+
+1. New tests pass:
+   - `test_facts_verify.NegationScopeTests`: each of the eight hypothetical sentences gives one `HYPOTHETICAL:<event>` fact whose span is the sentence, and a `HYPOTHETICAL:` claim on the sentence or the keyword verifies. On the seven negated sentences such a claim gives `EVENT_NEGATED`; on a plain reported impairment, `EVENT_NOT_HYPOTHETICAL`. "We recorded a goodwill impairment of $12 million; further impairments may follow." gives both IMPAIRMENT and `HYPOTHETICAL:IMPAIRMENT` ("further impairments may follow."). `statement_key` ignores case and spacing but not a changed word. The §9.4 tests still pass.
+   - `test_agent.HypotheticalEventTests`:
+     - Six new statements with no earlier filing: ASSESSED; `prior_context(HYPOTHETICAL)` called and NO_PRIOR; all six NEW; no finding and nothing adverse at the gate; review `REVIEW_NEW_HYPOTHETICAL_EVENT`; gate UNKNOWN with `NEW_HYPOTHETICAL_EVENT`; feature row 6 new and 0 repeated.
+     - The same two statements a month earlier: both REPEATED, no review and no gate reason; feature row 0 and 2.
+     - Those two plus one new statement: only the new one is NEW, with no IMPAIRMENT event finding.
+     - A model claim `HYPOTHETICAL:DELISTING` verifies, with no DELISTING finding.
+2. Every other test passes, including the 13 foundation tests. Exception: the `test_golden` pair is expected to fail on the first run. The regenerated traces may differ only in the identity hash and the ids derived from it, plus the new fields: `hypothetical_events: []`, and in the feature row `n_hypothetical_new: 0`, `n_hypothetical_repeated: 0`, `hypothetical_types_new: []`. The pack has no hypothetical statement, so tool sequences, statuses, findings, falsifiers, theses and gates must be unchanged.
+3. `python -m larp.intelligence.evaluation`: PASS on every frozen threshold, with the pack unchanged. Compared leaf by leaf with `eval-report-511b403.json`, only wall-clock fields may differ.
+4. `git diff --check` clean.
