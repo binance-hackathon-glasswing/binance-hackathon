@@ -432,23 +432,23 @@ class AbsoluteReturn(unittest.TestCase):
         self.fixture = research.ResearchTests()
 
     def test_r24_losing_treatment_is_flagged_and_can_be_required_positive(self):
-        """P1. Baseline loses 5%, treatment loses 2%: the paired rule passes, but the report must say the
-        treatment lost money, and a registration requiring a positive treatment return must not be SUPPORTED."""
+        """P1. Baseline loses 5%, treatment loses 2%: the paired rule passes, but the treatment lost money.
+        IDEA-034 (user decision 2026-10-11) supersedes the R24 stopgap: a positive absolute return is mandatory
+        under every support rule, and a treatment that confidently loses money is NOT_SUPPORTED. The R24 opt-in
+        rule is redundant and no longer a registrable value."""
         losing = self.fixture.outcomes(baseline_net=-10_000_000, evidence_net=-4_000_000)
         plain = evaluate(Document.from_dict(self.fixture.registration()), losing).read()
-        self.assertEqual(plain["status"], "SUPPORTED")  # registered rule, evaluated exactly as registered
+        self.assertEqual((plain["status"], plain["reason"]), ("NOT_SUPPORTED", "TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"))
         self.assertLess(plain["treatment_absolute_mean"][0], 0)
         self.assertIn("TREATMENT_ABSOLUTE_NET_NOT_POSITIVE", plain["warnings"])
         strict = self.fixture.registration(support_rule="LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE")
-        report = evaluate(Document.from_dict(strict), losing).read()
-        # The support rule fails; the registered kill rule (upper bound below zero) does not fire.
-        self.assertEqual((report["status"], report["reason"]), ("INCONCLUSIVE", "TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"))
+        self.assertEqual(evaluate(Document.from_dict(strict), losing).read()["status"], "NOT_RUN")
 
     def test_r24_profitable_treatment_supported_under_strict_rule(self):
-        """The new strict rule still supports a profitable, better treatment, without a warning."""
+        """The registered default rule (now always strict, IDEA-034) supports a profitable, better treatment,
+        without a warning."""
         better = self.fixture.outcomes(baseline_net=50000, evidence_net=150000)
-        strict = self.fixture.registration(support_rule="LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE")
-        report = evaluate(Document.from_dict(strict), better).read()
+        report = evaluate(Document.from_dict(self.fixture.registration()), better).read()
         self.assertEqual(report["status"], "SUPPORTED")
         self.assertEqual(report.get("warnings", []), [])
 
