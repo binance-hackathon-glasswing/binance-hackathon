@@ -187,6 +187,30 @@ class DojShapeTests(Harness):
 
 
 class FailureTests(Harness):
+    def test_abandoned_continuation_restarts_without_first_page_validators(self):
+        source = replace(self.register["fr-bis"], limits=dict(self.register["fr-bis"].limits, max_pages=1))
+        register = dict(self.register, **{"fr-bis": source})
+        tail = source.listing_url + "&page=2"
+        doc = {"document_number": "2026-a", "title": "Synthetic notice", "type": "Notice",
+               "publication_date": "2026-10-09"}
+        page = fr([doc], tail)
+        def conditional(headers):
+            return (304, {}, None) if headers.get("If-None-Match") else (200, {"ETag": "same"}, page)
+        net = FakeNet({source.listing_url: [(200, {"ETag": "same"}, page), conditional],
+                       tail: [(503, {}, None)]})
+        ingest = self.ingestor(net, register)
+        ingest.poll("fr-bis")
+        for _ in range(3):
+            self.assertEqual(ingest.poll("fr-bis")["status"], "SOURCE_UNAVAILABLE")
+        result = ingest.poll("fr-bis")
+        self.assertEqual(result["abandoned_continuation"], tail)
+        self.assertEqual(result["status"], "OK")
+        self.assertTrue(result["truncated"])
+        self.assertNotIn("If-None-Match", net.requests[-1][1])
+        recovered = self.ingestor(FakeNet({tail: [(200, {}, fr([dict(doc, document_number="2026-b")]))]}), register)
+        self.assertEqual(recovered.poll("fr-bis")["status"], "OK")
+        self.assertEqual(len(self.store.records("fr-bis")), 2)
+
     def test_page_budget_preserves_continuation_and_incomplete_coverage(self):
         source = replace(self.register["fr-bis"], limits=dict(self.register["fr-bis"].limits, max_pages=1))
         register = dict(self.register, **{"fr-bis": source})

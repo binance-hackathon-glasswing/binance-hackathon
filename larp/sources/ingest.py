@@ -59,7 +59,8 @@ class SourceIngestor:
         progress = cursor["in_progress"] or {}
         if progress and (progress.get("failures", 0) >= MAX_RESUME_FAILURES or not allowed(source, progress["next_url"])):
             outcome["abandoned_continuation"] = progress.get("next_url")  # wedged or poisoned (S4-B d07)
-            cursor = dict(cursor, in_progress=None)
+            # A validator for page 1 cannot attest that an abandoned tail was processed.
+            cursor = dict(cursor, in_progress=None, etag=None, last_modified=None)
         url = (cursor["in_progress"] or {}).get("next_url") or source.listing_url
         first = cursor["in_progress"] is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
@@ -68,8 +69,9 @@ class SourceIngestor:
             now = self.clock()
             health = dict(cursor["health"], last_attempt_ms=now)
             try:
-                response = self.client.get(source, url, etag=cursor["etag"] if first else None,
-                                           last_modified=cursor["last_modified"] if first else None)
+                conditional = first and not cursor.get("last_truncated")
+                response = self.client.get(source, url, etag=cursor["etag"] if conditional else None,
+                                           last_modified=cursor["last_modified"] if conditional else None)
                 if response.status == 304:
                     items, next_url = [], None
                     outcome["status"] = "NOT_MODIFIED"
