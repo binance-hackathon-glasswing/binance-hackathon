@@ -133,14 +133,14 @@ class Gates:
     nonce: int | None
     observed_at: int
     expires_at: int
-    audit_durable: bool = True
-    reservation_valid: bool = True
-    version_valid: bool = True
-    risk_valid: bool = True
-    health_valid: bool = True
-    token_market_open: bool = True
-    underlying_market_open: bool = True
-    clock_trusted: bool = True
+    audit_durable: bool = False
+    reservation_valid: bool = False
+    version_valid: bool = False
+    risk_valid: bool = False
+    health_valid: bool = False
+    token_market_open: bool = False
+    underlying_market_open: bool = False
+    clock_trusted: bool = False
 
     def check(self, intent, now):
         integer(now)
@@ -382,7 +382,7 @@ class Executor:
         gates = self.guards.snapshot(state.intent, now)
         self._validate(state, attempt.step, attempt.payload, gates, now)
         return self._update_attempt(state, replace(attempt, state="AUTHORIZED", epoch=gates.epoch,
-                                   guard_version=gates.state_version), "AUTHORIZED", gates)
+                                   guard_version=gates.state_version), "AUTHORIZED", gates, last_observed_at=now)
 
     def sign(self, key, now):
         state = self._load(key)
@@ -397,7 +397,7 @@ class Executor:
         if not self.signer.verify(attempt.payload, signed):
             raise Blocked("signed bytes/hash do not bind authorized payload")
         return self._update_attempt(state, replace(attempt, state="SIGNED_DURABLE",
-                                   raw_hex=signed.raw_hex, tx_hash=signed.tx_hash), "SIGNED_DURABLE", gates)
+                                   raw_hex=signed.raw_hex, tx_hash=signed.tx_hash), "SIGNED_DURABLE", gates, last_observed_at=now)
 
     def broadcast(self, key, now):
         state = self._load(key)
@@ -409,7 +409,7 @@ class Executor:
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
         attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now, next_probe=now)
-        state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates)
+        state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
         try:
             tx_hash = self.venue.broadcast(Signed(attempt.raw_hex, attempt.tx_hash), attempt.epoch, attempt.guard_version)
             phase = "PENDING" if tx_hash == attempt.tx_hash else "UNKNOWN"

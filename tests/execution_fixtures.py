@@ -100,7 +100,10 @@ class FakeGuards:
 
     def snapshot(self, economic_intent, now):
         epoch, version = self.store.authority()
-        return Gates(epoch, version, self.nonce, now, now + 30, **self.changes)
+        facts = dict(audit_durable=True, reservation_valid=True, version_valid=True,
+                     risk_valid=True, health_valid=True, token_market_open=True,
+                     underlying_market_open=True, clock_trusted=True)
+        return Gates(epoch, version, self.nonce, now, now + 30, **{**facts, **self.changes})
 
     def change(self, **changes):
         self.changes.update(changes)

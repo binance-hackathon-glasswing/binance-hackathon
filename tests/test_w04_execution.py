@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from larp.execution import (Blocked, Conflict, Executor, Outcome, Signed,
+from larp.execution import (Blocked, Conflict, Executor, Gates, Outcome, Signed,
                             canonical, possible_swap_hashes, validate_payload)
 from execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
                                 FakeSigner, FakeVenue, SQLiteFixture, finalized, intent)
@@ -331,6 +331,66 @@ class ExecutionTests(unittest.TestCase):
                         {"intent_id": ""}, {"max_prepare_probes": 0}):
             with self.subTest(changes=changes), self.assertRaises(Blocked):
                 intent(**changes).validate()
+
+    def test_unspecified_guard_facts_fail_closed(self):
+        with self.assertRaises(Blocked):
+            Gates(1, 1, 0, 10, 40).check(self.economic, 10)
+
+    def test_backward_clock_cannot_broadcast_emitted_signature(self):
+        self.signed_approve()
+        with self.assertRaises(Blocked):
+            self.engine.broadcast(self.key, 9)
+        self.assertEqual(self.venue.broadcasts, [])
+
+    def test_ownership_loss_at_broadcast_release_keeps_possible_send(self):
+        self.signed_approve()
+        original = self.venue.broadcast
+        def fenced(*args):
+            self.store.advance_authority(epoch=True)
+            return original(*args)
+        with patch.object(self.venue, "broadcast", side_effect=fenced), self.assertRaises(Conflict):
+            self.engine.broadcast(self.key, 11)
+        self.assertEqual(self.venue.broadcasts, [])
+        self.assertEqual(self.store.load(self.key).attempts[-1].state, "BROADCAST_ATTEMPTED")
+
+    def test_cold_restart_after_each_successful_durable_transition(self):
+        self.engine.create(self.economic, 10)
+        self.restart()
+        self.engine.prepare(self.key, 10)
+        self.restart()
+        self.engine.authorize(self.key, 10)
+        self.restart()
+        signed = self.engine.sign(self.key, 10)
+        self.restart()
+        self.assertEqual(self.store.load(self.key).attempts[-1].tx_hash, signed.attempts[-1].tx_hash)
+        self.engine.broadcast(self.key, 11)
+        self.restart()
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.engine.reconcile(self.key, 12)
+        self.restart()
+        self.guards.nonce = 1
+        self.engine.prepare(self.key, 13)
+        self.restart()
+        self.guards.nonce = 1
+        self.engine.authorize(self.key, 13)
+        self.restart()
+        self.guards.nonce = 1
+        self.engine.sign(self.key, 13)
+        self.restart()
+        self.guards.nonce = 1
+        self.engine.broadcast(self.key, 14)
+        self.restart()
+        self.guards.nonce = 1
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.engine.reconcile(self.key, 15)
+        self.restart()
+        state = self.store.load(self.key)
+        self.assertEqual(state.status, "COMPLETED")
+        self.assertEqual(len(state.attempts), 2)
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM signatures").fetchone()[0], 2)
+        self.assertEqual([event["step"] for event in self.store.events() if event["type"] == "FINAL_SUCCESS"], ["APPROVE", "SWAP"])
 
 
 if __name__ == "__main__":
