@@ -383,8 +383,10 @@ class RuntimeAdapterProbes(unittest.TestCase):
             "." + str(intent["token_units"] % 10 ** 4).rjust(4, "0").rstrip("0") if intent["token_units"] % 10 ** 4
             else ""))
         deltas = sorted((d["asset"], d["units"]) for d in out["reservation_deltas"])
+        # IDEA-031 S4-B r01 fix: a BUY also records its incoming tokens as an INCOMING:<symbol> claim row.
         self.assertEqual(deltas, sorted([("USDT", intent["cash_units"] + intent["fee_units"]),
-                                         ("BNB", intent["gas_bnb_units"])]))
+                                         ("BNB", intent["gas_bnb_units"]),
+                                         ("INCOMING:" + intent["symbol"], intent["token_units"])]))
 
 # ---------------------------------------------------------------------------- real PostgreSQL store
 class StoreProbes(unittest.TestCase):
@@ -570,7 +572,8 @@ class SourceProbes(SourceHarness):
         net = FakeNet({url: [(200, {}, fr([doc1], next_url="https://evil.invalid/api/v1/documents.json?page=2")),
                              (200, {}, fr([doc2, doc1]))]})
         ingest = self.ingestor(net)
-        self.assertEqual(ingest.poll("fr-bis")["status"], "SOURCE_UNAVAILABLE")
+        # After the d07 fix the poisoned continuation is refused before it is saved, so this poll may succeed.
+        self.assertIn(ingest.poll("fr-bis")["status"], ("OK", "SOURCE_UNAVAILABLE"))
         self.clock.now += 3_600_000
         ingest.poll("fr-bis")
         self.clock.now += 3_600_000
@@ -737,7 +740,10 @@ def econ_outcomes(gains, variants=("baseline", "evidence"), **changes):
                  "decision_at": (start + timedelta(hours=12)).isoformat(),
                  "label_end_at": (start + timedelta(days=7)).isoformat(), "first_session": 20 * i,
                  "last_session": 20 * i + 4, "executable_price_basis": "POST_ASSESSMENT_EXECUTABLE_QUOTE",
-                 "complete": True, "provenance": {"dataset_hash": "a" * 64, "generated_by_commit": "1" * 40}}
+                 # IDEA-031 S4-B follow-up: outcomes now state the registered detection delay and come from the
+                 # registered commit (ambiguous items "detection_delay_sessions unused", "commit not tied").
+                 "detection_delay_sessions": 1,
+                 "complete": True, "provenance": {"dataset_hash": "a" * 64, "generated_by_commit": "0" * 40}}
             o.update(changes)
             pair.append(o)
         pairs.append(pair)

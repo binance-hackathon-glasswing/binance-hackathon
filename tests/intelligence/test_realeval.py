@@ -19,7 +19,7 @@ class RealEvalTests(unittest.TestCase):
         self.assertFalse(report["promotion_authorized"])
 
     def manifest(self, **changes):
-        docs = [{"doc_id": f"d{i}", "path": f"/tmp/elsewhere/d{i}.htm", "sha256": "0" * 64, "split": "HELD_OUT",
+        docs = [{"doc_id": f"d{i}", "path": f"/tmp/elsewhere/d{i}.htm", "sha256": f"{i:064x}", "split": "HELD_OUT",
                  "rights": {"cleared": True, "licence_id": "CC-BY-4.0"}} for i in range(60)]
         m = {"schema": "RealEvalManifest.v1", "synthetic": False, "documents": docs,
              "labels": {"annotators": ["ann-1", "ann-2"], "implementers": ["impl-1"], "frozen_commit": "a" * 40,
@@ -36,6 +36,9 @@ class RealEvalTests(unittest.TestCase):
         unfrozen = self.manifest()
         unfrozen["labels"]["frozen_before_predictions"] = False
         self.assertIn("LABELS_NOT_FROZEN_BEFORE_PREDICTIONS", admissible(unfrozen, CRITERIA))
+        leaked = self.manifest()
+        leaked["documents"][1] = dict(leaked["documents"][0], split="DEV")
+        self.assertIn("DOCUMENT_IN_MORE_THAN_ONE_SPLIT", admissible(leaked, CRITERIA))
         small = self.manifest(documents=self.manifest()["documents"][:10])
         self.assertIn("TOO_FEW_HELD_OUT_DOCUMENTS", admissible(small, CRITERIA))
         inside = self.manifest()

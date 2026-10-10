@@ -72,7 +72,7 @@ class PrecisionScoringTests(unittest.TestCase):
         self.assertEqual(extra["numerical_precision"], [1, 2])
         self.assertEqual(extra["event_precision"], [1, 2])
         self.assertEqual(extra["statement_precision"], [1, 2])
-        self.assertEqual(extra["false_positives"], {"numerical": 1, "events": 1, "statements": 1})
+        self.assertEqual(extra["false_positives"], {"numerical": 1, "events": 1, "statements": 1, "findings": 0})
         self.assertIsNone(self.run_with([self.claim("1.2", metric="net_income")], exhaustive=False)["numerical_precision"])
 
 

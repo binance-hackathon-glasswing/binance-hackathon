@@ -30,8 +30,9 @@ def validate(spec: dict) -> list:
     if spec.get("schema") != "AblationStudy.v1":
         return ["SCHEMA"]
     exp = spec.get("exp_id")
-    if type(exp) is not str or not exp.startswith("EXP-") or not _committed(LEDGER / f"{exp}.md") or \
-            spec.get("study_id") not in (LEDGER / f"{exp}.md").read_text(encoding="utf-8"):
+    study = spec.get("study_id")
+    if type(exp) is not str or not exp.startswith("EXP-") or type(study) is not str or not study or \
+            not _committed(LEDGER / f"{exp}.md") or study not in (LEDGER / f"{exp}.md").read_text(encoding="utf-8"):
         reasons.append("NO_COMMITTED_EXP_RECORD")
     data = spec.get("dataset") or {}
     if data.get("rights_cleared") is not True or data.get("point_in_time") is not True or len(data.get("sha256", "")) != 64:
