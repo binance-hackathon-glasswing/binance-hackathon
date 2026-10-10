@@ -85,6 +85,24 @@ class GateTests(unittest.TestCase):
         self.assertEqual(state["evidence_gate"], "UNKNOWN")
         self.assertIn("SOURCE_STALE", state["gate_reasons"])
 
+    def test_untrusted_instructions_or_unchecked_priors_cannot_be_clear(self):
+        w = build_world(["EXSEMI_INJECTION_8K", "EXSEMI_Q2_8K", "EXSEMI_Q3_10Q_COMPACT"])
+        context = prior_thesis(w.config, EXSEMI)
+        state = dict(initial_state(EXSEMI, PROFILE), context=context, context_hash=context_hash(context))
+        cases = ((["EXSEMI_INJECTION_8K"], 6, "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE"),
+                 (["EXSEMI_Q3_10Q_COMPACT"], 0, "PRIOR_NOT_CHECKED"))
+        for refs, calls, reason in cases:
+            with self.subTest(reason=reason):
+                request = w.request(refs, issuer_id=EXSEMI, job_id=f"job:{reason}", context=context, tool_calls=calls)
+                result = w.assessor(RuleBaselineModel(w.clock)).assess(request)
+                _, after = accept(state, result, profile_hash=PROFILE, now_ms=w.clock())
+                self.assertEqual(after["evidence_gate"], "UNKNOWN")
+                self.assertIn(reason, after["gate_reasons"])
+        request = w.request(["EXSEMI_Q3_10Q_COMPACT"], issuer_id=EXSEMI, job_id="job:agent", context=context)
+        _, after = accept(state, w.assessor(RuleBaselineModel(w.clock)).assess(request), profile_hash=PROFILE,
+                          now_ms=w.clock())
+        self.assertEqual(after["evidence_gate"], "CLEAR")  # the agent checked the earlier filing
+
     def test_feature_rows_are_point_in_time_and_carry_no_trade_fields(self):
         result = self.assess(["EXSEMI_Q3_8K"])
         row = feature_row(result).read()

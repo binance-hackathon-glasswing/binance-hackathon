@@ -4,8 +4,9 @@
 It rejects results computed for an obsolete thesis context or policy profile, expired or
 out-of-order results, and duplicates. Its `evidence_gate` is descriptive evidence health:
 
-- CLEAR only after an ASSESSED, fresh, conflict-free result with complete evidence and no
-  adverse finding;
+- CLEAR only after an ASSESSED, fresh, conflict-free result with complete evidence, every
+  numerical fact checked against earlier filings, no untrusted instructions in the evidence
+  and no adverse finding;
 - ADVERSE while any accepted adverse finding or fired falsifier is unresolved;
 - UNKNOWN otherwise, including after ABSTAIN, UNAVAILABLE, timeouts and stale sources.
 
@@ -21,7 +22,8 @@ from larp.intelligence.common import IntelligenceError, digest
 DECISIONS = ("ACCEPT", "DUPLICATE", "REJECT_STALE_CONTEXT", "REJECT_PROFILE", "REJECT_EXPIRED",
              "REJECT_OUT_OF_ORDER", "REJECT_WRONG_ISSUER", "REJECT_MALFORMED")
 INCOMPLETE = ("SOURCE_STALE", "SOURCE_HEALTH_UNKNOWN", "TOOL_ERROR:", "EXHIBIT_NOT_LOADED:", "FILING_",
-              "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_", "REVISION_SUPERSEDED_REF:")
+              "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_", "REVISION_SUPERSEDED_REF:",
+              "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE")
 
 
 def initial_state(issuer_id: str, policy_profile_hash: str, max_known_facts: int = 200) -> dict:
@@ -98,6 +100,8 @@ def _gate(r: dict, adverse: list, availability: str) -> tuple:
     reasons = [m for m in r["missingness"] if m.startswith(INCOMPLETE)]
     if r["conflicts"]:
         reasons.append("CONFLICTS")
+    if (r.get("novelty") or {}).get("prior_not_checked"):
+        reasons.append("PRIOR_NOT_CHECKED")  # a contradiction with earlier filings cannot be excluded
     if r["proposed_thesis"] is None or r["proposed_thesis"]["status"] in ("UNKNOWN",):
         reasons.append("THESIS_UNKNOWN")
     return ("UNKNOWN", sorted(set(reasons))) if reasons else ("CLEAR", [])
