@@ -52,3 +52,7 @@ Also require whitespace checks and examples showing a baseline intent, rejected 
 - Integration notice: `main` commit `91af281` uses IDEA-023 for the prior proposed-solutions document, while the kickoff branch separately uses IDEA-023 for engine contracts. This pre-existing ID/path collision must be reconciled by Keegan in an integrating commit without losing either record; this branch does not rewrite either history or the shared index.
 
 Documentation references describe current work and remaining boundaries. A fake reservation installer/quote producer is explicitly temporary and restricted to offline fixtures. No automatic merge to main, organiser messages or live capability verification is authorized by this branch.
+
+## 4. Verification history (append-only)
+
+- Initial implementation/criteria `e9e3671` was pushed to `origin/codex/strategy-risk-research` before any new module ran. Python 3.12.14 unittest execution: 42 tests, 40 passed, one failure and one error. All original 13 passed. Two tests expected mandatory exits but their synthetic $0.05 cost reserve was below the quoted $0.054–0.06 cost; the planner rejected `COST_RESERVE_INSUFFICIENT` as designed. Fixture reserve raised to a clearly synthetic $0.10; no production risk gate was relaxed. Added prospective counterexamples for 100/200 USDT post-cost caps and split-exit replanning/actual fees. These changes must be committed/pushed before rerun; results pending.

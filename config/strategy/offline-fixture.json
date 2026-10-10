@@ -14,7 +14,7 @@
   "rebalance_band": [5, 100],
   "minimum_trade_units": 5000000,
   "per_trade_cap_units": 50000000,
-  "cost_reserve_units": 50000,
+  "cost_reserve_units": 100000,
   "exit_gas_reserve_units": 50000,
   "dust_units": 1,
   "quote_age_seconds": 30,

@@ -161,3 +161,35 @@ class RiskTests(unittest.TestCase):
         r = plan(changed(s, markets=c["markets"]), None).read()
         self.assertTrue(r["requirements"])
         self.assertEqual(s.context.read()["portfolio"]["positions"]["NVDAB"]["units"], 8000)
+
+    def test_post_cost_caps_at_both_wallet_sizes(self):
+        for funding in (100_000_000, 200_000_000):
+            s = snapshot()
+            c = s.context.read()
+            c["portfolio"]["cash_units"] = funding - 1_000_000
+            c["portfolio"]["opening_equity_units"] = funding
+            c["portfolio"]["risk"].update(day_anchor_units=funding, peak_units=funding)
+            s, r = self.planned(changed(s, portfolio=c["portfolio"]))
+            intent = r.read()["intents"][0]
+            m = next(x for x in s.context.read()["markets"] if x["symbol"] == intent["symbol"])
+            from larp.strategy.schema import value
+            mark = value(intent["token_units"], m)
+            cost = intent["cash_units"] - mark + intent["fee_units"] + intent["gas_bnb_units"]
+            self.assertLessEqual(mark * 5, funding - cost)
+            self.assertGreaterEqual(c["portfolio"]["cash_units"] - intent["cash_units"], (funding - cost) / 5)
+
+    def test_split_parent_replanned_after_actual_fill_and_fee(self):
+        s, r = self.planned(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}), policy=False)
+        c = s.context.read()
+        for quote in c["markets"][0]["quotes"]:
+            quote["fee_units"] = 100
+        s = changed(s, markets=c["markets"])
+        r = plan(s, None)
+        intent = r.read()["intents"][0]
+        reserved = reserve_fixture(s, r)
+        settled = advance_accounting(Document.from_dict(reserved.context.read()["portfolio"]), fill_fixture(s, intent))
+        self.assertEqual(settled.read()["accounting"]["fees_units"], 100)
+        self.assertEqual(settled.read()["positions"]["NVDAB"]["units"], 8000 - intent["token_units"])
+        following = plan(changed(s, portfolio=settled.read()), None).read()
+        self.assertGreater(following["requirements"][0]["remaining_sell_units"], 0)
+        self.assertLess(following["requirements"][0]["remaining_sell_units"], r.read()["requirements"][0]["remaining_sell_units"])
