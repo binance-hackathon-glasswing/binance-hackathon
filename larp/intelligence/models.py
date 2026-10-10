@@ -12,8 +12,9 @@ Adapters:
 - ScriptedModel: deterministic fake for tests (scripted outputs and latencies).
 - HostedChatModel: OpenAI-compatible chat-completions codec over an injected transport.
   NOT VERIFIED against any live provider; no provider is selected (GAP-57/D-03).
-- LocalCheckpointModel: local weights whose SHA-256 must equal the pinned hash before use.
-  No checkpoint exists: training is NOT RUN (training.py).
+- LocalCheckpointModel: runs an existing local model whose weight file's SHA-256 must equal the
+  pinned hash before use. No local model is selected. Model training is out of scope for this
+  build (IDEA-021 §8.1/§8.5).
 """
 
 from dataclasses import dataclass

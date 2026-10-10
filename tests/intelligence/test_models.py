@@ -1,4 +1,4 @@
-"""Provider-neutral adapters (fake transports only), output schema, training gate."""
+"""Provider-neutral adapters (fake transports only) and the model output schema."""
 
 import hashlib
 import json
@@ -14,7 +14,6 @@ from larp.intelligence.fakes import FakeClock
 from larp.intelligence.models import (
     HostedChatModel, LocalCheckpointModel, RuleBaselineModel, ScriptedModel, parse_output,
 )
-from larp.intelligence.training import check_training_manifest
 
 SECRET = "sk-synthetic-never-real-0123456789"
 
@@ -131,28 +130,6 @@ class OutputSchemaTests(unittest.TestCase):
         for output in bad:
             with self.subTest(output=output), self.assertRaises(IntelligenceError):
                 parse_output(output)
-
-
-class TrainingGateTests(unittest.TestCase):
-    def test_training_is_not_run_without_rights_criteria_and_checkpoint_details(self):
-        status = check_training_manifest(None)
-        self.assertEqual(status["status"], "NOT_RUN")
-        self.assertIn("label_rights_reference", status["missing"])
-
-    def test_claude_outputs_and_the_synthetic_pack_are_never_training_labels(self):
-        manifest = {k: "x" for k in ("label_rights_reference", "experiment_record_commit", "base_checkpoint_id",
-                                     "base_checkpoint_revision", "base_checkpoint_licence", "compute", "budget")}
-        manifest.update(base_checkpoint_sha256="a" * 64, dataset_manifest_sha256="b" * 64)
-        for source, teacher, problem in (("claude labels", "none", "LABEL_SOURCE_NOT_PERMITTED"),
-                                         ("synthetic-eval-pack", "none", "LABEL_SOURCE_NOT_PERMITTED"),
-                                         ("team gold set", "Claude via API", "TEACHER_NOT_PERMITTED")):
-            with self.subTest(source=source):
-                status = check_training_manifest(dict(manifest, label_source=source, teacher=teacher))
-                self.assertEqual(status["status"], "NOT_RUN")
-                self.assertIn(problem, status["problems"])
-        ready = check_training_manifest(dict(manifest, label_source="team gold set", teacher="none"))
-        self.assertEqual(ready["status"], "READY_FOR_REVIEW")
-        self.assertIn("not approval", ready["note"])
 
 
 if __name__ == "__main__":

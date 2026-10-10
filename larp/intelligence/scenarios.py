@@ -3,7 +3,7 @@
 Fictional issuers ("Example Semiconductor Corp", "Example Memory Co., Ltd.") with fictitious
 figures; CIKs 9900001/9900002 are placeholders, not real SEC filers. Every document says it is
 a synthetic fixture. The pack was written by Claude for evaluation only: under the Anthropic
-Usage Policy it must never be used to train a model (IDEA-007 §1, training.py).
+Usage Policy it must never be used to train a model (IDEA-007 §1).
 """
 
 from dataclasses import dataclass

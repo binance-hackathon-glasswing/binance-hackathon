@@ -3,7 +3,7 @@
 Rows are point-in-time: `as_of_ms` is the assessment cutoff and `available_ms` the time the
 row itself existed (cutoff + measured elapsed time). Values are integers, booleans or short
 codes; there is no trade, size or direction-to-trade field. The rule baseline has no fitted
-parameters, so it cannot leak training folds; any hosted/local model's rows inherit that
+parameters, so it cannot leak fitted information; any hosted/local model's rows inherit that
 model's knowledge-cutoff (hindsight) risk (I-67) and must be used out-of-fold. Models here do
 not select portfolio trades.
 """
