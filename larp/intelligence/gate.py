@@ -1,82 +1,156 @@
-"""Consumer-side acceptance of AssessmentResult.v1 and the per-issuer evidence state.
+"""Consumer-side acceptance of AssessmentResult.v2 and the per-issuer evidence state (IssuerEvidenceState.v2).
 
-`accept` is a pure reducer: (state, result, current profile, now) -> (decision, next state).
-It rejects results computed for an obsolete thesis context or policy profile, expired or
-out-of-order results, and duplicates. Its `evidence_gate` is descriptive evidence health:
+`accept` is a pure reducer: (state, result, current profile, now) -> (decision, next state). It rejects
+results computed for an obsolete thesis context or policy profile, expired or out-of-order results,
+and duplicates. `consume(state, now)` is the as-of view every consumer must read instead of the stored
+gate: freshness is assessed at consumption time (IDEA-030 R07).
 
-- CLEAR only after an ASSESSED, fresh, conflict-free result with complete evidence, every
-  numerical fact checked against earlier filings, no untrusted instructions in the evidence,
-  no hypothetical event statement that is new or unchecked against earlier filings, and no
-  adverse finding;
-- ADVERSE while any accepted adverse finding or fired falsifier is unresolved;
-- UNKNOWN otherwise, including after ABSTAIN, UNAVAILABLE, timeouts and stale sources.
+Evidence status, descriptive only:
+- CLEAR only after an ASSESSED, fresh, conflict-free result with complete coverage, every numerical
+  fact checked against earlier filings, no untrusted instructions, no statement pending review, no
+  unresolved adverse finding, and only while `now < assessed_until_ms`;
+- STALE when an accepted CLEAR has aged past its validity (an expired incoming result cannot refresh it);
+- ADVERSE while any adverse latch is unresolved;
+- UNKNOWN otherwise, including after ABSTAIN, UNAVAILABLE, timeouts, stale sources and pending reviews.
 
-Abstentions and timeouts never clear findings and never produce CLEAR, so a timeout cannot
-re-enable new exposure. How findings are resolved, and what any gate value means for orders,
-is policy (Keith's module); this reducer emits no actions.
+What these values mean for orders is NOT decided here (IDEA-031 S2.4): the integration layer applies a
+separately configured authority, whose default for statements and new evidence is SHADOW.
+
+State v2 adds, relative to v1 (IDEA-030 R06/R07):
+- `statements`: registry of event statements with review lifecycle (lifecycle.py). An unrelated clean
+  result never erases a pending statement; a reread of the same filing never re-opens a review; reviews
+  are bounded (attempts, exponential backoff, REVIEW_EXHAUSTED).
+- `unresolved_adverse` latches carry an explicit `resolution_rule`. The only rule implemented is
+  SOURCE_CORRECTED_OR_WITHDRAWN: the latch resolves when every record supporting it has been superseded by
+  a revision in which the finding no longer appears, or withdrawn. Latches are never cleared by expiry,
+  abstention, timeout or an unrelated clean filing.
+- `assessed_until_ms` and `last_rejection` for consumption-time freshness.
 """
 
 from larp.contracts import Document
+from larp.intelligence import lifecycle
 from larp.intelligence.agent import context_hash
 from larp.intelligence.common import IntelligenceError, digest
 
+SCHEMA = "IssuerEvidenceState.v2"
+RESULT_SCHEMAS = ("AssessmentResult.v2",)
 DECISIONS = ("ACCEPT", "DUPLICATE", "REJECT_STALE_CONTEXT", "REJECT_PROFILE", "REJECT_EXPIRED",
              "REJECT_OUT_OF_ORDER", "REJECT_WRONG_ISSUER", "REJECT_MALFORMED")
 INCOMPLETE = ("SOURCE_STALE", "SOURCE_HEALTH_UNKNOWN", "TOOL_ERROR:", "EXHIBIT_NOT_LOADED:", "FILING_",
               "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_", "REVISION_SUPERSEDED_REF:",
-              "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE", "PRIOR_GUIDANCE_CONFLICT:")
+              "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE", "PRIOR_GUIDANCE_CONFLICT:", "COVERAGE_TRUNCATED")
+RESOLUTION_RULE = "SOURCE_CORRECTED_OR_WITHDRAWN"
+DEFAULT_LIFECYCLE = {"review_base_delay_ms": 21_600_000, "max_review_attempts": 3, "max_backoff_ms": 172_800_000,
+                     "statement_retention_ms": 7_776_000_000, "max_statements": 400}
 
 
-def initial_state(issuer_id: str, policy_profile_hash: str, max_known_facts: int = 200) -> dict:
+def initial_state(issuer_id: str, policy_profile_hash: str, max_known_facts: int = 200,
+                  lifecycle_policy: dict | None = None) -> dict:
     context = {"thesis": None, "known_facts": []}
-    return {"schema": "IssuerEvidenceState.v1", "issuer_id": issuer_id, "version": 0,
+    return {"schema": SCHEMA, "issuer_id": issuer_id, "version": 0,
             "policy_profile_hash": policy_profile_hash, "context": context, "context_hash": context_hash(context),
             "latest_cutoff_ms": None, "accepted_result_ids": [], "accepted_keys": [],
-            "unresolved_adverse": [], "availability": "NONE", "evidence_gate": "UNKNOWN",
-            "gate_reasons": ["NO_ASSESSMENT"], "max_known_facts": max_known_facts}
+            "unresolved_adverse": [], "resolved_adverse": [], "statements": {}, "records_seen": {},
+            "availability": "NONE", "evidence_gate": "UNKNOWN", "gate_reasons": ["NO_ASSESSMENT"],
+            "assessed_until_ms": None, "last_rejection": None, "max_known_facts": max_known_facts,
+            "lifecycle": dict(DEFAULT_LIFECYCLE, **(lifecycle_policy or {}))}
+
+
+def lifecycle_policy_from(config) -> dict:
+    """Lifecycle parameters from an IntelligenceConfig (synthetic development defaults until set live)."""
+    return {"review_base_delay_ms": config.p("reassess_delay_ms"),
+            "max_review_attempts": config.p("max_review_attempts"),
+            "max_backoff_ms": config.p("max_review_backoff_ms"),
+            "statement_retention_ms": config.p("statement_retention_ms"),
+            "max_statements": config.limits["max_statements_registry"]}
+
+
+def _reject(state, decision, now_ms, result_id=None):
+    """A rejection never changes evidence; it is recorded so consumers can see that fresher input failed."""
+    if decision in ("DUPLICATE",):
+        return decision, state
+    return decision, dict(state, last_rejection={"decision": decision, "at_ms": now_ms, "result_id": result_id})
 
 
 def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> tuple:
+    if state.get("schema") != SCHEMA:
+        raise IntelligenceError("Unknown evidence state schema (expected IssuerEvidenceState.v2)")
     r = result.read()
-    if r.get("schema") != "AssessmentResult.v1" or type(r.get("result_id")) is not str:
-        return "REJECT_MALFORMED", state
+    rid = r.get("result_id") if type(r.get("result_id")) is str else None
+    if r.get("schema") not in RESULT_SCHEMAS or rid is None:
+        return _reject(state, "REJECT_MALFORMED", now_ms, rid)
     if r.get("issuer_id") != state["issuer_id"]:
-        return "REJECT_WRONG_ISSUER", state
-    if r["result_id"] in state["accepted_result_ids"] or r.get("assessment_key") in state["accepted_keys"]:
+        return _reject(state, "REJECT_WRONG_ISSUER", now_ms, rid)
+    if rid in state["accepted_result_ids"] or r.get("assessment_key") in state["accepted_keys"]:
         return "DUPLICATE", state
     if r.get("policy_profile_hash") != profile_hash or profile_hash != state["policy_profile_hash"]:
-        return "REJECT_PROFILE", state
+        return _reject(state, "REJECT_PROFILE", now_ms, rid)
     if r.get("context_hash") != state["context_hash"]:
-        return "REJECT_STALE_CONTEXT", state
+        return _reject(state, "REJECT_STALE_CONTEXT", now_ms, rid)
     if type(r.get("expiry_ms")) is not int or r["expiry_ms"] <= now_ms:
-        return "REJECT_EXPIRED", state
+        return _reject(state, "REJECT_EXPIRED", now_ms, rid)
     if state["latest_cutoff_ms"] is not None and r.get("cutoff_ms", -1) < state["latest_cutoff_ms"]:
-        return "REJECT_OUT_OF_ORDER", state
+        return _reject(state, "REJECT_OUT_OF_ORDER", now_ms, rid)
     if r.get("status") == "REJECTED_REQUEST":
-        return "REJECT_MALFORMED", state
+        return _reject(state, "REJECT_MALFORMED", now_ms, rid)
 
-    nxt = dict(state, version=state["version"] + 1, latest_cutoff_ms=r["cutoff_ms"],
-               accepted_result_ids=(state["accepted_result_ids"] + [r["result_id"]])[-500:],
+    policy = state["lifecycle"]
+    nxt = dict(state, version=state["version"] + 1, latest_cutoff_ms=r["cutoff_ms"], last_rejection=None,
+               accepted_result_ids=(state["accepted_result_ids"] + [rid])[-500:],
                accepted_keys=(state["accepted_keys"] + [r["assessment_key"]])[-500:])
-    adverse = list(state["unresolved_adverse"])
+    adverse = [dict(a) for a in state["unresolved_adverse"]]
+    resolved = list(state["resolved_adverse"])
     held = {a["finding_id"] for a in adverse}
-    for finding in r.get("event_findings", []):  # verified filer/keyword events, any status
-        if finding["impact"] == "ADVERSE" and finding["finding_id"] not in held:
-            held.add(finding["finding_id"])
-            adverse.append({"finding_id": finding["finding_id"], "type": finding["type"],
-                            "result_id": r["result_id"], "cutoff_ms": r["cutoff_ms"]})
+    statements = {k: dict(v) for k, v in state["statements"].items()}
+    records_seen = dict(state["records_seen"])
+
+    def latch(finding_id, kind, sources):
+        if finding_id in held:
+            return
+        held.add(finding_id)
+        adverse.append({"finding_id": finding_id, "type": kind, "result_id": rid, "cutoff_ms": r["cutoff_ms"],
+                        "sources": sources, "resolution_rule": RESOLUTION_RULE})
+
+    # Revisions and withdrawals first: they can resolve latches and correct statements from the old version.
+    present_findings = {f["type"] for f in r.get("event_findings", []) + r.get("findings", [])}
+    present_statements = {s["statement_id"] for s in r.get("event_statements", [])}
+    for used in r.get("evidence_used", []):
+        accession, revision = used.get("accession"), used.get("revision", 0)
+        seen = records_seen.get(accession)
+        withdrawn = used.get("quality") == "WITHDRAWN"
+        if seen is not None and (revision > seen["revision"] or withdrawn) and r["status"] == "ASSESSED":
+            lifecycle.revise(statements, accession=accession, superseding_hash=used.get("content_hash"),
+                             still_present=present_statements, withdrawn=withdrawn, now_ms=now_ms)
+            for a in list(adverse):
+                srcs = a.get("sources") or []
+                if srcs and all(x.get("accession") == accession for x in srcs) and \
+                        (withdrawn or a["type"] not in present_findings):
+                    adverse.remove(a)
+                    held.discard(a["finding_id"])
+                    resolved.append(dict(a, resolved_ms=now_ms, resolved_by=used.get("record_id"),
+                                         resolution="WITHDRAWN" if withdrawn else "CORRECTED"))
+        if seen is None or revision >= seen["revision"]:
+            records_seen[accession] = {"revision": revision, "record_id": used.get("record_id"),
+                                       "content_hash": used.get("content_hash")}
+
+    for finding in r.get("event_findings", []):  # re-verified filer/keyword events, any status
+        if finding["impact"] == "ADVERSE":
+            latch(finding["finding_id"], finding["type"], finding.get("sources") or [])
+    complete = r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
     if r["status"] == "ASSESSED":
         for finding in r["findings"]:
-            if finding["impact"] == "ADVERSE" and finding["finding_id"] not in held:
-                held.add(finding["finding_id"])
-                adverse.append({"finding_id": finding["finding_id"], "type": finding["type"],
-                                "result_id": r["result_id"], "cutoff_ms": r["cutoff_ms"]})
+            if finding["impact"] == "ADVERSE":
+                latch(finding["finding_id"], finding["type"], finding.get("sources") or [])
         for falsifier in r["falsifiers"]:
-            fid = "falsifier:" + digest("larp.intel.fired.v1", {"f": falsifier["falsifier_id"], "r": r["result_id"]})
-            if falsifier["state"] == "FIRED" and fid not in held:
-                adverse.append({"finding_id": fid, "type": "FALSIFIER_FIRED:" + falsifier["falsifier_id"],
-                                "result_id": r["result_id"], "cutoff_ms": r["cutoff_ms"]})
-        known = [c for c in state["context"]["known_facts"]]
+            fid = "falsifier:" + digest("larp.intel.fired.v1", {"f": falsifier["falsifier_id"], "r": rid})
+            if falsifier["state"] == "FIRED":
+                sources = [{"accession": u["accession"], "record_id": u["record_id"]} for u in r["evidence_used"]]
+                latch(fid, "FALSIFIER_FIRED:" + falsifier["falsifier_id"], sources)
+        history_checked = all((r.get("coverage") or {}).get("prior_history", {}).values())
+        for s in r.get("event_statements", []):
+            lifecycle.observe(statements, s, result_id=rid, now_ms=now_ms, complete=complete and history_checked,
+                              policy=policy)
+        known = list(state["context"]["known_facts"])
         known_ids = {f["fact_id"] for f in known}
         for claim in r["claims"]:
             fact = {k: v for k, v in claim.items() if k not in ("novelty", "model_confirmed")}
@@ -87,22 +161,30 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         nxt.update(context=context, context_hash=context_hash(context), availability="AVAILABLE")
     else:
         nxt["availability"] = "ABSTAINED" if r["status"] == "ABSTAIN" else "UNAVAILABLE"
-    nxt["unresolved_adverse"] = adverse
-    gate, reasons = _gate(r, adverse, nxt["availability"])
-    nxt.update(evidence_gate=gate, gate_reasons=reasons)
+    lifecycle.expire(statements, now_ms=now_ms, retention_ms=policy["statement_retention_ms"],
+                     max_entries=policy["max_statements"])
+    nxt.update(unresolved_adverse=adverse, resolved_adverse=resolved[-200:], statements=statements,
+               records_seen=dict(sorted(records_seen.items())[-2000:]))
+    gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete)
+    nxt.update(evidence_gate=gate, gate_reasons=reasons,
+               assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None)
     return "ACCEPT", nxt
 
 
-def _gate(r: dict, adverse: list, availability: str) -> tuple:
+def _gate(r: dict, adverse: list, availability: str, statements: dict, complete: bool) -> tuple:
     if adverse:
         return "ADVERSE", sorted({a["type"] for a in adverse})
+    pending = sorted(s["statement_id"] for s in statements.values() if s["status"] == "PENDING_REVIEW")
     if availability != "AVAILABLE":
-        return "UNKNOWN", [f"LATEST_{availability}"] + list(r.get("reasons", []))
+        return "UNKNOWN", [f"LATEST_{availability}"] + list(r.get("reasons", [])) + (
+            ["PENDING_STATEMENT_REVIEW"] if pending else [])
     reasons = [m for m in r["missingness"] if m.startswith(INCOMPLETE)]
+    if not complete:
+        reasons.append("COVERAGE_INCOMPLETE")
     if r["conflicts"]:
         reasons.append("CONFLICTS")
-    if any(h["novelty"] != "REPEATED" for h in r.get("hypothetical_events") or []):
-        reasons.append("NEW_HYPOTHETICAL_EVENT")  # a possible or planned event, not yet seen as boilerplate
+    if pending:
+        reasons.append("PENDING_STATEMENT_REVIEW")  # not erased by an unrelated clean result
     if (r.get("novelty") or {}).get("prior_not_checked"):
         reasons.append("PRIOR_NOT_CHECKED")  # a contradiction with earlier filings cannot be excluded
     if r["proposed_thesis"] is None or r["proposed_thesis"]["status"] in ("UNKNOWN",):
@@ -110,7 +192,30 @@ def _gate(r: dict, adverse: list, availability: str) -> tuple:
     return ("UNKNOWN", sorted(set(reasons))) if reasons else ("CLEAR", [])
 
 
+def consume(state: dict, now_ms: int) -> dict:
+    """As-of view of the stored state at `now_ms`. Consumers read this, never `evidence_gate` directly.
+
+    CLEAR becomes STALE once `now_ms >= assessed_until_ms`; ADVERSE latches stay; pending, exhausted and
+    corrected statements are listed separately as evidence uncertainty (not permission).
+    """
+    gate, reasons = state["evidence_gate"], list(state["gate_reasons"])
+    if gate == "CLEAR" and (state["assessed_until_ms"] is None or now_ms >= state["assessed_until_ms"]):
+        gate, reasons = "STALE", ["ASSESSMENT_EXPIRED"]
+    by_status = {}
+    for s in state["statements"].values():
+        by_status.setdefault(s["status"], []).append(s["statement_id"])
+    return {"schema": "EvidenceView.v1", "issuer_id": state["issuer_id"], "state_version": state["version"],
+            "as_of_ms": now_ms, "evidence_gate": gate, "gate_reasons": reasons,
+            "assessed_until_ms": state["assessed_until_ms"], "latest_cutoff_ms": state["latest_cutoff_ms"],
+            "availability": state["availability"], "last_rejection": state["last_rejection"],
+            "adverse": [{"finding_id": a["finding_id"], "type": a["type"], "resolution_rule": a["resolution_rule"]}
+                        for a in state["unresolved_adverse"]],
+            "statements": {k: sorted(v) for k, v in sorted(by_status.items())},
+            "due_reviews": [s["statement_id"] for s in lifecycle.due_reviews(state["statements"], now_ms)],
+            "thesis": (state["context"]["thesis"] or {}).get("status")}
+
+
 def state_document(state: dict) -> Document:
-    if state.get("schema") != "IssuerEvidenceState.v1":
+    if state.get("schema") != SCHEMA:
         raise IntelligenceError("Unknown evidence state schema")
     return Document.from_dict(state)

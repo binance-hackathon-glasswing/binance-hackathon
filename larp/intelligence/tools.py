@@ -9,7 +9,7 @@ registry rejects any name outside the configured allowlist.
 import re
 
 from larp.intelligence.common import IntelligenceError, sha256_hex
-from larp.intelligence.facts import HYPOTHETICAL_PREFIX, METRIC_NAMES, extract_document, item_events, values_agree
+from larp.intelligence.facts import METRIC_NAMES, extract_document, is_statement, item_events, values_agree
 from larp.intelligence.text import text_from_saved
 from larp.intelligence.verify import compare
 
@@ -65,15 +65,35 @@ def doc_source(record: dict, doc: dict) -> dict:
 
 
 def load_document(state, record: dict, doc: dict) -> list:
-    """Load one saved document into the assessment state; returns new fact IDs."""
+    """Load one saved document into the assessment state; returns new fact IDs.
+
+    Bounded (IDEA-031 S2.5): text beyond `max_document_chars` is not read, and at most `max_facts_per_document`
+    numerical facts and `max_statements_per_document` event facts are kept; every cut is counted in
+    `state.coverage` and makes the assessment incomplete.
+    """
     if doc["status"] != "OK" or not doc["text_sha256"]:
         raise ToolError("DOCUMENT_NOT_RETRIEVED")
     text = state.index.text(doc["text_sha256"])
+    limits = state.config.limits
+    if len(text) > limits["max_document_chars"]:
+        state.coverage["documents_truncated"].append(f"{record['accession']}:{doc['name']}:{len(text)}")
+        text = text[:limits["max_document_chars"]]
     state.texts[doc["text_sha256"]] = text
     state.loaded.add((record["accession"], doc["name"]))
+    state.coverage["documents_loaded"] += 1
+    state.coverage["chars_loaded"] += len(text)
     state.injection |= suspicious_instructions(text)
     new = []
-    for fact in extract_document(text, doc["text_sha256"], state.entry, doc_source(record, doc)):
+    extracted = extract_document(text, doc["text_sha256"], state.entry, doc_source(record, doc))
+    events = [f for f in extracted if f["kind"] == "EVENT"]
+    numbers = [f for f in extracted if f["kind"] != "EVENT"]
+    if len(numbers) > limits["max_facts_per_document"]:
+        state.coverage["facts_truncated"] += len(numbers) - limits["max_facts_per_document"]
+        numbers = numbers[:limits["max_facts_per_document"]]
+    if len(events) > limits["max_statements_per_document"]:
+        state.coverage["statements_truncated"] += len(events) - limits["max_statements_per_document"]
+        events = events[:limits["max_statements_per_document"]]
+    for fact in numbers + events:
         if fact["fact_id"] not in state.facts:
             state.facts[fact["fact_id"]] = fact
             new.append(fact["fact_id"])
@@ -114,26 +134,39 @@ def fetch_document(state, args: dict) -> dict:
             "chars": len(text), "excerpt": text[:limit], "truncated": len(text) > limit, "new_fact_ids": new}
 
 
-HYPOTHETICAL = "HYPOTHETICAL"  # prior_context(metric="HYPOTHETICAL"): every hypothetical event, in one call
+STATEMENTS = "STATEMENTS"  # prior_context(metric="STATEMENTS"): every event statement, in one call
+LEGACY_STATEMENTS = "HYPOTHETICAL"  # pre-IDEA-031 name of the same argument
 
 
 def _matches(fact: dict, metric: str) -> bool:
-    return fact["metric"].startswith(HYPOTHETICAL_PREFIX) if metric == HYPOTHETICAL else fact["metric"] == metric
+    return is_statement(fact["metric"]) if metric == STATEMENTS else fact["metric"] == metric
 
 
 def prior_context(state, args: dict) -> dict:
-    """Facts for one metric, or every hypothetical event, that were available before the assessed filing(s)."""
+    """Facts for one metric, or every event statement, that were available before the assessed filing(s).
+
+    At most `max_prior_records` earlier filings are read, newest first; reading fewer than exist, or failing to
+    read one, leaves that metric's history incomplete (HISTORY_UNAVAILABLE rather than FIRST_SEEN)."""
     metric = _text_arg(args, "metric")
-    if metric not in METRIC_NAMES and metric != HYPOTHETICAL:
+    if metric == LEGACY_STATEMENTS:
+        metric = STATEMENTS
+    if metric not in METRIC_NAMES and metric != STATEMENTS:
         raise ToolError("BAD_ARGUMENT:metric")
     state.queried_prior.add(metric)
+    state.history_complete[metric] = False  # until every in-scope earlier filing has been read
     current = state.current_accessions
     first_original = min(state.index.all_by_id[r]["original_ms"] for r in state.current_records)
     found = [f["fact_id"] for f in state.context_facts
              if _matches(f, metric) and f["source"].get("accession") not in current]
-    for record in sorted(state.index.by_accession.values(), key=lambda r: (r["original_ms"], r["accession"])):
-        if record["accession"] in current or record["original_ms"] >= first_original or record["quality"] == "MISSING":
-            continue
+    earlier = [r for r in state.index.by_accession.values()
+               if r["accession"] not in current and r["original_ms"] < first_original and r["quality"] != "MISSING"]
+    earlier.sort(key=lambda r: (r["original_ms"], r["accession"]), reverse=True)
+    limit = state.config.limits["max_prior_records"]
+    truncated = len(earlier) > limit
+    if truncated:
+        state.coverage["prior_records_truncated"] += len(earlier) - limit
+    for record in sorted(earlier[:limit], key=lambda r: (r["original_ms"], r["accession"])):
+        state.coverage["prior_records_scanned"] += 1
         for doc in record["documents"]:
             if doc["status"] == "OK" and (record["accession"], doc["name"]) not in state.loaded:
                 load_document(state, record, doc)
@@ -141,6 +174,7 @@ def prior_context(state, args: dict) -> dict:
                   if f["source"].get("accession") == record["accession"] and _matches(f, metric)]
     found = sorted(set(found))
     state.prior_fact_ids.update(found)
+    state.history_complete[metric] = not truncated
     periods = sorted({state.facts[i]["period"] or "" for i in found})
     return {"status": "OK" if found else "NO_PRIOR", "metric": metric, "fact_ids": found, "periods": periods}
 

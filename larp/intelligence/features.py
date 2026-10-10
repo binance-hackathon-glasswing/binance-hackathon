@@ -22,7 +22,8 @@ def feature_row(result: Document, gate_state: dict | None = None) -> Document:
         raise IntelligenceError("AssessmentResult has no completed_ms; its availability time is unknown")
     novelty = r.get("novelty") or {}
     falsifiers = r.get("falsifiers") or []
-    hypothetical = r.get("hypothetical_events") or []
+    statements = r.get("event_statements") or []
+    seen = ("REPEATED", "ALREADY_SEEN")
     row = {
         "schema": "FeatureRow.v1", "issuer_id": r.get("issuer_id"), "result_id": r.get("result_id"),
         "assessment_key": r.get("assessment_key"), "model_hash": r.get("model_hash"),
@@ -34,9 +35,12 @@ def feature_row(result: Document, gate_state: dict | None = None) -> Document:
         "n_conflicts": len(r.get("conflicts") or []),
         "n_new": novelty.get("new", 0), "n_changed": novelty.get("changed", 0),
         "n_unchanged": novelty.get("unchanged", 0), "n_no_prior": novelty.get("no_prior_available", 0),
-        "n_hypothetical_new": sum(1 for h in hypothetical if h["novelty"] != "REPEATED"),
-        "n_hypothetical_repeated": sum(1 for h in hypothetical if h["novelty"] == "REPEATED"),
-        "hypothetical_types_new": sorted({h["event"] for h in hypothetical if h["novelty"] != "REPEATED"}),
+        "n_statements_new": sum(1 for h in statements if h["novelty"] not in seen),
+        "n_statements_repeated": sum(1 for h in statements if h["novelty"] in seen),
+        "statement_types_new": sorted({h["event"] for h in statements if h["novelty"] not in seen}),
+        "statement_assertions_new": sorted({(h.get("semantics") or {}).get("assertion") or "LEGACY"
+                                            for h in statements if h["novelty"] not in seen}),
+        "coverage_complete": (r.get("coverage") or {}).get("complete") is True,
         "n_falsifiers_fired": sum(1 for f in falsifiers if f["state"] == "FIRED"),
         "n_falsifiers_unknown": sum(1 for f in falsifiers if f["state"] == "UNKNOWN"),
         "finding_types": sorted({f["type"] for f in r.get("findings") or []}),
