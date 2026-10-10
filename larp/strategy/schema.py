@@ -60,6 +60,11 @@ def profile(snapshot):
         raise ContractError("Policy identity mismatch")
     if p["evidence_mode"] not in ("SHADOW", "BOUNDED_FALSIFIER"):
         raise ContractError("Unknown evidence mode")
+    from larp.integration.contract import AuthorityError, authority
+    try:
+        authority(p)  # falsifier/statement authority (IDEA-031); defaults to SHADOW
+    except AuthorityError as exc:
+        raise ContractError(str(exc)) from exc
     if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM"):
         raise ContractError("Unknown baseline")
     for name in ("minimum_trade_units", "per_trade_cap_units", "cost_reserve_units",

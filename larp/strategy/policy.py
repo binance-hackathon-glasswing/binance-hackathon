@@ -1,10 +1,16 @@
-"""Pure low-turnover candidate. DEVELOPMENT shadow is not live adoption."""
+"""Pure low-turnover candidate. DEVELOPMENT shadow is not live adoption.
+
+Evidence arrives only as EvidenceContext.v1 (larp/integration/contract.py, IDEA-031): validated for
+identity, version, time and hash, with typed rejections kept in the next policy state. What evidence
+may do is the profile's configured authority (default SHADOW), never the evidence record itself.
+"""
 
 from dataclasses import replace
 from datetime import timedelta
 from fractions import Fraction
 
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
+from larp.integration.contract import accept_for_strategy, authority
 from .features import declared_weight, features
 from .schema import fraction, instant, integer, markets, profile, value, equity
 
@@ -25,20 +31,11 @@ def decide(snapshot, state):
     lifecycle = dict(data.get("lifecycle", {}))
     blocked = dict(data.get("blocked", {}))
     reviews, shadow, targets = [], [], []
-    assessments = {}
-    for a in c.get("assessments", []):
-        symbol = a.get("symbol")
-        if symbol in assessments:
-            raise ContractError("Duplicate assessment context")
-        m = market.get(symbol)
-        if (a.get("schema") == "AssessmentResult.v1" and m is not None
-                and a.get("run_id") == snapshot.run_id and a.get("issuer_id") == m["underlying_id"]
-                and a.get("policy_profile_hash") == snapshot.policy_profile_hash
-                and a.get("context_hash") == state.data.digest("ThesisContext.v1")
-                and a.get("model_hash") and a.get("prompt_hash")
-                and instant(a["available_at"]) <= now and instant(a["cutoff"]) <= now
-                and now < instant(a["expires_at"]) and a.get("quality") == "VERIFIED"):
-            assessments[symbol] = a
+    rights = authority(p)
+    versions = dict(data.get("evidence_versions", {}))
+    assessments, rejections = accept_for_strategy(c.get("assessments", []), snapshot, market, versions, p)
+    for symbol, a in assessments.items():
+        versions[symbol] = a["state_version"]
     terminal = now >= instant(p["flatten_start"])
     candidates = []
     for symbol in snapshot.universe:
@@ -56,17 +53,31 @@ def decide(snapshot, state):
                     if f.get("predicate_id") in p["falsifier_ids"]
                     and f.get("supported") is True and f.get("verifier_accepted") is True
                     and f.get("supporting_spans")]
-        if findings:
-            shadow.append({"symbol": symbol, "predicates": [f["predicate_id"] for f in findings]})
-            if p["evidence_mode"] == "BOUNDED_FALSIFIER":
+        if a is not None and not findings and blocked.get(symbol, {}).get("reason") in (
+                "VERIFIED_FALSIFIER", "MANDATORY_FALSIFIER_REDUCTION"):
+            # The evidence state resolved the latch by its declared rule (correction/withdrawal of the source).
+            blocked.pop(symbol)
+            shadow.append({"symbol": symbol, "unblocked": "EVIDENCE_LATCH_RESOLVED"})
+        if findings and rights["falsifier"] != "NONE":
+            shadow.append({"symbol": symbol, "predicates": [f["predicate_id"] for f in findings],
+                           "authority": rights["falsifier"]})
+            if rights["falsifier"] == "DISCRETIONARY_EXIT":
                 blocked[symbol] = {"reason": "VERIFIED_FALSIFIER", "run_id": snapshot.run_id}
+            elif rights["falsifier"] == "MANDATORY_REDUCTION":
+                # The reduction itself is a planner constraint (integration.contract.mandatory_reductions);
+                # the policy only stops re-entry while the finding stands.
+                blocked[symbol] = {"reason": "MANDATORY_FALSIFIER_REDUCTION", "run_id": snapshot.run_id}
+        pending = (a or {}).get("statements_pending") or []
+        if pending:
+            shadow.append({"symbol": symbol, "statements_pending": len(pending), "authority": rights["statement"]})
         status = "HELD" if units else "UNBUILT"
         if terminal:
             targets.append(Target(symbol, TargetKind.EXIT, "TERMINAL_REQUIREMENT"))
             status = "FLAT_TERMINAL" if not units else "EXIT_REQUIRED"
         elif symbol in blocked:
-            targets.append(Target(symbol, TargetKind.EXIT if units else TargetKind.KEEP_QUANTITY,
-                                  "BOUNDED_FALSIFIER"))
+            mandatory = blocked[symbol]["reason"] == "MANDATORY_FALSIFIER_REDUCTION"
+            targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory else TargetKind.KEEP_QUANTITY,
+                                  "MANDATORY_REDUCTION_BY_RISK" if mandatory else "BOUNDED_FALSIFIER"))
             status = "EXIT_REQUIRED" if units else "BLOCKED"
         elif m is None or not m.get("basis_verified"):
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "MISSING_MARKET_OR_BASIS"))
@@ -97,7 +108,8 @@ def decide(snapshot, state):
                 entry_ok = (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
                             and c["remaining_sessions"] >= p["minimum_remaining_sessions"]
                             and (not previously_held or fresh_review)
-                            and (not p["assessment_required"] or fresh_review))
+                            and (not p["assessment_required"] or fresh_review)
+                            and not (rights["statement"] == "ENTRY_BLOCK" and pending))
                 if p["baseline"] == "PRICE_MOMENTUM":
                     momentum = f.read()["momentum_5"]
                     entry_ok &= Fraction(momentum[0], momentum[1]) > Fraction(p["price_threshold_bps"], 10000)
@@ -125,6 +137,7 @@ def decide(snapshot, state):
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
     following = replace(state, version=state.version + 1, data=Document.from_dict({
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
-        "shadow_findings": shadow, "evidence_mode": p["evidence_mode"]}))
+        "shadow_findings": shadow, "evidence_mode": p["evidence_mode"], "evidence_authority": rights,
+        "evidence_versions": versions, "evidence_rejections": rejections}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

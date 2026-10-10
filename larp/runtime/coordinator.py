@@ -32,14 +32,20 @@ class RecoveryIncomplete(ContractError):
 
 
 class Coordinator:
-    def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address):
+    def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address,
+                 context_builder=None,initial_policy_state=None):
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
         self.execution=execution
+        # Optional versioned adapter (larp/integration/runtime.py, IDEA-031): builds the policy context from the
+        # journaled projection, the request and the assessment, and returns projection updates (evidence state)
+        # committed atomically with the round. Without it the original fixture context is used.
+        self.context_builder,self.initial_policy_state=context_builder,initial_policy_state
 
     def snapshot(self,current,now_ms,context):
         c=current.read()
-        state=c['policy_state'] or dict(run_id=self.run_id,policy_id='fixture',schema='PolicyState.v1',version=0,data={})
+        state=c['policy_state'] or self.initial_policy_state or dict(run_id=self.run_id,policy_id='fixture',
+            schema='PolicyState.v1',version=0,data={})
         return DecisionSnapshot(self.run_id,c['wallet_id'],self.version_id,self.profile_hash,c['version'],
             datetime.fromtimestamp(now_ms/1000,timezone.utc),('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'),
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
@@ -71,8 +77,19 @@ class Coordinator:
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
                    if k not in ('round_records','closed_rounds','observations')}
-        context=dict(projection=portfolio,reservations=current.read()['reservations'],
-                     request=request.read(),assessment=assessment.read() if assessment else None)
+        updates={}
+        if self.context_builder is None:
+            context=dict(projection=portfolio,reservations=current.read()['reservations'],
+                         request=request.read(),assessment=assessment.read() if assessment else None)
+        else:
+            try:
+                context,updates=self.context_builder(current.read(),request.read(),
+                                                     assessment.read() if assessment else None,now_ms)
+            except Exception as exc:
+                errors.append('CONTEXT_UNAVAILABLE:'+type(exc).__name__)
+                context=dict(projection=portfolio,reservations=current.read()['reservations'],
+                             request=request.read(),assessment=None,context_error=type(exc).__name__)
+                assessment=None
         snapshot=self.snapshot(current,now_ms,context)
         if assessment is not None:
             try:
@@ -100,9 +117,13 @@ class Coordinator:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
         projection=current.read()['projection']
+        projection.update(updates)
+        if plan.get('risk_state') is not None:
+            projection['risk_state']=plan['risk_state']  # persisted independent risk state (IDEA-031 AC-I03)
         # The policy saw `context`; its request and assessment are stored once, at the top level.
-        policy_input=dict(projection=context['projection'],reservations=context['reservations'],
-                          includes=['request','assessment'])
+        policy_input=(dict(projection=context['projection'],reservations=context['reservations'],
+                           includes=['request','assessment']) if self.context_builder is None else
+                      dict(context={k:v for k,v in context.items() if k not in ('request',)},includes=['request']))
         record=dict(round_id=round_id,request=request.read(),assessment=assessment.read() if assessment else None,
                     proposal_id=proposal.proposal_id if proposal else None,plan=plan,errors=errors,
                     policy_input=policy_input,policy_state=snapshot.policy_state.record(),
@@ -110,6 +131,8 @@ class Coordinator:
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
                     started_ms=now_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
                         for i in plan['intents']],swap_mappings=[])
+        if updates.get('evidence_decisions'):
+            record['evidence_decisions']=updates['evidence_decisions']
         projection.setdefault('round_records',{})[round_id]=record
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
                        decision_id=i['decision_id'],expires_ms=i['expires_ms']) for i in plan['intents']]

@@ -4,6 +4,7 @@ from fractions import Fraction
 import unittest
 
 from larp.contracts import ContractError, Document, TargetKind
+from larp.integration.contract import context_hash
 from larp.research.fixtures import snapshot, changed, with_quotes
 from larp.strategy.features import features, declared_weight
 from larp.strategy.policy import decide
@@ -16,17 +17,25 @@ class PolicyTests(unittest.TestCase):
         return features(Document.from_dict(series or c["series"][m["symbol"]]),
                         cutoff=s.observed_at, expected_entity=m["underlying_id"], max_age_seconds=864000)
 
-    def assessment(self, s):
+    def assessment(self, s, **changes):
+        """EvidenceContext.v1 (IDEA-031) for the first market. Before IDEA-031 this helper built a dict bound to the
+        policy's own ThesisContext digest, a shape no evidence producer emitted (IDEA-030 R02)."""
         m = s.context.read()["markets"][0]
-        return {"schema": "AssessmentResult.v1", "symbol": m["symbol"], "issuer_id": m["underlying_id"],
-                "run_id": s.run_id, "policy_profile_hash": s.policy_profile_hash,
-                "context_hash": s.policy_state.data.digest("ThesisContext.v1"),
-                "model_hash": "synthetic-model", "prompt_hash": "synthetic-prompt",
-                "cutoff": s.observed_at.isoformat(), "available_at": s.observed_at.isoformat(),
-                "expires_at": (s.observed_at + timedelta(seconds=60)).isoformat(),
-                "quality": "VERIFIED", "review_complete": True,
-                "falsifier_findings": [{"predicate_id": "fixture-reporting-integrity", "supported": True,
-                                        "verifier_accepted": True, "supporting_spans": ["synthetic span"]}]}
+        now_ms = int(s.observed_at.timestamp() * 1000)
+        record = {"schema": "EvidenceContext.v1", "run_id": s.run_id, "issuer_id": m["underlying_id"],
+                  "underlying_id": m["underlying_id"], "token": m["symbol"],
+                  "policy_profile_hash": s.policy_profile_hash, "state_version": 1, "as_of_ms": now_ms,
+                  "latest_cutoff_ms": now_ms, "assessed_until_ms": now_ms + 60_000, "status": "ADVERSE",
+                  "status_reasons": [], "availability": "AVAILABLE", "quality": "VERIFIED", "review_complete": True,
+                  "falsifier_findings": [{"predicate_id": "fixture-reporting-integrity", "finding_id": "find:x",
+                                          "supported": True, "verifier_accepted": True,
+                                          "supporting_spans": ["synthetic span"],
+                                          "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN"}],
+                  "statements_pending": [], "statements_exhausted": [], "due_reviews": [], "thesis_status": None,
+                  "last_rejection": None}
+        record.update(changes)
+        record["context_hash"] = context_hash(record)
+        return record
 
     def test_future_perturbation_does_not_change_decisions_or_features(self):
         s = snapshot()
@@ -83,9 +92,10 @@ class PolicyTests(unittest.TestCase):
         st = replace(s.policy_state, data=Document.from_dict({"lifecycle": {
             "NVDAB": {"ever_held": True, "last_review_session": 70}}}))
         s = replace(s, policy_state=st)
-        a = self.assessment(s)
-        a.update(expires_at=s.observed_at.isoformat(), falsifier_findings=[])
+        now_ms = int(s.observed_at.timestamp() * 1000)
+        a = self.assessment(s, status="CLEAR", assessed_until_ms=now_ms, falsifier_findings=[])
         result = decide(changed(s, assessments=[a]), st)
+        self.assertEqual(result.next_policy_state.data.read()["evidence_rejections"], [])
         self.assertEqual(next(t for t in result.targets if t.symbol == "NVDAB").kind, TargetKind.KEEP_QUANTITY)
 
     def test_horizon_reviews_without_forced_turnover(self):
