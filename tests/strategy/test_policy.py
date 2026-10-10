@@ -1,6 +1,8 @@
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from fractions import Fraction
+import json
+from pathlib import Path
 import unittest
 
 from larp.contracts import ContractError, Document, TargetKind
@@ -8,6 +10,8 @@ from larp.integration.contract import context_hash
 from larp.research.fixtures import snapshot, changed, with_quotes
 from larp.strategy.features import features, declared_weight
 from larp.strategy.policy import decide
+from larp.strategy.assessments import epoch_ms, consume
+from larp.strategy.schema import markets, profile
 
 
 class PolicyTests(unittest.TestCase):
@@ -36,6 +40,30 @@ class PolicyTests(unittest.TestCase):
         record.update(changes)
         record["context_hash"] = context_hash(record)
         return record
+    def raw_assessment(self, s):
+        """Legacy producer compatibility is tested independently of the canonical strategy port."""
+        m = s.context.read()["markets"][0]
+        context = s.policy_state.data.read().get("evidence_contexts", {}).get(
+            m["underlying_id"], {"thesis": None, "known_facts": []})
+        h = Document.from_dict(context).digest("larp.intel.context.v1")
+        now = epoch_ms(s.observed_at)
+        return {"schema": "AssessmentResult.v1", "issuer_id": m["underlying_id"], "job_id": "fixture-job",
+                "run_id": s.run_id, "policy_profile_hash": s.policy_profile_hash,
+                "context_hash": h, "model_hash": "a" * 64, "prompt_hash": "b" * 64,
+                "cutoff_ms": now, "completed_ms": now, "expiry_ms": now + 60000, "status": "ASSESSED",
+                "missingness": [], "conflicts": [], "novelty": {"prior_not_checked": False},
+                "proposed_thesis": {"status": "BROKEN", "based_on_context_hash": h},
+                "evidence_used": [{"record_id": "fixture-record", "available_ms": now, "content_hash": "c" * 64}],
+                "claims": [{"fact_id": "fixture-fact", "source": {"record_id": "fixture-record", "available_ms": now},
+                            "span": {"doc": "d" * 64, "text": "synthetic verified span"}}],
+                "falsifiers": [{"falsifier_id": "fixture-reporting-integrity", "state": "FIRED", "fact_ids": ["fixture-fact"]}]}
+
+    def assessed(self, s, a):
+        context = s.policy_state.data.read().get("evidence_contexts", {}).get(
+            a["issuer_id"], {"thesis": None, "known_facts": []})
+        request = {"schema": "AssessmentRequest.v1", "context": context,
+                   **{k: a[k] for k in ("job_id", "run_id", "issuer_id", "context_hash", "policy_profile_hash", "cutoff_ms")}}
+        return changed(s, assessments=[a], assessment_requests={a["issuer_id"]: request})
 
     def test_future_perturbation_does_not_change_decisions_or_features(self):
         s = snapshot()
@@ -114,3 +142,77 @@ class PolicyTests(unittest.TestCase):
         s = snapshot()
         with self.assertRaises(ContractError):
             decide(s, replace(s.policy_state, version=1))
+
+    def test_actual_legacy_producer_payload_reaches_compatibility_consumer(self):
+        fixture = json.loads((Path(__file__).parent / "fixtures/assessment-producer.json").read_text())
+        for mode in ("SHADOW", "BOUNDED_FALSIFIER"):
+            a, request = fixture["result"].copy(), fixture["request"].copy()
+            s = snapshot(held={"NVDAB": 2000}, now=datetime.fromtimestamp(a["completed_ms"] / 1000, timezone.utc),
+                profile_changes={"evidence_mode": mode,
+                "falsifier_ids": [f["falsifier_id"] for f in a["falsifiers"]]})
+            # Bind public producer fixture to this test run/profile; retain its
+            # actual context, claims, timestamps and falsifier vocabulary.
+            for document in (a, request):
+                document.update(run_id=s.run_id, policy_profile_hash=s.policy_profile_hash)
+            c = s.context.read()
+            c["markets"][0]["underlying_id"] = a["issuer_id"]
+            c["series"]["NVDAB"]["entity_id"] = a["issuer_id"]
+            state = replace(s.policy_state, data=Document.from_dict({"evidence_contexts": {
+                a["issuer_id"]: request["context"]}}))
+            s = replace(changed(s, markets=c["markets"], series=c["series"], assessments=[a],
+                               assessment_requests={a["issuer_id"]: request}), policy_state=state)
+            accepted, diagnostics = consume(s, state, markets(s, profile(s)), profile(s)["falsifier_ids"])
+            self.assertTrue(accepted["NVDAB"]["findings"])
+            self.assertIn("ASSESSMENT_ACCEPTED", [d["reason"] for d in diagnostics])
+            # The integrated strategy accepts only EvidenceContext.v1; raw producer results require the gate.
+            result = decide(s, state)
+            self.assertFalse(result.next_policy_state.data.read()["blocked"])
+            # A claimed comparison absent from its committed harness finding
+            # cannot borrow a current fact's support and authorize the overlay.
+            corrupt = json.loads(json.dumps(a))
+            for finding in corrupt["findings"]:
+                if finding["type"] == "GUIDANCE_LOWERED":
+                    finding["finding_id"] = "find:unverified"
+            bad = changed(s, assessments=[corrupt])
+            rejected, _ = consume(bad, state, markets(bad, profile(bad)), profile(bad)["falsifier_ids"])
+            self.assertFalse(rejected["NVDAB"]["findings"])
+
+    def test_assessment_diagnostics_context_and_fresh_review(self):
+        s = snapshot(profile_changes={"assessment_required": True})
+        a = self.raw_assessment(s)
+        a.update(falsifiers=[], proposed_thesis={"status": "INTACT", "based_on_context_hash": a["context_hash"]})
+        valid = self.assessed(s, a)
+        accepted, _ = consume(valid, valid.policy_state, markets(valid, profile(valid)), profile(valid)["falsifier_ids"])
+        self.assertTrue(accepted["NVDAB"]["fresh_review"])
+        # Lifecycle changes do not invalidate an unchanged issuer thesis context.
+        following = replace(valid, policy_state=replace(valid.policy_state, version=1))
+        accepted, _ = consume(following, following.policy_state, markets(following, profile(following)), profile(following)["falsifier_ids"])
+        self.assertTrue(accepted["NVDAB"]["fresh_review"])
+        for patch, expected in (({"expiry_ms": epoch_ms(s.observed_at)}, "ASSESSMENT_STALE_OR_FUTURE"),
+                                ({"completed_ms": epoch_ms(s.observed_at) + 1}, "ASSESSMENT_STALE_OR_FUTURE"),
+                                ({"context_hash": "e" * 64}, "ASSESSMENT_IDENTITY_MISMATCH"),
+                                ({"status": "UNAVAILABLE"}, "ASSESSMENT_NOT_ASSESSED")):
+            bad = changed(valid, assessments=[{**a, **patch}])
+            accepted, diagnostics = consume(bad, bad.policy_state, markets(bad, profile(bad)), profile(bad)["falsifier_ids"])
+            self.assertFalse(accepted)
+            self.assertIn(expected, [d["reason"] for d in diagnostics])
+        legacy = changed(s, assessments=[{"schema": "AssessmentResult.v1", "symbol": "NVDAB"}])
+        self.assertEqual(consume(legacy, legacy.policy_state, markets(legacy, profile(legacy)), profile(legacy)["falsifier_ids"])[1][0]["reason"],
+                         "ASSESSMENT_SCHEMA_UNRECOGNISED")
+
+    def test_unsupported_falsifier_and_changed_issuer_context_cannot_authorize(self):
+        s = snapshot(held={"NVDAB": 2000}, profile_changes={"evidence_mode": "BOUNDED_FALSIFIER"})
+        a = self.raw_assessment(s)
+        a["falsifiers"][0]["fact_ids"] = ["nonexistent-fact"]
+        valid = self.assessed(s, a)
+        accepted, diagnostics = consume(valid, s.policy_state, markets(valid, profile(valid)), profile(valid)["falsifier_ids"])
+        self.assertFalse(accepted["NVDAB"]["findings"])
+        self.assertIn("ASSESSMENT_FALSIFIER_UNSUPPORTED", [d["reason"] for d in diagnostics])
+        a = self.raw_assessment(s)
+        valid = self.assessed(s, a)
+        state = replace(s.policy_state, data=Document.from_dict({"evidence_contexts": {
+            a["issuer_id"]: {"thesis": {"version": 2}, "known_facts": []}}}))
+        bad = replace(valid, policy_state=state)
+        accepted, diagnostics = consume(bad, state, markets(bad, profile(bad)), profile(bad)["falsifier_ids"])
+        self.assertFalse(accepted)
+        self.assertEqual(diagnostics[0]["reason"], "ASSESSMENT_STALE_CONTEXT")

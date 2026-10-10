@@ -78,16 +78,21 @@ def advance_accounting(portfolio: Document, observation: Document):
         if e["symbol"] != symbol or e["side"] != side:
             raise ContractError("Fill conflicts with committed intent")
         q, cash, fee = [integer(e[k]) for k in ("token_units", "cash_units", "fee_units")]
-        if q == 0 or q != reservation["token_units"] or e.get("intent_terminal") is not True:
+        if q == 0 or e.get("intent_terminal") is not True:
             raise ContractError("Invalid settled quantity")
         position = d["positions"][symbol]
         if side == "BUY":
+            if (cash != integer(reservation["pay_units"], 1)
+                    or q < integer(reservation["min_receive_units"], 1)):
+                raise ContractError("Buy violates exact-input/minimum-receive reservation")
             if cash + fee > reservation["cash_units"] or cash + fee > d["cash_units"]:
                 raise ContractError("Buy spends unreserved or unavailable cash")
             d["cash_units"] -= cash + fee
             position["units"] += q
             position["cost_basis_units"] += cash + fee
         elif side == "SELL":
+            if q != reservation["token_units"] or cash < integer(reservation["min_receive_units"]):
+                raise ContractError("Sell violates exact-input/minimum-receive reservation")
             if q > position["units"]:
                 raise ContractError("Oversell")
             basis = floor(Fraction(position["cost_basis_units"] * q, position["units"]))

@@ -16,6 +16,7 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 
 | ID | Title | Status | Result (one line) | Updated | File |
 |---|---|---|---|---|---|
+| IDEA-032 | PR #7 integration review and fixes | open | merge missing owner fixes, preserve canonical evidence boundary; prospective synthetic checks recorded, NOT RUN | 2026-10-10 | [ledger/IDEA-032.md](ledger/IDEA-032.md) |
 | EXP-001 | Verified evidence vs no-evidence baseline | draft (blocked on D-07, D-08; final block = post-cutoff Tier B, five names as a slice, per D-10 (a)) | — | 2026-10-06 | [ledger/EXP-001.md](ledger/EXP-001.md) |
 | EXP-002 | Do off-hours bStocks quotes lag verified news? | draft (thresholds not frozen; viability depends on off-hours `openState`, Q-32) | — | 2026-10-05 | [ledger/EXP-002.md](ledger/EXP-002.md) |
 | EXP-003 | Rule-based regime gating vs a simple volatility cap | draft | — | 2026-10-03 | [ledger/EXP-003.md](ledger/EXP-003.md) |

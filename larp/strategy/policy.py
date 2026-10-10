@@ -135,7 +135,7 @@ def decide(snapshot, state):
             gross += allowed
         else:
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
-    following = replace(state, version=state.version + 1, data=Document.from_dict({
+    following = replace(state, version=state.version + 1, data=Document.from_dict({**data,
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
         "shadow_findings": shadow, "evidence_mode": p["evidence_mode"], "evidence_authority": rights,
         "evidence_versions": versions, "evidence_rejections": rejections}))
