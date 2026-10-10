@@ -148,7 +148,7 @@ def _token_end(text: str, start: int, end: int, number) -> int | None:
 
 
 _RANGE_LOW = re.compile(r"\bbetween\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?$", re.I)
-_RANGE_HIGH = re.compile(r"\bbetween\b[^.;\n]*\b(?:and|to)\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?$", re.I)
+_RANGE_HIGH = re.compile(r"\bbetween\b[^;\n]*\b(?:and|to)\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?$", re.I)
 
 
 def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issuer_names: tuple = (),
@@ -329,7 +329,7 @@ def _fact(claim, record, doc_name, *, event=False):
 
 def fact_as_claim(fact: dict) -> dict:
     """Extracted facts in the claim format, so the baseline passes through the same verifier."""
-    claim = {k: fact[k] for k in _FACT_KEYS}
+    claim = {k: fact.get(k) for k in _FACT_KEYS}
     claim["source"] = fact["source"]
     return claim
 
