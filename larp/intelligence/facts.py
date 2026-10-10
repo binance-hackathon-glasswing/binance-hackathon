@@ -29,15 +29,21 @@ METRIC_RE = re.compile("|".join(rf"(?P<{name}>\b(?:{pattern})\b)" for name, patt
 METRIC_ONE = {name: re.compile(rf"\b(?:{pattern})\b", re.I) for name, pattern in METRICS}
 
 _NUM = r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?"
+# A hyphen right after a number joins a range ("1.2-1.5 trillion won"); it is never a minus sign (IDEA-033 R19).
+_SIGN = r"(?<![\d.])(?<![\d.]\s)-"
+# A suffix-currency amount never starts inside a number or as the second half of a dashed range: matching
+# "1.5 trillion won" alone in "1.2-1.5 trillion won" would claim one bound of a range as a point.
+_NOT_RANGE_END = r"(?<![\d.,])(?<![\d.][-\u2013\u2014])(?<![\d.]\s[-\u2013\u2014]\s)"
 SCALES = {"thousand": 3, "thousands": 3, "million": 6, "millions": 6, "billion": 9, "billions": 9,
           "trillion": 12, "trillions": 12}
 MONEY = re.compile(
     rf"(?P<cur>US\$|\$|USD\s?|KRW\s?|\u20a9\s?)(?P<neg>\(|-)?(?P<num>{_NUM})\)?(?:\s*(?P<scale>trillion|billion|million|thousand)\b)?"
-    rf"|(?P<neg2>\(|-)?(?P<num2>{_NUM})\)?\s*(?P<scale2>trillion|billion|million|thousand)?\s*(?P<cur2>(?:Korean\s+)?won\b|KRW\b)",
+    rf"|(?P<neg2>\(|{_SIGN})?{_NOT_RANGE_END}(?P<num2>{_NUM})\)?\s*(?P<scale2>trillion|billion|million|thousand)?\s*"
+    rf"(?P<cur2>(?:Korean\s+)?won\b|KRW\b)",
     re.I)
 PERCENT = re.compile(rf"(?P<num>{_NUM})\s?(?:%|percent\b)", re.I)
 TOLERANCE = re.compile(rf"^,?\s*plus\s+or\s+minus\s+(?P<num>{_NUM})\s?(?:%|percent\b)", re.I)
-NUM_TOKEN = re.compile(r"\(?-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\)?|\(?-?\d+(?:\.\d+)?\)?")
+NUM_TOKEN = re.compile(rf"\(?(?:{_SIGN})?\d{{1,3}}(?:,\d{{3}})+(?:\.\d+)?\)?|\(?(?:{_SIGN})?\d+(?:\.\d+)?\)?")
 TABLE_SCALE = re.compile(r"\bin\s+(thousands|millions|billions|trillions)\b", re.I)
 GUIDANCE_WORDS = re.compile(r"\b(?:expects?|expected|expecting|outlook|guidance|forecasts?|anticipates?|"
                             r"projects?|projected|targets?\s+revenue)\b", re.I)

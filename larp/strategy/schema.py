@@ -102,10 +102,16 @@ def usable(observation, cutoff, max_age):
 
 
 def markets(snapshot, p):
+    return market_view(snapshot.context.read().get("markets", []), snapshot.universe, snapshot.observed_at, p)
+
+
+def market_view(observations, universe, cutoff, p):
+    """symbol -> usable MarketObservation or None, as the strategy reads them (also used by the runtime so evidence
+    the strategy cannot use never becomes a planner constraint, IDEA-033 R17)."""
     result = {}
-    for m in snapshot.context.read().get("markets", []):
+    for m in observations:
         symbol = m.get("symbol")
-        if symbol not in snapshot.universe or symbol not in SYMBOLS or symbol in result:
+        if symbol not in universe or symbol not in SYMBOLS or symbol in result:
             raise ContractError("Unknown or duplicate market entity")
         if m.get("schema") != "MarketObservation.v1":
             raise ContractError("Wrong market schema")
@@ -115,7 +121,7 @@ def markets(snapshot, p):
         if not m.get("token_id") or not m.get("underlying_id"):
             raise ContractError("Token/share identity required")
         integer(m["price_units"], 1)
-        result[symbol] = m if usable(m, snapshot.observed_at, p["quote_age_seconds"]) else None
+        result[symbol] = m if usable(m, cutoff, p["quote_age_seconds"]) else None
     return result
 
 

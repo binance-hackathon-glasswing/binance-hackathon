@@ -40,6 +40,7 @@ INCOMPLETE = INCOMPLETE_EVIDENCE
 RESOLUTION_RULE = "SOURCE_CORRECTED_OR_WITHDRAWN"
 _LISTS = ("findings", "event_findings", "claims", "falsifiers", "event_statements", "evidence_used", "missingness",
           "conflicts", "reasons")
+MAX_RECORDS = 2000  # records_seen / records_assessed bound, besides protected correction baselines
 DEFAULT_LIFECYCLE = {"review_base_delay_ms": 21_600_000, "max_review_attempts": 3, "max_backoff_ms": 172_800_000,
                      "statement_retention_ms": 7_776_000_000, "max_statements": 400}
 
@@ -214,10 +215,10 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
                                          resolution="WITHDRAWN" if all(c["resolution"] == "WITHDRAWN"
                                                                       for c in corrections.values()) else "CORRECTED"))
             records_assessed[accession] = {"revision": revision, "record_id": used.get("record_id"),
-                                           "content_hash": used.get("content_hash")}
+                                           "content_hash": used.get("content_hash"), "seen_ms": now_ms}
         if seen is None or revision >= seen["revision"]:
             records_seen[accession] = {"revision": revision, "record_id": used.get("record_id"),
-                                       "content_hash": used.get("content_hash")}
+                                       "content_hash": used.get("content_hash"), "seen_ms": now_ms}
 
     for finding in r.get("event_findings", []):  # re-verified filer/keyword events, any status
         if finding["impact"] == "ADVERSE":
@@ -247,15 +248,33 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         nxt.update(context=context, context_hash=context_hash(context), availability="AVAILABLE")
     else:
         nxt["availability"] = "ABSTAINED" if r["status"] == "ABSTAIN" else "UNAVAILABLE"
+    # Any accepted result at or after a due review that did not observe the statement is one attempt (R18).
+    lifecycle.missed_reviews(statements, result_id=rid, now_ms=now_ms, policy=policy)
     lifecycle.expire(statements, now_ms=now_ms, retention_ms=policy["statement_retention_ms"],
                      max_entries=policy["max_statements"])
+    # Correction baselines still needed by an unresolved latch or a registry statement are never evicted (R23).
+    keep = {s.get("accession") for a in adverse for s in a.get("sources") or []}
+    keep |= {rec.get("accession") for entry in statements.values() for rec in entry["records"]}
     nxt.update(unresolved_adverse=adverse, resolved_adverse=resolved[-200:], statements=statements,
-               records_seen=dict(sorted(records_seen.items())[-2000:]),
-               records_assessed=dict(sorted(records_assessed.items())[-2000:]))
+               records_seen=_bounded(records_seen, keep), records_assessed=_bounded(records_assessed, keep))
     gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete)
     nxt.update(evidence_gate=gate, gate_reasons=reasons,
                assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None)
     return "ACCEPT", nxt
+
+
+def _bounded(records: dict, keep: set, limit: int = MAX_RECORDS) -> dict:
+    """At most `limit` accessions besides those in `keep`, dropping the least recently seen first.
+
+    Accession numbers begin with the filer agent's CIK, so their string order is not their age (IDEA-033 R23).
+    Entries written before `seen_ms` existed count as oldest.
+    """
+    if len(records) > limit:
+        ranked = sorted(records, key=lambda a: (a in keep, records[a].get("seen_ms", 0), a))
+        for accession in ranked[: len(records) - limit]:
+            if accession not in keep:
+                del records[accession]
+    return dict(sorted(records.items()))
 
 
 def _gate(r: dict, adverse: list, availability: str, statements: dict, complete: bool) -> tuple:
@@ -288,6 +307,7 @@ def consume(state: dict, now_ms: int) -> dict:
     gate, reasons = state["evidence_gate"], list(state["gate_reasons"])
     if gate == "CLEAR" and (state["assessed_until_ms"] is None or now_ms >= state["assessed_until_ms"]):
         gate, reasons = "STALE", ["ASSESSMENT_EXPIRED"]
+    due = lifecycle.due_reviews(state["statements"], now_ms)
     by_status = {}
     for s in state["statements"].values():
         by_status.setdefault(s["status"], []).append(s["statement_id"])
@@ -298,7 +318,9 @@ def consume(state: dict, now_ms: int) -> dict:
             "adverse": [{"finding_id": a["finding_id"], "type": a["type"], "resolution_rule": a["resolution_rule"]}
                         for a in state["unresolved_adverse"]],
             "statements": {k: sorted(v) for k, v in sorted(by_status.items())},
-            "due_reviews": [s["statement_id"] for s in lifecycle.due_reviews(state["statements"], now_ms)],
+            "due_reviews": [s["statement_id"] for s in due],
+            # When the earliest listed review fell due: fixes the review job's definition (IDEA-033 R15).
+            "review_due_ms": due[0]["review"]["next_due_ms"] if due else None,
             "thesis": (state["context"]["thesis"] or {}).get("status")}
 
 

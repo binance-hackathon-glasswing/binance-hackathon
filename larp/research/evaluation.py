@@ -22,7 +22,9 @@ V2_FIELDS = frozenset({
     "bootstrap_draws", "seed", "purge_sessions", "embargo_sessions", "primary_horizon_sessions",
     "secondary_horizons_sessions", "independence_basis", "windows", "fixed_parameters"})
 METRICS = ("PAIRED_NET_WALLET_RETURN", "PAIRED_NET_WALLET_RETURN_AFTER_SERVICE_COSTS")
-SUPPORT_RULES = ("LOWER_BOUND_ABOVE_MARGIN",)
+# The strict rule also requires the treatment's own mean net return to be positive: beating a losing baseline is not
+# enough (IDEA-033 R24). Which rule a real experiment registers is a team decision (GAP-09).
+SUPPORT_RULES = ("LOWER_BOUND_ABOVE_MARGIN", "LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE")
 KILL_RULES = ("UPPER_BOUND_BELOW_ZERO", "UPPER_BOUND_BELOW_MARGIN")
 INCONCLUSIVE_RULES = ("OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",)
 INDEPENDENCE = ("NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS",)
@@ -156,7 +158,7 @@ def evaluate(registration: Document, outcomes):
                                    "promotion_authorized": False})
     baseline, treatment = d["variants"]
     after_service = d["metric"] == "PAIRED_NET_WALLET_RETURN_AFTER_SERVICE_COSTS"
-    paired, incomplete = [], 0
+    paired, absolute, incomplete = [], [], 0
     for _, group in sorted(groups.items()):  # canonical order: the bootstrap must not depend on input order
         if set(group) != {baseline, treatment}:
             continue
@@ -169,6 +171,7 @@ def evaluate(registration: Document, outcomes):
         E = integer(a["opening_equity_units"], 1)
         net = lambda o: o["wallet_net_units"] - (o["service_units"] if after_service else 0)
         paired.append(Fraction(net(b) - net(a), E))
+        absolute.append(Fraction(net(b), E))
     margin = d["margin_fraction"]
     result = {"schema": "EconomicReport.v2", "status": "INCONCLUSIVE", "metric": d["metric"],
               "margin": ratio(margin), "paired_clusters": len(paired), "registered_clusters": len(windows),
@@ -186,10 +189,20 @@ def evaluate(registration: Document, outcomes):
     tail = Fraction(10000 - d["confidence_bps"], 20000)
     low = draws[int(tail * len(draws))]
     high = draws[min(len(draws) - 1, int((1 - tail) * len(draws)))]
-    result.update(paired_mean=ratio(sum(paired, Fraction(0)) / len(paired)), confidence_interval=[ratio(low), ratio(high)])
+    treatment_mean = sum(absolute, Fraction(0)) / len(absolute)
+    result.update(paired_mean=ratio(sum(paired, Fraction(0)) / len(paired)), confidence_interval=[ratio(low), ratio(high)],
+                  treatment_absolute_mean=ratio(treatment_mean),
+                  warnings=[] if treatment_mean > 0 else ["TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"])
     kill_bound = Fraction(0) if d["kill_rule"] == "UPPER_BOUND_BELOW_ZERO" else margin
+    strict = d["support_rule"] == "LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE"
     if incomplete:
         result["reason"] = "INCOMPLETE_OUTCOMES_RETAINED"
+    elif low > margin and strict and treatment_mean <= 0:
+        # The support rule fails; only the registered kill rule can make it NOT_SUPPORTED.
+        if high < kill_bound:
+            result["status"] = "NOT_SUPPORTED"
+        else:
+            result["reason"] = "TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"
     elif low > margin:
         result["status"] = "SUPPORTED"
     elif high < kill_bound:

@@ -85,7 +85,8 @@ def build_evidence_context(view: dict, state: dict, *, run_id: str, token: str, 
         "falsifier_findings": sorted(findings, key=lambda f: f["finding_id"]),
         "statements_pending": statements.get("PENDING_REVIEW", []),
         "statements_exhausted": statements.get("REVIEW_EXHAUSTED", []),
-        "due_reviews": view["due_reviews"], "thesis_status": view["thesis"],
+        "due_reviews": view["due_reviews"], "review_due_ms": view.get("review_due_ms"),
+        "thesis_status": view["thesis"],
         "last_rejection": view["last_rejection"],
     }
     record["context_hash"] = context_hash(record)
@@ -105,9 +106,9 @@ def _finding_ok(f) -> bool:
 def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None, max_age_ms=None,
             universe=None) -> str | None:
     """The first reason `record` is unusable, or None. Intrinsic checks (schema, field types, hash, internal
-    consistency) always run; identity and time checks run for whichever context arguments are given. The strategy
-    and the planner-constraint builder use this same function, so a record the strategy rejects can never become
-    a mandatory reduction (IDEA-031 red team S4-B c02/c03)."""
+    consistency) always run; identity and time checks run for whichever context arguments are given. Strategy
+    acceptance (`accept_records`) is this check plus version and duplicate checks; the runtime builds planner
+    reduction constraints only from records `accept_records` accepts (IDEA-031 S4-B c02/c03, IDEA-033 R17)."""
     if type(record) is not dict:
         return "MALFORMED"
     if record.get("schema") != SCHEMA:
@@ -153,12 +154,26 @@ def accept_for_strategy(records: list, snapshot, markets: dict, known_versions: 
     that market's `underlying_id`. `known_versions`: symbol -> last accepted state_version (policy state), so an
     older or replayed context is rejected rather than silently used.
     """
-    now, limits = _ms(snapshot), authority(profile)
+    accepted, rejections = accept_records(records, run_id=snapshot.run_id, profile_hash=snapshot.policy_profile_hash,
+                                          now_ms=_ms(snapshot), markets=markets, known_versions=known_versions,
+                                          profile=profile, universe=snapshot.universe)
+    if profile.get("assessment_required"):
+        for symbol in snapshot.universe:
+            if markets.get(symbol) is not None and symbol not in accepted:
+                rejections.append({"reason": "MISSING", "symbol": symbol, "schema": None})
+    return accepted, rejections
+
+
+def accept_records(records: list, *, run_id: str, profile_hash: str, now_ms: int, markets: dict, known_versions: dict,
+                   profile: dict, universe) -> tuple:
+    """The strategy's acceptance of EvidenceContext.v1 records, without needing a DecisionSnapshot: the runtime
+    applies exactly this before turning a record into a planner constraint. Returns ({symbol: view}, [rejections])."""
+    now, limits = now_ms, authority(profile)
     accepted, rejections = {}, []
     for record in records:
         symbol = record.get("token") if type(record) is dict else None
-        reason = problem(record, run_id=snapshot.run_id, profile_hash=snapshot.policy_profile_hash, markets=markets,
-                         now_ms=now, max_age_ms=limits["max_context_age_ms"], universe=snapshot.universe)
+        reason = problem(record, run_id=run_id, profile_hash=profile_hash, markets=markets,
+                         now_ms=now, max_age_ms=limits["max_context_age_ms"], universe=universe)
         if reason is None and record["state_version"] < known_versions.get(symbol, -1):
             reason = "STALE_EVIDENCE_VERSION"
         if reason is None and symbol in accepted:
@@ -172,10 +187,6 @@ def accept_for_strategy(records: list, snapshot, markets: dict, known_versions: 
         if status == "CLEAR" and (record["assessed_until_ms"] is None or now >= record["assessed_until_ms"]):
             status = "STALE"
         accepted[symbol] = dict(record, status=status, review_complete=status == "CLEAR")
-    if profile.get("assessment_required"):
-        for symbol in snapshot.universe:
-            if markets.get(symbol) is not None and symbol not in accepted:
-                rejections.append({"reason": "MISSING", "symbol": symbol, "schema": None})
     return accepted, rejections
 
 
@@ -183,7 +194,8 @@ def mandatory_reductions(records: list, profile: dict, held: dict, **context) ->
     """Planner reduction constraints for verified falsifier findings, only under MANDATORY_REDUCTION authority.
 
     Only records that pass `problem` (intrinsic checks always; identity/time checks for the `context` given:
-    run_id, profile_hash, markets, now_ms, max_age_ms, universe) can create a constraint. These are requests to the
+    run_id, profile_hash, markets, now_ms, max_age_ms, universe) can create a constraint. The runtime passes only
+    records `accept_records` accepted, so version, duplicate and market checks apply too. These are requests to the
     independent planner, which still enforces affordability, market, integrity, ownership, clock and signing
     gates. Not every policy EXIT is mandatory: only these listed predicates.
     """

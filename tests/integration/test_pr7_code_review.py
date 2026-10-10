@@ -14,6 +14,7 @@ import unittest
 import uuid
 
 from larp.contracts import Document
+from larp.integration.contract import accept_for_strategy
 from larp.integration.runtime import (
     ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state, initial_projection,
 )
@@ -27,7 +28,7 @@ from larp.intelligence.text import document_text
 from larp.intelligence.tools import prior_context
 from larp.research.evaluation import evaluate
 from larp.research.fixtures import changed, synthetic_profile
-from larp.strategy.policy import decide
+from larp.strategy.schema import markets as strategy_markets
 from tests.integration.test_evidence_pipeline import (
     EXTRA as PIPE_EXTRA, RUN, context_for, evidence_state, pipeline_ledger, profile_hash, request_for,
     strategy_snapshot,
@@ -225,7 +226,8 @@ class MandatoryReductions(unittest.TestCase):
         s, _, context = self.build(lambda ms: [dict(m, quality="STALE") if m["symbol"] == "NVDAB" else m
                                                for m in ms])
         s2 = changed(s, markets=context["markets"], assessments=context["assessments"])
-        rejected = decide(s2, s2.policy_state).next_policy_state.data.read()["evidence_rejections"]
+        profile = s2.context.read()["profile"]
+        _, rejected = accept_for_strategy(context["assessments"], s2, strategy_markets(s2, profile), {}, profile)
         self.assertIn("UNKNOWN_TOKEN", [r["reason"] for r in rejected])
         self.assertEqual(context["reduction_constraints"], [])
 
@@ -439,7 +441,8 @@ class AbsoluteReturn(unittest.TestCase):
         self.assertIn("TREATMENT_ABSOLUTE_NET_NOT_POSITIVE", plain["warnings"])
         strict = self.fixture.registration(support_rule="LOWER_BOUND_ABOVE_MARGIN_AND_TREATMENT_NET_POSITIVE")
         report = evaluate(Document.from_dict(strict), losing).read()
-        self.assertEqual(report["status"], "NOT_SUPPORTED")
+        # The support rule fails; the registered kill rule (upper bound below zero) does not fire.
+        self.assertEqual((report["status"], report["reason"]), ("INCONCLUSIVE", "TREATMENT_ABSOLUTE_NET_NOT_POSITIVE"))
 
     def test_r24_profitable_treatment_supported_under_strict_rule(self):
         """The new strict rule still supports a profitable, better treatment, without a warning."""

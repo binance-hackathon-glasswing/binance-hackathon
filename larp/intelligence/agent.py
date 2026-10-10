@@ -102,21 +102,28 @@ class _State:
                 out.append({"gap": "UNCOMPARED", "tool": "compare_facts", "args": {"metric": metric}})
         return [g for g in out if (g["tool"], Document.from_dict(g["args"]).payload) not in self.attempted]
 
-    def view(self, gaps, remaining_calls) -> dict:
+    def view(self, gaps, remaining_calls) -> dict | None:
         """Model input. Bounded by `max_model_input_chars` (a token proxy): prior facts, then tool results, then
-        document excerpts are cut, in that order, and the cut is recorded as incomplete coverage."""
+        document excerpts are cut, in that order, and the cut is recorded as incomplete coverage. Cutting repeats
+        until the input fits; if even the bare input (current facts, document identities) exceeds the cap, None:
+        the model is not called (IDEA-033 R21)."""
         limit = self.config.limits["max_tool_result_chars"]
         view = self._view(gaps, remaining_calls, limit)
         cap = self.config.limits["max_model_input_chars"]
         size = len(Document.from_dict(view).payload)
-        if size > cap:
+        cuts = (lambda v: dict(v, prior_facts=v["prior_facts"][: len(v["prior_facts"]) // 4],
+                               tool_results=v["tool_results"][: len(v["tool_results"]) // 4],
+                               documents=[dict(d, excerpt=d["excerpt"][: limit // 4]) for d in v["documents"]]),
+                lambda v: dict(v, prior_facts=[], tool_results=[]),
+                lambda v: dict(v, documents=[dict(d, excerpt="") for d in v["documents"]]))
+        for cut in cuts:
+            if size <= cap:
+                break
             self.coverage["model_input_truncated"] = True
-            for key in ("prior_facts", "tool_results"):
-                view[key] = view[key][: max(0, len(view[key]) // 4)]
-            view["documents"] = [dict(d, excerpt=d["excerpt"][: limit // 4]) for d in view["documents"]]
+            view = cut(view)
             size = len(Document.from_dict(view).payload)
         self.coverage["model_input_chars_max"] = max(self.coverage["model_input_chars_max"], size)
-        return view
+        return view if size <= cap else None
 
     def _view(self, gaps, remaining_calls, limit) -> dict:
         return {"issuer": {"issuer_id": self.entry.issuer_id, "entity_name": self.entry.entity_name,
@@ -227,9 +234,14 @@ class EvidenceAssessor:
                 break
             gaps = state.gaps()
             calls_left = max_calls - len(state.tool_calls)
+            model_input = state.view(gaps, calls_left)
+            if model_input is None:
+                state.missing.append("EVIDENCE_MODEL_INPUT_OVER_CAP")
+                claims_out = None  # harness facts only; the model did not see or confirm them
+                break
             m_request = {"schema": "ModelRequest.v1", "request_id": f"{r['job_id']}:step:{step}",
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
-                         "input": state.view(gaps, calls_left)}
+                         "input": model_input}
             step += 1
             try:
                 m_response = self.model.step(Document.from_dict(m_request), remaining).read()
@@ -635,9 +647,14 @@ class EvidenceAssessor:
             label = labels.get((group, comparison["relation"]))
             if label:
                 rule = severity["comparisons"][label]
+                new = state.facts[new_id]
+                # The new fact's filing supports the finding, so a correction or withdrawal of it can resolve the
+                # latch under SOURCE_CORRECTED_OR_WITHDRAWN (IDEA-033 R22).
                 findings.append({"type": label, "impact": rule[0], "severity": rule[1],
-                                 "metric": state.facts[new_id]["metric"], "period": state.facts[new_id]["period"],
-                                 "fact_ids": [new_id, prior_id], "delta": comparison.get("delta")})
+                                 "metric": new["metric"], "period": new["period"],
+                                 "fact_ids": [new_id, prior_id], "delta": comparison.get("delta"),
+                                 "sources": [{"accession": new["source"].get("accession"),
+                                              "record_id": new["source"].get("record_id")}]})
         unique, seen = [], set()
         for finding in findings:
             key = (finding["type"], finding.get("metric"), finding.get("period"))

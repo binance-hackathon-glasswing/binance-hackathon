@@ -87,7 +87,7 @@ class Coordinator:
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
                    if k not in ('round_records','closed_rounds','observations')}
-        updates={}
+        updates={}; context_ok=True
         if self.context_builder is None:
             context=dict(projection=portfolio,reservations=current.read()['reservations'],
                          request=request.read(),assessment=assessment.read() if assessment else None)
@@ -96,12 +96,16 @@ class Coordinator:
                 context,updates=self.context_builder(current.read(),request.read(),
                                                      assessment.read() if assessment else None,now_ms)
             except Exception as exc:
-                errors.append('CONTEXT_UNAVAILABLE:'+type(exc).__name__)
+                cause=type(exc.__cause__ or exc).__name__
+                errors.append('CONTEXT_UNAVAILABLE:'+cause)
                 context=dict(projection=portfolio,reservations=current.read()['reservations'],
-                             request=request.read(),assessment=None,context_error=type(exc).__name__)
-                assessment=None
+                             request=request.read(),assessment=None,context_error=cause)
+                # Evidence the builder already accepted is still committed with the round, so a port failure
+                # cannot drop an adverse finding (IDEA-033 R16). No policy runs without its context.
+                updates=getattr(exc,'updates',None) or {}
+                context_ok=False
         snapshot=self.snapshot(current,now_ms,context)
-        if assessment is not None:
+        if assessment is not None and context_ok:
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))

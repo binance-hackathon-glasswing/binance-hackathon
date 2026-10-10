@@ -16,7 +16,8 @@ from its semantic signature, so rereading the same filing, a syndicated copy or 
 paraphrase maps to the same entry, and records review status with bounded retries:
 
 PENDING_REVIEW -> ACKNOWLEDGED (seen again by a complete assessment with prior history checked)
-PENDING_REVIEW -> PENDING_REVIEW (incomplete reassessment; attempts+1, exponential backoff)
+PENDING_REVIEW -> PENDING_REVIEW (incomplete reassessment, or any accepted result after the due time that did
+                  not observe it; attempts+1, exponential backoff)
 PENDING_REVIEW -> REVIEW_EXHAUSTED (max attempts; stays visible as uncertainty, no further jobs)
 any -> SUPERSEDED / CORRECTED / WITHDRAWN (its only supporting record was revised or withdrawn)
 any -> EXPIRED (not seen within the retention window; entries are bounded in number)
@@ -178,20 +179,43 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
             entry["status"] = "ACKNOWLEDGED"
             entry["review"]["next_due_ms"] = None
         else:
-            attempts = entry["review"]["attempts"] + 1
-            entry["review"]["attempts"] = attempts
-            if attempts >= policy["max_review_attempts"]:
-                entry["status"] = "REVIEW_EXHAUSTED"
-                entry["review"]["next_due_ms"] = None
-            else:
-                delay = min(policy["max_backoff_ms"], policy["review_base_delay_ms"] * 2 ** attempts)
-                entry["review"]["next_due_ms"] = now_ms + delay
+            _failed_attempt(entry, now_ms, policy)
     elif entry["status"] in ("SUPERSEDED", "CORRECTED", "WITHDRAWN", "EXPIRED"):
         # Seen again in current evidence: the statement is live again, but it is not news; it is acknowledged.
         entry["status"] = "ACKNOWLEDGED"
         entry["review"]["next_due_ms"] = None
     registry[sid] = entry
     return entry
+
+
+def _failed_attempt(entry: dict, now_ms: int, policy: dict) -> None:
+    """One incomplete review attempt: back off exponentially, or stop at `max_review_attempts`."""
+    attempts = entry["review"]["attempts"] + 1
+    entry["review"]["attempts"] = attempts
+    if attempts >= policy["max_review_attempts"]:
+        entry["status"] = "REVIEW_EXHAUSTED"
+        entry["review"]["next_due_ms"] = None
+    else:
+        delay = min(policy["max_backoff_ms"], policy["review_base_delay_ms"] * 2 ** attempts)
+        entry["review"]["next_due_ms"] = now_ms + delay
+
+
+def missed_reviews(registry: dict, *, result_id: str, now_ms: int, policy: dict) -> list:
+    """Count an accepted result that did not observe a due statement as one incomplete review attempt.
+
+    A reassessment can abstain, be unavailable or not reread the filing; without this, `observe` never runs for the
+    statement and its review stays due forever instead of reaching REVIEW_EXHAUSTED (IDEA-033 R18). Statements
+    `observe` already handled for this result are skipped. Returns the IDs charged an attempt.
+    """
+    charged = []
+    for entry in due_reviews(registry, now_ms):
+        if entry["review"]["last_result_id"] == result_id:
+            continue
+        entry = dict(entry, review=dict(entry["review"], last_result_id=result_id))
+        _failed_attempt(entry, now_ms, policy)
+        registry[entry["statement_id"]] = entry
+        charged.append(entry["statement_id"])
+    return charged
 
 
 def revise(registry: dict, *, accession: str, superseding_hash: str, still_present: set, withdrawn: bool,

@@ -10,7 +10,9 @@ reassessment state were not persisted. These adapters make each translation expl
   durable IssuerEvidenceState.v2 (committed in the projection with the round), consumes every issuer's
   state at decision time into EvidenceContext.v1, maps the projection to the strategy's PortfolioState.v1
   ledger (settled balances + store reservations + persisted risk state), asks the injected market port
-  for observations, and adds planner reduction constraints only under MANDATORY_REDUCTION authority.
+  for observations, and adds planner reduction constraints only under MANDATORY_REDUCTION authority and only from
+  records the strategy itself accepts. If the ledger or a port fails after evidence was accepted, it raises
+  `ContextUnavailable` carrying the evidence updates, which the coordinator still commits.
 - `RuntimePlanner` (Coordinator `planner`): the real independent planner, then decision identity, exact
   amount string, expiry, asset/units reservation deltas and reassessment jobs in the runtime vocabulary.
 - `StrategyPolicy` (Coordinator `policy`): the real `strategy.policy.decide`.
@@ -20,15 +22,15 @@ price history or quoted depth: what the market port does not supply stays missin
 the resulting capability blockers.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from larp.contracts import Document, PolicyState
+from larp.contracts import ContractError, Document, PolicyState
 from larp.intelligence.common import digest
 from larp.intelligence.gate import accept, consume, initial_state
-from larp.integration.contract import authority, build_evidence_context, mandatory_reductions
+from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
 from larp.risk.planner import plan as risk_plan
 from larp.strategy.policy import decide
-from larp.strategy.schema import MONEY_SCALE
+from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
 
 ADAPTER = "RuntimePlan.v1"
 SETTLED = ("USDT", "BNB")
@@ -90,6 +92,18 @@ def ledger_from(projection: dict, reservations: list) -> dict:
     return ledger
 
 
+class ContextUnavailable(Exception):
+    """The decision context could not be built, but evidence was already accepted into issuer state.
+
+    `updates` carries those evidence projection updates so the coordinator commits them with the round: a port
+    failure must not discard an adverse finding (IDEA-033 R16). No policy runs on a round that raised this.
+    """
+
+    def __init__(self, updates: dict):
+        super().__init__("Decision context unavailable; evidence updates retained")
+        self.updates = updates
+
+
 class StrategyPolicy:
     def decide(self, snapshot, state):
         return decide(snapshot, state)
@@ -99,10 +113,11 @@ class ContextBuilder:
     """Coordinator context builder. `issuers`: {issuer_id: {"token": symbol, "underlying_id": id}}."""
 
     def __init__(self, *, profile: dict, profile_hash: str, run_id: str, issuers: dict, market, health,
-                 calendar, lifecycle_policy: dict | None = None, series=None):
+                 calendar, lifecycle_policy: dict | None = None, series=None, universe=None):
         self.profile, self.profile_hash, self.run_id = profile, profile_hash, run_id
         self.issuers, self.market, self.health, self.calendar = issuers, market, health, calendar
         self.lifecycle_policy, self.series = lifecycle_policy, series
+        self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
         projection = current["projection"]
@@ -124,6 +139,15 @@ class ContextBuilder:
                 evidence[issuer] = state
                 decisions.append({"issuer_id": issuer, "result_id": assessment.get("result_id"),
                                   "decision": decision})
+        updates = {"evidence": evidence, "evidence_decisions": decisions}
+        try:
+            context, anchor = self._context(current, evidence, decisions, now_ms)
+        except Exception as exc:
+            raise ContextUnavailable(updates) from exc
+        return context, dict(updates, session_anchor=anchor)
+
+    def _context(self, current: dict, evidence: dict, decisions: list, now_ms: int) -> tuple:
+        projection = current["projection"]
         contexts = []
         for issuer, state in sorted(evidence.items()):
             meta = self.issuers.get(issuer)
@@ -136,19 +160,36 @@ class ContextBuilder:
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
         markets = self.market(now_ms)
-        # Reductions only from records that pass the strategy's own identity/hash/time validation (S4-B c03).
-        reductions = mandatory_reductions(contexts, self.profile, held, run_id=self.run_id,
-                                          profile_hash=self.profile_hash, markets={m["symbol"]: m for m in markets},
-                                          now_ms=now_ms, max_age_ms=authority(self.profile)["max_context_age_ms"])
+        # The first decision time seen in this session fixes the session's review jobs (IDEA-033 R15).
+        anchor = projection.get("session_anchor") or {}
+        if anchor.get("index") != session["index"]:
+            anchor = {"index": session["index"], "first_ms": now_ms}
+        reductions = self._reductions(contexts, current, held, markets, now_ms)
         context = {
             "schema": "StrategyContext.v1", "origin": "INTEGRATION_V1", "profile": self.profile, "portfolio": ledger,
             "markets": markets, "series": self.series(now_ms) if self.series else {},
             "session_index": session["index"], "remaining_sessions": session["remaining"],
+            "session_started_ms": anchor["first_ms"],
             "last_discretionary_session": projection.get("last_discretionary_session"),
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
-        return context, {"evidence": evidence, "evidence_decisions": decisions}
+        return context, anchor
+
+    def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:
+        """Reductions only from records the strategy itself would accept: same identity/hash/time checks, its parsed
+        (usable) markets, its persisted evidence versions and duplicate handling (S4-B c03, IDEA-033 R17)."""
+        cutoff = datetime.fromtimestamp(now_ms / 1000, timezone.utc)
+        try:
+            parsed = market_view(markets, self.universe, cutoff, self.profile)
+        except ContractError:
+            return []  # the strategy refuses these markets outright, so it accepts no evidence either
+        versions = ((current.get("policy_state") or {}).get("data") or {}).get("evidence_versions", {})
+        accepted, _ = accept_records(contexts, run_id=self.run_id, profile_hash=self.profile_hash, now_ms=now_ms,
+                                     markets=parsed, known_versions=versions, profile=self.profile,
+                                     universe=self.universe)
+        usable = [r for r in contexts if accepted.get(r["token"], {}).get("context_hash") == r["context_hash"]]
+        return mandatory_reductions(usable, self.profile, held)
 
 
 class RuntimePlanner:
@@ -189,9 +230,12 @@ class RuntimePlanner:
                                        reasons=sorted({r["reason"] for r in raw["rejections"]}),
                                        proposed_state={}))
 
-    def _job(self, payload: dict, now_ms: int, priority: int) -> dict:
-        job_id = "evidence:" + digest("larp.integration.review-job.v1", payload)
-        return {"job_id": job_id, "lane": "evidence", "due_ms": now_ms, "valid_until_ms": now_ms + self.validity,
+    def _job(self, payload: dict, due_ms: int, priority: int) -> dict:
+        """A job whose whole definition follows from its payload and due time, both covered by its ID: the store
+        refuses a reused job ID with changed bytes, so a review planned again in a later round must be identical
+        (IDEA-033 R15). Due times come from durable state, never from the planning round's clock."""
+        job_id = "evidence:" + digest("larp.integration.review-job.v2", {"payload": payload, "due_ms": due_ms})
+        return {"job_id": job_id, "lane": "evidence", "due_ms": due_ms, "valid_until_ms": due_ms + self.validity,
                 "max_attempts": self.attempts, "priority": priority, "calendar_id": "UTC",
                 "tzdata_version": "utc-only-no-tzdata", "missed": "catch_up", "payload": payload}
 
@@ -200,16 +244,19 @@ class RuntimePlanner:
         jobs = []
         for record in context.get("assessments", []):
             if record.get("due_reviews"):
+                due = record.get("review_due_ms")
                 jobs.append(self._job({"kind": "REASSESS_ISSUER", "issuer_id": record["issuer_id"],
                                        "reason": "STATEMENT_REVIEW_DUE", "state_version": record["state_version"],
-                                       "statement_ids": sorted(record["due_reviews"])}, now_ms, 40))
+                                       "statement_ids": sorted(record["due_reviews"])},
+                                      due if type(due) is int else now_ms, 40))  # records predating review_due_ms
         if proposal is not None:
             underlying = {m["symbol"]: m["underlying_id"] for m in context.get("markets", [])}
+            started = context.get("session_started_ms")
             for review in proposal.next_policy_state.data.read().get("reviews", []):
                 if review["symbol"] in underlying:
                     jobs.append(self._job({"kind": "REASSESS_ISSUER", "issuer_id": underlying[review["symbol"]],
                                            "reason": review["reason"], "session": context["session_index"]},
-                                          now_ms, 50))
+                                          started if type(started) is int else now_ms, 50))
         unique = {j["job_id"]: j for j in jobs}
         return [unique[k] for k in sorted(unique)]
 

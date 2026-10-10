@@ -158,23 +158,32 @@ def prior_context(state, args: dict) -> dict:
     first_original = min(state.index.all_by_id[r]["original_ms"] for r in state.current_records)
     found = [f["fact_id"] for f in state.context_facts
              if _matches(f, metric) and f["source"].get("accession") not in current]
-    earlier = [r for r in state.index.by_accession.values()
-               if r["accession"] not in current and r["original_ms"] < first_original and r["quality"] != "MISSING"]
+    before = [r for r in state.index.by_accession.values()
+              if r["accession"] not in current and r["original_ms"] < first_original]
+    # A filing whose primary document never arrived, or a document that failed to retrieve, was not checked: the
+    # history stays incomplete rather than reading as FIRST_SEEN (IDEA-033 R20).
+    earlier = [r for r in before if r["quality"] != "MISSING"]
     earlier.sort(key=lambda r: (r["original_ms"], r["accession"]), reverse=True)
     limit = state.config.limits["max_prior_records"]
     truncated = len(earlier) > limit
     if truncated:
         state.coverage["prior_records_truncated"] += len(earlier) - limit
+    oldest = earlier[limit - 1]["original_ms"] if truncated and limit else None  # older ones were not in scope
+    unreadable = {r["accession"] for r in before if r["quality"] == "MISSING"
+                  and (oldest is None or r["original_ms"] >= oldest)}
     for record in sorted(earlier[:limit], key=lambda r: (r["original_ms"], r["accession"])):
         state.coverage["prior_records_scanned"] += 1
         for doc in record["documents"]:
-            if doc["status"] == "OK" and (record["accession"], doc["name"]) not in state.loaded:
+            if doc["status"] != "OK":
+                unreadable.add(record["accession"])
+            elif (record["accession"], doc["name"]) not in state.loaded:
                 load_document(state, record, doc)
         found += [f["fact_id"] for f in state.facts.values()
                   if f["source"].get("accession") == record["accession"] and _matches(f, metric)]
     found = sorted(set(found))
     state.prior_fact_ids.update(found)
-    state.history_complete[metric] = not truncated
+    state.missing.extend(f"PRIOR_HISTORY_UNREADABLE:{a}" for a in sorted(unreadable))
+    state.history_complete[metric] = not truncated and not unreadable
     periods = sorted({state.facts[i]["period"] or "" for i in found})
     return {"status": "OK" if found else "NO_PRIOR", "metric": metric, "fact_ids": found, "periods": periods}
 
