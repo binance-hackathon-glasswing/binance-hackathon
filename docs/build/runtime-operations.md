@@ -102,6 +102,17 @@ late receipts are appended as new observations, never changes to an uploaded log
 Approval hashes are rejected by the swap-mapping schema. If another authorized
 swap attempt is needed after closure, Isaac's adapter must use a linked new round.
 
+Complete audit size is checked before reserving resources or releasing commands.
+Oversized unsupported I/O produces `AUDIT_CONTENT_UNSUPPORTED`, retains the full
+received local record, and emits an explicit small failure audit with its hash.
+It never silently truncates model output or claims full remote I/O delivery.
+
+`larp.runtime.replay.replay` takes the captured journal and explicit owner ports,
+reuses recorded assessment results and reruns policy/planning/execution/accounting.
+It compares each canonical batch hash and fails if an event lacks a replay adapter.
+The integration test uses a fresh disposable target and also checks restored state;
+production journal replay must never target an active wallet database.
+
 Database write failure stops command release. Remote audit failure does not become
 a local-disk error: bytes remain pending/permanent/exhausted with attempts and a
 deadline. ACK bodies must match event ID and chunk index. Exhausted delivery needs
@@ -147,6 +158,9 @@ only to the uploader, `WALLET_PRIVATE_KEY` or `WALLET_MNEMONIC` only to the sign
 and provider/Web3 credentials only to the corresponding workers. Leave
 `AI_SEEDS_URL` unset; this adapter uses the documented endpoint directly. Do not
 paste populated credentials into chat. No registered credentials were used here.
+
+The user requested infrastructure recommendations after implementation. See
+`runtime-infrastructure.md`; these are proposals, not selected destinations.
 
 ## Acceptance interpretation
 

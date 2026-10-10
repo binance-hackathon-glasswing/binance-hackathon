@@ -3,6 +3,10 @@
 All examples are synthetic. Common ports are in `larp/ports.py`. Existing
 DecisionSnapshot/PolicyState/Proposal/Target retain their original Python API.
 Documents use integer base units, exact rational weights and UTC epoch milliseconds.
+Concrete successful and rejected example payloads, committed batches and exact
+audit chunks are retained in `evidence/runtime-offline-trace.json`; provenance and
+the file checksum are recorded in IDEA-028. All its prices/balances/identities are
+synthetic fixtures, not production configuration.
 
 | Schema | Required vocabulary |
 |---|---|

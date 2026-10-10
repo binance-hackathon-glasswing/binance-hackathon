@@ -1,0 +1,3315 @@
+{
+  "schema": "larp_demo_0396b8c9cd6a",
+  "mode": "offline",
+  "simulated": true,
+  "head": "5ca09700686487cc9b8b6e83af7ed76d1b6863c8ff2c39c3767c3cd0d56d309e",
+  "state": {
+    "chain_id": 56,
+    "clock_ms": 0,
+    "epoch": 2,
+    "execution_state": {
+      "intents": {
+        "entry": {
+          "kind": "FINAL_SUCCESS",
+          "observation_id": "settled",
+          "round_id": "entry",
+          "simulated": true,
+          "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      },
+      "schema": "ExecutionState.v1"
+    },
+    "head": "5ca09700686487cc9b8b6e83af7ed76d1b6863c8ff2c39c3767c3cd0d56d309e",
+    "initial": {
+      "balances": {
+        "BNB": 10,
+        "NVDAB": 0,
+        "USDT": 100
+      }
+    },
+    "mode": "offline",
+    "policy_state": {
+      "data": {
+        "last_action": "BUY"
+      },
+      "policy_id": "fixture",
+      "run_id": "run",
+      "schema": "PolicyState.v1",
+      "version": 1
+    },
+    "projection": {
+      "balances": {
+        "BNB": 9,
+        "NVDAB": 2,
+        "USDT": 90
+      },
+      "closed_rounds": [
+        "entry",
+        "rejected"
+      ],
+      "observations": [
+        "broadcast",
+        "settled"
+      ],
+      "round_records": {
+        "entry": {
+          "assessment": {
+            "claims": [],
+            "confidence": "unknown",
+            "conflicts": [],
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "expiry_ms": 1791590460000,
+            "falsifiers": [],
+            "issuer_id": "NVDA",
+            "job_id": "job",
+            "missingness": [],
+            "model_hash": "synthetic",
+            "model_io": {
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "response": "synthetic assessment"
+            },
+            "novelty": "unknown",
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "prompt_hash": "synthetic",
+            "rationale": "Synthetic fixture; no model inference or market claim.",
+            "review_requests": [],
+            "run_id": "run",
+            "schema": "AssessmentResult.v1"
+          },
+          "errors": [],
+          "orders": [
+            {
+              "amount": "10",
+              "side": "BUY",
+              "symbol": "NVDAB",
+              "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ],
+          "plan": {
+            "intents": [
+              {
+                "amount": "10",
+                "decision_id": "decision:job",
+                "expires_ms": 1791590460000,
+                "gas_units": 1,
+                "intent_id": "intent:job",
+                "pay_units": 10,
+                "receive_units": 2,
+                "side": "BUY",
+                "symbol": "NVDAB"
+              }
+            ],
+            "jobs": [],
+            "proposed_state": {},
+            "reasons": [
+              "SYNTHETIC"
+            ],
+            "reservation_deltas": [
+              {
+                "asset": "USDT",
+                "intent_id": "intent:job",
+                "units": 10
+              },
+              {
+                "asset": "BNB",
+                "intent_id": "intent:job",
+                "units": 1
+              }
+            ],
+            "schema": "PlanResult.v1",
+            "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+          },
+          "policy_input": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "projection": {
+              "balances": {
+                "BNB": 10,
+                "NVDAB": 0,
+                "USDT": 100
+              }
+            },
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "reservations": []
+          },
+          "policy_output": {
+            "next_policy_state": {
+              "data": {
+                "last_action": "BUY"
+              },
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 1
+            },
+            "targets": [
+              {
+                "kind": "TARGET_WEIGHT",
+                "reason": "SYNTHETIC",
+                "symbol": "NVDAB",
+                "weight": [
+                  1,
+                  10
+                ]
+              }
+            ],
+            "valid_until": "2026-10-10T00:01:00+00:00"
+          },
+          "policy_state": {
+            "data": {},
+            "policy_id": "fixture",
+            "run_id": "run",
+            "schema": "PolicyState.v1",
+            "version": 0
+          },
+          "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+          "request": {
+            "allowed_tools": [],
+            "budget": {
+              "deadline_ms": 60000,
+              "tool_calls": 6
+            },
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "cutoff_ms": 1791590400000,
+            "evidence_refs": [
+              {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "source": "synthetic"
+              }
+            ],
+            "fixture_action": "BUY",
+            "issuer_id": "NVDA",
+            "job_id": "job",
+            "market": {
+              "available_ms": 1791590400000,
+              "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "decimals": 18,
+              "observation_id": "market:market",
+              "observed_ms": 1791590400000,
+              "quality": "SYNTHETIC",
+              "schema": "MarketObservation.v1",
+              "source": "synthetic",
+              "token": "NVDAB",
+              "token_market_state": "OPEN",
+              "underlying": "NVDA",
+              "underlying_market_state": "OPEN"
+            },
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "run_id": "run",
+            "schema": "AssessmentRequest.v1"
+          },
+          "round_id": "entry",
+          "started_ms": 1791590400000,
+          "swap_mappings": [
+            {
+              "decision_id": "decision:job",
+              "step": "swap",
+              "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        },
+        "rejected": {
+          "assessment": null,
+          "errors": [
+            "ASSESSMENT_UNAVAILABLE"
+          ],
+          "orders": [],
+          "plan": {
+            "intents": [],
+            "jobs": [],
+            "proposed_state": {},
+            "reasons": [
+              "SYNTHETIC"
+            ],
+            "reservation_deltas": [],
+            "schema": "PlanResult.v1",
+            "snapshot_id": "5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5"
+          },
+          "policy_input": {
+            "assessment": null,
+            "projection": {
+              "balances": {
+                "BNB": 9,
+                "NVDAB": 2,
+                "USDT": 90
+              }
+            },
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "HOLD",
+              "issuer_id": "NVDA",
+              "job_id": "failed",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "reservations": [
+              {
+                "asset": "BNB",
+                "intent_id": "intent:job",
+                "units": 0
+              },
+              {
+                "asset": "USDT",
+                "intent_id": "intent:job",
+                "units": 0
+              }
+            ]
+          },
+          "policy_output": null,
+          "policy_state": {
+            "data": {
+              "last_action": "BUY"
+            },
+            "policy_id": "fixture",
+            "run_id": "run",
+            "schema": "PolicyState.v1",
+            "version": 1
+          },
+          "proposal_id": null,
+          "request": {
+            "allowed_tools": [],
+            "budget": {
+              "deadline_ms": 60000,
+              "tool_calls": 6
+            },
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "cutoff_ms": 1791590400000,
+            "evidence_refs": [
+              {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "source": "synthetic"
+              }
+            ],
+            "fixture_action": "HOLD",
+            "issuer_id": "NVDA",
+            "job_id": "failed",
+            "market": {
+              "available_ms": 1791590400000,
+              "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "decimals": 18,
+              "observation_id": "market:market",
+              "observed_ms": 1791590400000,
+              "quality": "SYNTHETIC",
+              "schema": "MarketObservation.v1",
+              "source": "synthetic",
+              "token": "NVDAB",
+              "token_market_state": "OPEN",
+              "underlying": "NVDA",
+              "underlying_market_state": "OPEN"
+            },
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "run_id": "run",
+            "schema": "AssessmentRequest.v1"
+          },
+          "round_id": "rejected",
+          "started_ms": 1791590400002,
+          "swap_mappings": []
+        }
+      }
+    },
+    "quarantined": false,
+    "reservations": [
+      {
+        "asset": "BNB",
+        "intent_id": "intent:job",
+        "units": 0
+      },
+      {
+        "asset": "USDT",
+        "intent_id": "intent:job",
+        "units": 0
+      }
+    ],
+    "run_id": "run",
+    "version": 6,
+    "wallet_id": "synthetic-wallet"
+  },
+  "metrics": {
+    "audit_pending": 0,
+    "jobs_pending": 0,
+    "open_rounds": 0,
+    "owner_epoch": 2,
+    "quarantined": false,
+    "version": 6
+  },
+  "journal": [
+    {
+      "audit": [],
+      "chain_id": 56,
+      "commands": [
+        {
+          "command_id": "intent:job",
+          "decision_id": "decision:job",
+          "expires_ms": 1791590460000,
+          "kind": "EXECUTION_REQUEST",
+          "payload": {
+            "amount": "10",
+            "decision_id": "decision:job",
+            "expires_ms": 1791590460000,
+            "gas_units": 1,
+            "intent_id": "intent:job",
+            "pay_units": 10,
+            "receive_units": 2,
+            "side": "BUY",
+            "symbol": "NVDAB"
+          },
+          "round_id": "entry"
+        }
+      ],
+      "event": {
+        "kind": "ROUND_PLANNED",
+        "record": {
+          "assessment": {
+            "claims": [],
+            "confidence": "unknown",
+            "conflicts": [],
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "expiry_ms": 1791590460000,
+            "falsifiers": [],
+            "issuer_id": "NVDA",
+            "job_id": "job",
+            "missingness": [],
+            "model_hash": "synthetic",
+            "model_io": {
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "response": "synthetic assessment"
+            },
+            "novelty": "unknown",
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "prompt_hash": "synthetic",
+            "rationale": "Synthetic fixture; no model inference or market claim.",
+            "review_requests": [],
+            "run_id": "run",
+            "schema": "AssessmentResult.v1"
+          },
+          "errors": [],
+          "orders": [
+            {
+              "amount": "10",
+              "side": "BUY",
+              "symbol": "NVDAB"
+            }
+          ],
+          "plan": {
+            "intents": [
+              {
+                "amount": "10",
+                "decision_id": "decision:job",
+                "expires_ms": 1791590460000,
+                "gas_units": 1,
+                "intent_id": "intent:job",
+                "pay_units": 10,
+                "receive_units": 2,
+                "side": "BUY",
+                "symbol": "NVDAB"
+              }
+            ],
+            "jobs": [],
+            "proposed_state": {},
+            "reasons": [
+              "SYNTHETIC"
+            ],
+            "reservation_deltas": [
+              {
+                "asset": "USDT",
+                "intent_id": "intent:job",
+                "units": 10
+              },
+              {
+                "asset": "BNB",
+                "intent_id": "intent:job",
+                "units": 1
+              }
+            ],
+            "schema": "PlanResult.v1",
+            "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+          },
+          "policy_input": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "projection": {
+              "balances": {
+                "BNB": 10,
+                "NVDAB": 0,
+                "USDT": 100
+              }
+            },
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "reservations": []
+          },
+          "policy_output": {
+            "next_policy_state": {
+              "data": {
+                "last_action": "BUY"
+              },
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 1
+            },
+            "targets": [
+              {
+                "kind": "TARGET_WEIGHT",
+                "reason": "SYNTHETIC",
+                "symbol": "NVDAB",
+                "weight": [
+                  1,
+                  10
+                ]
+              }
+            ],
+            "valid_until": "2026-10-10T00:01:00+00:00"
+          },
+          "policy_state": {
+            "data": {},
+            "policy_id": "fixture",
+            "run_id": "run",
+            "schema": "PolicyState.v1",
+            "version": 0
+          },
+          "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+          "request": {
+            "allowed_tools": [],
+            "budget": {
+              "deadline_ms": 60000,
+              "tool_calls": 6
+            },
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "cutoff_ms": 1791590400000,
+            "evidence_refs": [
+              {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "source": "synthetic"
+              }
+            ],
+            "fixture_action": "BUY",
+            "issuer_id": "NVDA",
+            "job_id": "job",
+            "market": {
+              "available_ms": 1791590400000,
+              "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "decimals": 18,
+              "observation_id": "market:market",
+              "observed_ms": 1791590400000,
+              "quality": "SYNTHETIC",
+              "schema": "MarketObservation.v1",
+              "source": "synthetic",
+              "token": "NVDAB",
+              "token_market_state": "OPEN",
+              "underlying": "NVDA",
+              "underlying_market_state": "OPEN"
+            },
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "run_id": "run",
+            "schema": "AssessmentRequest.v1"
+          },
+          "round_id": "entry",
+          "started_ms": 1791590400000,
+          "swap_mappings": []
+        }
+      },
+      "event_id": "plan:entry",
+      "execution_state": {},
+      "expected_version": 0,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 10,
+          "NVDAB": 0,
+          "USDT": 100
+        },
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": []
+          }
+        }
+      },
+      "reservation_deltas": [
+        {
+          "asset": "USDT",
+          "intent_id": "intent:job",
+          "units": 10
+        },
+        {
+          "asset": "BNB",
+          "intent_id": "intent:job",
+          "units": 1
+        }
+      ],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    },
+    {
+      "audit": [],
+      "chain_id": 56,
+      "commands": [],
+      "event": {
+        "kind": "OBSERVATION",
+        "observation": {
+          "kind": "BROADCAST_ATTEMPTED",
+          "observation_id": "broadcast",
+          "round_id": "entry",
+          "simulated": true,
+          "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      },
+      "event_id": "broadcast",
+      "execution_state": {
+        "intents": {
+          "entry": {
+            "kind": "BROADCAST_ATTEMPTED",
+            "observation_id": "broadcast",
+            "round_id": "entry",
+            "simulated": true,
+            "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "schema": "ExecutionState.v1"
+      },
+      "expected_version": 1,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 10,
+          "NVDAB": 0,
+          "USDT": 100
+        },
+        "observations": [
+          "broadcast"
+        ],
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": [
+              {
+                "decision_id": "decision:job",
+                "step": "swap",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          }
+        }
+      },
+      "reservation_deltas": [],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    },
+    {
+      "audit": [
+        {
+          "address": "0x1111111111111111111111111111111111111111",
+          "chunks": [
+            "{\"protocolVersion\":\"2.0\",\"address\":\"0x1111111111111111111111111111111111111111\",\"chunkCount\":1,\"totalBytes\":6349,\"contentSha256\":\"682ade5ecb165372702199185df23d7700a76f3cb10f31d19e749845008ccc53\",\"encoding\":\"plain\",\"payload\":\"{\\\"timestamp\\\":1791590400001,\\\"data\\\":{\\\"input\\\":{\\\"version_id\\\":\\\"synthetic-build\\\",\\\"round_id\\\":\\\"entry\\\",\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"assessment\\\":{\\\"claims\\\":[],\\\"confidence\\\":\\\"unknown\\\",\\\"conflicts\\\":[],\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"expiry_ms\\\":1791590460000,\\\"falsifiers\\\":[],\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"missingness\\\":[],\\\"model_hash\\\":\\\"synthetic\\\",\\\"model_io\\\":{\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"response\\\":\\\"synthetic assessment\\\"},\\\"novelty\\\":\\\"unknown\\\",\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"prompt_hash\\\":\\\"synthetic\\\",\\\"rationale\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"review_requests\\\":[],\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentResult.v1\\\"},\\\"policy_input\\\":{\\\"assessment\\\":{\\\"claims\\\":[],\\\"confidence\\\":\\\"unknown\\\",\\\"conflicts\\\":[],\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"expiry_ms\\\":1791590460000,\\\"falsifiers\\\":[],\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"missingness\\\":[],\\\"model_hash\\\":\\\"synthetic\\\",\\\"model_io\\\":{\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"response\\\":\\\"synthetic assessment\\\"},\\\"novelty\\\":\\\"unknown\\\",\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"prompt_hash\\\":\\\"synthetic\\\",\\\"rationale\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"review_requests\\\":[],\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentResult.v1\\\"},\\\"projection\\\":{\\\"balances\\\":{\\\"BNB\\\":10,\\\"NVDAB\\\":0,\\\"USDT\\\":100}},\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"reservations\\\":[]},\\\"policy_state\\\":{\\\"data\\\":{},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":0}},\\\"cot\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"output\\\":{\\\"status\\\":\\\"INTERRUPTED_UNRESOLVED\\\",\\\"errors\\\":[],\\\"plan\\\":{\\\"intents\\\":[{\\\"amount\\\":\\\"10\\\",\\\"decision_id\\\":\\\"decision:job\\\",\\\"expires_ms\\\":1791590460000,\\\"gas_units\\\":1,\\\"intent_id\\\":\\\"intent:job\\\",\\\"pay_units\\\":10,\\\"receive_units\\\":2,\\\"side\\\":\\\"BUY\\\",\\\"symbol\\\":\\\"NVDAB\\\"}],\\\"jobs\\\":[],\\\"proposed_state\\\":{},\\\"reasons\\\":[\\\"SYNTHETIC\\\"],\\\"reservation_deltas\\\":[{\\\"asset\\\":\\\"USDT\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":10},{\\\"asset\\\":\\\"BNB\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":1}],\\\"schema\\\":\\\"PlanResult.v1\\\",\\\"snapshot_id\\\":\\\"32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c\\\"},\\\"proposal_id\\\":\\\"88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8\\\",\\\"policy_output\\\":{\\\"next_policy_state\\\":{\\\"data\\\":{\\\"last_action\\\":\\\"BUY\\\"},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":1},\\\"targets\\\":[{\\\"kind\\\":\\\"TARGET_WEIGHT\\\",\\\"reason\\\":\\\"SYNTHETIC\\\",\\\"symbol\\\":\\\"NVDAB\\\",\\\"weight\\\":[1,10]}],\\\"valid_until\\\":\\\"2026-10-10T00:01:00+00:00\\\"}},\\\"orders\\\":[{\\\"amount\\\":\\\"10\\\",\\\"side\\\":\\\"BUY\\\",\\\"symbol\\\":\\\"NVDAB\\\",\\\"tx_hash\\\":\\\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\\"}]}}\"}"
+          ],
+          "decision_ids": [
+            "decision:job"
+          ],
+          "event_id": "round:entry",
+          "log": "{\"timestamp\":1791590400001,\"data\":{\"input\":{\"version_id\":\"synthetic-build\",\"round_id\":\"entry\",\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"BUY\",\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"assessment\":{\"claims\":[],\"confidence\":\"unknown\",\"conflicts\":[],\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"expiry_ms\":1791590460000,\"falsifiers\":[],\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"missingness\":[],\"model_hash\":\"synthetic\",\"model_io\":{\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"BUY\",\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"response\":\"synthetic assessment\"},\"novelty\":\"unknown\",\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"prompt_hash\":\"synthetic\",\"rationale\":\"Synthetic fixture; no model inference or market claim.\",\"review_requests\":[],\"run_id\":\"run\",\"schema\":\"AssessmentResult.v1\"},\"policy_input\":{\"assessment\":{\"claims\":[],\"confidence\":\"unknown\",\"conflicts\":[],\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"expiry_ms\":1791590460000,\"falsifiers\":[],\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"missingness\":[],\"model_hash\":\"synthetic\",\"model_io\":{\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"BUY\",\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"response\":\"synthetic assessment\"},\"novelty\":\"unknown\",\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"prompt_hash\":\"synthetic\",\"rationale\":\"Synthetic fixture; no model inference or market claim.\",\"review_requests\":[],\"run_id\":\"run\",\"schema\":\"AssessmentResult.v1\"},\"projection\":{\"balances\":{\"BNB\":10,\"NVDAB\":0,\"USDT\":100}},\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"BUY\",\"issuer_id\":\"NVDA\",\"job_id\":\"job\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"reservations\":[]},\"policy_state\":{\"data\":{},\"policy_id\":\"fixture\",\"run_id\":\"run\",\"schema\":\"PolicyState.v1\",\"version\":0}},\"cot\":\"Synthetic fixture; no model inference or market claim.\",\"output\":{\"status\":\"INTERRUPTED_UNRESOLVED\",\"errors\":[],\"plan\":{\"intents\":[{\"amount\":\"10\",\"decision_id\":\"decision:job\",\"expires_ms\":1791590460000,\"gas_units\":1,\"intent_id\":\"intent:job\",\"pay_units\":10,\"receive_units\":2,\"side\":\"BUY\",\"symbol\":\"NVDAB\"}],\"jobs\":[],\"proposed_state\":{},\"reasons\":[\"SYNTHETIC\"],\"reservation_deltas\":[{\"asset\":\"USDT\",\"intent_id\":\"intent:job\",\"units\":10},{\"asset\":\"BNB\",\"intent_id\":\"intent:job\",\"units\":1}],\"schema\":\"PlanResult.v1\",\"snapshot_id\":\"32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c\"},\"proposal_id\":\"88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8\",\"policy_output\":{\"next_policy_state\":{\"data\":{\"last_action\":\"BUY\"},\"policy_id\":\"fixture\",\"run_id\":\"run\",\"schema\":\"PolicyState.v1\",\"version\":1},\"targets\":[{\"kind\":\"TARGET_WEIGHT\",\"reason\":\"SYNTHETIC\",\"symbol\":\"NVDAB\",\"weight\":[1,10]}],\"valid_until\":\"2026-10-10T00:01:00+00:00\"}},\"orders\":[{\"amount\":\"10\",\"side\":\"BUY\",\"symbol\":\"NVDAB\",\"tx_hash\":\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}]}}",
+          "log_sha256": "682ade5ecb165372702199185df23d7700a76f3cb10f31d19e749845008ccc53",
+          "round_id": "entry",
+          "schema": "AuditEvent.v1",
+          "swap_mappings": [
+            {
+              "decision_id": "decision:job",
+              "step": "swap",
+              "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ],
+          "timestamp_ms": 1791590400001,
+          "version_id": "synthetic-build"
+        }
+      ],
+      "chain_id": 56,
+      "commands": [],
+      "event": {
+        "kind": "ROUND_CLOSED",
+        "status": "INTERRUPTED_UNRESOLVED"
+      },
+      "event_id": "close:entry",
+      "execution_state": {
+        "intents": {
+          "entry": {
+            "kind": "BROADCAST_ATTEMPTED",
+            "observation_id": "broadcast",
+            "round_id": "entry",
+            "simulated": true,
+            "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "schema": "ExecutionState.v1"
+      },
+      "expected_version": 2,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 10,
+          "NVDAB": 0,
+          "USDT": 100
+        },
+        "closed_rounds": [
+          "entry"
+        ],
+        "observations": [
+          "broadcast"
+        ],
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": [
+              {
+                "decision_id": "decision:job",
+                "step": "swap",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          }
+        }
+      },
+      "reservation_deltas": [],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    },
+    {
+      "audit": [],
+      "chain_id": 56,
+      "commands": [],
+      "event": {
+        "kind": "OBSERVATION",
+        "observation": {
+          "kind": "FINAL_SUCCESS",
+          "observation_id": "settled",
+          "round_id": "entry",
+          "simulated": true,
+          "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      },
+      "event_id": "settled",
+      "execution_state": {
+        "intents": {
+          "entry": {
+            "kind": "FINAL_SUCCESS",
+            "observation_id": "settled",
+            "round_id": "entry",
+            "simulated": true,
+            "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "schema": "ExecutionState.v1"
+      },
+      "expected_version": 3,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 9,
+          "NVDAB": 2,
+          "USDT": 90
+        },
+        "closed_rounds": [
+          "entry"
+        ],
+        "observations": [
+          "broadcast",
+          "settled"
+        ],
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": [
+              {
+                "decision_id": "decision:job",
+                "step": "swap",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          }
+        }
+      },
+      "reservation_deltas": [
+        {
+          "asset": "USDT",
+          "intent_id": "intent:job",
+          "units": -10
+        },
+        {
+          "asset": "BNB",
+          "intent_id": "intent:job",
+          "units": -1
+        }
+      ],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    },
+    {
+      "audit": [],
+      "chain_id": 56,
+      "commands": [],
+      "event": {
+        "kind": "ROUND_PLANNED",
+        "record": {
+          "assessment": null,
+          "errors": [
+            "ASSESSMENT_UNAVAILABLE"
+          ],
+          "orders": [],
+          "plan": {
+            "intents": [],
+            "jobs": [],
+            "proposed_state": {},
+            "reasons": [
+              "SYNTHETIC"
+            ],
+            "reservation_deltas": [],
+            "schema": "PlanResult.v1",
+            "snapshot_id": "5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5"
+          },
+          "policy_input": {
+            "assessment": null,
+            "projection": {
+              "balances": {
+                "BNB": 9,
+                "NVDAB": 2,
+                "USDT": 90
+              }
+            },
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "HOLD",
+              "issuer_id": "NVDA",
+              "job_id": "failed",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "reservations": [
+              {
+                "asset": "BNB",
+                "intent_id": "intent:job",
+                "units": 0
+              },
+              {
+                "asset": "USDT",
+                "intent_id": "intent:job",
+                "units": 0
+              }
+            ]
+          },
+          "policy_output": null,
+          "policy_state": {
+            "data": {
+              "last_action": "BUY"
+            },
+            "policy_id": "fixture",
+            "run_id": "run",
+            "schema": "PolicyState.v1",
+            "version": 1
+          },
+          "proposal_id": null,
+          "request": {
+            "allowed_tools": [],
+            "budget": {
+              "deadline_ms": 60000,
+              "tool_calls": 6
+            },
+            "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "cutoff_ms": 1791590400000,
+            "evidence_refs": [
+              {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "source": "synthetic"
+              }
+            ],
+            "fixture_action": "HOLD",
+            "issuer_id": "NVDA",
+            "job_id": "failed",
+            "market": {
+              "available_ms": 1791590400000,
+              "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "decimals": 18,
+              "observation_id": "market:market",
+              "observed_ms": 1791590400000,
+              "quality": "SYNTHETIC",
+              "schema": "MarketObservation.v1",
+              "source": "synthetic",
+              "token": "NVDAB",
+              "token_market_state": "OPEN",
+              "underlying": "NVDA",
+              "underlying_market_state": "OPEN"
+            },
+            "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "run_id": "run",
+            "schema": "AssessmentRequest.v1"
+          },
+          "round_id": "rejected",
+          "started_ms": 1791590400002,
+          "swap_mappings": []
+        }
+      },
+      "event_id": "plan:rejected",
+      "execution_state": {
+        "intents": {
+          "entry": {
+            "kind": "FINAL_SUCCESS",
+            "observation_id": "settled",
+            "round_id": "entry",
+            "simulated": true,
+            "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "schema": "ExecutionState.v1"
+      },
+      "expected_version": 4,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 9,
+          "NVDAB": 2,
+          "USDT": 90
+        },
+        "closed_rounds": [
+          "entry"
+        ],
+        "observations": [
+          "broadcast",
+          "settled"
+        ],
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": [
+              {
+                "decision_id": "decision:job",
+                "step": "swap",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          },
+          "rejected": {
+            "assessment": null,
+            "errors": [
+              "ASSESSMENT_UNAVAILABLE"
+            ],
+            "orders": [],
+            "plan": {
+              "intents": [],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5"
+            },
+            "policy_input": {
+              "assessment": null,
+              "projection": {
+                "balances": {
+                  "BNB": 9,
+                  "NVDAB": 2,
+                  "USDT": 90
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "HOLD",
+                "issuer_id": "NVDA",
+                "job_id": "failed",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": [
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 0
+                },
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 0
+                }
+              ]
+            },
+            "policy_output": null,
+            "policy_state": {
+              "data": {
+                "last_action": "BUY"
+              },
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 1
+            },
+            "proposal_id": null,
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "HOLD",
+              "issuer_id": "NVDA",
+              "job_id": "failed",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "rejected",
+            "started_ms": 1791590400002,
+            "swap_mappings": []
+          }
+        }
+      },
+      "reservation_deltas": [],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    },
+    {
+      "audit": [
+        {
+          "address": "0x1111111111111111111111111111111111111111",
+          "chunks": [
+            "{\"protocolVersion\":\"2.0\",\"address\":\"0x1111111111111111111111111111111111111111\",\"chunkCount\":1,\"totalBytes\":2773,\"contentSha256\":\"988c3b98e929cdf95aa1dacb4353b9b99eed0cae860d0846de71ea19a01a903c\",\"encoding\":\"plain\",\"payload\":\"{\\\"timestamp\\\":1791590400002,\\\"data\\\":{\\\"input\\\":{\\\"version_id\\\":\\\"synthetic-build\\\",\\\"round_id\\\":\\\"rejected\\\",\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"HOLD\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"failed\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"assessment\\\":null,\\\"policy_input\\\":{\\\"assessment\\\":null,\\\"projection\\\":{\\\"balances\\\":{\\\"BNB\\\":9,\\\"NVDAB\\\":2,\\\"USDT\\\":90}},\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"HOLD\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"failed\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"reservations\\\":[{\\\"asset\\\":\\\"BNB\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":0},{\\\"asset\\\":\\\"USDT\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":0}]},\\\"policy_state\\\":{\\\"data\\\":{\\\"last_action\\\":\\\"BUY\\\"},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":1}},\\\"cot\\\":\\\"Deterministic runtime record: assessment unavailable; no model reasoning is claimed.\\\",\\\"output\\\":{\\\"status\\\":\\\"COMPLETE\\\",\\\"errors\\\":[\\\"ASSESSMENT_UNAVAILABLE\\\"],\\\"plan\\\":{\\\"intents\\\":[],\\\"jobs\\\":[],\\\"proposed_state\\\":{},\\\"reasons\\\":[\\\"SYNTHETIC\\\"],\\\"reservation_deltas\\\":[],\\\"schema\\\":\\\"PlanResult.v1\\\",\\\"snapshot_id\\\":\\\"5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5\\\"},\\\"proposal_id\\\":null,\\\"policy_output\\\":null},\\\"orders\\\":[]}}\"}"
+          ],
+          "decision_ids": [],
+          "event_id": "round:rejected",
+          "log": "{\"timestamp\":1791590400002,\"data\":{\"input\":{\"version_id\":\"synthetic-build\",\"round_id\":\"rejected\",\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"HOLD\",\"issuer_id\":\"NVDA\",\"job_id\":\"failed\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"assessment\":null,\"policy_input\":{\"assessment\":null,\"projection\":{\"balances\":{\"BNB\":9,\"NVDAB\":2,\"USDT\":90}},\"request\":{\"allowed_tools\":[],\"budget\":{\"deadline_ms\":60000,\"tool_calls\":6},\"context_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"cutoff_ms\":1791590400000,\"evidence_refs\":[{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"source\":\"synthetic\"}],\"fixture_action\":\"HOLD\",\"issuer_id\":\"NVDA\",\"job_id\":\"failed\",\"market\":{\"available_ms\":1791590400000,\"content_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"decimals\":18,\"observation_id\":\"market:market\",\"observed_ms\":1791590400000,\"quality\":\"SYNTHETIC\",\"schema\":\"MarketObservation.v1\",\"source\":\"synthetic\",\"token\":\"NVDAB\",\"token_market_state\":\"OPEN\",\"underlying\":\"NVDA\",\"underlying_market_state\":\"OPEN\"},\"policy_profile_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"run_id\":\"run\",\"schema\":\"AssessmentRequest.v1\"},\"reservations\":[{\"asset\":\"BNB\",\"intent_id\":\"intent:job\",\"units\":0},{\"asset\":\"USDT\",\"intent_id\":\"intent:job\",\"units\":0}]},\"policy_state\":{\"data\":{\"last_action\":\"BUY\"},\"policy_id\":\"fixture\",\"run_id\":\"run\",\"schema\":\"PolicyState.v1\",\"version\":1}},\"cot\":\"Deterministic runtime record: assessment unavailable; no model reasoning is claimed.\",\"output\":{\"status\":\"COMPLETE\",\"errors\":[\"ASSESSMENT_UNAVAILABLE\"],\"plan\":{\"intents\":[],\"jobs\":[],\"proposed_state\":{},\"reasons\":[\"SYNTHETIC\"],\"reservation_deltas\":[],\"schema\":\"PlanResult.v1\",\"snapshot_id\":\"5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5\"},\"proposal_id\":null,\"policy_output\":null},\"orders\":[]}}",
+          "log_sha256": "988c3b98e929cdf95aa1dacb4353b9b99eed0cae860d0846de71ea19a01a903c",
+          "round_id": "rejected",
+          "schema": "AuditEvent.v1",
+          "swap_mappings": [],
+          "timestamp_ms": 1791590400002,
+          "version_id": "synthetic-build"
+        }
+      ],
+      "chain_id": 56,
+      "commands": [],
+      "event": {
+        "kind": "ROUND_CLOSED",
+        "status": "COMPLETE"
+      },
+      "event_id": "close:rejected",
+      "execution_state": {
+        "intents": {
+          "entry": {
+            "kind": "FINAL_SUCCESS",
+            "observation_id": "settled",
+            "round_id": "entry",
+            "simulated": true,
+            "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "schema": "ExecutionState.v1"
+      },
+      "expected_version": 5,
+      "jobs": [],
+      "owner_epoch": 2,
+      "policy_state": {
+        "data": {
+          "last_action": "BUY"
+        },
+        "policy_id": "fixture",
+        "run_id": "run",
+        "schema": "PolicyState.v1",
+        "version": 1
+      },
+      "projection": {
+        "balances": {
+          "BNB": 9,
+          "NVDAB": 2,
+          "USDT": 90
+        },
+        "closed_rounds": [
+          "entry",
+          "rejected"
+        ],
+        "observations": [
+          "broadcast",
+          "settled"
+        ],
+        "round_records": {
+          "entry": {
+            "assessment": {
+              "claims": [],
+              "confidence": "unknown",
+              "conflicts": [],
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "expiry_ms": 1791590460000,
+              "falsifiers": [],
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "missingness": [],
+              "model_hash": "synthetic",
+              "model_io": {
+                "request": {
+                  "allowed_tools": [],
+                  "budget": {
+                    "deadline_ms": 60000,
+                    "tool_calls": 6
+                  },
+                  "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "cutoff_ms": 1791590400000,
+                  "evidence_refs": [
+                    {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "source": "synthetic"
+                    }
+                  ],
+                  "fixture_action": "BUY",
+                  "issuer_id": "NVDA",
+                  "job_id": "job",
+                  "market": {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "decimals": 18,
+                    "observation_id": "market:market",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "schema": "MarketObservation.v1",
+                    "source": "synthetic",
+                    "token": "NVDAB",
+                    "token_market_state": "OPEN",
+                    "underlying": "NVDA",
+                    "underlying_market_state": "OPEN"
+                  },
+                  "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_id": "run",
+                  "schema": "AssessmentRequest.v1"
+                },
+                "response": "synthetic assessment"
+              },
+              "novelty": "unknown",
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "prompt_hash": "synthetic",
+              "rationale": "Synthetic fixture; no model inference or market claim.",
+              "review_requests": [],
+              "run_id": "run",
+              "schema": "AssessmentResult.v1"
+            },
+            "errors": [],
+            "orders": [
+              {
+                "amount": "10",
+                "side": "BUY",
+                "symbol": "NVDAB",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ],
+            "plan": {
+              "intents": [
+                {
+                  "amount": "10",
+                  "decision_id": "decision:job",
+                  "expires_ms": 1791590460000,
+                  "gas_units": 1,
+                  "intent_id": "intent:job",
+                  "pay_units": 10,
+                  "receive_units": 2,
+                  "side": "BUY",
+                  "symbol": "NVDAB"
+                }
+              ],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 10
+                },
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 1
+                }
+              ],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c"
+            },
+            "policy_input": {
+              "assessment": {
+                "claims": [],
+                "confidence": "unknown",
+                "conflicts": [],
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "expiry_ms": 1791590460000,
+                "falsifiers": [],
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "missingness": [],
+                "model_hash": "synthetic",
+                "model_io": {
+                  "request": {
+                    "allowed_tools": [],
+                    "budget": {
+                      "deadline_ms": 60000,
+                      "tool_calls": 6
+                    },
+                    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "cutoff_ms": 1791590400000,
+                    "evidence_refs": [
+                      {
+                        "available_ms": 1791590400000,
+                        "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                        "observed_ms": 1791590400000,
+                        "quality": "SYNTHETIC",
+                        "source": "synthetic"
+                      }
+                    ],
+                    "fixture_action": "BUY",
+                    "issuer_id": "NVDA",
+                    "job_id": "job",
+                    "market": {
+                      "available_ms": 1791590400000,
+                      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                      "decimals": 18,
+                      "observation_id": "market:market",
+                      "observed_ms": 1791590400000,
+                      "quality": "SYNTHETIC",
+                      "schema": "MarketObservation.v1",
+                      "source": "synthetic",
+                      "token": "NVDAB",
+                      "token_market_state": "OPEN",
+                      "underlying": "NVDA",
+                      "underlying_market_state": "OPEN"
+                    },
+                    "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "run_id": "run",
+                    "schema": "AssessmentRequest.v1"
+                  },
+                  "response": "synthetic assessment"
+                },
+                "novelty": "unknown",
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "prompt_hash": "synthetic",
+                "rationale": "Synthetic fixture; no model inference or market claim.",
+                "review_requests": [],
+                "run_id": "run",
+                "schema": "AssessmentResult.v1"
+              },
+              "projection": {
+                "balances": {
+                  "BNB": 10,
+                  "NVDAB": 0,
+                  "USDT": 100
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "BUY",
+                "issuer_id": "NVDA",
+                "job_id": "job",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": []
+            },
+            "policy_output": {
+              "next_policy_state": {
+                "data": {
+                  "last_action": "BUY"
+                },
+                "policy_id": "fixture",
+                "run_id": "run",
+                "schema": "PolicyState.v1",
+                "version": 1
+              },
+              "targets": [
+                {
+                  "kind": "TARGET_WEIGHT",
+                  "reason": "SYNTHETIC",
+                  "symbol": "NVDAB",
+                  "weight": [
+                    1,
+                    10
+                  ]
+                }
+              ],
+              "valid_until": "2026-10-10T00:01:00+00:00"
+            },
+            "policy_state": {
+              "data": {},
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 0
+            },
+            "proposal_id": "88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8",
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "BUY",
+              "issuer_id": "NVDA",
+              "job_id": "job",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "entry",
+            "started_ms": 1791590400000,
+            "swap_mappings": [
+              {
+                "decision_id": "decision:job",
+                "step": "swap",
+                "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            ]
+          },
+          "rejected": {
+            "assessment": null,
+            "errors": [
+              "ASSESSMENT_UNAVAILABLE"
+            ],
+            "orders": [],
+            "plan": {
+              "intents": [],
+              "jobs": [],
+              "proposed_state": {},
+              "reasons": [
+                "SYNTHETIC"
+              ],
+              "reservation_deltas": [],
+              "schema": "PlanResult.v1",
+              "snapshot_id": "5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5"
+            },
+            "policy_input": {
+              "assessment": null,
+              "projection": {
+                "balances": {
+                  "BNB": 9,
+                  "NVDAB": 2,
+                  "USDT": 90
+                }
+              },
+              "request": {
+                "allowed_tools": [],
+                "budget": {
+                  "deadline_ms": 60000,
+                  "tool_calls": 6
+                },
+                "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "cutoff_ms": 1791590400000,
+                "evidence_refs": [
+                  {
+                    "available_ms": 1791590400000,
+                    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "observed_ms": 1791590400000,
+                    "quality": "SYNTHETIC",
+                    "source": "synthetic"
+                  }
+                ],
+                "fixture_action": "HOLD",
+                "issuer_id": "NVDA",
+                "job_id": "failed",
+                "market": {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "decimals": 18,
+                  "observation_id": "market:market",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "schema": "MarketObservation.v1",
+                  "source": "synthetic",
+                  "token": "NVDAB",
+                  "token_market_state": "OPEN",
+                  "underlying": "NVDA",
+                  "underlying_market_state": "OPEN"
+                },
+                "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "run_id": "run",
+                "schema": "AssessmentRequest.v1"
+              },
+              "reservations": [
+                {
+                  "asset": "BNB",
+                  "intent_id": "intent:job",
+                  "units": 0
+                },
+                {
+                  "asset": "USDT",
+                  "intent_id": "intent:job",
+                  "units": 0
+                }
+              ]
+            },
+            "policy_output": null,
+            "policy_state": {
+              "data": {
+                "last_action": "BUY"
+              },
+              "policy_id": "fixture",
+              "run_id": "run",
+              "schema": "PolicyState.v1",
+              "version": 1
+            },
+            "proposal_id": null,
+            "request": {
+              "allowed_tools": [],
+              "budget": {
+                "deadline_ms": 60000,
+                "tool_calls": 6
+              },
+              "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "cutoff_ms": 1791590400000,
+              "evidence_refs": [
+                {
+                  "available_ms": 1791590400000,
+                  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "observed_ms": 1791590400000,
+                  "quality": "SYNTHETIC",
+                  "source": "synthetic"
+                }
+              ],
+              "fixture_action": "HOLD",
+              "issuer_id": "NVDA",
+              "job_id": "failed",
+              "market": {
+                "available_ms": 1791590400000,
+                "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": 18,
+                "observation_id": "market:market",
+                "observed_ms": 1791590400000,
+                "quality": "SYNTHETIC",
+                "schema": "MarketObservation.v1",
+                "source": "synthetic",
+                "token": "NVDAB",
+                "token_market_state": "OPEN",
+                "underlying": "NVDA",
+                "underlying_market_state": "OPEN"
+              },
+              "policy_profile_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "run_id": "run",
+              "schema": "AssessmentRequest.v1"
+            },
+            "round_id": "rejected",
+            "started_ms": 1791590400002,
+            "swap_mappings": []
+          }
+        }
+      },
+      "reservation_deltas": [],
+      "run_id": "run",
+      "schema": "CommitBatch.v1",
+      "wallet_id": "synthetic-wallet"
+    }
+  ],
+  "audit_chunks": [
+    "{\"protocolVersion\":\"2.0\",\"address\":\"0x1111111111111111111111111111111111111111\",\"chunkCount\":1,\"totalBytes\":6349,\"contentSha256\":\"682ade5ecb165372702199185df23d7700a76f3cb10f31d19e749845008ccc53\",\"encoding\":\"plain\",\"payload\":\"{\\\"timestamp\\\":1791590400001,\\\"data\\\":{\\\"input\\\":{\\\"version_id\\\":\\\"synthetic-build\\\",\\\"round_id\\\":\\\"entry\\\",\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"assessment\\\":{\\\"claims\\\":[],\\\"confidence\\\":\\\"unknown\\\",\\\"conflicts\\\":[],\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"expiry_ms\\\":1791590460000,\\\"falsifiers\\\":[],\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"missingness\\\":[],\\\"model_hash\\\":\\\"synthetic\\\",\\\"model_io\\\":{\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"response\\\":\\\"synthetic assessment\\\"},\\\"novelty\\\":\\\"unknown\\\",\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"prompt_hash\\\":\\\"synthetic\\\",\\\"rationale\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"review_requests\\\":[],\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentResult.v1\\\"},\\\"policy_input\\\":{\\\"assessment\\\":{\\\"claims\\\":[],\\\"confidence\\\":\\\"unknown\\\",\\\"conflicts\\\":[],\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"expiry_ms\\\":1791590460000,\\\"falsifiers\\\":[],\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"missingness\\\":[],\\\"model_hash\\\":\\\"synthetic\\\",\\\"model_io\\\":{\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"response\\\":\\\"synthetic assessment\\\"},\\\"novelty\\\":\\\"unknown\\\",\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"prompt_hash\\\":\\\"synthetic\\\",\\\"rationale\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"review_requests\\\":[],\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentResult.v1\\\"},\\\"projection\\\":{\\\"balances\\\":{\\\"BNB\\\":10,\\\"NVDAB\\\":0,\\\"USDT\\\":100}},\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"BUY\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"job\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"reservations\\\":[]},\\\"policy_state\\\":{\\\"data\\\":{},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":0}},\\\"cot\\\":\\\"Synthetic fixture; no model inference or market claim.\\\",\\\"output\\\":{\\\"status\\\":\\\"INTERRUPTED_UNRESOLVED\\\",\\\"errors\\\":[],\\\"plan\\\":{\\\"intents\\\":[{\\\"amount\\\":\\\"10\\\",\\\"decision_id\\\":\\\"decision:job\\\",\\\"expires_ms\\\":1791590460000,\\\"gas_units\\\":1,\\\"intent_id\\\":\\\"intent:job\\\",\\\"pay_units\\\":10,\\\"receive_units\\\":2,\\\"side\\\":\\\"BUY\\\",\\\"symbol\\\":\\\"NVDAB\\\"}],\\\"jobs\\\":[],\\\"proposed_state\\\":{},\\\"reasons\\\":[\\\"SYNTHETIC\\\"],\\\"reservation_deltas\\\":[{\\\"asset\\\":\\\"USDT\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":10},{\\\"asset\\\":\\\"BNB\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":1}],\\\"schema\\\":\\\"PlanResult.v1\\\",\\\"snapshot_id\\\":\\\"32c180b1a11549bead4c763bba0b7dd2403a3cdda46159892924a1dfcf53336c\\\"},\\\"proposal_id\\\":\\\"88c0a2da46e933302958fb2c77b5a8eee8df4753115c16dbed3d43cd0320a0d8\\\",\\\"policy_output\\\":{\\\"next_policy_state\\\":{\\\"data\\\":{\\\"last_action\\\":\\\"BUY\\\"},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":1},\\\"targets\\\":[{\\\"kind\\\":\\\"TARGET_WEIGHT\\\",\\\"reason\\\":\\\"SYNTHETIC\\\",\\\"symbol\\\":\\\"NVDAB\\\",\\\"weight\\\":[1,10]}],\\\"valid_until\\\":\\\"2026-10-10T00:01:00+00:00\\\"}},\\\"orders\\\":[{\\\"amount\\\":\\\"10\\\",\\\"side\\\":\\\"BUY\\\",\\\"symbol\\\":\\\"NVDAB\\\",\\\"tx_hash\\\":\\\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\\"}]}}\"}",
+    "{\"protocolVersion\":\"2.0\",\"address\":\"0x1111111111111111111111111111111111111111\",\"chunkCount\":1,\"totalBytes\":2773,\"contentSha256\":\"988c3b98e929cdf95aa1dacb4353b9b99eed0cae860d0846de71ea19a01a903c\",\"encoding\":\"plain\",\"payload\":\"{\\\"timestamp\\\":1791590400002,\\\"data\\\":{\\\"input\\\":{\\\"version_id\\\":\\\"synthetic-build\\\",\\\"round_id\\\":\\\"rejected\\\",\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"HOLD\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"failed\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"assessment\\\":null,\\\"policy_input\\\":{\\\"assessment\\\":null,\\\"projection\\\":{\\\"balances\\\":{\\\"BNB\\\":9,\\\"NVDAB\\\":2,\\\"USDT\\\":90}},\\\"request\\\":{\\\"allowed_tools\\\":[],\\\"budget\\\":{\\\"deadline_ms\\\":60000,\\\"tool_calls\\\":6},\\\"context_hash\\\":\\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\\",\\\"cutoff_ms\\\":1791590400000,\\\"evidence_refs\\\":[{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"source\\\":\\\"synthetic\\\"}],\\\"fixture_action\\\":\\\"HOLD\\\",\\\"issuer_id\\\":\\\"NVDA\\\",\\\"job_id\\\":\\\"failed\\\",\\\"market\\\":{\\\"available_ms\\\":1791590400000,\\\"content_hash\\\":\\\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\\",\\\"decimals\\\":18,\\\"observation_id\\\":\\\"market:market\\\",\\\"observed_ms\\\":1791590400000,\\\"quality\\\":\\\"SYNTHETIC\\\",\\\"schema\\\":\\\"MarketObservation.v1\\\",\\\"source\\\":\\\"synthetic\\\",\\\"token\\\":\\\"NVDAB\\\",\\\"token_market_state\\\":\\\"OPEN\\\",\\\"underlying\\\":\\\"NVDA\\\",\\\"underlying_market_state\\\":\\\"OPEN\\\"},\\\"policy_profile_hash\\\":\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"AssessmentRequest.v1\\\"},\\\"reservations\\\":[{\\\"asset\\\":\\\"BNB\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":0},{\\\"asset\\\":\\\"USDT\\\",\\\"intent_id\\\":\\\"intent:job\\\",\\\"units\\\":0}]},\\\"policy_state\\\":{\\\"data\\\":{\\\"last_action\\\":\\\"BUY\\\"},\\\"policy_id\\\":\\\"fixture\\\",\\\"run_id\\\":\\\"run\\\",\\\"schema\\\":\\\"PolicyState.v1\\\",\\\"version\\\":1}},\\\"cot\\\":\\\"Deterministic runtime record: assessment unavailable; no model reasoning is claimed.\\\",\\\"output\\\":{\\\"status\\\":\\\"COMPLETE\\\",\\\"errors\\\":[\\\"ASSESSMENT_UNAVAILABLE\\\"],\\\"plan\\\":{\\\"intents\\\":[],\\\"jobs\\\":[],\\\"proposed_state\\\":{},\\\"reasons\\\":[\\\"SYNTHETIC\\\"],\\\"reservation_deltas\\\":[],\\\"schema\\\":\\\"PlanResult.v1\\\",\\\"snapshot_id\\\":\\\"5e3ca69abe6441c9db48683ee4ec9e89a2cc2c55b088a436a9bd089c7ea97ae5\\\"},\\\"proposal_id\\\":null,\\\"policy_output\\\":null},\\\"orders\\\":[]}}\"}"
+  ]
+}
