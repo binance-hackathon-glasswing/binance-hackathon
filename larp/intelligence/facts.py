@@ -73,7 +73,7 @@ PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", r
 def unasserted(text: str, start: int, end: int):
     """Why the event at text[start:end] is not reported as having happened, or None if it is.
 
-    The whole clause holding the match is read, before and after it. "NEGATED": a negation appears in it
+    The whole clause holding the match is read, the match included. "NEGATED": a negation appears in it
     ("recorded no impairment", "an impairment charge was not required", "did not identify ... an impairment").
     "HYPOTHETICAL": a modal, conditional or forward-looking cue appears in it ("could result in an impairment",
     "if ... we might recognize an impairment", "we expect to record an impairment").
@@ -87,7 +87,7 @@ def unasserted(text: str, start: int, end: int):
         elif m.start() >= end:
             hi = m.start()
             break
-    clause = NOT_A_CUE.sub(" ", text[lo:start] + " " + text[end:hi])
+    clause = NOT_A_CUE.sub(" ", text[lo:hi])  # the match too: "CFO may resign" has its cue inside the match
     if NEGATION.search(clause):
         return "NEGATED"
     return "HYPOTHETICAL" if HYPOTHETICAL.search(clause) else None

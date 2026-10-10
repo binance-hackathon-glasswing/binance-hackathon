@@ -227,3 +227,8 @@ The check stays conservative: one cue anywhere in the clause rejects the event. 
 2. Every other test passes, including the 13 foundation tests. The `test_golden` pair is expected to fail on the first run (the identity hash covers `facts.py` and `verify.py`). The regenerated traces may differ only in that hash and the ids derived from it.
 3. `python -m larp.intelligence.evaluation`: PASS on every frozen threshold, with the pack unchanged. Compared leaf by leaf with `eval-report-ae7acb7.json`, only wall-clock fields may differ. None of the pack's three event sentences contains a cue.
 4. `git diff --check` clean.
+
+**Results (runs of pushed commits only; same interpreters as §9.3):**
+
+1. **Fix commit `91db50d`, first run: FAIL.** unittest: 142 tests, 5 failures. pytest: 5 failed, 142 passed, 543 subtests passed. Two failures are the expected `test_golden` pair. The other three come from one cause, on "Our Chief Executive Officer may resign at any time." The OFFICER_DEPARTURE pattern matches across "Chief Executive Officer may resign", and `unasserted` read the clause *outside* the match, so a cue inside the match was invisible. The §9.3 negation check had the same gap: "The Chief Financial Officer has not resigned." would have verified. All other new subtests passed.
+2. **Fix commit (next):** `unasserted` reads the whole clause, the match included. "Should no longer be relied upon" is already masked as not a cue, so the non-reliance phrase still counts as an event. Criterion 1 gains one negated fixture, "The Chief Financial Officer has not resigned." (OFFICER_DEPARTURE; the negation is inside the match). Criteria 2–4 are unchanged.

@@ -148,6 +148,7 @@ NEGATED_EVENTS = (
     ("IMPAIRMENT", "Management concluded that goodwill impairment was not necessary."),
     ("IMPAIRMENT", "We did not identify any events or circumstances that would indicate an impairment."),
     ("RESTATEMENT", "The Audit Committee concluded that a restatement of prior financial statements is not required."),
+    ("OFFICER_DEPARTURE", "The Chief Financial Officer has not resigned."),  # the negation is inside the match
 )
 # Modal, conditional and forward-looking wording (risk factors, outlook): possible or planned, not reported.
 HYPOTHETICAL_EVENTS = (
