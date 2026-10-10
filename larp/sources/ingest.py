@@ -119,6 +119,7 @@ class SourceIngestor:
         body, exclusions, rejection = filter_item(item.get("title"), item.get("body_html"))
         if rejection:
             return None, rejection
+        exclusions = exclusions + [f"FIELD_NOT_RETRIEVED:{f}" for f in item.get("excluded_fields", [])]
         permitted = {"title": item.get("title"), "body": body, "url": item.get("url"),
                      "published_raw": item.get("published_raw"), "doc_type": item.get("doc_type"),
                      "event_times": item.get("event_times"), "withdrawn": bool(item.get("withdrawn"))}

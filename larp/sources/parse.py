@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from larp.sources.transport import SourceError
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_TIME_TAG = re.compile(r"<time[^>]*\bdatetime=[\"']([^\"']+)[\"']", re.I)
 
 
 def _day_ms(value: str) -> int:
@@ -27,6 +28,9 @@ def when(value) -> tuple:
     if value is None or value == "":
         return None, "NONE"
     text = str(value).strip()
+    tag = _TIME_TAG.search(text)  # DOJ API: '<time datetime="2026-10-09T07:30:28-04:00">1791545428</time>'
+    if tag:
+        text = tag.group(1)
     if text.isdigit():
         return int(text) * 1000, "SECOND"
     if _DATE.match(text):
@@ -129,11 +133,15 @@ def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
         text = r.get("body")
         if type(text) is dict:
             text = text.get("value")
-        ms, precision = when(r.get("date"))
+        ms, _ = when(r.get("date"))
+        # DOJ `date` is the release's listed date, delivered as epoch seconds at a fixed hour (observed 12:00 UTC on
+        # 2026-10-10), so it is kept at DAY precision; `created`/`changed` carry second-precision times.
         items.append({"item_id": r.get("uuid"), "url": r.get("url"), "title": r.get("title"), "body_html": text,
-                      "published_raw": r.get("date"), "published_ms": ms, "published_precision": precision,
+                      "published_raw": r.get("date"), "published_ms": None if ms is None else ms - ms % 86_400_000,
+                      "published_precision": "DAY" if ms is not None else "NONE",
                       "event_times": _event_times(r, ("created", "changed")), "changed_raw": r.get("changed"),
-                      "withdrawn": False, "doc_type": "PRESS_RELEASE"})
+                      "withdrawn": False, "doc_type": "PRESS_RELEASE",
+                      "excluded_fields": sorted(k for k in ("attachment", "image") if r.get(k))})
     page_size = int((dict(parse_qsl(urlsplit(page_url).query)).get("pagesize") or 20))
     next_url = None
     if len(results) >= page_size:

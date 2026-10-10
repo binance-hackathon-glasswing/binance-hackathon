@@ -166,6 +166,26 @@ class RecordTests(Harness):
         self.assertEqual(statuses, [(0, "ACTIVE"), (1, "WITHDRAWN")])
 
 
+class DojShapeTests(Harness):
+    def test_doj_time_tags_day_date_and_ignored_media_fields(self):
+        """Shape observed in the 2026-10-10 connectivity probe (synthetic values)."""
+        url = self.register["doj-press"].listing_url
+        payload = json.dumps({"metadata": {"resultset": {"count": "1", "pagesize": "20", "page": 0}}, "results": [{
+            "uuid": "u-shape", "title": "Release", "body": "<p>Synthetic release text.</p>", "date": "1791547200",
+            "created": '<time datetime="2026-10-09T07:30:28-04:00">1791545428</time>\n',
+            "changed": '<time datetime="2026-10-09T07:36:36-04:00">1791545796</time>\n',
+            "attachment": [{"url": "https://www.justice.gov/media/x.pdf"}], "image": [{"src": "x.png"}],
+            "url": "https://www.justice.gov/opa/pr/u-shape"}]}).encode()
+        out = self.ingestor(FakeNet({url: [(200, {}, payload)]})).poll("doj-press")
+        self.assertEqual(out["status"], "OK")
+        record = self.store.records("doj-press")[0]
+        self.assertEqual((record["published"]["precision"], record["published"]["ms"]), ("DAY", 1791504000000))
+        self.assertEqual(record["event_times"]["created"], {"raw": '<time datetime="2026-10-09T07:30:28-04:00">1791545428</time>\n',
+                                                            "ms": 1791545428000, "precision": "SECOND"})
+        self.assertIn("FIELD_NOT_RETRIEVED:attachment", record["exclusions"])
+        self.assertIn("FIELD_NOT_RETRIEVED:image", record["exclusions"])
+
+
 class FailureTests(Harness):
     def test_d03_outage_affects_only_its_own_source_and_consumers(self):
         doj_url, fr_url = self.register["doj-press"].listing_url, self.register["fr-bis"].listing_url
