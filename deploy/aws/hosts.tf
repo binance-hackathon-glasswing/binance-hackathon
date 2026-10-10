@@ -30,10 +30,10 @@ resource "aws_iam_role_policy" "host" {
     { Effect = "Allow", Action = ["rds-db:connect"], Resource = "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${aws_db_instance.larp.resource_id}/larp_${each.key}" }
     ] : [], contains(["signer", "uploader", "evidence"], each.key) ? [
     { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.service[each.key].arn }
-    ] : [], each.key == "archive" ? [
-    { Effect = "Allow", Action = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion", "s3:GetObjectRetention", "s3:PutObjectRetention"], Resource = "${aws_s3_bucket.archive.arn}/archive/*" },
-    { Effect = "Allow", Action = ["kms:GenerateDataKey"], Resource = aws_kms_key.data.arn, Condition = { StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" } } }
-  ] : []) })
+    ] : [], [for statement in [
+      { Effect = "Allow", Action = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion", "s3:GetObjectRetention", "s3:PutObjectRetention"], Resource = "${aws_s3_bucket.archive.arn}/archive/*" },
+      { Effect = "Allow", Action = ["kms:GenerateDataKey"], Resource = aws_kms_key.data.arn, Condition = { StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" } } }
+  ] : statement if each.key == "archive"]) })
 }
 resource "aws_iam_role_policy_attachment" "development_ssm" {
   for_each   = var.enable_development_ssm ? local.hosts : toset([])

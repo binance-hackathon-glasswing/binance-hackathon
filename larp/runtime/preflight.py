@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+from importlib.metadata import version
 import json
 from pathlib import Path
 import subprocess
@@ -13,7 +14,9 @@ from larp.runtime.release import verify_manifest
 def release_files(root):
     root = Path(root).resolve()
     files = set()
-    for directory, pattern in (('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock')):
+    patterns = [('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock'),
+                ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'), ('config', '*.json')]
+    for directory, pattern in patterns:
         for path in (root / directory).rglob(pattern):
             if path.is_symlink() or not path.resolve().is_relative_to(root):
                 raise ContractError('Release files must not escape through symlinks')
@@ -21,6 +24,19 @@ def release_files(root):
     if not files or 'larp/runtime/operations.py' not in files:
         raise ContractError('Incomplete release directory')
     return files
+
+
+def verify_environment(root):
+    """The operations service checks its own small installed dependency profile."""
+    directory = Path(root) / 'deploy'
+    for filename in ('requirements-runtime.lock', 'requirements-aws.lock'):
+        for line in (directory / filename).read_text(encoding='utf-8').splitlines():
+            value = line.split('#', 1)[0].strip()
+            if not value or value.startswith('-r '):
+                continue
+            name, expected = value.split('==')
+            if version(name) != expected:
+                raise ContractError('Installed operations dependency differs from manifest lock')
 
 
 def verify_release(manifest, root):
@@ -81,6 +97,7 @@ def main(argv=None):
             print(json.dumps(dict(manifest_created=True, registered=evidence is not None, signing_enabled=False)))
         else:
             verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+            verify_environment(args.root)
             print(json.dumps(dict(release_verified=True, signing_enabled=False)))
         return 0
     except Exception:

@@ -60,10 +60,10 @@ resource "aws_s3_bucket_policy" "all" {
   bucket   = each.value.id
   policy = jsonencode({ Version = "2012-10-17", Statement = concat([
     { Sid = "TLSOnly", Effect = "Deny", Principal = "*", Action = "s3:*", Resource = [each.value.arn, "${each.value.arn}/*"], Condition = { Bool = { "aws:SecureTransport" = "false" } } }
-    ], each.key == "archive" ? [
-    { Sid = "NoDeletion", Effect = "Deny", Principal = "*", Action = ["s3:DeleteObject", "s3:DeleteObjectVersion", "s3:BypassGovernanceRetention"], Resource = "${each.value.arn}/*" },
-    { Sid = "ConditionalCreation", Effect = "Deny", Principal = "*", Action = "s3:PutObject", Resource = "${each.value.arn}/*", Condition = { Null = { "s3:if-none-match" = "true" }, Bool = { "s3:ObjectCreationOperation" = "true" } } }
-  ] : []) })
+    ], [for statement in [
+      { Sid = "NoDeletion", Effect = "Deny", Principal = "*", Action = ["s3:DeleteObject", "s3:DeleteObjectVersion", "s3:BypassGovernanceRetention"], Resource = "${each.value.arn}/*" },
+      { Sid = "ConditionalCreation", Effect = "Deny", Principal = "*", Action = "s3:PutObject", Resource = "${each.value.arn}/*", Condition = { Null = { "s3:if-none-match" = "true" }, Bool = { "s3:ObjectCreationOperation" = "true" } } }
+  ] : statement if each.key == "archive"]) })
 }
 resource "aws_db_subnet_group" "larp" {
   name       = var.name
