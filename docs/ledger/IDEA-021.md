@@ -316,3 +316,81 @@ Suggested functional owners follow the repo; assignment is still GAP-37. This re
 | Frozen operational values | Respective component owners | GAP-13/28/36/65: input/quote ages, replay schemas, timeouts, retry/gas budgets, queue/service limits, confirmation/finality rule, mark/dust rules, retention/recovery targets and terminal UTC gates. Activation config must reject missing values; no unflagged placeholders. |
 
 Policy decisions stay in GAP-64/D-08/D-11/D-12 for a separate task. No exposure/cadence/evidence-exit variant is selected here. Handoff requires the repo's clean/pushed check; the pre-existing untracked `Claude outputs/` copies are user-owned and left untouched.
+
+## 8. 2026-10-10 delivery allocation and build estimate — SYZ requested
+
+**Scope / status [R]:** build the corrected engine in ENG-01–12 and verify AT01–20. This allocation is organized around coherent components, parallel work and review coverage; it does **not** preserve the team's previous role titles. For this engine build it supersedes §7's suggested owner mapping and IDEA-020 §7's incremental estimate. The earlier entries remain as review history. These are planned responsibilities, not evidence that work has started or that each person's availability has been confirmed (GAP-37). The architecture remains recommended, and all runtime acceptance tests remain **NOT RUN**.
+
+### 8.1 Time and capacity [E]
+
+**Expected elapsed time: 14–18 calendar days; reserve three weeks when scheduling.** Assumptions: four people working full-time with AI assistance, daily integration/review availability, one compact Python engine with PostgreSQL and an isolated signer, and timely access to the required development credentials, funding/gas and supported read/transaction/logging interfaces. This is an engineering estimate, not a literature result or a delivery guarantee. It starts from the current checkout, which has probes and research scripts but no production engine or test/deployment foundation (§5).
+
+| Milestone | Elapsed target from project start | What must exist |
+|---|---|---|
+| Working skeleton | Day 3–5 | One fixture decision passes through durable state, risk/planning, fake execution, accounting and fake audit delivery; the recorded run replays offline after restart. |
+| Integrated engine | Day 8–12 | Real adapters, action validation, reconciliation, audit delivery, paper mode and fault tests work together; critical integration capabilities have evidence. This alone is not activation readiness. |
+| Engine readiness evidence | Day 14–18 | Applicable acceptance cases pass, recovery/restore evidence is attached, and the declared full-pipeline rehearsal of 5+ days including a weekend is complete. |
+
+Milestones overlap; do not add the ranges. The per-person budgets below include implementation, component tests, peer review, integration fixes and active rehearsal work. They total **33–44 engineering person-days**, where one person-day is one person's full working day, not 24 hours of elapsed soak time. They are planning allowances, not measured productivity; do not divide the total by four and assume the dependency chain disappears. Re-estimate after the Day 3 integrated slice and after the first real adapter checks.
+
+Policy selection, comparative policy experiments, model training and new-source licensing are outside this estimate. Fixture policies exercise entry, HOLD, reduction, exit and stateful re-entry solely to verify the engine. A finished engine still needs a separately selected, manifested trading policy and its required inputs before activation.
+
+### 8.2 Who owns what [R]
+
+The primary owner delivers the implementation **and** its tests/evidence. The reviewer also learns the component well enough to provide backup coverage; a second name does not split accountability. These assignments are delivery recommendations, not claims about anyone's relative expertise.
+
+| Person | Primary deliverable | Included work | Reviewer / backup | Effort allowance [E] |
+|---|---|---|---|---|
+| **Yao Zhu** | **Engine core and integration** | Typed events/snapshots; deterministic reducer; policy interface, state and isolation; orchestration of independently enforced risk controls; durable scheduling and evidence-job contracts; source/assessment identity, catch-up and stale-result handling. Owns the shared interfaces and daily integrated build, not everyone else's component implementation. | Keith | 8–10 person-days |
+| **Isaac** | **Execution, signer and autonomous recovery** | Web3 read/quote/transaction adapters; approve → re-quote → swap state machine; payload decoding and authorization; nonce/finality evidence; gas-maintenance execution; fencing checks at sign/broadcast; recovery for ambiguous outcomes and explicit externally blocked states. | Keegan | 8–11 person-days |
+| **Keith** | **Portfolio mechanics and verification harness** | Integer accounting, valuation/cost provenance, reservation calculations, risk-constraint composition and order feasibility; exact replay runner; deterministic fake venue/fault scheduler; basic market simulation and paper execution; calendar and accounting scenario fixtures. Simulation calls the production state machines. | Yao Zhu | 8–11 person-days |
+| **Keegan** | **Durability, audit and release** | PostgreSQL schema and atomic commit boundary; journal/checkpoints and command outbox; stable audit event IDs/bytes/acknowledgements; ownership epochs; CI, Linux image, secrets/mode separation, telemetry, backup/restore, cold standby and evidence packaging. | Isaac | 9–12 person-days |
+
+**Boundary decisions that prevent overlap:** Keith defines the resource/accounting invariants and reservation deltas; Keegan makes their commit atomic with intents and state; Isaac consumes only durably authorized commands and returns observations; Yao Zhu applies those observations through the ordered reducer. Keith owns simulation infrastructure, while every component owner writes its fault scenarios. Keegan owns ownership-epoch persistence; Isaac enforces it at the signer and broadcaster. Yao Zhu owns scheduler behavior; Keegan supplies durable timer/job storage. No owner creates a second portfolio store, nonce allocator, execution algorithm or scheduler for test mode.
+
+### 8.3 Work packages and first handoffs [R]
+
+Day numbers below are elapsed project days and **targets**, not promises. Freeze the smallest shared contracts on Day 1; extend them through reviewed changes rather than having four people design incompatible interfaces independently.
+
+| ID | Primary / reviewer | Concrete output | First handoff / dependency |
+|---|---|---|---|
+| W01 | Yao Zhu / Keith | Canonical event and snapshot schemas, explicit policy state/proposal schema, reducer and stateless/stateful fixture policies; ports for storage, venue, audit and clock. ENG-01/02. | Day 1 contracts; runnable fixture by Day 2. Everyone codes against these shared types. |
+| W02 | Keegan / Isaac | Transactional store interface and migrations; expected-version commit of event, state, reservations and commands; checkpoints and ownership epochs. ENG-03. | Day 2 minimal durable implementation. Yao Zhu, Isaac and Keith integrate against the same commit boundary. |
+| W03 | Keith / Yao Zhu | Asset ledger, reservation arithmetic, risk-bound composition, concrete order planner, fees/gas/dust accounting and deterministic valuation fixtures. ENG-04/10. | Day 3 minimal buy/sell/hold fixture; Day 5 collision and settlement cases. Needs W01/W02; no discretionary trading policy is chosen. |
+| W04 | Isaac / Keegan | One approve/swap execution machine behind a venue port, action-specific validator, durable attempts, canonical outcome reconciliation and bounded recovery. ENG-05/06. | Day 3 fake-venue flow; Day 5 durable crash/restart flow. Real integration proceeds only after W02/W06 and relevant safety checks. |
+| W05 | Yao Zhu / Keith | Durable jobs/triggers, dependency health, source ingestion/deduplication, bounded assessor port, context-keyed results, untrusted-content defenses and missed-tick behavior. ENG-08/11. | Day 4 stub-worker path, Day 6 outage/catch-up path. Needs W01/W02; use captured/stub model outputs until a separately declared provider is ready. |
+| W06 | Keegan / Isaac | Round closure, immutable serialized event/chunk outbox, protocol-compatible receiver adapter, stable retries/acks and local-vs-remote failure handling. ENG-07. | Day 3 fake-receiver path, Day 5 crash/idempotency evidence. Yao Zhu supplies round/model records; Isaac supplies attempt/hash outcomes. |
+| W07 | Keith / Yao Zhu | Offline replay plus virtual clock, fake chain/venue, seeded infrastructure faults and approximate cost/fill model; paper executor with no signing capability. ENG-09. | Day 3 one integrated scenario, Day 5 crash replay, Day 8 broad fault coverage. Uses W01–W06 production logic; does not recreate it. |
+| W08 | Isaac / Keegan | Capability evidence for router decoding, nonce consumption, finality, quote expiry, gas estimation and actual adapter responses; registered-dev integration when prerequisites pass. | Start read-only investigation on Day 1; report blockers by Day 3. These capabilities are on the critical path, not discoveries deferred to rehearsal. Same-nonce replacement stays disabled unless separately proved. |
+| W09 | Keegan / Isaac | Secret-free test collection, CI/Linux image, version/mode gates, metrics, backup/restore and fenced takeover; release manifest and audit export. ENG-12. | Day 2 build/CI scaffold; Day 8–10 deployment and recovery evidence. Component owners provide configuration schemas and telemetry. |
+| W10 | Yao Zhu / Keith, with all four owners | Integrated acceptance report, dependency/blocker list and rehearsal candidate; each owner fixes their own failures and attaches evidence. | Day 3 first full slice; Day 8–12 integrated candidate. No late handoff to a separate testing phase. |
+
+Existing scripts are research inputs, not ready-made runtime adapters. Resolve §5 C01–C08 before affected paths are reused: Yao Zhu owns evidence/source contracts and EDGAR defects; Isaac owns API retry/metadata promotion defects; Keith owns entity-keyed analytics and simulation accounting; Keegan owns import-time credential/test-collection and environment/release defects. Work can use a new tested implementation instead of promoting a probe.
+
+### 8.4 Acceptance ownership and independent review [R]
+
+The pass criteria remain exactly those in §4. Each case gets a version/commit, fixture or seed, command, result and artifact reference before it can be marked passed. The reviewer checks a reproducer and the invariant, not just the author's report.
+
+| Primary owner | Acceptance cases | Independent reviewer |
+|---|---|---|
+| Yao Zhu | AT01, AT03, AT12, AT19 — policy interface/isolation, invalid outputs, source/assessment recovery and hostile inputs | Keith |
+| Isaac | AT06, AT07, AT08, AT09, AT17 — action authorization, transaction crashes, ownership/nonce ambiguity, conditional replacement and adapter parity | Keegan |
+| Keith | AT02, AT04, AT05, AT13, AT15, AT16, AT18 — independent risk, reservations, competing reductions, replay, calendars, point-in-time inputs and accounting/gas | Yao Zhu |
+| Keegan | AT10, AT11, AT14, AT20 — audit delivery, storage/network failures, bounded service/recovery and deployment/rehearsal | Isaac |
+
+AT09 is conditional on enabling replacement: disabled capability must be evidenced as disabled; it is not a passed replacement implementation. Cross-component cases require the relevant co-owner: for example AT04 needs Keegan's real transaction boundary, AT08 needs Keegan's epoch store, AT14 needs Yao Zhu's scheduler, and AT18 needs Isaac's gas path. No person is the sole tester of their own financial or signing logic.
+
+### 8.5 Sequence, calendar constraint and scope control [R/E]
+
+1. **Days 1–3: integrate a thin complete path.** Yao Zhu freezes interfaces and wires the round; Keegan persists it and queues an audit event; Keith supplies integer accounting and the fake environment; Isaac completes the fake approve/swap path. Kill/restart the process and replay the run. Isaac investigates route/nonce/finality feasibility and Keegan investigates durable audit compatibility in parallel. Re-estimate from this result.
+2. **Days 4–7: complete recovery and input handling.** Expand fault coverage as each component lands; implement source/job recovery, risk collisions, audit retries, gas accounting and deployment gates. Begin live-read paper operation once the capability boundary is verified. It does not count as the full signer-enabled rehearsal.
+3. **Days 8–12: finish real integration and qualify a rehearsal build.** The prerequisites in §4 and the relevant pre-live portions of AT20 must pass before registered-dev execution. Use committed/pushed, manifested test-mode code and truthful logs. Availability of a key or a passing quote alone is insufficient. Diagnose schema, latency, cost/accounting and recovery failures; do not select a policy from development PnL.
+4. **Days 10–18, only after the integration gate passes: run the 5+ day rehearsal and complete the evidence bundle.** Include a weekend and actual full-pipeline operation at the declared minimum size. Document export and review can overlap; unfinished safety work cannot be counted as already rehearsed. A behavior-changing fix requires affected checks and sufficient renewed rehearsal evidence for the new candidate; do not silently carry old-build evidence forward.
+
+**Calendar example [E]:** if Day 1 is October 12, Day 14–18 is October 25–29. To retain the October 26 candidate freeze, a qualifying full-pipeline rehearsal must start **no later than October 21 at the corresponding time** and run for at least five elapsed days, including October 24–25. That is the early part of the estimate. If integration takes until October 23, five elapsed days finish no earlier than October 28; the October 26 plan has slipped. Do not compress the rehearsal or claim that the whole estimate fits before the freeze. The five-day requirement comes from the **team's submitted proposal**, not a new organiser rule (GAP-04).
+
+**If behind schedule:** first defer richer market generators/reporting, optional replacement, additional policy implementations, model training and extra data sources. Keep a basic explicit-cost simulation, exact replay, paper mode, isolated signer, atomic reservations, accounting, durable logs and crash recovery. Keep declared commitments unless a deviation is explicitly adopted and recorded through GAP-62. Failing a required safety or audit gate means the candidate is not ready; it does not justify weakening that gate to meet a date.
+
+**Open-input owners:** Isaac owns evidence for usable gas, wallet/route/nonce/finality capabilities and transaction integration (GAP-29–32/41/47/49/52). Keegan owns credential/registration/logging/automatic-restart dependencies, release procedures and the deviation/evidence register (GAP-33–38/41/42/45/46/48/62). Keith owns measured market availability, valuation/cost assumptions and calendar inputs (GAP-13–15/44/50/51). Yao Zhu maintains the combined blocker list, policy-input interfaces and delivery re-estimate. Existing unanswered organiser items remain tracked in §7/GAP-42; this allocation neither answers them nor authorizes sending messages. GAP-37 remains open for availability, backup acceptance, the broader project assignments and a dated coverage rota.
+
+**Sources checked for this addition [V]:** §3–7 and IDEA-020 §7/10; `INCOMPLETE_WORK.md` (especially GAP-04/37/38/65); submitted `proposal_answers.md` team/delivery sections; core SKILL.md F/G/Q notes including F-114/F-117; verbatim official `source_page.md` timeline/repository restrictions and kit `bstocks-trading-guide.md` trading/logging sections; participant-kit.md K8/K13/K14. The timing and workload figures are our estimates. No new external facts, policy choice, experiment, runtime test or wallet/logging action is claimed.
