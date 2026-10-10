@@ -235,3 +235,11 @@ The check stays conservative: one cue anywhere in the clause rejects the event. 
 3. **Fix commit `511b403`, first run:** every test passed except the expected `test_golden` pair. unittest: 142 tests, 2 failures. pytest: 2 failed, 142 passed, 547 subtests passed (criterion 1).
 4. **Traces** regenerated from `511b403` and compared leaf by leaf with the committed ones. The only differences are the rule baseline's code-identity hash (`checkpoint_sha256` `7865f60e…` → `d95e019f…`) and the ids derived from it. No field was added or removed, and statuses, tool sequences, findings, falsifier states, thesis transitions and gate values are unchanged (criterion 2). Trace SHA-256: `trace-tool-selection-thesis-revision.json` `c9fd94a7…31de 635cb669…fca0 ac1ed01e…0658 `, `trace-justified-abstention.json` ``.
 5. **Evaluation at `511b403`: PASS** (`tests/intelligence/evidence/eval-report-511b403.json`, SHA-256 ``). Pack digest `42789e45…` and thresholds SHA-256 `3a1c9d8a…` are unchanged. Compared leaf by leaf with `eval-report-ae7acb7.json`, the only differences are `wall_clock_us.median` and `.max` (criterion 3).
+6. **Results commit `332288b`:**
+   - unittest **142 tests OK**; pytest **142 passed, 549 subtests passed**.
+   - A fresh `core.autocrlf=true` clone of `332288b` (macOS) passes unittest.
+   - `git diff --check 5e7eb33..332288b` is clean (criterion 4).
+   - Mutation checks in a scratch worktree:
+     - With the hypothetical cue check removed, the new tests fail on all eight hypothetical sentences in the extractor/verifier tests, and on all six in the agent tests.
+     - With the match excluded from the clause again, the tests fail on "has not resigned" and "may resign".
+7. **Outcome: all four §9.4 criteria PASS at `511b403`/`332288b`** (after the first-run FAIL at `91db50d`, results 1–2). The remaining limits are the conservative misses described in the Change paragraph. All of this is on synthetic sentences only; precision and recall on real filings remain unmeasured until the real-data evaluation (§7).
