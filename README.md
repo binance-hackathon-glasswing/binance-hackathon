@@ -32,3 +32,7 @@ The ai-seeds logging SDK 0.3.0 is not on PyPI: its wheel is vendored in `vendor/
 
 ### Docs
 Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [`docs/`](docs/README.md). Start with `docs/skill/SKILL.md`.
+
+W08's read-only execution capability collector, usage and W04 handoff are in
+[`docs/engineering/W08.md`](docs/engineering/W08.md); preregistration and measured blockers are in
+[`docs/ledger/EXP-005.md`](docs/ledger/EXP-005.md). No transaction is signed or broadcast by this collector.
