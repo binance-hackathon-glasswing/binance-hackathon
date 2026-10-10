@@ -117,7 +117,7 @@ class LocalAndRuleModelTests(unittest.TestCase):
         clock = FakeClock(0)
         model = ScriptedModel(clock, [{"latency_ms": 5000, "output": {"action": "FINISH", "claims": [], "notes": ""}}])
         self.assertEqual(model.step(request(), 4000).read()["status"], "TIMEOUT")
-        self.assertEqual(clock(), 4001)
+        self.assertEqual(clock(), 4000)
 
 
 class OutputSchemaTests(unittest.TestCase):

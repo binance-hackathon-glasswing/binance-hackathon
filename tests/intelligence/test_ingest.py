@@ -190,6 +190,7 @@ class RevisionAndFailureTests(IngestHarness):
                 return store.records(issuer_id)
 
         self.poll()
+        self.clock.advance(MIN)  # an identical replay would be IDEMPOTENT; this one differs
         outcome = self.make_ingestor(store=StaleView()).poll(EXSEMI).read()
         self.assertEqual((outcome["status"], outcome["receipt"]["status"], outcome["jobs"]), ("CONFLICT", "CONFLICT", []))
         self.assertEqual(len(self.records()), 1)

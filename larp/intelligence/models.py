@@ -127,9 +127,9 @@ class ScriptedModel:
         entry = self.script[min(self.calls, len(self.script) - 1)]
         self.calls += 1
         latency = entry.get("latency_ms", 0)
-        if latency > remaining_ms:
-            self.clock.advance(remaining_ms + 1)
-            return response(r, status="TIMEOUT", output=None, latency_ms=remaining_ms + 1, error="DEADLINE_EXCEEDED")
+        if latency > remaining_ms:  # like a transport timeout set to the remaining budget
+            self.clock.advance(remaining_ms)
+            return response(r, status="TIMEOUT", output=None, latency_ms=remaining_ms, error="DEADLINE_EXCEEDED")
         self.clock.advance(latency)
         if entry.get("error"):
             return response(r, status="ERROR", output=None, latency_ms=latency, error=entry["error"])

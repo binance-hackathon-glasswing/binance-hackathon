@@ -69,8 +69,7 @@ class _Extractor(HTMLParser):
             return
         if self.skip:
             return
-        if tag == "tr":
-            self.parts.append("\n")
+        if tag == "tr":  # rows start on a new line (handle_starttag); no blank line between rows
             if self.rows:
                 self.rows.pop()
         elif tag in BLOCK:

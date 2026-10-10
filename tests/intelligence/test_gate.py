@@ -23,6 +23,7 @@ class GateTests(unittest.TestCase):
 
     def test_accepting_an_assessment_moves_the_context_and_rejects_late_results_for_the_old_one(self):
         first = self.assess(["EXSEMI_Q3_8K"], job="job:1")
+        self.w.clock.advance(1000)  # a later cutoff: not a replay of the same assessment
         late = self.assess(["EXSEMI_Q3_8K"], job="job:2")  # computed for the same, now obsolete, context
         decision, state = accept(self.state, first, profile_hash=PROFILE, now_ms=self.w.clock())
         self.assertEqual(decision, "ACCEPT")

@@ -38,7 +38,7 @@ class TableBoundaryTests(unittest.TestCase):
 
     def test_nested_tables_keep_their_own_row_counts(self):
         html = "<table><tr><td>A</td><td><table><tr><td>B</td><td>C</td></tr></table></td><td>D</td></tr></table>"
-        self.assertEqual(html_to_text(html), "A\n\nB | C\n\nD")  # never "ABCD"
+        self.assertEqual(html_to_text(html), "A\n\nB | C\nD")  # never "ABCD"
 
 
 class PortableHashTests(unittest.TestCase):

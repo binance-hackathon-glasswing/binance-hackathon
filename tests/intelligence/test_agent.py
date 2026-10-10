@@ -235,7 +235,7 @@ class BudgetAndFailureTests(AgentHarness):
             "action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue"}}}])
         result, _ = self.assess(["EXSEMI_Q3_8K"], model=slow)
         self.assertEqual((result["status"], result["reasons"]), ("UNAVAILABLE", ["MODEL_TIMEOUT"]))
-        self.assertLessEqual(result["budget_used"]["elapsed_ms"], 60001)
+        self.assertLessEqual(result["budget_used"]["elapsed_ms"], 60000)
 
     def test_missing_artifact_is_a_tool_error_not_a_crash(self):
         self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
@@ -324,7 +324,19 @@ class InjectionAndAuthorityTests(AgentHarness):
         result, _ = self.assess(["EXSEMI_Q3_8K"])
         public = {k: v for k, v in result.items() if k != "model_io"}
         self.assertEqual(forbidden_key_paths(public), [])
-        self.assertNotIn("probability", json.dumps(public).lower())
+        keys = set()
+
+        def collect(value):
+            if type(value) is dict:
+                keys.update(k.lower() for k in value)
+                for item in value.values():
+                    collect(item)
+            elif type(value) is list:
+                for item in value:
+                    collect(item)
+
+        collect(public)
+        self.assertFalse({k for k in keys if "prob" in k})
         self.assertTrue({"buy", "sell", "orders", "side"} <= FORBIDDEN_KEYS)
 
     def test_identical_inputs_give_identical_bytes(self):

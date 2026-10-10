@@ -61,6 +61,7 @@ def run_case(case: dict, variant: str) -> dict:
     probes = []
     if case["case_id"] == "guidance_cut" and variant == "agent" and decision == "ACCEPT":
         probes.append(accept(new_state, result_doc, profile_hash=PROFILE, now_ms=world.clock())[0])
+        world.clock.advance(1000)
         again = world.request(case["refs"], issuer_id=case["issuer"], job_id="eval:late-old-context",
                               context=context)
         late = world.assessor(make_model(world, "rule")).assess(again)
