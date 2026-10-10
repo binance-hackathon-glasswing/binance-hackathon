@@ -96,6 +96,8 @@ Review follow-up (2026-10-10): [IDEA-017](ledger/IDEA-017.md) reviews IDEA-012�
 
 - [ ] GAP-66 — Correct the research calculations in [IDEA-022 R1-R3](ledger/IDEA-022.md) before reusing their statistics: reset the simulated UTC daily-loss anchor before the midnight interval; preserve time adjacency through spread-estimator filtering; separate cross-session gap returns from measured category variance. Add deterministic regression fixtures and record any subsequent market-data/simulation rerun prospectively; retain historical results with dated corrections. Suggested owner Keith (simulation/analytics), reviewer Yao Zhu under IDEA-021 §8; availability remains GAP-37. IDEA-021 C07's terminal-gas drawdown omission remains separately tracked by GAP-65.
 
+GAP-65 implementation update (2026-10-10): [IDEA-023](ledger/IDEA-023.md) starts W01 with immutable canonical snapshots/state and explicit proposal validation, plus secret-free test discovery from W09. This is a partial contract foundation; storage/reducer, full typed inputs, isolation, risk, execution and acceptance/rehearsal gates remain outstanding. Test evidence is recorded in IDEA-023; no whole backlog item is completed by this increment.
+
 ## Start now vs blocked (2026-10-05; re-checked 2026-10-08)
 
 Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Markets/Data/Risk: Isaac; Execution/Security: Keith; Platform/Audit: Keegan). They are suggestions, not assignments; owners are still GAP-37.
