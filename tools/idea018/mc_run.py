@@ -80,10 +80,11 @@ def run(shock, prem, gas, spr, pol):
 
     trade(np.outer(np.ones(N), tw) * EQ0 / (1 + spr), np.ones(N, bool))   # build at t0
     for t in range(HRS):
+        if NEWDAY[t]:
+            # NEWDAY labels interval START: anchor before its first return.
+            day_eq = equity().copy(); halt_day[:] = False
         h *= np.exp(shock[:, t] + mu)
         E = equity()
-        if NEWDAY[t]:
-            day_eq = E.copy(); halt_day[:] = False
         # risk checks every hour
         dd = 1 - E / np.maximum(peak, E)
         dl = 1 - E / day_eq
@@ -117,6 +118,9 @@ def run(shock, prem, gas, spr, pol):
         E = equity()
         peak = np.maximum(peak, E); mdd = np.maximum(mdd, 1 - E / peak)
     trade(-h, np.ones(N, bool))                         # final flatten
+    E = equity()
+    peak = np.maximum(peak, E)
+    mdd = np.maximum(mdd, 1 - E / peak)                 # include terminal gas
     pnl = cash - EQ0
     return pnl, mdd, legs, vol, f3, f8, f12
 

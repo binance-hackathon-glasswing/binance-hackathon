@@ -30,7 +30,13 @@ def day(ms):
 
 def stats(rows):
     """rows: list of (open_time_ms, close). Returns a dict of volatility statistics."""
+    if len(rows) != len(dict(rows)):
+        raise ValueError("Duplicate timestamps require explicit reconciliation")
     rows = sorted(dict(rows).items())
+    if len(rows) < HALF_LIFE + 1:
+        raise ValueError("At least 21 finite, positive closed bars required for EWMA20")
+    if any(not math.isfinite(c) or c <= 0 for _, c in rows):
+        raise ValueError("Finite positive prices required")
     closes = [c for _, c in rows]
     rets = [math.log(b / a) for a, b in zip(closes, closes[1:])]
     n = len(rets)
@@ -49,14 +55,42 @@ def stats(rows):
     }
 
 
-def bstock_series(path):
-    raw = json.load(open(path))["raw"]
-    daily = [r for r in raw if r.get("bar") == "1d" and isinstance(r["response"].get("data"), list)]
-    # Two 1d calls per token (limits 300 and 150), in TOKENS order; keep the first of each pair.
-    out = {}
-    for tok, r in zip(TOKENS, daily[::2]):
-        out[tok] = [(int(c[5]), float(c[3])) for c in r["response"]["data"]]
-    return out
+def bstock_series(path, *, as_of_ms=None):
+    with open(path, encoding="utf-8") as source:
+        capture = json.load(source)
+    raw = capture["raw"]
+    if as_of_ms is None:
+        captured = capture.get("report", {}).get("run_utc")
+        if not captured:
+            raise ValueError("Capture cutoff missing; supply explicit as_of_ms")
+        cutoff = datetime.fromisoformat(captured.replace("Z", "+00:00"))
+        if cutoff.tzinfo is None:
+            raise ValueError("Capture cutoff needs timezone")
+        as_of_ms = int(cutoff.timestamp() * 1000)
+    # Legacy captures lack symbols on candle responses: use the explicit preceding
+    # entity marker, never the position of a successful response in the array.
+    out, current = {symbol: {} for symbol in TOKENS}, None
+    for r in raw:
+        if r.get("endpoint") == "rwa/underlying-market":
+            current = r.get("symbol")
+            if current not in out:
+                raise ValueError("Unknown entity marker")
+        if r.get("bar") != "1d":
+            continue
+        symbol = r.get("symbol", current)
+        if symbol not in out:
+            raise ValueError("Daily response lacks verified entity context")
+        body = r.get("response", {})
+        if body.get("code") != 0 or not isinstance(body.get("data"), list):
+            continue
+        for c in body["data"]:
+            timestamp, close = int(c[5]), float(c[3])
+            if timestamp + 86_400_000 > as_of_ms:
+                continue  # never use the still-open calendar-day bar
+            if timestamp in out[symbol] and out[symbol][timestamp] != close:
+                raise ValueError("Conflicting versions of a saved candle")
+            out[symbol][timestamp] = close
+    return {symbol: sorted(rows.items()) for symbol, rows in out.items()}
 
 
 def ondo_series(path):
@@ -77,7 +111,11 @@ def main(candles_path, kit_path):
     series = {**bstock_series(candles_path), **ondo_series(kit_path)}
     print(f"{'series':8} {'bars':>5} {'first':>10} {'last':>10} {'bars/yr':>7} {'vol/bar':>8} {'ann.vol':>8} {'EWMA20':>8}")
     for name, rows in series.items():
-        s = stats(rows)
+        try:
+            s = stats(rows)
+        except ValueError as exc:
+            print(f"{name}: MISSING/INVALID ({exc})")
+            continue
         print(f"{name:8} {s['bars']:5d} {s['first']:>10} {s['last']:>10} {s['bars_per_year']:7.0f} "
               f"{s['vol_bar']:8.2%} {s['vol_ann']:8.1%} {s['ewma_ann']:8.1%}")
 
