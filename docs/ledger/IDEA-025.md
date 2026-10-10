@@ -283,3 +283,8 @@ The check stays conservative: one cue anywhere in the clause rejects the event. 
 2. Every other test passes, including the 13 foundation tests. Exception: the `test_golden` pair is expected to fail on the first run. The regenerated traces may differ only in the identity hash and the ids derived from it, plus the new fields: `hypothetical_events: []`, and in the feature row `n_hypothetical_new: 0`, `n_hypothetical_repeated: 0`, `hypothetical_types_new: []`. The pack has no hypothetical statement, so tool sequences, statuses, findings, falsifiers, theses and gates must be unchanged.
 3. `python -m larp.intelligence.evaluation`: PASS on every frozen threshold, with the pack unchanged. Compared leaf by leaf with `eval-report-511b403.json`, only wall-clock fields may differ.
 4. `git diff --check` clean.
+
+**Results (runs of pushed commits only; same interpreters as §9.3):**
+
+1. **Feature commit `cfa0966`, first run: FAIL.** unittest: 150 tests, 3 failures. pytest: 3 failed, 149 passed, 564 subtests passed. Two failures are the expected `test_golden` pair. The third is a **test error**, not a code fault: `test_new_hypothetical_statements_are_kept_reviewed_and_never_adverse` expected no findings at all, but the fixture 8-K carries Item 8.01, which the item map gives an UNKNOWN-impact finding (severity 1), as for any 8-K. The hypothetical statements produced no finding, nothing was adverse, and the gate reason was `NEW_HYPOTHETICAL_EVENT` alone. Every other new test passed.
+2. **Amendment (before the next run):** criterion 1's "no finding" now reads "no finding other than the fixture's own `ITEM:8.01` (impact UNKNOWN), and nothing adverse at the gate". The test asserts exactly that. No code change.

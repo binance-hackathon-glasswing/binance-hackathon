@@ -380,7 +380,9 @@ class HypotheticalEventTests(AgentHarness):
                          sorted((metric, "NEW") for metric, _ in HYPOTHETICAL_BOILERPLATE))
         self.assertEqual({h["statement"] for h in result["hypothetical_events"]},
                          {sentence for _, sentence in HYPOTHETICAL_BOILERPLATE})
-        self.assertEqual((result["findings"], result["event_findings"], after["unresolved_adverse"]), ([], [], []))
+        # The only finding is the fixture 8-K's own Item 8.01 (impact UNKNOWN); nothing comes from the statements.
+        self.assertEqual([(f["type"], f["impact"]) for f in result["findings"]], [("ITEM:8.01", "UNKNOWN")])
+        self.assertEqual(after["unresolved_adverse"], [])
         self.assertIn("REVIEW_NEW_HYPOTHETICAL_EVENT", {r["reason"] for r in result["review_requests"]})
         self.assertEqual(after["evidence_gate"], "UNKNOWN")
         self.assertIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
