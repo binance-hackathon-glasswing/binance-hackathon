@@ -10,6 +10,12 @@ from larp.contracts import ContractError, Document
 
 QUALITY = ("VALID", "MISSING", "STALE", "UNKNOWN", "SYNTHETIC")
 
+# Producer and consumer agree on gaps that prohibit complete assessment/correction.
+INCOMPLETE_EVIDENCE = ("SOURCE_STALE", "SOURCE_HEALTH_UNKNOWN", "TOOL_ERROR:", "EXHIBIT_NOT_LOADED:",
+                       "FILING_", "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_",
+                       "FUTURE_EVIDENCE_REF:", "REVISION_SUPERSEDED_REF:",
+                       "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE", "PRIOR_GUIDANCE_CONFLICT:", "COVERAGE_TRUNCATED")
+
 # Keys that would give an assessment, tool or model output trade or signing authority.
 FORBIDDEN_KEYS = frozenset({
     "order", "orders", "side", "target", "targets", "buy", "sell", "action_size", "tx_hash",

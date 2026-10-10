@@ -23,7 +23,7 @@ result existed (feature availability); `cutoff_ms` is the evidence observation t
 import threading
 
 from larp.contracts import Document
-from larp.intelligence.common import IntelligenceError, assert_no_trade_fields, digest, is_hash
+from larp.intelligence.common import INCOMPLETE_EVIDENCE, IntelligenceError, assert_no_trade_fields, digest, is_hash
 from larp.intelligence import lifecycle
 from larp.intelligence.facts import METRIC_NAMES, is_statement, issuer_names, statement_event, values_agree
 from larp.intelligence.semantics import finding_eligible
@@ -412,6 +412,7 @@ class EvidenceAssessor:
         missing = sorted(set(state.missing))
         if state.injection:
             missing.append("UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE")
+        coverage["complete"] = coverage["complete"] and not any(m.startswith(INCOMPLETE_EVIDENCE) for m in missing)
         now = self.clock()
         records = [state.index.all_by_id[x] for x in state.current_records]
         coverage["prior_history"] = {m: state.history_complete.get(m, False) for m in sorted(state.queried_prior)}

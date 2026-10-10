@@ -166,6 +166,10 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
         registry[sid] = entry
         return entry
     entry = dict(entry, last_seen_ms=now_ms, review=dict(entry["review"]))
+    if entry.get("source_resolutions"):
+        # A current observation of this support supersedes its earlier correction evidence.
+        keys = {r.get("record_id") for r in entry["records"] if r.get("accession") == record["accession"]}
+        entry["source_resolutions"] = {k: v for k, v in entry["source_resolutions"].items() if k not in keys}
     if record not in entry["records"]:
         entry["records"] = (entry["records"] + [record])[-8:]
     if entry["status"] == "PENDING_REVIEW" and result_id != entry["review"]["last_result_id"]:
@@ -185,6 +189,7 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
     elif entry["status"] in ("SUPERSEDED", "CORRECTED", "WITHDRAWN", "EXPIRED"):
         # Seen again in current evidence: the statement is live again, but it is not news; it is acknowledged.
         entry["status"] = "ACKNOWLEDGED"
+        entry["review"]["next_due_ms"] = None
     registry[sid] = entry
     return entry
 
@@ -193,20 +198,25 @@ def revise(registry: dict, *, accession: str, superseding_hash: str, still_prese
            now_ms: int) -> list:
     """A later revision (or withdrawal) of `accession`: statements it no longer supports are corrected/withdrawn.
 
-    Entries are kept, never deleted; only those whose every supporting record is this accession change status.
+    Entries are kept. Corrections accumulate per supporting record until every support is invalidated.
     """
     changed = []
     for sid, entry in list(registry.items()):
         records = [r for r in entry["records"] if r.get("accession") == accession]
         if not records or sid in still_present:
             continue
-        others = [r for r in entry["records"] if r.get("accession") != accession]
-        if others:
-            continue
-        status = "WITHDRAWN" if withdrawn else "CORRECTED"
-        if entry["status"] != status:
-            registry[sid] = dict(entry, status=status, corrected_ms=now_ms, corrected_by=superseding_hash)
+        corrections = dict(entry.get("source_resolutions", {}))
+        for record in records:
+            if record.get("record_id"):
+                corrections[record["record_id"]] = {"resolution": "WITHDRAWN" if withdrawn else "CORRECTED",
+                                                    "at_ms": now_ms, "superseding_hash": superseding_hash}
+        updated = dict(entry, source_resolutions=corrections)
+        if all(r.get("record_id") in corrections for r in entry["records"]):
+            status = "WITHDRAWN" if all(c["resolution"] == "WITHDRAWN" for c in corrections.values()) else "CORRECTED"
+            updated.update(status=status, corrected_ms=now_ms, corrected_by=superseding_hash,
+                           review=dict(entry["review"], next_due_ms=None))
             changed.append(sid)
+        registry[sid] = updated
     return changed
 
 

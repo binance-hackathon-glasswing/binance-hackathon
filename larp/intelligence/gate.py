@@ -30,15 +30,13 @@ State v2 adds, relative to v1 (IDEA-030 R06/R07):
 from larp.contracts import Document
 from larp.intelligence import lifecycle
 from larp.intelligence.agent import context_hash
-from larp.intelligence.common import IntelligenceError, digest
+from larp.intelligence.common import INCOMPLETE_EVIDENCE, IntelligenceError, digest
 
 SCHEMA = "IssuerEvidenceState.v2"
 RESULT_SCHEMAS = ("AssessmentResult.v2",)
 DECISIONS = ("ACCEPT", "DUPLICATE", "REJECT_STALE_CONTEXT", "REJECT_PROFILE", "REJECT_EXPIRED",
              "REJECT_OUT_OF_ORDER", "REJECT_WRONG_ISSUER", "REJECT_MALFORMED")
-INCOMPLETE = ("SOURCE_STALE", "SOURCE_HEALTH_UNKNOWN", "TOOL_ERROR:", "EXHIBIT_NOT_LOADED:", "FILING_",
-              "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_", "REVISION_SUPERSEDED_REF:",
-              "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE", "PRIOR_GUIDANCE_CONFLICT:", "COVERAGE_TRUNCATED")
+INCOMPLETE = INCOMPLETE_EVIDENCE
 RESOLUTION_RULE = "SOURCE_CORRECTED_OR_WITHDRAWN"
 _LISTS = ("findings", "event_findings", "claims", "falsifiers", "event_statements", "evidence_used", "missingness",
           "conflicts", "reasons")
@@ -141,7 +139,9 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
 
     # A correction can only be established by a complete assessment of the new version: partial coverage could
     # simply have missed the event (red team S4-B g01).
-    complete = r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
+    complete = (r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
+                and not any(m.startswith(INCOMPLETE) for m in r["missingness"])
+                and not r["conflicts"] and not (r.get("novelty") or {}).get("prior_not_checked"))
     # Revisions and withdrawals first: they can resolve latches and correct statements from the old version.
     present_findings = {f["type"] for f in r.get("event_findings", []) + r.get("findings", [])}
     present_findings.update("FALSIFIER_FIRED:" + f["falsifier_id"] for f in r["falsifiers"] if f["state"] == "FIRED")
@@ -153,7 +153,6 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         return any(f["type"] == kind and (not f.get("sources") or any(s.get("accession") == accession
                    for s in f["sources"])) for f in r["event_findings"] + r["findings"])
 
-    present_statements = {s["statement_id"] for s in r.get("event_statements", [])}
     for used in r.get("evidence_used", []):
         accession, revision = used.get("accession"), used.get("revision", 0)
         seen = records_seen.get(accession)
@@ -174,6 +173,14 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
                 source.get("accession") == accession and source.get("content_hash") != used.get("content_hash")
                 for entry in statements.values() for source in entry["records"])
             if revised_statement or (assessed is not None and revision > assessed["revision"]) or withdrawn:
+                local_statements = [s for s in r["event_statements"] if s.get("accession") == accession]
+                present_statements = {s["statement_id"] for s in local_statements}
+                # observe() can unify synonymous statement IDs from different records.
+                for sid, entry in statements.items():
+                    if entry.get("fingerprint") and any(s.get("fingerprint") and
+                            lifecycle.relation(s["fingerprint"], entry["fingerprint"]) in ("EXACT", "SEMANTIC_SAME")
+                            for s in local_statements):
+                        present_statements.add(sid)
                 lifecycle.revise(statements, accession=accession, superseding_hash=used.get("content_hash"),
                                  still_present=present_statements, withdrawn=withdrawn, now_ms=now_ms)
             for a in list(adverse):
