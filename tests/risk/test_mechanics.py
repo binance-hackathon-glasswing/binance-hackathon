@@ -224,7 +224,7 @@ class RiskTests(unittest.TestCase):
             self.assertEqual(after["positions"][intent["symbol"]]["cost_basis_units"], intent["cash_units"] + intent["fee_units"])
             self.assertFalse(after["reservations"])
         for patch in ({"token_units": intent["min_receive_units"] - 1}, {"cash_units": intent["cash_units"] - 1},
-                      {"fee_units": before["reservations"][intent["intent_id"]]["cash_units"] + 1}):
+                      {"fee_units": before.read()["reservations"][intent["intent_id"]]["cash_units"] + 1}):
             e = {**fill_fixture(s, intent).read(), **patch}
             with self.assertRaises(ContractError):
                 advance_accounting(before, Document.from_dict(e))

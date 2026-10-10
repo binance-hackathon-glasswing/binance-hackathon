@@ -79,16 +79,37 @@ def consume(snapshot, state, market, falsifier_ids):
                         or (fact.get("basis") == "ITEM_METADATA"
                             and fact.get("metric", "").startswith("ITEM:") and bool(source.get("accession"))))
             findings = []
+            thesis = a["proposed_thesis"] or {}
             for f in a["falsifiers"]:
                 ids = f.get("fact_ids", [])
                 if f.get("falsifier_id") not in falsifier_ids or f.get("state") != "FIRED" or not ids:
                     continue
                 support = [facts.get(i) for i in ids]
-                if all(supported(fact) for fact in support):
-                    findings.append({"predicate_id": f["falsifier_id"], "fact_ids": ids})
+                direct_support = all(supported(fact) for fact in support)
+                # PR #4 emits verified comparison findings, but only CURRENT facts
+                # in claims. A prior fact fetched during the call is not necessarily
+                # in the initial context. Consume the harness comparison, never a
+                # model-I/O summary or a reconstructed price/semantic comparison.
+                comparison = next((finding for finding in a.get("findings", [])
+                    if f.get("type") in ("GUIDANCE_LOWERED", "REPORTED_BELOW_PRIOR_GUIDANCE")
+                    and finding.get("type") == f["type"] and finding.get("fact_ids") == ids
+                    and finding.get("impact") == "ADVERSE"
+                    and finding.get("finding_id") in thesis.get("finding_ids", [])
+                    and f["falsifier_id"] in thesis.get("fired_falsifiers", [])
+                    and finding.get("finding_id") == "find:" + Document.from_dict(
+                        {k: v for k, v in finding.items() if k != "finding_id"}).digest("larp.intel.finding.v1")), None)
+                producer_support = (comparison is not None
+                                    and any(fact and supported(fact) for fact in support)
+                                    and all(fact is None or supported(fact) for fact in support))
+                if direct_support or producer_support:
+                    findings.append({"predicate_id": f["falsifier_id"], "fact_ids": ids,
+                        "verification_basis": "SUPPORTED_FACTS" if direct_support else "PRODUCER_VERIFIED_COMPARISON"})
+                    if not direct_support:
+                        diagnostics.append({"symbol": symbol, "reason": "ASSESSMENT_PRIOR_SUPPORT_IN_PRODUCER_FINDING",
+                                            "finding_id": comparison["finding_id"],
+                                            "prior_fact_ids": [i for i in ids if i not in facts]})
                 else:
                     diagnostics.append({"symbol": symbol, "reason": "ASSESSMENT_FALSIFIER_UNSUPPORTED"})
-            thesis = a["proposed_thesis"] or {}
             clear = (thesis.get("status") == "INTACT" and thesis.get("based_on_context_hash") == expected_hash
                      and bool(claims) and all(supported(fact) for fact in claims.values())
                      and not a.get("missingness") and not a.get("conflicts")

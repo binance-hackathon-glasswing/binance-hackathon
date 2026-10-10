@@ -112,6 +112,12 @@ Keith's validator neither verifies raw filing text nor advances a second thesis
 engine. Missing/stale/malformed/not-assessed inputs produce explicit diagnostics
 and cannot clear re-entry. Fresh review additionally needs supported, complete,
 conflict-free INTACT evidence with no unknown/fired falsifiers or new hypothetical events.
+PR #4's comparison findings may cite a prior fact retrieved during the assessment
+that is absent from `claims`/initial context. Matching verified harness findings and
+thesis references are consumed with current supporting facts, and that reliance is
+explicitly traced as `ASSESSMENT_PRIOR_SUPPORT_IN_PRODUCER_FINDING`. Opaque model-I/O
+summaries confer no authority. Trusted producer identity and persistence/resolution
+of the complete evidence graph remain Keegan/Yao's port responsibility.
 
 Entry blockers requiring team decisions: Keith and Isaac own selecting a
 rights-cleared sizing-price source, with Yao Zhu reviewing feature semantics and

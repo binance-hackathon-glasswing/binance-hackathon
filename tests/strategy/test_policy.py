@@ -144,6 +144,16 @@ class PolicyTests(unittest.TestCase):
             self.assertIn("ASSESSMENT_ACCEPTED", [d["reason"] for d in data["assessment_diagnostics"]])
             target = next(t for t in result.targets if t.symbol == "NVDAB")
             self.assertEqual(target.kind, TargetKind.EXIT if mode == "BOUNDED_FALSIFIER" else TargetKind.KEEP_QUANTITY)
+            # A claimed comparison absent from its committed harness finding
+            # cannot borrow a current fact's support and authorize the overlay.
+            corrupt = json.loads(json.dumps(a))
+            for finding in corrupt["findings"]:
+                if finding["type"] == "GUIDANCE_LOWERED":
+                    finding["finding_id"] = "find:unverified"
+            bad = changed(s, assessments=[corrupt])
+            rejected = decide(bad, state).next_policy_state.data.read()
+            self.assertFalse(rejected["shadow_findings"])
+            self.assertFalse(rejected["blocked"])
 
     def test_assessment_diagnostics_context_and_fresh_review(self):
         s = snapshot(profile_changes={"assessment_required": True})
