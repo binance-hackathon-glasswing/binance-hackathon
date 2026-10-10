@@ -324,7 +324,10 @@ EVAL_CASES = [
                 "falsifiers": {"F-ITEM-4.02": "FIRED", "F-RESTATEMENT": "FIRED"}, "thesis_status": "BROKEN"}},
     {"case_id": "officer_departure_502", "filings": ["EXSEMI_502_8K"], "refs": ["EXSEMI_502_8K"], "issuer": EXSEMI,
      "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED", "events": ["ITEM:5.02", "OFFICER_DEPARTURE"], "thesis_status": "INTACT"}},
+     # IDEA-031 label correction: the CFO announced a future resignation (effective Nov 30); before IDEA-031 this
+     # case expected an occurred OFFICER_DEPARTURE, the defect IDEA-030 R04 confirmed.
+     "labels": {"status": "ASSESSED", "events": ["ITEM:5.02"], "thesis_status": "INTACT",
+                "statements": [["OFFICER_DEPARTURE", "ANNOUNCED_FUTURE"]]}},
     {"case_id": "cyber_incident_6k", "filings": ["EXMEM_CYBER_6K"], "refs": ["EXMEM_CYBER_6K"], "issuer": EXMEM,
      "model": "rule", "context": "prior_thesis",
      "labels": {"status": "ASSESSED", "events": ["CYBERSECURITY_INCIDENT"], "findings": ["CYBERSECURITY_INCIDENT"],

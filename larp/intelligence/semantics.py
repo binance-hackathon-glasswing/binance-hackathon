@@ -103,7 +103,7 @@ HISTORICAL_MARK = re.compile(r"\bpreviously\s+(?:restated|recorded|recognized|re
 YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
 MONTHS = {m: i for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august",
                                       "september", "october", "november", "december"), 1)}
-EFFECTIVE = re.compile(r"\beffective\s+(?:as\s+of\s+|on\s+)?(?P<month>January|February|March|April|May|June|July|August|"
+EFFECTIVE = re.compile(r"\beffective\s+(?:as\s+of\s+|on\s+|no\s+later\s+than\s+)?(?P<month>January|February|March|April|May|June|July|August|"
                        r"September|October|November|December)\s+(?P<day>\d{1,2})(?:,\s*(?P<year>\d{4}))?", re.I)
 CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'“])|"
                           r"(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
