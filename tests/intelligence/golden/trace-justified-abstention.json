@@ -21,33 +21,35 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": false,
-  "assessment_key": "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987",
+  "assessment_key": "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "UNKNOWN",
+  "coverage_complete": true,
   "evidence_age_ms": 555900000,
   "evidence_gate": "UNKNOWN",
   "finding_types": [],
-  "hypothetical_types_new": [],
   "impact_ordinal": null,
   "issuer_id": "FIXTURE-CIK-9900001",
   "missing_codes": [],
-  "model_hash": "ab0f8998bd99e7d2ddc672ad1858e988399a6364195f5899a91f402a3985f551",
+  "model_hash": "0f683fb611fb1487a7489800e4ef74af3b9c08b1a864d21b39878999f46ebcd2",
   "n_changed": 1,
   "n_conflicts": 1,
   "n_falsifiers_fired": 0,
   "n_falsifiers_unknown": 0,
-  "n_hypothetical_new": 0,
-  "n_hypothetical_repeated": 0,
   "n_new": 2,
   "n_no_prior": 0,
   "n_rejected_claims": 0,
+  "n_statements_new": 0,
+  "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:a89504f1e23abe5d0a6637fc12421584b18240ac26b0e205ab15c5796b52fe51",
+  "result_id": "res:1f9e5e2b7908b807f019884853574beb4473549fe1bbc253ccf46308a1c8e7f3",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
+  "statement_assertions_new": [],
+  "statement_types_new": [],
   "status": "ABSTAIN",
   "tool_calls": 3
  },
@@ -55,11 +57,12 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987"
+    "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0"
    ],
    "accepted_result_ids": [
-    "res:a89504f1e23abe5d0a6637fc12421584b18240ac26b0e205ab15c5796b52fe51"
+    "res:1f9e5e2b7908b807f019884853574beb4473549fe1bbc253ccf46308a1c8e7f3"
    ],
+   "assessed_until_ms": null,
    "availability": "ABSTAINED",
    "context": {
     "known_facts": [],
@@ -103,29 +106,46 @@
     "CONFLICTING_EVIDENCE"
    ],
    "issuer_id": "FIXTURE-CIK-9900001",
+   "last_rejection": null,
    "latest_cutoff_ms": 1791590400000,
+   "lifecycle": {
+    "max_backoff_ms": 172800000,
+    "max_review_attempts": 3,
+    "max_statements": 400,
+    "review_base_delay_ms": 21600000,
+    "statement_retention_ms": 7776000000
+   },
    "max_known_facts": 200,
    "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
-   "schema": "IssuerEvidenceState.v1",
+   "records_seen": {
+    "0009900001-26-000190": {
+     "content_hash": "c48360044cf7ea80c00c8e874d6a3cc25a43b7f9462adf1bd5365aac6b0eb371",
+     "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0",
+     "revision": 0
+    }
+   },
+   "resolved_adverse": [],
+   "schema": "IssuerEvidenceState.v2",
+   "statements": {},
    "unresolved_adverse": [],
    "version": 1
   }
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:016d42fc0db54ba2f36e68f7afbe167264300d194a4dc7eeebf8db27e6b18740",
+   "batch_id": "state:42a1b8c5443a88eb82f4a0e07dae0b381ee088ff73cf151a69e8f5a91b21fc8e",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:de20e363d5d0cb2209f1f7f1e99e70219ac8582dedbf3da789f05a37f3579c58",
+     "job_id": "evidence:5d123d01a3d1bc4de20473ef22ca015a3365dbd37bf6902b45edae7e775fcd5c",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987",
+      "after_assessment_key": "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -135,15 +155,16 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:a89504f1e23abe5d0a6637fc12421584b18240ac26b0e205ab15c5796b52fe51",
+   "result_id": "res:1f9e5e2b7908b807f019884853574beb4473549fe1bbc253ccf46308a1c8e7f3",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987"
+     "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0"
     ],
     "accepted_result_ids": [
-     "res:a89504f1e23abe5d0a6637fc12421584b18240ac26b0e205ab15c5796b52fe51"
+     "res:1f9e5e2b7908b807f019884853574beb4473549fe1bbc253ccf46308a1c8e7f3"
     ],
+    "assessed_until_ms": null,
     "availability": "ABSTAINED",
     "context": {
      "known_facts": [],
@@ -187,16 +208,33 @@
      "CONFLICTING_EVIDENCE"
     ],
     "issuer_id": "FIXTURE-CIK-9900001",
+    "last_rejection": null,
     "latest_cutoff_ms": 1791590400000,
+    "lifecycle": {
+     "max_backoff_ms": 172800000,
+     "max_review_attempts": 3,
+     "max_statements": 400,
+     "review_base_delay_ms": 21600000,
+     "statement_retention_ms": 7776000000
+    },
     "max_known_facts": 200,
     "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
-    "schema": "IssuerEvidenceState.v1",
+    "records_seen": {
+     "0009900001-26-000190": {
+      "content_hash": "c48360044cf7ea80c00c8e874d6a3cc25a43b7f9462adf1bd5365aac6b0eb371",
+      "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0",
+      "revision": 0
+     }
+    },
+    "resolved_adverse": [],
+    "schema": "IssuerEvidenceState.v2",
+    "statements": {},
     "unresolved_adverse": [],
     "version": 1
    }
   },
   "receipt": {
-   "batch_id": "state:016d42fc0db54ba2f36e68f7afbe167264300d194a4dc7eeebf8db27e6b18740",
+   "batch_id": "state:42a1b8c5443a88eb82f4a0e07dae0b381ee088ff73cf151a69e8f5a91b21fc8e",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -336,7 +374,7 @@
   }
  },
  "result": {
-  "assessment_key": "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987",
+  "assessment_key": "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 4,
@@ -349,7 +387,7 @@
    "calibrated": false,
    "level": "UNKNOWN"
   },
-  "config_sha256": "0deea528e43fbf0fb91c348d21a5142a911da66124d6d2a1294ef12e03e6619e",
+  "config_sha256": "b5d51b6e4c8671e18a35ef6b064b76450263cbe0da31daa90a98937b5f5fe84c",
   "conflicts": [
    {
     "accessions": [
@@ -357,9 +395,9 @@
      "0009900001-26-000190"
     ],
     "fact_ids": [
-     "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
-     "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-     "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79"
+     "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
+     "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
+     "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
     ],
     "kind": "REPORTED",
     "metric": "revenue",
@@ -374,18 +412,43 @@
     "LOCAL_NO_PROVIDER_CHARGE"
    ]
   },
+  "coverage": {
+   "chars_loaded": 1870,
+   "complete": true,
+   "documents_loaded": 6,
+   "documents_truncated": [],
+   "facts_truncated": 0,
+   "model_input_chars_max": 15096,
+   "model_input_truncated": false,
+   "prior_history": {
+    "revenue": true
+   },
+   "prior_records_scanned": 2,
+   "prior_records_truncated": 0,
+   "statement_comparisons": 0,
+   "statement_comparisons_truncated": 0,
+   "statements_truncated": 0,
+   "truncated": false
+  },
   "cutoff_ms": 1791590400000,
   "event_findings": [
    {
     "fact_ids": [
-     "fact:93f459204771ca48a9f61e38f1f6a6ba78dadbe6c0a41b74101b21787f982200"
+     "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc"
     ],
-    "finding_id": "find:23c1cfa136192561773ac5fedfa372b5442ef582131d8b814f8049e3bd6a0078",
+    "finding_id": "find:6a585af49b5a4808bbde2002e0009be3469d4d5292c130ef03331f3471451ea0",
     "impact": "UNKNOWN",
     "severity": 1,
+    "sources": [
+     {
+      "accession": "0009900001-26-000190",
+      "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
+     }
+    ],
     "type": "ITEM:2.02"
    }
   ],
+  "event_statements": [],
   "evidence_used": [
    {
     "accession": "0009900001-26-000190",
@@ -393,7 +456,10 @@
     "content_hash": "c48360044cf7ea80c00c8e874d6a3cc25a43b7f9462adf1bd5365aac6b0eb371",
     "form": "8-K/A",
     "original_ms": 1791034200000,
-    "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
+    "quality": "SYNTHETIC",
+    "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0",
+    "revision": 0,
+    "supersedes": null
    }
   ],
   "expiry_ms": 1791594000000,
@@ -437,7 +503,6 @@
    "newest_original_ms": 1791034200000,
    "source_stale": false
   },
-  "hypothetical_events": [],
   "impact": "UNKNOWN",
   "instrument_scope": {
    "issuer_id": "FIXTURE-CIK-9900001",
@@ -449,13 +514,13 @@
   "job_id": "demo:justified-abstention",
   "missingness": [],
   "model": {
-   "checkpoint_sha256": "a7d44a057b6dae8f6f4d8efbf6b0de2e4db9411e1b5136c95757a633c41e9932",
+   "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "ab0f8998bd99e7d2ddc672ad1858e988399a6364195f5899a91f402a3985f551",
+  "model_hash": "0f683fb611fb1487a7489800e4ef74af3b9c08b1a864d21b39878999f46ebcd2",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -493,6 +558,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -517,6 +583,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -534,7 +601,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:55151b209f2c69849606667beea091db60f7393222de56e5fa3289b873bf93a6",
+         "fact_id": "fact:18297319cf6d8f0e43762ef7c9687da275690c4e17b6d76c341e46eb741b6a91",
          "kind": "EVENT",
          "metric": "ITEM:9.01",
          "period": null,
@@ -552,6 +619,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -559,7 +627,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:93f459204771ca48a9f61e38f1f6a6ba78dadbe6c0a41b74101b21787f982200",
+         "fact_id": "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc",
          "kind": "EVENT",
          "metric": "ITEM:2.02",
          "period": null,
@@ -577,6 +645,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -606,7 +675,7 @@
          "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp corrected third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $34.2 billion.\n\n(in millions)\nQ3 FY27\nRevenue | $34,201",
          "name": "exsm-ex991-q3a.htm",
          "new_fact_ids": [
-          "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a"
+          "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
          ],
          "status": "OK",
          "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
@@ -616,13 +685,13 @@
         {
          "excerpt": null,
          "fact_ids": [
-          "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-          "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-          "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
-          "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
-          "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-          "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-          "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79"
+          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
+          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
+          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
+          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
          ],
          "metric": "revenue",
          "periods": [
@@ -637,25 +706,14 @@
          "comparisons": [
           {
            "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
            "relation": "LOWER"
           },
           {
@@ -666,9 +724,20 @@
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
            "relation": "LOWER"
+          },
+          {
+           "applicable": true,
+           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
+           "delta": [
+            1700000000,
+            1
+           ],
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+           "relation": "ABOVE"
           }
          ],
          "excerpt": null,
@@ -679,13 +748,13 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "a7d44a057b6dae8f6f4d8efbf6b0de2e4db9411e1b5136c95757a633c41e9932",
+       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
        "revision": "v1"
       },
-      "prompt_sha256": "76ed45e83ad99ebe8c41f745fff1dc0196fc0a70f62dd69317372b7646fa1d97",
+      "prompt_sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be",
       "request_id": "demo:justified-abstention:step:0",
       "schema": "ModelRequest.v1"
      },
@@ -748,6 +817,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -782,6 +852,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -809,6 +880,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -831,7 +903,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:55151b209f2c69849606667beea091db60f7393222de56e5fa3289b873bf93a6",
+         "fact_id": "fact:18297319cf6d8f0e43762ef7c9687da275690c4e17b6d76c341e46eb741b6a91",
          "kind": "EVENT",
          "metric": "ITEM:9.01",
          "period": null,
@@ -849,6 +921,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -856,7 +929,7 @@
         {
          "basis": "SENTENCE_V1",
          "direction": null,
-         "fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
+         "fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -884,6 +957,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -894,7 +968,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:93f459204771ca48a9f61e38f1f6a6ba78dadbe6c0a41b74101b21787f982200",
+         "fact_id": "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc",
          "kind": "EVENT",
          "metric": "ITEM:2.02",
          "period": null,
@@ -912,6 +986,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -940,7 +1015,7 @@
          "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp corrected third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $34.2 billion.\n\n(in millions)\nQ3 FY27\nRevenue | $34,201",
          "name": "exsm-ex991-q3a.htm",
          "new_fact_ids": [
-          "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a"
+          "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
          ],
          "status": "OK",
          "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
@@ -950,13 +1025,13 @@
         {
          "excerpt": null,
          "fact_ids": [
-          "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-          "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-          "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
-          "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
-          "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-          "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-          "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79"
+          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
+          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
+          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
+          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
          ],
          "metric": "revenue",
          "periods": [
@@ -971,25 +1046,14 @@
          "comparisons": [
           {
            "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
            "relation": "LOWER"
           },
           {
@@ -1000,9 +1064,20 @@
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
            "relation": "LOWER"
+          },
+          {
+           "applicable": true,
+           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
+           "delta": [
+            1700000000,
+            1
+           ],
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+           "relation": "ABOVE"
           }
          ],
          "excerpt": null,
@@ -1013,13 +1088,13 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "a7d44a057b6dae8f6f4d8efbf6b0de2e4db9411e1b5136c95757a633c41e9932",
+       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
        "revision": "v1"
       },
-      "prompt_sha256": "76ed45e83ad99ebe8c41f745fff1dc0196fc0a70f62dd69317372b7646fa1d97",
+      "prompt_sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be",
       "request_id": "demo:justified-abstention:step:1",
       "schema": "ModelRequest.v1"
      },
@@ -1081,6 +1156,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1115,6 +1191,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1142,6 +1219,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1184,7 +1262,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:55151b209f2c69849606667beea091db60f7393222de56e5fa3289b873bf93a6",
+         "fact_id": "fact:18297319cf6d8f0e43762ef7c9687da275690c4e17b6d76c341e46eb741b6a91",
          "kind": "EVENT",
          "metric": "ITEM:9.01",
          "period": null,
@@ -1202,6 +1280,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1209,7 +1288,7 @@
         {
          "basis": "SENTENCE_V1",
          "direction": null,
-         "fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
+         "fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -1237,6 +1316,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1247,7 +1327,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:93f459204771ca48a9f61e38f1f6a6ba78dadbe6c0a41b74101b21787f982200",
+         "fact_id": "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc",
          "kind": "EVENT",
          "metric": "ITEM:2.02",
          "period": null,
@@ -1265,6 +1345,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1288,89 +1369,7 @@
         {
          "basis": "SENTENCE_V1",
          "direction": null,
-         "fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q3",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 251,
-          "start": 223,
-          "text": "third quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 318,
-          "start": 273,
-          "text": "revenue to be $32.5 billion, plus or minus 2%"
-         },
-         "tolerance_pct": [
-          2,
-          1
-         ],
-         "unit": "USD",
-         "value": [
-          65,
-          2
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q4",
-         "period_span": {
-          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
-          "end": 240,
-          "start": 211,
-          "text": "fourth quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000187",
-          "available_ms": 1790885400000,
-          "doc_name": "exsm-ex991-q3.htm",
-          "original_ms": 1790885100000,
-          "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024"
-         },
-         "span": {
-          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
-          "end": 311,
-          "start": 266,
-          "text": "revenue to be $33.0 billion, plus or minus 2%"
-         },
-         "tolerance_pct": [
-          2,
-          1
-         ],
-         "unit": "USD",
-         "value": [
-          33,
-          1
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+         "fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -1398,6 +1397,7 @@
           "start": 138,
           "text": "Revenue for the third quarter of fiscal 2027 was $35.1 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1406,9 +1406,48 @@
          ]
         },
         {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+         "kind": "REPORTED",
+         "metric": "revenue",
+         "period": "FY2027-Q2",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 184,
+          "start": 155,
+          "text": "second quarter of fiscal 2027"
+         },
+         "precision_exp10": 7,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 203,
+          "start": 139,
+          "text": "Revenue for the second quarter of fiscal 2027 was $30.04 billion"
+         },
+         "statement": null,
+         "tolerance_pct": null,
+         "unit": "USD",
+         "value": [
+          751,
+          25
+         ]
+        },
+        {
          "basis": "TABLE_V1",
          "direction": null,
-         "fact_id": "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
+         "fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q2",
@@ -1441,6 +1480,7 @@
           "start": 404,
           "text": "Revenue | $35,082 | $30,040"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1449,85 +1489,9 @@
          ]
         },
         {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-         "kind": "REPORTED",
-         "metric": "revenue",
-         "period": "FY2027-Q2",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 184,
-          "start": 155,
-          "text": "second quarter of fiscal 2027"
-         },
-         "precision_exp10": 7,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 203,
-          "start": 139,
-          "text": "Revenue for the second quarter of fiscal 2027 was $30.04 billion"
-         },
-         "tolerance_pct": null,
-         "unit": "USD",
-         "value": [
-          751,
-          25
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q4",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 358,
-          "start": 329,
-          "text": "fourth quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 407,
-          "start": 380,
-          "text": "revenue to be $36.0 billion"
-         },
-         "tolerance_pct": null,
-         "unit": "USD",
-         "value": [
-          36,
-          1
-         ]
-        },
-        {
          "basis": "TABLE_V1",
          "direction": null,
-         "fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+         "fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -1560,10 +1524,134 @@
           "start": 404,
           "text": "Revenue | $35,082"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
           35082,
+          1
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q3",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 251,
+          "start": 223,
+          "text": "third quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 318,
+          "start": 273,
+          "text": "revenue to be $32.5 billion, plus or minus 2%"
+         },
+         "statement": null,
+         "tolerance_pct": [
+          2,
+          1
+         ],
+         "unit": "USD",
+         "value": [
+          65,
+          2
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q4",
+         "period_span": {
+          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
+          "end": 240,
+          "start": 211,
+          "text": "fourth quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000187",
+          "available_ms": 1790885400000,
+          "doc_name": "exsm-ex991-q3.htm",
+          "original_ms": 1790885100000,
+          "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024"
+         },
+         "span": {
+          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
+          "end": 311,
+          "start": 266,
+          "text": "revenue to be $33.0 billion, plus or minus 2%"
+         },
+         "statement": null,
+         "tolerance_pct": [
+          2,
+          1
+         ],
+         "unit": "USD",
+         "value": [
+          33,
+          1
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q4",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 358,
+          "start": 329,
+          "text": "fourth quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 407,
+          "start": 380,
+          "text": "revenue to be $36.0 billion"
+         },
+         "statement": null,
+         "tolerance_pct": null,
+         "unit": "USD",
+         "value": [
+          36,
           1
          ]
         }
@@ -1576,7 +1664,7 @@
          "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp corrected third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $34.2 billion.\n\n(in millions)\nQ3 FY27\nRevenue | $34,201",
          "name": "exsm-ex991-q3a.htm",
          "new_fact_ids": [
-          "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a"
+          "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
          ],
          "status": "OK",
          "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
@@ -1586,13 +1674,13 @@
         {
          "excerpt": null,
          "fact_ids": [
-          "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-          "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-          "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
-          "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
-          "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-          "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-          "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79"
+          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
+          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
+          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
+          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
          ],
          "metric": "revenue",
          "periods": [
@@ -1607,25 +1695,14 @@
          "comparisons": [
           {
            "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
            "relation": "LOWER"
           },
           {
@@ -1636,9 +1713,20 @@
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
            "relation": "LOWER"
+          },
+          {
+           "applicable": true,
+           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
+           "delta": [
+            1700000000,
+            1
+           ],
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+           "relation": "ABOVE"
           }
          ],
          "excerpt": null,
@@ -1649,13 +1737,13 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "a7d44a057b6dae8f6f4d8efbf6b0de2e4db9411e1b5136c95757a633c41e9932",
+       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
        "revision": "v1"
       },
-      "prompt_sha256": "76ed45e83ad99ebe8c41f745fff1dc0196fc0a70f62dd69317372b7646fa1d97",
+      "prompt_sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be",
       "request_id": "demo:justified-abstention:step:2",
       "schema": "ModelRequest.v1"
      },
@@ -1717,6 +1805,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1751,6 +1840,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1778,6 +1868,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1820,7 +1911,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:55151b209f2c69849606667beea091db60f7393222de56e5fa3289b873bf93a6",
+         "fact_id": "fact:18297319cf6d8f0e43762ef7c9687da275690c4e17b6d76c341e46eb741b6a91",
          "kind": "EVENT",
          "metric": "ITEM:9.01",
          "period": null,
@@ -1838,6 +1929,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1845,7 +1937,7 @@
         {
          "basis": "SENTENCE_V1",
          "direction": null,
-         "fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
+         "fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -1873,6 +1965,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -1883,7 +1976,7 @@
         {
          "basis": "ITEM_METADATA",
          "direction": null,
-         "fact_id": "fact:93f459204771ca48a9f61e38f1f6a6ba78dadbe6c0a41b74101b21787f982200",
+         "fact_id": "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc",
          "kind": "EVENT",
          "metric": "ITEM:2.02",
          "period": null,
@@ -1901,6 +1994,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -1916,89 +2010,7 @@
         {
          "basis": "SENTENCE_V1",
          "direction": null,
-         "fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q3",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 251,
-          "start": 223,
-          "text": "third quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 318,
-          "start": 273,
-          "text": "revenue to be $32.5 billion, plus or minus 2%"
-         },
-         "tolerance_pct": [
-          2,
-          1
-         ],
-         "unit": "USD",
-         "value": [
-          65,
-          2
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q4",
-         "period_span": {
-          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
-          "end": 240,
-          "start": 211,
-          "text": "fourth quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000187",
-          "available_ms": 1790885400000,
-          "doc_name": "exsm-ex991-q3.htm",
-          "original_ms": 1790885100000,
-          "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024"
-         },
-         "span": {
-          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
-          "end": 311,
-          "start": 266,
-          "text": "revenue to be $33.0 billion, plus or minus 2%"
-         },
-         "tolerance_pct": [
-          2,
-          1
-         ],
-         "unit": "USD",
-         "value": [
-          33,
-          1
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+         "fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -2026,6 +2038,7 @@
           "start": 138,
           "text": "Revenue for the third quarter of fiscal 2027 was $35.1 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -2034,9 +2047,48 @@
          ]
         },
         {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+         "kind": "REPORTED",
+         "metric": "revenue",
+         "period": "FY2027-Q2",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 184,
+          "start": 155,
+          "text": "second quarter of fiscal 2027"
+         },
+         "precision_exp10": 7,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 203,
+          "start": 139,
+          "text": "Revenue for the second quarter of fiscal 2027 was $30.04 billion"
+         },
+         "statement": null,
+         "tolerance_pct": null,
+         "unit": "USD",
+         "value": [
+          751,
+          25
+         ]
+        },
+        {
          "basis": "TABLE_V1",
          "direction": null,
-         "fact_id": "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
+         "fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q2",
@@ -2069,6 +2121,7 @@
           "start": 404,
           "text": "Revenue | $35,082 | $30,040"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -2077,85 +2130,9 @@
          ]
         },
         {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-         "kind": "REPORTED",
-         "metric": "revenue",
-         "period": "FY2027-Q2",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 184,
-          "start": 155,
-          "text": "second quarter of fiscal 2027"
-         },
-         "precision_exp10": 7,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 203,
-          "start": 139,
-          "text": "Revenue for the second quarter of fiscal 2027 was $30.04 billion"
-         },
-         "tolerance_pct": null,
-         "unit": "USD",
-         "value": [
-          751,
-          25
-         ]
-        },
-        {
-         "basis": "SENTENCE_V1",
-         "direction": null,
-         "fact_id": "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-         "kind": "GUIDANCE",
-         "metric": "revenue",
-         "period": "FY2027-Q4",
-         "period_span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 358,
-          "start": 329,
-          "text": "fourth quarter of fiscal 2027"
-         },
-         "precision_exp10": 8,
-         "range": null,
-         "scale_exp10": 9,
-         "scale_span": null,
-         "security_scope": "ISSUER",
-         "source": {
-          "accession": "0009900001-26-000101",
-          "available_ms": 1785356700000,
-          "doc_name": "exsm-ex991-q2.htm",
-          "original_ms": 1785356400000,
-          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
-         },
-         "span": {
-          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
-          "end": 407,
-          "start": 380,
-          "text": "revenue to be $36.0 billion"
-         },
-         "tolerance_pct": null,
-         "unit": "USD",
-         "value": [
-          36,
-          1
-         ]
-        },
-        {
          "basis": "TABLE_V1",
          "direction": null,
-         "fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+         "fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
          "kind": "REPORTED",
          "metric": "revenue",
          "period": "FY2027-Q3",
@@ -2188,10 +2165,134 @@
           "start": 404,
           "text": "Revenue | $35,082"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
           35082,
+          1
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q3",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 251,
+          "start": 223,
+          "text": "third quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 318,
+          "start": 273,
+          "text": "revenue to be $32.5 billion, plus or minus 2%"
+         },
+         "statement": null,
+         "tolerance_pct": [
+          2,
+          1
+         ],
+         "unit": "USD",
+         "value": [
+          65,
+          2
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q4",
+         "period_span": {
+          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
+          "end": 240,
+          "start": 211,
+          "text": "fourth quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000187",
+          "available_ms": 1790885400000,
+          "doc_name": "exsm-ex991-q3.htm",
+          "original_ms": 1790885100000,
+          "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024"
+         },
+         "span": {
+          "doc": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
+          "end": 311,
+          "start": 266,
+          "text": "revenue to be $33.0 billion, plus or minus 2%"
+         },
+         "statement": null,
+         "tolerance_pct": [
+          2,
+          1
+         ],
+         "unit": "USD",
+         "value": [
+          33,
+          1
+         ]
+        },
+        {
+         "basis": "SENTENCE_V1",
+         "direction": null,
+         "fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
+         "kind": "GUIDANCE",
+         "metric": "revenue",
+         "period": "FY2027-Q4",
+         "period_span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 358,
+          "start": 329,
+          "text": "fourth quarter of fiscal 2027"
+         },
+         "precision_exp10": 8,
+         "range": null,
+         "scale_exp10": 9,
+         "scale_span": null,
+         "security_scope": "ISSUER",
+         "source": {
+          "accession": "0009900001-26-000101",
+          "available_ms": 1785356700000,
+          "doc_name": "exsm-ex991-q2.htm",
+          "original_ms": 1785356400000,
+          "record_id": "rec:7315caa3186871fbf4720bd9efaf9280561d23fc6048789263059c8194d9c74a"
+         },
+         "span": {
+          "doc": "7e47d5f8b1a376536fcfd4bc757cc3c3b72943022b28ce05cff811cda049a18f",
+          "end": 407,
+          "start": 380,
+          "text": "revenue to be $36.0 billion"
+         },
+         "statement": null,
+         "tolerance_pct": null,
+         "unit": "USD",
+         "value": [
+          36,
           1
          ]
         }
@@ -2204,7 +2305,7 @@
          "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp corrected third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $34.2 billion.\n\n(in millions)\nQ3 FY27\nRevenue | $34,201",
          "name": "exsm-ex991-q3a.htm",
          "new_fact_ids": [
-          "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a"
+          "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
          ],
          "status": "OK",
          "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
@@ -2214,13 +2315,13 @@
         {
          "excerpt": null,
          "fact_ids": [
-          "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-          "fact:346c2d0b4bacc017146f456e62143eb7071415ba1475d86fca2ea794e5c80be9",
-          "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
-          "fact:806d5c1d1ecdcce6000956f1becb02a03d50e39d98ea0b1cc2b6b3f2819ccd0e",
-          "fact:bc4c98f2df8ae365a23c98906c3aa77a11110a3fe9bd109e0ed5a0aa9e637d8a",
-          "fact:c643784ce8060557c435520262944084223f16bc0c4d1ec5ba0ed95dfd10d1f5",
-          "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79"
+          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
+          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
+          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
+          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
+          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
+          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
          ],
          "metric": "revenue",
          "periods": [
@@ -2235,25 +2336,14 @@
          "comparisons": [
           {
            "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:1336928c232f9fc77b762ff0c15938ad0f6388847ae56324b12d5b2ed04799ed",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:7fc3fcc4f5f01e26eea22fb17ec5451acbf470c8d11b168a45eb7721c867c9d2",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
            "relation": "LOWER"
           },
           {
@@ -2264,9 +2354,20 @@
             1
            ],
            "midpoint_derived": false,
-           "new_fact_id": "fact:84654697fbc8941bfe22bd3b2dadf46b82ec6d7ae3a8e03e6a510943cf8f103a",
-           "prior_fact_id": "fact:f0ce76007979b969030e9878f00026fee9bcab180ca4cb0f6aba2e3b10f80e79",
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
            "relation": "LOWER"
+          },
+          {
+           "applicable": true,
+           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
+           "delta": [
+            1700000000,
+            1
+           ],
+           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
+           "relation": "ABOVE"
           }
          ],
          "excerpt": null,
@@ -2277,13 +2378,13 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "a7d44a057b6dae8f6f4d8efbf6b0de2e4db9411e1b5136c95757a633c41e9932",
+       "checkpoint_sha256": "22cac6a1b2bb7b7e058f109e5b5e7029023c42db5446864fb5f820022523c566",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
        "revision": "v1"
       },
-      "prompt_sha256": "76ed45e83ad99ebe8c41f745fff1dc0196fc0a70f62dd69317372b7646fa1d97",
+      "prompt_sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be",
       "request_id": "demo:justified-abstention:step:3",
       "schema": "ModelRequest.v1"
      },
@@ -2317,6 +2418,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -2351,6 +2453,7 @@
           "start": 140,
           "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
          },
+         "statement": null,
          "tolerance_pct": null,
          "unit": "USD",
          "value": [
@@ -2378,6 +2481,7 @@
           "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
          },
          "span": null,
+         "statement": null,
          "tolerance_pct": null,
          "unit": null,
          "value": null
@@ -2386,7 +2490,7 @@
        "notes": "deterministic rule path"
       },
       "raw_response_artifact": null,
-      "raw_response_sha256": "d6a2cd79ccb77d099269fd71a9e945fe679478884f527485034bebe666417f5d",
+      "raw_response_sha256": "e69cf3403398bab3da440a36843b1915c9bc7e345f7abfb1feab7fa5b4bc114d",
       "reasoning_summary": "Rule baseline: no open gap within budget; finish.",
       "request_id": "demo:justified-abstention:step:3",
       "request_payload_artifact": null,
@@ -2410,7 +2514,7 @@
      "error": null,
      "index": 0,
      "latency_ms": 0,
-     "result_sha256": "a7f86cd13e5869208e3bd48b0e9a540b25f6ade75f66c217a26362ddb12e9bf5",
+     "result_sha256": "946838ed1c14833ce92a33c42440c5b7f05002c85660ff5b1f9f8a684af7535e",
      "started_ms": 1791590400000,
      "status": "OK",
      "tool": "fetch_document"
@@ -2422,7 +2526,7 @@
      "error": null,
      "index": 1,
      "latency_ms": 0,
-     "result_sha256": "b97362946c1a4a41933a076e70edf9483f97b980f3dc736ad307cc8f52b716a7",
+     "result_sha256": "5871ac7621e2bd8f591add37100cd055189fc806c59bdcc7e082fa48c0457e4d",
      "started_ms": 1791590400000,
      "status": "OK",
      "tool": "prior_context"
@@ -2434,7 +2538,7 @@
      "error": null,
      "index": 2,
      "latency_ms": 0,
-     "result_sha256": "335ea1cce8d1b963e2ada1c696b587b1aa7441b65aaef59247a1280bf3d56a54",
+     "result_sha256": "0513b1acbe1c2b95182d4eff8203db853d834417327843725c3330f6e96231fc",
      "started_ms": 1791590400000,
      "status": "OK",
      "tool": "compare_facts"
@@ -2442,34 +2546,137 @@
    ]
   },
   "novelty": {
+   "already_seen": 0,
    "changed": 1,
+   "first_seen": 0,
+   "history_unavailable": 0,
    "new": 2,
    "no_prior_available": 0,
    "prior_not_checked": 0,
    "repeated": 0,
+   "uncertain_match": 0,
    "unchanged": 0
   },
   "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
-  "prompt_hash": "76ed45e83ad99ebe8c41f745fff1dc0196fc0a70f62dd69317372b7646fa1d97",
+  "prompt_hash": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be",
   "proposed_thesis": null,
   "rationale": "Example Semiconductor Corp (8-K/A 0009900001-26-000190): abstain because conflicting evidence. No thesis update; 1 reassessment request(s) recorded.",
   "reasons": [
    "CONFLICTING_EVIDENCE"
   ],
   "rejected_claims": [],
-  "result_id": "res:a89504f1e23abe5d0a6637fc12421584b18240ac26b0e205ab15c5796b52fe51",
+  "result_id": "res:1f9e5e2b7908b807f019884853574beb4473549fe1bbc253ccf46308a1c8e7f3",
+  "retained_facts": [
+   {
+    "basis": "ITEM_METADATA",
+    "direction": null,
+    "fact_id": "fact:18297319cf6d8f0e43762ef7c9687da275690c4e17b6d76c341e46eb741b6a91",
+    "kind": "EVENT",
+    "metric": "ITEM:9.01",
+    "model_confirmed": true,
+    "novelty": "NEW",
+    "period": null,
+    "period_span": null,
+    "precision_exp10": 0,
+    "range": null,
+    "scale_exp10": 0,
+    "scale_span": null,
+    "security_scope": "ISSUER",
+    "source": {
+     "accession": "0009900001-26-000190",
+     "available_ms": 1791034500000,
+     "doc_name": null,
+     "original_ms": 1791034200000,
+     "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
+    },
+    "span": null,
+    "statement": null,
+    "tolerance_pct": null,
+    "unit": null,
+    "value": null
+   },
+   {
+    "basis": "SENTENCE_V1",
+    "direction": null,
+    "fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
+    "kind": "REPORTED",
+    "metric": "revenue",
+    "model_confirmed": true,
+    "novelty": "CHANGED",
+    "period": "FY2027-Q3",
+    "period_span": {
+     "doc": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
+     "end": 184,
+     "start": 156,
+     "text": "third quarter of fiscal 2027"
+    },
+    "precision_exp10": 8,
+    "range": null,
+    "scale_exp10": 9,
+    "scale_span": null,
+    "security_scope": "ISSUER",
+    "source": {
+     "accession": "0009900001-26-000190",
+     "available_ms": 1791034500000,
+     "doc_name": "exsm-ex991-q3a.htm",
+     "original_ms": 1791034200000,
+     "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
+    },
+    "span": {
+     "doc": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
+     "end": 202,
+     "start": 140,
+     "text": "Revenue for the third quarter of fiscal 2027 was $34.2 billion"
+    },
+    "statement": null,
+    "tolerance_pct": null,
+    "unit": "USD",
+    "value": [
+     171,
+     5
+    ]
+   },
+   {
+    "basis": "ITEM_METADATA",
+    "direction": null,
+    "fact_id": "fact:f1a826a350c50bcce9fb62b5cfa353cee29eab3320c758852981c1896b215cdc",
+    "kind": "EVENT",
+    "metric": "ITEM:2.02",
+    "model_confirmed": true,
+    "novelty": "NEW",
+    "period": null,
+    "period_span": null,
+    "precision_exp10": 0,
+    "range": null,
+    "scale_exp10": 0,
+    "scale_span": null,
+    "security_scope": "ISSUER",
+    "source": {
+     "accession": "0009900001-26-000190",
+     "available_ms": 1791034500000,
+     "doc_name": null,
+     "original_ms": 1791034200000,
+     "record_id": "rec:1ceaf0de2800a7cd0f514d1e72f1799f0977e278ce98122b01345aaf652d0fc0"
+    },
+    "span": null,
+    "statement": null,
+    "tolerance_pct": null,
+    "unit": null,
+    "value": null
+   }
+  ],
   "review_requests": [
    {
     "due_ms": 1791612000000,
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:de20e363d5d0cb2209f1f7f1e99e70219ac8582dedbf3da789f05a37f3579c58",
+     "job_id": "evidence:5d123d01a3d1bc4de20473ef22ca015a3365dbd37bf6902b45edae7e775fcd5c",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "590bbaa72fc7e7c71ed527c554acf05e7c37c4efa30d54ed60064ae9c21a1987",
+      "after_assessment_key": "54d5e617a002df6c38b12d6a051ee6246443e2af92387ef63509e12fd8ca0db0",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -2480,11 +2687,11 @@
     },
     "kind": "REASSESS",
     "reason": "CONFLICT_RESOLUTION",
-    "request_id": "evidence:de20e363d5d0cb2209f1f7f1e99e70219ac8582dedbf3da789f05a37f3579c58"
+    "request_id": "evidence:5d123d01a3d1bc4de20473ef22ca015a3365dbd37bf6902b45edae7e775fcd5c"
    }
   ],
   "run_id": "synthetic-evidence-run",
-  "schema": "AssessmentResult.v1",
+  "schema": "AssessmentResult.v2",
   "severity": null,
   "started_ms": 1791590400000,
   "status": "ABSTAIN"
