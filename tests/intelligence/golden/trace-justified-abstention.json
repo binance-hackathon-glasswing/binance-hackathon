@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": false,
-  "assessment_key": "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717",
+  "assessment_key": "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "UNKNOWN",
@@ -31,7 +31,7 @@
   "impact_ordinal": null,
   "issuer_id": "FIXTURE-CIK-9900001",
   "missing_codes": [],
-  "model_hash": "bcd46fc973a33d35821aefe4b8904a5dfb5874f0d89e2c8b4a08b3d0a5fdf096",
+  "model_hash": "f056eb905d9ac288bf4d7bd6a0913475e8527437ed5831f1e3d5ddc59c4bcacd",
   "n_changed": 1,
   "n_conflicts": 1,
   "n_falsifiers_fired": 0,
@@ -41,7 +41,7 @@
   "n_rejected_claims": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:55ee89eb7e6925e87045cf709b83d66866e1f426ca6de70df5a1b42b6d979707",
+  "result_id": "res:e2fd145b91f58ea91582fe28e734d488d86ee4e9038d490b5b4225893fc6c45f",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -52,10 +52,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717"
+    "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000"
    ],
    "accepted_result_ids": [
-    "res:55ee89eb7e6925e87045cf709b83d66866e1f426ca6de70df5a1b42b6d979707"
+    "res:e2fd145b91f58ea91582fe28e734d488d86ee4e9038d490b5b4225893fc6c45f"
    ],
    "availability": "ABSTAINED",
    "context": {
@@ -110,19 +110,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:ce3371ccbb0c654634786511ab8d56443a62f5f920e206e664d74d7940391edc",
+   "batch_id": "state:5565f702674586bf02c3923c79030940d342783ee39584e8a9810c3c3931de43",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:d5a7af5ef7cb235fcc90a2a39e8932a2e8cf34c665862cb1d0bde39060599a6a",
+     "job_id": "evidence:6c30ed37106ad9b968f017fd7663811a2727e3bd445390397b8677dc96f2e545",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717",
+      "after_assessment_key": "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -132,14 +132,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:55ee89eb7e6925e87045cf709b83d66866e1f426ca6de70df5a1b42b6d979707",
+   "result_id": "res:e2fd145b91f58ea91582fe28e734d488d86ee4e9038d490b5b4225893fc6c45f",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717"
+     "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000"
     ],
     "accepted_result_ids": [
-     "res:55ee89eb7e6925e87045cf709b83d66866e1f426ca6de70df5a1b42b6d979707"
+     "res:e2fd145b91f58ea91582fe28e734d488d86ee4e9038d490b5b4225893fc6c45f"
     ],
     "availability": "ABSTAINED",
     "context": {
@@ -193,7 +193,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:ce3371ccbb0c654634786511ab8d56443a62f5f920e206e664d74d7940391edc",
+   "batch_id": "state:5565f702674586bf02c3923c79030940d342783ee39584e8a9810c3c3931de43",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -333,13 +333,14 @@
   }
  },
  "result": {
-  "assessment_key": "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717",
+  "assessment_key": "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 4,
    "tool_calls": 3
   },
   "claims": [],
+  "completed_ms": 1791590400000,
   "confidence": {
    "basis": "status ABSTAIN",
    "calibrated": false,
@@ -444,13 +445,13 @@
   "job_id": "demo:justified-abstention",
   "missingness": [],
   "model": {
-   "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+   "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "bcd46fc973a33d35821aefe4b8904a5dfb5874f0d89e2c8b4a08b3d0a5fdf096",
+  "model_hash": "f056eb905d9ac288bf4d7bd6a0913475e8527437ed5831f1e3d5ddc59c4bcacd",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -631,6 +632,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             1700000000,
@@ -641,6 +643,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
@@ -652,6 +655,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -882000000,
@@ -671,7 +675,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -696,10 +700,14 @@
        },
        "tool": "fetch_document"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "c5888695e67e3527377995b82780acb249674f80278679862d8f2d59d02ca62e",
       "reasoning_summary": "Rule baseline: close gap fetch_document.",
       "request_id": "demo:justified-abstention:step:0",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -958,6 +966,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             1700000000,
@@ -968,6 +977,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
@@ -979,6 +989,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -882000000,
@@ -998,7 +1009,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1022,10 +1033,14 @@
        },
        "tool": "prior_context"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "d676042b2f0927e7a446634e054b86df3599f2a3312e5dce4b6ad5785e71864a",
       "reasoning_summary": "Rule baseline: close gap prior_context.",
       "request_id": "demo:justified-abstention:step:1",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -1587,6 +1602,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             1700000000,
@@ -1597,6 +1613,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
@@ -1608,6 +1625,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -882000000,
@@ -1627,7 +1645,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1651,10 +1669,14 @@
        },
        "tool": "compare_facts"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "09270cbd2e4930e1d5ee7baf87506f689045720e5ceb0a0cf9924ccb988d3c04",
       "reasoning_summary": "Rule baseline: close gap compare_facts.",
       "request_id": "demo:justified-abstention:step:2",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -2208,6 +2230,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             1700000000,
@@ -2218,6 +2241,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -900000000,
@@ -2229,6 +2253,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             -882000000,
@@ -2248,7 +2273,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2356,10 +2381,14 @@
        ],
        "notes": "deterministic rule path"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "d6a2cd79ccb77d099269fd71a9e945fe679478884f527485034bebe666417f5d",
       "reasoning_summary": "Rule baseline: no open gap within budget; finish.",
       "request_id": "demo:justified-abstention:step:3",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -2401,7 +2430,7 @@
      "error": null,
      "index": 2,
      "latency_ms": 0,
-     "result_sha256": "81808f83a2f2b827264c3f2ad56403472c73715864d8cb7389282fd908a6f47c",
+     "result_sha256": "335ea1cce8d1b963e2ada1c696b587b1aa7441b65aaef59247a1280bf3d56a54",
      "started_ms": 1791590400000,
      "status": "OK",
      "tool": "compare_facts"
@@ -2424,19 +2453,19 @@
    "CONFLICTING_EVIDENCE"
   ],
   "rejected_claims": [],
-  "result_id": "res:55ee89eb7e6925e87045cf709b83d66866e1f426ca6de70df5a1b42b6d979707",
+  "result_id": "res:e2fd145b91f58ea91582fe28e734d488d86ee4e9038d490b5b4225893fc6c45f",
   "review_requests": [
    {
     "due_ms": 1791612000000,
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:d5a7af5ef7cb235fcc90a2a39e8932a2e8cf34c665862cb1d0bde39060599a6a",
+     "job_id": "evidence:6c30ed37106ad9b968f017fd7663811a2727e3bd445390397b8677dc96f2e545",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "6e5c44b515e8aec3f136adf4e6597f16e165236670dd4f5dba2cfaba14392717",
+      "after_assessment_key": "4cc4eace239c0c0d1b2d750b2f227f184bd07a461d64a70a8d400f47c472f000",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -2447,12 +2476,13 @@
     },
     "kind": "REASSESS",
     "reason": "CONFLICT_RESOLUTION",
-    "request_id": "evidence:d5a7af5ef7cb235fcc90a2a39e8932a2e8cf34c665862cb1d0bde39060599a6a"
+    "request_id": "evidence:6c30ed37106ad9b968f017fd7663811a2727e3bd445390397b8677dc96f2e545"
    }
   ],
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentResult.v1",
   "severity": null,
+  "started_ms": 1791590400000,
   "status": "ABSTAIN"
  },
  "schema": "IntelligenceTrace.v1",

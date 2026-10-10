@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": true,
-  "assessment_key": "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52",
+  "assessment_key": "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "LOW",
@@ -37,7 +37,7 @@
   "missing_codes": [
    "PRIOR_MISSING"
   ],
-  "model_hash": "bcd46fc973a33d35821aefe4b8904a5dfb5874f0d89e2c8b4a08b3d0a5fdf096",
+  "model_hash": "f056eb905d9ac288bf4d7bd6a0913475e8527437ed5831f1e3d5ddc59c4bcacd",
   "n_changed": 1,
   "n_conflicts": 0,
   "n_falsifiers_fired": 1,
@@ -47,7 +47,7 @@
   "n_rejected_claims": 0,
   "n_unchanged": 1,
   "n_verified_claims": 8,
-  "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+  "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
   "schema": "FeatureRow.v1",
   "severity": 2,
   "source_stale": false,
@@ -58,10 +58,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52"
+    "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206"
    ],
    "accepted_result_ids": [
-    "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904"
+    "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4"
    ],
    "availability": "AVAILABLE",
    "context": {
@@ -428,13 +428,13 @@
     {
      "cutoff_ms": 1791590400000,
      "finding_id": "find:72a2b84e20da677ea7f83e082d3c3f680f1ce190dfdbcaa4fed2039aa21aaaa0",
-     "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+     "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
      "type": "GUIDANCE_LOWERED"
     },
     {
      "cutoff_ms": 1791590400000,
-     "finding_id": "falsifier:ea4592d6d53d4a7e361211a1dccd9e14a055b4cfe7f1fbb1f816068bf1f8d657",
-     "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+     "finding_id": "falsifier:a6e7e7a20ec13f4a1c06395ae1ca9e4d5f33b7770bd5306fc6f1e764ace9348e",
+     "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
      "type": "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT"
     }
    ],
@@ -443,19 +443,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:322af5ac93d1de08b80ee263f9f376b6f45eaa5cb5bdf459db022fb010ea4d64",
+   "batch_id": "state:740904f248ff7ca753b6c60c8909b3356e38435d739c6691319b4011a93f4ef9",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:88568c6cd7b60d66ce7be85be73eb98c2a2179c16aef6c29475ad43963a81984",
+     "job_id": "evidence:a5ee843852750c292adea51c6f099ed16478a7cd112baeecf6c351b9ce058cdd",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52",
+      "after_assessment_key": "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -465,14 +465,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+   "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52"
+     "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206"
     ],
     "accepted_result_ids": [
-     "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904"
+     "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4"
     ],
     "availability": "AVAILABLE",
     "context": {
@@ -839,13 +839,13 @@
      {
       "cutoff_ms": 1791590400000,
       "finding_id": "find:72a2b84e20da677ea7f83e082d3c3f680f1ce190dfdbcaa4fed2039aa21aaaa0",
-      "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+      "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
       "type": "GUIDANCE_LOWERED"
      },
      {
       "cutoff_ms": 1791590400000,
-      "finding_id": "falsifier:ea4592d6d53d4a7e361211a1dccd9e14a055b4cfe7f1fbb1f816068bf1f8d657",
-      "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+      "finding_id": "falsifier:a6e7e7a20ec13f4a1c06395ae1ca9e4d5f33b7770bd5306fc6f1e764ace9348e",
+      "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
       "type": "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT"
      }
     ],
@@ -853,7 +853,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:322af5ac93d1de08b80ee263f9f376b6f45eaa5cb5bdf459db022fb010ea4d64",
+   "batch_id": "state:740904f248ff7ca753b6c60c8909b3356e38435d739c6691319b4011a93f4ef9",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -993,7 +993,7 @@
   }
  },
  "result": {
-  "assessment_key": "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52",
+  "assessment_key": "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -1308,6 +1308,7 @@
     ]
    }
   ],
+  "completed_ms": 1791590400000,
   "confidence": {
    "basis": "ordinal rule over verified-fact count, missingness and comparison coverage; not a probability",
    "calibrated": false,
@@ -1444,13 +1445,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+   "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "bcd46fc973a33d35821aefe4b8904a5dfb5874f0d89e2c8b4a08b3d0a5fdf096",
+  "model_hash": "f056eb905d9ac288bf4d7bd6a0913475e8527437ed5831f1e3d5ddc59c4bcacd",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -1641,6 +1642,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
            "delta": [
             -3000000000,
@@ -1652,6 +1654,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2600000000,
@@ -1662,6 +1665,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             0,
@@ -1673,6 +1677,7 @@
            "relation": "EQUAL"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2582000000,
@@ -1691,7 +1696,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1716,10 +1721,14 @@
        },
        "tool": "fetch_document"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "24b7f9d166f113a7638d2b538599c2e090163e3ceedb0c5045773d08a113deb0",
       "reasoning_summary": "Rule baseline: close gap fetch_document.",
       "request_id": "demo:tool-selection-thesis-revision:step:0",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -2395,6 +2404,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
            "delta": [
             -3000000000,
@@ -2406,6 +2416,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2600000000,
@@ -2416,6 +2427,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             0,
@@ -2427,6 +2439,7 @@
            "relation": "EQUAL"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2582000000,
@@ -2445,7 +2458,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2469,10 +2482,14 @@
        },
        "tool": "prior_context"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "d676042b2f0927e7a446634e054b86df3599f2a3312e5dce4b6ad5785e71864a",
       "reasoning_summary": "Rule baseline: close gap prior_context.",
       "request_id": "demo:tool-selection-thesis-revision:step:1",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -3276,6 +3293,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
            "delta": [
             -3000000000,
@@ -3287,6 +3305,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2600000000,
@@ -3297,6 +3316,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             0,
@@ -3308,6 +3328,7 @@
            "relation": "EQUAL"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2582000000,
@@ -3326,7 +3347,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3350,10 +3371,14 @@
        },
        "tool": "prior_context"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "996d282b0fd1977910b3068dd7680fa2fa048cfde77ca2784d61ec7fd0d0b264",
       "reasoning_summary": "Rule baseline: close gap prior_context.",
       "request_id": "demo:tool-selection-thesis-revision:step:2",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -4150,6 +4175,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
            "delta": [
             -3000000000,
@@ -4161,6 +4187,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2600000000,
@@ -4171,6 +4198,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             0,
@@ -4182,6 +4210,7 @@
            "relation": "EQUAL"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2582000000,
@@ -4200,7 +4229,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4224,10 +4253,14 @@
        },
        "tool": "compare_facts"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "09270cbd2e4930e1d5ee7baf87506f689045720e5ceb0a0cf9924ccb988d3c04",
       "reasoning_summary": "Rule baseline: close gap compare_facts.",
       "request_id": "demo:tool-selection-thesis-revision:step:3",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -5016,6 +5049,7 @@
         {
          "comparisons": [
           {
+           "applicable": true,
            "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
            "delta": [
             -3000000000,
@@ -5027,6 +5061,7 @@
            "relation": "LOWER"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2600000000,
@@ -5037,6 +5072,7 @@
            "relation": "ABOVE"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_REPORTED",
            "delta": [
             0,
@@ -5048,6 +5084,7 @@
            "relation": "EQUAL"
           },
           {
+           "applicable": true,
            "basis": "REPORTED_VS_PRIOR_GUIDANCE",
            "delta": [
             2582000000,
@@ -5066,7 +5103,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "f7b6eb4e08e1913603b8c065a3cb782f5d73c32917feacc59872ba7aff74a307",
+       "checkpoint_sha256": "b324be5b59ce01044e489261cc863601b49793417f3e89697f225ce085754954",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -5372,10 +5409,14 @@
        ],
        "notes": "deterministic rule path"
       },
+      "raw_response_artifact": null,
       "raw_response_sha256": "3bf7d14d6bcc3806b6fd25eda4a424a66b6718b0d586cde33f217cf6229fffae",
       "reasoning_summary": "Rule baseline: no open gap within budget; finish.",
       "request_id": "demo:tool-selection-thesis-revision:step:4",
+      "request_payload_artifact": null,
+      "request_payload_sha256": null,
       "schema": "ModelResponse.v1",
+      "served_model": null,
       "status": "OK",
       "usage": {
        "input_tokens": 0,
@@ -5429,7 +5470,7 @@
      "error": null,
      "index": 3,
      "latency_ms": 0,
-     "result_sha256": "ecdcfdbc1ec3475b0a07a86671802b36cca069de59a279bcd6ee8a950f007039",
+     "result_sha256": "d97240da245f56eac4dbbe7edcbc2b829006629e9f924c3b6f6fb02bb25f62ac",
      "started_ms": 1791590400000,
      "status": "OK",
      "tool": "compare_facts"
@@ -5503,19 +5544,19 @@
   "rationale": "Example Semiconductor Corp (8-K 0009900001-26-000187): 6 verified numerical fact(s); revenue FY2027-Q3 reported above prior guidance; revenue FY2027-Q4 guidance lowered; events ITEM:2.02. No earlier comparison point was available for gross_margin:REPORTED:FY2027-Q2, gross_margin:REPORTED:FY2027-Q3. Proposed thesis BROKEN (v4); falsifiers fired: F-REVENUE-GUIDANCE-CUT; confidence LOW (uncalibrated).",
   "reasons": [],
   "rejected_claims": [],
-  "result_id": "res:0d9d77dd04c492865e990aae801c1653b8cc987d44a8406697c5a56359deb904",
+  "result_id": "res:2800317a99d72707830b64de2e5d22d2c908e9c69dd948be834d436e847074e4",
   "review_requests": [
    {
     "due_ms": 1791612000000,
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:88568c6cd7b60d66ce7be85be73eb98c2a2179c16aef6c29475ad43963a81984",
+     "job_id": "evidence:a5ee843852750c292adea51c6f099ed16478a7cd112baeecf6c351b9ce058cdd",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "50f31241bc50f47257086e089fac60413f469b010ce4540687daf92ebf89de52",
+      "after_assessment_key": "53d3d96208112a68650743ae3f1ba75e4c6cb71f16e46f6e61a1101b065af206",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -5526,12 +5567,13 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:88568c6cd7b60d66ce7be85be73eb98c2a2179c16aef6c29475ad43963a81984"
+    "request_id": "evidence:a5ee843852750c292adea51c6f099ed16478a7cd112baeecf6c351b9ce058cdd"
    }
   ],
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentResult.v1",
   "severity": 2,
+  "started_ms": 1791590400000,
   "status": "ASSESSED"
  },
  "schema": "IntelligenceTrace.v1",
