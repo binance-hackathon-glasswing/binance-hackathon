@@ -204,7 +204,7 @@ class Outcome:
     block_number: int | None = None
     finalized_height: int | None = None
     finality_verified: bool = False
-    gas_used: int = 0
+    gas_used: int | None = None
 
 
 class Store(Protocol):
@@ -336,6 +336,7 @@ class Executor:
             if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
                 raise Blocked("approved nonce consumption and current wallet count disagree")
         previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
+                             and attempt.gas_used is not None
                              else attempt.payload.gas) * attempt.payload.gas_price
                             for attempt in state.attempts if attempt.step != step)
         if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
@@ -347,6 +348,9 @@ class Executor:
             return state
         if state.attempts and state.attempts[-1].state != "FINAL_SUCCESS":
             return state  # No second step while outgoing outcome is uncertain.
+        integer(now)
+        if now < state.last_observed_at:
+            raise Blocked("clock regression")
         if state.prepare_probes >= state.intent.max_prepare_probes:
             raise Blocked("prepare probe budget exhausted")
         gates = self.guards.snapshot(state.intent, now)
@@ -404,11 +408,17 @@ class Executor:
         attempt = state.attempts[-1]
         if attempt.state != "SIGNED_DURABLE":
             return state  # Possibly sent bytes are never blindly resubmitted.
+        if attempt.broadcast_at is not None:
+            raise Blocked("possible submission cannot obtain a fresh recovery budget")
         gates = self.guards.snapshot(state.intent, now)
         if (gates.epoch, gates.state_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
-        attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now, next_probe=now)
+        # Initialize post-submission recovery in the same durable transition as
+        # the first possible send. Earlier absence checks cannot consume it;
+        # retries/restarts of a possibly submitted attempt never reset it.
+        attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now,
+                          probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
         try:
             tx_hash = self.venue.broadcast(Signed(attempt.raw_hex, attempt.tx_hash), attempt.epoch, attempt.guard_version)
@@ -444,11 +454,18 @@ class Executor:
                                         blocked_reason="unexplained transaction/nonce evidence")
         timed_out = attempt.broadcast_at is not None and now >= attempt.broadcast_at + state.intent.timeout
         if outcome.status in {"PENDING", "UNKNOWN"}:
+            if (outcome.status == "UNKNOWN" and attempt.state == "SIGNED_DURABLE"
+                    and attempt.broadcast_at is None):
+                # Absence is no evidence of submission. Keep unused bytes eligible
+                # for the original, fully guarded first broadcast; never demote a
+                # durable possible-send record back into this state.
+                return self._update_attempt(state, attempt, "UNBROADCAST_RECONCILED", gates)
             return self._update_attempt(state, replace(attempt, state=outcome.status), outcome.status, gates,
                                         blocked_reason="transaction unresolved" if timed_out else None)
-        integer(outcome.gas_used)
-        if outcome.gas_used > attempt.payload.gas:
-            raise Blocked("receipt gas exceeds signed limit")
+        if outcome.gas_used is not None:
+            integer(outcome.gas_used, positive=True)
+            if outcome.gas_used > attempt.payload.gas:
+                raise Blocked("receipt gas exceeds signed limit")
         canonical_block = (isinstance(outcome.block_hash, str)
                            and re.fullmatch(r"0x[0-9a-f]{64}", outcome.block_hash)
                            and outcome.block_hash == outcome.canonical_block_hash)
@@ -464,7 +481,9 @@ class Executor:
             status = "COMPLETED"
         return self._update_attempt(state, replace(attempt, state=phase, included_block=outcome.block_hash,
                                    gas_used=outcome.gas_used), phase, gates, status=status,
-                                   blocked_reason=None if finalized else "canonical finality unproved")
+                                   blocked_reason=("receipt gas unavailable; signed gas allowance retained"
+                                                   if finalized and outcome.gas_used is None
+                                                   else None if finalized else "canonical finality unproved"))
 
     def replace_transaction(self, *args, **kwargs):
         raise Blocked("same-nonce replacement is disabled")

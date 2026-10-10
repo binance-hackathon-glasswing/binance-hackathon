@@ -272,6 +272,9 @@ class ExecutionTests(unittest.TestCase):
         count = len(self.store.events())
         self.engine.reconcile(self.key, 300)
         self.assertEqual(len(self.store.events()), count)
+        self.engine.broadcast(self.key, 301)
+        self.assertEqual(self.store.load(self.key).attempts[-1].probes, 8)
+        self.assertEqual(self.venue.broadcasts, [])
         with self.assertRaises(Conflict):
             self.engine.create(intent(intent_id="economic-2", pay_token=TOKEN, receive_token=self.economic.pay_token), 300)
         self.assertEqual(self.store.load(self.key).status, "ACTIVE")
@@ -347,6 +350,166 @@ class ExecutionTests(unittest.TestCase):
         with self.assertRaises(Blocked):
             self.engine.broadcast(self.key, 9)
         self.assertEqual(self.venue.broadcasts, [])
+
+    def test_backward_clock_initial_prepare_preserves_saved_timestamp(self):
+        state = self.engine.create(self.economic, 100)
+        with self.assertRaisesRegex(Blocked, "clock regression"):
+            self.engine.prepare(self.key, 90)
+        self.assertEqual(self.store.load(self.key), state)
+        self.assertEqual(state.last_observed_at, 100)
+        self.assertEqual(self.venue.quote_calls, 0)
+        self.assertEqual(self.signer.calls, 0)
+        self.assertEqual(self.venue.broadcasts, [])
+
+    def test_backward_clock_after_approval_cannot_prepare_swap(self):
+        state = self.final_approve()
+        with self.assertRaisesRegex(Blocked, "clock regression"):
+            self.engine.prepare(self.key, 11)
+        self.assertEqual(self.store.load(self.key), state)
+        self.assertEqual(self.venue.quote_calls, 1)
+        self.assertEqual(len(self.venue.broadcasts), 1)
+        self.assertEqual(self.engine.prepare(self.key, 13).attempts[-1].step, "SWAP")
+
+    def test_unbroadcast_approval_survives_restart_reconcile_then_first_send(self):
+        signed = self.signed_approve()
+        self.restart()
+        state = self.engine.reconcile(self.key, 11)
+        attempt = state.attempts[-1]
+        self.assertEqual(attempt.state, "SIGNED_DURABLE")
+        self.assertIsNone(attempt.broadcast_at)
+        self.assertEqual(attempt.tx_hash, signed.attempts[-1].tx_hash)
+        self.assertEqual(attempt.raw_hex, signed.attempts[-1].raw_hex)
+        self.assertEqual(state.intent.reservation_id, signed.intent.reservation_id)
+        self.assertEqual(self.engine.broadcast(self.key, 12).attempts[-1].state, "PENDING")
+        self.engine.broadcast(self.key, 13)
+        self.assertEqual(self.venue.broadcasts, [attempt.tx_hash])
+        self.assertEqual(self.signer.calls, 0)
+
+    def test_unbroadcast_swap_preserves_guarded_first_send_after_absent_outcome(self):
+        self.final_approve()
+        self.engine.prepare(self.key, 13)
+        self.engine.authorize(self.key, 13)
+        state = self.engine.sign(self.key, 13)
+        self.restart()
+        self.guards.nonce = 1
+        attempt = state.attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = Outcome(attempt.tx_hash, WALLET, 1, "UNKNOWN")
+        recovered = self.engine.reconcile(self.key, 14)
+        self.assertEqual(recovered.attempts[-1].state, "SIGNED_DURABLE")
+        self.engine.broadcast(self.key, 15)
+        self.assertEqual(self.venue.broadcasts, [attempt.tx_hash])
+
+    def test_unbroadcast_reconciliation_does_not_bypass_changed_authority(self):
+        self.signed_approve()
+        self.restart()
+        self.guards.change(risk_valid=False)
+        self.assertEqual(self.engine.reconcile(self.key, 11).attempts[-1].state, "SIGNED_DURABLE")
+        with self.assertRaises(Conflict):
+            self.engine.broadcast(self.key, 12)
+        self.assertEqual(self.venue.broadcasts, [])
+
+    def exhaust_unbroadcast_probes(self, state, start):
+        attempt = state.attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = Outcome(attempt.tx_hash, WALLET, attempt.payload.nonce, "UNKNOWN")
+        for index in range(self.economic.max_recovery_probes):
+            state = self.engine.reconcile(self.key, start + index * self.economic.probe_interval)
+        self.assertEqual(state.attempts[-1].state, "SIGNED_DURABLE")
+        self.assertEqual(state.attempts[-1].probes, self.economic.max_recovery_probes)
+        self.assertIsNone(state.attempts[-1].broadcast_at)
+        return state
+
+    def test_exhausted_prebroadcast_approval_budget_can_process_finality_after_restart(self):
+        state = self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.restart()
+        self.assertEqual(self.store.load(self.key).attempts[-1].probes, 8)
+        state = self.engine.broadcast(self.key, 33)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(state.attempts[-1].next_probe, 33)
+        self.assertEqual(self.venue.broadcasts, [state.attempts[-1].tx_hash])
+        self.restart()
+        attempt = self.store.load(self.key).attempts[-1]
+        self.assertEqual(attempt.probes, 0)
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        state = self.engine.reconcile(self.key, 34)
+        self.assertEqual(state.attempts[-1].state, "FINAL_SUCCESS")
+        self.assertEqual(state.attempts[-1].probes, 1)
+
+    def test_exhausted_prebroadcast_swap_budget_can_complete_after_restart(self):
+        self.final_approve()
+        self.engine.prepare(self.key, 13)
+        self.engine.authorize(self.key, 13)
+        state = self.engine.sign(self.key, 13)
+        self.exhaust_unbroadcast_probes(state, 14)
+        state = self.engine.broadcast(self.key, 36)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(len(self.venue.broadcasts), 2)
+        self.restart()
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.assertEqual(self.engine.reconcile(self.key, 37).status, "COMPLETED")
+
+    def test_first_broadcast_storage_failure_keeps_prebroadcast_counter(self):
+        state = self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.store.fail_next = True
+        with self.assertRaises(OSError):
+            self.engine.broadcast(self.key, 33)
+        self.assertEqual(self.store.load(self.key), state)
+        self.assertEqual(self.venue.broadcasts, [])
+        self.restart()
+        state = self.engine.broadcast(self.key, 34)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(self.venue.broadcasts, [state.attempts[-1].tx_hash])
+
+    def test_lost_first_broadcast_response_retains_fresh_budget_after_restart(self):
+        self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.venue.broadcast_fault = TimeoutError()
+        state = self.engine.broadcast(self.key, 33)
+        self.assertEqual(state.attempts[-1].state, "UNKNOWN")
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.restart()
+        self.engine.broadcast(self.key, 34)
+        self.assertEqual(self.venue.broadcasts, [])
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.assertEqual(self.engine.reconcile(self.key, 34).attempts[-1].state, "FINAL_SUCCESS")
+
+    def test_missing_receipt_gas_retains_allowance_and_blocks_tight_parent_budget(self):
+        self.economic = intent(gas_budget=150000)
+        self.key = self.economic.key
+        state = self.signed_approve()
+        attempt = state.attempts[-1]
+        self.engine.broadcast(self.key, 11)
+        # Construct the outcome with gas_used OMITTED, matching the review report.
+        self.venue.outcomes[attempt.tx_hash] = Outcome(attempt.tx_hash, WALLET, 0, "SUCCESS",
+                                                     BLOCK, BLOCK, 10, 12, True)
+        state = self.engine.reconcile(self.key, 12)
+        self.assertEqual(state.attempts[-1].state, "FINAL_SUCCESS")
+        self.assertIsNone(state.attempts[-1].gas_used)
+        self.assertIn("gas allowance retained", state.blocked_reason)
+        self.restart()
+        self.guards.nonce = 1
+        state = self.engine.prepare(self.key, 13)
+        self.assertEqual(len(state.attempts), 1)
+        self.assertIn("parent gas budget", state.blocked_reason)
+
+    def test_missing_receipt_gas_allows_only_affordable_worst_case_swap(self):
+        state = self.signed_approve()
+        attempt = state.attempts[-1]
+        self.engine.broadcast(self.key, 11)
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt, gas_used=None)
+        self.engine.reconcile(self.key, 12)
+        self.guards.nonce = 1
+        self.assertEqual(self.engine.prepare(self.key, 13).attempts[-1].step, "SWAP")
+
+    def test_invalid_receipt_gas_cannot_finalize_or_release_budget(self):
+        state = self.signed_approve()
+        attempt = state.attempts[-1]
+        self.engine.broadcast(self.key, 11)
+        for index, gas in enumerate((0, -1, True, attempt.payload.gas + 1)):
+            self.venue.outcomes[attempt.tx_hash] = finalized(attempt, gas_used=gas)
+            with self.subTest(gas=gas), self.assertRaises(Blocked):
+                self.engine.reconcile(self.key, 12 + index * 4)
+            self.assertEqual(self.store.load(self.key).attempts[-1].state, "PENDING")
 
     def test_ownership_loss_at_broadcast_release_keeps_possible_send(self):
         self.signed_approve()
