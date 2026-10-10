@@ -100,6 +100,8 @@ GAP-65 implementation update (2026-10-10): [IDEA-023](ledger/IDEA-023.md) starts
 
 ## Start now vs blocked (2026-10-05; re-checked 2026-10-08)
 
+2026-10-10 delivery update: [IDEA-024](ledger/IDEA-024.md) and its four build prompts supersede earlier owner suggestions for this build: Yao Zhu evidence/model; Keith deterministic strategy/risk/accounting/research; Isaac market adapters/execution; Keegan shared contracts/coordinator/durability/audit/deployment/integration. Work starts independently with fixtures on four branches from one kickoff commit; integration and cross-review remain required. GAP-37 availability, GAP-57 model selection, GAP-64 policy adoption, GAP-65 implementation/acceptance and GAP-66 corrections remain open. This allocation does not close them or adopt a live policy.
+
 Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Markets/Data/Risk: Isaac; Execution/Security: Keith; Platform/Audit: Keegan). They are suggestions, not assignments; owners are still GAP-37.
 
 **Start now** (no registered wallet or organiser answer needed):
