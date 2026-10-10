@@ -66,8 +66,10 @@ class _State:
         return {self.index.all_by_id[r]["accession"] for r in self.current_records}
 
     def current_facts(self) -> list:
-        accessions = self.current_accessions
-        return sorted((f for f in self.facts.values() if f["source"].get("accession") in accessions),
+        """Facts of the assessed records themselves. Keyed by record, not accession: facts of a superseded
+        revision of the same filing (still held in context) are neither current nor prior evidence."""
+        records = set(self.current_records)
+        return sorted((f for f in self.facts.values() if f["source"].get("record_id") in records),
                       key=lambda f: f["fact_id"])
 
     def prior_facts(self) -> list:
