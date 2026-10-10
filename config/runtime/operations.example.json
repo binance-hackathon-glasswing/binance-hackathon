@@ -1,0 +1,19 @@
+{
+  "schema": "OperationsConfiguration.v1",
+  "deployment": null,
+  "region": null,
+  "account_id": null,
+  "run_id": null,
+  "archive_bucket": null,
+  "archive_prefix": null,
+  "kms_key": null,
+  "retention_days": null,
+  "backup_interval_hours": null,
+  "database_host": null,
+  "database_user": "larp_archive",
+  "database_name": "larp",
+  "database_ca_file": null,
+  "max_attempts": null,
+  "retry_seconds": null,
+  "max_archive_bytes": null
+}

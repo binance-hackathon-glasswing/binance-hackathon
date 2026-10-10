@@ -11,6 +11,10 @@ from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
 
 TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','anchors','command_checks')
+# Payloads of earlier backups must never be embedded recursively in new backups.
+# These delivery tables are rebuilt only after quarantine/reconciliation and a new
+# archive namespace; remote object versions/receipts are retained independently.
+MAINTENANCE_TABLES=('archive_clock','archive_outbox')
 
 
 def export(store):
@@ -37,6 +41,9 @@ def restore(store,backup):
     if set(b['tables'])!=set(TABLES):
         raise IntegrityError('Incomplete backup')
     with store.transaction() as db:
+        for table in MAINTENANCE_TABLES:
+            if db.execute(f'SELECT count(*) FROM {table}').fetchone()[0]:
+                raise IntegrityError('Restore requires empty maintenance tables')
         for table in TABLES:
             if db.execute(f'SELECT count(*) FROM {table}').fetchone()[0]:
                 raise IntegrityError('Restore requires an empty target database')

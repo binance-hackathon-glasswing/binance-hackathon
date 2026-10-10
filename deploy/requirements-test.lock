@@ -1,4 +1,5 @@
 -r requirements-runtime.lock
+-r requirements-aws.lock
 pytest==9.1.1
 iniconfig==2.3.0
 packaging==26.3

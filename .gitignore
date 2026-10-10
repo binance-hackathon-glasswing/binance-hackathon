@@ -13,3 +13,13 @@ logs/
 .live_armed
 trades.json
 # vendor/ is committed on purpose (organiser SDK wheel); do not ignore it
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+crash.log
+deployment.local.json
+backend.local.hcl
