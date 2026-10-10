@@ -78,32 +78,32 @@ resource "aws_db_parameter_group" "larp" {
   }
 }
 resource "aws_db_instance" "larp" {
-  identifier                      = var.name
-  engine                          = "postgres"
-  engine_version                  = var.postgres_version
-  instance_class                  = var.db_instance_class
-  allocated_storage               = var.db_storage_gib
-  max_allocated_storage           = var.db_max_storage_gib
-  storage_type                    = "gp3"
-  storage_encrypted               = true
-  kms_key_id                      = aws_kms_key.data.arn
-  db_name                         = "larp"
-  username                        = "larp_admin"
-  manage_master_user_password     = true
+  identifier                          = var.name
+  engine                              = "postgres"
+  engine_version                      = var.postgres_version
+  instance_class                      = var.db_instance_class
+  allocated_storage                   = var.db_storage_gib
+  max_allocated_storage               = var.db_max_storage_gib
+  storage_type                        = "gp3"
+  storage_encrypted                   = true
+  kms_key_id                          = aws_kms_key.data.arn
+  db_name                             = "larp"
+  username                            = "larp_admin"
+  manage_master_user_password         = true
   iam_database_authentication_enabled = true
-  db_subnet_group_name            = aws_db_subnet_group.larp.name
-  parameter_group_name            = aws_db_parameter_group.larp.name
-  vpc_security_group_ids          = [aws_security_group.database.id]
-  publicly_accessible            = false
-  multi_az                       = var.multi_az
-  backup_retention_period        = var.backup_retention_days
-  deletion_protection            = true
-  skip_final_snapshot            = false
-  final_snapshot_identifier      = "${var.name}-final"
-  auto_minor_version_upgrade     = false
-  apply_immediately              = false
-  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
-  copy_tags_to_snapshot           = true
+  db_subnet_group_name                = aws_db_subnet_group.larp.name
+  parameter_group_name                = aws_db_parameter_group.larp.name
+  vpc_security_group_ids              = [aws_security_group.database.id]
+  publicly_accessible                 = false
+  multi_az                            = var.multi_az
+  backup_retention_period             = var.backup_retention_days
+  deletion_protection                 = true
+  skip_final_snapshot                 = false
+  final_snapshot_identifier           = "${var.name}-final"
+  auto_minor_version_upgrade          = false
+  apply_immediately                   = false
+  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
+  copy_tags_to_snapshot               = true
   lifecycle {
     prevent_destroy = true
     precondition {

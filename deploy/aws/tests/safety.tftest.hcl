@@ -1,17 +1,17 @@
 mock_provider "aws" {}
 
 variables {
-  account_id                   = "123456789012"
-  region                       = "ap-southeast-1"
-  availability_zones           = ["ap-southeast-1a", "ap-southeast-1b"]
-  environment                  = "development"
-  name                         = "larp-fixture"
-  vpc_cidr                     = "10.80.0.0/16"
-  archive_bucket_name          = "larp-synthetic-archive-fixture"
-  artifact_bucket_name         = "larp-synthetic-artifact-fixture"
-  archive_retention_days       = 90
-  backup_retention_days        = 7
-  log_retention_days           = 30
+  account_id                  = "123456789012"
+  region                      = "ap-southeast-1"
+  availability_zones          = ["ap-southeast-1a", "ap-southeast-1b"]
+  environment                 = "development"
+  name                        = "larp-fixture"
+  vpc_cidr                    = "10.80.0.0/16"
+  archive_bucket_name         = "larp-synthetic-archive-fixture"
+  artifact_bucket_name        = "larp-synthetic-artifact-fixture"
+  archive_retention_days      = 90
+  backup_retention_days       = 7
+  log_retention_days          = 30
   postgres_version            = "14.24"
   postgres_family             = "postgres14"
   db_instance_class           = "db.t3.micro"

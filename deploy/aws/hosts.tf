@@ -55,7 +55,7 @@ resource "aws_instance" "host" {
   iam_instance_profile        = aws_iam_instance_profile.host[each.key].name
   associate_public_ip_address = false
   disable_api_termination     = true
-  monitoring                 = true
+  monitoring                  = true
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"

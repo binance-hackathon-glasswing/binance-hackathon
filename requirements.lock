@@ -8,6 +8,10 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 bitarray==3.11.0
+boto3==1.43.111
+botocore==1.43.111
+jmespath==1.1.0
+s3transfer==0.19.2
 certifi==2026.7.22
 charset-normalizer==3.5.2
 ckzg==2.1.8
