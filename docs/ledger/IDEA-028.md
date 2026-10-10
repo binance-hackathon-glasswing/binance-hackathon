@@ -329,3 +329,54 @@ GAP, so none is removed. No production roles, infrastructure or live services we
 changed. PR #3 remains for re-review; integration owners and deployment/rehearsal
 limits in RT14 remain open. Full snapshot verification remains linear in journal
 size and must still be capacity-tested during rehearsal.
+
+### RT16 — PR routing and next-chat handoff, 2026-10-10
+
+Read-only GitHub checks after RT15: PR #3 remains OPEN, mergeable, targeting
+`codex/engine-foundation`, at `3ee7eb5ba1bff86b3813fbebfcb9c7c7f1b482a4`.
+All six checks from its push/PR triggers passed, including
+[run 38032311100](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38032311100)
+and run 38032314701. Cookiemunchrr's review is COMMENTED; independent acceptance
+of the amended code is still pending. These results precede this documentation-only
+handoff commit; do not describe them as checks of a later SHA.
+
+[PR #4](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/4)
+remains OPEN, mergeable, targeting `main`, now at
+`572332fc4adb2049e7be04d6e959cf5589bff8d7`. Yao Zhu has replied to all eleven
+findings from Keegan's review of `33c2f40`. Fixes are in `35c60b4`, fixtures/results
+in `5ba3e88`, and the updated record in `572332f` (IDEA-025 §9.2 on that branch).
+The author reports 139 tests and 514 subtests passing, plus an autocrlf checkout
+check on macOS; these amended results have NOT been independently verified here.
+GitHub returned no CI checks for PR #4. Actual Windows verification and the locked
+environment are not established by the author's report. The replies describe a
+remaining limitation: a permanently blocked evidence-store read can leave a daemon
+thread waiting after the caller's assessment deadline.
+
+Branch ancestry checked via GitHub: `codex/engine-foundation` is three commits
+ahead of `main`, zero behind. PR #4 includes those foundation commits (5a6f4d7,
+510dfa3, e10eae2) as well as the evidence changes, but does not include PR #3's
+runtime changes. Merging #3 alone leaves main unchanged. No foundation-to-main
+PR is currently open. Recommendation ONLY, not an adopted team decision: target
+both component PRs at `codex/engine-foundation`, independently re-review them,
+then combine them through a tested integration PR to main. No PR was approved,
+retargeted, merged, or newly commented on during this routing discussion.
+
+Next chat: re-check remote heads; independently review PR #4's amended diff and
+regressions against Downloads/01-evidence-agent.prompt.txt and the common build
+brief; obtain PR #3 peer re-review; agree the integration route before changing
+targets or merging. Preserve the no-history-rewrite rule. Commit and push any
+decision/trade/logging changes and prospective acceptance criteria BEFORE running
+them. The user asked for advice and a handoff, not approval or merge execution.
+
+Open owners: Yao Zhu for evidence fixes/provider inputs; Keith is PR #4's named
+reviewer; Isaac is PR #3's designated reviewer and owns real execution, terminal-round
+attestation and signer fencing; Keegan owns cross-module integration and the combined
+checks. Keegan/team still own cloud selections/provisioning, final configuration,
+monitoring/restore acceptance and rehearsal (RT14/15, GAP-65 and related backlog).
+The user has not selected database, backup/anchor storage or hosting destinations
+and asked for recommendations after the build prompt; no production activation is
+authorized by this handoff. Full-journal verification capacity remains unproved.
+
+Before this handoff-only edit, the runtime worktree was clean and fully pushed;
+local main and origin/main matched. Runtime code/test evidence remains RT14/15.
+Future work must distinguish component acceptance from live-trading readiness.
