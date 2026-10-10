@@ -525,13 +525,13 @@ class EvidenceAssessor:
         for fact in current:
             if is_statement(fact["metric"]):
                 sig = self._signed(state, fact)
-                again = lifecycle.novelty(sig["signature"], seen, checked=True, history_complete=True,
+                again = lifecycle.novelty(sig["fingerprint"], seen, checked=True, history_complete=True,
                                           max_comparisons=cap)
                 state.coverage["statement_comparisons"] += again["compared"]
                 if again["label"] == "REPEATED":
                     label, match = "ALREADY_SEEN", again["match"]
                 else:
-                    found = lifecycle.novelty(sig["signature"], earlier, checked=STATEMENTS in state.queried_prior,
+                    found = lifecycle.novelty(sig["fingerprint"], earlier, checked=STATEMENTS in state.queried_prior,
                                               history_complete=state.history_complete.get(STATEMENTS, False),
                                               max_comparisons=cap)
                     state.coverage["statement_comparisons"] += found["compared"]
@@ -540,7 +540,7 @@ class EvidenceAssessor:
                     label, match = found["label"], found["match"]
                 reuse = match and match["relation"] in ("EXACT", "SEMANTIC_SAME")
                 state.statement_ids[fact["fact_id"]] = (match["prior_id"] if reuse else
-                                                        lifecycle.statement_id(sig["signature"]))
+                                                        lifecycle.statement_id(sig["fingerprint"]))
                 state.statement_matches[fact["fact_id"]] = match
             elif fact["kind"] == "EVENT":
                 label = "REPEATED" if (fact["metric"], fact["source"].get("accession")) in known_events else "NEW"
@@ -565,7 +565,7 @@ class EvidenceAssessor:
     def _signed(state, fact) -> dict:
         """{"id", "signature"} of a statement fact: its recorded statement_id if it has one, else a new one."""
         sig = lifecycle.signature(statement_event(fact["metric"]), fact.get("statement"), fact["span"]["text"])
-        return {"id": fact.get("statement_id") or lifecycle.statement_id(sig), "signature": sig}
+        return {"id": fact.get("statement_id") or lifecycle.statement_id(sig), "fingerprint": sig}
 
     def _statement_record(self, state, fact, novelty) -> dict:
         sem = fact.get("statement") or {}
@@ -573,7 +573,7 @@ class EvidenceAssessor:
         return {"type": fact["metric"], "event": statement_event(fact["metric"]), "fact_id": fact["fact_id"],
                 "statement_id": state.statement_ids[fact["fact_id"]], "novelty": novelty["by_fact"][fact["fact_id"]],
                 "match": state.statement_matches.get(fact["fact_id"]), "statement": fact["span"]["text"],
-                "semantics": sem or None, "signature": self._signed(state, fact)["signature"],
+                "semantics": sem or None, "fingerprint": self._signed(state, fact)["fingerprint"],
                 "accession": fact["source"].get("accession"), "record_id": fact["source"].get("record_id"),
                 "content_hash": record.get("content_hash")}
 

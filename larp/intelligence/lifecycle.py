@@ -112,7 +112,7 @@ def novelty(new: dict, priors: list, *, checked: bool, history_complete: bool, m
             truncated = True
             break
         compared += 1
-        rel = relation(new, prior["signature"])
+        rel = relation(new, prior["fingerprint"])
         if rel in order and (best is None or order[rel] < order[best[0]]):
             best = (rel, prior["id"])
             if rel == "EXACT":
@@ -138,10 +138,10 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
     `policy`: {"review_base_delay_ms", "max_review_attempts", "max_backoff_ms"}.
     """
     sid = statement["statement_id"]
-    if sid not in registry and statement.get("signature"):
+    if sid not in registry and statement.get("fingerprint"):
         # A paraphrase or syndicated copy of a registered statement keeps that statement's identity.
         for other in list(registry.values())[: policy.get("max_registry_comparisons", 500)]:
-            if other.get("signature") and relation(statement["signature"], other["signature"]) in ("EXACT",
+            if other.get("fingerprint") and relation(statement["fingerprint"], other["fingerprint"]) in ("EXACT",
                                                                                                     "SEMANTIC_SAME"):
                 sid = other["statement_id"]
                 break
@@ -151,7 +151,7 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
     if entry is None:
         status = "PENDING_REVIEW" if needs_review(statement["novelty"]) else "ACKNOWLEDGED"
         entry = {"statement_id": sid, "event": statement["event"], "semantics": statement.get("semantics"),
-                 "signature": statement.get("signature"),
+                 "fingerprint": statement.get("fingerprint"),
                  "text": statement.get("statement"), "first_seen_ms": now_ms, "last_seen_ms": now_ms,
                  "first_result_id": result_id, "first_novelty": statement["novelty"], "status": status,
                  "records": [record], "review": {"attempts": 0, "next_due_ms": None, "last_result_id": result_id}}

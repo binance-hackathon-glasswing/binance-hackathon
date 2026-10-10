@@ -155,7 +155,7 @@ class IdentityTests(unittest.TestCase):
                          "HISTORY_UNAVAILABLE")
         self.assertEqual(lifecycle.novelty(sig, [], checked=True, history_complete=True, **args)["label"],
                          "FIRST_SEEN")
-        priors = [{"id": f"p{i}", "signature": SIG(f"unrelated text number {i} about suppliers")} for i in range(20)]
+        priors = [{"id": f"p{i}", "fingerprint": SIG(f"unrelated text number {i} about suppliers")} for i in range(20)]
         bounded = lifecycle.novelty(sig, priors, checked=True, history_complete=True, max_comparisons=5)
         self.assertEqual((bounded["label"], bounded["compared"], bounded["truncated"]), ("HISTORY_UNAVAILABLE", 5, True))
 
