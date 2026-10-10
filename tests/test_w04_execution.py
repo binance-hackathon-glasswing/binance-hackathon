@@ -266,6 +266,9 @@ class ExecutionTests(unittest.TestCase):
         count = len(self.store.events())
         self.engine.reconcile(self.key, 300)
         self.assertEqual(len(self.store.events()), count)
+        self.engine.broadcast(self.key, 301)
+        self.assertEqual(self.store.load(self.key).attempts[-1].probes, 8)
+        self.assertEqual(self.venue.broadcasts, [])
         with self.assertRaises(Conflict):
             self.engine.create(intent(intent_id="economic-2", pay_token=TOKEN, receive_token=self.economic.pay_token), 300)
         self.assertEqual(self.store.load(self.key).status, "ACTIVE")
@@ -398,6 +401,71 @@ class ExecutionTests(unittest.TestCase):
         with self.assertRaises(Conflict):
             self.engine.broadcast(self.key, 12)
         self.assertEqual(self.venue.broadcasts, [])
+
+    def exhaust_unbroadcast_probes(self, state, start):
+        attempt = state.attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = Outcome(attempt.tx_hash, WALLET, attempt.payload.nonce, "UNKNOWN")
+        for index in range(self.economic.max_recovery_probes):
+            state = self.engine.reconcile(self.key, start + index * self.economic.probe_interval)
+        self.assertEqual(state.attempts[-1].state, "SIGNED_DURABLE")
+        self.assertEqual(state.attempts[-1].probes, self.economic.max_recovery_probes)
+        self.assertIsNone(state.attempts[-1].broadcast_at)
+        return state
+
+    def test_exhausted_prebroadcast_approval_budget_can_process_finality_after_restart(self):
+        state = self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.restart()
+        self.assertEqual(self.store.load(self.key).attempts[-1].probes, 8)
+        state = self.engine.broadcast(self.key, 33)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(state.attempts[-1].next_probe, 33)
+        self.assertEqual(self.venue.broadcasts, [state.attempts[-1].tx_hash])
+        self.restart()
+        attempt = self.store.load(self.key).attempts[-1]
+        self.assertEqual(attempt.probes, 0)
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        state = self.engine.reconcile(self.key, 34)
+        self.assertEqual(state.attempts[-1].state, "FINAL_SUCCESS")
+        self.assertEqual(state.attempts[-1].probes, 1)
+
+    def test_exhausted_prebroadcast_swap_budget_can_complete_after_restart(self):
+        self.final_approve()
+        self.engine.prepare(self.key, 13)
+        self.engine.authorize(self.key, 13)
+        state = self.engine.sign(self.key, 13)
+        self.exhaust_unbroadcast_probes(state, 14)
+        state = self.engine.broadcast(self.key, 36)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(len(self.venue.broadcasts), 2)
+        self.restart()
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.assertEqual(self.engine.reconcile(self.key, 37).status, "COMPLETED")
+
+    def test_first_broadcast_storage_failure_keeps_prebroadcast_counter(self):
+        state = self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.store.fail_next = True
+        with self.assertRaises(OSError):
+            self.engine.broadcast(self.key, 33)
+        self.assertEqual(self.store.load(self.key), state)
+        self.assertEqual(self.venue.broadcasts, [])
+        self.restart()
+        state = self.engine.broadcast(self.key, 34)
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.assertEqual(self.venue.broadcasts, [state.attempts[-1].tx_hash])
+
+    def test_lost_first_broadcast_response_retains_fresh_budget_after_restart(self):
+        self.exhaust_unbroadcast_probes(self.signed_approve(), 11)
+        self.venue.broadcast_fault = TimeoutError()
+        state = self.engine.broadcast(self.key, 33)
+        self.assertEqual(state.attempts[-1].state, "UNKNOWN")
+        self.assertEqual(state.attempts[-1].probes, 0)
+        self.restart()
+        self.engine.broadcast(self.key, 34)
+        self.assertEqual(self.venue.broadcasts, [])
+        attempt = self.store.load(self.key).attempts[-1]
+        self.venue.outcomes[attempt.tx_hash] = finalized(attempt)
+        self.assertEqual(self.engine.reconcile(self.key, 34).attempts[-1].state, "FINAL_SUCCESS")
 
     def test_missing_receipt_gas_retains_allowance_and_blocks_tight_parent_budget(self):
         self.economic = intent(gas_budget=150000)

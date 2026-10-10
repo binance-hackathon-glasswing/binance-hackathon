@@ -408,11 +408,17 @@ class Executor:
         attempt = state.attempts[-1]
         if attempt.state != "SIGNED_DURABLE":
             return state  # Possibly sent bytes are never blindly resubmitted.
+        if attempt.broadcast_at is not None:
+            raise Blocked("possible submission cannot obtain a fresh recovery budget")
         gates = self.guards.snapshot(state.intent, now)
         if (gates.epoch, gates.state_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
-        attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now, next_probe=now)
+        # Initialize post-submission recovery in the same durable transition as
+        # the first possible send. Earlier absence checks cannot consume it;
+        # retries/restarts of a possibly submitted attempt never reset it.
+        attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now,
+                          probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
         try:
             tx_hash = self.venue.broadcast(Signed(attempt.raw_hex, attempt.tx_hash), attempt.epoch, attempt.guard_version)
