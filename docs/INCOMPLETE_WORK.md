@@ -96,6 +96,8 @@ Review follow-up (2026-10-10): [IDEA-017](ledger/IDEA-017.md) reviews IDEA-012�
 
 - [ ] GAP-66 — Correct the research calculations in [IDEA-022 R1-R3](ledger/IDEA-022.md) before reusing their statistics: reset the simulated UTC daily-loss anchor before the midnight interval; preserve time adjacency through spread-estimator filtering; separate cross-session gap returns from measured category variance. Add deterministic regression fixtures and record any subsequent market-data/simulation rerun prospectively; retain historical results with dated corrections. Suggested owner Keith (simulation/analytics), reviewer Yao Zhu under IDEA-021 §8; availability remains GAP-37. IDEA-021 C07's terminal-gas drawdown omission remains separately tracked by GAP-65.
 
+2026-10-10 proposed solution path for GAP-26/44/50/62/64/65/66: [IDEA-023 S1–S3](ledger/IDEA-023.md) recommends explicit factual-risk predicates with separate predictive gates, corrected measurements and prospective cost-aware comparisons, and a thin integrated engine with early nonce/finality and durable-audit capability proof. Recommendations only; policy adoption, implementation, experiments and runtime acceptance remain outstanding. Ownership follows IDEA-021 §8, subject to GAP-37; no item is closed.
+
 ## Start now vs blocked (2026-10-05; re-checked 2026-10-08)
 
 Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Markets/Data/Risk: Isaac; Execution/Security: Keith; Platform/Audit: Keegan). They are suggestions, not assignments; owners are still GAP-37.
