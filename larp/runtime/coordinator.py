@@ -53,7 +53,10 @@ class Coordinator:
             assessment_result(assessment,request,now_ms)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
-        context=dict(projection=current.read()['projection'],reservations=current.read()['reservations'],
+        # Runtime history is journal data, not recursively embedded policy context.
+        portfolio={k:v for k,v in current.read()['projection'].items()
+                   if k not in ('round_records','closed_rounds','observations')}
+        context=dict(projection=portfolio,reservations=current.read()['reservations'],
                      request=request.read(),assessment=assessment.read() if assessment else None)
         snapshot=self.snapshot(current,now_ms,context)
         if assessment is not None:
@@ -82,11 +85,22 @@ class Coordinator:
         projection.setdefault('round_records',{})[round_id]=record
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
                        decision_id=i['decision_id'],expires_ms=i['expires_ms']) for i in plan['intents']]
+        reservation_deltas=plan['reservation_deltas']
+        try:
+            self.audit_record(record,round_id,now_ms,'PREFLIGHT')
+            # Leave space for later hashes/outcome metadata; this is a development
+            # serialization budget, not an adopted trading parameter.
+            if len(doc(record).payload)>4*1024*1024:
+                raise ContractError('Round exceeds pre-execution audit budget')
+        except ContractError:
+            record['errors'].append('AUDIT_CONTENT_UNSUPPORTED')
+            record['audit_fallback']=True
+            commands=[]; reservation_deltas=[]
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
         try:
             receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
                 projection=projection,policy_state=proposal.next_policy_state.record() if proposal else None,
-                reservation_deltas=plan['reservation_deltas'],jobs=plan['jobs'],commands=commands))
+                reservation_deltas=reservation_deltas,jobs=plan['jobs'],commands=commands))
         except Conflict:
             # Rejection is itself a durable outcome, never a silent lost round.
             current=self.store.load(self.run_id)
@@ -118,6 +132,26 @@ class Coordinator:
             projection=change['projection'],execution_state=transition['next_state'],
             reservation_deltas=change.get('reservation_deltas',[]),commands=transition.get('commands',[])))
 
+    def audit_record(self,record,round_id,now_ms,status):
+        assessment=record['assessment']
+        rationale=(assessment['rationale'] if assessment else
+                   'Deterministic runtime record: assessment unavailable; no model reasoning is claimed.')
+        decisions=sorted({m['decision_id'] for m in record['swap_mappings']} |
+                         {i['decision_id'] for i in record['plan'].get('intents',[])})
+        inputs=dict(version_id=self.version_id,round_id=round_id,request=record['request'],
+                    assessment=assessment,policy_input=record.get('policy_input'),policy_state=record.get('policy_state'))
+        output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
+                    policy_output=record.get('policy_output'))
+        if record.get('audit_fallback'):
+            inputs=dict(version_id=self.version_id,round_id=round_id,
+                        local_record_hash=doc(record).digest('larp.round.v1'),
+                        omitted_content='Original complete I/O retained in the durable ROUND_PLANNED record; serialization budget exceeded.')
+            output=dict(status='AUDIT_CONTENT_UNSUPPORTED',errors=record['errors'],trading_blocked=True)
+            rationale='Deterministic serialization failure; original reasoning retained locally, not fabricated or truncated.'
+        return build_event(event_id='round:'+round_id,round_id=round_id,version_id=self.version_id,
+            decision_ids=decisions,address=self.address,timestamp_ms=now_ms,input_record=inputs,rationale=rationale,
+            output=output,orders=record['orders'],swap_mappings=record['swap_mappings'])
+
     def close(self,round_id,now_ms,status):
         previous=self.store.receipt(self.run_id,'close:'+round_id)
         if previous:
@@ -128,19 +162,7 @@ class Coordinator:
             request=dict(self.store.open_rounds(self.run_id))[round_id].read()
             record=dict(request=request,assessment=None,proposal_id=None,plan={},errors=['PROCESS_INTERRUPTED'],
                         started_ms=now_ms,orders=[],swap_mappings=[])
-        assessment=record['assessment']
-        rationale=(assessment['rationale'] if assessment else
-                   'Deterministic runtime record: assessment unavailable; no model reasoning is claimed.')
-        decisions=sorted({m['decision_id'] for m in record['swap_mappings']} |
-                         {i['decision_id'] for i in record['plan'].get('intents',[])})
-        audit=build_event(event_id='round:'+round_id,round_id=round_id,version_id=self.version_id,
-            decision_ids=decisions,address=self.address,timestamp_ms=now_ms,
-            input_record=dict(version_id=self.version_id,round_id=round_id,request=record['request'],
-                              assessment=assessment,policy_input=record.get('policy_input'),
-                              policy_state=record.get('policy_state')),rationale=rationale,
-            output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
-                        policy_output=record.get('policy_output')),
-            orders=record['orders'],swap_mappings=record['swap_mappings'])
+        audit=self.audit_record(record,round_id,now_ms,status)
         projection=current.read()['projection']
         projection.setdefault('closed_rounds',[]).append(round_id)
         return self.store.commit(batch_for(current,'close:'+round_id,dict(kind='ROUND_CLOSED',status=status),

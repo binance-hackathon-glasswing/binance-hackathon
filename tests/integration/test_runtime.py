@@ -99,3 +99,14 @@ class IntegratedRuntime(DatabaseCase):
         self.assertEqual(0,self.store.metrics('run').read()['open_rounds'])
         self.assertEqual(1,self.store.metrics('run').read()['audit_pending'])
         self.assertEqual(100,self.store.load('run').read()['projection']['balances']['USDT'])
+
+    def test_oversized_audit_blocks_commands_but_keeps_truthful_local_record(self):
+        large=request('BUY').read(); large['synthetic_large_input']='x'*(2200000)
+        coordinator=self.coordinator()
+        coordinator.start('oversize',doc(large),1791590400000)
+        current=self.store.load('run').read()
+        self.assertEqual([],current['reservations'])
+        self.assertIn('AUDIT_CONTENT_UNSUPPORTED',current['projection']['round_records']['oversize']['errors'])
+        with self.store.transaction() as db:
+            self.assertEqual(0,db.execute('SELECT count(*) FROM commands').fetchone()[0])
+            self.assertEqual(1,db.execute('SELECT count(*) FROM audit_events').fetchone()[0])
