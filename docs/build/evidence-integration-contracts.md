@@ -19,6 +19,8 @@ Applies to branch `codex/evidence-hardening`. Record: [IDEA-031](../ledger/IDEA-
 
 ## Semantic rules (summary)
 
+PR #7 review corrections ([IDEA-032](../ledger/IDEA-032.md)): BUY audit `amount` is exact USDT pay amount using the planner's money scale, while SELL `amount` is token quantity using token decimals. AssessmentResult.v2 must carry nonnegative integer clocks with `cutoff_ms ≤ started_ms ≤ completed_ms ≤ consumption time`; runtime additionally requires the exact request cutoff. Source page budgets apply per poll: unprocessed continuations persist across restart, incomplete coverage stays visible, and abandoning a failed continuation forces a full rescan without conditional validators.
+
 - Findings come only from OCCURRED ∧ actor ISSUER ∧ temporal CURRENT, re-verified from source text before use, even when the model abstains. Everything else non-negated is a statement and is never a finding.
 - Actor: trigger complement ("at one of our suppliers"), passive by-agent, object of a verb trigger, then the mention nearest before the predicate; issuer words inside prepositional phrases are not subjects; named companies (corporate suffix or capitalised possessive) are third parties.
 - Scope: negation, modality and years are read in the conjunct holding the trigger, excluding non-restrictive relative clauses and leading concessive clauses. Quoted speech is read with its speaker.

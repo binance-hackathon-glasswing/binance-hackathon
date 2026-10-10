@@ -90,7 +90,7 @@
     "intents": [
      {
       "amount": "0.2",
-      "decision_id": "decision:5d4dc879532e46db80bd5350245650d1098499e6c96d9d0c326a1e169dcc0fbc",
+      "decision_id": "decision:9abae66d4edcabf28feba8dc51845c1f9b73fc7c389214703aed67c7791eb5bb",
       "mandatory": true,
       "side": "SELL",
       "symbol": "NVDAB",
@@ -107,19 +107,19 @@
        "EVIDENCE_FALSIFIER_MANDATORY:F-ITEM-4.02"
       ],
       "remaining_sell_units": 2000,
-      "status": "PENDING",
+      "status": "AWAITING_SETTLEMENT",
       "symbol": "NVDAB"
      }
     ],
     "reservation_deltas": [
      {
       "asset": "NVDAB",
-      "intent_id": "c3dd62b82435ed309c5251bf569b59014f7d518baefe02e607a147ced8e2843b",
+      "intent_id": "759a7d46260f3d9bd94e627e3ebb8c148dfa1b3b522bfbceca02ba87cc87bf6c",
       "units": 2000
      },
      {
       "asset": "BNB",
-      "intent_id": "c3dd62b82435ed309c5251bf569b59014f7d518baefe02e607a147ced8e2843b",
+      "intent_id": "759a7d46260f3d9bd94e627e3ebb8c148dfa1b3b522bfbceca02ba87cc87bf6c",
       "units": 10000
      }
     ]

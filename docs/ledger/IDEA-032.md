@@ -1,7 +1,7 @@
 # IDEA-032 — PR #7 integration review and fixes
 
 - Date / author: 2026-10-10 / Keith request, Codex implementation.
-- Status: review and implementation in progress; verification NOT RUN.
+- Status: review complete; fixes implemented and pushed on PR #7; synthetic PostgreSQL and Linux acceptance passed. No live adoption; PR remains unmerged.
 - Scope: PR #7 (`codex/evidence-hardening`), IDEA-031, GAP-65/67. No policy adoption, deployment, live data, signing, trading or organiser log upload.
 
 ## R01 — Missing owner fixes
@@ -18,7 +18,7 @@ Yao Zhu / independent annotator: real-document semantics and model-value evaluat
 
 ## Verification history
 
-NOT RUN. Append results after executing pushed revisions.
+Initial preregistration status was NOT RUN; dated results follow.
 
 ## Additional review findings and prospective regressions
 
@@ -33,3 +33,5 @@ All regressions use fake sources/model/market only. First run targets the pushed
 - V03: pushed fixes `b5c4bd6`, full PostgreSQL run: 499 passed, 4 failed, 3 skipped, 728 subtests passed. Three pre-existing integration quote fixtures lacked the newly merged exact-input fields and correctly produced no commands; update their fake RFQ records and the demo to the owner's current contract without relaxing the planner. One pagination control omitted the terminal empty page that was previously hidden by the bug; add it and require retrieval. Initial sandboxed database run failed because loopback TCP was denied; rerun with approved local-service access produced the result above.
 - R05 (P2): GitHub runtime CI at `b5c4bd6` also failed the simulator regression because its isolated dependency profile omitted numpy (local project environment already had it). Add the existing project pin `numpy==2.5.3` to the test-only lock; no runtime dependency expansion. CI run `38059970634`: 5 failed, 501 passed, 728 subtests passed; both Terraform jobs passed. Verification requires the next CI runtime job to pass, including Linux isolation.
 - V04: pushed revision `4c63282` against disposable PostgreSQL 14.24: **503 passed, 3 skipped, 728 subtests passed** on Python 3.12.14. Three skips are Linux bubblewrap tests on macOS; all PostgreSQL and both red-team files ran. Follow-up to R03: a continuation abandoned after three source failures must restart without page-one validators; otherwise a 304 still hides its missing tail. Add a deterministic retry-exhaustion regression, suppress conditional requests for incomplete cycles, and reset validators on abandonment. Commit/push before executing this extension.
+- V05: GitHub Actions run `38060193054`, pushed `4c63282`, Linux/Python 3.12.15: **506 passed, 728 subtests passed, no skips**; all three workflow jobs passed (runtime, AWS Terraform, bootstrap Terraform), dependency checks and runtime Docker build/offline smoke passed. After pushed `9aba1a4`, the extended source suite and source red-team probes passed **25/25**. Refreshed the synthetic integration demo from that pushed revision: `docs/build/evidence/evidence-integration-demo.json`, SHA-256 `3733ac372e1134572d508346ded414239bc4a016fb8c116b744b769496f43fa1`; exact-input intent identifiers and AWAITING_SETTLEMENT replace the older quote vocabulary. No source/model/network/financial experiment ran.
+- V06: final code revision `9aba1a4`, GitHub Actions run `38060329563`: **507 passed, 728 subtests passed, no skips** on Linux/Python 3.12.15 with disposable PostgreSQL, both red-team files and all three bubblewrap checks. Runtime, both Terraform jobs, dependency checks and Docker offline build/smoke all passed. No changes to deployment, live authority, live configuration or economic thresholds. The final documentation commit refreshes the demo and links remaining owners/backlog; no code change follows this acceptance run. Main still matches origin/main; review branch commits are pushed without rewriting history.
