@@ -26,7 +26,8 @@ SCHEMA = "EvidenceContext.v1"
 FALSIFIER_AUTHORITIES = ("NONE", "SHADOW", "DISCRETIONARY_EXIT", "MANDATORY_REDUCTION")
 STATEMENT_AUTHORITIES = ("SHADOW", "ENTRY_BLOCK")
 LEGACY_EVIDENCE_MODE = {"SHADOW": "SHADOW", "BOUNDED_FALSIFIER": "DISCRETIONARY_EXIT"}
-REJECTIONS = ("UNSUPPORTED_SCHEMA", "MALFORMED", "WRONG_RUN", "PROFILE_MISMATCH", "UNKNOWN_TOKEN", "WRONG_ISSUER",
+STATUSES = ("CLEAR", "UNKNOWN", "ADVERSE", "STALE")
+REJECTIONS = ("UNSUPPORTED_SCHEMA", "MALFORMED", "INCONSISTENT", "WRONG_RUN", "PROFILE_MISMATCH", "UNKNOWN_TOKEN", "WRONG_ISSUER",
               "HASH_MISMATCH", "FUTURE_CONTEXT", "EXPIRED_CONTEXT", "STALE_EVIDENCE_VERSION", "DUPLICATE_CONTEXT",
               "MISSING")
 DEFAULT_MAX_AGE_MS = 3_600_000
@@ -44,8 +45,10 @@ def authority(profile: dict) -> dict:
     if profile.get("evidence_mode") == "BOUNDED_FALSIFIER" and falsifier not in ("DISCRETIONARY_EXIT",
                                                                                 "MANDATORY_REDUCTION"):
         raise AuthorityError("evidence_mode BOUNDED_FALSIFIER cannot be weakened silently by falsifier_authority")
-    return {"falsifier": falsifier, "statement": statement,
-            "max_context_age_ms": profile.get("evidence_max_age_ms", DEFAULT_MAX_AGE_MS)}
+    age = profile.get("evidence_max_age_ms", DEFAULT_MAX_AGE_MS)
+    if type(age) is not int or age <= 0:
+        raise AuthorityError("evidence_max_age_ms must be a positive integer")
+    return {"falsifier": falsifier, "statement": statement, "max_context_age_ms": age}
 
 
 def context_hash(record: dict) -> str:
@@ -93,6 +96,56 @@ def _ms(snapshot) -> int:
     return int(snapshot.observed_at.timestamp() * 1000)
 
 
+def _finding_ok(f) -> bool:
+    return (type(f) is dict and type(f.get("predicate_id")) is str and f.get("supported") is True
+            and f.get("verifier_accepted") is True and type(f.get("supporting_spans")) is list
+            and bool(f["supporting_spans"]))
+
+
+def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None, max_age_ms=None,
+            universe=None) -> str | None:
+    """The first reason `record` is unusable, or None. Intrinsic checks (schema, field types, hash, internal
+    consistency) always run; identity and time checks run for whichever context arguments are given. The strategy
+    and the planner-constraint builder use this same function, so a record the strategy rejects can never become
+    a mandatory reduction (IDEA-031 red team S4-B c02/c03)."""
+    if type(record) is not dict:
+        return "MALFORMED"
+    if record.get("schema") != SCHEMA:
+        return "UNSUPPORTED_SCHEMA"
+    if (record.get("status") not in STATUSES or type(record.get("state_version")) is not int
+            or record["state_version"] < 0 or type(record.get("as_of_ms")) is not int
+            or type(record.get("falsifier_findings")) is not list
+            or type(record.get("statements_pending")) is not list or type(record.get("token")) is not str
+            or record.get("assessed_until_ms") is not None and type(record["assessed_until_ms"]) is not int):
+        return "MALFORMED"
+    try:
+        if record.get("context_hash") != context_hash(record):
+            return "HASH_MISMATCH"
+    except (TypeError, ValueError):
+        return "MALFORMED"
+    if any(not _finding_ok(f) for f in record["falsifier_findings"]):
+        return "MALFORMED"
+    if record["status"] == "CLEAR" and (record["falsifier_findings"] or record["statements_pending"]):
+        return "INCONSISTENT"
+    if run_id is not None and record.get("run_id") != run_id:
+        return "WRONG_RUN"
+    if profile_hash is not None and record.get("policy_profile_hash") != profile_hash:
+        return "PROFILE_MISMATCH"
+    if markets is not None:
+        market = markets.get(record["token"])
+        if (universe is not None and record["token"] not in universe) or market is None:
+            return "UNKNOWN_TOKEN"
+        if record.get("issuer_id") != market.get("underlying_id") or \
+                record.get("underlying_id") != market.get("underlying_id"):
+            return "WRONG_ISSUER"
+    if now_ms is not None:
+        if record["as_of_ms"] > now_ms:
+            return "FUTURE_CONTEXT"
+        if max_age_ms is not None and now_ms - record["as_of_ms"] > max_age_ms:
+            return "EXPIRED_CONTEXT"
+    return None
+
+
 def accept_for_strategy(records: list, snapshot, markets: dict, known_versions: dict, profile: dict) -> tuple:
     """Validate EvidenceContext.v1 records for the strategy. Returns ({symbol: view}, [typed rejections]).
 
@@ -102,49 +155,23 @@ def accept_for_strategy(records: list, snapshot, markets: dict, known_versions: 
     """
     now, limits = _ms(snapshot), authority(profile)
     accepted, rejections = {}, []
-
-    def reject(reason, record, symbol=None):
-        rejections.append({"reason": reason, "symbol": symbol,
-                           "schema": record.get("schema") if type(record) is dict else None})
-
     for record in records:
-        if type(record) is not dict:
-            reject("MALFORMED", {})
+        symbol = record.get("token") if type(record) is dict else None
+        reason = problem(record, run_id=snapshot.run_id, profile_hash=snapshot.policy_profile_hash, markets=markets,
+                         now_ms=now, max_age_ms=limits["max_context_age_ms"], universe=snapshot.universe)
+        if reason is None and record["state_version"] < known_versions.get(symbol, -1):
+            reason = "STALE_EVIDENCE_VERSION"
+        if reason is None and symbol in accepted:
+            reason = "DUPLICATE_CONTEXT"
+        if reason is not None:
+            rejections.append({"reason": reason, "symbol": symbol if type(symbol) is str else None,
+                               "schema": record.get("schema") if type(record) is dict else None})
             continue
-        symbol = record.get("token")
-        if record.get("schema") != SCHEMA:
-            reject("UNSUPPORTED_SCHEMA", record, symbol)
-            continue
-        try:
-            if record.get("context_hash") != context_hash(record):
-                reject("HASH_MISMATCH", record, symbol)
-                continue
-        except (TypeError, ValueError):
-            reject("MALFORMED", record, symbol)
-            continue
-        if record.get("run_id") != snapshot.run_id:
-            reject("WRONG_RUN", record, symbol)
-        elif record.get("policy_profile_hash") != snapshot.policy_profile_hash:
-            reject("PROFILE_MISMATCH", record, symbol)
-        elif symbol not in snapshot.universe or markets.get(symbol) is None:
-            reject("UNKNOWN_TOKEN", record, symbol)
-        elif record.get("issuer_id") != markets[symbol].get("underlying_id") or \
-                record.get("underlying_id") != markets[symbol].get("underlying_id"):
-            reject("WRONG_ISSUER", record, symbol)
-        elif type(record.get("as_of_ms")) is not int or record["as_of_ms"] > now:
-            reject("FUTURE_CONTEXT", record, symbol)
-        elif now - record["as_of_ms"] > limits["max_context_age_ms"]:
-            reject("EXPIRED_CONTEXT", record, symbol)
-        elif record.get("state_version", -1) < known_versions.get(symbol, -1):
-            reject("STALE_EVIDENCE_VERSION", record, symbol)
-        elif symbol in accepted:
-            reject("DUPLICATE_CONTEXT", record, symbol)
-        else:
-            # An as-of CLEAR whose validity ended between production and use is read as STALE here too.
-            status = record["status"]
-            if status == "CLEAR" and (record["assessed_until_ms"] is None or now >= record["assessed_until_ms"]):
-                status = "STALE"
-            accepted[symbol] = dict(record, status=status, review_complete=status == "CLEAR")
+        # An as-of CLEAR whose validity ended between production and use is read as STALE here too.
+        status = record["status"]
+        if status == "CLEAR" and (record["assessed_until_ms"] is None or now >= record["assessed_until_ms"]):
+            status = "STALE"
+        accepted[symbol] = dict(record, status=status, review_complete=status == "CLEAR")
     if profile.get("assessment_required"):
         for symbol in snapshot.universe:
             if markets.get(symbol) is not None and symbol not in accepted:
@@ -152,19 +179,22 @@ def accept_for_strategy(records: list, snapshot, markets: dict, known_versions: 
     return accepted, rejections
 
 
-def mandatory_reductions(records: list, profile: dict, held: dict) -> list:
+def mandatory_reductions(records: list, profile: dict, held: dict, **context) -> list:
     """Planner reduction constraints for verified falsifier findings, only under MANDATORY_REDUCTION authority.
 
-    These are requests to the independent planner, which still enforces affordability, market, integrity,
-    ownership, clock and signing gates. Not every policy EXIT is mandatory: only these listed predicates.
+    Only records that pass `problem` (intrinsic checks always; identity/time checks for the `context` given:
+    run_id, profile_hash, markets, now_ms, max_age_ms, universe) can create a constraint. These are requests to the
+    independent planner, which still enforces affordability, market, integrity, ownership, clock and signing
+    gates. Not every policy EXIT is mandatory: only these listed predicates.
     """
     if authority(profile)["falsifier"] != "MANDATORY_REDUCTION":
         return []
     out = []
     for record in records:
-        hits = sorted({f["predicate_id"] for f in record.get("falsifier_findings", [])
-                       if f["predicate_id"] in profile.get("falsifier_ids", []) and f["supported"]
-                       and f["verifier_accepted"] and f["supporting_spans"]})
+        if problem(record, **context) is not None:
+            continue
+        hits = sorted({f["predicate_id"] for f in record["falsifier_findings"]
+                       if f["predicate_id"] in profile.get("falsifier_ids", [])})
         if hits and held.get(record["token"], 0) > 0:
             out.append({"symbol": record["token"], "max_units": 0,
                         "reason": "EVIDENCE_FALSIFIER_MANDATORY:" + ",".join(hits)})

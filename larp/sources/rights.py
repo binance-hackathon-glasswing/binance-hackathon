@@ -12,9 +12,9 @@ MEDIA = re.compile(r"<(?:img|figure|video|audio|iframe|object|embed|picture|svg)
                    r"iframe|object|picture|svg)>|>)", re.I | re.S)
 ATTACHMENT = re.compile(r"<a\b[^>]*href=[\"'][^\"']+\.(?:pdf|docx?|xlsx?|pptx?|zip|jpe?g|png|gif)(?:\?[^\"']*)?[\"'][^>]*>"
                         r".*?</a>", re.I | re.S)
-NOTICE = re.compile(r"©|\(c\)\s*\d{4}|\bcopyright\s+(?:©\s*)?\d{4}|\ball\s+rights\s+reserved\b|"
-                    r"\breprinted\s+with\s+permission\b|\bused\s+with\s+permission\b|\bcourtesy\s+of\b|"
-                    r"\bphoto(?:graph)?\s*(?:credit)?\s*:", re.I)
+NOTICE = re.compile(r"\u00a9|\(c\)\s*\d{4}|(?i:\bcopyright\s+(?:\u00a9\s*)?\d{4})|\b[Cc]opyright\s+[A-Z][\w&.-]+|"
+                    r"(?i:\ball\s+rights\s+reserved\b|\breprinted\s+with\s+permission\b|\bused\s+(?:with\s+permission|"
+                    r"under\s+licen[cs]e)\b|\blicensed\s+from\b|\bcourtesy\s+of\b|\bphoto(?:graph)?\s*(?:credit)?\s*:)")
 NOT_COVERED = re.compile(r"\bnot\s+(?:covered|licensed)\s+(?:by|under)\b|\bmay\s+not\s+be\s+reproduced\b|"
                          r"\bunless\s+otherwise\s+(?:indicated|noted)\b.{0,80}\bthird[\s-]part", re.I | re.S)
 PARAGRAPH = re.compile(r"(<p\b[^>]*>.*?</p>|<li\b[^>]*>.*?</li>|<blockquote\b[^>]*>.*?</blockquote>)", re.I | re.S)

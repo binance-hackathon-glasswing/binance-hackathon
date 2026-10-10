@@ -46,7 +46,9 @@ def admissible(manifest: dict, criteria: dict) -> list:
     if manifest.get("synthetic") is not False:
         reasons.append("SYNTHETIC_NOT_ADMISSIBLE")
     labels = manifest.get("labels") or {}
-    annotators, implementers = set(labels.get("annotators") or []), set(labels.get("implementers") or [])
+    identity = lambda x: " ".join(str(x).split()).casefold()  # "Impl-1 " is "impl-1" (S4-B e08)
+    annotators = {identity(a) for a in labels.get("annotators") or []}
+    implementers = {identity(i) for i in labels.get("implementers") or []}
     a = criteria["admissibility"]
     if len(annotators) < a["min_annotators"]:
         reasons.append("TOO_FEW_ANNOTATORS")
@@ -55,6 +57,10 @@ def admissible(manifest: dict, criteria: dict) -> list:
     if len(labels.get("frozen_commit") or "") != 40 or not labels.get("frozen_before_predictions"):
         reasons.append("LABELS_NOT_FROZEN_BEFORE_PREDICTIONS")
     docs = manifest.get("documents") or []
+    for key in ("doc_id", "sha256"):  # the same document in two splits leaks held-out labels (S4-B e07)
+        values = [d.get(key) for d in docs]
+        if len(values) != len(set(values)):
+            reasons.append("DOCUMENT_IN_MORE_THAN_ONE_SPLIT")
     if sum(1 for d in docs if d.get("split") == "HELD_OUT") < a["min_held_out_documents"]:
         reasons.append("TOO_FEW_HELD_OUT_DOCUMENTS")
     for d in docs:

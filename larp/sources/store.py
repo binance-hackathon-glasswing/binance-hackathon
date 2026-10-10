@@ -32,6 +32,12 @@ class SQLiteSourceStore:
         row = self.db.execute("SELECT doc FROM cursors WHERE source_id=?", (source_id,)).fetchone()
         return None if row is None else Document(bytes(row[0])).read()
 
+    def latest(self, source_id: str, item_id: str) -> dict | None:
+        """Durable item index: the newest stored version of an item, independent of the bounded cursor cache."""
+        row = self.db.execute("SELECT doc FROM records WHERE source_id=? AND item_id=? ORDER BY version DESC LIMIT 1",
+                              (source_id, item_id)).fetchone()
+        return None if row is None else Document(bytes(row[0])).read()
+
     def records(self, source_id: str | None = None) -> list:
         query = "SELECT doc FROM records" + (" WHERE source_id=?" if source_id else "") + " ORDER BY rowid"
         return [Document(bytes(r[0])).read() for r in self.db.execute(query, (source_id,) if source_id else ())]

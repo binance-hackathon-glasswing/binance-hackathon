@@ -45,16 +45,29 @@ def when(value) -> tuple:
     try:
         parsed = parsedate_to_datetime(text)
         if parsed.tzinfo is None:
-            raise ValueError("naive")
+            if not text.rstrip().endswith("-0000"):
+                raise ValueError("naive")
+            parsed = parsed.replace(tzinfo=timezone.utc)  # RFC 5322 "-0000": UTC, local zone unknown
         return int(parsed.timestamp() * 1000), "SECOND"
     except (TypeError, ValueError, IndexError):
         raise SourceError("UNPARSEABLE_TIMESTAMP") from None
 
 
+def safe_when(value) -> tuple:
+    """`when`, but an unparseable value is (None, "UNPARSEABLE") so one bad item cannot block a page (S4-B d04)."""
+    try:
+        return when(value)
+    except SourceError:
+        return None, "UNPARSEABLE"
+
+
 def _event_times(record: dict, names: tuple) -> dict:
     out = {}
     for name in names:
-        ms, precision = when(record.get(name))
+        ms, precision = safe_when(record.get(name))
+        if precision == "UNPARSEABLE":
+            out[name] = {"raw": record.get(name), "ms": None, "precision": "UNPARSEABLE"}
+            continue
         if ms is not None:
             out[name] = {"raw": record.get(name), "ms": ms, "precision": precision}
     return out
@@ -78,7 +91,7 @@ def rss(body: bytes, limit: int) -> tuple:
             break
         get = lambda tag: (node.findtext(tag) or "").strip() or None
         link, guid = get("link"), get("guid")
-        ms, precision = when(get("pubDate"))
+        ms, precision = safe_when(get("pubDate"))
         items.append({"item_id": guid or link, "url": link, "title": get("title"), "body_html": get("description"),
                       "published_raw": get("pubDate"), "published_ms": ms, "published_precision": precision,
                       "event_times": {}, "changed_raw": None, "withdrawn": False, "doc_type": "PRESS_RELEASE"})
@@ -99,13 +112,13 @@ def fr_documents(body: bytes, limit: int) -> tuple:
     data = _json(body)
     items = []
     for r in (data.get("results") or [])[:limit]:
-        ms, precision = when(r.get("publication_date"))
+        ms, precision = safe_when(r.get("publication_date"))
         action = r.get("action") or ""
         items.append({"item_id": r.get("document_number"), "url": r.get("html_url"), "title": r.get("title"),
                       "body_html": "\n".join(x for x in (r.get("action"), r.get("abstract")) if x) or None,
                       "published_raw": r.get("publication_date"), "published_ms": ms, "published_precision": precision,
                       "event_times": _event_times(r, ("effective_on", "comments_close_on", "signing_date")),
-                      "changed_raw": None, "withdrawn": "withdraw" in action.lower(),
+                      "changed_raw": None, "announces_withdrawal": "withdraw" in action.lower(), "withdrawn": False,
                       "doc_type": (r.get("type") or "UNKNOWN").upper().replace(" ", "_")})
     return [i for i in items if i["item_id"]], data.get("next_page_url")
 
@@ -114,7 +127,7 @@ def fr_public_inspection(body: bytes, limit: int) -> tuple:
     data = _json(body)
     items = []
     for r in (data.get("results") or [])[:limit]:
-        filed_ms, filed_precision = when(r.get("filed_at"))
+        filed_ms, filed_precision = safe_when(r.get("filed_at"))
         items.append({"item_id": r.get("document_number"), "url": r.get("html_url") or r.get("pdf_url"),
                       "title": r.get("title"), "body_html": None,
                       "published_raw": r.get("filed_at"), "published_ms": filed_ms,
@@ -133,12 +146,12 @@ def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
         text = r.get("body")
         if type(text) is dict:
             text = text.get("value")
-        ms, _ = when(r.get("date"))
+        ms, unparsed = safe_when(r.get("date"))
         # DOJ `date` is the release's listed date, delivered as epoch seconds at a fixed hour (observed 12:00 UTC on
         # 2026-10-10), so it is kept at DAY precision; `created`/`changed` carry second-precision times.
         items.append({"item_id": r.get("uuid"), "url": r.get("url"), "title": r.get("title"), "body_html": text,
                       "published_raw": r.get("date"), "published_ms": None if ms is None else ms - ms % 86_400_000,
-                      "published_precision": "DAY" if ms is not None else "NONE",
+                      "published_precision": "DAY" if ms is not None else unparsed,
                       "event_times": _event_times(r, ("created", "changed")), "changed_raw": r.get("changed"),
                       "withdrawn": False, "doc_type": "PRESS_RELEASE",
                       "excluded_fields": sorted(k for k in ("attachment", "image") if r.get(k))})

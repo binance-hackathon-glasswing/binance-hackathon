@@ -25,12 +25,15 @@ from datetime import datetime
 from larp.contracts import Document, PolicyState
 from larp.intelligence.common import digest
 from larp.intelligence.gate import accept, consume, initial_state
-from larp.integration.contract import build_evidence_context, mandatory_reductions
+from larp.integration.contract import authority, build_evidence_context, mandatory_reductions
 from larp.risk.planner import plan as risk_plan
 from larp.strategy.policy import decide
 
 ADAPTER = "RuntimePlan.v1"
 SETTLED = ("USDT", "BNB")
+# A pending BUY reserves settled USDT/BNB and records the incoming token as a claim, not a settled resource, so a
+# restart can rebuild the pending exposure from the store alone (IDEA-031 red team S4-B r01).
+INCOMING = "INCOMING:"
 
 
 def iso_ms(value: str) -> int:
@@ -57,7 +60,8 @@ def ledger_from(projection: dict, reservations: list) -> dict:
     balances = projection["balances"]
     expected = {"USDT": ledger["cash_units"], "BNB": ledger["bnb_units"],
                 **{s: p["units"] for s, p in ledger["positions"].items()}}
-    if {k: balances.get(k, 0) for k in expected} != expected:
+    unledgered = {k: v for k, v in balances.items() if k not in expected and v}
+    if {k: balances.get(k, 0) for k in expected} != expected or unledgered:
         raise ValueError("Projection balances disagree with the portfolio ledger")
     if projection.get("risk_state") is not None:
         ledger["risk"] = projection["risk_state"]
@@ -70,14 +74,17 @@ def ledger_from(projection: dict, reservations: list) -> dict:
             entry["side"] = "BUY"
         elif row["asset"] == "BNB":
             entry["bnb_units"] += row["units"]
+        elif row["asset"].startswith(INCOMING):
+            entry["token_units"] += row["units"]
+            entry["symbol"], entry["side"] = row["asset"][len(INCOMING):], "BUY"
         else:
             entry["token_units"] += row["units"]
             entry["symbol"], entry["side"] = row["asset"], "SELL"
     for intent_id, entry in grouped.items():
         if entry["side"] is None:
             entry["side"] = "GAS_ONLY"
-        if entry["symbol"] is None:
-            entry["symbol"] = projection.get("intent_symbols", {}).get(intent_id)
+        if entry["symbol"] is None and entry["side"] == "BUY":
+            raise ValueError(f"Pending BUY {intent_id} has no recorded incoming token")
     ledger["reservations"] = grouped
     return ledger
 
@@ -108,8 +115,11 @@ class ContextBuilder:
             else:
                 state = evidence.get(issuer) or initial_state(issuer, self.profile_hash,
                                                               lifecycle_policy=self.lifecycle_policy)
-                decision, state = accept(state, Document.from_dict(assessment), profile_hash=self.profile_hash,
-                                         now_ms=now_ms)
+                try:
+                    decision, state = accept(state, Document.from_dict(assessment), profile_hash=self.profile_hash,
+                                             now_ms=now_ms)
+                except Exception as exc:  # one bad result never drops other issuers' evidence this round
+                    decision = "REJECT_MALFORMED:" + type(exc).__name__
                 evidence[issuer] = state
                 decisions.append({"issuer_id": issuer, "result_id": assessment.get("result_id"),
                                   "decision": decision})
@@ -124,12 +134,17 @@ class ContextBuilder:
         ledger = ledger_from(projection, current["reservations"])
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
+        markets = self.market(now_ms)
+        # Reductions only from records that pass the strategy's own identity/hash/time validation (S4-B c03).
+        reductions = mandatory_reductions(contexts, self.profile, held, run_id=self.run_id,
+                                          profile_hash=self.profile_hash, markets={m["symbol"]: m for m in markets},
+                                          now_ms=now_ms, max_age_ms=authority(self.profile)["max_context_age_ms"])
         context = {
             "schema": "StrategyContext.v1", "origin": "INTEGRATION_V1", "profile": self.profile, "portfolio": ledger,
-            "markets": self.market(now_ms), "series": self.series(now_ms) if self.series else {},
+            "markets": markets, "series": self.series(now_ms) if self.series else {},
             "session_index": session["index"], "remaining_sessions": session["remaining"],
             "last_discretionary_session": projection.get("last_discretionary_session"),
-            "assessments": contexts, "reduction_constraints": mandatory_reductions(contexts, self.profile, held),
+            "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
         return context, {"evidence": evidence, "evidence_decisions": decisions}
@@ -158,6 +173,8 @@ class RuntimePlanner:
         for delta in raw["reservation_deltas"]:
             if delta["side"] == "BUY":
                 deltas.append({"intent_id": delta["intent_id"], "asset": "USDT", "units": delta["cash_units"]})
+                deltas.append({"intent_id": delta["intent_id"], "asset": INCOMING + delta["symbol"],
+                               "units": delta["token_units"]})
             else:
                 deltas.append({"intent_id": delta["intent_id"], "asset": delta["symbol"],
                                "units": delta["token_units"]})

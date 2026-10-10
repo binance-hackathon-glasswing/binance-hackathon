@@ -24,7 +24,9 @@ from larp.intelligence.tools import suspicious_instructions
 from larp.sources.parse import parse
 from larp.sources.rights import filter_item
 from larp.sources.store import canonical
-from larp.sources.transport import SourceError
+from larp.sources.transport import SourceError, allowed
+
+MAX_RESUME_FAILURES = 3  # a continuation that keeps failing is abandoned and the listing restarts at page 1
 
 DAY_MS = 86_400_000
 # A date-only publication time could mean any instant of that day in the publisher's zone; for historical replay
@@ -34,7 +36,7 @@ DATE_ONLY_REPLAY_BOUND_MS = DAY_MS + 12 * 3_600_000
 
 def initial_cursor(source_id: str) -> dict:
     return {"schema": "SourceCursor.v1", "source_id": source_id, "version": 0, "seen": {}, "rejected": {},
-            "in_progress": None, "etag": None, "last_modified": None, "watermark_ms": None,
+            "in_progress": None, "etag": None, "last_modified": None, "watermark_ms": None, "last_truncated": False,
             "health": {"status": "NEVER_POLLED", "last_success_ms": None, "last_attempt_ms": None,
                        "consecutive_failures": 0, "last_error": None}}
 
@@ -53,7 +55,11 @@ class SourceIngestor:
         cursor = stored or initial_cursor(source_id)
         expected = cursor["version"] if stored else -1
         outcome = {"source_id": source_id, "status": "OK", "pages": 0, "new": [], "versions": [], "withdrawn": [],
-                   "duplicates": 0, "rejected": [], "resumed": cursor["in_progress"] is not None}
+                   "duplicates": 0, "rejected": [], "resumed": cursor["in_progress"] is not None, "truncated": False}
+        progress = cursor["in_progress"] or {}
+        if progress and (progress.get("failures", 0) >= MAX_RESUME_FAILURES or not allowed(source, progress["next_url"])):
+            outcome["abandoned_continuation"] = progress.get("next_url")  # wedged or poisoned (S4-B d07)
+            cursor = dict(cursor, in_progress=None)
         url = (cursor["in_progress"] or {}).get("next_url") or source.listing_url
         first = cursor["in_progress"] is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
@@ -71,13 +77,24 @@ class SourceIngestor:
             except SourceError as exc:
                 health.update(status="UNAVAILABLE", consecutive_failures=health["consecutive_failures"] + 1,
                               last_error=str(exc))
-                cursor = dict(cursor, version=cursor["version"] + 1, health=health)
+                progress = cursor["in_progress"]
+                if progress:
+                    progress = dict(progress, failures=progress.get("failures", 0) + 1)
+                cursor = dict(cursor, version=cursor["version"] + 1, health=health, in_progress=progress)
                 self.store.commit({"cursor": cursor, "records": [], "expected_cursor_version": expected})
                 return dict(outcome, status="SOURCE_UNAVAILABLE", error=str(exc))
             records = []
             seen, rejected = dict(cursor["seen"]), dict(cursor["rejected"])
             for item in items:
-                record, why = self._record(source, item, seen.get(item["item_id"]), now, response)
+                previous = seen.get(item["item_id"])
+                if previous is None:  # the cursor cache is bounded; the store is the durable item index (S4-B d06)
+                    stored_record = self.store.latest(source.source_id, item["item_id"])
+                    if stored_record is not None:
+                        previous = {"version": stored_record["version"], "content_hash": stored_record["content_hash"],
+                                    "record_id": stored_record["record_id"], "status": stored_record["status"],
+                                    "first_seen_ms": stored_record["first_seen_ms"],
+                                    "published_ms": stored_record["published"]["ms"]}
+                record, why = self._record(source, item, previous, now, response)
                 if why == "DUPLICATE":
                     outcome["duplicates"] += 1
                     continue
@@ -93,11 +110,17 @@ class SourceIngestor:
                 key = "withdrawn" if record["status"] == "WITHDRAWN" else "versions" if record["version"] else "new"
                 outcome[key].append(record["record_id"])
             pages_done += 1
+            if next_url and not allowed(source, next_url):
+                outcome["rejected_next_page"] = next_url  # never saved as a continuation (S4-B d07)
+                next_url = None
             more = next_url and pages_done < source.limits.get("max_pages", 1)
+            if next_url and not more:
+                outcome["truncated"] = True  # page limit reached with pages left: coverage is incomplete
             published = [r["published"]["ms"] for r in records if r["published"]["ms"] is not None]
             cursor = dict(cursor, version=cursor["version"] + 1, seen=self._bounded(seen), rejected=rejected,
                           in_progress={"next_url": next_url, "pages_done": pages_done} if more else None,
                           watermark_ms=max([cursor["watermark_ms"] or 0] + published) or None,
+                          last_truncated=bool(outcome["truncated"]),
                           health=dict(health, status="OK", last_success_ms=now, consecutive_failures=0,
                                       last_error=None))
             if first and response.status == 200:
@@ -116,15 +139,21 @@ class SourceIngestor:
         return dict(keep)
 
     def _record(self, source, item: dict, previous: dict | None, now: int, response) -> tuple:
+        if item.get("published_precision") == "UNPARSEABLE":
+            return None, "UNPARSEABLE_TIMESTAMP"
         body, exclusions, rejection = filter_item(item.get("title"), item.get("body_html"))
         if rejection:
             return None, rejection
         exclusions = exclusions + [f"FIELD_NOT_RETRIEVED:{f}" for f in item.get("excluded_fields", [])]
         permitted = {"title": item.get("title"), "body": body, "url": item.get("url"),
                      "published_raw": item.get("published_raw"), "doc_type": item.get("doc_type"),
-                     "event_times": item.get("event_times"), "withdrawn": bool(item.get("withdrawn"))}
+                     "event_times": item.get("event_times"), "withdrawn": bool(item.get("withdrawn")),
+                     "announces_withdrawal": bool(item.get("announces_withdrawal"))}
         content_hash = digest("larp.source.content.v1", permitted)
-        status = "WITHDRAWN" if item.get("withdrawn") else "ACTIVE"
+        # WITHDRAWN only when an item we already hold is withdrawn (or turns into a withdrawal notice); a new document
+        # announcing the withdrawal of something else is an ACTIVE document about a withdrawal (S4-B d08).
+        status = ("WITHDRAWN" if previous and (item.get("withdrawn") or item.get("announces_withdrawal"))
+                  else "ACTIVE")
         if previous and previous["content_hash"] == content_hash and previous["status"] == status:
             return None, "DUPLICATE"
         raw = canonical(permitted)

@@ -15,7 +15,8 @@ SHARED = {"sizing_rule": "declared-vol-v1", "risk_profile_hash": "b" * 64, "exec
 def spec(**changes):
     arms = {name: dict(SHARED, evidence_inputs=list(ablation.EVIDENCE[name]), authority="SHADOW_EVALUATION")
             for name in ablation.ARMS}
-    s = {"schema": "AblationStudy.v1", "exp_id": "EXP-999", "secondary_horizons_are_diagnostics_only": True,
+    s = {"schema": "AblationStudy.v1", "exp_id": "EXP-999", "study_id": "ABLATION-UNIT-CHECK",
+         "secondary_horizons_are_diagnostics_only": True,
          "dataset": {"rights_cleared": True, "point_in_time": True, "sha256": "d" * 64}, "arms": arms}
     s.update(changes)
     return s
@@ -31,8 +32,14 @@ class AblationTests(unittest.TestCase):
 
     def test_arms_may_differ_only_in_evidence_inputs(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(ablation, "LEDGER", Path(tmp)):
-            (Path(tmp) / "EXP-999.md").write_text("synthetic registration stub for a unit test")
-            self.assertEqual(ablation.validate(spec()), [])
+            (Path(tmp) / "EXP-999.md").write_text("synthetic registration stub for ABLATION-UNIT-CHECK")
+            self.assertEqual(ablation.validate(spec()), ["NO_COMMITTED_EXP_RECORD"])  # not tracked by git
+            with patch.object(ablation, "_committed", lambda path: True):
+                self.assertEqual(ablation.validate(spec()), [])
+                self.assertIn("NO_COMMITTED_EXP_RECORD", ablation.validate(spec(study_id="OTHER-STUDY")))
+        with tempfile.TemporaryDirectory() as tmp, patch.object(ablation, "LEDGER", Path(tmp)), \
+                patch.object(ablation, "_committed", lambda path: True):
+            (Path(tmp) / "EXP-999.md").write_text("synthetic registration stub for ABLATION-UNIT-CHECK")
             s = spec()
             s["arms"]["FREE_NEWS"]["sizing_rule"] = "bigger"
             self.assertIn("ARMS_DIFFER_BEYOND_EVIDENCE_INPUTS", ablation.validate(s))

@@ -155,7 +155,8 @@ class ResearchTests(unittest.TestCase):
                      "rejected_allocations": 1, "missed_upside_units": 5000, "maximum_drawdown_bps": 100,
                      "decision_at": decided, "label_end_at": labelled, "first_session": first,
                      "last_session": first + 4, "executable_price_basis": "POST_ASSESSMENT_EXECUTABLE_QUOTE",
-                     "complete": True, "provenance": {"dataset_hash": "a" * 64, "generated_by_commit": "1" * 40}}
+                     "detection_delay_sessions": 1, "complete": True,
+                     "provenance": {"dataset_hash": "a" * 64, "generated_by_commit": "0" * 40}}
                 o.update(changes)
                 out.append(Document.from_dict(o))
         return out
@@ -198,6 +199,10 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(evaluate(registration, horizon).read()["status"], "NOT_RUN")
         mid = self.outcomes(executable_price_basis="MID_PRICE")
         self.assertEqual(evaluate(registration, mid).read()["status"], "NOT_RUN")
+        delay = self.outcomes(detection_delay_sessions=0)
+        self.assertEqual(evaluate(registration, delay).read()["status"], "NOT_RUN")
+        other_code = self.outcomes(provenance={"dataset_hash": "a" * 64, "generated_by_commit": "9" * 40})
+        self.assertEqual(evaluate(registration, other_code).read()["status"], "NOT_RUN")
         purge = self.registration()
         purge["windows"][1].update(first_session=12, last_session=16)
         self.assertEqual(evaluate(Document.from_dict(purge), self.outcomes()).read()["status"], "NOT_RUN")

@@ -40,6 +40,8 @@ INCOMPLETE = ("SOURCE_STALE", "SOURCE_HEALTH_UNKNOWN", "TOOL_ERROR:", "EXHIBIT_N
               "PRIMARY_UNREADABLE:", "TOOL_BUDGET_EXHAUSTED", "EVIDENCE_", "REVISION_SUPERSEDED_REF:",
               "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE", "PRIOR_GUIDANCE_CONFLICT:", "COVERAGE_TRUNCATED")
 RESOLUTION_RULE = "SOURCE_CORRECTED_OR_WITHDRAWN"
+_LISTS = ("findings", "event_findings", "claims", "falsifiers", "event_statements", "evidence_used", "missingness",
+          "conflicts", "reasons")
 DEFAULT_LIFECYCLE = {"review_base_delay_ms": 21_600_000, "max_review_attempts": 3, "max_backoff_ms": 172_800_000,
                      "statement_retention_ms": 7_776_000_000, "max_statements": 400}
 
@@ -93,6 +95,10 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         return _reject(state, "REJECT_OUT_OF_ORDER", now_ms, rid)
     if r.get("status") == "REJECTED_REQUEST":
         return _reject(state, "REJECT_MALFORMED", now_ms, rid)
+    if r.get("status") not in ("ASSESSED", "ABSTAIN", "UNAVAILABLE") or type(r.get("cutoff_ms")) is not int or \
+            type(r.get("assessment_key")) is not str or any(type(r.get(k)) is not list for k in _LISTS) or \
+            type(r.get("coverage")) is not dict or (r["status"] == "ASSESSED" and "proposed_thesis" not in r):
+        return _reject(state, "REJECT_MALFORMED", now_ms, rid)
 
     policy = state["lifecycle"]
     nxt = dict(state, version=state["version"] + 1, latest_cutoff_ms=r["cutoff_ms"], last_rejection=None,
@@ -111,6 +117,9 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         adverse.append({"finding_id": finding_id, "type": kind, "result_id": rid, "cutoff_ms": r["cutoff_ms"],
                         "sources": sources, "resolution_rule": RESOLUTION_RULE})
 
+    # A correction can only be established by a complete assessment of the new version: partial coverage could
+    # simply have missed the event (red team S4-B g01).
+    complete = r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
     # Revisions and withdrawals first: they can resolve latches and correct statements from the old version.
     present_findings = {f["type"] for f in r.get("event_findings", []) + r.get("findings", [])}
     present_statements = {s["statement_id"] for s in r.get("event_statements", [])}
@@ -118,7 +127,7 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         accession, revision = used.get("accession"), used.get("revision", 0)
         seen = records_seen.get(accession)
         withdrawn = used.get("quality") == "WITHDRAWN"
-        if seen is not None and (revision > seen["revision"] or withdrawn) and r["status"] == "ASSESSED":
+        if seen is not None and (revision > seen["revision"] or withdrawn) and complete:
             lifecycle.revise(statements, accession=accession, superseding_hash=used.get("content_hash"),
                              still_present=present_statements, withdrawn=withdrawn, now_ms=now_ms)
             for a in list(adverse):
@@ -136,7 +145,6 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     for finding in r.get("event_findings", []):  # re-verified filer/keyword events, any status
         if finding["impact"] == "ADVERSE":
             latch(finding["finding_id"], finding["type"], finding.get("sources") or [])
-    complete = r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
     if r["status"] == "ASSESSED":
         for finding in r["findings"]:
             if finding["impact"] == "ADVERSE":
@@ -146,7 +154,8 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
             if falsifier["state"] == "FIRED":
                 sources = [{"accession": u["accession"], "record_id": u["record_id"]} for u in r["evidence_used"]]
                 latch(fid, "FALSIFIER_FIRED:" + falsifier["falsifier_id"], sources)
-        history_checked = all((r.get("coverage") or {}).get("prior_history", {}).values())
+        # Acknowledgment needs an actual statement-history lookup that completed (S4-B g05).
+        history_checked = (r.get("coverage") or {}).get("prior_history", {}).get("STATEMENTS") is True
         for s in r.get("event_statements", []):
             lifecycle.observe(statements, s, result_id=rid, now_ms=now_ms, complete=complete and history_checked,
                               policy=policy)

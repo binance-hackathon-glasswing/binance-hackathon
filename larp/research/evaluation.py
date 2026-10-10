@@ -92,14 +92,18 @@ OUTCOME_FIELDS = ("variant", "cluster_id", "dataset_hash", "opening_equity_units
                   "fees_units", "gas_units", "spread_slippage_units", "failed_attempts", "failed_attempt_gas_units",
                   "reentries", "turnover_units", "rejected_allocations", "missed_upside_units",
                   "maximum_drawdown_bps", "decision_at", "label_end_at", "first_session", "last_session",
-                  "executable_price_basis", "complete", "provenance")
+                  "executable_price_basis", "detection_delay_sessions", "complete", "provenance")
 
 
 def _outcome_window(o, w, d):
     """Outcome provenance must sit inside its registered decision/label window and the frozen horizon."""
     decided, labelled = instant(o["decision_at"]), instant(o["label_end_at"])
+    if not decided < labelled:
+        raise ContractError("Outcome label ends before its decision")
     if not instant(w["decision_start"]) <= decided <= instant(w["decision_end"]) or labelled > instant(w["label_end"]):
         raise ContractError("Outcome decision/label times outside the registered window")
+    if o["detection_delay_sessions"] != d["detection_delay_sessions"]:
+        raise ContractError("Outcome used a detection delay other than the registered one")
     if not w["first_session"] <= o["first_session"] <= o["last_session"] <= w["last_session"]:
         raise ContractError("Outcome sessions outside the registered window")
     if o["last_session"] - o["first_session"] + 1 != d["primary_horizon_sessions"]:
@@ -107,8 +111,9 @@ def _outcome_window(o, w, d):
     if o["executable_price_basis"] != "POST_ASSESSMENT_EXECUTABLE_QUOTE":
         raise ContractError("Outcome not priced at post-assessment executable quotes")
     p = o["provenance"]
-    if type(p) is not dict or p.get("dataset_hash") != d["dataset_hash"] or len(p.get("generated_by_commit", "")) != 40:
-        raise ContractError("Outcome provenance missing")
+    if type(p) is not dict or p.get("dataset_hash") != d["dataset_hash"] or \
+            p.get("generated_by_commit") != d["registered_commit"]:
+        raise ContractError("Outcome provenance missing or not produced by the registered commit")
 
 
 def evaluate(registration: Document, outcomes):
@@ -152,7 +157,7 @@ def evaluate(registration: Document, outcomes):
     baseline, treatment = d["variants"]
     after_service = d["metric"] == "PAIRED_NET_WALLET_RETURN_AFTER_SERVICE_COSTS"
     paired, incomplete = [], 0
-    for group in groups.values():
+    for _, group in sorted(groups.items()):  # canonical order: the bootstrap must not depend on input order
         if set(group) != {baseline, treatment}:
             continue
         a, b = group[baseline], group[treatment]

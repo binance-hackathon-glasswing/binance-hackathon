@@ -11,6 +11,7 @@ INCONCLUSIVE with the registered default (fallback) unchanged.
 """
 
 from pathlib import Path
+import subprocess
 
 from larp.contracts import ContractError, Document
 from larp.research.evaluation import evaluate
@@ -29,7 +30,8 @@ def validate(spec: dict) -> list:
     if spec.get("schema") != "AblationStudy.v1":
         return ["SCHEMA"]
     exp = spec.get("exp_id")
-    if type(exp) is not str or not exp.startswith("EXP-") or not (LEDGER / f"{exp}.md").exists():
+    if type(exp) is not str or not exp.startswith("EXP-") or not _committed(LEDGER / f"{exp}.md") or \
+            spec.get("study_id") not in (LEDGER / f"{exp}.md").read_text(encoding="utf-8"):
         reasons.append("NO_COMMITTED_EXP_RECORD")
     data = spec.get("dataset") or {}
     if data.get("rights_cleared") is not True or data.get("point_in_time") is not True or len(data.get("sha256", "")) != 64:
@@ -52,6 +54,17 @@ def validate(spec: dict) -> list:
     return sorted(set(reasons))
 
 
+def _committed(path: Path) -> bool:
+    """The EXP record exists and is tracked by git (an untracked or unrelated file does not register a study)."""
+    if not path.exists():
+        return False
+    try:
+        return subprocess.run(["git", "ls-files", "--error-unmatch", str(path)], cwd=path.parent, capture_output=True,
+                              timeout=10).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def run(spec: dict, registrations: dict, outcomes: dict) -> Document:
     """registrations/outcomes per non-baseline arm (EconomicRegistration.v2 / PortfolioOutcome.v2 documents)."""
     reasons = validate(spec)
@@ -63,10 +76,17 @@ def run(spec: dict, registrations: dict, outcomes: dict) -> Document:
         registration = registrations.get(arm)
         if registration is None:
             raise ContractError(f"Missing registration for {arm}")
-        if registration.read().get("variants") != ["BASELINE", arm]:
+        r = registration.read()
+        if r.get("variants") != ["BASELINE", arm]:
             raise ContractError("Each registration pairs its arm with the baseline")
+        shared = spec["arms"][arm]
+        if r.get("dataset_hash") != spec["dataset"]["sha256"] or \
+                r.get("primary_horizon_sessions") != shared["primary_horizon_sessions"] or \
+                r.get("cost_model") != shared["cost_model"]:
+            raise ContractError(f"Registration for {arm} departs from the study's dataset, horizon or cost model")
         results[arm] = evaluate(registration, outcomes.get(arm, [])).read()
-    status = "COMPLETE_NO_PROMOTION"
+    decided = [a for a, r in results.items() if r["status"] in ("SUPPORTED", "NOT_SUPPORTED")]
+    status = "EVALUATED_NO_PROMOTION" if decided else "INCONCLUSIVE_FALLBACK_TO_DEFAULT"
     return Document.from_dict({"schema": "AblationReport.v1", "status": status, "arms": results,
                                "promotion_authorized": False,
                                "note": "Results never change live authority; adoption is a separate team decision."})

@@ -101,7 +101,7 @@ def score(runs: list) -> dict:
     abst_hit = abst_total = false_abst = assessed_total = 0
     probes_rejected = probes_total = comp_ok = comp_total = 0
     max_calls = max_elapsed = 0
-    num_tp = num_fp = ev_tp = ev_fp = 0
+    num_tp = num_fp = ev_tp = ev_fp = fd_tp = fd_fp = 0
     st = {}  # assertion -> [tp, fp, fn]
     complete = total_assessed = 0
     errors, latencies = {}, []
@@ -136,9 +136,19 @@ def score(runs: list) -> dict:
             total_assessed += 1
             complete += (result.get("coverage") or {}).get("complete") is True
         if labels.get("exhaustive"):
+            unmatched = list(expected_facts)  # multiset: a repeated correct claim matches one label only
             for claim in (c for c in claims if c["kind"] != "EVENT"):
-                hit = any(_key(w) == _key(claim) and _value(w) == _value(claim) for w in expected_facts)
-                num_tp, num_fp = num_tp + hit, num_fp + (not hit)
+                match = next((w for w in unmatched if _key(w) == _key(claim) and _value(w) == _value(claim)), None)
+                if match is not None:
+                    unmatched.remove(match)
+                    num_tp += 1
+                else:
+                    num_fp += 1
+            wanted_findings = set(labels.get("findings", []))
+            found_types = [f["type"] for f in result.get("findings", []) + result.get("event_findings", [])]
+            found_types = sorted(set(found_types))
+            fd_tp += sum(1 for t in found_types if t in wanted_findings)
+            fd_fp += sum(1 for t in found_types if t not in wanted_findings)
             wanted = set(labels.get("events", []))
             emitted = {c["metric"] for c in claims if c["kind"] == "EVENT" and not c["metric"].startswith("STATEMENT:")}
             ev_tp, ev_fp = ev_tp + len(emitted & wanted), ev_fp + len(emitted - wanted)
@@ -183,13 +193,14 @@ def score(runs: list) -> dict:
     st_tp, st_fp, st_fn = (sum(v[i] for v in st.values()) for i in range(3))
     latencies.sort()
     return {"numerical_precision": ratio(num_tp, num_tp + num_fp), "event_precision": ratio(ev_tp, ev_tp + ev_fp),
+            "finding_precision": ratio(fd_tp, fd_tp + fd_fp),
             "statement_precision": ratio(st_tp, st_tp + st_fp), "statement_recall": ratio(st_tp, st_tp + st_fn),
             "statement_classes": {k: {"tp": v[0], "fp": v[1], "fn": v[2]} for k, v in sorted(st.items())},
             "coverage_complete": ratio(complete, total_assessed), "error_types": dict(sorted(errors.items())),
             "latency_ms": {"min": latencies[0] if latencies else None, "median": latencies[len(latencies) // 2]
                            if latencies else None, "max": latencies[-1] if latencies else None,
                            "basis": "simulated model latency on the fake clock plus tool time"},
-            "false_positives": {"numerical": num_fp, "events": ev_fp, "statements": st_fp},
+            "false_positives": {"numerical": num_fp, "events": ev_fp, "statements": st_fp, "findings": fd_fp},
             "span_accuracy": ratio(span_hits, span_total), "numerical_correctness": ratio(num_ok, num_total),
             "unsupported_acceptance": ratio(planted_accepted, planted), "event_recall": ratio(events_hit, events_total),
             "abstention_recall": ratio(abst_hit, abst_total), "false_abstention": ratio(false_abst, assessed_total),

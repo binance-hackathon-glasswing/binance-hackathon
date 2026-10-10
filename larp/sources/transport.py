@@ -9,8 +9,12 @@ connectivity probe uses `urllib_fetch`. Retrieved bytes are untrusted data.
 """
 
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import unquote, urljoin, urlsplit
+import http.client
+import re
 import time
+
+_DOT_SEGMENT = re.compile(r"(?:^|/)\.{1,2}(?:/|$)")
 
 USER_AGENT_DEFAULT = "LARP-free-source-ingest/1 (IDEA-031; no contact configured)"
 
@@ -30,10 +34,24 @@ class Response:
 
 
 def allowed(source, url: str) -> bool:
-    parts = urlsplit(url)
-    if parts.scheme != "https" or parts.username or parts.password or parts.port not in (None, 443):
+    """https, no credentials or odd port, an allowlisted host, and a path inside an allowlisted prefix after
+    rejecting dot segments, encoded separators/dots and empty segments (S4-B d01)."""
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
         return False
-    return any(parts.hostname == a["host"] and parts.path.startswith(a["path_prefix"]) for a in source.allow)
+    if parts.scheme != "https" or parts.username or parts.password or port not in (None, 443):
+        return False
+    path, decoded = parts.path, unquote(parts.path)
+    if _DOT_SEGMENT.search(decoded) or "//" in path or "\\" in decoded or re.search(r"%2[ef]|%5c", path, re.I):
+        return False
+    for a in source.allow:
+        prefix = a["path_prefix"]
+        if parts.hostname == a["host"] and path.startswith(prefix) and (
+                prefix.endswith("/") or len(path) == len(prefix) or path[len(prefix)] in "/.?"):
+            return True
+    return False
 
 
 class AllowlistedClient:
@@ -63,7 +81,7 @@ class AllowlistedClient:
             attempts += 1
             try:
                 status, reply_headers, body = self.fetch(current, headers, 30)
-            except (OSError, TimeoutError) as exc:
+            except (OSError, TimeoutError, http.client.HTTPException) as exc:
                 if attempts >= limits.get("max_attempts", 3):
                     raise SourceError(f"NETWORK_ERROR:{type(exc).__name__}:EXHAUSTED") from None
                 self.sleep(delay / 1000)
