@@ -94,3 +94,15 @@ class StatementCorrections(unittest.TestCase):
         pending = dict(pending, statements=registry)
         after = self.correct(pending, 'B', 3000)
         self.assertNotIn(after['statements']['stmt:shared']['status'], ('CORRECTED', 'WITHDRAWN'))
+
+    def test_newer_unread_revision_invalidates_old_correction_until_reread(self):
+        pending = self.correct(self.initial(), 'A', 2000)
+        used = [dict(accession='A', record_id='A2', content_hash='Ahash2', revision=2, quality='OK')]
+        original = copy.deepcopy(pending)
+        _, partial = accept(pending, gate_result('partial', pending, 2500, used=used, complete=False),
+                            profile_hash=P, now_ms=2500)
+        self.assertEqual(pending, original)
+        after = self.correct(partial, 'B', 3000)
+        self.assertNotIn(after['statements']['stmt:shared']['status'], ('CORRECTED', 'WITHDRAWN'))
+        _, complete = accept(after, gate_result('complete', after, 3500, used=used), profile_hash=P, now_ms=3500)
+        self.assertEqual(complete['statements']['stmt:shared']['status'], 'CORRECTED')

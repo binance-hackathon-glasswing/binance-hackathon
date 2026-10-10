@@ -54,6 +54,7 @@ class ReviewLoopTests(Harness):
         self.assertEqual({s["status"] for s in state["statements"].values()}, {"PENDING_REVIEW"})
         self.assertIn("PENDING_STATEMENT_REVIEW", state["gate_reasons"])
         self.w.clock.advance(6 * 3_600_000)
+        self.w.ingestor.poll(EXSEMI)  # a complete review requires current source health
         second, state = self.run_one("RISKS", state=state, job="j2")
         self.assertEqual({s["novelty"] for s in second["event_statements"]}, {"ALREADY_SEEN"})
         self.assertNotIn("REVIEW_NEW_STATEMENT", {r["reason"] for r in second["review_requests"]})
@@ -61,6 +62,7 @@ class ReviewLoopTests(Harness):
         self.assertNotIn("PENDING_STATEMENT_REVIEW", state["gate_reasons"])
         ids = set(state["statements"])
         self.w.clock.advance(6 * 3_600_000)
+        self.w.ingestor.poll(EXSEMI)
         third, state = self.run_one("RISKS", state=state, job="j3")
         self.assertEqual(set(state["statements"]), ids)  # stable identity, nothing re-opened
         self.assertFalse([r for r in third["review_requests"] if r["reason"] == "REVIEW_NEW_STATEMENT"])

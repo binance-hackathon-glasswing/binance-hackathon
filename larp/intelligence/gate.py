@@ -162,6 +162,14 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
                   (assessed is None or revision >= assessed["revision"])
         if current:
             # A newer partial observation cannot inherit correction evidence from its older revision.
+            for sid, entry in list(statements.items()):
+                keys = {s.get("record_id") for s in entry["records"] if s.get("accession") == accession}
+                corrections = entry.get("source_resolutions", {})
+                invalid = {k for k in keys if k in corrections and
+                           corrections[k]["superseding_hash"] != used.get("content_hash")}
+                if invalid:
+                    statements[sid] = dict(entry, source_resolutions={k: v for k, v in corrections.items()
+                                                                      if k not in invalid})
             for a in adverse:
                 for source in a.get("sources") or []:
                     key = source.get("record_id")
