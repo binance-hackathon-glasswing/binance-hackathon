@@ -1,0 +1,6 @@
+# Runtime-only Linux/Windows profile. Existing project pins retained.
+# No model, market or signing package is required by the coordinator/audit process.
+psycopg==3.3.6
+psycopg-binary==3.3.6
+typing_extensions==4.16.0
+tzdata==2026.4

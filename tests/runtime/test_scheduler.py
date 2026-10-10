@@ -1,0 +1,79 @@
+from datetime import datetime
+
+from larp.runtime.scheduler import Scheduler,utc_ms
+from larp.storage.postgres import Conflict
+from tests.support import DatabaseCase,job
+
+
+class Scheduling(DatabaseCase):
+    def test_zero_retry_timestamp_is_preserved(self):
+        self.store.commit(self.batch(jobs=[job(lane='safety')]))
+        scheduler=Scheduler(self.store)
+        claim=scheduler.claim('run',self.epoch,'safety',100)
+        scheduler.finish('run',claim,retry_at_ms=0)
+        with self.store.transaction() as db:
+            self.assertEqual(0,db.execute('SELECT next_ms FROM jobs').fetchone()[0])
+
+    def test_timezone_conversion_ignores_host_cache_and_preserves_tzpath(self):
+        import zoneinfo
+        from unittest.mock import patch
+        zoneinfo.ZoneInfo('America/New_York')
+        before=zoneinfo.TZPATH
+        with patch('larp.runtime.scheduler.ZoneInfo',wraps=zoneinfo.ZoneInfo) as cls:
+            utc_ms(datetime(2026,11,1,1,30),'America/New_York')
+            cls.from_file.assert_called_once()
+            cls.assert_not_called()
+        self.assertEqual(before,zoneinfo.TZPATH)
+
+    def test_duplicate_missed_and_backward_ticks(self):
+        self.store.commit(self.batch(jobs=[job(),job()]))
+        scheduler=Scheduler(self.store,lease_ms=10)
+        claim=scheduler.claim('run',self.epoch,'policy',100)
+        self.assertIsNone(scheduler.claim('run',self.epoch,'policy',100))
+        scheduler.finish('run',claim)
+        self.assertIsNone(scheduler.claim('run',self.epoch,'policy',150))
+        with self.assertRaises(Conflict): scheduler.claim('run',self.epoch,'policy',99)
+
+    def test_crash_lease_retry_budget_and_stale_completion(self):
+        self.store.commit(self.batch(jobs=[job(lane='safety')]))
+        scheduler=Scheduler(self.store,lease_ms=10)
+        first=scheduler.claim('run',self.epoch,'safety',100)
+        second=scheduler.claim('run',self.epoch,'safety',111)
+        self.assertEqual(2,second.read()['attempt'])
+        with self.assertRaises(Conflict): scheduler.finish('run',first)
+        self.assertIsNone(scheduler.claim('run',self.epoch,'safety',122))
+
+    def test_evidence_overload_does_not_consume_safety_capacity(self):
+        self.store.commit(self.batch(jobs=[job(str(i),'evidence') for i in range(100)]+[job('safe','safety')]))
+        scheduler=Scheduler(self.store)
+        self.assertEqual('safe',scheduler.claim('run',self.epoch,'safety',100).read()['job']['job_id'])
+        self.assertIsNotNone(scheduler.claim('run',self.epoch,'evidence',101))
+
+    def test_expired_policy_but_reconciliation_catches_up(self):
+        self.store.commit(self.batch(jobs=[job(),job('recovery','reconcile')]))
+        scheduler=Scheduler(self.store)
+        self.assertIsNone(scheduler.claim('run',self.epoch,'policy',300))
+        self.assertIsNotNone(scheduler.claim('run',self.epoch,'reconcile',300))
+
+    def test_explicit_priority_and_midnight_do_not_reset_retry_budget(self):
+        high=dict(job('z','safety',0,100000000),priority=0)
+        low=dict(job('a','safety',0,100000000),priority=100)
+        self.store.commit(self.batch(jobs=[low,high]))
+        scheduler=Scheduler(self.store,lease_ms=10)
+        first=scheduler.claim('run',self.epoch,'safety',86399999)
+        self.assertEqual('z',first.read()['job']['job_id'])
+        second=scheduler.claim('run',self.epoch,'safety',86400010)
+        self.assertEqual(2,second.read()['attempt'])
+
+    def test_dst_midnight_and_timezone_provenance(self):
+        local=datetime(2026,11,1,1,30)
+        early=utc_ms(local,'America/New_York',fold=0)
+        late=utc_ms(local,'America/New_York',fold=1)
+        self.assertEqual(3600000,late-early)
+        before=utc_ms(datetime(2026,10,10,23,59),'UTC')
+        after=utc_ms(datetime(2026,10,11,0,0),'UTC')
+        self.store.commit(self.batch(jobs=[job('midnight','policy',after,after+60000)]))
+        scheduler=Scheduler(self.store)
+        self.assertIsNone(scheduler.claim('run',self.epoch,'policy',before))
+        self.assertIsNotNone(scheduler.claim('run',self.epoch,'policy',after))
+        with self.assertRaises(ValueError): utc_ms(datetime(2026,3,8,2,30),'America/New_York')

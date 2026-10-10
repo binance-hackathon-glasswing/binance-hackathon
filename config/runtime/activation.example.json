@@ -1,0 +1,22 @@
+{
+  "schema": "RuntimeConfiguration.v1",
+  "mode": "offline",
+  "database": null,
+  "artifact_root": null,
+  "backup_destination": null,
+  "anchor_destination": null,
+  "retention_days": null,
+  "registered_wallet": null,
+  "registered_repository": null,
+  "registered_build": null,
+  "policy_profile": null,
+  "risk_profile": null,
+  "scored_start_ms": null,
+  "scored_end_ms": null,
+  "funding_evidence": null,
+  "gas_evidence": null,
+  "registration_proof": null,
+  "rehearsal_evidence": null,
+  "signer_isolation_evidence": null,
+  "anchor_interval_seconds": 3600
+}
