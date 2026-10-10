@@ -373,7 +373,7 @@ class Pipeline(unittest.TestCase):
                            RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3), execution=FakeExecution(),
                            run_id=RUN, version_id="integration-fixture", profile_hash=self.h,
                            address="0x" + "1" * 40, context_builder=builder,
-                           initial_policy_state=initial_policy_state(RUN, self.profile))
+                           initial_policy_state=initial_policy_state(RUN, self.profile), clock_ms=self.w.clock)
 
     def evidence(self):
         return self.store.load(RUN).read()["projection"]["evidence"].get(EXSEMI) or initial_state(

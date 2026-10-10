@@ -33,9 +33,11 @@ def probe(source, client) -> dict:
            "probed_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started))}
     try:
         response = client.get(source, source.listing_url)
-        items, next_url = parse(source, response.body, response.url)
+        items, next_url, item_truncated = (([], None, False) if response.status == 304 else
+                                          parse(source, response.body, response.url))
         row.update(status=response.status, attempts=response.attempts, bytes=len(response.body or b""),
                    content_type=response.headers.get("content-type"), items=len(items), has_next_page=bool(next_url),
+                   item_truncated=item_truncated,
                    first_item={k: items[0].get(k) for k in TIME_FIELDS} if items else None,
                    first_item_has_body=bool(items and items[0].get("body_html")))
     except SourceError as exc:

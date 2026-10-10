@@ -57,7 +57,7 @@ def safe_when(value) -> tuple:
     """`when`, but an unparseable value is (None, "UNPARSEABLE") so one bad item cannot block a page (S4-B d04)."""
     try:
         return when(value)
-    except SourceError:
+    except (SourceError, ValueError, OverflowError, TypeError):
         return None, "UNPARSEABLE"
 
 
@@ -85,6 +85,8 @@ def _safe_xml(body: bytes):
 
 def rss(body: bytes, limit: int) -> tuple:
     root = _safe_xml(body)
+    if root.tag != "rss" or root.find("channel") is None:
+        raise SourceError("RSS_SHAPE")
     items = []
     truncated = False
     for node in root.iter("item"):
@@ -97,7 +99,7 @@ def rss(body: bytes, limit: int) -> tuple:
         items.append({"item_id": guid or link, "url": link, "title": get("title"), "body_html": get("description"),
                       "published_raw": get("pubDate"), "published_ms": ms, "published_precision": precision,
                       "event_times": {}, "changed_raw": None, "withdrawn": False, "doc_type": "PRESS_RELEASE"})
-    return [i for i in items if i["item_id"]], None, truncated
+    return _listing(items, None, truncated)
 
 
 def _json(body: bytes) -> dict:
@@ -110,9 +112,28 @@ def _json(body: bytes) -> dict:
     return data
 
 
+def _results(data: dict) -> list:
+    results = data.get("results")
+    if type(results) is not list or any(type(r) is not dict for r in results):
+        raise SourceError("JSON_RESULTS_SHAPE")
+    text_fields = ("document_number", "uuid", "html_url", "pdf_url", "url", "title", "action", "abstract", "type")
+    if any(r.get(k) is not None and type(r[k]) is not str for r in results for k in text_fields):
+        raise SourceError("JSON_ITEM_SHAPE")
+    return results
+
+
+def _listing(items: list, next_url, truncated: bool) -> tuple:
+    if next_url is not None and type(next_url) is not str:
+        raise SourceError("JSON_PAGINATION_SHAPE")
+    if any(i.get("body_html") is not None and type(i["body_html"]) is not str for i in items):
+        raise SourceError("JSON_ITEM_SHAPE")
+    valid = [i for i in items if type(i["item_id"]) is str and i["item_id"].strip()]
+    return valid, next_url, truncated or len(valid) != len(items)
+
+
 def fr_documents(body: bytes, limit: int) -> tuple:
     data = _json(body)
-    results = data.get("results") or []
+    results = _results(data)
     items = []
     for r in results[:limit]:
         ms, precision = safe_when(r.get("publication_date"))
@@ -123,12 +144,12 @@ def fr_documents(body: bytes, limit: int) -> tuple:
                       "event_times": _event_times(r, ("effective_on", "comments_close_on", "signing_date")),
                       "changed_raw": None, "announces_withdrawal": "withdraw" in action.lower(), "withdrawn": False,
                       "doc_type": (r.get("type") or "UNKNOWN").upper().replace(" ", "_")})
-    return [i for i in items if i["item_id"]], data.get("next_page_url"), len(results) > limit
+    return _listing(items, data.get("next_page_url"), len(results) > limit)
 
 
 def fr_public_inspection(body: bytes, limit: int) -> tuple:
     data = _json(body)
-    results = data.get("results") or []
+    results = _results(data)
     items = []
     for r in results[:limit]:
         filed_ms, filed_precision = safe_when(r.get("filed_at"))
@@ -139,12 +160,12 @@ def fr_public_inspection(body: bytes, limit: int) -> tuple:
                       "event_times": _event_times(r, ("publication_date", "pdf_updated_at")),
                       "changed_raw": r.get("pdf_updated_at"), "withdrawn": bool(r.get("withdrawn")),
                       "doc_type": "PUBLIC_INSPECTION:" + (r.get("type") or "UNKNOWN").upper().replace(" ", "_")})
-    return [i for i in items if i["item_id"]], None, len(results) > limit
+    return _listing(items, None, len(results) > limit)
 
 
 def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
     data = _json(body)
-    results = data.get("results") or []
+    results = _results(data)
     items = []
     for r in results[:limit]:
         text = r.get("body")
@@ -166,7 +187,7 @@ def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
         query = dict(parse_qsl(parts.query))
         query["page"] = str(int(query.get("page", "0")) + 1)
         next_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
-    return [i for i in items if i["item_id"]], next_url, len(results) > limit
+    return _listing(items, next_url, len(results) > limit)
 
 
 def parse(source, body: bytes, page_url: str) -> tuple:

@@ -5,6 +5,7 @@ Fixture reducers live in fixtures.py and never qualify a live deployment.
 """
 
 from datetime import datetime,timezone
+import time
 
 from larp.audit.protocol import build_event,check_orders,event_id_for
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
@@ -33,10 +34,11 @@ class RecoveryIncomplete(ContractError):
 
 class Coordinator:
     def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address,
-                 context_builder=None,initial_policy_state=None):
+                 context_builder=None,initial_policy_state=None,clock_ms=None):
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
         self.execution=execution
+        self.clock=clock_ms if clock_ms is not None else lambda: time.time_ns()//1_000_000
         # Optional versioned adapter (larp/integration/runtime.py, IDEA-031): builds the policy context from the
         # journaled projection, the request and the assessment, and returns projection updates (evidence state)
         # committed atomically with the round. Without it the original fixture context is used.
@@ -68,12 +70,20 @@ class Coordinator:
                 return self.close(round_id,now_ms,'COMPLETE')
             return previous
         assessment=None; proposal=None; errors=[]
+        started_ms=now_ms
         try:
             assessment_request(request,self.run_id,self.profile_hash,now_ms)
             assessment=self.assessor.assess(request)
-            assessment_result(assessment,request,now_ms)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
+        now_ms=self.clock()
+        if type(now_ms) is not int or now_ms<started_ms:
+            raise ContractError('Decision clock moved backward or is invalid; reconciliation required')
+        if assessment is not None:
+            try:
+                assessment_result(assessment,request,now_ms)
+            except Exception:
+                errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
                    if k not in ('round_records','closed_rounds','observations')}
@@ -129,8 +139,10 @@ class Coordinator:
                     policy_input=policy_input,policy_state=snapshot.policy_state.record(),
                     policy_output=None if proposal is None else dict(targets=[t.record() for t in proposal.targets],
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
-                    started_ms=now_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
+                    started_ms=started_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
                         for i in plan['intents']],swap_mappings=[])
+        if now_ms!=started_ms:
+            record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):
             record['evidence_decisions']=updates['evidence_decisions']
         projection.setdefault('round_records',{})[round_id]=record

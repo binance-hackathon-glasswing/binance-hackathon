@@ -73,6 +73,10 @@ class SourceIngestor:
                 conditional = first and not cursor.get("last_truncated")
                 response = self.client.get(source, url, etag=cursor["etag"] if conditional else None,
                                            last_modified=cursor["last_modified"] if conditional else None)
+                received = self.clock()
+                if type(received) is not int or received < now:
+                    raise SourceError("RETRIEVAL_CLOCK_INVALID")
+                now = received  # bytes become available only after retrieval, including all retries
                 if response.status == 304:
                     items, next_url, item_truncated = [], None, False
                     outcome["status"] = "NOT_MODIFIED"
@@ -103,6 +107,7 @@ class SourceIngestor:
                     outcome["duplicates"] += 1
                     continue
                 if why:
+                    cycle_incomplete = True  # omitted evidence cannot establish complete coverage
                     rejected[item["item_id"]] = {"reason": why, "at_ms": now}
                     outcome["rejected"].append([item["item_id"], why])
                     continue
@@ -214,7 +219,7 @@ def coverage(register: dict, store, dependencies: dict, now_ms: int, max_age_ms:
             continue
         cursor = store.cursor(source_id)
         h = (cursor or initial_cursor(source_id))["health"]
-        fresh = h["last_success_ms"] is not None and now_ms - h["last_success_ms"] <= max_age_ms
+        fresh = h["last_success_ms"] is not None and 0 <= now_ms - h["last_success_ms"] <= max_age_ms
         status = h["status"] if fresh or h["status"] != "OK" else "STALE"
         if status == "OK" and cursor and (cursor.get("last_truncated") or cursor.get("in_progress")):
             status = "INCOMPLETE"

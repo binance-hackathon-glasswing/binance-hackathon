@@ -33,9 +33,10 @@ def main():
     store.migrate(); store.initialize('run','synthetic-wallet',56,doc(dict(balances=dict(USDT=100,BNB=10,NVDAB=0))))
     epoch=store.takeover('run',1,offline=True)
     worker=IsolatedWorker(timeout=3)
-    def coordinator(assessor=None):
+    def coordinator(assessor=None,clock_ms=None):
         return Coordinator(store,assessor or SandboxAssessor(worker),SandboxPolicy(worker),FakePlanner(),
-                           execution=FakeExecution(),run_id='run',version_id='synthetic-build',profile_hash='a'*64,address='0x'+'1'*40)
+                           execution=FakeExecution(),run_id='run',version_id='synthetic-build',profile_hash='a'*64,address='0x'+'1'*40,
+                           clock_ms=clock_ms or (lambda:now))
     now=1791590400000
     market=FakeMarket().observe(doc(dict(schema='MarketRequest.v1',request_id='market',run_id='run',
                                         token='NVDAB',underlying='NVDA',cutoff_ms=now)))
@@ -56,7 +57,7 @@ def main():
                                      tx_hash=tx,simulated=True)),settle)
     runtime.recover(now+2)
     rejected=request.read(); rejected['job_id']='failed'; rejected['fixture_action']='HOLD'
-    coordinator(SandboxAssessor(worker,'larp.runtime.fixtures:fail')).start('rejected',doc(rejected),now+2)
+    coordinator(SandboxAssessor(worker,'larp.runtime.fixtures:fail'),lambda:now+2).start('rejected',doc(rejected),now+2)
     receiver=FakeReceiver(lose_ack=True)
     uploader=DeliveryWorker(store,receiver,retry_ms=1)
     for tick in range(10): uploader.once('run',epoch,now+tick+3)

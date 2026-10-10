@@ -38,7 +38,8 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
             if kind in ('ROUND_PLANNED','PLAN_REJECTED'):
                 record=event['record']
                 runtime=Coordinator(target,RecordedAssessment(record['request'],record['assessment']),policy,planner,
-                    execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address)
+                    execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address,
+                    clock_ms=lambda:record.get('decision_ms',record['started_ms']))
                 if kind=='PLAN_REJECTED':
                     target.open_round(run_id,record['round_id'],doc(record['request']),current['epoch'])
                     runtime.record_rejection(record['round_id'],record)
