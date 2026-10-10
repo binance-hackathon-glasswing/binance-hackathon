@@ -103,7 +103,8 @@ NAMED = re.compile(r"\b(?:[A-Z][\w&.-]*\s+){0,3}(?:Corp(?:oration)?|Inc|Ltd|LLC|
                    r"\b[A-Z][A-Za-z&.-]+['’]s\b")
 NOT_NAMED = re.compile(r"^(?:The\s+)?(?:Company|Registrant|Board|Corporation|Issuer)['’]s$", re.I)
 PREPOSITION_BEFORE = re.compile(r"\b(?:to|of|for|with|by|from|at|about|regarding|against|than)\s+$", re.I)
-BY_AGENT = re.compile(r"^\s*by\s+(?P<agent>[^,.;:\n]{1,80})", re.I)
+BY_AGENT = re.compile(r"^[^,;:\n]*?\b(?:\w+ed|\w+en)\s+by\s+(?P<agent>[^,.;:\n]{1,80})|^\s*by\s+(?P<agent2>[^,.;:\n]{1,80})",
+                      re.I)
 OBJECT = re.compile(r"^\s*(?P<obj>(?:the\s+|our\s+|its\s+|an?\s+|one\s+of\s+our\s+)?(?:\w+\s+){0,2}\w+)", re.I)
 OFFICER = re.compile(r"\b(?:chief\s+executive|chief\s+financial|CEO|CFO|president|chair(?:man|woman|person)?)\b", re.I)
 COMPLEMENT_THIRD = re.compile(
@@ -249,9 +250,9 @@ def _actor(segment: str, t_lo: int, t_hi: int, pred, issuer_names: tuple, issuer
     if COMPLEMENT_THIRD.match(after_trigger):
         return "THIRD_PARTY", COMPLEMENT_THIRD.match(after_trigger).group(0).strip()
     pred_end = pred.end() if pred is not None else t_hi
-    agent = BY_AGENT.match(segment[max(pred_end, t_hi):])
+    agent = BY_AGENT.match(segment[t_hi:])
     if agent:
-        found = _mentions(agent.group("agent"), issuer_names)
+        found = _mentions(agent.group("agent") or agent.group("agent2"), issuer_names)
         if found:  # the head of the agent phrase is its last mention: "by our largest customer" -> customer
             _, who, what = max(found)
             return who, what

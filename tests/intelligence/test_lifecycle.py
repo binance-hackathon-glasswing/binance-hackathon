@@ -141,7 +141,8 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(lifecycle.relation(moved, dated), "SUBSTANTIVE_CHANGE")
         third = SIG("A cybersecurity incident could disrupt our operations.", actor="THIRD_PARTY")
         self.assertEqual(lifecycle.relation(third, base), "SUBSTANTIVE_CHANGE")
-        wider = SIG("A cybersecurity incident could disrupt our operations and harm our reputation with customers.")
+        # Role nouns such as "customers" are anchors (red team S4-A f04), so the gray-zone example avoids them.
+        wider = SIG("A cybersecurity incident could disrupt our operations and harm our reputation significantly.")
         self.assertEqual(lifecycle.relation(wider, base), "UNCERTAIN_MATCH")
         other_event = SIG("A cybersecurity incident could disrupt our operations.", event="IMPAIRMENT")
         self.assertEqual(lifecycle.relation(other_event, base), "UNRELATED")

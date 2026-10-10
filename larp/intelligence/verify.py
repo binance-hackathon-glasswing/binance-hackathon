@@ -179,12 +179,17 @@ def _prose_reading(text: str, span: dict, metric: str, kind: str, value, bounds)
         return "NUMBER_NOT_AN_AMOUNT"
     between = text[mention.end():amount.start()]
     pattern = PERCENT if metric in PERCENT_METRICS else MONEY
-    if pattern.search(between):
-        return "NOT_FIRST_AMOUNT_AFTER_METRIC"
     if ANALYST_FRAME.search(text[sentence_lo:amount.end()]):
         return "ATTRIBUTED_ESTIMATE_NOT_ADMISSIBLE"
     if is_change_amount(between):
         return "CHANGE_AMOUNT_NOT_LEVEL"
+    join = re.search(r"(?:-|\u2013|\u2014|\bto|\band)\s*$", text[sentence_lo:amount.start()])
+    if value is not None and join:
+        previous = [m for m in pattern.finditer(text, sentence_lo, join.start()) if m.end() >= join.start() - 1]
+        if previous and range_partner(text, previous[-1], unit, text[sentence_lo:previous[-1].start()]):
+            return "RANGE_BOUND_CLAIMED_AS_POINT"
+    if pattern.search(between):
+        return "NOT_FIRST_AMOUNT_AFTER_METRIC"
     derived = kind_of(text[sentence_lo:amount.end()])
     if kind != derived:
         return "KIND_NOT_SUPPORTED:" + derived
@@ -196,12 +201,6 @@ def _prose_reading(text: str, span: dict, metric: str, kind: str, value, bounds)
     if value is not None:
         if partner is not None:
             return "RANGE_BOUND_CLAIMED_AS_POINT"
-        before = text[sentence_lo:amount.start()]
-        join = re.search(r"(?:-|\u2013|\u2014|\bto|\band)\s*$", before)
-        if join:
-            previous = [m for m in pattern.finditer(text, sentence_lo, join.start()) if m.end() >= join.start() - 1]
-            if previous and range_partner(text, previous[-1], unit, text[sentence_lo:previous[-1].start()]):
-                return "RANGE_BOUND_CLAIMED_AS_POINT"
         if value != expected[0]:
             return "SIGN_MISMATCH" if -value == expected[0] else "NUMBER_NOT_IN_SPAN"
         return None
