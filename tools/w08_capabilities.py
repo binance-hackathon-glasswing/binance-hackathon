@@ -238,6 +238,8 @@ def collect(client, address, symbols, amount, tx_hashes):
     if connectivity["outcome"] != "ok":
         return {"blocked": connectivity["outcome"], "routes": []}
     call("GET", "market/rwa/tokens", {"binanceChainId": "56", "platformId": "bstock"})
+    if address is None:
+        return {"blocked": "wallet_observations_not_requested", "routes": []}
     call("POST", "balance/token-balances-by-address", {"address": address,
          "tokenContractAddresses": [{"binanceChainId": "56", "tokenContractAddress": token}
                                     for token in ["", USDT, *TOKENS.values()]]})
@@ -301,13 +303,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--address")
+    parser.add_argument("--connectivity-only", action="store_true",
+                        help="Probe authentication and token metadata without a wallet")
     parser.add_argument("--symbols", nargs="+", choices=list(TOKENS), default=list(TOKENS))
     parser.add_argument("--amount-base-units", default="1000000000000000000", type=positive_units)
     parser.add_argument("--tx-hash", action="append", default=[])
     args = parser.parse_args()
     try:
         env = selected_env(args.env_file)
-        address = public_address(args.address or env.get("AI_SEEDS_ADDRESS"))
+        address = None if args.connectivity_only else public_address(args.address or env.get("AI_SEEDS_ADDRESS"))
         if not all(env.get(key) for key in ENV_NAMES[:2]):
             parser.error("BINANCE_API_KEY and BINANCE_SECRET_KEY are required")
         if any(not re.fullmatch(r"0x[0-9a-fA-F]{64}", value) for value in args.tx_hash):

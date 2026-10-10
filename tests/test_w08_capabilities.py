@@ -137,6 +137,57 @@ class Boundaries(unittest.TestCase):
             with self.assertRaises(ValueError):
                 w.positive_units(amount)
 
+    def test_connectivity_only_never_makes_wallet_requests(self):
+        client = w.ReadClient("fake-key", "fake-secret", FakeOpener())
+        with patch.object(w.time, "sleep"):
+            summary = w.collect(client, None, ["NVDAB"], "1", [])
+        self.assertEqual(len(client.records), 2)
+        self.assertEqual(summary["blocked"], "wallet_observations_not_requested")
+        self.assertEqual(client.records[-1]["endpoint"], "market/rwa/tokens")
+
+    def test_authentication_and_rate_limit_stop_collection(self):
+        for code, expected in [(40102, "authentication_error"), (42900, "rate_limited")]:
+            client = w.ReadClient("fake-key", "fake-secret", FakeOpener(json.dumps({"code": code}).encode()))
+            with self.assertRaises(w.ProbeStopped) as stopped:
+                w.collect(client, w.USDT, ["NVDAB"], "1", [])
+            self.assertEqual(stopped.exception.outcome, expected)
+            self.assertEqual(len(client.records), 1)
+
+    def test_full_fake_flow_keeps_calldata_and_failed_gas_without_fallback(self):
+        class ScriptedClient:
+            def __init__(self):
+                self.records = []
+
+            def request(self, method, endpoint, params):
+                if endpoint == "aggregator/quote-and-swap":
+                    body = {"routerResult": {"vendorName": "LiquidMesh", "toTokenAmount": "17"},
+                            "tx": {"to": w.USDT, "data": "0xdeadbeef" + "0" * 64, "value": "0", "gas": "450000"}}
+                elif endpoint == "aggregator/approve-transaction":
+                    body = {"dexContractAddress": w.USDT,
+                            "data": "0x095ea7b3" + "0" * 24 + w.USDT[2:] + format(int(params["approveAmount"]), "064x")}
+                else:
+                    body = {}
+                record = {"method": method, "endpoint": endpoint, "params": params,
+                          "outcome": "api_or_http_error" if endpoint == "pre-transaction/gas-limit" else "ok",
+                          "response": {"code": 0, "data": [body]}}
+                self.records.append(record)
+                return record
+        client = ScriptedClient()
+        with patch.object(w.time, "sleep"):
+            summary = w.collect(client, w.USDT, ["NVDAB"], "1", [])
+        self.assertEqual([route["direction"] for route in summary["routes"]], ["buy", "sell"])
+        for route in summary["routes"]:
+            self.assertFalse(route["signable"])
+            self.assertIsNone(route["gas_estimate"])
+            self.assertEqual(route["gas_outcome"], "api_or_http_error")
+            self.assertIsInstance(route["approve_decode"], dict)
+        estimates = [record for record in client.records if record["endpoint"] == "pre-transaction/gas-limit"]
+        self.assertEqual(estimates[0]["params"]["evmTx"]["data"], "0xdeadbeef" + "0" * 64)
+        self.assertFalse(summary["nonce_consumption_proved"])
+        self.assertFalse(summary["finality_proved"])
+        self.assertFalse(summary["quote_expiry_proved"])
+        self.assertFalse(summary["replacement_enabled"])
+
 
 if __name__ == "__main__":
     unittest.main()
