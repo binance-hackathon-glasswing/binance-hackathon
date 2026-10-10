@@ -56,6 +56,17 @@ This is a live checklist. Remove an entire item once its work is fully completed
 
 ## Delivery and external dependencies
 
+Architecture follow-up, 2026-10-10 (IDEA-028 RT10–13): GAP-33/34/35/36/38 now have
+implemented Terraform state/cloud definitions, durable S3 write-once delivery,
+hourly anchor/backup scheduling, monitoring, IAM database grants and manifest/config
+startup checks. Local SDK/real-PostgreSQL tests and mocked Terraform plans pass;
+none establishes a hosted deployment. Remaining: Keegan/team select account,
+region/budget/retention/image and provision/rehearse; Isaac reviews and supplies
+external signer fencing/real execution; Keith/Yao Zhu supply their owner modules.
+Registration evidence, host image qualification, service authentication/network
+allowlists, real AWS restore/alert tests and five-plus-day rehearsal remain open.
+Full ordered work list: `build/architecture-deployment.md`. No whole GAP is closed.
+
 - [ ] GAP-37 — Confirm availability and backup acceptance, complete individual ownership outside the engine build, and publish a dated coverage rota. The component-based engine allocation is drafted in [IDEA-021 §8](ledger/IDEA-021.md#8-2026-10-10-delivery-allocation-and-build-estimate--syz-requested): Yao Zhu core/integration, Isaac execution/recovery, Keith accounting/harness, Keegan durability/audit/release; W01–W10 and AT01–20 have primary/reviewer coverage. This replaces the older suggested engine roles, not ownership for every decision, experiment or onboarding item. A written allocation alone does not establish availability or close this item.
 - [ ] GAP-38 — Replace generic milestone criteria with artifact links and measurable readiness gates; update Adopted/Implemented/Tested status from evidence, including the Oct 4 skeleton milestone. Sources: plan adopted-scope table and §9.
 - [ ] GAP-39 — Populate I-65's onboarding gate register: owner, answer deadline, evidence required, affected actions and fallback. Answered so far: Q-07, Q-10, Q-19 (kit); Q-34, Q-36, Q-37 and Q-16 (in practice); Q-09 by F-114 (follow-up Q-40). Prioritize Q-12/Q-26 eligibility (team position), Q-03 first BNB (expected with the Oct 11 deposit, F-116), Q-04/Q-06 valuation and window, Q-32 trading hours, Q-33 registration and version events, Q-14 incident uploads, Q-39 scoring and Q-40 in-run restarts; complete the core post-onboarding checklist when the official rules arrive. Pending organiser answers remain blocked items, not implicit approval.

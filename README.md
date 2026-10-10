@@ -37,9 +37,11 @@ Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [
 The `larp` package starts the IDEA-021 policy boundary; it cannot trade. See
 [`IDEA-023`](docs/ledger/IDEA-023.md) for its scope, verification and remaining work.
 After committing and pushing decision-related changes as required by `AGENTS.md`,
-run `python -m unittest discover -s tests -v` from the repository root. These tests
-need only the Python standard library and no `.env` or credentials. In the pinned
-environment, `python -m pytest` discovers only `tests/test_*.py` by default.
+run `python -m unittest tests.test_contracts -v` from the repository root for the
+original 13 standard-library tests. The complete runtime suite needs
+`deploy/requirements-test.lock`, disposable PostgreSQL and Linux worker isolation;
+it needs no `.env` or real credentials. Pytest collects under `tests/`, excluding
+credential-dependent standalone probes.
 
 The runtime/audit branch adds real PostgreSQL transactions, durable scheduler and
 audit outboxes, isolated workers, backup/restore and a restartable synthetic fixture.
@@ -49,3 +51,10 @@ acceptance matrix are in [IDEA-028](docs/ledger/IDEA-028.md). The default is off
 this increment cannot activate live trading. The lightweight coordinator image uses
 `deploy/requirements-runtime.lock`; the full research lock was also installed and
 checked on Linux Python 3.12.15 and Windows Python 3.12.14.
+
+The [architecture deployment guide](docs/build/architecture-deployment.md) lists
+every remaining provisioning/integration step and owner. Terraform definitions are
+in `deploy/bootstrap/` and `deploy/aws/`; the optional archive host uses
+`deploy/requirements-aws.lock` and `deploy/systemd/larp-archive.timer`. These provide
+durable S3 backup/hourly anchor delivery, monitoring and release checks. No AWS
+resources are provisioned, no destinations are selected, and signing remains blocked.

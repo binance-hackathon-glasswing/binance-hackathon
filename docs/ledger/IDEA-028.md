@@ -227,3 +227,36 @@ RT13 evidence will follow the final pushed code checks. The complete ordered wor
 list, required inputs, owner responsibilities and no-cloud/cloud commands are in
 `docs/build/architecture-deployment.md`. No AWS resources, secrets, alarms to people,
 registered uploads or real transactions were created by this follow-up.
+
+### RT13 — follow-up verification results, 2026-10-10
+
+Pushed implementation `5f3ecc3edd6bab9fee628175279b3d6a6b0231ed`: **70 tests passed,
+44 subtests passed**, 13.06 seconds, real PostgreSQL 14.24 / Linux Python 3.12.15.
+The original restart demo also passes; dependencies report no broken requirements.
+New tests cover SDK-validated S3 request parameters, same-key lost ACK, changed
+bytes/retention, corrupted restore downloads, hourly unchanged-head anchors, restart
+budgets, backward time, backup recursion avoidance, quarantine, corrupt outbox,
+audit deadline monitoring, real SQL grants denying financial-state mutation, missing
+configuration, pinned CA and release-manifest tampering.
+
+Terraform 1.13.5 / AWS provider 6.61.0: both modules validate; main infrastructure
+has **3 passing mocked plan scenarios**, bootstrap **1**. No AWS credential or apply
+was used. The initial `5c20936` validation caught heterogeneous conditional IAM/S3
+statement types; `9ac4ab8` replaced them with filtered statement lists and the checks
+pass. CI at `887f961` passes both infrastructure modules plus Python/demo/container:
+[run 38029124199](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38029124199).
+The final code head also runs the same CI workflow; GitHub PR #3 carries its checks.
+
+Changes continue in [draft PR #3](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/3)
+against `codex/engine-foundation`, designated reviewer Isaac. The AWS profile adds
+only boto3/botocore/jmespath/s3transfer to the full lock; existing compatible urllib3,
+dateutil and six pins are retained. No new Mac validation is claimed. Updated README,
+ledger index and partial backlog records point to the architecture guide; no unresolved
+GAP was removed. All source increments were committed and pushed before execution.
+
+Remaining owners: Keegan/team for selections, hosted provisioning/monitoring/restore
+and deployment acceptance; Isaac for independent review, signer fencing and real
+execution; Keith for financial semantics; Yao Zhu for evidence/provider integration;
+team for registration, final policy/window/funding evidence and declared rehearsal.
+The supplied systemd unit has not been installed or exercised on a selected cloud
+AMI. Local recovery and mocked cloud checks do not establish production readiness.
