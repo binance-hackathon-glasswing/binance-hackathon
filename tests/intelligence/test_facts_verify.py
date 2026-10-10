@@ -1,10 +1,9 @@
 """Fact extraction, claim verification, rounding-aware conflicts and comparisons."""
 
 from fractions import Fraction
-import re
 import unittest
 
-from larp.intelligence.facts import extract_document, item_events, normalized, parse_period, periods_in
+from larp.intelligence.facts import KEYWORD_EVENTS, extract_document, item_events, normalized, parse_period, periods_in
 from larp.intelligence.issuers import IssuerRegistry
 from larp.intelligence.scenarios import EXMEM, EXSEMI, FILINGS, FIXTURE_REGISTRY
 from larp.intelligence.text import document_text
@@ -150,8 +149,21 @@ NEGATED_EVENTS = (
     ("IMPAIRMENT", "We did not identify any events or circumstances that would indicate an impairment."),
     ("RESTATEMENT", "The Audit Committee concluded that a restatement of prior financial statements is not required."),
 )
+# Modal, conditional and forward-looking wording (risk factors, outlook): possible or planned, not reported.
+HYPOTHETICAL_EVENTS = (
+    ("IMPAIRMENT", "Goodwill impairment could result if the operating results of the segment decline."),
+    ("IMPAIRMENT", "We may be required to record an impairment of goodwill in future periods."),
+    ("IMPAIRMENT", "If our stock price declines, we might recognize an impairment charge."),
+    ("IMPAIRMENT", "We expect to record an impairment charge in the fourth quarter."),
+    ("RESTATEMENT", "Any future restatement of our financial statements would harm investor confidence."),
+    ("DELISTING", "There is a risk that our common stock could be delisted from the exchange."),
+    ("CYBERSECURITY_INCIDENT", "A cybersecurity incident could disrupt our operations."),
+    ("OFFICER_DEPARTURE", "Our Chief Executive Officer may resign at any time."),
+)
 AFFIRMED_EVENTS = (
     ("IMPAIRMENT", "The company recorded a goodwill impairment of $12 million in the quarter."),
+    ("IMPAIRMENT", "We recorded a goodwill impairment of $12 million; further impairments may follow."),
+    ("OFFICER_DEPARTURE", "On May 12, 2026, the Chief Financial Officer resigned."),
     ("IMPAIRMENT", "We recorded an impairment charge on the Boise facility, but no restructuring charge was required."),
     ("OFFICER_DEPARTURE", "The Chief Financial Officer will resign effective no later than November 30, 2026."),
     ("RESTATEMENT", "The Audit Committee concluded that the previously issued financial statements "
@@ -160,7 +172,8 @@ AFFIRMED_EVENTS = (
 
 
 class NegationScopeTests(unittest.TestCase):
-    """The extractor and the verifier read an event's whole clause for negation, in both directions."""
+    """The extractor and the verifier read an event's whole clause, in both directions, for negation and for
+    hypothetical wording."""
 
     def check(self, metric, sentence, *quotes):
         """Whether the extractor finds `metric`, and the verifier's reason for a claim quoting each of `quotes`."""
@@ -176,11 +189,13 @@ class NegationScopeTests(unittest.TestCase):
             reasons.append(verify_claim(claim, texts, None)[1])
         return metric in events, reasons
 
-    def test_negated_events_give_no_fact_and_are_not_verified(self):
-        for metric, sentence in NEGATED_EVENTS:
-            with self.subTest(sentence=sentence):
-                keyword = re.search(r"(?i)impairment|restatement", sentence).group(0)
-                self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, ["EVENT_NEGATED"] * 2))
+    def test_negated_or_hypothetical_events_give_no_fact_and_are_not_verified(self):
+        patterns = dict(KEYWORD_EVENTS)
+        for events, reason in ((NEGATED_EVENTS, "EVENT_NEGATED"), (HYPOTHETICAL_EVENTS, "EVENT_HYPOTHETICAL")):
+            for metric, sentence in events:
+                with self.subTest(sentence=sentence):
+                    keyword = patterns[metric].search(sentence).group(0)
+                    self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, [reason] * 2))
 
     def test_affirmed_events_still_give_a_fact_and_verify(self):
         for metric, sentence in AFFIRMED_EVENTS:

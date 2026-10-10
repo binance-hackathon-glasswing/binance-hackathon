@@ -210,3 +210,20 @@ Re-check result: R1, R2 and R4–R11 verified fixed. Keegan also ran the full su
    - `git diff --check 572332f..8cabdc3` is clean (criterion 4).
    - Mutation check: with the old 40-character look-behind guard restored in a scratch worktree, the new tests fail on each of the four re-check sentences, in both the extractor/verifier tests and the agent tests. The three sentences the old guard already rejected still pass.
 6. **Outcome: all four §9.3 criteria PASS.** The open limits are the conservative misses described above (an affirmed event sharing its clause with an unrelated negation) and hypothetical or risk-factor wording, which is still read as an event.
+
+### 9.4 Hypothetical event wording (follow-up to §9.3; SYZ, 2026-10-10)
+
+The §9.3 limit: modal, conditional and forward-looking wording ("Goodwill impairment could result if …", "our common stock could be delisted", "We expect to record an impairment charge") was still read as a reported event. The extractor turned such risk-factor and outlook boilerplate into verified adverse findings without any model, and the verifier accepted it from a model claim. This is the same failure class as R3.
+
+**Change.** `facts.negated` becomes `facts.unasserted(text, start, end)`. It reads the same clause as §9.3 and returns `NEGATED`, `HYPOTHETICAL` or None. The hypothetical cues are: may, might, could, would, should, can, if, unless, whether, possible/possibly, potential/potentially, risk(s), likely/unlikely, future, expect(s)/expected, anticipate(s)/anticipated, intend(s), "plan(s) to" and "in the event". Three phrases are not cues: "no/not later than", "should no longer be relied upon", and the month "May" followed by a day or year (case-sensitive). The extractor skips any unasserted match. If every match in a claim is unasserted, the verifier rejects it with `EVENT_NEGATED` when any match is negated, otherwise with `EVENT_HYPOTHETICAL`.
+
+The check stays conservative: one cue anywhere in the clause rejects the event. So "the Audit Committee concluded that the statements would need to be restated" is missed, and so is "the expected impairment was recorded". For non-reliance, the Item 4.02 metadata event (`ITEM:4.02`, F-ITEM-4.02) does not depend on wording and is unaffected. Tests renamed: `test_negated_events_give_no_fact_and_are_not_verified` → `test_negated_or_hypothetical_events_give_no_fact_and_are_not_verified`; the two §9.3 agent tests gain "or_hypothetical" in their names and now cover both boilerplate documents.
+
+**Prospective criteria (written before any run of the changed code):**
+
+1. New and changed tests pass:
+   - `test_facts_verify.NegationScopeTests`. The seven §9.3 negated sentences still give `EVENT_NEGATED`. Eight hypothetical sentences, at least one for each keyword event type, give no event fact and `EVENT_HYPOTHETICAL` for a claim quoting either the sentence or the keyword alone. Six affirmed controls give the event and verify: the four from §9.3, "We recorded a goodwill impairment of $12 million; further impairments may follow." (the modal sits in another clause) and "On May 12, 2026, the Chief Financial Officer resigned." (the month).
+   - `test_agent.ClaimBindingTests`: a model claim on each sentence of the negated and the hypothetical boilerplate 8-Ks abstains with the matching reason and leaves no adverse finding in the result or at the gate. The baseline finds none of those events, and F-RESTATEMENT is not FIRED.
+2. Every other test passes, including the 13 foundation tests. The `test_golden` pair is expected to fail on the first run (the identity hash covers `facts.py` and `verify.py`). The regenerated traces may differ only in that hash and the ids derived from it.
+3. `python -m larp.intelligence.evaluation`: PASS on every frozen threshold, with the pack unchanged. Compared leaf by leaf with `eval-report-ae7acb7.json`, only wall-clock fields may differ. None of the pack's three event sentences contains a cue.
+4. `git diff --check` clean.

@@ -57,18 +57,28 @@ KEYWORD_EVENTS = (
         r"\b(?:resign(?:s|ed|ation)?|step(?:s|ped)?\s+down|depart(?:s|ure|ed)?)\b", re.I)),
 )
 NEGATION = re.compile(r"\b(?:no|not|none|neither|nor|never|without|cannot|absence\s+of|unnecessary)\b|n't\b", re.I)
-NOT_NEGATING = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+be\s+relied\s+upon\b", re.I)
+# Modal, conditional and forward-looking cues: the event is possible or planned, not reported as having happened.
+HYPOTHETICAL = re.compile(r"\b(?:may|might|could|would|should|can|if|unless|whether|possible|possibly|potential|"
+                          r"potentially|risks?|likely|unlikely|future|expects?|expected|anticipates?|anticipated|"
+                          r"intends?|plans?\s+to|in\s+the\s+event)\b", re.I)
+# Phrases that contain a cue word but are not cues: deadlines, the non-reliance event phrase itself, and the month.
+NOT_A_CUE = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+be\s+relied\s+upon\b|"
+                       r"\b(?-i:May)\s+(?:\d{1,2}|\d{4})\b", re.I)
 # Clause ends: a line or sentence end, a semicolon, or a contrastive join. A bare comma or ", and" does not end
 # a clause, so negation in a list ("did not identify loss, damage, and impairment") still counts.
 CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'])|(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
 PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
 
 
-def negated(text: str, start: int, end: int) -> bool:
-    """True if a negation appears anywhere in the clause holding text[start:end], before or after it
-    ("recorded no impairment", "an impairment charge was not required", "did not identify ... an impairment").
+def unasserted(text: str, start: int, end: int):
+    """Why the event at text[start:end] is not reported as having happened, or None if it is.
 
-    Conservative: one negation anywhere in the clause rejects the event, so "recorded an impairment and did not
+    The whole clause holding the match is read, before and after it. "NEGATED": a negation appears in it
+    ("recorded no impairment", "an impairment charge was not required", "did not identify ... an impairment").
+    "HYPOTHETICAL": a modal, conditional or forward-looking cue appears in it ("could result in an impairment",
+    "if ... we might recognize an impairment", "we expect to record an impairment").
+
+    Conservative: one cue anywhere in the clause rejects the event, so "recorded an impairment and did not
     record a restructuring charge" gives no IMPAIRMENT fact."""
     lo, hi = text.rfind("\n", 0, start) + 1, len(text)
     for m in CLAUSE_BREAK.finditer(text, lo):
@@ -77,7 +87,10 @@ def negated(text: str, start: int, end: int) -> bool:
         elif m.start() >= end:
             hi = m.start()
             break
-    return bool(NEGATION.search(NOT_NEGATING.sub(" ", text[lo:start] + " " + text[end:hi])))
+    clause = NOT_A_CUE.sub(" ", text[lo:start] + " " + text[end:hi])
+    if NEGATION.search(clause):
+        return "NEGATED"
+    return "HYPOTHETICAL" if HYPOTHETICAL.search(clause) else None
 
 
 _QUARTER = {"first": 1, "second": 2, "third": 3, "fourth": 4, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
@@ -369,7 +382,7 @@ def _keyword_events(text, doc_sha):
     facts = []
     for event, pattern in KEYWORD_EVENTS:
         for m in pattern.finditer(text):
-            if negated(text, m.start(), m.end()):
+            if unasserted(text, m.start(), m.end()):
                 continue
             facts.append({"kind": "EVENT", "metric": event, "period": None, "value": None, "range": None,
                           "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,

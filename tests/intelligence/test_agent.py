@@ -31,6 +31,17 @@ NEGATED_BOILERPLATE = (
     ("IMPAIRMENT", "We did not identify any events or circumstances that would indicate an impairment."),
     ("RESTATEMENT", "The Audit Committee concluded that a restatement of prior financial statements is not required."),
 )
+# Modal, conditional and forward-looking boilerplate (risk factors, outlook): possible or planned, not reported.
+HYPOTHETICAL_BOILERPLATE = (
+    ("IMPAIRMENT", "Goodwill impairment could result if the operating results of the segment decline."),
+    ("IMPAIRMENT", "We expect to record an impairment charge in the fourth quarter."),
+    ("RESTATEMENT", "Any future restatement of our financial statements would harm investor confidence."),
+    ("DELISTING", "There is a risk that our common stock could be delisted from the exchange."),
+    ("CYBERSECURITY_INCIDENT", "A cybersecurity incident could disrupt our operations."),
+    ("OFFICER_DEPARTURE", "Our Chief Executive Officer may resign at any time."),
+)
+UNASSERTED = {"NEGATED_BOILERPLATE": (NEGATED_BOILERPLATE, "EVENT_NEGATED"),
+              "HYPOTHETICAL_BOILERPLATE": (HYPOTHETICAL_BOILERPLATE, "EVENT_HYPOTHETICAL")}
 
 EXTRA = {
     "G1_36": eight_k("0009900001-26-000301", "2026-07-01T20:00:00+00:00", [Q4_GUIDE.format("36.0")]),
@@ -40,6 +51,8 @@ EXTRA = {
     "G3_34": eight_k("0009900001-26-000303", "2026-09-20T20:00:00+00:00", [Q4_GUIDE.format("34.0")]),
     "NEGATED_BOILERPLATE": eight_k("0009900001-26-000305", "2026-10-02T20:00:00+00:00",
                                    [sentence for _, sentence in NEGATED_BOILERPLATE], items=("2.02",)),
+    "HYPOTHETICAL_BOILERPLATE": eight_k("0009900001-26-000306", "2026-10-02T21:00:00+00:00",
+                                        [sentence for _, sentence in HYPOTHETICAL_BOILERPLATE], items=("8.01",)),
 }
 
 
@@ -311,30 +324,35 @@ class ClaimBindingTests(AgentHarness):
                 result, _ = self.assess(["EXSEMI_Q3_8K"], model=claim(source), job_id=f"job:{reason}:{bool(source)}")
                 self.assert_abstains(result, reason)
 
-    def test_a_negated_event_claim_abstains_and_creates_no_adverse_finding(self):
-        self.world("NEGATED_BOILERPLATE")
-        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
-        for i, (metric, sentence) in enumerate(NEGATED_BOILERPLATE):
-            with self.subTest(sentence=sentence):
-                model = ScriptedModel(self.w.clock, [{"output": lambda st, metric=metric, sentence=sentence: {
-                    "action": "FINISH", "notes": "x",
-                    "claims": [{"kind": "EVENT", "metric": metric, "span": cite(st, sentence)}]}}])
-                result, doc = self.assess(["NEGATED_BOILERPLATE"], model=model, job_id=f"job:negated:{i}")
-                self.assert_abstains(result, "EVENT_NEGATED")
-                self.assertNotIn(metric, {f["type"] for f in result["event_findings"]})
-                _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
-                self.assertNotIn(metric, {a["type"] for a in after["unresolved_adverse"]})
+    def test_a_negated_or_hypothetical_event_claim_abstains_and_creates_no_adverse_finding(self):
+        for key, (sentences, reason) in UNASSERTED.items():
+            self.world(key)
+            state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+            for i, (metric, sentence) in enumerate(sentences):
+                with self.subTest(sentence=sentence):
+                    model = ScriptedModel(self.w.clock, [{"output": lambda st, metric=metric, sentence=sentence: {
+                        "action": "FINISH", "notes": "x",
+                        "claims": [{"kind": "EVENT", "metric": metric, "span": cite(st, sentence)}]}}])
+                    result, doc = self.assess([key], model=model, job_id=f"job:{key}:{i}")
+                    self.assert_abstains(result, reason)
+                    self.assertNotIn(metric, {f["type"] for f in result["event_findings"]})
+                    _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+                    self.assertNotIn(metric, {a["type"] for a in after["unresolved_adverse"]})
 
-    def test_the_baseline_finds_no_event_in_negated_boilerplate(self):
-        self.world("NEGATED_BOILERPLATE")
-        result, doc = self.assess(["NEGATED_BOILERPLATE"])
-        adverse = {"IMPAIRMENT", "RESTATEMENT"}
-        self.assertFalse(adverse & {c["metric"] for c in result["claims"] if c["kind"] == "EVENT"})
-        self.assertFalse(adverse & {f["type"] for f in result["event_findings"]})
-        self.assertNotEqual({f["falsifier_id"]: f["state"] for f in result["falsifiers"]}["F-RESTATEMENT"], "FIRED")
-        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
-        _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
-        self.assertFalse(adverse & {a["type"] for a in after["unresolved_adverse"]})
+    def test_the_baseline_finds_no_event_in_negated_or_hypothetical_boilerplate(self):
+        for key, (sentences, _) in UNASSERTED.items():
+            with self.subTest(world=key):
+                self.world(key)
+                result, doc = self.assess([key])
+                adverse = {metric for metric, _ in sentences}
+                self.assertFalse(adverse & {c["metric"] for c in result["claims"] if c["kind"] == "EVENT"})
+                self.assertFalse(adverse & {f["type"] for f in result["event_findings"]})
+                states = {f["falsifier_id"]: f["state"] for f in result["falsifiers"]}
+                self.assertNotEqual(states["F-RESTATEMENT"], "FIRED")
+                state = dict(initial_state(EXSEMI, PROFILE), context=self.context,
+                             context_hash=context_hash(self.context))
+                _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+                self.assertFalse(adverse & {a["type"] for a in after["unresolved_adverse"]})
 
 
 class RequestValidationTests(AgentHarness):
