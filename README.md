@@ -36,3 +36,7 @@ Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [
 W08's read-only execution capability collector, usage and W04 handoff are in
 [`docs/engineering/W08.md`](docs/engineering/W08.md); preregistration and measured blockers are in
 [`docs/ledger/EXP-005.md`](docs/ledger/EXP-005.md). No transaction is signed or broadcast by this collector.
+
+W04's execution component and production integration boundaries are in
+[`docs/engineering/W04.md`](docs/engineering/W04.md); offline crash/recovery evidence is in
+[`docs/ledger/EXP-006.md`](docs/ledger/EXP-006.md). Its supplied ports are fake only; live execution remains disabled.
