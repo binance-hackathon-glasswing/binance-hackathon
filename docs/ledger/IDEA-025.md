@@ -204,3 +204,9 @@ Re-check result: R1, R2 and R4–R11 verified fixed. Keegan also ran the full su
 2. **Traces** regenerated from `ae7acb7` and compared leaf by leaf with the committed ones. The only differences are the rule baseline's code-identity hash (`checkpoint_sha256` `b324be5b…` → `7865f60e…`) and the ids derived from it (`model_hash`, `assessment_key`, `result_id`, finding, job, request and batch ids). No field was added or removed. Statuses, tool sequences, findings, falsifier states, thesis transitions and gate values are unchanged (criterion 2).
 3. **Evaluation at `ae7acb7`: PASS** (`tests/intelligence/evidence/eval-report-ae7acb7.json`, SHA-256 `4e42fd4f…b980`). Pack digest `42789e45…` and thresholds SHA-256 `3a1c9d8a…` are unchanged. Compared leaf by leaf with `eval-report-35c60b4.json`, the only differences are `wall_clock_us.median` and `.max`. Every metric, per-case status, reason, tool count, gate value and the SUPPORTED_ON_SYNTHETIC_PACK comparison are identical (criterion 3).
 4. Trace SHA-256 after regeneration: `trace-tool-selection-thesis-revision.json` `20b7d9c8…239e`, `trace-justified-abstention.json` `10318b4b…8ac3`.
+5. **Results commit `8cabdc3`:**
+   - unittest **142 tests OK**; pytest **142 passed, 530 subtests passed**.
+   - A fresh `git clone --no-checkout --config core.autocrlf=true` checkout of `8cabdc3` (macOS) passes unittest.
+   - `git diff --check 572332f..8cabdc3` is clean (criterion 4).
+   - Mutation check: with the old 40-character look-behind guard restored in a scratch worktree, the new tests fail on each of the four re-check sentences, in both the extractor/verifier tests and the agent tests. The three sentences the old guard already rejected still pass.
+6. **Outcome: all four §9.3 criteria PASS.** The open limits are the conservative misses described above (an affirmed event sharing its clause with an unrelated negation) and hypothetical or risk-factor wording, which is still read as an event.
