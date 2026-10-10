@@ -1,8 +1,8 @@
 ---
 name: binance-agentic-ai-challenge
 description: Core skill file for "Beyond the Benchmark: The Binance Agentic AI Challenge" (DoraHacks, Sep–Nov 2026) — official facts, hard guardrails, the never-do list and ranked open questions. Load it for any rule-compliance, design, risk, logging/versioning or planning question on this challenge, then load the reference/larp file the file index points to when you need K/E/I/L/T/H/P/D/S detail.
-version: 0.7.5 (no declaration requested, team statement; dates re-set by IDEA-009; F-117 assumptions in Q-40)
-revised: 2026-10-08 (SGT, UTC+8)
+version: 0.7.6 (IDEA-021 engineering caveats for nonce, signing and audit delivery; no rule or policy-value change)
+revised: 2026-10-10 (SGT, UTC+8)
 source_verification:
   - official DoraHacks page re-checked 2026-09-30 (body text, timeline image, banner) — unchanged since the 2026-09-27 capture
   - Laya model card (Hugging Face) checked 2026-09-30 — card text only (E-51)
@@ -231,6 +231,8 @@ Tags: **[RULE: F-xx]** required by official text · **[RULE-DERIVED]** our conse
 
 Guardrails G-20..G-47 (mostly POLICY; G-40–G-42 RULE; G-43–G-44 RULE-DERIVED) and harness additions G-50..G-54 — in `larp/plan.md`.
 
+**2026-10-10 implementation review caveats (IDEA-021 R03–R06/R08; GAP-30/31/34/46/65 remain open).** G-18(g)'s independent risk-exit eligibility is not a guarantee that another token can execute while the wallet has a missing nonce: nonce ordering is wallet-wide. Deadline expiry or absence from one index is not proof of a dropped transaction. G-18(b)'s signer uniqueness must be refined for distinct approve/swap steps and any explicitly authorized attempts without permitting duplicate economic actions; the detailed proposed contract is IDEA-021 ENG-05/06, not an adopted replacement procedure. G-19's exactly-one `log()` call is not itself crash-safe exactly-one logical event: the SDK generates a fresh ID per call, while PROTOCOL §1 requires resends to reuse the original ID. F-109/G-07's spool check is a normal-flow health indicator, not per-round acknowledgement across crashes/4xx (participant-kit.md K13 engineering caveat). Implement and verify durable event identity/bytes/acknowledgements before claiming G-19 is satisfied. Local write-ahead durability or exclusive signing-ownership failure blocks all signing, including exits; remote upload failure with intact local records is a separate condition. These caveats correct engineering guarantees, do not change official facts or declared risk values, and confer no permission to trade.
+
 ---
 
 ## 11. OPEN QUESTIONS (ranked)
@@ -355,4 +357,5 @@ Moved sections keep their v0.3 numbers, so cross-references such as "§6.1" or "
 - 2026-10-08: four more kit-named Skills probed (participant-kit.md K6b): token-rank and social-hype cover our names as snapshots; the other two Skills and two boards do not. First EDGAR run recorded in `../ledger/IDEA-001.md` §15; `tools/edgar_fetch.py` now picks exhibits by the filing index's Type column.
 - 2026-10-08: SEC EDGAR taken off hold (SYZ decision; `../ledger/IDEA-001.md` §15); test pipeline `../../tools/edgar_fetch.py`.
 - 2026-10-07: kit-named Skills sources probed (participant-kit.md K6b); Q-31 annotated with a team decision. Data plan: kit-provided and kit-named sources first (IDEA-001 §11).
+- v0.7.6 (2026-10-10): IDEA-021 engine-only full-code review, primary literature and independent red teams identify implementation caveats in G-18/G-19: wallet-wide nonce barriers; approve/swap/attempt identity; stable logical audit events rather than crash-sensitive call counts; spool absence not per-round delivery proof; local durability/ownership failures block all signing. Added explicit caveat after G-19 and participant-kit.md K13. These are engineering corrections and proposed implementation contracts, not new organiser answers, adopted trading policy or tested runtime. Live DoraHacks re-check again returned HTTP 405; prior capture stands.
 - Next update: when the official competition rules (scoring rules, incident policy) arrive — finish the checklist above.

@@ -292,3 +292,17 @@ Estimates are [E]. "Incremental" means beyond IDEA-010 §5 must-haves already pl
 - **Read for this entry:** IDEA-019 in full; IDEA-018; IDEA-010 §4–§5; IDEA-011; IDEA-013 R1; IDEA-015 A.1–A.2; SKILL.md G-03, G-05, G-09, G-18, G-19, F-95..F-110, F-114..F-117; plan.md G-22, G-25, G-27, G-28, G-46; `proposal_answers.md` "Failure modes"; `bstocks-trading-guide.md` lines 97–102, 154–156, 277–292.
 - **Not tested:** that the Web3 API's broadcast endpoint accepts a same-nonce replacement; real `openState` schedules; real quote costs.
 - **Status:** this is an architecture recommendation, not an implementation, and no readiness or profitability claim follows from it.
+
+## 10. 2026-10-10 correction — engine-only independent review (SYZ requested; Codex)
+
+[IDEA-021](IDEA-021.md) records a full first-party code review, primary systems literature, two independent red teams and a second adversarial pass over the corrected contracts. It is the **corrected architecture candidate** for this entry; both remain recommendations, not an adopted policy or implementation. The original text above is retained under the append-only ledger rule.
+
+Do not adopt §§3–6 unchanged. In particular:
+- §§3.3–3.5 embed policy choices in the engine; move them into separately manifested policy/risk profiles without loosening current declarations. Add explicit policy state, input requirements, proposal expiry, precise numeric/target semantics and outcome feedback.
+- §5.3's generic same-nonce clear is unproved, and §8.3's other-token sell fallback cannot bypass a wallet-wide nonce gap. Replacement remains disabled until its authorization, competing hashes, finality, reservations and endpoint behavior are verified. Unknown signing ownership blocks all new signing.
+- §6's 24-hour EDGAR relaxation and §3.3's reassessment-timeout `allow` do not establish valid inputs. Use declared dependencies and positive recovery evidence; outage age is not favorable evidence.
+- The journal needs atomic reservations and durable command/audit outboxes. Exactly one `log()` call or an empty SDK spool does not establish one durable logical log across crashes; retain immutable event IDs and bytes per PROTOCOL 2.0.
+- §4 needs separate exact audit replay, shared-state-machine fault simulation, approximate market simulation and real-adapter/paper/dev verification. Trade candles are not executable midpoints; synthetic fills do not prove live recovery. Jun/Jul to Oct does not supply 10–14 independent two-week historical windows; count actual joint coverage and retain gaps.
+- “Always shippable,” “counterfactual … for free,” guaranteed self-clearing and the net-new 6–9 pd estimate are not established. Read IDEA-021 ENG-01–12 and AT01–20 for the corrected contracts, conditional liveness and prospective activation evidence.
+
+No trading policy was selected, no experiment or wallet/model/logging code was run, and no implementation backlog item is closed by this review. Follow-up remains GAP-65; policy selection is separate in GAP-64.
