@@ -472,3 +472,33 @@ audit chunk is found only at the next full verification (RT17 known limit);
 full-verification capacity is still unproved until the rehearsal. Migration 006
 was run only on fresh test schemas (no pre-existing audit rows). Peer
 acceptance of PR #3 (Isaac) and the integration route remain as in RT16.
+
+### RT20 — cross-component integration: first criteria and gap inventory, 2026-10-10
+
+Context: PRs #3 (runtime), #4 (evidence) and #6 (execution) plus `main` were merged
+onto `codex/engine-foundation` (which already held PR #5, strategy) through
+integration PR #8 (`codex/integration`); PR #7 is excluded by the user's
+instruction. Main's IDEA-023 was renumbered IDEA-032 there. These tests are
+committed and pushed before they run. Results: **NOT RUN** at this commit.
+
+**Boundary inventory (read from the merged code):**
+
+| Boundary | State | Gap / owner |
+|---|---|---|
+| Runtime → evidence: `AssessmentRequest.v1` / `AssessmentResult.v1` | Yao's `build_request` and result match `larp.runtime.schema` validators field for field | none known; C1 checks it |
+| Evidence → strategy: `consume()` | Keith's adapter reads Yao's real output (captured from the golden trace at `544df90`) | fixture drift if the evidence output changes; C2 detects it |
+| Coordinator → strategy policy/planner (G1) | The coordinator builds context `{projection, reservations, request, assessment}`; Keith's `decide`/`plan` need `StrategyContext.v1` (profile, `PortfolioState.v1`, markets, price series, `assessments`, `assessment_requests`, sessions, health) | G1, Keegan: a context provider port in `larp/ports.py`, then the coordinator uses it |
+| Strategy plan → coordinator commit (G2) | Coordinator expects intents with `decision_id`, string `amount`, `expires_ms` and deltas `{intent_id, asset, units}`; Keith's intents carry `pay_units`/`min_receive_units`/quote fields and deltas `{cash_units, bnb_units, token_units}` | G2, Keegan with Keith: one PlanResult/reservation schema or an adapter |
+| Coordinator → execution (G3) | `ports.Execution.advance(state, observation)` vs Isaac's `Executor` (`create/prepare/authorize/sign/broadcast/reconcile`) with its own `Intent` and `Store` | G3, Keegan with Isaac: adapter from command to `Executor`, and `terminal_rounds` attestation from its outcomes |
+| Execution observations → accounting (G4) | The coordinator reducer updates a `balances` projection; Keith's `advance_accounting` reduces `PortfolioState.v1` | G4, Keegan with Keith: make Keith's reducer the projection reducer |
+| Issuer evidence context (G5) | `consume()` needs `PolicyState.data.evidence_contexts` kept in step with Yao's issuer state; nothing updates it | G5, Keegan with Yao and Keith: decide where the context lives (PR #5 re-review note 1) |
+
+**Prospective criteria for this commit** (`python -m pytest -q -p no:cacheprovider`, CI Linux/PostgreSQL; unittest locally):
+
+1. C1: the evidence golden-trace request and result pass `assessment_request` and `assessment_result` at the result's completion time.
+2. C2: Keith's `assessment-producer.json` request/result equal the current evidence golden trace. A failure means re-capture, not a code bug.
+3. C3: the current golden-trace result, bound only to the strategy fixture's run/profile, reaches `decide()` with diagnostic `ASSESSMENT_ACCEPTED`.
+4. C4: marked `expectedFailure`: a BUY round through the real coordinator, PostgreSQL store, Keith's `decide` and `plan` commits at least one execution command. It is expected to fail on G1/G2 today (no StrategyContext provider, no PlanResult adapter); an unexpected success means remove the marker and re-check.
+5. Every existing test still passes (CI on PR #8 is the baseline).
+
+Next (not in this commit): adapters for G1–G4 and the full thin path from PARALLEL_BUILD (filing → assessment → proposal → mandatory risk/planning → atomic commit → execution observations → settled accounting → durable audit → restart replay), each with its own prospective criteria.
