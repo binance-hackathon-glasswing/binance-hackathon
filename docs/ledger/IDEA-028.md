@@ -302,3 +302,30 @@ intent history or inactive reservations in the next snapshot; journal replay mus
 remain exact. This prevents the smaller fixture histories from recreating quadratic
 batch growth after the large round records have been pruned. Owner production
 state retention remains an explicit integration responsibility.
+
+### RT15 — review-amendment verification, 2026-10-10
+
+Pushed `4ecfaa0`: **85 tests and 49 subtests passed** against the disposable Linux
+PostgreSQL database (21.49 s). Both CI triggers passed, including container/demo
+and both infrastructure modules: run 38032038917 and 38032042361. No failed test
+was suppressed or acceptance threshold relaxed.
+
+Pushed final implementation `79d5ba38dd860517aa250debf721fce6dd1786d4`:
+**86 tests and 49 subtests passed** (23.69 s), Linux Python 3.12.15 / PostgreSQL
+14.24; all 13 foundation tests retained. `pip check` reports no broken requirements.
+CI for `79d5ba3` also passes runtime/tests/demo/container and both infrastructure
+modules: [run 38032177234](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38032177234).
+The restart demo passes and its refreshed `docs/build/evidence/runtime-offline-trace.json`
+has SHA-256 `eb713e04152fa44120d7c76c86c479f4e7298a2717057da63d0342c434a2cfc0`.
+It records the broadcast, terminal success, then the COMPLETE audit with the exact
+synthetic hash and decision/round mapping. Final metrics: 0 open rounds, 0 pending
+audit chunks. The failed-assessment example is still labeled by its error rather
+than inventing model reasoning. Older RT05–13 trace descriptions/checksums refer
+to their historical commits; this file supersedes that earlier trace.
+
+All eleven reviewer topics now have amendments and regression evidence under RT14.
+The live backlog was checked: these fixes do not complete any entire remaining
+GAP, so none is removed. No production roles, infrastructure or live services were
+changed. PR #3 remains for re-review; integration owners and deployment/rehearsal
+limits in RT14 remain open. Full snapshot verification remains linear in journal
+size and must still be capacity-tested during rehearsal.

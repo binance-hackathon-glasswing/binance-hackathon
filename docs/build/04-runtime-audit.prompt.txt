@@ -29,3 +29,11 @@ traces, and docs/build/runtime-infrastructure.md for the requested recommendatio
 Isaac review, owner-module integration, selected deployment destinations and actual
 registered/rehearsal/live capabilities remain pending with named owners. No main
 merge, registered transaction, or shortened rehearsal is claimed or authorized.
+
+Review-amendment appendix — 2026-10-10, IDEA-028 RT14–15:
+All eleven comments in PR #3 review 5477961701 are addressed. Pushed implementation
+79d5ba3 passes 86 Linux/PostgreSQL tests plus 49 subtests; refreshed restart trace
+waits for terminal reconciliation before sealing its swap audit. Review criteria,
+comment-to-fix matrix, exact trace hash and remaining integration limits are in
+IDEA-028. Execution owners must supply terminal_rounds; deployment upgrades must
+reapply the restricted uploader grants. Re-review and full rehearsal remain open.
