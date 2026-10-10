@@ -235,3 +235,5 @@ New fact from the follow-up fetch: `origin/branch-isaac` now exists, initially s
 Validation of this publication is document/link/diff checking only. The 150-test result remains tied to the original evidence SHA, not to main or any future integration. The pre-existing untracked `Claude outputs/` remains untouched; do not declare the strict clean-worktree handoff check satisfied. Remote success is reported only after the push and fetched-head comparison complete.
 
 The implementation prompt received an independent semantic red-team pass before publication. Corrections applied: require an actual policy-adoption record instead of assuming one; prevent partial fact retention from upgrading ABSTAIN or expanding authority; require an independently labeled held-out real-document evaluation and mark it NOT RUN if its inputs are unavailable. No review criterion was treated as an already passing implementation test.
+
+- 2026-10-10 note (Keegan, integration): "main's IDEA-023" above is renumbered [IDEA-032](IDEA-032.md) on the integration branch; the foundation's IDEA-023 keeps its ID.

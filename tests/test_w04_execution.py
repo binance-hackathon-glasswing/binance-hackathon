@@ -7,14 +7,8 @@ from unittest.mock import patch
 
 from larp.execution import (Blocked, Conflict, Executor, Gates, Outcome, Signed,
                             canonical, possible_swap_hashes, validate_payload)
-# IDEA-031 AC-I09: in the integrated tree tests/ is a package (runtime branch), so the fixture module is
-# tests.execution_fixtures; the top-level name still works when this directory is on sys.path (owner branch).
-try:
-    from execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
-                                    FakeSigner, FakeVenue, SQLiteFixture, finalized, intent)
-except ModuleNotFoundError:
-    from tests.execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
-                                    FakeSigner, FakeVenue, SQLiteFixture, finalized, intent)
+from tests.execution_fixtures import (BLOCK, ROUTER, TOKEN, WALLET, FakeDecoder, FakeGuards,
+                                FakeSigner, FakeVenue, SQLiteFixture, finalized, intent)
 
 
 class ExecutionTests(unittest.TestCase):

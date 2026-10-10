@@ -19,7 +19,7 @@ Applies to branch `codex/evidence-hardening`. Record: [IDEA-031](../ledger/IDEA-
 
 ## Semantic rules (summary)
 
-PR #7 review corrections ([IDEA-032](../ledger/IDEA-032.md)): BUY audit `amount` is exact USDT pay amount using the planner's money scale, while SELL `amount` is token quantity using token decimals. AssessmentResult.v2 must carry nonnegative integer clocks with `cutoff_ms ≤ started_ms ≤ completed_ms ≤ consumption time`; runtime additionally requires the exact request cutoff. Source page budgets apply per poll: unprocessed continuations persist across restart, incomplete coverage stays visible, and abandoning a failed continuation forces a full rescan without conditional validators.
+PR #7 review corrections ([IDEA-033](../ledger/IDEA-033.md); recorded as IDEA-032 on the PR branch before the merge): BUY audit `amount` is exact USDT pay amount using the planner's money scale, while SELL `amount` is token quantity using token decimals. AssessmentResult.v2 must carry nonnegative integer clocks with `cutoff_ms ≤ started_ms ≤ completed_ms ≤ consumption time`; runtime additionally requires the exact request cutoff. Source page budgets apply per poll: unprocessed continuations persist across restart, incomplete coverage stays visible, and abandoning a failed continuation forces a full rescan without conditional validators.
 
 Follow-up R06–R08: partial observations advance only `records_seen`, not the complete-assessment checkpoint. Corrections accumulate per supporting record and resolve a latch only after all supports are corrected/withdrawn; complete rereads can recover after partial reads, but same-version reads and still-fired falsifiers cannot manufacture corrections. Legacy v2 state lacks the new checkpoint and is upgraded without treating old observations as complete; support revisions are recovered only from matching record identities, otherwise remain fail-closed. All listing parsers return `(items, next_url, item_truncated)`. Item-cap loss persists in continuation `coverage_incomplete` across polls/restarts and remains visible after the final page; an untruncated full rescan is required to restore complete source coverage.
 
@@ -38,7 +38,7 @@ Follow-up R06–R08: partial observations advance only `records_seen`, not the c
 
 ## Free sources
 
-2026-10-11 follow-up (IDEA-032 R09–R14): retrieval and availability timestamps are
+2026-10-11 follow-up (IDEA-033 R09–R14): retrieval and availability timestamps are
 captured after HTTP response completion, including retries. Listing shape errors
 persist as source failures; missing identities, rejected items and item caps retain
 incomplete coverage through pagination until a complete clean rescan. The probe

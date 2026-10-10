@@ -1,4 +1,4 @@
-"""IDEA-032 R10: elapsed assessment time is not future evidence or free validity."""
+"""IDEA-033 R10: elapsed assessment time is not future evidence or free validity."""
 
 from larp.contracts import ContractError
 from larp.runtime.coordinator import Coordinator

@@ -35,7 +35,7 @@ Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [
 
 ### Offline engine foundation
 The `larp` package starts the IDEA-021 policy boundary; it cannot trade. See
-[`IDEA-023` (owner-branch record)](docs/ledger/IDEA-023-offline-policy-boundary.md) for its scope, verification and remaining work.
+[`IDEA-023`](docs/ledger/IDEA-023.md) for its scope, verification and remaining work.
 After committing and pushing decision-related changes as required by `AGENTS.md`,
 run `python -m unittest tests.test_contracts -v` from the repository root for the
 original 13 standard-library tests. The complete runtime suite needs
@@ -58,6 +58,8 @@ in `deploy/bootstrap/` and `deploy/aws/`; the optional archive host uses
 `deploy/requirements-aws.lock` and `deploy/systemd/larp-archive.timer`. These provide
 durable S3 backup/hourly anchor delivery, monitoring and release checks. No AWS
 resources are provisioned, no destinations are selected, and signing remains blocked.
+
+### Execution component (Isaac)
 W08's read-only execution capability collector, usage and W04 handoff are in
 [`docs/engineering/W08.md`](docs/engineering/W08.md); preregistration and measured blockers are in
 [`docs/ledger/EXP-005.md`](docs/ledger/EXP-005.md). No transaction is signed or broadcast by this collector.
