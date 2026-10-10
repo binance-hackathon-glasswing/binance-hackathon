@@ -17,10 +17,15 @@ on sec.gov is considered public information and may be copied or further distrib
 
 No keys, no signing, no ai-seeds calls. Output goes to data/edgar/<UTC stamp>/ (git-ignored, F-61).
 
+2026-10-10 corrections (IDEA-013 R5/R6, IDEA-025): HTML is converted by larp.intelligence.text, which keeps
+table-cell boundaries (" | ") instead of concatenating adjacent cells; saved text is written as explicit UTF-8
+bytes ("\n" newlines, NFC) and `text_sha256` is the SHA-256 of exactly those saved bytes on every platform.
+The runtime ingestion path is larp/intelligence/ingest.py; this script stays a research fetcher.
+
 Run from the team network:
   python tools/edgar_fetch.py --user-agent "Glasswing research <contact email>"
   python tools/edgar_fetch.py --forms 8-K,6-K --per-company 3 --window 2025-10-29:2025-11-12
-  (or put SEC_USER_AGENT=... in the git-ignored .env, loaded automatically, or the environment)
+  (or put LARP_SEC_USER_AGENT=... (legacy SEC_USER_AGENT) in the git-ignored .env, loaded automatically, or the environment)
 """
 import argparse
 import hashlib
@@ -30,10 +35,10 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
-from html.parser import HTMLParser
 from pathlib import Path
 
-import requests
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root, for larp.intelligence
+from larp.intelligence.text import document_text  # noqa: E402
 
 try:  # read the git-ignored .env (SEC_USER_AGENT) if python-dotenv is installed (requirements.in)
     from dotenv import load_dotenv
@@ -96,7 +101,7 @@ def get(session, url, want_json=True):
                 except ValueError:
                     return r.status_code, None, "not JSON"
             return r.status_code, r.content, None
-        except requests.RequestException as e:
+        except OSError as e:  # requests.RequestException subclasses IOError (OSError)
             _last = time.monotonic()
             rec["error"] = repr(e)[:300]
             RAW.append(rec)
@@ -104,37 +109,18 @@ def get(session, url, want_json=True):
     return None, None, "retry exhausted"
 
 
-class _Text(HTMLParser):
-    """Minimal HTML -> text (stdlib only): drops script/style, keeps block breaks."""
-    BLOCK = {"p", "div", "br", "tr", "li", "h1", "h2", "h3", "h4", "h5", "h6", "table", "section"}
-
-    def __init__(self):
-        super().__init__(convert_charrefs=True)
-        self.out, self.skip = [], 0
-
-    def handle_starttag(self, tag, attrs):
-        if tag in ("script", "style"):
-            self.skip += 1
-        elif tag in self.BLOCK:
-            self.out.append("\n")
-
-    def handle_endtag(self, tag):
-        if tag in ("script", "style") and self.skip:
-            self.skip -= 1
-        elif tag in self.BLOCK:
-            self.out.append("\n")
-
-    def handle_data(self, data):
-        if not self.skip:
-            self.out.append(data)
-
-
 def html_to_text(raw: bytes) -> str:
-    p = _Text()
-    p.feed(raw.decode("utf-8", errors="replace"))
-    text = "".join(p.out).replace("\xa0", " ")
-    text = re.sub(r"[ \t]+", " ", text)
-    return re.sub(r"\n\s*\n+", "\n\n", text).strip()
+    """Filing bytes -> portable text with table-cell boundaries (larp.intelligence.text)."""
+    return document_text(raw, "document.htm", None).text
+
+
+def save_document_text(path: Path, raw: bytes, name: str, content_type=None) -> dict:
+    """Write the exact portable UTF-8 bytes and hash those same bytes (IDEA-013 R6)."""
+    saved = document_text(raw, name, content_type)
+    path.write_bytes(saved.saved_bytes)
+    return {"raw_sha256": saved.raw_sha256, "text_sha256": saved.text_sha256, "text_bytes": len(saved.saved_bytes),
+            "text_chars": len(saved.text), "text_encoding": "utf-8", "source_encoding": saved.encoding,
+            "decode_lossy": saved.lossy, "text_sha256_basis": "exact saved file bytes"}
 
 
 def rows_from(block):
@@ -177,7 +163,7 @@ def pick_document(form, docs, primary):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--user-agent", default=os.environ.get("SEC_USER_AGENT"),
+    ap.add_argument("--user-agent", default=os.environ.get("LARP_SEC_USER_AGENT") or os.environ.get("SEC_USER_AGENT"),
                     help="required by the SEC: who you are + contact, e.g. 'Glasswing research you@example.com' (team name: Glasswing)")
     ap.add_argument("--forms", default="8-K,6-K", help="comma-separated form types to read (default 8-K,6-K)")
     ap.add_argument("--per-company", type=int, default=2, help="newest filings per company to read (default 2)")
@@ -188,6 +174,10 @@ def main():
     if not args.user_agent:
         sys.exit("Refusing to run: the SEC requires a declared User-Agent with contact details. "
                  "Pass --user-agent or set SEC_USER_AGENT.")
+    if (os.environ.get("LARP_SEC_USER_AGENT") and os.environ.get("SEC_USER_AGENT")
+            and os.environ["LARP_SEC_USER_AGENT"] != os.environ["SEC_USER_AGENT"]):
+        sys.exit("Refusing to run: LARP_SEC_USER_AGENT and SEC_USER_AGENT disagree.")
+    import requests  # imported here so the helpers above can be tested without the dependency
     forms = {f.strip().upper() for f in args.forms.split(",") if f.strip()}
     window = tuple(args.window.split(":")) if args.window else None
 
@@ -242,15 +232,13 @@ def main():
                     rec["document"] = {"url": base + doc, "error": err4}
                     print(f"         document: {err4}")
                 else:
-                    text = html_to_text(raw) if doc.lower().endswith((".htm", ".html")) else raw.decode("utf-8", "replace")
                     fname = f"{sym}_{r['accessionNumber']}_{doc}.txt"
-                    (out / "docs" / fname).write_text(text)
+                    saved = save_document_text(out / "docs" / fname, raw, doc)
                     rec["document"] = {
                         "url": base + doc, "chosen_because": why, "source_ts_utc": r["acceptanceDateTime"],
-                        "fetched_utc": RAW[-1]["fetched_utc"], "http_status": st4,
-                        "raw_sha256": hashlib.sha256(raw).hexdigest(),
-                        "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
-                        "text_chars": len(text), "saved_as": f"docs/{fname}"}
+                        "fetched_utc": RAW[-1]["fetched_utc"], "http_status": st4, **saved,
+                        "saved_as": f"docs/{fname}"}
+                    text = (out / "docs" / fname).read_bytes().decode("utf-8")
                     head = re.sub(r"\s+", " ", text)[:240]
                     print(f"         read {doc} ({why}); {len(text):,} chars of text")
                     print(f"         \"{head}…\"")
@@ -266,8 +254,8 @@ def main():
         report["issuers"][sym] = entry
         print()
 
-    (out / "report.json").write_text(json.dumps(report, indent=1, default=str))
-    (out / "requests.json").write_text(json.dumps(RAW, indent=1))
+    (out / "report.json").write_bytes(json.dumps(report, indent=1, default=str).encode("utf-8"))
+    (out / "requests.json").write_bytes(json.dumps(RAW, indent=1).encode("utf-8"))
     print(f"Saved {out}/report.json, requests.json and docs/ (git-ignored). Requests made: {len(RAW)}.")
 
 
