@@ -117,31 +117,48 @@ class ResearchTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             fusion_rows(Document.from_dict(request))
 
-    def registration(self):
-        return {"schema": "EconomicRegistration.v1", "experiment_id": "SYNTHETIC_UNIT_CHECK_NOT_EXP",
-                "origin": "SYNTHETIC_VERIFICATION", "hypothesis": "fixture incremental outcome",
-                "population": "synthetic portfolio windows", "dataset_hash": "a" * 64,
-                "rights_basis": "generated synthetic values", "rights_cleared": True,
-                "cost_model": "fixture observed accounting", "detection_delay": 1,
-                "purge_sessions": 5, "embargo_sessions": 5, "fixed_parameters": {"fake": True},
-                "paired_metric": "after-service-cost portfolio return",
-                "confidence_method": "PAIRED_CALENDAR_CLUSTER_BOOTSTRAP", "confidence_bps": 9500,
-                "bootstrap_draws": 100, "minimum_clusters": 2, "seed": 7,
-                "kill_rule": "negative bound", "inconclusive_rule": "too few paired clusters",
-                "default": "frozen baseline", "registered_commit": "0" * 40,
-                "variants": ["baseline", "evidence"],
-                "windows": [{"cluster_id": "one", "start": "2026-01-01T00:00:00Z",
-                             "label_end": "2026-01-07T00:00:00Z"},
-                            {"cluster_id": "two", "start": "2026-01-20T00:00:00Z",
-                             "label_end": "2026-01-27T00:00:00Z"}]}
+    def registration(self, **changes):
+        """EconomicRegistration.v2 (IDEA-031 AC-E05): every criterion structured and implemented."""
+        d = {"schema": "EconomicRegistration.v2", "experiment_id": "SYNTHETIC_UNIT_CHECK_NOT_EXP",
+             "origin": "SYNTHETIC_VERIFICATION", "hypothesis": "fixture incremental outcome",
+             "population": "synthetic portfolio windows", "dataset_hash": "a" * 64,
+             "rights_basis": "generated synthetic values", "rights_cleared": True,
+             "cost_model": "fixture observed accounting", "detection_delay_sessions": 1,
+             "purge_sessions": 5, "embargo_sessions": 5, "fixed_parameters": {"fake": True},
+             "metric": "PAIRED_NET_WALLET_RETURN", "margin": [0, 1], "support_rule": "LOWER_BOUND_ABOVE_MARGIN",
+             "kill_rule": "UPPER_BOUND_BELOW_ZERO", "inconclusive_rule": "OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",
+             "confidence_method": "PAIRED_CALENDAR_CLUSTER_BOOTSTRAP", "confidence_bps": 9500,
+             "bootstrap_draws": 100, "minimum_clusters": 2, "seed": 7, "primary_horizon_sessions": 5,
+             "secondary_horizons_sessions": [20], "independence_basis": "NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS",
+             "default": "frozen baseline", "registered_commit": "0" * 40, "variants": ["baseline", "evidence"],
+             "windows": [{"cluster_id": "one", "decision_start": "2026-01-01T00:00:00Z",
+                          "decision_end": "2026-01-02T00:00:00Z", "label_end": "2026-01-09T00:00:00Z",
+                          "first_session": 0, "last_session": 4},
+                         {"cluster_id": "two", "decision_start": "2026-01-25T00:00:00Z",
+                          "decision_end": "2026-01-26T00:00:00Z", "label_end": "2026-02-02T00:00:00Z",
+                          "first_session": 16, "last_session": 20}]}
+        d.update(changes)
+        return d
 
-    def outcomes(self):
-        return [Document.from_dict({"schema": "PortfolioOutcome.v1", "variant": v,
-                "cluster_id": cluster, "dataset_hash": "a" * 64, "opening_equity_units": 200000000,
-                "wallet_net_units": 100000 if v == "baseline" else 50000,
-                "service_units": 10000, "fees_units": 10000, "gas_units": 10000,
-                "turnover_units": 40000000, "rejected_allocations": 1, "missed_upside_units": 5000,
-                "maximum_drawdown_bps": 100}) for cluster in ("one", "two") for v in ("baseline", "evidence")]
+    def outcomes(self, baseline_net=100000, evidence_net=50000, **changes):
+        times = {"one": ("2026-01-01T12:00:00Z", "2026-01-08T00:00:00Z", 0),
+                 "two": ("2026-01-25T12:00:00Z", "2026-02-01T00:00:00Z", 16)}
+        out = []
+        for cluster in ("one", "two"):
+            for v in ("baseline", "evidence"):
+                decided, labelled, first = times[cluster]
+                o = {"schema": "PortfolioOutcome.v2", "variant": v, "cluster_id": cluster, "dataset_hash": "a" * 64,
+                     "opening_equity_units": 200000000,
+                     "wallet_net_units": baseline_net if v == "baseline" else evidence_net,
+                     "service_units": 10000, "fees_units": 10000, "gas_units": 10000, "spread_slippage_units": 5000,
+                     "failed_attempts": 0, "failed_attempt_gas_units": 0, "reentries": 0, "turnover_units": 40000000,
+                     "rejected_allocations": 1, "missed_upside_units": 5000, "maximum_drawdown_bps": 100,
+                     "decision_at": decided, "label_end_at": labelled, "first_session": first,
+                     "last_session": first + 4, "executable_price_basis": "POST_ASSESSMENT_EXECUTABLE_QUOTE",
+                     "complete": True, "provenance": {"dataset_hash": "a" * 64, "generated_by_commit": "1" * 40}}
+                o.update(changes)
+                out.append(Document.from_dict(o))
+        return out
 
     def test_paired_costs_negative_edge_and_missing_allocations(self):
         registration = Document.from_dict(self.registration())
@@ -150,10 +167,48 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(report["paired_clusters"], 2)
         self.assertFalse(report["promotion_authorized"])
         self.assertEqual(report["summary"]["evidence"]["rejected_allocations"], 2)
+        self.assertTrue(report["service_costs_reported_separately"])
         self.assertEqual(evaluate(registration, self.outcomes()[:-1]).read()["status"], "INCONCLUSIVE")
+
+    def test_registered_margin_changes_the_verdict_exactly(self):
+        better = self.outcomes(baseline_net=50000, evidence_net=150000)
+        self.assertEqual(evaluate(Document.from_dict(self.registration()), better).read()["status"], "SUPPORTED")
+        high_bar = self.registration(margin=[1, 1000])  # 0.1% of equity; observed gain is 0.05%
+        report = evaluate(Document.from_dict(high_bar), better).read()
+        self.assertEqual((report["status"], report["reason"]), ("INCONCLUSIVE", "INTERVAL_SPANS_REGISTERED_RULES"))
+        killed = self.registration(margin=[1, 1000], kill_rule="UPPER_BOUND_BELOW_MARGIN")
+        self.assertEqual(evaluate(Document.from_dict(killed), better).read()["status"], "NOT_SUPPORTED")
+
+    def test_unsupported_or_unstructured_criteria_are_not_run(self):
+        legacy = dict(self.registration(), schema="EconomicRegistration.v1")
+        report = evaluate(Document.from_dict(legacy), self.outcomes()).read()
+        self.assertEqual(report["status"], "NOT_RUN")
+        self.assertIn("UNSTRUCTURED_REGISTRATION_UNSUPPORTED", report["reason"])
+        for change in ({"metric": "SHARPE_RATIO"}, {"kill_rule": "if it looks bad"},
+                       {"paired_metric": "after-service-cost return"}, {"secondary_horizons_sessions": [5]}):
+            with self.subTest(change=change):
+                d = dict(self.registration(), **change)
+                self.assertEqual(evaluate(Document.from_dict(d), self.outcomes()).read()["status"], "NOT_RUN")
+
+    def test_outcome_provenance_windows_purge_and_incomplete(self):
+        registration = Document.from_dict(self.registration())
+        late = self.outcomes(label_end_at="2026-03-01T00:00:00Z")
+        self.assertEqual(evaluate(registration, late).read()["status"], "NOT_RUN")
+        horizon = self.outcomes(last_session=2)
+        self.assertEqual(evaluate(registration, horizon).read()["status"], "NOT_RUN")
+        mid = self.outcomes(executable_price_basis="MID_PRICE")
+        self.assertEqual(evaluate(registration, mid).read()["status"], "NOT_RUN")
+        purge = self.registration()
+        purge["windows"][1].update(first_session=12, last_session=16)
+        self.assertEqual(evaluate(Document.from_dict(purge), self.outcomes()).read()["status"], "NOT_RUN")
+        better = self.outcomes(baseline_net=50000, evidence_net=150000)
+        incomplete = better[:-1] + [Document.from_dict(dict(better[-1].read(), complete=False))]
+        report = evaluate(registration, incomplete).read()
+        self.assertEqual((report["status"], report["incomplete_outcomes"]), ("INCONCLUSIVE", 1))
+        self.assertEqual(report["independence"]["note"], "cluster count alone is not independence")
 
     def test_incomplete_registration_and_overlapping_windows_not_run(self):
         self.assertEqual(evaluate(Document.from_dict({}), []).read()["status"], "NOT_RUN")
         d = self.registration()
-        d["windows"][1]["start"] = "2026-01-03T00:00:00Z"
+        d["windows"][1]["decision_start"] = "2026-01-03T00:00:00Z"
         self.assertEqual(evaluate(Document.from_dict(d), []).read()["status"], "NOT_RUN")
