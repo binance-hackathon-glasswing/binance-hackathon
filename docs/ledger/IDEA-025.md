@@ -163,3 +163,21 @@ Review: 11 inline findings (7 P1, 4 P2) plus the process note on §9.1. The §9.
 2. `python -m larp.intelligence.evaluation`: **PASS on every frozen threshold, unchanged**. The pack (`scenarios.FILINGS`/`EVAL_CASES`) is not modified; the new fixtures live in the tests only. The SUPPORTED_ON_SYNTHETIC_PACK verdict must hold.
 3. Windows-style checkout: a fresh clone of the pushed fix commit with `git -c core.autocrlf=true clone` must pass the whole suite. The same procedure on `33c2f40` is run as the control and is expected to fail as the review describes. This is run on macOS: `core.autocrlf=true` converts on checkout on any platform. It is not a Windows run.
 4. `git diff --check` clean.
+
+**Results (runs of pushed commits only; Python 3.12.1 unittest and pytest 9.0.3 on Python 3.14.6, as in §9.1, so not the locked environment, W09/GAP-45):**
+
+1. **Fix commit `35c60b4`, first run:**
+   - Every test passed except the expected `test_golden` pair: unittest 139 tests, 2 failures; pytest 2 failed, 139 passed.
+   - 21 new tests: 7 in `test_facts_verify`, 4 in `test_models`, 6 in `test_agent`, 2 in `test_edgar`, 1 in `test_ingest`, 1 in `test_gate`.
+   - Traces regenerated from `35c60b4` and compared leaf by leaf with the committed ones. The only differences: the rule baseline's code-identity hash (`checkpoint_sha256` `f7b6eb4e…` → `b324be5b…`) and the ids/digests derived from it (`model_hash`, `assessment_key`, `result_id`, finding/job/batch ids, the `compare_facts` result hash), plus the new fields (`applicable`, all `true` in both traces; `started_ms`/`completed_ms`; `raw_response_artifact`, `request_payload_sha256`/`_artifact`, `served_model`). Statuses, tool sequences, findings, falsifier states and thesis transitions are unchanged. Criterion 1 is met.
+2. **Evaluation at `35c60b4`: PASS** (`tests/intelligence/evidence/eval-report-35c60b4.json`, SHA-256 `5a43ee4c…5762`). Pack digest `42789e45…` and thresholds SHA-256 `3a1c9d8a…` are the same as at `b1f7016`. Every metric and every per-case status, reason, tool count, elapsed time and gate value is identical to `eval-report-b1f7016.json`. Verdict: SUPPORTED_ON_SYNTHETIC_PACK (agent 40/40 vs baseline 25/36). Criterion 2 is met.
+3. **Results commit `5ba3e88`** (regenerated traces and the report): unittest **139 tests OK**; pytest **139 passed, 514 subtests passed**. Trace SHA-256: `trace-tool-selection-thesis-revision.json` `230e28f6…a1ad`, `trace-justified-abstention.json` `1e708004…bdb1`.
+4. **CRLF checkout** (fresh `git clone --no-checkout --config core.autocrlf=true`, then checkout; macOS):
+   - Control `33c2f40`: the prompt and `facts.py` are checked out with CRLF. unittest gives 1 failure and 53 errors; pytest gives **53 failed, 61 passed, 4 errors**, the same as the review's Windows numbers.
+   - Fix `5ba3e88`: owner-directory files stay LF, while `tests/test_contracts.py` (outside them) is CRLF. unittest OK, pytest **139 passed, 514 subtests passed**. Criterion 3 is met.
+   - Still not run on Windows itself.
+5. `git diff --check 33c2f40..5ba3e88` clean (criterion 4). No change to `larp/contracts.py`, `pytest.ini`, dependency files, `tests/test_contracts.py`, `docs/official/` or `vendor/`.
+6. **Outcome: all four §9.2 criteria PASS.**
+   - Still open: the root `.gitattributes` (or an equivalent shared rule) is Keegan's to adopt at integration. Already-cloned Windows checkouts need a fresh checkout to pick up the attributes.
+   - A blocked store read leaves its abandoned thread waiting until the read returns. It is a daemon thread, makes no further calls, and its result is discarded.
+   - The hosted adapter is still not verified against a live provider. Whether a given provider echoes the snapshot ID in `model` is unverified.

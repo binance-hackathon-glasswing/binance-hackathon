@@ -22,3 +22,5 @@ Progress appendix (Yao Zhu, 2026-10-10)
 - Implemented in larp/intelligence/ (ingest, edgar, text, issuers, facts, verify, tools, agent, gate,
   models, features, training, evaluation, scenarios, demo, fakes), config/intelligence/ and
   tools/edgar_fetch.py (R5/R6). Tests in tests/intelligence/. Results: IDEA-025 section 9.
+- 2026-10-10: PR #4 review (Keegan) findings R1-R11 fixed in 35c60b4, results in 5ba3e88;
+  criteria and results in IDEA-025 section 9.2.
