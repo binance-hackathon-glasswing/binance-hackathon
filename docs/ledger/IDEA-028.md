@@ -433,3 +433,42 @@ Results: **NOT RUN** at this criteria commit.
 
 Commands after push: as RT17. Cleanups change the shape of the audit input (#8) and
 add migration 006 (#6, #9); the demo trace is regenerated with RT17's.
+
+### RT19 — RT17/RT18 verification results, 2026-10-10
+
+All runs below are of pushed commits; RT17 and RT18 criteria were pushed with
+their fixes before any run.
+
+1. `0da6c24` (RT17 fixes): CI run 38035209654 **failed**, 97 passed, 3 failed, 1
+   error. All three were test defects, none in the fixes: an existing maintenance
+   test's `_verify` stand-in took three arguments (the same signature-only change
+   had been made in `test_postgres` but missed there); the new checkpoint test
+   expected versions 1–9 where each write continues from 0–8; the new fail-closed
+   test re-ran `setUp` and dropped schemas twice. Fixed in `9a7f1bb`; no assertion
+   was relaxed.
+2. `9a7f1bb`: CI run 38035409760 **failed**, 100 passed, 7 subtests failed: the
+   per-case runs shared wallet `wallet`, violating `runs_wallet_id_chain_id_key`.
+   The error surfaced as `IntegrityError: 23505 runs_wallet_id_chain_id_key`,
+   not `Unavailable`, which is RT17 #4 working. Fixed in `8fd6ebc` (one wallet
+   per case).
+3. `c40bb39` (RT18 cleanups on top): CI runs 38035762563 (push) and 38035765202
+   (pull request) **passed**: **108 tests and 65 subtests passed** (48.68 s),
+   Linux Python 3.12.15 / PostgreSQL 14.24; `pip check` clean; offline demo,
+   container build and both infrastructure modules pass. All 13 foundation tests
+   and every earlier runtime test are retained. Test-data changes only: two
+   oversize fixtures grew from 2.2 MB to 4.5 MB (RT18 #8) and one raw
+   `audit_events` insert gained the new `timestamp_ms` value (RT18 #6).
+
+**Outcome: RT17 #1–#5 and RT18 #6–#10 PASS.** All 21 review threads on PR #3
+(eleven from the first review, ten from the second) have replies naming the fix
+commit and are resolved; the first eleven were resolved on RT15's evidence, the
+second ten after run 38035762563.
+
+Still open: `docs/build/evidence/runtime-offline-trace.json` still shows the
+pre-RT17 `round:` event IDs and RT15's SHA-256; CI runs the demo but does not
+commit its output, so the trace must be regenerated on a Linux host with
+PostgreSQL. Between full verifications, a change to an old journal row or old
+audit chunk is found only at the next full verification (RT17 known limit);
+full-verification capacity is still unproved until the rehearsal. Migration 006
+was run only on fresh test schemas (no pre-existing audit rows). Peer
+acceptance of PR #3 (Isaac) and the integration route remain as in RT16.
