@@ -61,7 +61,8 @@ def gate_result(rid, state, cutoff, *, findings=(), used=(), complete=True, miss
     """A hand-written AssessmentResult.v2 aimed at the gate (the consumer under test)."""
     r = {"schema": "AssessmentResult.v2", "result_id": rid, "issuer_id": issuer, "assessment_key": "k-" + rid,
          "policy_profile_hash": P, "context_hash": state["context_hash"], "expiry_ms": cutoff + 3_600_000,
-         "cutoff_ms": cutoff, "status": status, "reasons": [], "findings": list(findings), "event_findings": [],
+         "cutoff_ms": cutoff, "started_ms": cutoff, "completed_ms": cutoff,
+         "status": status, "reasons": [], "findings": list(findings), "event_findings": [],
          "falsifiers": [], "claims": [], "retained_facts": [], "event_statements": [], "evidence_used": list(used),
          "missingness": list(missing), "conflicts": [],
          "coverage": {"complete": complete, "prior_history": {"STATEMENTS": True}}, "novelty": {},
@@ -379,8 +380,8 @@ class RuntimeAdapterProbes(unittest.TestCase):
         intent = out["intents"][0]
         self.assertFalse(intent["mandatory"])
         self.assertLessEqual(intent["expires_ms"], int(proposal.valid_until.timestamp() * 1000))
-        self.assertEqual(intent["amount"], str(intent["token_units"] // 10 ** 4) + (
-            "." + str(intent["token_units"] % 10 ** 4).rjust(4, "0").rstrip("0") if intent["token_units"] % 10 ** 4
+        self.assertEqual(intent["amount"], str(intent["pay_units"] // 10 ** 6) + (
+            "." + str(intent["pay_units"] % 10 ** 6).rjust(6, "0").rstrip("0") if intent["pay_units"] % 10 ** 6
             else ""))
         deltas = sorted((d["asset"], d["units"]) for d in out["reservation_deltas"])
         # IDEA-031 S4-B r01 fix: a BUY also records its incoming tokens as an INCOMING:<symbol> claim row.

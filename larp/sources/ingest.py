@@ -63,7 +63,8 @@ class SourceIngestor:
         url = (cursor["in_progress"] or {}).get("next_url") or source.listing_url
         first = cursor["in_progress"] is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
-        while url and pages_done < source.limits.get("max_pages", 1):
+        # max_pages bounds work per poll, not the lifetime of a durable pagination cycle.
+        while url and outcome["pages"] < source.limits.get("max_pages", 1):
             now = self.clock()
             health = dict(cursor["health"], last_attempt_ms=now)
             try:
@@ -112,15 +113,16 @@ class SourceIngestor:
             pages_done += 1
             if next_url and not allowed(source, next_url):
                 outcome["rejected_next_page"] = next_url  # never saved as a continuation (S4-B d07)
+                outcome["truncated"] = True
                 next_url = None
-            more = next_url and pages_done < source.limits.get("max_pages", 1)
+            more = next_url and outcome["pages"] + 1 < source.limits.get("max_pages", 1)
             if next_url and not more:
                 outcome["truncated"] = True  # page limit reached with pages left: coverage is incomplete
             published = [r["published"]["ms"] for r in records if r["published"]["ms"] is not None]
             cursor = dict(cursor, version=cursor["version"] + 1, seen=self._bounded(seen), rejected=rejected,
-                          in_progress={"next_url": next_url, "pages_done": pages_done} if more else None,
+                          in_progress={"next_url": next_url, "pages_done": pages_done} if next_url else None,
                           watermark_ms=max([cursor["watermark_ms"] or 0] + published) or None,
-                          last_truncated=bool(outcome["truncated"]),
+                          last_truncated=bool(next_url or outcome["truncated"]),
                           health=dict(health, status="OK", last_success_ms=now, consecutive_failures=0,
                                       last_error=None))
             if first and response.status == 200:
@@ -207,7 +209,10 @@ def coverage(register: dict, store, dependencies: dict, now_ms: int, max_age_ms:
         cursor = store.cursor(source_id)
         h = (cursor or initial_cursor(source_id))["health"]
         fresh = h["last_success_ms"] is not None and now_ms - h["last_success_ms"] <= max_age_ms
-        health[source_id] = {"status": h["status"] if fresh or h["status"] != "OK" else "STALE",
+        status = h["status"] if fresh or h["status"] != "OK" else "STALE"
+        if status == "OK" and cursor and (cursor.get("last_truncated") or cursor.get("in_progress")):
+            status = "INCOMPLETE"
+        health[source_id] = {"status": status,
                              "last_success_ms": h["last_success_ms"], "last_error": h["last_error"]}
     consumers = {name: {"impaired": sorted(s for s in deps if health.get(s, {}).get("status") != "OK"),
                         "complete": all(health.get(s, {}).get("status") == "OK" for s in deps)}

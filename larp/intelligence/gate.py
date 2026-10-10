@@ -91,6 +91,9 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         return _reject(state, "REJECT_STALE_CONTEXT", now_ms, rid)
     if type(r.get("expiry_ms")) is not int or r["expiry_ms"] <= now_ms:
         return _reject(state, "REJECT_EXPIRED", now_ms, rid)
+    if (any(type(r.get(k)) is not int or r[k] < 0 for k in ("cutoff_ms", "started_ms", "completed_ms"))
+            or not r["cutoff_ms"] <= r["started_ms"] <= r["completed_ms"] <= now_ms):
+        return _reject(state, "REJECT_MALFORMED", now_ms, rid)
     if state["latest_cutoff_ms"] is not None and r.get("cutoff_ms", -1) < state["latest_cutoff_ms"]:
         return _reject(state, "REJECT_OUT_OF_ORDER", now_ms, rid)
     if r.get("status") == "REJECTED_REQUEST":

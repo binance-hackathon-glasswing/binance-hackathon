@@ -28,6 +28,7 @@ from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import authority, build_evidence_context, mandatory_reductions
 from larp.risk.planner import plan as risk_plan
 from larp.strategy.policy import decide
+from larp.strategy.schema import MONEY_SCALE
 
 ADAPTER = "RuntimePlan.v1"
 SETTLED = ("USDT", "BNB")
@@ -168,8 +169,11 @@ class RuntimePlanner:
                 expires = min(expires, valid_until)  # a discretionary intent never outlives its proposal
             decision_id = "decision:" + digest("larp.decision.v1", {"snapshot_id": snapshot.snapshot_id,
                                                                      "intent_id": intent["intent_id"]})
-            intents.append(dict(intent, decision_id=decision_id, expires_ms=expires,
-                                amount=decimal_amount(intent["token_units"], intent["decimals"])))
+            # The organiser's order amount is USDT spent for BUY, token quantity for SELL.
+            # cash_units uses the planner's money scale; wallet USDT decimals are a separate execution concern.
+            amount = (decimal_amount(intent["pay_units"], len(str(MONEY_SCALE)) - 1)
+                      if intent["side"] == "BUY" else decimal_amount(intent["token_units"], intent["decimals"]))
+            intents.append(dict(intent, decision_id=decision_id, expires_ms=expires, amount=amount))
         for delta in raw["reservation_deltas"]:
             if delta["side"] == "BUY":
                 deltas.append({"intent_id": delta["intent_id"], "asset": "USDT", "units": delta["cash_units"]})
