@@ -32,3 +32,11 @@ The ai-seeds logging SDK 0.3.0 is not on PyPI: its wheel is vendored in `vendor/
 
 ### Docs
 Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [`docs/`](docs/README.md). Start with `docs/skill/SKILL.md`.
+
+### Offline engine foundation
+The `larp` package starts the IDEA-021 policy boundary; it cannot trade. See
+[`IDEA-023`](docs/ledger/IDEA-023.md) for its scope, verification and remaining work.
+After committing and pushing decision-related changes as required by `AGENTS.md`,
+run `python -m unittest discover -s tests -v` from the repository root. These tests
+need only the Python standard library and no `.env` or credentials. In the pinned
+environment, `python -m pytest` discovers only `tests/test_*.py` by default.

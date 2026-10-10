@@ -1,0 +1,8 @@
+# Hash-pinned bytes: the prompt and config SHA-256s, the rule baseline's code identity (it
+# hashes facts.py, verify.py and models.py), golden traces and evaluation reports. Check these
+# out with LF on every platform, so a Windows checkout with core.autocrlf=true has the same
+# bytes as the pinned hashes. Integrity checks stay on; this only fixes the checked-out bytes.
+# Kept in owner directories (not the repository root) pending Keegan's integration.
+*.py   text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf

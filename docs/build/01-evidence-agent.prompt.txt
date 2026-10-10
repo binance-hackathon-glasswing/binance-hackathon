@@ -1,0 +1,26 @@
+You are implementing Yao Zhu's section of LARP: evidence ingestion, the assessment model and bounded agent reasoning.
+
+Start on branch codex/evidence-agent from the team's shared kickoff commit on origin/codex/engine-foundation. Read AGENTS.md, docs/skill/SKILL.md, the LEDGER table, relevant INCOMPLETE_WORK items, and docs/build/PARALLEL_BUILD.md. That brief is part of this prompt: follow its port vocabulary, ownership, defaults, credential rules and acceptance requirements. Read IDEA-013/014/015, IDEA-021 ENG-02/08/11 and the relevant IDEA-007/008 model sections. Create your build record as IDEA-025; do not claim the optional model experiments are already approved or validated.
+
+Own larp/intelligence/, tests/intelligence/, config/intelligence/ and the EDGAR extractor corrections. Avoid shared core/dependency edits; Keegan owns their integration. Work immediately with synthetic evidence, a fake document source and a deterministic fake model through assess(Document) -> Document. Do not wait for real keys, a database or the other modules.
+
+Deliver:
+1. Point-in-time ingestion with durable cursor/job requests through the storage port, overlap/backfill, accession deduplication, original/retrieved/available timestamps, source hashes and revision tracking. Handle 8-K/10-Q/10-K and appropriate 6-K/20-F issuer mappings without treating Korean shares/ADRs/tokens as interchangeable. Fix table-cell boundaries and hash the exact portable UTF-8 bytes saved by the EDGAR path.
+2. A bounded evidence agent: identify a missing fact, choose an allowlisted retrieval/comparison tool, extract numerical facts and supporting spans, compare with previously available context, detect novelty/contradictions, update a proposed thesis, and request a later reassessment. Stay within declared tool/time budgets. No generic web autonomy, wallet access, BUY/SELL output, raw confidence-as-probability assumption or invented consensus estimates.
+3. AssessmentRequest.v1/AssessmentResult.v1 adapters from the common brief. Return issuer/context/model/prompt identities, evidence support, uncertainty/unknown, freshness, falsifier findings and concise public rationale. Deduplicate repeated evidence and reject late results for an obsolete thesis/profile. Unsupported or conflicting claims cause abstention. A timeout must never re-enable a buy.
+4. Provider-neutral hosted/local model adapters with fixed checkpoint/prompt hashes and explicit costs/latency. First implement a verified extraction/severity baseline. Add a small trained evidence model only after rights-cleared labels, committed experiment criteria and compute/checkpoint details exist. If data are insufficient, ship the functioning inference/evaluation path with training marked NOT RUN rather than fabricating a model or claiming alpha. Export features for Keith's optional fusion research; models do not select portfolio trades.
+5. A labeled synthetic evaluation pack: supporting-span accuracy, numerical correctness, unsupported-claim acceptance, relevant-event recall, abstention, stale-result rejection, latency and tool budget. Add held-out real-data evaluation only after source rights and availability are verified. Freeze thresholds before evaluation; compare additional reasoning/tool calls against the simple baseline.
+
+Acceptance: duplicate/late filing delivery, outage then catch-up, HTML tables, UTF-8 hashes, contradictory filings, missing prior guidance, stale contexts, tool errors, prompt injection and model timeout all have deterministic tests. One trace must demonstrate useful autonomous tool selection and thesis revision; another must demonstrate justified abstention. No policy/signer commands are reachable. Store proposed jobs/state through ports, not a competing production database or scheduler.
+
+Details to request ONLY when real integration needs them: real EDGAR contact/User-Agent; approved source rights/data location; model provider, exact model/checkpoint revision, permitted output/training use, inference/training budget, and selected provider credentials supplied through the runtime secret store. Use proposed LARP_MODEL_* and LARP_SEC_USER_AGENT conventions from the brief. Never request the wallet private key or AI_SEEDS_SECRET.
+
+Commit/push implementation and prospective test/experiment criteria before running affected code. Preserve all 13 foundation tests. Finish with your branch/commit, test commands/results, successful and rejected fixture documents, model/data provenance, measured costs if available, and remaining inputs. Keith reviews; Keegan integrates. This section optimizes evidence quality and bounded autonomy; it must not promise profitable trades.
+
+Progress appendix (Yao Zhu, 2026-10-10)
+- Branch codex/evidence-agent from kickoff e10eae2. Build record: docs/ledger/IDEA-025.md.
+- Implemented in larp/intelligence/ (ingest, edgar, text, issuers, facts, verify, tools, agent, gate,
+  models, features, training, evaluation, scenarios, demo, fakes), config/intelligence/ and
+  tools/edgar_fetch.py (R5/R6). Tests in tests/intelligence/. Results: IDEA-025 section 9.
+- 2026-10-10: PR #4 review (Keegan) findings R1-R11 fixed in 35c60b4, results in 5ba3e88;
+  criteria and results in IDEA-025 section 9.2.
