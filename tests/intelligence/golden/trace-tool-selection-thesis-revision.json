@@ -445,6 +445,13 @@
    },
    "max_known_facts": 200,
    "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+   "records_assessed": {
+    "0009900001-26-000187": {
+     "content_hash": "65b2348eb864359481306dd3cc883d4881eb8d95a2e6b33dcfee49290196745b",
+     "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024",
+     "revision": 0
+    }
+   },
    "records_seen": {
     "0009900001-26-000187": {
      "content_hash": "65b2348eb864359481306dd3cc883d4881eb8d95a2e6b33dcfee49290196745b",
@@ -461,6 +468,8 @@
      "finding_id": "find:eb5985de58a97aa9606726c8a5d4dc65a69d08d45ae0f74dfba41fd810c83a5c",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
      "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
+     "source_resolutions": {},
+     "source_revisions": {},
      "sources": [],
      "type": "GUIDANCE_LOWERED"
     },
@@ -469,6 +478,10 @@
      "finding_id": "falsifier:3716b8ab6214c85da20f62e0e5d1558ec5df2d35264b9281afc50a3b50bcfef1",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
      "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
+     "source_resolutions": {},
+     "source_revisions": {
+      "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
+     },
      "sources": [
       {
        "accession": "0009900001-26-000187",
@@ -483,7 +496,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:041c857dd3307ced210172a09068bb39fa8d526f2442c798d86f0ebd23da5b12",
+   "batch_id": "state:d834b7fdd62031b3ba598b4872bf738d891c6302fbcde28e8527d7e3ecd6458b",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -891,6 +904,13 @@
     },
     "max_known_facts": 200,
     "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+    "records_assessed": {
+     "0009900001-26-000187": {
+      "content_hash": "65b2348eb864359481306dd3cc883d4881eb8d95a2e6b33dcfee49290196745b",
+      "record_id": "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024",
+      "revision": 0
+     }
+    },
     "records_seen": {
      "0009900001-26-000187": {
       "content_hash": "65b2348eb864359481306dd3cc883d4881eb8d95a2e6b33dcfee49290196745b",
@@ -907,6 +927,8 @@
       "finding_id": "find:eb5985de58a97aa9606726c8a5d4dc65a69d08d45ae0f74dfba41fd810c83a5c",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
       "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
+      "source_resolutions": {},
+      "source_revisions": {},
       "sources": [],
       "type": "GUIDANCE_LOWERED"
      },
@@ -915,6 +937,10 @@
       "finding_id": "falsifier:3716b8ab6214c85da20f62e0e5d1558ec5df2d35264b9281afc50a3b50bcfef1",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
       "result_id": "res:692acfd5ceff541deaa54e99d0725d01038520fcf6222c3e972bada22eff2928",
+      "source_resolutions": {},
+      "source_revisions": {
+       "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
+      },
       "sources": [
        {
         "accession": "0009900001-26-000187",
@@ -928,7 +954,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:041c857dd3307ced210172a09068bb39fa8d526f2442c798d86f0ebd23da5b12",
+   "batch_id": "state:d834b7fdd62031b3ba598b4872bf738d891c6302fbcde28e8527d7e3ecd6458b",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }

@@ -117,6 +117,7 @@
    },
    "max_known_facts": 200,
    "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+   "records_assessed": {},
    "records_seen": {
     "0009900001-26-000190": {
      "content_hash": "c48360044cf7ea80c00c8e874d6a3cc25a43b7f9462adf1bd5365aac6b0eb371",
@@ -133,7 +134,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:831a5c0a49bfaaa2dd3d4ca15c753a628e4e75393eda736c9338d91d5bdf9d32",
+   "batch_id": "state:e0f7ae1cf834e21565c36967f3cdbcd338f9fb41dcf5d700372e15edad2c802b",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -219,6 +220,7 @@
     },
     "max_known_facts": 200,
     "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+    "records_assessed": {},
     "records_seen": {
      "0009900001-26-000190": {
       "content_hash": "c48360044cf7ea80c00c8e874d6a3cc25a43b7f9462adf1bd5365aac6b0eb371",
@@ -234,7 +236,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:831a5c0a49bfaaa2dd3d4ca15c753a628e4e75393eda736c9338d91d5bdf9d32",
+   "batch_id": "state:e0f7ae1cf834e21565c36967f3cdbcd338f9fb41dcf5d700372e15edad2c802b",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
