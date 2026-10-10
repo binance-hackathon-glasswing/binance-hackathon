@@ -1,7 +1,8 @@
 """Consistent logical export and quarantined restore, including all outboxes.
 
 Exports belong in protected artifact storage, never Git. External hourly anchor
-and signer epoch are required before any restored live authority can be considered.
+(Anchor.v2, written by Maintenance) and signer epoch are required before any restored
+live authority can be considered.
 """
 
 import base64
@@ -10,7 +11,7 @@ from decimal import Decimal
 from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
 
-TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','anchors','command_checks')
+TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks')
 # Payloads of earlier backups must never be embedded recursively in new backups.
 # These delivery tables are rebuilt only after quarantine/reconciliation and a new
 # archive namespace; remote object versions/receipts are retained independently.
@@ -62,19 +63,3 @@ def restore(store,backup):
         db.execute("SELECT setval(pg_get_serial_sequence('command_checks','check_id'), "
                    "COALESCE((SELECT max(check_id) FROM command_checks),1), "
                    "EXISTS(SELECT 1 FROM command_checks))")
-
-
-def anchor(store,run_id,receiver,now_ms):
-    """Receiver must durably write immutable anchor ID; receipt is kept locally."""
-    current=store.load(run_id).read()
-    store.verify(run_id,minimum_version=current['version'],anchored_head=current['head'])
-    value=doc(dict(schema='Anchor.v1',run_id=run_id,sequence=current['version'],head=current['head'],
-                   owner_epoch=current['epoch']))
-    receipt=receiver.deliver(value)
-    r=receipt.read()
-    if r.get('status')!='STORED' or r.get('head')!=current['head']:
-        raise IntegrityError('Anchor not acknowledged')
-    with store.transaction() as db:
-        db.execute('INSERT INTO anchors VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
-                   (run_id,current['version'],current['head'],now_ms,receipt.payload))
-    return value

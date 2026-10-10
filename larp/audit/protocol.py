@@ -33,6 +33,16 @@ def _validate(log):
     check_orders(data['orders'])
 
 
+DAY_MS = 86400000
+UPLOAD_GRACE_MS = 7200000
+
+
+def breach_cutoff_ms(now_ms):
+    """An event is past its upload deadline (next UTC midnight + 2 h after its
+    timestamp) exactly when its timestamp_ms is below this value."""
+    return (now_ms - UPLOAD_GRACE_MS) // DAY_MS * DAY_MS
+
+
 def event_id_for(run_id,address,round_id,head,timestamp_ms):
     """Kit SDK format evt-<ms>-<12 hex>; the server de-duplicates by event ID.
 

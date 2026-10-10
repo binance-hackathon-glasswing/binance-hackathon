@@ -100,9 +100,12 @@ class Coordinator:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
         projection=current.read()['projection']
+        # The policy saw `context`; its request and assessment are stored once, at the top level.
+        policy_input=dict(projection=context['projection'],reservations=context['reservations'],
+                          includes=['request','assessment'])
         record=dict(round_id=round_id,request=request.read(),assessment=assessment.read() if assessment else None,
                     proposal_id=proposal.proposal_id if proposal else None,plan=plan,errors=errors,
-                    policy_input=context,policy_state=snapshot.policy_state.record(),
+                    policy_input=policy_input,policy_state=snapshot.policy_state.record(),
                     policy_output=None if proposal is None else dict(targets=[t.record() for t in proposal.targets],
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
                     started_ms=now_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])

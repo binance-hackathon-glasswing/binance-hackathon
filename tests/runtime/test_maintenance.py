@@ -139,7 +139,7 @@ class MaintenanceTests(DatabaseCase):
             # Prove upgrades revoke a pre-existing blanket uploader grant.
             db.execute('GRANT UPDATE ON audit_chunks TO larp_uploader')
             db.execute(script)
-            db.execute("INSERT INTO audit_events VALUES('run','role-event','role-round','{}'::bytea)")
+            db.execute("INSERT INTO audit_events VALUES('run','role-event','role-round','{}'::bytea,0)")
             db.execute("INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES('run','role-event',0,'original'::bytea)")
             db.execute('SET LOCAL ROLE larp_uploader')
             db.execute("UPDATE audit_chunks SET attempts=1,status='ACK',next_ms=2,last_code='200',acknowledgement='{}'::bytea")

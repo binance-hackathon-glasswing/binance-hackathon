@@ -18,6 +18,9 @@ def release_files(root):
                 ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'), ('config', '*.json')]
     for directory, pattern in patterns:
         for path in (root / directory).rglob(pattern):
+            # Host-local configuration and downloaded Terraform modules are not release code.
+            if path.name.endswith('.local.json') or '.terraform' in path.relative_to(root).parts:
+                continue
             if path.is_symlink() or not path.resolve().is_relative_to(root):
                 raise ContractError('Release files must not escape through symlinks')
             files.add(path.relative_to(root).as_posix())
@@ -52,6 +55,16 @@ def verify_release(manifest, root):
     return m
 
 
+def tracked_release_files(root, git):
+    """release_files(root), refusing any that git does not track (an ignored file
+    would put its hash into release provenance and be missing on the deploy host)."""
+    names = release_files(root)
+    untracked = names - set(git('ls-files', '-z').split('\0'))
+    if untracked:
+        raise ContractError('Release files are not tracked by git: ' + ', '.join(sorted(untracked)[:5]))
+    return names
+
+
 def build_manifest(root, services, registration_evidence=None, operations_config=None):
     root = Path(root).resolve()
     def git(*args):
@@ -68,8 +81,8 @@ def build_manifest(root, services, registration_evidence=None, operations_config
     remote_row = git('ls-remote', '--exit-code', 'origin', 'refs/heads/' + branch).split()
     if not remote_row or remote_row[0] != commit:
         raise ContractError('Build commit is not the pushed branch head')
-    files = {name: hashlib.sha256((root / name).read_bytes()).hexdigest()
-             for name in sorted(release_files(root))}
+    names = tracked_release_files(root, git)
+    files = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in sorted(names)}
     return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit,
         repository=remote, remote_verified=True, services=services,
         registration_evidence=registration_evidence, files=files,

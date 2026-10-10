@@ -94,7 +94,7 @@ class FallbackAudit(Base):
         self.assertEqual(0,self.store.metrics('run').read()['open_rounds'])
 
     def test_fallback_and_rejected_rounds_log_no_orders(self):
-        large=request('BUY').read(); large['synthetic_large_input']='x'*2200000
+        large=request('BUY').read(); large['synthetic_large_input']='x'*4500000
         self.runtime().start('fallback',doc(large),NOW)
         runtime=self.runtime(); commit=self.store.commit
         def conflict_once(batch):

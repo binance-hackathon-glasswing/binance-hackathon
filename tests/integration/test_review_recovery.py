@@ -85,7 +85,7 @@ class ReviewRecovery(DatabaseCase):
         self.assert_replay()
 
     def test_fallback_audit_replays_without_request_in_remote_log(self):
-        large=request().read(); large['synthetic_large_input']='x'*2200000
+        large=request().read(); large['synthetic_large_input']='x'*4500000
         self.runtime().start('r',doc(large),NOW)
         with self.store.transaction() as db:
             audit=Document(bytes(db.execute('SELECT document FROM audit_events').fetchone()[0])).read()

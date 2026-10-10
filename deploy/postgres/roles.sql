@@ -14,7 +14,7 @@ GRANT CONNECT ON DATABASE larp TO larp_archive, larp_uploader;
 GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,
-  swap_owners,jobs,anchors,command_checks TO larp_archive;
+  swap_owners,jobs,command_checks TO larp_archive;
 -- SELECT ... FOR UPDATE needs update privilege; restrict it to the clock column.
 -- The archive/uploader implementations only lock runs; they never write this field.
 GRANT UPDATE (clock_ms) ON runs TO larp_archive, larp_uploader;

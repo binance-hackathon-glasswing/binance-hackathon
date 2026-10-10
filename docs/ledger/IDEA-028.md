@@ -415,3 +415,21 @@ journal row or an old audit chunk body is detected only at the next full verific
 verification remains linear in journal size and must still be capacity-tested in the
 rehearsal. The committed `docs/build/evidence/runtime-offline-trace.json` still shows
 the old `round:` event IDs until it is regenerated on Linux. Cleanups #6–#10 stay open.
+
+### RT18 — second PR #3 review cleanups #6–#10: amendments and prospective criteria, 2026-10-10
+
+Source: the same review as RT17 (comments 4236833330–4236833347). Auto-fix on PR #3
+is the standing authorization for these follow-ups. As in RT17, this section, the
+fixes and their tests are committed and pushed before any affected code runs.
+Results: **NOT RUN** at this criteria commit.
+
+| # | Finding | Amendment | Required regression result |
+|---|---|---|---|
+| 6 | Deadline formula duplicated in `maintenance.health` and `DeliveryWorker.deadline_breaches`; both load every unacknowledged audit document to read one timestamp | One helper (`protocol.breach_cutoff_ms`): an event is late iff its `timestamp_ms` is before the start of the UTC day that began 2 h before now, i.e. now ≥ next UTC midnight + 2 h, as before. Migration 006 adds `audit_events.timestamp_ms`, filled from each existing document, NOT NULL; `_audit` writes it; `_verify` checks it against the document (full and incremental). One SQL query in `delivery.deadline_breaches(db, …)` serves both callers without loading documents. | The cutoff agrees with the old formula across day boundaries. Health and the worker report the same breaches as before (existing tests unchanged). A changed `timestamp_ms` fails verification. |
+| 7 | Read-only `load()`/`metrics()` take `FOR UPDATE` | Both read without a row lock. Writers still compare versions under their own lock, so a stale read can only cause a `Conflict`. The `UPDATE(clock_ms)` grant stays: the uploader's epoch check still locks `runs`, and PostgreSQL requires UPDATE privilege for any row lock. | `load()` and `metrics()` return while another connection holds `FOR UPDATE` on the run row. |
+| 8 | Request and assessment serialized twice (top level and inside `policy_input`) | `policy_input` keeps the projection and reservations plus `includes: ["request","assessment"]`, naming the top-level fields that complete the policy context. The policy still receives the full context; only the stored and audited copy changes. | The audit input has the request and assessment once each. Existing oversize-fallback tests keep their purpose with a larger synthetic input (4.5 MB instead of 2.2 MB, since the duplicate no longer doubles it). Replay stays exact. |
+| 9 | `backup.anchor()` (Anchor.v1) is dead; the live anchor is `Maintenance.prepare` (Anchor.v2) | Remove `anchor()`. Migration 006 drops the unused `anchors` table; it is removed from backups and from `roles.sql`. | After migration there is no `anchors` table, backup/restore round-trips and the role grants apply. |
+| 10 | Manifest can hash git-ignored files | `release_files` skips host-local files (`*.local.json`, anything under `.terraform/`) on both the build and the host side. `build_manifest` refuses any release file that git does not track. | A temporary tree with `config/x/deployment.local.json` and `deploy/aws/.terraform/m/main.tf` lists neither. In a temporary git repository, an ignored `larp/extra.py` makes the tracked-file check fail. |
+
+Commands after push: as RT17. Cleanups change the shape of the audit input (#8) and
+add migration 006 (#6, #9); the demo trace is regenerated with RT17's.

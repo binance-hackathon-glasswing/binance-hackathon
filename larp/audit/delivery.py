@@ -6,11 +6,19 @@ import secrets
 import urllib.error
 import urllib.request
 
-from larp.audit.protocol import sign
+from larp.audit.protocol import breach_cutoff_ms,sign
 from larp.contracts import Document
 from larp.storage.postgres import Conflict,doc
 
 BASE_URL = 'https://api.commonservice.io/ai-seeds-event-log'
+
+
+def deadline_breaches(db,run_id,now_ms):
+    """Unacknowledged audit events past their upload deadline, filtered in SQL."""
+    return [r[0] for r in db.execute(
+        "SELECT DISTINCT a.event_id FROM audit_events a JOIN audit_chunks c USING(run_id,event_id) "
+        "WHERE a.run_id=%s AND c.status<>'ACK' AND a.timestamp_ms<%s ORDER BY 1",
+        (run_id,breach_cutoff_ms(now_ms)))]
 
 
 class HttpReceiver:
@@ -95,7 +103,4 @@ class DeliveryWorker:
 
     def deadline_breaches(self,run_id,now_ms):
         with self.store.transaction() as db:
-            rows=db.execute("SELECT DISTINCT a.event_id,a.document FROM audit_events a JOIN audit_chunks c "
-                "USING(run_id,event_id) WHERE a.run_id=%s AND c.status<>'ACK'",(run_id,)).fetchall()
-        return [event_id for event_id,raw in rows if now_ms >=
-                ((Document(bytes(raw)).read()['timestamp_ms']//86400000+1)*86400000+7200000)]
+            return deadline_breaches(db,run_id,now_ms)

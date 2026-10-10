@@ -110,8 +110,9 @@ class PostgresStore:
                          'projection','policy_state','execution_state','clock_ms','mode','initial'),row))
 
     def load(self, run_id):
+        # Read-only: writers re-check the version under their own row lock.
         with self.transaction() as db:
-            value = self._run(db,run_id)
+            value = self._run(db,run_id,lock=False)
             for key in ('projection','policy_state','execution_state','initial'):
                 value[key] = Document(bytes(value[key])).read()
             value['run_id'] = run_id
@@ -255,8 +256,8 @@ class PostgresStore:
         for mapping in audit['swap_mappings']:
             db.execute('INSERT INTO swap_owners VALUES(%s,%s,%s,%s,%s)',
                        (run_id,mapping['tx_hash'].lower(),audit['round_id'],mapping['decision_id'],audit['version_id']))
-        db.execute('INSERT INTO audit_events VALUES(%s,%s,%s,%s)',
-                   (run_id,audit['event_id'],audit['round_id'],raw))
+        db.execute('INSERT INTO audit_events(run_id,event_id,round_id,document,timestamp_ms) VALUES(%s,%s,%s,%s,%s)',
+                   (run_id,audit['event_id'],audit['round_id'],raw,audit['timestamp_ms']))
         for index,chunk in enumerate(audit['chunks']):
             db.execute('INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES(%s,%s,%s,%s)',
                        (run_id,audit['event_id'],index,chunk.encode('utf-8')))
@@ -365,13 +366,18 @@ class PostgresStore:
             count=db.execute(f'SELECT count(*) FROM {table} WHERE run_id=%s',(run_id,)).fetchone()[0]
             if rows!=new[table] or count!=len(ids[table]):
                 raise IntegrityError('Outbox/job definition differs from journal')
-        chunks,expected_chunks=base['chunks'],{}
+        chunks,expected_chunks,timestamps=base['chunks'],{},{}
         for event_id,raw in new['audit_events'].items():
-            parts=Document(raw).read()['chunks']
+            audit=Document(raw).read()
+            timestamps[event_id]=audit['timestamp_ms']
             if event_id not in base['ids']['audit_events']:
-                chunks+=len(parts)
-            for index,chunk in enumerate(parts):
+                chunks+=len(audit['chunks'])
+            for index,chunk in enumerate(audit['chunks']):
                 expected_chunks[(event_id,index)]=chunk.encode('utf-8')
+        # The deadline query filters on this column, so it must equal the document.
+        if timestamps!=dict(db.execute('SELECT event_id,timestamp_ms FROM audit_events WHERE run_id=%s '
+                                       'AND event_id=ANY(%s::text[])',(run_id,list(timestamps))).fetchall()):
+            raise IntegrityError('Audit timestamp differs from journal')
         actual_chunks={(r[0],r[1]):bytes(r[2]) for r in db.execute(
             'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s AND event_id=ANY(%s::text[])',
             (run_id,list(new['audit_events'])))}
@@ -435,7 +441,7 @@ class PostgresStore:
 
     def metrics(self,run_id):
         with self.transaction() as db:
-            run = self._run(db,run_id)
+            run = self._run(db,run_id,lock=False)
             return doc(dict(version=run['version'],owner_epoch=run['epoch'],quarantined=run['quarantined'],
                 audit_pending=db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s AND status<>'ACK'",(run_id,)).fetchone()[0],
                 open_rounds=db.execute("SELECT count(*) FROM rounds WHERE run_id=%s AND status='OPEN'",(run_id,)).fetchone()[0],

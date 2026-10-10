@@ -1,5 +1,6 @@
 """Durable archive maintenance, independent of model and trade scheduling."""
 
+from larp.audit.delivery import deadline_breaches
 from larp.contracts import ContractError, Document
 from larp.storage.backup import export
 from larp.storage.postgres import Conflict, IntegrityError, Unavailable, digest, doc
@@ -124,10 +125,7 @@ class Maintenance:
                                      "AND status='ACK' GROUP BY kind", (run_id,)))
             audit_failures = db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s "
                                         "AND status IN ('PERMANENT','EXHAUSTED')", (run_id,)).fetchone()[0]
-            pending = db.execute("SELECT DISTINCT a.document FROM audit_events a JOIN audit_chunks c "
-                                 "USING(run_id,event_id) WHERE a.run_id=%s AND c.status<>'ACK'", (run_id,)).fetchall()
-        breaches = sum(now_ms >= ((Document(bytes(raw)).read()['timestamp_ms'] // 86400000 + 1)
-                                  * 86400000 + 7200000) for raw, in pending)
+            breaches = len(deadline_breaches(db, run_id, now_ms))
         ages = {kind: max(0, now_ms - latest[kind]) if kind in latest else None for kind in ('anchor', 'backup')}
         reasons = []
         if run['quarantined']:
