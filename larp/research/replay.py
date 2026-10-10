@@ -7,7 +7,7 @@ from dataclasses import replace
 from datetime import timedelta
 import random
 
-from larp.contracts import ContractError, Document
+from larp.contracts import ContractError, Document, PolicyState
 from larp.risk.accounting import advance_accounting, roll_day
 from larp.risk.planner import plan
 from larp.strategy.policy import decide
@@ -70,3 +70,42 @@ def seeded_observations(seed, times, symbols):
                            "fault": rng.choice(["NONE", "QUOTE_MISSING", "MARKET_CLOSED", "PENDING"]),
                            "origin": "SCRIPTED_FAKE"})
     return Document.from_dict({"schema": "SeededFixture.v1", "observations": result})
+
+
+def replay_seeded(initial, *, seed, rounds=3, interval_seconds=60):
+    """Inject basic market/fault fixtures through real decide/plan ports; no fills.
+
+    Pending is an injected fake external state, not our own execution machine.
+    Test requests stay unexecuted until Isaac/Keegan supply their actual ports.
+    """
+    clock, state, traces = FakeClock(initial.observed_at), initial.policy_state, []
+    for round_id in range(rounds):
+        c = initial.context.read()
+        generated = seeded_observations(seed, [round_id], initial.universe).read()["observations"]
+        pending = False
+        for event in generated:
+            m = next(m for m in c["markets"] if m["symbol"] == event["symbol"])
+            m["price_units"] = m["price_units"] * (10000 + event["price_move_bps"]) // 10000
+            for key in ("observed_at", "available_at", "close_at"):
+                m[key] = clock.now.isoformat()
+            m["quotes"] = []
+            if event["fault"] == "MARKET_CLOSED":
+                m["underlying_open"] = False
+            if event["fault"] == "QUOTE_MISSING":
+                m["quality"] = "UNKNOWN"
+            pending |= event["fault"] == "PENDING"
+        if pending:
+            c["portfolio"]["reservations"]["injected-fake-pending"] = {
+                "symbol": initial.universe[0], "side": "BUY", "cash_units": 0,
+                "bnb_units": 0, "token_units": 0}
+        snapshot = replace(initial, policy_state=state, event_sequence=initial.event_sequence + round_id,
+                           observed_at=clock.now, context=Document.from_dict(c))
+        recorded = replay_snapshots([snapshot]).read()["trace"][0]
+        traces.append(recorded)
+        next_state = recorded["plan"]["next_policy_state"]
+        if next_state:
+            state = PolicyState(next_state["run_id"], next_state["policy_id"], next_state["schema"],
+                                next_state["version"], Document.from_dict(next_state["data"]))
+        clock.advance(interval_seconds)
+    return Document.from_dict({"schema": "SeededPortReplay.v1", "origin": "SCRIPTED_FAKE",
+                               "trace": traces, "live_execution_parity": False})

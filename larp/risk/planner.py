@@ -178,22 +178,42 @@ def plan(snapshot, proposal_or_none):
                                              "side": side, "token_units": q,
                                              "decimals": m["decimals"], "mandatory": mandatory})
             continue
-        if (not quote.get("route_valid") or instant(quote["available_at"]) > now
-                or not 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
-                or now >= instant(quote["expires_at"]) or quote["slippage_bps"] > p["slippage_bps"]
-                or quote["impact_bps"] > p["impact_bps"]):
+        try:
+            valid_quote = (quote.get("route_valid") is True and bool(quote["quote_id"])
+                           and instant(quote["available_at"]) <= now
+                           and 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
+                           and now < instant(quote["expires_at"])
+                           and integer(quote["slippage_bps"]) <= p["slippage_bps"]
+                           and integer(quote["impact_bps"]) <= p["impact_bps"])
+            cash, fee, gas = [integer(quote[k]) for k in ("cash_units", "fee_units", "gas_bnb_units")]
+        except (KeyError, ContractError, TypeError):
+            valid_quote = False
+        if not valid_quote:
+            if req is not None:
+                req["status"] = "BLOCKED_QUOTE"
             result["rejections"].append({"symbol": symbol, "reason": "QUOTE_ROUTE_OR_SLIPPAGE"})
             continue
-        cash, fee, gas = [integer(quote[k]) for k in ("cash_units", "fee_units", "gas_bnb_units")]
         if cash + fee > p["per_trade_cap_units"]:
             result["rejections"].append({"symbol": symbol, "reason": "EXECUTABLE_TRADE_CAP"})
             continue
         gas_value = ceil(Fraction(gas * ledger["bnb_price_units"], 10**ledger["bnb_decimals"]))
         mark = value(q, m)
         cost = max(Fraction(0), cash - mark if side == "BUY" else mark - cash) + fee + gas_value
-        if cost > cost_reserve:
+        if cost > cost_reserve and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
+        if cost > cost_reserve and mandatory:
+            # An estimated discretionary reserve cannot veto a mandatory sell.
+            # Recompute conservative upper bounds and retain the child residual.
+            adjusted_equity = max(0, E - ceil(cost))
+            for requirement in result["requirements"]:
+                old_bound = requirement["max_units"]
+                requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
+                requirement["remaining_sell_units"] = requirement["held_units"] - requirement["max_units"]
+                requirement["status"] = "PARTIAL_REQUIRES_POST_FILL_REPLAN"
+            quantity = req["remaining_sell_units"]
+            result["clamps"].append({"symbol": symbol, "reason": "POST_QUOTE_COST_REDUCTION",
+                                     "cost_units": ceil(cost)})
         if not mandatory and side == "BUY":
             if cost * 10000 > mark * 50:
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
@@ -216,6 +236,9 @@ def plan(snapshot, proposal_or_none):
             spend = 0
             if q > positions[symbol]["units"]:
                 raise ContractError("Planner oversell")
+            if fee > cash + ledger["cash_units"]:
+                result["rejections"].append({"symbol": symbol, "reason": "UNAFFORDABLE_EXIT_FEE"})
+                continue
         intent = {"symbol": symbol, "side": side, "token_units": q, "decimals": m["decimals"],
                   "cash_units": cash, "fee_units": fee, "gas_bnb_units": gas,
                   "mandatory": mandatory, "reasons": why, "quote_id": quote["quote_id"],

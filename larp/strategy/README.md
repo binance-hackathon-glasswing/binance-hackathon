@@ -68,9 +68,12 @@ turns a position into fictitious cash; dust is explicitly retained.
 
 Exact quotes bind side and integer quantity. Initial planning without a quote
 returns `MarketRequest.v1` requests; a new observed quote creates a new snapshot
-and requires fresh proposal/planning. `cost_reserve_units` is an explicit upper
-bound used for conservative post-cost cap sizing; a quote exceeding it is rejected.
-There is no hard-coded spread estimator in production planning. Missing quoted
+and requires fresh proposal/planning. `cost_reserve_units` is a configured planning
+bound used for conservative post-cost cap sizing; discretionary quotes exceeding
+it are rejected.
+Mandatory reductions may exceed this planning estimate: their stricter post-quote
+residuals remain explicit and are replanned after actual fills. Actual affordability
+and exit slippage still gate execution. There is no hard-coded spread estimator in production planning. Missing quoted
 depth blocks new entries under the currently declared depth rule (GAP-51); a
 price-impact replacement must be adopted/manifested before the real adapter can
 use it. Mandatory sells still obey their exit slippage and per-trade limits.

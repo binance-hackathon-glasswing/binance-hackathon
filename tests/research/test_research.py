@@ -10,8 +10,11 @@ from unittest.mock import patch
 from larp.contracts import ContractError, Document
 from larp.research.candles import adjacent_pairs, ar_estimate, category_variance
 from larp.research.evaluation import evaluate, fusion_rows
-from larp.research.fixtures import snapshot, changed
-from larp.research.replay import replay_snapshots, seeded_observations, replay_accounting
+from larp.research.fixtures import snapshot, changed, with_quotes, reserve_fixture, fill_fixture
+from larp.risk.accounting import advance_accounting
+from larp.risk.planner import plan
+from larp.strategy.policy import decide
+from larp.research.replay import replay_snapshots, seeded_observations, replay_accounting, replay_seeded
 from tools.realised_vol import bstock_series, stats
 
 
@@ -79,6 +82,24 @@ class ResearchTests(unittest.TestCase):
         b = seeded_observations(4, [2, 1], ["MSFTB", "NVDAB"]).read()["observations"]
         key = lambda o: (o["time"], o["symbol"])
         self.assertEqual(sorted(a, key=key), sorted(b, key=key))
+
+    def test_accounting_replay_matches_direct_settlement_and_duplicate_hashes(self):
+        s = with_quotes(snapshot())
+        result = plan(s, decide(s, s.policy_state))
+        initial = Document.from_dict(reserve_fixture(s, result).context.read()["portfolio"])
+        observation = fill_fixture(s, result.read()["intents"][0])
+        settled = advance_accounting(initial, observation)
+        replay = replay_accounting(initial, [observation, observation]).read()
+        self.assertEqual(replay["portfolio"], settled.read())
+        self.assertEqual(replay["hashes"], [settled.digest("PortfolioState.v1")] * 2)
+
+    def test_seeded_faults_run_through_production_ports(self):
+        s = snapshot(held={"NVDAB": 8000})
+        a = replay_seeded(s, seed=7, rounds=3)
+        self.assertEqual(a, replay_seeded(s, seed=7, rounds=3))
+        self.assertFalse(a.read()["live_execution_parity"])
+        self.assertEqual(len(a.read()["trace"]), 3)
+        self.assertTrue(any(t["plan"]["requirements"] for t in a.read()["trace"]))
 
     def test_no_data_fusion_is_inconclusive_and_in_sample_prediction_rejected(self):
         self.assertEqual(fusion_rows(Document.from_dict({"rights_cleared": False})).read()["status"], "INCONCLUSIVE")

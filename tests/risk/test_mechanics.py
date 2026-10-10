@@ -193,3 +193,20 @@ class RiskTests(unittest.TestCase):
         following = plan(changed(s, portfolio=settled.read()), None).read()
         self.assertGreater(following["requirements"][0]["remaining_sell_units"], 0)
         self.assertLess(following["requirements"][0]["remaining_sell_units"], r.read()["requirements"][0]["remaining_sell_units"])
+
+    def test_mandatory_cost_above_planning_estimate_does_not_veto_reduction(self):
+        s, r = self.planned(snapshot(held={"NVDAB": 8000}, profile_changes={"cost_reserve_units": 1000}), policy=False)
+        self.assertTrue(r.read()["intents"])
+        self.assertTrue(r.read()["intents"][0]["mandatory"])
+        self.assertIn("POST_QUOTE_COST_REDUCTION", [c["reason"] for c in r.read()["clamps"]])
+        self.assertTrue(r.read()["requirements"])
+
+    def test_malformed_quote_is_blocked_not_an_exception(self):
+        s = with_quotes(snapshot(held={"NVDAB": 8000}), policy=False)
+        for patch_value in ({"fee_units": -1}, {"gas_bnb_units": "bad"},
+                            {"expires_at": "bad"}, {"quote_id": ""}, {"route_valid": "yes"}):
+            c = s.context.read()
+            c["markets"][0]["quotes"][0].update(patch_value)
+            r = plan(changed(s, markets=c["markets"]), None).read()
+            self.assertFalse(r["intents"])
+            self.assertEqual(r["requirements"][0]["status"], "BLOCKED_QUOTE")

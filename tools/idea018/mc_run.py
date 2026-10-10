@@ -14,6 +14,8 @@ NAMES = ["NVDAB", "GOOGLB", "TSLAB", "MSFTB"]
 SIG_CAL = np.array([1.80, 1.59, 2.44, 1.65]) / 100 * VSCALE   # bStock 1d candles, calendar-day sd (Jul 17-Oct 7)
 # per-hour variance relative to RTH (10-16 ET), from 1h candles Sep 5-Oct 7 (analyse_candles.py)
 #               RTH  open(9-10) pre(4-9) after(16-20) overnight weekend
+# Historical illustrative coefficients, NOT re-estimated after IDEA-022's gap
+# correction. A registered rerun must supply reviewed coefficients/provenance.
 PROF = np.array([[1, 3.45, 0.87, 0.60, 0.66, 0.33],    # NVDAB
                  [1, 2.98, 1.15, 1.24, 0.71, 0.19],    # GOOGLB
                  [1, 9.26, 0.49, 0.26, 0.23, 0.24],    # TSLAB
