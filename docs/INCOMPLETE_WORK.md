@@ -94,6 +94,8 @@ Review follow-up (2026-10-10): [IDEA-017](ledger/IDEA-017.md) reviews IDEA-012�
 - [ ] GAP-51 — Replace G-25's depth cap: the API returns no depth (F-96). Define a price-impact rule using `priceImpactPercent` / `priceImpactProtectionPercent`. The proposal declared "≤ 10% of quoted depth", so the change needs a stated reason (G-11; proposal vs kit: plan.md I-68).
 - [ ] GAP-52 — Final-wallet transition (Oct 27–29): generate and register the fresh wallet (F-14), get its secret (Q-35), keep separate `.ai-seeds/` directories and nonce records per wallet, and make config refuse a mismatched address (G-09).
 
+- [ ] GAP-66 — Correct the research calculations in [IDEA-022 R1-R3](ledger/IDEA-022.md) before reusing their statistics: reset the simulated UTC daily-loss anchor before the midnight interval; preserve time adjacency through spread-estimator filtering; separate cross-session gap returns from measured category variance. Add deterministic regression fixtures and record any subsequent market-data/simulation rerun prospectively; retain historical results with dated corrections. Suggested owner Keith (simulation/analytics), reviewer Yao Zhu under IDEA-021 §8; availability remains GAP-37. IDEA-021 C07's terminal-gas drawdown omission remains separately tracked by GAP-65.
+
 ## Start now vs blocked (2026-10-05; re-checked 2026-10-08)
 
 Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Markets/Data/Risk: Isaac; Execution/Security: Keith; Platform/Audit: Keegan). They are suggestions, not assignments; owners are still GAP-37.
