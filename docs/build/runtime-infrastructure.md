@@ -4,6 +4,11 @@ Status: recommendation, 2026-10-10. The user confirmed no database, backup/ancho
 hosting destinations are selected. Nothing has been provisioned or purchased. This
 choice does not resolve registration, funded-wallet, policy or rehearsal gates.
 
+Follow-up implementation: `architecture-deployment.md` now provides the full ordered
+work list and commands; `deploy/aws/` and `deploy/bootstrap/` define the architecture,
+and the durable S3 archive/maintenance service is implemented. Those artifacts are
+still unprovisioned; this recommendation has not become a selected AWS destination.
+
 ## Recommended starting architecture
 
 Use one AWS account/project for operations, with a separately controlled audit
@@ -33,8 +38,9 @@ and allowed operator access. Record the resulting nonsecret resource references 
 the deployment manifest; keep credentials in the secret store. Do not replace the
 intentional nulls in `config/runtime/activation.example.json` with guessed names.
 
-Keegan then implements the S3 write-once receiver, scheduled hourly anchors, backup
-export/verification, monitoring and restore drill on those destinations. Isaac must
+Keegan deploys and verifies the implemented S3 write-once receiver, scheduled hourly
+anchors, backup export/verification and monitoring, then performs the restore drill
+on those destinations. Isaac must
 review external signer fencing and reconciliation before either primary or standby
 can sign. Yao Zhu validates the provider worker's actual capability/network isolation;
 Keith supplies the manifested financial and policy configuration. Full cross-owner

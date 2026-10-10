@@ -161,6 +161,9 @@ paste populated credentials into chat. No registered credentials were used here.
 
 The user requested infrastructure recommendations after implementation. See
 `runtime-infrastructure.md`; these are proposals, not selected destinations.
+The follow-up `architecture-deployment.md` documents implemented Terraform, archive
+maintenance, IAM service grants, host service definitions, monitoring and release
+checks, with the full remaining deployment work list and exact commands.
 
 ## Acceptance interpretation
 

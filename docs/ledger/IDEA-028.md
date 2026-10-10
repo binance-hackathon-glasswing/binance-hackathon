@@ -185,3 +185,45 @@ backups, reports failures; (4) restored application state remains quarantined; (
 and configuration checks fail closed on missing settings; (6) existing suite and CI
 remain green. Mocked AWS tests are not hosted disaster-recovery evidence. Record all
 unresolved deployment inputs, ownership and exact commands after verification.
+
+### RT11 — architecture choices implemented (not provisioned)
+
+The AWS definitions now cover state bootstrap, private two-AZ networking, RDS
+TLS/IAM/managed admin credentials, KMS, separate Object Lock archive/release buckets,
+six separate host identities, optional private EC2 hosts, optional restricted-role
+HTTPS/NAT access and CloudWatch alarms. AWS provider 6.61.0 and Terraform 1.13.5 are
+pinned. Cloud service availability/quotas, costs and chosen input values are not verified.
+The host AMI is required before enabling hosts; none starts application code in user-data.
+The selected Linux EC2 pattern remains an unprovisioned recommendation, not a claim
+that D-05 or the wider infrastructure decision has been adopted by the team.
+
+### RT12 — durable archive and operational boundary
+
+Hourly anchors now have an immutable UTC slot and captured time, including hours
+with an unchanged journal head. New migration 005 persists archive payloads, digest,
+attempts, next retry, explicit terminal failures and ACK, plus a monotonic maintenance
+clock. No historic state is fabricated after downtime. The S3 adapter uses conditional
+creation and verifies the exact object version's bytes, KMS key and COMPLIANCE
+retention. A lost acknowledgement retries the identical slot/payload; conflicting
+bytes fail. Stored receipts select immutable backup versions for quarantined restore.
+
+Backup.v1 excludes archive delivery tables to prevent recursive backup growth. A
+restored deployment must use a new archive namespace after reconciliation; the old
+remote history is retained. The archive process never promotes a run or signer.
+Its database role can read snapshots and update archive state but cannot mutate the
+financial projection. Runtime IAM tokens are generated for each TLS connection.
+CloudWatch health includes archive failures/staleness and official-outbox failures/
+deadline breaches; notification destinations are empty until explicitly selected.
+
+The archive systemd timer is supplied, not installed or enabled. Startup verifies
+the root-controlled manifest, code/config hashes, installed dependency pins, the
+actual operations configuration, recorded registration evidence and pinned RDS CA.
+A supplied registration reference is not proof of organiser acceptance; no proof is
+invented. Independent signer fencing, app-to-app authentication, actual provider /
+venue channels, selected image provisioning and live service startup remain owner
+integration work. The Terraform templates expose no inbound application ports yet.
+
+RT13 evidence will follow the final pushed code checks. The complete ordered work
+list, required inputs, owner responsibilities and no-cloud/cloud commands are in
+`docs/build/architecture-deployment.md`. No AWS resources, secrets, alarms to people,
+registered uploads or real transactions were created by this follow-up.

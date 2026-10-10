@@ -13,6 +13,7 @@
   "database_user": "larp_archive",
   "database_name": "larp",
   "database_ca_file": null,
+  "database_ca_sha256": null,
   "max_attempts": null,
   "retry_seconds": null,
   "max_archive_bytes": null

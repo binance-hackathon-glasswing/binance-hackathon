@@ -30,3 +30,19 @@ class OperationsTests(unittest.TestCase):
             verify_release(Document.from_dict(base), root)
             (path.parent/'unexpected.py').write_text('# unlisted', encoding='utf-8')
             with self.assertRaises(ContractError): verify_release(Document.from_dict(base), root)
+
+    def test_database_certificate_is_pinned_and_admin_role_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            certificate = Path(directory)/'ca.pem'
+            certificate.write_bytes(b'synthetic certificate')
+            config = dict(schema='OperationsConfiguration.v1', deployment='fixture', region='us-east-1',
+                          account_id='123456789012', run_id='run', archive_bucket='fixture',
+                          archive_prefix='archive/development', kms_key='synthetic', retention_days=7,
+                          backup_interval_hours=24, database_host='synthetic', database_user='larp_archive',
+                          database_name='larp', database_ca_file=str(certificate),
+                          database_ca_sha256=hashlib.sha256(certificate.read_bytes()).hexdigest(),
+                          max_attempts=2, retry_seconds=60, max_archive_bytes=1024)
+            validate_config(config)
+            with self.assertRaises(ContractError): validate_config(dict(config, database_user='larp_admin'))
+            certificate.write_bytes(b'changed')
+            with self.assertRaises(ContractError): validate_config(config)

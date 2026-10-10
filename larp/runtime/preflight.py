@@ -52,7 +52,7 @@ def verify_release(manifest, root):
     return m
 
 
-def build_manifest(root, services, registration_evidence=None):
+def build_manifest(root, services, registration_evidence=None, operations_config=None):
     root = Path(root).resolve()
     def git(*args):
         result = subprocess.run(['git', '-C', str(root), *args], capture_output=True,
@@ -72,7 +72,8 @@ def build_manifest(root, services, registration_evidence=None):
              for name in sorted(release_files(root))}
     return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit,
         repository=remote, remote_verified=True, services=services,
-        registration_evidence=registration_evidence, files=files))
+        registration_evidence=registration_evidence, files=files,
+        operations_config_sha256=hashlib.sha256(operations_config).hexdigest() if operations_config else None))
 
 
 def main(argv=None):
@@ -82,6 +83,7 @@ def main(argv=None):
     parser.add_argument('--build-output')
     parser.add_argument('--services')
     parser.add_argument('--registration-evidence')
+    parser.add_argument('--config')
     args = parser.parse_args(argv)
     try:
         if args.build_output:
@@ -90,14 +92,17 @@ def main(argv=None):
             services = json.loads(Path(args.services).read_text(encoding='utf-8'))
             evidence = (json.loads(Path(args.registration_evidence).read_text(encoding='utf-8'))
                         if args.registration_evidence else None)
-            manifest = build_manifest(args.root, services, evidence)
+            config = Path(args.config).read_bytes() if args.config else None
+            manifest = build_manifest(args.root, services, evidence, config)
             # Exclusive creation avoids replacing a release's provenance.
             with Path(args.build_output).open('xb') as stream:
                 stream.write(manifest.payload)
-            print(json.dumps(dict(manifest_created=True, registered=evidence is not None, signing_enabled=False)))
+            print(json.dumps(dict(manifest_created=True, registration_evidence_supplied=evidence is not None, signing_enabled=False)))
         else:
-            verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+            m = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
             verify_environment(args.root)
+            if args.config and hashlib.sha256(Path(args.config).read_bytes()).hexdigest() != m.get('operations_config_sha256'):
+                raise ContractError('Operations configuration differs from the registered manifest')
             print(json.dumps(dict(release_verified=True, signing_enabled=False)))
         return 0
     except Exception:

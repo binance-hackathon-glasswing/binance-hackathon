@@ -2,6 +2,7 @@
 
 import argparse
 from contextlib import contextmanager
+import hashlib
 import json
 from pathlib import Path
 import time
@@ -16,7 +17,7 @@ from larp.storage.postgres import PostgresStore, Unavailable, doc
 def validate_config(value):
     required = ('deployment', 'region', 'account_id', 'run_id', 'archive_bucket',
                 'archive_prefix', 'kms_key', 'retention_days', 'backup_interval_hours',
-                'database_host', 'database_user', 'database_name', 'database_ca_file',
+                'database_host', 'database_user', 'database_name', 'database_ca_file', 'database_ca_sha256',
                 'max_attempts', 'retry_seconds', 'max_archive_bytes')
     if value.get('schema') != 'OperationsConfiguration.v1':
         raise ContractError('Invalid operations configuration schema')
@@ -32,6 +33,8 @@ def validate_config(value):
         raise ContractError('Maintenance requires the dedicated larp_archive database role')
     if not Path(value['database_ca_file']).is_file():
         raise ContractError('Pinned RDS certificate bundle is missing')
+    if hashlib.sha256(Path(value['database_ca_file']).read_bytes()).hexdigest() != value['database_ca_sha256']:
+        raise ContractError('RDS certificate bundle hash differs from configuration')
     return value
 
 
