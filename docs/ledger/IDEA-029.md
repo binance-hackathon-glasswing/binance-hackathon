@@ -72,6 +72,8 @@ Every adopted source needs a licence-register row (GAP-23), a line in the manife
 
 ## Sources
 
+**Dated follow-up, 2026-10-10:** [IDEA-030 R10](IDEA-030.md) qualifies this historical review: G-10's exclusion of human-authored market views is team policy, not a challenge ban; inaccessible/unread terms do not establish that no licensable product exists; Alpha Vantage's private-analysis distinction needs its full wording. The user subsequently chose **no paid licensing**, so the implementation shortlist is the [free-source follow-up](IDEA-030-free-sources.md), not a commercial subscription. It verifies DOJ/SEC/Federal Register/EC machine access and identifies broken FTC RSS links, third-party-content exclusions, missing broad-rumor coverage and Wikinews' May 2026 closure. Official releases may support attributed claims as well as event flags, but do not by themselves establish return direction. Historical recommendations above remain recorded; no trading policy was adopted or tested here.
+
 - SEC RSS feeds: https://www.sec.gov/about/rss-feeds
 - Federal Register API: https://www.federalregister.gov/reader-aids/developer-resources/rest-api ; live call https://www.federalregister.gov/api/v1/documents.json?conditions[agencies][]=industry-and-security-bureau
 - Public inspection timing: https://law.cornell.edu/cfr/text/1/part-17/subpart-C
