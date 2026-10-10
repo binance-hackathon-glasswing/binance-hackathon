@@ -49,7 +49,8 @@ class Sandbox(unittest.TestCase):
             value=IsolatedWorker(timeout=3).call('larp.runtime.fixtures:inspect_capabilities',doc({})).read()
         finally:
             del os.environ['LARP_SENTINEL_SECRET']
-        self.assertEqual({},value['environment'])
+        # Python locale coercion and bubblewrap's cwd are nonsecret runtime metadata.
+        self.assertLessEqual(set(value['environment']),{'LC_CTYPE','PWD'})
         self.assertFalse(value['home_exists']); self.assertFalse(value['env_exists']); self.assertFalse(value['network'])
 
     def test_hang_exception_and_input_budget(self):

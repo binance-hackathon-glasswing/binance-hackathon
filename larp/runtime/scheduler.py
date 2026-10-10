@@ -1,7 +1,7 @@
 """Independent bounded lanes; expired policy work never becomes a late trade."""
 
 from datetime import datetime,timezone
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo,reset_tzpath
 
 from larp.contracts import ContractError,Document
 from larp.storage.postgres import Conflict,doc,integer
@@ -27,7 +27,9 @@ def utc_ms(local,zone,*,fold=0):
     """Resolve explicit fold; reject nonexistent civil times via round trip."""
     if local.tzinfo is not None:
         raise ContractError('Expected naive local calendar input')
-    aware=local.replace(tzinfo=ZoneInfo(zone),fold=fold)
+    # Force the version-pinned tzdata wheel rather than host OS calendar files.
+    reset_tzpath(())
+    aware=local.replace(tzinfo=ZoneInfo.no_cache(zone),fold=fold)
     utc=aware.astimezone(timezone.utc)
     if utc.astimezone(ZoneInfo(zone)).replace(tzinfo=None)!=local:
         raise ContractError('Nonexistent local calendar time')

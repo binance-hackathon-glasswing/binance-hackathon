@@ -9,6 +9,7 @@ from datetime import datetime,timezone
 from larp.audit.protocol import build_event
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
 from larp.storage.postgres import Conflict,doc
+from larp.runtime.schema import assessment_request,assessment_result
 
 
 def batch_for(current,event_id,event,*,projection=None,policy_state=None,execution_state=None,
@@ -43,13 +44,9 @@ class Coordinator:
             return previous
         assessment=None; proposal=None; errors=[]
         try:
+            assessment_request(request,self.run_id,self.profile_hash,now_ms)
             assessment=self.assessor.assess(request)
-            a=assessment.read(); r=request.read()
-            for key in ('job_id','run_id','issuer_id','context_hash','policy_profile_hash'):
-                if a.get(key)!=r.get(key):
-                    raise ContractError('Assessment context mismatch')
-            if a.get('schema')!='AssessmentResult.v1' or a['expiry_ms']<=now_ms:
-                raise ContractError('Stale assessment')
+            assessment_result(assessment,request,now_ms)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         context=dict(projection=current.read()['projection'],reservations=current.read()['reservations'],
@@ -117,7 +114,8 @@ class Coordinator:
             input_record=dict(version_id=self.version_id,round_id=round_id,request=record['request'],
                               assessment=assessment,policy_input=record.get('policy_input'),
                               policy_state=record.get('policy_state')),rationale=rationale,
-            output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id']),
+            output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
+                        policy_output=record.get('policy_output')),
             orders=record['orders'],swap_mappings=record['swap_mappings'])
         projection=current.read()['projection']
         projection.setdefault('closed_rounds',[]).append(round_id)

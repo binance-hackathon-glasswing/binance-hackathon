@@ -255,6 +255,7 @@ class PostgresStore:
         with self.transaction() as db:
             run = self._run(db,run_id)
             self._owned(run,epoch)
+            self._verify(db,run_id,run)
             row = db.execute('SELECT payload,epoch,state_version,status FROM commands WHERE run_id=%s AND command_id=%s',
                              (run_id,command_id)).fetchone()
             if not row or row[1] != epoch or row[2] != run['version'] or row[3] != 'PENDING':
@@ -267,6 +268,7 @@ class PostgresStore:
     @staticmethod
     def _verify(db,run_id,run):
         head,version,last = ZERO,0,None
+        reservations={}; audits={}; commands={}; jobs={}
         for raw,bhash,ehash,previous,stored,sequence in db.execute(
                 'SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events WHERE run_id=%s ORDER BY sequence',
                 (run_id,)):
@@ -278,12 +280,37 @@ class PostgresStore:
                     bhash,ehash,head,expected,version):
                 raise IntegrityError('Journal corruption')
             head,last = stored,b
+            for delta in b.get('reservation_deltas',[]):
+                key=(delta['intent_id'],delta['asset'])
+                reservations[key]=reservations.get(key,0)+delta['units']
+            for audit in b.get('audit',[]): audits[audit['event_id']]=doc(audit).payload
+            for command in b.get('commands',[]): commands[command['command_id']]=doc(command).payload
+            for job in b.get('jobs',[]): jobs[job['job_id']]=doc(job).payload
         if (head,version) != (run['head'],run['version']):
             raise IntegrityError('Truncated or rewound journal')
         if last:
             for field in ('projection','policy_state','execution_state'):
                 if doc(last[field]).payload != bytes(run[field]):
                     raise IntegrityError('Projection does not match journal')
+        actual={(r[0],r[1]):int(r[2]) for r in db.execute(
+            'SELECT intent_id,asset,units FROM reservations WHERE run_id=%s',(run_id,))}
+        if actual!=reservations:
+            raise IntegrityError('Reservations differ from journal')
+        for table,id_column,value_column,expected in (
+                ('audit_events','event_id','document',audits),('commands','command_id','payload',commands),
+                ('jobs','job_id','document',jobs)):
+            actual={r[0]:bytes(r[1]) for r in db.execute(
+                f'SELECT {id_column},{value_column} FROM {table} WHERE run_id=%s',(run_id,))}
+            if actual!=expected:
+                raise IntegrityError('Outbox/job definition differs from journal')
+        expected_chunks={}
+        for event_id,raw in audits.items():
+            for index,chunk in enumerate(Document(raw).read()['chunks']):
+                expected_chunks[(event_id,index)]=chunk.encode('utf-8')
+        actual_chunks={(r[0],r[1]):bytes(r[2]) for r in db.execute(
+            'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s',(run_id,))}
+        if actual_chunks!=expected_chunks:
+            raise IntegrityError('Audit chunk bytes differ from journal')
         return head
 
     def verify(self,run_id, *, minimum_version=0, anchored_head=None):
