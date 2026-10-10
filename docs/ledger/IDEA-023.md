@@ -35,3 +35,12 @@ Pass only if:
 Tests NOT RUN at initial commit. Results will be appended after the pushed implementation is tested. Full AT01, AT03 and AT20 remain incomplete: policy isolation, risk fallback/incident recording, durable state, Linux deployment and rehearsal are not delivered by these unit checks.
 
 Next delivery: Yao Zhu / reviewer Keith owns the remaining W01 typed contracts, policy interface and reducer; Keegan / reviewer Isaac owns W02 atomic persistence and W09 environment/CI; Keith owns independent risk/accounting integration; Isaac owns execution. These remain the suggested allocation in IDEA-021, subject to GAP-37 availability. GAP-65 stays open; no readiness gate is closed by this increment.
+
+### 2026-10-10 verification result
+
+- Implementation/test/criteria commit: `5a6f4d7`, pushed to `origin/codex/engine-foundation` before importing or running the new code. The first push was rejected by automatic approval review; Keegan then explicitly approved this destination, branch, payload and offline testing. No main-branch change was made by this increment.
+- `python -m unittest discover -s tests -v` using the `binance-hackathon` environment, Python **3.12.14**: **13 tests passed**. Synthetic inputs only; no strategy experiment, trading, external API request or ai-seeds upload.
+- `python -m pytest --collect-only -q -p no:cacheprovider` using the installed base-environment pytest on Python **3.14.6**, with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`: **13 tests collected**, all from `tests/test_contracts.py`; `binance_test.py` was not collected. This verifies default discovery, not the locked project environment.
+- Attempted pytest execution in the project environment failed before collection: `No module named pytest`. The declared dependency is already pinned in `requirements.in`; no package installation or lock change was made. Keegan's W09 environment work (GAP-45/65) still needs installation/verification of the locked environment and CI/Linux checks. Standard-library execution supplies this increment's unit evidence but does not close that gap.
+- Python 3.12 AST syntax checks and `git diff --check` passed. No code changes followed the passing unit tests; the follow-up commit records evidence only.
+- Outcome: this narrow policy-boundary increment is implemented and unit-tested; full W01 and AT01/AT03/AT20 remain incomplete for the reasons above. No trading policy or live build was enabled. Research-script corrections remain GAP-66.
