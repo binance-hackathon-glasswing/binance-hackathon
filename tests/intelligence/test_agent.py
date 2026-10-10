@@ -23,14 +23,23 @@ def eight_k(accession, acceptance, lines, items=("7.01",)):
         doc(f"exsm-8k-{accession[-6:]}.htm", "8-K", cover("Example Semiconductor Corp", "8-K", list(items), lines))])
 
 
+# Common "no event" boilerplate (PR #4 review, R3 re-check): negation before, after or governing the keyword.
+NEGATED_BOILERPLATE = (
+    ("IMPAIRMENT", "The company recorded no impairment in the quarter."),
+    ("IMPAIRMENT", "An impairment charge was not required in the quarter."),
+    ("IMPAIRMENT", "Management concluded that goodwill impairment was not necessary."),
+    ("IMPAIRMENT", "We did not identify any events or circumstances that would indicate an impairment."),
+    ("RESTATEMENT", "The Audit Committee concluded that a restatement of prior financial statements is not required."),
+)
+
 EXTRA = {
     "G1_36": eight_k("0009900001-26-000301", "2026-07-01T20:00:00+00:00", [Q4_GUIDE.format("36.0")]),
     "G2_32": eight_k("0009900001-26-000302", "2026-08-15T20:00:00+00:00", [Q4_GUIDE.format("32.0")]),
     "G2_SPLIT": eight_k("0009900001-26-000304", "2026-08-15T20:00:00+00:00",
                         [Q4_GUIDE.format("32.0"), Q4_GUIDE.format("33.5")]),
     "G3_34": eight_k("0009900001-26-000303", "2026-09-20T20:00:00+00:00", [Q4_GUIDE.format("34.0")]),
-    "NO_IMPAIRMENT": eight_k("0009900001-26-000305", "2026-10-02T20:00:00+00:00",
-                             ["The company recorded no impairment in the quarter."], items=("2.02",)),
+    "NEGATED_BOILERPLATE": eight_k("0009900001-26-000305", "2026-10-02T20:00:00+00:00",
+                                   [sentence for _, sentence in NEGATED_BOILERPLATE], items=("2.02",)),
 }
 
 
@@ -303,17 +312,29 @@ class ClaimBindingTests(AgentHarness):
                 self.assert_abstains(result, reason)
 
     def test_a_negated_event_claim_abstains_and_creates_no_adverse_finding(self):
-        self.world("NO_IMPAIRMENT")
-        model = ScriptedModel(self.w.clock, [{"output": lambda state: {
-            "action": "FINISH", "notes": "x", "claims": [{
-                "kind": "EVENT", "metric": "IMPAIRMENT",
-                "span": cite(state, "The company recorded no impairment in the quarter.")}]}}])
-        result, doc = self.assess(["NO_IMPAIRMENT"], model=model)
-        self.assert_abstains(result, "EVENT_NEGATED")
-        self.assertNotIn("IMPAIRMENT", {f["type"] for f in result["event_findings"]})
+        self.world("NEGATED_BOILERPLATE")
+        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+        for i, (metric, sentence) in enumerate(NEGATED_BOILERPLATE):
+            with self.subTest(sentence=sentence):
+                model = ScriptedModel(self.w.clock, [{"output": lambda st, metric=metric, sentence=sentence: {
+                    "action": "FINISH", "notes": "x",
+                    "claims": [{"kind": "EVENT", "metric": metric, "span": cite(st, sentence)}]}}])
+                result, doc = self.assess(["NEGATED_BOILERPLATE"], model=model, job_id=f"job:negated:{i}")
+                self.assert_abstains(result, "EVENT_NEGATED")
+                self.assertNotIn(metric, {f["type"] for f in result["event_findings"]})
+                _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+                self.assertNotIn(metric, {a["type"] for a in after["unresolved_adverse"]})
+
+    def test_the_baseline_finds_no_event_in_negated_boilerplate(self):
+        self.world("NEGATED_BOILERPLATE")
+        result, doc = self.assess(["NEGATED_BOILERPLATE"])
+        adverse = {"IMPAIRMENT", "RESTATEMENT"}
+        self.assertFalse(adverse & {c["metric"] for c in result["claims"] if c["kind"] == "EVENT"})
+        self.assertFalse(adverse & {f["type"] for f in result["event_findings"]})
+        self.assertNotEqual({f["falsifier_id"]: f["state"] for f in result["falsifiers"]}["F-RESTATEMENT"], "FIRED")
         state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
         _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
-        self.assertNotIn("IMPAIRMENT", {a["type"] for a in after["unresolved_adverse"]})
+        self.assertFalse(adverse & {a["type"] for a in after["unresolved_adverse"]})
 
 
 class RequestValidationTests(AgentHarness):

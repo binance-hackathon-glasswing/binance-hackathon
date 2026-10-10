@@ -3,7 +3,7 @@
 A claim is accepted only if it is a well-formed claim object; its quoted span is the exact
 substring at the stated offsets of a loaded document; with records, that document belongs to
 the claimed source record, from which all provenance is taken; the metric/event is named in the
-span, and an event is not negated in the surrounding source text; every stated number (value,
+span, and an event is not negated anywhere in its clause of the source text; every stated number (value,
 range bounds, tolerance) appears in the span; the scale and currency are stated in the span or
 its cited scale span; and the period parses from the cited period span. Period and scale spans
 come from the same statement: the same line for prose, and for a table cell its own column
@@ -150,7 +150,7 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
         matches = list(_EVENTS[metric].finditer(text, span["start"], span["end"])) if metric in _EVENTS else []
         if not matches:
             return None, "EVENT_NOT_IN_SPAN"
-        if all(negated(text, m.start()) for m in matches):
+        if all(negated(text, m.start(), m.end()) for m in matches):
             return None, "EVENT_NEGATED"  # "recorded no impairment" is not an impairment
         return _fact(claim, record, doc_name, event=True), None
     if metric not in METRIC_NAMES or not METRIC_ONE[metric].search(span_text):

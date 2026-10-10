@@ -1,6 +1,7 @@
 """Fact extraction, claim verification, rounding-aware conflicts and comparisons."""
 
 from fractions import Fraction
+import re
 import unittest
 
 from larp.intelligence.facts import extract_document, item_events, normalized, parse_period, periods_in
@@ -137,6 +138,54 @@ class PerShareScaleTests(unittest.TestCase):
         _, facts = self.facts(INCOME_TABLE.replace(b"(In millions, except per share data)", b"(In millions)"))
         self.assertEqual([f for f in facts if f["metric"] == "eps_diluted"], [])
         self.assertTrue(pick(facts, "REPORTED", "revenue", "FY2027-Q3", 6))
+
+
+# Common "no event" boilerplate: negation before the keyword, after it, or on the verb that governs it.
+NEGATED_EVENTS = (
+    ("IMPAIRMENT", "The company recorded no impairment in the quarter."),
+    ("IMPAIRMENT", "No goodwill or intangible asset impairment charges were recognized."),
+    ("IMPAIRMENT", "There were no indicators of impairment."),
+    ("IMPAIRMENT", "An impairment charge was not required in the quarter."),
+    ("IMPAIRMENT", "Management concluded that goodwill impairment was not necessary."),
+    ("IMPAIRMENT", "We did not identify any events or circumstances that would indicate an impairment."),
+    ("RESTATEMENT", "The Audit Committee concluded that a restatement of prior financial statements is not required."),
+)
+AFFIRMED_EVENTS = (
+    ("IMPAIRMENT", "The company recorded a goodwill impairment of $12 million in the quarter."),
+    ("IMPAIRMENT", "We recorded an impairment charge on the Boise facility, but no restructuring charge was required."),
+    ("OFFICER_DEPARTURE", "The Chief Financial Officer will resign effective no later than November 30, 2026."),
+    ("RESTATEMENT", "The Audit Committee concluded that the previously issued financial statements "
+                    "should no longer be relied upon."),
+)
+
+
+class NegationScopeTests(unittest.TestCase):
+    """The extractor and the verifier read an event's whole clause for negation, in both directions."""
+
+    def check(self, metric, sentence, *quotes):
+        """Whether the extractor finds `metric`, and the verifier's reason for a claim quoting each of `quotes`."""
+        saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
+        facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
+        events = {f["metric"] for f in facts if f["kind"] == "EVENT"}
+        texts = {saved.text_sha256: saved.text}
+        reasons = []
+        for quoted in quotes:
+            start = saved.text.index(quoted)
+            claim = {"kind": "EVENT", "metric": metric,
+                     "span": {"doc": saved.text_sha256, "start": start, "end": start + len(quoted), "text": quoted}}
+            reasons.append(verify_claim(claim, texts, None)[1])
+        return metric in events, reasons
+
+    def test_negated_events_give_no_fact_and_are_not_verified(self):
+        for metric, sentence in NEGATED_EVENTS:
+            with self.subTest(sentence=sentence):
+                keyword = re.search(r"(?i)impairment|restatement", sentence).group(0)
+                self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, ["EVENT_NEGATED"] * 2))
+
+    def test_affirmed_events_still_give_a_fact_and_verify(self):
+        for metric, sentence in AFFIRMED_EVENTS:
+            with self.subTest(sentence=sentence):
+                self.assertEqual(self.check(metric, sentence, sentence), (True, [None]))
 
 
 class VerificationTests(unittest.TestCase):

@@ -56,13 +56,28 @@ KEYWORD_EVENTS = (
         r"\b(?:chief\s+executive\s+officer|chief\s+financial\s+officer|CEO|CFO)\b[^.\n]{0,80}?"
         r"\b(?:resign(?:s|ed|ation)?|step(?:s|ped)?\s+down|depart(?:s|ure|ed)?)\b", re.I)),
 )
-NEGATION = re.compile(r"\b(?:no|not|without|nor|never)\b[^.\n]{0,30}$", re.I)
+NEGATION = re.compile(r"\b(?:no|not|none|neither|nor|never|without|cannot|absence\s+of|unnecessary)\b|n't\b", re.I)
+NOT_NEGATING = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+be\s+relied\s+upon\b", re.I)
+# Clause ends: a line or sentence end, a semicolon, or a contrastive join. A bare comma or ", and" does not end
+# a clause, so negation in a list ("did not identify loss, damage, and impairment") still counts.
+CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'])|(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
 PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
 
 
-def negated(text: str, position: int) -> bool:
-    """True if a negation ("no", "not", "without", ...) shortly precedes `position` in the same sentence."""
-    return bool(NEGATION.search(text[max(0, position - 40):position]))
+def negated(text: str, start: int, end: int) -> bool:
+    """True if a negation appears anywhere in the clause holding text[start:end], before or after it
+    ("recorded no impairment", "an impairment charge was not required", "did not identify ... an impairment").
+
+    Conservative: one negation anywhere in the clause rejects the event, so "recorded an impairment and did not
+    record a restructuring charge" gives no IMPAIRMENT fact."""
+    lo, hi = text.rfind("\n", 0, start) + 1, len(text)
+    for m in CLAUSE_BREAK.finditer(text, lo):
+        if m.end() <= start:
+            lo = m.end()
+        elif m.start() >= end:
+            hi = m.start()
+            break
+    return bool(NEGATION.search(NOT_NEGATING.sub(" ", text[lo:start] + " " + text[end:hi])))
 
 
 _QUARTER = {"first": 1, "second": 2, "third": 3, "fourth": 4, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
@@ -354,7 +369,7 @@ def _keyword_events(text, doc_sha):
     facts = []
     for event, pattern in KEYWORD_EVENTS:
         for m in pattern.finditer(text):
-            if negated(text, m.start()):
+            if negated(text, m.start(), m.end()):
                 continue
             facts.append({"kind": "EVENT", "metric": event, "period": None, "value": None, "range": None,
                           "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,
