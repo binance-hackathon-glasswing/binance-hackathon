@@ -68,12 +68,28 @@ class Transactions(DatabaseCase):
             db.execute("UPDATE schema_migrations SET sha256='bad'")
         with self.assertRaises(IntegrityError): self.store.migrate()
 
+    def test_offline_flag_cannot_activate_live_run(self):
+        self.store.initialize('live','live-wallet',56,doc(dict(balances={})),mode='live')
+        with self.assertRaises(Conflict): self.store.takeover('live',1,offline=True)
+        self.assertTrue(self.store.load('live').read()['quarantined'])
+
     def test_database_write_failure_cannot_authorize(self):
+        self.store.commit(self.batch(commands=[dict(command_id='c',expires_ms=999,kind='FAKE')]))
         # Real PostgreSQL read-only transaction stands in for a failing durable write.
         from psycopg.conninfo import make_conninfo
         broken=type(self.store)(make_conninfo(self.store._dsn,options='-c search_path='+self.schema+' -c default_transaction_read_only=on'))
-        with self.assertRaises(Unavailable): broken.commit(self.batch())
-        self.assertEqual(0,self.store.load('run').read()['version'])
+        with self.assertRaises(Unavailable): broken.commit(self.batch('blocked'))
+        with self.assertRaises(Unavailable): broken.command('run','c',self.epoch,100)
+        self.assertEqual(1,self.store.load('run').read()['version'])
+
+    def test_postgres_disk_full_fault_rolls_back_reservation(self):
+        with self.store.transaction() as db:
+            db.execute("CREATE FUNCTION fail_write() RETURNS trigger LANGUAGE plpgsql AS $$ "
+                       "BEGIN RAISE EXCEPTION 'synthetic disk full' USING ERRCODE='53100'; END $$")
+            db.execute('CREATE TRIGGER fail_write BEFORE INSERT ON events FOR EACH ROW EXECUTE FUNCTION fail_write()')
+        with self.assertRaises(Unavailable):
+            self.store.commit(self.batch(reservation_deltas=[dict(intent_id='i',asset='USDT',units=20)]))
+        self.assertEqual([],self.store.load('run').read()['reservations'])
 
     def test_backup_checksum_and_stale_external_watermark(self):
         self.store.commit(self.batch())

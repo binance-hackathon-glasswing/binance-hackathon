@@ -2,7 +2,7 @@ import json
 
 from larp.audit.delivery import DeliveryWorker
 from larp.runtime.coordinator import Coordinator
-from larp.runtime.fixtures import FakeAssessor,FakePolicy,FakePlanner,FakeReceiver,settle
+from larp.runtime.fixtures import FakeAssessor,FakePolicy,FakePlanner,FakeReceiver,FakeExecution,settle
 from larp.storage.postgres import doc,Conflict
 from larp.storage.backup import export,restore
 from tests.support import DatabaseCase,request
@@ -12,7 +12,7 @@ class IntegratedRuntime(DatabaseCase):
     def coordinator(self,assessor=None,policy=None):
         self.planner=FakePlanner()
         return Coordinator(self.store,assessor or FakeAssessor(),policy or FakePolicy(),self.planner,
-                           run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40)
+                           execution=FakeExecution(),run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40)
 
     def test_restartable_round_settlement_audit_backup_and_exact_replay(self):
         coordinator=self.coordinator(); now=1791590400000
@@ -33,6 +33,8 @@ class IntegratedRuntime(DatabaseCase):
         self.assertEqual(1,len(receiver.stored))
         audit_before=list(receiver.stored.values())[0]
         final=doc(dict(kind='FINAL_SUCCESS',observation_id='settled',round_id='r',tx_hash=tx,simulated=True))
+        coordinator.observe('settled',final,settle)
+        # A repeated identical receipt after restart is idempotent at the port too.
         coordinator.observe('settled',final,settle)
         value=self.store.load('run').read()
         self.assertEqual(dict(USDT=90,BNB=9,NVDAB=2),value['projection']['balances'])
@@ -87,3 +89,11 @@ class IntegratedRuntime(DatabaseCase):
         old=self.batch('old')
         self.store.commit(self.batch('new'))
         with self.assertRaises(Conflict): self.store.commit(old)
+
+    def test_reservation_rejection_is_logged_without_mutation(self):
+        self.store.commit(self.batch(reservation_deltas=[dict(intent_id='other',asset='USDT',units=100)]))
+        coordinator=self.coordinator()
+        coordinator.start('blocked',request('BUY'),1791590400000)
+        self.assertEqual(0,self.store.metrics('run').read()['open_rounds'])
+        self.assertEqual(1,self.store.metrics('run').read()['audit_pending'])
+        self.assertEqual(100,self.store.load('run').read()['projection']['balances']['USDT'])

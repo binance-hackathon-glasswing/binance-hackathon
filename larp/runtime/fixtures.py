@@ -12,6 +12,34 @@ from larp.contracts import Document,PolicyState,Proposal,Target,TargetKind
 from larp.storage.postgres import doc
 
 
+class FakeMarket:
+    def observe(self,request):
+        r=request.read()
+        return doc(dict(schema='MarketObservation.v1',observation_id='market:'+r['request_id'],
+            token=r['token'],underlying=r['underlying'],decimals=18,
+            token_market_state='OPEN',underlying_market_state='OPEN',source='synthetic',
+            observed_ms=r['cutoff_ms'],available_ms=r['cutoff_ms'],content_hash='e'*64,quality='SYNTHETIC'))
+
+
+class FakeExecution:
+    """Minimal port fixture, explicitly not a nonce/approve/venue implementation."""
+    def advance(self,state,observation):
+        s=state.read(); o=observation.read()
+        if s['schema']!='ExecutionState.v1' or o.get('simulated') is not True:
+            raise ValueError('Synthetic execution only')
+        intents=s['intents']; previous=intents.get(o['round_id'])
+        if o['kind']=='BROADCAST_ATTEMPTED':
+            if previous is not None: raise ValueError('Repeated attempt')
+        elif o['kind'] in ('FINAL_SUCCESS','FINAL_REVERT'):
+            if previous is None or previous['kind']!='BROADCAST_ATTEMPTED' or previous['tx_hash']!=o['tx_hash']:
+                raise ValueError('Outcome without matching attempt')
+        else:
+            raise ValueError('Unsupported synthetic observation')
+        intents[o['round_id']]=o
+        return doc(dict(schema='ExecutionTransition.v1',next_state=dict(schema='ExecutionState.v1',intents=intents),
+                        commands=[],observation_ids=[o['observation_id']]))
+
+
 def assess(request):
     r=request.read()
     return doc(dict(schema='AssessmentResult.v1',**{k:r[k] for k in
@@ -112,25 +140,18 @@ def settle(current,observation):
     seen.append(o['observation_id'])
     record=projection['round_records'][o['round_id']]
     intent=record['plan']['intents'][0]
-    execution=c['execution_state']
-    state=execution.get(intent['intent_id'],{})
     deltas=[]
     if o['kind']=='BROADCAST_ATTEMPTED':
-        if state:
-            raise ValueError('Repeated broadcast authorization')
         record['orders'][0]['tx_hash']=o['tx_hash']
-        record['swap_mappings'].append(dict(tx_hash=o['tx_hash'],decision_id=intent['decision_id']))
+        record['swap_mappings'].append(dict(tx_hash=o['tx_hash'],decision_id=intent['decision_id'],step='swap'))
     else:
-        if state.get('kind')!='BROADCAST_ATTEMPTED' or state['tx_hash']!=o['tx_hash']:
-            raise ValueError('Outcome without matching durable attempt')
         projection['balances']['BNB']-=intent['gas_units']
         if o['kind']=='FINAL_SUCCESS':
             projection['balances']['USDT']-=intent['pay_units']
             projection['balances']['NVDAB']+=intent['receive_units']
         deltas=[dict(intent_id=intent['intent_id'],asset=a,units=-n) for a,n in
                 [('USDT',intent['pay_units']),('BNB',intent['gas_units'])]]
-    execution[intent['intent_id']]=o
-    return doc(dict(projection=projection,execution_state=execution,reservation_deltas=deltas))
+    return doc(dict(projection=projection,reservation_deltas=deltas))
 
 
 class FakeReceiver:

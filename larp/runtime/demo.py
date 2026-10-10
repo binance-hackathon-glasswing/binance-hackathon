@@ -11,7 +11,7 @@ import uuid
 
 from larp.audit.delivery import DeliveryWorker
 from larp.runtime.coordinator import Coordinator
-from larp.runtime.fixtures import FakePlanner,FakeReceiver,SandboxAssessor,SandboxPolicy,settle
+from larp.runtime.fixtures import FakePlanner,FakeReceiver,FakeMarket,FakeExecution,SandboxAssessor,SandboxPolicy,settle
 from larp.runtime.worker import IsolatedWorker
 from larp.storage.postgres import PostgresStore,doc
 
@@ -35,9 +35,12 @@ def main():
     worker=IsolatedWorker(timeout=3)
     def coordinator(assessor=None):
         return Coordinator(store,assessor or SandboxAssessor(worker),SandboxPolicy(worker),FakePlanner(),
-                           run_id='run',version_id='synthetic-build',profile_hash='a'*64,address='0x'+'1'*40)
+                           execution=FakeExecution(),run_id='run',version_id='synthetic-build',profile_hash='a'*64,address='0x'+'1'*40)
     now=1791590400000
+    market=FakeMarket().observe(doc(dict(schema='MarketRequest.v1',request_id='market',run_id='run',
+                                        token='NVDAB',underlying='NVDA',cutoff_ms=now)))
     request=doc(dict(schema='AssessmentRequest.v1',job_id='job',run_id='run',issuer_id='NVDA',cutoff_ms=now,
+        market=market.read(),
         context_hash='c'*64,policy_profile_hash='a'*64,evidence_refs=[dict(source='synthetic',content_hash='e'*64,
         observed_ms=now,available_ms=now,quality='SYNTHETIC')],allowed_tools=[],
         budget=dict(tool_calls=6,deadline_ms=60000),fixture_action='BUY'))

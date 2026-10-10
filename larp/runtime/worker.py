@@ -44,7 +44,7 @@ class IsolatedWorker:
         if Path('/lib64').exists():
             command+=['--ro-bind','/lib64','/lib64']
         prefix=Path(sys.base_prefix).resolve()
-        command+=['--ro-bind',str(prefix),'/python']
+        command+=['--ro-bind',str(prefix),'/python','--setenv','LD_LIBRARY_PATH','/python/lib']
         isolated_python='/python/'+str(python.relative_to(prefix))
         command+=['--dir','/app','--ro-bind',str(package),'/app/larp',
                   '--tmpfs','/tmp','--proc','/proc','--dev','/dev','--chdir','/app',

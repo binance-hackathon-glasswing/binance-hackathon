@@ -101,5 +101,5 @@ def verify_event(event):
     hashes = [o['tx_hash'].lower() for o in log['data']['orders'] if 'tx_hash' in o]
     mappings = e['swap_mappings']
     if (len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(m['tx_hash'].lower() for m in mappings)
-            or any(m['decision_id'] not in e['decision_ids'] for m in mappings)):
+            or any(m['decision_id'] not in e['decision_ids'] or m.get('step')!='swap' for m in mappings)):
         raise ContractError('Each swap needs unique decision/round ownership')

@@ -71,31 +71,33 @@ class PostgresStore:
                     db.execute(source)
                     db.execute('INSERT INTO schema_migrations VALUES(%s,%s)',(sql.name,checksum))
 
-    def initialize(self, run_id, wallet_id, chain_id, projection):
+    def initialize(self, run_id, wallet_id, chain_id, projection, *, mode='offline'):
         """New runs start quarantined. Caller must explicitly attest offline mode."""
         if not run_id or not wallet_id or type(projection) is not Document:
             raise ContractError('Invalid run identity/projection')
         integer(chain_id, 1)
+        if mode not in ('offline','paper','dev','live'):
+            raise ContractError('Invalid run mode')
         with self.transaction() as db:
             db.execute('INSERT INTO runs(run_id,wallet_id,chain_id,head,initial,projection,'
-                       'policy_state,execution_state) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
+                       'policy_state,execution_state,mode) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)',
                        (run_id,wallet_id,chain_id,ZERO,projection.payload,projection.payload,
-                        doc({}).payload,doc({}).payload))
+                        doc({}).payload,doc({}).payload,mode))
 
     @staticmethod
     def _run(db, run_id):
         row = db.execute('SELECT wallet_id,chain_id,version,epoch,quarantined,head,'
-                         'projection,policy_state,execution_state,clock_ms FROM runs '
+                         'projection,policy_state,execution_state,clock_ms,mode,initial FROM runs '
                          'WHERE run_id=%s FOR UPDATE', (run_id,)).fetchone()
         if row is None:
             raise Conflict('Unknown run')
         return dict(zip(('wallet_id','chain_id','version','epoch','quarantined','head',
-                         'projection','policy_state','execution_state','clock_ms'),row))
+                         'projection','policy_state','execution_state','clock_ms','mode','initial'),row))
 
     def load(self, run_id):
         with self.transaction() as db:
             value = self._run(db,run_id)
-            for key in ('projection','policy_state','execution_state'):
+            for key in ('projection','policy_state','execution_state','initial'):
                 value[key] = Document(bytes(value[key])).read()
             value['run_id'] = run_id
             value['reservations'] = [dict(intent_id=r[0],asset=r[1],units=int(r[2])) for r in
@@ -113,6 +115,8 @@ class PostgresStore:
             run = self._run(db,run_id)
             if run['epoch'] != expected_epoch:
                 raise Conflict('Stale ownership')
+            if offline and run['mode'] not in ('offline','paper'):
+                raise Conflict('Offline takeover cannot activate a trading run')
             self._verify(db,run_id,run)
             epoch = expected_epoch + 1
             db.execute('UPDATE runs SET epoch=%s,quarantined=%s WHERE run_id=%s',
@@ -261,6 +265,11 @@ class PostgresStore:
             row=db.execute('SELECT receipt FROM events WHERE run_id=%s AND event_id=%s',(run_id,event_id)).fetchone()
             return Document(bytes(row[0])) if row else None
 
+    def event(self,run_id,event_id):
+        with self.transaction() as db:
+            row=db.execute('SELECT batch FROM events WHERE run_id=%s AND event_id=%s',(run_id,event_id)).fetchone()
+            return Document(bytes(row[0])).read()['event'] if row else None
+
     def command(self,run_id,command_id,epoch,now_ms):
         with self.transaction() as db:
             run = self._run(db,run_id)
@@ -273,6 +282,10 @@ class PostgresStore:
             result = Document(bytes(row[0]))
             if result.read()['expires_ms'] <= now_ms:
                 raise Conflict('Expired command')
+            # A read-only health query cannot establish local write-ahead health.
+            # This commits durably before returning an execution request.
+            db.execute('INSERT INTO command_checks(run_id,command_id,epoch,state_version,checked_ms) '
+                       'VALUES(%s,%s,%s,%s,%s)',(run_id,command_id,epoch,run['version'],now_ms))
             return result
 
     @staticmethod
@@ -284,6 +297,8 @@ class PostgresStore:
                 (run_id,)):
             raw = bytes(raw)
             b = Document(raw).read()
+            if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
+                raise IntegrityError('Journal identity differs from wallet authority')
             version += 1
             expected = digest(bytes.fromhex(head)+bytes.fromhex(digest(raw)))
             if (digest(raw),digest(doc(b['event']).payload),previous,stored,sequence) != (
@@ -302,6 +317,8 @@ class PostgresStore:
             for field in ('projection','policy_state','execution_state'):
                 if doc(last[field]).payload != bytes(run[field]):
                     raise IntegrityError('Projection does not match journal')
+        elif bytes(run['projection'])!=bytes(run['initial']):
+            raise IntegrityError('Initial projection changed')
         actual={(r[0],r[1]):int(r[2]) for r in db.execute(
             'SELECT intent_id,asset,units FROM reservations WHERE run_id=%s',(run_id,))}
         if actual!=reservations:

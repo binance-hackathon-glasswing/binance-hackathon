@@ -50,7 +50,8 @@ class Sandbox(unittest.TestCase):
         finally:
             del os.environ['LARP_SENTINEL_SECRET']
         # Python locale coercion and bubblewrap's cwd are nonsecret runtime metadata.
-        self.assertLessEqual(set(value['environment']),{'LC_CTYPE','PWD'})
+        self.assertLessEqual(set(value['environment']),{'LC_CTYPE','PWD','LD_LIBRARY_PATH'})
+        self.assertEqual('/python/lib',value['environment']['LD_LIBRARY_PATH'])
         self.assertFalse(value['home_exists']); self.assertFalse(value['env_exists']); self.assertFalse(value['network'])
 
     def test_hang_exception_and_input_budget(self):

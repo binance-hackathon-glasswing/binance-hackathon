@@ -8,7 +8,7 @@ from datetime import datetime,timezone
 
 from larp.audit.protocol import build_event
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
-from larp.storage.postgres import Conflict,doc
+from larp.storage.postgres import Conflict,IntegrityError,doc
 from larp.runtime.schema import assessment_request,assessment_result
 
 
@@ -25,9 +25,10 @@ def batch_for(current,event_id,event,*,projection=None,policy_state=None,executi
 
 
 class Coordinator:
-    def __init__(self,store,assessor,policy,planner,*,run_id,version_id,profile_hash,address):
+    def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address):
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
+        self.execution=execution
 
     def snapshot(self,current,now_ms,context):
         c=current.read()
@@ -39,6 +40,9 @@ class Coordinator:
     def start(self,round_id,request,now_ms):
         current=self.store.load(self.run_id)
         self.store.open_round(self.run_id,round_id,request,current.read()['epoch'])
+        closed=self.store.receipt(self.run_id,'close:'+round_id)
+        if closed:
+            return closed
         previous=self.store.receipt(self.run_id,'plan:'+round_id)
         if previous:
             return previous
@@ -79,20 +83,40 @@ class Coordinator:
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
                        decision_id=i['decision_id'],expires_ms=i['expires_ms']) for i in plan['intents']]
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
-        receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
-            projection=projection,policy_state=proposal.next_policy_state.record() if proposal else None,
-            reservation_deltas=plan['reservation_deltas'],jobs=plan['jobs'],commands=commands))
+        try:
+            receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
+                projection=projection,policy_state=proposal.next_policy_state.record() if proposal else None,
+                reservation_deltas=plan['reservation_deltas'],jobs=plan['jobs'],commands=commands))
+        except Conflict:
+            # Rejection is itself a durable outcome, never a silent lost round.
+            current=self.store.load(self.run_id)
+            record['errors'].append('COMMIT_REJECTED')
+            projection=current.read()['projection']
+            projection.setdefault('round_records',{})[round_id]=record
+            self.store.commit(batch_for(current,'rejected:'+round_id,dict(kind='PLAN_REJECTED',record=record),
+                                         projection=projection))
+            return self.close(round_id,now_ms,'REJECTED')
         if not commands:
             return self.close(round_id,now_ms,'COMPLETE')
         return receipt
 
     def observe(self,event_id,observation,reducer):
+        expected=dict(kind='OBSERVATION',observation=observation.read())
+        old=self.store.event(self.run_id,event_id)
+        if old is not None:
+            if old!=expected:
+                raise IntegrityError('Observation ID reused with changed facts')
+            return self.store.receipt(self.run_id,event_id)
         current=self.store.load(self.run_id)
+        state=current.read()['execution_state'] or dict(schema='ExecutionState.v1',intents={})
+        transition=self.execution.advance(doc(state),observation).read()
+        if transition.get('schema')!='ExecutionTransition.v1':
+            raise ContractError('Invalid execution transition')
         # reducer returns the owner's explicit atomic transition document.
         change=reducer(current,observation).read()
-        return self.store.commit(batch_for(current,event_id,dict(kind='OBSERVATION',observation=observation.read()),
-            projection=change['projection'],execution_state=change['execution_state'],
-            reservation_deltas=change.get('reservation_deltas',[]),commands=change.get('commands',[])))
+        return self.store.commit(batch_for(current,event_id,expected,
+            projection=change['projection'],execution_state=transition['next_state'],
+            reservation_deltas=change.get('reservation_deltas',[]),commands=transition.get('commands',[])))
 
     def close(self,round_id,now_ms,status):
         previous=self.store.receipt(self.run_id,'close:'+round_id)

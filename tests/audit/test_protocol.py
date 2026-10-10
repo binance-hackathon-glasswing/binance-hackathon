@@ -39,8 +39,10 @@ class Protocol(unittest.TestCase):
     def test_orders_require_hash_mapping_and_eligible_symbol(self):
         order=dict(symbol='NVDAB',side='BUY',amount='1',tx_hash='0x'+'a'*64)
         with self.assertRaises(ContractError): event(orders=[order])
-        valid=event(orders=[order],mappings=[dict(tx_hash=order['tx_hash'],decision_id='d')])
+        valid=event(orders=[order],mappings=[dict(tx_hash=order['tx_hash'],decision_id='d',step='swap')])
         verify_event(valid)
+        with self.assertRaises(ContractError):
+            event(orders=[order],mappings=[dict(tx_hash=order['tx_hash'],decision_id='d',step='approve')])
         with self.assertRaises(ContractError): event(orders=[dict(symbol='BNB',side='BUY',amount='1')])
 
     def test_oversize_rejected_without_truncating_reasoning(self):

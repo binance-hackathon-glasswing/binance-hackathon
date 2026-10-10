@@ -10,7 +10,7 @@ from decimal import Decimal
 from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
 
-TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','anchors')
+TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','anchors','command_checks')
 
 
 def export(store):
@@ -50,6 +50,9 @@ def restore(store,backup):
         for run_id, in db.execute('SELECT run_id FROM runs').fetchall():
             store._verify(db,run_id,store._run(db,run_id))
         db.execute('UPDATE runs SET quarantined=true,epoch=epoch+1')
+        db.execute("SELECT setval(pg_get_serial_sequence('command_checks','check_id'), "
+                   "COALESCE((SELECT max(check_id) FROM command_checks),1), "
+                   "EXISTS(SELECT 1 FROM command_checks))")
 
 
 def anchor(store,run_id,receiver,now_ms):
