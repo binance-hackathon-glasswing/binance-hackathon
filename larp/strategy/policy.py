@@ -6,6 +6,7 @@ from fractions import Fraction
 
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
 from .features import declared_weight, features
+from .assessments import consume
 from .schema import fraction, instant, integer, markets, profile, value, equity
 
 
@@ -25,20 +26,7 @@ def decide(snapshot, state):
     lifecycle = dict(data.get("lifecycle", {}))
     blocked = dict(data.get("blocked", {}))
     reviews, shadow, targets = [], [], []
-    assessments = {}
-    for a in c.get("assessments", []):
-        symbol = a.get("symbol")
-        if symbol in assessments:
-            raise ContractError("Duplicate assessment context")
-        m = market.get(symbol)
-        if (a.get("schema") == "AssessmentResult.v1" and m is not None
-                and a.get("run_id") == snapshot.run_id and a.get("issuer_id") == m["underlying_id"]
-                and a.get("policy_profile_hash") == snapshot.policy_profile_hash
-                and a.get("context_hash") == state.data.digest("ThesisContext.v1")
-                and a.get("model_hash") and a.get("prompt_hash")
-                and instant(a["available_at"]) <= now and instant(a["cutoff"]) <= now
-                and now < instant(a["expires_at"]) and a.get("quality") == "VERIFIED"):
-            assessments[symbol] = a
+    assessments, assessment_diagnostics = consume(snapshot, state, market, p["falsifier_ids"])
     terminal = now >= instant(p["flatten_start"])
     candidates = []
     for symbol in snapshot.universe:
@@ -52,10 +40,7 @@ def decide(snapshot, state):
         if due:
             reviews.append({"symbol": symbol, "reason": "HORIZON_REASSESSMENT"})
         a = assessments.get(symbol)
-        findings = [f for f in (a or {}).get("falsifier_findings", [])
-                    if f.get("predicate_id") in p["falsifier_ids"]
-                    and f.get("supported") is True and f.get("verifier_accepted") is True
-                    and f.get("supporting_spans")]
+        findings = (a or {}).get("findings", [])
         if findings:
             shadow.append({"symbol": symbol, "predicates": [f["predicate_id"] for f in findings]})
             if p["evidence_mode"] == "BOUNDED_FALSIFIER":
@@ -75,7 +60,7 @@ def decide(snapshot, state):
             f = (features(Document.from_dict(series), cutoff=now, expected_entity=m["underlying_id"],
                           max_age_seconds=p["feature_age_seconds"]) if series else
                  Document.from_dict({"status": "MISSING"}))
-            fresh_review = bool(a and a.get("review_complete") is True)
+            fresh_review = bool(a and a["fresh_review"])
             if due and fresh_review:
                 last_review = session
             if f.read()["status"] != "VALID":
@@ -123,8 +108,9 @@ def decide(snapshot, state):
             gross += allowed
         else:
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
-    following = replace(state, version=state.version + 1, data=Document.from_dict({
+    following = replace(state, version=state.version + 1, data=Document.from_dict({**data,
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
-        "shadow_findings": shadow, "evidence_mode": p["evidence_mode"]}))
+        "shadow_findings": shadow, "assessment_diagnostics": assessment_diagnostics,
+        "evidence_mode": p["evidence_mode"]}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

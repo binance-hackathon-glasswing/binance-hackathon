@@ -81,19 +81,28 @@ def changed(s, **changes):
 
 
 def with_quotes(s, *, spread_bps=10, gas=10000, policy=True):
-    """Temporary fake observe(MarketRequest.v1) implementation, size bound."""
+    """Temporary fake observe(MarketRequest.v1), bound to exact pay-token input."""
     proposal = decide(s, s.policy_state) if policy else None
     requests = plan(s, proposal).read()["quote_requests"]
     c = s.context.read()
     for request in requests:
         m = next(m for m in c["markets"] if m["symbol"] == request["symbol"])
-        mark = floor(value(request["token_units"], m))
-        cash = mark * (10000 + spread_bps if request["side"] == "BUY" else 10000 - spread_bps) // 10000
-        m["quotes"].append({"quote_id": "fake-" + request["symbol"] + request["side"],
-                            "side": request["side"], "token_units": request["token_units"],
+        pay = request["pay_units"]
+        if request["side"] == "BUY":
+            cash = pay
+            q = pay * 10**m["decimals"] * 10000 // (m["price_units"] * (10000 + spread_bps))
+            minimum = max(1, q * 9980 // 10000)
+        else:
+            q = pay
+            cash = floor(value(q, m)) * (10000 - spread_bps) // 10000
+            minimum = cash * 9980 // 10000
+        m["quotes"].append({"quote_id": "fake-" + request["symbol"] + request["side"] + "-" + str(pay),
+                            "side": request["side"], "token_units": q,
+                            "amount_kind": "EXACT_IN", "pay_asset": request["pay_asset"],
+                            "pay_units": pay, "min_receive_units": minimum,
                             "cash_units": cash, "fee_units": 0, "gas_bnb_units": gas,
-                            "route_valid": True, "slippage_bps": 20, "impact_bps": spread_bps,
-                            "quoted_depth_units": request["token_units"] * 100,
+                            "route_valid": True, "slippage_bps": 20, "impact_bps": abs(spread_bps),
+                            "quoted_depth_units": q * 100,
                             "available_at": s.observed_at.isoformat(), "observed_at": s.observed_at.isoformat(),
                             "expires_at": (s.observed_at + timedelta(seconds=30)).isoformat(),
                             "origin": "SCRIPTED_FAKE"})

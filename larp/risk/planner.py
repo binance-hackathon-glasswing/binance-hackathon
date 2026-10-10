@@ -13,6 +13,52 @@ from larp.strategy.schema import (ceil, equity, floor, fraction, instant, intege
 from .accounting import update_risk
 
 
+def _request(symbol, side, pay_units, m, mandatory):
+    return {"schema": "MarketRequest.v1", "symbol": symbol, "side": side,
+            "amount_kind": "EXACT_IN", "pay_asset": "USDT" if side == "BUY" else symbol,
+            "pay_units": pay_units, "pay_decimals": 6 if side == "BUY" else m["decimals"],
+            "mandatory": mandatory}
+
+
+def _quote_at_cap(m, side, pay_units, p, now, target_units):
+    """Walk observed smaller exact-in quotes; otherwise request the next size."""
+    rejections = []
+    quotes = m.get("quotes", [])
+    asset = "USDT" if side == "BUY" else m["symbol"]
+    for _ in range(len(quotes) + 1):
+        quote = next((x for x in quotes if type(x) is dict and x.get("side") == side
+                      and x.get("pay_asset") == asset and x.get("pay_units") == pay_units
+                      and x.get("amount_kind") == "EXACT_IN"), None)
+        if quote is None:
+            return None, pay_units, rejections, "REQUOTE_REQUIRED" if rejections else "PENDING"
+        try:
+            valid = (quote.get("route_valid") is True and type(quote["quote_id"]) is str and bool(quote["quote_id"])
+                     and instant(quote["available_at"]) <= now
+                     and 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
+                     and now < instant(quote["expires_at"])
+                     and integer(quote["slippage_bps"]) <= p["slippage_bps"]
+                     and integer(quote["impact_bps"]) <= p["impact_bps"])
+            cash, fee, gas, q, minimum = [integer(quote[k]) for k in
+                ("cash_units", "fee_units", "gas_bnb_units", "token_units", "min_receive_units")]
+            valid &= (cash == pay_units and 0 < minimum <= q) if side == "BUY" else (q == pay_units and minimum <= cash)
+        except (KeyError, ContractError, TypeError):
+            valid = False
+        if not valid:
+            return None, None, rejections + ["QUOTE_ROUTE_OR_SLIPPAGE"], "BLOCKED_QUOTE"
+        if side == "BUY" and q > target_units:
+            smaller = min(pay_units - 1, floor(Fraction(pay_units * target_units, q)))
+            rejections.append("BUY_RECEIVE_TARGET_REQUOTE")
+        elif cash + fee <= p["per_trade_cap_units"]:
+            return quote, None, rejections, "PENDING"
+        else:
+            smaller = min(pay_units - 1, floor(Fraction(pay_units * p["per_trade_cap_units"], cash + fee)))
+            rejections.append("EXECUTABLE_TRADE_CAP")
+        if smaller <= 0:
+            return None, None, rejections, "DUST_OR_UNEXECUTABLE"
+        pay_units = smaller
+    raise ContractError("Nondecreasing re-quote chain")
+
+
 def plan(snapshot, proposal_or_none):
     c, now = snapshot.context.read(), snapshot.observed_at
     result = {"schema": "PlanResult.v1", "snapshot_id": snapshot.snapshot_id,
@@ -24,12 +70,21 @@ def plan(snapshot, proposal_or_none):
         p = profile(snapshot)
         ledger = c["portfolio"]
         market = markets(snapshot, p)
-        E = equity(ledger, market)
-        if E <= 0:
-            raise ContractError("Nonpositive equity")
-        risk_ledger = update_risk(Document.from_dict(ledger), now=now, equity_units=E).read()
+        unvalued = sorted({s for s, pos in ledger["positions"].items()
+                           if pos["units"] and market.get(s) is None}
+                          | {v["symbol"] for v in ledger["reservations"].values()
+                             if v["side"] == "BUY" and market.get(v["symbol"]) is None})
+        E = equity(ledger, market, allow_missing=True)
+        # Incomplete valuation is not a loss observation. Preserve latches/peak;
+        # block buys and use only the disclosed lower bound for healthy-name trims.
+        risk_ledger = (ledger if unvalued else
+                       update_risk(Document.from_dict(ledger), now=now, equity_units=E).read())
         r = risk_ledger["risk"]
         result["risk_state"] = r
+        result.update(valuation_status="LOWER_BOUND" if unvalued else "COMPLETE",
+                      risk_equity_lower_bound_units=E, unvalued_symbols=unvalued)
+        if unvalued:
+            result["rejections"].append({"reason": "PARTIAL_VALUATION_NEW_RISK_BLOCKED", "symbols": unvalued})
     except (KeyError, TypeError, ContractError, ValueError) as exc:
         # Invalid valuation is explicit; terminal holdings remain outstanding.
         result["rejections"].append({"reason": "INVALID_REQUIRED_INPUT", "detail": str(exc)})
@@ -64,15 +119,23 @@ def plan(snapshot, proposal_or_none):
         if reservation["side"] == "BUY":
             s = reservation["symbol"]
             pending_buy[s] = pending_buy.get(s, 0) + integer(reservation["token_units"])
-    gross = sum((value(q + pending_buy.get(s, 0), market[s]) for s, q in held.items()), Fraction(0))
-    gross += sum((value(q, market[s]) for s, q in pending_buy.items() if s not in held), Fraction(0))
-    result["worst_case_gross_units"] = ceil(gross)
+    gross = sum((value(q + pending_buy.get(s, 0), market[s]) for s, q in held.items()
+                 if market.get(s) is not None), Fraction(0))
+    gross += sum((value(q, market[s]) for s, q in pending_buy.items()
+                  if s not in held and market.get(s) is not None), Fraction(0))
+    result["worst_case_gross_units"] = None if unvalued else ceil(gross)
+    result["known_gross_units"] = ceil(gross)
     result["available_cash_units"] = max(0, ledger["cash_units"] - reserved_cash)
     cap_bounds = {}
     reasons = {}
     held_names = sorted(held)
     for index, symbol in enumerate(held_names):
-        m, qty = market[symbol], held[symbol]
+        m, qty = market.get(symbol), held[symbol]
+        if m is None:
+            result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
+                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
+                "status": "BLOCKED_MARK"})
+            continue
         cap = floor(Fraction(safe_equity, 5) * 10**m["decimals"] / m["price_units"])
         reason = []
         if qty + pending_buy.get(symbol, 0) > cap:
@@ -136,7 +199,7 @@ def plan(snapshot, proposal_or_none):
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
             if side == "BUY":
-                if (r["daily_halt"] or r["run_halt"] or terminal
+                if (unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
                         or now.date().isoformat() != r["day"]
                         or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
@@ -154,7 +217,9 @@ def plan(snapshot, proposal_or_none):
                 actions.append((symbol, side, q, False, [t.reason]))
 
     for symbol, side, quantity, mandatory, why in actions:
-        m = market[symbol]
+        m = market.get(symbol)
+        if m is None:
+            continue
         notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
         q = min(quantity, floor(Fraction(notional_cap) * 10**m["decimals"] / m["price_units"]))
         req = next((r for r in result["requirements"] if r["symbol"] == symbol), None)
@@ -171,30 +236,20 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "BLOCKED_MARKET"
             result["rejections"].append({"symbol": symbol, "reason": "MARKET_CLOSED_OR_UNKNOWN"})
             continue
-        quote = next((quote for quote in m.get("quotes", [])
-                      if quote.get("side") == side and quote.get("token_units") == q), None)
+        pay_units = floor(value(q, m)) if side == "BUY" else q
+        quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity)
+        result["rejections"].extend({"symbol": symbol, "reason": reason} for reason in rejected)
         if quote is None:
-            result["quote_requests"].append({"schema": "MarketRequest.v1", "symbol": symbol,
-                                             "side": side, "token_units": q,
-                                             "decimals": m["decimals"], "mandatory": mandatory})
-            continue
-        try:
-            valid_quote = (quote.get("route_valid") is True and bool(quote["quote_id"])
-                           and instant(quote["available_at"]) <= now
-                           and 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
-                           and now < instant(quote["expires_at"])
-                           and integer(quote["slippage_bps"]) <= p["slippage_bps"]
-                           and integer(quote["impact_bps"]) <= p["impact_bps"])
-            cash, fee, gas = [integer(quote[k]) for k in ("cash_units", "fee_units", "gas_bnb_units")]
-        except (KeyError, ContractError, TypeError):
-            valid_quote = False
-        if not valid_quote:
             if req is not None:
-                req["status"] = "BLOCKED_QUOTE"
-            result["rejections"].append({"symbol": symbol, "reason": "QUOTE_ROUTE_OR_SLIPPAGE"})
+                req["status"] = quote_status
+            if request_units is not None:
+                result["quote_requests"].append(_request(symbol, side, request_units, m, mandatory))
             continue
-        if cash + fee > p["per_trade_cap_units"]:
-            result["rejections"].append({"symbol": symbol, "reason": "EXECUTABLE_TRADE_CAP"})
+        cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
+        if q <= p["dust_units"] or (not mandatory and value(q, m) < p["minimum_trade_units"]):
+            if req is not None:
+                req["status"] = "DUST_OR_UNEXECUTABLE"
+            result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
             continue
         gas_value = ceil(Fraction(gas * ledger["bnb_price_units"], 10**ledger["bnb_decimals"]))
         mark = value(q, m)
@@ -202,18 +257,6 @@ def plan(snapshot, proposal_or_none):
         if cost > cost_reserve and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
-        if cost > cost_reserve and mandatory:
-            # An estimated discretionary reserve cannot veto a mandatory sell.
-            # Recompute conservative upper bounds and retain the child residual.
-            adjusted_equity = max(0, E - ceil(cost))
-            for requirement in result["requirements"]:
-                old_bound = requirement["max_units"]
-                requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
-                requirement["remaining_sell_units"] = requirement["held_units"] - requirement["max_units"]
-                requirement["status"] = "PARTIAL_REQUIRES_POST_FILL_REPLAN"
-            quantity = req["remaining_sell_units"]
-            result["clamps"].append({"symbol": symbol, "reason": "POST_QUOTE_COST_REDUCTION",
-                                     "cost_units": ceil(cost)})
         if not mandatory and side == "BUY":
             if cost * 10000 > mark * 50:
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
@@ -223,6 +266,8 @@ def plan(snapshot, proposal_or_none):
                 result["rejections"].append({"symbol": symbol, "reason": "DECLARED_DEPTH_INPUT_UNAVAILABLE"})
                 continue
         if gas > ledger["bnb_units"] - reserved_bnb:
+            if req is not None:
+                req["status"] = "BLOCKED_GAS"
             result["rejections"].append({"symbol": symbol, "reason": "INSUFFICIENT_GAS"})
             continue
         if side == "BUY":
@@ -237,18 +282,38 @@ def plan(snapshot, proposal_or_none):
             if q > positions[symbol]["units"]:
                 raise ContractError("Planner oversell")
             if fee > cash + ledger["cash_units"]:
+                if req is not None:
+                    req["status"] = "BLOCKED_EXIT_FEE"
                 result["rejections"].append({"symbol": symbol, "reason": "UNAFFORDABLE_EXIT_FEE"})
                 continue
+        if cost > cost_reserve and mandatory:
+            # Tighten bounds only after this child passes every execution gate.
+            adjusted_equity = max(0, E - ceil(cost))
+            for requirement in result["requirements"]:
+                if requirement["status"] == "BLOCKED_MARK":
+                    continue
+                old_bound = requirement["max_units"]
+                requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
+                requirement["remaining_sell_units"] = requirement["held_units"] - requirement["max_units"]
+            quantity = req["remaining_sell_units"]
+            result["clamps"].append({"symbol": symbol, "reason": "POST_QUOTE_COST_REDUCTION",
+                                     "cost_units": ceil(cost)})
+        if req is not None:
+            req["status"] = "PARTIAL_REQUIRES_POST_FILL_REPLAN" if q < quantity else "AWAITING_SETTLEMENT"
         intent = {"symbol": symbol, "side": side, "token_units": q, "decimals": m["decimals"],
                   "cash_units": cash, "fee_units": fee, "gas_bnb_units": gas,
                   "mandatory": mandatory, "reasons": why, "quote_id": quote["quote_id"],
-                  "quote_expiry": quote["expires_at"], "parent_remaining_units": quantity - q}
+                  "quote_expiry": quote["expires_at"], "parent_remaining_units": quantity - q,
+                  "amount_kind": "EXACT_IN", "pay_asset": quote["pay_asset"], "pay_units": quote["pay_units"],
+                  "min_receive_units": quote["min_receive_units"],
+                  "receive_decimals": m["decimals"] if side == "BUY" else 6}
         intent_id = Document.from_dict({"snapshot_id": snapshot.snapshot_id, **intent}).digest("EconomicIntent.v1")
         intent["intent_id"] = intent_id
         result["intents"].append(intent)
         result["reservation_deltas"].append({"intent_id": intent_id, "cash_units": spend,
                                               "bnb_units": gas, "symbol": symbol,
-                                              "side": side, "token_units": q})
+                                              "side": side, "token_units": q, "pay_units": intent["pay_units"],
+                                              "min_receive_units": intent["min_receive_units"]})
         if q < quantity:
             result["clamps"].append({"symbol": symbol, "reason": "PER_TRADE_CAP",
                                      "requested_units": quantity, "planned_units": q})

@@ -31,7 +31,10 @@ and Isaac/Yao Zhu adapters; they are owner-local v1 integration proposals.
   transparent/frozen; it has no calibration or alpha claim. Re-entry after actual
   holdings needs a fresh context-matched review. Evidence starts SHADOW; the
   explicitly configured bounded variant blocks a name for the run after supported
-  allowlisted findings. No live adoption is selected.
+  allowlisted findings. No live adoption is selected. `assessments.py` consumes
+  PR #4's issuer IDs, UTC epoch-millisecond timestamps, `status`, verified `claims`
+  and `falsifiers[].falsifier_id/state/fact_ids`. Legacy ISO/symbol payloads receive
+  `ASSESSMENT_SCHEMA_UNRECOGNISED`, rather than disappearing from the trace.
 - `plan(snapshot, proposal_or_none) -> PlanResult.v1` in `larp/risk/planner.py`:
   requirements, risk latch state, clamps/rejections, exact-size quote requests,
   one immediate child economic intent, reservation delta requests and proposed
@@ -42,7 +45,12 @@ and Isaac/Yao Zhu adapters; they are owner-local v1 integration proposals.
 - `advance_accounting(PortfolioState.v1, ExecutionObservation.v1)`: settled actual
   fills, fees, approvals and reverts, average-cost basis and immutable observation
   IDs. Approvals/reverts only consume actual observed gas. Full-or-revert swaps
-  settle one child; portfolio plans can remain partly completed. A service-cost
+  settle one child's exact INPUT; buy output quantity and sell proceeds vary.
+  Buys must spend the committed USDT input, receive at least the committed minimum
+  and stay within the fee/cash reserve. Actual received quantity and actual cash
+  enter holdings/cost basis; even a favorable surplus must be recorded and replanned.
+  Sells consume the committed token input and respect minimum cash received.
+  Portfolio plans can remain partly completed. A service-cost
   observation affects off-wallet economics only. Keegan supplies committed intent
   reservations; Isaac supplies verified final settlement. Unsolicited balances,
   corporate actions and reorg/provisional reversals need shared integration before
@@ -66,7 +74,13 @@ including exits, while every reduction remains visible. Exit reserve is spendabl
 by valid reductions. Infeasible gas, market, integrity, route or slippage never
 turns a position into fictitious cash; dust is explicitly retained.
 
-Exact quotes bind side and integer quantity. Initial planning without a quote
+Exact quotes bind side and integer pay amount: USDT for buys, tokens for sells.
+`MarketRequest.v1`/quotes/intents use `amount_kind=EXACT_IN`, `pay_asset`, `pay_units`;
+requests identify `pay_decimals`, and quotes/intents carry `min_receive_units` in
+the received asset's units (`receive_decimals` on intents). USDT here is normalized
+to 6 decimals; Isaac's adapter must convert exactly to the chain token's decimals.
+Buy `token_units` is an estimate, never a guaranteed settlement quantity.
+Initial planning without a quote
 returns `MarketRequest.v1` requests; a new observed quote creates a new snapshot
 and requires fresh proposal/planning. `cost_reserve_units` is a configured planning
 bound used for conservative post-cost cap sizing; discretionary quotes exceeding
@@ -77,6 +91,35 @@ and exit slippage still gate execution. There is no hard-coded spread estimator 
 depth blocks new entries under the currently declared depth rule (GAP-51); a
 price-impact replacement must be adopted/manifested before the real adapter can
 use it. Mandatory sells still obey their exit slippage and per-trade limits.
+An over-cap executable quote requests a strictly smaller exact input; the next
+snapshot can follow that observed quote chain. No scaled quote/proceeds are invented.
+
+An unavailable held-name mark blocks that name's exits and all entries, while
+healthy names can still reduce or flatten. `valuation_status=LOWER_BOUND` identifies
+risk-only equity with unvalued holdings omitted; `worst_case_gross_units=null`
+discloses that full exposure is unknown. This lower bound never updates PnL, peaks
+or loss latches. A terminal obligation persists even at a zero lower bound.
+Quote-cost rescaling occurs only after the child passes gas/fee/route gates, and
+only its selected requirement receives a settlement/replan status.
+
+Assessment integration: the runtime supplies `assessment_requests` keyed by issuer,
+including the exact request/job/context/cutoff that produced the result. The current
+issuer contexts are carried in `PolicyState.data.evidence_contexts` (initial empty
+context is `{thesis: null, known_facts: []}`). Their hash domain is
+`larp.intel.context.v1`, matching PR #4. Lifecycle changes do not change this hash.
+Keegan must atomically synchronize these contexts with Yao's evidence reducer;
+Keith's validator neither verifies raw filing text nor advances a second thesis
+engine. Missing/stale/malformed/not-assessed inputs produce explicit diagnostics
+and cannot clear re-entry. Fresh review additionally needs supported, complete,
+conflict-free INTACT evidence with no unknown/fired falsifiers or new hypothetical events.
+
+Entry blockers requiring team decisions: Keith and Isaac own selecting a
+rights-cleared sizing-price source, with Yao Zhu reviewing feature semantics and
+SYZ/team adopting the choice. Current sizing requires underlying shares; D-09's
+vendor remains on hold, and kit token candles cannot silently replace share
+session closes. Isaac owns the GAP-51 depth-to-price-impact proposal, with team
+adoption/manifest required. Until both decisions are resolved, real baseline entry
+is unavailable; synthetic fixture series/depth are engineering inputs only.
 
 ## Research and open settings
 

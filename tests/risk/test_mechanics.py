@@ -210,3 +210,93 @@ class RiskTests(unittest.TestCase):
             r = plan(changed(s, markets=c["markets"]), None).read()
             self.assertFalse(r["intents"])
             self.assertEqual(r["requirements"][0]["status"], "BLOCKED_QUOTE")
+
+    def test_exact_input_buy_records_variable_received_quantity(self):
+        s, result = self.planned(snapshot())
+        intent = result.read()["intents"][0]
+        self.assertEqual(intent["pay_asset"], "USDT")
+        before = Document.from_dict(reserve_fixture(s, result).context.read()["portfolio"])
+        for received in (intent["token_units"] - 1, intent["token_units"], intent["token_units"] + 1):
+            e = fill_fixture(s, intent).read()
+            e["token_units"] = received
+            after = advance_accounting(before, Document.from_dict(e)).read()
+            self.assertEqual(after["positions"][intent["symbol"]]["units"], received)
+            self.assertEqual(after["positions"][intent["symbol"]]["cost_basis_units"], intent["cash_units"] + intent["fee_units"])
+            self.assertFalse(after["reservations"])
+        for patch in ({"token_units": intent["min_receive_units"] - 1}, {"cash_units": intent["cash_units"] - 1},
+                      {"fee_units": before["reservations"][intent["intent_id"]]["cash_units"] + 1}):
+            e = {**fill_fixture(s, intent).read(), **patch}
+            with self.assertRaises(ContractError):
+                advance_accounting(before, Document.from_dict(e))
+        request = plan(snapshot(), decide(snapshot(), snapshot().policy_state)).read()["quote_requests"][0]
+        self.assertEqual(request["pay_asset"], "USDT")
+        self.assertNotIn("token_units", request)
+
+    def test_exact_input_sell_accepts_variable_proceeds_above_minimum(self):
+        s, result = self.planned(snapshot(held={"NVDAB": 8000}), policy=False)
+        intent = result.read()["intents"][0]
+        initial = Document.from_dict(reserve_fixture(s, result).context.read()["portfolio"])
+        for cash in (intent["cash_units"] - 1, intent["cash_units"] + 1):
+            e = {**fill_fixture(s, intent).read(), "cash_units": cash}
+            settled = advance_accounting(initial, Document.from_dict(e)).read()
+            self.assertEqual(settled["cash_units"], initial.read()["cash_units"] + cash - intent["fee_units"])
+        for patch in ({"token_units": intent["token_units"] - 1}, {"cash_units": intent["min_receive_units"] - 1}):
+            with self.assertRaises(ContractError):
+                advance_accounting(initial, Document.from_dict({**fill_fixture(s, intent).read(), **patch}))
+
+    def test_stale_name_does_not_block_healthy_terminal_or_cap_exit(self):
+        for terminal in (False, True):
+            s = snapshot(held={"NVDAB": 8000, "MSFTB": 2000})
+            if terminal:
+                s = snapshot(held={"NVDAB": 8000, "MSFTB": 2000}, now=s.observed_at.replace(day=21))
+            c = s.context.read()
+            msft = next(m for m in c["markets"] if m["symbol"] == "MSFTB")
+            msft["observed_at"] = (s.observed_at - timedelta(minutes=5)).isoformat()
+            s = changed(s, markets=c["markets"])
+            raw = plan(s, None).read()
+            self.assertEqual(raw["valuation_status"], "LOWER_BOUND")
+            self.assertIsNone(raw["worst_case_gross_units"])
+            self.assertEqual(raw["risk_state"], c["portfolio"]["risk"])
+            self.assertTrue(any(q["symbol"] == "NVDAB" for q in raw["quote_requests"]))
+            self.assertFalse(any(q["symbol"] == "MSFTB" for q in raw["quote_requests"]))
+            s, result = self.planned(s, policy=False)
+            self.assertEqual(result.read()["intents"][0]["symbol"], "NVDAB")
+            blocked = next(r for r in result.read()["requirements"] if r["symbol"] == "MSFTB")
+            self.assertEqual(blocked["status"], "BLOCKED_MARK")
+            self.assertEqual(blocked["held_units"], 2000)
+
+    def test_nonpositive_terminal_equity_retains_flatten_requirement(self):
+        s = snapshot(held={"NVDAB": 2000}, now=snapshot().observed_at.replace(day=21))
+        c = s.context.read()
+        c["portfolio"].update(cash_units=0, bnb_units=0)
+        c["markets"][0]["quality"] = "UNKNOWN"
+        r = plan(changed(s, portfolio=c["portfolio"], markets=c["markets"]), None).read()
+        self.assertEqual(r["risk_equity_lower_bound_units"], 0)
+        self.assertIn("TERMINAL_FLATTEN", r["requirements"][0]["reasons"])
+        self.assertFalse(r["intents"])
+
+    def test_better_sell_price_requests_smaller_quote_and_can_progress(self):
+        s = with_quotes(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}),
+                        policy=False, spread_bps=-7)
+        r = plan(s, None).read()
+        self.assertFalse(r["intents"])
+        q = next(q for q in r["quote_requests"] if q["symbol"] == "NVDAB")
+        self.assertLess(q["pay_units"], 1500)
+        self.assertEqual(r["requirements"][0]["status"], "REQUOTE_REQUIRED")
+        # New observed exact-size quote, not a fabricated proportional fill.
+        following = with_quotes(s, policy=False, spread_bps=-7)
+        r = plan(following, None).read()
+        self.assertTrue(r["intents"])
+        self.assertLessEqual(r["intents"][0]["cash_units"] + r["intents"][0]["fee_units"], 15_000_000)
+        self.assertGreater(r["intents"][0]["parent_remaining_units"], 0)
+
+    def test_rejected_cost_overrun_does_not_rescale_other_requirements(self):
+        s = snapshot(held={"NVDAB": 8000, "MSFTB": 6000}, profile_changes={"cost_reserve_units": 1000})
+        before = plan(s, None).read()
+        quoted = with_quotes(s, policy=False, gas=2_000_000)
+        after = plan(quoted, None).read()
+        self.assertFalse(after["intents"])
+        self.assertNotIn("POST_QUOTE_COST_REDUCTION", [c["reason"] for c in after["clamps"]])
+        self.assertEqual([(r["symbol"], r["max_units"]) for r in before["requirements"]],
+                         [(r["symbol"], r["max_units"]) for r in after["requirements"]])
+        self.assertTrue(all(r["status"] == "BLOCKED_GAS" for r in after["requirements"]))

@@ -118,7 +118,7 @@ def value(units, m):
     return Fraction(units * m["price_units"], 10 ** m["decimals"])
 
 
-def equity(ledger, market):
+def equity(ledger, market, *, allow_missing=False):
     total = Fraction(integer(ledger["cash_units"]))
     total += Fraction(integer(ledger["bnb_units"]) * integer(ledger["bnb_price_units"], 1),
                       10 ** integer(ledger["bnb_decimals"]))
@@ -126,6 +126,8 @@ def equity(ledger, market):
         units = integer(position["units"])
         if units:
             m = market.get(symbol)
+            if m is None and allow_missing:
+                continue  # Risk-only lower bound; never an accounting/PnL mark.
             if m is None or position["decimals"] != m["decimals"]:
                 raise ContractError("Held position lacks valid valuation/units")
             total += value(units, m)

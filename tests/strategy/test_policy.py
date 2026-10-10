@@ -1,12 +1,15 @@
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from fractions import Fraction
+import json
+from pathlib import Path
 import unittest
 
 from larp.contracts import ContractError, Document, TargetKind
 from larp.research.fixtures import snapshot, changed, with_quotes
 from larp.strategy.features import features, declared_weight
 from larp.strategy.policy import decide
+from larp.strategy.assessments import epoch_ms
 
 
 class PolicyTests(unittest.TestCase):
@@ -18,15 +21,27 @@ class PolicyTests(unittest.TestCase):
 
     def assessment(self, s):
         m = s.context.read()["markets"][0]
-        return {"schema": "AssessmentResult.v1", "symbol": m["symbol"], "issuer_id": m["underlying_id"],
+        context = s.policy_state.data.read().get("evidence_contexts", {}).get(
+            m["underlying_id"], {"thesis": None, "known_facts": []})
+        h = Document.from_dict(context).digest("larp.intel.context.v1")
+        now = epoch_ms(s.observed_at)
+        return {"schema": "AssessmentResult.v1", "issuer_id": m["underlying_id"], "job_id": "fixture-job",
                 "run_id": s.run_id, "policy_profile_hash": s.policy_profile_hash,
-                "context_hash": s.policy_state.data.digest("ThesisContext.v1"),
-                "model_hash": "synthetic-model", "prompt_hash": "synthetic-prompt",
-                "cutoff": s.observed_at.isoformat(), "available_at": s.observed_at.isoformat(),
-                "expires_at": (s.observed_at + timedelta(seconds=60)).isoformat(),
-                "quality": "VERIFIED", "review_complete": True,
-                "falsifier_findings": [{"predicate_id": "fixture-reporting-integrity", "supported": True,
-                                        "verifier_accepted": True, "supporting_spans": ["synthetic span"]}]}
+                "context_hash": h, "model_hash": "a" * 64, "prompt_hash": "b" * 64,
+                "cutoff_ms": now, "completed_ms": now, "expiry_ms": now + 60000, "status": "ASSESSED",
+                "missingness": [], "conflicts": [], "novelty": {"prior_not_checked": False},
+                "proposed_thesis": {"status": "BROKEN", "based_on_context_hash": h},
+                "evidence_used": [{"record_id": "fixture-record", "available_ms": now, "content_hash": "c" * 64}],
+                "claims": [{"fact_id": "fixture-fact", "source": {"record_id": "fixture-record", "available_ms": now},
+                            "span": {"doc": "d" * 64, "text": "synthetic verified span"}}],
+                "falsifiers": [{"falsifier_id": "fixture-reporting-integrity", "state": "FIRED", "fact_ids": ["fixture-fact"]}]}
+
+    def assessed(self, s, a):
+        context = s.policy_state.data.read().get("evidence_contexts", {}).get(
+            a["issuer_id"], {"thesis": None, "known_facts": []})
+        request = {"schema": "AssessmentRequest.v1", "context": context,
+                   **{k: a[k] for k in ("job_id", "run_id", "issuer_id", "context_hash", "policy_profile_hash", "cutoff_ms")}}
+        return changed(s, assessments=[a], assessment_requests={a["issuer_id"]: request})
 
     def test_future_perturbation_does_not_change_decisions_or_features(self):
         s = snapshot()
@@ -72,7 +87,7 @@ class PolicyTests(unittest.TestCase):
     def test_shadow_and_explicit_bounded_variant(self):
         for mode, expected in (("SHADOW", TargetKind.KEEP_QUANTITY), ("BOUNDED_FALSIFIER", TargetKind.EXIT)):
             s = snapshot(held={"NVDAB": 2000}, profile_changes={"evidence_mode": mode})
-            s = changed(s, assessments=[self.assessment(s)])
+            s = self.assessed(s, self.assessment(s))
             result = decide(s, s.policy_state)
             target = next(t for t in result.targets if t.symbol == "NVDAB")
             self.assertEqual(target.kind, expected)
@@ -84,8 +99,8 @@ class PolicyTests(unittest.TestCase):
             "NVDAB": {"ever_held": True, "last_review_session": 70}}}))
         s = replace(s, policy_state=st)
         a = self.assessment(s)
-        a.update(expires_at=s.observed_at.isoformat(), falsifier_findings=[])
-        result = decide(changed(s, assessments=[a]), st)
+        a.update(expiry_ms=epoch_ms(s.observed_at), falsifiers=[])
+        result = decide(self.assessed(s, a), st)
         self.assertEqual(next(t for t in result.targets if t.symbol == "NVDAB").kind, TargetKind.KEEP_QUANTITY)
 
     def test_horizon_reviews_without_forced_turnover(self):
@@ -104,3 +119,67 @@ class PolicyTests(unittest.TestCase):
         s = snapshot()
         with self.assertRaises(ContractError):
             decide(s, replace(s.policy_state, version=1))
+
+    def test_actual_producer_payload_reaches_shadow_and_bounded_policy(self):
+        fixture = json.loads((Path(__file__).parent / "fixtures/assessment-producer.json").read_text())
+        for mode in ("SHADOW", "BOUNDED_FALSIFIER"):
+            a, request = fixture["result"].copy(), fixture["request"].copy()
+            s = snapshot(held={"NVDAB": 2000}, now=datetime.fromtimestamp(a["completed_ms"] / 1000, timezone.utc),
+                profile_changes={"evidence_mode": mode,
+                "falsifier_ids": [f["falsifier_id"] for f in a["falsifiers"]]})
+            # Bind public producer fixture to this test run/profile; retain its
+            # actual context, claims, timestamps and falsifier vocabulary.
+            for document in (a, request):
+                document.update(run_id=s.run_id, policy_profile_hash=s.policy_profile_hash)
+            c = s.context.read()
+            c["markets"][0]["underlying_id"] = a["issuer_id"]
+            c["series"]["NVDAB"]["entity_id"] = a["issuer_id"]
+            state = replace(s.policy_state, data=Document.from_dict({"evidence_contexts": {
+                a["issuer_id"]: request["context"]}}))
+            s = replace(changed(s, markets=c["markets"], series=c["series"], assessments=[a],
+                               assessment_requests={a["issuer_id"]: request}), policy_state=state)
+            result = decide(s, state)
+            data = result.next_policy_state.data.read()
+            self.assertTrue(data["shadow_findings"])
+            self.assertIn("ASSESSMENT_ACCEPTED", [d["reason"] for d in data["assessment_diagnostics"]])
+            target = next(t for t in result.targets if t.symbol == "NVDAB")
+            self.assertEqual(target.kind, TargetKind.EXIT if mode == "BOUNDED_FALSIFIER" else TargetKind.KEEP_QUANTITY)
+
+    def test_assessment_diagnostics_context_and_fresh_review(self):
+        s = snapshot(profile_changes={"assessment_required": True})
+        a = self.assessment(s)
+        a.update(falsifiers=[], proposed_thesis={"status": "INTACT", "based_on_context_hash": a["context_hash"]})
+        valid = self.assessed(s, a)
+        first = decide(valid, valid.policy_state)
+        self.assertEqual(next(t for t in first.targets if t.symbol == "NVDAB").kind, TargetKind.TARGET_WEIGHT)
+        # Lifecycle changes do not invalidate an unchanged issuer thesis context.
+        following = replace(valid, policy_state=first.next_policy_state)
+        self.assertEqual(next(t for t in decide(following, following.policy_state).targets
+                              if t.symbol == "NVDAB").kind, TargetKind.TARGET_WEIGHT)
+        for patch, expected in (({"expiry_ms": epoch_ms(s.observed_at)}, "ASSESSMENT_STALE_OR_FUTURE"),
+                                ({"completed_ms": epoch_ms(s.observed_at) + 1}, "ASSESSMENT_STALE_OR_FUTURE"),
+                                ({"context_hash": "e" * 64}, "ASSESSMENT_IDENTITY_MISMATCH"),
+                                ({"status": "UNAVAILABLE"}, "ASSESSMENT_NOT_ASSESSED")):
+            bad = changed(valid, assessments=[{**a, **patch}])
+            result = decide(bad, bad.policy_state)
+            self.assertEqual(next(t for t in result.targets if t.symbol == "NVDAB").kind, TargetKind.KEEP_QUANTITY)
+            self.assertIn(expected, [d["reason"] for d in result.next_policy_state.data.read()["assessment_diagnostics"]])
+        legacy = changed(s, assessments=[{"schema": "AssessmentResult.v1", "symbol": "NVDAB"}])
+        self.assertEqual(decide(legacy, legacy.policy_state).next_policy_state.data.read()["assessment_diagnostics"][0]["reason"],
+                         "ASSESSMENT_SCHEMA_UNRECOGNISED")
+
+    def test_unsupported_falsifier_and_changed_issuer_context_cannot_authorize(self):
+        s = snapshot(held={"NVDAB": 2000}, profile_changes={"evidence_mode": "BOUNDED_FALSIFIER"})
+        a = self.assessment(s)
+        a["falsifiers"][0]["fact_ids"] = ["nonexistent-fact"]
+        result = decide(self.assessed(s, a), s.policy_state)
+        self.assertFalse(result.next_policy_state.data.read()["blocked"])
+        self.assertIn("ASSESSMENT_FALSIFIER_UNSUPPORTED", [d["reason"] for d in result.next_policy_state.data.read()["assessment_diagnostics"]])
+        a = self.assessment(s)
+        valid = self.assessed(s, a)
+        state = replace(s.policy_state, data=Document.from_dict({"evidence_contexts": {
+            a["issuer_id"]: {"thesis": {"version": 2}, "known_facts": []}}}))
+        bad = replace(valid, policy_state=state)
+        result = decide(bad, state)
+        self.assertFalse(result.next_policy_state.data.read()["blocked"])
+        self.assertEqual(result.next_policy_state.data.read()["assessment_diagnostics"][0]["reason"], "ASSESSMENT_STALE_CONTEXT")
