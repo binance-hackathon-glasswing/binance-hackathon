@@ -273,6 +273,15 @@ class AuthorityTests(unittest.TestCase):
 
 
 class RuntimePlanTests(unittest.TestCase):
+    def test_buy_audit_amount_is_usdt_spent_not_tokens_received(self):
+        s = with_quotes(snapshot())
+        proposal = decide(s, s.policy_state)
+        result = RuntimePlanner(job_validity_ms=60_000, job_max_attempts=3).plan(s, proposal).read()
+        intent = result["intents"][0]
+        self.assertEqual(intent["side"], "BUY")
+        self.assertEqual(intent["amount"], decimal_amount(intent["pay_units"], 6))
+        self.assertNotEqual(intent["amount"], decimal_amount(intent["token_units"], intent["decimals"]))
+
     def test_i03_plan_carries_runtime_vocabulary(self):
         p = synthetic_profile(falsifier_ids=["F-ITEM-4.02"])
         _, state, _ = evidence_state(["EXSEMI_402_8K"], p)

@@ -19,3 +19,11 @@ Yao Zhu / independent annotator: real-document semantics and model-value evaluat
 ## Verification history
 
 NOT RUN. Append results after executing pushed revisions.
+
+## Additional review findings and prospective regressions
+
+- R02 (P1): RuntimePlanner serializes BUY order `amount` from received token units, although BUY logs must record USDT spent (SKILL.md F-99). SELL units are correct. The existing red-team control asserts the same wrong BUY convention. Regression: a real baseline BUY records `pay_units / MONEY_SCALE`, excluding separately charged fees, and differs from token quantity; retain the SELL control.
+- R03 (P2): SourceIngestor discards `next_url` at `max_pages`, then sends a conditional listing request. An unchanged first page can forever hide later items. Retain a durable continuation across bounded polls/restarts; coverage remains incomplete until pagination finishes. Regression: three pages with a one-page poll budget ingest all three over a store restart before sending conditional requests; report truncation as impaired coverage.
+- R04 (P1): Evidence gate accepts future cutoffs/completion times and the runtime validator does not bind the result cutoff to the request. Reject malformed, future or out-of-order result clocks without changing accepted evidence/latches. Regression: mutate real producer timestamps, verify rejection and unchanged evidence state; runtime refuses a result with a different cutoff. Update synthetic gate fixtures to include the real producer's started/completed fields.
+
+All regressions use fake sources/model/market only. First run targets the pushed pre-fix implementation; append observed failures before implementing corrections.

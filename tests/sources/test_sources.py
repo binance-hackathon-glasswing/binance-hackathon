@@ -187,6 +187,32 @@ class DojShapeTests(Harness):
 
 
 class FailureTests(Harness):
+    def test_page_budget_preserves_continuation_and_incomplete_coverage(self):
+        source = replace(self.register["fr-bis"], limits=dict(self.register["fr-bis"].limits, max_pages=1))
+        register = dict(self.register, **{"fr-bis": source})
+        urls = [source.listing_url, source.listing_url + "&page=2", source.listing_url + "&page=3"]
+        net = FakeNet({url: [(200, {"ETag": "unchanged"} if i == 0 else {}, fr([
+            {"document_number": f"2026-{i}", "title": "Synthetic notice", "type": "Notice",
+             "publication_date": "2026-10-09"}], urls[i + 1] if i < 2 else None))]
+            for i, url in enumerate(urls)})
+        first = self.ingestor(net, register).poll("fr-bis")
+        self.assertTrue(first["truncated"])
+        self.assertEqual(self.store.cursor("fr-bis")["in_progress"]["next_url"], urls[1])
+        report = coverage(register, self.store, {"export_controls": ["fr-bis"]}, T0, 3_600_000)
+        self.assertFalse(report["consumers"]["export_controls"]["complete"])
+        restarted = SQLiteSourceStore(self.db_path)
+        self.addCleanup(restarted.close)
+        second = self.ingestor(net, register, store=restarted).poll("fr-bis")
+        self.assertTrue(second["truncated"])
+        third = self.ingestor(net, register, store=restarted).poll("fr-bis")
+        self.assertFalse(third["truncated"])
+        self.assertIsNone(restarted.cursor("fr-bis")["in_progress"])
+        self.assertEqual(len(restarted.records("fr-bis")), 3)
+        self.assertEqual([url for url, _ in net.requests], urls)
+        self.assertTrue(all("If-None-Match" not in headers for _, headers in net.requests))
+        self.assertTrue(coverage(register, restarted, {"export_controls": ["fr-bis"]}, T0, 3_600_000)
+                        ["consumers"]["export_controls"]["complete"])
+
     def test_d03_outage_affects_only_its_own_source_and_consumers(self):
         doj_url, fr_url = self.register["doj-press"].listing_url, self.register["fr-bis"].listing_url
         net = FakeNet({doj_url: [(503, {}, None)],

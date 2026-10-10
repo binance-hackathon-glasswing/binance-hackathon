@@ -9,9 +9,24 @@ from larp.intelligence.gate import accept, initial_state, state_document
 from larp.intelligence.models import RuleBaselineModel, ScriptedModel
 from larp.intelligence.scenarios import EXSEMI, PROFILE, build_world, cover, doc, make_model, prior_thesis
 from larp.intelligence.common import forbidden_key_paths
+from larp.contracts import Document
 
 
 class GateTests(unittest.TestCase):
+    def test_future_and_inconsistent_result_clocks_do_not_change_evidence(self):
+        result = self.assess(["CLEAN"]).read()
+        now = self.w.clock()
+        patches = ({"cutoff_ms": now + 1}, {"completed_ms": now + 1},
+                   {"started_ms": result["completed_ms"] + 1}, {"completed_ms": -1},
+                   {"completed_ms": True}, {"cutoff_ms": -1})
+        for patch in patches:
+            with self.subTest(patch=patch):
+                decision, after = accept(self.state, Document.from_dict(dict(result, **patch)),
+                                         profile_hash=PROFILE, now_ms=now)
+                self.assertEqual(decision, "REJECT_MALFORMED")
+                self.assertEqual({k: v for k, v in after.items() if k != "last_rejection"},
+                                 {k: v for k, v in self.state.items() if k != "last_rejection"})
+
     def setUp(self):
         # CLEAN: a filing with no event statement. EXSEMI_502_8K carries an announced future CFO departure, which
         # IDEA-031 keeps as a statement pending review, so it no longer yields CLEAR on first sight.
