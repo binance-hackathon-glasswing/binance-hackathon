@@ -37,7 +37,7 @@ ASSERTIONS = ("OCCURRED", "ANNOUNCED_FUTURE", "ATTRIBUTED_REPORT", "FORECAST", "
               "MENTION_ONLY")
 ACTORS = ("ISSUER", "THIRD_PARTY", "UNSPECIFIED")
 TEMPORAL = ("CURRENT", "HISTORICAL", "FUTURE", "UNKNOWN")
-SEMANTICS_VERSION = "EventSemantics.v1"
+SEMANTICS_VERSION = "EventSemantics.v2"
 
 NEGATION = re.compile(r"\b(?:no|not|none|neither|nor|never|without|cannot|absence\s+of|unnecessary)\b|n't\b", re.I)
 # Phrases containing a cue word that is not a cue: deadlines, the non-reliance event phrase, the month, list idioms.
@@ -59,9 +59,9 @@ DECISION = re.compile(r"\b(?:decision|intention|intent|plans?|agreed|will)\s+to\
                       r"depart|leave|be\s+delisted|restate)\b", re.I)
 REPORT_VERB = re.compile(r"\b(?:reported|disclosed|announced|said|stated|confirmed)\b", re.I)
 
-# Occurrence predicates per event: a verb (or event-specific frame) asserting that the event happened.
-_GENERIC_PAST = r"(?:recorded|recognized|recognised|incurred|took|booked|reported|identified|detected|" \
-                r"discovered|experienced|suffered|determined|concluded|became\s+aware|occurred|announced|disclosed)"
+# Occurrence predicates per event: a past/perfect verb (or event-specific frame) asserting that the event happened.
+_GENERIC_PAST = r"\b(?:recorded|recognized|recognised|incurred|took|booked|reported|identified|detected|" \
+                r"discovered|experienced|suffered|determined|concluded|became\s+aware|occurred|announced|disclosed)\b"
 OCCURRENCE = {
     "IMPAIRMENT": re.compile(_GENERIC_PAST + r"|\bwr(?:ote|itten)\s+down\b|\b(?:was|were|is|are|been)\s+impaired\b|"
                              r"\bimpairment\s+(?:charges?|loss(?:es)?)\s+(?:of|totall?ing|amounting|was|were)\b", re.I),
@@ -74,8 +74,18 @@ OCCURRENCE = {
                             r"\breceived\s+(?:a\s+)?(?:notice|notification|letter|determination)\b|\bfiled\s+(?:a\s+)?Form\s+25\b",
                             re.I),
     "OFFICER_DEPARTURE": re.compile(r"\b(?:resigned|stepped\s+down|departed|left|retired|terminated|was\s+removed|"
-                                    r"resignation\s+(?:was|became|is)\s+effective)\b" + "|" + _GENERIC_PAST, re.I),
+                                    r"accepted|resignation\s+(?:was|became|is)\s+effective)\b|" + _GENERIC_PAST, re.I),
 }
+# A generic present-tense passive ("an impairment loss is recognized when ...") describes a policy or process, not
+# an occurrence.
+GENERIC_PRESENT = re.compile(r"\b(?:is|are)\s+(?:\w+ly\s+)?(?:recorded|recognized|recognised|detected|identified|"
+                             r"reported|discovered|determined|incurred|booked|disclosed)\b", re.I)
+GENERIC_FRAME = re.compile(r"\b(?:when|whenever|once|if\s+and\s+when|in\s+which|in\s+the\s+case\s+of)\b", re.I)
+# Scenario, exercise and counterfactual frames assert no occurrence even without a modal verb.
+SCENARIO = re.compile(r"\b(?:scenarios?|simulat\w*|tabletop|drills?|exercises?|hypothetical\w*|assum(?:e|es|ed|ing)|"
+                      r"suppose|supposing|were\s+to|had\s+we|stress[\s-]+tests?)\b", re.I)
+TOC = re.compile(r"\.{4,}\s*\d+\s*$|\btable\s+of\s+contents\b", re.I)
+FUTURE_MARK = re.compile(r"\b(?:upcoming|planned|pending|forthcoming|impending|anticipated\s+departure)\b", re.I)
 # A clause with no finite verb at all is a heading or list label.
 FINITE = re.compile(r"\b(?:is|are|was|were|be|been|being|has|have|had|do|does|did|will|shall|would|could|may|"
                     r"might|must|can|should)\b|\b\w+(?:ed|es)\b", re.I)
@@ -88,6 +98,13 @@ THIRD_PARTY = re.compile(
 ISSUER = re.compile(r"\b(?:we|our|us|the\s+company|the\s+registrant|the\s+issuer|the\s+board|"
                     r"the\s+audit\s+committee|management|(?:its|our|the)\s+(?:chief\s+\w+\s+officer|CEO|CFO|"
                     r"president|chair(?:man|woman|person)?|director))\b", re.I)
+# A named company other than the issuer: a corporate suffix, or a capitalised possessive ("Acme's").
+NAMED = re.compile(r"\b(?:[A-Z][\w&.-]*\s+){0,3}(?:Corp(?:oration)?|Inc|Ltd|LLC|plc|Holdings|Group)\b\.?|"
+                   r"\b[A-Z][A-Za-z&.-]+['’]s\b")
+NOT_NAMED = re.compile(r"^(?:The\s+)?(?:Company|Registrant|Board|Corporation|Issuer)['’]s$", re.I)
+PREPOSITION_BEFORE = re.compile(r"\b(?:to|of|for|with|by|from|at|about|regarding|against|than)\s+$", re.I)
+BY_AGENT = re.compile(r"^\s*by\s+(?P<agent>[^,.;:\n]{1,80})", re.I)
+OBJECT = re.compile(r"^\s*(?P<obj>(?:the\s+|our\s+|its\s+|an?\s+|one\s+of\s+our\s+)?(?:\w+\s+){0,2}\w+)", re.I)
 OFFICER = re.compile(r"\b(?:chief\s+executive|chief\s+financial|CEO|CFO|president|chair(?:man|woman|person)?)\b", re.I)
 COMPLEMENT_THIRD = re.compile(
     r"^\s*(?:at|of|involving|affecting|on|reported\s+by|disclosed\s+by|experienced\s+by)\s+(?:one\s+of\s+our\s+|"
@@ -95,17 +112,24 @@ COMPLEMENT_THIRD = re.compile(
     r"third[\s-]+part\w+|peers?)\b", re.I)
 CONJUNCT = re.compile(r"(?:,\s*|\s+)(?:and|but|while|whereas)\s+(?=(?:we|it|they|the|our|its|he|she|did|does|do|has|"
                       r"have|had|was|were|is|are|will|no|not|never|\w+ed)\b)", re.I)
-QUOTE_CHARS = "\"“”"
-SPEAKER = re.compile(r"(?:said|says|stated|according\s+to|told)\s+(?P<who>[^.,;\n]{1,60})", re.I)
+# Non-restrictive relative clauses and leading concessive clauses: their negation, years and modality do not scope
+# over the main predicate ("we recorded an impairment, which did not affect liquidity").
+RELATIVE = re.compile(r",\s*(?:which|who|whom|whose|where)\b[^,;]*(?:,|$)", re.I)
+CONCESSIVE = re.compile(r"^\s*(?:although|though|even\s+though|while|whereas|despite)\b[^,]*,", re.I)
+QUOTE_PAIRS = (("\"", "\""), ("“", "”"), ("‘", "’"))
+SPEAKER = re.compile(r"(?:said|says|stated|according\s+to|told|:)\s*(?P<who>[^.;\n]{1,120})", re.I)
 HISTORICAL_MARK = re.compile(r"\bpreviously\s+(?:restated|recorded|recognized|reported|disclosed|experienced|"
                              r"identified|delisted)\b|\bin\s+(?:prior|previous|past)\s+(?:years|periods|quarters)\b|"
-                             r"\bhistorically\b|\bin\s+the\s+past\b", re.I)
+                             r"\bhistorically\b|\bin\s+the\s+past\b|\b(?:in\s+)?the\s+prior[\s-]+year(?:\s+period)?\b|"
+                             r"\bprior[\s-]+year\s+period\b|\blast\s+year\b|\ba\s+year\s+ago\b|\byear[\s-]+ago\b|"
+                             r"\bthe\s+previous\s+year\b", re.I)
 YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
 MONTHS = {m: i for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august",
                                       "september", "october", "november", "december"), 1)}
-EFFECTIVE = re.compile(r"\beffective\s+(?:as\s+of\s+|on\s+|no\s+later\s+than\s+)?(?P<month>January|February|March|April|May|June|July|August|"
+EFFECTIVE = re.compile(r"\beffective\s+(?:as\s+of\s+)?(?:the\s+(?:close|end|opening)\s+of\s+business\s+)?"
+                       r"(?:on\s+|no\s+later\s+than\s+)?(?P<month>January|February|March|April|May|June|July|August|"
                        r"September|October|November|December)\s+(?P<day>\d{1,2})(?:,\s*(?P<year>\d{4}))?", re.I)
-CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'“])|"
+CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'“‘])|"
                           r"(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
 
 
@@ -131,12 +155,46 @@ def _conjunct(clause: str, start: int, end: int) -> tuple:
         elif m.start() >= end:
             hi = m.start()
             break
+    concessive = CONCESSIVE.match(clause, lo)
+    if concessive and concessive.end() <= start:
+        lo = concessive.end()
     return lo, hi
 
 
-def _quoted(clause: str, position: int) -> bool:
-    count = sum(1 for c in clause[:position] if c in QUOTE_CHARS)
-    return count % 2 == 1
+def _blank(text: str, spans) -> str:
+    out = list(text)
+    for lo, hi in spans:
+        out[lo:hi] = " " * (hi - lo)
+    return "".join(out)
+
+
+def _relatives(segment: str, t_lo: int, t_hi: int) -> tuple:
+    """(segment with non-restrictive relative clauses blanked, the relative clause holding the trigger or None)."""
+    holding, blanked = None, []
+    for m in RELATIVE.finditer(segment):
+        if m.start() <= t_lo and t_hi <= m.end():
+            holding = (m.start(), m.end())
+        else:
+            blanked.append((m.start(), m.end()))
+    return _blank(segment, blanked), holding
+
+
+def _quote(text: str, position: int):
+    """(open, close) offsets of the quotation holding `position`, or None. Straight or typographic quotes."""
+    for left, right in QUOTE_PAIRS:
+        if left == right:
+            positions = [i for i, c in enumerate(text) if c == left]
+            for a, b in zip(positions[::2], positions[1::2]):
+                if a < position < b:
+                    return a, b
+        else:
+            depth_open = text.rfind(left, 0, position)
+            if depth_open >= 0:
+                close = text.find(right, position)
+                between = text.rfind(right, depth_open, position)
+                if close > position and between < 0:
+                    return depth_open, close
+    return None
 
 
 def _doc_date(document_ms):
@@ -145,8 +203,9 @@ def _doc_date(document_ms):
     return datetime.fromtimestamp(document_ms / 1000, timezone.utc).date()
 
 
-def effective_date(segment: str, document_ms=None):
-    """ISO date of an explicit "effective <Month> <day>[, <year>]"; the year defaults to the document's year."""
+def effective_date(segment: str, document_ms=None, *, roll_forward: bool = True):
+    """ISO date of an explicit effective date; the year defaults to the document's year. A month/day earlier than
+    the document date rolls into the next year only for a forward-looking statement (`roll_forward`)."""
     m = EFFECTIVE.search(segment)
     if not m:
         return None
@@ -158,27 +217,57 @@ def effective_date(segment: str, document_ms=None):
         value = date(year, MONTHS[m.group("month").lower()], int(m.group("day")))
     except ValueError:
         return None
-    if not m.group("year") and doc and value < doc:
-        value = date(year + 1, value.month, value.day)  # "effective January 5" stated in December
+    if not m.group("year") and doc and value < doc and roll_forward:
+        value = date(year + 1, value.month, value.day)  # "will resign effective January 5" stated in December
     return value.isoformat()
 
 
-def _actor(segment: str, trigger_lo: int, trigger_hi: int, predicate, issuer_names: tuple, issuer_source: bool):
-    """Subject/possessor of the predicate, or the trigger's own complement."""
-    if COMPLEMENT_THIRD.match(segment[trigger_hi:]):
-        return "THIRD_PARTY", COMPLEMENT_THIRD.match(segment[trigger_hi:]).group(0).strip()
-    anchor = min(trigger_lo, predicate.start()) if predicate is not None else trigger_lo
-    subject = segment[:anchor]
-    if predicate is not None and predicate.start() > trigger_hi:
-        subject = segment[:predicate.start()]  # "a cybersecurity incident at X occurred": subject includes trigger
+def _mentions(region: str, issuer_names: tuple) -> list:
+    """(position, actor, text) actor mentions in `region`; issuer words inside a prepositional phrase are not actors
+    ("a supplier to the company", "one of our suppliers")."""
+    out = [(m.start(), "THIRD_PARTY", m.group(0)) for m in THIRD_PARTY.finditer(region)]
+    for m in ISSUER.finditer(region):
+        if not PREPOSITION_BEFORE.search(region[max(0, m.start() - 14):m.start()]):
+            out.append((m.start(), "ISSUER", m.group(0)))
     names = [n for n in issuer_names if n]
-    mentions = [(m.start(), "THIRD_PARTY", m.group(0)) for m in THIRD_PARTY.finditer(subject)]
-    mentions += [(m.start(), "ISSUER", m.group(0)) for m in ISSUER.finditer(subject)]
+    for m in NAMED.finditer(region):
+        text = m.group(0).strip()
+        if NOT_NAMED.match(text) or any(n.lower() in text.lower() or text.lower().rstrip("'’s") in n.lower()
+                                        for n in names):
+            continue
+        out.append((m.start(), "THIRD_PARTY", text))
     for name in names:
-        for m in re.finditer(re.escape(name), subject, re.I):
-            mentions.append((m.start(), "ISSUER", m.group(0)))
-    if mentions:  # the mention nearest the predicate governs: "our competitor" -> competitor; "after a
-        _, who, what = max(mentions)  # competitor's report, we identified" -> we
+        for m in re.finditer(re.escape(name), region, re.I):
+            out.append((m.start(), "ISSUER", m.group(0)))
+    return out
+
+
+def _actor(segment: str, t_lo: int, t_hi: int, pred, issuer_names: tuple, issuer_source: bool, verb_trigger: bool):
+    """Who the event happened to: the trigger's complement, a by-agent, the object of a verb trigger, else the
+    mention nearest before the predicate (subject or possessor)."""
+    after_trigger = segment[t_hi:]
+    if COMPLEMENT_THIRD.match(after_trigger):
+        return "THIRD_PARTY", COMPLEMENT_THIRD.match(after_trigger).group(0).strip()
+    pred_end = pred.end() if pred is not None else t_hi
+    agent = BY_AGENT.match(segment[max(pred_end, t_hi):])
+    if agent:
+        found = _mentions(agent.group("agent"), issuer_names)
+        if found:
+            _, who, what = min(found)
+            return who, what
+    if verb_trigger and pred is not None:
+        obj = OBJECT.match(segment[pred.end():])
+        if obj:
+            found = _mentions(obj.group("obj"), issuer_names)
+            if found and min(found)[1] == "THIRD_PARTY":
+                return "THIRD_PARTY", min(found)[2]
+    anchor = pred.start() if pred is not None else t_lo
+    found = [m for m in _mentions(segment[:anchor], issuer_names)]
+    if pred is not None and pred.start() > t_hi:  # "a cybersecurity incident at X occurred": include the trigger
+        found += [(t_lo + p, w, x) for p, w, x in _mentions(segment[t_lo:pred.start()], issuer_names)
+                  if (t_lo + p, w, x) not in found]
+    if found:  # the mention nearest the predicate governs: "our competitor" -> competitor;
+        _, who, what = max(found)  # "after a competitor's report, we identified" -> we
         return who, what
     if issuer_source:
         return "ISSUER", "issuer's own filing (no other actor named)"
@@ -193,51 +282,79 @@ def classify_event(text: str, start: int, end: int, *, event: str, document_ms=N
     actor named is the issuer's. For third-party sources (news, regulators) such an actor is UNSPECIFIED.
     """
     lo, hi = clause_bounds(text, start, end)
-    clause = NOT_A_CUE.sub(lambda m: " " * len(m.group(0)), text[lo:hi])
     raw_clause = text[lo:hi]
+    clause = NOT_A_CUE.sub(lambda m: " " * len(m.group(0)), raw_clause)
     t_lo, t_hi = start - lo, end - lo
-    c_lo, c_hi = _conjunct(clause, t_lo, t_hi)
-    segment, raw_segment = clause[c_lo:c_hi], raw_clause[c_lo:c_hi]
-    t_lo, t_hi = t_lo - c_lo, t_hi - c_lo
-    cues = []
-    attribution = "SOURCE_ASSERTS"
-    if _quoted(raw_clause, start - lo):
-        who = SPEAKER.search(raw_clause[start - lo:])
-        speaker = who.group("who") if who else ""
-        is_issuer = bool(ISSUER.search(speaker)) or any(n and n.lower() in speaker.lower() for n in issuer_names)
+    cues, attribution = [], "SOURCE_ASSERTS"
+    quote = _quote(raw_clause, t_lo)
+    speaker_actor = None
+    if quote is not None:
+        tail = raw_clause[quote[1]:]
+        head = raw_clause[:quote[0]]
+        speaker = SPEAKER.search(tail).group("who") if SPEAKER.search(tail) else head  # "X said: '...'"
+        found = _mentions(speaker, issuer_names)
+        is_issuer = bool(found) and max(found)[1] == "ISSUER" and not any(f[1] == "THIRD_PARTY" for f in found)
         attribution = "QUOTED_ISSUER" if is_issuer else "QUOTED_THIRD_PARTY"
+        speaker_actor = "ISSUER" if is_issuer else "THIRD_PARTY"
         cues.append("QUOTED")
+        # Read the quoted statement on its own terms (its subject is the speaker's "we").
+        clause = _blank(clause, [(0, quote[0] + 1), (quote[1], len(clause))])
+        raw_view = _blank(raw_clause, [(0, quote[0] + 1), (quote[1], len(raw_clause))])
+    else:
+        raw_view = raw_clause
+    c_lo, c_hi = _conjunct(clause, t_lo, t_hi)
+    segment, raw_segment = clause[c_lo:c_hi], raw_view[c_lo:c_hi]
+    t_lo, t_hi = t_lo - c_lo, t_hi - c_lo
+    segment, holding = _relatives(segment, t_lo, t_hi)
+    raw_segment, _ = _relatives(raw_segment, t_lo, t_hi)
+    antecedent = None
+    if holding is not None:  # the event is inside "X, who resigned as CEO of Acme Corp,": read that clause
+        antecedent = raw_segment[:holding[0]]
+        segment = _blank(segment, [(0, holding[0]), (holding[1], len(segment))])
+        raw_segment = _blank(raw_segment, [(0, holding[0]), (holding[1], len(raw_segment))])
+        cues.append("RELATIVE_CLAUSE")
     predicate = OCCURRENCE.get(event)
-    # The trigger itself may be the predicate ("resigned", "restated", "delisted").
     pred = None
     if predicate is not None:
         found = [m for m in predicate.finditer(raw_segment)]
         inside = [m for m in found if t_lo <= m.start() < t_hi]
         pred = inside[0] if inside else (min(found, key=lambda m: abs(m.start() - t_lo)) if found else None)
-    effective = effective_date(raw_segment, document_ms)
+    verb_trigger = pred is not None and t_lo <= pred.start() < t_hi
+    future = bool(DECISION.search(segment) or FUTURE_MARK.search(segment))
+    effective = effective_date(raw_segment, document_ms, roll_forward=future or pred is None)
     doc = _doc_date(document_ms)
-    actor, actor_text = _actor(raw_segment, t_lo, t_hi, pred, issuer_names, issuer_source)
-    if attribution == "QUOTED_THIRD_PARTY":
+    actor, actor_text = _actor(raw_segment, t_lo, t_hi, pred, issuer_names, issuer_source, verb_trigger)
+    if antecedent is not None and actor == "ISSUER" and actor_text.startswith("issuer's own filing"):
+        found = _mentions(antecedent, issuer_names)
+        actor, actor_text = (max(found)[1], max(found)[2]) if found else ("UNSPECIFIED", "relative clause antecedent")
+    if speaker_actor == "THIRD_PARTY":
         actor, actor_text = "THIRD_PARTY", "quoted speaker"
 
-    if NEGATION.search(segment):
+    if TOC.search(raw_clause):
+        assertion = "MENTION_ONLY"
+        cues.append("TABLE_OF_CONTENTS")
+    elif NEGATION.search(segment):
         assertion = "NEGATED"
         cues.append("NEGATION_IN_CONJUNCT")
     elif ATTRIBUTION.search(clause):
         assertion = "ATTRIBUTED_REPORT"
         attribution = "ATTRIBUTED_TO_OTHERS"
         cues.append("ATTRIBUTION_FRAME")
-    elif CONDITIONAL.search(segment):
+    elif CONDITIONAL.search(segment) or SCENARIO.search(segment):
         assertion = "CONDITIONAL_RISK"
-        cues.append("CONDITIONAL")
-    elif (ANNOUNCE.search(segment) or DECISION.search(segment) or effective) and \
-            (DECISION.search(segment) or (effective and doc is not None and effective > doc.isoformat())
+        cues.append("CONDITIONAL" if CONDITIONAL.search(segment) else "SCENARIO")
+    elif (ANNOUNCE.search(segment) or future or effective) and \
+            (future or (effective and doc is not None and effective > doc.isoformat())
              or (effective and doc is None and ANNOUNCE.search(segment))):
         assertion = "ANNOUNCED_FUTURE"
         cues.append("ANNOUNCEMENT_OF_FUTURE_EVENT")
     elif FORECAST.search(segment):
         assertion = "FORECAST"
         cues.append("FORWARD_LOOKING")
+    elif pred is not None and (GENERIC_PRESENT.search(raw_segment[max(0, pred.start() - 20):pred.end()])
+                               or (GENERIC_FRAME.search(segment) and GENERIC_PRESENT.search(raw_segment))):
+        assertion = "MENTION_ONLY"
+        cues.append("GENERIC_PRESENT_TENSE")
     elif pred is None or not FINITE.search(segment):
         assertion = "MENTION_ONLY"
         cues.append("NO_OCCURRENCE_PREDICATE")
