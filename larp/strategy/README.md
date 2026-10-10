@@ -160,5 +160,5 @@ cmp tests/research/fixtures/strategy-examples.json /private/tmp/larp-strategy-ex
 
 The three scenarios contain full immutable snapshot/state records. The baseline
 has one intent; the costly opportunity has `ENTRY_COST_CAP` rejections; the blocked
-mandatory exit retains its reduction with `BLOCKED_MARKET`. These outputs and 48
-passing local tests are engineering evidence from pushed revision `21b8fdb`.
+mandatory exit retains its reduction with `BLOCKED_MARKET`. These updated outputs
+and 57 passing local tests are engineering evidence from pushed revision `8d15e77`.
