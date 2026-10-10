@@ -86,8 +86,10 @@ def _safe_xml(body: bytes):
 def rss(body: bytes, limit: int) -> tuple:
     root = _safe_xml(body)
     items = []
+    truncated = False
     for node in root.iter("item"):
         if len(items) >= limit:
+            truncated = True
             break
         get = lambda tag: (node.findtext(tag) or "").strip() or None
         link, guid = get("link"), get("guid")
@@ -95,7 +97,7 @@ def rss(body: bytes, limit: int) -> tuple:
         items.append({"item_id": guid or link, "url": link, "title": get("title"), "body_html": get("description"),
                       "published_raw": get("pubDate"), "published_ms": ms, "published_precision": precision,
                       "event_times": {}, "changed_raw": None, "withdrawn": False, "doc_type": "PRESS_RELEASE"})
-    return [i for i in items if i["item_id"]], None
+    return [i for i in items if i["item_id"]], None, truncated
 
 
 def _json(body: bytes) -> dict:
@@ -110,8 +112,9 @@ def _json(body: bytes) -> dict:
 
 def fr_documents(body: bytes, limit: int) -> tuple:
     data = _json(body)
+    results = data.get("results") or []
     items = []
-    for r in (data.get("results") or [])[:limit]:
+    for r in results[:limit]:
         ms, precision = safe_when(r.get("publication_date"))
         action = r.get("action") or ""
         items.append({"item_id": r.get("document_number"), "url": r.get("html_url"), "title": r.get("title"),
@@ -120,13 +123,14 @@ def fr_documents(body: bytes, limit: int) -> tuple:
                       "event_times": _event_times(r, ("effective_on", "comments_close_on", "signing_date")),
                       "changed_raw": None, "announces_withdrawal": "withdraw" in action.lower(), "withdrawn": False,
                       "doc_type": (r.get("type") or "UNKNOWN").upper().replace(" ", "_")})
-    return [i for i in items if i["item_id"]], data.get("next_page_url")
+    return [i for i in items if i["item_id"]], data.get("next_page_url"), len(results) > limit
 
 
 def fr_public_inspection(body: bytes, limit: int) -> tuple:
     data = _json(body)
+    results = data.get("results") or []
     items = []
-    for r in (data.get("results") or [])[:limit]:
+    for r in results[:limit]:
         filed_ms, filed_precision = safe_when(r.get("filed_at"))
         items.append({"item_id": r.get("document_number"), "url": r.get("html_url") or r.get("pdf_url"),
                       "title": r.get("title"), "body_html": None,
@@ -135,7 +139,7 @@ def fr_public_inspection(body: bytes, limit: int) -> tuple:
                       "event_times": _event_times(r, ("publication_date", "pdf_updated_at")),
                       "changed_raw": r.get("pdf_updated_at"), "withdrawn": bool(r.get("withdrawn")),
                       "doc_type": "PUBLIC_INSPECTION:" + (r.get("type") or "UNKNOWN").upper().replace(" ", "_")})
-    return [i for i in items if i["item_id"]], None
+    return [i for i in items if i["item_id"]], None, len(results) > limit
 
 
 def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
@@ -162,10 +166,11 @@ def doj_press(body: bytes, limit: int, page_url: str) -> tuple:
         query = dict(parse_qsl(parts.query))
         query["page"] = str(int(query.get("page", "0")) + 1)
         next_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
-    return [i for i in items if i["item_id"]], next_url
+    return [i for i in items if i["item_id"]], next_url, len(results) > limit
 
 
 def parse(source, body: bytes, page_url: str) -> tuple:
+    """Return (items, next_url, item_truncated); pagination alone cannot recover discarded page items."""
     limit = source.limits.get("max_items_per_page", 50)
     if source.format == "RSS":
         return rss(body, limit)

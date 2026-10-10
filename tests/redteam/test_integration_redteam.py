@@ -262,11 +262,36 @@ class GateProbes(unittest.TestCase):
         _, partial = accept(st, gate_result("partial", st, 2000, used=used, complete=False),
                             profile_hash=P, now_ms=2000)
         self.assertEqual(partial["records_seen"]["A"]["revision"], 1)
+        self.assertEqual(partial["records_assessed"]["A"]["revision"], 0)
         self.assertEqual(partial["evidence_gate"], "ADVERSE")
         _, recovered = accept(partial, gate_result("complete", partial, 3000, used=used),
                               profile_hash=P, now_ms=3000)
         self.assertEqual(recovered["unresolved_adverse"], [])
         self.assertEqual(recovered["evidence_gate"], "CLEAR")
+        self.assertEqual(recovered["records_assessed"]["A"]["revision"], 1)
+
+    def test_pr7_older_complete_revision_cannot_resolve_newer_observation(self):
+        st = adverse_state()
+        for revision, complete in ((2, False), (1, True)):
+            used = [{"record_id": f"r{revision}", "accession": "A", "revision": revision,
+                     "content_hash": f"h{revision}", "quality": "OK"}]
+            _, st = accept(st, gate_result(f"rev{revision}", st, st["latest_cutoff_ms"] + 1000,
+                                           used=used, complete=complete), profile_hash=P,
+                           now_ms=st["latest_cutoff_ms"] + 1000)
+        self.assertEqual(st["evidence_gate"], "ADVERSE")
+        self.assertEqual(st["records_assessed"]["A"]["revision"], 0)
+
+    def test_pr7_legacy_state_recovers_when_support_version_is_known(self):
+        st = adverse_state()
+        st.pop("records_assessed")
+        for latch in st["unresolved_adverse"]:
+            latch.pop("source_revisions")
+            latch.pop("source_resolutions")
+        used = [{"record_id": "r1", "accession": "A", "revision": 1, "content_hash": "h1", "quality": "OK"}]
+        for n, complete in ((2, False), (3, True)):
+            _, st = accept(st, gate_result(f"legacy{n}", st, n * 1000, used=used, complete=complete),
+                           profile_hash=P, now_ms=n * 1000)
+        self.assertEqual(st["evidence_gate"], "CLEAR")
 
     def test_pr7_multi_source_corrections_accumulate_without_mutating_state(self):
         for order in (("A", "B"), ("B", "A")):
@@ -288,6 +313,26 @@ class GateProbes(unittest.TestCase):
                     st = after
                     self.assertEqual(st["evidence_gate"], "ADVERSE" if n == 2 else "CLEAR")
                 self.assertEqual(len(st["resolved_adverse"]), 1)
+
+    def test_pr7_one_corrected_support_and_one_partial_withdrawal_do_not_resolve(self):
+        st = initial_state("ISS", P)
+        used = [{"record_id": a + "0", "accession": a, "revision": 0,
+                 "content_hash": a + "h0", "quality": "OK"} for a in ("A", "B")]
+        finding = {"finding_id": "both", "type": "IMPAIRMENT", "impact": "ADVERSE",
+                   "sources": [{"accession": u["accession"], "record_id": u["record_id"]} for u in used]}
+        _, st = accept(st, gate_result("both", st, 1000, used=used, findings=[finding]),
+                       profile_hash=P, now_ms=1000)
+        # B still carries the finding; it must not prevent correction of A's separate support.
+        on_b = dict(finding, finding_id="B-finding", sources=[{"accession": "B", "record_id": "B0"}])
+        for n, accession, complete, findings in ((2, "A", True, [on_b]), (3, "B", False, []),
+                                                (4, "B", True, [])):
+            revision = [{"record_id": accession + "1", "accession": accession, "revision": 1,
+                         "content_hash": accession + "h1", "quality": "WITHDRAWN" if accession == "B" else "OK"}]
+            _, st = accept(st, gate_result(f"step{n}", st, n * 1000, used=revision, complete=complete,
+                                           findings=findings), profile_hash=P, now_ms=n * 1000)
+            self.assertEqual(st["evidence_gate"], "CLEAR" if n == 4 else "ADVERSE")
+        both = next(a for a in st["resolved_adverse"] if a["finding_id"] == "both")
+        self.assertEqual({c["resolution"] for c in both["source_resolutions"].values()}, {"CORRECTED", "WITHDRAWN"})
 
     def test_pr7_same_version_clean_reread_does_not_clear(self):
         st = adverse_state()

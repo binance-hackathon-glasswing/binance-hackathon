@@ -53,6 +53,7 @@ def initial_state(issuer_id: str, policy_profile_hash: str, max_known_facts: int
             "policy_profile_hash": policy_profile_hash, "context": context, "context_hash": context_hash(context),
             "latest_cutoff_ms": None, "accepted_result_ids": [], "accepted_keys": [],
             "unresolved_adverse": [], "resolved_adverse": [], "statements": {}, "records_seen": {},
+            "records_assessed": {},
             "availability": "NONE", "evidence_gate": "UNKNOWN", "gate_reasons": ["NO_ASSESSMENT"],
             "assessed_until_ms": None, "last_rejection": None, "max_known_facts": max_known_facts,
             "lifecycle": dict(DEFAULT_LIFECYCLE, **(lifecycle_policy or {}))}
@@ -107,40 +108,98 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     nxt = dict(state, version=state["version"] + 1, latest_cutoff_ms=r["cutoff_ms"], last_rejection=None,
                accepted_result_ids=(state["accepted_result_ids"] + [rid])[-500:],
                accepted_keys=(state["accepted_keys"] + [r["assessment_key"]])[-500:])
-    adverse = [dict(a) for a in state["unresolved_adverse"]]
+    adverse = [dict(a, source_revisions=dict(a.get("source_revisions", {})),
+                    source_resolutions=dict(a.get("source_resolutions", {}))) for a in state["unresolved_adverse"]]
     resolved = list(state["resolved_adverse"])
     held = {a["finding_id"] for a in adverse}
     statements = {k: dict(v) for k, v in state["statements"].items()}
     records_seen = dict(state["records_seen"])
+    records_assessed = dict(state.get("records_assessed", {}))
+    used_by_id = {u.get("record_id"): u for u in r["evidence_used"]}
+
+    def supporting_revisions(sources):
+        revisions = {}
+        for source in sources:
+            record_id = source.get("record_id")
+            record = used_by_id.get(record_id) or records_seen.get(source.get("accession")) or {}
+            if record_id and record.get("record_id") == record_id:
+                revisions[record_id] = record.get("revision", 0)
+        return revisions
+
+    # Upgrade older v2 latches only from matching record identities, never assume a partial observation
+    # proves the supporting version was assessed. Unknown legacy support revisions stay fail-closed.
+    for a in adverse:
+        a["source_revisions"] = supporting_revisions(a.get("sources") or []) | a["source_revisions"]
 
     def latch(finding_id, kind, sources):
         if finding_id in held:
             return
         held.add(finding_id)
         adverse.append({"finding_id": finding_id, "type": kind, "result_id": rid, "cutoff_ms": r["cutoff_ms"],
-                        "sources": sources, "resolution_rule": RESOLUTION_RULE})
+                        "sources": sources, "source_revisions": supporting_revisions(sources),
+                        "source_resolutions": {}, "resolution_rule": RESOLUTION_RULE})
 
     # A correction can only be established by a complete assessment of the new version: partial coverage could
     # simply have missed the event (red team S4-B g01).
     complete = r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
     # Revisions and withdrawals first: they can resolve latches and correct statements from the old version.
     present_findings = {f["type"] for f in r.get("event_findings", []) + r.get("findings", [])}
+    present_findings.update("FALSIFIER_FIRED:" + f["falsifier_id"] for f in r["falsifiers"] if f["state"] == "FIRED")
+    def still_present(kind, accession):
+        if kind not in present_findings:
+            return False
+        if kind.startswith("FALSIFIER_FIRED:"):
+            return True
+        return any(f["type"] == kind and (not f.get("sources") or any(s.get("accession") == accession
+                   for s in f["sources"])) for f in r["event_findings"] + r["findings"])
+
     present_statements = {s["statement_id"] for s in r.get("event_statements", [])}
     for used in r.get("evidence_used", []):
         accession, revision = used.get("accession"), used.get("revision", 0)
         seen = records_seen.get(accession)
+        assessed = records_assessed.get(accession)
         withdrawn = used.get("quality") == "WITHDRAWN"
-        if seen is not None and (revision > seen["revision"] or withdrawn) and complete:
-            lifecycle.revise(statements, accession=accession, superseding_hash=used.get("content_hash"),
-                             still_present=present_statements, withdrawn=withdrawn, now_ms=now_ms)
+        current = (seen is None or revision >= seen["revision"]) and \
+                  (assessed is None or revision >= assessed["revision"])
+        if current:
+            # A newer partial observation cannot inherit correction evidence from its older revision.
+            for a in adverse:
+                for source in a.get("sources") or []:
+                    key = source.get("record_id")
+                    correction = a["source_resolutions"].get(key)
+                    if source.get("accession") == accession and correction and revision > correction["revision"]:
+                        a["source_resolutions"].pop(key)
+        if complete and current:
+            revised_statement = assessed is None and any(
+                source.get("accession") == accession and source.get("content_hash") != used.get("content_hash")
+                for entry in statements.values() for source in entry["records"])
+            if revised_statement or (assessed is not None and revision > assessed["revision"]) or withdrawn:
+                lifecycle.revise(statements, accession=accession, superseding_hash=used.get("content_hash"),
+                                 still_present=present_statements, withdrawn=withdrawn, now_ms=now_ms)
             for a in list(adverse):
                 srcs = a.get("sources") or []
-                if srcs and all(x.get("accession") == accession for x in srcs) and \
-                        (withdrawn or a["type"] not in present_findings):
+                corrections = a["source_resolutions"]
+                for source in srcs:
+                    key = source.get("record_id")
+                    baseline = a["source_revisions"].get(key)
+                    if source.get("accession") != accession or not key:
+                        continue
+                    superseded = baseline is not None and revision > baseline and used.get("record_id") != key
+                    present = still_present(a["type"], accession)
+                    if withdrawn or (superseded and not present):
+                        corrections[key] = {"record_id": used.get("record_id"), "revision": revision,
+                                            "accession": accession, "resolved_ms": now_ms,
+                                            "resolution": "WITHDRAWN" if withdrawn else "CORRECTED"}
+                    elif present:
+                        corrections.pop(key, None)
+                if srcs and all(x.get("record_id") in corrections for x in srcs):
                     adverse.remove(a)
                     held.discard(a["finding_id"])
                     resolved.append(dict(a, resolved_ms=now_ms, resolved_by=used.get("record_id"),
-                                         resolution="WITHDRAWN" if withdrawn else "CORRECTED"))
+                                         resolution="WITHDRAWN" if all(c["resolution"] == "WITHDRAWN"
+                                                                      for c in corrections.values()) else "CORRECTED"))
+            records_assessed[accession] = {"revision": revision, "record_id": used.get("record_id"),
+                                           "content_hash": used.get("content_hash")}
         if seen is None or revision >= seen["revision"]:
             records_seen[accession] = {"revision": revision, "record_id": used.get("record_id"),
                                        "content_hash": used.get("content_hash")}
@@ -176,7 +235,8 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     lifecycle.expire(statements, now_ms=now_ms, retention_ms=policy["statement_retention_ms"],
                      max_entries=policy["max_statements"])
     nxt.update(unresolved_adverse=adverse, resolved_adverse=resolved[-200:], statements=statements,
-               records_seen=dict(sorted(records_seen.items())[-2000:]))
+               records_seen=dict(sorted(records_seen.items())[-2000:]),
+               records_assessed=dict(sorted(records_assessed.items())[-2000:]))
     gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete)
     nxt.update(evidence_gate=gate, gate_reasons=reasons,
                assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None)

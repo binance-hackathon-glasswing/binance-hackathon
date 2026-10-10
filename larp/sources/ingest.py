@@ -64,6 +64,7 @@ class SourceIngestor:
         url = (cursor["in_progress"] or {}).get("next_url") or source.listing_url
         first = cursor["in_progress"] is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
+        cycle_incomplete = (cursor["in_progress"] or {}).get("coverage_incomplete", False)
         # max_pages bounds work per poll, not the lifetime of a durable pagination cycle.
         while url and outcome["pages"] < source.limits.get("max_pages", 1):
             now = self.clock()
@@ -73,10 +74,10 @@ class SourceIngestor:
                 response = self.client.get(source, url, etag=cursor["etag"] if conditional else None,
                                            last_modified=cursor["last_modified"] if conditional else None)
                 if response.status == 304:
-                    items, next_url = [], None
+                    items, next_url, item_truncated = [], None, False
                     outcome["status"] = "NOT_MODIFIED"
                 else:
-                    items, next_url = parse(source, response.body, response.url)
+                    items, next_url, item_truncated = parse(source, response.body, response.url)
             except SourceError as exc:
                 health.update(status="UNAVAILABLE", consecutive_failures=health["consecutive_failures"] + 1,
                               last_error=str(exc))
@@ -113,6 +114,8 @@ class SourceIngestor:
                 key = "withdrawn" if record["status"] == "WITHDRAWN" else "versions" if record["version"] else "new"
                 outcome[key].append(record["record_id"])
             pages_done += 1
+            cycle_incomplete = cycle_incomplete or item_truncated
+            outcome["truncated"] = outcome["truncated"] or cycle_incomplete
             if next_url and not allowed(source, next_url):
                 outcome["rejected_next_page"] = next_url  # never saved as a continuation (S4-B d07)
                 outcome["truncated"] = True
@@ -122,7 +125,8 @@ class SourceIngestor:
                 outcome["truncated"] = True  # page limit reached with pages left: coverage is incomplete
             published = [r["published"]["ms"] for r in records if r["published"]["ms"] is not None]
             cursor = dict(cursor, version=cursor["version"] + 1, seen=self._bounded(seen), rejected=rejected,
-                          in_progress={"next_url": next_url, "pages_done": pages_done} if next_url else None,
+                          in_progress={"next_url": next_url, "pages_done": pages_done,
+                                       "coverage_incomplete": cycle_incomplete} if next_url else None,
                           watermark_ms=max([cursor["watermark_ms"] or 0] + published) or None,
                           last_truncated=bool(next_url or outcome["truncated"]),
                           health=dict(health, status="OK", last_success_ms=now, consecutive_failures=0,
