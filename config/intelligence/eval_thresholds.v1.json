@@ -1,0 +1,26 @@
+{
+  "schema": "IntelligenceEvalThresholds.v1",
+  "frozen": "2026-10-10, committed and pushed before any evaluation run (IDEA-025 section 5). A change after a run needs a new dated file version and a ledger note; this file is never edited in place.",
+  "applies_to": "the synthetic evaluation pack in larp/intelligence/scenarios.py only; says nothing about real filings, live model quality or trading performance",
+  "agent": {
+    "span_accuracy__min": [19, 20],
+    "numerical_correctness__min": [1, 1],
+    "unsupported_acceptance__max": [0, 1],
+    "event_recall__min": [9, 10],
+    "abstention_recall__min": [1, 1],
+    "false_abstention__max": [1, 10],
+    "stale_rejection__min": [1, 1],
+    "max_tool_calls__max": 6,
+    "max_elapsed_ms__max": 60000
+  },
+  "baseline": {
+    "numerical_correctness__min": [1, 1],
+    "max_tool_calls__max": 0
+  },
+  "comparison": {
+    "metric": "comparison_accuracy",
+    "min_gain": [1, 4],
+    "min_expectations": 20,
+    "rule": "SUPPORTED_ON_SYNTHETIC_PACK if agent minus baseline comparison accuracy >= 1/4 with >= 20 labelled expectations and zero unsupported-claim acceptance; NOT_SUPPORTED if enough expectations but the gain is smaller; INCONCLUSIVE if fewer expectations"
+  }
+}

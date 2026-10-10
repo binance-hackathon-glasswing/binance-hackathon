@@ -1,0 +1,35 @@
+{
+  "schema": "IssuerRegistry.v1",
+  "provenance": {
+    "set_by": "IDEA-025 (Yao Zhu build record), 2026-10-10",
+    "tokens": "SKILL.md F-91: the five eligible bStocks",
+    "ciks": "tools/edgar_fetch.py ISSUERS and IDEA-009 C.2 (data.sec.gov submissions checked 2026-10-08); SK hynix CIK 2120882 files 6-K",
+    "forms": "domestic filers 8-K/10-Q/10-K; foreign private issuer 6-K/20-F. No 20-F from SK hynix was observed in the 2026-10-08 run (its EDGAR history starts 2026-03-24)",
+    "token_underlying": "UNVERIFIED for every token: the kit gives a per-share referencePrice (F-95) but no mapping to a listing, share class or ratio",
+    "securities": "listing identifiers from public exchange tickers; the SKHY US listing's instrument type and depositary ratio are UNVERIFIED and no conversion is allowed"
+  },
+  "issuers": [
+    {"issuer_id": "SEC-CIK-0001045810", "token": "NVDAB", "cik": 1045810, "entity_name": "NVIDIA", "filer_class": "DOMESTIC",
+     "reporting_currency": "USD",
+     "securities": [{"security_id": "XNAS:NVDA", "kind": "COMMON", "currency": "USD", "ratio_to_common": [1, 1], "ratio_status": "VERIFIED"}],
+     "token_underlying": {"security_id": null, "status": "UNVERIFIED"}},
+    {"issuer_id": "SEC-CIK-0001652044", "token": "GOOGLB", "cik": 1652044, "entity_name": "Alphabet", "filer_class": "DOMESTIC",
+     "reporting_currency": "USD",
+     "securities": [{"security_id": "XNAS:GOOGL", "kind": "COMMON_CLASS_A", "currency": "USD", "ratio_to_common": null, "ratio_status": "UNVERIFIED"},
+                    {"security_id": "XNAS:GOOG", "kind": "COMMON_CLASS_C", "currency": "USD", "ratio_to_common": null, "ratio_status": "UNVERIFIED"}],
+     "token_underlying": {"security_id": null, "status": "UNVERIFIED"}},
+    {"issuer_id": "SEC-CIK-0001318605", "token": "TSLAB", "cik": 1318605, "entity_name": "Tesla", "filer_class": "DOMESTIC",
+     "reporting_currency": "USD",
+     "securities": [{"security_id": "XNAS:TSLA", "kind": "COMMON", "currency": "USD", "ratio_to_common": [1, 1], "ratio_status": "VERIFIED"}],
+     "token_underlying": {"security_id": null, "status": "UNVERIFIED"}},
+    {"issuer_id": "SEC-CIK-0000789019", "token": "MSFTB", "cik": 789019, "entity_name": "Microsoft", "filer_class": "DOMESTIC",
+     "reporting_currency": "USD",
+     "securities": [{"security_id": "XNAS:MSFT", "kind": "COMMON", "currency": "USD", "ratio_to_common": [1, 1], "ratio_status": "VERIFIED"}],
+     "token_underlying": {"security_id": null, "status": "UNVERIFIED"}},
+    {"issuer_id": "SEC-CIK-0002120882", "token": "SKHYB", "cik": 2120882, "entity_name": "SK hynix", "filer_class": "FOREIGN_PRIVATE",
+     "reporting_currency": "KRW",
+     "securities": [{"security_id": "XKRX:000660", "kind": "COMMON", "currency": "KRW", "ratio_to_common": [1, 1], "ratio_status": "VERIFIED"},
+                    {"security_id": "XNAS:SKHY", "kind": "US_LISTING_TYPE_UNVERIFIED", "currency": "USD", "ratio_to_common": null, "ratio_status": "UNVERIFIED"}],
+     "token_underlying": {"security_id": null, "status": "UNVERIFIED"}}
+  ]
+}

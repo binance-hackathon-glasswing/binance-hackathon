@@ -16,3 +16,9 @@ Acceptance: duplicate/late filing delivery, outage then catch-up, HTML tables, U
 Details to request ONLY when real integration needs them: real EDGAR contact/User-Agent; approved source rights/data location; model provider, exact model/checkpoint revision, permitted output/training use, inference/training budget, and selected provider credentials supplied through the runtime secret store. Use proposed LARP_MODEL_* and LARP_SEC_USER_AGENT conventions from the brief. Never request the wallet private key or AI_SEEDS_SECRET.
 
 Commit/push implementation and prospective test/experiment criteria before running affected code. Preserve all 13 foundation tests. Finish with your branch/commit, test commands/results, successful and rejected fixture documents, model/data provenance, measured costs if available, and remaining inputs. Keith reviews; Keegan integrates. This section optimizes evidence quality and bounded autonomy; it must not promise profitable trades.
+
+Progress appendix (Yao Zhu, 2026-10-10)
+- Branch codex/evidence-agent from kickoff e10eae2. Build record: docs/ledger/IDEA-025.md.
+- Implemented in larp/intelligence/ (ingest, edgar, text, issuers, facts, verify, tools, agent, gate,
+  models, features, training, evaluation, scenarios, demo, fakes), config/intelligence/ and
+  tools/edgar_fetch.py (R5/R6). Tests in tests/intelligence/. Results: IDEA-025 section 9.
