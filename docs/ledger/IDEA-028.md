@@ -165,3 +165,23 @@ real evidence/model semantics. Team-owned choices are enumerated in the operatio
 guide and infrastructure recommendation. Shared backlog partial progress is recorded;
 no incompletely verified GAP was removed. No main merge, live activation, credential
 provisioning, organizer message, market experiment or rehearsal completion is claimed.
+
+## RT10 — architecture implementation follow-up, prospective criteria
+
+2026-10-10: user asks for everything needed to create the recommended architecture
+and implementation of everything possible. Scope extends this branch/PR with AWS
+infrastructure definitions, immutable S3 archive delivery, durable hourly maintenance,
+monitoring, host service definitions and deployment/readiness instructions. Cloud
+account/region/budget/retention/AMI are not supplied; no AWS resources or notifications
+will be created. Signer/execution and financial/evidence semantics retain their owners.
+
+Before running new code: commit and push. Acceptance criteria: (1) Terraform formats,
+validates and passes mocked-provider plan assertions without AWS credentials; private
+database, protected archives, per-host IAM and no live startup defaults; (2) conditional
+S3 writes verify bytes/version/retention, retries preserve identity, conflicting bytes
+fail and no credentials enter output; (3) real PG maintenance outbox survives lost ACK,
+restart, exhausted attempts and backward clocks, schedules hourly anchors and bounded
+backups, reports failures; (4) restored application state remains quarantined; (5) service
+and configuration checks fail closed on missing settings; (6) existing suite and CI
+remain green. Mocked AWS tests are not hosted disaster-recovery evidence. Record all
+unresolved deployment inputs, ownership and exact commands after verification.
