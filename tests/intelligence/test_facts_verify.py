@@ -61,7 +61,7 @@ class ExtractionTests(unittest.TestCase):
             self.assertTrue(facts, key)
             for f in facts:
                 with self.subTest(key=key, metric=f["metric"], period=f["period"]):
-                    verified, reason = verify_claim(fact_as_claim(f), {saved.text_sha256: saved.text}, {})
+                    verified, reason = verify_claim(fact_as_claim(f), {saved.text_sha256: saved.text}, None)
                     self.assertIsNone(reason)
                     self.assertEqual(normalized(verified), normalized(f))
 
@@ -92,6 +92,53 @@ class ExtractionTests(unittest.TestCase):
         self.assertEqual(domestic[0]["security_scope"], "XFIX:EXSM")
 
 
+INCOME_TABLE = (
+    b"<p>Condensed statements of income</p>"
+    b"<table><tr><td>(In millions, except per share data)</td></tr><tr><td></td><td>Q3 FY27</td><td>Q2 FY27</td></tr>"
+    b"<tr><td>Revenue</td><td>$35,082</td><td>$30,040</td></tr>"
+    b"<tr><td>Diluted EPS</td><td>$1.20</td><td>$1.05</td></tr></table>")
+INCOME_PROSE = (b"<p>Revenue for the third quarter of fiscal 2027 was $35.1 billion, and diluted earnings per share "
+                b"for the third quarter of fiscal 2027 was $1.20.</p>")
+
+
+class PerShareScaleTests(unittest.TestCase):
+    def facts(self, html):
+        saved = document_text(html, "income.htm")
+        return saved, extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI),
+                                       {"accession": "a"})
+
+    def test_per_share_rows_keep_their_amounts_under_the_exception(self):
+        saved, facts = self.facts(INCOME_TABLE)
+        eps = {f["period"]: f for f in facts if f["metric"] == "eps_diluted"}
+        self.assertEqual({p: (normalized(f), f["scale_exp10"]) for p, f in eps.items()},
+                         {"FY2027-Q3": (Fraction(6, 5), 0), "FY2027-Q2": (Fraction(21, 20), 0)})
+        revenue = pick(facts, "REPORTED", "revenue", "FY2027-Q3", 6)[0]
+        self.assertEqual(normalized(revenue), 35082 * 10 ** 6)  # the exception does not unscale other rows
+        texts = {saved.text_sha256: saved.text}
+        for f in facts:
+            with self.subTest(metric=f["metric"], period=f["period"]):
+                self.assertIsNone(verify_claim(fact_as_claim(f), texts, None)[1])
+        wrong = dict(fact_as_claim(eps["FY2027-Q3"]), scale_exp10=6)  # $1.2 million per share
+        self.assertEqual(verify_claim(wrong, texts, None)[1], "SCALE_NOT_STATED")
+
+    def test_table_and_equivalent_prose_agree(self):
+        saved, facts = self.facts(INCOME_TABLE + INCOME_PROSE)
+        prose_eps = [f for f in facts if f["metric"] == "eps_diluted" and f["basis"] == "SENTENCE_V1"]
+        self.assertEqual([(f["period"], normalized(f), f["scale_exp10"]) for f in prose_eps],
+                         [("FY2027-Q3", Fraction(6, 5), 0)])
+        self.assertEqual({normalized(f) for f in pick(facts, "REPORTED", "revenue", "FY2027-Q3")},
+                         {Fraction(351, 10) * 10 ** 9, 35082 * 10 ** 6})
+        self.assertEqual(detect_conflicts(facts), [])  # "$35.1 billion" ~ 35,082 million; $1.20 = $1.20
+        texts = {saved.text_sha256: saved.text}
+        self.assertEqual(verify_claim(dict(fact_as_claim(prose_eps[0]), scale_exp10=6), texts, None)[1],
+                         "SCALE_NOT_STATED")
+
+    def test_scaled_table_without_the_exception_gives_no_per_share_fact(self):
+        _, facts = self.facts(INCOME_TABLE.replace(b"(In millions, except per share data)", b"(In millions)"))
+        self.assertEqual([f for f in facts if f["metric"] == "eps_diluted"], [])
+        self.assertTrue(pick(facts, "REPORTED", "revenue", "FY2027-Q3", 6))
+
+
 class VerificationTests(unittest.TestCase):
     def setUp(self):
         self.saved, facts = extract("EXSEMI_Q3_8K", 1)
@@ -100,7 +147,7 @@ class VerificationTests(unittest.TestCase):
         self.table = pick(facts, "REPORTED", "revenue", "FY2027-Q2", 6)[0]
 
     def rejected(self, claim):
-        return verify_claim(claim, self.texts, {})[1]
+        return verify_claim(claim, self.texts, None)[1]
 
     def test_tampering_is_rejected_with_a_reason(self):
         good = fact_as_claim(self.fact)
@@ -130,8 +177,76 @@ class VerificationTests(unittest.TestCase):
         self.assertIsNone(self.rejected(claim))
         self.assertEqual(self.rejected(dict(claim, value=[35082, 1])), "TABLE_VALUE_NOT_LAST_CELL")
 
+    def test_malformed_nested_fields_are_rejected_before_use(self):
+        good = fact_as_claim(self.fact)
+        cases = {
+            "SOURCE_MALFORMED": [dict(good, source="oops"), dict(good, source={"record_id": ["r"]}),
+                                 dict(good, source={"url": "x"})],
+            "SPAN_MALFORMED": [dict(good, span="x"), dict(good, span=dict(good["span"], doc=["a"])),
+                               dict(good, span=dict(good["span"], start="0"))],
+            "PERIOD_SPAN_MALFORMED": [dict(good, period_span=7)],
+            "RANGE_MALFORMED": [dict(good, range=1), dict(good, range=["1"])],
+            "METRIC_MALFORMED": [dict(good, metric=["revenue"])],
+            "UNIT_MALFORMED": [dict(good, unit={"USD": 1})],
+            "SCALE_MALFORMED": [dict(good, scale_exp10="9")],
+            "CLAIM_UNKNOWN_FIELD": [dict(good, confidence="high")],
+            "CLAIM_MALFORMED": [5, None, ["claim"]],
+        }
+        for reason, claims in cases.items():
+            for claim in claims:
+                with self.subTest(reason=reason, claim=str(claim)[:60]):
+                    self.assertEqual(verify_claim(claim, self.texts, {})[1], reason)
+
+    def test_provenance_comes_from_the_record_holding_the_cited_document(self):
+        claim = dict(fact_as_claim(self.fact), source={"record_id": "rec:current", "accession": "forged"})
+        record = {"record_id": "rec:current", "accession": "0009900001-26-000187", "available_ms": 5,
+                  "original_ms": 4, "items": [], "documents": [{"name": "ex991.htm", "text_sha256": self.saved.text_sha256}]}
+        fact, reason = verify_claim(claim, self.texts, {"rec:current": record})
+        self.assertIsNone(reason)
+        self.assertEqual(fact["source"], {"record_id": "rec:current", "accession": "0009900001-26-000187",
+                                          "doc_name": "ex991.htm", "available_ms": 5, "original_ms": 4})
+        other = dict(record, documents=[{"name": "other.htm", "text_sha256": "1" * 64}])
+        self.assertEqual(verify_claim(claim, self.texts, {"rec:current": other})[1], "SPAN_NOT_IN_SOURCE_RECORD")
+        self.assertEqual(verify_claim(claim, self.texts, {})[1], "SOURCE_RECORD_UNKNOWN")
+        self.assertEqual(verify_claim(dict(claim, source=None), self.texts, {})[1], "SOURCE_RECORD_UNKNOWN")
+
+    def test_period_and_scale_spans_belong_to_the_cited_statement(self):
+        claim = fact_as_claim(self.table)  # "Revenue | $35,082 | $30,040", column Q2 FY27
+        q3_header = fact_as_claim(pick(extract("EXSEMI_Q3_8K", 1)[1], "REPORTED", "revenue", "FY2027-Q3", 6)[0])
+        self.assertEqual(self.rejected(dict(claim, period="FY2027-Q3", period_span=q3_header["period_span"])),
+                         "PERIOD_NOT_TABLE_COLUMN")  # the other column's header
+        self.assertEqual(self.rejected(dict(claim, scale_span=None)), "SCALE_SPAN_NOT_TABLE_SCALE")
+        self.assertEqual(self.rejected(dict(claim, scale_exp10=0, scale_span=None)), "SCALE_NOT_STATED")
+        self.assertEqual(self.rejected(dict(claim, scale_exp10=9)), "SCALE_NOT_STATED")
+        prose = fact_as_claim(self.fact)
+        copy = dict(self.texts, **{"a" * 64: self.saved.text})  # same words, another loaded document
+        moved = dict(prose, period_span=dict(prose["period_span"], doc="a" * 64))
+        self.assertEqual(verify_claim(moved, copy, None)[1], "PERIOD_SPAN_OTHER_DOCUMENT")
+        elsewhere = self.saved.text.index("fourth quarter of fiscal 2027")
+        span = {"doc": self.saved.text_sha256, "start": elsewhere, "end": elsewhere + len("fourth quarter of fiscal 2027"),
+                "text": "fourth quarter of fiscal 2027"}
+        self.assertEqual(self.rejected(dict(prose, period="FY2027-Q4", period_span=span)), "PERIOD_SPAN_OUTSIDE_STATEMENT")
+
+    def test_negated_events_are_not_verified(self):
+        saved = document_text(b"<p>The company recorded no impairment in the quarter.</p>"
+                              b"<p>The company recorded an impairment of goodwill.</p>", "n.htm")
+        texts = {saved.text_sha256: saved.text}
+
+        def claim(sentence):
+            start = saved.text.index(sentence)
+            return {"kind": "EVENT", "metric": "IMPAIRMENT",
+                    "span": {"doc": saved.text_sha256, "start": start, "end": start + len(sentence), "text": sentence}}
+
+        self.assertEqual(verify_claim(claim("impairment in the quarter"), texts, None)[1], "EVENT_NEGATED")
+        self.assertEqual(verify_claim(claim("The company recorded no impairment in the quarter."), texts, None)[1],
+                         "EVENT_NEGATED")
+        self.assertEqual(verify_claim(claim("recorded no"), texts, None)[1], "EVENT_NOT_IN_SPAN")
+        fact, reason = verify_claim(claim("impairment of goodwill"), texts, None)
+        self.assertIsNone(reason)
+        self.assertEqual((fact["metric"], fact["value"], fact["period"]), ("IMPAIRMENT", None, None))
+
     def test_claimed_precision_is_recomputed_from_the_span(self):
-        fact, reason = verify_claim(dict(fact_as_claim(self.fact), precision_exp10=0), self.texts, {})
+        fact, reason = verify_claim(dict(fact_as_claim(self.fact), precision_exp10=0), self.texts, None)
         self.assertIsNone(reason)
         self.assertEqual(fact["precision_exp10"], 8)
 

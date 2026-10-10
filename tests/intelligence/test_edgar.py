@@ -6,7 +6,8 @@ import unittest
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.config import live_model_settings, load_config, load_registry, sec_user_agent
 from larp.intelligence.edgar import (
-    EdgarHttpSource, check_identity, listing_rows, parse_acceptance_ms, parse_filing_index, select_documents,
+    EdgarHttpSource, check_identity, history_files, listing_rows, parse_acceptance_ms, parse_filing_index,
+    select_documents,
 )
 from larp.intelligence.issuers import IssuerRegistry
 
@@ -30,6 +31,30 @@ class EdgarParsingTests(unittest.TestCase):
         rows = listing_rows(submissions)
         self.assertEqual([r["malformed"] for r in rows], [None, "ACCESSION", "ACCEPTANCE_TIME"])
         self.assertEqual(rows[0]["items"], ["2.02", "9.01"])
+
+    def test_history_rows_are_merged_and_an_accession_is_kept_once(self):
+        recent = {"accessionNumber": ["0000000001-26-000001"], "form": ["8-K"], "items": [""],
+                  "acceptanceDateTime": ["2026-10-01T20:05:00.000Z"], "filingDate": ["2026-10-01"],
+                  "reportDate": [""], "primaryDocument": ["a.htm"]}
+        older = {"accessionNumber": ["0000000001-24-000009", "0000000001-26-000001", ["x"]], "form": ["10-Q"] * 3,
+                 "items": [""] * 3, "acceptanceDateTime": ["2024-05-01T20:05:00.000Z"] * 3,
+                 "filingDate": ["2024-05-01"] * 3, "reportDate": [""] * 3, "primaryDocument": ["b.htm"] * 3}
+        rows = listing_rows({"filings": {"recent": recent}}, (older,))
+        self.assertEqual([(r["accession"], r["malformed"]) for r in rows],
+                         [("0000000001-26-000001", None), ("0000000001-24-000009", None), (["x"], "ACCESSION")])
+
+    def test_history_files_cover_the_requested_window(self):
+        submissions = {"filings": {"recent": {}, "files": [
+            {"name": "CIK0009900001-submissions-001.json", "filingFrom": "2024-01-01", "filingTo": "2024-12-31"},
+            {"name": "CIK0009900001-submissions-002.json", "filingFrom": "2022-01-01", "filingTo": "2023-12-31"},
+            {"name": "CIK0009900001-submissions-003.json"},
+            {"name": "../../outside.json", "filingFrom": "2024-01-01", "filingTo": "2024-12-31"}]}}
+        window = (parse_acceptance_ms("2024-06-01T00:00:00+00:00"), parse_acceptance_ms("2024-07-01T00:00:00+00:00"))
+        names, malformed = history_files(submissions, window)
+        self.assertEqual(names, ("CIK0009900001-submissions-001.json", "CIK0009900001-submissions-003.json"))
+        self.assertEqual(malformed, ("../../outside.json",))  # never turned into a URL
+        late_filed = (parse_acceptance_ms("2025-01-01T02:00:00+00:00"),) * 2  # 2024-12-31 Eastern
+        self.assertIn("CIK0009900001-submissions-001.json", history_files(submissions, late_filed)[0])
 
     def test_identity_check_rejects_wrong_cik_or_name(self):
         check_identity({"cik": "0001045810", "name": "NVIDIA CORP"}, 1045810, "NVIDIA")

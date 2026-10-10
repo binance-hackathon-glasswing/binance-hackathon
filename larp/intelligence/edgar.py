@@ -11,7 +11,8 @@ stated. One 6-K was checked to be true UTC (IDEA-001 §15, IDEA-009 C.2); IDEA-0
 EDT/EST comparison against the index page is still open, so the raw string is retained.
 """
 
-from datetime import datetime, timedelta, timezone
+from dataclasses import replace
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 import json
 import re
@@ -24,12 +25,15 @@ from larp.intelligence.sources import FetchedDocument, FetchedFiling, Listing
 from larp.intelligence.text import decode_bytes
 
 SUBMISSIONS = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+SUBMISSIONS_FILE = "https://data.sec.gov/submissions/{name}"
 ARCHIVES = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/"
 ALLOWED_HOSTS = frozenset({"data.sec.gov", "www.sec.gov"})
 READABLE = (".htm", ".html", ".txt", ".xhtml")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 _MS = timedelta(milliseconds=1)
 _ACCESSION = re.compile(r"^\d{10}-\d{2}-\d{6}$")
+_HISTORY_FILE = re.compile(r"^CIK\d{10}-submissions-\d{3}\.json$")
+_DAY_MS = 86_400_000
 
 
 def parse_acceptance_ms(raw: object) -> int:
@@ -50,10 +54,22 @@ def check_identity(submissions: dict, cik: int, entity_name: str) -> None:
         raise IntelligenceError("ISSUER_IDENTITY_MISMATCH: submissions response is not the registered issuer")
 
 
-def listing_rows(submissions: dict) -> tuple:
-    """Rows of filings.recent, each with a parsed original timestamp; malformed rows are flagged."""
-    block = submissions.get("filings", {}).get("recent", {})
-    n = len(block.get("accessionNumber", []))
+def listing_rows(submissions: dict, history: tuple = ()) -> tuple:
+    """Rows of filings.recent and of any fetched history blocks, each with a parsed original
+    timestamp; malformed rows are flagged; an accession listed twice is kept once."""
+    rows, seen = [], set()
+    for block in (submissions.get("filings", {}).get("recent", {}), *history):
+        for row in _block_rows(block if type(block) is dict else {}):
+            if row["malformed"] is None:
+                if row["accession"] in seen:
+                    continue
+                seen.add(row["accession"])
+            rows.append(row)
+    return tuple(rows)
+
+
+def _block_rows(block: dict) -> list:
+    n = len(block.get("accessionNumber") or [])
     keys = ("accessionNumber", "form", "items", "acceptanceDateTime", "filingDate", "reportDate",
             "primaryDocument")
     columns = {k: (block.get(k) or [None] * n) for k in keys}
@@ -75,7 +91,35 @@ def listing_rows(submissions: dict) -> tuple:
             except (IntelligenceError, ValueError):
                 row["malformed"] = "ACCEPTANCE_TIME"
         rows.append(row)
-    return tuple(rows)
+    return rows
+
+
+def _date_ms(raw: object) -> int | None:
+    try:
+        return (datetime.combine(date.fromisoformat(raw), datetime.min.time(), timezone.utc) - _EPOCH) // _MS
+    except (TypeError, ValueError):
+        return None
+
+
+def history_files(submissions: dict, window: tuple) -> tuple:
+    """(names to fetch, malformed entries) of `filings.files` that may hold filings in `window`.
+
+    Each entry covers filing dates filingFrom..filingTo. Filing dates are US Eastern calendar
+    dates while the window is acceptance time in UTC, so each range is widened by a day on both
+    sides. An entry without readable dates is fetched (it cannot be excluded); one whose name is
+    not an EDGAR submissions file name is never turned into a URL.
+    """
+    names, malformed = [], []
+    for entry in (submissions.get("filings", {}).get("files") or []):
+        name = entry.get("name") if type(entry) is dict else None
+        if type(name) is not str or not _HISTORY_FILE.match(name):
+            malformed.append(str(name)[:80])
+            continue
+        low, high = _date_ms(entry.get("filingFrom")), _date_ms(entry.get("filingTo"))
+        if (low is not None and low - _DAY_MS > window[1]) or (high is not None and high + 2 * _DAY_MS < window[0]):
+            continue
+        names.append(name)
+    return tuple(names), tuple(malformed)
 
 
 def parse_filing_index(index_html: bytes) -> tuple:
@@ -127,7 +171,7 @@ class EdgarHttpSource:
     source_id = "sec-edgar"
 
     def __init__(self, user_agent: str, *, http_get=None, clock_ms=None, sleep=time.sleep,
-                 spacing_s: float = 0.2, timeout_s: float = 30.0):
+                 spacing_s: float = 0.2, timeout_s: float = 30.0, max_history_files: int = 20):
         if not user_agent or "@" not in user_agent:
             raise IntelligenceError("EDGAR access requires a declared User-Agent with contact details")
         if spacing_s < 0.1:
@@ -136,7 +180,7 @@ class EdgarHttpSource:
         self._get = http_get or _urllib_get
         self._clock = clock_ms or (lambda: time.time_ns() // 1_000_000)
         self._sleep, self._spacing, self._timeout = sleep, spacing_s, timeout_s
-        self._last = None
+        self._max_history, self._last = max_history_files, None
 
     def _fetch(self, url: str) -> tuple:
         if urlsplit(url).scheme != "https" or urlsplit(url).hostname not in ALLOWED_HOSTS:
@@ -152,14 +196,43 @@ class EdgarHttpSource:
         self._last = time.monotonic()
         return status, content_type, body, error, self._clock()
 
-    def list_filings(self, cik: int) -> Listing:
+    def list_filings(self, cik: int, window: tuple | None = None) -> Listing:
+        """The submissions listing; with a (from_ms, to_ms) window, also every historical file
+        (`filings.files`) that may hold filings in it, at most `max_history_files` requests.
+        Anything not fetched or unreadable makes `history_status` PARTIAL, never a silent gap."""
         status, _, body, error, at = self._fetch(SUBMISSIONS.format(cik=cik))
         if error:
             return Listing("UNAVAILABLE", at, None, None, error)
         try:
-            return Listing("OK", at, json.loads(body.decode("utf-8")), sha256_hex(body))
+            listing = Listing("OK", at, json.loads(body.decode("utf-8")), sha256_hex(body))
         except (UnicodeDecodeError, ValueError):
             return Listing("INVALID", at, None, sha256_hex(body), "Submissions response is not JSON")
+        if window is None or type(listing.submissions) is not dict:
+            return listing
+        names, malformed = history_files(listing.submissions, window)
+        blocks, files = [], [{"name": m, "status": "MALFORMED_ENTRY", "response_sha256": None, "error": None}
+                             for m in malformed]
+        for index, name in enumerate(names):
+            if index >= self._max_history:
+                files.append({"name": name, "status": "NOT_FETCHED", "response_sha256": None,
+                              "error": "HISTORY_FILE_LIMIT"})
+                continue
+            _, _, data, err, _ = self._fetch(SUBMISSIONS_FILE.format(name=name))
+            digest = None if err else sha256_hex(data)
+            try:
+                block = None if err else json.loads(data.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                block, err = None, "Historical submissions file is not JSON"
+            if err is None and type(block) is not dict:
+                err = "Historical submissions file is not an object"
+            if err:
+                files.append({"name": name, "status": "FAILED", "response_sha256": digest, "error": err})
+                continue
+            blocks.append(block)
+            files.append({"name": name, "status": "OK", "response_sha256": digest, "error": None})
+        complete = all(f["status"] == "OK" for f in files)
+        return replace(listing, history=tuple(blocks), history_status="OK" if complete else "PARTIAL",
+                       history_files=tuple(files))
 
     def fetch_filing(self, cik: int, row: dict, max_documents: int) -> FetchedFiling:
         base = ARCHIVES.format(cik=cik, acc=row["accession"].replace("-", ""))

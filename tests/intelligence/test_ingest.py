@@ -1,12 +1,13 @@
 """Point-in-time ingestion through the store port. Synthetic filings and fakes only."""
 
 import hashlib
+import json
 import unittest
 
 from larp.contracts import Document
 from larp.intelligence.common import forbidden_key_paths
 from larp.intelligence.config import load_config
-from larp.intelligence.edgar import parse_acceptance_ms
+from larp.intelligence.edgar import EdgarHttpSource, parse_acceptance_ms
 from larp.intelligence.fakes import FakeClock, FakeFilingSource, MemoryArtifacts, MemoryEvidenceStore
 from larp.intelligence.ingest import Ingestor
 from larp.intelligence.issuers import IssuerRegistry
@@ -247,6 +248,53 @@ class SourceIdentityAndScopeTests(IngestHarness):
         self.assertEqual(self.cursor()["watermark_ms"], watermark)
         job = self.store.jobs[outcome["jobs"][0]]
         self.assertGreater(Document(job).read()["priority"], 50)
+
+    def test_backfill_reads_historical_submissions_files(self):
+        accession, history = "0009900001-25-000050", "CIK0009900001-submissions-001.json"
+        primary = FILINGS["EXSEMI_Q2_8K"]["documents"][0]
+        base = f"https://www.sec.gov/Archives/edgar/data/9900001/{accession.replace('-', '')}/"
+        columns = ("accessionNumber", "form", "items", "acceptanceDateTime", "filingDate", "reportDate", "primaryDocument")
+        root = {"cik": "9900001", "name": "Example Semiconductor Corp",
+                "filings": {"recent": {k: [] for k in columns},
+                            "files": [{"name": history, "filingCount": 1, "filingFrom": "2025-06-01",
+                                       "filingTo": "2025-06-30"}]}}
+        older = {"accessionNumber": [accession], "form": ["8-K"], "items": ["2.02,9.01"],
+                 "acceptanceDateTime": ["2025-06-02T20:20:00.000Z"], "filingDate": ["2025-06-02"],
+                 "reportDate": [""], "primaryDocument": [primary["name"]]}
+        index = (f'<table><tr><td>1</td><td>Current report</td><td><a href="/Archives/edgar/data/9900001/'
+                 f'{accession.replace("-", "")}/{primary["name"]}">{primary["name"]}</a></td><td>8-K</td>'
+                 f'<td>100</td></tr></table>').encode()
+        routes = {"https://data.sec.gov/submissions/CIK0009900001.json": (200, "application/json", json.dumps(root).encode()),
+                  f"https://data.sec.gov/submissions/{history}": (200, "application/json", json.dumps(older).encode()),
+                  f"{base}{accession}-index.htm": (200, "text/html", index),
+                  base + primary["name"]: (200, "text/html", primary["content"])}
+        requested = []
+
+        def http_get(url, headers, timeout):
+            requested.append(url)
+            return routes.get(url, (404, None, b""))
+
+        source = EdgarHttpSource("LARP synthetic test contact@university.edu.sg", http_get=http_get,
+                                 clock_ms=self.clock, sleep=lambda s: None)
+        ingestor = Ingestor(registry=self.registry, source=source, store=self.store, artifacts=self.artifacts,
+                            config=self.config, clock_ms=self.clock, run_id=RUN_ID, synthetic=True)
+        live = ingestor.poll(EXSEMI).read()
+        self.assertEqual((live["new_records"], live["history_status"]), ([], "NOT_REQUESTED"))
+        self.assertNotIn(f"https://data.sec.gov/submissions/{history}", requested)
+        window = (parse_acceptance_ms("2025-06-01T00:00:00+00:00"), parse_acceptance_ms("2025-06-30T00:00:00+00:00"))
+        routes[f"https://data.sec.gov/submissions/{history}"] = (503, None, b"")
+        partial = ingestor.poll(EXSEMI, mode="BACKFILL", window=window).read()
+        self.assertEqual((partial["status"], partial["new_records"]), ("PARTIAL_HISTORY", []))
+        self.assertEqual([(f["name"], f["status"], f["error"]) for f in partial["history_files"]],
+                         [(history, "FAILED", "HTTP 503")])
+        routes[f"https://data.sec.gov/submissions/{history}"] = (200, "application/json", json.dumps(older).encode())
+        outcome = ingestor.poll(EXSEMI, mode="BACKFILL", window=window).read()
+        self.assertEqual((outcome["status"], outcome["history_status"], len(outcome["new_records"])), ("OK", "OK", 1))
+        self.assertEqual(outcome["history_files"][0]["response_sha256"], hashlib.sha256(json.dumps(older).encode()).hexdigest())
+        record = next(r for r in self.records() if r["accession"] == accession)
+        self.assertEqual((record["ingest_mode"], record["original_ms"]),
+                         ("BACKFILL", parse_acceptance_ms("2025-06-02T20:20:00+00:00")))
+        self.assertEqual(self.artifacts.get(record["documents"][0]["raw_sha256"]), primary["content"])
 
     def test_future_dated_rows_are_rejected(self):
         future = self.add("EXSEMI_Q3_8K", acceptance="2026-10-02T20:00:00+00:00")

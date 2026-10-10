@@ -64,7 +64,7 @@ class FakeFilingSource:
                             return
         raise KeyError((accession, name))
 
-    def list_filings(self, cik: int) -> Listing:
+    def list_filings(self, cik: int, window: tuple | None = None) -> Listing:  # every filing is in `recent`
         self.listing_calls += 1
         now = self.clock()
         if not self.available:

@@ -10,10 +10,17 @@ Loop (G-50 budget, at most 6 tool calls and 60 s, <= 3 tool types):
 5. Compare with previously available context, detect novelty and contradictions, evaluate
    thesis falsifiers, propose the next thesis version and request later reassessment.
 
+The deadline is enforced, not only measured: the assessment (evidence reads, tools and model
+steps) runs in a worker thread that is abandoned at the deadline with an UNAVAILABLE result.
+The abandoned worker makes no further model or tool call and its late output is discarded.
+
 The result has no trade field at any depth. Confidence is an uncalibrated ordinal label,
 never a probability. UNAVAILABLE and ABSTAIN results never propose a thesis update, and
-the gate (gate.py) never lets them make evidence look clear.
+the gate (gate.py) never lets them make evidence look clear. `completed_ms` is when the
+result existed (feature availability); `cutoff_ms` is the evidence observation time.
 """
+
+import threading
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError, assert_no_trade_fields, digest, is_hash
@@ -141,7 +148,8 @@ class EvidenceAssessor:
                   "missingness": [reason], "confidence": {"level": "UNKNOWN", "calibrated": False},
                   "falsifiers": [], "expiry_ms": now + 1, "review_requests": [], "proposed_thesis": None,
                   "rationale": f"Request rejected before assessment: {reason}.",
-                  "model_io": {"steps": [], "tool_calls": [], "note": "no model call"}}
+                  "model_io": {"steps": [], "tool_calls": [], "note": "no model call"},
+                  "started_ms": now, "completed_ms": now}
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
@@ -150,9 +158,29 @@ class EvidenceAssessor:
         start = self.clock()
         r = request.read()
         try:
-            entry, cutoff, max_calls, deadline, tools, context, refs = self._validate(r)
+            validated = self._validate(r)
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
+        box, cancel = {}, threading.Event()
+
+        def work():
+            try:
+                box["result"] = self._assess(r, start, validated, cancel)
+            except BaseException as exc:  # re-raised in the caller's thread
+                box["error"] = exc
+
+        worker = threading.Thread(target=work, name=f"larp-assess:{r['job_id']}", daemon=True)
+        worker.start()
+        worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
+        if worker.is_alive():
+            cancel.set()  # no further model or tool call; whatever the worker returns is discarded
+            return self._abandoned(r, validated, start)
+        if "error" in box:
+            raise box["error"]
+        return box["result"]
+
+    def _assess(self, r, start, validated, cancel) -> Document:
+        entry, cutoff, max_calls, deadline, tools, context, refs = validated
         index = EvidenceIndex(self.reader, entry, cutoff)
         state = _State(entry, index, self.config, cutoff, tools, context)
         self._load_refs(state, refs)
@@ -162,6 +190,9 @@ class EvidenceAssessor:
             status, reasons = "UNAVAILABLE", ["NO_USABLE_EVIDENCE"]
         step = 0
         while status is None:
+            if cancel.is_set():
+                status, reasons = "UNAVAILABLE", ["ASSESSMENT_DEADLINE_EXCEEDED"]
+                break
             remaining = deadline - (self.clock() - start)
             if remaining <= 0:
                 status, reasons = "UNAVAILABLE", ["TIME_BUDGET_EXHAUSTED"]
@@ -200,6 +231,8 @@ class EvidenceAssessor:
                 state.missing.append("TOOL_BUDGET_EXHAUSTED")
                 claims_out = None  # harness facts only; the model did not confirm
                 break
+            if cancel.is_set():
+                continue  # the loop head records the abandonment
             self._call_tool(state, action["tool"], action["args"])
         return self._result(r, state, entry, start, status, reasons, model_io, claims_out, rejected)
 
@@ -276,9 +309,10 @@ class EvidenceAssessor:
             if i >= self.config.limits["max_claims"]:
                 rejected.append({"index": i, "reason": "TOO_MANY_CLAIMS"})
                 continue
-            if type(claim) is dict and claim.get("source") is None:
-                claim = dict(claim, source=self._source_for(state, claim))
-            fact, reason = verify_claim(claim, state.texts, records)
+            try:
+                fact, reason = verify_claim(self._bind_source(state, claim), state.texts, records)
+            except Exception as exc:  # anything the schema check missed is a rejected claim, never a crash
+                fact, reason = None, f"CLAIM_MALFORMED:{type(exc).__name__}"
             if fact is None:
                 rejected.append({"index": i, "reason": reason, "metric": claim.get("metric") if type(claim) is dict else None})
                 continue
@@ -289,9 +323,23 @@ class EvidenceAssessor:
             verified.append(fact["fact_id"])
         return verified, rejected
 
+    def _bind_source(self, state, claim):
+        """A claim naming no source record is attributed to the record holding its cited document.
+
+        A named record is kept: the verifier then requires that record to hold the cited
+        document and takes all provenance from it, so a span from an earlier filing can never
+        be presented as evidence from the assessed one.
+        """
+        if type(claim) is not dict or not (claim.get("source") is None or type(claim["source"]) is dict):
+            return claim  # malformed: the verifier rejects it
+        if (claim.get("source") or {}).get("record_id") is not None:
+            return claim
+        return dict(claim, source=self._source_for(state, claim))
+
     def _source_for(self, state, claim):
         span = claim.get("span") if type(claim.get("span")) is dict else {}
-        for record_id in state.current_records:
+        others = [x for x in state.index.all_by_id if x not in state.current_records]
+        for record_id in list(state.current_records) + others:
             record = state.index.all_by_id[record_id]
             for doc in record["documents"]:
                 if doc["text_sha256"] and doc["text_sha256"] == span.get("doc"):
@@ -375,6 +423,39 @@ class EvidenceAssessor:
             "model_io": {"steps": model_io, "tool_calls": state.tool_calls,
                          "cot": [s["response"]["reasoning_summary"] for s in model_io
                                  if "response" in s and s["response"]["reasoning_summary"]]},
+            "started_ms": start, "completed_ms": now,
+        }
+        result["rationale"] = _rationale(result, entry)
+        assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
+        result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
+        return Document.from_dict(result)
+
+    def _abandoned(self, r, validated, start) -> Document:
+        """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is read or used."""
+        entry, cutoff, _, _, tools, _, refs = validated
+        now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
+        key = digest("larp.intel.assessment-key.v1", {
+            "issuer_id": entry.issuer_id, "cutoff_ms": cutoff, "evidence_refs": refs, "context_hash": r["context_hash"],
+            "policy_profile_hash": r["policy_profile_hash"], "model_hash": self.model.identity.model_hash,
+            "prompt_sha256": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
+            "tools": list(tools), "budget": r["budget"], "outcome": "DEADLINE_EXCEEDED"})
+        result = {
+            "schema": "AssessmentResult.v1", "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
+            "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"], "cutoff_ms": cutoff,
+            "assessment_key": key, "status": "UNAVAILABLE", "reasons": reasons,
+            "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
+            "prompt_hash": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
+            "evidence_used": [], "claims": [], "rejected_claims": [], "novelty": {}, "conflicts": [], "findings": [],
+            "event_findings": [], "impact": "UNKNOWN", "severity": None, "missingness": reasons,
+            "confidence": {"level": "UNKNOWN", "calibrated": False, "basis": "status UNAVAILABLE"},
+            "freshness": None, "falsifiers": [], "proposed_thesis": None,
+            "expiry_ms": now + self.config.p("result_ttl_ms"),
+            "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
+            "budget_used": {"tool_calls": None, "model_steps": None, "elapsed_ms": now - start},
+            "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
+            "model_io": {"steps": [], "tool_calls": [],
+                         "note": "worker abandoned at the deadline; its records are not part of this result"},
+            "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
@@ -424,8 +505,9 @@ class EvidenceAssessor:
                   ("REPORTED_VS_PRIOR_GUIDANCE", "WITHIN"): "REPORTED_WITHIN_PRIOR_GUIDANCE"}
         current_ids = {f["fact_id"] for f in current}
         for (new_id, prior_id), comparison in sorted(state.comparisons.items()):
-            if new_id not in current_ids or comparison["relation"] == "INCOMPARABLE":
-                continue
+            if new_id not in current_ids or comparison["relation"] == "INCOMPARABLE" or \
+                    not comparison.get("applicable", True):
+                continue  # superseded or conflicting prior guidance stays audit-only
             basis = comparison.get("basis", "")
             group = "GUIDANCE" if basis == "GUIDANCE_VS_PRIOR_GUIDANCE" else basis
             label = labels.get((group, comparison["relation"]))
@@ -467,7 +549,7 @@ class EvidenceAssessor:
                 has_fact = any(x["kind"] == kinds[kind] and x["metric"] == f["metric"] for x in current)
                 compared = [c for (n, _), c in state.comparisons.items()
                             if state.facts[n]["metric"] == f["metric"] and state.facts[n]["kind"] == kinds[kind]
-                            and c["relation"] != "INCOMPARABLE"]
+                            and c["relation"] != "INCOMPARABLE" and c.get("applicable", True)]
                 fired = ("FIRED" if hit else ("UNKNOWN" if unread else "NOT_APPLICABLE") if not has_fact else
                          "NOT_FIRED" if compared else "UNKNOWN")
                 basis = [i for x in hit for i in x["fact_ids"]]
@@ -507,7 +589,7 @@ class EvidenceAssessor:
         config, wanted = self.config, []
         if status == "UNAVAILABLE":
             wanted.append(("RETRY_AFTER_UNAVAILABLE", config.p("retry_delay_ms")))
-        if "CONFLICTING_EVIDENCE" in reasons:
+        if "CONFLICTING_EVIDENCE" in reasons or any(m.startswith("PRIOR_GUIDANCE_CONFLICT:") for m in missing):
             wanted.append(("CONFLICT_RESOLUTION", config.p("reassess_delay_ms")))
         if "UNSUPPORTED_CLAIM" in reasons or "MODEL_OUTPUT_INVALID" in reasons or \
                 any(x.startswith("MODEL_OUTPUT_") for x in reasons):

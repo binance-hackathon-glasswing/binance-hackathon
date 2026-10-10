@@ -1,12 +1,50 @@
 """Bounded evidence agent behind assess(Document) -> Document. Synthetic world, fake models only."""
 
 import json
+import threading
+import time
 import unittest
 
 from larp.contracts import ContractError, Document
+from larp.intelligence.agent import EvidenceAssessor, context_hash
 from larp.intelligence.common import FORBIDDEN_KEYS, forbidden_key_paths
+from larp.intelligence.gate import accept, initial_state
 from larp.intelligence.models import RuleBaselineModel, ScriptedModel
-from larp.intelligence.scenarios import EXMEM, EXSEMI, build_world, make_model, prior_thesis
+from larp.intelligence.scenarios import (
+    EXMEM, EXSEMI, PROFILE, build_world, cover, doc, make_model, prior_thesis,
+)
+
+Q4_GUIDE = "For the fourth quarter of fiscal 2027, the company expects revenue to be ${} billion."
+
+
+def eight_k(accession, acceptance, lines, items=("7.01",)):
+    """A test-only synthetic 8-K whose primary document carries `lines` (not part of the evaluation pack)."""
+    return dict(cik=9900001, accession=accession, form="8-K", items=list(items), acceptance=acceptance, documents=[
+        doc(f"exsm-8k-{accession[-6:]}.htm", "8-K", cover("Example Semiconductor Corp", "8-K", list(items), lines))])
+
+
+EXTRA = {
+    "G1_36": eight_k("0009900001-26-000301", "2026-07-01T20:00:00+00:00", [Q4_GUIDE.format("36.0")]),
+    "G2_32": eight_k("0009900001-26-000302", "2026-08-15T20:00:00+00:00", [Q4_GUIDE.format("32.0")]),
+    "G2_SPLIT": eight_k("0009900001-26-000304", "2026-08-15T20:00:00+00:00",
+                        [Q4_GUIDE.format("32.0"), Q4_GUIDE.format("33.5")]),
+    "G3_34": eight_k("0009900001-26-000303", "2026-09-20T20:00:00+00:00", [Q4_GUIDE.format("34.0")]),
+    "NO_IMPAIRMENT": eight_k("0009900001-26-000305", "2026-10-02T20:00:00+00:00",
+                             ["The company recorded no impairment in the quarter."], items=("2.02",)),
+}
+
+
+def cite(state, sentence):
+    """A span for `sentence` in whichever loaded document contains it."""
+    d = next(x for x in state["documents"] if sentence in x["excerpt"])
+    start = d["excerpt"].index(sentence)
+    return {"doc": d["text_sha256"], "start": start, "end": start + len(sentence), "text": sentence}
+
+
+def comparisons(result):
+    """Every comparison the agent computed, from the tool results it saw (kept for audit)."""
+    last = result["model_io"]["steps"][-1]["request"]["input"]
+    return [c for t in last["tool_results"] if t["tool"] == "compare_facts" for c in t["comparisons"]]
 
 
 def compatible_with_runtime_schema(request: Document, result: Document, now_ms: int) -> None:
@@ -41,7 +79,7 @@ def compatible_with_runtime_schema(request: Document, result: Document, now_ms: 
 
 class AgentHarness(unittest.TestCase):
     def world(self, *keys):
-        self.w = build_world(list(keys))
+        self.w = build_world(list(keys), extra_filings=EXTRA)
         self.context = prior_thesis(self.w.config, EXSEMI)
         return self.w
 
@@ -180,6 +218,104 @@ class EvidenceSemanticsTests(AgentHarness):
         self.assertEqual(result["evidence_used"][0]["record_id"], self.w.record("EXSEMI_Q3_8K")["record_id"])
 
 
+class GuidanceBasisTests(AgentHarness):
+    def test_only_the_latest_prior_guidance_classifies_an_update(self):
+        self.world("G1_36", "G2_32", "G3_34")  # 36.0 -> 32.0 -> 34.0 for the same quarter
+        result, _ = self.assess(["G3_34"])
+        self.assertEqual(result["status"], "ASSESSED")
+        types = {f["type"] for f in result["findings"]}
+        self.assertIn("GUIDANCE_RAISED", types)
+        self.assertNotIn("GUIDANCE_LOWERED", types)  # versus the superseded 36.0, kept only for audit
+        states = {f["falsifier_id"]: f["state"] for f in result["falsifiers"]}
+        self.assertEqual(states["F-REVENUE-GUIDANCE-CUT"], "NOT_FIRED")
+        self.assertEqual(result["proposed_thesis"]["status"], "INTACT")
+        audit = {(c["relation"], c["applicable"], c.get("not_applicable")) for c in comparisons(result)}
+        self.assertEqual(audit, {("HIGHER", True, None), ("LOWER", False, "SUPERSEDED_PRIOR_GUIDANCE")})
+
+    def test_contemporaneous_conflicting_guidance_gives_no_basis(self):
+        self.world("G1_36", "G2_SPLIT", "G3_34")  # the latest prior filing states 32.0 and 33.5
+        result, doc = self.assess(["G3_34"])
+        self.assertIn("PRIOR_GUIDANCE_CONFLICT:revenue:FY2027-Q4", result["missingness"])
+        self.assertFalse({"GUIDANCE_RAISED", "GUIDANCE_LOWERED"} & {f["type"] for f in result["findings"]})
+        self.assertEqual({f["falsifier_id"]: f["state"] for f in result["falsifiers"]}["F-REVENUE-GUIDANCE-CUT"],
+                         "UNKNOWN")
+        self.assertEqual(result["proposed_thesis"]["status"], "UNKNOWN")
+        self.assertIn("CONFLICT_RESOLUTION", {r["reason"] for r in result["review_requests"]})
+        self.assertEqual({c.get("not_applicable") for c in comparisons(result)},
+                         {"CONFLICTING_PRIOR_GUIDANCE", "SUPERSEDED_PRIOR_GUIDANCE"})
+        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+        _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+        self.assertNotEqual(after["evidence_gate"], "CLEAR")
+        self.assertIn("PRIOR_GUIDANCE_CONFLICT:revenue:FY2027-Q4", after["gate_reasons"])
+
+
+class ClaimBindingTests(AgentHarness):
+    def finish_with(self, claims):
+        return ScriptedModel(self.w.clock, [{"output": {"action": "FINISH", "claims": claims, "notes": "x"}}])
+
+    def assert_abstains(self, result, reason):
+        self.assertEqual((result["status"], result["reasons"]), ("ABSTAIN", ["UNSUPPORTED_CLAIM"]))
+        self.assertEqual([r["reason"] for r in result["rejected_claims"]], [reason])
+        self.assertIsNone(result["proposed_thesis"])
+        self.assertEqual(result["claims"], [])
+        self.assertIn("REASSESS_AFTER_ABSTENTION", {r["reason"] for r in result["review_requests"]})
+
+    def test_malformed_nested_claims_abstain_instead_of_crashing(self):
+        self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
+        cases = {
+            "SOURCE_MALFORMED": {"kind": "REPORTED", "source": "oops"},
+            "SPAN_MALFORMED": {"kind": "REPORTED", "metric": "revenue", "span": "x"},
+            "RANGE_MALFORMED": {"kind": "REPORTED", "metric": "revenue", "range": 1},
+            "UNIT_MALFORMED": {"kind": "REPORTED", "metric": "revenue", "unit": ["USD"]},
+            "METRIC_MALFORMED": {"kind": "EVENT", "metric": {"IMPAIRMENT": 1}},
+            "CLAIM_MALFORMED": 7,
+        }
+        cases["SPAN_MALFORMED_DOC"] = {"kind": "EVENT", "metric": "IMPAIRMENT",
+                                       "span": {"doc": ["a"], "start": 0, "end": 1, "text": "x"}}
+        for name, claim in cases.items():
+            with self.subTest(case=name):
+                result, doc = self.assess(["EXSEMI_Q3_8K"], model=self.finish_with([claim]), job_id=f"job:{name}")
+                self.assert_abstains(result, name.replace("_DOC", ""))
+                compatible_with_runtime_schema(self.request_doc, doc, self.w.clock())
+
+    def test_a_prior_filing_span_cannot_be_passed_off_as_current_evidence(self):
+        self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
+        old = "Revenue for the second quarter of fiscal 2027 was $30.04 billion."
+        current_record = self.w.record("EXSEMI_Q3_8K")
+
+        def claim(source):
+            def finish(state):
+                c = {"kind": "REPORTED", "metric": "revenue", "period": "FY2027-Q2", "value": "30.04", "unit": "USD",
+                     "scale_exp10": 9, "span": cite(state, old), "period_span": None}
+                if source is not None:
+                    c["source"] = source
+                return {"action": "FINISH", "claims": [c], "notes": "x"}
+            return ScriptedModel(self.w.clock, [
+                {"output": {"action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue"}}},
+                {"output": finish}])
+
+        cases = (({"record_id": current_record["record_id"]}, "SPAN_NOT_IN_SOURCE_RECORD"),
+                 (None, "CLAIM_NOT_FROM_ASSESSED_FILING"),
+                 ({"accession": current_record["accession"]}, "CLAIM_NOT_FROM_ASSESSED_FILING"))
+        for source, reason in cases:
+            with self.subTest(source=source):
+                result, _ = self.assess(["EXSEMI_Q3_8K"], model=claim(source), job_id=f"job:{reason}:{bool(source)}")
+                self.assert_abstains(result, reason)
+
+    def test_a_negated_event_claim_abstains_and_creates_no_adverse_finding(self):
+        self.world("NO_IMPAIRMENT")
+        model = ScriptedModel(self.w.clock, [{"output": lambda state: {
+            "action": "FINISH", "notes": "x", "claims": [{
+                "kind": "EVENT", "metric": "IMPAIRMENT",
+                "span": cite(state, "The company recorded no impairment in the quarter.")}]}}])
+        result, doc = self.assess(["NO_IMPAIRMENT"], model=model)
+        self.assert_abstains(result, "EVENT_NEGATED")
+        self.assertNotIn("IMPAIRMENT", {f["type"] for f in result["event_findings"]})
+        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+        _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+        self.assertNotIn("IMPAIRMENT", {a["type"] for a in after["unresolved_adverse"]})
+
+
 class RequestValidationTests(AgentHarness):
     def test_stale_context_and_budget_violations_are_rejected_before_any_model_call(self):
         self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
@@ -294,6 +430,42 @@ class BudgetAndFailureTests(AgentHarness):
 
         result, _ = self.assess(["EXSEMI_Q3_8K"], model=Exploding())
         self.assertEqual((result["status"], result["reasons"]), ("UNAVAILABLE", ["MODEL_ERROR"]))
+
+
+class DeadlineTests(AgentHarness):
+    def test_a_blocked_evidence_read_is_abandoned_at_the_deadline(self):
+        self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
+        release = threading.Event()
+        reader = self.w.reader
+        original = reader.text
+
+        def blocked(digest):
+            release.wait(30)  # a store read that ignores every deadline
+            return original(digest)
+
+        reader.text = blocked
+        model = ScriptedModel(self.w.clock, [{"output": {"action": "FINISH", "claims": [], "notes": "late"}}])
+        assessor = EvidenceAssessor(registry=self.w.registry, reader=reader, model=model, config=self.w.config,
+                                    clock_ms=self.w.clock)
+        request = self.w.request(["EXSEMI_Q3_8K"], issuer_id=EXSEMI, job_id="job:blocked", context=self.context,
+                                 deadline_ms=500)
+        started = time.monotonic()
+        doc = assessor.assess(request)
+        waited = time.monotonic() - started
+        release.set()
+        result = doc.read()
+        self.assertLess(waited, 5)  # bounded by the 0.5 s deadline, not by the 30 s read
+        self.assertEqual((result["status"], result["reasons"]), ("UNAVAILABLE", ["ASSESSMENT_DEADLINE_EXCEEDED"]))
+        self.assertEqual((result["claims"], result["proposed_thesis"]), ([], None))
+        self.assertIn("RETRY_AFTER_UNAVAILABLE", {r["reason"] for r in result["review_requests"]})
+        compatible_with_runtime_schema(request, doc, self.w.clock())
+        for worker in [t for t in threading.enumerate() if t.name == "larp-assess:job:blocked"]:
+            worker.join(10)
+            self.assertFalse(worker.is_alive())
+        self.assertEqual(model.calls, 0)  # after release the abandoned worker made no model call
+        state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
+        decision, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
+        self.assertEqual((decision, after["evidence_gate"], after["availability"]), ("ACCEPT", "UNKNOWN", "UNAVAILABLE"))
 
 
 class InjectionAndAuthorityTests(AgentHarness):

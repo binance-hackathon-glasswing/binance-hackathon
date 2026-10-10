@@ -6,7 +6,7 @@ a synthetic fixture. The pack was written by Claude for evaluation only: under t
 Usage Policy it must never be used to train a model (IDEA-007 §1).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 
 from larp.intelligence.agent import EMPTY_CONTEXT, EvidenceAssessor, build_request
@@ -164,13 +164,14 @@ class World:
     artifacts: MemoryArtifacts
     config: object
     ingestor: Ingestor
+    filings: dict = field(default_factory=lambda: FILINGS)
 
     @property
     def reader(self):
         return PortEvidenceReader(self.store, self.artifacts)
 
     def record(self, key: str) -> dict:
-        spec = FILINGS[key]
+        spec = self.filings[key]
         issuer = self.registry.by_cik(spec["cik"]).issuer_id
         held = [d.read() for d in self.store.records(issuer) if d.read()["accession"] == spec["accession"]]
         return max(held, key=lambda r: r["revision"])
@@ -192,18 +193,22 @@ class World:
                              tool_calls=tool_calls, deadline_ms=deadline_ms, source_health=source_health)
 
 
-def build_world(keys: list, *, now_ms: int = NOW) -> World:
-    """Ingest the named synthetic filings in acceptance order, each shortly after acceptance."""
+def build_world(keys: list, *, now_ms: int = NOW, extra_filings: dict | None = None) -> World:
+    """Ingest the named synthetic filings in acceptance order, each shortly after acceptance.
+
+    `extra_filings` adds test-only fixtures without changing the evaluation pack (FILINGS).
+    """
+    filings = dict(FILINGS, **(extra_filings or {}))
     config = load_config("development")
     registry = IssuerRegistry.from_dict(FIXTURE_REGISTRY)
-    first = min(parse_acceptance_ms(FILINGS[k]["acceptance"]) for k in keys)
+    first = min(parse_acceptance_ms(filings[k]["acceptance"]) for k in keys)
     clock = FakeClock(first)
     source = FakeFilingSource(clock, ENTITIES)
     store, artifacts = MemoryEvidenceStore(), MemoryArtifacts()
     ingestor = Ingestor(registry=registry, source=source, store=store, artifacts=artifacts, config=config,
                         clock_ms=clock, run_id=RUN_ID, synthetic=True)
-    for key in sorted(keys, key=lambda k: FILINGS[k]["acceptance"]):
-        spec = FILINGS[key]
+    for key in sorted(keys, key=lambda k: filings[k]["acceptance"]):
+        spec = filings[key]
         accepted = parse_acceptance_ms(spec["acceptance"])
         source.add(spec["cik"], accession=spec["accession"], form=spec["form"], items=spec["items"],
                    acceptance=spec["acceptance"], documents=spec["documents"], visible_ms=accepted)
@@ -212,9 +217,9 @@ def build_world(keys: list, *, now_ms: int = NOW) -> World:
         if outcome["status"] != "OK":
             raise RuntimeError(f"synthetic ingestion failed: {outcome}")
     clock.now = max(clock.now, now_ms)
-    for issuer in {registry.by_cik(FILINGS[k]["cik"]).issuer_id for k in keys}:
+    for issuer in {registry.by_cik(filings[k]["cik"]).issuer_id for k in keys}:
         ingestor.poll(issuer)  # a fresh successful poll at "now": source health OK
-    return world_from(registry, clock, source, store, artifacts, config, ingestor)
+    return world_from(registry, clock, source, store, artifacts, config, ingestor, filings)
 
 
 def world_from(*parts) -> World:

@@ -6,7 +6,7 @@ from larp.intelligence.agent import context_hash
 from larp.intelligence.fakes import MemoryEvidenceStore
 from larp.intelligence.features import feature_row
 from larp.intelligence.gate import accept, initial_state, state_document
-from larp.intelligence.models import RuleBaselineModel
+from larp.intelligence.models import RuleBaselineModel, ScriptedModel
 from larp.intelligence.scenarios import EXSEMI, PROFILE, build_world, make_model, prior_thesis
 from larp.intelligence.common import forbidden_key_paths
 
@@ -111,6 +111,18 @@ class GateTests(unittest.TestCase):
         self.assertGreaterEqual(row["available_ms"], row["as_of_ms"])
         self.assertEqual((row["impact_ordinal"], row["n_falsifiers_fired"], row["confidence_calibrated"]), (0, 1, False))
         self.assertEqual(forbidden_key_paths(row), [])
+
+    def test_feature_availability_is_completion_time_not_cutoff(self):
+        request = self.w.request(["EXSEMI_Q3_8K"], issuer_id=EXSEMI, job_id="job:queued", context=self.context)
+        cutoff = request.read()["cutoff_ms"]
+        self.w.clock.advance(600_000)  # the job waited ten minutes before it ran
+        model = ScriptedModel(self.w.clock, [{"latency_ms": 100, "output": {"action": "FINISH", "claims": [],
+                                                                           "notes": "queued"}}])
+        result = self.w.assessor(model).assess(request)
+        r, row = result.read(), feature_row(result).read()
+        self.assertEqual((r["started_ms"], r["completed_ms"]), (cutoff + 600_000, cutoff + 600_100))
+        self.assertEqual((row["as_of_ms"], row["available_ms"]), (cutoff, cutoff + 600_100))
+        self.assertGreater(row["available_ms"], cutoff + r["budget_used"]["elapsed_ms"])  # the old, look-ahead date
 
     def test_state_and_review_jobs_persist_through_the_store_port(self):
         from larp.intelligence.demo import _persist

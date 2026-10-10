@@ -57,6 +57,13 @@ KEYWORD_EVENTS = (
         r"\b(?:resign(?:s|ed|ation)?|step(?:s|ped)?\s+down|depart(?:s|ure|ed)?)\b", re.I)),
 )
 NEGATION = re.compile(r"\b(?:no|not|without|nor|never)\b[^.\n]{0,30}$", re.I)
+PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
+
+
+def negated(text: str, position: int) -> bool:
+    """True if a negation ("no", "not", "without", ...) shortly precedes `position` in the same sentence."""
+    return bool(NEGATION.search(text[max(0, position - 40):position]))
+
 
 _QUARTER = {"first": 1, "second": 2, "third": 3, "fourth": 4, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
 _PERIODS = (
@@ -215,12 +222,22 @@ def _sentence_facts(text, doc_sha, entry):
     return facts
 
 
-def _table_facts(text, doc_sha, entry):
-    facts, lines, offset = [], [], 0
+def _lines(text: str) -> list:
+    lines, offset = [], 0
     for line in text.split("\n"):
         lines.append((offset, line))
         offset += len(line) + 1
-    i = 0
+    return lines
+
+
+def table_blocks(text: str) -> list:
+    """Contiguous " | " line blocks with what the extractor reads around them.
+
+    Each block has its rows, kind (from the title line above it), scale and the offsets of the
+    whole line stating it (e.g. "(In billions of Korean won)"), whether that line exempts
+    per-share amounts from the scale, the currency context and the period header cells.
+    """
+    lines, blocks, i = _lines(text), [], 0
     while i < len(lines):
         if " | " not in lines[i][1]:
             i += 1
@@ -228,50 +245,94 @@ def _table_facts(text, doc_sha, entry):
         start = i
         while i < len(lines) and " | " in lines[i][1]:
             i += 1
-        block = lines[start:i]
+        rows = lines[start:i]
         preamble = [ln for ln in lines[max(0, start - 3):start] if ln[1].strip()]
         title = preamble[-1][1] if preamble else ""
-        kind = "GUIDANCE" if GUIDANCE_WORDS.search(title) else "REPORTED"
-        scale_line = next(((o, ln, m) for o, ln in preamble + block
-                           for m in [TABLE_SCALE.search(ln)] if m), None)
-        scale = SCALES[scale_line[2].group(1).lower()] if scale_line else 0
-        # The whole line that states the scale, e.g. "(In billions of Korean won)", so a
-        # verifier can see the currency stated beside the scale.
-        scale_span = None if not scale_line else _span(doc_sha, text, scale_line[0], scale_line[0] + len(scale_line[1]))
-        context = " ".join(ln for _, ln in preamble + block)
-        krw = re.search(r"korean\s+won|\bKRW\b|\u20a9", context, re.I)
+        scale_line = next(((o, ln, m) for o, ln in preamble + rows for m in [TABLE_SCALE.search(ln)] if m), None)
+        context = " ".join(ln for _, ln in preamble + rows)
         header = None
-        for off, line in block:
+        for off, line in rows:
             cells = _cells(line)
             if not METRIC_RE.match(cells[0][0]) and any(parse_period(c) for c, _ in cells):
-                header = [(parse_period(c), off + s, off + s + len(c)) for c, s in cells]
+                header = [h for h in ((parse_period(c), off + s, off + s + len(c)) for c, s in cells) if h[0]]
                 break
+        blocks.append({
+            "rows": rows, "kind": "GUIDANCE" if GUIDANCE_WORDS.search(title) else "REPORTED",
+            "scale": SCALES[scale_line[2].group(1).lower()] if scale_line else 0,
+            "scale_span": None if not scale_line else (scale_line[0], scale_line[0] + len(scale_line[1])),
+            "per_share_exception": bool(scale_line and PER_SHARE_EXCEPTION.search(scale_line[1])),
+            "usd": "$" in context, "krw": bool(re.search(r"korean\s+won|\bKRW\b|\u20a9", context, re.I)),
+            "header": header})
+    return blocks
+
+
+def row_metric(label: str) -> str | None:
+    return next((name for name in METRIC_NAMES if METRIC_ONE[name].fullmatch(label.strip(" :")) or
+                 (METRIC_ONE[name].match(label) and len(label) <= 40)), None)
+
+
+def _row_values(cells: list) -> list:
+    return [(c, s) for c, s in cells[1:] if NUM_TOKEN.fullmatch(c.lstrip("$\u20a9").rstrip("%").strip())]
+
+
+def table_unit(metric: str, cell: str, block: dict) -> str | None:
+    if metric in PERCENT_METRICS:
+        return "PERCENT"
+    if "$" in cell or (block["usd"] and not block["krw"]):
+        return "USD"
+    return "KRW" if block["krw"] else None  # currency not stated: no unit rather than a guess
+
+
+def table_scale(metric: str, unit: str, block: dict) -> int | None:
+    """Scale of one cell: none for percentages; per-share rows of a scaled table only under an
+    explicit exception such as "(In millions, except per share data)", otherwise unknown (None)."""
+    if unit == "PERCENT":
+        return 0
+    if metric in PER_SHARE_METRICS:
+        return 0 if block["scale"] == 0 or block["per_share_exception"] else None
+    return block["scale"]
+
+
+def table_cell(text: str, start: int, end: int) -> dict | None:
+    """The table row holding [start, end) and the period column of the value cell ending at `end`,
+    aligned exactly as the extractor aligns values to header periods; None if it is not such a cell."""
+    for block in table_blocks(text):
+        for off, line in block["rows"]:
+            if not off <= start < end <= off + len(line):
+                continue
+            cells, header = _cells(line), block["header"]
+            values = _row_values(cells)
+            hit = [k for k, (c, s) in enumerate(values) if off + s + len(c) == end]
+            if not hit or header is None or len(values) > len(header):
+                return None
+            return {"block": block, "label": cells[0][0], "cell": values[hit[0]][0],
+                    "period": header[len(header) - len(values) + hit[0]]}
+    return None
+
+
+def _table_facts(text, doc_sha, entry):
+    facts = []
+    for block in table_blocks(text):
+        header = block["header"]
         if header is None:
             continue
-        header = [h for h in header if h[0]]
-        for off, line in block:
+        scale_span = None if not block["scale_span"] else _span(doc_sha, text, *block["scale_span"])
+        for off, line in block["rows"]:
             cells = _cells(line)
-            label = cells[0][0]
-            metric = next((name for name in METRIC_NAMES if METRIC_ONE[name].fullmatch(label.strip(" :")) or
-                           (METRIC_ONE[name].match(label) and len(label) <= 40)), None)
+            metric = row_metric(cells[0][0])
             if metric is None:
                 continue
-            values = [(c, s) for c, s in cells[1:] if NUM_TOKEN.fullmatch(c.lstrip("$\u20a9").rstrip("%").strip())]
+            values = _row_values(cells)
             if not values or len(values) > len(header):
                 continue
             for (cell, s), period in zip(values, header[-len(values):]):
-                if metric in PERCENT_METRICS:
-                    unit = "PERCENT"
-                elif "$" in cell or ("$" in context and not krw):
-                    unit = "USD"
-                elif krw:
-                    unit = "KRW"
-                else:
-                    continue  # currency not stated: no fact rather than a guessed unit
+                unit = table_unit(metric, cell, block)
+                fact_scale = None if unit is None else table_scale(metric, unit, block)
+                if fact_scale is None:
+                    continue  # unstated currency, or a per-share cell whose scale the table leaves open
                 token = cell.lstrip("$\u20a9").rstrip("%").strip()
-                number, fact_scale = parse_number(token), 0 if unit == "PERCENT" else scale
                 facts.append({
-                    "kind": kind, "metric": metric, "period": period[0], "value": frac(number),
+                    "kind": block["kind"], "metric": metric, "period": period[0], "value": frac(parse_number(token)),
                     "range": None, "tolerance_pct": None, "unit": unit, "scale_exp10": fact_scale,
                     "precision_exp10": fact_scale - decimals_of(token), "direction": None,
                     "security_scope": _scope(metric, unit, entry),
@@ -293,7 +354,7 @@ def _keyword_events(text, doc_sha):
     facts = []
     for event, pattern in KEYWORD_EVENTS:
         for m in pattern.finditer(text):
-            if NEGATION.search(text[max(0, m.start() - 40):m.start()]):
+            if negated(text, m.start()):
                 continue
             facts.append({"kind": "EVENT", "metric": event, "period": None, "value": None, "range": None,
                           "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,

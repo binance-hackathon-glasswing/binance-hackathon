@@ -19,6 +19,10 @@ class Listing:
     submissions: dict | None
     response_sha256: str | None
     error: str | None = None
+    # Older filings beyond the recent block (EDGAR `filings.files`), fetched only for a window.
+    history: tuple = ()  # columnar blocks, same keys as filings.recent
+    history_status: str = "NOT_REQUESTED"  # NOT_REQUESTED | OK | PARTIAL
+    history_files: tuple = ()  # {"name", "status", "response_sha256", "error"} per file
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +48,7 @@ class FetchedFiling:
 class FilingSource(Protocol):
     source_id: str
 
-    def list_filings(self, cik: int) -> Listing: ...
+    def list_filings(self, cik: int, window: tuple | None = None) -> Listing: ...
 
     def fetch_filing(self, cik: int, row: dict, max_documents: int) -> FetchedFiling: ...
 

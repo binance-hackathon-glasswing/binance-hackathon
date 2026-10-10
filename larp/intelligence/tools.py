@@ -9,7 +9,7 @@ registry rejects any name outside the configured allowlist.
 import re
 
 from larp.intelligence.common import IntelligenceError, sha256_hex
-from larp.intelligence.facts import METRIC_NAMES, extract_document, item_events
+from larp.intelligence.facts import METRIC_NAMES, extract_document, item_events, values_agree
 from larp.intelligence.text import text_from_saved
 from larp.intelligence.verify import compare
 
@@ -150,17 +150,71 @@ def comparable_pairs(state, metric: str) -> list:
     return pairs
 
 
+def _latest_revision(state, fact: dict) -> bool:
+    record = state.index.all_by_id.get(fact["source"].get("record_id"))
+    if record is None:
+        return True  # verified context fact whose record is outside this index view
+    return state.index.by_accession[record["accession"]]["record_id"] == record["record_id"]
+
+
+def guidance_basis(state, new: dict, priors: list) -> dict:
+    """Prior guidance fact ID -> None if it is the comparison basis for `new`, else why it is not.
+
+    The basis is the latest guidance issued (acceptance time) before the filing that holds `new`,
+    from the latest revision of each filing available at the cutoff. Earlier guidance is
+    SUPERSEDED: kept for audit, never the basis of a finding. Disagreeing guidance issued at that
+    latest time is CONFLICTING and gives no basis at all.
+    """
+    issued = new["source"].get("original_ms")
+    reasons, usable = {}, []
+    for prior in priors:
+        if prior["kind"] != "GUIDANCE":
+            continue
+        when = prior["source"].get("original_ms")
+        if not _latest_revision(state, prior):
+            reasons[prior["fact_id"]] = "SUPERSEDED_REVISION"
+        elif type(when) is not int or type(issued) is not int or when >= issued:
+            reasons[prior["fact_id"]] = "NOT_ISSUED_BEFORE_ASSESSED_FILING"
+        else:
+            usable.append(prior)
+    if usable:
+        latest = max(p["source"]["original_ms"] for p in usable)
+        group = [p for p in usable if p["source"]["original_ms"] == latest]
+        conflict = any(not values_agree(a, b) for i, a in enumerate(group) for b in group[i + 1:])
+        in_group = {p["fact_id"] for p in group}
+        for prior in usable:
+            reasons[prior["fact_id"]] = (("CONFLICTING_PRIOR_GUIDANCE" if conflict else None)
+                                         if prior["fact_id"] in in_group else "SUPERSEDED_PRIOR_GUIDANCE")
+    return reasons
+
+
 def compare_facts(state, args: dict) -> dict:
-    """Exact, rounding-aware comparison of every current fact of a metric with its prior facts."""
+    """Exact, rounding-aware comparison of every current fact of a metric with its prior facts.
+
+    Every pair is compared and kept for audit; `applicable` marks the pairs a finding may use
+    (all earlier reported values, but only the latest applicable prior guidance).
+    """
     metric = _text_arg(args, "metric")
     if metric not in METRIC_NAMES:
         raise ToolError("BAD_ARGUMENT:metric")
     state.compared_metrics.add(metric)
-    results = []
+    by_new = {}
     for new_id, prior_id in comparable_pairs(state, metric):
-        result = compare(state.facts[new_id], state.facts[prior_id])
-        state.comparisons[(new_id, prior_id)] = result
-        results.append(result)
+        by_new.setdefault(new_id, []).append(prior_id)
+    results = []
+    for new_id, prior_ids in by_new.items():
+        new = state.facts[new_id]
+        basis = guidance_basis(state, new, [state.facts[i] for i in prior_ids])
+        if "CONFLICTING_PRIOR_GUIDANCE" in basis.values():
+            state.missing.append(f"PRIOR_GUIDANCE_CONFLICT:{metric}:{new['period']}")
+        for prior_id in prior_ids:
+            result = compare(new, state.facts[prior_id])
+            reason = basis.get(prior_id)
+            result = dict(result, applicable=reason is None)
+            if reason:
+                result["not_applicable"] = reason
+            state.comparisons[(new_id, prior_id)] = result
+            results.append(result)
     return {"status": "OK" if results else "NOTHING_TO_COMPARE", "metric": metric, "comparisons": results}
 
 

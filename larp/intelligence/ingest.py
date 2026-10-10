@@ -14,7 +14,9 @@ advances past work that is not durable. Properties:
   superseded content hash. Earlier records are never rewritten.
 - Per-filing fetch failures are retried on later polls; after `max_fetch_attempts` the
   accession is recorded as MISSING (dead letter) so downstream sees a known-unreadable filing.
-- BACKFILL mode ingests an explicit older window without moving the live watermark.
+- BACKFILL mode ingests an explicit older window without moving the live watermark. The
+  source is given the window so it can read EDGAR's historical submissions files; any history
+  file it could not read makes the outcome PARTIAL_HISTORY, listed per file.
 
 Jobs follow the runtime job vocabulary (lane/due_ms/valid_until_ms/max_attempts/missed);
 the store owns attempts, status and scheduling. Jobs carry no trade command.
@@ -77,11 +79,12 @@ class Ingestor:
         cursor = self._cursor(issuer_id)
         expected_version = cursor["version"]
         now = self.clock()
-        listing = self.source.list_filings(entry.cik)
+        listing = self.source.list_filings(entry.cik, window=window)
         health = dict(cursor["health"], last_attempt_ms=now)
         outcome = {"status": "OK", "new_records": [], "revisions": [], "duplicates": 0, "late": [],
                    "retry_pending": [], "dead_letter": [], "rejected_future": [], "ignored_forms": 0,
-                   "unexpected_forms": [], "malformed_rows": 0}
+                   "unexpected_forms": [], "malformed_rows": 0, "history_status": listing.history_status,
+                   "history_files": [dict(f) for f in listing.history_files]}
         if listing.status == "OK":
             try:
                 check_identity(listing.submissions, entry.cik, entry.entity_name)
@@ -95,7 +98,9 @@ class Ingestor:
 
         records, jobs = [], []
         old_watermark, newest = cursor["watermark_ms"], cursor["watermark_ms"]
-        for row in sorted(listing_rows(listing.submissions),
+        if listing.history_status == "PARTIAL":
+            outcome["status"] = "PARTIAL_HISTORY"
+        for row in sorted(listing_rows(listing.submissions, listing.history),
                           key=lambda r: (r["original_ms"] or 0, r["accession"] or "")):
             if row["malformed"]:
                 outcome["malformed_rows"] += 1
@@ -210,7 +215,9 @@ class Ingestor:
                  "issuer_id": cursor["issuer_id"], "expected_cursor_version": expected_version,
                  "cursor": cursor, "records": records, "jobs": jobs,
                  "listing": {"status": listing.status, "retrieved_ms": listing.retrieved_ms,
-                             "response_sha256": listing.response_sha256, "error": listing.error}}
+                             "response_sha256": listing.response_sha256, "error": listing.error,
+                             "history_status": listing.history_status,
+                             "history_files": [dict(f) for f in listing.history_files]}}
         batch["batch_id"] = "ingest:" + digest("larp.intel.batch.v1", batch)
         receipt = self.store.commit(Document.from_dict(batch)).read()
         if receipt.get("status") not in ("COMMITTED", "IDEMPOTENT"):
