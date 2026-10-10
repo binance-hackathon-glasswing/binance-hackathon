@@ -74,11 +74,11 @@ class MaintenanceTests(DatabaseCase):
         from larp.storage.postgres import PostgresStore
         entered,release=Event(),Event()
         verify=self.store._verify
-        def slow(db,run_id,run):
+        def slow(db,run_id,run,*rest):
             if not entered.is_set():
                 entered.set()
                 if not release.wait(4): raise AssertionError('Verification not released')
-            return verify(db,run_id,run)
+            return verify(db,run_id,run,*rest)
         batch=self.batch('concurrent')
         primary=PostgresStore(self.store._dsn)
         worker=self.worker()

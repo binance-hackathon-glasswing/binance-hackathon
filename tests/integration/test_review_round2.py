@@ -147,7 +147,8 @@ class IncrementalVerification(Base):
             for i in range(8):
                 self.store.commit(self.batch('e'+str(i),commands=[dict(command_id='c'+str(i),expires_ms=999,kind='FAKE')]))
             self.store.command('run','c7',self.epoch,100)
-        self.assertEqual(list(range(1,10)),seen)
+        # Each write continues from the version verified before the previous write.
+        self.assertEqual(list(range(0,9)),seen)
         self.store.verify('run')
         # A new process has no checkpoint: its first write verifies everything.
         fresh=type(self.store)(self.store._dsn); seen.clear()
@@ -157,27 +158,34 @@ class IncrementalVerification(Base):
         self.assertEqual([None],seen)
 
     def test_incremental_path_fails_closed(self):
+        # One run per case in this schema; every statement is scoped to that run.
         cases={
-            'projection':"UPDATE runs SET projection='{}'::bytea",
-            'reservations':'UPDATE reservations SET units=units+1',
-            'extra chunk':"INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES('run','evt',99,'x'::bytea)",
-            'deleted chunk':'DELETE FROM audit_chunks',
-            'deleted command':'DELETE FROM commands',
-            'deleted job':'DELETE FROM jobs',
-            'changed new command':"UPDATE commands SET payload='{}'::bytea",
+            'projection':"UPDATE runs SET projection='{}'::bytea WHERE run_id=%s",
+            'reservations':'UPDATE reservations SET units=units+1 WHERE run_id=%s',
+            'extra chunk':"INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES(%s,'evt',99,'x'::bytea)",
+            'deleted chunk':'DELETE FROM audit_chunks WHERE run_id=%s',
+            'deleted command':'DELETE FROM commands WHERE run_id=%s',
+            'deleted job':'DELETE FROM jobs WHERE run_id=%s',
+            'changed new command':"UPDATE commands SET payload='{}'::bytea WHERE run_id=%s",
         }
-        for name,sql in cases.items():
+        for n,(name,sql) in enumerate(cases.items()):
             with self.subTest(name):
-                self.setUp()
-                self.store.commit(self.batch('first'))
-                self.store.commit(self.batch('second',audit=[event()],jobs=[job()],
-                    commands=[dict(command_id='c',expires_ms=999,kind='FAKE')],
-                    reservation_deltas=[dict(intent_id='i',asset='USDT',units=20)]))
+                run_id='case'+str(n)
+                self.store.initialize(run_id,'wallet',56,doc(INITIAL))
+                self.store.takeover(run_id,1,offline=True)
+                def commit(event_id,**kwargs):
+                    from larp.runtime.coordinator import batch_for
+                    return self.store.commit(batch_for(self.store.load(run_id),event_id,
+                                                       dict(kind='SYNTHETIC'),**kwargs))
+                commit('first')
+                commit('second',audit=[event()],jobs=[job()],
+                       commands=[dict(command_id='c',expires_ms=999,kind='FAKE')],
+                       reservation_deltas=[dict(intent_id='i',asset='USDT',units=20)])
                 if name!='changed new command':
-                    self.store.commit(self.batch('third'))  # checkpoint now covers 'second'
-                with self.store.transaction() as db: db.execute(sql)
+                    commit('third')  # the checkpoint now covers 'second'
+                with self.store.transaction() as db: db.execute(sql,(run_id,))
                 with self.assertRaises(IntegrityError):
-                    self.store.commit(self.batch('after'))
+                    commit('after')
 
     def test_full_verification_still_finds_changed_old_rows(self):
         self.store.commit(self.batch('first',audit=[event()]))
