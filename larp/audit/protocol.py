@@ -72,10 +72,12 @@ def chunks(log_bytes,address):
 
 
 def build_event(*,event_id,round_id,version_id,decision_ids,address,timestamp_ms,
-                input_record,rationale,output,orders,swap_mappings=()):
+                input_record,rationale,output,orders,swap_mappings=(),secrets=()):
     if not EVENT_ID.fullmatch(event_id) or not ADDRESS.fullmatch(address):
         raise ContractError('Invalid event/address')
-    log = dict(timestamp=timestamp_ms,data=dict(input=input_record,cot=rationale,output=output,orders=orders))
+    from larp.runtime.release import redact
+    log = dict(timestamp=timestamp_ms,data=dict(input=redact(input_record,secrets),cot=redact(rationale,secrets),
+               output=redact(output,secrets),orders=orders))
     _validate(log)
     raw = compact(log)
     event = Document.from_dict(dict(schema='AuditEvent.v1',event_id=event_id,round_id=round_id,

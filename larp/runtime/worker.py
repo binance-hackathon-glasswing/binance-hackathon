@@ -44,11 +44,11 @@ class IsolatedWorker:
         if Path('/lib64').exists():
             command+=['--ro-bind','/lib64','/lib64']
         prefix=Path(sys.base_prefix).resolve()
-        if not str(prefix).startswith('/usr'):
-            command+=['--ro-bind',str(prefix),str(prefix)]
+        command+=['--ro-bind',str(prefix),'/python']
+        isolated_python='/python/'+str(python.relative_to(prefix))
         command+=['--dir','/app','--ro-bind',str(package),'/app/larp',
                   '--tmpfs','/tmp','--proc','/proc','--dev','/dev','--chdir','/app',
-                  str(python),'-I','-S','/app/larp/runtime/worker_child.py',entrypoint,
+                  isolated_python,'-I','-S','/app/larp/runtime/worker_child.py',entrypoint,
                   str(self.max_bytes),str(self.memory_mb)]
         # Output goes to bounded temporary files rather than unbounded pipes.
         with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:

@@ -17,6 +17,7 @@ def validate_job(job):
         raise ContractError('Invalid job lane/disposition')
     for key in ('due_ms','valid_until_ms','max_attempts'):
         integer(job[key])
+    integer(job.get('priority',100))
     if job['max_attempts']<1 or job['valid_until_ms']<=job['due_ms']:
         raise ContractError('Invalid job budget/time')
     if job['lane']=='policy' and job['missed']!='expire':
@@ -54,7 +55,7 @@ class Scheduler:
             db.execute('UPDATE runs SET clock_ms=%s WHERE run_id=%s',(now_ms,run_id))
             rows=db.execute("SELECT job_id,document,attempts FROM jobs WHERE run_id=%s AND lane=%s "
                 "AND ((status='PENDING' AND next_ms<=%s) OR (status='RUNNING' AND lease_until_ms<=%s)) "
-                'ORDER BY next_ms,job_id FOR UPDATE SKIP LOCKED',(run_id,lane,now_ms,now_ms)).fetchall()
+                'ORDER BY priority,next_ms,job_id FOR UPDATE SKIP LOCKED',(run_id,lane,now_ms,now_ms)).fetchall()
             for job_id,raw,attempts in rows:
                 job=Document(bytes(raw)).read()
                 if attempts>=job['max_attempts'] or (job['missed']=='expire' and now_ms>=job['valid_until_ms']):

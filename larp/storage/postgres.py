@@ -57,10 +57,19 @@ class PostgresStore:
             raise Unavailable('Database transaction failed; signing blocked') from None
 
     def migrate(self):
-        sql = Path(__file__).resolve().parents[2] / 'migrations/001_runtime.sql'
+        directory = Path(__file__).resolve().parents[2] / 'migrations'
         with self.transaction() as db:
             db.execute('SELECT pg_advisory_xact_lock(28001)')
-            db.execute(sql.read_text(encoding='utf-8'))
+            db.execute('CREATE TABLE IF NOT EXISTS schema_migrations(name text PRIMARY KEY,sha256 text NOT NULL)')
+            for sql in sorted(directory.glob('*.sql')):
+                source=sql.read_text(encoding='utf-8').replace('\r\n','\n')
+                checksum=digest(source.encode('utf-8'))
+                row=db.execute('SELECT sha256 FROM schema_migrations WHERE name=%s',(sql.name,)).fetchone()
+                if row and row[0]!=checksum:
+                    raise IntegrityError('Applied migration changed')
+                if not row:
+                    db.execute(source)
+                    db.execute('INSERT INTO schema_migrations VALUES(%s,%s)',(sql.name,checksum))
 
     def initialize(self, run_id, wallet_id, chain_id, projection):
         """New runs start quarantined. Caller must explicitly attest offline mode."""
@@ -147,6 +156,7 @@ class PostgresStore:
                     raise IntegrityError('Event ID reused with different bytes')
                 return Document(bytes(old[1]))
             self._owned(run,b['owner_epoch'])
+            self._verify(db,b['run_id'],run)
             if (b['wallet_id'],b['chain_id'],b['expected_version']) != (
                     run['wallet_id'],run['chain_id'],run['version']):
                 raise Conflict('Stale version or wrong wallet/chain')
@@ -208,8 +218,8 @@ class PostgresStore:
                            (run_id,job['lane'])).fetchone()[0]
         if count >= 1024:
             raise Conflict('Lane queue capacity reached')
-        db.execute('INSERT INTO jobs(run_id,job_id,document,lane,next_ms) VALUES(%s,%s,%s,%s,%s)',
-                   (run_id,job['job_id'],raw,job['lane'],job['due_ms']))
+        db.execute('INSERT INTO jobs(run_id,job_id,document,lane,next_ms,priority) VALUES(%s,%s,%s,%s,%s,%s)',
+                   (run_id,job['job_id'],raw,job['lane'],job['due_ms'],job.get('priority',100)))
 
     @staticmethod
     def _audit(db,run_id,audit):

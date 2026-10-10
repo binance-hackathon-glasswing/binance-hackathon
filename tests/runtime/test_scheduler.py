@@ -36,6 +36,16 @@ class Scheduling(DatabaseCase):
         self.assertIsNone(scheduler.claim('run',self.epoch,'policy',300))
         self.assertIsNotNone(scheduler.claim('run',self.epoch,'reconcile',300))
 
+    def test_explicit_priority_and_midnight_do_not_reset_retry_budget(self):
+        high=dict(job('z','safety',0,100000000),priority=0)
+        low=dict(job('a','safety',0,100000000),priority=100)
+        self.store.commit(self.batch(jobs=[low,high]))
+        scheduler=Scheduler(self.store,lease_ms=10)
+        first=scheduler.claim('run',self.epoch,'safety',86399999)
+        self.assertEqual('z',first.read()['job']['job_id'])
+        second=scheduler.claim('run',self.epoch,'safety',86400010)
+        self.assertEqual(2,second.read()['attempt'])
+
     def test_dst_midnight_and_timezone_provenance(self):
         local=datetime(2026,11,1,1,30)
         early=utc_ms(local,'America/New_York',fold=0)

@@ -6,7 +6,7 @@ import re
 
 from larp.contracts import ContractError,Document
 
-SECRET_KEYS=re.compile(r'(secret|password|private.?key|mnemonic|authorization|api.?key|token)',re.I)
+SECRET_KEYS=re.compile(r'(secret|password|private.?key|mnemonic|authorization|api.?key|access.?token|refresh.?token)',re.I)
 
 
 def redact(value,secrets=()):

@@ -57,6 +57,17 @@ class Transactions(DatabaseCase):
         with self.assertRaises(IntegrityError): self.store.verify('run')
         with self.assertRaises(IntegrityError): self.store.takeover('run',self.epoch,offline=True)
 
+    def test_corrupt_reservations_fail_before_new_commit(self):
+        self.store.commit(self.batch(reservation_deltas=[dict(intent_id='i',asset='USDT',units=20)]))
+        with self.store.transaction() as db:
+            db.execute('UPDATE reservations SET units=0')
+        with self.assertRaises(IntegrityError): self.store.commit(self.batch('next'))
+
+    def test_changed_applied_migration_is_rejected(self):
+        with self.store.transaction() as db:
+            db.execute("UPDATE schema_migrations SET sha256='bad'")
+        with self.assertRaises(IntegrityError): self.store.migrate()
+
     def test_database_write_failure_cannot_authorize(self):
         # Real PostgreSQL read-only transaction stands in for a failing durable write.
         from psycopg.conninfo import make_conninfo
