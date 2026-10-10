@@ -112,6 +112,12 @@ class Maintenance:
             counts = dict(db.execute('SELECT status,count(*) FROM archive_outbox WHERE run_id=%s GROUP BY status', (run_id,)))
             latest = dict(db.execute("SELECT kind,max(slot_ms) FROM archive_outbox WHERE run_id=%s "
                                      "AND status='ACK' GROUP BY kind", (run_id,)))
+            audit_failures = db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s "
+                                        "AND status IN ('PERMANENT','EXHAUSTED')", (run_id,)).fetchone()[0]
+            pending = db.execute("SELECT DISTINCT a.document FROM audit_events a JOIN audit_chunks c "
+                                 "USING(run_id,event_id) WHERE a.run_id=%s AND c.status<>'ACK'", (run_id,)).fetchall()
+        breaches = sum(now_ms >= ((Document(bytes(raw)).read()['timestamp_ms'] // 86400000 + 1)
+                                  * 86400000 + 7200000) for raw, in pending)
         ages = {kind: max(0, now_ms - latest[kind]) if kind in latest else None for kind in ('anchor', 'backup')}
         reasons = []
         if run['quarantined']:
@@ -123,5 +129,8 @@ class Maintenance:
                 reasons.append(kind.upper() + '_STALE')
         if counts.get('PERMANENT', 0) or counts.get('EXHAUSTED', 0):
             reasons.append('ARCHIVE_DELIVERY_BLOCKED')
+        if audit_failures or breaches:
+            reasons.append('AUDIT_DELIVERY_BLOCKED')
         return doc(dict(schema='MaintenanceHealth.v1', healthy=not reasons, reasons=reasons,
-                        counts=counts, age_ms=ages, signing_enabled=False))
+                        counts=counts, age_ms=ages, audit_failures=audit_failures,
+                        audit_deadline_breaches=breaches, signing_enabled=False))

@@ -79,3 +79,38 @@ class MaintenanceTests(DatabaseCase):
         worker.once('run', 100)
         self.assertFalse(self.client.objects)
         self.assertIn('ARCHIVE_DELIVERY_BLOCKED', worker.health('run', 100).read()['reasons'])
+
+    def test_audit_deadline_failure_remains_visible_to_monitoring(self):
+        from tests.audit.test_protocol import event
+        worker = self.worker()
+        self.store.commit(self.batch(audit=[event()]))
+        health = worker.health('run', 1791676800000+7200000).read()
+        self.assertEqual(1, health['audit_deadline_breaches'])
+        self.assertIn('AUDIT_DELIVERY_BLOCKED', health['reasons'])
+
+    def test_archive_role_can_operate_without_mutating_financial_state(self):
+        # Apply the production grants inside a rolled-back PG transaction, using
+        # existing fixture roles and schema. No global roles survive the test.
+        from pathlib import Path
+        from larp.storage.backup import TABLES
+        script = Path('deploy/postgres/roles.sql').read_text()
+        import psycopg
+        with psycopg.connect(self.store._dsn) as db:
+            if not db.execute("SELECT 1 FROM pg_roles WHERE rolname='rds_iam'").fetchone():
+                db.execute('CREATE ROLE rds_iam')
+            database = db.execute('SELECT current_database()').fetchone()[0]
+            script = script.replace('ON DATABASE larp ', 'ON DATABASE '+database+' ')
+            script = script.replace('SCHEMA public ', 'SCHEMA '+self.schema+' ')
+            db.execute(script)
+            db.execute('SET LOCAL ROLE larp_archive')
+            run = self.store._run(db, 'run')
+            self.store._verify(db, 'run', run)
+            for table in TABLES:
+                db.execute('SELECT * FROM '+table).fetchall()
+            db.execute("INSERT INTO archive_clock VALUES('run',100)")
+            db.execute("INSERT INTO archive_outbox(run_id,kind,slot_ms,payload,sha256) "
+                       "VALUES('run','anchor',0,'{}'::bytea,'synthetic')")
+            db.execute("UPDATE archive_outbox SET attempts=1 WHERE run_id='run'")
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                with db.transaction(): db.execute("UPDATE runs SET projection='changed'::bytea")
+            db.rollback()
