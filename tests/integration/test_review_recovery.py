@@ -92,6 +92,24 @@ class ReviewRecovery(DatabaseCase):
         self.assertNotIn('request',json.loads(audit['log'])['data']['input'])
         self.assert_replay()
 
+    def test_completed_execution_history_is_not_copied_into_later_rounds(self):
+        for i in range(4):
+            round_id='r'+str(i)
+            runtime=self.runtime()
+            runtime.start(round_id,request('BUY',job=round_id),NOW)
+            tx='0x'+str(i+1)*64
+            for kind in ('BROADCAST_ATTEMPTED','FINAL_SUCCESS'):
+                identity=round_id+kind
+                runtime.observe(identity,doc(dict(kind=kind,observation_id=identity,
+                    round_id=round_id,tx_hash=tx,simulated=True)),settle)
+            runtime.recover(NOW+1)
+            current=self.store.load('run').read()
+            self.assertEqual({},current['projection']['round_records'])
+            self.assertNotIn('observations',current['projection'])
+            self.assertEqual({},current['execution_state']['intents'])
+            self.assertEqual([],current['reservations'])
+        self.assert_replay()
+
     def test_unplanned_crash_closure_replays_from_durable_request(self):
         self.store.open_round('run','r',request(),self.epoch)
         self.runtime().recover(NOW)

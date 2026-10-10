@@ -35,7 +35,10 @@ class FakeExecution:
                 raise ValueError('Outcome without matching attempt')
         else:
             raise ValueError('Unsupported synthetic observation')
-        intents[o['round_id']]=o
+        if o['kind'] in ('FINAL_SUCCESS','FINAL_REVERT'):
+            intents.pop(o['round_id'])
+        else:
+            intents[o['round_id']]=o
         return doc(dict(schema='ExecutionTransition.v1',next_state=dict(schema='ExecutionState.v1',intents=intents),
                         commands=[],observation_ids=[o['observation_id']],
                         terminal_rounds=[o['round_id']] if o['kind'] in ('FINAL_SUCCESS','FINAL_REVERT') else []))
@@ -135,10 +138,9 @@ def settle(current,observation):
     c=current.read(); o=observation.read()
     if o.get('simulated') is not True or o['kind'] not in ('BROADCAST_ATTEMPTED','FINAL_SUCCESS','FINAL_REVERT'):
         raise ValueError('Fixture reducer accepts only simulated observations')
-    projection=c['projection']; seen=projection.setdefault('observations',[])
-    if o['observation_id'] in seen:
-        raise ValueError('Duplicate semantic observation')
-    seen.append(o['observation_id'])
+    # Durable observation IDs live in the journal; execution state rejects
+    # repeated semantic transitions. Do not copy the entire history each round.
+    projection=c['projection']
     record=projection['round_records'][o['round_id']]
     intent=record['plan']['intents'][0]
     deltas=[]

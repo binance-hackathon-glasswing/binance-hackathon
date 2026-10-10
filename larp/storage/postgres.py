@@ -101,7 +101,7 @@ class PostgresStore:
                 value[key] = Document(bytes(value[key])).read()
             value['run_id'] = run_id
             value['reservations'] = [dict(intent_id=r[0],asset=r[1],units=int(r[2])) for r in
-                db.execute('SELECT intent_id,asset,units FROM reservations WHERE run_id=%s '
+                db.execute('SELECT intent_id,asset,units FROM reservations WHERE run_id=%s AND units<>0 '
                            'ORDER BY intent_id,asset',(run_id,))]
             return doc(value)
 

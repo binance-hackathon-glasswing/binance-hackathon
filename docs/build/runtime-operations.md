@@ -97,10 +97,20 @@ previously emitted signed bytes. Production takeover remains quarantined here.
 
 Round input is durable before assessment. The plan and complete received policy/
 assessment records are durable before an execution request can be released. A
-pending round is closed on restart with its known possibly-broadcast swap hashes;
-late receipts are appended as new observations, never changes to an uploaded log.
+pending execution round stays open on restart until Isaac's execution transition
+attests `terminal_rounds` after all attempts, swap hashes and settlement reconcile.
+Recovery then seals its audit once. A rejected plan never runs again; a committed
+command-less plan closes COMPLETE. Unplanned interrupted rounds close truthfully.
+Closed full records remain in the journal rather than accumulating in projections.
 Approval hashes are rejected by the swap-mapping schema. If another authorized
 swap attempt is needed after closure, Isaac's adapter must use a linked new round.
+
+Archive preparation and integrity scans run without holding the wallet row lock;
+writers compare the verified snapshot under a short lock and reject changed state.
+Already queued archive delivery continues during quarantine or preparation errors,
+with unhealthy status retained. Reapply `deploy/postgres/roles.sql` when upgrading:
+it revokes the former blanket uploader UPDATE grant before granting delivery-only
+columns. No cloud database role was changed by the offline development tests.
 
 Complete audit size is checked before reserving resources or releasing commands.
 Oversized unsupported I/O produces `AUDIT_CONTENT_UNSUPPORTED`, retains the full

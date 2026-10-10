@@ -294,3 +294,11 @@ the trading row lock; this is not a constant-time verifier or a rehearsal capaci
 claim. The real execution owner must implement terminal-round attestation. Final
 deployment role provisioning must reapply `roles.sql` to revoke the old grant.
 Existing cloud, provider, independent-review and rehearsal gates remain open.
+
+RT14 follow-up criteria before a second run: remove synthetic completed-execution
+history from fixture state and expose only nonzero reservations to new decision
+contexts. Four settled synthetic swaps must leave no copied observation/completed
+intent history or inactive reservations in the next snapshot; journal replay must
+remain exact. This prevents the smaller fixture histories from recreating quadratic
+batch growth after the large round records have been pruned. Owner production
+state retention remains an explicit integration responsibility.
