@@ -287,3 +287,9 @@ Markers: **[D]** declared; **[C]** changes a declaration (needs a GAP-62 row); *
   - The window end is ±1 session (Q-06), which moves the premium by ≈ ±10% of its value.
   - Scoring weights unknown (Q-39).
   - Nothing here is a profitability or readiness claim.
+
+## 7. Updates (append-only)
+- 2026-10-10 (SYZ, drafted by Claude): [IDEA-019](IDEA-019.md) (Isaac, drafted by Codex) was written in parallel and merged without editing it; it reserves IDEA-018 for this entry. Points where the two differ, for the Oct 11 meeting (nothing here amends IDEA-019):
+  - **Inconclusive default:** IDEA-019 R2 keeps evidence effects in shadow (as IDEA-017 R3); this entry §1 R3 recommends the narrow declared falsifier EXIT live, because the proposal's validation clause covers the decision model and the falsifier exit is declared separately.
+  - **Re-entry:** IDEA-019 §5 requires a fresh reassessment before re-entry; this entry §1 R1 / §4.2 flags that as a stuck-in-cash risk when the LLM runs only on filings, and lets code re-enable entry after a soft block expires (hard blocks stay permanent).
+  - **Objective:** IDEA-019 §5 targets prize placement (Isaac's follow-up); this entry targets U1 net profit. Both keep declared sizing and the 3/8/12 ladder and reject the +6% lock-in; IDEA-019's conditional exposure escalation matches §3.4 here (a variance choice to be pre-registered, not a profit claim).
