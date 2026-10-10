@@ -252,15 +252,15 @@ def _actor(segment: str, t_lo: int, t_hi: int, pred, issuer_names: tuple, issuer
     agent = BY_AGENT.match(segment[max(pred_end, t_hi):])
     if agent:
         found = _mentions(agent.group("agent"), issuer_names)
-        if found:
-            _, who, what = min(found)
+        if found:  # the head of the agent phrase is its last mention: "by our largest customer" -> customer
+            _, who, what = max(found)
             return who, what
     if verb_trigger and pred is not None:
         obj = OBJECT.match(segment[pred.end():])
         if obj:
             found = _mentions(obj.group("obj"), issuer_names)
-            if found and min(found)[1] == "THIRD_PARTY":
-                return "THIRD_PARTY", min(found)[2]
+            if found and max(found)[1] == "THIRD_PARTY":  # "delisted our competitor": the object's head noun
+                return "THIRD_PARTY", max(found)[2]
     anchor = pred.start() if pred is not None else t_lo
     found = [m for m in _mentions(segment[:anchor], issuer_names)]
     if pred is not None and pred.start() > t_hi:  # "a cybersecurity incident at X occurred": include the trigger
@@ -383,7 +383,7 @@ def finding_eligible(semantics: dict) -> bool:
 
 # ------------------------------------------------------------------ regulator / agency releases
 REGULATORY_ACTIONS = (
-    ("PROPOSED_RULE", re.compile(r"\bproposed\s+rule|\bnotice\s+of\s+proposed\s+rulemaking\b|\bproposes?\b", re.I)),
+    ("PROPOSED_RULE", re.compile(r"\bpropos(?:e|es|ed|ing|al|als)\b|\bnotice\s+of\s+proposed\s+rulemaking\b", re.I)),
     ("INTERIM_FINAL_RULE", re.compile(r"\binterim\s+final\s+rule\b", re.I)),
     ("FINAL_RULE", re.compile(r"\bfinal\s+rule\b|\badopt(?:s|ed)\s+(?:final\s+)?(?:rules?|amendments)\b", re.I)),
     ("ENTITY_LIST_ACTION", re.compile(r"\bentity\s+list\b", re.I)),
@@ -429,6 +429,8 @@ def classify_source_statement(text: str, *, source_kind: str, actor: str, aliase
     # A proposed rule is never effective; "final rule" wins over a generic "propose" only when both are present.
     if "INTERIM_FINAL_RULE" in actions and "FINAL_RULE" in actions:
         actions.remove("FINAL_RULE")
+    if "PROPOSED_RULE" in actions:  # "proposed amendments to the final rule adopted in 2024": still a proposal
+        actions = [a for a in actions if a not in ("FINAL_RULE", "INTERIM_FINAL_RULE")]
     statement_type = "REGULATORY_ACTION" if source_kind == "AGENCY" and actions else (
         "DEVELOPMENT_CLAIM" if DEVELOPMENT.search(text) else "OTHER_STATEMENT")
     certainty = sorted({CERTAINTY[a] for a in actions}) if statement_type == "REGULATORY_ACTION" else (

@@ -62,7 +62,18 @@ KEYWORD_EVENTS = (
 LOSS_FORM = re.compile(r"\bloss(?:es)?\b(?!\))", re.I)
 # A change amount ("revenue increased by $2 billion") is not the metric's level and is never extracted.
 CHANGE_FRAME = re.compile(r"\b(?:increased|decreased|increase|decrease|grew|growth|rose|fell|declined|decline|dropped|"
-                          r"up|down|changed|improved|higher|lower)\b", re.I)
+                          r"up|down|changed|change|improved|improvement|deteriorat\w*|reduction|widen\w*|narrow\w*|"
+                          r"swing|higher|lower)\b", re.I)
+# "... increased 10% to $35.1 billion": the amount after "to" is the new level, not the change.
+LEVEL_AFTER_CHANGE = re.compile(r"\bto\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?\(?-?$", re.I)
+# Third-party estimates are never an issuer's reported or guided figure (G-53: no admissible source).
+ANALYST_FRAME = re.compile(r"\b(?:analysts?|consensus|the\s+street|wall\s+street|sell[\s-]side|street\s+estimates?)\b",
+                           re.I)
+# "As expected, revenue was $35.1 billion": an introductory reference to expectations does not make a level guidance.
+INTRO_EXPECTATION = re.compile(r"^\s*(?:just\s+)?as\s+(?:\w+\s+){0,2}(?:expected|anticipated|forecast|projected|guided|"
+                               r"previously\s+(?:announced|disclosed))\s*,", re.I)
+RANGE_LEAD = re.compile(r"\b(?:between|range\s+of|ranging\s+from|from)\s*$", re.I)
+RANGE_JOIN = re.compile(r"\s*(?:-|\u2013|\u2014|to)\s*|\s+and\s+", re.I)
 PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
 
 # Event facts (IDEA-031 S2.1). A plain event metric ("IMPAIRMENT") is the issuer's own, current, occurred event
@@ -178,6 +189,27 @@ def money_parts(m: re.Match) -> tuple:
     return _signed(m.group("neg2"), m.group("num2")), SCALES.get((m.group("scale2") or "").lower(), 0), "KRW"
 
 
+def kind_of(prefix: str) -> str:
+    """REPORTED or GUIDANCE from the words leading to an amount, after any introductory "As expected," phrase."""
+    m = INTRO_EXPECTATION.match(prefix)
+    return "GUIDANCE" if GUIDANCE_WORDS.search(prefix[m.end():] if m else prefix) else "REPORTED"
+
+
+def is_change_amount(between: str) -> bool:
+    """`between`: text from the metric mention to the amount. A change amount, unless it is the level "to $X"."""
+    return bool(CHANGE_FRAME.search(between)) and not LEVEL_AFTER_CHANGE.search(between)
+
+
+def range_partner(text: str, amount: re.Match, unit: str, lead: str):
+    """The second amount of a range starting at `amount` ("between X and Y", "range of X to Y", "X-Y", "X to Y"), or
+    None. "and" joins a range only after a range lead word; "-"/"to" join two amounts directly."""
+    join = RANGE_JOIN.match(text, amount.end())
+    if not join or ("and" in join.group(0).lower() and not RANGE_LEAD.search(lead)):
+        return None
+    other = (PERCENT if unit == "PERCENT" else MONEY).match(text, join.end())
+    return other
+
+
 def _signed(neg, number: str) -> str:
     return number if not neg else "-" + number
 
@@ -191,6 +223,8 @@ def signed_value(number: Fraction, metric_text: str) -> Fraction:
 def _scope(metric: str, unit: str, entry) -> str:
     if metric not in PER_SHARE_METRICS:
         return "ISSUER"
+    if entry is None:
+        return "AMBIGUOUS"
     matches = [s.security_id for s in entry.securities if s.currency == unit]
     return matches[0] if len(matches) == 1 and len(entry.securities) == 1 else "AMBIGUOUS"
 
@@ -237,23 +271,21 @@ def _sentence_facts(text, doc_sha, entry):
                 if not amount:
                     continue
                 number, scale, unit = money_parts(amount)
-            if CHANGE_FRAME.search(segment[:amount.start()]):
+            if is_change_amount(segment[:amount.start()]):
                 continue  # a change amount, not the metric's level
+            if ANALYST_FRAME.search(sentence[:m_end + amount.end()]):
+                continue  # a third-party estimate is not the issuer's figure
             end = m_end + amount.end()
-            between = re.search(r"\bbetween\s*$", segment[:amount.start()], re.I)
-            second = re.match(r"\s+(?:and|to)\s+", segment[amount.end():]) if between else None
-            if second:
-                other = MONEY.match(segment, amount.end() + second.end()) if unit != "PERCENT" else \
-                    PERCENT.match(segment, amount.end() + second.end())
-                if other:
-                    o_number, o_scale, o_unit = (money_parts(other) if unit != "PERCENT"
-                                                 else (other.group("num"), 0, "PERCENT"))
-                    scale = max(scale, o_scale) if scale == 0 or o_scale == 0 else scale
-                    if o_unit == unit and (o_scale in (0, scale)):
-                        metric_text = sentence[m_start:m_end]
-                        low = signed_value(parse_number(number), metric_text)
-                        high = signed_value(parse_number(o_number), metric_text)
-                        end = m_end + other.end()
+            other = range_partner(segment, amount, unit, segment[:amount.start()])
+            if other:
+                o_number, o_scale, o_unit = (money_parts(other) if unit != "PERCENT"
+                                             else (other.group("num"), 0, "PERCENT"))
+                scale = max(scale, o_scale) if scale == 0 or o_scale == 0 else scale
+                if o_unit == unit and (o_scale in (0, scale)):
+                    metric_text = sentence[m_start:m_end]
+                    low = signed_value(parse_number(number), metric_text)
+                    high = signed_value(parse_number(o_number), metric_text)
+                    end = m_end + other.end()
             if low is None:
                 value = signed_value(parse_number(number), sentence[m_start:m_end])
                 tol = TOLERANCE.match(sentence[end:])
@@ -263,7 +295,7 @@ def _sentence_facts(text, doc_sha, entry):
             written = [number] + ([o_number] if low is not None else [])
             precision = scale - max(decimals_of(w) for w in written)
             prefix = sentence[:m_end + amount.end()]
-            kind = "GUIDANCE" if GUIDANCE_WORDS.search(prefix) else "REPORTED"
+            kind = kind_of(prefix)
             direction = None
             if kind == "GUIDANCE":
                 direction = next((name for name, rx in DIRECTION if rx.search(prefix)), None)

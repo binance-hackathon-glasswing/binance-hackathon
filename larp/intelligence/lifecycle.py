@@ -39,8 +39,15 @@ UNCERTAIN_THRESHOLD = (1, 2)  # 0.5 <= Jaccard < 0.8, or anchors differ above 0.
 _MODAL = re.compile(r"\b(?:may|might|could|can|would|should)\b", re.I)
 _STOP = frozenset("a an the of to in on for and or our we us its it this that these those is are be been being "
                   "was were has have had at by with from as any all such which who also other".split())
-_ANCHOR = re.compile(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)"
-                     r"\s+\d{1,2}(?:,\s*\d{4})?|\$?\d[\d,]*(?:\.\d+)?%?|\b(?:19|20)\d{2}\b", re.I)
+# Anchors: what makes two statements about the same event different facts. Numbers keep their currency and
+# scale ("$1.2 billion" vs "$1.2 million"); dates, years, quarter ordinals, officer titles and third-party roles
+# are a closed set (IDEA-031 red team S4-A f03-f06).
+_ANCHOR = re.compile(r"\b(?:January|February|March|April|June|July|August|September|October|November|December|May(?=\s+\d))"
+                     r"\s+\d{1,2}(?:,\s*\d{4})?|(?:US\$|\$|KRW\s?|\u20a9)?\d[\d,]*(?:\.\d+)?%?"
+                     r"(?:\s*(?:thousand|million|billion|trillion))?|\b(?:first|second|third|fourth)\s+(?:fiscal\s+)?quarter\b|"
+                     r"\b(?:chief\s+(?:executive|financial|operating|technology)\s+officer|CEO|CFO|COO|CTO|president|"
+                     r"chair(?:man|woman|person)?)\b|\b(?:suppliers?|customers?|competitors?|vendors?|partners?)\b|"
+                     r"\b(?:thousand|million|billion|trillion)\b", re.I)
 _WORD = re.compile(r"[a-z][a-z\-]+")
 
 
@@ -65,8 +72,7 @@ def content_words(text: str) -> frozenset:
 
 
 def anchors(text: str) -> tuple:
-    return tuple(sorted({" ".join(a.lower().replace(",", "").split()) for a in _ANCHOR.findall(text)
-                         if not re.fullmatch(r"(?i)may", a.strip())}))
+    return tuple(sorted({re.sub(r"s$", "", " ".join(a.lower().replace(",", "").split())) for a in _ANCHOR.findall(text)}))
 
 
 def signature(event: str, semantics: dict | None, text: str) -> dict:

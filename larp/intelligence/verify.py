@@ -24,10 +24,11 @@ import re
 
 from larp.intelligence.common import frac
 from larp.intelligence.facts import (
-    CHANGE_FRAME, DROPPED_ASSERTIONS, GUIDANCE_WORDS, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, NUM_TOKEN,
+    ANALYST_FRAME, DROPPED_ASSERTIONS, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, MONEY, NUM_TOKEN, PERCENT,
     PER_SHARE_EXCEPTION, PER_SHARE_METRICS, PERCENT_METRICS, SCALES, SENTENCE_END, STATEMENT_PREFIX, event_semantics,
-    finish_fact, half_unit, is_statement, normalized, parse_number, parse_period, row_metric, signed_value,
-    stated_numbers, statement_event, table_cell, table_scale, table_unit, token_decimals, values_agree,
+    finish_fact, half_unit, is_change_amount, is_statement, kind_of, money_parts, normalized, parse_number,
+    parse_period, range_partner, row_metric, signed_value, stated_numbers, statement_event, table_cell, table_scale,
+    table_unit, token_decimals, values_agree,
 )
 from larp.intelligence.semantics import finding_eligible
 
@@ -147,8 +148,68 @@ def _token_end(text: str, start: int, end: int, number) -> int | None:
     return None
 
 
-_RANGE_LOW = re.compile(r"\bbetween\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?$", re.I)
-_RANGE_HIGH = re.compile(r"\bbetween\b[^;\n]*\b(?:and|to)\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?$", re.I)
+def _amount_at(text: str, lo: int, number_end: int, metric: str):
+    """The MONEY/PERCENT match in text[lo:] whose number ends at `number_end`, with its unit."""
+    pattern, unit = (PERCENT, "PERCENT") if metric in PERCENT_METRICS else (MONEY, None)
+    for m in pattern.finditer(text, lo):
+        if m.start() > number_end:
+            break
+        groups = [g for g in ("num", "num2") if g in pattern.groupindex and m.group(g)]
+        if any(m.end(g) == number_end or (m.end(g) + 1 == number_end and text[m.end(g)] == ")") for g in groups):
+            return m, unit or money_parts(m)[2]
+    return None, None
+
+
+def _prose_reading(text: str, span: dict, metric: str, kind: str, value, bounds) -> str | None:
+    """Read a prose amount the way the extractor does (facts._sentence_facts). The governing metric mention is the
+    last mention before the amount; the amount must be the first one after it; its sign comes from that mention
+    (a loss form is negative); a change amount, an analyst estimate or a range bound is not a level; the kind is the
+    statement's own (an introductory "As expected," does not make a level guidance). Returns a reason or None."""
+    first = value if value is not None else bounds[0]
+    token_end = _token_end(text, span["start"], span["end"], first)
+    if token_end is None:
+        return "NUMBER_NOT_IN_SPAN"
+    sentence_lo = _sentence_start(text, span["start"])
+    mentions = [m for m in METRIC_ONE[metric].finditer(text, sentence_lo, token_end)]
+    if not mentions:
+        return "METRIC_NOT_GOVERNING_NUMBER"
+    mention = mentions[-1]
+    amount, unit = _amount_at(text, mention.end(), token_end, metric)
+    if amount is None:
+        return "NUMBER_NOT_AN_AMOUNT"
+    between = text[mention.end():amount.start()]
+    pattern = PERCENT if metric in PERCENT_METRICS else MONEY
+    if pattern.search(between):
+        return "NOT_FIRST_AMOUNT_AFTER_METRIC"
+    if ANALYST_FRAME.search(text[sentence_lo:amount.end()]):
+        return "ATTRIBUTED_ESTIMATE_NOT_ADMISSIBLE"
+    if is_change_amount(between):
+        return "CHANGE_AMOUNT_NOT_LEVEL"
+    derived = kind_of(text[sentence_lo:amount.end()])
+    if kind != derived:
+        return "KIND_NOT_SUPPORTED:" + derived
+    written = [parse_number(m.group(0)) for m in NUM_TOKEN.finditer(text, amount.start(), amount.end())]
+    partner = range_partner(text, amount, unit, text[sentence_lo:amount.start()])
+    if partner is not None:
+        written += [parse_number(m.group(0)) for m in NUM_TOKEN.finditer(text, partner.start(), partner.end())]
+    expected = [signed_value(n, mention.group(0)) for n in written]
+    if value is not None:
+        if partner is not None:
+            return "RANGE_BOUND_CLAIMED_AS_POINT"
+        before = text[sentence_lo:amount.start()]
+        join = re.search(r"(?:-|\u2013|\u2014|\bto|\band)\s*$", before)
+        if join:
+            previous = [m for m in pattern.finditer(text, sentence_lo, join.start()) if m.end() >= join.start() - 1]
+            if previous and range_partner(text, previous[-1], unit, text[sentence_lo:previous[-1].start()]):
+                return "RANGE_BOUND_CLAIMED_AS_POINT"
+        if value != expected[0]:
+            return "SIGN_MISMATCH" if -value == expected[0] else "NUMBER_NOT_IN_SPAN"
+        return None
+    if partner is None:
+        return "RANGE_NOT_STATED"
+    if list(bounds) != expected[:2]:
+        return "SIGN_MISMATCH" if [-b for b in bounds] == expected[:2] else "NUMBER_NOT_IN_SPAN"
+    return None
 
 
 def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issuer_names: tuple = (),
@@ -232,33 +293,19 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issue
         return None, "VALUE_MISSING"
     stated = stated_numbers(span_text)
     table = " | " in span_text
-    mention = METRIC_ONE[metric].search(span_text).group(0)
-    signed = [signed_value(n, mention) for n in stated]
-    if table and (value is None or not signed or signed[-1] != value):
-        return None, ("TABLE_VALUE_SIGN_MISMATCH" if value is not None and signed and -signed[-1] == value
-                      else "TABLE_VALUE_NOT_LAST_CELL")
-    for number in [v for v in [value, *bounds] if v is not None]:
-        if number not in signed:
-            return None, "SIGN_MISMATCH" if -number in signed else "NUMBER_NOT_IN_SPAN"
-    if tolerance is not None and tolerance not in stated and -tolerance not in stated:
-        return None, "NUMBER_NOT_IN_SPAN"
-    if not table:  # the wording around the first claimed number decides level/change, kind and point/range
-        first = value if value is not None else bounds[0]
-        token_end = _token_end(text, span["start"], span["end"], first)
-        mention_at = span["start"] + METRIC_ONE[metric].search(span_text).end()
-        if token_end is None:
+    for number in [v for v in [value, tolerance, *bounds] if v is not None]:
+        if number not in stated and -number not in stated:
             return None, "NUMBER_NOT_IN_SPAN"
-        before = text[_sentence_start(text, span["start"]):token_end]
-        if CHANGE_FRAME.search(text[mention_at:token_end]):
-            return None, "CHANGE_AMOUNT_NOT_LEVEL"
-        derived = "GUIDANCE" if GUIDANCE_WORDS.search(before) else "REPORTED"
-        if kind != derived:
-            return None, "KIND_NOT_SUPPORTED:" + derived
-        token_start = next(m.start() for m in NUM_TOKEN.finditer(text, span["start"], token_end)
-                           if m.end() == token_end)
-        if value is not None and (_RANGE_LOW.search(text[_sentence_start(text, span["start"]):token_start])
-                                  or _RANGE_HIGH.search(text[_sentence_start(text, span["start"]):token_start])):
-            return None, "RANGE_BOUND_CLAIMED_AS_POINT"
+    if table:
+        mention = METRIC_ONE[metric].search(span_text).group(0)
+        signed = [signed_value(n, mention) for n in stated]
+        if value is None or not signed or signed[-1] != value:
+            return None, ("TABLE_VALUE_SIGN_MISMATCH" if value is not None and signed and -signed[-1] == value
+                          else "TABLE_VALUE_NOT_LAST_CELL")
+    else:
+        reason = _prose_reading(text, span, metric, kind, value, bounds)
+        if reason:
+            return None, reason
     unit, scale = claim.get("unit"), claim.get("scale_exp10")
     if type(scale) is not int:
         return None, "SCALE_MALFORMED"
