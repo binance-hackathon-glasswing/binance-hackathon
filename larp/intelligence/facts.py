@@ -201,6 +201,7 @@ def _span(doc_sha: str, text: str, start: int, end: int) -> dict:
 
 def finish_fact(fact: dict, source: dict) -> dict:
     fact = dict(fact, source=source)
+    fact.setdefault("statement", None)  # event semantics; None for numerical and filer-item facts
     fact["fact_id"] = "fact:" + digest("larp.intel.fact.v1", {k: v for k, v in fact.items() if k != "fact_id"})
     return fact
 
