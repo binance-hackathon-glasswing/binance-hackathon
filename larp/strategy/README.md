@@ -100,3 +100,16 @@ availability, adopted baseline/evidence/default, terminal UTC gates, minimum siz
 cost/gas/slippage/headroom budgets, accounting/finality/reorg conventions and atomic
 store/signer integration. Review partner Yao Zhu; integrator Keegan; execution
 observations Isaac. See IDEA-026 for reproducible evidence and backlog ownership.
+
+Saved public/synthetic example inputs and outputs are in
+`tests/research/fixtures/strategy-examples.json`. Generate exactly the same bytes:
+
+```sh
+/Users/keith/anaconda3/envs/binance-hackathon/bin/python -m larp.research.demo > /private/tmp/larp-strategy-examples.json
+cmp tests/research/fixtures/strategy-examples.json /private/tmp/larp-strategy-examples.json
+```
+
+The three scenarios contain full immutable snapshot/state records. The baseline
+has one intent; the costly opportunity has `ENTRY_COST_CAP` rejections; the blocked
+mandatory exit retains its reduction with `BLOCKED_MARKET`. These outputs and 48
+passing local tests are engineering evidence from pushed revision `21b8fdb`.
