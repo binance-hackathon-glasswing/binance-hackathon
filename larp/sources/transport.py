@@ -1,0 +1,120 @@
+"""Allowlisted, bounded HTTP retrieval for free sources (IDEA-031 S2.6, AC-D04/AC-D06).
+
+`AllowlistedClient.get(source, url, ...)` enforces: https only; host and path prefix in the source's allowlist;
+redirects followed only to allowlisted URLs (at most 3); response bytes capped; bounded retries with
+exponential backoff on network errors, HTTP 429 and 5xx; conditional requests (If-None-Match /
+If-Modified-Since) from the cursor. The network itself is an injected `fetch(url, headers, timeout_s)
+-> (status, headers, body)` that never follows redirects, so tests use fakes and only the read-only
+connectivity probe uses `urllib_fetch`. Retrieved bytes are untrusted data.
+"""
+
+from dataclasses import dataclass
+from urllib.parse import urljoin, urlsplit
+import time
+
+USER_AGENT_DEFAULT = "LARP-free-source-ingest/1 (IDEA-031; no contact configured)"
+
+
+class SourceError(Exception):
+    """Retrieval refused or failed; the code is recorded in the source's health."""
+
+
+@dataclass(frozen=True, slots=True)
+class Response:
+    status: int
+    headers: dict
+    body: bytes | None
+    url: str
+    attempts: int
+    truncated: bool
+
+
+def allowed(source, url: str) -> bool:
+    parts = urlsplit(url)
+    if parts.scheme != "https" or parts.username or parts.password or parts.port not in (None, 443):
+        return False
+    return any(parts.hostname == a["host"] and parts.path.startswith(a["path_prefix"]) for a in source.allow)
+
+
+class AllowlistedClient:
+    def __init__(self, fetch, *, sleep=time.sleep, user_agents: dict | None = None):
+        self.fetch, self.sleep, self.user_agents = fetch, sleep, user_agents or {}
+
+    def get(self, source, url: str, *, etag: str | None = None, last_modified: str | None = None) -> Response:
+        limits = source.limits
+        if not source.enabled:
+            raise SourceError("SOURCE_DISABLED")
+        if not allowed(source, url):
+            raise SourceError("URL_NOT_ALLOWLISTED")
+        headers = {"Accept": "application/json, application/rss+xml, application/xml;q=0.9, */*;q=0.1"}
+        if source.requires_user_agent:
+            agent = self.user_agents.get(source.requires_user_agent)
+            if not agent:
+                raise SourceError("USER_AGENT_NOT_CONFIGURED")
+            headers["User-Agent"] = agent
+        else:
+            headers["User-Agent"] = USER_AGENT_DEFAULT
+        if etag:
+            headers["If-None-Match"] = etag
+        if last_modified:
+            headers["If-Modified-Since"] = last_modified
+        attempts, delay, current, redirects = 0, limits.get("backoff_ms", 1000), url, 0
+        while True:
+            attempts += 1
+            try:
+                status, reply_headers, body = self.fetch(current, headers, 30)
+            except (OSError, TimeoutError) as exc:
+                if attempts >= limits.get("max_attempts", 3):
+                    raise SourceError(f"NETWORK_ERROR:{type(exc).__name__}:EXHAUSTED") from None
+                self.sleep(delay / 1000)
+                delay *= 2
+                continue
+            reply_headers = {k.lower(): v for k, v in (reply_headers or {}).items()}
+            if status in (301, 302, 303, 307, 308):
+                target = urljoin(current, reply_headers.get("location", ""))
+                redirects += 1
+                if redirects > 3 or not allowed(source, target):
+                    raise SourceError("REDIRECT_NOT_ALLOWLISTED")
+                current = target
+                attempts -= 1  # a redirect is not a failed attempt
+                continue
+            if status == 429 or status >= 500:
+                if attempts >= limits.get("max_attempts", 3):
+                    raise SourceError(f"HTTP_{status}:EXHAUSTED")
+                self.sleep(delay / 1000)
+                delay *= 2
+                continue
+            if status == 304:
+                return Response(304, reply_headers, None, current, attempts, False)
+            if status != 200:
+                raise SourceError(f"HTTP_{status}")
+            cap = limits.get("max_response_bytes", 2_000_000)
+            truncated = body is not None and len(body) > cap
+            if truncated:
+                raise SourceError("RESPONSE_TOO_LARGE")
+            return Response(200, reply_headers, body, current, attempts, truncated)
+
+
+class _NoRedirect:
+    """urllib redirect handler that returns 3xx responses instead of following them."""
+
+    def __new__(cls):
+        import urllib.request
+
+        class Handler(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *args, **kwargs):
+                return None
+        return Handler()
+
+
+def urllib_fetch(url: str, headers: dict, timeout_s: float) -> tuple:
+    """Real network for the read-only connectivity probe only (no redirects followed, bounded read)."""
+    import urllib.error
+    import urllib.request
+    opener = urllib.request.build_opener(_NoRedirect())
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with opener.open(request, timeout=timeout_s) as reply:  # noqa: S310 - allowlisted by the caller
+            return reply.status, dict(reply.headers), reply.read(8_000_001)
+    except urllib.error.HTTPError as exc:
+        return exc.code, dict(exc.headers or {}), None
