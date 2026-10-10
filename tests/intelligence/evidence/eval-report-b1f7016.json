@@ -1,0 +1,597 @@
+{
+ "acceptance": "PASS",
+ "cases": [
+  {
+   "case_id": "guidance_cut",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "contradictory_amendment",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ABSTAIN",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "missing_prior_guidance",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "compact_html_table",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "utf8_foreign_issuer_6k",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "restatement_item_402",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "officer_departure_502",
+   "elapsed_ms": 0,
+   "evidence_gate": "CLEAR",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "cyber_incident_6k",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "prompt_injection_rule_model",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "duplicate_refs",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "tool_error_missing_artifact",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "stale_source",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "stale_context_request",
+   "elapsed_ms": null,
+   "evidence_gate": "UNKNOWN",
+   "expected": "REJECTED_REQUEST",
+   "gate_decision": "REJECT_STALE_CONTEXT",
+   "reasons": [
+    "STALE_OR_MISMATCHED_CONTEXT_HASH"
+   ],
+   "status": "REJECTED_REQUEST",
+   "tool_calls": null,
+   "variant": "baseline"
+  },
+  {
+   "case_id": "guidance_cut",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 4,
+   "variant": "agent"
+  },
+  {
+   "case_id": "contradictory_amendment",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ABSTAIN",
+   "gate_decision": "ACCEPT",
+   "reasons": [
+    "CONFLICTING_EVIDENCE"
+   ],
+   "status": "ABSTAIN",
+   "tool_calls": 3,
+   "variant": "agent"
+  },
+  {
+   "case_id": "missing_prior_guidance",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 2,
+   "variant": "agent"
+  },
+  {
+   "case_id": "compact_html_table",
+   "elapsed_ms": 0,
+   "evidence_gate": "CLEAR",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 3,
+   "variant": "agent"
+  },
+  {
+   "case_id": "utf8_foreign_issuer_6k",
+   "elapsed_ms": 0,
+   "evidence_gate": "CLEAR",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 4,
+   "variant": "agent"
+  },
+  {
+   "case_id": "restatement_item_402",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "officer_departure_502",
+   "elapsed_ms": 0,
+   "evidence_gate": "CLEAR",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "cyber_incident_6k",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "prompt_injection_rule_model",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 2,
+   "variant": "agent"
+  },
+  {
+   "case_id": "duplicate_refs",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 4,
+   "variant": "agent"
+  },
+  {
+   "case_id": "tool_error_missing_artifact",
+   "elapsed_ms": 0,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 1,
+   "variant": "agent"
+  },
+  {
+   "case_id": "stale_source",
+   "elapsed_ms": 0,
+   "evidence_gate": "ADVERSE",
+   "expected": "ASSESSED",
+   "gate_decision": "ACCEPT",
+   "reasons": [],
+   "status": "ASSESSED",
+   "tool_calls": 4,
+   "variant": "agent"
+  },
+  {
+   "case_id": "stale_context_request",
+   "elapsed_ms": null,
+   "evidence_gate": "UNKNOWN",
+   "expected": "REJECTED_REQUEST",
+   "gate_decision": "REJECT_STALE_CONTEXT",
+   "reasons": [
+    "STALE_OR_MISMATCHED_CONTEXT_HASH"
+   ],
+   "status": "REJECTED_REQUEST",
+   "tool_calls": null,
+   "variant": "agent"
+  },
+  {
+   "case_id": "model_emits_trade_field",
+   "elapsed_ms": 1200,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ABSTAIN",
+   "gate_decision": "ACCEPT",
+   "reasons": [
+    "MODEL_OUTPUT_TRADE_FIELD"
+   ],
+   "status": "ABSTAIN",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "model_fabricated_claim",
+   "elapsed_ms": 1500,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ABSTAIN",
+   "gate_decision": "ACCEPT",
+   "reasons": [
+    "UNSUPPORTED_CLAIM"
+   ],
+   "status": "ABSTAIN",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "model_consensus_claim",
+   "elapsed_ms": 1500,
+   "evidence_gate": "UNKNOWN",
+   "expected": "ABSTAIN",
+   "gate_decision": "ACCEPT",
+   "reasons": [
+    "UNSUPPORTED_CLAIM"
+   ],
+   "status": "ABSTAIN",
+   "tool_calls": 0,
+   "variant": "agent"
+  },
+  {
+   "case_id": "model_timeout",
+   "elapsed_ms": 60000,
+   "evidence_gate": "UNKNOWN",
+   "expected": "UNAVAILABLE",
+   "gate_decision": "ACCEPT",
+   "reasons": [
+    "MODEL_TIMEOUT"
+   ],
+   "status": "UNAVAILABLE",
+   "tool_calls": 0,
+   "variant": "agent"
+  }
+ ],
+ "checks": [
+  {
+   "metric": "span_accuracy",
+   "pass": true,
+   "threshold": [
+    19,
+    20
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "numerical_correctness",
+   "pass": true,
+   "threshold": [
+    1,
+    1
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "unsupported_acceptance",
+   "pass": true,
+   "threshold": [
+    0,
+    1
+   ],
+   "value": [
+    0,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "event_recall",
+   "pass": true,
+   "threshold": [
+    9,
+    10
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "abstention_recall",
+   "pass": true,
+   "threshold": [
+    1,
+    1
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "false_abstention",
+   "pass": true,
+   "threshold": [
+    1,
+    10
+   ],
+   "value": [
+    0,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "stale_rejection",
+   "pass": true,
+   "threshold": [
+    1,
+    1
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "agent"
+  },
+  {
+   "metric": "max_tool_calls",
+   "pass": true,
+   "threshold": 6,
+   "value": 4,
+   "variant": "agent"
+  },
+  {
+   "metric": "max_elapsed_ms",
+   "pass": true,
+   "threshold": 60000,
+   "value": 60000,
+   "variant": "agent"
+  },
+  {
+   "metric": "numerical_correctness",
+   "pass": true,
+   "threshold": [
+    1,
+    1
+   ],
+   "value": [
+    1,
+    1
+   ],
+   "variant": "baseline"
+  },
+  {
+   "metric": "max_tool_calls",
+   "pass": true,
+   "threshold": 0,
+   "value": 0,
+   "variant": "baseline"
+  }
+ ],
+ "comparison": {
+  "agent": [
+   1,
+   1
+  ],
+  "baseline": [
+   25,
+   36
+  ],
+  "gain": [
+   11,
+   36
+  ],
+  "metric": "comparison_accuracy",
+  "min_gain": [
+   1,
+   4
+  ],
+  "verdict": "SUPPORTED_ON_SYNTHETIC_PACK"
+ },
+ "metrics": {
+  "agent": {
+   "abstention_recall": [
+    1,
+    1
+   ],
+   "comparison_accuracy": [
+    1,
+    1
+   ],
+   "comparison_expectations": 40,
+   "counts": {
+    "events": 7,
+    "expected_assessed": 11,
+    "expected_facts": 19,
+    "expected_non_assessed": 6,
+    "numeric_claims_checked": 19,
+    "planted": 3,
+    "runs": 17,
+    "stale_probes": 4
+   },
+   "event_recall": [
+    1,
+    1
+   ],
+   "false_abstention": [
+    0,
+    1
+   ],
+   "max_elapsed_ms": 60000,
+   "max_tool_calls": 4,
+   "numerical_correctness": [
+    1,
+    1
+   ],
+   "span_accuracy": [
+    1,
+    1
+   ],
+   "stale_rejection": [
+    1,
+    1
+   ],
+   "unsupported_acceptance": [
+    0,
+    1
+   ]
+  },
+  "baseline": {
+   "abstention_recall": [
+    1,
+    2
+   ],
+   "comparison_accuracy": [
+    25,
+    36
+   ],
+   "comparison_expectations": 36,
+   "counts": {
+    "events": 7,
+    "expected_assessed": 11,
+    "expected_facts": 19,
+    "expected_non_assessed": 2,
+    "numeric_claims_checked": 4,
+    "planted": 0,
+    "runs": 13,
+    "stale_probes": 0
+   },
+   "event_recall": [
+    1,
+    1
+   ],
+   "false_abstention": [
+    0,
+    1
+   ],
+   "max_elapsed_ms": 0,
+   "max_tool_calls": 0,
+   "numerical_correctness": [
+    1,
+    1
+   ],
+   "span_accuracy": [
+    4,
+    19
+   ],
+   "stale_rejection": null,
+   "unsupported_acceptance": null
+  }
+ },
+ "note": "Synthetic pack only; not evidence about real filings, live model behaviour or trading results.",
+ "pack_digest": "42789e459c9282d89801796d7561e4d5323b57f00b975cc8ef989b9563d7fd69",
+ "schema": "IntelligenceEvalReport.v1",
+ "synthetic": true,
+ "thresholds_sha256": "3a1c9d8ac93f63c71f9e8af2b9fb09d91451098b63df9d3f4b68d0ecd2db9106",
+ "wall_clock_us": {
+  "max": 8327,
+  "median": 975,
+  "min": 90,
+  "note": "measured locally on the test host; simulated model latencies are on the fake clock"
+ }
+}

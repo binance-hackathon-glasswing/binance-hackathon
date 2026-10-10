@@ -106,3 +106,29 @@ Commands: `python -m unittest discover -s tests -v` on Python 3.12, and `python 
 ## 9. Results
 
 NOT RUN at the criteria commit. Appended below after the pushed code is run.
+
+### 9.1 2026-10-10 runs (Python 3.12.1, macOS; standard-library unittest)
+
+Environment: the project's locked `binance-hackathon` conda environment does not exist on this machine, so tests ran with an unrelated local conda environment's Python 3.12.1 (standard library only; this package needs nothing else) and pytest 9.0.3 from the base Anaconda Python 3.14.6 with plugin autoload disabled. This is not evidence for the locked environment (Keegan's W09/GAP-45 remains open).
+
+1. **Criteria commit `6442698`, first run: FAIL** — 118 tests, 7 failures, 6 errors. Causes: (a) `<tr>` emitted a newline at both start and end, so table rows were separated by blank lines and never formed a table block — no table fact was extracted, which also broke the tool-sequence test (gross-margin facts exist only in the table) and the evaluation (agent span accuracy 7/19; baseline had no numeric observations); (b) the scripted fake overshot its timeout by 1 ms (agent `max_elapsed_ms` 60 001 > 60 000); (c) two tests expected byte-identical replays (same ingestion batch; same assessment key) to be rejected, while the store and gate correctly return IDEMPOTENT/DUPLICATE; (d) one test matched the word "probability" in the explanatory text "not a probability" instead of checking for probability fields.
+2. **Fix commit `2a0abc3`.** Code fix for (a); the fake now times out at exactly the remaining budget, like a transport timeout set to it (b); tests corrected for (c)/(d) — the competing poll and the late result now differ from the accepted ones; the probability check inspects keys. **Process slip:** these fixes were run once locally before they were committed and pushed; the evidence of record below comes only from runs of pushed commits. From pushed `2a0abc3`: 118 tests OK; pytest 118 passed; evaluation PASS on every frozen check.
+3. **Review of the `2a0abc3` evaluation report** (all checks passed; nothing in the thresholds covers this): a filing with injected instructions reached evidence gate CLEAR, and the 0-tool baseline reached CLEAR on the 10-Q without checking earlier filings. **Fix commit `b1f7016`**: the gate stays UNKNOWN for `UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE` and for any numerical fact whose prior was not checked; new test `test_untrusted_instructions_or_unchecked_priors_cannot_be_clear`. No threshold or label was changed.
+4. **Evidence of record, pushed `b1f7016`:** `python -m unittest discover -s tests` → **119 tests OK** (including all 13 foundation tests in `tests/test_contracts.py`); `python -m pytest -q -p no:cacheprovider` → **119 passed, 489 subtests passed**; `binance_test.py` not collected. `python -m larp.intelligence.evaluation` → **acceptance PASS** (report `tests/intelligence/evidence/eval-report-b1f7016.json`, pack digest `42789e45…7fd69`, thresholds SHA-256 `3a1c9d8a…db9106` = the frozen file):
+
+| Metric (threshold) | Agent (≤ 6 tools) | Baseline (0 tools) |
+|---|---|---|
+| Supporting-span accuracy (≥ 19/20) | 19/19 | 4/19 |
+| Numerical correctness (= 1) | 19/19 claims checked | 4/4 |
+| Unsupported-claim acceptance (= 0) | 0/3 planted (trade field, fabricated span, consensus claim) | not run (no adversarial cases) |
+| Relevant-event recall (≥ 9/10) | 7/7 | 7/7 |
+| Abstention recall (= 1) / false abstention (≤ 1/10) | 6/6 / 0/11 | 1/2 (misses the contradiction) / 0/11 |
+| Stale-result rejection (= 1) | 4/4 probes (duplicate, obsolete context, expired, wrong profile) | not run |
+| Max tool calls (≤ 6) / max elapsed, fake clock (≤ 60 000 ms) | 4 / 60 000 (the timeout case) | 0 / 0 |
+| Comparison accuracy (gain ≥ 1/4, ≥ 20 expectations) | 40/40 | 25/36 |
+
+Comparison verdict: **SUPPORTED_ON_SYNTHETIC_PACK** (gain 11/36 ≈ 0.31). Meaning: on these 17 synthetic cases the tool loop found the guidance cut, the beat versus prior guidance, the cross-filing contradiction and the falsifier states that the single-pass baseline could not see, at no unsupported-claim cost. It is not evidence about real filings, hosted-model behaviour or returns (§5.4).
+
+5. **Measured costs:** rule baseline — zero provider cost, no tokens; wall-clock per `assess()` call on the development Mac 0.09 ms min, 0.98 ms median, 8.3 ms max over 30 runs (fake-clock model latencies are simulated, not measured). No hosted or local model call was made, so no token cost or provider latency exists to report.
+6. **Example documents:** `tests/intelligence/golden/trace-tool-selection-thesis-revision.json` (SHA-256 `c8cca285…8e10`: 4 tool calls — fetch exhibit, prior revenue, prior gross margin [NO_PRIOR], compare revenue; findings GUIDANCE_LOWERED and REPORTED_ABOVE_PRIOR_GUIDANCE; thesis v3 INTACT → v4 BROKEN; gate ADVERSE; state and review job committed through the store port; baseline on the same input: thesis UNKNOWN, no comparison finding) and `trace-justified-abstention.json` (SHA-256 `6069e72c…4603`: 3 tool calls; 8-K/A revenue contradicts the original 8-K found through prior context → ABSTAIN CONFLICTING_EVIDENCE, no thesis update, CONFLICT_RESOLUTION review job). `tests/intelligence/test_golden.py` (added with these files) checks both byte for byte.
+7. **Outcome:** §4 engineering criteria PASS at `b1f7016`; §5 synthetic evaluation PASS and SUPPORTED_ON_SYNTHETIC_PACK. Still NOT RUN: trained evidence model, any live EDGAR/model run, real-data held-out evaluation, integration with Keegan's store/scheduler and Keith's policy. Nothing here adopts a model, a severity map or a trading use.
