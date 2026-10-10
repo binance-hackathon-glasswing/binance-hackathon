@@ -1,0 +1,14 @@
+# Disposable database only. Local trust is intentionally limited to loopback/test use.
+services:
+  postgres:
+    image: postgres:14.24-bookworm@sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: larp_test
+    ports: ["127.0.0.1:55432:5432"]
+    tmpfs: ["/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d larp_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20

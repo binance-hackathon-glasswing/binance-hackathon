@@ -23,7 +23,7 @@ in, so install from the repo root). A dependency change in anything that trades 
 Copy `.env.example` to `.env` and fill it in (never committed):
 - `BINANCE_API_KEY` / `BINANCE_SECRET_KEY`: the Web3 API key and secret from the Binance Web3 Developer Portal, shared within the team. The participant kit's demos call the same values `BN_WEB3_API_KEY` / `BN_WEB3_API_SECRET`.
 - `AI_SEEDS_ADDRESS` / `AI_SEEDS_SECRET`: the registered wallet address and the log-upload signing secret the organisers issue for that wallet. The ai-seeds SDK reads these exact names. Leave the optional `AI_SEEDS_URL` override unset.
-- `WALLET_PRIVATE_KEY` (or `WALLET_MNEMONIC`, path `m/44'/60'/0'/0/0`): signs transactions locally; its address must equal `AI_SEEDS_ADDRESS`. Only on the one machine that runs the agent.
+- `WALLET_PRIVATE_KEY` (or `WALLET_MNEMONIC`, path `m/44'/60'/0'/0/0`): signs transactions locally; its address must equal `AI_SEEDS_ADDRESS`. Provision only to the isolated signer, never to the coordinator, evidence workers or uploader.
 
 Then run `python binance_test.py` to check API access from your network (exit code 0 only if the API returns `code == 0`;
 optional `BINANCE_RECV_WINDOW`, e.g. `15000`, sends `X-OC-RECV-WINDOW`).
@@ -37,6 +37,33 @@ Challenge rules, our plan (LARP), guardrails and the submitted proposal are in [
 The `larp` package starts the IDEA-021 policy boundary; it cannot trade. See
 [`IDEA-023`](docs/ledger/IDEA-023.md) for its scope, verification and remaining work.
 After committing and pushing decision-related changes as required by `AGENTS.md`,
-run `python -m unittest discover -s tests -v` from the repository root. These tests
-need only the Python standard library and no `.env` or credentials. In the pinned
-environment, `python -m pytest` discovers only `tests/test_*.py` by default.
+run `python -m unittest tests.test_contracts -v` from the repository root for the
+original 13 standard-library tests. The complete runtime suite needs
+`deploy/requirements-test.lock`, disposable PostgreSQL and Linux worker isolation;
+it needs no `.env` or real credentials. Pytest collects under `tests/`, excluding
+credential-dependent standalone probes.
+
+The runtime/audit branch adds real PostgreSQL transactions, durable scheduler and
+audit outboxes, isolated workers, backup/restore and a restartable synthetic fixture.
+Use the [runtime operations guide](docs/build/runtime-operations.md) for exact setup,
+test and demo commands, deployment boundaries and missing settings. Results and the
+acceptance matrix are in [IDEA-028](docs/ledger/IDEA-028.md). The default is offline;
+this increment cannot activate live trading. The lightweight coordinator image uses
+`deploy/requirements-runtime.lock`; the full research lock was also installed and
+checked on Linux Python 3.12.15 and Windows Python 3.12.14.
+
+The [architecture deployment guide](docs/build/architecture-deployment.md) lists
+every remaining provisioning/integration step and owner. Terraform definitions are
+in `deploy/bootstrap/` and `deploy/aws/`; the optional archive host uses
+`deploy/requirements-aws.lock` and `deploy/systemd/larp-archive.timer`. These provide
+durable S3 backup/hourly anchor delivery, monitoring and release checks. No AWS
+resources are provisioned, no destinations are selected, and signing remains blocked.
+
+### Execution component (Isaac)
+W08's read-only execution capability collector, usage and W04 handoff are in
+[`docs/engineering/W08.md`](docs/engineering/W08.md); preregistration and measured blockers are in
+[`docs/ledger/EXP-005.md`](docs/ledger/EXP-005.md). No transaction is signed or broadcast by this collector.
+
+W04's execution component and production integration boundaries are in
+[`docs/engineering/W04.md`](docs/engineering/W04.md); offline crash/recovery evidence is in
+[`docs/ledger/EXP-006.md`](docs/ledger/EXP-006.md). Its supplied ports are fake only; live execution remains disabled.
