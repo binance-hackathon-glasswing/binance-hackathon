@@ -1,6 +1,8 @@
 -r requirements-runtime.lock
 -r requirements-aws.lock
 pytest==9.1.1
+# Research regressions import the existing project-pinned numerical package.
+numpy==2.5.3
 iniconfig==2.3.0
 packaging==26.3
 pluggy==1.6.0

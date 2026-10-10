@@ -423,6 +423,8 @@ class StoreProbes(unittest.TestCase):
             quotes = []
             if symbol == "NVDAB":
                 quotes.append({"quote_id": "fake-nvdab-sell", "side": "SELL", "token_units": 2000,
+                               "amount_kind": "EXACT_IN", "pay_asset": "NVDAB", "pay_units": 2000,
+                               "min_receive_units": 19_940_040,
                                "cash_units": 19_980_000, "fee_units": 0, "gas_bnb_units": 10000, "route_valid": True,
                                "slippage_bps": 20, "impact_bps": 10, "available_at": at.isoformat(),
                                "observed_at": at.isoformat(), "expires_at": (at + timedelta(seconds=30)).isoformat()})
@@ -628,7 +630,7 @@ class SourceProbes(SourceHarness):
             load_register(Path(path))
 
     def test_d11_control_crash_between_pages_resumes_without_duplicates_and_versions_not_backdated(self):
-        """CONTROL. Crash after page 1 commit: the resumed poll reads page 2 only; earlier records keep their bytes;
+        """CONTROL. Crash after page 1 commit: resume from page 2 through the empty terminal page; preserve bytes;
         a changed item later is version 1 with available_ms = its own retrieval."""
         source = replace(self.register["doj-press"],
                          listing_url="https://www.justice.gov/api/v1/press_releases.json?pagesize=1",
@@ -643,9 +645,9 @@ class SourceProbes(SourceHarness):
         first = self.store.records("doj-press")
         restarted = SQLiteSourceStore(self.db_path)
         self.addCleanup(restarted.close)
-        net = FakeNet({page(1): [(200, {}, doj([b]))]})
+        net = FakeNet({page(1): [(200, {}, doj([b]))], page(2): [(200, {}, doj([]))]})
         self.ingestor(net, register, store=restarted).poll("doj-press")
-        self.assertEqual([u for u, _ in net.requests], [page(1)])
+        self.assertEqual([u for u, _ in net.requests], [page(1), page(2)])
         self.assertEqual([r["item_id"] for r in restarted.records("doj-press")], ["a", "b"])
         self.assertEqual(restarted.records("doj-press")[0], first[0])
         self.clock.now += 1000

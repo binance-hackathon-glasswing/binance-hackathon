@@ -344,6 +344,8 @@ class Pipeline(unittest.TestCase):
             quotes = []
             if symbol == "NVDAB":  # a fake external RFQ for the held quantity; no depth field (kit has none)
                 quotes.append({"quote_id": "fake-nvdab-sell", "side": "SELL", "token_units": 2000,
+                               "amount_kind": "EXACT_IN", "pay_asset": "NVDAB", "pay_units": 2000,
+                               "min_receive_units": 19_940_040,
                                "cash_units": 19_980_000, "fee_units": 0, "gas_bnb_units": 10000, "route_valid": True,
                                "slippage_bps": 20, "impact_bps": 10, "available_at": at.isoformat(),
                                "observed_at": at.isoformat(), "expires_at": (at + timedelta(seconds=30)).isoformat()})

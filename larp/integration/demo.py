@@ -35,6 +35,8 @@ def _market(s, held):
         if m["symbol"] == "NVDAB":
             m["underlying_id"] = EXSEMI
             m["quotes"] = [{"quote_id": "fake-exit", "side": "SELL", "token_units": held, "cash_units": held * 9990,
+                            "amount_kind": "EXACT_IN", "pay_asset": "NVDAB", "pay_units": held,
+                            "min_receive_units": held * 9990 * 9980 // 10000,
                             "fee_units": 0, "gas_bnb_units": 10000, "route_valid": True, "slippage_bps": 20,
                             "impact_bps": 10, "available_at": at.isoformat(), "observed_at": at.isoformat(),
                             "expires_at": (at + timedelta(seconds=30)).isoformat()}]
