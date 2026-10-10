@@ -16,7 +16,7 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 
 | ID | Title | Status | Result (one line) | Updated | File |
 |---|---|---|---|---|---|
-| IDEA-032 | PR #7 integration review and fixes | open (review complete; fixes pushed; PR unmerged; no live activation) | 10 owner commits merged; audit amounts, pagination/recovery, evidence clocks, per-record correction recovery and item truncation repaired; Linux/PostgreSQL acceptance 516 tests + 734 subtests, no skips (V09); real-text/live integration open | 2026-10-10 | [ledger/IDEA-032.md](ledger/IDEA-032.md) |
+| IDEA-032 | PR #7 integration review and fixes | open (review complete; fixes pushed; PR unmerged; no live activation) | R01–R14 repaired; follow-up fixes probe, completion clocks, source availability/coverage and unread/multi-support corrections; Linux/PostgreSQL acceptance 532 tests + 757 subtests, no skips (V13); real-text/live integration open | 2026-10-11 | [ledger/IDEA-032.md](ledger/IDEA-032.md) |
 | EXP-001 | Verified evidence vs no-evidence baseline | draft (blocked on D-07, D-08; final block = post-cutoff Tier B, five names as a slice, per D-10 (a)) | — | 2026-10-06 | [ledger/EXP-001.md](ledger/EXP-001.md) |
 | EXP-002 | Do off-hours bStocks quotes lag verified news? | draft (thresholds not frozen; viability depends on off-hours `openState`, Q-32) | — | 2026-10-05 | [ledger/EXP-002.md](ledger/EXP-002.md) |
 | EXP-003 | Rule-based regime gating vs a simple volatility cap | draft | — | 2026-10-03 | [ledger/EXP-003.md](ledger/EXP-003.md) |

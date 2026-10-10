@@ -34,9 +34,19 @@ Follow-up R06–R08: partial observations advance only `records_seen`, not the c
 - Statement identity: event, assertion, actor, temporal, effective date, anchors (amounts with scale, dates, years, quarter ordinals, officer titles, third-party roles) and content words with modal verbs normalised. Relations: EXACT, SEMANTIC_SAME, SUBSTANTIVE_CHANGE, UNCERTAIN_MATCH (exposed, never merged).
 - Novelty: PRIOR_NOT_CHECKED, HISTORY_UNAVAILABLE, FIRST_SEEN, REPEATED, CHANGED, UNCERTAIN_MATCH, ALREADY_SEEN (accepted before, including a reread of the same filing).
 - Review: PENDING_REVIEW → ACKNOWLEDGED after a complete reassessment with history checked; incomplete reassessments back off exponentially to REVIEW_EXHAUSTED. Corrections and withdrawals mark statements CORRECTED/WITHDRAWN and resolve adverse latches only under SOURCE_CORRECTED_OR_WITHDRAWN.
-- Authority (strategy profile): `falsifier_authority` NONE / SHADOW (default) / DISCRETIONARY_EXIT / MANDATORY_REDUCTION; `statement_authority` SHADOW (default) / ENTRY_BLOCK. No adoption record makes any non-SHADOW value live.
+- Authority (strategy profile): `falsifier_authority` NONE / SHADOW (default) / DISCRETIONARY_EXIT / MANDATORY_REDUCTION; `statement_authority` SHADOW (default) / ENTRY_BLOCK. Main's `a21d034` records D-11's narrow verified 8-K exit decision; the versioned live predicates/configuration and activation remain outstanding. Synthetic defaults stay SHADOW.
 
 ## Free sources
+
+2026-10-11 follow-up (IDEA-032 R09–R14): retrieval and availability timestamps are
+captured after HTTP response completion, including retries. Listing shape errors
+persist as source failures; missing identities, rejected items and item caps retain
+incomplete coverage through pagination until a complete clean rescan. The probe
+reports `item_truncated` and handles bodyless 304 responses. Producer and consumer
+both refuse correction/acknowledgement from incomplete or contradictory evidence,
+including unread primary text. Statement correction proof accumulates per support;
+newer unread revisions invalidate older proof, and all supports must resolve before
+the statement is marked corrected/withdrawn.
 
 | source_id | Enabled | Rights basis | Notes |
 |---|---|---|---|
