@@ -134,21 +134,17 @@ class ContractTests(unittest.TestCase):
 
     def test_i02_stale_clear_is_not_a_fresh_review(self):
         p = synthetic_profile()
-        w = build_world(["OCCURRED_8K"], extra_filings={"CLEAN": dict(OCCURRED_8K, accession="0009900001-26-000431",
-            documents=[doc("c.htm", "8-K", cover("Example Semiconductor Corp", "8-K", ["8.01"],
-                                                   ["The company held its annual meeting of stockholders."]))])})
+        clean = dict(OCCURRED_8K, accession="0009900001-26-000431", documents=[doc("c.htm", "8-K", cover(
+            "Example Semiconductor Corp", "8-K", ["8.01"], ["The company held its annual meeting of stockholders."]))])
+        w = build_world(["CLEAN"], extra_filings={"CLEAN": clean})
         h = profile_hash(p)
         state = initial_state(EXSEMI, h, lifecycle_policy=lifecycle_policy_from(w.config))
-        w2 = build_world(["CLEAN"], extra_filings={"CLEAN": dict(OCCURRED_8K, accession="0009900001-26-000431",
-            documents=[doc("c.htm", "8-K", cover("Example Semiconductor Corp", "8-K", ["8.01"],
-                                                   ["The company held its annual meeting of stockholders."]))])})
-        res = w2.assessor(RuleBaselineModel(w2.clock)).assess(request_for(w2, ["CLEAN"], state, h, RUN, "j"))
-        _, state = accept(state, res, profile_hash=h, now_ms=w2.clock())
+        res = w.assessor(RuleBaselineModel(w.clock)).assess(request_for(w, ["CLEAN"], state, h, RUN, "j"))
+        _, state = accept(state, res, profile_hash=h, now_ms=w.clock())
         self.assertEqual(state["evidence_gate"], "CLEAR")
         s = strategy_snapshot()  # 14:00 UTC, after the 1 h assessment validity
         ctx = context_for(s, state)
         self.assertEqual((ctx["status"], ctx["review_complete"]), ("STALE", False))
-        del w
 
 
 class AuthorityTests(unittest.TestCase):
@@ -168,8 +164,9 @@ class AuthorityTests(unittest.TestCase):
         return s
 
     def quoted(self, s):
-        proposal = decide(s, s.policy_state)
-        return with_quotes(s), proposal
+        """Quotes from the fake port change the snapshot, so the policy decides on the quoted snapshot."""
+        q = with_quotes(s)
+        return q, decide(q, q.policy_state)
 
     def test_i06_none_and_shadow_never_exit(self):
         for authority, shadowed in (("NONE", False), ("SHADOW", True)):
@@ -347,10 +344,10 @@ class Pipeline(unittest.TestCase):
                         "underlying_open": True, "basis_verified": False, "quotes": quotes})
         return out
 
-    def coordinator(self, authority="SHADOW"):
+    def coordinator(self, authority="SHADOW", falsifier_ids=("F-ITEM-4.02",)):
         from larp.runtime.coordinator import Coordinator
         from larp.runtime.fixtures import FakeExecution
-        self.profile = synthetic_profile(falsifier_ids=["F-ITEM-4.02"], falsifier_authority=authority)
+        self.profile = synthetic_profile(falsifier_ids=list(falsifier_ids), falsifier_authority=authority)
         self.h = profile_hash(self.profile)
         builder = ContextBuilder(profile=self.profile, profile_hash=self.h, run_id=RUN,
                                  issuers={EXSEMI: {"token": "NVDAB", "underlying_id": EXSEMI}}, market=self.market,
@@ -409,9 +406,9 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(self.store.metrics(RUN).read()["open_rounds"], 1)  # awaits execution reconciliation
 
     def test_i05_restart_duplicate_stale_context_and_correction(self):
-        c = self.coordinator("MANDATORY_REDUCTION")
+        c = self.coordinator("MANDATORY_REDUCTION", falsifier_ids=("IMPAIRMENT",))
         first, request = self.round(c, "r1", "OCCURRED_8K")
-        restarted = self.coordinator("MANDATORY_REDUCTION")  # new process, same store
+        restarted = self.coordinator("MANDATORY_REDUCTION", falsifier_ids=("IMPAIRMENT",))  # new process
         self.assertEqual(restarted.start("r1", request, self.w.clock()).read(), first.read())
         self.assertEqual(len(self.commands()), 1)
         self.assertEqual(len(self.store.load(RUN).read()["reservations"]), 2)
