@@ -141,14 +141,11 @@ class Web3Client:
                 body = json.loads(raw)
             except (ValueError, UnicodeError):
                 raise Unavailable('non_json_response') from None
-            code = body.get('code') if isinstance(body, dict) else None
-            if code == 40304:
+            if status == 403:
                 outcome = 'compliance_restriction'
-            elif status == 403:
-                outcome = 'http_forbidden_unclassified'
-            elif status == 401 or code == 40102:
+            elif status == 401:
                 outcome = 'authentication_error'
-            elif status == 429 or code == 42900:
+            elif status == 429:
                 outcome = 'rate_limited'
             elif 200 <= status < 300 and type(body) is dict and type(body.get('code')) is int and body['code'] == 0:
                 outcome = 'ok'

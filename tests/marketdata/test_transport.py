@@ -36,9 +36,3 @@ class TransportTests(unittest.TestCase):
             c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=Opener(b'{"code":40435,"data":[]}'))
             with self.assertRaises(Unavailable):c.request('GET','market/rwa/tokens',{})
         self.assertIsNone(NoRedirect().redirect_request(None,None,None,None,None,None))
-    def test_http_200_auth_rate_and_compliance_codes_stop_collection(self):
-        for code, outcome in ((40102,'authentication_error'),(42900,'rate_limited'),(40304,'compliance_restriction')):
-            with self.subTest(code=code), tempfile.TemporaryDirectory() as root:
-                c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),
-                             opener=Opener(json.dumps({'code':code}).encode()))
-                with self.assertRaisesRegex(Unavailable,outcome):c.request('GET','market/rwa/tokens',{})

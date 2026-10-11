@@ -36,13 +36,13 @@ def cycle(port, sizes, symbols):
                                                           artifact_sha256=estimate['artifact_sha256'])
                     except Unavailable as e:
                         item['gas_estimates'][side] = dict(status='UNAVAILABLE', reason=str(e))
-                        if str(e) in ('compliance_restriction', 'http_forbidden_unclassified', 'authentication_error', 'rate_limited'):
+                        if str(e) in ('compliance_restriction', 'authentication_error', 'rate_limited'):
                             raise
                 item['status'] = 'MEASURED_NONEXECUTABLE'
             except Unavailable as e:
                 item.update(status='UNAVAILABLE', reason=str(e))
                 report['observations'].append(item)
-                if str(e) in ('compliance_restriction', 'http_forbidden_unclassified', 'authentication_error', 'rate_limited'):
+                if str(e) in ('compliance_restriction', 'authentication_error', 'rate_limited'):
                     report.update(finished_at=utc(), stopped=str(e))
                     return report
                 continue
