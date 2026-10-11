@@ -68,3 +68,11 @@ run "reject_final_interactive_access" {
   }
   expect_failures = [aws_iam_role_policy_attachment.development_ssm]
 }
+
+run "archive_retention_reaches_end_of_2026" {
+  command = plan
+  variables {
+    archive_retention_days = 80
+  }
+  expect_failures = [var.archive_retention_days]
+}

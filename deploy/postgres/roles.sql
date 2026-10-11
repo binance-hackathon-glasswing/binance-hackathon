@@ -8,13 +8,24 @@ BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='larp_uploader') THEN
     CREATE ROLE larp_uploader LOGIN;
   END IF;
+  -- IDEA-042 item 7: coordinator/journal, W04 execution store, signer registry.
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='larp_runtime') THEN
+    CREATE ROLE larp_runtime LOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='larp_execution') THEN
+    CREATE ROLE larp_execution LOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='larp_signer') THEN
+    CREATE ROLE larp_signer LOGIN;
+  END IF;
 END $$;
-GRANT rds_iam TO larp_archive, larp_uploader;
-GRANT CONNECT ON DATABASE larp TO larp_archive, larp_uploader;
-GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader;
+GRANT rds_iam TO larp_archive, larp_uploader, larp_runtime, larp_execution, larp_signer;
+GRANT CONNECT ON DATABASE larp TO larp_archive, larp_uploader, larp_runtime, larp_execution, larp_signer;
+GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader, larp_runtime, larp_execution, larp_signer;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,
-  swap_owners,jobs,command_checks TO larp_archive;
+  swap_owners,jobs,command_checks,process_sessions,execution_authority,executions,execution_events,
+  execution_signatures TO larp_archive;
 -- SELECT ... FOR UPDATE needs update privilege; restrict it to the clock column.
 -- The archive/uploader implementations only lock runs; they never write this field.
 GRANT UPDATE (clock_ms) ON runs TO larp_archive, larp_uploader;
@@ -23,5 +34,24 @@ GRANT SELECT ON runs,audit_events,audit_chunks TO larp_uploader;
 -- Re-running this script must also remove the earlier broad table privilege.
 REVOKE UPDATE ON audit_chunks FROM larp_uploader;
 GRANT UPDATE (status,attempts,next_ms,last_code,acknowledgement) ON audit_chunks TO larp_uploader;
--- No DELETE/DDL, trading command creation or wallet state mutation grants.
--- Primary/standby/signer roles require owner-specific grants during integration.
+-- No DELETE/DDL, trading command creation or wallet state mutation grants for the two roles above.
+
+-- Coordinator and journal (larp.runtime). Never the execution store or the signer registry; never the run's
+-- identity or initial projection.
+GRANT SELECT,INSERT ON runs TO larp_runtime;
+GRANT UPDATE (version,epoch,quarantined,head,projection,policy_state,execution_state,clock_ms) ON runs TO larp_runtime;
+GRANT SELECT,INSERT ON events,commands,audit_events,audit_chunks,swap_owners,command_checks TO larp_runtime;
+GRANT SELECT,INSERT,UPDATE ON reservations,rounds,jobs,process_sessions TO larp_runtime;
+GRANT USAGE ON SEQUENCE command_checks_check_id_seq TO larp_runtime;
+
+-- W04 execution store and command claims (larp.storage.execution_store, PostgresStore.claim_command). Reads the
+-- journal to verify it; never writes it. Locking runs needs an UPDATE privilege: only the clock column.
+GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,swap_owners,jobs TO larp_execution;
+GRANT UPDATE (clock_ms) ON runs TO larp_execution;
+GRANT UPDATE (status,execution_key) ON commands TO larp_execution;
+GRANT SELECT,INSERT ON command_checks,execution_events TO larp_execution;
+GRANT SELECT,INSERT,UPDATE ON execution_authority,executions TO larp_execution;
+GRANT USAGE ON SEQUENCE command_checks_check_id_seq,execution_events_sequence_seq TO larp_execution;
+
+-- Signer registry only (signed bytes; the wallet key itself never enters the database).
+GRANT SELECT,INSERT ON execution_signatures TO larp_signer;

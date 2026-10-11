@@ -36,6 +36,12 @@ variable "archive_retention_days" {
     condition     = var.archive_retention_days >= 1 && floor(var.archive_retention_days) == var.archive_retention_days
     error_message = "Choose the explicit immutable archive retention in whole days."
   }
+  # IDEA-036 #1: anchors and backups are kept at least through 2026-12-31 (audit and technical review). From the
+  # earliest anchor (Oct 11) that is 81 days. COMPLIANCE retention can never be shortened afterwards.
+  validation {
+    condition     = var.archive_retention_days >= 81
+    error_message = "Archive retention must reach at least 2026-12-31: 81 days or more."
+  }
 }
 variable "backup_retention_days" {
   type = number

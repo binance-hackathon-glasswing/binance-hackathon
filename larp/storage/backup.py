@@ -11,7 +11,9 @@ from decimal import Decimal
 from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
 
-TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks')
+TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks',
+        # IDEA-042 items 2 and 5: execution state and process sessions recover with the journal (FK order).
+        'process_sessions','execution_authority','executions','execution_events','execution_signatures')
 # Payloads of earlier backups must never be embedded recursively in new backups.
 # These delivery tables are rebuilt only after quarantine/reconciliation and a new
 # archive namespace; remote object versions/receipts are retained independently.
@@ -60,6 +62,7 @@ def restore(store,backup):
         for run_id, in db.execute('SELECT run_id FROM runs').fetchall():
             store._verify(db,run_id,store._run(db,run_id))
         db.execute('UPDATE runs SET quarantined=true,epoch=epoch+1')
-        db.execute("SELECT setval(pg_get_serial_sequence('command_checks','check_id'), "
-                   "COALESCE((SELECT max(check_id) FROM command_checks),1), "
-                   "EXISTS(SELECT 1 FROM command_checks))")
+        for table,column in (('command_checks','check_id'),('execution_events','sequence')):
+            db.execute(f"SELECT setval(pg_get_serial_sequence('{table}','{column}'), "
+                       f"COALESCE((SELECT max({column}) FROM {table}),1), "
+                       f"EXISTS(SELECT 1 FROM {table}))")
