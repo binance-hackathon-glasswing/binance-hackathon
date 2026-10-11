@@ -94,6 +94,19 @@ Design note: the supervisor restarts the same process on the same host only afte
 - **R4 · manifest.** `build_manifest` embeds the services list and the deviations register with their hashes. Release preflight refuses a manifest whose register or services list is missing or invalid.
 - **R5 · version event before trading.** `Coordinator.register_version` commits a `VERSION_REGISTERED` journal event (build ID, manifest, services and deviations hashes). A coordinator constructed with `require_version=True` commits no execution command unless the registered build equals its `version_id`. Replay supports the event.
 
+**Amendment to H3 (2026-10-11, before any item 5 test ran):** a journal that fails verification cannot accept a commit, so an **integrity failure quarantines the run** (every write and every signature fenced) and is reported through the health check, instead of committing a `HALT` event. The other three triggers commit `HALT` events as written.
+
 ### 2.5 Results
 
-NOT RUN at the time of writing (criteria commit).
+Criteria pushed at `5b80e7e` (CI green, [run 38154687328](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38154687328)) before any covered code ran.
+
+**Item 3 — PASS** at `55d8222`, Linux CI green on `0551587` (that commit plus a no-change merge of the base after PR #12 merged; [run 38156600082](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156600082)). Local: 621 passed, 3 skipped (bubblewrap), 774 subtests.
+- L1–L7: `tests/audit/test_round_logging.py`, 18 tests on PostgreSQL. Every path (hold, assessment unavailable, context unavailable, planner unavailable, plan invalid incl. BNB in a trade round, commit rejected, interrupted, executed, gas top-up, mixed top-up refused) closes with exactly one log. `cot` is the providers' summaries in order, "Model called; the provider returned no reasoning summary …", or "No model call this round. …". Test rounds are marked only when asked. An oversize round logs once and places nothing. An event is DELIVERED only after every chunk is ACKed, a lost ACK resends identical bytes, and a 400 leaves it FAILED with an empty outbox.
+- L2 and L8: `tests/integration/test_settlement.py`. An unsent intent is logged without a tx hash, with `output.aborted[0].reason == "QUOTE_EXPIRED"`, and a settled swap's hash is owned by its round and decision in `swap_owners`.
+- Code: `larp/audit/protocol.py` (`round_kind`, BNB only in GAS_TOPUP rounds; trade-round envelopes unchanged), `larp/runtime/coordinator.py` (`round_kind`, `round_cot`, decision IDs and `example` in `input`, `output.aborted`), `larp/audit/delivery.py` (`delivery_status`), `larp/integration/settlement.py` (aborted orders), `larp/ports.py` (optional `reason` on NOT_SUBMITTED), `larp/runtime/replay.py` (`test_rounds` passthrough).
+
+**Item 4 — PASS locally** (CI: see the next entry). `larp/integration/replay.py` (`RecordedPorts`, `replay_live`) and `builder_for` in `larp/runtime/replay.py`. `tests/integration/test_live_replay.py`, 4 tests on PostgreSQL:
+- P2: a MANDATORY_REDUCTION round with broadcast, FILL and close replays to the same head. Control: the same replay through the live ports, now dead, raises `IntegrityError`.
+- P1, P3: a five-round day (clean hold, adverse mandatory reduction settled by observations, a context failure caused by a market port outage, two holds), with a market port whose prices change every call, replays to the identical head after every live port is made to raise. A recorded failure re-raises with its recorded cause name.
+- P4: one recorded market price changed in a copy of the journal is refused (`IntegrityError`).
+- Local: 625 passed, 3 skipped, 774 subtests.
