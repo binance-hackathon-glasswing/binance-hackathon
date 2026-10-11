@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:184c0824986bebdd925034633fd760ec4e87b8e4a7303952383353558d48cb1c",
+  "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -60,7 +60,7 @@
     "d106bccec802b29cf37f3ee2c484d445cd2c2aa6ab464d1d825d337ba6b6aa12"
    ],
    "accepted_result_ids": [
-    "res:184c0824986bebdd925034633fd760ec4e87b8e4a7303952383353558d48cb1c"
+    "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,7 +141,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:a57a8d46a6fae75b5900da6d0db11d44bb7d11a70301dab221cda650a2d15699",
+   "batch_id": "state:e94e9b1c8294aea12235313f27d3c9b08b4fbfb52bf1ce6187836f8125d010bc",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:184c0824986bebdd925034633fd760ec4e87b8e4a7303952383353558d48cb1c",
+   "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
      "d106bccec802b29cf37f3ee2c484d445cd2c2aa6ab464d1d825d337ba6b6aa12"
     ],
     "accepted_result_ids": [
-     "res:184c0824986bebdd925034633fd760ec4e87b8e4a7303952383353558d48cb1c"
+     "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:a57a8d46a6fae75b5900da6d0db11d44bb7d11a70301dab221cda650a2d15699",
+   "batch_id": "state:e94e9b1c8294aea12235313f27d3c9b08b4fbfb52bf1ce6187836f8125d010bc",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -382,6 +382,7 @@
   "issuer_id": "FIXTURE-CIK-9900001",
   "job_id": "demo:justified-abstention",
   "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+  "review": null,
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentRequest.v1",
   "source_health": {
@@ -2583,7 +2584,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "b0cdbae023b677184fd83d1b43a0a279805282de31fb8c0a178b293b925ce364",
   "rejected_claims": [],
-  "result_id": "res:184c0824986bebdd925034633fd760ec4e87b8e4a7303952383353558d48cb1c",
+  "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",
@@ -2708,6 +2709,7 @@
     "request_id": "evidence:856e9a730188f2b749164add37742cdbe236643a5f9b02dfb3d2760ed97a1a6f"
    }
   ],
+  "review_scope": null,
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentResult.v2",
   "severity": null,

@@ -40,6 +40,7 @@ INCOMPLETE = INCOMPLETE_EVIDENCE
 RESOLUTION_RULE = "SOURCE_CORRECTED_OR_WITHDRAWN"
 _LISTS = ("findings", "event_findings", "claims", "falsifiers", "event_statements", "evidence_used", "missingness",
           "conflicts", "reasons")
+_LEGACY = object()  # marker: the result has no review_scope field at all
 MAX_RECORDS = 2000  # records_seen / records_assessed bound, besides protected correction baselines
 DEFAULT_LIFECYCLE = {"review_base_delay_ms": 21_600_000, "max_review_attempts": 3, "max_backoff_ms": 172_800_000,
                      "statement_retention_ms": 7_776_000_000, "max_statements": 400}
@@ -103,6 +104,18 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
             type(r.get("assessment_key")) is not str or any(type(r.get(k)) is not list for k in _LISTS) or \
             type(r.get("coverage")) is not dict or (r["status"] == "ASSESSED" and "proposed_thesis" not in r):
         return _reject(state, "REJECT_MALFORMED", now_ms, rid)
+
+    scope = r.get("review_scope", _LEGACY)
+    if scope is None:
+        scope = frozenset()  # not a review job: no statement's review attempt
+    elif scope is not _LEGACY:
+        if type(scope) is not dict or scope.get("job_id") != r.get("job_id") or \
+                type(scope.get("statement_ids")) is not list or \
+                any(type(x) is not str for x in scope["statement_ids"]):
+            return _reject(state, "REJECT_MALFORMED", now_ms, rid)
+        scope = frozenset(scope["statement_ids"])
+    else:
+        scope = None  # a result written before review scopes existed: the v1.0 rule replays unchanged
 
     policy = state["lifecycle"]
     nxt = dict(state, version=state["version"] + 1, latest_cutoff_ms=r["cutoff_ms"], last_rejection=None,
@@ -260,7 +273,7 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         history_checked = (r.get("coverage") or {}).get("prior_history", {}).get("STATEMENTS") is True
         for s in r.get("event_statements", []):
             lifecycle.observe(statements, s, result_id=rid, now_ms=now_ms, complete=complete and history_checked,
-                              policy=policy)
+                              policy=policy, review_scope=scope)
         known = list(state["context"]["known_facts"])
         known_ids = {f["fact_id"] for f in known}
         for claim in r["claims"]:
@@ -274,8 +287,9 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         nxt["availability"] = "ABSTAINED" if r["status"] == "ABSTAIN" else "UNAVAILABLE"
     # Correction proof invalidated above and not re-established by this result reopens the review (R25).
     lifecycle.reopen(statements, invalidated, result_id=rid, now_ms=now_ms, policy=policy)
-    # Any accepted result at or after a due review that did not observe the statement is one attempt (R18).
-    lifecycle.missed_reviews(statements, result_id=rid, now_ms=now_ms, policy=policy)
+    # A result of a statement's own review job at or after its due time that did not observe it is one attempt (R18,
+    # narrowed to the statement's own review job by IDEA-035 A4 / GAP-28).
+    lifecycle.missed_reviews(statements, result_id=rid, now_ms=now_ms, policy=policy, review_scope=scope)
     lifecycle.expire(statements, now_ms=now_ms, retention_ms=policy["statement_retention_ms"],
                      max_entries=policy["max_statements"])
     # Correction baselines still needed by an unresolved latch or a registry statement are never evicted (R23).

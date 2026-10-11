@@ -176,6 +176,10 @@ class EvidenceAssessor:
             raise IntelligenceError("TOOL_NOT_ALLOWLISTED") from None
         refs = r.get("evidence_refs")
         need(type(refs) is list and refs, "NO_EVIDENCE_REFS")
+        review = r.get("review")
+        need(review is None or (type(review) is dict and set(review) == {"job_id", "statement_ids"}
+                                and review["job_id"] == r["job_id"] and type(review["statement_ids"]) is list
+                                and all(type(x) is str for x in review["statement_ids"])), "REVIEW_SCOPE_MALFORMED")
         return entry, cutoff, calls, deadline, tools, context, refs
 
     def _rejected(self, r: dict, reason: str, now: int) -> Document:
@@ -460,6 +464,7 @@ class EvidenceAssessor:
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"],
             "cutoff_ms": state.cutoff, "assessment_key": key, "status": status, "reasons": reasons,
+            "review_scope": r.get("review"),
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": config.prompt_sha256, "config_sha256": config.config_sha256,
             "red_flag_set_sha256": self.red_flag_set_sha256,
@@ -512,7 +517,7 @@ class EvidenceAssessor:
         result = {
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"], "cutoff_ms": cutoff,
-            "assessment_key": key, "status": "UNAVAILABLE", "reasons": reasons,
+            "assessment_key": key, "status": "UNAVAILABLE", "reasons": reasons, "review_scope": r.get("review"),
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
             "evidence_used": [], "claims": [], "retained_facts": [], "rejected_claims": [], "novelty": {},
@@ -845,10 +850,19 @@ def _rationale(result, entry):
     return f"{parts[0]}. {second}. {third}."
 
 
+def review_scope(job: dict) -> dict | None:
+    """The statements a job reviews: from a STATEMENT_REVIEW_DUE job payload (larp.integration.runtime), else None.
+    The result echoes it, and only results of a statement's own review job count as its review attempts (A4)."""
+    payload = job.get("payload") if type(job.get("payload")) is dict else {}
+    if payload.get("reason") != "STATEMENT_REVIEW_DUE":
+        return None
+    return {"job_id": job["job_id"], "statement_ids": sorted(payload.get("statement_ids") or [])}
+
+
 def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cutoff_ms: int, context: dict,
                   policy_profile_hash: str, allowed_tools: list, tool_calls: int, deadline_ms: int,
                   source_health: dict | None) -> Document:
-    """AssessmentRequest.v1 from an ingestion job and the records it references."""
+    """AssessmentRequest.v1 from an ingestion or review job and the records it references."""
     refs = [{"record_id": x["record_id"], "accession": x["accession"], "source": x["source_id"],
              "quality": x["quality"], "observed_ms": x["retrieved_ms"], "available_ms": x["available_ms"],
              "content_hash": x["content_hash"]} for x in records]
@@ -856,4 +870,5 @@ def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cuto
         "schema": "AssessmentRequest.v1", "job_id": job["job_id"], "run_id": run_id, "issuer_id": issuer_id,
         "cutoff_ms": cutoff_ms, "evidence_refs": refs, "context": context, "context_hash": context_hash(context),
         "policy_profile_hash": policy_profile_hash, "allowed_tools": allowed_tools,
-        "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health})
+        "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health,
+        "review": review_scope(job)})
