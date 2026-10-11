@@ -26,7 +26,7 @@ import json
 import re
 
 from larp.intelligence.common import IntelligenceError, sha256_hex
-from larp.intelligence.semantics import classify_event, finding_eligible
+from larp.intelligence.semantics import classify_event, clause_bounds, finding_eligible
 
 CONFIG = Path(__file__).resolve().parents[2] / "config" / "intelligence" / "red_flags.v1.json"
 SCHEMA = "RedFlagPredicateSet.v1"
@@ -83,11 +83,10 @@ def item_predicates(predicates: dict) -> dict:
 
 
 def _heading_clause(text: str, lo: int, hi: int) -> bool:
-    """The condition clause is (part of) an item heading, e.g. 'Item 4.02 Non-Reliance on ...'."""
-    line_lo = text.rfind("\n", 0, lo) + 1
-    line_hi = text.find("\n", hi)
-    line = text[line_lo: len(text) if line_hi < 0 else line_hi]
-    return bool(ANY_ITEM_HEADING.search(line))
+    """The condition sits in an item heading's own clause, e.g. 'Item 4.02 Non-Reliance on ...'. Only that clause
+    is excluded: a heading and its body in one paragraph still leave the body's sentences readable."""
+    c_lo, c_hi = clause_bounds(text, lo, hi)
+    return bool(ANY_ITEM_HEADING.search(text[c_lo:c_hi]))
 
 
 def sections(text: str, item: str, heading: re.Pattern) -> list:
@@ -146,9 +145,8 @@ def verify_item(predicate: dict, *, record: dict, texts: dict, issuer_names: tup
                                      document_ms=original, issuer_names=issuer_names)
                 seen.append(sem)
                 if finding_eligible(sem) and sem.get("attribution") == "SOURCE_ASSERTS":
-                    clause_lo = max(lo, text.rfind("\n", lo, m.start()) + 1)
-                    clause_hi = text.find("\n", m.end(), hi)
-                    clause = text[clause_lo: hi if clause_hi < 0 else clause_hi].strip()
+                    clause_lo, clause_hi = clause_bounds(text, m.start(), m.end())
+                    clause = text[max(lo, clause_lo): min(hi, clause_hi)].strip()
                     return dict(out, verified=True, reason="VERIFIED", semantics=sem,
                                 span={"doc": doc["text_sha256"], "doc_name": doc.get("name"), "text": clause},
                                 affected_periods=sorted({p.group(0) for p in PERIOD.finditer(clause)}),

@@ -657,6 +657,57 @@
     "directive": "BLOCK_NEW_BUYS",
     "restarts_block": false
    }
+  },
+  {
+   "fixture_id": "RF1-4.02-SUPPORTED-INLINE",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-11 (IDEA-041 review, before running): heading and body in one paragraph; only the heading's own clause is excluded.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000290",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T22:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements. On October 7, 2026, the Audit Committee concluded that the previously issued financial statements for the first quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-HEADING-ONLY-INLINE",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "unsupported",
+   "note": "Added 2026-10-11 (IDEA-041 review, before running): a heading followed in the same paragraph by an unrelated sentence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000291",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T22:05:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements. The Company will provide further information in a later filing."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_CONDITION_TEXT",
+    "directive": null
+   }
   }
  ]
 }
