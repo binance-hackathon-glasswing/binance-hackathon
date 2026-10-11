@@ -448,6 +448,47 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(after[:len(before)], before)  # earlier events are not rewritten
         self.store.verify(RUN)
 
+    # IDEA-033 R27 (Keegan, PR #7 review at bf6d65e): replay() could not take the evidence-pipeline builder or initial
+    # policy state, so a replayed round fell back to the fixture context and its batch hash diverged.
+    def replay_into_empty_store(self, coordinator):
+        from larp.runtime.fixtures import FakeExecution, settle
+        from larp.runtime.replay import replay
+        from larp.storage.postgres import doc as sdoc
+        journal, expected = self.store.journal(RUN), self.store.verify(RUN)
+        with self.store.transaction() as db:
+            db.execute("TRUNCATE runs CASCADE")
+        replay(journal, sdoc(initial_projection(pipeline_ledger())), self.store, run_id=RUN, wallet_id="fake-wallet",
+               chain_id=56, version_id="integration-fixture", profile_hash=self.h, address="0x" + "1" * 40,
+               policy=StrategyPolicy(), planner=RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3),
+               execution=FakeExecution(), reducer=settle, context_builder=coordinator.context_builder,
+               initial_policy_state=coordinator.initial_policy_state)
+        self.assertEqual(self.store.verify(RUN), expected)
+        return journal
+
+    def test_r27_evidence_pipeline_rounds_replay_exactly(self):
+        c = self.coordinator("SHADOW")
+        self.round(c, "r1", "EXSEMI_402_8K")
+        self.w.clock.advance(60_000)
+        self.round(c, "r2", "EXSEMI_Q2_8K")
+        journal = self.replay_into_empty_store(c)
+        self.assertEqual([d.payload for d in self.store.journal(RUN)], [d.payload for d in journal])
+        state = self.store.load(RUN).read()["projection"]["evidence"][EXSEMI]
+        self.assertEqual(state["evidence_gate"], "ADVERSE")  # the evidence state is rebuilt, not copied
+
+    def test_r27_context_unavailable_round_replays_its_committed_evidence(self):
+        """R16 rounds commit accepted evidence although a port failed; replay reproduces them with the same ports."""
+        c = self.coordinator("SHADOW")
+
+        def market_down(now_ms):
+            raise ConnectionError("synthetic market port outage")
+        c.context_builder.market = market_down
+        self.round(c, "r1", "EXSEMI_402_8K")
+        record = self.store.event(RUN, "plan:r1")["record"]
+        self.assertIn("CONTEXT_UNAVAILABLE:ConnectionError", record["errors"])
+        self.replay_into_empty_store(c)
+        state = self.store.load(RUN).read()["projection"]["evidence"][EXSEMI]
+        self.assertEqual(state["evidence_gate"], "ADVERSE")
+
 
 if __name__ == "__main__":
     unittest.main()

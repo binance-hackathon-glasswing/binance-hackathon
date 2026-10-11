@@ -7,6 +7,7 @@ NOT_SUPPORTED; one whose own return is uncertain is INCONCLUSIVE. Tests marked C
 """
 
 import unittest
+from unittest import mock
 
 from larp.contracts import Document
 from larp.research import evaluation
@@ -118,6 +119,51 @@ class SupportRules(unittest.TestCase):
         self.assertEqual(r["status"], "NOT_RUN")
         self.assertIn("Unsupported support_rule", r["reason"])
         self.assertEqual(evaluation.SUPPORT_RULES, ("LOWER_BOUND_ABOVE_MARGIN",))
+
+
+class LowDrawBootstrap(unittest.TestCase):
+    """IDEA-033 R26 (wtvlol, PR #7 review at bf6d65e). With bootstrap_draws=1 both "bounds" are one resample, which
+    can lie on the far side of the observed mean. Two clusters, baseline -20%/-20%, treatment -10%/+9%, seed 0: the
+    only resample picks cluster 1 twice, so the paired bound is +29% and the absolute bound +9%, while the treatment's
+    own mean is -0.5%. It was SUPPORTED."""
+
+    def two_clusters(self, baseline=(-200_000, -200_000), treatment=(-100_000, 90_000), **changes):
+        pairs = econ_outcomes([0, 0])
+        for (a, b), base, treat in zip(pairs, baseline, treatment):
+            a["wallet_net_units"], b["wallet_net_units"] = base, treat
+        docs = [Document.from_dict(o) for pair in pairs for o in pair]
+        return evaluate(Document.from_dict(econ_registration(2, **changes)), docs).read()
+
+    def test_r26_single_draw_cannot_support_a_negative_average_treatment(self):
+        r = self.two_clusters(bootstrap_draws=1, seed=0, confidence_bps=9500)
+        self.assertNotEqual(r["status"], "SUPPORTED")
+        self.assertEqual(r["status"], "NOT_RUN")
+        self.assertIn("BOOTSTRAP_DRAWS_TOO_FEW", r["reason"])
+
+    def test_r26_draws_too_few_for_the_registered_tails_are_not_run(self):
+        """At least 25 draws must lie beyond each percentile bound: 1000 draws at 95%, 500 at 90%, 5000 at 99%."""
+        for confidence, enough in ((9500, 1000), (9000, 500), (9900, 5000)):
+            with self.subTest(confidence=confidence):
+                profitable = dict(baseline=(0, 0), treatment=(10_000, 10_000), confidence_bps=confidence)
+                too_few = self.two_clusters(bootstrap_draws=enough - 1, **profitable)
+                self.assertEqual(too_few["status"], "NOT_RUN")
+                self.assertIn("BOOTSTRAP_DRAWS_TOO_FEW", too_few["reason"])
+                self.assertEqual(self.two_clusters(bootstrap_draws=enough, **profitable)["status"], "SUPPORTED")
+
+    def test_r26_interval_that_excludes_the_observed_mean_never_supports(self):
+        """Defence in depth: with the draw minimum switched off, a treatment whose observed mean is not positive
+        is still never SUPPORTED, because its interval contradicts its own point estimate."""
+        with mock.patch.object(evaluation, "MIN_TAIL_DRAWS", 0, create=True):
+            r = self.two_clusters(bootstrap_draws=1, seed=0, confidence_bps=9500)
+        self.assertNotEqual(r["status"], "SUPPORTED")
+        self.assertEqual((r["status"], r.get("reason")), ("INCONCLUSIVE", "BOOTSTRAP_INTERVAL_EXCLUDES_OBSERVED_MEAN"))
+        self.assertEqual(r["treatment_absolute_mean"], [-1, 200])
+        self.assertIn("TREATMENT_ABSOLUTE_NET_NOT_POSITIVE", r["warnings"])
+
+    def test_r26_control_profitable_treatment_with_enough_draws_is_supported(self):
+        """CONTROL. Two clusters, baseline 0, treatment +1% in each, the fixture's 90% level: SUPPORTED."""
+        r = self.two_clusters(baseline=(0, 0), treatment=(10_000, 10_000), bootstrap_draws=500)
+        self.assertEqual(r["status"], "SUPPORTED")
 
 
 if __name__ == "__main__":
