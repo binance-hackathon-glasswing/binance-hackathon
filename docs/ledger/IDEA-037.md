@@ -83,3 +83,28 @@ All on synthetic fixtures (`larp/research/fixtures.py`), with an `EQUAL_WEIGHT` 
 These are synthetic fixtures: they show the rules behave as specified, not that the policy is profitable.
 
 - 2026-10-11 correction (SYZ/Claude): §2 said the cash-after-buy ≥ 20% check was unchanged. During implementation it proved incompatible with the 80% target. Gas BNB counts toward equity but not cash, so with any BNB in the wallet the fourth 20% buy was rejected (`CASH_OR_EXIT_RESERVE`) and the book stopped at 60%. Fix in `1a7aedd`: the floor counts free BNB (after this trade's gas) as uninvested, so it means "invested ≤ 80%", the declared "gross ≤ 80%, cash ≥ 20%" read as complements. The separate exit-gas reserve check is unchanged. This applies to every baseline and slightly loosens the old floor by the BNB value (≈ 0.5–1% of equity), still bounded by the gross buy capacity. P04 covers it.
+
+## 5. Addendum 2026-10-11: top up held names (decided by SYZ)
+
+**Decision.** When gross is below the 75% threshold, a **held** name below 20% is also bought back up to 20%. Before this addendum, only unheld names were bought. This supersedes the "not topped up after a fall" clause of §2 and the "no dip top-up" half of P05. Unchanged: no sale on drift, no resize of a name at or above 20%, the hard trim lines and every entry gate.
+
+**Why, and the risk.** It completes partial builds and keeps the book near equal weight after a sale. It is a mild buy-the-dip rule, which IDEA-035 §10.3 found unsupported for these names. Two things limit it:
+- the minimum trade size skips small gaps;
+- price falls alone can push gross below 75% only after holdings fall ≥ 25%, i.e. a ≥ 20% drawdown, and by then the 8% stop already blocks new buys.
+
+It mostly acts when a sale has left cash idle with no eligible fifth name. The team accepted this trade-off.
+
+**Design.** Under `EQUAL_WEIGHT`, a held name gets `TARGET_WEIGHT` `operating_name_weight` (reason `TOP_UP_TO_EQUAL_WEIGHT`) when all of these hold:
+- gross / equity < `top_up_below_gross_weight`;
+- its value < `operating_name_weight` × (equity − `cost_reserve_units`). This is the same base the planner sizes against, so the planner never sees a dust SELL;
+- the entry window is open, and `assessment_required` / statement-block gates pass. No previously-held check applies, since the name is held.
+
+Otherwise the name gets `KEEP_QUANTITY`. The planner is unchanged: buy capacity (≤ 80%), the cash floor, the minimum trade, `NEW_RISK_HALTED` and the one-intent-per-round rule apply as before.
+
+**Pass criteria (written before implementation).**
+- **P14 Top-up held.** NVDAB ≈ 15%, GOOGLB and TSLAB 20%, MSFTB ≈ 17.5% (gross ≈ 72.5%): NVDAB and MSFTB get `TARGET_WEIGHT` 1/5 `TOP_UP_TO_EQUAL_WEIGHT`, while GOOGLB and TSLAB get `KEEP_QUANTITY`. The planner emits one non-mandatory BUY for NVDAB (gap ≈ 10 USDT).
+- **P15 Small gaps skipped.** Same case: MSFTB's ≈ 5 USDT gap is below the fixture minimum trade and is rejected `MINIMUM_TRADE`.
+- **P16 Not at or above the threshold.** NVDAB ≈ 15% with gross ≈ 77.5%: NVDAB `KEEP_QUANTITY`.
+- **P17 Loss stop blocks top-ups.** The P14 case with `run_halt`: no intent, rejection `NEW_RISK_HALTED`.
+- **P05 (revised).** NVDAB ≈ 22%, GOOGLB ≈ 15%, gross ≈ 37%: NVDAB `KEEP_QUANTITY` (no sale on drift); GOOGLB `TARGET_WEIGHT` 1/5; no requirement and no SELL intent for either.
+- P01–P04 and P06–P13 must still pass. Full suite: no new failures against V01 (499 passed locally, 586 + 770 in Linux CI before the new tests).
