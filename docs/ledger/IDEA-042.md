@@ -130,3 +130,70 @@ Criteria pushed at `5b80e7e` (CI green, [run 38154687328](https://github.com/bin
 - R5: `Coordinator.register_version` commits `VERSION_REGISTERED` (build, manifest, services and deviations hashes). With `require_version=True`, a BUY round before the event commits no command (`VERSION_NOT_REGISTERED`) and one after it does. Another build's manifest is refused, and a process session for another build is refused. The event replays to the same head.
 - Tests: `tests/runtime/test_release_register.py` (6). The fixture in `tests/runtime/test_operations.py` now carries a register.
 - Remaining for DR-18: add IDEA-039–041 rows when those records exist, decide the three OPEN rows, and produce the rehearsal build's manifest on the host (Gate A).
+
+## 3. Remaining work that needs no other PR — prospective criteria (written 2026-10-11, before running anything they cover)
+
+Authorized by the user on 2026-10-11 ("go ahead with item 2 and the live-mode refusals; complete every task that can be done without the other PRs"). Same process as §2: each push to PR #13 waits for green CI. Synthetic fixtures only.
+
+**Not possible without others, and not attempted:** Isaac's execution service and its I3 → W04 mapping (prompt 06); the four-way integration (item 10); anything needing the AWS account, secrets or a host (items 6 and 7 drills, Terraform apply, restore drill on RDS, alert delivery, rehearsals, the host rehearsal of the wallet switch).
+
+### 3.1 Item 2 — execution store side (DR-04, DR-05)
+- **E1 · W04 store on PostgreSQL.** `PostgresExecutionStore` implements `larp.execution.Store`:
+  - compare-and-swap on the execution revision;
+  - the owner epoch and guard version fence every commit;
+  - one active execution per wallet and chain across runs;
+  - state and event commit in one transaction;
+  - signed bytes live only in a separate signature registry, never in state or events.
+- **E2 · Isaac's suite as the contract.** Isaac's W04 suite (`tests/test_w04_execution.py::ExecutionTests`) runs unchanged against PostgreSQL through a subclass that swaps only the storage fixture. This includes:
+  - crashes before and after signing and after broadcast;
+  - storage failures;
+  - a cold restart after each transition;
+  - the cross-run wallet barrier;
+  - "never sends twice".
+- **E3 · command consumption.** `claim_command` hands a pending `EXECUTION_REQUEST` to exactly one W04 execution key. It applies the same fencing as `command()`: current owner epoch, current state version, not halted, not expired. A second claim with another key is refused, and the same claim again is idempotent.
+
+### 3.2 Live-mode refusals and the final-wallet switch (item 9, DR-17; prompt 09 acceptance)
+- **W1 · refusals.** `check_live_start` (modes `dev` and `live`) refuses to start, naming the reason but never a secret value, when:
+  - any port is a fake or synthetic fixture;
+  - a required secret is missing or empty;
+  - a wallet key is present on the runtime host;
+  - `AI_SEEDS_ADDRESS`, the configured wallet and the run's wallet disagree;
+  - the `.ai-seeds/` or nonce directory belongs to another wallet.
+
+  `offline` and `paper` modes are not affected.
+- **W2 · per-wallet records.** Each `.ai-seeds/` and nonce directory carries a wallet marker. A directory marked for another wallet is refused.
+- **W3 · switch procedure.** `switch_wallet` refuses when:
+  - the old run still has open rounds, reservations or pending commands;
+  - the old run holds any token;
+  - the new wallet equals the old one;
+  - a directory would be shared.
+
+  Otherwise it opens a fresh run for the new wallet (quarantined until takeover) with its own directories, and returns a switch record (old run, final head, new run). It is rehearsed with a throwaway configuration in tests. The host rehearsal stays at Gate C.
+- **W4 · the service applies W1.** `larp.runtime.service run` in `dev`/`live` mode exits with code 1 before opening a session when `check_live_start` refuses.
+
+### 3.3 Item 6 — hourly anchoring, repository side (DR-15; IDEA-036 criteria 1, 3, 5, 6)
+- **A1 · verify every anchor.** `verify_anchors` checks each anchor's sequence and head against the verified journal. Altering one journal event after it was anchored makes verification fail (IDEA-036 #3).
+- **A2 · stale restore.** A restore whose journal is behind the latest anchor is rejected as stale (IDEA-036 #5, local part).
+- **A3 · no secrets.** Anchor payloads contain only identifiers, times, sequence, head and epoch (IDEA-036 #6).
+- **A4 · retention floor.** Terraform refuses an archive retention shorter than 81 days, which is what reaches 2026-12-31 from the earliest anchor (IDEA-036 #1). A `terraform test` run checks the refusal. Cadence (#2), storage-enforced immutability (#4) and the RDS restore drill wait for the host.
+
+### 3.4 Item 7 — database roles, repository side (DR-16)
+- **G1 · least-privilege roles.** `deploy/postgres/roles.sql` adds `larp_runtime` (coordinator and journal), `larp_execution` (the W04 store) and `larp_signer` (signature registry only).
+- **G2 · roles tested.** A PostgreSQL test applies the script, then shows:
+  - a round, its settlement and its close run as `larp_runtime`;
+  - the W04 store runs as `larp_execution`;
+  - each role is refused outside its grants: the runtime cannot touch signatures, and execution cannot write the journal.
+
+### 3.5 Item 10 — repository-side acceptance and runbook (DR-20 partial, DR-22 draft)
+- **T1 · acceptance day.** `tests/integration/test_acceptance.py` runs one synthetic day through every real component on this branch:
+  - evidence assessor with fake EDGAR;
+  - strategy and independent risk;
+  - coordinator with the version event and `require_version`;
+  - scripted I4 execution facts, settlement and close;
+  - round-log delivery with ACK proof;
+  - guard;
+  - anchor and `verify_anchors`;
+  - replay with recorded ports to the same head.
+
+  Isaac's execution service replaces the scripted facts at integration.
+- **T2 · runbook draft.** `docs/build/runbook.md` covers start, automatic restart, HALT and its automatic clearing, restore, version event and final-wallet switch, each tied to code and tests. The on-call rota is marked as owed by the team (GAP-37).
