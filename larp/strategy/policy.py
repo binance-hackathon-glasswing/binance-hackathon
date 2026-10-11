@@ -86,27 +86,31 @@ def decide(snapshot, state):
         elif m is None or not m.get("basis_verified"):
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "MISSING_MARKET_OR_BASIS"))
         elif p["baseline"] == "EQUAL_WEIGHT":
-            # IDEA-037: no estimate, so no price-history features. Held names are never resized on drift
-            # (the planner's hard lines handle extremes) or topped up after a fall; freed capacity goes
-            # only to unheld names, and only while gross is below the top-up threshold.
+            # IDEA-037: no estimate, so no price-history features. Names are never sold on drift (the
+            # planner's hard lines handle extremes). Only while gross is below the top-up threshold, a held
+            # name below the equal weight is bought back up to it and unheld names are entry candidates.
             fresh_review = bool(a and a.get("review_complete") is True)
             if due and fresh_review:
                 last_review = session
+            weight = fraction(p["operating_name_weight"])
+            below = gross < fraction(p["top_up_below_gross_weight"])
+            gates = (window_open and (not p["assessment_required"] or fresh_review)
+                     and not (rights["statement"] == "ENTRY_BLOCK" and pending))
             if units:
-                targets.append(Target(symbol, TargetKind.KEEP_QUANTITY,
-                                      "REVIEW_PENDING" if due else "LOW_TURNOVER_HOLD"))
+                if below and gates and value(units, m) < weight * (E - p["cost_reserve_units"]):
+                    targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "TOP_UP_TO_EQUAL_WEIGHT", weight))
+                else:
+                    targets.append(Target(symbol, TargetKind.KEEP_QUANTITY,
+                                          "REVIEW_PENDING" if due else "LOW_TURNOVER_HOLD"))
             else:
                 previously_held = old.get("ever_held", False)
-                entry_ok = (window_open and (not previously_held or fresh_review)
-                            and (not p["assessment_required"] or fresh_review)
-                            and not (rights["statement"] == "ENTRY_BLOCK" and pending))
+                entry_ok = gates and (not previously_held or fresh_review)
                 if not entry_ok:
                     targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "ENTRY_OR_REENTRY_UNAVAILABLE"))
-                elif gross >= fraction(p["top_up_below_gross_weight"]):
+                elif not below:
                     targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "ABOVE_TOP_UP_THRESHOLD"))
                 else:
-                    candidates.append((m.get("measured_roundtrip_bps", 10**9), symbol,
-                                       fraction(p["operating_name_weight"])))
+                    candidates.append((m.get("measured_roundtrip_bps", 10**9), symbol, weight))
                 if previously_held:
                     status = "CASH_REVIEW"
         else:

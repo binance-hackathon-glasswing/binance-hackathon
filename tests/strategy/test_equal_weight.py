@@ -1,4 +1,4 @@
-"""IDEA-037 pass criteria P01-P11: EQUAL_WEIGHT baseline, top-up rebalancing and hard trim lines (synthetic)."""
+"""IDEA-037 pass criteria P01-P11 and P14-P17: EQUAL_WEIGHT baseline, top-up rebalancing and hard trim lines (synthetic)."""
 from dataclasses import replace
 from fractions import Fraction
 import unittest
@@ -72,15 +72,42 @@ class EqualWeightPolicy(unittest.TestCase):
         safe = 200_000_000 - s.context.read()["profile"]["cost_reserve_units"]
         self.assertLessEqual(r["intents"][0]["cash_units"] + r["intents"][0]["fee_units"], safe // 5)
 
-    def test_p05_no_sell_on_drift_and_no_dip_top_up(self):
+    def test_p05_no_sell_on_drift(self):
+        # Revised by the IDEA-037 addendum: the fallen name is now topped up (P14); the drifted one is still held.
         s = ew(held={"NVDAB": 4400, "GOOGLB": 3000})  # about 22% and 15%, gross 37%
         t = by_symbol(decide(s, s.policy_state))
-        for symbol in ("NVDAB", "GOOGLB"):
-            self.assertEqual(t[symbol].kind, TargetKind.KEEP_QUANTITY)
+        self.assertEqual(t["NVDAB"].kind, TargetKind.KEEP_QUANTITY)
+        self.assertEqual((t["GOOGLB"].kind, t["GOOGLB"].weight), (TargetKind.TARGET_WEIGHT, Fraction(1, 5)))
         s = with_quotes(s)
         r = plan(s, decide(s, s.policy_state)).read()
         self.assertFalse(r["requirements"])
-        self.assertFalse([i for i in r["intents"] if i["symbol"] in ("NVDAB", "GOOGLB")])
+        self.assertFalse([i for i in r["intents"] if i["side"] == "SELL"])
+
+    def test_p14_p15_tops_up_held_names_and_skips_small_gaps(self):
+        s = ew(held={"NVDAB": 3000, "GOOGLB": 4000, "TSLAB": 4000, "MSFTB": 3500})  # gross 72.5%
+        t = by_symbol(decide(s, s.policy_state))
+        for symbol in ("NVDAB", "MSFTB"):
+            self.assertEqual((t[symbol].kind, t[symbol].reason, t[symbol].weight),
+                             (TargetKind.TARGET_WEIGHT, "TOP_UP_TO_EQUAL_WEIGHT", Fraction(1, 5)))
+        for symbol in ("GOOGLB", "TSLAB"):
+            self.assertEqual(t[symbol].kind, TargetKind.KEEP_QUANTITY)
+        s = with_quotes(s)
+        r = plan(s, decide(s, s.policy_state)).read()
+        self.assertEqual([(i["symbol"], i["side"], i["mandatory"]) for i in r["intents"]], [("NVDAB", "BUY", False)])
+        self.assertIn({"symbol": "MSFTB", "reason": "MINIMUM_TRADE"}, r["rejections"])
+
+    def test_p16_no_top_up_at_or_above_threshold(self):
+        s = ew(held={"NVDAB": 3000, "GOOGLB": 4000, "TSLAB": 4000, "MSFTB": 4500})  # gross 77.5%
+        self.assertEqual(by_symbol(decide(s, s.policy_state))["NVDAB"].kind, TargetKind.KEEP_QUANTITY)
+
+    def test_p17_loss_stop_blocks_top_ups(self):
+        s = ew(held={"NVDAB": 3000, "GOOGLB": 4000, "TSLAB": 4000, "MSFTB": 3500})
+        c = s.context.read()
+        c["portfolio"]["risk"]["run_halt"] = True
+        s = with_quotes(changed(s, portfolio=c["portfolio"]))
+        r = plan(s, decide(s, s.policy_state)).read()
+        self.assertFalse(r["intents"])
+        self.assertIn({"symbol": "NVDAB", "reason": "NEW_RISK_HALTED"}, r["rejections"])
 
     def test_p09_gates_retained(self):
         held = {"NVDAB": 4000}
@@ -88,7 +115,7 @@ class EqualWeightPolicy(unittest.TestCase):
                                                   "new_risk_end": "2026-10-10T12:00:00Z"})
         self.assertTrue(all(t.kind is TargetKind.EXIT for t in decide(flatten, flatten.policy_state).targets
                             if t.symbol == "NVDAB"))
-        late = ew(profile_changes={"new_risk_end": "2026-10-10T13:00:00Z"})
+        late = ew(held={"NVDAB": 3000}, profile_changes={"new_risk_end": "2026-10-10T13:00:00Z"})
         self.assertFalse([t for t in decide(late, late.policy_state).targets if t.kind is TargetKind.TARGET_WEIGHT])
         s = ew(held={"NVDAB": 4000, "GOOGLB": 4000, "TSLAB": 4000})
         s = with_state(s, {"lifecycle": {"MSFTB": {"status": "CASH_REVIEW", "last_review_session": 80,
