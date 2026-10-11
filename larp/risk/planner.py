@@ -109,6 +109,11 @@ def plan(snapshot, proposal_or_none):
     gross_limit = min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
         gross_limit = min(gross_limit, Fraction(2, 5))
+    # IDEA-037: optional hard lines; drift between the cap and the line is held, not trimmed. The deep
+    # drawdown cut always trims at its own limit. Trims still go back to the operating cap.
+    hard_name = fraction(p.get("hard_name_weight", [1, 5]))
+    trim_gross = (gross_limit if r["deep_cut"] or "hard_gross_weight" not in p
+                  else max(gross_limit, fraction(p["hard_gross_weight"])))
     positions = ledger["positions"]
     held = {s: pos["units"] for s, pos in positions.items() if pos["units"]}
     pending_buy = {}
@@ -136,7 +141,7 @@ def plan(snapshot, proposal_or_none):
                 "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
                 "status": "BLOCKED_MARK"})
             continue
-        cap = floor(Fraction(safe_equity, 5) * 10**m["decimals"] / m["price_units"])
+        cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
         if qty + pending_buy.get(symbol, 0) > cap:
             reason.append("POSITION_CAP")
@@ -144,7 +149,7 @@ def plan(snapshot, proposal_or_none):
                         * 10**m["decimals"] / m["price_units"])
         else:
             cap = qty
-        if gross > safe_equity * gross_limit:
+        if gross > safe_equity * trim_gross:
             cap = min(cap, floor(Fraction(qty) * safe_equity * gross_limit / gross))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
         if index >= 4:
@@ -272,8 +277,11 @@ def plan(snapshot, proposal_or_none):
             continue
         if side == "BUY":
             spend = cash + fee
+            # The 20% uninvested floor counts free gas BNB, so four 20% names fit beside a gas reserve (IDEA-037).
+            free_bnb = max(0, floor(Fraction((ledger["bnb_units"] - reserved_bnb - gas) * ledger["bnb_price_units"],
+                                             10**ledger["bnb_decimals"])))
             if (spend > ledger["cash_units"] - reserved_cash
-                    or ledger["cash_units"] - spend < ceil(Fraction(safe_equity, 5))
+                    or ledger["cash_units"] + free_bnb - spend < ceil(Fraction(safe_equity, 5))
                     or ledger["bnb_units"] - reserved_bnb - gas < p["exit_gas_reserve_units"]):
                 result["rejections"].append({"symbol": symbol, "reason": "CASH_OR_EXIT_RESERVE"})
                 continue

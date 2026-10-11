@@ -65,7 +65,7 @@ def profile(snapshot):
         authority(p)  # falsifier/statement authority (IDEA-031); defaults to SHADOW
     except AuthorityError as exc:
         raise ContractError(str(exc)) from exc
-    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM"):
+    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM", "EQUAL_WEIGHT"):
         raise ContractError("Unknown baseline")
     for name in ("minimum_trade_units", "per_trade_cap_units", "cost_reserve_units",
                  "exit_gas_reserve_units", "dust_units", "quote_age_seconds",
@@ -82,6 +82,15 @@ def profile(snapshot):
                           ("rebalance_band", Fraction(1))):
         if fraction(p[name]) > maximum:
             raise ContractError("Configuration loosens declared cap")
+    # IDEA-037: the 20%/80% caps bind new buys; forced trims start only above these hard lines.
+    if "hard_name_weight" in p and not (max(Fraction(1, 5), fraction(p["operating_name_weight"]))
+                                        <= fraction(p["hard_name_weight"]) <= Fraction(1, 4)):
+        raise ContractError("Hard per-name line outside [operating weight, 1/4]")
+    if "hard_gross_weight" in p and not Fraction(4, 5) <= fraction(p["hard_gross_weight"]) <= Fraction(9, 10):
+        raise ContractError("Hard gross line outside [4/5, 9/10]")
+    if p["baseline"] == "EQUAL_WEIGHT" and not (
+            0 < fraction(p.get("top_up_below_gross_weight")) <= fraction(p["operating_gross_weight"])):
+        raise ContractError("Top-up threshold must be positive and within the gross target")
     start, end, flatten, stop = [instant(p[n]) for n in
                                ("trade_after", "new_risk_end", "flatten_start", "signing_end")]
     if not start < end <= flatten < stop:
