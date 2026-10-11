@@ -10,12 +10,14 @@ not restart (`RestartPreventExitStatus`): neither is cured by restarting.
 
 import argparse
 import json
+import os
 from pathlib import Path
 import signal
 import time
 import uuid
 
 from larp.contracts import ContractError, Document
+from larp.runtime.live import LiveStartRefused, check_live_start
 from larp.runtime.supervision import Guard, Sessions
 
 EXIT_NOT_INTEGRATED, EXIT_QUARANTINED = 2, 3
@@ -27,18 +29,21 @@ class NotIntegrated(ContractError):
 
 class Service:
     def __init__(self, store, run_id, build_id, *, guard, driver, clock_ms, interval_s=5.0, sleep=time.sleep,
-                 session_id=None):
+                 session_id=None, start_check=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
         self.guard, self.driver, self.clock, self.interval, self.sleep = guard, driver, clock_ms, interval_s, sleep
         self.session_id = session_id or 'session:' + uuid.uuid4().hex
         self.sessions = Sessions(store, run_id)
         self.stopping = False
+        self.start_check = start_check  # live/dev refusals (larp/runtime/live.py), before any session opens
 
     def stop(self, *args):
         self.stopping = True
 
     def run(self, *, max_cycles=None):
         """Returns an exit code. An exception escapes on purpose: the session stays open and counts as a crash."""
+        if self.start_check is not None:
+            self.start_check()
         self.sessions.begin(session_id=self.session_id, build_id=self.build_id, now_ms=self.clock())
         cycles = 0
         while not self.stopping and (max_cycles is None or cycles < max_cycles):
@@ -91,11 +96,20 @@ def main(argv=None):
         except NotIntegrated:
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
+        def start_check():
+            check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=os.environ,
+                             wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
+                             ai_seeds_dir=c.get('ai_seeds_dir'), nonce_dir=c.get('nonce_dir'))
         service = Service(store, c['run_id'], c['build_id'], driver=driver,
                           guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
-                          clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'])
+                          clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'],
+                          start_check=start_check)
         signal.signal(signal.SIGTERM, service.stop)
         return service.run()
+    except LiveStartRefused as refused:
+        # The reason names the failed check, never a secret value (larp/runtime/live.py).
+        print(json.dumps(dict(started=False, reason='LIVE_START_REFUSED', detail=str(refused), signing_enabled=False)))
+        return 1
     except Exception:
         # Exception text can carry DSNs or secrets; the journal and health check hold the detail.
         print(json.dumps(dict(started=False, reason='RUNTIME_FAILED', signing_enabled=False)))
