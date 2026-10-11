@@ -1,7 +1,7 @@
 # IDEA-042 — Deployment build record: runtime, hosting and integration (Keegan)
 
 - Date / author: 2026-10-11 / Keegan (drafted with Claude)
-- Status: open (item 1 in progress; items 2–10 not started)
+- Status: open (item 1 complete: B1–B6 PASS, local and Linux CI; items 2–10 not started)
 - What: Keegan's part of the deployment build, prompt [09-runtime-deployment](../build/09-runtime-deployment.prompt.txt) under the common brief [DEPLOYMENT_BUILD.md](../build/DEPLOYMENT_BUILD.md) ([IDEA-038](IDEA-038.md)): reconciled baseline, settlement and execution wiring, official ai-seeds logging, live replay, restart/HALT, hourly anchoring, hosting, release/manifest/deviations, final-wallet switch, integration and the DR checklist evidence.
 - Branch: `codex/deploy-runtime`, cut from `codex/deployment-prompts` (`e4ebff6`, the commit that adds the brief; PR #12 still open), with `origin/codex/engine-foundation` (`e8658ba`) merged in by an ordinary merge (`b583059`). Reviewer: Isaac.
 - Decisions that govern: [IDEA-035](IDEA-035.md) and [IDEA-037](IDEA-037.md); where main's `a21d034` differs, those govern (IDEA-035 A11).
@@ -31,6 +31,22 @@
   4. An observation for an intent the round did not plan, a provisional (`settlement` not `FINAL`) fill, and a fill with another wallet's ID are refused and change nothing.
 - **B6 · nothing else breaks.** Full suite locally (PostgreSQL) and in Linux CI: every test that passed at the baseline still passes; new tests pass; the only failure allowed on PR #9 is C2 as stated in B2.
 
-### 1.2 Results
+### 1.2 Results (2026-10-11)
 
-NOT RUN at the time of writing (criteria commit).
+Criteria committed and pushed at `aaad51b` before any covered code ran.
+
+- **B1 · PASS.** `b583059` merges `origin/codex/engine-foundation` (`e8658ba`, which contains `a21d034`) by an ordinary merge; `aaad51b` adds the dated A11 annotations to plan.md D-03, D-05, D-11 and D-12, SKILL.md Q-03, GAP-51 and GAP-57, and restores the GAP-51 sentence `e8658ba` dropped. `git diff --check` clean.
+- **B2 · PASS (C2 failing as intended).** PR #9 (`codex/integration-tests`): base merged by `5498a0e`; `5609b26` rewrites C3 for the current path (golden `AssessmentResult.v2` → `IssuerEvidenceState.v2` → `EvidenceContext.v1` → `decide()`, no `evidence_rejections`) and restates C4's expected-failure reason (raw wiring without `ContextBuilder`; a real BUY waits for DR-08; the item 10 acceptance suite replaces it). Linux CI [run 38153321721](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38153321721): **1 failed (C2), 597 passed, 1 xfailed (C4), 770 subtests, no skips**; both Terraform jobs green. C2 stays red until Keith re-captures the strategy fixture (prompt 07 item 8); PR #9 must not merge before then.
+- **B3 · PASS.** PR #10 closed with a note naming what superseded it and what was ported. `7145ac1` adds `larp/integration/settlement.py` (`ExecutionBridge`, `settle`) for the `ledger_from` layout with I4's two boundaries, and the coordinator now refuses a terminal-round attestation unless every planned intent of the round has a terminal final fact.
+- **B4 · PASS.** `larp/ports.py` (`7145ac1`): `validate_execution_request` (I3, incl. `purpose: GAS_TOPUP` for I7), `validate_execution_observation` (I4), `RoundLogBuilder` (I5), and `decimal_string`, now the single implementation behind `integration.runtime.decimal_amount`. Real `RuntimePlanner` output passes the I3 validator; the settlement reducer and bridge validate every observation with the I4 validator first.
+- **B5 · PASS.** `tests/integration/test_settlement.py`, 11 tests + 4 subtests on PostgreSQL: SELL broadcast then fill (balances and reservations unchanged by the broadcast; no reservation row after the fill; ledger accepted by `ledger_from`; round closes with the tx hash in its audit event); BUY fill and BUY revert (no USDT, BNB or `INCOMING:` row left; revert charges only gas; the reverted swap is still logged); approval releases only its gas; a repeated observation returns the same receipt and the same event ID with changed bytes is refused; unplanned intent, provisional fill, other wallet and unknown swap hash are refused with the store unchanged; `NOT_SUBMITTED` releases without accounting.
+- **B6 · PASS.** Local (Python 3.13.16, PostgreSQL 16) at `7145ac1`: **603 passed, 3 skipped (bubblewrap), 774 subtests** (baseline 592 + 11 new). The evidence integration demo regenerates byte-identically. Linux CI on `7145ac1` ([run 38153737901](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38153737901), manual dispatch, Python 3.12.15, PostgreSQL 14.24): **606 passed, 774 subtests, no skips**; `pip check`, the offline runtime demo, Docker build and offline smoke passed; both Terraform jobs green.
+
+**Item 1 status:** complete for the runtime side. PR #9 stays open and red on C2 until Keith's fixture re-capture; the §1.3 interface points go to Isaac on Oct 12.
+
+### 1.3 Open points from item 1 (for Isaac, interface day Oct 12)
+
+1. **I4 additions proposed by the runtime side, need Isaac's agreement:** `round_terminal` on final facts (the execution owner's attestation that every command of the round is terminal, checked by the coordinator), `step` (`approve`/`swap`) on broadcast attempts, receipt evidence as `block_hash` + `canonical: true`, and a `NOT_SUBMITTED` terminal kind for an intent that never reached the chain (expired or refused before signing). Without `NOT_SUBMITTED`, a round whose command expires unsent can never close.
+2. **I3:** the payload is Keith's intent plus `decision_id`, `expires_ms`, `amount` and an optional `purpose`; Isaac publishes the mapping to `Intent.validate`. A `GAS_TOPUP` intent passes I3 today, but `check_orders` (audit) and `Intent.validate` (execution) still refuse BNB; both narrow exceptions are item 3 and prompt 06.
+3. **Logging of unsent intents:** a `NOT_SUBMITTED` intent still appears in the round's `orders`. Item 3 derives `orders` only from executed intents (DR-07).
+4. **Gas top-up accounting:** `advance_accounting` has no BNB position, so a `GAS_TOPUP` fill cannot settle yet; Keith (prompt 07, B11) and Keegan (item 2) to agree the accounting form.
