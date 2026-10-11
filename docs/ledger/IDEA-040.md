@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11; prepared into 2026-10-12 SGT. Owner: Keith / wtvlol. Reviewer: Yao Zhu. Integrator: Keegan.
 - Scope: PR #12 prompt 07, IDEA-035/037; owner paths only. Base: `e4ebff65e0f249d001d86fb04fb4f2a312a63955`.
-- Status: local implementation and prospective tests prepared; execution/push pending authorization; no live runs or activation authorized.
+- Status: `ab3adc1` pushed with user authorization; initial synthetic regression run complete, one test-fixture failure corrected locally. Follow-up commit/push and regression pending; no live runs or activation authorized.
 
 ## P01–P08 prospective acceptance (before execution)
 
@@ -31,7 +31,7 @@ Run only after code and these criteria are committed and pushed: Python 3.12 `py
 
 ## Verification
 
-NOT RUN until push authorization and publication. Interface proposals and integration limitations must be reviewed by producer/consumer owners before runtime dependence.
+Initial runs below cover pushed `ab3adc1`. Follow-up changes must be pushed before rerunning. Interface proposals and integration limitations must be reviewed by producer/consumer owners before runtime dependence.
 
 ### V01 — static preparation, no decision execution
 
@@ -58,3 +58,13 @@ NOT RUN until push authorization and publication. Interface proposals and integr
 - Isaac: agree I1/I2/I4/I7 mappings and provide recorded candle/quote/receipt fixtures. Real quote costs, dates, nonce/finality and first BNB unverified by Keith.
 - Keegan: apply requested index/backlog/deviation edits, wire context/profile/resource/settlement fields, release INCOMING reservations, then PostgreSQL/CI/replay/rehearsal tests. Foundation has separately advanced to `e8658ba` via main sync; this branch preserves PR #12's docs head, leaving shared-doc synchronization to integration.
 - Team: review conservative B6 budgets/windows and freeze actual measured profiles at Oct 22; activation remains blocked on DR gates. Nothing in these changes claims live readiness/profit or authorizes a main merge.
+
+### V02 — first pushed-code execution (2026-10-12 SGT)
+
+- User authorized publication/testing; `ab3adc1ad57912f801b39674ec7dba3408560f16` pushed to `origin/codex/deploy-strategy` before execution. The declared Python 3.12 project environment lacked pytest, as did system Python 3.13. Created isolated `/private/tmp/larp-keith-test-env` with the project's Python 3.12 and installed existing `deploy/requirements-test.lock`; no dependency file changed. `pip check`: PASS.
+- Focused criterion run: **149 passed, 1 failed, 61 subtests passed** (3.21s). Full run: **563 passed, 1 failed, 86 skipped, 754 subtests passed** (11.40s). Failure in both is the same new `test_live_cost_cap_still_blocks_without_double_counting_impact`: modifying safe-equity cost reserve after generating quotes changes the exact pay input, so the planner correctly requests a fresh quote rather than reaching the economic cost gate. Correction regenerates observed synthetic quotes for that new exact input; no risk limit is loosened. All pre-existing tests that ran passed; PostgreSQL/Linux isolation cases remain skipped locally in this run.
+- The fixture re-capture compatibility test passes with actual golden AssessmentResult.v2 and the real runtime validator. Session/DST/gaps, profile validation, Class 1/2 lifecycle, resource accounting, receipt rejection/idempotence and UTC terminal tests pass except the fixture correction above. Synthetic evidence only; real-data/profile proof still NOT RUN.
+- During this run, PR #13 (`codex/deploy-runtime`, `96c01f5399fcfa7e3a7d6f59f8d97adfc26779d3`) became available. Read published I3/I4 and settlement code. Keith adopts the published resource `purpose: GAS_TOPUP` alongside kind GAS_TOP_UP, and the flat FINAL canonical receipt shape. Optional detailed receipt evidence remains checked against flat fields. No runtime-owned file changed.
+- **Integration blocker, Keegan owner:** PR #13 `_accounting_reservation` omits round_id/resource purpose, and `settle` removes round_id/tx_hash/block_hash/canonical before calling accounting. Preserve the full validated I4 observation and copy round_id/purpose into its reservation view; mark the live portfolio mode LIVE. Without that, real final-reconciler receipts correctly reject instead of weakening receipt validation. Existing PR #13 fake-receipt tests bypass this trust boundary; require a real-origin synthetic observation integration test. I7 dispatch/audit/signer opt-in still pending owners.
+- Prospective additional follow-up checks: shared `larp.ports.validate_execution_request` must accept the actual RuntimePlanner gas output, and shared `validate_execution_observation` plus Keith accounting must accept the same final flat receipt for APPROVAL/FILL/REVERT. Tests call the actual validators when PR #13 is present; otherwise explicitly SKIP (not claim I3/I4 integration PASS). New flat-receipt consumer test must pass on Keith's branch. Corrected cost-cap counterexample must reach ENTRY_COST_CAP, not merely request a different amount.
+- Follow-up tests/changes are local and **NOT RUN** until their commit is pushed with permission. Reviewer Yao Zhu and integrator Keegan still need the branch PR; no gate readiness, actual profile calibration or five-day rehearsal is claimed.

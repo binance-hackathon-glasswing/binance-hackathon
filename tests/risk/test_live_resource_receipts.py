@@ -37,7 +37,8 @@ def receipt(s, result, *, kind="FILL", terminal=True):
     reserved["mode"] = "LIVE"
     reserved["reservations"][intent["intent_id"]]["round_id"] = "synthetic-round"
     e = fill_fixture(s, intent, kind=kind, terminal=terminal).read()
-    e.update(origin="EXECUTION_RECONCILER", round_id="synthetic-round", tx_hash="0x" + "a" * 64,
+    e.update(origin="EXECUTION_RECONCILER", round_id="synthetic-round", round_terminal=terminal,
+        tx_hash="0x" + "a" * 64, block_hash="0x" + "b" * 64, canonical=True,
         receipt={"tx_hash": "0x" + "a" * 64, "block_hash": "0x" + "b" * 64,
                  "block_number": 99, "canonical": True, "finality": "FINAL", "chain_id": 56,
                  "status": 0 if kind == "REVERT" else 1})
@@ -156,6 +157,38 @@ def test_duplicate_approval_receipt_cannot_spend_gas_again_with_new_event_id():
     e["event_id"] = "synthetic-duplicate-receipt"
     with pytest.raises(ContractError):
         advance_accounting(after, Document.from_dict(e))
+
+
+def test_published_flat_final_receipt_shape_is_accepted():
+    s, result = resource_plan()
+    before, e = receipt(s, result)
+    e.pop("receipt")
+    after = advance_accounting(before, Document.from_dict(e)).read()
+    assert after["bnb_units"] == before.read()["bnb_units"] - e["gas_bnb_units"] + e["token_units"]
+
+
+def test_resource_plan_passes_real_published_runtime_i3_validator_when_integrated():
+    import larp.ports as ports
+    if not hasattr(ports, "validate_execution_request"):
+        pytest.skip("Requires published runtime PR #13 validator in integration")
+    from larp.integration.runtime import RuntimePlanner
+    s, _ = resource_plan()
+    intent = RuntimePlanner(job_validity_ms=60000, job_max_attempts=2).plan(s, None).read()["intents"][0]
+    command = {"kind": "EXECUTION_REQUEST", "command_id": intent["intent_id"], "round_id": "synthetic-round",
+               "decision_id": intent["decision_id"], "expires_ms": intent["expires_ms"], "payload": intent}
+    assert ports.validate_execution_request(command)["payload"]["purpose"] == "GAS_TOPUP"
+
+
+def test_real_published_runtime_i4_validator_and_accounting_share_one_observation_when_integrated():
+    import larp.ports as ports
+    if not hasattr(ports, "validate_execution_observation"):
+        pytest.skip("Requires published runtime PR #13 validator in integration")
+    for kind in ("APPROVAL", "FILL", "REVERT"):
+        s, result = resource_plan()
+        before, e = receipt(s, result, kind=kind, terminal=kind != "APPROVAL")
+        e.pop("receipt")
+        ports.validate_execution_observation(e)
+        advance_accounting(before, Document.from_dict(e))
 
 
 def test_actual_sell_proceeds_fee_and_basis_are_used():

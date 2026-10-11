@@ -60,6 +60,15 @@ reservation, and attach final receipt facts to prevent fake settlement. The
 execution owner supplies chain proof: canonical/finality flags alone are trusted
 producer assertions, not independent RPC verification.
 
+Runtime PR #13 now publishes `purpose: GAS_TOPUP` for its narrow BNB exception;
+the resource intent/reservation retains that purpose as well as kind GAS_TOP_UP.
+Its I4 receipt evidence is flat `tx_hash`, `block_hash`, `canonical: true`, plus
+`settlement: FINAL`. Accounting consumes that form and validates an optional
+detailed `receipt` if supplied. Keegan must preserve those fields and round_id
+when calling accounting, and copy round_id/resource purpose into the committed
+reservation view. PR #13 currently strips those fields; real-reconciler settlement
+will deliberately reject until that integration change is made.
+
 For gas rounds the live health port must explicitly provide
 `new_spending_ok: true` after checking degraded/reconciliation/spending gates;
 absence blocks resource spending. Gas quotes declare `receive_decimals` equal

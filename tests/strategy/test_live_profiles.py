@@ -106,15 +106,21 @@ def test_live_fakes_rejected_at_market_and_quote_boundaries():
 
 
 def test_live_cost_cap_still_blocks_without_double_counting_impact():
-    s = live_snapshot(quoted=True)
+    from larp.research.fixtures import with_quotes
+    s = live_snapshot()
     c = s.context.read()
-    for m in c["markets"]:
-        for q in m["quotes"]:
-            q["gas_bnb_units"] = 300_000
     # Raise the planning reserve only; the independent 50 bp economic cap remains.
     p = c["profile"]
     p.update(cost_reserve_units=1_000_000, per_trade_cap_units=41_000_000)
     s = rebound(changed(s, markets=c["markets"]), p)
+    # Observe quotes for the new exact input implied by the changed safe equity.
+    s = with_quotes(s, gas=300_000)
+    c = s.context.read()
+    for m in c["markets"]:
+        for q in m["quotes"]:
+            q["origin"] = "WEB3_OPEN_API"
+            q.pop("quoted_depth_units", None)
+    s = changed(s, markets=c["markets"])
     r = plan(s, decide(s, s.policy_state)).read()
     assert not r["intents"]
     assert "ENTRY_COST_CAP" in {x["reason"] for x in r["rejections"]}

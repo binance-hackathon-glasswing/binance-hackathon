@@ -87,7 +87,7 @@ def advance_accounting(portfolio: Document, observation: Document):
         q, cash, fee = [integer(e[k]) for k in ("token_units", "cash_units", "fee_units")]
         if q == 0 or e.get("intent_terminal") is not True:
             raise ContractError("Invalid settled quantity")
-        resource = reservation.get("kind") == "GAS_TOP_UP"
+        resource = reservation.get("kind") == "GAS_TOP_UP" or reservation.get("purpose") == "GAS_TOPUP"
         if resource and (symbol != "BNB" or side != "BUY"):
             raise ContractError("Invalid gas resource reservation")
         if not resource and symbol == "BNB":
@@ -140,17 +140,23 @@ def _final_receipt(e, reservation):
     def chain_hash(h):
         return (type(h) is str and len(h) == 66 and h.startswith("0x")
                 and all(c in "0123456789abcdefABCDEF" for c in h[2:]))
-    receipt = e.get("receipt")
-    if (type(receipt) is not dict or not chain_hash(e.get("tx_hash"))
-            or receipt.get("tx_hash") != e["tx_hash"] or not chain_hash(receipt.get("block_hash"))
-            or receipt.get("canonical") is not True or receipt.get("finality") != "FINAL"
-            or receipt.get("chain_id") != 56 or not e.get("round_id")
+    # PR #13 publishes canonical receipt evidence flat on ExecutionObservation.v1.
+    # FINAL is the reconciler's finality attestation. Detailed nested receipt proof
+    # is optional; if supplied it must agree with the flat record, never replace it.
+    if (not chain_hash(e.get("tx_hash")) or not chain_hash(e.get("block_hash"))
+            or e.get("canonical") is not True or not e.get("round_id")
             or e["round_id"] != reservation.get("round_id")):
         raise ContractError("Canonical final receipt and committed round identity required")
-    integer(receipt.get("block_number"), 1)
-    expected_status = 0 if e["kind"] == "REVERT" else 1
-    if type(receipt.get("status")) is not int or receipt["status"] != expected_status:
-        raise ContractError("Receipt status disagrees with accounting fact")
+    receipt = e.get("receipt")
+    if receipt is not None:
+        if (type(receipt) is not dict or receipt.get("tx_hash") != e["tx_hash"]
+                or receipt.get("block_hash") != e["block_hash"] or receipt.get("canonical") is not True
+                or receipt.get("finality") != "FINAL" or receipt.get("chain_id") != 56):
+            raise ContractError("Detailed receipt disagrees with final observation")
+        integer(receipt.get("block_number"), 1)
+        expected_status = 0 if e["kind"] == "REVERT" else 1
+        if type(receipt.get("status")) is not int or receipt["status"] != expected_status:
+            raise ContractError("Receipt status disagrees with accounting fact")
     if e["kind"] == "FILL" and e.get("intent_terminal") is not True:
         raise ContractError("Final fill must terminate the exact-input intent")
     if e["kind"] == "APPROVAL" and e.get("intent_terminal") is not False:
