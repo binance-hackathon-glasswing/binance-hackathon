@@ -76,3 +76,23 @@ Local `cbf4440` full pytest: PASS, 538 tests, 767 subtests, 90 skips; raw record
 `cbf4440` CI: [PASS](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156516334), 624 tests, 780 subtests, 4 skips (3 signer tests due to missing CI dependency plus external recorded responses). All three checks pass.
 
 Additional receipt retry criterion: because finalized head advances between reads, preserve the first successful final observation and its proof in an immutable PostgreSQL `execution_observations` row. A retry must return those exact stored bytes before any new chain/valuation I/O. Changed bytes under the same event ID are rejected. This extension also needs Keegan's migration/role/outbox integration. A synthetic callback test and real PostgreSQL immutability test are preregistered before execution.
+
+### Final verification for this implementation stage
+
+- `ff945f6` local: PASS, 539 tests, 767 subtests, 93 skips (including the seven PostgreSQL tests, unavailable locally). External recorded-response and ephemeral signer tests are enabled and passing.
+- [`ff945f6` CI](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156901734): PASS, 628 tests, 780 subtests, 4 skips, all three checks green. Both approve and swap process-death fixtures reached their intended exit codes and recovered from PostgreSQL state without re-signing or rebroadcasting. Final observations retain their first proof across restart and reject changed payloads.
+- Scope check: only Isaac's exclusive paths plus IDEA-039 changed. Shared docs, migrations, dependency locks, official kit and vendor copies untouched. This remains a draft implementation milestone, not deployment or live-trading acceptance.
+
+| Prompt deliverable | Implemented / verified | Remaining owner / dependency |
+|---|---|---|
+| 1 · I1/I2 market | Web3 read transport; real metadata/status/price responses; exact unit conversion; actual consumer validation; raw candles and hashes | Isaac: verified route/expiry/fee/gas proof for executable quotes. Keith: candle open/close semantics and actual session-builder validation. |
+| 2 · Logger | Running hourly locally; two successful 40-USDT cycles for five names; automatic summaries; 300 hourly candles/name | Isaac: multi-day/weekend coverage and Oct 19 summary. Keegan: reliable host supervision. |
+| 3 · Venue | Quote/unsigned approve/exact gas request adapters, verified-decoder boundary, matching vendor/router checks | Isaac: attributable router decoder. Keegan/Isaac: gated real broadcast/release and integrated W04 live activation. |
+| 4 · Signer/chain | Exact legacy EVM signature verification, one secret source, isolated-host/address checks, durable fenced PostgreSQL registry; synthetic canonical nonce/finality tests | Team: RPC configuration and signer host. Isaac: real provider/nonce/finality evidence. Keegan: signer role/secret provisioning and CI/deployment dependency lock. |
+| 5 · Execution service | Store.command mapping; W04 CAS/journal/registry adapter; replayable broadcast/final facts; actual accounting validator; PostgreSQL process-death tests | Keegan: adopt schema/migration/roles/restore coverage; atomically wire commands, reservations, ordered reducer, final observations and official audit outbox. Isaac/Keegan: integration review and live gates. |
+| 6 · Gas | Balance API checked; explicit USDT→native BNB validation | Team: first BNB absent/unproved. Keith/Isaac: top-up planner, native receipt/balance accounting and reserve floor. |
+| 7 · Wallet transition | Separate wallet/run audit paths and wallet-wide nonce namespace; mismatch rejection tests | Keegan/Isaac: wire configuration through actual host release and rehearse the final-wallet switch. |
+
+Second cycle summary at 16:42:24.708 UTC: two pairs/name; all observed token/underlying states open. Sequential round-trip median bp (range): NVDAB 0.4467 (-1.1675–2.0609), GOOGLB 2.3439 (-3.4672–8.1549), SKHYB -2.2610 (-3.3239–-1.1981), TSLAB 8.1148 (7.7633–8.4662), MSFTB 19.9120 (16.9631–22.8609). Negative pairs are retained as measurement evidence, not treated as arbitrage. Two samples cannot establish stable spreads, B4 values or profitability; exact gas remains unavailable.
+
+No live transaction, official log or production deployment was run. The next live-capability work is RPC/provider evidence plus router ABI/expiry resolution; the next integration work is Keegan's shared storage/release/audit wiring. The RPC configuration question remains unanswered in this session. No permission to choose a paid service or send organiser messages is assumed.
