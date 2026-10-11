@@ -27,7 +27,7 @@ class RecordedAssessment:
 
 
 def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile_hash,address,
-           policy,planner,execution,reducer,context_builder=None,initial_policy_state=None):
+           policy,planner,execution,reducer,context_builder=None,initial_policy_state=None,test_rounds=False):
     target.initialize(run_id,wallet_id,chain_id,initial)
     runtime=None
     for batch in batches:
@@ -42,7 +42,7 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                 record=event['record']
                 runtime=Coordinator(target,RecordedAssessment(record['request'],record['assessment']),policy,planner,
                     execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address,
-                    context_builder=context_builder,initial_policy_state=initial_policy_state,
+                    context_builder=context_builder,initial_policy_state=initial_policy_state,test_rounds=test_rounds,
                     clock_ms=lambda:record.get('decision_ms',record['started_ms']))
                 if kind=='PLAN_REJECTED':
                     target.open_round(run_id,record['round_id'],doc(record['request']),current['epoch'])
@@ -65,7 +65,7 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                     target.open_round(run_id,audit['round_id'],doc(request),current['epoch'])
                     runtime=Coordinator(target,RecordedAssessment(request,None),policy,planner,execution=execution,
                         run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address,
-                        context_builder=context_builder,initial_policy_state=initial_policy_state)
+                        context_builder=context_builder,initial_policy_state=initial_policy_state,test_rounds=test_rounds)
                 runtime.close(audit['round_id'],audit['timestamp_ms'],event['status'])
             else:
                 raise ContractError('Unsupported replay event; register an owner reducer')

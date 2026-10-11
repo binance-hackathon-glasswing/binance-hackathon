@@ -122,6 +122,12 @@ def settle(current, observation):
         projection["balances"] = balances_of(after)
     elif record["orders"][index].get("tx_hash") is not None:
         raise ContractError("A broadcast swap cannot end as NOT_SUBMITTED")
+    else:
+        # Logged without a tx hash, with the reason in the round's output (kit convention; IDEA-042 L2).
+        order = record["orders"][index]
+        record.setdefault("aborted", []).append({"intent_id": o["intent_id"], "symbol": order["symbol"],
+                                                 "side": order["side"], "amount": order["amount"],
+                                                 "reason": o.get("reason", "NOT_SUBMITTED")})
     if o["intent_terminal"]:
         final.append(o["intent_id"])
         deltas = [{"intent_id": o["intent_id"], "asset": asset, "units": -units}

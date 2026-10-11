@@ -125,6 +125,10 @@ class Settlement(pipeline.PipelineHarness):
         ledger_from(value["projection"], value["reservations"])  # the next round accepts the settled state
         c.close("r1", self.w.clock(), "COMPLETE")
         self.assertEqual(self.closed_orders("r1")[0]["tx_hash"], TX)
+        with self.store.transaction() as db:  # IDEA-042 L8: the settled swap belongs to this round's log
+            owner = db.execute("SELECT round_id,decision_id FROM swap_owners WHERE run_id=%s AND tx_hash=%s",
+                               (RUN, TX)).fetchone()
+        self.assertEqual(owner, ("r1", intent["decision_id"]))
 
     def buy_round(self, round_id):
         raw = raw_buy_plan()
@@ -209,10 +213,19 @@ class Settlement(pipeline.PipelineHarness):
     def test_not_submitted_releases_without_accounting(self):
         c, intent = self.buy_round("r1")
         before = self.store.load(RUN).read()["projection"]["balances"]
-        self.observe(c, observation(intent, "r1", "o1", "NOT_SUBMITTED"))
+        self.observe(c, observation(intent, "r1", "o1", "NOT_SUBMITTED", reason="QUOTE_EXPIRED"))
         self.assertEqual(self.rows(intent["intent_id"]), [])
         self.assertEqual(self.store.load(RUN).read()["projection"]["balances"], before)
-        self.assertFalse(self.planned("r1")["execution_pending"])  # the round can close; its log is item 3 (DR-07)
+        self.assertFalse(self.planned("r1")["execution_pending"])
+        c.close("r1", self.w.clock(), "COMPLETE")
+        # Logged without a tx hash, with the reason in output.aborted (IDEA-042 L2, kit convention).
+        import json
+        with self.store.transaction() as db:
+            raw = db.execute("SELECT document FROM audit_events WHERE run_id=%s AND round_id=%s",
+                             (RUN, "r1")).fetchone()[0]
+        data = json.loads(Document(bytes(raw)).read()["log"])["data"]
+        self.assertEqual(data["orders"], [{"symbol": intent["symbol"], "side": "BUY", "amount": intent["amount"]}])
+        self.assertEqual(data["output"]["aborted"][0]["reason"], "QUOTE_EXPIRED")
 
 
 if __name__ == "__main__":

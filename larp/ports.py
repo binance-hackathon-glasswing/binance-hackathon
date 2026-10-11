@@ -141,7 +141,8 @@ def validate_execution_observation(observation: dict) -> dict:
     Final facts (`settlement: FINAL`, receipt evidence `block_hash` + `canonical: true`) carry gas for every kind and
     fill amounts for FILL. `intent_terminal` ends the intent; `round_terminal` is the execution owner's attestation
     that every command of the round is terminal. NOT_SUBMITTED (proposed 2026-10-11, needs Isaac's agreement) ends an
-    intent that was never broadcast (expired or refused before signing): no tx, no gas, reservations released.
+    intent that was never broadcast (expired or refused before signing): no tx, no gas, reservations released, and an
+    optional `reason` that the round log shows in `output.aborted`.
     """
     o = observation
     if type(o) is not dict or o.get("schema") != "ExecutionObservation.v1":
@@ -167,6 +168,8 @@ def validate_execution_observation(observation: dict) -> dict:
     if kind == "NOT_SUBMITTED":
         if not o["intent_terminal"] or any(key in o for key in ACCOUNTING_FIELDS + ("tx_hash",)):
             raise ContractError("NOT_SUBMITTED is terminal and has no transaction or gas")
+        if "reason" in o:
+            _text(o["reason"], "reason")
         return o
     if not TX_HASH.fullmatch(o.get("tx_hash") or "") or not TX_HASH.fullmatch(o.get("block_hash") or "") \
             or o.get("canonical") is not True:

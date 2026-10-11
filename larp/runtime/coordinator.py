@@ -25,6 +25,39 @@ def batch_for(current,event_id,event,*,projection=None,policy_state=None,executi
         audit=[a.read() if isinstance(a,Document) else a for a in audit]))
 
 
+def round_kind(intents):
+    """GAS_TOPUP when the plan is exactly one gas top-up intent (I7); TRADE otherwise. A top-up mixed with trades is
+    refused: a gas top-up is its own round."""
+    purposes=[i.get('purpose','TRADE') if type(i) is dict else None for i in intents]
+    if 'GAS_TOPUP' not in purposes:
+        return 'TRADE'
+    if purposes!=['GAS_TOPUP']:
+        raise ContractError('A gas top-up is its own round')
+    return 'GAS_TOPUP'
+
+
+GAS_TOPUP_COT='Gas top-up round: USDT -> BNB swap to keep the BNB floor for transaction fees (B11); no trading decision.'
+
+
+def round_cot(assessment,kind='TRADE'):
+    """The round's chain of thought (Q-16, F-102, F-106 (a)): the provider's reasoning summaries in order when a model
+    ran; otherwise an explicit statement that no model was called, with the deterministic path."""
+    model_io=(assessment or {}).get('model_io')
+    steps=model_io.get('steps') if type(model_io) is dict and type(model_io.get('steps')) is list else []
+    summaries=[c for c in (model_io.get('cot') or []) if type(c) is str and c.strip()] if type(model_io) is dict else []
+    if assessment is None:
+        cot='No model call this round. Assessment unavailable; deterministic runtime record, no model reasoning is claimed.'
+    elif summaries:
+        cot=summaries
+    elif any(type(s) is dict and 'response' in s for s in steps):
+        cot='Model called; the provider returned no reasoning summary. Assessment rationale: '+assessment['rationale']
+    else:
+        cot='No model call this round. Deterministic assessment: '+assessment['rationale']
+    if kind=='GAS_TOPUP':
+        return [GAS_TOPUP_COT]+cot if type(cot) is list else GAS_TOPUP_COT+' '+cot
+    return cot
+
+
 class RecoveryIncomplete(ContractError):
     """Some rounds could not close; every other closable round was closed."""
     def __init__(self,receipts,failures):
@@ -34,7 +67,7 @@ class RecoveryIncomplete(ContractError):
 
 class Coordinator:
     def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address,
-                 context_builder=None,initial_policy_state=None,clock_ms=None):
+                 context_builder=None,initial_policy_state=None,clock_ms=None,test_rounds=False):
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
         self.execution=execution
@@ -43,6 +76,8 @@ class Coordinator:
         # journaled projection, the request and the assessment, and returns projection updates (evidence state)
         # committed atomically with the round. Without it the original fixture context is used.
         self.context_builder,self.initial_policy_state=context_builder,initial_policy_state
+        # Development and rehearsal rounds are marked in every log the way the kit marks examples (IDEA-042 L5).
+        self.test_rounds=test_rounds
 
     def snapshot(self,current,now_ms,context):
         c=current.read()
@@ -125,8 +160,9 @@ class Coordinator:
             try:
                 if type(plan.get('intents')) is not list:
                     raise ContractError('Planner intents must be a list')
+                kind=round_kind(plan['intents'])
                 check_orders([dict(symbol=i.get('symbol'),side=i.get('side'),amount=i.get('amount'))
-                              if type(i) is dict else i for i in plan['intents']])
+                              if type(i) is dict else i for i in plan['intents']],kind)
             except ContractError:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
@@ -149,6 +185,8 @@ class Coordinator:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):
             record['evidence_decisions']=updates['evidence_decisions']
+        if plan['intents'] and round_kind(plan['intents'])=='GAS_TOPUP':
+            record['round_kind']='GAS_TOPUP'  # absent for trade rounds, so their records keep their bytes
         projection.setdefault('round_records',{})[round_id]=record
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
                        decision_id=i['decision_id'],expires_ms=i['expires_ms']) for i in plan['intents']]
@@ -229,24 +267,29 @@ class Coordinator:
             reservation_deltas=change.get('reservation_deltas',[]),commands=transition.get('commands',[])))
 
     def audit_record(self,record,round_id,now_ms,status,head):
+        """One ai-seeds round log (interface I5, IDEA-042 item 3): input, cot, output and the orders committed."""
         assessment=record['assessment']
-        rationale=(assessment['rationale'] if assessment else
-                   'Deterministic runtime record: assessment unavailable; no model reasoning is claimed.')
+        kind=record.get('round_kind','TRADE')
+        rationale=round_cot(assessment,kind)
         decisions=sorted({m['decision_id'] for m in record['swap_mappings']} |
                          {i['decision_id'] for i in record['plan'].get('intents',[])})
-        inputs=dict(version_id=self.version_id,round_id=round_id,request=record['request'],
+        inputs=dict(version_id=self.version_id,round_id=round_id,decision_ids=decisions,request=record['request'],
                     assessment=assessment,policy_input=record.get('policy_input'),policy_state=record.get('policy_state'))
         output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
                     policy_output=record.get('policy_output'))
+        if record.get('aborted'):
+            output['aborted']=record['aborted']  # committed orders that never reached the chain, with the reason
         if record.get('audit_fallback'):
             inputs=dict(version_id=self.version_id,round_id=round_id,
                         local_record_hash=doc(record).digest('larp.round.v1'),
                         omitted_content='Original complete I/O retained in the durable ROUND_PLANNED record; serialization budget exceeded.')
             output=dict(status='AUDIT_CONTENT_UNSUPPORTED',errors=record['errors'],trading_blocked=True)
             rationale='Deterministic serialization failure; original reasoning retained locally, not fabricated or truncated.'
+        if self.test_rounds:
+            inputs['example']=True
         return build_event(event_id=event_id_for(self.run_id,self.address,round_id,head,now_ms),round_id=round_id,version_id=self.version_id,
             decision_ids=decisions,address=self.address,timestamp_ms=now_ms,input_record=inputs,rationale=rationale,
-            output=output,orders=record['orders'],swap_mappings=record['swap_mappings'])
+            output=output,orders=record['orders'],swap_mappings=record['swap_mappings'],round_kind=kind)
 
     def close(self,round_id,now_ms,status):
         previous=self.store.receipt(self.run_id,'close:'+round_id)
