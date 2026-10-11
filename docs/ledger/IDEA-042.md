@@ -228,3 +228,39 @@ Criteria pushed at `4694785` (CI green, [run 38158943819](https://github.com/bin
 - The four-way integration and the shadow-mode path with real read-only adapters.
 - Every host step: provisioning, alerts, restore and anchor drills on AWS, restart and HALT drills, the rehearsal-build manifest, the switch rehearsal, rehearsals and Gate reviews.
 - The team's inputs: B9, secrets, rota, and the three OPEN deviation rows.
+
+## 4. Integration round 1: reconciling with the three owner branches. Prospective criteria (written 2026-10-11, before any change below)
+
+Authorized by the user on 2026-10-11 ("Continue", after the owner branches appeared). The owner branches at the time of writing: Isaac `codex/deploy-execution` `28613da` (draft PR #14), Keith `codex/deploy-strategy` `ab3adc1` (no PR; IDEA-040 says its tests were NOT RUN), Yao Zhu `codex/deploy-evidence` `92e4745` (PR #15). Base `codex/engine-foundation` `bd3f69a`.
+
+**Diagnosis only, not a result.** Before these criteria were written, an exploratory local merge of all three into this branch (`c1271a6`) was run to see what breaks. It is reported as diagnosis and is not counted towards any criterion below. No textual conflicts. Full suite on PostgreSQL 16: 834 passed, 9 failed, 4 skipped:
+- `tests/execution/test_postgres_execution.py` (5): my migration 008 already creates an `execution_signatures` table with other columns, so Isaac's `CREATE TABLE IF NOT EXISTS` keeps the wrong one. Two stores for the same thing: mine (`PostgresExecutionStore`, §3.1 E1) and Isaac's `larp/execution_live/store.py`, which his service uses and which IDEA-039 asks me to adopt in migrations, roles and backup. **Mine to fix (X1, X2).**
+- `tests/execution/test_settlement.py` (2): Keith's `advance_accounting` now requires a `receipt` object (`tx_hash`, `block_hash`, `block_number`, `canonical`, `finality: FINAL`, `chain_id: 56`, `status`) for `EXECUTION_RECONCILER` facts; Isaac's receipt facts do not carry it. **Isaac ↔ Keith (I4); both owners must agree (brief §Interfaces).**
+- `tests/strategy/test_live_profiles.py::test_live_cost_cap_still_blocks_without_double_counting_impact`: fails on Keith's branch alone. **Keith.**
+- `tests/strategy/test_live_profiles.py::test_c2_fixture_matches_current_golden_trace_without_reconstruction`: Yao Zhu's branch regenerated the golden traces (new `review` field); Keith's fixture still holds the old request. **Keith re-captures** (same root cause as PR #9's C2).
+
+Other mismatches found by reading the branches (not by tests):
+- **I7 naming.** Isaac and Keith both mark a top-up with the intent field `kind: "GAS_TOP_UP"` (absent or `BSTOCK_TRADE` = a trade); Keith's top-up round is `GAS_TOP_UP` too. My `ports.py`, `check_orders` and coordinator use a separate field `purpose: "GAS_TOPUP"`. **Mine to fix (X3).**
+- **I7 decimals.** Keith's top-up intent has `receive_decimals: 6`; Isaac's `map_command` requires 18 for native BNB. **Isaac ↔ Keith.**
+- **I8 shape.** Yao Zhu publishes `config/intelligence/red_flags.v1.json` and `red_flag_directives(record, profile)`; Keith's consumer proposes a different `RedFlagPredicates.v1` registry in `context.red_flag_predicates`. **Keith ↔ Yao Zhu.**
+- **I5.** IDEA-041 §6.3 asks Keith whether `larp.strategy.assessments.consume` (v1 only) is on the live path. **Keith.**
+
+### 4.1 Criteria for this branch (L1)
+- **X1 · one execution store.** Migration 008 creates exactly the tables and index of Isaac's proposed schema (`larp/execution_live/store.py:SCHEMA` at `28613da`: `execution_records`, `execution_wallet_barrier`, `execution_journal`, `execution_signatures`, `execution_observations`), same DDL, nothing else. Migration 008 has never been applied outside disposable test databases (it is not on `codex/engine-foundation`), so it is replaced rather than superseded by a 009. My duplicate is removed: `larp/storage/execution_store.py`, its tables, `commands.execution_key` and `PostgresStore.claim_command` (Isaac's service consumes commands through `PostgresStore.command`). A test shows that, on a tree that has Isaac's module, running his `SCHEMA` after the migrations changes nothing (same columns, types, nullability, keys and indexes); on this branch alone it is skipped. **Pass on the trial merge:** Isaac's `tests/execution/test_postgres_execution.py` passes against the migrated tables.
+- **X2 · roles and backup for that store.** `deploy/postgres/roles.sql`:
+  - `larp_execution`: SELECT, INSERT, UPDATE on `execution_records`; SELECT, INSERT on `execution_journal` and `execution_observations`; SELECT on `execution_signatures`; the existing command and journal reads.
+  - `larp_signer`: SELECT, INSERT on `execution_signatures` only, plus SELECT on `runs` and UPDATE of `runs.clock_ms` (Isaac's fencing locks the run row).
+  - `larp_runtime`: SELECT on `execution_journal` and `execution_observations`; nothing on `execution_records` or `execution_signatures`.
+  - `larp_archive`: SELECT on `execution_journal` and `execution_observations` only.
+  - No role has UPDATE or DELETE on `execution_journal`, `execution_signatures` or `execution_observations`.
+  A PostgreSQL test shows each grant and each refusal. `larp/storage/backup.py` covers the four tables, and a test shows an export and restore round trip keeps their rows byte for byte.
+- **X3 · I3/I7 naming agreed with the other two owners.** `validate_execution_request` reads the intent's `kind` (`BSTOCK_TRADE` when absent, or `GAS_TOP_UP`) and refuses `purpose`; the coordinator's round kind and `check_orders` use `GAS_TOP_UP`. `GAS_TOPUP` appears nowhere in code, and a test shows it is refused.
+- **X4 · signer dependencies.** New `deploy/requirements-signer.lock` (runtime lock plus `eth-account==0.14.0` and its 22 transitive pins, all taken unchanged from `requirements.lock`), included by `deploy/requirements-test.lock` so CI runs the signer tests instead of skipping them. `pip check` passes in CI. The runtime image lock is unchanged.
+- **X5 · requested shared edits.** Applied in the same change as the code, each worded to say what is built and what is still unproven:
+  - `docs/LEDGER.md` rows for IDEA-039, IDEA-040 and IDEA-041.
+  - `docs/INCOMPLETE_WORK.md` notes requested in IDEA-039 §5, IDEA-040 ("Requested shared edits") and IDEA-041 §6.1. No backlog item is removed: none is complete.
+  - New deviation rows only where the register has none yet (IDEA-040 items 1–7 and IDEA-041 §6.1 (a)–(d) are checked against DEV-01..DEV-20 one by one, and the mapping is recorded in §4.3).
+- **X6 · cross-owner findings handed over.** Every "Isaac ↔ Keith", "Keith ↔ Yao Zhu" and "Keith" item above is listed in §4.3 with its owner. I do not change another owner's paths.
+- **X7 · re-run the trial merge** (the same owner SHAs) after X1–X4 are pushed and green. **Pass:** the 5 PostgreSQL execution failures are gone; every remaining failure is one of the cross-owner items above, and none is in a runtime-owned path. The integration branch `codex/deploy-integration` and its PR into `codex/engine-foundation` wait until each owner PR has passed CI and its reviewer (brief §Integration); this round does not create them.
+
+Process as before: these criteria are pushed to PR #13 and CI is green before any change they cover; each later push also waits for green CI.
