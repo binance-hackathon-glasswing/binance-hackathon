@@ -289,3 +289,4 @@ for prem in (0.08, 0.0):
 ```
 
 - 2026-10-11 note (SYZ/Claude): the B5 rebalance rule and cap semantics are decided, and Option 1 is built offline, in [IDEA-037](IDEA-037.md): reinvest only into unheld names while gross < 75%; no sell on drift; forced trims only above 25% per name / 90% gross. §7 item 6 is built offline and passes Linux CI; a live profile remains.
+- 2026-10-11 note (SYZ/Claude): IDEA-037's addendum also tops up held names below 20% while gross < 75% (`148a994`), replacing "only into unheld names" in the note above.

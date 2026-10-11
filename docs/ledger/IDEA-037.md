@@ -108,3 +108,20 @@ Otherwise the name gets `KEEP_QUANTITY`. The planner is unchanged: buy capacity 
 - **P17 Loss stop blocks top-ups.** The P14 case with `run_halt`: no intent, rejection `NEW_RISK_HALTED`.
 - **P05 (revised).** NVDAB ≈ 22%, GOOGLB ≈ 15%, gross ≈ 37%: NVDAB `KEEP_QUANTITY` (no sale on drift); GOOGLB `TARGET_WEIGHT` 1/5; no requirement and no SELL intent for either.
 - P01–P04 and P06–P13 must still pass. Full suite: no new failures against V01 (499 passed locally, 586 + 770 in Linux CI before the new tests).
+
+**Addendum results: V02 (`148a994`, synthetic fixtures only).**
+
+| Criterion | Result |
+|---|---|
+| P14–P17, P05 revised | PASS. P09 is extended with a held name outside the entry window |
+| P01–P04, P06–P13 | PASS |
+| Local full suite (Python 3.14.6) | 502 passed, 86 skipped, 1 failed (the same `boto3`-missing archive test) |
+| Linux CI | PASS: run 38147628647 on `148a994` (PR #7), 589 passed + 770 subtests, no skips; Terraform jobs pass |
+
+**Mutation check.** Each mutation was caught:
+- no held top-up → P05, P14 and P17 fail;
+- top-up ignores the 75% threshold → P16 fails;
+- top-up ignores the entry gates → P09 fails;
+- a held name resized even at or above 20% → P05 and P14 fail.
+
+A first batch of mutations misreported because the M8 and M9 edits had the same file size and were written within the same second, so Python reused stale bytecode. Rerun individually, with a fresh write, each mutation was caught as listed.
