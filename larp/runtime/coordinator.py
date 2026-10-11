@@ -36,6 +36,28 @@ def round_kind(intents):
     return 'GAS_TOPUP'
 
 
+# Round errors that count towards a repeated-failure HALT (larp/runtime/supervision.py). A missing assessment is a
+# normal hold, not a failure.
+FAILURES=('PLANNER_UNAVAILABLE','PLAN_INVALID','COMMIT_REJECTED','POLICY_REJECTED','AUDIT_CONTENT_UNSUPPORTED')
+
+
+def is_failure(errors):
+    return any(e in FAILURES or e.startswith('CONTEXT_UNAVAILABLE') for e in errors)
+
+
+def halt_reasons(projection):
+    return sorted((projection.get('halt') or {}).get('reasons',{}))
+
+
+def record_round_health(projection,errors,decision_ms):
+    """Consecutive failure/success counts and the last decision time, journaled with each round (DR-13)."""
+    health=dict(projection.get('round_health') or {'failures':0,'successes':0})
+    health=({'failures':health['failures']+1,'successes':0} if is_failure(errors) else
+            {'failures':0,'successes':health['successes']+1})
+    projection['round_health']=health
+    projection['last_decision_ms']=max(decision_ms,projection.get('last_decision_ms',decision_ms))
+
+
 GAS_TOPUP_COT='Gas top-up round: USDT -> BNB swap to keep the BNB floor for transaction fees (B11); no trading decision.'
 
 
@@ -56,6 +78,10 @@ def round_cot(assessment,kind='TRADE'):
     if kind=='GAS_TOPUP':
         return [GAS_TOPUP_COT]+cot if type(cot) is list else GAS_TOPUP_COT+' '+cot
     return cot
+
+
+class _Halted(Exception):
+    pass
 
 
 class RecoveryIncomplete(ContractError):
@@ -121,7 +147,7 @@ class Coordinator:
                 errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
-                   if k not in ('round_records','closed_rounds','observations')}
+                   if k not in ('round_records','closed_rounds','observations','round_health','last_decision_ms','halt')}
         updates={}; context_ok=True
         if self.context_builder is None:
             context=dict(projection=portfolio,reservations=current.read()['reservations'],
@@ -140,17 +166,25 @@ class Coordinator:
                 updates=getattr(exc,'updates',None) or {}
                 context_ok=False
         snapshot=self.snapshot(current,now_ms,context)
-        if assessment is not None and context_ok:
+        halted=halt_reasons(current.read()['projection'])
+        if halted:
+            # HALT (larp/runtime/supervision.py): no new risk and no signing; the round still runs and is logged.
+            errors.append('HALTED:'+','.join(halted))
+        if assessment is not None and context_ok and not halted:
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
             except Exception:
                 errors.append('POLICY_REJECTED'); proposal=None
-        # Mandatory risk is called even when there is no policy output.
+        # Mandatory risk is called even when there is no policy output (unless halted: nothing may be signed).
         try:
+            if halted:
+                raise _Halted()
             plan=self.planner.plan(snapshot,proposal).read()
             if plan['schema']!='PlanResult.v1' or plan['snapshot_id']!=snapshot.snapshot_id:
                 raise ContractError('Mismatched planner result')
+        except _Halted:
+            plan=self.empty_plan(snapshot,'HALTED')
         except Exception:
             errors.append('PLANNER_UNAVAILABLE')
             plan=self.empty_plan(snapshot,'PLANNER_UNAVAILABLE')
@@ -204,6 +238,7 @@ class Coordinator:
             record['orders']=[]
             commands=[]; reservation_deltas=[]
         record['execution_pending']=bool(commands)
+        record_round_health(projection,record['errors'],now_ms)
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
         try:
             receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
@@ -230,6 +265,7 @@ class Coordinator:
         record=dict(record,execution_pending=False,orders=[])
         projection=current.read()['projection']
         projection.setdefault('round_records',{})[round_id]=record
+        record_round_health(projection,record['errors'],record.get('decision_ms',record['started_ms']))
         return self.store.commit(batch_for(current,'rejected:'+round_id,
             dict(kind='PLAN_REJECTED',record=record),projection=projection))
 

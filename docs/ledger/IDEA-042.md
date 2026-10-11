@@ -105,8 +105,19 @@ Criteria pushed at `5b80e7e` (CI green, [run 38154687328](https://github.com/bin
 - L2 and L8: `tests/integration/test_settlement.py`. An unsent intent is logged without a tx hash, with `output.aborted[0].reason == "QUOTE_EXPIRED"`, and a settled swap's hash is owned by its round and decision in `swap_owners`.
 - Code: `larp/audit/protocol.py` (`round_kind`, BNB only in GAS_TOPUP rounds; trade-round envelopes unchanged), `larp/runtime/coordinator.py` (`round_kind`, `round_cot`, decision IDs and `example` in `input`, `output.aborted`), `larp/audit/delivery.py` (`delivery_status`), `larp/integration/settlement.py` (aborted orders), `larp/ports.py` (optional `reason` on NOT_SUBMITTED), `larp/runtime/replay.py` (`test_rounds` passthrough).
 
-**Item 4 — PASS locally** (CI: see the next entry). `larp/integration/replay.py` (`RecordedPorts`, `replay_live`) and `builder_for` in `larp/runtime/replay.py`. `tests/integration/test_live_replay.py`, 4 tests on PostgreSQL:
+**Item 4 — PASS** at `cd97ed3`, Linux CI green ([run 38156955583](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156955583)). `larp/integration/replay.py` (`RecordedPorts`, `replay_live`) and `builder_for` in `larp/runtime/replay.py`. `tests/integration/test_live_replay.py`, 4 tests on PostgreSQL:
 - P2: a MANDATORY_REDUCTION round with broadcast, FILL and close replays to the same head. Control: the same replay through the live ports, now dead, raises `IntegrityError`.
 - P1, P3: a five-round day (clean hold, adverse mandatory reduction settled by observations, a context failure caused by a market port outage, two holds), with a market port whose prices change every call, replays to the identical head after every live port is made to raise. A recorded failure re-raises with its recorded cause name.
 - P4: one recorded market price changed in a copy of the journal is refused (`IntegrityError`).
 - Local: 625 passed, 3 skipped, 774 subtests.
+
+**Item 5 — PASS locally** (CI: see the next entry). Local: 635 passed, 3 skipped, 774 subtests.
+- Code: `larp/runtime/supervision.py` (`Sessions`, `Guard`), `larp/runtime/service.py` (`Service`, exit codes), `deploy/systemd/larp-runtime.service`, `migrations/007_process_sessions.sql`. The coordinator records `round_health` and `last_decision_ms` with each round and, while halted, skips policy and planner and logs `HALTED:<reasons>`. `store.command()` refuses every command while halted. Replay recommits `INCIDENT`/`HALT`/`HALT_CLEARED` as recorded facts.
+- `tests/runtime/test_supervision.py`, 10 tests:
+  - H1: a clean restart records no incident; a crash followed by two restarts records exactly one RESTART incident naming the crashed session; another build or a reused session ID is refused.
+  - H2: the unit has `Restart=always`, `RestartSec=10`, no start limit, `KillMode=control-group`, `RestartPreventExitStatus=2 3`, preflight before start, and every hardening directive of the archive unit.
+  - H3, H4: a clock behind the last decision halts. The signing gate refuses a command it accepted before the HALT, and a halted BUY round logs once with no new command. The clock HALT stays latched while a later delivery HALT is added.
+  - H3, H5: a delivery-deadline HALT is raised and clears once the log is ACKed. Three failed rounds raise REPEATED_FAILURES, which clears after two successful (halted, logged) rounds.
+  - H3 (amended): a tampered projection quarantines the run, and the service then exits with code 3 without running a round.
+  - H6: incident, HALT and clear events replay to the same head.
+- Not yet shown, due on the host: the kill-and-restart drill (Gate A) and the HALT drill (Gate B). The runtime database role and its grants (including `process_sessions`) belong to item 7 (provisioning). `larp.runtime.service run` exits with code 2 (not integrated) until item 10 supplies the round driver.

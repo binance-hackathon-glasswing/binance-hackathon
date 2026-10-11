@@ -15,6 +15,9 @@ from larp.runtime.coordinator import Coordinator
 from larp.storage.postgres import IntegrityError,digest,doc
 
 
+RECORDED_FACTS=('INCIDENT','HALT','HALT_CLEARED')
+
+
 class RecordedAssessment:
     def __init__(self,request,result):
         self.request,self.result=request,result
@@ -54,6 +57,9 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                     runtime.record_rejection(record['round_id'],record)
                 else:
                     runtime.start(record['round_id'],doc(record['request']),record['started_ms'],defer_close=True)
+            elif kind in RECORDED_FACTS:
+                # Supervision facts (larp/runtime/supervision.py) are recorded, not computed: recommit them as they are.
+                target.commit(batch)
             elif kind=='OBSERVATION':
                 if runtime is None: raise IntegrityError('Replay observation has no round context')
                 runtime.observe(b['event_id'],doc(event['observation']),reducer)

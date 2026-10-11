@@ -1,0 +1,106 @@
+"""Supervised runtime process (DR-13; IDEA-042 item 5). Run by deploy/systemd/larp-runtime.service.
+
+One durable session per process. SIGTERM ends the session cleanly; a crash or kill leaves it open, so the next start
+records a RESTART incident. Before every round the guard may HALT or quarantine the run. The process never changes
+its build: the release preflight and the session check both refuse a build other than the registered one.
+
+Exit codes the supervisor uses: 0 clean stop; 1 failure (restart); 2 not integrated yet; 3 run quarantined. 2 and 3 do
+not restart (`RestartPreventExitStatus`): neither is cured by restarting.
+"""
+
+import argparse
+import json
+from pathlib import Path
+import signal
+import time
+import uuid
+
+from larp.contracts import ContractError, Document
+from larp.runtime.supervision import Guard, Sessions
+
+EXIT_NOT_INTEGRATED, EXIT_QUARANTINED = 2, 3
+
+
+class NotIntegrated(ContractError):
+    """The round driver (scheduler -> coordinator with live ports) arrives with IDEA-042 item 10."""
+
+
+class Service:
+    def __init__(self, store, run_id, build_id, *, guard, driver, clock_ms, interval_s=5.0, sleep=time.sleep,
+                 session_id=None):
+        self.store, self.run_id, self.build_id = store, run_id, build_id
+        self.guard, self.driver, self.clock, self.interval, self.sleep = guard, driver, clock_ms, interval_s, sleep
+        self.session_id = session_id or 'session:' + uuid.uuid4().hex
+        self.sessions = Sessions(store, run_id)
+        self.stopping = False
+
+    def stop(self, *args):
+        self.stopping = True
+
+    def run(self, *, max_cycles=None):
+        """Returns an exit code. An exception escapes on purpose: the session stays open and counts as a crash."""
+        self.sessions.begin(session_id=self.session_id, build_id=self.build_id, now_ms=self.clock())
+        cycles = 0
+        while not self.stopping and (max_cycles is None or cycles < max_cycles):
+            now = self.clock()
+            if 'QUARANTINED:INTEGRITY' in self.guard.evaluate(now):
+                return EXIT_QUARANTINED  # no clean end: the next start reports the stop as an incident
+            self.driver.once(now)
+            self.sessions.heartbeat(self.session_id, self.clock())
+            cycles += 1
+            if not self.stopping and (max_cycles is None or cycles < max_cycles):
+                self.sleep(self.interval)
+        self.sessions.end(self.session_id, self.clock())
+        return 0
+
+
+def validate_config(value):
+    required = ('run_id', 'build_id', 'database_dsn_file', 'max_failures', 'clear_after', 'interval_seconds')
+    if value.get('schema') != 'RuntimeService.v1':
+        raise ContractError('Invalid runtime service configuration schema')
+    missing = [k for k in required if value.get(k) in (None, '')]
+    if missing:
+        raise ContractError('Missing runtime settings: ' + ','.join(missing))
+    return value
+
+
+def build_driver(config, store):
+    raise NotIntegrated('Round driver not integrated yet (IDEA-042 item 10)')
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=('check', 'run'))
+    parser.add_argument('--config', required=True)
+    parser.add_argument('--manifest', required=True)
+    parser.add_argument('--root', required=True)
+    args = parser.parse_args(argv)
+    try:
+        from larp.runtime.preflight import verify_release
+        c = validate_config(json.loads(Path(args.config).read_text(encoding='utf-8')))
+        manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+        if manifest['build_id'] != c['build_id']:
+            raise ContractError('Configured build differs from the verified release')
+        if args.command == 'check':
+            print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
+            return 0
+        from larp.storage.postgres import PostgresStore
+        store = PostgresStore(Path(c['database_dsn_file']).read_text(encoding='utf-8').strip())
+        try:
+            driver = build_driver(c, store)
+        except NotIntegrated:
+            print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
+            return EXIT_NOT_INTEGRATED
+        service = Service(store, c['run_id'], c['build_id'], driver=driver,
+                          guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
+                          clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'])
+        signal.signal(signal.SIGTERM, service.stop)
+        return service.run()
+    except Exception:
+        # Exception text can carry DSNs or secrets; the journal and health check hold the detail.
+        print(json.dumps(dict(started=False, reason='RUNTIME_FAILED', signing_enabled=False)))
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
