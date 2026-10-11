@@ -18,7 +18,7 @@ Deliver:
 
 6. Gas top-up planning (B11; DR-06; interface I7; with Isaac and Keegan). When BNB falls below the floor (two transactions of approve + swap gas), plan a USDT -> BNB top-up intent as its own round, sized by the profile, never using unconfirmed proceeds, and never during a blocked state that forbids new spending. It is a resource action, not a position: it does not count toward the four positions or gross exposure; BNB value is reported separately in the economic views.
 
-7. Accounting from real receipts (DR-05; interface I4; with Keegan and Isaac). Make advance_accounting accept Isaac's real ExecutionObservation.v1 facts (actual received tokens on exact-in buys, actual proceeds on sells, actual fee, gas in BNB units and USDT value, revert gas only). Keegan's settlement reducer calls it; agree the observation fields with Isaac by Oct 12 and test on his recorded observations.
+7. Accounting from real receipts (DR-05; interface I4; with Keegan and Isaac). Make advance_accounting accept Isaac's real final receipt facts (APPROVAL, FILL, REVERT with settlement FINAL: actual received tokens on exact-in buys, actual proceeds on sells, actual fee, gas in BNB units and USDT value, revert gas only). Keep rejecting every other kind: BROADCAST_ATTEMPTED is an execution/audit fact handled by Keegan's settlement reducer and never changes balances or gas (interface I4). Keegan's settlement reducer calls it; agree the observation fields with Isaac by Oct 12 and test on his recorded observations.
 
 8. Fixture re-capture. Re-capture tests/strategy/fixtures/assessment-producer.json from Yao's current golden trace (PR #7 regenerated it; Keegan's integration check C2 fails until this is done) and keep the producer commit in the fixture.
 
