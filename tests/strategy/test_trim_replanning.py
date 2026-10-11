@@ -57,7 +57,8 @@ class TrimReplanning(unittest.TestCase):
         self.assertEqual(result['risk_state']['cap_trims']['gross_shares'], {})
 
     def test_costly_gross_trim_keeps_dust_residual_explicit(self):
-        s = ew(held=dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), 4600))
+        s = ew(held=dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), 4600),
+               profile_changes={'dust_units': 2})
         for _ in range(4):
             s = self.settled_child(s)
         result = plan(with_quotes(s, policy=False), None).read()

@@ -134,6 +134,7 @@ def plan(snapshot, proposal_or_none):
     # Hard lines start an obligation; crossing back below the trigger does not complete it.
     # This state is committed even on blocked rounds and restored independently of policy output.
     trim_state = r.get("cap_trims", {})
+    durable_trims = "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r
     name_trims = set(trim_state.get("names", [])) & set(held)
     gross_trim = bool(trim_state.get("gross", False)) or gross > safe_equity * trim_gross
     gross_shares = dict(trim_state.get("gross_shares", {}))
@@ -166,9 +167,12 @@ def plan(snapshot, proposal_or_none):
         if gross_trim and gross > safe_equity * gross_limit:
             # Freeze allocation shares when the obligation starts. Recomputing shares after each
             # settled child repeatedly trims completed names and creates an asymptotic micro-trade tail.
-            if symbol not in gross_shares:
+            if symbol not in gross_shares and durable_trims and not unvalued:
                 gross_shares[symbol] = ratio(value(qty, m) / gross)
-            cap = min(cap, floor(fraction(gross_shares[symbol]) * safe_equity * gross_limit
+            # Incomplete valuation cannot establish allocation shares; retain existing ones, but
+            # use conservative provisional bounds for names without a complete starting valuation.
+            share = fraction(gross_shares[symbol]) if symbol in gross_shares else value(qty, m) / gross
+            cap = min(cap, floor(share * safe_equity * gross_limit
                                  * 10**m["decimals"] / m["price_units"]))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
         if index >= 4:
@@ -187,7 +191,7 @@ def plan(snapshot, proposal_or_none):
             result["requirements"].append({"symbol": symbol, "held_units": qty,
                                            "max_units": cap, "remaining_sell_units": qty - cap,
                                            "reasons": reason, "status": "PENDING"})
-    if "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r:
+    if durable_trims:
         r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim,
                           "gross_shares": gross_shares}
     # The nonce simplification also ensures pending trades cannot allocate twice.
