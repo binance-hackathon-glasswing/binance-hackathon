@@ -1,0 +1,32 @@
+You are building Isaac's part of LARP's deployment: the live market and execution path. Today the runtime trades only through fake ports. When your PR is integrated with the other three, LARP must be able to quote, approve, swap, settle and recover on the real BNB Smart Chain venue from committed code.
+
+Start on a new branch codex/deploy-execution from origin/codex/engine-foundation at the commit that adds docs/build/DEPLOYMENT_BUILD.md. That brief is part of this prompt: read it first, then AGENTS.md, docs/skill/SKILL.md (§0 and the never-do list), the LEDGER table, IDEA-035 (§7 items 1-3, §8.1, B4, B11, C1, C8), EXP-005, EXP-006, docs/engineering/W04.md and W08.md, docs/skill/reference/participant-kit.md K6-K8, the verbatim docs/official/kit/ trading guide and Web3 API docs, and GAP-31/41/44/47/49/50/51/52 in docs/INCOMPLETE_WORK.md. Record all work in IDEA-039 (create docs/ledger/IDEA-039.md). Your reviewer is Keegan.
+
+Own only the paths the brief assigns to you. Shared docs, locks and the ledger index are Keegan's: list the edits you need in IDEA-039.
+
+Deliver:
+
+1. Live market port (interface I1, I2; DR-01, DR-08 inputs). An observe(MarketRequest.v1) -> MarketObservation.v1 adapter over the kit's Web3 Open API: rwa/tokens and rwa/underlying-market for openState and market status, rwa/price, decimals from the API, and EXACT_IN quotes from quote-and-swap that carry every field Keith's planner reads (impact_bps from priceImpactPercent, slippage, gas, fee, min receive, expiry, quote_id, route validity). Prove it against larp.strategy.schema.market_view and larp.risk.planner on recorded real responses; do not hand-copy the schema. Also supply raw token candles (bar, open/close times, source hash) for Keith's session builder. Map credential aliases (BINANCE_* <-> BN_WEB3_*) and reject conflicting values. Responses that change are new observations; never edit a stored one.
+
+2. Quote logger (DR-01; GAP-44/50/51; B4). Run read-only, hourly or faster, for all five names at the sizes the policy uses (about 40 USDT per position at 200 USDT): spread, priceImpactPercent, gas estimate, openState, response latency and failures. Start by Oct 12 so at least 3 days including the Oct 17-18 weekend exist before the Oct 22 parameter freeze. Store raw responses outside Git with hashes; put the summary (median and spread per name, openState coverage) in IDEA-039. Keith needs these numbers to set B4 and B6. Quotes are free and need no balance; no ai-seeds log() call is involved.
+
+3. Live venue adapter (DR-02). Replace the fake venue with the kit flow: approve -> confirm -> re-quote -> gas estimate -> sign -> broadcast -> receipt. Gas estimation fails before approval (EXP-005); estimate the swap only after the approve is final. Keep the per-trade cap, the openState gate (never order while openState is false, F-95) and recipient/min-out verification (GAP-63 R2). Decode and verify the router payload; resolve the router ABI and encoded expiry open in EXP-005, or record why they cannot be resolved and what guard replaces them.
+
+4. Isolated signer and nonce/finality (DR-03). A signer component that runs only on the signer host, loads exactly one of WALLET_PRIVATE_KEY or WALLET_MNEMONIC from the runtime secret store, refuses to start unless the derived address equals AI_SEEDS_ADDRESS (G-09), and signs only payloads that passed validate_payload under a current fencing epoch. Wallet nonce: the kit history omits approvals, so do not derive the next nonce from it; use a chain RPC transaction count or another positive source and record the method and its evidence. Finality: canonical block evidence before a transaction counts as final; update EXP-005's capability verdicts with what you prove. Same-nonce replacement stays disabled.
+
+5. Execution service (DR-04, interfaces I3 and I4; with Keegan). A consumer that takes EXECUTION_REQUEST commands from the store (store.command checks ownership, version and expiry), maps them to your Intent (publish the mapping in IDEA-039 on Oct 12), drives the Executor, and reports every fact as ExecutionObservation.v1: APPROVAL, BROADCAST_ATTEMPTED, FILL, REVERT, with tx hash, receipt evidence, actual token/cash/fee units and gas in BNB units plus its USDT value. Prove your observations with larp.risk.accounting.advance_accounting. Replace the SQLite fixture store with Keegan's PostgreSQL store boundary (W04.md "Integration owners"); agree the table shape with Keegan by Oct 13. Crash tests at each step: before sign, after sign, after broadcast, after receipt, each recovering without a duplicate transaction.
+
+6. Gas: first BNB and automatic top-ups (DR-06, interface I7; with Keith). First check the dev wallet's BNB balance and record it (IDEA-035 C1). If it is zero, stop: report to the team, who decide whether to ask the organisers (Q-03); do not add funds, which is prohibited (F-25, F-64). Once BNB exists: allow USDT -> BNB in Intent.validate only for gas top-up intents Keith's planner emits, with its own round (B11), sized to keep at least two transactions of gas (approve + swap) above the floor.
+
+7. Final-wallet support (DR-17; with Keegan). Configuration binds one wallet per run: separate signer key, nonce records and .ai-seeds/ directory per wallet, and refusal on any address mismatch (GAP-52).
+
+Acceptance (write criteria in IDEA-039 and push them before running anything):
+- All existing tests pass, including the 13 foundation tests and W04/W08.
+- Live adapters are tested against recorded real responses (hashed, stored outside Git); live mode refuses to start with any fake port or missing credential.
+- On the dev wallet, from committed code: one approve and one swap at minimum size, each with a decision record and a logged round, settled through the observation path (needs BNB, DR-06). If BNB is missing, this is NOT RUN with the reason.
+- Crash-recovery tests for every step pass against PostgreSQL in CI.
+- The quote-logger summary is in IDEA-039 by Oct 19.
+
+Dates: interfaces I1-I4/I7 agreed Oct 12; quote logger running Oct 12; venue + signer proven on the dev wallet by Oct 19-20; this is the critical path for the signed rehearsal starting Oct 21.
+
+You need from the team: the BNB balance answer, the Web3 API keys and the wallet key on the signer host (runtime secret store only), AI_SEEDS_ADDRESS. Nothing here authorizes organiser messages, adding funds or merges to main.

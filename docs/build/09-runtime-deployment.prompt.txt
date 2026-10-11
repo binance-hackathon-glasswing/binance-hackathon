@@ -1,0 +1,41 @@
+You are building Keegan's part of LARP's deployment: the runtime wiring, official logging, operations, hosting, release and the integration of all four PRs. When the four PRs are integrated, the repository and the provisioned environment must contain everything needed to run the signed rehearsal and to activate the final build. You also own the deployment-readiness checklist (DR) in docs/build/DEPLOYMENT_BUILD.md and its evidence.
+
+Start on a new branch codex/deploy-runtime from origin/codex/engine-foundation at the commit that adds docs/build/DEPLOYMENT_BUILD.md. That brief is part of this prompt: read it first, then AGENTS.md, docs/skill/SKILL.md (§0, the never-do list, F-12-F-17, F-60-F-62, F-99-F-103, F-114, F-117), the LEDGER table, IDEA-035 (all), IDEA-036, IDEA-028 RT10-RT21, docs/build/architecture-deployment.md, runtime-operations.md and runtime-infrastructure.md, larp/integration/runtime.py, and GAP-04/35/36/37/45/46/52/62/65 in docs/INCOMPLETE_WORK.md. Record all work in IDEA-042 (create docs/ledger/IDEA-042.md). Your reviewer is Isaac.
+
+Deliver:
+
+1. Reconciled baseline (by Oct 13, before the others need it).
+   - Merge main's a21d034 into the base as an ordinary merge commit; annotate plan.md D-03/D-05/D-11/D-12, SKILL.md Q-03 and GAP-51/57 from IDEA-035 where they differ (A11).
+   - PR #9 (codex/integration-tests): merge the base in; C2 fails until Keith re-captures his fixture (07 item 8) and C3 errors on the regenerated golden trace: fix C3 against the current output, keep C2 as the drift check.
+   - PR #10 (codex/thin-path) is superseded by PR #7's ContextBuilder/RuntimePlanner (G1, G2, G5, G6 are now there): close it with a note, and port only its execution bridge (terminal-round attestation) and settlement reducer to the projection layout ledger_from uses.
+   - Publish interfaces I3/I4/I7 in larp/ports.py with a schema per document, and the round-log builder interface (I5) by Oct 14.
+
+2. Settlement and execution wiring (DR-04, DR-05; with Isaac and Keith). The production settlement reducer: Isaac's ExecutionObservation.v1 facts through Keith's advance_accounting into the projection; release of USDT, BNB and INCOMING:<token> reservations on FILL and REVERT, idempotent on replay (A9); terminal-round attestation only on final facts. Provide the store side Isaac's execution service needs (command consumption under fencing, durable attempt/signature registry tables agreed with Isaac by Oct 13). PostgreSQL regressions: no reservation row left after success, revert, or a replayed observation; crash at each execution step recovers without a duplicate transaction.
+
+3. Official ai-seeds round logging (DR-07; GAP-46; with Yao). Map each decision round to one log: input (system prompt, tool definitions, context, decision_id, version_id), cot (provider reasoning summaries in order, or an explicit "no model call" statement, Q-16), output, and orders derived only from executed intents (BUY amount = USDT spent, SELL amount = tokens sold, A10; approves never logged as orders). One log per round on every path: hold, failure, abort, recovery, gas top-up (I7: allow symbol BNB in check_orders only for gas top-up rounds). Respect the size limits; mark development test rounds; deliver with the existing outbox and verify a log is delivered only when the spool is empty (F-109). Test with the dev secret on the host only, from committed code.
+
+4. Live replay (DR-19; A2). A recorded-port adapter so a live round (real market, model and execution facts) replays exactly from the journal; replay of a whole rehearsal day reproduces the head. Include the MANDATORY_REDUCTION round replay regression IDEA-035 A2 still lists.
+
+5. Supervisor restart and autonomous HALT (DR-13; C5). A supervisor (systemd or equivalent) that restarts the same registered version after a crash, logs the restart as an incident, and never changes the version. An autonomous HALT path in code (stops new risk and signing, keeps logging, records an incident) triggered by integrity, clock, delivery-deadline or repeated-failure conditions. No human action is part of either (F-114, never-do #1).
+
+6. Hourly anchoring (DR-15; IDEA-036). Destination, retention (at least Dec 31 2026; Object Lock COMPLIANCE cannot be shortened, B9), deployed hourly schedule, verification against anchored heads, immutability, restore drill: IDEA-036 criteria 1-6 with results.
+
+7. Hosting (DR-16; architecture-deployment.md steps 1-7 and 11). With the team's B9/D-05 answers by Oct 14: bootstrap Terraform state, review and apply the plan, provision RDS PostgreSQL, the archive bucket, IAM roles and the hosts (coordinator, uploader, evidence, isolated signer; standby per D-05), build and pin the host image (Python 3.12.15, locked dependencies, provider SDK once B8 is decided, GAP-45), apply migrations and grants, configure monitoring with real alert destinations, and run a restore drill. Secrets only in the runtime secret store.
+
+8. Release, manifest and deviations (DR-18; GAP-62). Manifest generation from git-tracked files (preflight), the version event before anything trades, the services list (F-61) and the deviations register: collect every deviation from the three other build records (IDEA-039-041) plus IDEA-035 §4/§5 and IDEA-037, each with the declared text, v1.0 behaviour, reason and evidence ID. Draft by Oct 19, final by Oct 26.
+
+9. Final-wallet switch (DR-17; GAP-52; with Isaac). A switch procedure from the dev wallet to the final wallet: new address and secret (remind the team by Oct 26, IDEA-035 C7), a fresh run, separate .ai-seeds/ directory and nonce records, refusal on any address mismatch. Rehearse it on the dev host with a throwaway configuration.
+
+10. Integration and acceptance (DR-20, DR-21, DR-22).
+   - Acceptance suite in tests/integration: the full path with every real component (evidence, strategy/risk/accounting, execution service, runtime, audit, logging) and fake external services; a shadow-mode path with real read-only adapters (behind an opt-in flag, never in default CI).
+   - Integrate the four PRs into codex/deploy-integration with merge commits on Oct 16 (first) and again before Oct 22; open the integration PR into codex/engine-foundation; CI green is DR-20.
+   - Run the shadow rehearsal from Oct 14-16 and the signed rehearsal from Oct 21 (5+ days incl. Oct 24-25) on the hosted dev environment; keep a daily rehearsal log in IDEA-042. If signing is not ready by Oct 20, record the shortfall as a deviation (GAP-04) that day.
+   - Activation pack by Oct 26: frozen commit, manifest, final-wallet configuration with secret slot, runbook (start, restart, HALT, restore, switch), on-call rota (GAP-37). Each owner signs off their DR items in IDEA-042.
+   - Update the shared ledger index, backlog (remove only fully verified items), README and locks in the integrating changes.
+
+Acceptance (write criteria in IDEA-042 and push them before running anything):
+- All existing tests pass in CI on Linux with PostgreSQL, including the 13 foundation tests.
+- Every DR item owned by you has the evidence the brief names, recorded with commit SHAs or drill dates.
+- No secret in Git or logs; live mode refuses to start with a fake port, a missing secret or an address mismatch.
+
+You need from the team: AWS account/region/budget, retention choice, alert recipients (by Oct 14), the secrets for the runtime secret store, the on-call rota, and authorization for the eventual foundation -> main PR. Nothing here authorizes organiser messages, adding funds or merges to main without the team.
