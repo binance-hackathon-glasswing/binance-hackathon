@@ -62,3 +62,13 @@ Router search for the exact observed address did not produce a verified ABI. Off
 - I2 supplies raw candle rows and UTC reported timestamps with hashes. Open/close semantics remain explicitly unverified; Keith must establish those semantics in the real session-builder validator. Null open/close values are flagged unresolved fields, not assumed data.
 - Live Executor bundles remain rejected until route/expiry and production release gates are evidenced. Development approve/swap acceptance remains NOT RUN. No real wallet transaction signing, broadcasts, official ai-seeds logs, paid services or organiser messages occurred.
 - Logger long-running operation and multi-day/weekend summary remain pending; subsequent dated results below record them. The default balance/one-cycle CLI does not start a background logger.
+
+### Follow-up preregistration: actual process death
+
+Additional PostgreSQL acceptance: child processes exit immediately before signing, after restricted signer-registry persistence but before W04 persistence, after a possible fake broadcast but before response persistence, and after receipt reading but before final-state persistence. Restart must recover the same signature/attempt, retain possible-send state, never retransmit, and finalize only from subsequent positive evidence. Both approve and swap paths are covered. The child only uses the disposable CI database and unbroadcastable fake signatures. This strengthens restart evidence; it is not a power-loss or chain test. Commit/push before running.
+
+### Collector operation / follow-up verification
+
+The read-only hourly collector was launched locally on pushed `cbf4440`, PID 96699, at about 2026-10-11 16:45 UTC. Its private PID/log files are ignored under `data/execution-live/`; it has no signer or ai-seeds client. This laptop must stay awake and connected for coverage; Keegan must move/supervise collection on the deployment host for reliable multi-day evidence. Multi-day/weekend acceptance remains open.
+
+Local `cbf4440` full pytest: PASS, 538 tests, 767 subtests, 90 skips; raw recorded-response validation and ephemeral cryptographic tests enabled. CI/result hashes for the latest revision are recorded after completion.

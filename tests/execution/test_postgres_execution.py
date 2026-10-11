@@ -1,5 +1,8 @@
 """Disposable PostgreSQL W04 faults. No Ethereum signatures or networking."""
 from dataclasses import replace
+import os
+import subprocess
+import sys
 
 from larp.execution import Conflict, Executor
 from larp.execution_live.store import ExecutionStore
@@ -82,3 +85,53 @@ class PostgresExecutionTests(DatabaseCase):
         self.assertEqual(self.executor.signer.lookup(attempt.attempt_id, attempt.payload.hash).tx_hash, attempt.tx_hash)
         with self.assertRaises(Conflict):
             self.executor.signer.lookup(attempt.attempt_id, 'changed')
+
+    def crash(self, stage, key):
+        result = subprocess.run([sys.executable, '-m', 'tests.execution.crash_worker', stage, key],
+                                env={'LARP_TEST_DATABASE_URL': self.store._dsn},
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 77, 'Crash fixture did not reach its intended boundary')
+        self.restart()
+
+    def test_process_death_recovers_signature_and_possible_broadcast(self):
+        key = self.prepared()
+        self.crash('BEFORE_SIGN', key)
+        self.assertEqual(self.execution_store.load(key).attempts[-1].state, 'AUTHORIZED')
+        self.crash('AFTER_SIGN', key)
+        self.assertEqual(self.execution_store.load(key).attempts[-1].state, 'AUTHORIZED')
+        signed = self.executor.recover_signature(key, 25)
+        self.assertEqual(signed.attempts[-1].state, 'SIGNED_DURABLE')
+        self.crash('AFTER_BROADCAST', key)
+        sent = self.execution_store.load(key)
+        self.assertEqual(sent.attempts[-1].state, 'BROADCAST_ATTEMPTED')
+        self.executor.broadcast(key, 31)
+        self.assertFalse(self.venue.broadcasts)
+        self.crash('AFTER_RECEIPT', key)
+        self.assertEqual(self.execution_store.load(key).attempts[-1].state, 'BROADCAST_ATTEMPTED')
+        self.venue.outcomes[sent.attempts[-1].tx_hash] = finalized(sent.attempts[-1])
+        final = self.executor.reconcile(key, 40)
+        self.assertEqual(final.attempts[-1].state, 'FINAL_SUCCESS')
+        self.assertEqual(final.attempts[-1].finalized_at, 40)
+        self.assertFalse(self.venue.broadcasts)
+
+    def test_swap_process_death_never_reissues_or_rebroadcasts(self):
+        key = self.prepared()
+        self.executor.sign(key, 13)
+        state = self.executor.broadcast(key, 14)
+        self.venue.outcomes[state.attempts[-1].tx_hash] = finalized(state.attempts[-1])
+        self.executor.reconcile(key, 17)
+        self.guards.nonce = 1
+        self.executor.prepare(key, 20)
+        self.executor.authorize(key, 21)
+        self.crash('AFTER_SIGN', key)
+        recovered = self.executor.recover_signature(key, 25)
+        self.assertEqual(recovered.attempts[-1].step, 'SWAP')
+        self.crash('AFTER_BROADCAST', key)
+        sent = self.execution_store.load(key)
+        self.executor.broadcast(key, 31)
+        self.assertEqual(len(self.venue.broadcasts), 1)  # Only the parent's earlier approval.
+        self.crash('AFTER_RECEIPT', key)
+        self.venue.outcomes[sent.attempts[-1].tx_hash] = finalized(sent.attempts[-1])
+        final = self.executor.reconcile(key, 40)
+        self.assertEqual(final.status, 'COMPLETED')
+        self.assertEqual(len(self.venue.broadcasts), 1)
