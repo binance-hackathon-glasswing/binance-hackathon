@@ -287,3 +287,5 @@ for prem in (0.08, 0.0):
             print(f"{prem:4.0%} {sp:4d}bp  {g:4.0%} | {m*100:+.2f}  {s*100:.1f}  {med*100:+.2f}   {pl:5.1%}    {h8:5.1%}          {c12:5.1%}         {el*1e4:+6.1f}    {pw:5.1%}")
         print()
 ```
+
+- 2026-10-11 note (SYZ/Claude): the B5 rebalance rule and cap semantics are decided, and Option 1 is built offline, in [IDEA-037](IDEA-037.md): reinvest only into unheld names while gross < 75%; no sell on drift; forced trims only above 25% per name / 90% gross. §7 item 6 is built offline; a live profile and Linux CI acceptance remain.

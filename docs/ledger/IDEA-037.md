@@ -63,4 +63,23 @@ All on synthetic fixtures (`larp/research/fixtures.py`), with an `EQUAL_WEIGHT` 
 
 ## 4. Results
 
-(to be filled after the run)
+**V01 (local, `1a7aedd`, Python 3.14.6, synthetic fixtures only).**
+
+| Criterion | Result |
+|---|---|
+| P01–P11 | PASS: `tests/strategy/test_equal_weight.py`, 11 tests |
+| P12 | PASS: every pre-existing test passes unmodified (stored strategy examples included) |
+| P13 | PASS: 499 passed, 86 skipped, 1 failed (the same `boto3`-missing archive test as the baseline); 754 subtests. `tests.test_contracts` OK |
+| Linux CI (PostgreSQL / integration tests skipped locally) | Pending: runs on PR #7 after the push |
+
+**Mutation check.** Each behaviour was reverted in turn and the suite rerun. Every mutation was caught:
+- no hard per-name line → P04–P07 fail;
+- no hard gross line → P07 fails;
+- free BNB not counted → P04 fails;
+- deep cut delayed to the hard line → P08 fails;
+- no top-up threshold → P03 fails;
+- held names resized to 20% → P05 fails.
+
+These are synthetic fixtures: they show the rules behave as specified, not that the policy is profitable.
+
+- 2026-10-11 correction (SYZ/Claude): §2 said the cash-after-buy ≥ 20% check was unchanged. During implementation it proved incompatible with the 80% target. Gas BNB counts toward equity but not cash, so with any BNB in the wallet the fourth 20% buy was rejected (`CASH_OR_EXIT_RESERVE`) and the book stopped at 60%. Fix in `1a7aedd`: the floor counts free BNB (after this trade's gas) as uninvested, so it means "invested ≤ 80%", the declared "gross ≤ 80%, cash ≥ 20%" read as complements. The separate exit-gas reserve check is unchanged. This applies to every baseline and slightly loosens the old floor by the BNB value (≈ 0.5–1% of equity), still bounded by the gross buy capacity. P04 covers it.
