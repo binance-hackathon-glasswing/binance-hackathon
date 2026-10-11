@@ -1,0 +1,60 @@
+# IDEA-040 — Keith deployment strategy build
+
+- Date: 2026-10-11; prepared into 2026-10-12 SGT. Owner: Keith / wtvlol. Reviewer: Yao Zhu. Integrator: Keegan.
+- Scope: PR #12 prompt 07, IDEA-035/037; owner paths only. Base: `e4ebff65e0f249d001d86fb04fb4f2a312a63955`.
+- Status: local implementation and prospective tests prepared; execution/push pending authorization; no live runs or activation authorized.
+
+## P01–P08 prospective acceptance (before execution)
+
+1. P01: raw token candles build explicitly identified TOKEN session closes at 16:00 America/New_York, UTC timestamps across DST; calendar omissions, intraday gaps, duplicates, future/unavailable candles cannot silently create history. First candle dates reported, never inferred from another token. Equal weight needs no history; optional declared-volatility/momentum features remain history-gated.
+2. P02: LIVE entries require impact <= min(50 bp, twice the recorded median), and executable all-in entry costs <= 50 bp without double-counting impact. Missing median/cost inputs block; depth is not required in LIVE. Mandatory reductions bypass profitability/impact filters, retaining route, market, gas, slippage and expiry checks. Offline golden outputs unchanged.
+3. P03: LIVE profile validation requires provenance for every behavior value, complete quote-cost input, nonfake inputs, full-position per-trade capacity, and UTC ordered windows. Rehearsal/final profiles derive minimum size/gas/impact/slippage/freshness from recorded costs and explicit formula/decision references; missing inputs refuse construction/startup. No P&L optimization.
+4. P04: consume versioned producer predicate records. Class 1 exits and latches until a validated source correction/withdrawal clears it. Class 2 blocks buys/adds for five sessions, never sells; identical/replayed findings cannot renew the timer, newer findings can. Class 3 remains SHADOW. Missing/malformed records fail closed.
+5. P05: clock-boundary checks at trade_after/new_risk_end/flatten_start/signing_end; independent terminal reductions survive policy failures, stale marks, blocked integrity/market/gas, and repeated rounds. Terminal window forbids reinvestment and top-ups; no fictitious completed flatten.
+6. P06: gas top-up is one isolated USDT->BNB resource intent/round below a sourced floor, cash and BNB reserved, no unconfirmed proceeds, no position/gross slot; all spending blocks preserved and zero first BNB cannot bootstrap itself. Accounting keeps BNB economics separate.
+7. P07: final APPROVAL/FILL/REVERT require immutable canonical/finality receipt evidence and run/wallet/round/intent identity. Actual exact-input output/proceeds/fees/gas accounted once; broadcasts/provisional/noncanonical events never mutate balances. Top-up fill/revert/idempotence also verified.
+8. P08: assessment fixture matches current committed Yao golden trace request/result and pins producer commit; existing suite (IDEA-037 P01–P17 and 13 foundation tests) remains green. Tests use synthetic records unless explicitly identified as recorded real inputs; real-data and PostgreSQL integration remain separately reported.
+
+Run only after code and these criteria are committed and pushed: Python 3.12 `python -m pytest tests/strategy tests/risk tests/research tests/test_contracts.py`, then full `python -m pytest`. No credentials, network, signing, ai-seeds, market experiment or historical numerical rerun.
+
+## Dependencies / evidence due
+
+- Isaac: I1 quote-cost summary, I2 raw candle captures/calendar, I4 actual receipt observation mapping, I7 Intent.validate mapping; no companion deployment branch or captures at task start. Real GOOGLB/SKHYB first dates NOT VERIFIED. DR-08 real-input proof pending Isaac.
+- Yao Zhu: I8 versioned predicate registry and verification fixtures. Consumer contract/tests will be provided; records owned by Yao, not duplicated here. Review and producer agreement pending.
+- Keegan: wire I2 series, I6 generated profiles/preflight, I7 resource round and BNB-only audit convention, I4 settlement/reservation release and PostgreSQL replay. Runtime files remain integrator-owned.
+- Team: B6 parameter approval/freeze, real source/calendar/receipt capability and Q-03 first BNB. DR-09 actual profile values cannot be invented before measured inputs. No claim of DR gate completion.
+
+## Requested shared edits (Keegan owns index/backlog/manifest)
+
+- Replace IDEA-040 reservation with implementation/evidence pointer; update GAP-13/49/50/51/62/64/65 to distinguish built consumer code from measurement/agreement/live proof still pending. No entire backlog item is complete yet.
+- Register deviations: (1) equal weight 4 x 20%, 80% gross with 75% reinvestment and held-name top-ups (IDEA-037), replacing vol sizing; (2) 25%/90% hard trim lines, free gas BNB counted in uninvested floor and buy-only regime cap, replacing continuous 20%/80%/cash caps; (3) price-impact <= min(50,2*median) replaces unavailable quoted depth (IDEA-035 B4); (4) explicitly token US-session series, no underlying/Ondo substitution (B3); (5) separate BNB gas resource rounds/orders, not stock positions (B11); (6) Class 1 exit/Class 2 five-session block/Class 3 SHADOW (B1); (7) conservative UTC cut/flatten schedule finished by Nov 11 15:00 (C4). These are internal team decisions, not organiser rules or evidence of profit.
+
+## Verification
+
+NOT RUN until push authorization and publication. Interface proposals and integration limitations must be reviewed by producer/consumer owners before runtime dependence.
+
+### V01 — static preparation, no decision execution
+
+- Implemented session consumer, per-symbol LIVE impact rule, sourced profile validator/generator, class-specific policy/expiry, gas resource planner/accounting, canonical final receipt binding/idempotence, and current producer fixture capture. Existing OFFLINE_FIXTURE behavior is retained; mandatory impact limits no longer veto required sales. Candidate conservative budgets/windows are explicitly recorded in `config/strategy/LIVE.md`, requiring review/freeze.
+- Added `tests/strategy/test_token_sessions.py`, `test_live_profiles.py`, `test_red_flag_classes.py`, `tests/risk/test_live_terminal.py`, `test_live_resource_receipts.py`; every input is synthetic unless the assessment fixture's **synthetic** committed golden producer is named. No recorded market/chain evidence was available or used. No module imported or run.
+- Syntax-only `ast.parse` on all 24 owner-local Python files: PASS. `git diff --check`: PASS. Test suite, CLI profile generation, real capture validation and CI: NOT RUN. No wallet credentials read; no network/model/signing/logging calls.
+- Assessment fixture now directly copies request/result from `tests/intelligence/golden/trace-tool-selection-thesis-revision.json`; producer commit `ea38a4c9ab8a6c3eb49f04f330e4626b526a42e4`, current at this base. The compatibility consumer accepts v2 through the real runtime validator; canonical strategy evidence still only comes through `EvidenceContext.v1` and the gate.
+- Real profile files and GOOGLB/SKHYB first dates remain NOT PRODUCED/NOT VERIFIED until Isaac supplies measurements/captures; generator exposes both rehearsal/final outputs and refuses missing inputs. Yao's actual registry and verifier fixtures remain pending; only the proposed I8 consumer/test registry is provided. No fake registry is shipped in production config.
+- No new EXP or financial experiment: engineering acceptance only. No shared documentation/lock/backlog/index mutation. The IDEA-040 index row remains reserved until Keegan applies the shared edits above.
+
+### Consumer handoff proposals (owner agreement pending)
+
+- I1: existing executable quote fields remain unchanged; LIVE quotes/markets carry `origin: WEB3_OPEN_API`. The quote-cost summary (`QuoteCostSummary.v1`) has `origin: RECORDED_WEB3`, `capture_hash`, `observed_at`, `bnb_price_units`, `bnb_decimals`, and all five `symbols` with samples, median impact, spread excluding impact, fee bp, approve/swap gas, measured slippage, RFQ TTL. Normalized USDT scale stays 10^6, chain USDT remains Isaac's conversion.
+- I2: `TokenCandles.v1` wrapper has symbol/token/entity/source IDs, raw content hash, available_at, bar_seconds, timestamp_kind=OPEN, token_adjustment_version and seven-column candles. `USRegularSessions.v1` supplies pinned calendar ID/hash and explicitly consecutive session_index/open_at/close_at. Builder output is PriceSeries.v1 instrument_kind=TOKEN with original raw/calendar hashes, first_candle_at and missing_sessions. No auto-holiday/weekday calendar or short-session substitute is invented.
+- I4: EXECUTION_RECONCILER final receipts bind round_id to the committed reservation and tx_hash to receipt.tx_hash. Receipt fields: block_hash, positive block_number, canonical=true, finality=FINAL, chain_id=56, status 0/1. Same event is idempotent; duplicate tx receipt under a changed event ID rejects. APPROVAL is nonterminal; FILL terminal; REVERT termination is explicit (approve-revert may abandon the action). Real canonical/finality proof stays Isaac's. Runtime sets PortfolioState.mode=LIVE and preserves round_id/reservation kind. BROADCAST_ATTEMPTED always rejects accounting.
+- I6: `StrategyProfile.v1` LIVE retains the common fields and adds measured summary/medians, expected equity/environment, series_kind=TOKEN, red_flag_policy=IDEA-035-B1, pinned predicate registry hash, gas floor/top-up budgets and per-value provenance. `python -m larp.strategy.profiles --summary <recorded-summary> --predicates <Yao-registry> --output-dir <new-directory>` writes rehearsal-live.json/final-live.json without overwriting frozen files (execute only after push).
+- I7: GAS_TOP_UP intent/request has symbol BNB, BUY, exact USDT pay, explicit native-BNB receive decimals/minimum and own_round=true. Resource reservations include kind=GAS_TOP_UP. Quote origin/route/expiry/slippage/actual affordability validated; live health must explicitly set new_spending_ok=true. Low gas cannot hide an affordable risk/evidence sale when resource spending is blocked. BNB is separately reported; stock turnover/count/gross unaffected. Keegan/Isaac must add explicit dispatch/log/signer validation before use; no runtime-owned paths edited here.
+- I8: RedFlagPredicates.v1 registry includes pinned producer_commit, version, content_hash over the body, records with predicate_id/item/class/action/block_sessions/verification_fixture_hashes. It is passed in context.red_flag_predicates and pinned in profile. Current EvidenceContext findings require stable finding_id. Every Class 1 clear requires a valid current complete CLEAR context; missing/expired contexts cannot clear it. Class 2 expiry persists finding first-session history through restart; source replay cannot renew it. Registry/schema agreement and real producer tests remain Yao's review gate.
+
+### Outstanding work / handoff status
+
+- Keith: run focused/full regression and fix any failures after approved push; record exact tested commit/results. Then validate/generate actual profiles and first-date evidence when Isaac/Yao inputs arrive. The work is not fully verified and this session is not ready for handoff.
+- Yao Zhu: review policy/feature/provenance semantics and agree/provide I8 records, including how fully read correction/withdrawal reaches CLEAR. Owner test on real registry pending.
+- Isaac: agree I1/I2/I4/I7 mappings and provide recorded candle/quote/receipt fixtures. Real quote costs, dates, nonce/finality and first BNB unverified by Keith.
+- Keegan: apply requested index/backlog/deviation edits, wire context/profile/resource/settlement fields, release INCOMING reservations, then PostgreSQL/CI/replay/rehearsal tests. Foundation has separately advanced to `e8658ba` via main sync; this branch preserves PR #12's docs head, leaving shared-doc synchronization to integration.
+- Team: review conservative B6 budgets/windows and freeze actual measured profiles at Oct 22; activation remains blocked on DR gates. Nothing in these changes claims live readiness/profit or authorizes a main merge.

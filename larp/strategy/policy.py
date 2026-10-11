@@ -13,6 +13,7 @@ from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
 from larp.integration.contract import accept_for_strategy, authority
 from .features import declared_weight, features
 from .schema import fraction, instant, integer, markets, profile, value, equity
+from .predicates import predicate_records, update_blocks
 
 
 def decide(snapshot, state):
@@ -30,6 +31,12 @@ def decide(snapshot, state):
     data = state.data.read()
     lifecycle = dict(data.get("lifecycle", {}))
     blocked = dict(data.get("blocked", {}))
+    finding_sessions = dict(data.get("finding_sessions", {}))
+    registry = c.get("red_flag_predicates")
+    classified = p.get("red_flag_policy") == "IDEA-035-B1"
+    records = predicate_records(registry) if classified else {}
+    if classified and Document.from_dict(registry).digest("RedFlagRegistry.v1") != p["predicate_registry_hash"]:
+        raise ContractError("Predicate registry differs from the active profile")
     reviews, shadow, targets = [], [], []
     rights = authority(p)
     versions = dict(data.get("evidence_versions", {}))
@@ -57,12 +64,23 @@ def decide(snapshot, state):
                     if f.get("predicate_id") in p["falsifier_ids"]
                     and f.get("supported") is True and f.get("verifier_accepted") is True
                     and f.get("supporting_spans")]
-        if a is not None and not findings and blocked.get(symbol, {}).get("reason") in (
+        if classified:
+            classified_findings = [f for f in findings if f["predicate_id"] in records]
+            if a is not None:
+                if any(type(f.get("finding_id")) is not str or not f["finding_id"] for f in classified_findings):
+                    raise ContractError("Stable finding identity required for red-flag expiry")
+                update_blocks(blocked, finding_sessions, symbol, classified_findings, session=session,
+                              run_id=snapshot.run_id, registry=registry,
+                              allow_resolution=a.get("review_complete") is True)
+            elif blocked.get(symbol, {}).get("reason") == "CLASS_2_ENTRY_BLOCK":
+                if session >= blocked[symbol]["expires_session"]:
+                    blocked.pop(symbol)
+        if not classified and a is not None and not findings and blocked.get(symbol, {}).get("reason") in (
                 "VERIFIED_FALSIFIER", "MANDATORY_FALSIFIER_REDUCTION"):
             # The evidence state resolved the latch by its declared rule (correction/withdrawal of the source).
             blocked.pop(symbol)
             shadow.append({"symbol": symbol, "unblocked": "EVIDENCE_LATCH_RESOLVED"})
-        if findings and rights["falsifier"] != "NONE":
+        if not classified and findings and rights["falsifier"] != "NONE":
             shadow.append({"symbol": symbol, "predicates": [f["predicate_id"] for f in findings],
                            "authority": rights["falsifier"]})
             if rights["falsifier"] == "DISCRETIONARY_EXIT":
@@ -80,9 +98,12 @@ def decide(snapshot, state):
             status = "FLAT_TERMINAL" if not units else "EXIT_REQUIRED"
         elif symbol in blocked:
             mandatory = blocked[symbol]["reason"] == "MANDATORY_FALSIFIER_REDUCTION"
-            targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory else TargetKind.KEEP_QUANTITY,
+            entry_only = blocked[symbol]["reason"] == "CLASS_2_ENTRY_BLOCK"
+            targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory and not entry_only
+                                  else TargetKind.KEEP_QUANTITY,
+                                  "CLASS_2_ENTRY_BLOCK" if entry_only else
                                   "MANDATORY_REDUCTION_BY_RISK" if mandatory else "BOUNDED_FALSIFIER"))
-            status = "EXIT_REQUIRED" if units else "BLOCKED"
+            status = "HELD_ENTRY_BLOCKED" if units and entry_only else "EXIT_REQUIRED" if units else "BLOCKED"
         elif m is None or not m.get("basis_verified"):
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "MISSING_MARKET_OR_BASIS"))
         elif p["baseline"] == "EQUAL_WEIGHT":
@@ -116,7 +137,9 @@ def decide(snapshot, state):
         else:
             series = c.get("series", {}).get(symbol)
             f = (features(Document.from_dict(series), cutoff=now, expected_entity=m["underlying_id"],
-                          max_age_seconds=p["feature_age_seconds"]) if series else
+                          max_age_seconds=p["feature_age_seconds"],
+                          expected_instrument="TOKEN" if p.get("series_kind") == "TOKEN" else "UNDERLYING_SHARE",
+                          expected_token=m["token_id"] if p.get("series_kind") == "TOKEN" else None) if series else
                  Document.from_dict({"status": "MISSING"}))
             fresh_review = bool(a and a.get("review_complete") is True)
             if due and fresh_review:
@@ -167,6 +190,7 @@ def decide(snapshot, state):
     following = replace(state, version=state.version + 1, data=Document.from_dict({**data,
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
         "shadow_findings": shadow, "evidence_mode": p["evidence_mode"], "evidence_authority": rights,
-        "evidence_versions": versions, "evidence_rejections": rejections}))
+        "evidence_versions": versions, "evidence_rejections": rejections,
+        **({"finding_sessions": finding_sessions} if classified else {})}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

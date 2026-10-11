@@ -11,6 +11,7 @@ from larp.contracts import ContractError, Document, TargetKind, validate_proposa
 from larp.strategy.schema import (ceil, equity, floor, fraction, instant, integer,
                                   markets, profile, ratio, value)
 from .accounting import update_risk
+from .gas import plan_top_up
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -20,7 +21,7 @@ def _request(symbol, side, pay_units, m, mandatory):
             "mandatory": mandatory}
 
 
-def _quote_at_cap(m, side, pay_units, p, now, target_units):
+def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
     """Walk observed smaller exact-in quotes; otherwise request the next size."""
     rejections = []
     quotes = m.get("quotes", [])
@@ -37,10 +38,15 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units):
                      and 0 <= (now - instant(quote["observed_at"])).total_seconds() <= p["quote_age_seconds"]
                      and now < instant(quote["expires_at"])
                      and integer(quote["slippage_bps"]) <= p["slippage_bps"]
-                     and integer(quote["impact_bps"]) <= p["impact_bps"])
+                     and (mandatory or integer(quote["impact_bps"]) <= p["impact_bps"])
+                     and (p.get("mode") != "LIVE" or quote.get("origin") == "WEB3_OPEN_API"))
             cash, fee, gas, q, minimum = [integer(quote[k]) for k in
                 ("cash_units", "fee_units", "gas_bnb_units", "token_units", "min_receive_units")]
             valid &= (cash == pay_units and 0 < minimum <= q) if side == "BUY" else (q == pay_units and minimum <= cash)
+            if p.get("mode") == "LIVE":
+                output = q if side == "BUY" else cash
+                valid &= (output > 0 and minimum > 0
+                          and minimum >= floor(Fraction(output * (10000 - p["slippage_bps"]), 10000)))
         except (KeyError, ContractError, TypeError):
             valid = False
         if not valid:
@@ -209,6 +215,13 @@ def plan(snapshot, proposal_or_none):
             req["status"] = "BLOCKED"
         return Document.from_dict(result)
 
+    # Gas replenishment has its own round, no position slot or gross allocation.
+    # A blocked top-up cannot hide mandatory sale requirements already recorded.
+    gas_short = not terminal and plan_top_up(snapshot, p, risk_ledger, result)
+    if gas_short:
+        if result["intents"] or result["quote_requests"]:
+            return Document.from_dict(result)
+
     actions = []
     for req in sorted(result["requirements"], key=lambda x: (-x["remaining_sell_units"], x["symbol"])):
         actions.append((req["symbol"], "SELL", req["remaining_sell_units"], True, req["reasons"]))
@@ -230,7 +243,7 @@ def plan(snapshot, proposal_or_none):
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
             if side == "BUY":
-                if (unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
+                if (gas_short or unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
                         or now.date().isoformat() != r["day"]
                         or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
@@ -268,7 +281,7 @@ def plan(snapshot, proposal_or_none):
             result["rejections"].append({"symbol": symbol, "reason": "MARKET_CLOSED_OR_UNKNOWN"})
             continue
         pay_units = floor(value(q, m)) if side == "BUY" else q
-        quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity)
+        quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity, mandatory)
         result["rejections"].extend({"symbol": symbol, "reason": reason} for reason in rejected)
         if quote is None:
             if req is not None:
@@ -292,10 +305,16 @@ def plan(snapshot, proposal_or_none):
             if cost * 10000 > mark * 50:
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
                 continue
-            depth = quote.get("quoted_depth_units")
-            if type(depth) is not int or depth < 10 * q:
-                result["rejections"].append({"symbol": symbol, "reason": "DECLARED_DEPTH_INPUT_UNAVAILABLE"})
-                continue
+            if p.get("mode") == "LIVE":
+                median = p["impact_median_bps"].get(symbol)
+                if type(median) is not int or quote["impact_bps"] > min(50, 2 * median):
+                    result["rejections"].append({"symbol": symbol, "reason": "ENTRY_IMPACT_CAP"})
+                    continue
+            else:
+                depth = quote.get("quoted_depth_units")
+                if type(depth) is not int or depth < 10 * q:
+                    result["rejections"].append({"symbol": symbol, "reason": "DECLARED_DEPTH_INPUT_UNAVAILABLE"})
+                    continue
         if gas > ledger["bnb_units"] - reserved_bnb:
             if req is not None:
                 req["status"] = "BLOCKED_GAS"
