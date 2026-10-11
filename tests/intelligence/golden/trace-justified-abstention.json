@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
+  "result_id": "res:8a59b5298182af080ba41a56a5513c9e0718083114a640b0657e83cd08c20510",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -60,7 +60,7 @@
     "d106bccec802b29cf37f3ee2c484d445cd2c2aa6ab464d1d825d337ba6b6aa12"
    ],
    "accepted_result_ids": [
-    "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59"
+    "res:8a59b5298182af080ba41a56a5513c9e0718083114a640b0657e83cd08c20510"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,7 +141,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:e94e9b1c8294aea12235313f27d3c9b08b4fbfb52bf1ce6187836f8125d010bc",
+   "batch_id": "state:0bd84fe55c39b6b425f354755a8167d0746ce890fd7028cc9e4f22629f75fb67",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
+   "result_id": "res:8a59b5298182af080ba41a56a5513c9e0718083114a640b0657e83cd08c20510",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
      "d106bccec802b29cf37f3ee2c484d445cd2c2aa6ab464d1d825d337ba6b6aa12"
     ],
     "accepted_result_ids": [
-     "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59"
+     "res:8a59b5298182af080ba41a56a5513c9e0718083114a640b0657e83cd08c20510"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:e94e9b1c8294aea12235313f27d3c9b08b4fbfb52bf1ce6187836f8125d010bc",
+   "batch_id": "state:0bd84fe55c39b6b425f354755a8167d0746ce890fd7028cc9e4f22629f75fb67",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -545,6 +545,9 @@
     "Rule baseline: close gap compare_facts.",
     "Rule baseline: no open gap within budget; finish."
    ],
+   "model_called": true,
+   "no_model_call_reason": null,
+   "requests_started": 4,
    "steps": [
     {
      "request": {
@@ -2584,7 +2587,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "b0cdbae023b677184fd83d1b43a0a279805282de31fb8c0a178b293b925ce364",
   "rejected_claims": [],
-  "result_id": "res:690720061066938046a05ce7d1992bf19b3c6305370441409c174d1508d28d59",
+  "result_id": "res:8a59b5298182af080ba41a56a5513c9e0718083114a640b0657e83cd08c20510",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",

@@ -191,7 +191,8 @@ class EvidenceAssessor:
                   "missingness": [reason], "confidence": {"level": "UNKNOWN", "calibrated": False},
                   "falsifiers": [], "expiry_ms": now + 1, "review_requests": [], "proposed_thesis": None,
                   "rationale": f"Request rejected before assessment: {reason}.",
-                  "model_io": {"steps": [], "tool_calls": [], "note": "no model call"},
+                  "model_io": {"steps": [], "tool_calls": [], "cot": [], "model_called": False,
+                               "requests_started": 0, "no_model_call_reason": reason, "note": "no model call"},
                   "started_ms": now, "completed_ms": now}
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -205,10 +206,11 @@ class EvidenceAssessor:
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
         box, cancel = {}, threading.Event()
+        io = {"steps": [], "started": 0}  # model I/O as it happens, so a deadline result can still record it
 
         def work():
             try:
-                box["result"] = self._assess(r, start, validated, cancel)
+                box["result"] = self._assess(r, start, validated, cancel, io)
             except BaseException as exc:  # re-raised in the caller's thread
                 box["error"] = exc
 
@@ -217,18 +219,18 @@ class EvidenceAssessor:
         worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
         if worker.is_alive():
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
-            return self._abandoned(r, validated, start)
+            return self._abandoned(r, validated, start, io)
         if "error" in box:
             raise box["error"]
         return box["result"]
 
-    def _assess(self, r, start, validated, cancel) -> Document:
+    def _assess(self, r, start, validated, cancel, io) -> Document:
         entry, cutoff, max_calls, deadline, tools, context, refs = validated
         index = EvidenceIndex(self.reader, entry, cutoff)
         state = _State(entry, index, self.config, cutoff, tools, context)
         self._load_refs(state, refs)
         self._source_health(state, r.get("source_health"))
-        status, reasons, model_io, claims_out, rejected = None, [], [], None, []
+        status, reasons, model_io, claims_out, rejected = None, [], io["steps"], None, []
         if not state.current_records:
             status, reasons = "UNAVAILABLE", ["NO_USABLE_EVIDENCE"]
         step = 0
@@ -251,6 +253,7 @@ class EvidenceAssessor:
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
                          "input": model_input}
             step += 1
+            io["started"] += 1
             try:
                 m_response = self.model.step(Document.from_dict(m_request), remaining).read()
             except Exception as exc:  # adapter defect: unavailable, never a silent success
@@ -497,7 +500,12 @@ class EvidenceAssessor:
                      "basis": sorted({c["basis"] for c in steps_cost})},
             "model_io": {"steps": model_io, "tool_calls": state.tool_calls,
                          "cot": [s["response"]["reasoning_summary"] for s in model_io
-                                 if "response" in s and s["response"]["reasoning_summary"]]},
+                                 if "response" in s and s["response"]["reasoning_summary"]],
+                         # I5 (IDEA-041): a result always says whether a model was called, and if not, why.
+                         "model_called": bool(model_io), "requests_started": len(model_io),
+                         "no_model_call_reason": None if model_io else (
+                             reasons[0] if reasons else "EVIDENCE_MODEL_INPUT_OVER_CAP"
+                             if "EVIDENCE_MODEL_INPUT_OVER_CAP" in missing else "NOT_CALLED")},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
@@ -505,8 +513,10 @@ class EvidenceAssessor:
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
-    def _abandoned(self, r, validated, start) -> Document:
-        """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is read or used."""
+    def _abandoned(self, r, validated, start, io) -> Document:
+        """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
+        completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
+        steps = list(io["steps"])
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
         key = digest("larp.intel.assessment-key.v1", {
@@ -530,8 +540,14 @@ class EvidenceAssessor:
             "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
             "budget_used": {"tool_calls": None, "model_steps": None, "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
-            "model_io": {"steps": [], "tool_calls": [],
-                         "note": "worker abandoned at the deadline; its records are not part of this result"},
+            "model_io": {"steps": steps, "tool_calls": [],
+                         "cot": [x["response"]["reasoning_summary"] for x in steps
+                                 if "response" in x and x["response"]["reasoning_summary"]],
+                         "model_called": io["started"] > 0, "requests_started": io["started"],
+                         "no_model_call_reason": None if io["started"] else "ASSESSMENT_DEADLINE_EXCEEDED",
+                         "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
+                                 "audit only; a call in flight at the deadline is counted in requests_started; tool "
+                                 "results are not part of this result"},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
