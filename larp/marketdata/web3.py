@@ -29,17 +29,6 @@ def encoded(v):
     return json.dumps(v, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
 
 
-def redact(value, secrets):
-    if isinstance(value, dict):
-        return {k: redact(v, secrets) for k, v in value.items()}
-    if isinstance(value, list):
-        return [redact(v, secrets) for v in value]
-    if isinstance(value, str):
-        for secret in secrets:
-            value = value.replace(secret, '[REDACTED]')
-    return value
-
-
 class Unavailable(RuntimeError):
     pass
 
@@ -158,7 +147,10 @@ class Web3Client:
             record['outcome'] = str(e)
         record.update(available_at=utc(), elapsed_ms=round((time.monotonic() - start) * 1000))
         # Headers and exceptions are never captured. Defensive redaction also covers a reflected credential.
-        record = redact(record, (self.key, self.secret, sig))
+        raw = encoded(record).decode()
+        for secret in (self.key, self.secret, sig):
+            raw = raw.replace(secret, '[REDACTED]')
+        record = json.loads(raw)
         record['artifact_sha256'] = self.artifacts.put(record)
         if record['outcome'] != 'ok':
             raise Unavailable(record['outcome'])

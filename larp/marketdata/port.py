@@ -1,6 +1,6 @@
 """Live observation producer. Unknown route/gas/fee evidence never becomes execution authority."""
 from datetime import datetime, timedelta
-from decimal import Decimal, InvalidOperation, localcontext
+from decimal import Decimal, InvalidOperation
 import hashlib
 import re
 
@@ -24,9 +24,7 @@ def number(v):
 
 
 def units(v, decimals):
-    with localcontext() as context:
-        context.prec = 100
-        n = number(v) * 10 ** decimals
+    n = number(v) * 10 ** decimals
     if n != n.to_integral_value():
         raise Unavailable('nonintegral asset units')
     return int(n)
@@ -136,7 +134,6 @@ class MarketPort:
             impact_bps=str(number(rr['priceImpactPercent']) * 100), fee_amount=rr.get('feeAmount'),
             trade_fee=rr.get('tradeFee'), vendor=rr.get('vendorName'), router=tx.get('to'),
             minimum_receive_raw=tx.get('minReceiveAmount'), quoted_gas=tx.get('gas'), available_at=raw['available_at']))
-        observation['quote_measurement']['unsigned_transaction'] = tx
         stamp = max(observation['available_at'], raw['available_at'])
         observation.update(observed_at=stamp, available_at=stamp, close_at=stamp,
                            content_hash=hashlib.sha256(encoded([observation['content_hash'], raw['artifact_sha256']])).hexdigest())
