@@ -29,6 +29,10 @@ CREATE TABLE IF NOT EXISTS execution_signatures (
     attempt_id text PRIMARY KEY, run_id text NOT NULL REFERENCES runs,
     payload_hash text NOT NULL, signed bytea NOT NULL, signed_hash text NOT NULL
 );
+CREATE TABLE IF NOT EXISTS execution_observations (
+    event_id text PRIMARY KEY, run_id text NOT NULL REFERENCES runs,
+    observation bytea NOT NULL, observation_hash text NOT NULL
+);
 '''
 
 
@@ -149,3 +153,28 @@ class ExecutionStore:
             if row[0] != payload_hash or row[2] != digest(stored) or row[3] != self.run_id:
                 raise Conflict('immutable attempt signature conflicts')
             return Signed(**stored)
+
+    def lookup_observation(self, event_id):
+        with self.store.transaction() as db:
+            row = db.execute('SELECT observation,observation_hash,run_id FROM execution_observations '
+                             'WHERE event_id=%s', (event_id,)).fetchone()
+            if row is None:
+                return None
+            value = json.loads(bytes(row[0]))
+            if digest(value) != row[1] or row[2] != self.run_id or value['event_id'] != event_id:
+                raise Conflict('immutable execution observation corrupted')
+            return value
+
+    def put_observation(self, observation, epoch, version):
+        if observation.get('run_id') != self.run_id:
+            raise Conflict('observation run mismatch')
+        with self.store.transaction() as db:
+            self._authority(db, epoch, version)
+            checksum = digest(observation)
+            db.execute('INSERT INTO execution_observations VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING',
+                       (observation['event_id'], self.run_id, canonical(observation).encode(), checksum))
+            row = db.execute('SELECT observation_hash,run_id FROM execution_observations WHERE event_id=%s',
+                             (observation['event_id'],)).fetchone()
+            if row != (checksum, self.run_id):
+                raise Conflict('immutable execution observation changed')
+        return observation

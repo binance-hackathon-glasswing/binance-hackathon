@@ -135,3 +135,12 @@ class PostgresExecutionTests(DatabaseCase):
         final = self.executor.reconcile(key, 40)
         self.assertEqual(final.status, 'COMPLETED')
         self.assertEqual(len(self.venue.broadcasts), 1)
+
+    def test_final_observation_is_immutable_across_restart(self):
+        e, v = self.execution_store.authority()
+        fact = dict(event_id='fact', run_id='run', kind='APPROVAL', settlement='FINAL')
+        self.execution_store.put_observation(fact, e, v)
+        self.restart()
+        self.assertEqual(self.executor.store.lookup_observation('fact'), fact)
+        with self.assertRaises(Conflict):
+            self.execution_store.put_observation(dict(fact, finalized_height=999), e, v)

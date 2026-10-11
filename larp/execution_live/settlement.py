@@ -96,13 +96,24 @@ class ReceiptFacts:
     The valuation callback must return the same persisted price for an attempt,
     not the current BNB price. Publishing belongs to the atomic runtime outbox.
     """
-    def __init__(self, chain, *, wallet_id, valuation):
+    def __init__(self, chain, *, wallet_id, valuation, registry):
         self.chain, self.wallet_id, self.valuation = chain, wallet_id, valuation
+        self.registry = registry
+        if not all(callable(getattr(registry, name, None)) for name in
+                   ('lookup_observation', 'put_observation', 'authority')):
+            raise Blocked('durable immutable receipt-fact registry required')
 
     def __call__(self, state, attempt):
         if attempt.finalized_at is None:
             raise Blocked('durable finalization time required')
+        existing = self.registry.lookup_observation(attempt.attempt_id + ':final')
+        if existing is not None:
+            if existing.get('tx_hash') != attempt.tx_hash or existing.get('intent_id') != state.intent.intent_id:
+                raise Blocked('stored receipt fact conflicts with attempt')
+            return existing
         proof = self.chain.receipt(attempt.tx_hash)
         stamp = datetime.fromtimestamp(attempt.finalized_at, timezone.utc).isoformat()
-        return final_observation(state, attempt, proof, wallet_id=self.wallet_id,
+        fact = final_observation(state, attempt, proof, wallet_id=self.wallet_id,
                                  bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp)
+        epoch, version = self.registry.authority()
+        return self.registry.put_observation(fact, epoch, version)

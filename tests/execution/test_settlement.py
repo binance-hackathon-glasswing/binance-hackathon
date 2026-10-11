@@ -6,7 +6,7 @@ from larp.contracts import ContractError, Document
 from larp.execution import Attempt, Blocked, Execution, Payload, USDT
 from larp.execution_live.config import WalletBinding
 from larp.execution_live.service import broadcast_observation
-from larp.execution_live.settlement import TRANSFER, final_observation
+from larp.execution_live.settlement import TRANSFER, ReceiptFacts, final_observation
 from larp.research.fixtures import snapshot
 from larp.risk.accounting import advance_accounting
 from tests.execution_fixtures import intent, TOKEN, WALLET, ROUTER
@@ -82,3 +82,27 @@ class SettlementTests(unittest.TestCase):
         self.assertNotEqual(one.nonce_namespace, two.nonce_namespace)
         with self.assertRaises(Blocked):
             WalletBinding.create('dev', WALLET, '/tmp/runtime', expected_wallet=ROUTER)
+
+    def test_receipt_retry_reuses_first_finality_proof_and_observation_bytes(self):
+        class Registry:
+            fact = None
+            def lookup_observation(self, event_id):
+                return self.fact
+            def authority(self):
+                return 1, 1
+            def put_observation(self, fact, epoch, version):
+                self.fact = fact
+                return fact
+        class Chain:
+            calls = 0
+            def receipt(chain, tx_hash):
+                chain.calls += 1
+                return self.proof
+        registry, chain = Registry(), Chain()
+        facts = ReceiptFacts(chain, wallet_id='fake-wallet', valuation=lambda _:700000000, registry=registry)
+        attempt = replace(self.attempt, finalized_at=1791734400)
+        first = facts(self.state, attempt)
+        self.proof['finalized_height'] += 10
+        second = facts(self.state, attempt)
+        self.assertEqual(first, second)
+        self.assertEqual(chain.calls, 1)

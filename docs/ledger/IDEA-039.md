@@ -69,6 +69,10 @@ Additional PostgreSQL acceptance: child processes exit immediately before signin
 
 ### Collector operation / follow-up verification
 
-The read-only hourly collector was launched locally on pushed `cbf4440`, PID 96699, at about 2026-10-11 16:45 UTC. Its private PID/log files are ignored under `data/execution-live/`; it has no signer or ai-seeds client. This laptop must stay awake and connected for coverage; Keegan must move/supervise collection on the deployment host for reliable multi-day evidence. Multi-day/weekend acceptance remains open.
+The read-only hourly collector was launched locally on pushed `cbf4440`, PID 96699. First cycle 2026-10-11 16:42:05.187–16:42:24.708 UTC, artifact `2883aca5c9ad96e099bd8a7d81de84f4a9428a9ea731f3552b2b5a1e5ebbb343`. All five names returned 300 raw hourly candles. Its private PID/log files are ignored under `data/execution-live/`; it has no signer or ai-seeds client. This laptop must stay awake and connected for coverage; Keegan must move/supervise collection on the deployment host for reliable multi-day evidence. Multi-day/weekend acceptance remains open.
 
 Local `cbf4440` full pytest: PASS, 538 tests, 767 subtests, 90 skips; raw recorded-response validation and ephemeral cryptographic tests enabled. CI/result hashes for the latest revision are recorded after completion.
+
+`cbf4440` CI: [PASS](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156516334), 624 tests, 780 subtests, 4 skips (3 signer tests due to missing CI dependency plus external recorded responses). All three checks pass.
+
+Additional receipt retry criterion: because finalized head advances between reads, preserve the first successful final observation and its proof in an immutable PostgreSQL `execution_observations` row. A retry must return those exact stored bytes before any new chain/valuation I/O. Changed bytes under the same event ID are rejected. This extension also needs Keegan's migration/role/outbox integration. A synthetic callback test and real PostgreSQL immutability test are preregistered before execution.
