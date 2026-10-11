@@ -197,3 +197,34 @@ Authorized by the user on 2026-10-11 ("go ahead with item 2 and the live-mode re
 
   Isaac's execution service replaces the scripted facts at integration.
 - **T2 · runbook draft.** `docs/build/runbook.md` covers start, automatic restart, HALT and its automatic clearing, restore, version event and final-wallet switch, each tied to code and tests. The on-call rota is marked as owed by the team (GAP-37).
+
+### 3.6 Results (2026-10-11)
+
+Criteria pushed at `4694785` (CI green, [run 38158943819](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38158943819)) before any covered code ran.
+
+- **E1–E3 · PASS** at `fa8c069`, Linux CI green ([run 38159355897](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38159355897)). `larp/storage/execution_store.py` and migration 008.
+  - Isaac's 43 W04 tests run unchanged against PostgreSQL through `PostgresW04` (`tests/integration/test_execution_store.py`), together with 4 new tests: 47 passed + 42 subtests. This covers crashes before and after signing and after broadcast, storage faults, cold restarts after each transition, the cross-run wallet barrier and "never sends twice".
+  - `claim_command` binds one command to one execution key. It refuses another key, a stale owner, an expired command and a halted run.
+- **W1–W4 · PASS** at `fa8c069`, same CI run. `larp/runtime/live.py`; `tests/runtime/test_live_start.py` (7).
+  - W1: every refusal is shown, and no refusal text contains the secret value. `offline` and `paper` are unaffected.
+  - W2: a directory marked for another wallet, or holding unmarked records, is refused.
+  - W3: the switch is refused while the old run has an open round, reservations or a pending command, and while it is not flat. It is also refused for an invalid wallet or a shared directory. The throwaway-configuration rehearsal opens a quarantined live run for the new wallet and returns the old head.
+  - W4: the service refuses before opening a session.
+- **A1–A4, G1–G2 · PASS** at `fc7a759`, Linux CI green incl. Terraform ([run 38159712464](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38159712464)). `tests/runtime/test_anchors_roles.py` (6).
+  - A1: both hourly anchors verify, and a self-consistent rewrite of round 1 is refused against them.
+  - A2: a restore behind the latest anchor is refused as stale.
+  - A3: anchor fields are identifiers and hashes only, and an extra field is refused.
+  - A4: the `archive_retention_reaches_end_of_2026` Terraform test refuses 80 days.
+  - G1–G2: as `larp_runtime`, a round, its settlement and its close run, while signatures, executions, the run's `initial` and deleting events are refused. As `larp_execution`, claims and the W04 store work, while journal writes, signatures and projection writes are refused. As `larp_signer`, only the registry is reachable.
+  - Found and fixed on the way: backups and restores did not include the new tables. They now cover process sessions and the execution store, with the event sequence reset after a restore.
+- **T1, T2 · PASS** at `f1fae29`, Linux CI green.
+  - T1: `tests/integration/test_acceptance.py`, one day covering the version event; a clean hold; an Item 4.02 mandatory reduction claimed by one execution, settled by I4 facts and closed with no reservation left; both logs DELIVERED; the guard idle; the anchor verified; and a replay with every live port disabled reproducing the head.
+  - T2: `docs/build/runbook.md` drafted (start, restart, HALT, restore, switch), with the host drills and the on-call rota marked as owed.
+  - Found while writing the runbook: a quarantined run (for example after a restore) with an unclean session would have made the service fail and restart every 10 s. The service now exits with code 3 before opening a session, and systemd does not restart on 3 (`test_service_does_not_start_on_a_quarantined_run`).
+- Local full suite at `f1fae29`: 703 passed, 3 skipped (bubblewrap), 829 subtests.
+
+**What remains in prompt 09 after §3:**
+- Isaac's execution service and its I3 → W04 mapping (prompt 06).
+- The four-way integration and the shadow-mode path with real read-only adapters.
+- Every host step: provisioning, alerts, restore and anchor drills on AWS, restart and HALT drills, the rehearsal-build manifest, the switch rehearsal, rehearsals and Gate reviews.
+- The team's inputs: B9, secrets, rota, and the three OPEN deviation rows.
