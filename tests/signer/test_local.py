@@ -39,3 +39,15 @@ class SignerTests(unittest.TestCase):
         with self.assertRaises(Blocked):self.signer.sign('a',self.payload,1,1)
         with self.assertRaises(Blocked):LocalSigner(account=self.account,expected_address=ROUTER,
           registry=self.registry,authorization=None,signer_host=True)
+
+    def test_secret_loader_requires_one_source_and_isolated_host(self):
+        args = dict(registry=self.registry, authorization=self.signer.authorization, signer_host=True)
+        for values in ({}, {'WALLET_PRIVATE_KEY':'bad', 'WALLET_MNEMONIC':'bad'},
+                       {'WALLET_PRIVATE_KEY':'invalid-credential'}):
+            with self.subTest(values=tuple(values)), self.assertRaises(Blocked):
+                LocalSigner.from_secret_store(dict(values, AI_SEEDS_ADDRESS=self.intent.wallet), **args)
+        key = self.account.key.hex()
+        secrets = dict(WALLET_PRIVATE_KEY=key, AI_SEEDS_ADDRESS=self.intent.wallet)
+        with self.assertRaises(Blocked):
+            LocalSigner.from_secret_store(secrets, registry=self.registry, authorization=None, signer_host=False)
+        self.assertEqual(LocalSigner.from_secret_store(secrets, **args).account.address, self.account.address)

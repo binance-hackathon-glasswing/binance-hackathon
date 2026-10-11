@@ -36,17 +36,24 @@ class LocalSigner:
             raise Blocked('isolated signer host and wallet binding required')
         if not all(callable(getattr(registry,k,None)) for k in ('lookup','check_authority','put_if_absent')):
             raise Blocked('durable fenced signer registry required')
+        if not callable(authorization):
+            raise Blocked('current signer authorization boundary required')
         self.account,self.registry,self.authorization=account,registry,authorization
 
     @classmethod
     def from_secret_store(cls,secrets,**kwargs):
+        if kwargs.get('signer_host') is not True:
+            raise Blocked('wallet secrets may only be loaded on the isolated signer host')
         from eth_account import Account
         key=secrets.get('WALLET_PRIVATE_KEY');mnemonic=secrets.get('WALLET_MNEMONIC')
         if bool(key)==bool(mnemonic):raise Blocked('exactly one signer credential required')
-        if mnemonic:
-            Account.enable_unaudited_hdwallet_features()
-            account=Account.from_mnemonic(mnemonic)
-        else:account=Account.from_key(key)
+        try:
+            if mnemonic:
+                Account.enable_unaudited_hdwallet_features()
+                account=Account.from_mnemonic(mnemonic)
+            else:account=Account.from_key(key)
+        except (ValueError,TypeError):
+            raise Blocked('invalid signer credential') from None
         return cls(account=account,expected_address=secrets['AI_SEEDS_ADDRESS'],**kwargs)
 
     def sign(self,attempt_id,payload,epoch,guard_version):

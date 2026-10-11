@@ -1,7 +1,11 @@
 """Read-only quote collection at configured sizes. No wallet signing or ai-seeds client."""
 import argparse
+import hashlib
+import json
 from decimal import Decimal
 from pathlib import Path
+from statistics import median
+import subprocess
 import time
 
 from .port import MarketPort, TOKENS, integer, units
@@ -25,6 +29,7 @@ def cycle(port, sizes, symbols):
                 # Quoted net loss includes any fees already reflected in received amounts; gas is separate.
                 proceeds = Decimal(sell['quote_measurement']['receive_units']) / 10**18
                 item['quoted_roundtrip_bps'] = str((size - proceeds) * 10000 / size)
+                item['measurement'] = 'SEQUENTIAL_BUY_AND_SELL_QUOTES; prices can move between calls'
                 item['gas_estimates'] = {}
                 for side, observation in (('BUY', buy), ('SELL', sell)):
                     tx = observation['quote_measurement']['unsigned_transaction']
@@ -47,8 +52,44 @@ def cycle(port, sizes, symbols):
                     return report
                 continue
             report['observations'].append(item)
+    report['candles'] = {}
+    for symbol in symbols:
+        try:
+            report['candles'][symbol] = port.candles(symbol, bar='1h', limit=300)
+        except Unavailable as e:
+            report['candles'][symbol] = dict(status='UNAVAILABLE', reason=str(e))
+            if str(e) in ('compliance_restriction', 'http_forbidden_unclassified', 'authentication_error', 'rate_limited'):
+                report['stopped'] = str(e)
+                break
     report['finished_at'] = utc()
     return report
+
+
+def summarize(root):
+    reports = []
+    for path in Path(root).glob('*.json'):
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != path.stem:
+            raise Unavailable('artifact summary integrity failure')
+        value = json.loads(raw)
+        if value.get('schema') == 'QuoteCycle.v1':
+            reports.append((path.stem, value))
+    result = dict(schema='QuoteSummary.v1', cycle_count=len(reports), artifact_hashes=[h for h, _ in reports], symbols={})
+    if reports:
+        result.update(first_at=min(r['started_at'] for _, r in reports), last_at=max(r['finished_at'] for _, r in reports))
+    for symbol in TOKENS:
+        items = [x for _, r in reports for x in r['observations'] if x['symbol'] == symbol]
+        costs = [Decimal(x['quoted_roundtrip_bps']) for x in items if 'quoted_roundtrip_bps' in x]
+        impacts = [Decimal(x[side]['quote_measurement']['impact_bps']) for x in items
+                   for side in ('buy', 'sell') if side in x]
+        result['symbols'][symbol] = dict(samples=len(items), successful_pairs=len(costs),
+            open_samples=sum(x.get('token_open') is True and x.get('underlying_open') is True for x in items),
+            roundtrip_bps_median=str(median(costs)) if costs else None,
+            roundtrip_bps_min=str(min(costs)) if costs else None,
+            roundtrip_bps_max=str(max(costs)) if costs else None,
+            impact_bps_median=str(median(impacts)) if impacts else None,
+            failures=[x.get('reason') for x in items if x.get('status') == 'UNAVAILABLE'])
+    return result
 
 
 def main(argv=None):
@@ -61,7 +102,11 @@ def main(argv=None):
     p.add_argument('--interval-seconds', type=int, default=3600)
     p.add_argument('--cycles', type=int, default=1, help='0 runs continuously')
     p.add_argument('--balance-only', action='store_true')
+    p.add_argument('--summary-only', action='store_true')
     args = p.parse_args(argv)
+    if args.summary_only:
+        print(json.dumps(summarize(args.artifact_root), sort_keys=True))
+        return 0
     if args.interval_seconds < 60 or args.cycles < 0:
         p.error('interval must be >=60 seconds; cycles must be nonnegative')
     sizes = [Decimal(x) for x in args.sizes.split(',')]
@@ -80,9 +125,11 @@ def main(argv=None):
         print('BNB raw balance:', integer(native[0]['rawBalance']) if len(native) == 1 else 'NO_NATIVE_ENTRY')
         return 0
     count = 0
+    revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     while args.cycles == 0 or count < args.cycles:
         start = time.monotonic()
         report = cycle(port, sizes, symbols)
+        report['code_revision'] = revision
         sha = artifacts.put(report)
         print(report['finished_at'], 'cycle artifact:', sha, flush=True)
         count += 1

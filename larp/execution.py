@@ -180,6 +180,7 @@ class Attempt:
     next_probe: int = 0
     included_block: str | None = None
     gas_used: int | None = None
+    finalized_at: int | None = None
 
 
 @dataclass(frozen=True)
@@ -486,6 +487,7 @@ class Executor:
         elif finalized and attempt.step == "SWAP":
             status = "COMPLETED"
         return self._update_attempt(state, replace(attempt, state=phase, included_block=outcome.block_hash,
+                                                  finalized_at=now if finalized else None,
                                    gas_used=outcome.gas_used), phase, gates, status=status,
                                    blocked_reason=("receipt gas unavailable; signed gas allowance retained"
                                                    if finalized and outcome.gas_used is None

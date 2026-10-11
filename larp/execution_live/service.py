@@ -50,9 +50,10 @@ def broadcast_observation(state,attempt,*,wallet_id=None):
 
 
 class ExecutionService:
-    def __init__(self,*,store,executor,mapping,observe,wallet_id=None):
+    def __init__(self,*,store,executor,mapping,observe,wallet_id=None,settlement=None):
         self.store,self.executor,self.mapping,self.observe=store,executor,mapping,observe
         self.wallet_id=wallet_id
+        self.settlement=settlement
     def create_from_command(self,run_id,command_id,epoch,now_ms):
         command=self.store.command(run_id,command_id,epoch,now_ms)
         intent=map_command(command,run_id=run_id,now_ms=now_ms,**self.mapping)
@@ -64,6 +65,16 @@ class ExecutionService:
         for attempt in state.attempts:
             if attempt.broadcast_at is not None:
                 self.observe(broadcast_observation(state,attempt,wallet_id=self.wallet_id))
+            if attempt.state in ('FINAL_SUCCESS','FINAL_REVERT'):
+                if self.settlement is None:
+                    raise Blocked('final receipt observation adapter required before advancing')
+                fact=self.settlement(state,attempt)
+                if (fact.get('schema')!='ExecutionObservation.v1' or fact.get('settlement')!='FINAL'
+                        or fact.get('kind') not in ('APPROVAL','FILL','REVERT')
+                        or fact.get('intent_id')!=state.intent.intent_id
+                        or fact.get('attempt_id')!=attempt.attempt_id or fact.get('tx_hash')!=attempt.tx_hash):
+                    raise Blocked('settlement fact identity mismatch')
+                self.observe(fact)
         if state.status!='ACTIVE':return state
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':return self.executor.prepare(key,now)
         stage=state.attempts[-1].state

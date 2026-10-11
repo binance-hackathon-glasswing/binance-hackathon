@@ -146,6 +146,7 @@ class MarketPort:
             impact_bps=str(number(rr['priceImpactPercent']) * 100), fee_amount=rr.get('feeAmount'),
             trade_fee=rr.get('tradeFee'), vendor=rr.get('vendorName'), router=tx.get('to'),
             minimum_receive_raw=tx.get('minReceiveAmount'), quoted_gas=tx.get('gas'), available_at=raw['available_at']))
+        observation['quote_measurement']['elapsed_ms'] = raw.get('elapsed_ms')
         observation['quote_measurement']['unsigned_transaction'] = tx
         stamp = max(observation['available_at'], raw['available_at'])
         observation.update(available_at=stamp,
@@ -202,8 +203,22 @@ class MarketPort:
         if symbol not in TOKENS or bar not in ('1m', '5m', '15m', '1h', '4h', '1d') or type(limit) is not int or not 1 <= limit <= 300:
             raise Unavailable('invalid candle request')
         r = self.call('market/candles', dict(tokenContractAddress=TOKENS[symbol], bar=bar, limit=limit))
+        rows = data(r)
+        if not isinstance(rows, list):
+            raise Unavailable('candles must be a list')
+        stamps = []
+        previous = -1
+        for row in rows:
+            if not isinstance(row, list) or len(row) < 7:
+                raise Unavailable('invalid raw candle row')
+            timestamp = integer(row[5])
+            if timestamp <= previous:
+                raise Unavailable('candle timestamps are not strictly ascending')
+            previous = timestamp
+            stamps.append(dict(reported_at=datetime.fromtimestamp(timestamp / 1000, timezone.utc).isoformat(),
+                               open_at=None, close_at=None))
         return dict(schema='RawTokenCandles.v1', symbol=symbol, token_id=TOKENS[symbol], bar=bar,
-                    rows=data(r), available_at=r['available_at'], content_hash=r['artifact_sha256'],
+                    rows=rows, timestamps=stamps, available_at=r['available_at'], content_hash=r['artifact_sha256'],
                     timestamp_semantics='KIT_TIMESTAMP_MS; consumer must establish open/close semantics')
 
     def balances(self):

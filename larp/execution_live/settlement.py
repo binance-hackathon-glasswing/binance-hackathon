@@ -88,3 +88,21 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                       fee_units=0, fee_convention='ALL_USDT_TRANSFERS_INCLUDED_IN_NET_CASH',
                       actual_cash_chain_units=cash_raw)
     return result
+
+
+class ReceiptFacts:
+    """Service callback. Finalization time is durable, so retries retain event bytes.
+
+    The valuation callback must return the same persisted price for an attempt,
+    not the current BNB price. Publishing belongs to the atomic runtime outbox.
+    """
+    def __init__(self, chain, *, wallet_id, valuation):
+        self.chain, self.wallet_id, self.valuation = chain, wallet_id, valuation
+
+    def __call__(self, state, attempt):
+        if attempt.finalized_at is None:
+            raise Blocked('durable finalization time required')
+        proof = self.chain.receipt(attempt.tx_hash)
+        stamp = datetime.fromtimestamp(attempt.finalized_at, timezone.utc).isoformat()
+        return final_observation(state, attempt, proof, wallet_id=self.wallet_id,
+                                 bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp)
