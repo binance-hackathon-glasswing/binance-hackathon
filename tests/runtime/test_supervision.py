@@ -135,6 +135,13 @@ class Supervision(DatabaseCase):
         self.assertEqual(self.service(driver, session='s1').run(max_cycles=1), EXIT_QUARANTINED)
         self.assertEqual(driver.n, 0)  # no round ran on the quarantined run
 
+    def test_service_does_not_start_on_a_quarantined_run(self):
+        with self.assertRaises(RuntimeError):
+            self.service(Crash(), session='s1').run()  # leaves an unclean session behind
+        self.store.quarantine('run')  # e.g. a restore
+        self.assertEqual(self.service(Rounds(self.coordinator()), session='s2').run(max_cycles=1), EXIT_QUARANTINED)
+        self.assertEqual(self.incidents(), [])
+
     def test_service_stops_when_quarantined(self):
         class Tamper:
             def once(inner, now_ms):

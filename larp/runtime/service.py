@@ -44,6 +44,8 @@ class Service:
         """Returns an exit code. An exception escapes on purpose: the session stays open and counts as a crash."""
         if self.start_check is not None:
             self.start_check()
+        if self.store.metrics(self.run_id).read()['quarantined']:
+            return EXIT_QUARANTINED  # e.g. after a restore: restarting cannot cure it, so systemd stops here
         self.sessions.begin(session_id=self.session_id, build_id=self.build_id, now_ms=self.clock())
         cycles = 0
         while not self.stopping and (max_cycles is None or cycles < max_cycles):
