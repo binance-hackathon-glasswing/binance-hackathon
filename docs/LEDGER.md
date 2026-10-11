@@ -63,4 +63,4 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 | IDEA-039 | Deployment build record: execution (Isaac) | reserved for Isaac | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
 | IDEA-040 | Deployment build record: strategy (Keith) | reserved for Keith | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
 | IDEA-041 | Deployment build record: evidence (Yao Zhu) | reserved for Yao Zhu | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
-| IDEA-042 | Deployment build record: runtime, hosting and integration (Keegan) | reserved for Keegan | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
+| IDEA-042 | Deployment build record: runtime, hosting and integration (Keegan) | open (item 1 baseline in progress; criteria committed before running) | branch `codex/deploy-runtime`; base merged incl. main `a21d034`; A11 annotations; GAP-51 sentence lost in `e8658ba` restored; item 1 criteria B1–B6 (PR #9 C3, PR #10 port to settlement, ports I3/I4/I7/I5, PostgreSQL settlement regressions) | 2026-10-11 | [ledger/IDEA-042.md](ledger/IDEA-042.md) |
