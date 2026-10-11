@@ -89,7 +89,8 @@ class Cleanups(DatabaseCase):
 
     def test_request_and_assessment_are_stored_once(self):  # #8
         Coordinator(self.store,FakeAssessor(),FakePolicy(),FakePlanner(),execution=FakeExecution(),
-            run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40).start('r',request(),NOW)
+            run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40,
+            clock_ms=lambda:NOW).start('r',request(),NOW)
         with self.store.transaction() as db:
             audit=Document(bytes(db.execute('SELECT document FROM audit_events').fetchone()[0])).read()
         data=json.loads(audit['log'])['data']['input']

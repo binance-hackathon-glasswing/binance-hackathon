@@ -13,11 +13,12 @@ from fractions import Fraction
 import re
 
 from larp.intelligence.common import digest, frac
+from larp.intelligence.semantics import classify_event, clause_bounds, finding_eligible
 
 METRICS = (
     ("revenue", r"(?:total\s+)?(?:net\s+)?revenues?|net\s+sales|total\s+sales"),
-    ("net_income", r"net\s+(?:income|earnings|profit)"),
-    ("operating_income", r"operating\s+(?:income|profit)|income\s+from\s+operations"),
+    ("net_income", r"net\s+(?:income|earnings|profit|loss(?:es)?)(?:\s*\(loss\))?"),
+    ("operating_income", r"operating\s+(?:income|profit|loss(?:es)?)(?:\s*\(loss\))?|(?:income|loss)\s+from\s+operations"),
     ("gross_margin", r"gross\s+margin"),
     ("eps_diluted", r"diluted\s+(?:earnings|net\s+income)\s+per\s+share|diluted\s+eps"),
 )
@@ -28,15 +29,21 @@ METRIC_RE = re.compile("|".join(rf"(?P<{name}>\b(?:{pattern})\b)" for name, patt
 METRIC_ONE = {name: re.compile(rf"\b(?:{pattern})\b", re.I) for name, pattern in METRICS}
 
 _NUM = r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?"
+# A hyphen right after a number joins a range ("1.2-1.5 trillion won"); it is never a minus sign (IDEA-033 R19).
+_SIGN = r"(?<![\d.])(?<![\d.]\s)-"
+# A suffix-currency amount never starts inside a number or as the second half of a dashed range: matching
+# "1.5 trillion won" alone in "1.2-1.5 trillion won" would claim one bound of a range as a point.
+_NOT_RANGE_END = r"(?<![\d.,])(?<![\d.][-\u2013\u2014])(?<![\d.]\s[-\u2013\u2014]\s)"
 SCALES = {"thousand": 3, "thousands": 3, "million": 6, "millions": 6, "billion": 9, "billions": 9,
           "trillion": 12, "trillions": 12}
 MONEY = re.compile(
-    rf"(?P<cur>US\$|\$|USD\s?|KRW\s?|\u20a9\s?)(?P<num>{_NUM})(?:\s*(?P<scale>trillion|billion|million|thousand)\b)?"
-    rf"|(?P<num2>{_NUM})\s*(?P<scale2>trillion|billion|million|thousand)?\s*(?P<cur2>(?:Korean\s+)?won\b|KRW\b)",
+    rf"(?P<cur>US\$|\$|USD\s?|KRW\s?|\u20a9\s?)(?P<neg>\(|-)?(?P<num>{_NUM})\)?(?:\s*(?P<scale>trillion|billion|million|thousand)\b)?"
+    rf"|(?P<neg2>\(|{_SIGN})?{_NOT_RANGE_END}(?P<num2>{_NUM})\)?\s*(?P<scale2>trillion|billion|million|thousand)?\s*"
+    rf"(?P<cur2>(?:Korean\s+)?won\b|KRW\b)",
     re.I)
 PERCENT = re.compile(rf"(?P<num>{_NUM})\s?(?:%|percent\b)", re.I)
 TOLERANCE = re.compile(rf"^,?\s*plus\s+or\s+minus\s+(?P<num>{_NUM})\s?(?:%|percent\b)", re.I)
-NUM_TOKEN = re.compile(r"\(?-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\)?|\(?-?\d+(?:\.\d+)?\)?")
+NUM_TOKEN = re.compile(rf"\(?(?:{_SIGN})?\d{{1,3}}(?:,\d{{3}})+(?:\.\d+)?\)?|\(?(?:{_SIGN})?\d+(?:\.\d+)?\)?")
 TABLE_SCALE = re.compile(r"\bin\s+(thousands|millions|billions|trillions)\b", re.I)
 GUIDANCE_WORDS = re.compile(r"\b(?:expects?|expected|expecting|outlook|guidance|forecasts?|anticipates?|"
                             r"projects?|projected|targets?\s+revenue)\b", re.I)
@@ -56,34 +63,54 @@ KEYWORD_EVENTS = (
         r"\b(?:chief\s+executive\s+officer|chief\s+financial\s+officer|CEO|CFO)\b[^.\n]{0,80}?"
         r"\b(?:resign(?:s|ed|ation)?|step(?:s|ped)?\s+down|depart(?:s|ure|ed)?)\b", re.I)),
 )
-NEGATION = re.compile(r"\b(?:no|not|none|neither|nor|never|without|cannot|absence\s+of|unnecessary)\b|n't\b", re.I)
-# Modal, conditional and forward-looking cues: the event is possible or planned, not reported as having happened.
-HYPOTHETICAL = re.compile(r"\b(?:may|might|could|would|should|can|if|unless|whether|possible|possibly|potential|"
-                          r"potentially|risks?|likely|unlikely|future|expects?|expected|anticipates?|anticipated|"
-                          r"intends?|plans?\s+to|in\s+the\s+event)\b", re.I)
-# Phrases that contain a cue word but are not cues: deadlines, the non-reliance event phrase itself, and the month.
-NOT_A_CUE = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+be\s+relied\s+upon\b|"
-                       r"\b(?-i:May)\s+(?:\d{1,2}|\d{4})\b", re.I)
-# Clause ends: a line or sentence end, a semicolon, or a contrastive join. A bare comma or ", and" does not end
-# a clause, so negation in a list ("did not identify loss, damage, and impairment") still counts.
-CLAUSE_BREAK = re.compile(r"\n|;|(?<=[.!?])\s+(?=[A-Z(\"'])|"
-                          r"(?i:,\s+(?:but|whereas|while|although|though|however|yet)\b)")
+# A loss-form metric name ("net loss", "operating loss", "loss from operations") states a negative level;
+# "net income (loss)" leaves the sign to the written number.
+LOSS_FORM = re.compile(r"\bloss(?:es)?\b(?!\))", re.I)
+# A change amount ("revenue increased by $2 billion") is not the metric's level and is never extracted.
+CHANGE_FRAME = re.compile(r"\b(?:increased|decreased|increase|decrease|grew|growth|rose|fell|declined|decline|dropped|"
+                          r"up|down|changed|change|improved|improvement|deteriorat\w*|reduction|widen\w*|narrow\w*|"
+                          r"swing|higher|lower)\b", re.I)
+# "... increased 10% to $35.1 billion": the amount after "to" is the new level, not the change.
+LEVEL_AFTER_CHANGE = re.compile(r"\bto\s*(?:US\$|\$|USD\s?|KRW\s?|\u20a9\s?)?\(?-?$", re.I)
+# Third-party estimates are never an issuer's reported or guided figure (G-53: no admissible source).
+ANALYST_FRAME = re.compile(r"\b(?:analysts?|consensus|the\s+street|wall\s+street|sell[\s-]side|street\s+estimates?)\b",
+                           re.I)
+# "As expected, revenue was $35.1 billion": an introductory reference to expectations does not make a level guidance.
+INTRO_EXPECTATION = re.compile(r"^\s*(?:just\s+)?as\s+(?:\w+\s+){0,2}(?:expected|anticipated|forecast|projected|guided|"
+                               r"previously\s+(?:announced|disclosed))\s*,", re.I)
+RANGE_LEAD = re.compile(r"\b(?:between|range\s+of|ranging\s+from|from)\s*$", re.I)
+RANGE_JOIN = re.compile(r"\s*(?:-|\u2013|\u2014|to)\s*|\s+and\s+", re.I)
 PER_SHARE_EXCEPTION = re.compile(r"\bexcept\b[^)\n]{0,40}?\bper[\s-]+share\b", re.I)
 
+# Event facts (IDEA-031 S2.1). A plain event metric ("IMPAIRMENT") is the issuer's own, current, occurred event
+# and may become a finding. Every other non-negated statement about an event (announced future event, attributed
+# report, forecast, conditional risk, third-party or historical occurrence) is kept as "STATEMENT:<event>" with
+# its semantics, never a finding. "HYPOTHETICAL:<event>" is the pre-v2 name, still read from stored context.
+STATEMENT_PREFIX = "STATEMENT:"
+HYPOTHETICAL_PREFIX = "HYPOTHETICAL:"  # legacy (no semantics recorded); read-only
+STATEMENT_PREFIXES = (STATEMENT_PREFIX, HYPOTHETICAL_PREFIX)
+DROPPED_ASSERTIONS = ("NEGATED", "MENTION_ONLY")  # assert nothing about the event: no fact
 
-HYPOTHETICAL_PREFIX = "HYPOTHETICAL:"  # "HYPOTHETICAL:IMPAIRMENT": a possible or planned event, never a finding
+
+def is_statement(metric) -> bool:
+    return type(metric) is str and metric.startswith(STATEMENT_PREFIXES)
 
 
-def clause_bounds(text: str, start: int, end: int) -> tuple:
-    """(lo, hi) of the clause holding text[start:end], ended by CLAUSE_BREAK."""
-    lo, hi = text.rfind("\n", 0, start) + 1, len(text)
-    for m in CLAUSE_BREAK.finditer(text, lo):
-        if m.end() <= start:
-            lo = m.end()
-        elif m.start() >= end:
-            hi = m.start()
-            break
-    return lo, hi
+def statement_event(metric: str) -> str:
+    for prefix in STATEMENT_PREFIXES:
+        if metric.startswith(prefix):
+            return metric[len(prefix):]
+    return metric
+
+
+def issuer_names(entry) -> tuple:
+    """Names by which the issuer's own text refers to itself: the entity name and its stem without suffixes."""
+    if entry is None:
+        return ()
+    name = entry.entity_name
+    stem = re.sub(r"[,.]?\s+(?:Corp(?:oration)?|Inc|Co|Company|Ltd|Limited|plc|N\.V|AG|SE)\.?(?:,?\s*Ltd\.?)?$", "",
+                  name, flags=re.I).strip()
+    return tuple(dict.fromkeys(n for n in (name, stem) if n))
 
 
 def statement_key(text: str, start: int, end: int) -> str:
@@ -93,21 +120,11 @@ def statement_key(text: str, start: int, end: int) -> str:
     return " ".join(text[lo:hi].lower().split()).strip(" ,.;:")
 
 
-def unasserted(text: str, start: int, end: int):
-    """Why the event at text[start:end] is not reported as having happened, or None if it is.
-
-    The whole clause holding the match is read, the match included. "NEGATED": a negation appears in it
-    ("recorded no impairment", "an impairment charge was not required", "did not identify ... an impairment").
-    "HYPOTHETICAL": a modal, conditional or forward-looking cue appears in it ("could result in an impairment",
-    "if ... we might recognize an impairment", "we expect to record an impairment").
-
-    Conservative: one cue anywhere in the clause rejects the event, so "recorded an impairment and did not
-    record a restructuring charge" gives no IMPAIRMENT fact."""
-    lo, hi = clause_bounds(text, start, end)
-    clause = NOT_A_CUE.sub(" ", text[lo:hi])  # the match too: "CFO may resign" has its cue inside the match
-    if NEGATION.search(clause):
-        return "NEGATED"
-    return "HYPOTHETICAL" if HYPOTHETICAL.search(clause) else None
+def event_semantics(text: str, start: int, end: int, event: str, *, document_ms=None, names: tuple = (),
+                    issuer_source: bool = True) -> dict:
+    """semantics.classify_event for one trigger; the extractor and the verifier both call this."""
+    return classify_event(text, start, end, event=event, document_ms=document_ms, issuer_names=names,
+                          issuer_source=issuer_source)
 
 
 _QUARTER = {"first": 1, "second": 2, "third": 3, "fourth": 4, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
@@ -170,17 +187,50 @@ def stated_numbers(text: str) -> list:
 
 
 def money_parts(m: re.Match) -> tuple:
-    """(number text, scale_exp10, unit) of a MONEY match."""
+    """(number text, scale_exp10, unit) of a MONEY match; the number text keeps a written "(...)" or "-" sign."""
     if m.group("num") is not None:
         cur = m.group("cur").strip().upper()
         unit = "KRW" if cur in ("KRW", "\u20a9") else "USD"
-        return m.group("num"), SCALES.get((m.group("scale") or "").lower(), 0), unit
-    return m.group("num2"), SCALES.get((m.group("scale2") or "").lower(), 0), "KRW"
+        return _signed(m.group("neg"), m.group("num")), SCALES.get((m.group("scale") or "").lower(), 0), unit
+    return _signed(m.group("neg2"), m.group("num2")), SCALES.get((m.group("scale2") or "").lower(), 0), "KRW"
+
+
+def kind_of(prefix: str) -> str:
+    """REPORTED or GUIDANCE from the words leading to an amount, after any introductory "As expected," phrase."""
+    m = INTRO_EXPECTATION.match(prefix)
+    return "GUIDANCE" if GUIDANCE_WORDS.search(prefix[m.end():] if m else prefix) else "REPORTED"
+
+
+def is_change_amount(between: str) -> bool:
+    """`between`: text from the metric mention to the amount. A change amount, unless it is the level "to $X"."""
+    return bool(CHANGE_FRAME.search(between)) and not LEVEL_AFTER_CHANGE.search(between)
+
+
+def range_partner(text: str, amount: re.Match, unit: str, lead: str):
+    """The second amount of a range starting at `amount` ("between X and Y", "range of X to Y", "X-Y", "X to Y"), or
+    None. "and" joins a range only after a range lead word; "-"/"to" join two amounts directly."""
+    join = RANGE_JOIN.match(text, amount.end())
+    if not join or ("and" in join.group(0).lower() and not RANGE_LEAD.search(lead)):
+        return None
+    other = (PERCENT if unit == "PERCENT" else MONEY).match(text, join.end())
+    return other
+
+
+def _signed(neg, number: str) -> str:
+    return number if not neg else "-" + number
+
+
+def signed_value(number: Fraction, metric_text: str) -> Fraction:
+    """A loss-form metric name makes the level negative whatever the written sign ("net loss of $1.2 billion",
+    "net loss of $(1.2) billion"); otherwise the written sign stands."""
+    return -abs(number) if LOSS_FORM.search(metric_text or "") else number
 
 
 def _scope(metric: str, unit: str, entry) -> str:
     if metric not in PER_SHARE_METRICS:
         return "ISSUER"
+    if entry is None:
+        return "AMBIGUOUS"
     matches = [s.security_id for s in entry.securities if s.currency == unit]
     return matches[0] if len(matches) == 1 and len(entry.securities) == 1 else "AMBIGUOUS"
 
@@ -191,6 +241,7 @@ def _span(doc_sha: str, text: str, start: int, end: int) -> dict:
 
 def finish_fact(fact: dict, source: dict) -> dict:
     fact = dict(fact, source=source)
+    fact.setdefault("statement", None)  # event semantics; None for numerical and filer-item facts
     fact["fact_id"] = "fact:" + digest("larp.intel.fact.v1", {k: v for k, v in fact.items() if k != "fact_id"})
     return fact
 
@@ -226,21 +277,23 @@ def _sentence_facts(text, doc_sha, entry):
                 if not amount:
                     continue
                 number, scale, unit = money_parts(amount)
+            if is_change_amount(segment[:amount.start()]):
+                continue  # a change amount, not the metric's level
+            if ANALYST_FRAME.search(sentence[:m_end + amount.end()]):
+                continue  # a third-party estimate is not the issuer's figure
             end = m_end + amount.end()
-            between = re.search(r"\bbetween\s*$", segment[:amount.start()], re.I)
-            second = re.match(r"\s+(?:and|to)\s+", segment[amount.end():]) if between else None
-            if second:
-                other = MONEY.match(segment, amount.end() + second.end()) if unit != "PERCENT" else \
-                    PERCENT.match(segment, amount.end() + second.end())
-                if other:
-                    o_number, o_scale, o_unit = (money_parts(other) if unit != "PERCENT"
-                                                 else (other.group("num"), 0, "PERCENT"))
-                    scale = max(scale, o_scale) if scale == 0 or o_scale == 0 else scale
-                    if o_unit == unit and (o_scale in (0, scale)):
-                        low, high = parse_number(number), parse_number(o_number)
-                        end = m_end + other.end()
+            other = range_partner(segment, amount, unit, segment[:amount.start()])
+            if other:
+                o_number, o_scale, o_unit = (money_parts(other) if unit != "PERCENT"
+                                             else (other.group("num"), 0, "PERCENT"))
+                scale = max(scale, o_scale) if scale == 0 or o_scale == 0 else scale
+                if o_unit == unit and (o_scale in (0, scale)):
+                    metric_text = sentence[m_start:m_end]
+                    low = signed_value(parse_number(number), metric_text)
+                    high = signed_value(parse_number(o_number), metric_text)
+                    end = m_end + other.end()
             if low is None:
-                value = parse_number(number)
+                value = signed_value(parse_number(number), sentence[m_start:m_end])
                 tol = TOLERANCE.match(sentence[end:])
                 if tol:
                     tolerance = parse_number(tol.group("num"))
@@ -248,7 +301,7 @@ def _sentence_facts(text, doc_sha, entry):
             written = [number] + ([o_number] if low is not None else [])
             precision = scale - max(decimals_of(w) for w in written)
             prefix = sentence[:m_end + amount.end()]
-            kind = "GUIDANCE" if GUIDANCE_WORDS.search(prefix) else "REPORTED"
+            kind = kind_of(prefix)
             direction = None
             if kind == "GUIDANCE":
                 direction = next((name for name, rx in DIRECTION if rx.search(prefix)), None)
@@ -377,7 +430,8 @@ def _table_facts(text, doc_sha, entry):
                     continue  # unstated currency, or a per-share cell whose scale the table leaves open
                 token = cell.lstrip("$\u20a9").rstrip("%").strip()
                 facts.append({
-                    "kind": block["kind"], "metric": metric, "period": period[0], "value": frac(parse_number(token)),
+                    "kind": block["kind"], "metric": metric, "period": period[0],
+                    "value": frac(signed_value(parse_number(token), cells[0][0])),
                     "range": None, "tolerance_pct": None, "unit": unit, "scale_exp10": fact_scale,
                     "precision_exp10": fact_scale - decimals_of(token), "direction": None,
                     "security_scope": _scope(metric, unit, entry),
@@ -395,39 +449,50 @@ def _cells(line: str) -> list:
     return out
 
 
-def _keyword_events(text, doc_sha):
-    """Reported events (one supporting span per event type per document) and hypothetical ones (one fact per
-    distinct statement, spanning its clause, so each can be compared with earlier filings). Negated: none."""
+def _keyword_events(text, doc_sha, *, document_ms=None, names=(), issuer_source=True):
+    """Event facts with their semantics (semantics.py). The issuer's own current occurrence: one supporting span per
+    event type per document, metric = event code. Any other non-negated statement: one fact per distinct statement
+    and assertion, spanning its clause, metric "STATEMENT:<event>". Negated and mention-only text: no fact."""
     facts, statements = [], set()
 
-    def event(metric, start, end):
+    def event(metric, start, end, semantics):
         facts.append({"kind": "EVENT", "metric": metric, "period": None, "value": None, "range": None,
                       "tolerance_pct": None, "unit": None, "scale_exp10": 0, "precision_exp10": 0, "direction": None,
                       "security_scope": "ISSUER", "span": _span(doc_sha, text, start, end),
-                      "period_span": None, "scale_span": None, "basis": "KEYWORD_V1"})
+                      "period_span": None, "scale_span": None, "basis": "KEYWORD_V2", "statement": semantics})
 
     for name, pattern in KEYWORD_EVENTS:
         reported = False
         for m in pattern.finditer(text):
-            why = unasserted(text, m.start(), m.end())
-            if why is None and not reported:
-                event(name, m.start(), m.end())
-                reported = True
-            elif why == "HYPOTHETICAL" and (name, statement_key(text, m.start(), m.end())) not in statements:
-                statements.add((name, statement_key(text, m.start(), m.end())))
-                lo, hi = clause_bounds(text, m.start(), m.end())
-                clause = text[lo:hi]
-                lo += len(clause) - len(clause.lstrip())
-                event(HYPOTHETICAL_PREFIX + name, lo, lo + len(clause.strip()))
+            sem = event_semantics(text, m.start(), m.end(), name, document_ms=document_ms, names=names,
+                                  issuer_source=issuer_source)
+            if finding_eligible(sem):
+                if not reported:
+                    event(name, m.start(), m.end(), sem)
+                    reported = True
+                continue
+            if sem["assertion"] in DROPPED_ASSERTIONS:
+                continue
+            key = (name, statement_key(text, m.start(), m.end()), sem["assertion"], sem["actor"], sem["temporal"])
+            if key in statements:
+                continue
+            statements.add(key)
+            lo, hi = clause_bounds(text, m.start(), m.end())
+            clause = text[lo:hi]
+            lo += len(clause) - len(clause.lstrip())
+            event(STATEMENT_PREFIX + name, lo, lo + len(clause.strip()), sem)
     return facts
 
 
-def extract_document(text: str, doc_sha: str, entry, source: dict) -> list:
-    raw = _sentence_facts(text, doc_sha, entry) + _table_facts(text, doc_sha, entry) + _keyword_events(text, doc_sha)
+def extract_document(text: str, doc_sha: str, entry, source: dict, *, issuer_source: bool = True) -> list:
+    raw = (_sentence_facts(text, doc_sha, entry) + _table_facts(text, doc_sha, entry)
+           + _keyword_events(text, doc_sha, document_ms=source.get("original_ms"), names=issuer_names(entry),
+                             issuer_source=issuer_source))
     seen, out = set(), []
     for fact in raw:
         key = (fact["kind"], fact["metric"], fact["period"], fact["unit"], str(normalized(fact)),
-               fact["span"]["text"] if fact["metric"].startswith(HYPOTHETICAL_PREFIX) else None)
+               fact["span"]["text"] if is_statement(fact["metric"]) else None,
+               (fact.get("statement") or {}).get("assertion"))
         if key in seen:
             continue
         seen.add(key)

@@ -17,7 +17,7 @@ class ReviewRecovery(DatabaseCase):
     def runtime(self):
         self.planner=FakePlanner()
         return Coordinator(self.store,FakeAssessor(),FakePolicy(),self.planner,execution=FakeExecution(),
-            run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40)
+            run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40,clock_ms=lambda:NOW)
 
     def assert_replay(self):
         journal=self.store.journal('run')

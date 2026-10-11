@@ -1,5 +1,7 @@
 # IDEA-023 — Start the engine with an offline policy boundary
 
+> **ID reconciliation (2026-10-10, IDEA-031; final mapping 2026-10-11 at the PR #7 merge into `codex/engine-foundation`):** the ID IDEA-023 was used independently for two records. This file is the owner-branch record (`5a6f4d7`), which `docs/build/PARALLEL_BUILD.md`, `docs/build/0[1-4]-*.prompt.txt`, IDEA-024 and IDEA-025–028 cite. Main's "Proposed solutions for evidence exits, economic evidence and engine proof" (published on `main` as IDEA-023 in `91af281`) is [IDEA-032](IDEA-032.md) in integrated trees; references to "main's IDEA-023" in IDEA-029/IDEA-030 and main's INCOMPLETE_WORK S1–S3 line mean that record. PR #7's review is [IDEA-033](IDEA-033.md). Before this merge, `codex/evidence-hardening` kept this record at `IDEA-023-offline-policy-boundary.md` and the proposed-solutions record at `IDEA-023.md`; the merge adopts the foundation numbering, and both records' content is unchanged.
+
 - Date / author: 2026-10-10 / Codex, requested by Keegan (start building on the reviewed version; continue development).
 - Status: open; first implementation increment of IDEA-021 W01 and test-discovery setup from W09. Not an adopted trading policy or activation authorization.
 - Basis: reviewed `3cb8765`, plus review record `9fe13b1`; branch `codex/engine-foundation`.

@@ -60,7 +60,12 @@ def profile(snapshot):
         raise ContractError("Policy identity mismatch")
     if p["evidence_mode"] not in ("SHADOW", "BOUNDED_FALSIFIER"):
         raise ContractError("Unknown evidence mode")
-    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM"):
+    from larp.integration.contract import AuthorityError, authority
+    try:
+        authority(p)  # falsifier/statement authority (IDEA-031); defaults to SHADOW
+    except AuthorityError as exc:
+        raise ContractError(str(exc)) from exc
+    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM", "EQUAL_WEIGHT"):
         raise ContractError("Unknown baseline")
     for name in ("minimum_trade_units", "per_trade_cap_units", "cost_reserve_units",
                  "exit_gas_reserve_units", "dust_units", "quote_age_seconds",
@@ -77,6 +82,15 @@ def profile(snapshot):
                           ("rebalance_band", Fraction(1))):
         if fraction(p[name]) > maximum:
             raise ContractError("Configuration loosens declared cap")
+    # IDEA-037: the 20%/80% caps bind new buys; forced trims start only above these hard lines.
+    if "hard_name_weight" in p and not (max(Fraction(1, 5), fraction(p["operating_name_weight"]))
+                                        <= fraction(p["hard_name_weight"]) <= Fraction(1, 4)):
+        raise ContractError("Hard per-name line outside [operating weight, 1/4]")
+    if "hard_gross_weight" in p and not Fraction(4, 5) <= fraction(p["hard_gross_weight"]) <= Fraction(9, 10):
+        raise ContractError("Hard gross line outside [4/5, 9/10]")
+    if p["baseline"] == "EQUAL_WEIGHT" and not (
+            0 < fraction(p.get("top_up_below_gross_weight")) <= fraction(p["operating_gross_weight"])):
+        raise ContractError("Top-up threshold must be positive and within the gross target")
     start, end, flatten, stop = [instant(p[n]) for n in
                                ("trade_after", "new_risk_end", "flatten_start", "signing_end")]
     if not start < end <= flatten < stop:
@@ -97,10 +111,16 @@ def usable(observation, cutoff, max_age):
 
 
 def markets(snapshot, p):
+    return market_view(snapshot.context.read().get("markets", []), snapshot.universe, snapshot.observed_at, p)
+
+
+def market_view(observations, universe, cutoff, p):
+    """symbol -> usable MarketObservation or None, as the strategy reads them (also used by the runtime so evidence
+    the strategy cannot use never becomes a planner constraint, IDEA-033 R17)."""
     result = {}
-    for m in snapshot.context.read().get("markets", []):
+    for m in observations:
         symbol = m.get("symbol")
-        if symbol not in snapshot.universe or symbol not in SYMBOLS or symbol in result:
+        if symbol not in universe or symbol not in SYMBOLS or symbol in result:
             raise ContractError("Unknown or duplicate market entity")
         if m.get("schema") != "MarketObservation.v1":
             raise ContractError("Wrong market schema")
@@ -110,7 +130,7 @@ def markets(snapshot, p):
         if not m.get("token_id") or not m.get("underlying_id"):
             raise ContractError("Token/share identity required")
         integer(m["price_units"], 1)
-        result[symbol] = m if usable(m, snapshot.observed_at, p["quote_age_seconds"]) else None
+        result[symbol] = m if usable(m, cutoff, p["quote_age_seconds"]) else None
     return result
 
 

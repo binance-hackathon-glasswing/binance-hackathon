@@ -109,6 +109,11 @@ def plan(snapshot, proposal_or_none):
     gross_limit = min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
         gross_limit = min(gross_limit, Fraction(2, 5))
+    # IDEA-037: optional hard lines; drift between the cap and the line is held, not trimmed. The deep
+    # drawdown cut always trims at its own limit. Trims still go back to the operating cap.
+    hard_name = fraction(p.get("hard_name_weight", [1, 5]))
+    trim_gross = (gross_limit if r["deep_cut"] or "hard_gross_weight" not in p
+                  else max(gross_limit, fraction(p["hard_gross_weight"])))
     positions = ledger["positions"]
     held = {s: pos["units"] for s, pos in positions.items() if pos["units"]}
     pending_buy = {}
@@ -126,6 +131,16 @@ def plan(snapshot, proposal_or_none):
     result["worst_case_gross_units"] = None if unvalued else ceil(gross)
     result["known_gross_units"] = ceil(gross)
     result["available_cash_units"] = max(0, ledger["cash_units"] - reserved_cash)
+    # Hard lines start an obligation; crossing back below the trigger does not complete it.
+    # This state is committed even on blocked rounds and restored independently of policy output.
+    trim_state = r.get("cap_trims", {})
+    durable_trims = "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r
+    name_trims = set(trim_state.get("names", [])) & set(held)
+    gross_trim = bool(trim_state.get("gross", False)) or gross > safe_equity * trim_gross
+    gross_shares = dict(trim_state.get("gross_shares", {}))
+    if not unvalued and gross <= safe_equity * gross_limit:
+        gross_trim = False
+        gross_shares = {}
     cap_bounds = {}
     reasons = {}
     held_names = sorted(held)
@@ -136,16 +151,29 @@ def plan(snapshot, proposal_or_none):
                 "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
                 "status": "BLOCKED_MARK"})
             continue
-        cap = floor(Fraction(safe_equity, 5) * 10**m["decimals"] / m["price_units"])
+        cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
+        operating_cap = floor(fraction(p["operating_name_weight"]) * safe_equity
+                              * 10**m["decimals"] / m["price_units"])
         if qty + pending_buy.get(symbol, 0) > cap:
+            name_trims.add(symbol)
+        if qty + pending_buy.get(symbol, 0) <= operating_cap:
+            name_trims.discard(symbol)
+        if symbol in name_trims:
             reason.append("POSITION_CAP")
-            cap = floor(fraction(p["operating_name_weight"]) * safe_equity
-                        * 10**m["decimals"] / m["price_units"])
+            cap = operating_cap
         else:
             cap = qty
-        if gross > safe_equity * gross_limit:
-            cap = min(cap, floor(Fraction(qty) * safe_equity * gross_limit / gross))
+        if gross_trim and gross > safe_equity * gross_limit:
+            # Freeze allocation shares when the obligation starts. Recomputing shares after each
+            # settled child repeatedly trims completed names and creates an asymptotic micro-trade tail.
+            if symbol not in gross_shares and durable_trims and not unvalued:
+                gross_shares[symbol] = ratio(value(qty, m) / gross)
+            # Incomplete valuation cannot establish allocation shares; retain existing ones, but
+            # use conservative provisional bounds for names without a complete starting valuation.
+            share = fraction(gross_shares[symbol]) if symbol in gross_shares else value(qty, m) / gross
+            cap = min(cap, floor(share * safe_equity * gross_limit
+                                 * 10**m["decimals"] / m["price_units"]))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
         if index >= 4:
             cap = 0
@@ -163,6 +191,9 @@ def plan(snapshot, proposal_or_none):
             result["requirements"].append({"symbol": symbol, "held_units": qty,
                                            "max_units": cap, "remaining_sell_units": qty - cap,
                                            "reasons": reason, "status": "PENDING"})
+    if durable_trims:
+        r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim,
+                          "gross_shares": gross_shares}
     # The nonce simplification also ensures pending trades cannot allocate twice.
     global_blocks = []
     for gate in ("integrity_ok", "journal_ok", "ownership_ok", "clock_ok"):
@@ -272,8 +303,11 @@ def plan(snapshot, proposal_or_none):
             continue
         if side == "BUY":
             spend = cash + fee
+            # The 20% uninvested floor counts free gas BNB, so four 20% names fit beside a gas reserve (IDEA-037).
+            free_bnb = max(0, floor(Fraction((ledger["bnb_units"] - reserved_bnb - gas) * ledger["bnb_price_units"],
+                                             10**ledger["bnb_decimals"])))
             if (spend > ledger["cash_units"] - reserved_cash
-                    or ledger["cash_units"] - spend < ceil(Fraction(safe_equity, 5))
+                    or ledger["cash_units"] + free_bnb - spend < ceil(Fraction(safe_equity, 5))
                     or ledger["bnb_units"] - reserved_bnb - gas < p["exit_gas_reserve_units"]):
                 result["rejections"].append({"symbol": symbol, "reason": "CASH_OR_EXIT_RESERVE"})
                 continue

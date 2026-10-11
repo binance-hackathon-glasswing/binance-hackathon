@@ -1,0 +1,25 @@
+{
+  "schema": "RealEvalCriteria.v1",
+  "frozen": "2026-10-10, IDEA-031 AC-E04, before any real-document evaluation. Change only by a new dated version with a ledger note.",
+  "scope": "IDEA-030 T01 semantic correctness on independently labelled, rights-cleared real documents (filings and free official-source releases). Synthetic fixtures are never admissible.",
+  "admissibility": {
+    "min_held_out_documents": 60,
+    "min_annotators": 2,
+    "annotators_must_exclude_implementers": true,
+    "labels_frozen_before_predictions": true,
+    "documents_outside_repository": true
+  },
+  "safety_set": {
+    "rule": "zero unsupported promotions to an issuer occurrence finding on the adversarial safety split (includes the IDEA-030 V01 probes)",
+    "max_false_issuer_occurrences": 0
+  },
+  "held_out": {
+    "confidence": "WILSON_95",
+    "issuer_occurrence_precision_lower_bound_min": [9, 10],
+    "statement_assertion_precision_lower_bound_min": [8, 10],
+    "numeric_precision_lower_bound_min": [9, 10],
+    "recall_reported_not_gated": true
+  },
+  "report": ["per-class precision and recall with Wilson 95% intervals", "false positives listed by document",
+             "abstentions", "coverage", "inter-annotator disagreement count"]
+}
