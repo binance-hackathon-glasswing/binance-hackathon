@@ -31,6 +31,7 @@ from larp.intelligence.tools import (
     STATEMENTS, EvidenceIndex, ToolError, check_allowlist, comparable_pairs, load_document, load_items, run_tool,
 )
 from larp.intelligence.models import parse_output
+from larp.intelligence.redflags import item_predicates, load_predicates, verify_item
 from larp.intelligence.verify import detect_conflicts, fact_as_claim, verify_claim
 
 EMPTY_CONTEXT = {"thesis": None, "known_facts": []}
@@ -140,8 +141,11 @@ class _State:
 class EvidenceAssessor:
     """Implements the shared Assessor port: assess(request: Document) -> Document."""
 
-    def __init__(self, *, registry, reader, model, config, clock_ms):
+    def __init__(self, *, registry, reader, model, config, clock_ms, red_flags: tuple | None = None):
         self.registry, self.reader, self.model, self.config, self.clock = registry, reader, model, config, clock_ms
+        # RedFlagPredicateSet.v1 (IDEA-041): an item code becomes a finding only when its own section verifies.
+        predicates, self.red_flag_set_sha256 = red_flags or load_predicates()
+        self.item_predicates = item_predicates(predicates)
 
     # ------------------------------------------------------------------ request
     def _validate(self, r: dict):
@@ -419,8 +423,9 @@ class EvidenceAssessor:
         coverage["complete"] = not (coverage["truncated"] or state.unread_exhibits())
         if coverage["truncated"]:
             state.missing.append("COVERAGE_TRUNCATED")
-        findings = self._findings(state, current)
-        thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread))
+        red_flags = self._red_flags(state, current)
+        findings = self._findings(state, current, red_flags)
+        thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread), red_flags)
         missing = sorted(set(state.missing))
         if state.injection:
             missing.append("UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE")
@@ -441,6 +446,7 @@ class EvidenceAssessor:
             "content": sorted(x["content_hash"] for x in records), "context_hash": r["context_hash"],
             "policy_profile_hash": r["policy_profile_hash"], "model_hash": self.model.identity.model_hash,
             "prompt_sha256": config.prompt_sha256, "config_sha256": config.config_sha256,
+            "red_flag_set_sha256": self.red_flag_set_sha256,
             "tools": list(state.allowed_tools), "budget": r["budget"]})
         ids = {s["fact_id"]: s["statement_id"] for s in statements}
         claims = [self._claim(f, novelty, confirmed, ids) for f in current] if status == "ASSESSED" else []
@@ -456,6 +462,8 @@ class EvidenceAssessor:
             "cutoff_ms": state.cutoff, "assessment_key": key, "status": status, "reasons": reasons,
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": config.prompt_sha256, "config_sha256": config.config_sha256,
+            "red_flag_set_sha256": self.red_flag_set_sha256,
+            "red_flag_checks": sorted(red_flags.values(), key=lambda v: (v["accession"], v["item"])),
             "instrument_scope": {"issuer_id": entry.issuer_id, "token": entry.token,
                                  "token_underlying_status": entry.token_underlying_status,
                                  "note": "issuer-level evidence; not converted to any listing or token"},
@@ -616,12 +624,41 @@ class EvidenceAssessor:
             kept.append(fact)
         return kept, sorted(set(failed))
 
-    def _findings(self, state, current):
+    def _red_flags(self, state, current) -> dict:
+        """{fact_id: RedFlagVerification.v1} for every item fact that has a red-flag predicate. An unverified one is
+        recorded as missing evidence, so it can neither raise a finding nor let the evidence look clear."""
+        out = {}
+        for fact in current:
+            item = fact["metric"][5:] if fact["metric"].startswith("ITEM:") else None
+            predicate = self.item_predicates.get(item)
+            if predicate is None:
+                continue
+            record = state.index.all_by_id[fact["source"]["record_id"]]
+            check = verify_item(predicate, record=record, texts=state.texts, issuer_names=issuer_names(state.entry),
+                                filer_class=state.entry.filer_class, cutoff_ms=state.cutoff,
+                                set_sha256=self.red_flag_set_sha256)
+            out[fact["fact_id"]] = check
+            if not check["verified"]:
+                state.missing.append(f"EVIDENCE_RED_FLAG_UNVERIFIED:{item}:{check['reason']}:{record['accession']}")
+        return out
+
+    def _same_event(self, red_flags) -> dict:
+        """{(record_id, keyword event): verification} of each verified item: the filing's keyword event of the same
+        kind is the same disclosed event and carries the same red flag."""
+        return {(v["record_id"], self.item_predicates[v["item"]]["trigger"]["event"]): v
+                for v in red_flags.values() if v["verified"]}
+
+    def _findings(self, state, current, red_flags):
         severity = self.config.severity
         findings = []
+        # The filing's keyword event of the same kind is the same disclosed event as its verified item: it carries the
+        # item's red flag, so one disclosure gets one class (else a Class 2 block could never expire).
+        same_event = self._same_event(red_flags)
         for fact in current:
             if fact["kind"] != "EVENT" or is_statement(fact["metric"]):
                 continue  # a statement about an event is never a finding (event_statements, review)
+            if fact["fact_id"] in red_flags and not red_flags[fact["fact_id"]]["verified"]:
+                continue  # an item code without its own verified section text is not a finding (IDEA-032 S1)
             if fact["metric"].startswith("ITEM:"):
                 rule = severity["items"].get(fact["metric"][5:])
             elif fact.get("statement") is not None and finding_eligible(fact["statement"]):
@@ -629,10 +666,14 @@ class EvidenceAssessor:
             else:
                 rule = None  # legacy event fact without recorded semantics: kept, never a finding
             if rule:
-                findings.append({"type": fact["metric"], "impact": rule[0], "severity": rule[1],
-                                 "fact_ids": [fact["fact_id"]],
-                                 "sources": [{"accession": fact["source"].get("accession"),
-                                              "record_id": fact["source"].get("record_id")}]})
+                finding = {"type": fact["metric"], "impact": rule[0], "severity": rule[1],
+                           "fact_ids": [fact["fact_id"]],
+                           "sources": [{"accession": fact["source"].get("accession"),
+                                        "record_id": fact["source"].get("record_id")}]}
+                flag = red_flags.get(fact["fact_id"]) or same_event.get((fact["source"].get("record_id"), fact["metric"]))
+                if flag:
+                    finding["red_flag"] = flag
+                findings.append(finding)
         labels = {("GUIDANCE", "LOWER"): "GUIDANCE_LOWERED", ("GUIDANCE", "HIGHER"): "GUIDANCE_RAISED",
                   ("REPORTED_VS_PRIOR_GUIDANCE", "BELOW"): "REPORTED_BELOW_PRIOR_GUIDANCE",
                   ("REPORTED_VS_PRIOR_GUIDANCE", "ABOVE"): "REPORTED_ABOVE_PRIOR_GUIDANCE",
@@ -665,17 +706,20 @@ class EvidenceAssessor:
             unique.append(finding)
         return sorted(unique, key=lambda f: f["finding_id"])
 
-    def _thesis(self, r, state, current, findings, status, unread):
+    def _thesis(self, r, state, current, findings, status, unread, red_flags):
         prior = (r.get("context") or EMPTY_CONTEXT)["thesis"]
         definitions = list(prior["falsifiers"]) if prior else [dict(f) for f in self.config.default_falsifiers]
+        same_event = self._same_event(red_flags)
         is_8k = any(state.index.all_by_id[x]["form"].startswith("8-K") for x in state.current_records)
         types = {f["type"] for f in findings}
         states = []
         for f in definitions:
             kind, fired, basis = f["type"], "UNKNOWN", []
             if kind == "ITEM":
-                hit = [x["fact_id"] for x in current if x["metric"] == f"ITEM:{f['item']}"]
-                fired = "FIRED" if hit else ("NOT_FIRED" if is_8k else "NOT_APPLICABLE")
+                coded = [x["fact_id"] for x in current if x["metric"] == f"ITEM:{f['item']}"]
+                hit = [i for i in coded if i not in red_flags or red_flags[i]["verified"]]
+                # An item code whose own section does not verify is neither a firing nor a clean reading.
+                fired = "FIRED" if hit else "UNKNOWN" if coded else ("NOT_FIRED" if is_8k else "NOT_APPLICABLE")
                 basis = hit
             elif kind == "EVENT":
                 hit = [x["fact_id"] for x in current if x["metric"] == f["event"]]
@@ -692,7 +736,16 @@ class EvidenceAssessor:
                 fired = ("FIRED" if hit else ("UNKNOWN" if unread else "NOT_APPLICABLE") if not has_fact else
                          "NOT_FIRED" if compared else "UNKNOWN")
                 basis = [i for x in hit for i in x["fact_ids"]]
-            states.append({"falsifier_id": f["falsifier_id"], "type": kind, "state": fired, "fact_ids": basis})
+            entry = {"falsifier_id": f["falsifier_id"], "type": kind, "state": fired, "fact_ids": basis}
+            flag = None
+            if kind == "ITEM" and fired == "FIRED" and basis:
+                flag = red_flags.get(basis[0])
+            elif kind == "EVENT" and fired == "FIRED" and basis:
+                fact = state.facts.get(basis[0]) or {}
+                flag = same_event.get(((fact.get("source") or {}).get("record_id"), fact.get("metric")))
+            if flag and flag["verified"]:
+                entry["red_flag"] = flag  # the evidence state latches it with its class (I8)
+            states.append(entry)
         if status != "ASSESSED":
             return None, states
         adverse = any(x["impact"] == "ADVERSE" for x in findings)

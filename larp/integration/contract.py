@@ -17,10 +17,19 @@ profile by `authority(profile)`:
   falsifier exits live or mandatory (IDEA-031 S0); MANDATORY_REDUCTION is a tested capability, not enabled.
 - statement_authority: SHADOW | ENTRY_BLOCK. Default SHADOW: statements pending review are recorded but are
   not an entry veto (IDEA-030 R06).
+- red_flag_authority (IDEA-041, B1, interface I8): {"set_sha256": <RedFlagPredicateSet.v1 file hash>,
+  "enabled": [predicate IDs]}. Absent, every red-flag predicate is SHADOW. An enabled predicate's action is
+  the one its versioned record declares (Class 1 EXIT, Class 2 BLOCK_NEW_BUYS for its block_sessions,
+  Class 3 SHADOW); the profile only enables it, and only for the exact predicate set it names.
+  `red_flag_directives(record, profile)` turns an accepted record's verified red flags into those
+  directives; the session-aware policy applies them (block start, expiry and reset are policy state).
 """
+
+from functools import lru_cache
 
 from larp.contracts import Document
 from larp.intelligence.common import digest
+from larp.intelligence.redflags import load_predicates
 
 SCHEMA = "EvidenceContext.v1"
 FALSIFIER_AUTHORITIES = ("NONE", "SHADOW", "DISCRETIONARY_EXIT", "MANDATORY_REDUCTION")
@@ -37,6 +46,30 @@ class AuthorityError(ValueError):
     """The profile names an authority this build does not implement."""
 
 
+@lru_cache(maxsize=1)
+def red_flag_predicates() -> tuple:
+    """(predicates by id, set sha256) of the committed RedFlagPredicateSet.v1."""
+    return load_predicates()
+
+
+def _red_flag_authority(profile: dict) -> dict:
+    predicates, set_sha = red_flag_predicates()
+    spec = profile.get("red_flag_authority")
+    rights = {pid: "SHADOW" for pid in sorted(predicates)}
+    if spec is None:
+        return {"set_sha256": set_sha, "predicates": rights}
+    if type(spec) is not dict or set(spec) != {"set_sha256", "enabled"} or type(spec["enabled"]) is not list:
+        raise AuthorityError("red_flag_authority must be {set_sha256, enabled}")
+    if spec["set_sha256"] != set_sha:
+        raise AuthorityError("red_flag_authority names a different red-flag predicate set than this build")
+    unknown = sorted(set(map(str, spec["enabled"])) - set(predicates))
+    if unknown or len(set(spec["enabled"])) != len(spec["enabled"]):
+        raise AuthorityError(f"red_flag_authority enables unknown or repeated predicates: {unknown}")
+    for pid in spec["enabled"]:
+        rights[pid] = predicates[pid]["directive"]["kind"]
+    return {"set_sha256": set_sha, "predicates": rights}
+
+
 def authority(profile: dict) -> dict:
     falsifier = profile.get("falsifier_authority") or LEGACY_EVIDENCE_MODE.get(profile.get("evidence_mode"))
     statement = profile.get("statement_authority", "SHADOW")
@@ -48,7 +81,8 @@ def authority(profile: dict) -> dict:
     age = profile.get("evidence_max_age_ms", DEFAULT_MAX_AGE_MS)
     if type(age) is not int or age <= 0:
         raise AuthorityError("evidence_max_age_ms must be a positive integer")
-    return {"falsifier": falsifier, "statement": statement, "max_context_age_ms": age}
+    return {"falsifier": falsifier, "statement": statement, "max_context_age_ms": age,
+            "red_flags": _red_flag_authority(profile)}
 
 
 def context_hash(record: dict) -> str:
@@ -66,11 +100,14 @@ def build_evidence_context(view: dict, state: dict, *, run_id: str, token: str, 
         raise ValueError("Expected the EvidenceView.v1 of this issuer's state")
     findings = []
     for latch in state["unresolved_adverse"]:
-        findings.append({"predicate_id": _predicate(latch["type"]), "finding_id": latch["finding_id"],
-                         "supported": True, "verifier_accepted": True,
-                         "supporting_spans": [s.get("accession") for s in latch.get("sources") or []
-                                              if s.get("accession")] or [latch["result_id"]],
-                         "resolution_rule": latch["resolution_rule"]})
+        finding = {"predicate_id": _predicate(latch["type"]), "finding_id": latch["finding_id"],
+                   "supported": True, "verifier_accepted": True,
+                   "supporting_spans": [s.get("accession") for s in latch.get("sources") or []
+                                        if s.get("accession")] or [latch["result_id"]],
+                   "resolution_rule": latch["resolution_rule"]}
+        if latch.get("red_flag"):
+            finding["red_flag"] = _red_flag_view(latch)
+        findings.append(finding)
     statements = view["statements"]
     gate = view["evidence_gate"]
     record = {
@@ -88,9 +125,56 @@ def build_evidence_context(view: dict, state: dict, *, run_id: str, token: str, 
         "due_reviews": view["due_reviews"], "review_due_ms": view.get("review_due_ms"),
         "thesis_status": view["thesis"],
         "last_rejection": view["last_rejection"],
+        # Only Class 2 (expiring) red-flag latches stand between this issuer and a complete, fresh review. The policy
+        # may treat the name as reviewed once it has counted those blocks out (IDEA-041, B1).
+        "review_complete_excluding_timed_blocks": view.get("evidence_gate_excluding_timed") == "CLEAR",
+        "assessed_until_excluding_timed_ms": view.get("assessed_until_excluding_timed_ms"),
     }
     record["context_hash"] = context_hash(record)
     return record
+
+
+def _red_flag_view(latch: dict) -> dict:
+    flag = latch["red_flag"]
+    return {"predicate_id": flag["predicate_id"], "predicate_version": flag["predicate_version"],
+            "class": flag["class"], "set_sha256": flag["set_sha256"], "item": flag["item"],
+            "accession": flag["accession"], "record_id": flag["record_id"], "form": flag["form"],
+            "amendment": flag["amendment"], "event_original_ms": flag["event_original_ms"],
+            "latched_ms": latch.get("latched_ms"), "span": flag["span"],
+            "affected_periods": flag["affected_periods"]}
+
+
+def red_flag_directives(record: dict, profile: dict) -> list:
+    """Directives for an accepted EvidenceContext.v1 record's verified red flags under the profile's authority.
+
+    One directive per (predicate, accession); only predicates the profile enables for this exact predicate set,
+    with the record's predicate version. SHADOW predicates yield none. Each directive: symbol, issuer_id,
+    predicate_id, predicate_version, class, kind (EXIT | BLOCK_NEW_BUYS), block_sessions, accession, finding_ids,
+    amendment, restarts_block (an original filing restarts a Class 2 block; an 8-K/A never does) and latched_ms.
+    """
+    rights = authority(profile)["red_flags"]["predicates"]
+    predicates, set_sha = red_flag_predicates()
+    out = {}
+    for finding in record.get("falsifier_findings", []):
+        flag = finding.get("red_flag")
+        if type(flag) is not dict or flag.get("set_sha256") != set_sha:
+            continue
+        predicate = predicates.get(flag.get("predicate_id"))
+        kind = rights.get(flag.get("predicate_id"), "SHADOW")
+        if predicate is None or kind == "SHADOW" or flag.get("predicate_version") != predicate["version"] \
+                or flag.get("class") != predicate["class"]:
+            continue
+        key = (flag["predicate_id"], flag["accession"])
+        if key in out:
+            out[key]["finding_ids"].append(finding["finding_id"])
+            continue
+        out[key] = {"symbol": record["token"], "issuer_id": record["issuer_id"],
+                    "predicate_id": flag["predicate_id"], "predicate_version": flag["predicate_version"],
+                    "class": flag["class"], "kind": kind, "block_sessions": predicate["directive"]["block_sessions"],
+                    "accession": flag["accession"], "finding_ids": [finding["finding_id"]],
+                    "amendment": flag["amendment"], "restarts_block": kind == "BLOCK_NEW_BUYS" and not flag["amendment"],
+                    "latched_ms": flag.get("latched_ms")}
+    return [dict(d, finding_ids=sorted(d["finding_ids"])) for _, d in sorted(out.items())]
 
 
 def _ms(snapshot) -> int:
@@ -128,6 +212,10 @@ def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None
         return "MALFORMED"
     if record["status"] == "CLEAR" and (record["falsifier_findings"] or record["statements_pending"]):
         return "INCONSISTENT"
+    timed = record.get("review_complete_excluding_timed_blocks", False)
+    if type(timed) is not bool or (timed and record["status"] != "CLEAR" and any(
+            (f.get("red_flag") or {}).get("class") != 2 for f in record["falsifier_findings"])):
+        return "INCONSISTENT"  # only Class 2 red flags may stand between this record and a clear review
     if run_id is not None and record.get("run_id") != run_id:
         return "WRONG_RUN"
     if profile_hash is not None and record.get("policy_profile_hash") != profile_hash:
@@ -186,7 +274,11 @@ def accept_records(records: list, *, run_id: str, profile_hash: str, now_ms: int
         status = record["status"]
         if status == "CLEAR" and (record["assessed_until_ms"] is None or now >= record["assessed_until_ms"]):
             status = "STALE"
-        accepted[symbol] = dict(record, status=status, review_complete=status == "CLEAR")
+        timed_until = record.get("assessed_until_excluding_timed_ms")
+        timed = (record.get("review_complete_excluding_timed_blocks") is True and type(timed_until) is int
+                 and now < timed_until)
+        accepted[symbol] = dict(record, status=status, review_complete=status == "CLEAR",
+                                review_complete_excluding_timed_blocks=timed)
     return accepted, rejections
 
 

@@ -1,0 +1,662 @@
+{
+ "schema": "RedFlagFixtures.v1",
+ "predicate_set": "config/intelligence/red_flags.v1.json",
+ "provenance": "IDEA-041 AC-3.3, written 2026-10-11 before the test ran. SYNTHETIC: fictitious issuer (Example Semiconductor Corp, placeholder CIK 9900001) and wording written for these checks; it shows paths, not real-world error rates. Written with Claude for evaluation only; never use it to train a model (Anthropic Usage Policy, IDEA-007 §1).",
+ "cutoff": "2026-10-10T00:00:00+00:00",
+ "pass_rule": "Every supported or amended fixture yields exactly one directive of its predicate's kind when the profile enables the predicate; every other fixture yields no directive, no verified red flag and no FIRED item falsifier. With the default (no red_flag_authority) no fixture yields a directive.",
+ "sequences": [
+  {
+   "sequence_id": "RF-CORRECTED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "corrected",
+   "base_fixture": "RF1-4.02-SUPPORTED",
+   "steps": [
+    "assess the supported filing: EXIT directive",
+    "the same accession is revised without the item (metadata items ['8.01'], text without the section); the newer revision's primary document cannot be read: the latch stays and the directive stays",
+    "the newer revision is read completely: the latch resolves (CORRECTED) and no directive remains (A8 re-entry)"
+   ]
+  },
+  {
+   "sequence_id": "RF-CLASS2-TIMED-VIEW",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "timed-view",
+   "base_fixture": "RF2-1.05-SUPPORTED",
+   "steps": [
+    "after the supported Class 2 filing the evidence status is ADVERSE, but review_complete_excluding_timed_blocks is true, so the policy can let the 5-session block expire",
+    "after the supported Class 1 filing review_complete_excluding_timed_blocks is false"
+   ]
+  }
+ ],
+ "fixtures": [
+  {
+   "fixture_id": "RF1-4.02-SUPPORTED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Item code in metadata and the item's own section asserts the issuer's current occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000101",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-UNSUPPORTED-NO-SECTION",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "unsupported",
+   "note": "Item code in metadata only; the filing text has no section for that item.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000102",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:05:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "On October 7, 2026, the Company held its annual meeting of stockholders."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_ITEM_SECTION",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-UNSUPPORTED-HEADING-ONLY",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "unsupported",
+   "note": "The item heading alone (whose title names the event) is not an assertion.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000103",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:10:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "The Company will provide further information in a later filing."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_CONDITION_TEXT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-NEGATED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "negated",
+   "note": "The section states the condition did not occur.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000104",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:15:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "The Audit Committee has not concluded that any previously issued financial statements should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMBIGUOUS",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "ambiguous",
+   "note": "Conditional or hypothetical wording is not an occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000105",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:20:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "The Audit Committee may conclude that previously issued financial statements should no longer be relied upon if the review finds errors."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NOT_ASSERTED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-WRONG-ISSUER",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "wrong-issuer",
+   "note": "The section reports another company's event.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000106",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T21:25:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the audit committee of Example Memory Co., Ltd., an equity-method investee, concluded that its previously issued financial statements should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "THIRD_PARTY",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-STALE",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "stale",
+   "note": "A supported text whose acceptance is older than max_event_age_ms (7 days) at the cutoff.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000107",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-09-25T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMENDED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "amended",
+   "note": "An 8-K/A that still asserts the event is a verified red flag; for Class 2 it never restarts a running block.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000108",
+    "form": "8-K/A",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-09T13:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on October 8, 2026 to provide additional information.",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-SUPPORTED",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "supported",
+   "note": "Item code in metadata and the item's own section asserts the issuer's current occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000109",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "On October 7, 2026, the Company determined that a cybersecurity incident affecting its internal business systems, which it detected on October 3, 2026, was material."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": true
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-UNSUPPORTED-NO-SECTION",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "unsupported",
+   "note": "Item code in metadata only; the filing text has no section for that item.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000110",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:05:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "On October 7, 2026, the Company held its annual meeting of stockholders."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_ITEM_SECTION",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-UNSUPPORTED-HEADING-ONLY",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "unsupported",
+   "note": "The item heading alone (whose title names the event) is not an assertion.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000111",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:10:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "The Company will provide further information in a later filing."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_CONDITION_TEXT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-NEGATED",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "negated",
+   "note": "The section states the condition did not occur.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000112",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:15:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "The Company has not determined that the cybersecurity incident is material and has not experienced a cybersecurity incident affecting its operations."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-AMBIGUOUS",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "ambiguous",
+   "note": "Conditional or hypothetical wording is not an occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000113",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:20:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "A cybersecurity incident could disrupt our operations if our controls fail."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NOT_ASSERTED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-WRONG-ISSUER",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "wrong-issuer",
+   "note": "The section reports another company's event.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000114",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T21:25:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "On October 3, 2026, one of our suppliers detected a cybersecurity incident affecting its own systems."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "THIRD_PARTY",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-STALE",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "stale",
+   "note": "A supported text whose acceptance is older than max_event_age_ms (7 days) at the cutoff.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000115",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-09-25T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "On October 7, 2026, the Company determined that a cybersecurity incident affecting its internal business systems, which it detected on October 3, 2026, was material."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-AMENDED",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "amended",
+   "note": "An 8-K/A that still asserts the event is a verified red flag; for Class 2 it never restarts a running block.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000116",
+    "form": "8-K/A",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-09T13:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on October 8, 2026 to provide additional information.",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "On October 7, 2026, the Company determined that a cybersecurity incident affecting its internal business systems, which it detected on October 3, 2026, was material."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-SUPPORTED",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "supported",
+   "note": "Item code in metadata and the item's own section asserts the issuer's current occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000117",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "On October 7, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment for the third quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": true
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-UNSUPPORTED-NO-SECTION",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "unsupported",
+   "note": "Item code in metadata only; the filing text has no section for that item.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000118",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:05:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "On October 7, 2026, the Company held its annual meeting of stockholders."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_ITEM_SECTION",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-UNSUPPORTED-HEADING-ONLY",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "unsupported",
+   "note": "The item heading alone (whose title names the event) is not an assertion.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000119",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:10:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "The Company will provide further information in a later filing."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_CONDITION_TEXT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-NEGATED",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "negated",
+   "note": "The section states the condition did not occur.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000120",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:15:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "On October 7, 2026, the Company concluded that no material impairment charge is required."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-AMBIGUOUS",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "ambiguous",
+   "note": "Conditional or hypothetical wording is not an occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000121",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:20:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "If market conditions deteriorate, an impairment charge could be required in a future period."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NOT_ASSERTED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-WRONG-ISSUER",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "wrong-issuer",
+   "note": "The section reports another company's event.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000122",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:25:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "On October 7, 2026, Example Memory Co., Ltd., an equity-method investee, recorded a goodwill impairment charge in its own accounts."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "THIRD_PARTY",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-STALE",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "stale",
+   "note": "A supported text whose acceptance is older than max_event_age_ms (7 days) at the cutoff.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000123",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-09-25T21:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "On October 7, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment for the third quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-AMENDED",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "amended",
+   "note": "An 8-K/A that still asserts the event is a verified red flag; for Class 2 it never restarts a running block.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000124",
+    "form": "8-K/A",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-09T13:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on October 8, 2026 to provide additional information.",
+     "Item 2.06 Material Impairments.",
+     "On October 7, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment for the third quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": false
+   }
+  }
+ ]
+}

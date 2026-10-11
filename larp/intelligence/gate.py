@@ -54,7 +54,8 @@ def initial_state(issuer_id: str, policy_profile_hash: str, max_known_facts: int
             "unresolved_adverse": [], "resolved_adverse": [], "statements": {}, "records_seen": {},
             "records_assessed": {},
             "availability": "NONE", "evidence_gate": "UNKNOWN", "gate_reasons": ["NO_ASSESSMENT"],
-            "assessed_until_ms": None, "last_rejection": None, "max_known_facts": max_known_facts,
+            "assessed_until_ms": None, "gate_excluding_timed": "UNKNOWN",
+            "gate_excluding_timed_reasons": ["NO_ASSESSMENT"], "assessed_until_excluding_timed_ms": None, "last_rejection": None, "max_known_facts": max_known_facts,
             "lifecycle": dict(DEFAULT_LIFECYCLE, **(lifecycle_policy or {}))}
 
 
@@ -130,13 +131,19 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     for a in adverse:
         a["source_revisions"] = supporting_revisions(a.get("sources") or []) | a["source_revisions"]
 
-    def latch(finding_id, kind, sources):
+    def latch(finding_id, kind, sources, red_flag=None):
         if finding_id in held:
             return
         held.add(finding_id)
-        adverse.append({"finding_id": finding_id, "type": kind, "result_id": rid, "cutoff_ms": r["cutoff_ms"],
-                        "sources": sources, "source_revisions": supporting_revisions(sources),
-                        "source_resolutions": {}, "resolution_rule": RESOLUTION_RULE})
+        entry = {"finding_id": finding_id, "type": kind, "result_id": rid, "cutoff_ms": r["cutoff_ms"],
+                 "sources": sources, "source_revisions": supporting_revisions(sources),
+                 "source_resolutions": {}, "resolution_rule": RESOLUTION_RULE}
+        if type(red_flag) is dict and red_flag.get("verified") is True:
+            # The verified red-flag predicate (IDEA-041) travels with the latch to the EvidenceContext; the
+            # consumer looks its action up in the predicate record and the profile's authority.
+            entry["red_flag"] = red_flag
+            entry["latched_ms"] = now_ms
+        adverse.append(entry)
 
     # A correction can only be established by a complete assessment of the new version: partial coverage could
     # simply have missed the event (red team S4-B g01).
@@ -239,16 +246,16 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
 
     for finding in r.get("event_findings", []):  # re-verified filer/keyword events, any status
         if finding["impact"] == "ADVERSE":
-            latch(finding["finding_id"], finding["type"], finding.get("sources") or [])
+            latch(finding["finding_id"], finding["type"], finding.get("sources") or [], finding.get("red_flag"))
     if r["status"] == "ASSESSED":
         for finding in r["findings"]:
             if finding["impact"] == "ADVERSE":
-                latch(finding["finding_id"], finding["type"], finding.get("sources") or [])
+                latch(finding["finding_id"], finding["type"], finding.get("sources") or [], finding.get("red_flag"))
         for falsifier in r["falsifiers"]:
             fid = "falsifier:" + digest("larp.intel.fired.v1", {"f": falsifier["falsifier_id"], "r": rid})
             if falsifier["state"] == "FIRED":
                 sources = [{"accession": u["accession"], "record_id": u["record_id"]} for u in r["evidence_used"]]
-                latch(fid, "FALSIFIER_FIRED:" + falsifier["falsifier_id"], sources)
+                latch(fid, "FALSIFIER_FIRED:" + falsifier["falsifier_id"], sources, falsifier.get("red_flag"))
         # Acknowledgment needs an actual statement-history lookup that completed (S4-B g05).
         history_checked = (r.get("coverage") or {}).get("prior_history", {}).get("STATEMENTS") is True
         for s in r.get("event_statements", []):
@@ -277,8 +284,15 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     nxt.update(unresolved_adverse=adverse, resolved_adverse=resolved[-200:], statements=statements,
                records_seen=_bounded(records_seen, keep), records_assessed=_bounded(records_assessed, keep))
     gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete)
+    # The same reading without Class 2 red-flag latches (IDEA-041, B1): their buy block expires after a set number
+    # of sessions, which only the session-aware policy can count. Their latches stay (the finding stays logged), so
+    # the plain gate stays ADVERSE; this view lets the policy tell "only expiring blocks remain" from anything else.
+    untimed = [a for a in adverse if (a.get("red_flag") or {}).get("class") != 2]
+    timed_gate, timed_reasons = _gate(r, untimed, nxt["availability"], statements, complete)
     nxt.update(evidence_gate=gate, gate_reasons=reasons,
-               assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None)
+               assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None,
+               gate_excluding_timed=timed_gate, gate_excluding_timed_reasons=timed_reasons,
+               assessed_until_excluding_timed_ms=r["expiry_ms"] if timed_gate == "CLEAR" else None)
     return "ACCEPT", nxt
 
 
@@ -326,6 +340,12 @@ def consume(state: dict, now_ms: int) -> dict:
     gate, reasons = state["evidence_gate"], list(state["gate_reasons"])
     if gate == "CLEAR" and (state["assessed_until_ms"] is None or now_ms >= state["assessed_until_ms"]):
         gate, reasons = "STALE", ["ASSESSMENT_EXPIRED"]
+    # States written before IDEA-041 have no timed view: they read as UNKNOWN, never as clear.
+    timed, timed_reasons = state.get("gate_excluding_timed", "UNKNOWN"), list(state.get(
+        "gate_excluding_timed_reasons", ["NO_TIMED_VIEW"]))
+    timed_until = state.get("assessed_until_excluding_timed_ms")
+    if timed == "CLEAR" and (timed_until is None or now_ms >= timed_until):
+        timed, timed_reasons = "STALE", ["ASSESSMENT_EXPIRED"]
     due = lifecycle.due_reviews(state["statements"], now_ms)
     by_status = {}
     for s in state["statements"].values():
@@ -336,6 +356,8 @@ def consume(state: dict, now_ms: int) -> dict:
             "availability": state["availability"], "last_rejection": state["last_rejection"],
             "adverse": [{"finding_id": a["finding_id"], "type": a["type"], "resolution_rule": a["resolution_rule"]}
                         for a in state["unresolved_adverse"]],
+            "evidence_gate_excluding_timed": timed, "gate_excluding_timed_reasons": timed_reasons,
+            "assessed_until_excluding_timed_ms": timed_until,
             "statements": {k: sorted(v) for k, v in sorted(by_status.items())},
             "due_reviews": [s["statement_id"] for s in due],
             # When the earliest listed review fell due: fixes the review job's definition (IDEA-033 R15).
