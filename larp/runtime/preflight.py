@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 
 from larp.contracts import ContractError, Document
+from larp.runtime.register import load_register
 from larp.runtime.release import verify_manifest
 
 
@@ -52,6 +53,9 @@ def verify_release(manifest, root):
             or evidence.get('repository') != m.get('repository') or not m.get('services')
             or not m.get('remote_verified')):
         raise ContractError('Recorded registration/build/services evidence is incomplete')
+    # Services list and deviations register (F-61, GAP-62; IDEA-042 item 8): valid and exactly as manifested.
+    if m.get('release_register') != load_register(root):
+        raise ContractError('Release register is missing, invalid or changed since the manifest')
     return m
 
 
@@ -85,7 +89,7 @@ def build_manifest(root, services, registration_evidence=None, operations_config
     files = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in sorted(names)}
     return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit,
         repository=remote, remote_verified=True, services=services,
-        registration_evidence=registration_evidence, files=files,
+        registration_evidence=registration_evidence, files=files, release_register=load_register(root),
         operations_config_sha256=hashlib.sha256(operations_config).hexdigest() if operations_config else None))
 
 

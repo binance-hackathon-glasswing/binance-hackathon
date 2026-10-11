@@ -7,6 +7,7 @@ import unittest
 from larp.contracts import ContractError, Document
 from larp.runtime.operations import validate_config, main
 from larp.runtime.preflight import release_files, verify_release
+from larp.runtime.register import DEVIATIONS, SERVICES, load_register
 
 
 class OperationsTests(unittest.TestCase):
@@ -44,9 +45,13 @@ class OperationsTests(unittest.TestCase):
             path = root/'larp/runtime/operations.py'
             path.parent.mkdir(parents=True)
             path.write_text('# fixture', encoding='utf-8')
+            for name in (SERVICES, DEVIATIONS, 'docs/proposal/proposal_answers.md'):  # IDEA-042 R4
+                (root/name).parent.mkdir(parents=True, exist_ok=True)
+                (root/name).write_bytes((Path(__file__).resolve().parents[2]/name).read_bytes())
             files = {p: hashlib.sha256((root/p).read_bytes()).hexdigest() for p in release_files(root)}
             base = dict(schema='ReleaseManifest.v1', build_id='a'*40, repository='synthetic',
-                        remote_verified=True, services=['synthetic'], files=files)
+                        remote_verified=True, services=['synthetic'], files=files,
+                        release_register=load_register(root))
             with self.assertRaises(ContractError): verify_release(Document.from_dict(base), root)
             base['registration_evidence'] = dict(schema='RegistrationEvidence.v1', evidence_ref='synthetic-only',
                                                  build_id='a'*40, repository='synthetic')

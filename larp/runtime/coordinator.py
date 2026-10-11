@@ -5,6 +5,7 @@ Fixture reducers live in fixtures.py and never qualify a live deployment.
 """
 
 from datetime import datetime,timezone
+import hashlib
 import time
 
 from larp.audit.protocol import build_event,check_orders,event_id_for
@@ -93,7 +94,7 @@ class RecoveryIncomplete(ContractError):
 
 class Coordinator:
     def __init__(self,store,assessor,policy,planner,*,execution,run_id,version_id,profile_hash,address,
-                 context_builder=None,initial_policy_state=None,clock_ms=None,test_rounds=False):
+                 context_builder=None,initial_policy_state=None,clock_ms=None,test_rounds=False,require_version=False):
         self.store,self.assessor,self.policy,self.planner=store,assessor,policy,planner
         self.run_id,self.version_id,self.profile_hash,self.address=run_id,version_id,profile_hash,address
         self.execution=execution
@@ -104,6 +105,9 @@ class Coordinator:
         self.context_builder,self.initial_policy_state=context_builder,initial_policy_state
         # Development and rehearsal rounds are marked in every log the way the kit marks examples (IDEA-042 L5).
         self.test_rounds=test_rounds
+        # Live and rehearsal coordinators commit no execution command until this build's version event is in the
+        # journal (register_version; never-do #5, F-60/F-61; IDEA-042 R5).
+        self.require_version=require_version
 
     def snapshot(self,current,now_ms,context):
         c=current.read()
@@ -147,7 +151,8 @@ class Coordinator:
                 errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         # Runtime history is journal data, not recursively embedded policy context.
         portfolio={k:v for k,v in current.read()['projection'].items()
-                   if k not in ('round_records','closed_rounds','observations','round_health','last_decision_ms','halt')}
+                   if k not in ('round_records','closed_rounds','observations','round_health','last_decision_ms','halt',
+                                'registered_version')}
         updates={}; context_ok=True
         if self.context_builder is None:
             context=dict(projection=portfolio,reservations=current.read()['reservations'],
@@ -170,21 +175,26 @@ class Coordinator:
         if halted:
             # HALT (larp/runtime/supervision.py): no new risk and no signing; the round still runs and is logged.
             errors.append('HALTED:'+','.join(halted))
-        if assessment is not None and context_ok and not halted:
+        registered=(current.read()['projection'].get('registered_version') or {}).get('build_id')
+        unregistered=self.require_version and registered!=self.version_id
+        if unregistered:
+            errors.append('VERSION_NOT_REGISTERED')
+        blocked=bool(halted) or unregistered
+        if assessment is not None and context_ok and not blocked:
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
             except Exception:
                 errors.append('POLICY_REJECTED'); proposal=None
-        # Mandatory risk is called even when there is no policy output (unless halted: nothing may be signed).
+        # Mandatory risk is called even when there is no policy output (unless blocked: nothing may be signed).
         try:
-            if halted:
+            if blocked:
                 raise _Halted()
             plan=self.planner.plan(snapshot,proposal).read()
             if plan['schema']!='PlanResult.v1' or plan['snapshot_id']!=snapshot.snapshot_id:
                 raise ContractError('Mismatched planner result')
         except _Halted:
-            plan=self.empty_plan(snapshot,'HALTED')
+            plan=self.empty_plan(snapshot,'HALTED' if halted else 'VERSION_NOT_REGISTERED')
         except Exception:
             errors.append('PLANNER_UNAVAILABLE')
             plan=self.empty_plan(snapshot,'PLANNER_UNAVAILABLE')
@@ -268,6 +278,25 @@ class Coordinator:
         record_round_health(projection,record['errors'],record.get('decision_ms',record['started_ms']))
         return self.store.commit(batch_for(current,'rejected:'+round_id,
             dict(kind='PLAN_REJECTED',record=record),projection=projection))
+
+    def register_version(self,manifest,now_ms):
+        """Commit the VERSION_REGISTERED event for this build before anything trades (F-60/F-61, never-do #5).
+
+        `manifest` is the verified ReleaseManifest.v1 Document of the running build (larp/runtime/preflight.py)."""
+        m=manifest.read()
+        if m.get('schema')!='ReleaseManifest.v1' or m.get('build_id')!=self.version_id:
+            raise ContractError('Version event needs the manifest of the running build')
+        register=m.get('release_register') or {}
+        if not register.get('services_sha256') or not register.get('deviations_sha256'):
+            raise ContractError('Version event needs the manifested services list and deviations register')
+        version=dict(build_id=m['build_id'],manifest_sha256=hashlib.sha256(manifest.payload).hexdigest(),
+                     repository=m.get('repository'),services_sha256=register['services_sha256'],
+                     deviations_sha256=register['deviations_sha256'],at_ms=now_ms)
+        current=self.store.load(self.run_id)
+        projection=current.read()['projection']
+        projection['registered_version']=version
+        return self.store.commit(batch_for(current,f"version:{m['build_id']}:{now_ms}",
+                                           dict(kind='VERSION_REGISTERED',version=version),projection=projection))
 
     def observe(self,event_id,observation,reducer):
         expected=dict(kind='OBSERVATION',observation=observation.read())
