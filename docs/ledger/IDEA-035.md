@@ -1,7 +1,7 @@
 # IDEA-035 — Team decisions 2026-10-11: PR #7 review answers and pre-live choices
 
 - Date / author: 2026-10-11 / SYZ (team decisions relayed by SYZ; drafted with Claude)
-- Status: open (decision record; items marked "proposal" or "deferred" are not decided)
+- Status: open (decision record; B1 and the B5 stock mix decided later on 2026-10-11, §10; B7–B9 deferred to after system testing)
 - What: the team's answers to Keegan's PR #7 question list (A1–A11 merge questions, B1–B11 team decisions, C1–C8 organiser questions; PR #7 comments of 2026-10-11 06:01 UTC) and to the backlog items GAP-02/03/04/05/35/62. Also records three stock-mix options for the new 80% invested target (§5), a red-flag severity proposal (§6), the features still missing before live trading (§7) and conflicts the decisions leave open (§8).
 - Why: AGENTS.md requires every decision to be written down with an ID before the session ends. Several of these decisions change the submitted proposal and must reach the deviations register (GAP-62).
 - Cost / risk: the 80% target (§5) roughly doubles market exposure compared with the declared sizing (≈ 42–54% gross, plan.md D-12). Several choices are deferred to "after system testing", and every one of them must be settled before final activation (Oct 27–29, F-14), because the registered build runs unchanged for the whole scored run (F-117).
@@ -176,3 +176,114 @@ The team asked to be told about missing features. Items marked **blocks trading*
 | After exploring AWS | Decide D-05 primary + fenced cold standby (GAP-02) | GAP-02 |
 | By Oct 26, before final activation | Confirm the final wallet's new `AI_SEEDS_SECRET` (C7) | GAP-52 |
 | Before enabling S3 Object Lock | Choose retention deliberately (it cannot be shortened later) | B9, GAP-36 |
+
+## 10. Update later on 2026-10-11 (SYZ; drafted with Claude)
+
+### 10.1 Further decisions
+- **B5 stock mix: Option 1** (§5): equal weight, four names at 20% each, chosen by dropping any name with an unresolved red flag and then the most expensive name to trade. After a sale, the freed 20% goes to the fifth name if it is eligible; otherwise it stays in cash. No cap change is needed.
+- **B1 red-flag classes: adopted as proposed in §6.**
+  - Class 1, Item 4.02: sell (`DISCRETIONARY_EXIT`).
+  - Class 2, Items 1.05 and 2.06: no forced sale; no new buys for 5 sessions, then the block expires.
+  - Class 3, statements: SHADOW.
+
+  Still needed before Oct 22: the versioned predicate record, verification fixtures (IDEA-018 §4.4) and the Class 2 expiring entry block, which is new code (`ENTRY_BLOCK` as built has no expiry).
+- **A9: build the `INCOMING:` release.** It is not built yet. `larp/runtime/fixtures.py` `settle` releases the USDT and BNB reservations on FINAL_SUCCESS/FINAL_REVERT but never `INCOMING:<token>`, and no production settlement reducer exists (the runtime still uses a fake execution port). To build, with the execution wiring:
+  - the settlement reducer emits a delta that releases `INCOMING:<token>` when the swap is final (success or revert);
+  - a PostgreSQL regression shows no `INCOMING:` row left after either outcome, and none after recovery replays the same observation.
+
+  Owner Isaac + Keegan (GAP-65).
+- **C1: the team will test whether USDT → BNB auto-converts on the dev wallet.** The test is itself an on-chain transaction from the dev wallet. It must therefore run from committed, pushed code with a decision record and a logged round (never-do #2, #5, #13; F-103). If the wallet holds no BNB, the expected outcome is that the swap cannot be paid for (F-93, Guide p.5): that confirms Q-03, and the organisers must be asked.
+- **Tracks B–H** are signed off (team statement 2026-10-11). The integrator ticked them in the PR description on the reviewers' behalf.
+
+### 10.2 Finding: starting exposure (synthetic simulation, not market data)
+Question: what starting investment maximises wallet equity after two weeks?
+
+**Assumptions:**
+- Measured full-history daily vols NVDA/GOOGL/TSLA/MSFT 2.39/1.95/2.90/1.70% (IDEA-009 D.1).
+- Correlation 0.55, Student-t (df 4) tails, equal weight across four names, 10 daily steps.
+- Premium 8%/yr (and 0%) × β 1.3.
+- Spread per side 5/20/50 bp on entry and exit, gas $0.035 per leg on 200 USDT.
+- The declared 12% drawdown cut to 40% gross.
+
+Run with `numpy==2.5.3` and seed 11, 200,000 paths.
+
+At 8%/yr premium and 5 bp/side:
+
+| Starting gross | Mean | SD | P(< −5%) | P(hit 8% stop) | P(12% cut) | P(> +5%) |
+|---|---|---|---|---|---|---|
+| 40% | −0.01% | 2.3% | 1.6% | 0.2% | 0.0% | 1.8% |
+| 60% | +0.06% | 3.5% | 6.5% | 1.7% | 0.2% | 7.3% |
+| 80% | +0.13% | 4.6% | 12.2% | 5.8% | 0.9% | 13.4% |
+| 90% | +0.16% | 5.2% | 14.9% | 8.9% | 1.6% | 16.3% |
+| 100% | +0.19% | 5.8% | 17.3% | 12.4% | 2.6% | 18.8% |
+
+**Sensitivity to the spread:**
+- At 20 bp/side the mean is about −0.12% at every level: break-even is about 20 bp per side.
+- At 50 bp/side the mean falls as exposure rises (80%: −0.60%).
+- At 0% premium every level loses its costs.
+
+**Reading:**
+- 80%, built on day one with one trade per name, is the most the declared caps allow.
+- 80% → 100% adds about +0.06 pp of mean while doubling P(hit 8% stop), which would stop reinvestment for the rest of the run.
+- The outcome is dominated by the market path (SD about 35 × the mean).
+- The measured bStock spread decides whether being invested has a positive expectation. Measure it before Oct 19 (GAP-50/51).
+- Limits: daily closes only (24/7 trading makes excursions larger), assumed premium, no fitted alpha.
+
+### 10.3 Finding: buy-the-dip and the optional momentum mode
+- **Buy-the-dip is not supported by the evidence for these names.**
+  - Daily reversal is about 0 for large caps in calm markets (Nagel 2012), and short-term reversal does not survive trading costs (Novy-Marx & Velikov 2016).
+  - The negative hourly autocorrelation in the token candles (IDEA-012 §1) is consistent with bid-ask bounce, which a taker pays rather than earns. Those estimates need recomputing after IDEA-022 R1–R3.
+  - IDEA-018 found no overnight reversal (low power), and rejects off-hours dip buying and daily/weekly reversal as negative after costs (IDEA-018 table, line "Overnight/intraday … off-hours dip buying").
+  - A dip rule could be adopted only through a pre-registered EXP with measured costs; none exists.
+- **The momentum mode exists but is off and untested.**
+  - `larp/strategy/policy.py` supports `baseline: "PRICE_MOMENTUM"` (added in `e9e3671` as a price-only comparison arm). It enters only if the 5-session return exceeds +`price_threshold_bps`, and exits a held name if it is below −`price_threshold_bps`.
+  - It is trend-following, the opposite of buy-the-dip. The exit check runs every round, but re-entry waits for a fresh review, so it whipsaws.
+  - No test exercises it, and the only strategy config (`config/strategy/offline-fixture.json`) uses `DECLARED_EXPOSURE`.
+  - It conflicts with the 80% invested goal, because it sits in cash whenever the 5-session trend is down.
+  - Five-session momentum is not supported for large caps; the momentum evidence is for multi-month horizons (Moskowitz, Ooi & Pedersen 2012).
+
+### 10.4 Code used for §10.2
+
+```python
+"""Two-week outcome by starting gross exposure. Assumptions (stated, not measured unless noted):
+daily vols NVDA/GOOGL/TSLA/MSFT 2.39/1.95/2.90/1.70% (IDEA-009 D.1, full history, measured on Ondo history);
+pairwise corr 0.55; Student-t df 4 tails; 10 sessions; equal weight over the 4 names;
+premium p/yr x beta 1.3; spread s bp per side paid on entry and exit; gas 0.035 USD per leg on 200 USDT equity;
+declared ladder: drawdown >= 12% from peak (daily closes) -> cut gross to 40% (paying spread)."""
+import numpy as np
+rng = np.random.default_rng(11)
+N, T = 200_000, 10
+vol = np.array([0.0239, 0.0195, 0.0290, 0.0170])
+C = np.full((4, 4), 0.55); np.fill_diagonal(C, 1)
+L = np.linalg.cholesky(np.outer(vol, vol) * C)
+df = 4
+z = rng.standard_normal((N, T, 4)) @ L.T
+chi = rng.chisquare(df, (N, T, 1)) / df
+shock = z / np.sqrt(chi) * np.sqrt((df - 2) / df)   # unit-variance t
+def run(gross, prem, spread_bp, ladder=True):
+    mu = 1.3 * prem / 252
+    r = mu + shock                                    # daily simple returns per name
+    port = r.mean(axis=2)                             # equal-weight basket
+    gas = 4 * 2 * 0.035 / 200                         # 4 names, entry + exit legs
+    cost_in = gross * spread_bp / 1e4
+    W = np.full(N, 1.0 - cost_in - gas / 2); g = np.full(N, gross)
+    peak = W.copy(); cut = np.zeros(N, bool); hit8 = np.zeros(N, bool); mdd = np.zeros(N)
+    for t in range(T):
+        W = W * (1 + g * port[:, t])
+        peak = np.maximum(peak, W); dd = 1 - W / peak; mdd = np.maximum(mdd, dd)
+        hit8 |= dd >= 0.08
+        if ladder:
+            trig = (dd >= 0.12) & ~cut & (g > 0.40)
+            W[trig] -= (g[trig] - 0.40) * W[trig] * spread_bp / 1e4
+            g[trig] = 0.40; cut |= trig
+    W = W - g * W * spread_bp / 1e4 - gas / 2          # flatten at the end
+    ret = W - 1
+    return ret.mean(), ret.std(), np.median(ret), (ret < -0.05).mean(), hit8.mean(), cut.mean(), np.mean(np.log(W)), (ret > 0.05).mean()
+print("prem  spread  gross | mean%  sd%  median%  P(<-5%)  P(hit 8% stop)  P(12% forced cut)  E[log W] bp  P(>+5%)")
+for prem in (0.08, 0.0):
+    for sp in (5, 20, 50):
+        for g in (0.4, 0.6, 0.8, 0.9, 1.0):
+            m, s, med, pl, h8, c12, el, pw = run(g, prem, sp)
+            print(f"{prem:4.0%} {sp:4d}bp  {g:4.0%} | {m*100:+.2f}  {s*100:.1f}  {med*100:+.2f}   {pl:5.1%}    {h8:5.1%}          {c12:5.1%}         {el*1e4:+6.1f}    {pw:5.1%}")
+        print()
+```
