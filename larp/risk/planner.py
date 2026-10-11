@@ -131,6 +131,13 @@ def plan(snapshot, proposal_or_none):
     result["worst_case_gross_units"] = None if unvalued else ceil(gross)
     result["known_gross_units"] = ceil(gross)
     result["available_cash_units"] = max(0, ledger["cash_units"] - reserved_cash)
+    # Hard lines start an obligation; crossing back below the trigger does not complete it.
+    # This state is committed even on blocked rounds and restored independently of policy output.
+    trim_state = r.get("cap_trims", {})
+    name_trims = set(trim_state.get("names", [])) & set(held)
+    gross_trim = bool(trim_state.get("gross", False)) or gross > safe_equity * trim_gross
+    if not unvalued and gross <= safe_equity * gross_limit:
+        gross_trim = False
     cap_bounds = {}
     reasons = {}
     held_names = sorted(held)
@@ -143,13 +150,18 @@ def plan(snapshot, proposal_or_none):
             continue
         cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
+        operating_cap = floor(fraction(p["operating_name_weight"]) * safe_equity
+                              * 10**m["decimals"] / m["price_units"])
         if qty + pending_buy.get(symbol, 0) > cap:
+            name_trims.add(symbol)
+        if qty + pending_buy.get(symbol, 0) <= operating_cap:
+            name_trims.discard(symbol)
+        if symbol in name_trims:
             reason.append("POSITION_CAP")
-            cap = floor(fraction(p["operating_name_weight"]) * safe_equity
-                        * 10**m["decimals"] / m["price_units"])
+            cap = operating_cap
         else:
             cap = qty
-        if gross > safe_equity * trim_gross:
+        if gross_trim and gross > safe_equity * gross_limit:
             cap = min(cap, floor(Fraction(qty) * safe_equity * gross_limit / gross))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
         if index >= 4:
@@ -168,6 +180,8 @@ def plan(snapshot, proposal_or_none):
             result["requirements"].append({"symbol": symbol, "held_units": qty,
                                            "max_units": cap, "remaining_sell_units": qty - cap,
                                            "reasons": reason, "status": "PENDING"})
+    if "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r:
+        r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim}
     # The nonce simplification also ensures pending trades cannot allocate twice.
     global_blocks = []
     for gate in ("integrity_ok", "journal_ok", "ownership_ok", "clock_ok"):

@@ -125,3 +125,17 @@ Otherwise the name gets `KEEP_QUANTITY`. The planner is unchanged: buy capacity 
 - a held name resized even at or above 20% → P05 and P14 fail.
 
 A first batch of mutations misreported because the M8 and M9 edits had the same file size and were written within the same second, so Python reused stale bytecode. Rerun individually, with a fresh write, each mutation was caught as listed.
+
+## 6. R01 — Retain triggered trims across settlement (Isaac/Codex, 2026-10-11)
+
+Review of PR #7 at `0ad5426` reproduced premature completion: a 92% gross book sells one child and stops near 89%; a 26% position with a 6 USDT child cap stops near 23%. Each round rechecks the hard trigger instead of retaining the obligation to reach the operating target. Existing P06/P07 check initial bounds only.
+
+Design: persist active name/gross trim latches in the planner's `risk_state`, which Coordinator already commits and ContextBuilder restores. A breached hard line starts the latch; subsequent rounds re-evaluate reductions against current safe equity until the operating target is satisfied. Preserve a latch when valuation is incomplete; clear it on observed satisfaction, including a flat position. No policy proposal is required for continued reductions. Existing execution barriers remain binding; no live activation.
+
+Prospective acceptance (before running changed decision code):
+- `tests/strategy/test_trim_replanning.py`: real reservation/settlement reducer and serialized risk-state reload retain gross reductions below 90% through completion at 80%, and capped per-name reductions below 25% through completion at 20%.
+- Untouched drift below hard lines creates no reductions. An integrity block or missing mark cannot erase an outstanding name trim.
+- Existing strategy/risk tests and stored golden traces pass unchanged. Profiles without hard-line fields retain their historical output shape.
+- Commit and push the decision code before running it. Latest Linux runtime/infrastructure CI passes. Tests use synthetic ports only; no credentials, network sources, wallet or audit uploads.
+
+Verification: pending the committed/pushed implementation and test run.
