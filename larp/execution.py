@@ -12,6 +12,7 @@ import re
 from typing import Protocol
 
 USDT = "0x55d398326f99059ff775485246999027b3197955"
+NATIVE_BNB = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 BSTOCKS = frozenset({
     "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
     "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
@@ -74,6 +75,7 @@ class Intent:
     max_recovery_probes: int = 8
     probe_interval: int = 3
     timeout: int = 120
+    kind: str = "BSTOCK_TRADE"
 
     @property
     def key(self):
@@ -90,8 +92,12 @@ class Intent:
             address(value)
         if self.chain_id != 56 or type(self.chain_id) is not int:
             raise Blocked("only chain 56")
-        if not ((self.pay_token == USDT and self.receive_token in BSTOCKS)
-                or (self.receive_token == USDT and self.pay_token in BSTOCKS)):
+        trade = (self.kind == "BSTOCK_TRADE" and
+                 ((self.pay_token == USDT and self.receive_token in BSTOCKS)
+                  or (self.receive_token == USDT and self.pay_token in BSTOCKS)))
+        gas_top_up = (self.kind == "GAS_TOP_UP" and self.pay_token == USDT
+                      and self.receive_token == NATIVE_BNB)
+        if not (trade or gas_top_up):
             raise Blocked("unsupported economic action")
         for value in (self.amount, self.minimum_output, self.valid_until, self.max_gas,
                       self.max_gas_price, self.gas_budget, self.max_prepare_probes,

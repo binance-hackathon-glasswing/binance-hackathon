@@ -25,7 +25,19 @@ def cycle(port, sizes, symbols):
                 # Quoted net loss includes any fees already reflected in received amounts; gas is separate.
                 proceeds = Decimal(sell['quote_measurement']['receive_units']) / 10**18
                 item['quoted_roundtrip_bps'] = str((size - proceeds) * 10000 / size)
-                item['gas_estimate_status'] = 'NOT_ESTIMATED_BEFORE_APPROVAL; quoted gas is not an executable estimate'
+                item['gas_estimates'] = {}
+                for side, observation in (('BUY', buy), ('SELL', sell)):
+                    tx = observation['quote_measurement']['unsigned_transaction']
+                    try:
+                        estimate = port.client.request('POST', 'pre-transaction/gas-limit', dict(
+                            binanceChainId='56', evmTx={'from': port.wallet, 'to': tx['to'],
+                            'data': tx['data'], 'value': str(tx['value'])}))
+                        item['gas_estimates'][side] = dict(status='OBSERVED', gas_limit=single(estimate)['gasLimit'],
+                                                          artifact_sha256=estimate['artifact_sha256'])
+                    except Unavailable as e:
+                        item['gas_estimates'][side] = dict(status='UNAVAILABLE', reason=str(e))
+                        if str(e) in ('compliance_restriction', 'authentication_error', 'rate_limited'):
+                            raise
                 item['status'] = 'MEASURED_NONEXECUTABLE'
             except Unavailable as e:
                 item.update(status='UNAVAILABLE', reason=str(e))
