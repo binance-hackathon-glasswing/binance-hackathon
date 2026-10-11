@@ -1,7 +1,7 @@
 # IDEA-042 — Deployment build record: runtime, hosting and integration (Keegan)
 
 - Date / author: 2026-10-11 / Keegan (drafted with Claude)
-- Status: open (item 1 complete: B1–B6 PASS, local and Linux CI; items 2–10 not started)
+- Status: open (item 1 complete: B1–B6 PASS, local and Linux CI; items 3, 4, 5 and 8 criteria written, in progress; items 2, 6, 7, 9 and 10 not started)
 - What: Keegan's part of the deployment build, prompt [09-runtime-deployment](../build/09-runtime-deployment.prompt.txt) under the common brief [DEPLOYMENT_BUILD.md](../build/DEPLOYMENT_BUILD.md) ([IDEA-038](IDEA-038.md)): reconciled baseline, settlement and execution wiring, official ai-seeds logging, live replay, restart/HALT, hourly anchoring, hosting, release/manifest/deviations, final-wallet switch, integration and the DR checklist evidence.
 - Branch: `codex/deploy-runtime`, cut from `codex/deployment-prompts` (`e4ebff6`, the commit that adds the brief; PR #12 still open), with `origin/codex/engine-foundation` (`e8658ba`) merged in by an ordinary merge (`b583059`). Reviewer: Isaac.
 - Decisions that govern: [IDEA-035](IDEA-035.md) and [IDEA-037](IDEA-037.md); where main's `a21d034` differs, those govern (IDEA-035 A11).
@@ -50,3 +50,50 @@ Criteria committed and pushed at `aaad51b` before any covered code ran.
 2. **I3:** the payload is Keith's intent plus `decision_id`, `expires_ms`, `amount` and an optional `purpose`; Isaac publishes the mapping to `Intent.validate`. A `GAS_TOPUP` intent passes I3 today, but `check_orders` (audit) and `Intent.validate` (execution) still refuse BNB; both narrow exceptions are item 3 and prompt 06.
 3. **Logging of unsent intents:** a `NOT_SUBMITTED` intent still appears in the round's `orders`. Item 3 derives `orders` only from executed intents (DR-07).
 4. **Gas top-up accounting:** `advance_accounting` has no BNB position, so a `GAS_TOPUP` fill cannot settle yet; Keith (prompt 07, B11) and Keegan (item 2) to agree the accounting form.
+
+## 2. Items 3, 4, 5 and 8 — prospective criteria (written 2026-10-11, before running anything they cover)
+
+Authorized by the user on 2026-10-11 ("continue with items 3, 4, 5 and 8 … push to a PR to engine foundation and ensure that CI passes each time"). Work is pushed to PR #13 (`codex/deploy-runtime` → `codex/engine-foundation`, draft); every push waits for green CI before the next step. Synthetic fixtures only: no secret, signing, wallet, organiser upload or live source.
+
+### 2.1 Item 3 — official ai-seeds round logging (DR-07, GAP-46)
+
+Interpretation recorded before building: prompt 09 says `orders` are "derived only from executed intents". The kit defines `orders` as what the code "finally decided to place this round (after risk checks …)" (F-99), and its reference code logs an aborted order **without** `tx_hash`, with the reason in `output` (participant-kit.md, conventions after L14). So `orders` lists the intents committed as execution requests: each broadcast swap carries its `tx_hash`, and an intent that never reached the chain is logged without one, with its reason in `output.aborted`. Proposals, rejected plans and approvals are never orders.
+
+- **L1 · content.** `input` holds `version_id`, `round_id`, the decision IDs, the request, the complete assessment including its `model_io` (every model request and response and every tool call, so system prompt, tool definitions and context are in the log) and the policy input. `cot` is the assessment's provider reasoning summaries in order (`model_io.cot`) when a model ran. Otherwise it is an explicit statement beginning `No model call this round.` that names the deterministic path (Q-16, F-106 (a)). `output` holds status, errors, the plan and the policy output.
+- **L2 · orders.** `orders` are the round's committed intents: BUY `amount` = USDT paid, SELL `amount` = tokens sold (A10). Every broadcast swap, including a reverted one, carries its `tx_hash`. An intent that ended `NOT_SUBMITTED` has no `tx_hash` and appears in `output.aborted` with its reason. A round with no committed intent logs `orders: []`. An approval never appears.
+- **L3 · one log per round on every path.** Each of these closes with exactly one audit event with non-empty `input`/`cot`/`output`: hold; assessment unavailable; context unavailable; planner unavailable; plan invalid; commit rejected; interrupted round closed by recovery; executed round; gas top-up round.
+- **L4 · gas top-up (I7, B11).** `check_orders` accepts `symbol: "BNB"` only in an event whose `round_kind` is `GAS_TOPUP`, and then only as exactly one BUY. That round's `cot` says it is a gas top-up. A BNB order in a trade round is refused at planning (`PLAN_INVALID`) and by `verify_event`. Events without `round_kind` keep their exact bytes (no change to existing records).
+- **L5 · test rounds marked.** A coordinator constructed for development or rehearsal (`test_rounds=True`) puts `"example": true` in every log's `input` (kit convention). Without the flag nothing is added.
+- **L6 · size limits.** A round whose log exceeds the protocol budget still closes with exactly one log (the existing deterministic fallback with the full record's hash) and commits no command.
+- **L7 · delivery proof.** `delivery_status(run_id)` reports an event `DELIVERED` only when every one of its chunks is `ACK` with a stored acknowledgement. A lost ACK resends the same event ID and bytes and then reports `DELIVERED`. A 4xx response leaves the event `FAILED` (visible). An empty outbox reports zero pending as health only, and lists no event as delivered without ACK rows.
+- **L8 · no fill without a log.** Every tx hash of a FILL or REVERT settled in a round is mapped to that round's audit event (`swap_owners`).
+
+### 2.2 Item 4 — live replay (DR-19, IDEA-035 A2)
+
+- **P1 · recorded ports.** `RecordedPorts` replays a `ContextBuilder` round from its journal record alone: market, calendar, health and series come from the round's recorded policy input, and no live port is called (the live ports raise if touched). A recorded `CONTEXT_UNAVAILABLE` round re-raises with the same recorded cause, so the replayed batch is identical.
+- **P2 · MANDATORY_REDUCTION replay.** A MANDATORY_REDUCTION round with its execution command, reservations, broadcast and FILL observations (`ExecutionBridge` + `settle`) and its close replays into an empty store to the same verified head (the regression IDEA-035 A2 still lists).
+- **P3 · a rehearsal day.** At least five rounds with a SHADOW adverse finding, a MANDATORY_REDUCTION round settled by observations, a context-failure round and holds, using ports whose answers change from round to round and which fail after the run, replay to the identical head with recorded ports only.
+- **P4 · tampering is detected.** Changing one recorded market value in a copy of the journal makes the replayed head differ from the original, so `verify(anchored_head=…)` refuses it.
+
+### 2.3 Item 5 — supervisor restart and autonomous HALT (DR-13, C5)
+
+Design note: the supervisor restarts the same process on the same host only after systemd has ended the previous one (`KillMode=control-group`), so the restarted process keeps the run's owner epoch. Epoch takeover stays reserved for standby promotion, which remains disabled (GAP-02). No human action is part of restart or HALT (F-114, never-do #1).
+
+- **H1 · restart incident and fixed version.** Process sessions are durable. A start after an unclean end commits exactly one `INCIDENT` journal event of kind `RESTART`, naming the previous session and the build. A clean restart commits none. A start whose build differs from the run's registered build is refused.
+- **H2 · supervisor unit.** `deploy/systemd/larp-runtime.service` runs the release preflight before every start and restarts always with a fixed delay. It has no start limit that would leave the agent stopped, no manual step, and the same hardening as the archive unit. A test checks the directives.
+- **H3 · autonomous HALT triggers.** A guard evaluated before each round commits a `HALT` journal event, with an incident reason, on any of: journal integrity failure; a decision clock behind the last committed decision time; an audit delivery deadline breach; N consecutive failed rounds (N from configuration).
+- **H4 · HALT effect.** While halted, every round still runs and is logged (no orders, error `HALTED:<reason>`). No command or reservation is committed, and `store.command()` refuses every pending command (the signing gate).
+- **H5 · automatic clearing only.** Integrity and clock HALTs are latched for the run. A delivery-deadline HALT clears automatically once no overdue event remains unacknowledged. A repeated-failure HALT clears after the configured number of consecutive successful rounds. Each clear is a journal event. Nothing clears by elapsed time alone or by hand.
+- **H6 · replay.** HALT, clear and incident events replay to the same head.
+
+### 2.4 Item 8 — release, manifest, services and deviations (DR-18, GAP-62; draft due Oct 19)
+
+- **R1 · services list (F-61).** `config/release/services.v1.json` lists every principal model and data service the build may call (provider, purpose, scope, terms reference, status). The B8 assessor model is listed as pending with both candidates and the deterministic fallback. A validator refuses missing fields.
+- **R2 · deviations register.** `config/release/deviations.v1.json` has one row per deviation from the submitted proposal decided so far (IDEA-035 §2–§5, IDEA-037, plan.md D-08/D-09/D-11 and GAP-51). Each row has the declared text quoted verbatim from `docs/proposal/proposal_answers.md`, the v1.0 behaviour, the reason and evidence IDs. A test checks every quote against the proposal file and every evidence ID against the repository. Rows from IDEA-039–041 are added when those records exist.
+- **R3 · one source.** plan.md §6.5 shows the register as rendered by `tools/render_deviations.py`; a test fails on drift.
+- **R4 · manifest.** `build_manifest` embeds the services list and the deviations register with their hashes. Release preflight refuses a manifest whose register or services list is missing or invalid.
+- **R5 · version event before trading.** `Coordinator.register_version` commits a `VERSION_REGISTERED` journal event (build ID, manifest, services and deviations hashes). A coordinator constructed with `require_version=True` commits no execution command unless the registered build equals its `version_id`. Replay supports the event.
+
+### 2.5 Results
+
+NOT RUN at the time of writing (criteria commit).
