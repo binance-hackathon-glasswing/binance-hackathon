@@ -13,7 +13,8 @@ class IntegratedRuntime(DatabaseCase):
     def coordinator(self,assessor=None,policy=None):
         self.planner=FakePlanner()
         return Coordinator(self.store,assessor or FakeAssessor(),policy or FakePolicy(),self.planner,
-                           execution=FakeExecution(),run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40)
+                           execution=FakeExecution(),run_id='run',version_id='synthetic',profile_hash='a'*64,address='0x'+'1'*40,
+                           clock_ms=lambda:1791590400000)
 
     def test_restartable_round_settlement_audit_backup_and_exact_replay(self):
         coordinator=self.coordinator(); now=1791590400000

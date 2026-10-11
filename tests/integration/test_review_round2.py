@@ -38,7 +38,7 @@ class Base(DatabaseCase):
     def runtime(self,planner=FakePlanner):
         self.planner=planner()
         return Coordinator(self.store,FakeAssessor(),FakePolicy(),self.planner,execution=FakeExecution(),
-            run_id='run',version_id='synthetic',profile_hash='a'*64,address=ADDRESS)
+            run_id='run',version_id='synthetic',profile_hash='a'*64,address=ADDRESS,clock_ms=lambda:NOW)
 
     def assert_replay(self,planner=FakePlanner):
         journal=self.store.journal('run')
@@ -270,7 +270,8 @@ class RunScopedEventIds(Base):
         with self.store.transaction() as db: db.execute('TRUNCATE runs CASCADE')
         self.store.initialize('run','wallet',56,doc(INITIAL))
         self.epoch=self.store.takeover('run',1,offline=True)
-        self.runtime().start('entry',request('HOLD',job='rehearsal-2'),NOW+60000)
+        runtime=self.runtime(); runtime.clock=lambda:NOW+60000
+        runtime.start('entry',request('HOLD',job='rehearsal-2'),NOW+60000)
         [second]=self.audits()
         self.assertNotEqual(first['event_id'],second['event_id'])
         self.assertTrue(EVENT_ID.fullmatch(second['event_id']))

@@ -46,8 +46,14 @@ def assessment_result(document,request,now_ms):
     for key in ('job_id','run_id','issuer_id','context_hash','policy_profile_hash'):
         if a.get(key)!=r.get(key):
             raise ContractError('Assessment context mismatch')
-    if a.get('schema')!='AssessmentResult.v1' or type(a['expiry_ms']) is not int or a['expiry_ms']<=now_ms:
+    # v2 is the evidence producer (IDEA-031); v1 remains for the synthetic runtime fixtures.
+    if a.get('schema') not in ('AssessmentResult.v1','AssessmentResult.v2') or type(a['expiry_ms']) is not int or a['expiry_ms']<=now_ms:
         raise ContractError('Expired or malformed assessment')
+    if a.get('schema') == 'AssessmentResult.v2':
+        if (any(type(a.get(k)) is not int or a[k]<0 for k in ('cutoff_ms','started_ms','completed_ms'))
+            or a['cutoff_ms']!=r['cutoff_ms']
+            or not a['cutoff_ms']<=a['started_ms']<=a['completed_ms']<=now_ms):
+            raise ContractError('Future or mismatched assessment timestamps')
     if {'orders','side','targets','buy','sell'} & {key.lower() for key in a}:
         raise ContractError('Assessment cannot grant trade authority')
     for key in ('model_hash','prompt_hash','rationale','model_io'):

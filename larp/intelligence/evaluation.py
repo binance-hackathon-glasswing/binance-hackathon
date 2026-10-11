@@ -1,11 +1,19 @@
-"""Synthetic evaluation: verified-extraction baseline (0 tool calls) vs bounded agent (<= 6).
+"""Synthetic evaluation of the evidence path (IDEA-025 §5, corrected by IDEA-031 AC-E01..E03).
 
-Metrics (IDEA-025 §5): supporting-span accuracy, numerical correctness, unsupported-claim
-acceptance, relevant-event recall, abstention recall / false abstention, stale-result
-rejection, tool budget and elapsed time, plus comparison accuracy (novelty labels, findings,
-falsifier states, thesis status and status) for the baseline-vs-agent comparison.
+Metrics: supporting-span accuracy, numerical correctness and PRECISION (every numerical claim the result
+emits counts; extra or wrong ones are false positives), event recall and PRECISION, statement-class
+precision/recall by assertion (occurrence, announced future, attributed report, forecast, conditional risk),
+unsupported-claim acceptance, abstention recall / false abstention, coverage completeness, error types
+(rejected-claim reasons, missingness codes), stale-result rejection, tool budget and latency. Precision is
+computed only on cases whose labels are marked exhaustive: without exhaustive labels an extra output
+cannot be called wrong.
 
-Thresholds are read from config/intelligence/eval_thresholds.v1.json, frozen before any run.
+Comparisons: `retrieval_ablation` is the same deterministic rule model with 6 tool calls versus 0; it
+measures retrieval/comparison value on designed fixtures and is NOT a test of LLM value (IDEA-030 R08).
+`model_vs_deterministic` runs both arms on identical inputs and budgets, only with an authorised
+no-additional-cost model; otherwise NOT_RUN. A scripted fake exercises the harness only.
+
+Thresholds are read from config/intelligence/eval_thresholds.v2.json, frozen before any run.
 Results describe the synthetic pack only: they are not evidence about real filings, model
 quality on live data or trading performance.
 
@@ -36,7 +44,7 @@ def _context(world, case):
     return prior_thesis(world.config, case["issuer"])
 
 
-def run_case(case: dict, variant: str) -> dict:
+def run_case(case: dict, variant: str, model_factory=None) -> dict:
     world = build_world(case["filings"])
     if case.get("delete_artifact"):
         key, name = case["delete_artifact"]
@@ -51,7 +59,7 @@ def run_case(case: dict, variant: str) -> dict:
         tampered = request.read()
         tampered["context_hash"] = "f" * 64
         request = Document.from_dict(tampered)
-    model = make_model(world, case["model"])
+    model = model_factory(world) if model_factory is not None else make_model(world, case["model"])
     started = time.perf_counter_ns()
     result_doc = world.assessor(model).assess(request)
     wall_us = (time.perf_counter_ns() - started) // 1000
@@ -93,6 +101,10 @@ def score(runs: list) -> dict:
     abst_hit = abst_total = false_abst = assessed_total = 0
     probes_rejected = probes_total = comp_ok = comp_total = 0
     max_calls = max_elapsed = 0
+    num_tp = num_fp = ev_tp = ev_fp = fd_tp = fd_fp = 0
+    st = {}  # assertion -> [tp, fp, fn]
+    complete = total_assessed = 0
+    errors, latencies = {}, []
     for run in runs:
         labels, result = run["case"]["labels"], run["result"]
         claims = result.get("claims", [])
@@ -115,6 +127,43 @@ def score(runs: list) -> dict:
             if claim["kind"] != "EVENT" and _key(claim) in keys:
                 num_total += 1
                 num_ok += any(_key(w) == _key(claim) and _value(w) == _value(claim) for w in expected_facts)
+        latencies.append((result.get("budget_used") or {}).get("elapsed_ms") or 0)
+        for r in result.get("rejected_claims", []):
+            errors[f"rejected:{r['reason'].split(':')[0]}"] = errors.get(f"rejected:{r['reason'].split(':')[0]}", 0) + 1
+        for m in result.get("missingness", []):
+            errors[f"missing:{m.split(':')[0]}"] = errors.get(f"missing:{m.split(':')[0]}", 0) + 1
+        if result["status"] == "ASSESSED":
+            total_assessed += 1
+            complete += (result.get("coverage") or {}).get("complete") is True
+        if labels.get("exhaustive"):
+            unmatched = list(expected_facts)  # multiset: a repeated correct claim matches one label only
+            for claim in (c for c in claims if c["kind"] != "EVENT"):
+                match = next((w for w in unmatched if _key(w) == _key(claim) and _value(w) == _value(claim)), None)
+                if match is not None:
+                    unmatched.remove(match)
+                    num_tp += 1
+                else:
+                    num_fp += 1
+            wanted_findings = set(labels.get("findings", []))
+            found_types = [f["type"] for f in result.get("findings", []) + result.get("event_findings", [])]
+            found_types = sorted(set(found_types))
+            fd_tp += sum(1 for t in found_types if t in wanted_findings)
+            fd_fp += sum(1 for t in found_types if t not in wanted_findings)
+            wanted = set(labels.get("events", []))
+            emitted = {c["metric"] for c in claims if c["kind"] == "EVENT" and not c["metric"].startswith("STATEMENT:")}
+            ev_tp, ev_fp = ev_tp + len(emitted & wanted), ev_fp + len(emitted - wanted)
+            expected_st = [tuple(x) for x in labels.get("statements", [])]
+            got_st = [(s_["event"], (s_.get("semantics") or {}).get("assertion")) for s_ in result.get("event_statements", [])]
+            remaining = list(got_st)
+            for want in expected_st:
+                row = st.setdefault(want[1], [0, 0, 0])
+                if want in remaining:
+                    remaining.remove(want)
+                    row[0] += 1
+                else:
+                    row[2] += 1
+            for extra in remaining:
+                st.setdefault(extra[1], [0, 0, 0])[1] += 1
         if labels.get("planted"):
             planted += labels["planted"]
             planted_values = {Fraction(v) for v in labels.get("planted_values", [])}
@@ -141,7 +190,18 @@ def score(runs: list) -> dict:
         probes_total += len(run["probes"])
         probes_rejected += sum(1 for p in run["probes"] if p != "ACCEPT")
     ratio = lambda a, b: frac(Fraction(a, b)) if b else None
-    return {"span_accuracy": ratio(span_hits, span_total), "numerical_correctness": ratio(num_ok, num_total),
+    st_tp, st_fp, st_fn = (sum(v[i] for v in st.values()) for i in range(3))
+    latencies.sort()
+    return {"numerical_precision": ratio(num_tp, num_tp + num_fp), "event_precision": ratio(ev_tp, ev_tp + ev_fp),
+            "finding_precision": ratio(fd_tp, fd_tp + fd_fp),
+            "statement_precision": ratio(st_tp, st_tp + st_fp), "statement_recall": ratio(st_tp, st_tp + st_fn),
+            "statement_classes": {k: {"tp": v[0], "fp": v[1], "fn": v[2]} for k, v in sorted(st.items())},
+            "coverage_complete": ratio(complete, total_assessed), "error_types": dict(sorted(errors.items())),
+            "latency_ms": {"min": latencies[0] if latencies else None, "median": latencies[len(latencies) // 2]
+                           if latencies else None, "max": latencies[-1] if latencies else None,
+                           "basis": "simulated model latency on the fake clock plus tool time"},
+            "false_positives": {"numerical": num_fp, "events": ev_fp, "statements": st_fp, "findings": fd_fp},
+            "span_accuracy": ratio(span_hits, span_total), "numerical_correctness": ratio(num_ok, num_total),
             "unsupported_acceptance": ratio(planted_accepted, planted), "event_recall": ratio(events_hit, events_total),
             "abstention_recall": ratio(abst_hit, abst_total), "false_abstention": ratio(false_abst, assessed_total),
             "stale_rejection": ratio(probes_rejected, probes_total), "comparison_accuracy": ratio(comp_ok, comp_total),
@@ -159,7 +219,7 @@ def _check(name, value, threshold, kind):
     return {"metric": name, "value": value, "threshold": threshold, "pass": v >= t if kind == "min" else v <= t}
 
 
-def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v1.json") -> dict:
+def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v2.json", model_arm: dict | None = None) -> dict:
     raw = thresholds_path.read_bytes()
     thresholds = json.loads(raw.decode("utf-8"))
     runs = {"baseline": [], "agent": []}
@@ -178,7 +238,7 @@ def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v1.json") -> dict:
     for name, threshold in thresholds["baseline"].items():
         metric, kind = name.rsplit("__", 1)
         checks.append(dict(_check(metric, b[metric], threshold, kind), variant="baseline"))
-    comp = thresholds["comparison"]
+    comp = thresholds["retrieval_ablation"]
     gain = Fraction(*a["comparison_accuracy"]) - Fraction(*b["comparison_accuracy"])
     if a["comparison_expectations"] < comp["min_expectations"]:
         verdict = "INCONCLUSIVE"
@@ -186,13 +246,16 @@ def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v1.json") -> dict:
         verdict = "SUPPORTED_ON_SYNTHETIC_PACK"
     else:
         verdict = "NOT_SUPPORTED"
+    llm = _model_vs_deterministic(model_arm)
     wall = sorted(r["wall_us"] for items in runs.values() for r in items)
     return {
         "schema": "IntelligenceEvalReport.v1", "synthetic": True, "pack_digest": pack_digest(),
         "thresholds_sha256": sha256_hex(raw), "metrics": metrics, "checks": checks,
         "acceptance": "PASS" if all(c["pass"] for c in checks) else "FAIL",
         "comparison": {"metric": comp["metric"], "agent": a["comparison_accuracy"], "baseline": b["comparison_accuracy"],
-                       "gain": frac(gain), "min_gain": comp["min_gain"], "verdict": verdict},
+                       "gain": frac(gain), "min_gain": comp["min_gain"], "verdict": verdict,
+                       "kind": "RETRIEVAL_ABLATION_NOT_LLM_VALUE", "note": comp["note"]},
+        "model_vs_deterministic": llm,
         "wall_clock_us": {"min": wall[0], "median": wall[len(wall) // 2], "max": wall[-1],
                           "note": "measured locally on the test host; simulated model latencies are on the fake clock"},
         "cases": [{"case_id": r["case"]["case_id"], "variant": r["variant"], "expected": r["case"]["labels"]["status"],
@@ -203,6 +266,22 @@ def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v1.json") -> dict:
                   for items in runs.values() for r in items],
         "note": "Synthetic pack only; not evidence about real filings, live model behaviour or trading results.",
     }
+
+
+def _model_vs_deterministic(model_arm: dict | None) -> dict:
+    """Same cases, same 6-tool budget, deterministic rule model versus `model_arm["factory"](world)`."""
+    if model_arm is None:
+        return {"status": "NOT_RUN", "reason": "NO_AUTHORISED_NO_COST_MODEL",
+                "note": "No hosted or local model is authorised or selected (GAP-57); no paid inference is run."}
+    cases = [c for c in EVAL_CASES if not c.get("adversarial")]
+    deterministic = score([run_case(c, "agent") for c in cases])
+    model = score([run_case(c, "agent", model_arm["factory"]) for c in cases])
+    keys = ("numerical_precision", "event_precision", "statement_precision", "statement_recall",
+            "comparison_accuracy", "unsupported_acceptance", "false_abstention", "coverage_complete")
+    return {"status": "HARNESS_ONLY" if model_arm.get("fake") else "RUN", "model": model_arm.get("name"),
+            "deterministic": {k: deterministic[k] for k in keys}, "model_arm": {k: model[k] for k in keys},
+            "identical_inputs": True, "tool_budget": 6,
+            "note": "Synthetic pack; a fake model shows the harness works, not model value."}
 
 
 def main() -> None:

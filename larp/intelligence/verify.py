@@ -3,9 +3,14 @@
 A claim is accepted only if it is a well-formed claim object; its quoted span is the exact
 substring at the stated offsets of a loaded document; with records, that document belongs to
 the claimed source record, from which all provenance is taken; the metric/event is named in the
-span, and an event is neither negated nor hypothetical in its clause of the source text (a
-"HYPOTHETICAL:<event>" claim instead needs a hypothetical, non-negated mention); every stated
-number (value, range bounds, tolerance) appears in the span; the scale and currency are stated
+span. An event code ("IMPAIRMENT") needs an occurrence the source asserts for the issuer, now
+(semantics.py: OCCURRED, actor ISSUER, temporal CURRENT); a "STATEMENT:<event>" claim needs a
+non-negated, non-heading statement that is not such an occurrence, and any semantics the claim
+states (assertion, actor, temporal, effective date) must equal the semantics recomputed from the
+source text, which are the ones recorded. Every signed number (value, range bounds) appears in the
+span with the claimed sign (a loss-form metric name makes the level negative), a change amount is
+never a level, a range bound is never a point value, and the claimed REPORTED/GUIDANCE kind equals
+the kind the statement's own wording gives; the tolerance appears in the span; the scale and currency are stated
 in the span or its cited scale span; and the period parses from the cited period span. Period
 and scale spans come from the same statement: the same line for prose, and for a table cell its
 own column header and the table's scale line, read exactly as the extractor reads them
@@ -19,10 +24,13 @@ import re
 
 from larp.intelligence.common import frac
 from larp.intelligence.facts import (
-    HYPOTHETICAL_PREFIX, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, PER_SHARE_EXCEPTION, PER_SHARE_METRICS,
-    PERCENT_METRICS, SCALES, finish_fact, half_unit, normalized, parse_period, row_metric, stated_numbers, table_cell,
-    table_scale, table_unit, token_decimals, unasserted, values_agree,
+    ANALYST_FRAME, DROPPED_ASSERTIONS, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, MONEY, NUM_TOKEN, PERCENT,
+    PER_SHARE_EXCEPTION, PER_SHARE_METRICS, PERCENT_METRICS, SCALES, SENTENCE_END, STATEMENT_PREFIX, event_semantics,
+    finish_fact, half_unit, is_change_amount, is_statement, kind_of, money_parts, normalized, parse_number,
+    parse_period, range_partner, row_metric, signed_value, stated_numbers, statement_event, table_cell, table_scale,
+    table_unit, token_decimals, values_agree,
 )
+from larp.intelligence.semantics import finding_eligible
 
 ALLOWED_KINDS = ("REPORTED", "GUIDANCE", "EVENT")
 _DECIMAL = re.compile(r"^-?\d+(?:\.\d+)?$")
@@ -31,7 +39,9 @@ _SCALE_WORDS = re.compile(r"\b(thousands?|millions?|billions?|trillions?)\b", re
 _CURRENCY = {"USD": re.compile(r"\$|\bUSD\b|U\.S\.\s+dollars", re.I),
              "KRW": re.compile(r"\bKRW\b|\u20a9|\bwon\b", re.I)}
 _FACT_KEYS = ("kind", "metric", "period", "value", "range", "tolerance_pct", "unit", "scale_exp10",
-              "precision_exp10", "direction", "security_scope", "span", "period_span", "scale_span", "basis")
+              "precision_exp10", "direction", "security_scope", "span", "period_span", "scale_span", "basis",
+              "statement")
+_SEMANTIC_FIELDS = ("assertion", "actor", "temporal", "effective")
 _CLAIM_KEYS = frozenset(_FACT_KEYS) | {"source"}
 _TEXT_FIELDS = ("kind", "metric", "period", "unit", "direction", "security_scope", "basis")
 _SOURCE_KEYS = frozenset({"record_id", "accession", "doc_name", "available_ms", "original_ms"})
@@ -65,6 +75,9 @@ def claim_schema_error(claim) -> str | None:
             return reason
     if claim.get("range") is not None and (type(claim["range"]) is not list or len(claim["range"]) != 2):
         return "RANGE_MALFORMED"
+    if claim.get("statement") is not None and (type(claim["statement"]) is not dict or any(
+            type(claim["statement"].get(k)) not in (str, type(None)) for k in _SEMANTIC_FIELDS)):
+        return "STATEMENT_MALFORMED"
     return None
 
 
@@ -103,7 +116,103 @@ def _line(text: str, start: int, end: int) -> tuple:
     return text.rfind("\n", 0, start) + 1, len(text) if stop < 0 else stop
 
 
-def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple:
+def _event_reason(semantics: dict) -> str:
+    if semantics["assertion"] == "NEGATED":
+        return "EVENT_NEGATED"
+    if semantics["assertion"] == "MENTION_ONLY":
+        return "EVENT_NOT_ASSERTED"
+    if semantics["assertion"] != "OCCURRED":
+        return "EVENT_NOT_OCCURRED:" + semantics["assertion"]
+    if semantics["actor"] != "ISSUER":
+        return "EVENT_NOT_ISSUER:" + semantics["actor"]
+    return "EVENT_NOT_CURRENT:" + semantics["temporal"]
+
+
+def _semantics_agree(claimed, semantics: dict) -> bool:
+    return claimed is None or all(claimed.get(k) in (None, semantics.get(k)) for k in _SEMANTIC_FIELDS)
+
+
+def _sentence_start(text: str, position: int) -> int:
+    lo = text.rfind("\n", 0, position) + 1
+    for m in SENTENCE_END.finditer(text, lo, position):
+        lo = m.end()
+    return lo
+
+
+def _token_end(text: str, start: int, end: int, number) -> int | None:
+    """End offset of the first written token in text[start:end] equal to `number` up to sign."""
+    for m in NUM_TOKEN.finditer(text, start, end):
+        value = parse_number(m.group(0))
+        if value == number or -value == number:
+            return m.end()
+    return None
+
+
+def _amount_at(text: str, lo: int, number_end: int, metric: str):
+    """The MONEY/PERCENT match in text[lo:] whose number ends at `number_end`, with its unit."""
+    pattern, unit = (PERCENT, "PERCENT") if metric in PERCENT_METRICS else (MONEY, None)
+    for m in pattern.finditer(text, lo):
+        if m.start() > number_end:
+            break
+        groups = [g for g in ("num", "num2") if g in pattern.groupindex and m.group(g)]
+        if any(m.end(g) == number_end or (m.end(g) + 1 == number_end and text[m.end(g)] == ")") for g in groups):
+            return m, unit or money_parts(m)[2]
+    return None, None
+
+
+def _prose_reading(text: str, span: dict, metric: str, kind: str, value, bounds) -> str | None:
+    """Read a prose amount the way the extractor does (facts._sentence_facts). The governing metric mention is the
+    last mention before the amount; the amount must be the first one after it; its sign comes from that mention
+    (a loss form is negative); a change amount, an analyst estimate or a range bound is not a level; the kind is the
+    statement's own (an introductory "As expected," does not make a level guidance). Returns a reason or None."""
+    first = value if value is not None else bounds[0]
+    token_end = _token_end(text, span["start"], span["end"], first)
+    if token_end is None:
+        return "NUMBER_NOT_IN_SPAN"
+    sentence_lo = _sentence_start(text, span["start"])
+    mentions = [m for m in METRIC_ONE[metric].finditer(text, sentence_lo, token_end)]
+    if not mentions:
+        return "METRIC_NOT_GOVERNING_NUMBER"
+    mention = mentions[-1]
+    amount, unit = _amount_at(text, mention.end(), token_end, metric)
+    if amount is None:
+        return "NUMBER_NOT_AN_AMOUNT"
+    between = text[mention.end():amount.start()]
+    pattern = PERCENT if metric in PERCENT_METRICS else MONEY
+    if ANALYST_FRAME.search(text[sentence_lo:amount.end()]):
+        return "ATTRIBUTED_ESTIMATE_NOT_ADMISSIBLE"
+    if is_change_amount(between):
+        return "CHANGE_AMOUNT_NOT_LEVEL"
+    join = re.search(r"(?:-|\u2013|\u2014|\bto|\band)\s*$", text[sentence_lo:amount.start()])
+    if value is not None and join:
+        previous = [m for m in pattern.finditer(text, sentence_lo, join.start()) if m.end() >= join.start() - 1]
+        if previous and range_partner(text, previous[-1], unit, text[sentence_lo:previous[-1].start()]):
+            return "RANGE_BOUND_CLAIMED_AS_POINT"
+    if pattern.search(between):
+        return "NOT_FIRST_AMOUNT_AFTER_METRIC"
+    derived = kind_of(text[sentence_lo:amount.end()])
+    if kind != derived:
+        return "KIND_NOT_SUPPORTED:" + derived
+    written = [parse_number(m.group(0)) for m in NUM_TOKEN.finditer(text, amount.start(), amount.end())]
+    partner = range_partner(text, amount, unit, text[sentence_lo:amount.start()])
+    if partner is not None:
+        written += [parse_number(m.group(0)) for m in NUM_TOKEN.finditer(text, partner.start(), partner.end())]
+    expected = [signed_value(n, mention.group(0)) for n in written]
+    if value is not None:
+        if partner is not None:
+            return "RANGE_BOUND_CLAIMED_AS_POINT"
+        if value != expected[0]:
+            return "SIGN_MISMATCH" if -value == expected[0] else "NUMBER_NOT_IN_SPAN"
+        return None
+    if partner is None:
+        return "RANGE_NOT_STATED"
+    if list(bounds) != expected[:2]:
+        return "SIGN_MISMATCH" if [-b for b in bounds] == expected[:2] else "NUMBER_NOT_IN_SPAN"
+    return None
+
+
+def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issuer_names: tuple = (),
+                 issuer_source: bool = True) -> tuple:
     """Return (fact, None) if verified, else (None, reason). `texts` maps text_sha256 -> text.
 
     `records` maps record_id -> EvidenceRecord.v1. With records, the claim must name a known
@@ -139,6 +248,7 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
             return None, "SPAN_NOT_IN_SOURCE_RECORD"
         doc_name = doc["name"]
     text = texts[span["doc"]]
+    document_ms = (record or {}).get("original_ms", (claim.get("source") or {}).get("original_ms"))
     side = {}
     for key, prefix in (("period_span", "PERIOD_"), ("scale_span", "SCALE_")):
         if claim.get(key) is None:
@@ -149,18 +259,27 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
         if claim[key]["doc"] != span["doc"]:
             return None, prefix + "SPAN_OTHER_DOCUMENT"
     if kind == "EVENT":
-        hypothetical = metric is not None and metric.startswith(HYPOTHETICAL_PREFIX)
-        event = metric[len(HYPOTHETICAL_PREFIX):] if hypothetical else metric
+        statement = is_statement(metric)
+        event = statement_event(metric) if type(metric) is str else None
         matches = list(_EVENTS[event].finditer(text, span["start"], span["end"])) if event in _EVENTS else []
         if not matches:
             return None, "EVENT_NOT_IN_SPAN"
-        why = [unasserted(text, m.start(), m.end()) for m in matches]
-        if hypothetical:  # "could result in an impairment" is verified as a possible impairment, not an impairment
-            if "HYPOTHETICAL" not in why:
-                return None, "EVENT_NEGATED" if all(why) else "EVENT_NOT_HYPOTHETICAL"
-        elif all(why):  # "recorded no impairment" or "could result in an impairment" is not an impairment
-            return None, "EVENT_NEGATED" if "NEGATED" in why else "EVENT_HYPOTHETICAL"
-        return _fact(claim, record, doc_name, event=True), None
+        found = [event_semantics(text, m.start(), m.end(), event, document_ms=document_ms, names=issuer_names,
+                                 issuer_source=issuer_source) for m in matches]
+        if statement:  # a statement about the event that is not the issuer's current occurrence
+            usable = [x for x in found if not finding_eligible(x) and x["assertion"] not in DROPPED_ASSERTIONS]
+            if not usable:
+                return None, ("STATEMENT_IS_ISSUER_OCCURRENCE" if any(map(finding_eligible, found))
+                              else _event_reason(found[0]))
+        else:
+            usable = [x for x in found if finding_eligible(x)]
+            if not usable:
+                return None, _event_reason(found[0])
+        agreeing = [x for x in usable if _semantics_agree(claim.get("statement"), x)]
+        if not agreeing:
+            return None, "EVENT_SEMANTICS_MISMATCH"
+        recorded = dict(claim, metric=(STATEMENT_PREFIX + event) if statement else event, statement=agreeing[0])
+        return _fact(recorded, record, doc_name, event=True), None
     if metric not in METRIC_NAMES or not METRIC_ONE[metric].search(span_text):
         return None, "METRIC_NOT_IN_SPAN"
     try:
@@ -173,11 +292,19 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
         return None, "VALUE_MISSING"
     stated = stated_numbers(span_text)
     table = " | " in span_text
-    if table and (value is None or not stated or stated[-1] != value):
-        return None, "TABLE_VALUE_NOT_LAST_CELL"
     for number in [v for v in [value, tolerance, *bounds] if v is not None]:
         if number not in stated and -number not in stated:
             return None, "NUMBER_NOT_IN_SPAN"
+    if table:
+        mention = METRIC_ONE[metric].search(span_text).group(0)
+        signed = [signed_value(n, mention) for n in stated]
+        if value is None or not signed or signed[-1] != value:
+            return None, ("TABLE_VALUE_SIGN_MISMATCH" if value is not None and signed and -signed[-1] == value
+                          else "TABLE_VALUE_NOT_LAST_CELL")
+    else:
+        reason = _prose_reading(text, span, metric, kind, value, bounds)
+        if reason:
+            return None, reason
     unit, scale = claim.get("unit"), claim.get("scale_exp10")
     if type(scale) is not int:
         return None, "SCALE_MALFORMED"
@@ -187,6 +314,8 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
         if cell is None or "\n" in span_text or row_metric(cell["label"]) != metric:
             return None, "TABLE_CELL_NOT_VERIFIED"
         block = cell["block"]
+        if kind != block["kind"]:
+            return None, "KIND_NOT_SUPPORTED:" + block["kind"]
         if unit != table_unit(metric, cell["cell"], block):
             return None, "UNIT_NOT_STATED"
         if scale != table_scale(metric, unit, block):
@@ -227,6 +356,8 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None) -> tuple
 
 def _fact(claim, record, doc_name, *, event=False):
     fact = {k: claim.get(k) for k in _FACT_KEYS}
+    if not event:
+        fact["statement"] = None
     if event:  # an event asserts occurrence only: no value, unit, period or direction is verified
         fact.update(period=None, value=None, range=None, tolerance_pct=None, unit=None, scale_exp10=0,
                     precision_exp10=0, direction=None, period_span=None, scale_span=None)
@@ -244,7 +375,7 @@ def _fact(claim, record, doc_name, *, event=False):
 
 def fact_as_claim(fact: dict) -> dict:
     """Extracted facts in the claim format, so the baseline passes through the same verifier."""
-    claim = {k: fact[k] for k in _FACT_KEYS}
+    claim = {k: fact.get(k) for k in _FACT_KEYS}
     claim["source"] = fact["source"]
     return claim
 

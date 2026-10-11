@@ -43,8 +43,11 @@ HYPOTHETICAL_BOILERPLATE = (
 )
 RISK_LINES = [HYPOTHETICAL_BOILERPLATE[0][1], HYPOTHETICAL_BOILERPLATE[5][1]]
 NEW_RISK = "We expect to record a goodwill impairment charge in the fourth quarter of fiscal 2027."
-UNASSERTED = {"NEGATED_BOILERPLATE": (NEGATED_BOILERPLATE, "EVENT_NEGATED"),
-              "HYPOTHETICAL_BOILERPLATE": (HYPOTHETICAL_BOILERPLATE, "EVENT_HYPOTHETICAL")}
+# Expected verifier reason for a claim that the statement is an occurred issuer event (IDEA-031: the reason names
+# the statement's assertion class instead of the former single EVENT_HYPOTHETICAL).
+UNASSERTED = {"NEGATED_BOILERPLATE": (NEGATED_BOILERPLATE, lambda s: "EVENT_NEGATED"),
+              "HYPOTHETICAL_BOILERPLATE": (HYPOTHETICAL_BOILERPLATE, lambda s: "EVENT_NOT_OCCURRED:" + (
+                  "FORECAST" if s.startswith("We expect") else "CONDITIONAL_RISK"))}
 
 EXTRA = {
     "G1_36": eight_k("0009900001-26-000301", "2026-07-01T20:00:00+00:00", [Q4_GUIDE.format("36.0")]),
@@ -77,31 +80,14 @@ def comparisons(result):
 
 
 def compatible_with_runtime_schema(request: Document, result: Document, now_ms: int) -> None:
-    """Copy of the checks in larp/runtime/schema.py on origin/codex/runtime-audit-platform @ 955cfc2
-    (assessment_request / assessment_result), kept here so this branch tests compatibility without
-    importing another owner's unmerged module."""
+    """The runtime's own boundary checks (larp/runtime/schema.py, integrated on this branch) plus the result
+    vocabulary the integration adapters read."""
+    from larp.runtime.schema import assessment_request, assessment_result
     r, a = request.read(), result.read()
-    if (r.get("schema"), type(r["cutoff_ms"])) != ("AssessmentRequest.v1", int) or r["cutoff_ms"] > now_ms:
-        raise ContractError("request")
-    budget = r["budget"]
-    if not (0 <= budget["tool_calls"] <= 6 and 0 < budget["deadline_ms"] <= 60000):
-        raise ContractError("budget")
-    for ref in r["evidence_refs"]:
-        if not ref["source"] or ref["quality"] not in ("VALID", "MISSING", "STALE", "UNKNOWN", "SYNTHETIC"):
-            raise ContractError("ref")
-        if ref["observed_ms"] > r["cutoff_ms"] or ref["available_ms"] > r["cutoff_ms"] or len(ref["content_hash"]) != 64:
-            raise ContractError("ref time/hash")
-    for key in ("job_id", "run_id", "issuer_id", "context_hash", "policy_profile_hash"):
-        if a.get(key) != r.get(key):
-            raise ContractError("identity")
-    if a.get("schema") != "AssessmentResult.v1" or type(a["expiry_ms"]) is not int or a["expiry_ms"] <= now_ms:
-        raise ContractError("expiry")
-    if {"orders", "side", "targets", "buy", "sell"} & {k.lower() for k in a}:
-        raise ContractError("authority")
-    for key in ("model_hash", "prompt_hash", "rationale", "model_io"):
-        if not a.get(key):
-            raise ContractError("provenance")
-    for key in ("claims", "novelty", "conflicts", "missingness", "confidence", "falsifiers", "review_requests"):
+    assessment_request(request, r["run_id"], r["policy_profile_hash"], now_ms)
+    assessment_result(result, request, now_ms)
+    for key in ("claims", "novelty", "conflicts", "missingness", "confidence", "falsifiers", "review_requests",
+                "event_statements", "retained_facts", "coverage"):
         if key not in a:
             raise ContractError(f"vocabulary {key}")
 
@@ -341,7 +327,7 @@ class ClaimBindingTests(AgentHarness):
                         "action": "FINISH", "notes": "x",
                         "claims": [{"kind": "EVENT", "metric": metric, "span": cite(st, sentence)}]}}])
                     result, doc = self.assess([key], model=model, job_id=f"job:{key}:{i}")
-                    self.assert_abstains(result, reason)
+                    self.assert_abstains(result, reason(sentence))
                     self.assertNotIn(metric, {f["type"] for f in result["event_findings"]})
                     _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
                     self.assertNotIn(metric, {a["type"] for a in after["unresolved_adverse"]})
@@ -362,8 +348,9 @@ class ClaimBindingTests(AgentHarness):
                 self.assertFalse(adverse & {a["type"] for a in after["unresolved_adverse"]})
 
 
-class HypotheticalEventTests(AgentHarness):
-    """Possible or planned events are kept as statements, never as findings; new ones are sent for review."""
+class StatementTests(AgentHarness):
+    """Statements about events (formerly "hypothetical events") are kept with their semantics, never as findings;
+    first-seen ones are sent for bounded review (IDEA-031 S2.1/S2.4)."""
 
     def outcome(self, refs):
         result, doc = self.assess(refs)
@@ -371,52 +358,69 @@ class HypotheticalEventTests(AgentHarness):
         _, after = accept(state, doc, profile_hash=PROFILE, now_ms=self.w.clock())
         return result, after, feature_row(doc, after).read()
 
-    def test_new_hypothetical_statements_are_kept_reviewed_and_never_adverse(self):
+    def test_first_seen_statements_are_kept_reviewed_and_never_adverse(self):
         self.world("HYPOTHETICAL_BOILERPLATE")
         result, after, row = self.outcome(["HYPOTHETICAL_BOILERPLATE"])
         self.assertEqual(result["status"], "ASSESSED")
-        self.assertIn(("prior_context", "HYPOTHETICAL", "NO_PRIOR"), self.tools(result))
-        self.assertEqual(sorted((h["event"], h["novelty"]) for h in result["hypothetical_events"]),
-                         sorted((metric, "NEW") for metric, _ in HYPOTHETICAL_BOILERPLATE))
-        self.assertEqual({h["statement"] for h in result["hypothetical_events"]},
+        self.assertIn(("prior_context", "STATEMENTS", "NO_PRIOR"), self.tools(result))
+        self.assertEqual(sorted((h["event"], h["novelty"]) for h in result["event_statements"]),
+                         sorted((metric, "FIRST_SEEN") for metric, _ in HYPOTHETICAL_BOILERPLATE))
+        self.assertEqual({h["statement"] for h in result["event_statements"]},
                          {sentence for _, sentence in HYPOTHETICAL_BOILERPLATE})
+        self.assertEqual({h["semantics"]["assertion"] for h in result["event_statements"]},
+                         {"CONDITIONAL_RISK", "FORECAST"})
         # The only finding is the fixture 8-K's own Item 8.01 (impact UNKNOWN); nothing comes from the statements.
         self.assertEqual([(f["type"], f["impact"]) for f in result["findings"]], [("ITEM:8.01", "UNKNOWN")])
         self.assertEqual(after["unresolved_adverse"], [])
-        self.assertIn("REVIEW_NEW_HYPOTHETICAL_EVENT", {r["reason"] for r in result["review_requests"]})
+        self.assertIn("REVIEW_NEW_STATEMENT", {r["reason"] for r in result["review_requests"]})
         self.assertEqual(after["evidence_gate"], "UNKNOWN")
-        self.assertIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
-        self.assertEqual((row["n_hypothetical_new"], row["n_hypothetical_repeated"]), (6, 0))
-        self.assertEqual(row["hypothetical_types_new"], sorted({m for m, _ in HYPOTHETICAL_BOILERPLATE}))
+        self.assertIn("PENDING_STATEMENT_REVIEW", after["gate_reasons"])
+        self.assertEqual((row["n_statements_new"], row["n_statements_repeated"]), (6, 0))
+        self.assertEqual(row["statement_types_new"], sorted({m for m, _ in HYPOTHETICAL_BOILERPLATE}))
 
     def test_boilerplate_repeated_from_an_earlier_filing_is_not_new(self):
         self.world("RISK_PRIOR", "RISK_REPEATED")
         result, after, row = self.outcome(["RISK_REPEATED"])
-        self.assertEqual({h["novelty"] for h in result["hypothetical_events"]}, {"REPEATED"})
-        self.assertNotIn("REVIEW_NEW_HYPOTHETICAL_EVENT", {r["reason"] for r in result["review_requests"]})
-        self.assertNotIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
-        self.assertEqual((row["n_hypothetical_new"], row["n_hypothetical_repeated"]), (0, 2))
+        self.assertEqual({h["novelty"] for h in result["event_statements"]}, {"REPEATED"})
+        self.assertNotIn("REVIEW_NEW_STATEMENT", {r["reason"] for r in result["review_requests"]})
+        self.assertNotIn("PENDING_STATEMENT_REVIEW", after["gate_reasons"])
+        self.assertEqual((row["n_statements_new"], row["n_statements_repeated"]), (0, 2))
 
-    def test_only_the_statement_absent_from_earlier_filings_is_new(self):
+    def test_only_the_statement_absent_from_earlier_filings_is_first_seen(self):
         self.world("RISK_PRIOR", "RISK_NEW")
         result, after, row = self.outcome(["RISK_NEW"])
-        new = [h for h in result["hypothetical_events"] if h["novelty"] == "NEW"]
+        new = [h for h in result["event_statements"] if h["novelty"] == "FIRST_SEEN"]
         self.assertEqual([(h["event"], h["statement"]) for h in new], [("IMPAIRMENT", NEW_RISK)])
-        self.assertEqual(len(result["hypothetical_events"]), 3)
+        self.assertEqual(len(result["event_statements"]), 3)
         self.assertNotIn("IMPAIRMENT", {f["type"] for f in result["event_findings"]})
-        self.assertIn("NEW_HYPOTHETICAL_EVENT", after["gate_reasons"])
-        self.assertEqual((row["n_hypothetical_new"], row["hypothetical_types_new"]), (1, ["IMPAIRMENT"]))
+        self.assertIn("PENDING_STATEMENT_REVIEW", after["gate_reasons"])
+        self.assertEqual((row["n_statements_new"], row["statement_types_new"]), (1, ["IMPAIRMENT"]))
 
-    def test_a_model_may_claim_a_hypothetical_event_with_its_label(self):
+    def test_a_model_may_claim_a_statement_with_its_label_and_semantics(self):
         self.world("HYPOTHETICAL_BOILERPLATE")
         sentence = HYPOTHETICAL_BOILERPLATE[3][1]
         model = ScriptedModel(self.w.clock, [{"output": lambda st: {
             "action": "FINISH", "notes": "x",
-            "claims": [{"kind": "EVENT", "metric": "HYPOTHETICAL:DELISTING", "span": cite(st, sentence)}]}}])
+            "claims": [{"kind": "EVENT", "metric": "STATEMENT:DELISTING", "span": cite(st, sentence),
+                        "statement": {"assertion": "CONDITIONAL_RISK"}}]}}])
         result, _ = self.assess(["HYPOTHETICAL_BOILERPLATE"], model=model)
         self.assertEqual((result["status"], result["rejected_claims"]), ("ASSESSED", []))
-        self.assertIn("HYPOTHETICAL:DELISTING", {c["metric"] for c in result["claims"] if c["model_confirmed"]})
+        self.assertIn("STATEMENT:DELISTING", {c["metric"] for c in result["claims"] if c["model_confirmed"]})
         self.assertNotIn("DELISTING", {f["type"] for f in result["event_findings"]})
+
+    def test_a_model_claiming_wrong_statement_semantics_abstains(self):
+        self.world("HYPOTHETICAL_BOILERPLATE")
+        sentence = HYPOTHETICAL_BOILERPLATE[3][1]
+        model = ScriptedModel(self.w.clock, [{"output": lambda st: {
+            "action": "FINISH", "notes": "x",
+            "claims": [{"kind": "EVENT", "metric": "STATEMENT:DELISTING", "span": cite(st, sentence),
+                        "statement": {"assertion": "OCCURRED"}}]}}])
+        result, _ = self.assess(["HYPOTHETICAL_BOILERPLATE"], model=model)
+        self.assertEqual((result["status"], result["reasons"]), ("ABSTAIN", ["UNSUPPORTED_CLAIM"]))
+        self.assertEqual([r["reason"] for r in result["rejected_claims"]], ["EVENT_SEMANTICS_MISMATCH"])
+        self.assertEqual((result["claims"], result["proposed_thesis"], result["findings"]), ([], None, []))
+        self.assertTrue(result["retained_facts"])  # supported harness facts kept for audit, status unchanged
+        self.assertFalse(result["coverage"]["complete"] and result["status"] == "ASSESSED")
 
 
 class RequestValidationTests(AgentHarness):

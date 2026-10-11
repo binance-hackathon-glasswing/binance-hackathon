@@ -149,6 +149,20 @@ FILINGS = {
                            acceptance="2026-10-09T02:00:00+00:00", documents=[
         doc("exmm-6k-20261009.htm", "6-K", cover("Example Memory Co., Ltd.", "6-K", [], [
             "On October 5, 2026, the company identified a cybersecurity incident affecting certain internal systems."]))]),
+    # IDEA-031 AC-E02: one line per statement class (occurrence, rumour, forecast, conditional risk, announced future
+    # event, third-party occurrence, heading, historical occurrence). Fictitious text.
+    "EXSEMI_STATEMENTS_8K": dict(cik=9900001, accession="0009900001-26-000215", form="8-K", items=["8.01"],
+                                 acceptance="2026-10-08T18:00:00+00:00", documents=[
+        doc("exsm-8k-20261008c.htm", "8-K", cover("Example Semiconductor Corp", "8-K", ["8.01"], [
+            "We recorded a goodwill impairment charge of $1.2 billion in the quarter.",
+            "Media reports said our Chief Executive Officer is rumored to resign.",
+            "We expect to record a restatement-related charge in the fourth quarter.",
+            "A cybersecurity incident could disrupt our operations.",
+            "On October 8, 2026, the Chief Financial Officer notified the Board of a decision to resign, effective "
+            "December 31, 2026.",
+            "One of our suppliers disclosed a cybersecurity incident.",
+            "Impairment of goodwill",
+            "In fiscal 2019, we restated our financial statements."]))]),
 }
 
 NOW = parse_acceptance_ms("2026-10-10T00:00:00+00:00")
@@ -306,13 +320,16 @@ EVAL_CASES = [
                 "missing_prefixes": ["PRIOR_MISSING:revenue:GUIDANCE:FY2028-Q1"]}},
     {"case_id": "compact_html_table", "filings": ["EXSEMI_Q2_8K", "EXSEMI_Q3_10Q_COMPACT"],
      "refs": ["EXSEMI_Q3_10Q_COMPACT"], "issuer": EXSEMI, "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED",
+     # IDEA-031: labels enumerated from the fixture text (two table rows x two columns, no item codes, no event
+     # wording), so they are exhaustive and every other output is a false positive.
+     "labels": {"status": "ASSESSED", "exhaustive": True, "events": [], "statements": [],
                 "facts": [fact(R, "revenue", "FY2027-Q3", "35082", "USD", 6), fact(R, "revenue", "FY2026-Q3", "18120", "USD", 6),
                           fact(R, "net_income", "FY2027-Q3", "19309", "USD", 6), fact(R, "net_income", "FY2026-Q3", "9243", "USD", 6)],
                 "findings": ["REPORTED_ABOVE_PRIOR_GUIDANCE"]}},
     {"case_id": "utf8_foreign_issuer_6k", "filings": ["EXMEM_Q3_6K"], "refs": ["EXMEM_Q3_6K"], "issuer": EXMEM,
      "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED",
+     # IDEA-031: exhaustive (one prose sentence with two amounts, a 2x2 table, no item codes or event wording).
+     "labels": {"status": "ASSESSED", "exhaustive": True, "events": [], "statements": [],
                 "facts": [fact(R, "revenue", "2026-Q3", "24.45", "KRW", 12), fact(R, "operating_income", "2026-Q3", "11.38", "KRW", 12),
                           fact(R, "revenue", "2026-Q3", "24449", "KRW", 9), fact(R, "revenue", "2026-Q2", "22232", "KRW", 9),
                           fact(R, "operating_income", "2026-Q3", "11383", "KRW", 9),
@@ -324,7 +341,17 @@ EVAL_CASES = [
                 "falsifiers": {"F-ITEM-4.02": "FIRED", "F-RESTATEMENT": "FIRED"}, "thesis_status": "BROKEN"}},
     {"case_id": "officer_departure_502", "filings": ["EXSEMI_502_8K"], "refs": ["EXSEMI_502_8K"], "issuer": EXSEMI,
      "model": "rule", "context": "prior_thesis",
-     "labels": {"status": "ASSESSED", "events": ["ITEM:5.02", "OFFICER_DEPARTURE"], "thesis_status": "INTACT"}},
+     # IDEA-031 label correction: the CFO announced a future resignation (effective Nov 30); before IDEA-031 this
+     # case expected an occurred OFFICER_DEPARTURE, the defect IDEA-030 R04 confirmed.
+     "labels": {"status": "ASSESSED", "events": ["ITEM:5.02"], "thesis_status": "INTACT",
+                "statements": [["OFFICER_DEPARTURE", "ANNOUNCED_FUTURE"]]}},
+    {"case_id": "event_statement_classes", "filings": ["EXSEMI_STATEMENTS_8K"], "refs": ["EXSEMI_STATEMENTS_8K"],
+     "issuer": EXSEMI, "model": "rule", "context": "prior_thesis",
+     "labels": {"status": "ASSESSED", "exhaustive": True, "facts": [], "events": ["ITEM:8.01", "IMPAIRMENT"],
+                "findings": ["IMPAIRMENT"],
+                "statements": [["OFFICER_DEPARTURE", "ATTRIBUTED_REPORT"], ["RESTATEMENT", "FORECAST"],
+                               ["CYBERSECURITY_INCIDENT", "CONDITIONAL_RISK"], ["OFFICER_DEPARTURE", "ANNOUNCED_FUTURE"],
+                               ["CYBERSECURITY_INCIDENT", "OCCURRED"], ["RESTATEMENT", "OCCURRED"]]}},
     {"case_id": "cyber_incident_6k", "filings": ["EXMEM_CYBER_6K"], "refs": ["EXMEM_CYBER_6K"], "issuer": EXMEM,
      "model": "rule", "context": "prior_thesis",
      "labels": {"status": "ASSESSED", "events": ["CYBERSECURITY_INCIDENT"], "findings": ["CYBERSECURITY_INCIDENT"],

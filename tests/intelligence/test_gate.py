@@ -7,13 +7,35 @@ from larp.intelligence.fakes import MemoryEvidenceStore
 from larp.intelligence.features import feature_row
 from larp.intelligence.gate import accept, initial_state, state_document
 from larp.intelligence.models import RuleBaselineModel, ScriptedModel
-from larp.intelligence.scenarios import EXSEMI, PROFILE, build_world, make_model, prior_thesis
+from larp.intelligence.scenarios import EXSEMI, PROFILE, build_world, cover, doc, make_model, prior_thesis
 from larp.intelligence.common import forbidden_key_paths
+from larp.contracts import Document
 
 
 class GateTests(unittest.TestCase):
+    def test_future_and_inconsistent_result_clocks_do_not_change_evidence(self):
+        result = self.assess(["CLEAN"]).read()
+        now = self.w.clock()
+        patches = ({"cutoff_ms": now + 1}, {"completed_ms": now + 1},
+                   {"started_ms": result["completed_ms"] + 1}, {"completed_ms": -1},
+                   {"completed_ms": True}, {"cutoff_ms": -1})
+        for patch in patches:
+            with self.subTest(patch=patch):
+                decision, after = accept(self.state, Document.from_dict(dict(result, **patch)),
+                                         profile_hash=PROFILE, now_ms=now)
+                self.assertEqual(decision, "REJECT_MALFORMED")
+                self.assertEqual({k: v for k, v in after.items() if k != "last_rejection"},
+                                 {k: v for k, v in self.state.items() if k != "last_rejection"})
+
     def setUp(self):
-        self.w = build_world(["EXSEMI_Q2_8K", "EXSEMI_Q3_8K", "EXSEMI_502_8K", "EXSEMI_402_8K"])
+        # CLEAN: a filing with no event statement. EXSEMI_502_8K carries an announced future CFO departure, which
+        # IDEA-031 keeps as a statement pending review, so it no longer yields CLEAR on first sight.
+        clean = dict(cik=9900001, accession="0009900001-26-000420", form="8-K", items=["8.01"],
+                     acceptance="2026-10-08T21:00:00+00:00", documents=[doc("exsm-8k-clean.htm", "8-K", cover(
+                         "Example Semiconductor Corp", "8-K", ["8.01"],
+                         ["The company held its annual meeting of stockholders."]))])
+        self.w = build_world(["EXSEMI_Q2_8K", "EXSEMI_Q3_8K", "EXSEMI_502_8K", "EXSEMI_402_8K", "CLEAN"],
+                             extra_filings={"CLEAN": clean})
         self.context = prior_thesis(self.w.config, EXSEMI)
         self.state = dict(initial_state(EXSEMI, PROFILE), context=self.context, context_hash=context_hash(self.context))
 
@@ -45,11 +67,11 @@ class GateTests(unittest.TestCase):
         self.assertEqual(accept(other, result, profile_hash=PROFILE, now_ms=self.w.clock())[0], "REJECT_WRONG_ISSUER")
 
     def test_timeout_after_clear_evidence_never_stays_clear(self):
-        clear = self.assess(["EXSEMI_502_8K"], job="job:clear")
+        clear = self.assess(["CLEAN"], job="job:clear")
         decision, state = accept(self.state, clear, profile_hash=PROFILE, now_ms=self.w.clock())
         self.assertEqual((decision, state["evidence_gate"]), ("ACCEPT", "CLEAR"))
         self.w.clock.advance(1000)
-        timeout = self.assess(["EXSEMI_502_8K"], model="timeout", context=state["context"], job="job:t")
+        timeout = self.assess(["CLEAN"], model="timeout", context=state["context"], job="job:t")
         self.assertEqual(timeout.read()["status"], "UNAVAILABLE")
         decision, after = accept(state, timeout, profile_hash=PROFILE, now_ms=self.w.clock())
         self.assertEqual((decision, after["evidence_gate"], after["availability"]), ("ACCEPT", "UNKNOWN", "UNAVAILABLE"))

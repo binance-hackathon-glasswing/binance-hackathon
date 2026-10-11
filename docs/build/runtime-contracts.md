@@ -3,6 +3,13 @@
 All examples are synthetic. Common ports are in `larp/ports.py`. Existing
 DecisionSnapshot/PolicyState/Proposal/Target retain their original Python API.
 Documents use integer base units, exact rational weights and UTC epoch milliseconds.
+The coordinator samples its independent `clock_ms` after assessment (UTC wall clock
+by default; inject a deterministic clock for fixtures). Result freshness and the
+decision snapshot use that completion-time observation, never the request-start
+time. Round records retain `started_ms` and, when different, `decision_ms`; exact
+replay supplies the recorded clock, with `started_ms` as the legacy fallback.
+Backward/invalid clocks leave a recoverable open round and create no plan or
+reservations. Execution still revalidates authorization/expiry before signing.
 Concrete successful and rejected example payloads, committed batches and exact
 audit chunks are retained in `evidence/runtime-offline-trace.json`; provenance and
 the file checksum are recorded in IDEA-028. All its prices/balances/identities are

@@ -1,0 +1,300 @@
+{
+ "note": "Synthetic fixtures; real modules; no network, store, model or execution. Not evidence of live readiness or profit. MANDATORY_REDUCTION is a capability, not an adopted policy.",
+ "schema": "IntegrationDemo.v1",
+ "steps": {
+  "MANDATORY_REDUCTION": {
+   "assessments": [
+    {
+     "coverage_complete": true,
+     "decision": "ACCEPT",
+     "filing": "EXSEMI_STATEMENTS_8K",
+     "findings": [
+      "IMPAIRMENT",
+      "ITEM:8.01"
+     ],
+     "statements": [
+      [
+       "CYBERSECURITY_INCIDENT",
+       "CONDITIONAL_RISK",
+       "FIRST_SEEN"
+      ],
+      [
+       "CYBERSECURITY_INCIDENT",
+       "OCCURRED",
+       "FIRST_SEEN"
+      ],
+      [
+       "OFFICER_DEPARTURE",
+       "ANNOUNCED_FUTURE",
+       "FIRST_SEEN"
+      ],
+      [
+       "OFFICER_DEPARTURE",
+       "ATTRIBUTED_REPORT",
+       "FIRST_SEEN"
+      ],
+      [
+       "RESTATEMENT",
+       "FORECAST",
+       "FIRST_SEEN"
+      ],
+      [
+       "RESTATEMENT",
+       "OCCURRED",
+       "FIRST_SEEN"
+      ]
+     ],
+     "status": "ASSESSED"
+    },
+    {
+     "coverage_complete": true,
+     "decision": "ACCEPT",
+     "filing": "EXSEMI_402_8K",
+     "findings": [
+      "ITEM:4.02",
+      "RESTATEMENT"
+     ],
+     "statements": [],
+     "status": "ASSESSED"
+    }
+   ],
+   "evidence_context": {
+    "due_reviews": [],
+    "falsifier_predicates": [
+     "F-ITEM-4.02",
+     "F-RESTATEMENT",
+     "IMPAIRMENT",
+     "ITEM:4.02",
+     "RESTATEMENT"
+    ],
+    "review_complete": false,
+    "schema": "EvidenceContext.v1",
+    "statements_pending": [
+     "stmt:0c31996df18459e7275a169d088c219618a24da20c3d549ad86d0a252a4517cc",
+     "stmt:11ed61e012d9ed943937f402151cb856b80a2022272fd45067b42e93231b27a3",
+     "stmt:2c2fe9b571396fab1fbbd817ac52ab40c9267d405821361af3863f8a2d2bc2fe",
+     "stmt:5bc6209b27a6a5846524b604771702645b35307f9d3c2a07d430735f07fddeef",
+     "stmt:66417bd1b4a868ff14ae181cc4f26079a5d793be206d79bef179d4e83054e214",
+     "stmt:954dc7517b947da2baddad3776d0dfd4d5ec3a6ebb0f7f85c39edcb44d70c389"
+    ],
+    "status": "ADVERSE",
+    "status_reasons": [
+     "FALSIFIER_FIRED:F-ITEM-4.02",
+     "FALSIFIER_FIRED:F-RESTATEMENT",
+     "IMPAIRMENT",
+     "ITEM:4.02",
+     "RESTATEMENT"
+    ]
+   },
+   "plan": {
+    "intents": [
+     {
+      "amount": "0.2",
+      "decision_id": "decision:e96f335738a580cbc12b7b45af3c2549301d3bfac30c6e9929c7b554dfcb56c9",
+      "mandatory": true,
+      "side": "SELL",
+      "symbol": "NVDAB",
+      "token_units": 2000
+     }
+    ],
+    "jobs": [],
+    "rejections": [],
+    "requirements": [
+     {
+      "held_units": 2000,
+      "max_units": 0,
+      "reasons": [
+       "EVIDENCE_FALSIFIER_MANDATORY:F-ITEM-4.02"
+      ],
+      "remaining_sell_units": 2000,
+      "status": "AWAITING_SETTLEMENT",
+      "symbol": "NVDAB"
+     }
+    ],
+    "reservation_deltas": [
+     {
+      "asset": "NVDAB",
+      "intent_id": "7be27f9b349ce1507d7b2eaa6495f344f3f30136e263e4a47422e16ab39480c0",
+      "units": 2000
+     },
+     {
+      "asset": "BNB",
+      "intent_id": "7be27f9b349ce1507d7b2eaa6495f344f3f30136e263e4a47422e16ab39480c0",
+      "units": 10000
+     }
+    ]
+   },
+   "policy": {
+    "evidence_rejections": [],
+    "shadow": [
+     {
+      "authority": "MANDATORY_REDUCTION",
+      "predicates": [
+       "F-ITEM-4.02"
+      ],
+      "symbol": "NVDAB"
+     },
+     {
+      "authority": "SHADOW",
+      "statements_pending": 6,
+      "symbol": "NVDAB"
+     }
+    ],
+    "targets": [
+     [
+      "GOOGLB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ],
+     [
+      "MSFTB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ],
+     [
+      "NVDAB",
+      "KEEP_QUANTITY",
+      "MANDATORY_REDUCTION_BY_RISK"
+     ],
+     [
+      "TSLAB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ]
+    ]
+   }
+  },
+  "SHADOW": {
+   "assessments": [
+    {
+     "coverage_complete": true,
+     "decision": "ACCEPT",
+     "filing": "EXSEMI_STATEMENTS_8K",
+     "findings": [
+      "IMPAIRMENT",
+      "ITEM:8.01"
+     ],
+     "statements": [
+      [
+       "CYBERSECURITY_INCIDENT",
+       "CONDITIONAL_RISK",
+       "FIRST_SEEN"
+      ],
+      [
+       "CYBERSECURITY_INCIDENT",
+       "OCCURRED",
+       "FIRST_SEEN"
+      ],
+      [
+       "OFFICER_DEPARTURE",
+       "ANNOUNCED_FUTURE",
+       "FIRST_SEEN"
+      ],
+      [
+       "OFFICER_DEPARTURE",
+       "ATTRIBUTED_REPORT",
+       "FIRST_SEEN"
+      ],
+      [
+       "RESTATEMENT",
+       "FORECAST",
+       "FIRST_SEEN"
+      ],
+      [
+       "RESTATEMENT",
+       "OCCURRED",
+       "FIRST_SEEN"
+      ]
+     ],
+     "status": "ASSESSED"
+    },
+    {
+     "coverage_complete": true,
+     "decision": "ACCEPT",
+     "filing": "EXSEMI_402_8K",
+     "findings": [
+      "ITEM:4.02",
+      "RESTATEMENT"
+     ],
+     "statements": [],
+     "status": "ASSESSED"
+    }
+   ],
+   "evidence_context": {
+    "due_reviews": [],
+    "falsifier_predicates": [
+     "F-ITEM-4.02",
+     "F-RESTATEMENT",
+     "IMPAIRMENT",
+     "ITEM:4.02",
+     "RESTATEMENT"
+    ],
+    "review_complete": false,
+    "schema": "EvidenceContext.v1",
+    "statements_pending": [
+     "stmt:0c31996df18459e7275a169d088c219618a24da20c3d549ad86d0a252a4517cc",
+     "stmt:11ed61e012d9ed943937f402151cb856b80a2022272fd45067b42e93231b27a3",
+     "stmt:2c2fe9b571396fab1fbbd817ac52ab40c9267d405821361af3863f8a2d2bc2fe",
+     "stmt:5bc6209b27a6a5846524b604771702645b35307f9d3c2a07d430735f07fddeef",
+     "stmt:66417bd1b4a868ff14ae181cc4f26079a5d793be206d79bef179d4e83054e214",
+     "stmt:954dc7517b947da2baddad3776d0dfd4d5ec3a6ebb0f7f85c39edcb44d70c389"
+    ],
+    "status": "ADVERSE",
+    "status_reasons": [
+     "FALSIFIER_FIRED:F-ITEM-4.02",
+     "FALSIFIER_FIRED:F-RESTATEMENT",
+     "IMPAIRMENT",
+     "ITEM:4.02",
+     "RESTATEMENT"
+    ]
+   },
+   "plan": {
+    "intents": [],
+    "jobs": [],
+    "rejections": [],
+    "requirements": [],
+    "reservation_deltas": []
+   },
+   "policy": {
+    "evidence_rejections": [],
+    "shadow": [
+     {
+      "authority": "SHADOW",
+      "predicates": [
+       "F-ITEM-4.02"
+      ],
+      "symbol": "NVDAB"
+     },
+     {
+      "authority": "SHADOW",
+      "statements_pending": 6,
+      "symbol": "NVDAB"
+     }
+    ],
+    "targets": [
+     [
+      "GOOGLB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ],
+     [
+      "MSFTB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ],
+     [
+      "NVDAB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ],
+     [
+      "TSLAB",
+      "KEEP_QUANTITY",
+      "MISSING_MARKET_OR_BASIS"
+     ]
+    ]
+   }
+  }
+ },
+ "synthetic": true
+}

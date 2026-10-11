@@ -2,6 +2,9 @@
 
 Re-runs the injected deterministic policy/planner/execution/reducer. Recommitting
 saved projections alone is restore verification, not this conformance check.
+Rounds recorded with a context builder (larp/integration/runtime.py) replay only with
+that builder and initial policy state, and only if its ports return what they returned
+then, failures included (IDEA-033 R27).
 """
 
 import json
@@ -24,7 +27,7 @@ class RecordedAssessment:
 
 
 def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile_hash,address,
-           policy,planner,execution,reducer):
+           policy,planner,execution,reducer,context_builder=None,initial_policy_state=None):
     target.initialize(run_id,wallet_id,chain_id,initial)
     runtime=None
     for batch in batches:
@@ -38,7 +41,9 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
             if kind in ('ROUND_PLANNED','PLAN_REJECTED'):
                 record=event['record']
                 runtime=Coordinator(target,RecordedAssessment(record['request'],record['assessment']),policy,planner,
-                    execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address)
+                    execution=execution,run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address,
+                    context_builder=context_builder,initial_policy_state=initial_policy_state,
+                    clock_ms=lambda:record.get('decision_ms',record['started_ms']))
                 if kind=='PLAN_REJECTED':
                     target.open_round(run_id,record['round_id'],doc(record['request']),current['epoch'])
                     runtime.record_rejection(record['round_id'],record)
@@ -59,7 +64,8 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                         raise IntegrityError('Replay closure lacks its durable round request')
                     target.open_round(run_id,audit['round_id'],doc(request),current['epoch'])
                     runtime=Coordinator(target,RecordedAssessment(request,None),policy,planner,execution=execution,
-                        run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address)
+                        run_id=run_id,version_id=version_id,profile_hash=profile_hash,address=address,
+                        context_builder=context_builder,initial_policy_state=initial_policy_state)
                 runtime.close(audit['round_id'],audit['timestamp_ms'],event['status'])
             else:
                 raise ContractError('Unsupported replay event; register an owner reducer')

@@ -166,9 +166,16 @@ AFFIRMED_EVENTS = (
     ("IMPAIRMENT", "We recorded a goodwill impairment of $12 million; further impairments may follow."),
     ("OFFICER_DEPARTURE", "On May 12, 2026, the Chief Financial Officer resigned."),
     ("IMPAIRMENT", "We recorded an impairment charge on the Boise facility, but no restructuring charge was required."),
-    ("OFFICER_DEPARTURE", "The Chief Financial Officer will resign effective no later than November 30, 2026."),
     ("RESTATEMENT", "The Audit Committee concluded that the previously issued financial statements "
                     "should no longer be relied upon."),
+)
+
+
+# Announced future events: confirmed announcement now, occurrence later (IDEA-030 R04; IDEA-031 AC-S04). Before
+# IDEA-031 the first of these was expected to be an occurred departure, which is the defect IDEA-030 confirmed.
+ANNOUNCED_EVENTS = (
+    ("OFFICER_DEPARTURE", "The Chief Financial Officer will resign effective no later than November 30, 2026.",
+     "2026-11-30"),
 )
 
 
@@ -192,11 +199,13 @@ class NegationScopeTests(unittest.TestCase):
 
     def test_negated_or_hypothetical_events_give_no_fact_and_are_not_verified(self):
         patterns = dict(KEYWORD_EVENTS)
-        for events, reason in ((NEGATED_EVENTS, "EVENT_NEGATED"), (HYPOTHETICAL_EVENTS, "EVENT_HYPOTHETICAL")):
+        for events, reason in ((NEGATED_EVENTS, lambda s: "EVENT_NEGATED"),
+                               (HYPOTHETICAL_EVENTS, lambda s: "EVENT_NOT_OCCURRED:" + (
+                                   "FORECAST" if s.startswith("We expect") else "CONDITIONAL_RISK"))):
             for metric, sentence in events:
                 with self.subTest(sentence=sentence):
                     keyword = patterns[metric].search(sentence).group(0)
-                    self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, [reason] * 2))
+                    self.assertEqual(self.check(metric, sentence, sentence, keyword), (False, [reason(sentence)] * 2))
 
     def test_hypothetical_events_are_kept_as_possible_events_spanning_their_clause(self):
         patterns = dict(KEYWORD_EVENTS)
@@ -204,16 +213,16 @@ class NegationScopeTests(unittest.TestCase):
             with self.subTest(sentence=sentence):
                 saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
                 facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
-                kept = [f for f in facts if f["metric"] == "HYPOTHETICAL:" + metric]
+                kept = [f for f in facts if f["metric"] == "STATEMENT:" + metric]
                 self.assertEqual([f["span"]["text"] for f in kept], [sentence])
                 keyword = patterns[metric].search(sentence).group(0)
-                self.assertEqual(self.check("HYPOTHETICAL:" + metric, sentence, sentence, keyword)[1], [None, None])
+                self.assertEqual(self.check("STATEMENT:" + metric, sentence, sentence, keyword)[1], [None, None])
 
     def test_a_hypothetical_claim_needs_hypothetical_wording(self):
-        for events, reason in ((NEGATED_EVENTS, "EVENT_NEGATED"), (AFFIRMED_EVENTS[:1], "EVENT_NOT_HYPOTHETICAL")):
+        for events, reason in ((NEGATED_EVENTS, "EVENT_NEGATED"), (AFFIRMED_EVENTS[:1], "STATEMENT_IS_ISSUER_OCCURRENCE")):
             for metric, sentence in events:
                 with self.subTest(sentence=sentence):
-                    found, reasons = self.check("HYPOTHETICAL:" + metric, sentence, sentence)
+                    found, reasons = self.check("STATEMENT:" + metric, sentence, sentence)
                     self.assertEqual((found, reasons), (False, [reason]))
 
     def test_one_clause_reported_and_the_next_hypothetical_gives_both(self):
@@ -221,7 +230,7 @@ class NegationScopeTests(unittest.TestCase):
         saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
         facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
         events = {f["metric"]: f["span"]["text"] for f in facts if f["kind"] == "EVENT"}
-        self.assertEqual(events, {"IMPAIRMENT": "impairment", "HYPOTHETICAL:IMPAIRMENT": "further impairments may follow."})
+        self.assertEqual(events, {"IMPAIRMENT": "impairment", "STATEMENT:IMPAIRMENT": "further impairments may follow."})
 
     def test_statement_key_ignores_case_and_spacing_but_not_wording(self):
         def key(sentence):
@@ -229,6 +238,15 @@ class NegationScopeTests(unittest.TestCase):
         base = key("Goodwill impairment could result if results decline.")
         self.assertEqual(base, key("GOODWILL IMPAIRMENT   could result if results decline."))
         self.assertNotEqual(base, key("Goodwill impairment may result if results decline."))
+
+    def test_announced_future_events_are_statements_with_their_effective_date(self):
+        for metric, sentence, effective in ANNOUNCED_EVENTS:
+            with self.subTest(sentence=sentence):
+                saved = document_text(f"<p>{sentence}</p>".encode(), "n.htm")
+                facts = extract_document(saved.text, saved.text_sha256, REGISTRY.by_issuer(EXSEMI), {"accession": "a"})
+                kept = [f["statement"] for f in facts if f["metric"] == "STATEMENT:" + metric]
+                self.assertEqual([(k["assertion"], k["effective"]) for k in kept], [("ANNOUNCED_FUTURE", effective)])
+                self.assertEqual(self.check(metric, sentence, sentence), (False, ["EVENT_NOT_OCCURRED:ANNOUNCED_FUTURE"]))
 
     def test_affirmed_events_still_give_a_fact_and_verify(self):
         for metric, sentence in AFFIRMED_EVENTS:

@@ -221,6 +221,9 @@ class PostgresStore:
             integer(units)
         for asset,units in db.execute('SELECT asset,sum(units) FROM reservations WHERE run_id=%s GROUP BY asset',
                                       (b['run_id'],)):
+            # 'INCOMING:<token>' records a pending buy's expected tokens (IDEA-031): a claim, not a settled resource.
+            if asset.startswith('INCOMING:'):
+                continue
             if int(units) > balances.get(asset,0):
                 raise Conflict('Insufficient settled resource for reservations')
 
