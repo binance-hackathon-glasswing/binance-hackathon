@@ -1,0 +1,33 @@
+You are building Keith's part of LARP's deployment: the live strategy, risk and accounting configuration. Today the decided equal-weight policy (IDEA-037) runs only with a synthetic OFFLINE_FIXTURE profile, entries are blocked by missing inputs, and the red-flag classes and end-of-run schedule are not wired. When your PR is integrated with the other three, the strategy must run with a complete, sourced live profile.
+
+Start on a new branch codex/deploy-strategy from origin/codex/engine-foundation at the commit that adds docs/build/DEPLOYMENT_BUILD.md. That brief is part of this prompt: read it first, then AGENTS.md, docs/skill/SKILL.md (§0 and the never-do list), the LEDGER table, IDEA-035 (B1, B3-B6, C4, §5, §6, §7 items 5-7 and 11, §10), IDEA-037, IDEA-026, plan.md "Declared values" and G-21/G-22/G-25/G-28/G-29, and GAP-13/49/50/51/62/64 in docs/INCOMPLETE_WORK.md. Record all work in IDEA-040 (create docs/ledger/IDEA-040.md). Your reviewer is Yao Zhu.
+
+Own only the paths the brief assigns to you. Shared docs and the ledger index are Keegan's: list the edits you need in IDEA-040, including every deviation from the proposal for the register (GAP-62).
+
+Deliver:
+
+1. Token-candle sessions (B3; DR-08; interface I2). Build PriceSeries from Isaac's raw token candles: one bar per US regular session closing 16:00 ET, fixed in UTC, no Ondo extension of short histories. Check and record the first candle dates for GOOGLB and SKHYB. Keep the no-silent-substitution rule: missing or gapped sessions stay missing. EQUAL_WEIGHT needs no history for entries (IDEA-037 P10), so state which remaining features still use the series.
+
+2. Price-impact rule replacing the depth cap (B4; DR-08; GAP-51). Entry requires impact <= min(50 bp, 2 x the logged median) and total entry cost (spread + impact + gas / size) <= 50 bp, from Isaac's quote fields (interface I1). Remove the DECLARED_DEPTH_INPUT_UNAVAILABLE blocker for live quotes. Mandatory reductions keep their existing exemptions (cost filters never veto a required sale; market, route, gas and slippage gates still apply).
+
+3. Live profile (B6; DR-09; GAP-13; interface I6). Add a LIVE profile mode alongside OFFLINE_FIXTURE. Every value carries provenance (decision ID, data hash or formula); startup refuses any unset or unsourced value. Set values by the method B6 decided (from the literature, inputs from measured quote costs, never from P&L), using Isaac's quote-logger summary by Oct 19: per_trade_cap_units >= one full 20% position, minimum_trade_units, slippage_bps, impact_bps, quote_age_seconds, feature_age_seconds, the BNB gas floor and top-up size, dates (trade_after, new_risk_end, flatten_start, signing_end) for the scored run. Produce two profiles: the development rehearsal profile (Oct 21-26 dates, minimum size, dev wallet ~100 USDT) and the final profile (Oct 29 - Nov 11, 200 USDT). Freeze values at the Oct 22 cut line.
+
+4. Red-flag classes (B1; DR-10; interface I8; with Yao). Class 1 (Item 4.02): sell (DISCRETIONARY_EXIT), no buys while the latch is unresolved, buying allowed again once the finding is corrected or withdrawn (A8). Class 2 (Items 1.05, 2.06): no forced sale; block buys and adds for 5 sessions, then the block expires (new code: the existing ENTRY_BLOCK has no expiry). Class 3 (statements): SHADOW. Consume Yao's versioned predicate records, not your own copies; test on them.
+
+5. End-of-run schedule (C4; DR-14). No new risk after new_risk_end; flatten every position so it is finished by Nov 11 15:00 UTC; no reinvestment or top-up inside the flatten window; the flatten is mandatory and survives blocked rounds (it retries until done or every remaining position is documented dust). Clock-driven tests across each boundary, in UTC.
+
+6. Gas top-up planning (B11; DR-06; interface I7; with Isaac and Keegan). When BNB falls below the floor (two transactions of approve + swap gas), plan a USDT -> BNB top-up intent as its own round, sized by the profile, never using unconfirmed proceeds, and never during a blocked state that forbids new spending. It is a resource action, not a position: it does not count toward the four positions or gross exposure; BNB value is reported separately in the economic views.
+
+7. Accounting from real receipts (DR-05; interface I4; with Keegan and Isaac). Make advance_accounting accept Isaac's real final receipt facts (APPROVAL, FILL, REVERT with settlement FINAL: actual received tokens on exact-in buys, actual proceeds on sells, actual fee, gas in BNB units and USDT value, revert gas only). Keep rejecting every other kind: BROADCAST_ATTEMPTED is an execution/audit fact handled by Keegan's settlement reducer and never changes balances or gas (interface I4). Keegan's settlement reducer calls it; agree the observation fields with Isaac by Oct 12 and test on his recorded observations.
+
+8. Fixture re-capture. Re-capture tests/strategy/fixtures/assessment-producer.json from Yao's current golden trace (PR #7 regenerated it; Keegan's integration check C2 fails until this is done) and keep the producer commit in the fixture.
+
+Acceptance (write criteria in IDEA-040 and push them before running anything):
+- All existing tests pass, including IDEA-037 P01-P17 and the 13 foundation tests.
+- New tests for items 1-7 on recorded real candles and quotes where they exist, synthetic otherwise and labelled as such.
+- The live profile loads only with every value sourced; a missing value stops startup.
+- IDEA-040 lists every deviation (80% invested, 25%/90% hard lines, price-impact rule, token-candle series, top-up rounds, red-flag classes) with its reason for Keegan's register.
+
+Dates: interfaces I1/I2/I4/I6/I7/I8 agreed Oct 12; items 1, 2, 4-7 built by Oct 17; live profile values set from measured quotes by Oct 20; frozen at the Oct 22 cut line.
+
+You need: Isaac's quote-logger summary and recorded candles, Yao's predicate records, the team's B7 answer if they change the policy after system testing. Nothing here authorizes live transactions, organiser messages or merges to main.
