@@ -20,6 +20,8 @@ PENDING_REVIEW -> PENDING_REVIEW (incomplete reassessment, or any accepted resul
                   not observe it; attempts+1, exponential backoff)
 PENDING_REVIEW -> REVIEW_EXHAUSTED (max attempts; stays visible as uncertainty, no further jobs)
 any -> SUPERSEDED / CORRECTED / WITHDRAWN (its only supporting record was revised or withdrawn)
+CORRECTED / WITHDRAWN -> PENDING_REVIEW (a newer revision of a support was not completely read, so its correction
+                  proof no longer holds; attempts restart)
 any -> EXPIRED (not seen within the retention window; entries are bounded in number)
 
 No transition requires a human. Statuses are evidence bookkeeping, not portfolio permission.
@@ -242,6 +244,29 @@ def revise(registry: dict, *, accession: str, superseding_hash: str, still_prese
             changed.append(sid)
         registry[sid] = updated
     return changed
+
+
+def reopen(registry: dict, ids, *, result_id: str, now_ms: int, policy: dict) -> list:
+    """Reopen CORRECTED/WITHDRAWN statements among `ids` whose correction proof no longer covers every support.
+
+    A newer revision of a supporting record that was not completely read invalidates that record's proof. The
+    statement is then unproven rather than corrected, and needs a review like a new one; otherwise it would get no
+    review job and an unrelated complete result could clear the gate (IDEA-033 R25). Returns the reopened IDs.
+    """
+    out = []
+    for sid in sorted(ids):
+        entry = registry.get(sid)
+        if entry is None or entry["status"] not in ("CORRECTED", "WITHDRAWN"):
+            continue
+        proof = entry.get("source_resolutions", {})
+        if all(r.get("record_id") in proof for r in entry["records"]):
+            continue
+        registry[sid] = dict({k: v for k, v in entry.items() if k not in ("corrected_ms", "corrected_by")},
+                             status="PENDING_REVIEW", reopened_ms=now_ms,
+                             review=dict(entry["review"], attempts=0, last_result_id=result_id,
+                                         next_due_ms=now_ms + policy["review_base_delay_ms"]))
+        out.append(sid)
+    return out
 
 
 def expire(registry: dict, *, now_ms: int, retention_ms: int, max_entries: int) -> list:

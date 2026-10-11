@@ -814,7 +814,7 @@ def econ_registration(n=4, span=5, **changes):
          "purge_sessions": 5, "embargo_sessions": 5, "fixed_parameters": {}, "metric": "PAIRED_NET_WALLET_RETURN",
          "margin": [0, 1], "support_rule": "LOWER_BOUND_ABOVE_MARGIN", "kill_rule": "UPPER_BOUND_BELOW_ZERO",
          "inconclusive_rule": "OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",
-         "confidence_method": "PAIRED_CALENDAR_CLUSTER_BOOTSTRAP", "confidence_bps": 9000, "bootstrap_draws": 50,
+         "confidence_method": "PAIRED_CALENDAR_CLUSTER_BOOTSTRAP", "confidence_bps": 9000, "bootstrap_draws": 500,
          "minimum_clusters": 2, "seed": 7, "primary_horizon_sessions": 5, "secondary_horizons_sessions": [],
          "independence_basis": "NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS", "default": "base",
          "registered_commit": "0" * 40, "variants": ["baseline", "evidence"], "windows": windows}

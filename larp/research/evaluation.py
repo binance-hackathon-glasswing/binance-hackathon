@@ -7,6 +7,8 @@ verdict ignored, so v1 now returns NOT_RUN.
 IDEA-034 (user decision 2026-10-11, goal is maximum profit): a treatment that loses money is never SUPPORTED.
 Every support rule also requires the bootstrap lower bound of the treatment's own net return (registered metric)
 to be above zero; a treatment whose upper bound is at or below zero is NOT_SUPPORTED whatever the paired result.
+IDEA-033 R26: the bounds only mean that with enough resamples, so a registration needs MIN_TAIL_DRAWS draws beyond
+each percentile bound, and an interval that excludes its own observed mean never supports.
 
 No historical dataset is supplied here. Tests use synthetic accounting examples.
 EXP IDs/rights/splits must be coordinated with the integrator before a real run.
@@ -33,6 +35,8 @@ ABSOLUTE_RETURN_RULE = "TREATMENT_LOWER_BOUND_ABOVE_ZERO"
 KILL_RULES = ("UPPER_BOUND_BELOW_ZERO", "UPPER_BOUND_BELOW_MARGIN")
 INCONCLUSIVE_RULES = ("OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",)
 INDEPENDENCE = ("NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS",)
+# Percentile bounds need resamples beyond them: 25 per tail is 1000 draws at 95%, 500 at 90%, 5000 at 99% (R26).
+MIN_TAIL_DRAWS = 25
 WINDOW_FIELDS = frozenset({"cluster_id", "decision_start", "decision_end", "label_end", "first_session",
                            "last_session"})
 
@@ -63,9 +67,12 @@ def validate_registration(registration):
         raise ContractError("Margin must be [numerator, denominator] of opening equity")
     if type(d["variants"]) is not list or len(d["variants"]) != 2 or len(set(d["variants"])) != 2:
         raise ContractError("Exactly one baseline and one treatment variant")
-    integer(d["bootstrap_draws"], 1)
+    draws = integer(d["bootstrap_draws"], 1)
     if not 0 < integer(d["confidence_bps"]) < 10000:
         raise ContractError("Confidence out of bounds")
+    if draws * (10000 - d["confidence_bps"]) < MIN_TAIL_DRAWS * 20000:
+        raise ContractError(f"BOOTSTRAP_DRAWS_TOO_FEW: {draws} draws leave fewer than {MIN_TAIL_DRAWS} beyond "
+                            f"each bound at {d['confidence_bps']} bps")
     integer(d["minimum_clusters"], 2)
     for name in ("purge_sessions", "embargo_sessions", "detection_delay_sessions"):
         integer(d[name])
@@ -217,15 +224,19 @@ def evaluate(registration: Document, outcomes):
                   treatment_absolute_interval=[ratio(absolute_low), ratio(absolute_high)],
                   baseline_absolute_mean=ratio(mean(baseline_absolute)), warnings=warnings)
     kill_bound = Fraction(0) if d["kill_rule"] == "UPPER_BOUND_BELOW_ZERO" else margin
+    bounds_support = low > margin and absolute_low > 0
     if incomplete:
         result["reason"] = "INCOMPLETE_OUTCOMES_RETAINED"
     elif absolute_high <= 0:
         # Confidently does not make money: not worth adopting whatever the paired difference (IDEA-034).
         result.update(status="NOT_SUPPORTED", reason="TREATMENT_ABSOLUTE_NET_NOT_POSITIVE")
-    elif low > margin and absolute_low > 0:
+    elif bounds_support and mean(paired) > margin and treatment_mean > 0:
         result["status"] = "SUPPORTED"
     elif high < kill_bound:
         result["status"] = "NOT_SUPPORTED"
+    elif bounds_support:
+        # A bound beyond its own observed mean is a resampling artefact, not evidence (R26).
+        result["reason"] = "BOOTSTRAP_INTERVAL_EXCLUDES_OBSERVED_MEAN"
     elif low > margin:
         result["reason"] = "TREATMENT_ABSOLUTE_LOWER_BOUND_NOT_POSITIVE"
     else:

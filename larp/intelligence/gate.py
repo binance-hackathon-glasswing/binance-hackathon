@@ -154,6 +154,7 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         return any(f["type"] == kind and (not f.get("sources") or any(s.get("accession") == accession
                    for s in f["sources"])) for f in r["event_findings"] + r["findings"])
 
+    invalidated = set()  # statements whose correction proof this result invalidated (R25)
     for used in r.get("evidence_used", []):
         accession, revision = used.get("accession"), used.get("revision", 0)
         seen = records_seen.get(accession)
@@ -171,12 +172,28 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
                 if invalid:
                     statements[sid] = dict(entry, source_resolutions={k: v for k, v in corrections.items()
                                                                       if k not in invalid})
+                    invalidated.add(sid)
             for a in adverse:
                 for source in a.get("sources") or []:
                     key = source.get("record_id")
                     correction = a["source_resolutions"].get(key)
                     if source.get("accession") == accession and correction and revision > correction["revision"]:
                         a["source_resolutions"].pop(key)
+            if not complete:
+                # Nor does a resolved latch keep a resolution proved on an older revision: until the newer one is
+                # completely read, the finding may still be there (IDEA-033 R25). A complete read is handled below.
+                for a in list(resolved):
+                    proof = a.get("source_resolutions") or {}
+                    stale = {s.get("record_id") for s in a.get("sources") or [] if s.get("accession") == accession
+                             and s.get("record_id") in proof and revision > proof[s.get("record_id")]["revision"]}
+                    if stale and a["finding_id"] not in held:
+                        resolved.remove(a)
+                        held.add(a["finding_id"])
+                        adverse.append(dict({k: v for k, v in a.items()
+                                             if k not in ("resolved_ms", "resolved_by", "resolution")},
+                                            source_revisions=dict(a.get("source_revisions", {})),
+                                            source_resolutions={k: v for k, v in proof.items() if k not in stale},
+                                            reopened_ms=now_ms))
         if complete and current:
             revised_statement = assessed is None and any(
                 source.get("accession") == accession and source.get("content_hash") != used.get("content_hash")
@@ -248,6 +265,8 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
         nxt.update(context=context, context_hash=context_hash(context), availability="AVAILABLE")
     else:
         nxt["availability"] = "ABSTAINED" if r["status"] == "ABSTAIN" else "UNAVAILABLE"
+    # Correction proof invalidated above and not re-established by this result reopens the review (R25).
+    lifecycle.reopen(statements, invalidated, result_id=rid, now_ms=now_ms, policy=policy)
     # Any accepted result at or after a due review that did not observe the statement is one attempt (R18).
     lifecycle.missed_reviews(statements, result_id=rid, now_ms=now_ms, policy=policy)
     lifecycle.expire(statements, now_ms=now_ms, retention_ms=policy["statement_retention_ms"],

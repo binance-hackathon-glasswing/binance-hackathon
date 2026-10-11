@@ -22,8 +22,8 @@ def used(accession, revision, record_id=None):
 
 
 def statement(record, **changes):
-    return dict(statement_id=SID, event='IMPAIRMENT', novelty='FIRST_SEEN', statement='Synthetic statement',
-                **{k: record[k] for k in ('accession', 'record_id', 'content_hash')}, **changes)
+    return dict(dict(statement_id=SID, event='IMPAIRMENT', novelty='FIRST_SEEN', statement='Synthetic statement',
+                     **{k: record[k] for k in ('accession', 'record_id', 'content_hash')}), **changes)
 
 
 class ClosedStatementReopens(unittest.TestCase):

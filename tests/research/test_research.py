@@ -128,7 +128,7 @@ class ResearchTests(unittest.TestCase):
              "metric": "PAIRED_NET_WALLET_RETURN", "margin": [0, 1], "support_rule": "LOWER_BOUND_ABOVE_MARGIN",
              "kill_rule": "UPPER_BOUND_BELOW_ZERO", "inconclusive_rule": "OTHERWISE_INCLUDING_INSUFFICIENT_OR_INCOMPLETE",
              "confidence_method": "PAIRED_CALENDAR_CLUSTER_BOOTSTRAP", "confidence_bps": 9500,
-             "bootstrap_draws": 100, "minimum_clusters": 2, "seed": 7, "primary_horizon_sessions": 5,
+             "bootstrap_draws": 1000, "minimum_clusters": 2, "seed": 7, "primary_horizon_sessions": 5,
              "secondary_horizons_sessions": [20], "independence_basis": "NON_OVERLAPPING_PURGED_EMBARGOED_WINDOWS",
              "default": "frozen baseline", "registered_commit": "0" * 40, "variants": ["baseline", "evidence"],
              "windows": [{"cluster_id": "one", "decision_start": "2026-01-01T00:00:00Z",
