@@ -136,8 +136,10 @@ def plan(snapshot, proposal_or_none):
     trim_state = r.get("cap_trims", {})
     name_trims = set(trim_state.get("names", [])) & set(held)
     gross_trim = bool(trim_state.get("gross", False)) or gross > safe_equity * trim_gross
+    gross_shares = dict(trim_state.get("gross_shares", {}))
     if not unvalued and gross <= safe_equity * gross_limit:
         gross_trim = False
+        gross_shares = {}
     cap_bounds = {}
     reasons = {}
     held_names = sorted(held)
@@ -162,7 +164,12 @@ def plan(snapshot, proposal_or_none):
         else:
             cap = qty
         if gross_trim and gross > safe_equity * gross_limit:
-            cap = min(cap, floor(Fraction(qty) * safe_equity * gross_limit / gross))
+            # Freeze allocation shares when the obligation starts. Recomputing shares after each
+            # settled child repeatedly trims completed names and creates an asymptotic micro-trade tail.
+            if symbol not in gross_shares:
+                gross_shares[symbol] = ratio(value(qty, m) / gross)
+            cap = min(cap, floor(fraction(gross_shares[symbol]) * safe_equity * gross_limit
+                                 * 10**m["decimals"] / m["price_units"]))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
         if index >= 4:
             cap = 0
@@ -181,7 +188,8 @@ def plan(snapshot, proposal_or_none):
                                            "max_units": cap, "remaining_sell_units": qty - cap,
                                            "reasons": reason, "status": "PENDING"})
     if "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r:
-        r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim}
+        r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim,
+                          "gross_shares": gross_shares}
     # The nonce simplification also ensures pending trades cannot allocate twice.
     global_blocks = []
     for gate in ("integrity_ok", "journal_ok", "ownership_ok", "clock_ok"):

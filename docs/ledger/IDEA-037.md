@@ -139,3 +139,5 @@ Prospective acceptance (before running changed decision code):
 - Commit and push the decision code before running it. Latest Linux runtime/infrastructure CI passes. Tests use synthetic ports only; no credentials, network sources, wallet or audit uploads.
 
 Verification: pending the committed/pushed implementation and test run.
+
+R01 implementation refinement: the first pushed regression run (`61eb3d9`) passed 64 of 65 targeted tests. The gross completion case exposed a second issue: a boolean latch with newly calculated proportions generates an asymptotic micro-trade tail (23 child fills in the fixture before dust). Retain the original gross allocation shares across child fills, while sizing against current safe equity and the current gross limit. The completion control uses zero-cost quotes to isolate the obligation; an additional positive-cost fixture verifies that an unexecutable dust residual remains explicitly outstanding, rather than falsely completed. The existing dust/gas policy remains binding.

@@ -11,17 +11,17 @@ from tests.strategy.test_equal_weight import ew
 
 
 class TrimReplanning(unittest.TestCase):
-    def settled_child(self, s):
+    def settled_child(self, s, *, gas=10000, spread_bps=10):
         # Each round obtains fresh exact-size quotes; install the planner's persisted risk state,
         # then use the real accounting reducer for the committed reservation and final fill.
-        s = with_quotes(s, policy=False)
+        s = with_quotes(s, policy=False, gas=gas, spread_bps=spread_bps)
         result = plan(s, None)
         self.assertEqual(len(result.read()['intents']), 1)
         reserved = reserve_fixture(s, result)
         ledger = reserved.context.read()['portfolio']
         ledger['risk'] = result.read()['risk_state']
         ledger = advance_accounting(Document.from_dict(ledger),
-                                   fill_fixture(s, result.read()['intents'][0])).read()
+                                   fill_fixture(s, result.read()['intents'][0], gas=gas)).read()
         # Canonical bytes round trip models a process restart (no local latch survives).
         ledger = Document.from_dict(ledger).read()
         context = s.context.read()
@@ -37,22 +37,34 @@ class TrimReplanning(unittest.TestCase):
 
     def test_gross_trim_continues_below_trigger_until_target_after_reload(self):
         s = ew(held=dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), 4600))
-        s = self.settled_child(s)
+        # Zero-cost controls isolate obligation completion from the existing dust/gas policy.
+        s = self.settled_child(s, gas=0, spread_bps=0)
         c, m, safe = self.exposure(s)
         gross = sum(value(p['units'], m[n]) for n, p in c['portfolio']['positions'].items())
         self.assertTrue(safe * Fraction(4, 5) < gross < safe * Fraction(9, 10))
         self.assertTrue(plan(s, None).read()['requirements'])
-        for _ in range(20):
+        for _ in range(4):
             result = plan(s, None).read()
             if not result['requirements']:
                 break
-            s = self.settled_child(s)
+            s = self.settled_child(s, gas=0, spread_bps=0)
         else:
             self.fail('gross reduction did not finish')
         c, m, safe = self.exposure(s)
         self.assertLessEqual(sum(value(p['units'], m[n]) for n, p in c['portfolio']['positions'].items()),
                              safe * Fraction(4, 5))
         self.assertFalse(result['risk_state']['cap_trims']['gross'])
+        self.assertEqual(result['risk_state']['cap_trims']['gross_shares'], {})
+
+    def test_costly_gross_trim_keeps_dust_residual_explicit(self):
+        s = ew(held=dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), 4600))
+        for _ in range(4):
+            s = self.settled_child(s)
+        result = plan(with_quotes(s, policy=False), None).read()
+        self.assertTrue(result['requirements'])
+        self.assertTrue(result['risk_state']['cap_trims']['gross'])
+        self.assertFalse(result['intents'])
+        self.assertTrue(all(r['status'] == 'DUST_OR_UNEXECUTABLE' for r in result['requirements']))
 
     def test_capped_name_trim_continues_below_trigger_until_target(self):
         s = ew(held={'NVDAB': 5200}, profile_changes={'per_trade_cap_units': 6000000})
