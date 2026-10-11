@@ -89,6 +89,19 @@ class TrimReplanning(unittest.TestCase):
         self.assertFalse(plan(s, None).read()['requirements'])
         self.assertFalse(plan(ew(held={'NVDAB': 4800}), None).read()['requirements'])
 
+    def test_partial_valuation_defers_allocation_until_all_marks_recover(self):
+        s = ew(held=dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), 4800))
+        c = s.context.read()
+        c['markets'] = [dict(m, quality='UNAVAILABLE') if m['symbol'] == 'NVDAB' else m for m in c['markets']]
+        partial = plan(changed(s, **c), None).read()
+        self.assertTrue(partial['risk_state']['cap_trims']['gross'])
+        self.assertEqual(partial['risk_state']['cap_trims']['gross_shares'], {})
+        c['portfolio']['risk'] = partial['risk_state']
+        c['markets'] = s.context.read()['markets']
+        recovered = plan(changed(s, **c), None).read()
+        self.assertEqual(recovered['risk_state']['cap_trims']['gross_shares'],
+                         dict.fromkeys(('NVDAB', 'GOOGLB', 'TSLAB', 'MSFTB'), [1, 4]))
+
     def test_execution_block_keeps_obligation_and_missing_mark_cannot_clear_it(self):
         s = self.settled_child(ew(held={'NVDAB': 5200}, profile_changes={'per_trade_cap_units': 6000000}))
         c = s.context.read()
