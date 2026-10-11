@@ -70,7 +70,7 @@ All on synthetic fixtures (`larp/research/fixtures.py`), with an `EQUAL_WEIGHT` 
 | P01–P11 | PASS: `tests/strategy/test_equal_weight.py`, 11 tests |
 | P12 | PASS: every pre-existing test passes unmodified (stored strategy examples included) |
 | P13 | PASS: 499 passed, 86 skipped, 1 failed (the same `boto3`-missing archive test as the baseline); 754 subtests. `tests.test_contracts` OK |
-| Linux CI (PostgreSQL / integration tests skipped locally) | Pending: runs on PR #7 after the push |
+| Linux CI (PostgreSQL / integration tests skipped locally) | PASS: run 38147033478 on `54534d2` (PR #7), 586 passed + 770 subtests, no skips; Terraform jobs pass. Against V16 (575 + 764), that is the 11 new tests and 6 new subtests |
 
 **Mutation check.** Each behaviour was reverted in turn and the suite rerun. Every mutation was caught:
 - no hard per-name line → P04–P07 fail;
