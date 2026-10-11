@@ -312,8 +312,10 @@ def pipeline_ledger():
     return s.context.read()["portfolio"]
 
 
-class Pipeline(unittest.TestCase):
-    """Fake EDGAR -> Ingestor -> EvidenceAssessor -> gate (persisted) -> strategy -> planner -> Coordinator/Postgres."""
+class PipelineHarness(unittest.TestCase):
+    """Fake EDGAR -> Ingestor -> EvidenceAssessor -> gate (persisted) -> strategy -> planner -> Coordinator/Postgres.
+
+    No tests here, so other modules can reuse the harness (tests/integration/test_settlement.py)."""
 
     def setUp(self):
         dsn = os.environ.get("LARP_TEST_DATABASE_URL")
@@ -387,6 +389,8 @@ class Pipeline(unittest.TestCase):
         with self.store.transaction() as db:
             return db.execute("SELECT command_id,payload FROM commands WHERE run_id=%s", (RUN,)).fetchall()
 
+
+class Pipeline(PipelineHarness):
     def test_i04_shadow_pipeline_persists_evidence_and_closes_with_audit(self):
         c = self.coordinator("SHADOW")
         receipt, _ = self.round(c, "r1", "EXSEMI_402_8K")

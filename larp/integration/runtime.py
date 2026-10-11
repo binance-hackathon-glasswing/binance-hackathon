@@ -28,6 +28,7 @@ from larp.contracts import ContractError, Document, PolicyState
 from larp.intelligence.common import digest
 from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
+from larp.ports import decimal_string as decimal_amount  # exact decimal of base units (one implementation)
 from larp.risk.planner import plan as risk_plan
 from larp.strategy.policy import decide
 from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
@@ -41,16 +42,6 @@ INCOMING = "INCOMING:"
 
 def iso_ms(value: str) -> int:
     return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000)
-
-
-def decimal_amount(units: int, decimals: int) -> str:
-    """Exact decimal string of integer base units (no float)."""
-    if type(units) is not int or units < 0 or type(decimals) is not int or decimals < 0:
-        raise ValueError("Amount requires nonnegative integer units and decimals")
-    whole, frac = divmod(units, 10 ** decimals)
-    if not decimals or not frac:
-        return str(whole)
-    return f"{whole}.{str(frac).rjust(decimals, '0').rstrip('0')}"
 
 
 def ledger_from(projection: dict, reservations: list) -> dict:

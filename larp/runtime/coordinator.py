@@ -218,6 +218,11 @@ class Coordinator:
             record=change['projection'].get('round_records',{}).get(round_id)
             if record is None:
                 raise ContractError('Terminal execution has no open round record')
+            # A reducer that tracks final facts (larp/integration/settlement.py) lets the attestation be checked
+            # independently: every planned intent must have reached a terminal final fact (IDEA-042 B3).
+            if 'final_intents' in record and not ({i['intent_id'] for i in record['plan'].get('intents',[])}
+                                                  <= set(record['final_intents'])):
+                raise ContractError('Terminal attestation before every planned intent is final')
             record['execution_pending']=False
         return self.store.commit(batch_for(current,event_id,expected,
             projection=change['projection'],execution_state=transition['next_state'],
