@@ -1,10 +1,11 @@
 # IDEA-044 — Comprehensive system-testing branch review
 
 - Date / owner: 2026-10-12 / Yao Zhu with Codex and three component reviewers.
-- Status: implementation checkpoint at user-requested usage stop; **NOT VALIDATED**. Prospective acceptance below, repository tests NOT RUN. Continue from `docs/build/system-testing-review-20261012.md` and the draft PR targeting the testing branch.
+- Status: **offline engineering scope validated** (2026-10-12, Claude continuation). Component, golden/consumer, PostgreSQL integration, full-suite, system-runner and Linux/Docker/Terraform CI checks pass on the final tested heads below, and the independent final review findings V00–V09 are fixed with red/green regressions. V10/V11 (hosted database authentication) are pre-existing deployment gaps, deferred to `docs/INCOMPLETE_WORK.md`. No live capability is established.
 - Scope: all first-party code, configuration, migrations, deployment definitions and tests on `codex/system-testing-20261012` at `213a782`. Immutable official-kit/vendor copies are references only. Existing untracked `Claude outputs/` is user material, excluded.
 - Delivery: ordinary commits on `codex/system-testing-review-20261012`, PR **to `codex/system-testing-20261012`** as explicitly requested. No merge or live activation is implied.
 - Published checkpoint: implementation `5dc42de6d330c8e26a1e6f719b3c27da55d2f516`, draft [PR #18](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/18). No local functional execution. CI/final validation remains continuation work.
+- Continuation commits (all pushed before execution): `137c038` (test depth fix), `fed9a00` (first reviewed golden/fixture regeneration), `b34a90d` (final-review fixes and regressions), `c4be6a7` (second reviewed golden/fixture regeneration), then documentation-only commits.
 - Method: inspect components, record expected counterexamples, implement fixes, publish before execution, validate components then integration/system, independently re-review fixes and red-team important boundaries. External effects use synthetic ports and disposable databases; no production credentials, transactions, uploads or cloud provisioning.
 
 ## Prospective acceptance (recorded before implementation/testing)
@@ -66,11 +67,61 @@ Prospective research controls for C06: positive aligned outcomes retain their ve
 
 Prospective numeric/recovery controls: a claim must retain the amount's explicitly stated tolerance and cannot borrow an unrelated number, omit the tolerance or state both point and range. Negative guidance/loss comparisons must use ordered bounds. A failed recheck must retry on ordinary polling, with changed revisions retained and bounded failure/dead-letter behavior. Changes to `facts.py`, `verify.py`, and `models.py` intentionally change the baseline code identity: regenerate synthetic intelligence goldens only after publication, review semantic changes, then update the exact consumer fixture and publish before final validation.
 
-Validation results: pending publication and execution. Test reports below will identify exact tested commits, environments, failures fixed and any skips.
+Validation results: see "Continuation validation (2026-10-12)" below. The checkpoint paragraph that follows is kept as the historical pre-execution state.
 
 Checkpoint checks (2026-10-12): `git diff --check` PASS. An isolated Python 3.12 environment was installed from the test lock before the final signed-probe dependency additions; `pip check` PASS at that stage. Docker's disposable PostgreSQL test service started successfully. **No modified repository Python, tests, demos or probes have run.** No functional pass is claimed. The user requested an early stop and a Claude handoff; publication and a draft PR preserve work without waiting for CI or fixture regeneration. Known expected first-run failures: stale synthetic golden traces (baseline code identity changed) until reviewed regeneration and exact consumer fixture re-capture. All other failures require diagnosis, not snapshot acceptance.
 
 Prospective ancillary controls (C02/C11): fake signed responses must prove identical signed request targets, no redirects, no literal/escaped credential values in returned or persisted data, and at most one call after a refusal. Malformed quote quantities must never become a subsequent sell amount. Four transient network attempts remain the existing maximum; error output must not reflect credentials. Tests load no dotenv file and use no live transport. Test-only dependency additions copy existing project lock versions.
+
+## Continuation validation (2026-10-12, Claude)
+
+Environment: clean clone of the pushed review branch (the shared checkout holds user-owned untracked material, which `tools/system_test.py` correctly refuses), Python 3.12.14 venv from `deploy/requirements-test.lock` (`pip check` PASS), disposable PostgreSQL 14 container `larp-review-20261012` on loopback port 55432, `env -i` with no credentials or dotenv, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. Raw artifacts stayed outside the repository.
+
+| Step | Commit | Command / scope | Result |
+|---|---|---|---|
+| First CI (checkpoint) | `149f5f1` | PR CI run [38245835826](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38245835826) | Terraform aws/bootstrap PASS; runtime FAIL: 1051 passed, 1 skipped, 3 subtest failures: 2 expected stale goldens and 1 unexpected `OUTPUT_TOO_DEEP` regression (V00) |
+| Components 1 | `149f5f1` | `tests/strategy tests/risk tests/research` | 213 passed, 17 subtests |
+| Components 2 | `149f5f1` | `tests/intelligence tests/sources tests/redteam/test_semantics_redteam.py` | 388 passed, 3 failed: 2 stale goldens, 1 V00 |
+| Components 3 | `149f5f1` | `tests/execution tests/marketdata tests/signer tests/test_w04_execution.py tests/test_w08_capabilities.py tests/test_probe_boundaries.py` | 154 passed, 1 skipped (opt-in external recorded artifacts), 144 subtests |
+| V00 fix rerun | `137c038` | `tests/intelligence/test_models.py` | 13 passed, 27 subtests |
+| Golden regeneration 1 | `137c038` → `fed9a00` | `python -m larp.intelligence.demo --out <scratch>`; path-by-path JSON diff | Only baseline `checkpoint_sha256` and derived ids changed (result/assessment/model keys, batch/job/request ids, result-derived `falsifier:` finding ids). Status, thesis, tool calls, claims, falsifiers and gates unchanged; `find:` ids unchanged. New `assessment_key` equals the Linux CI value. Fixture request/result re-captured exactly, `producer_commit` `137c038` |
+| PostgreSQL integration | `fed9a00` | `tests/integration tests/runtime tests/storage tests/audit` | 233 passed, 3 skipped (Linux bubblewrap), 95 subtests; new `test_cadence`, `test_review_boundaries`, real-role `test_anchors_roles`: 18 passed, 0 skipped |
+| Full local suite | `fed9a00` | `pytest` | 1048 passed, 4 skipped (1 opt-in external artifacts, 3 bubblewrap), 1276 subtests |
+| Linux CI | `fed9a00` | run [38246576071](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38246576071) | All 3 jobs PASS: full pytest 1051 passed, 1 skipped (opt-in external artifacts), 1276 subtests; namespace-isolated runtime demo, Docker build and `--network none --read-only --cap-drop ALL` smoke, Terraform fmt/init/validate/test for `deploy/aws` and `deploy/bootstrap` |
+| System runner | `fed9a00` | `tools/system_test.py --linux-ci-run 38246576071` | PASS: system 108 passed, 63 subtests; full suite 1048 passed, 4 skipped; Linux offline demo verified from CI on an identical runtime tree |
+| Integration demo | `fed9a00` | `python -m larp.integration.demo --out <scratch>` | Completed (synthetic trace sha256 `c4e1a96e…d18807`) |
+| Final-review fixes | `b34a90d` | affected suites (intelligence system/models/providers, sources, transport, research, strategy, risk, cadence) | 338 passed, 213 subtests; sources rerun with `TMPDIR=/tmp` 13 passed |
+| Red/green | new tests at `b34a90d` against code at `fed9a00` | same files | Every new regression fails on old code (32 failures/subtest failures, incl. the updated git mock); all pass on the fixes |
+| Golden regeneration 2 | `b34a90d` → `c4be6a7` | as above | Same identity-only diff pattern; fixture `producer_commit` `b34a90d` |
+| Full local suite | `c4be6a7` | `pytest` | 1058 passed, 4 skipped (as above), 1330 subtests |
+| Interim CI | `b34a90d` | run [38248917932](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38248917932) | Expected FAIL only on the 2 stale goldens (1061 passed, 1 skipped); Terraform PASS |
+| **Final Linux CI** | `c4be6a7` | run [38249013986](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38249013986) | **All 3 jobs PASS**: full pytest 1061 passed, 1 skipped (opt-in external artifacts), 1330 subtests; isolated runtime demo; Docker build and network-disabled smoke; Terraform fmt/init/validate/test for `deploy/aws` and `deploy/bootstrap`. 1062 collected tests, the same as local |
+| **Final system runner** | `c4be6a7` | `tools/system_test.py --linux-ci-run 38249013986` | **PASS**: system 109 passed, 63 subtests; full suite 1058 passed, 4 skipped, 1330 subtests; Linux offline demo verified from CI on an identical runtime tree |
+
+Later commits are documentation-only (ledger, backlog and handoff text); CI on them is recorded in the PR.
+
+Process note: during the V08 fix, one ad-hoc Python probe imported the edited, not-yet-committed pure function `larp.contracts.reflects_secret` (no network, database, credentials or I/O). That breached the "publish before running" rule for one pure check. No test results depend on it; every recorded result above ran on pushed commits.
+
+## Final independent review and red team (2026-10-12)
+
+Two independent read-only reviewers (runtime/execution/deployment; evidence/research/strategy) checked the `213a782..fed9a00` diff against callers, with probes. Apart from the items below, they found the R01–R26 corrections sound.
+
+| ID | Severity | Finding | Disposition |
+|---|---|---|---|
+| V00 | P3 | Hosted-model regression nested 40 levels, below the existing `depth > 64` bound, so the reply parsed OK (found by first CI). | Test fixed to 65 levels; bound unchanged (`137c038`). |
+| V01 | P2 | R07 latched issuer health INCOMPLETE on any malformed/unexpected listing row, even years out of scope, and permanently on dead-lettered or bounded filings. No production caller passes `recheck`, and no human action is allowed in the scored run, so evidence could never reach CLEAR. | Out-of-scope malformed/unexpected rows no longer count; undatable or pending ones still do. A dead letter or bounded filing marks the poll that records it, then stays on its record (assessments add `FILING_UNREADABLE` / `FILING_INCOMPLETE`). Pending retries, partial history and future rows still mark INCOMPLETE. **Semantic change: evidence owner (Yao Zhu) to confirm.** |
+| V02 | P2 | EQUAL_WEIGHT cost sort raised TypeError on an explicit `None` (unavailable, non-LIVE) cost; the same pre-existing pattern in `policy.py` candidate sort. | `None` ranks last in planner and policy. |
+| V03 | P2 | Rights notices bypassed via U+200B word join, soft hyphen, word joiner or fullwidth letters. | NFKC plus both readings of invisible characters before matching. |
+| V04 | P3 | Paired research outcomes could differ in `decision_at`. | Pairs must share `decision_at` (NOT_RUN otherwise). |
+| V05 | P3 | Assume-unchanged/skip-worktree edits or hidden untracked files passed the live-source dirty check. | Index flags and all untracked files count as dirty. |
+| V06 | P3 | New artifact fsync test compared an unresolved macOS temp root. | Compares the resolved root. |
+| V07 | P3 | Hosted-model replies (incl. late replies) were stored without checking for a credential echo. | Replies reflecting the key (literal, JSON-escaped, duplicate key) return `CREDENTIAL_REFLECTION` and are never stored. |
+| V08 | P2 | R02 incomplete: an escaped credential in an earlier duplicate JSON key survived in the reversible raw body. | Shared `reflects_secret` decodes JSON escapes over the whole body. |
+| V09 | P2 | A future-dated broadcast `observed_at` made every later context unavailable, which also blocked mandatory reductions. | It now spends the current session's discretionary allowance only; malformed values still refuse. Replay identical. |
+| V10 | P2 | No host has `rds-db:connect` for `larp_execution`, which holds the execution-store writes. | Pre-existing; the execution host is not yet integrated (`build_driver` → NOT_INTEGRATED). Deferred to INCOMPLETE_WORK (Keegan + Isaac). |
+| V11 | P2 | The runtime service reads a static `database_dsn_file`, but `larp_runtime` is IAM-only (tokens expire in 15 min; `IamPostgresStore` exists only for operations). | Pre-existing; deferred with V10. The service still refuses before trading. |
+
+The reviewer's unverified HCL concern (`local.db_users[each.key]` in the unselected branch for `evidence`) is cleared: CI `terraform test` plans the host policy for every host, including `evidence`.
 
 ## Remaining production work
 

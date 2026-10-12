@@ -1,5 +1,7 @@
 # IDEA-044 — Claude continuation checkpoint
 
+> **Status 2026-10-12: continuation completed.** Steps 1–8 below were carried out on pushed commits `137c038`, `fed9a00`, `b34a90d`, `c4be6a7` and the documentation commits that follow them. Exact commands, counts, CI runs, the final-review findings (V00–V11) and their disposition are in `docs/ledger/IDEA-044.md`. Open items are V10/V11, hosted database authentication (Keegan + Isaac), and V01, owner confirmation of the coverage semantics (Yao Zhu), both in `docs/INCOMPLETE_WORK.md`. PR #18 still targets `codex/system-testing-20261012` and is not merged. The text below is the original checkpoint, kept for history.
+
 The user requested a comprehensive review of the entire system-testing codebase, proceeding through components, integration and system tests, with prospective expectations, fixes, independent review and red-team cases. They explicitly authorized subagents and a PR. They then requested a usage-limit stop and this handoff. Continue the same work; do not restart the review or merge into main.
 
 ## Branch and authority
