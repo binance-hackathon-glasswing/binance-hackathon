@@ -75,3 +75,29 @@ class DependencyReviewTests(unittest.TestCase):
         p.write_text('BINANCE_API_KEY=file-key\nBINANCE_SECRET_KEY=fixture-secret\n')
         with self.assertRaises(Unavailable):
             credentials(p,environ={'BINANCE_API_KEY':'process-key'})
+
+    def test_corrupted_or_redacted_records_fail_with_sanitized_conflict(self):
+        from larp.execution_live.store import _decode
+        from larp.execution import Conflict
+        for raw in (b'{"state":1}',b'not-json',b'{"intent":"REDACTED"}'):
+            with self.subTest(raw=raw),self.assertRaises(Conflict):_decode(raw)
+
+    def test_pending_nonce_and_market_outage_do_not_prevent_reconciliation_snapshot(self):
+        from larp.execution_live.guards import LiveGuards
+        class Store:
+            def authority(self):return 2,19
+            def execution_authority(self):return 2,2
+        class Market:
+            mode='live'
+            def metadata(self):raise Unavailable('transport_error')
+        class Chain:
+            mode='live'
+            def nonce(self,_):raise Blocked('pending nonce')
+        guards=LiveGuards(store=Store(),market=Market(),chain=Chain(),
+            authorization=lambda *_:dict(expires_at=100,audit_durable=True,reservation_valid=True,
+                version_valid=True,risk_valid=True,health_valid=True,clock_trusted=True))
+        facts=guards.snapshot(self.i,20)
+        self.assertIsNone(facts.nonce)
+        self.assertFalse(facts.token_market_open)
+        self.assertEqual(facts.authority_version,2)
+        with self.assertRaises(Blocked):facts.check(self.i,20)

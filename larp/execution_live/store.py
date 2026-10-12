@@ -42,9 +42,8 @@ def _decode(raw):
         value['intent'] = Intent(**value['intent'])
         value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
         return Execution(**value)
-    except (KeyError, TypeError, ValueError, UnicodeDecodeError):
-        raise Conflict('execution state cannot be decoded or restored safely') from None
-
+    except (ValueError, TypeError, KeyError):
+        raise Conflict('execution record schema/integrity rejected') from None
 
 
 class ExecutionStore:
