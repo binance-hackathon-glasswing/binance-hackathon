@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -53,6 +54,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--system-only', action='store_true')
     parser.add_argument('--output-dir')
+    parser.add_argument('--linux-ci-run', help='Successful runtime CI run for platforms without bubblewrap')
     args = parser.parse_args()
     branch, commit = git('branch', '--show-current'), git('rev-parse', 'HEAD')
     if not branch.startswith('codex/system-testing-') or git('status', '--porcelain'):
@@ -79,7 +81,27 @@ def main():
     phases = [('system', pytest + SYSTEM_CASES)]
     if not args.system_only:
         phases.append(('full_suite', pytest))
-    phases.append(('offline_demo', [sys.executable, '-m', 'larp.runtime.demo']))
+    linux_evidence = None
+    if sys.platform == 'linux' and shutil.which('bwrap'):
+        phases.append(('offline_demo', [sys.executable, '-m', 'larp.runtime.demo']))
+    elif args.linux_ci_run:
+        if not args.linux_ci_run.isdigit():
+            parser.error('Linux CI run ID must be numeric')
+        ci = json.loads(subprocess.check_output(['gh', 'run', 'view', args.linux_ci_run,
+            '--repo', 'binance-hackathon-glasswing/binance-hackathon',
+            '--json', 'headSha,status,conclusion,jobs,url'], text=True))
+        runtime = next((j for j in ci['jobs'] if j['name'] == 'runtime'), {})
+        demo = next((s for s in runtime.get('steps', []) if 'python -m larp.runtime.demo' in s['name']), {})
+        paths = ['larp', 'config', 'deploy', 'migrations', '.github', 'requirements.lock', 'requirements.in']
+        same_runtime = subprocess.run(['git', 'diff', '--quiet', ci['headSha'], commit, '--', *paths], cwd=ROOT).returncode == 0
+        if (ci['status'] != 'completed' or ci['conclusion'] != 'success' or runtime.get('conclusion') != 'success'
+                or demo.get('conclusion') != 'success' or not same_runtime):
+            parser.error('CI evidence must prove this exact runtime tree and its Linux demo passed')
+        linux_evidence = dict(name='offline_demo', status='PASS', execution='GITHUB_ACTIONS_LINUX',
+                              ci_run=args.linux_ci_run, tested_commit=ci['headSha'], url=ci['url'],
+                              proof='Successful runtime/demo steps and identical runtime/config/deploy/migration tree')
+    else:
+        parser.error('Linux bubblewrap unavailable; supply --linux-ci-run for a verified equivalent runtime tree')
     report = dict(schema='SystemTestReport.v1', branch=branch, commit=commit, synthetic=True,
                   started_utc=datetime.now(timezone.utc).isoformat(),
                   scope='Disposable PostgreSQL; local fake HTTP/EDGAR/venue/chain/signing; no production credentials',
@@ -98,6 +120,9 @@ def main():
                      log_sha256=hashlib.sha256(raw).hexdigest(), **counts)
         report['checks'].append(check)
         print(json.dumps(check), flush=True)
+    if linux_evidence is not None:
+        report['checks'].append(linux_evidence)
+        print(json.dumps(linux_evidence), flush=True)
     report['status'] = 'PASS' if all(c['status'] == 'PASS' for c in report['checks']) else 'FAIL'
     report['completed_utc']=datetime.now(timezone.utc).isoformat()
     (output / 'report.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
