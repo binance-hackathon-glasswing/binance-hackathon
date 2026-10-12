@@ -312,3 +312,26 @@ Each review was run independently on the owner's head and its main blocking clai
   - the Class 1 exit is not treated as mandatory;
   - LIVE validation needs fields Isaac's port does not emit, which can block the end-of-run flatten;
   - the failing cost-cap test is a test bug (fix given).
+
+### 4.5 Fixes for Yao Zhu's review of PR #13 (review 5486736446, 2026-10-12). Prospective criteria
+Each of the ten comments was checked against the code at `092d9c5` before writing these; all ten hold.
+- **V1 · HALT does not clear itself.** A round blocked only by `REPEATED_FAILURES` runs policy and planner as a *probe*. Its plan is discarded: no orders, commands, reservations, jobs, risk-state or policy-state change. Probe failures keep the HALT and probe successes clear it. A round blocked for any other reason (CLOCK, DELIVERY_DEADLINE, VERSION_NOT_REGISTERED) leaves the failure and success counts unchanged. Tests:
+  - with a still-broken planner the HALT never clears;
+  - with a fixed planner it clears after `clear_after` probes;
+  - a probe round commits no command;
+  - clock-halted rounds do not count.
+- **V2 · Missing proposal file.** `load_register` raises ContractError when the register's `proposal` file is missing, instead of skipping the verbatim-quote check. Tested.
+- **V3 · Gas top-up rounds always close.** A GAS_TOP_UP round may log zero orders (a top-up that placed nothing, e.g. rejected at commit or audit fallback), but never anything other than its single BNB buy. Test: a top-up round rejected at commit closes with its log written.
+- **V4 · No restart loop on refusals.** `LiveStartRefused` and contract refusals (configuration, release, session build or reused ID) exit with code 4. The unit has `RestartPreventExitStatus=2 3 4`. Other failures stay 1 (restart). Tests on the exit codes and the unit. **Not fixed here:** delivering secrets to the runtime process (the unit reads none, and no loader from Secrets Manager exists). Recorded as an open item for the host step.
+- **V5 · PR description** updated to the current state (Isaac's store adopted; no `claim_command`).
+- **V6 · `switch_wallet` can pass.** The pending-execution check uses the execution service's `execution_records` (no non-terminal record for the old run) instead of `commands.status`, which nothing updates. Test without any owner-only UPDATE.
+- **V7 · Delivery status in constant queries.** `delivery_status` uses one documents query, one grouped chunks query and the pending count, whatever the number of events, with the same results. Tested.
+- **V8 · Backups never hold signed bytes.**
+  - `larp_archive` gets column-level SELECT on `execution_signatures` without `signed`.
+  - The export writes a fixed redaction marker for `signed`.
+  - After a restore, a lookup of a redacted row fails closed (the registry digest no longer matches), and the restored run is quarantined as before.
+  - Tests: the archive role cannot read `signed`; no backup contains the signed bytes; a restored registry lookup refuses.
+- **V9 · Retention through all of Dec 31.** Terraform refuses `archive_retention_days` below 82; the test value 81 is refused.
+- **V10 · One set of constants.** `larp/ports.py` and `larp/runtime/live.py` import `SYMBOLS`, `TX` and `ADDRESS` from `larp.audit.protocol` instead of copying them.
+
+Pass: every test above, the full suite on PostgreSQL, and CI green. Each thread gets a reply naming the commit.
