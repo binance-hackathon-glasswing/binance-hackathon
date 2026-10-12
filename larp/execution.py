@@ -12,6 +12,7 @@ import re
 from typing import Protocol
 
 USDT = "0x55d398326f99059ff775485246999027b3197955"
+NATIVE_BNB = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 BSTOCKS = frozenset({
     "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
     "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
@@ -29,6 +30,10 @@ class Blocked(RuntimeError):
 
 class Conflict(Blocked):
     """Stale revision, ownership or wallet-wide concurrency conflict."""
+
+
+class DependencyUnavailable(Blocked):
+    """A sanitized transient port failure, never evidence of transaction absence."""
 
 
 def canonical(value):
@@ -74,6 +79,8 @@ class Intent:
     max_recovery_probes: int = 8
     probe_interval: int = 3
     timeout: int = 120
+    kind: str = "BSTOCK_TRADE"
+    max_cash_units: int | None = None
 
     @property
     def key(self):
@@ -90,9 +97,17 @@ class Intent:
             address(value)
         if self.chain_id != 56 or type(self.chain_id) is not int:
             raise Blocked("only chain 56")
-        if not ((self.pay_token == USDT and self.receive_token in BSTOCKS)
-                or (self.receive_token == USDT and self.pay_token in BSTOCKS)):
+        bstock = self.kind == "BSTOCK_TRADE" and (
+            (self.pay_token == USDT and self.receive_token in BSTOCKS)
+            or (self.receive_token == USDT and self.pay_token in BSTOCKS))
+        gas_top_up = (self.kind == "GAS_TOP_UP" and self.pay_token == USDT
+                      and self.receive_token == NATIVE_BNB)
+        if not (bstock or gas_top_up):
             raise Blocked("unsupported economic action")
+        if self.max_cash_units is not None:
+            integer(self.max_cash_units, positive=True)
+            if self.pay_token == USDT and self.amount > self.max_cash_units * 10**12:
+                raise Blocked('per-trade cash cap exceeded')
         for value in (self.amount, self.minimum_output, self.valid_until, self.max_gas,
                       self.max_gas_price, self.gas_budget, self.max_prepare_probes,
                       self.max_recovery_probes, self.probe_interval, self.timeout):
@@ -141,6 +156,11 @@ class Gates:
     token_market_open: bool = False
     underlying_market_open: bool = False
     clock_trusted: bool = False
+    execution_version: int | None = None
+
+    @property
+    def authority_version(self):
+        return self.state_version if self.execution_version is None else self.execution_version
 
     def check(self, intent, now):
         integer(now)
@@ -174,6 +194,8 @@ class Attempt:
     next_probe: int = 0
     included_block: str | None = None
     gas_used: int | None = None
+    finalized_at: int | None = None
+    dependency_failures: int = 0
 
 
 @dataclass(frozen=True)
@@ -196,8 +218,8 @@ class Signed:
 @dataclass(frozen=True)
 class Outcome:
     tx_hash: str
-    sender: str
-    nonce: int
+    sender: str | None
+    nonce: int | None
     status: str  # PENDING, UNKNOWN, SUCCESS, REVERT
     block_hash: str | None = None
     canonical_block_hash: str | None = None
@@ -352,7 +374,7 @@ class Executor:
         if now < state.last_observed_at:
             raise Blocked("clock regression")
         if state.prepare_probes >= state.intent.max_prepare_probes:
-            raise Blocked("prepare probe budget exhausted")
+            raise Blocked('prepare probe budget exhausted')
         gates = self.guards.snapshot(state.intent, now)
         step = "SWAP" if state.attempts else "APPROVE"
         # Persist the work budget before any quote/estimate I/O; restart cannot reset it.
@@ -374,7 +396,7 @@ class Executor:
         except (TimeoutError, ConnectionError):
             return self._save(state, replace(state, blocked_reason="quote/gas dependency unavailable"),
                               "PREPARE_BLOCKED", gates)
-        attempt = Attempt(digest([key, step]), step, "PREPARED", payload, gates.epoch, gates.state_version)
+        attempt = Attempt(digest([key, step]), step, "PREPARED", payload, gates.epoch, gates.authority_version)
         return self._save(state, replace(state, attempts=state.attempts + (attempt,), blocked_reason=None),
                           "PREPARED", gates)
 
@@ -386,7 +408,7 @@ class Executor:
         gates = self.guards.snapshot(state.intent, now)
         self._validate(state, attempt.step, attempt.payload, gates, now)
         return self._update_attempt(state, replace(attempt, state="AUTHORIZED", epoch=gates.epoch,
-                                   guard_version=gates.state_version), "AUTHORIZED", gates, last_observed_at=now)
+                                   guard_version=gates.authority_version), "AUTHORIZED", gates, last_observed_at=now)
 
     def sign(self, key, now):
         state = self._load(key)
@@ -394,7 +416,7 @@ class Executor:
         if attempt.state != "AUTHORIZED":
             return state
         gates = self.guards.snapshot(state.intent, now)
-        if (gates.epoch, gates.state_version) != (attempt.epoch, attempt.guard_version):
+        if (gates.epoch, gates.authority_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("authorization invalidated before signing")
         self._validate(state, attempt.step, attempt.payload, gates, now)
         signed = self.signer.sign(attempt.attempt_id, attempt.payload, attempt.epoch, attempt.guard_version)
@@ -411,7 +433,7 @@ class Executor:
         if attempt.broadcast_at is not None:
             raise Blocked("possible submission cannot obtain a fresh recovery budget")
         gates = self.guards.snapshot(state.intent, now)
-        if (gates.epoch, gates.state_version) != (attempt.epoch, attempt.guard_version):
+        if (gates.epoch, gates.authority_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
         # Initialize post-submission recovery in the same durable transition as
@@ -439,14 +461,27 @@ class Executor:
         # Reconciliation remains permitted after market/expiry/nonce gates fail.
         if now < state.last_observed_at or now < attempt.next_probe:
             return state
+        interval = state.intent.probe_interval
         if attempt.probes >= state.intent.max_recovery_probes:
-            return state  # Budget exhaustion never releases issued capabilities.
-        attempt = replace(attempt, probes=attempt.probes + 1, next_probe=now + state.intent.probe_interval)
+            if getattr(self.venue, 'periodic_reconciliation', False) is not True:
+                return state  # Legacy fixtures retain their explicit bounded behavior.
+            interval = max(60, interval)
+        attempt = replace(attempt, probes=attempt.probes + 1, next_probe=now + interval)
         state = self._update_attempt(state, attempt, "RECOVERY_PROBE", gates, last_observed_at=now)
         try:
             outcome = self.venue.outcome(attempt.tx_hash)
-        except (TimeoutError, ConnectionError):
+        except (TimeoutError, ConnectionError, DependencyUnavailable):
             outcome = Outcome(attempt.tx_hash, state.intent.wallet, attempt.payload.nonce, "UNKNOWN")
+            attempt = replace(attempt, probes=attempt.probes - 1,
+                              dependency_failures=attempt.dependency_failures + 1,
+                              next_probe=now + min(3600, 3 * 2**min(attempt.dependency_failures + 1, 10)))
+            return self._update_attempt(state, attempt, 'RECOVERY_DEPENDENCY_UNAVAILABLE', gates,
+                                        blocked_reason='receipt dependency unavailable; wallet barrier retained')
+        except Blocked:
+            return self._update_attempt(state, attempt, 'RECOVERY_BLOCKED', gates,
+                                        blocked_reason='receipt evidence rejected; wallet barrier retained')
+        if outcome.status == 'UNKNOWN' and outcome.sender is None and outcome.nonce is None:
+            outcome = replace(outcome, sender=state.intent.wallet, nonce=attempt.payload.nonce)
         if (outcome.tx_hash != attempt.tx_hash or outcome.sender != state.intent.wallet
                 or type(outcome.nonce) is not int or outcome.nonce != attempt.payload.nonce
                 or outcome.status not in {"PENDING", "UNKNOWN", "SUCCESS", "REVERT"}):
@@ -480,13 +515,47 @@ class Executor:
         elif finalized and attempt.step == "SWAP":
             status = "COMPLETED"
         return self._update_attempt(state, replace(attempt, state=phase, included_block=outcome.block_hash,
+                                                  finalized_at=now if finalized else None,
                                    gas_used=outcome.gas_used), phase, gates, status=status,
+                                   prepare_probes=0 if finalized and attempt.step == 'APPROVE' else state.prepare_probes,
                                    blocked_reason=("receipt gas unavailable; signed gas allowance retained"
                                                    if finalized and outcome.gas_used is None
                                                    else None if finalized else "canonical finality unproved"))
 
     def replace_transaction(self, *args, **kwargs):
         raise Blocked("same-nonce replacement is disabled")
+
+    def reauthorize_unbroadcast(self, key, now):
+        state = self._load(key)
+        attempt = state.attempts[-1]
+        if attempt.broadcast_at is not None or attempt.state not in {'AUTHORIZED', 'SIGNED_DURABLE'}:
+            raise Blocked('possible submission cannot be reauthorized')
+        gates = self.guards.snapshot(state.intent, now)
+        self._validate(state, attempt.step, attempt.payload, gates, now)
+        signed = self.signer.lookup(attempt.attempt_id, attempt.payload.hash)
+        if attempt.state == 'SIGNED_DURABLE' and signed is None:
+            raise Blocked('issued signature registry evidence missing')
+        if signed is not None and not self.signer.verify(attempt.payload, signed):
+            raise Blocked('recovered signature does not bind payload')
+        updated = replace(attempt, epoch=gates.epoch, guard_version=gates.authority_version,
+                          state='SIGNED_DURABLE' if signed else 'AUTHORIZED',
+                          raw_hex=signed.raw_hex if signed else None, tx_hash=signed.tx_hash if signed else None)
+        return self._update_attempt(state, updated, 'REAUTHORIZED_UNBROADCAST', gates, last_observed_at=now)
+
+    def abort_unbroadcast(self, key, now):
+        state = self._load(key)
+        if state.status in TERMINAL:
+            return state
+        attempt = state.attempts[-1]
+        if attempt.broadcast_at is not None or attempt.state not in {'AUTHORIZED', 'SIGNED_DURABLE'}:
+            raise Blocked('possible submission cannot be aborted')
+        if getattr(self.store, 'revokes_unbroadcast', False) is not True:
+            raise Blocked('atomic registry/release revocation not implemented')
+        gates = self.guards.snapshot(state.intent, now)
+        if now < state.last_observed_at:
+            raise Blocked('clock regression')
+        return self._update_attempt(state, replace(attempt, state='ABORTED'), 'ABORTED_UNBROADCAST', gates,
+                                    status='ABORTED', last_observed_at=now)
 
     def recover_signature(self, key, now):
         state = self._load(key)
