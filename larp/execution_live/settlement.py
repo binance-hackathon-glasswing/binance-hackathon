@@ -61,7 +61,8 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                   event_id=attempt.attempt_id + ':final', tx_hash=attempt.tx_hash,
                   decision_id=intent.decision_id, version_id=intent.version_id, observed_at=observed_at,
                   gas_bnb_units=gas, gas_value_units=-(-gas_value.numerator // gas_value.denominator),
-                  intent_terminal=kind in ('FILL', 'REVERT'),
+                  intent_terminal=kind in ('FILL', 'REVERT'), round_terminal=False,
+                  step=attempt.step.lower(), block_hash=proof['block_hash'], canonical=True,
                   receipt=dict(tx_hash=attempt.tx_hash, block_hash=proof['block_hash'],
                                block_number=proof['block_number'], canonical=True,
                                finality='FINAL', chain_id=56, status=status),
@@ -100,9 +101,10 @@ class ReceiptFacts:
     The valuation callback must return the same persisted price for an attempt,
     not the current BNB price. Publishing belongs to the atomic runtime outbox.
     """
-    def __init__(self, chain, *, wallet_id, valuation, registry, epoch, authority_version):
+    def __init__(self, chain, *, wallet_id, valuation, registry, epoch, authority_version, round_terminal=None):
         self.chain, self.wallet_id, self.valuation = chain, wallet_id, valuation
         self.registry = registry
+        self.round_terminal = round_terminal or (lambda state: False)
         self.epoch, self.authority_version = epoch, authority_version
         if not all(callable(getattr(registry, name, None)) for name in
                    ('lookup_observation', 'put_observation', 'check_authority')):
@@ -122,4 +124,5 @@ class ReceiptFacts:
         stamp = datetime.fromtimestamp(attempt.finalized_at, timezone.utc).isoformat()
         fact = final_observation(state, attempt, proof, wallet_id=self.wallet_id,
                                  bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp)
+        fact["round_terminal"] = fact["intent_terminal"] and self.round_terminal(state)
         return self.registry.put_observation(fact, self.epoch, self.authority_version)
