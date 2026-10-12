@@ -1,11 +1,8 @@
 """Cross-component integration criteria (IDEA-028 RT20).
 
 C1-C3 check boundaries that already agree; C2 is the fixture drift check and fails
-until the strategy fixture is re-captured (prompt 07 item 8). C4 records the raw
-coordinator-to-strategy wiring as an expected failure (IDEA-042 B2): PR #7's
-ContextBuilder/RuntimePlanner replaced that wiring, and a BUY through them stays
-blocked by entry inputs until the token-candle sessions and price-impact rule land
-(DR-08). The deployment acceptance suite (IDEA-042 item 10) replaces C4.
+until the strategy fixture is re-captured (prompt 07 item 8). C4 exercises the supported ContextBuilder/RuntimePlanner coordinator path against
+disposable PostgreSQL, with synthetic complete inputs and explicit resource reservations.
 """
 
 from dataclasses import replace
@@ -76,25 +73,40 @@ from tests.support import DatabaseCase, request as runtime_request
 
 
 class CoordinatorWithStrategy(DatabaseCase):
-    @unittest.expectedFailure  # raw wiring without ContextBuilder; superseded by PR #7 adapters (IDEA-042 B2)
     def test_c4_coordinator_commits_strategy_baseline_intent(self):
-        """Target behaviour: a BUY-eligible round through the real coordinator, store and
-        strategy modules commits the strategy's baseline intent as an execution request."""
-        from larp.risk import planner
+        """Supported adapter path commits an executable plan and atomically reserves resources."""
+        from larp.integration.runtime import (ContextBuilder, RuntimePlanner, StrategyPolicy,
+                                             initial_policy_state, initial_projection)
+        from larp.research.fixtures import snapshot, with_quotes
         from larp.runtime.coordinator import Coordinator
         from larp.runtime.fixtures import FakeAssessor, FakeExecution
-        from larp.strategy import policy
-
-        class Policy:
-            decide = staticmethod(policy.decide)
-
-        class Planner:
-            plan = staticmethod(planner.plan)
-
-        runtime = Coordinator(self.store, FakeAssessor(), Policy(), Planner(), execution=FakeExecution(),
-                              run_id='run', version_id='synthetic', profile_hash='a' * 64,
-                              address='0x' + '1' * 40)
-        runtime.start('r', runtime_request('BUY'), 1791590400000, defer_close=True)
+        from larp.storage.postgres import doc
+        fixture = with_quotes(snapshot(profile_changes={'baseline':'EQUAL_WEIGHT',
+            'operating_name_weight':[1,5], 'operating_gross_weight':[4,5],
+            'regime_gross_weight':[4,5], 'top_up_below_gross_weight':[3,4]}))
+        context = fixture.context.read()
+        profile = context['profile']
+        profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
         with self.store.transaction() as db:
-            commands = db.execute('SELECT count(*) FROM commands').fetchone()[0]
-        self.assertGreaterEqual(commands, 1)
+            db.execute('TRUNCATE runs CASCADE')
+        self.store.initialize('run','wallet',56,doc(initial_projection(context['portfolio'])))
+        self.epoch = self.store.takeover('run',1,offline=True)
+        builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id='run', issuers={},
+            market=lambda now:context['markets'], health=lambda current:context['health'],
+            calendar=lambda now:{'index':80,'remaining':10}, series=lambda now:context['series'],
+            universe=fixture.universe)
+        runtime = Coordinator(self.store, FakeAssessor(), StrategyPolicy(),
+            RuntimePlanner(job_validity_ms=60000,job_max_attempts=3), execution=FakeExecution(),
+            run_id='run',version_id='synthetic',profile_hash=profile_hash,address='0x'+'1'*40,
+            context_builder=builder,initial_policy_state=initial_policy_state('run',profile))
+        now = int(fixture.observed_at.timestamp()*1000)
+        request = runtime_request('BUY').read()
+        request.update(policy_profile_hash=profile_hash,cutoff_ms=now)
+        runtime.start('r',doc(request),now,defer_close=True)
+        with self.store.transaction() as db:
+            commands = db.execute("SELECT payload FROM commands WHERE run_id='run'").fetchall()
+        self.assertEqual(len(commands),1)
+        command = Document(bytes(commands[0][0])).read()
+        self.assertEqual(command['kind'],'EXECUTION_REQUEST')
+        self.assertEqual(command['payload']['side'],'BUY')
+        self.assertTrue(self.store.load('run').read()['reservations'])
