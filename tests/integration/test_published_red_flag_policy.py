@@ -3,7 +3,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 import unittest
 from larp.contracts import Document, TargetKind
-from larp.integration.contract import build_evidence_context, red_flag_predicates
+from larp.integration.contract import build_evidence_context, red_flag_predicates, context_hash as evidence_hash
 from larp.integration.runtime import ContextBuilder, initial_projection
 from larp.intelligence.agent import context_hash
 from larp.intelligence.gate import accept, consume, initial_state
@@ -70,6 +70,10 @@ class PublishedPredicatePolicy(unittest.TestCase):
         prior=dict(blocked={'NVDAB':dict(reason='CLASS_1_EXIT',run_id=s.run_id,
                                         finding_ids=['old-critical'],timed_block=timed)},finding_sessions={key:80})
         s=replace(changed(s,session_index=82),policy_state=replace(s.policy_state,data=Document.from_dict(prior)))
+        incomplete=dict(record,review_complete_excluding_timed_blocks=False)
+        incomplete['context_hash']=evidence_hash(incomplete)
+        kept=decide(changed(s,assessments=[incomplete]),s.policy_state)
+        self.assertEqual(kept.next_policy_state.data.read()['blocked']['NVDAB']['reason'],'CLASS_1_EXIT')
         first=decide(s,s.policy_state)
         block=first.next_policy_state.data.read()['blocked']['NVDAB']
         self.assertEqual(block['reason'],'CLASS_2_ENTRY_BLOCK')
