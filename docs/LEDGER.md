@@ -64,3 +64,5 @@ One row per idea (IDEA-) or experiment (EXP-). Full records are in `ledger/<ID>.
 | IDEA-040 | Deployment build record: strategy (Keith) | reserved for Keith | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
 | IDEA-041 | Deployment build record: evidence (Yao Zhu) | reserved for Yao Zhu | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
 | IDEA-042 | Deployment build record: runtime, hosting and integration (Keegan) | reserved for Keegan | Not started (IDEA-038) | 2026-10-11 | [reservation](ledger/IDEA-038.md) |
+
+| IDEA-043 | Open PR remediation and isolated system testing | open (prospective criteria) | Review/fix PRs 9, 13, 14, 15, then foundation 11; ordinary merges and offline system tests authorized; tests NOT RUN | 2026-10-12 | [ledger/IDEA-043.md](ledger/IDEA-043.md) |
