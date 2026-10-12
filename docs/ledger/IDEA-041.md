@@ -196,6 +196,13 @@ Tests first: `6610ddd` committed the criteria and the regression tests (62 failu
 | R15 | PASS | `ReviewMetrics::test_http_errors_are_provider_errors_not_invalid_replies`. |
 | R16 | Done | Set version 2, item predicates version 2, SHA-256 above. |
 
+**After Keith's concurrent remediation (`710f806`, merged in `9d36df7`):** the merge kept these fixes and added his tests `tests/intelligence/test_pr15_remediation.py` and `tests/sources/test_pr15_recovery.py`. At `9d36df7` they failed to collect: they import `ANY_ITEM_HEADING`, which the block-heading reader replaced, and that one error stopped the whole suite. Three assertions also needed adapting, without changing what they check:
+- a `World.request` call lacked the required `job_id`;
+- corrupt poll-log entries now also carry `bytes` and `sha256`;
+- the gap report's `cadence_ms` is the declared cadence, and the logged one is in `logged_cadences_ms`; the FAIL verdict under test holds.
+
+After that fix: **611 passed, 86 skipped, 1036 subtests**, plus the same local `boto3` failure.
+
 ### 7.2 Internal review of the fixes (before pushing)
 
 Two independent reviews of the uncommitted fixes: a red team of the red-flag verifier and a code review of the provider, transport, store and live-source changes. Each finding was reproduced by the reviewer; the confirmed ones are fixed in `8364164` with tests run red first (13 more fixtures, 1 sequence, unit tests).

@@ -13,7 +13,8 @@ class PollRecovery(unittest.TestCase):
                           cadence_ms=300000, status='OK')
             log.append(record)
             self.assertTrue(log.path.read_bytes().startswith(torn + b'\n'))
-            self.assertEqual(log.lines(), [{'corrupt':True}, record])
+            lines = log.lines()  # a corrupt entry also carries the torn bytes' length and SHA-256
+            self.assertEqual(([l.get('corrupt') for l in lines], lines[1]), ([True, None], record))
             runner = LiveRunner(register={}, issuers=['ISS-A'], source_ingestor=None,
                                 edgar_ingestor=None, log=log, clock_ms=lambda:1060000)
             self.assertEqual(runner.due(1060000), [])
@@ -26,4 +27,5 @@ class PollRecovery(unittest.TestCase):
         report = gap_report(lines, cadences={'edgar:ISS-A':300000}, start_ms=0,
                             end_ms=400000, required_ms=400000)
         self.assertEqual(report['verdict'], 'FAIL')
-        self.assertEqual(report['targets']['edgar:ISS-A']['cadence_ms'], 60000)
+        # cadence_ms reports the declared cadence; the run's own logged cadence is listed and governs when stricter
+        self.assertEqual(report['targets']['edgar:ISS-A']['logged_cadences_ms'], [60000])
