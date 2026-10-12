@@ -2,7 +2,7 @@
 
 import json
 
-from larp.audit.delivery import DeliveryWorker
+from larp.audit.delivery import DeliveryWorker, delivery_status
 from larp.audit.protocol import build_event
 from larp.contracts import ContractError, Document
 from larp.runtime.coordinator import Coordinator
@@ -163,6 +163,17 @@ class RoundLogging(DatabaseCase):
         self.assertEqual(log['orders'], [dict(symbol='BNB', side='BUY', amount='1', tx_hash=TX)])
         self.assertTrue(log['cot'].startswith('Gas top-up round'))
 
+    def test_v3_a_rejected_gas_top_up_round_still_closes_and_logs(self):
+        top = intent('gas', symbol='BNB', amount='1', kind='GAS_TOP_UP')
+        planner = Planned([top], [dict(intent_id='intent:gas', asset='USDT', units=1000)])  # > balance: rejected
+        self.coordinator(planner=planner).start('g', request('BUY'), NOW)
+        event, log = self.one_log('g')
+        self.assertEqual(event['round_kind'], 'GAS_TOP_UP')
+        self.assertIn('COMMIT_REJECTED', log['output']['errors'])
+        self.assertEqual((log['orders'], log['output']['status']), ([], 'REJECTED'))  # placed nothing (IDEA-042 V3)
+        self.coordinator().recover(NOW + 1)  # nothing left that cannot close
+        self.assertEqual(list(self.store.open_rounds('run')), [])
+
     def test_l4_a_top_up_mixed_with_trades_is_refused(self):
         planner = Planned([intent('gas', symbol='BNB', amount='1', kind='GAS_TOP_UP'), intent('x')],
                           [dict(intent_id='intent:x', asset='USDT', units=10)])
@@ -182,6 +193,7 @@ class RoundLogging(DatabaseCase):
         with self.assertRaises(ContractError):
             build_event(orders=[dict(symbol='BNB', side='SELL', amount='1')], round_kind='GAS_TOP_UP', **common)
         build_event(orders=bnb, round_kind='GAS_TOP_UP', **common)
+        build_event(orders=[], round_kind='GAS_TOP_UP', **common)  # a top-up that placed nothing (V3)
 
     # ---------------------------------------------------------------- L1: cot and input content
     def test_l1_cot_is_the_providers_summaries_in_order(self):
@@ -236,6 +248,28 @@ class RoundLogging(DatabaseCase):
         status = worker.status('run')
         self.assertEqual((status['events'], status['delivered'], status['pending_chunks']),
                          ({event_id: 'DELIVERED'}, [event_id], 0))
+
+    def test_v7_status_queries_do_not_grow_with_events(self):
+        class Counting:
+            def __init__(inner, db):
+                inner.db, inner.n = db, 0
+
+            def execute(inner, *args):
+                inner.n += 1
+                return inner.db.execute(*args)
+
+        def queries():
+            with self.store.transaction() as db:
+                counting = Counting(db)
+                status = delivery_status(counting, 'run')
+            return counting.n, status
+        self.coordinator().start('r1', request('HOLD', job='j1'), NOW)
+        one, _ = queries()
+        for n in range(2, 5):
+            self.coordinator().start(f'r{n}', request('HOLD', job=f'j{n}'), NOW)
+        many, status = queries()
+        self.assertEqual((one, many), (3, 3))  # IDEA-042 V7: documents, grouped chunks, pending count
+        self.assertEqual(sorted(status['events'].values()), ['PENDING'] * 4)
 
     def test_l7_refused_upload_stays_visible(self):
         self.coordinator().start('r', request('HOLD'), NOW)

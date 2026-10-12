@@ -8,7 +8,7 @@ from larp.runtime.coordinator import Coordinator
 from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePlanner, FakePolicy, settle
 from larp.runtime.maintenance import ANCHOR_FIELDS, HOUR_MS, Maintenance, verify_anchors
 from larp.storage.archive import S3Archive
-from larp.storage.backup import export, restore
+from larp.storage.backup import export, restore, select_sql
 from larp.storage.postgres import IntegrityError, PostgresStore, Unavailable, doc
 from tests.storage.test_archive import FakeS3
 from tests.support import DatabaseCase, request
@@ -159,10 +159,11 @@ class Roles(Rounds):
                      "UPDATE runs SET projection='\\x00'::bytea", "UPDATE execution_signatures SET signed_hash='x'",
                      'DELETE FROM execution_signatures')
 
-    def test_g2_archive_backs_up_execution_tables_but_never_writes_them(self):
+    def test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes(self):
         self.execution_rows()
         with self.as_role['larp_archive'].transaction() as db:  # the daily backup exports all four (IDEA-042 §4 X2)
             for table in ('execution_records', 'execution_journal', 'execution_signatures', 'execution_observations'):
-                self.assertEqual(len(db.execute('SELECT * FROM ' + table).fetchall()), 1)
-        self.refused('larp_archive', "UPDATE execution_records SET terminal=true", 'DELETE FROM execution_signatures',
+                self.assertEqual(len(db.execute(*select_sql(db, table)).fetchall()), 1)
+        self.refused('larp_archive', 'SELECT signed FROM execution_signatures', 'SELECT * FROM execution_signatures',
+                     "UPDATE execution_records SET terminal=true", 'DELETE FROM execution_signatures',
                      "INSERT INTO execution_observations VALUES('x','run','\\x00','o')")

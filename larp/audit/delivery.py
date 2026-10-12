@@ -28,15 +28,17 @@ def delivery_status(db,run_id):
     FAILED: a chunk was refused permanently (4xx) or exhausted its attempts; it stays visible. PENDING otherwise.
     `pending_chunks` is a health figure only: an empty outbox never makes an event DELIVERED.
     """
+    # One grouped query for all chunks (IDEA-042 V7): the cost does not grow with one query per event.
+    chunks={r[0]:r[1:] for r in db.execute(
+        "SELECT event_id,count(*),bool_and(status='ACK' AND acknowledgement IS NOT NULL),"
+        "bool_or(status IN ('PERMANENT','EXHAUSTED')) FROM audit_chunks WHERE run_id=%s GROUP BY event_id",(run_id,))}
     events={}
     for event_id,raw in db.execute('SELECT event_id,document FROM audit_events WHERE run_id=%s ORDER BY 1',(run_id,)):
         expected=len(Document(bytes(raw)).read()['chunks'])
-        rows=db.execute('SELECT status,acknowledgement IS NOT NULL FROM audit_chunks '
-                        'WHERE run_id=%s AND event_id=%s',(run_id,event_id)).fetchall()
-        statuses=[r[0] for r in rows]
-        if any(s in ('PERMANENT','EXHAUSTED') for s in statuses):
+        count,acknowledged,failed=chunks.get(event_id,(0,False,False))
+        if failed:
             events[event_id]='FAILED'
-        elif len(rows)==expected>0 and all(r[0]=='ACK' and r[1] for r in rows):
+        elif count==expected>0 and acknowledged:
             events[event_id]='DELIVERED'
         else:
             events[event_id]='PENDING'

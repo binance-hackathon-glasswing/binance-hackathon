@@ -18,8 +18,8 @@ ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --mani
 ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.service run --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current
 Restart=always
 RestartSec=10
-# 2 = not integrated, 3 = run quarantined: restarting cures neither (larp/runtime/service.py).
-RestartPreventExitStatus=2 3
+# 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none (larp/runtime/service.py).
+RestartPreventExitStatus=2 3 4
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutStopSec=60

@@ -50,11 +50,15 @@ def halt_reasons(projection):
     return sorted((projection.get('halt') or {}).get('reasons',{}))
 
 
-def record_round_health(projection,errors,decision_ms):
-    """Consecutive failure/success counts and the last decision time, journaled with each round (DR-13)."""
+def record_round_health(projection,errors,decision_ms,counted=True):
+    """Consecutive failure/success counts and the last decision time, journaled with each round (DR-13).
+
+    `counted=False` for a round blocked without exercising policy and planner (CLOCK, DELIVERY_DEADLINE or
+    VERSION_NOT_REGISTERED): it says nothing about whether the planner works, so the counts stay as they are."""
     health=dict(projection.get('round_health') or {'failures':0,'successes':0})
-    health=({'failures':health['failures']+1,'successes':0} if is_failure(errors) else
-            {'failures':0,'successes':health['successes']+1})
+    if counted:
+        health=({'failures':health['failures']+1,'successes':0} if is_failure(errors) else
+                {'failures':0,'successes':health['successes']+1})
     projection['round_health']=health
     projection['last_decision_ms']=max(decision_ms,projection.get('last_decision_ms',decision_ms))
 
@@ -180,7 +184,10 @@ class Coordinator:
         if unregistered:
             errors.append('VERSION_NOT_REGISTERED')
         blocked=bool(halted) or unregistered
-        if assessment is not None and context_ok and not blocked:
+        # A HALT for repeated failures alone probes policy and planner, so only a round that really works can clear
+        # it (IDEA-042 V1). The probe's plan is discarded below: nothing is placed, reserved or advanced.
+        probe=halted==['REPEATED_FAILURES'] and not unregistered
+        if assessment is not None and context_ok and (not blocked or probe):
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
@@ -188,7 +195,7 @@ class Coordinator:
                 errors.append('POLICY_REJECTED'); proposal=None
         # Mandatory risk is called even when there is no policy output (unless blocked: nothing may be signed).
         try:
-            if blocked:
+            if blocked and not probe:
                 raise _Halted()
             plan=self.planner.plan(snapshot,proposal).read()
             if plan['schema']!='PlanResult.v1' or plan['snapshot_id']!=snapshot.snapshot_id:
@@ -210,6 +217,9 @@ class Coordinator:
             except ContractError:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
+            else:
+                if probe:
+                    plan=self.empty_plan(snapshot,'HALTED')
         projection=current.read()['projection']
         projection.update(updates)
         if plan.get('risk_state') is not None:
@@ -248,11 +258,12 @@ class Coordinator:
             record['orders']=[]
             commands=[]; reservation_deltas=[]
         record['execution_pending']=bool(commands)
-        record_round_health(projection,record['errors'],now_ms)
+        record_round_health(projection,record['errors'],now_ms,counted=not blocked or probe)
         # Holdings remain byte-identical: the planner can only REQUEST reservations.
         try:
             receipt=self.store.commit(batch_for(current,'plan:'+round_id,dict(kind='ROUND_PLANNED',record=record),
-                projection=projection,policy_state=proposal.next_policy_state.record() if proposal else None,
+                projection=projection,
+                policy_state=proposal.next_policy_state.record() if proposal and not blocked else None,
                 reservation_deltas=reservation_deltas,jobs=plan['jobs'],commands=commands))
         except Conflict:
             # Rejection is itself a durable outcome, never a silent lost round.

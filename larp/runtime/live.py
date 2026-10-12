@@ -10,11 +10,10 @@ its own `.ai-seeds/` and nonce directories, opened only once the old run is clos
 """
 
 from pathlib import Path
-import re
 
+from larp.audit.protocol import ADDRESS
 from larp.contracts import ContractError
 
-ADDRESS = re.compile(r'^0x[0-9a-fA-F]{40}$')
 # The runtime host holds API and log credentials only; the wallet key lives on the isolated signer host.
 RUNTIME_SECRETS = ('AI_SEEDS_ADDRESS', 'AI_SEEDS_SECRET', 'BINANCE_API_KEY', 'BINANCE_SECRET_KEY')
 SIGNER_ONLY = ('WALLET_PRIVATE_KEY', 'WALLET_MNEMONIC')
@@ -87,11 +86,13 @@ def switch_wallet(store, *, old_run, new_run, new_wallet, chain_id, initial_proj
         raise LiveStartRefused('Old run still has open rounds')
     if old['reservations']:
         raise LiveStartRefused('Old run still holds reservations')
+    # The execution service's own state is the fact: an economic intent is done when its record is terminal
+    # (IDEA-042 V6). Command rows are never updated after commit, so they cannot say this.
     with store.transaction() as db:
-        pending = db.execute("SELECT count(*) FROM commands WHERE run_id=%s AND status='PENDING'",
+        pending = db.execute('SELECT count(*) FROM execution_records WHERE run_id=%s AND NOT terminal',
                              (old_run,)).fetchone()[0]
     if pending:
-        raise LiveStartRefused('Old run still has pending execution commands')
+        raise LiveStartRefused('Old run still has unfinished executions')
     held = {k: v for k, v in (old['projection'].get('balances') or {}).items() if k not in ('USDT', 'BNB') and v}
     if held:
         raise LiveStartRefused('Old run is not flat: ' + ', '.join(sorted(held)))

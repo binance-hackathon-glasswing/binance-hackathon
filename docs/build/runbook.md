@@ -15,7 +15,9 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - the addresses disagree;
    - a record directory belongs to another wallet.
 
-   It exits 1 with the reason and never a secret value (`larp/runtime/live.py`; `tests/runtime/test_live_start.py`).
+   It exits 4 with the reason and never a secret value (`larp/runtime/live.py`; `tests/runtime/test_live_start.py`). systemd does not restart it.
+
+   **Open (host step):** nothing delivers the runtime secrets into the process yet. The unit reads no `EnvironmentFile` and there is no loader from AWS Secrets Manager, so a `live` start is refused until one exists (IDEA-042 V4).
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
 The round driver arrives with integration (item 10). Until then `service run` exits 2 (not integrated) and systemd does not restart it.
@@ -24,7 +26,7 @@ The round driver arrives with integration (item 10). Until then `service run` ex
 
 - Unit: `deploy/systemd/larp-runtime.service`: `Restart=always`, `RestartSec=10`, no start limit, preflight before every start, `KillMode=control-group`.
 - A crash leaves the session open, so the next start commits one `INCIDENT` (RESTART) journal event naming the crashed session. The restart runs the same build: another build is refused.
-- Exit codes 2 (not integrated) and 3 (quarantined) are not restarted, because restarting cures neither.
+- Exit codes 2 (not integrated), 3 (quarantined) and 4 (start refused: live-start checks, configuration, release, another build or a reused session) are not restarted, because restarting cures none of them. A failure inside a round still exits 1 and restarts.
 - Tests: `tests/runtime/test_supervision.py` (H1, H2).
 - **Host drill:** `systemctl kill -s SIGKILL larp-runtime`. Expect the unit back within about 10 s and one RESTART incident in the journal.
 
@@ -34,11 +36,12 @@ The round driver arrives with integration (item 10). Until then `service run` ex
 |---|---|---|
 | Decision clock behind the last committed decision | HALT `CLOCK` | Never during the run (latched) |
 | A round log past its upload deadline (next UTC midnight + 2 h) | HALT `DELIVERY_DEADLINE` | Automatically, once nothing is overdue |
-| N consecutive failed rounds (planner, plan, commit, policy, context, audit content) | HALT `REPEATED_FAILURES` | Automatically, after the configured number of successful rounds |
+| N consecutive failed rounds (planner, plan, commit, policy, context, audit content) | HALT `REPEATED_FAILURES` | Automatically, after the configured number of successful **probe** rounds (below) |
 | Journal fails verification | Run **quarantined** (every write and signature fenced) | Not during the run |
 
 While halted:
 - every round still runs and is logged (`HALTED:<reasons>`, no orders);
+- if the only reason is `REPEATED_FAILURES`, the round probes policy and planner and discards the plan: a probe failure keeps the HALT, a probe success counts towards clearing it. A round blocked for any other reason does not count either way;
 - no command is committed;
 - `store.command()` refuses every signature, mandatory exits included.
 

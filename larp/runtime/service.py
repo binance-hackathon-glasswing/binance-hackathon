@@ -4,8 +4,9 @@ One durable session per process. SIGTERM ends the session cleanly; a crash or ki
 records a RESTART incident. Before every round the guard may HALT or quarantine the run. The process never changes
 its build: the release preflight and the session check both refuse a build other than the registered one.
 
-Exit codes the supervisor uses: 0 clean stop; 1 failure (restart); 2 not integrated yet; 3 run quarantined. 2 and 3 do
-not restart (`RestartPreventExitStatus`): neither is cured by restarting.
+Exit codes the supervisor uses: 0 clean stop; 1 failure (restart); 2 not integrated yet; 3 run quarantined; 4 start
+refused (live-start checks, configuration, release or session contract). 2, 3 and 4 do not restart
+(`RestartPreventExitStatus`): none is cured by restarting (IDEA-042 V4).
 """
 
 import argparse
@@ -20,11 +21,15 @@ from larp.contracts import ContractError, Document
 from larp.runtime.live import LiveStartRefused, check_live_start
 from larp.runtime.supervision import Guard, Sessions
 
-EXIT_NOT_INTEGRATED, EXIT_QUARANTINED = 2, 3
+EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
     """The round driver (scheduler -> coordinator with live ports) arrives with IDEA-042 item 10."""
+
+
+class StartRefused(ContractError):
+    """A start that restarting the same build cannot cure: exit 4 (IDEA-042 V4)."""
 
 
 class Service:
@@ -42,11 +47,17 @@ class Service:
 
     def run(self, *, max_cycles=None):
         """Returns an exit code. An exception escapes on purpose: the session stays open and counts as a crash."""
-        if self.start_check is not None:
-            self.start_check()
-        if self.store.metrics(self.run_id).read()['quarantined']:
-            return EXIT_QUARANTINED  # e.g. after a restore: restarting cannot cure it, so systemd stops here
-        self.sessions.begin(session_id=self.session_id, build_id=self.build_id, now_ms=self.clock())
+        from larp.storage.postgres import Conflict, IntegrityError
+        try:
+            if self.start_check is not None:
+                self.start_check()
+            if self.store.metrics(self.run_id).read()['quarantined']:
+                return EXIT_QUARANTINED  # e.g. after a restore: restarting cannot cure it, so systemd stops here
+            self.sessions.begin(session_id=self.session_id, build_id=self.build_id, now_ms=self.clock())
+        except (LiveStartRefused, Conflict, IntegrityError):
+            raise  # reported on its own, or a storage outcome a later start may not repeat
+        except ContractError as refused:
+            raise StartRefused(str(refused)) from refused  # e.g. another build, a reused session ID
         cycles = 0
         while not self.stopping and (max_cycles is None or cycles < max_cycles):
             now = self.clock()
@@ -84,10 +95,13 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         from larp.runtime.preflight import verify_release
-        c = validate_config(json.loads(Path(args.config).read_text(encoding='utf-8')))
-        manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
-        if manifest['build_id'] != c['build_id']:
-            raise ContractError('Configured build differs from the verified release')
+        try:
+            c = validate_config(json.loads(Path(args.config).read_text(encoding='utf-8')))
+            manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+            if manifest['build_id'] != c['build_id']:
+                raise ContractError('Configured build differs from the verified release')
+        except (ContractError, ValueError, OSError) as refused:
+            raise StartRefused(type(refused).__name__) from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
             return 0
@@ -111,7 +125,12 @@ def main(argv=None):
     except LiveStartRefused as refused:
         # The reason names the failed check, never a secret value (larp/runtime/live.py).
         print(json.dumps(dict(started=False, reason='LIVE_START_REFUSED', detail=str(refused), signing_enabled=False)))
-        return 1
+        return EXIT_REFUSED
+    except StartRefused:
+        # Configuration, release or session refusal: restarting the same files cannot cure it. The text may name
+        # paths, so it is not printed.
+        print(json.dumps(dict(started=False, reason='START_REFUSED', signing_enabled=False)))
+        return EXIT_REFUSED
     except Exception:
         # Exception text can carry DSNs or secrets; the journal and health check hold the detail.
         print(json.dumps(dict(started=False, reason='RUNTIME_FAILED', signing_enabled=False)))

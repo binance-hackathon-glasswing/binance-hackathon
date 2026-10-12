@@ -6,7 +6,9 @@ his module, the test below recreates the four tables from his DDL and shows the 
 
 import importlib.util
 
-from larp.storage.backup import export, restore
+import base64
+
+from larp.storage.backup import REDACTED, export, restore
 from tests.support import DatabaseCase
 
 TABLES = ('execution_records', 'execution_journal', 'execution_signatures', 'execution_observations')
@@ -47,7 +49,7 @@ class ExecutionSchema(DatabaseCase):
             db.execute(SCHEMA.replace(' IF NOT EXISTS', ''))
         self.assertEqual(self.catalogue(), before)
 
-    def test_x2_backup_round_trip_keeps_the_execution_rows(self):
+    def test_x2_v8_backup_round_trip_keeps_the_execution_rows_but_never_signed_bytes(self):
         rows = dict(
             execution_records=('key-1', 'run', '0x' + '1' * 40, 56, False, 1, b'{"state":1}', 's' * 64),
             execution_journal=('key-1', 1, b'{"event":1}', 's' * 64, '0' * 64, 'h' * 64),
@@ -58,6 +60,11 @@ class ExecutionSchema(DatabaseCase):
                 db.execute(f'INSERT INTO {table} VALUES({",".join(["%s"] * len(rows[table]))})', rows[table])
         backup = export(self.store)
         self.assertTrue(set(TABLES) <= set(backup.read()['tables']))
+        signed = rows['execution_signatures'][3]
+        self.assertNotIn(signed, backup.payload)
+        self.assertNotIn(base64.b64encode(signed), backup.payload)  # IDEA-042 V8: neither raw nor encoded
+        marker = REDACTED['execution_signatures']['signed']
+        rows['execution_signatures'] = rows['execution_signatures'][:3] + (marker,) + rows['execution_signatures'][4:]
         with self.store.transaction() as db:
             db.execute('TRUNCATE runs, archive_clock, archive_outbox CASCADE')
             for table in TABLES:
@@ -69,3 +76,8 @@ class ExecutionSchema(DatabaseCase):
                     restored = [tuple(bytes(v) if isinstance(v, memoryview) else v for v in r)
                                 for r in db.execute(f'SELECT * FROM {table}').fetchall()]
                     self.assertEqual(restored, [rows[table]])
+        if importlib.util.find_spec('larp.execution_live') is not None:  # after integration: the registry refuses
+            from larp.execution import Conflict
+            from larp.execution_live.store import ExecutionStore
+            with self.assertRaises(Conflict):
+                ExecutionStore(self.store, run_id='run', wallet='0x' + '1' * 40).lookup('attempt-1', 'p' * 64)

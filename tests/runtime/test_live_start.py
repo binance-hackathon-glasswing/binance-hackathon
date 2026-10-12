@@ -97,14 +97,19 @@ class Switch(DatabaseCase):
         c.start('r', request('BUY'), NOW)  # open round, reservations and a pending command
         with self.assertRaises(LiveStartRefused):
             self.switch()
+        with self.store.transaction() as db:  # the execution service's record of that intent, not yet terminal
+            db.execute("INSERT INTO execution_records VALUES('key-r','run','0xw',56,false,1,'\\x00','s')")
         tx = '0x' + 'b' * 64
         c.observe('b', doc(dict(kind='BROADCAST_ATTEMPTED', observation_id='b', round_id='r', tx_hash=tx,
                                 simulated=True)), settle)
         c.observe('f', doc(dict(kind='FINAL_SUCCESS', observation_id='f', round_id='r', tx_hash=tx,
                                 simulated=True)), settle)
         c.recover(NOW + 1)
-        with self.store.transaction() as db:  # the fixture never marks commands done; the execution service will
-            db.execute("UPDATE commands SET status='DONE' WHERE run_id='run'")
+        with self.assertRaises(LiveStartRefused) as caught:  # rounds closed, but the execution is unfinished
+            self.switch()
+        self.assertIn('unfinished executions', str(caught.exception))
+        with self.store.transaction() as db:  # the execution service finishes it (IDEA-042 V6; grant tested in G2)
+            db.execute("UPDATE execution_records SET terminal=true WHERE economic_key='key-r'")
         with self.assertRaises(LiveStartRefused) as caught:  # holds NVDAB after the fill
             self.switch()
         self.assertIn('not flat', str(caught.exception))

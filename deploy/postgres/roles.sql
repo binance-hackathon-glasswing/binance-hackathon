@@ -24,8 +24,11 @@ GRANT CONNECT ON DATABASE larp TO larp_archive, larp_uploader, larp_runtime, lar
 GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader, larp_runtime, larp_execution, larp_signer;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,
-  swap_owners,jobs,command_checks,process_sessions,execution_records,execution_journal,execution_signatures,
+  swap_owners,jobs,command_checks,process_sessions,execution_records,execution_journal,
   execution_observations TO larp_archive;  -- the daily backup exports every table larp.storage.backup restores
+-- Signed transaction bytes are never readable by the archive role or written to a backup (IDEA-042 V8).
+REVOKE SELECT ON execution_signatures FROM larp_archive;
+GRANT SELECT (attempt_id,run_id,payload_hash,signed_hash) ON execution_signatures TO larp_archive;
 -- SELECT ... FOR UPDATE needs update privilege; restrict it to the clock column.
 -- The archive/uploader implementations only lock runs; they never write this field.
 GRANT UPDATE (clock_ms) ON runs TO larp_archive, larp_uploader;

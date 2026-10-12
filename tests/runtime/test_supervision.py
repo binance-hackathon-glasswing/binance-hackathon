@@ -1,14 +1,17 @@
 """Supervisor restart incidents and the autonomous HALT (DR-13; IDEA-042 item 5, criteria H1-H6)."""
 
+from contextlib import redirect_stdout
+import io
 from pathlib import Path
+import tempfile
 import unittest
 
 from larp.audit.delivery import DeliveryWorker
 from larp.contracts import ContractError
-from larp.runtime.coordinator import Coordinator
+from larp.runtime.coordinator import Coordinator, halt_reasons
 from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePlanner, FakePolicy, FakeReceiver, settle
 from larp.runtime.replay import replay
-from larp.runtime.service import EXIT_QUARANTINED, Service
+from larp.runtime.service import EXIT_QUARANTINED, EXIT_REFUSED, Service, StartRefused, main
 from larp.runtime.supervision import Guard, Sessions
 from larp.storage.postgres import Conflict, doc
 from tests.support import DatabaseCase, request
@@ -21,6 +24,19 @@ ROOT = Path(__file__).resolve().parents[2]
 class Raising:
     def plan(self, *args):
         raise RuntimeError('synthetic planner outage')
+
+
+class Toggle:
+    """A planner that fails until it is repaired."""
+
+    def __init__(self):
+        self.broken, self.calls = True, 0
+
+    def plan(self, snapshot, proposal):
+        self.calls += 1
+        if self.broken:
+            raise RuntimeError('synthetic planner outage')
+        return FakePlanner().plan(snapshot, proposal)
 
 
 class Rounds:
@@ -61,6 +77,10 @@ class Supervision(DatabaseCase):
 
     def projection(self):
         return self.store.load('run').read()['projection']
+
+    def commands(self):
+        with self.store.transaction() as db:
+            return db.execute("SELECT count(*) FROM commands WHERE run_id='run'").fetchone()[0]
 
     # ---------------------------------------------------------------- H1
     def test_h1_clean_restart_records_no_incident(self):
@@ -114,16 +134,35 @@ class Supervision(DatabaseCase):
         self.assertEqual(self.guard().evaluate(late + 3), ['CLEAR:DELIVERY_DEADLINE'])
         self.assertNotIn('halt', self.projection())
 
-    def test_h3_h5_repeated_failures_halt_then_clear_after_successes(self):
-        failing = self.coordinator(planner=Raising())
+    def test_h3_h5_v1_repeated_failures_halt_clears_only_when_the_planner_works(self):
+        planner = Toggle()
+        c = self.coordinator(planner=planner)
         for n in range(3):
-            failing.start(f'f{n}', request('HOLD', job=f'f{n}'), NOW)
+            c.start(f'f{n}', request('BUY', job=f'f{n}'), NOW)
         self.assertEqual(self.projection()['round_health'], {'failures': 3, 'successes': 0})
         self.assertEqual(self.guard().evaluate(NOW), ['HALT:REPEATED_FAILURES'])
-        for n in range(2):  # halted rounds still run, log and count (the planner is not called)
-            failing.start(f'h{n}', request('HOLD', job=f'h{n}'), NOW)
+        for n in range(4):  # halted rounds probe the planner; it still fails, so the HALT holds (IDEA-042 V1)
+            c.start(f'h{n}', request('BUY', job=f'h{n}'), NOW)
+        self.assertEqual(self.guard().evaluate(NOW), [])
+        self.assertEqual(halt_reasons(self.projection()), ['REPEATED_FAILURES'])
+        planner.broken = False
+        calls = planner.calls
+        for n in range(2):  # the repaired planner is probed; its plans are discarded
+            c.start(f'p{n}', request('BUY', job=f'p{n}'), NOW)
+        self.assertEqual(planner.calls, calls + 2)
+        self.assertEqual(self.commands(), 0)  # a probe places nothing
         self.assertEqual(self.guard().evaluate(NOW), ['CLEAR:REPEATED_FAILURES'])
+        c.start('after', request('BUY', job='after'), NOW)
+        self.assertEqual(self.commands(), 1)
         self.assertEqual(self.kinds().count('HALT'), 1)
+
+    def test_v1_a_round_blocked_by_the_clock_does_not_count(self):
+        self.coordinator().start('r1', request('HOLD'), NOW)
+        before = self.projection()['round_health']
+        self.assertEqual(self.guard().evaluate(NOW - 1), ['HALT:CLOCK'])
+        for n in range(3):
+            self.coordinator(clock=NOW + 1).start(f'c{n}', request('HOLD', job=f'c{n}'), NOW + 1)
+        self.assertEqual(self.projection()['round_health'], before)
 
     def test_h3_integrity_failure_quarantines(self):
         self.coordinator().start('r1', request('HOLD'), NOW)
@@ -148,6 +187,14 @@ class Supervision(DatabaseCase):
                 with self.store.transaction() as db:
                     db.execute("UPDATE runs SET projection=%s WHERE run_id='run'", (doc(dict(x=1)).payload,))
         self.assertEqual(self.service(Tamper(), session='s1').run(max_cycles=3), EXIT_QUARANTINED)
+
+    def test_v4_a_session_refusal_is_a_start_refusal_and_a_crash_is_not(self):
+        self.service(Rounds(self.coordinator()), session='s1').run(max_cycles=1)
+        with self.assertRaises(StartRefused):  # another build: restarting cannot cure it (exit 4)
+            self.service(Rounds(self.coordinator()), build='build-2', session='s2').run(max_cycles=1)
+        with self.assertRaises(RuntimeError) as crash:  # a failure inside a round still restarts (exit 1)
+            self.service(Crash(), session='s3').run()
+        self.assertNotIsInstance(crash.exception, StartRefused)
 
     # ---------------------------------------------------------------- H6
     def test_h6_supervision_events_replay(self):
@@ -180,7 +227,7 @@ class SupervisorUnit(unittest.TestCase):
     def test_h2_runtime_unit(self):
         d = self.directives('larp-runtime.service')
         for required in ('Restart=always', 'RestartSec=10', 'StartLimitIntervalSec=0', 'KillMode=control-group',
-                         'RestartPreventExitStatus=2 3', 'User=larp-runtime'):
+                         'RestartPreventExitStatus=2 3 4', 'User=larp-runtime'):
             self.assertIn(required, d)
         self.assertTrue(any(x.startswith('ExecStartPre=') and 'larp.runtime.preflight --manifest' in x for x in d))
         self.assertTrue(any(x.startswith('ExecStart=') and 'larp.runtime.service run' in x for x in d))
@@ -191,3 +238,12 @@ class SupervisorUnit(unittest.TestCase):
         self.assertTrue(hardening)
         for line in hardening:
             self.assertIn(line, d)
+
+    def test_v4_unfixable_start_errors_exit_4(self):
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()) as out:
+            config = Path(directory) / 'runtime.json'
+            config.write_text('{"schema": "RuntimeService.v1"}', encoding='utf-8')  # settings missing
+            args = ['--config', str(config), '--manifest', str(Path(directory) / 'missing.json'), '--root', directory]
+            self.assertEqual(main(['check'] + args), EXIT_REFUSED)
+            self.assertEqual(main(['run'] + args), EXIT_REFUSED)
+        self.assertIn('START_REFUSED', out.getvalue())

@@ -85,6 +85,20 @@ class Register(unittest.TestCase):
             with self.assertRaises(ContractError):
                 verify_release(Document.from_dict(manifest), root)
 
+    def test_v2_a_register_without_its_proposal_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in (SERVICES, DEVIATIONS):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_bytes((ROOT / name).read_bytes())
+            with self.assertRaises(ContractError):  # the quote check cannot run, so nothing passes (IDEA-042 V2)
+                load_register(root)
+            changed = load(DEVIATIONS)
+            changed.pop('proposal')
+            (root / DEVIATIONS).write_text(json.dumps(changed), encoding='utf-8')
+            with self.assertRaises(ContractError):
+                load_register(root)
+
 
 def manifest(build='synthetic'):
     return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=build, repository='synthetic',

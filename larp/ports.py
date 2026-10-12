@@ -7,6 +7,7 @@ from datetime import datetime
 import re
 from typing import Protocol
 
+from larp.audit.protocol import SYMBOLS as BSTOCKS, TX as TX_HASH  # one definition for I3/I4 and the round log
 from larp.contracts import ContractError, DecisionSnapshot, Document, PolicyState, Proposal
 
 
@@ -44,8 +45,6 @@ class Receiver(Protocol):
 # still applies on top. A change needs both owners' agreement, recorded in both build records.
 # ---------------------------------------------------------------------------------------------------------
 
-BSTOCKS = frozenset(("NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"))
-TX_HASH = re.compile(r"^0x[0-9a-fA-F]{64}$")
 DECIMAL = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$")
 INTENT_KINDS = ("BSTOCK_TRADE", "GAS_TOP_UP")  # I7: a gas top-up is its own round with exactly one USDT -> BNB intent
 OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")

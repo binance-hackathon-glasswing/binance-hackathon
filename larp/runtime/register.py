@@ -96,7 +96,10 @@ def load_register(root):
     deviations, deviations_sha = _load(root, DEVIATIONS)
     validate_services(services)
     proposal = Path(root) / deviations.get('proposal', '')
-    validate_deviations(deviations, proposal.read_text(encoding='utf-8') if proposal.is_file() else None)
+    if not deviations.get('proposal') or not proposal.is_file():
+        # Without the proposal the verbatim-quote check cannot run, so the register is not valid (IDEA-042 V2).
+        raise ContractError('Deviations register names no readable proposal file')
+    validate_deviations(deviations, proposal.read_text(encoding='utf-8'))
     return dict(schema='ReleaseRegister.v1', services_sha256=services_sha, deviations_sha256=deviations_sha,
                 services=len(services['services']), deviations=len(deviations['rows']),
                 open_deviations=sorted(r['id'] for r in deviations['rows'] if r['decided'] == 'OPEN'))

@@ -72,7 +72,7 @@ run "reject_final_interactive_access" {
 run "archive_retention_reaches_end_of_2026" {
   command = plan
   variables {
-    archive_retention_days = 80
+    archive_retention_days = 81
   }
   expect_failures = [var.archive_retention_days]
 }

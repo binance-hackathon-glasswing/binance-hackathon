@@ -65,14 +65,15 @@ def event_id_for(run_id,address,round_id,head,timestamp_ms):
 def check_orders(orders,round_kind='TRADE'):
     """Orders the code decided to place, in the form the audit log accepts.
 
-    BNB is accepted only in a GAS_TOP_UP round, and then only as its single BUY (I7)."""
+    BNB is accepted only in a GAS_TOP_UP round, and then only as its single BUY (I7). A top-up round that placed
+    nothing (rejected at commit, or an audit fallback) logs no orders, so it can still close (IDEA-042 V3)."""
     if type(orders) is not list:
         raise ContractError('Orders must be a list')
     if round_kind not in ROUND_KINDS:
         raise ContractError('Unknown round kind')
-    if round_kind=='GAS_TOP_UP' and [(o.get('symbol'),o.get('side')) if type(o) is dict else None
-                                    for o in orders]!=[('BNB','BUY')]:
-        raise ContractError('A gas top-up round logs exactly one BNB buy')
+    if round_kind=='GAS_TOP_UP' and orders and [(o.get('symbol'),o.get('side')) if type(o) is dict else None
+                                                for o in orders]!=[('BNB','BUY')]:
+        raise ContractError('A gas top-up round logs its one BNB buy, or nothing if none was placed')
     for order in orders:
         if type(order) is not dict:
             raise ContractError('Unsupported audit order')
