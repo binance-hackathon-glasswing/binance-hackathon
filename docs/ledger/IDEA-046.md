@@ -1,7 +1,7 @@
 # IDEA-046 — Lean two-host AWS deployment (Option B) within a $100 credit cap
 
 - Date / owner: 2026-10-12 / Yao Zhu (decision) with Claude. Hosting owners remain Keegan + Isaac.
-- Status: open (decisions and prospective criteria recorded before implementation or execution).
+- Status: **implemented and validated offline** (L01–L08 PASS, 2026-10-12). Not applied to AWS; the first plan/apply waits for the user's explicit approval of a reviewed saved plan.
 - Branch: `codex/hosting-option-b-20261012`, stacked on PR #19 (`codex/hosting-step1-20261012`). Nothing is applied to AWS by this entry.
 - Links: IDEA-028 (six-host design this replaces for deployment), IDEA-045 (IAM database login), G-17 / Q-12 (jurisdiction), G-47 (archive retention), F-15/F-17 (scored run Oct 29 – Nov 12, winner audit Nov 16–20), F-62 (write-once trace uploads).
 
@@ -29,4 +29,17 @@ Estimated cost at official Sydney prices (730 h): `t3.small` $19.27, `t3.micro` 
 | L07 | `terraform fmt/init/validate/test` pass for `deploy/aws` and `deploy/bootstrap` with mock providers and no credentials; Linux CI green; the Python suite is unaffected. No `terraform plan` against the real account in this step. |
 | L08 | Documentation states the two-host layout, the signer key-file requirement, the cost table, the Sydney risk and revisit date, and a teardown checklist that keeps the archive and audit material through Nov 20. |
 
-Validation results: pending.
+Validation results (2026-10-12). Criteria committed at `62f53e0` before implementation. Code `721d865`, docs `02453f7`; PR #20 (stacked on #19).
+
+| ID | Result | Evidence |
+|---|---|---|
+| L01 | PASS | `host_database_users_match_sql_roles`: two hosts, the role map as specified, every `rds_iam` role reachable. `safe_defaults`: 2 IAM roles. |
+| L02 | PASS | NAT, Elastic IP and interface-endpoint resources removed from the configuration; `safe_defaults` asserts the only VPC endpoint is the S3 gateway. |
+| L03 | PASS | `safe_defaults`: no internet gateway or route by default. `host_isolation`: no public IP and no external egress by default. `internet_reaches_primary_only`: with egress enabled, only `primary` gets a public IP, HTTPS egress and the internet route, and the signer reads no managed secret. |
+| L04 | PASS | `host_isolation`: standard CPU credits, IMDSv2, encrypted disks, termination protection, default `t3.small`/`t3.micro`, one recovery alarm per host. `non_burstable_types_are_refused`. |
+| L05 | PASS | `safe_defaults`: private, encrypted, IAM-authenticated, single-AZ, no log export, deletion-protected. `teardown_lifts_only_operational_protection`: `allow_teardown` lifts database, instance and artifact protection, while the archive keeps COMPLIANCE and is never force-destroyed. Archive bucket and KMS key keep `prevent_destroy` (configuration). |
+| L06 | PASS | `budget_alerts_with_recipient`: one budget, `90.00` USD, 3 actual-spend notifications. `safe_defaults`: no budget without a recipient. Recipients are a sensitive variable; the example file has placeholders only. |
+| L07 | PASS | Local Terraform 1.13.5 with mock providers and no credentials: `deploy/aws` 10/10, `deploy/bootstrap` 1/1, fmt/validate clean. Linux CI run [38261464804](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38261464804): all jobs PASS (Terraform 10/10 and 1/1; pytest 1063 passed, 1 opt-in skip; demo; Docker smoke). No plan against the real account. |
+| L08 | PASS | `docs/build/architecture-deployment.md`: lean target, cost, signer key-file and offline-image requirements, Sydney risk with the Oct 27 revisit, teardown checklist. Open items in `docs/INCOMPLETE_WORK.md`. |
+
+Read-only account checks used for B3 (2026-10-12, profile `larp`, role `AccountFullAccessRole`): Free plan ACTIVE, $100.00 credits, expiry 2027-04-12. Singapore EC2/RDS calls are denied by an AWS-managed SCP. In Sydney: no instances, databases, addresses, endpoints, NAT gateways, buckets or budgets, and the needed services are readable. PostgreSQL 14.24 is orderable on `db.t4g.micro`. Readable is not proof that creating is allowed; check creation permissions before the first apply.
