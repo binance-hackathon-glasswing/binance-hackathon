@@ -52,7 +52,7 @@ class LocalSigner:
                 Account.enable_unaudited_hdwallet_features()
                 account=Account.from_mnemonic(mnemonic)
             else:account=Account.from_key(key)
-        except (ValueError,TypeError):
+        except Exception:
             raise Blocked('invalid signer credential') from None
         return cls(account=account,expected_address=secrets['AI_SEEDS_ADDRESS'],**kwargs)
 
@@ -60,7 +60,7 @@ class LocalSigner:
         self.registry.check_authority(epoch,guard_version)
         # Authorization returns the actual intent, step, current gates, trusted clock and verified decoder.
         intent,step,gates,now,decoder=self.authorization(attempt_id,payload,epoch,guard_version)
-        if gates.epoch!=epoch or gates.state_version!=guard_version:raise Blocked('stale signer authority')
+        if gates.epoch!=epoch or gates.authority_version!=guard_version:raise Blocked('stale signer authority')
         validate_payload(intent,step,payload,gates,now,decoder)
         if payload.sender!=self.account.address.lower():raise Blocked('signer sender mismatch')
         stored=self.lookup(attempt_id,payload.hash)

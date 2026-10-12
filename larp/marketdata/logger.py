@@ -29,6 +29,7 @@ def cycle(port, sizes, symbols):
                 # Quoted net loss includes any fees already reflected in received amounts; gas is separate.
                 proceeds = Decimal(sell['quote_measurement']['receive_units']) / 10**18
                 item['quoted_roundtrip_bps'] = str((size - proceeds) * 10000 / size)
+                item['effective_quoted_spread_bps'] = str(20000 * (size - proceeds) / (size + proceeds))
                 item['measurement'] = 'SEQUENTIAL_BUY_AND_SELL_QUOTES; prices can move between calls'
                 item['gas_estimates'] = {}
                 for side, observation in (('BUY', buy), ('SELL', sell)):
@@ -82,12 +83,21 @@ def summarize(root):
         costs = [Decimal(x['quoted_roundtrip_bps']) for x in items if 'quoted_roundtrip_bps' in x]
         impacts = [Decimal(x[side]['quote_measurement']['impact_bps']) for x in items
                    for side in ('buy', 'sell') if side in x]
+        spreads = [Decimal(x['effective_quoted_spread_bps']) for x in items if 'effective_quoted_spread_bps' in x]
+        latencies = [x[side]['quote_measurement']['elapsed_ms'] for x in items for side in ('buy', 'sell')
+                     if side in x and type(x[side]['quote_measurement'].get('elapsed_ms')) is int]
         result['symbols'][symbol] = dict(samples=len(items), successful_pairs=len(costs),
             open_samples=sum(x.get('token_open') is True and x.get('underlying_open') is True for x in items),
             roundtrip_bps_median=str(median(costs)) if costs else None,
             roundtrip_bps_min=str(min(costs)) if costs else None,
             roundtrip_bps_max=str(max(costs)) if costs else None,
             impact_bps_median=str(median(impacts)) if impacts else None,
+            effective_quoted_spread_bps_median=str(median(spreads)) if spreads else None,
+            effective_quoted_spread_bps_min=str(min(spreads)) if spreads else None,
+            effective_quoted_spread_bps_max=str(max(spreads)) if spreads else None,
+            quote_latency_ms_median=median(latencies) if latencies else None,
+            quote_latency_ms_max=max(latencies) if latencies else None,
+            spread_convention='SEQUENTIAL_EFFECTIVE_QUOTED_PRICES; includes reflected fees and price movement',
             failures=[x.get('reason') for x in items if x.get('status') == 'UNAVAILABLE'])
     return result
 

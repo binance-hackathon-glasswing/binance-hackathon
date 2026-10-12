@@ -5,14 +5,14 @@ import sys
 from larp.execution import Executor
 from larp.execution_live.store import ExecutionStore
 from larp.storage.postgres import PostgresStore
-from tests.execution.test_postgres_execution import RegistrySigner
+from tests.execution.test_postgres_execution import RegistrySigner, ExecutionGuards
 from tests.execution_fixtures import FakeDecoder, FakeGuards, FakeVenue, WALLET, finalized
 
 
 def main():
     stage, key = sys.argv[1:]
     store = ExecutionStore(PostgresStore(os.environ['LARP_TEST_DATABASE_URL']), run_id='run', wallet=WALLET)
-    guards = FakeGuards(store)
+    guards = ExecutionGuards(store)
 
     class CrashVenue(FakeVenue):
         def broadcast(self, signed, epoch, version):

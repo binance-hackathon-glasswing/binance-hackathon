@@ -88,8 +88,8 @@ class SettlementTests(unittest.TestCase):
             fact = None
             def lookup_observation(self, event_id):
                 return self.fact
-            def authority(self):
-                return 1, 1
+            def check_authority(self, epoch, version):
+                if (epoch, version) != (1, 1):raise Blocked('fenced')
             def put_observation(self, fact, epoch, version):
                 self.fact = fact
                 return fact
@@ -99,10 +99,37 @@ class SettlementTests(unittest.TestCase):
                 chain.calls += 1
                 return self.proof
         registry, chain = Registry(), Chain()
-        facts = ReceiptFacts(chain, wallet_id='fake-wallet', valuation=lambda _:700000000, registry=registry)
+        facts = ReceiptFacts(chain, wallet_id='fake-wallet', valuation=lambda _:700000000, registry=registry,
+                             epoch=1, authority_version=1)
         attempt = replace(self.attempt, finalized_at=1791734400)
         first = facts(self.state, attempt)
         self.proof['finalized_height'] += 10
         second = facts(self.state, attempt)
         self.assertEqual(first, second)
         self.assertEqual(chain.calls, 1)
+
+    def test_fractional_sell_cash_settles_with_exact_dust(self):
+        self.intent = replace(self.intent, pay_token=TOKEN, receive_token=USDT,
+                              amount=4 * 10**17, minimum_output=40 * 10**18)
+        self.state = replace(self.state, intent=self.intent)
+        actual = 40123456789012345678
+        self.proof['receipt']['logs'] = [log(TOKEN, WALLET, ROUTER, self.intent.amount),
+                                        log(USDT, ROUTER, WALLET, actual)]
+        p=self.portfolio.read()
+        p['positions']['NVDAB'].update(units=self.intent.amount,cost_basis_units=40000000)
+        p['reservations'][self.intent.intent_id].update(side='SELL',token_units=self.intent.amount,
+                                                      pay_units=self.intent.amount,min_receive_units=40000000)
+        observation=self.observed()
+        result=advance_accounting(Document.from_dict(p),observation).read()
+        self.assertEqual(result['positions']['NVDAB']['units'],0)
+        self.assertEqual(observation.read()['cash_units'],40123456)
+        self.assertEqual(observation.read()['cash_dust_chain_units'],789012345678)
+        self.assertEqual(observation.read()['actual_cash_chain_units'],actual)
+
+    def test_final_fact_producer_cannot_borrow_current_authority(self):
+        class Registry:
+            def check_authority(self,e,v):raise Blocked('fenced')
+            def lookup_observation(self,_):raise AssertionError('must fence before read')
+            def put_observation(self,*_):raise AssertionError('must not write')
+        facts=ReceiptFacts(None,wallet_id='fake-wallet',valuation=None,registry=Registry(),epoch=1,authority_version=1)
+        with self.assertRaises(Blocked):facts(self.state,replace(self.attempt,finalized_at=1791734400))

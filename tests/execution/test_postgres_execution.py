@@ -3,9 +3,12 @@ from dataclasses import replace
 import os
 import subprocess
 import sys
+import importlib.util
+import unittest
 
 from larp.execution import Conflict, Executor
 from larp.execution_live.store import ExecutionStore
+from larp.execution_live.service import ExecutionService
 from tests.support import DatabaseCase
 from tests.execution_fixtures import (FakeDecoder, FakeGuards, FakeSigner, FakeVenue,
                                       WALLET, finalized, intent)
@@ -24,12 +27,18 @@ class RegistrySigner:
         return self.store.lookup(attempt_id, payload_hash)
 
 
+class ExecutionGuards(FakeGuards):
+    def snapshot(self, economic_intent, now):
+        return replace(super().snapshot(economic_intent, now),
+                       execution_version=self.store.execution_authority()[1])
+
+
 class PostgresExecutionTests(DatabaseCase):
     def setUp(self):
         super().setUp()
         self.execution_store = ExecutionStore(self.store, run_id='run', wallet=WALLET)
         self.execution_store.install_test_schema()
-        self.guards = FakeGuards(self.execution_store)
+        self.guards = ExecutionGuards(self.execution_store)
         self.venue = FakeVenue(self.execution_store)
         self.signer = RegistrySigner(self.execution_store)
         self.restart()
@@ -137,10 +146,77 @@ class PostgresExecutionTests(DatabaseCase):
         self.assertEqual(len(self.venue.broadcasts), 1)
 
     def test_final_observation_is_immutable_across_restart(self):
-        e, v = self.execution_store.authority()
+        e, v = self.execution_store.execution_authority()
         fact = dict(event_id='fact', run_id='run', kind='APPROVAL', settlement='FINAL')
         self.execution_store.put_observation(fact, e, v)
         self.restart()
         self.assertEqual(self.executor.store.lookup_observation('fact'), fact)
         with self.assertRaises(Conflict):
             self.execution_store.put_observation(dict(fact, finalized_height=999), e, v)
+
+    def service(self, publish=None):
+        epoch, version = self.execution_store.execution_authority()
+        return ExecutionService(store=self.store,executor=self.executor,mapping={},
+                                observe=publish or (lambda _:None),wallet_id='wallet',
+                                epoch=epoch,authority_version=version)
+
+    def test_runtime_commit_does_not_invalidate_authorized_attempt(self):
+        key=self.prepared()
+        self.store.commit(self.batch('ordinary-runtime-commit'))
+        result=self.service().advance(key,13)
+        self.assertEqual(result.attempts[-1].state,'SIGNED_DURABLE')
+
+    def test_service_recovers_signature_after_takeover_without_reissuing(self):
+        key=self.prepared();signed=self.executor.sign(key,13)
+        stale=self.service()
+        self.store.takeover('run',self.epoch,offline=True)
+        from larp.storage.postgres import Conflict as StorageConflict
+        with self.assertRaises(StorageConflict):stale.advance(key,14)
+        service=self.service()
+        recovered=service.advance(key,15)
+        self.assertEqual(recovered.attempts[-1].tx_hash,signed.attempts[-1].tx_hash)
+        self.assertEqual(recovered.attempts[-1].epoch,self.epoch+1)
+        service.advance(key,16)
+        self.assertEqual(len(self.venue.broadcasts),1)
+
+    def test_service_recovers_registry_commit_and_publication_crash(self):
+        key=self.prepared()
+        state=self.execution_store.load(key);a=state.attempts[-1]
+        self.signer.sign(a.attempt_id,a.payload,a.epoch,a.guard_version)
+        self.assertEqual(self.service().advance(key,13).attempts[-1].state,'SIGNED_DURABLE')
+        publications=[]
+        def lost_ack(fact):
+            publications.append(fact)
+            raise ConnectionError('synthetic publication crash')
+        with self.assertRaises(ConnectionError):self.service(lost_ack).advance(key,14)
+        self.service(publications.append).advance(key,15)
+        self.assertEqual(publications[0],publications[1])
+        self.assertEqual(len(self.venue.broadcasts),1)
+
+    def test_expired_unbroadcast_signature_is_revoked_but_possible_send_cannot_abort(self):
+        key=self.prepared();signed=self.executor.sign(key,13)
+        self.store.takeover('run',self.epoch,offline=True)
+        result=self.service().advance(key,1001)
+        self.assertEqual(result.status,'ABORTED')
+        a=signed.attempts[-1]
+        with self.assertRaises(Conflict):self.execution_store.lookup(a.attempt_id,a.payload.hash)
+        from larp.execution import Signed
+        e,v=self.execution_store.execution_authority()
+        with self.assertRaises(Conflict):self.execution_store.check_broadcast(Signed(a.raw_hex,a.tx_hash),e,v)
+
+    @unittest.skipUnless(importlib.util.find_spec('eth_account'),'signer dependency supplied by integration CI lock')
+    def test_real_ephemeral_signer_uses_postgres_registry(self):
+        from eth_account import Account
+        from larp.signer.local import LocalSigner,verify
+        account=Account.create()
+        adapter=ExecutionStore(self.store,run_id='run',wallet=account.address.lower())
+        guards=ExecutionGuards(adapter)
+        executor=Executor(adapter,guards,FakeVenue(adapter),RegistrySigner(adapter),FakeDecoder())
+        i=intent(wallet=account.address.lower())
+        executor.create(i,10);executor.prepare(i.key,11);state=executor.authorize(i.key,12)
+        a=state.attempts[-1]
+        signer=LocalSigner(account=account,expected_address=i.wallet,registry=adapter,signer_host=True,
+            authorization=lambda *_:(i,'APPROVE',guards.snapshot(i,13),13,None))
+        signed=signer.sign(a.attempt_id,a.payload,a.epoch,a.guard_version)
+        self.assertTrue(verify(a.payload,signed))
+        self.assertEqual(signed,signer.lookup(a.attempt_id,a.payload.hash))

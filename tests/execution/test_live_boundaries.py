@@ -38,11 +38,12 @@ class LiveBoundaries(unittest.TestCase):
     def command(self,side='BUY'):
         p=dict(intent_id='i',decision_id='d',expires_ms=1000000,symbol='NVDAB',side=side,amount_kind='EXACT_IN',
                pay_asset='USDT' if side=='BUY' else 'NVDAB',pay_units=40000000,min_receive_units=30000000,
-               receive_decimals=18 if side=='BUY' else 6)
+               receive_decimals=18 if side=='BUY' else 6, cash_units=40000000, fee_units=0)
         return dict(kind='EXECUTION_REQUEST',command_id='i',decision_id='d',expires_ms=1000000,round_id='r',payload=p)
     def mapped(self,c):
         return map_command(c,run_id='run',wallet=WALLET,version_id='v',router=ROUTER,
-                           token_decimals={'NVDAB':18},limits=dict(max_gas=1000000,max_gas_price=10,gas_budget=20000000),now_ms=100)
+                           token_decimals={'NVDAB':18},limits=dict(max_gas=1000000,max_gas_price=10,gas_budget=20000000,
+                                                               per_trade_cap_units=50000000),now_ms=100)
     def test_command_units_identity_and_expiry(self):
         buy=self.mapped(self.command());self.assertEqual(buy.amount,40*10**18)
         sell=self.mapped(self.command('SELL'));self.assertEqual(sell.minimum_output,30*10**18)

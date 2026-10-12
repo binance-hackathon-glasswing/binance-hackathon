@@ -51,3 +51,17 @@ class SignerTests(unittest.TestCase):
         with self.assertRaises(Blocked):
             LocalSigner.from_secret_store(secrets, registry=self.registry, authorization=None, signer_host=False)
         self.assertEqual(LocalSigner.from_secret_store(secrets, **args).account.address, self.account.address)
+
+    def test_mnemonic_provider_exception_never_exposes_words(self):
+        from eth_utils import ValidationError
+        from unittest.mock import patch
+        import traceback
+        marker='PRIVATE_MNEMONIC_FIXTURE_MUST_NOT_APPEAR'
+        with patch('eth_account.Account.from_mnemonic',side_effect=ValidationError(marker)):
+            try:
+                LocalSigner.from_secret_store(dict(WALLET_MNEMONIC=marker,AI_SEEDS_ADDRESS=self.intent.wallet),
+                    registry=self.registry,authorization=self.signer.authorization,signer_host=True)
+            except Blocked:
+                rendered=traceback.format_exc()
+            else:self.fail('invalid credential accepted')
+        self.assertNotIn(marker,rendered)

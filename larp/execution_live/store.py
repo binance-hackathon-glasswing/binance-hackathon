@@ -44,6 +44,7 @@ def _decode(raw):
 
 
 class ExecutionStore:
+    revokes_unbroadcast = True
     def __init__(self, store, *, run_id, wallet):
         self.store, self.run_id, self.wallet = store, run_id, wallet
 
@@ -67,7 +68,41 @@ class ExecutionStore:
 
     def check_authority(self, epoch, version):
         with self.store.transaction() as db:
-            self._authority(db, epoch, version)
+            self._release_authority(db, epoch, version)
+
+    def _release_authority(self, db, epoch, version):
+        run = self.store._run(db, self.run_id)
+        self.store._owned(run, epoch)
+        if version != epoch or run['chain_id'] != 56:
+            raise Conflict('execution release authority changed')
+        return run
+
+    def execution_authority(self):
+        run = self.store.load(self.run_id).read()
+        return run['epoch'], run['epoch']
+
+    def _attempt(self, db, attempt_id):
+        keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
+        for key, in keys:
+            state = self._load(db, key)
+            for attempt in state.attempts:
+                if attempt.attempt_id == attempt_id:
+                    return state, attempt
+        raise Conflict('unknown registered execution attempt')
+
+    def check_broadcast(self, signed, epoch, version):
+        with self.store.transaction() as db:
+            self._release_authority(db, epoch, version)
+            keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
+            for key, in keys:
+                state = self._load(db, key)
+                for attempt in state.attempts:
+                    if (state.status == 'ACTIVE' and attempt.state == 'BROADCAST_ATTEMPTED'
+                            and attempt.broadcast_at is not None and attempt.tx_hash == signed.tx_hash
+                            and attempt.raw_hex == signed.raw_hex and attempt.epoch == epoch
+                            and attempt.guard_version == version):
+                        return
+            raise Conflict('signed bytes have no current possible-send authority')
 
     def _load(self, db, key):
         row = db.execute('SELECT state,state_hash,revision,run_id,wallet FROM execution_records '
@@ -107,6 +142,11 @@ class ExecutionStore:
                     raise Conflict('stale execution CAS')
                 if stored is not None and stored.intent != current.intent:
                     raise Conflict('immutable economic intent changed')
+                if event.get('type') == 'ABORTED_UNBROADCAST':
+                    if (stored is None or stored.status != 'ACTIVE' or not stored.attempts
+                            or stored.attempts[-1].broadcast_at is not None
+                            or current.status != 'ABORTED' or current.attempts[-1].state != 'ABORTED'):
+                        raise Conflict('no-positive-unbroadcast evidence for revocation')
                 new = replace(current, revision=1 if previous is None else previous.revision + 1)
                 raw, checksum = canonical(asdict(new)).encode(), digest(asdict(new))
                 if stored is None:
@@ -136,6 +176,9 @@ class ExecutionStore:
                              'WHERE attempt_id=%s', (attempt_id,)).fetchone()
             if row is None:
                 return None
+            state, attempt = self._attempt(db, attempt_id)
+            if state.status == 'ABORTED' or attempt.state == 'ABORTED':
+                raise Conflict('attempt signing authority revoked')
             value = json.loads(bytes(row[1]))
             if row[0] != payload_hash or row[2] != digest(value) or row[3] != self.run_id:
                 raise Conflict('immutable signer registry mismatch')
@@ -143,7 +186,12 @@ class ExecutionStore:
 
     def put_if_absent(self, attempt_id, payload_hash, signed, epoch, version):
         with self.store.transaction() as db:
-            self._authority(db, epoch, version)
+            self._release_authority(db, epoch, version)
+            state, attempt = self._attempt(db, attempt_id)
+            if (state.status != 'ACTIVE' or attempt.state != 'AUTHORIZED'
+                    or attempt.payload.hash != payload_hash or attempt.epoch != epoch
+                    or attempt.guard_version != version):
+                raise Conflict('attempt has no current signing authority')
             value = asdict(signed)
             db.execute('INSERT INTO execution_signatures VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
                        (attempt_id, self.run_id, payload_hash, canonical(value).encode(), digest(value)))
@@ -169,7 +217,7 @@ class ExecutionStore:
         if observation.get('run_id') != self.run_id:
             raise Conflict('observation run mismatch')
         with self.store.transaction() as db:
-            self._authority(db, epoch, version)
+            self._release_authority(db, epoch, version)
             checksum = digest(observation)
             db.execute('INSERT INTO execution_observations VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING',
                        (observation['event_id'], self.run_id, canonical(observation).encode(), checksum))

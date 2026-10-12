@@ -39,12 +39,13 @@ def proof(raw, request, observation):
 
 
 class QuoteContractTests(unittest.TestCase):
+    limits = dict(quote_age_seconds=30, slippage_bps=50, impact_bps=50, per_trade_cap_units=50000000)
     request = dict(schema='MarketRequest.v1', symbol='NVDAB', side='BUY', amount_kind='EXACT_IN',
                    pay_asset='USDT', pay_units=40000000, pay_decimals=6)
 
     def test_verified_fixture_passes_real_consumers(self):
         c = QuoteClient()
-        row = MarketPort(c, WALLET, quote_verifier=proof).observe(self.request)
+        row = MarketPort(c, WALLET, quote_verifier=proof, quote_limits=self.limits).observe(self.request)
         now = datetime(2026, 10, 11, 16, tzinfo=timezone.utc)
         self.assertIsNotNone(market_view([row], ('NVDAB',), now, {'quote_age_seconds':30})['NVDAB'])
         accepted = _quote_at_cap(row, 'BUY', 40000000,
@@ -60,7 +61,8 @@ class QuoteContractTests(unittest.TestCase):
         for change in (dict(source_hash='wrong'), dict(exact_gas_verified=False), dict(gas_bnb_units=0)):
             with self.subTest(change=change), self.assertRaises(Unavailable):
                 MarketPort(QuoteClient(), WALLET,
-                           quote_verifier=lambda *args: {**proof(*args), **change}).observe(self.request)
+                           quote_verifier=lambda *args: {**proof(*args), **change},
+                           quote_limits=self.limits).observe(self.request)
 
     def test_fresh_quote_does_not_refresh_old_metadata(self):
         class OldMetadata(QuoteClient):
@@ -72,3 +74,8 @@ class QuoteContractTests(unittest.TestCase):
         row = MarketPort(OldMetadata(), WALLET).observe(self.request)
         now = datetime(2026, 10, 11, 16, tzinfo=timezone.utc)
         self.assertIsNone(market_view([row], ('NVDAB',), now, {'quote_age_seconds':30})['NVDAB'])
+
+    def test_policy_limits_are_independent_of_observed_quote(self):
+        with self.assertRaises(Unavailable):
+            MarketPort(QuoteClient(),WALLET,quote_verifier=proof,
+                       quote_limits=dict(self.limits,impact_bps=0)).observe(self.request)

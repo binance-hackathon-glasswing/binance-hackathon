@@ -57,10 +57,12 @@ def credentials(env_file=None, environ=None):
         for line in Path(env_file).read_text().splitlines():
             key, sep, val = line.removeprefix('export ').partition('=')
             key = key.strip()
-            if sep and key in ENV_NAMES and key not in selected:
+            if sep and key in ENV_NAMES:
                 parts = shlex.split(val, comments=True)
                 if len(parts) != 1 or '$' in parts[0] or '`' in parts[0]:
                     raise Unavailable('credentials must be literal values')
+                if key in selected and selected[key] != parts[0]:
+                    raise Unavailable('conflicting process/file credentials')
                 selected[key] = parts[0]
     for primary, aliases in (('BINANCE_API_KEY', ('BN_WEB3_API_KEY',)),
                              ('BINANCE_SECRET_KEY', ('BN_WEB3_API_SECRET', 'BN_WEB3_SECRET_KEY'))):
