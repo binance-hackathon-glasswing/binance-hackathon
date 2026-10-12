@@ -382,3 +382,7 @@ Results:
 - **S3 · PASS.** `RUNTIME_SECRETS` is `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY`, `BINANCE_SECRET_KEY`. `AI_SEEDS_SECRET` is refused on the runtime host (`UPLOADER_ONLY`). W1 is updated. **This supersedes §3.2 W1's list**, which required the audit secret in the runtime.
 - **S4 · PASS.** `deploy/aws/hosts.tf`: `local.secret_readers` maps each secret to its only readers, with `runtime` read by primary and standby. The `runtime_secret_exists` test passes and `safe_defaults` counts four secrets.
 - Runbook §1 and §6 (activation) updated. The V4 review thread is closed; review comment V8 also had no remaining work in this PR.
+
+## 4.7 2026-10-12 combined PR remediation (IDEA-043) — prospective criteria
+
+User authorizes review/fix all open PRs, ordinary target merges including PR11 to main, then a separate system-testing branch. Repository merge authorization does not activate Gate A/B/C. Integrate reviewed evidence/strategy/execution/test branches without rewriting history; actual I4 facts must reach the canonical settlement reducer with receipt provenance and committed round binding retained. Gas top-up reservations retain resource kind/valuation. Broadcast and final observations use actual validator; approval reverts map to their own broadcast identity, not a swap hash. No stale receipt can borrow current authority. Full suite with PostgreSQL, Linux CI and combined synthetic day/replay/ACK checks required. Record remaining host, economic, model and source gates; no production credentials or transactions.
