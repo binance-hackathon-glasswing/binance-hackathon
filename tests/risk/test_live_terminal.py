@@ -38,7 +38,7 @@ def test_terminal_survives_absent_policy_and_blocked_rounds_until_final_receipt(
 
 @pytest.mark.parametrize("gate", ["market", "mark", "gas", "signing_end", "slippage"])
 def test_terminal_retains_unfilled_position_when_execution_gate_blocks(gate):
-    now = instant("2026-11-11T14:59:59Z" if gate != "signing_end" else "2026-11-11T15:00:00Z")
+    now = instant("2026-11-11T14:44:59Z" if gate != "signing_end" else "2026-11-11T14:45:00Z")
     s = live_snapshot(held={"NVDAB": 1000}, now=now, quoted=True)
     c = s.context.read()
     if gate == "market":

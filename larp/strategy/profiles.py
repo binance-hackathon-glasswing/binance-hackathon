@@ -13,7 +13,7 @@ from .schema import SYMBOLS, ceil, instant, integer
 from .predicates import predicate_records
 
 WINDOWS = {
-    "REHEARSAL": ("2026-10-21T00:00:00Z", "2026-10-24T00:00:00Z",
+    "REHEARSAL": ("2026-10-21T00:00:00Z", "2026-10-22T00:00:00Z",
                   "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"),
     "FINAL": ("2026-10-29T00:00:00Z", "2026-11-09T00:00:00Z",
               "2026-11-10T00:00:00Z", "2026-11-11T14:45:00Z"),

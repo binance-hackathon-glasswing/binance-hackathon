@@ -2,7 +2,7 @@
 from dataclasses import replace
 import pytest
 from larp.contracts import Document, ContractError
-from larp.research.fixtures import changed
+from larp.research.fixtures import changed, with_quotes
 from larp.risk.planner import plan
 from larp.risk.accounting import advance_accounting
 from larp.strategy.policy import decide
@@ -21,10 +21,11 @@ def test_low_gas_above_one_sale_budget_never_starves_mandatory_trim():
 
 
 def test_class1_exit_precedes_buy_and_bypasses_discretionary_filters():
-    s = evidence(live_snapshot(held={'NVDAB':100}, quoted=True), '4.02')
+    s = with_quotes(evidence(live_snapshot(held={'NVDAB':100}), '4.02'))
     c = s.context.read()
     for q in c['markets'][0]['quotes']:
         q['impact_bps'] = 500
+        q['origin'] = 'WEB3_OPEN_API'
     s = changed(s, markets=c['markets'], last_discretionary_session=c['session_index'])
     result = plan(s, decide(s, s.policy_state)).read()
     assert result['intents'][0]['symbol'] == 'NVDAB'
