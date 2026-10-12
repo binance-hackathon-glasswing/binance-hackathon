@@ -50,7 +50,11 @@ to reproduce the local checks. Isaac's independent review remains required.
 6. **Keegan — apply migrations and service grants.** Use a provisioning identity for
    `PostgresStore.migrate()`; apply `deploy/postgres/roles.sql` once in database `larp`,
    schema `public`. Runtime uses short-lived RDS IAM tokens over certificate-verified
-   TLS. The archive role can read snapshots and update only maintenance tables plus
+   TLS: `/etc/larp/runtime.json` sets `database_host`, `database_user` = `larp_runtime`,
+   `database_name`, `database_ca_file`, `database_ca_sha256` and `region` instead of
+   `database_dsn_file` (exactly one of the two is accepted), and the runtime hosts install
+   `deploy/requirements-aws.lock` (Secrets Manager and RDS tokens). The execution service
+   (`larp_execution`) runs on the primary/standby hosts beside the coordinator (IDEA-045). The archive role can read snapshots and update only maintenance tables plus
    the lock-required `runs.clock_ms` column; it cannot change projection/balances.
 7. **Keegan — configure and install archive maintenance.** Fill intentional nulls in
    `operations.example.json` with nonsecret resource references. Use a unique

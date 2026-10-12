@@ -1,13 +1,12 @@
 """Explicit maintenance CLI. It has no signer, trading loop or promotion command."""
 
 import argparse
-from contextlib import contextmanager
-import hashlib
 import json
 from pathlib import Path
 import time
 
 from larp.contracts import ContractError, Document
+from larp.runtime.database import IamPostgresStore, check_iam_settings
 from larp.runtime.maintenance import Maintenance, HOUR_MS
 from larp.storage.archive import S3Archive
 from larp.storage.backup import restore
@@ -37,31 +36,8 @@ def validate_config(value):
         raise ContractError('Archive namespace must begin with archive/')
     if value['database_user'] != 'larp_archive':
         raise ContractError('Maintenance requires the dedicated larp_archive database role')
-    if not Path(value['database_ca_file']).is_file():
-        raise ContractError('Pinned RDS certificate bundle is missing')
-    if hashlib.sha256(Path(value['database_ca_file']).read_bytes()).hexdigest() != value['database_ca_sha256']:
-        raise ContractError('RDS certificate bundle hash differs from configuration')
+    check_iam_settings(value, 'larp_archive')
     return value
-
-
-class IamPostgresStore(PostgresStore):
-    def __init__(self, config, rds):
-        # Snapshot verification owns per-process checkpoints even though this
-        # adapter generates its DSN afresh inside every transaction.
-        super().__init__(None)
-        self.config, self.rds = config, rds
-
-    @contextmanager
-    def transaction(self):
-        from psycopg.conninfo import make_conninfo
-        c = self.config
-        # Generate a fresh short-lived IAM token for every database connection.
-        token = self.rds.generate_db_auth_token(DBHostname=c['database_host'], Port=5432,
-                                                DBUsername=c['database_user'], Region=c['region'])
-        dsn = make_conninfo(host=c['database_host'], port=5432, user=c['database_user'], password=token,
-                            dbname=c['database_name'], sslmode='verify-full', sslrootcert=c['database_ca_file'])
-        with PostgresStore(dsn).transaction() as db:
-            yield db
 
 
 def cloud_clients(c):

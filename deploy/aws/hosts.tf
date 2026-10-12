@@ -15,13 +15,14 @@ resource "aws_iam_instance_profile" "host" {
 locals {
   # Which hosts may read which secret: each secret has its own readers, nothing else.
   secret_readers = { signer = ["signer"], uploader = ["uploader"], evidence = ["evidence"], runtime = ["primary", "standby"] }
-  # Provisioned SQL roles are service identities, not EC2 host names.
+  # Provisioned SQL roles are service identities, not EC2 host names. The execution service runs beside the
+  # coordinator on primary/standby (IDEA-045); SQL grants, not IAM, separate the two roles on one host.
   db_users = {
-    primary  = "larp_runtime"
-    standby  = "larp_runtime"
-    archive  = "larp_archive"
-    uploader = "larp_uploader"
-    signer   = "larp_signer"
+    primary  = ["larp_runtime", "larp_execution"]
+    standby  = ["larp_runtime", "larp_execution"]
+    archive  = ["larp_archive"]
+    uploader = ["larp_uploader"]
+    signer   = ["larp_signer"]
   }
 }
 resource "aws_secretsmanager_secret" "service" {
@@ -40,7 +41,7 @@ resource "aws_iam_role_policy" "host" {
     { Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.host[each.key].arn}:*" },
     { Effect = "Allow", Action = ["cloudwatch:PutMetricData"], Resource = "*", Condition = { StringEquals = { "cloudwatch:namespace" = "LARP/Runtime" } } }
     ], contains(local.db_hosts, each.key) ? [
-    { Effect = "Allow", Action = ["rds-db:connect"], Resource = "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${aws_db_instance.larp.resource_id}/${local.db_users[each.key]}" }
+    { Effect = "Allow", Action = ["rds-db:connect"], Resource = [for user in local.db_users[each.key] : "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${aws_db_instance.larp.resource_id}/${user}"] }
     ] : [], [for secret, readers in local.secret_readers :
     { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.service[secret].arn }
     if contains(readers, each.key)
