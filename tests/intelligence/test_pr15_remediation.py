@@ -14,7 +14,6 @@ from larp.sources.store import SQLiteEvidenceStore
 from tests.intelligence.test_providers import Adapters, FINISH, anthropic_reply, request
 from tests.intelligence.test_red_flags import BY_ID, Run, spec, enabled_profile
 from larp.integration.contract import red_flag_directives
-from larp.intelligence.redflags import sections, ANY_ITEM_HEADING
 
 
 class DurableReader(unittest.TestCase):
