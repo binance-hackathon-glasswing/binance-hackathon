@@ -11,7 +11,6 @@ refused (live-start checks, configuration, release or session contract). 2, 3 an
 
 import argparse
 import json
-import os
 from pathlib import Path
 import signal
 import time
@@ -82,7 +81,7 @@ def validate_config(value):
     return value
 
 
-def build_driver(config, store):
+def build_driver(config, store, secrets):
     raise NotIntegrated('Round driver not integrated yet (IDEA-042 item 10)')
 
 
@@ -107,13 +106,16 @@ def main(argv=None):
             return 0
         from larp.storage.postgres import PostgresStore
         store = PostgresStore(Path(c['database_dsn_file']).read_text(encoding='utf-8').strip())
+        # Secrets only from the configured Secrets Manager entry, never the environment (IDEA-042 S2).
+        from larp.runtime.credentials import runtime_secrets
+        secrets = runtime_secrets(c)
         try:
-            driver = build_driver(c, store)
+            driver = build_driver(c, store, secrets)
         except NotIntegrated:
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
         def start_check():
-            check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=os.environ,
+            check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=secrets,
                              wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
                              ai_seeds_dir=c.get('ai_seeds_dir'), nonce_dir=c.get('nonce_dir'))
         service = Service(store, c['run_id'], c['build_id'], driver=driver,

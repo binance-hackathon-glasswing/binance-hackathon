@@ -60,6 +60,17 @@ run "host_isolation" {
     error_message = "No external egress by default."
   }
 }
+run "runtime_secret_exists" {
+  command = plan
+  assert {
+    condition     = aws_secretsmanager_secret.service["runtime"].name == "larp-fixture/runtime"
+    error_message = "The runtime host's secret (wallet address and market-data keys) must exist; values stay outside Terraform."
+  }
+  assert {
+    condition     = length(aws_secretsmanager_secret.service) == 4
+    error_message = "One secret each for signer, uploader, evidence and runtime."
+  }
+}
 run "reject_final_interactive_access" {
   command = plan
   variables {

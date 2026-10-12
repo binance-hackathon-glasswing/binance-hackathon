@@ -11,13 +11,17 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 3. **Live-start checks:** in `dev`/`live` mode, `larp.runtime.service run` refuses to open a session when:
    - a port is a fake;
    - a runtime secret is missing;
-   - a wallet key is on the runtime host;
+   - a wallet key or the audit secret is on the runtime host;
    - the addresses disagree;
    - a record directory belongs to another wallet.
 
    It exits 4 with the reason and never a secret value (`larp/runtime/live.py`; `tests/runtime/test_live_start.py`). systemd does not restart it.
 
-   **Open (host step):** nothing delivers the runtime secrets into the process yet. The unit reads no `EnvironmentFile` and there is no loader from AWS Secrets Manager, so a `live` start is refused until one exists (IDEA-042 V4).
+   **Secrets (IDEA-042 S1–S4):** in `dev` and `live` the service reads one AWS Secrets Manager entry, named by `runtime_secret_id` (and `region`) in `/etc/larp/runtime.json`. It never reads the process environment.
+   - The entry is `<name>/runtime`, readable only by the primary and standby hosts.
+   - It is a JSON object with `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY` and `BINANCE_SECRET_KEY`, and nothing else for this host.
+   - The audit secret `AI_SEEDS_SECRET` belongs in `<name>/uploader`, and the wallet key in `<name>/signer`. Either one in the runtime entry refuses the start.
+   - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
 The round driver arrives with integration (item 10). Until then `service run` exits 2 (not integrated) and systemd does not restart it.
@@ -61,7 +65,7 @@ Backups include the journal, outboxes, process sessions and the execution store.
 
 ## 5. Final-wallet switch (Oct 27–29; GAP-52, C7) — **host** rehearsal at Gate C
 
-1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7) and place the final secrets in the runtime secret store only.
+1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7). Place the final secrets in Secrets Manager only, each in its host's entry: runtime (`AI_SEEDS_ADDRESS`, Binance keys), uploader (`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`), signer (wallet key, `AI_SEEDS_ADDRESS`).
 2. **Old run:** after the development run's last round, it must have no open round, reservation or pending command, and hold no token.
 3. **Switch:** `larp.runtime.live.switch_wallet(...)` opens a fresh run for the final wallet with its own `.ai-seeds/` and nonce directories, marked for that wallet. The new run starts quarantined. The switch record (old run, final head, new run) goes into the activation pack.
 4. **New run:** register the version for the final build (step 1.2) and start. The live-start checks refuse any address mismatch.

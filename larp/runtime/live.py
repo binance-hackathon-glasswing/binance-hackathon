@@ -14,9 +14,12 @@ from pathlib import Path
 from larp.audit.protocol import ADDRESS
 from larp.contracts import ContractError
 
-# The runtime host holds API and log credentials only; the wallet key lives on the isolated signer host.
-RUNTIME_SECRETS = ('AI_SEEDS_ADDRESS', 'AI_SEEDS_SECRET', 'BINANCE_API_KEY', 'BINANCE_SECRET_KEY')
+# The runtime host holds the public wallet address and the Web3 market-data key pair only (IDEA-042 S3). The audit
+# secret lives on the uploader host (larp/audit/delivery.py signs uploads) and the wallet key on the signer host.
+RUNTIME_SECRETS = ('AI_SEEDS_ADDRESS', 'BINANCE_API_KEY', 'BINANCE_SECRET_KEY')
 SIGNER_ONLY = ('WALLET_PRIVATE_KEY', 'WALLET_MNEMONIC')
+UPLOADER_ONLY = ('AI_SEEDS_SECRET',)
+NOT_ON_RUNTIME = SIGNER_ONLY + UPLOADER_ONLY
 MARKER = '.larp-wallet'
 LIVE_MODES = ('dev', 'live')
 
@@ -64,6 +67,9 @@ def check_live_start(*, mode, ports, secrets, wallet_address, run_wallet, ai_see
     present = [name for name in SIGNER_ONLY if secrets.get(name)]
     if present:
         raise LiveStartRefused('Wallet key present on the runtime host (signer host only): ' + ', '.join(present))
+    present = [name for name in UPLOADER_ONLY if secrets.get(name)]
+    if present:
+        raise LiveStartRefused('Audit secret present on the runtime host (uploader host only): ' + ', '.join(present))
     addresses = {'AI_SEEDS_ADDRESS': secrets['AI_SEEDS_ADDRESS'], 'configured wallet': wallet_address,
                  'run wallet': run_wallet}
     if any(type(v) is not str or not ADDRESS.fullmatch(v) for v in addresses.values()):

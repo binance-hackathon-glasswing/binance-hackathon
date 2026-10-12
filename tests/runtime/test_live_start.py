@@ -21,7 +21,8 @@ class Real:
     """Stands in for a production port: no fixture marker, not from a fixtures module."""
 
 
-SECRETS = dict(AI_SEEDS_ADDRESS=WALLET, AI_SEEDS_SECRET='s3cret-value', BINANCE_API_KEY='k', BINANCE_SECRET_KEY='sk')
+# The runtime host's secrets only (IDEA-042 S3): no audit secret, no wallet key.
+SECRETS = dict(AI_SEEDS_ADDRESS=WALLET, BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s3cret-value')
 
 
 class Refusals(unittest.TestCase):
@@ -50,7 +51,8 @@ class Refusals(unittest.TestCase):
         self.refused('market', ports=dict(market=FakeMarket(), assessor=Real()))
         self.refused('assessor', ports=dict(market=Real(), assessor=FakeAssessor()))
         self.refused('assessor', ports=dict(market=Real(), assessor=None))
-        self.refused('AI_SEEDS_SECRET', secrets={**SECRETS, 'AI_SEEDS_SECRET': ''})
+        self.refused('BINANCE_SECRET_KEY', secrets={**SECRETS, 'BINANCE_SECRET_KEY': ''})
+        self.refused('uploader host only', secrets={**SECRETS, 'AI_SEEDS_SECRET': 'audit-secret'})  # S3
         self.refused('BINANCE_API_KEY', secrets={k: v for k, v in SECRETS.items() if k != 'BINANCE_API_KEY'})
         self.refused('WALLET_PRIVATE_KEY', secrets={**SECRETS, 'WALLET_PRIVATE_KEY': 'never-here'})
         self.refused('mismatch', wallet=OTHER)
