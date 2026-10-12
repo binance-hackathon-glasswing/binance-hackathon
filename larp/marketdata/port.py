@@ -44,12 +44,14 @@ def integer(v):
 class MarketPort:
     mode = 'live'
 
-    def __init__(self, client, wallet, *, basis_verifier=None, quote_verifier=None):
+    def __init__(self, client, wallet, *, basis_verifier=None, quote_verifier=None, quote_limits=None, cost_observation=None):
         if not re.fullmatch(r'0x[0-9a-fA-F]{40}', wallet or ''):
             raise Unavailable('public wallet address required')
         self.client, self.wallet = client, wallet.lower()
         self.basis_verifier = basis_verifier
         self.quote_verifier = quote_verifier
+        self.quote_limits = quote_limits
+        self.cost_observation = cost_observation
 
     def call(self, endpoint, params=None, method='GET'):
         return self.client.request(method, endpoint, {'binanceChainId': '56', **(params or {})})
@@ -89,7 +91,7 @@ class MarketPort:
         price = int(number(price_row['tokenPrice']) * 1000000)
         if price <= 0 or not row.get('underlyingTicker'):
             raise Unavailable('missing positive price/underlying identity')
-        return dict(schema='MarketObservation.v1', symbol=symbol, underlying_id=row['underlyingTicker'],
+        result = dict(schema='MarketObservation.v1', origin='WEB3_OPEN_API', symbol=symbol, underlying_id=row['underlyingTicker'],
                     token_id=TOKENS[symbol], decimals=integer(row['decimals']), currency='USDT', money_scale=1000000,
                     price_units=price, source_id='BINANCE_WEB3', content_hash=hashlib.sha256(encoded(
                         [metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']])).hexdigest(), quality='VALID',
@@ -98,6 +100,58 @@ class MarketPort:
                     underlying_open=underlying.get('statusInfo', {}).get('openState') is True,
                     basis_verified=basis, quotes=[], observation_hashes=[metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']],
                     token_status=row.get('statusInfo'), underlying_status=underlying.get('statusInfo'))
+        result.update(measured_roundtrip_bps=None, cost_status='UNAVAILABLE')
+        try:
+            cost = (self.cost_observation(symbol) if self.cost_observation is not None
+                    else self.measure_cost(symbol, result['decimals']))
+        except Unavailable:
+            cost = None
+        if cost is not None:
+            if (cost.get('symbol') != symbol or cost.get('origin') != 'WEB3_OPEN_API'
+                    or not re.fullmatch('[0-9a-f]{64}', cost.get('content_hash', ''))
+                    or not cost.get('available_at') or not cost.get('observed_at')):
+                raise Unavailable('cost measurement identity/provenance rejected')
+            result.update(measured_roundtrip_bps=integer(cost['measured_roundtrip_bps']),
+                          cost_status='MEASURED', cost_observation=cost,
+                          available_at=max(available, cost['available_at']),
+                          observed_at=min(stamp, cost['observed_at']), close_at=min(stamp, cost['observed_at']),
+                          content_hash=hashlib.sha256(encoded([result['content_hash'], cost['content_hash']])).hexdigest())
+        return result
+
+    def measure_cost(self, symbol, decimals, *, cash_units=40000000):
+        """Sequential EXACT_IN quote cost proxy; retains signed price-movement noise.
+
+        Negative measured net cost receives no cost credit in the planner. This
+        is a current sampled proxy, not the multi-day spread/impact calibration.
+        """
+        def receive(raw, pay, recv, amount, pay_decimals, recv_decimals):
+            rr = single(raw)['routerResult']
+            if (str(rr['fromToken']['tokenContractAddress']).lower() != pay
+                    or str(rr['toToken']['tokenContractAddress']).lower() != recv
+                    or integer(rr['fromToken']['decimal']) != pay_decimals
+                    or integer(rr['toToken']['decimal']) != recv_decimals
+                    or integer(rr['fromTokenAmount']) != amount):
+                raise Unavailable('cost quote economic binding failed')
+            result = integer(rr['toTokenAmount'])
+            if result <= 0:raise Unavailable('cost quote has no receive amount')
+            return result
+        try:
+            pay = cash_units * 10**12
+            buy = self.quote(symbol, 'BUY', pay, decimals)
+            quantity = receive(buy, USDT, TOKENS[symbol], pay, 18, decimals)
+            sell = self.quote(symbol, 'SELL', quantity, decimals)
+            proceeds = receive(sell, TOKENS[symbol], USDT, quantity, decimals, 18)
+            with localcontext() as context:
+                context.prec = 100
+                signed = Decimal(pay - proceeds) * 10000 / pay
+            return dict(symbol=symbol, origin='WEB3_OPEN_API',
+                        measured_roundtrip_bps=max(0, int(signed.to_integral_value(rounding='ROUND_CEILING'))),
+                        signed_roundtrip_bps=str(signed), pay_units=cash_units,
+                        measurement='SEQUENTIAL_EFFECTIVE_QUOTE_COST; no negative-cost credit',
+                        observed_at=buy['available_at'], available_at=sell['available_at'],
+                        content_hash=hashlib.sha256(encoded([buy['artifact_sha256'], sell['artifact_sha256']])).hexdigest())
+        except (KeyError, TypeError, ValueError):
+            raise Unavailable('cost response schema rejected') from None
 
     def __call__(self, now_ms):
         # Caller establishes its decision cutoff after this I/O. No observation is backdated to now_ms.
@@ -181,7 +235,7 @@ class MarketPort:
         cash = request['pay_units'] if side == 'BUY' else received // 10**12
         minimum = decoded.minimum_output if side == 'BUY' else decoded.minimum_output // 10**12
         impact = number(rr['priceImpactPercent']) * 100
-        quote = dict(amount_kind='EXACT_IN', side=side, pay_asset=request['pay_asset'],
+        quote = dict(origin='WEB3_OPEN_API', amount_kind='EXACT_IN', side=side, pay_asset=request['pay_asset'],
                      pay_units=request['pay_units'], token_units=received if side == 'BUY' else amount,
                      cash_units=cash, min_receive_units=minimum,
                      fee_units=integer(proof['fee_units']), gas_bnb_units=integer(proof['gas_bnb_units']),
@@ -191,13 +245,28 @@ class MarketPort:
         if quote['gas_bnb_units'] <= 0 or proof.get('exact_gas_verified') is not True:
             raise Unavailable('exact payload gas evidence required')
         now = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
+        if self.quote_limits is None:
+            raise Unavailable('independent policy quote limits required')
         test = _quote_at_cap(dict(observation, quotes=[quote]), side, request['pay_units'],
-                            dict(quote_age_seconds=30, slippage_bps=quote['slippage_bps'],
-                                 impact_bps=quote['impact_bps'], per_trade_cap_units=cash + quote['fee_units']),
+                            self.quote_limits,
                             now, quote['token_units'])
         if test[0] is None:
             raise Unavailable('quote fails consumer validator')
         observation.update(quotes=[quote], quote_status='VERIFIED_EXECUTABLE')
+
+    def session_candles(self, symbol, *, entity_id, timestamp_kind, timestamp_evidence_hash,
+                        token_adjustment_version, bar='1h', limit=300):
+        if (timestamp_kind != 'OPEN' or not entity_id or not token_adjustment_version
+                or not re.fullmatch('[0-9a-f]{64}', timestamp_evidence_hash or '')):
+            raise Unavailable('verified candle semantics/adjustment provenance required')
+        raw = self.candles(symbol, bar=bar, limit=limit)
+        seconds = {'1m':60, '5m':300, '15m':900, '1h':3600, '4h':14400, '1d':86400}[bar]
+        return dict(schema='TokenCandles.v1', origin='WEB3_OPEN_API', symbol=symbol,
+                    token_id=TOKENS[symbol], entity_id=entity_id, source_id='BINANCE_WEB3',
+                    candles=raw['rows'], bar_seconds=seconds, timestamp_kind=timestamp_kind,
+                    timestamp_evidence_hash=timestamp_evidence_hash,
+                    token_adjustment_version=token_adjustment_version,
+                    available_at=raw['available_at'], content_hash=raw['content_hash'])
 
     def candles(self, symbol, *, bar='1m', limit=100):
         if symbol not in TOKENS or bar not in ('1m', '5m', '15m', '1h', '4h', '1d') or type(limit) is not int or not 1 <= limit <= 300:

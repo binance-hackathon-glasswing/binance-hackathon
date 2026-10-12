@@ -62,6 +62,9 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                   decision_id=intent.decision_id, version_id=intent.version_id, observed_at=observed_at,
                   gas_bnb_units=gas, gas_value_units=-(-gas_value.numerator // gas_value.denominator),
                   intent_terminal=kind in ('FILL', 'REVERT'),
+                  receipt=dict(tx_hash=attempt.tx_hash, block_hash=proof['block_hash'],
+                               block_number=proof['block_number'], canonical=True,
+                               finality='FINAL', chain_id=56, status=status),
                   receipt_evidence=dict(block_hash=proof['block_hash'], block_number=proof['block_number'],
                                         finalized_height=proof['finalized_height'], canonical=True,
                                         gas_used=gas_used, effective_gas_price=gas_price))
@@ -80,13 +83,14 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
         if pay != intent.amount or received < intent.minimum_output:
             raise Blocked('actual transfers violate exact input or minimum receive')
         cash_raw = -cash_delta if side == 'BUY' else cash_delta
-        if cash_raw <= 0 or cash_raw % 10**12:
+        if cash_raw <= 0 or (side == 'BUY' and cash_raw % 10**12):
             raise Blocked('actual cash cannot be represented exactly in accounting scale')
         # All wallet cash transfers, including any route fees, are netted above.
         # No separately assumed quote fee is booked a second time.
         result.update(symbol=symbol, side=side, token_units=abs(token_delta), cash_units=cash_raw // 10**12,
                       fee_units=0, fee_convention='ALL_USDT_TRANSFERS_INCLUDED_IN_NET_CASH',
                       actual_cash_chain_units=cash_raw)
+        result['cash_dust_chain_units'] = cash_raw % 10**12
     return result
 
 
@@ -96,24 +100,26 @@ class ReceiptFacts:
     The valuation callback must return the same persisted price for an attempt,
     not the current BNB price. Publishing belongs to the atomic runtime outbox.
     """
-    def __init__(self, chain, *, wallet_id, valuation, registry):
+    def __init__(self, chain, *, wallet_id, valuation, registry, epoch, authority_version):
         self.chain, self.wallet_id, self.valuation = chain, wallet_id, valuation
         self.registry = registry
+        self.epoch, self.authority_version = epoch, authority_version
         if not all(callable(getattr(registry, name, None)) for name in
-                   ('lookup_observation', 'put_observation', 'authority')):
+                   ('lookup_observation', 'put_observation', 'check_authority')):
             raise Blocked('durable immutable receipt-fact registry required')
 
     def __call__(self, state, attempt):
+        self.registry.check_authority(self.epoch, self.authority_version)
         if attempt.finalized_at is None:
             raise Blocked('durable finalization time required')
         existing = self.registry.lookup_observation(attempt.attempt_id + ':final')
         if existing is not None:
             if existing.get('tx_hash') != attempt.tx_hash or existing.get('intent_id') != state.intent.intent_id:
                 raise Blocked('stored receipt fact conflicts with attempt')
+            self.registry.check_authority(self.epoch, self.authority_version)
             return existing
         proof = self.chain.receipt(attempt.tx_hash)
         stamp = datetime.fromtimestamp(attempt.finalized_at, timezone.utc).isoformat()
         fact = final_observation(state, attempt, proof, wallet_id=self.wallet_id,
                                  bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp)
-        epoch, version = self.registry.authority()
-        return self.registry.put_observation(fact, epoch, version)
+        return self.registry.put_observation(fact, self.epoch, self.authority_version)

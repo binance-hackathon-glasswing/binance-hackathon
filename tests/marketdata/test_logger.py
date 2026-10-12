@@ -15,13 +15,16 @@ class LoggerTests(unittest.TestCase):
             for amount in ('-3', '5'):
                 a.put(dict(schema='QuoteCycle.v1', started_at='2026-10-11T16:00:00Z', finished_at='2026-10-11T16:01:00Z',
                            observations=[dict(symbol='NVDAB', status='MEASURED_NONEXECUTABLE', token_open=True,
-                           underlying_open=True, quoted_roundtrip_bps=amount, buy={'quote_measurement':{'impact_bps':'1'}},
-                           sell={'quote_measurement':{'impact_bps':'3'}})]))
+                           underlying_open=True, quoted_roundtrip_bps=amount,effective_quoted_spread_bps=amount,
+                           buy={'quote_measurement':{'impact_bps':'1','elapsed_ms':100}},
+                           sell={'quote_measurement':{'impact_bps':'3','elapsed_ms':200}})]))
             report = summarize(root)
             self.assertEqual(report['cycle_count'], 2)
             self.assertEqual(report['symbols']['NVDAB']['roundtrip_bps_median'], '1')
             self.assertEqual(report['symbols']['NVDAB']['impact_bps_median'], '2')
             self.assertEqual(report['symbols']['NVDAB']['open_samples'], 2)
+            self.assertEqual(report['symbols']['NVDAB']['effective_quoted_spread_bps_median'],'1')
+            self.assertEqual(report['symbols']['NVDAB']['quote_latency_ms_median'],150)
 
     def test_official_secret_alias_and_conflicts(self):
         selected = credentials(environ={'BN_WEB3_API_KEY':'fixture-key','BN_WEB3_API_SECRET':'fixture-secret'})
@@ -41,3 +44,9 @@ class LoggerTests(unittest.TestCase):
         self.assertEqual(row['rows'][0][5], 1791734400000)
         self.assertIsNone(row['timestamps'][0]['open_at'])
         self.assertEqual(row['content_hash'], 'a'*64)
+        port=MarketPort(CandleClient(), '0x'+'1'*40)
+        normalized=port.session_candles('NVDAB',entity_id='NVDA',timestamp_kind='OPEN',
+                                       timestamp_evidence_hash='b'*64,token_adjustment_version='fixture-v1')
+        self.assertEqual(normalized['schema'],'TokenCandles.v1')
+        self.assertEqual(normalized['bar_seconds'],3600)
+        self.assertEqual(normalized['candles'],row['rows'])

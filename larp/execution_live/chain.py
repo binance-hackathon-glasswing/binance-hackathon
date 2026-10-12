@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 from urllib.request import Request, build_opener
 from urllib.error import URLError
 
-from larp.execution import Blocked, Outcome
+from larp.execution import Blocked, DependencyUnavailable, Outcome
 from larp.marketdata.web3 import NoRedirect, encoded, utc
 
 METHODS = frozenset(('eth_chainId', 'eth_getTransactionCount', 'eth_getTransactionByHash',
@@ -46,7 +46,7 @@ class Rpc:
             if len(raw)>2*1024*1024:raise Blocked('RPC response too large')
             result=json.loads(raw)
         except (URLError,OSError,ValueError):
-            raise Blocked('RPC unavailable') from None
+            raise DependencyUnavailable('RPC unavailable') from None
         if result.get('jsonrpc')!='2.0' or result.get('id')!=self.sequence or 'error' in result or 'result' not in result:
             raise Blocked('RPC response rejected')
         self.artifacts.put(dict(schema='ChainObservation.v1',source_id=self.source_id,method=method,params=params,
@@ -97,7 +97,13 @@ class ChainEvidence:
     def outcome(self,tx_hash):
         proof=self.receipt(tx_hash)
         if proof is None:
-            return Outcome(tx_hash,'',0,'UNKNOWN')
+            tx = self.rpc.call('eth_getTransactionByHash', [tx_hash])
+            if tx is None:
+                return Outcome(tx_hash,None,None,'UNKNOWN')
+            if hash_value(tx['hash']) != tx_hash:
+                raise Blocked('pending transaction identity mismatch')
+            return Outcome(tx_hash,tx['from'].lower(),quantity(tx['nonce']),
+                           'PENDING' if tx.get('blockNumber') is None else 'UNKNOWN')
         tx,r=proof['tx'],proof['receipt']
         return Outcome(tx_hash,tx['from'].lower(),quantity(tx['nonce']),
                        'SUCCESS' if quantity(r['status'])==1 else 'REVERT',proof['block_hash'],proof['block_hash'],

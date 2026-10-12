@@ -18,6 +18,13 @@ class Client:
             rows=[dict(tokenContractAddress=params['tokenContractAddress'],statusInfo={'openState':True})]
         elif endpoint=='market/rwa/price':
             rows=[dict(tokenContractAddress=params['tokenContractAddresses'],tokenPrice='100')]
+        elif endpoint=='aggregator/quote-and-swap':
+            from larp.execution import USDT
+            amount=int(params['amount']);buy=params['fromTokenAddress']==USDT
+            receive=amount//100 if buy else amount*100*999//1000
+            rows=[dict(routerResult=dict(fromToken=dict(tokenContractAddress=params['fromTokenAddress'],decimal='18'),
+                 toToken=dict(tokenContractAddress=params['toTokenAddress'],decimal='18'),
+                 fromTokenAmount=str(amount),toTokenAmount=str(receive)))]
         else:
             raise AssertionError(endpoint)
         return dict(response={'data':rows},available_at=stamp, artifact_sha256=hashlib.sha256(encoded(rows)).hexdigest())
