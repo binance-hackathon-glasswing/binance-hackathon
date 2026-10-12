@@ -38,6 +38,7 @@ class SettlementTests(unittest.TestCase):
         p.update(bnb_units=10**15, bnb_decimals=18, bnb_price_units=700000000)
         p['positions']['NVDAB'].update(units=0, decimals=18)
         p['reservations'][self.intent.intent_id] = dict(side='BUY', symbol='NVDAB', cash_units=40000000,
+            round_id=self.intent.round_id,
             bnb_units=10000000, token_units=4 * 10**17, pay_units=40000000, min_receive_units=3 * 10**17)
         self.portfolio = Document.from_dict(p)
 
