@@ -292,3 +292,23 @@ Runtime wiring still mine, after the owner PRs are integrated: `model_trace` as 
 Deviation requests checked against DEV-01..DEV-20:
 - IDEA-040: (1) equal weight → DEV-03; (2) 25%/90% trims → DEV-04; (3) price impact → DEV-05; (4) token US-session series → DEV-06; (5) gas resource rounds → **new DEV-21**; (6) red-flag classes → DEV-07; (7) end-of-run cut and flatten → DEV-07. Keith's extra details (free gas BNB counted in the uninvested share; no substitution of underlying or other token prices) are added to DEV-04 and DEV-06 when his code is integrated and run.
 - IDEA-041: (a) verified item-section text → DEV-07 ("verified"); (b) no red-flag class for 6-K filers → added to DEV-07 at integration; (c) Claude as assessor → DEV-19 (OPEN); (d) three tools → DEV-08.
+
+### 4.4 Reviews of the owner branches (2026-10-12)
+Each review was run independently on the owner's head and its main blocking claims re-checked against the code before posting.
+- **PR #14 (Isaac, `28613da`): changes requested** ([review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/14)).
+  - Blocking:
+    - B1: a SELL whose USDT output is not a multiple of 10^12 chain units cannot settle.
+    - B2: a mistyped mnemonic is printed in the signer's exception.
+    - B3: fencing on `runs.version` invalidates every authorized or signed attempt after any runtime commit or takeover, and nothing can release it.
+  - Should-fix: S1–S5. Plus the integration items H-1, H-2 and the I1/I2 field mismatch.
+  - **Open decision (Isaac + Keegan):** B3's rule. Proposed: a dedicated execution authority version that changes only on takeover, HALT or reauthorization, with a defined recovery path for AUTHORIZED and never-broadcast SIGNED_DURABLE attempts. Keegan adds the column and migration once it is agreed.
+- **PR #15 (Yao Zhu, `92e4745`): comment, not a block** (Keith is the designated reviewer) ([review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/15)). Core safety properties hold. To fix before RF1 is enabled or the bake-off is run:
+  - an 8-K/A of an old event yields a fresh Class 1 EXIT;
+  - the Claude structured-output schema is likely refused (not checked live);
+  - raw bytes are stored after parsing;
+  - the Class 1 text match is brittle.
+- **Keith's branch (`ab3adc1`, no PR): needs changes before the PR** ([comment on PR #13](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/13#issuecomment-6116747515)). Blocking:
+  - a gas top-up pre-empts mandatory sales;
+  - the Class 1 exit is not treated as mandatory;
+  - LIVE validation needs fields Isaac's port does not emit, which can block the end-of-run flatten;
+  - the failing cost-cap test is a test bug (fix given).
