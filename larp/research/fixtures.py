@@ -24,7 +24,7 @@ def snapshot(*, held=None, profile_changes=None, now=None, state=None):
     held = held or {}
     state = state or PolicyState("synthetic-run", p["policy_id"], "Lifecycle.v1", 0, Document.from_dict({}))
     cash = 199_000_000 - sum(held.values()) * 10_000
-    ledger = {"schema": "PortfolioState.v1", "run_id": "synthetic-run", "wallet_id": "fake-wallet",
+    ledger = {"schema": "PortfolioState.v1", "mode": "OFFLINE", "run_id": "synthetic-run", "wallet_id": "fake-wallet",
               "cash_units": cash, "bnb_units": 1_000_000, "bnb_price_units": 1_000_000,
               "bnb_decimals": 6, "opening_equity_units": 200_000_000,
               "positions": {s: {"units": held.get(s, 0), "decimals": 4,

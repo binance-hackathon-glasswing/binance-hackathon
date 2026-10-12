@@ -52,9 +52,12 @@ def profile(snapshot):
     p = context["profile"]
     if Document.from_dict(p).digest("StrategyProfile.v1") != snapshot.policy_profile_hash:
         raise ContractError("Profile hash mismatch")
-    if p.get("schema") != "StrategyProfile.v1" or p.get("mode") != "OFFLINE_FIXTURE":
-        raise ContractError("Live configuration unsupported until integration/adoption")
-    if p.get("values_origin") != "SYNTHETIC" or not p.get("provenance"):
+    if p.get("schema") != "StrategyProfile.v1" or p.get("mode") not in ("OFFLINE_FIXTURE", "LIVE"):
+        raise ContractError("Unsupported strategy profile mode")
+    if p["mode"] == "LIVE":
+        from .profiles import validate_live
+        validate_live(p)
+    elif p.get("values_origin") != "SYNTHETIC" or not p.get("provenance"):
         raise ContractError("Fixture values need explicit provenance")
     if p["policy_id"] != snapshot.policy_state.policy_id:
         raise ContractError("Policy identity mismatch")
@@ -95,6 +98,8 @@ def profile(snapshot):
                                ("trade_after", "new_risk_end", "flatten_start", "signing_end")]
     if not start < end <= flatten < stop:
         raise ContractError("Terminal gates out of order")
+    if p["mode"] == "LIVE" and p["environment"] == "FINAL" and stop > instant("2026-11-11T15:00:00Z"):
+        raise ContractError("Final flatten must finish by IDEA-035 C4 deadline")
     return p
 
 
@@ -124,6 +129,11 @@ def market_view(observations, universe, cutoff, p):
             raise ContractError("Unknown or duplicate market entity")
         if m.get("schema") != "MarketObservation.v1":
             raise ContractError("Wrong market schema")
+        if p.get("mode") == "LIVE" and (m.get("origin") != "WEB3_OPEN_API"
+                or m.get("source_id") in ("SCRIPTED_FAKE", "SYNTHETIC")):
+            raise ContractError("Fake or unidentified market observation in LIVE")
+        if m.get("measured_roundtrip_bps") is not None:
+            integer(m["measured_roundtrip_bps"])
         integer(m["decimals"])
         if m["decimals"] > 30 or m["currency"] != "USDT" or m["money_scale"] != MONEY_SCALE:
             raise ContractError("Unsupported units/currency")
