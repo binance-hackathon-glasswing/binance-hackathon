@@ -6,6 +6,36 @@ authorized implementing what is possible, but has not selected an account, regio
 budget, image, retention durations or registered deployment. No credentials are needed
 to reproduce the local checks. Isaac's independent review remains required.
 
+## Current target: lean two-host deployment (IDEA-046, 2026-10-12)
+
+The six-host design below is **superseded for deployment** by IDEA-046 Option B, which fits the team's $100 AWS
+credit budget. Rows below that say six hosts, NAT or interface endpoints describe the earlier template; Git history keeps it.
+
+| Item | Lean deployment |
+|---|---|
+| Account / region | New-AWS-experience project on the Free plan ($100 credits). An AWS-managed policy denies Singapore, so **Sydney (`ap-southeast-2`) for now**. The agent would trade from an Australian address (G-17; Q-12 open): **revisit before final activation (Oct 27)**, either a Singapore account or a written jurisdiction check. |
+| Hosts | `primary` (`t3.small`): coordinator, execution service, evidence worker, uploader, archive maintenance, each as its own Linux user and systemd unit. `signer` (`t3.micro`): wallet key only. Both use standard CPU credits (never billed above baseline), IMDSv2, encrypted disks, and automatic EC2 recovery. |
+| Network | No NAT gateway, no interface endpoints. `enable_external_https` (default off) adds an internet gateway route, a public IPv4 and HTTPS egress for `primary` only. `signer` sits in a private subnet with no internet route; it reaches only the database and the free S3 gateway endpoint. |
+| Secrets | Managed secrets `runtime`, `uploader`, `evidence`, readable only by `primary`. **The wallet key is a root-only file on the signer's encrypted disk** (no Secrets Manager entry or endpoint). The signer service, still `NOT_INTEGRATED`, must refuse a key file that is not a regular file owned by root or the signer user, or that is readable by group or other. |
+| Signer image | No internet: everything the signer runs (Python 3.12.15 venv and wheels from the pinned locks, the release) must be in its AMI or fetched from the artifact bucket through the S3 gateway endpoint. |
+| Database | RDS PostgreSQL 14.24 `db.t4g.micro`, single zone, 20 GiB gp3, IAM login, TLS, 7-day backups, no CloudWatch log export by default. `primary` may log in as `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader`; `signer` only as `larp_signer`. |
+| Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of actual spend when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
+| Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. |
+
+Estimated cost (official Sydney prices, 2026-10-12, 730 h): servers $28.91, database $21.01, disks $3.84, public IPv4
+$3.65, KMS/secrets ≈ $2.60, alarms/logs/S3 ≈ $2.50 → **≈ $62/month**, ≈ $66 to Nov 12. Hosts and the public IPv4 cost
+nothing while `enable_hosts`/`enable_external_https` are off; stopped instances bill only their disks.
+
+### Teardown after the winner audit (not before Nov 20, F-17)
+
+1. Download the archive, final logs and a database export; keep them with the registered version records.
+2. Set `allow_teardown = true` and apply: this lifts database deletion protection, instance termination protection and artifact-bucket protection.
+3. Destroy everything except the archive and its KMS key, which keep `prevent_destroy` (COMPLIANCE objects cannot be deleted before their retention date):
+   `terraform -chdir=deploy/aws destroy -var-file=development.tfvars -target=aws_vpc.larp -target=aws_iam_role.host -target=aws_secretsmanager_secret.service -target=aws_cloudwatch_log_group.host -target=aws_s3_bucket.artifacts -target=aws_cloudwatch_metric_alarm.database_storage -target=aws_cloudwatch_metric_alarm.maintenance -target=aws_db_parameter_group.larp`
+   (destroying the VPC also destroys every host, the database and the network that depend on it). Review the destroy plan before confirming.
+4. Delete the RDS final snapshot once the export is verified (it bills per GB-month).
+5. Next day, check Billing → Bills and Cost Explorer. What remains is the KMS key (≈ $1/month) and the archive (cents) until the retention date; then delete them and close the account.
+
 ## What is now implemented
 
 | Layer | Implemented artifact | Current boundary |
