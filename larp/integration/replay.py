@@ -33,12 +33,13 @@ class RecordedPorts:
         cause = next((e[len(FAILURE):] for e in record.get("errors", []) if e.startswith(FAILURE)), None)
         recorded = copy(self.builder)
         if cause is not None:
-            recorded.market = recorded.calendar = recorded.health = recorded.series = _failing(cause)
+            recorded.market = recorded.calendar = recorded.health = recorded.series = recorded.gas_quotes = _failing(cause)
             return recorded
         recorded.market = lambda now_ms: context["markets"]
         recorded.calendar = lambda now_ms: {"index": context["session_index"], "remaining": context["remaining_sessions"]}
         recorded.health = lambda current: context["health"]
         recorded.series = lambda now_ms: context["series"]
+        recorded.gas_quotes = (lambda now_ms: context["gas_quotes"]) if "gas_quotes" in context else None
         return recorded
 
 

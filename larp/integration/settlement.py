@@ -64,10 +64,11 @@ class ExecutionBridge:
                                    "commands": [], "observation_ids": [o["event_id"]], "terminal_rounds": terminal})
 
 
-def _accounting_reservation(intent: dict, held: dict) -> dict:
+def _accounting_reservation(intent: dict, held: dict, round_id: str) -> dict:
     """Keith's per-intent reservation view, from the planned intent and the store rows still held for it."""
     side, symbol = intent["side"], intent["symbol"]
     return {"symbol": symbol, "side": side, "pay_units": intent["pay_units"],
+            "round_id": round_id, "kind": intent.get("kind", "BSTOCK_TRADE"),
             "min_receive_units": intent["min_receive_units"],
             "cash_units": held.get("USDT", 0) if side == "BUY" else 0,
             "bnb_units": held.get("BNB", 0),
@@ -100,6 +101,12 @@ def settle(current, observation):
     held = {r["asset"]: r["units"] for r in c["reservations"] if r["intent_id"] == o["intent_id"]}
     kind = o["kind"]
     if kind == "BROADCAST_ATTEMPTED":
+        broadcasts = record.setdefault("execution_broadcasts", {})
+        identity = o["intent_id"] + ":" + o["step"]
+        previous = broadcasts.get(identity)
+        if previous is not None and previous != o["tx_hash"].lower():
+            raise ContractError("Execution step already broadcast under another hash")
+        broadcasts[identity] = o["tx_hash"].lower()
         if o["step"] == "swap":
             tx = o["tx_hash"].lower()
             order = record["orders"][index]
@@ -109,13 +116,17 @@ def settle(current, observation):
             if not any(m["tx_hash"] == tx for m in record["swap_mappings"]):
                 record["swap_mappings"].append({"tx_hash": tx, "decision_id": intent["decision_id"], "step": "swap"})
         return Document.from_dict({"projection": projection, "reservation_deltas": []})
-    if kind in ("FILL", "REVERT") and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
+    if o.get("step") == "approve" and kind in ("APPROVAL", "REVERT"):
+        expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ":approve")
+        if expected != o["tx_hash"].lower():
+            raise ContractError("Final approval fact names an unrecorded broadcast")
+    if kind in ("FILL", "REVERT") and o.get("step", "swap") != "approve" and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
         raise ContractError("Final swap fact names a hash this round never broadcast")
     if kind != "NOT_SUBMITTED":
         portfolio = deepcopy(projection["portfolio"])
-        portfolio["reservations"] = {o["intent_id"]: _accounting_reservation(intent, held)}
-        accounted = {k: v for k, v in o.items()
-                     if k not in ("round_id", "tx_hash", "block_hash", "canonical", "step", "round_terminal")}
+        portfolio["mode"] = c["mode"].upper()
+        portfolio["reservations"] = {o["intent_id"]: _accounting_reservation(intent, held, o["round_id"])}
+        accounted = dict(o)  # retain receipt provenance and committed round binding for accounting
         after = advance_accounting(Document.from_dict(portfolio), Document.from_dict(accounted)).read()
         after["reservations"] = {}
         projection["portfolio"] = after

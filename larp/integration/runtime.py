@@ -22,6 +22,8 @@ price history or quoted depth: what the market port does not supply stays missin
 the resulting capability blockers.
 """
 
+from larp.integration.contract import red_flag_directives
+
 from datetime import datetime, timezone
 
 from larp.contracts import ContractError, Document, PolicyState
@@ -104,10 +106,11 @@ class ContextBuilder:
     """Coordinator context builder. `issuers`: {issuer_id: {"token": symbol, "underlying_id": id}}."""
 
     def __init__(self, *, profile: dict, profile_hash: str, run_id: str, issuers: dict, market, health,
-                 calendar, lifecycle_policy: dict | None = None, series=None, universe=None):
+                 calendar, lifecycle_policy: dict | None = None, series=None, universe=None, gas_quotes=None):
         self.profile, self.profile_hash, self.run_id = profile, profile_hash, run_id
         self.issuers, self.market, self.health, self.calendar = issuers, market, health, calendar
         self.lifecycle_policy, self.series = lifecycle_policy, series
+        self.gas_quotes = gas_quotes
         self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
@@ -148,6 +151,7 @@ class ContextBuilder:
                                                    token=meta["token"], underlying_id=meta["underlying_id"],
                                                    policy_profile_hash=self.profile_hash))
         ledger = ledger_from(projection, current["reservations"])
+        ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
         markets = self.market(now_ms)
@@ -165,6 +169,8 @@ class ContextBuilder:
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
+        if self.gas_quotes is not None:
+            context["gas_quotes"] = self.gas_quotes(now_ms)
         return context, anchor
 
     def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:
@@ -180,7 +186,12 @@ class ContextBuilder:
                                      markets=parsed, known_versions=versions, profile=self.profile,
                                      universe=self.universe)
         usable = [r for r in contexts if accepted.get(r["token"], {}).get("context_hash") == r["context_hash"]]
-        return mandatory_reductions(usable, self.profile, held)
+        reductions = mandatory_reductions(usable, self.profile, held)
+        for record in usable:
+            for directive in red_flag_directives(record, self.profile):
+                if directive["kind"] == "EXIT" and held.get(record["token"], 0):
+                    reductions.append({"symbol": record["token"], "max_units": 0, "reason": "CLASS_1_EXIT"})
+        return reductions
 
 
 class RuntimePlanner:
