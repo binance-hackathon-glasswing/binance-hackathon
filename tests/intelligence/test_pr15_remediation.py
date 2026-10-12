@@ -14,7 +14,7 @@ from larp.sources.store import SQLiteEvidenceStore
 from tests.intelligence.test_providers import Adapters, FINISH, anthropic_reply, request
 from tests.intelligence.test_red_flags import BY_ID, Run, spec, enabled_profile
 from larp.integration.contract import red_flag_directives
-from larp.intelligence.redflags import sections, ANY_ITEM_HEADING
+from larp.intelligence.redflags import sections  # noqa: F401 - the block-heading reader under test
 
 
 class DurableReader(unittest.TestCase):
@@ -28,7 +28,7 @@ class DurableReader(unittest.TestCase):
                                  (d.read()['record_id'], EXSEMI, d.payload))
             assessor = world.assessor(RuleBaselineModel(world.clock))
             assessor.reader = PortEvidenceReader(store, world.artifacts)
-            result = assessor.assess(world.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI)).read()
+            result = assessor.assess(world.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='sqlite-worker')).read()
             self.assertEqual(result['status'], 'ASSESSED')
             self.assertTrue(result['evidence_used'])
 
