@@ -37,10 +37,14 @@ CREATE TABLE IF NOT EXISTS execution_observations (
 
 
 def _decode(raw):
-    value = json.loads(bytes(raw))
-    value['intent'] = Intent(**value['intent'])
-    value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
-    return Execution(**value)
+    try:
+        value = json.loads(bytes(raw))
+        value['intent'] = Intent(**value['intent'])
+        value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
+        return Execution(**value)
+    except (KeyError, TypeError, ValueError, UnicodeDecodeError):
+        raise Conflict('execution state cannot be decoded or restored safely') from None
+
 
 
 class ExecutionStore:

@@ -151,7 +151,8 @@ class ContextBuilder:
                                                    token=meta["token"], underlying_id=meta["underlying_id"],
                                                    policy_profile_hash=self.profile_hash))
         ledger = ledger_from(projection, current["reservations"])
-        ledger["mode"] = current["mode"].upper()
+        if current.get("mode") is not None:
+            ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
         markets = self.market(now_ms)
