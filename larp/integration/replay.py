@@ -1,0 +1,48 @@
+"""Live replay from the journal alone (DR-19; IDEA-042 item 4, IDEA-035 A2).
+
+A live `ContextBuilder` round reads external ports: market, calendar, health and series. Their answers are recorded in
+the round's `policy_input.context`, so replay feeds those recorded answers back instead of calling the ports. The
+evidence step (gate acceptance and consumption) is pure and is re-run; the model's output comes from the recorded
+assessment (`larp.runtime.replay.RecordedAssessment`) and execution facts from the journaled observations. A round
+whose context failed re-raises the recorded cause at the first port it reaches, so its batch replays byte-identically.
+"""
+
+from copy import copy
+
+from larp.runtime.replay import replay as runtime_replay
+
+FAILURE = "CONTEXT_UNAVAILABLE:"
+
+
+def _failing(cause: str):
+    error = type(cause, (Exception,), {})  # same class name, so the coordinator records the same cause
+
+    def port(*args):
+        raise error("Recorded port failure replayed")
+    return port
+
+
+class RecordedPorts:
+    """Builds, per journal record, a copy of the live builder whose ports return what they returned then."""
+
+    def __init__(self, builder):
+        self.builder = builder
+
+    def builder_for(self, record: dict):
+        context = (record.get("policy_input") or {}).get("context") or {}
+        cause = next((e[len(FAILURE):] for e in record.get("errors", []) if e.startswith(FAILURE)), None)
+        recorded = copy(self.builder)
+        if cause is not None:
+            recorded.market = recorded.calendar = recorded.health = recorded.series = recorded.gas_quotes = _failing(cause)
+            return recorded
+        recorded.market = lambda now_ms: context["markets"]
+        recorded.calendar = lambda now_ms: {"index": context["session_index"], "remaining": context["remaining_sessions"]}
+        recorded.health = lambda current: context["health"]
+        recorded.series = lambda now_ms: context["series"]
+        recorded.gas_quotes = (lambda now_ms: context["gas_quotes"]) if "gas_quotes" in context else None
+        return recorded
+
+
+def replay_live(batches, initial, target, *, builder, **options):
+    """`larp.runtime.replay.replay` with recorded ports: no live port is called."""
+    return runtime_replay(batches, initial, target, builder_for=RecordedPorts(builder).builder_for, **options)

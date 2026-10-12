@@ -1,0 +1,132 @@
+# IDEA-039 — Isaac: live market and execution integration
+
+- Owner Isaac; reviewer Keegan. Prompt `docs/build/06-execution-live.prompt.txt` and IDEA-038 govern scope.
+- Baseline: foundation `bd3f69a`, merged into `codex/deploy-execution` by `4d1fde2`. PR12 is merged. Earlier implementation commits were reverted; they provide reusable source, not current acceptance evidence.
+- Status: implementation in progress. No live signing, broadcast or official round logging is enabled by this record.
+
+## Preregistered acceptance
+
+Commit and push this record and code before execution. Record PASS / FAIL / NOT RUN / INCONCLUSIVE and commit SHA for each run.
+
+1. Existing foundation, W04 and W08 suites remain passing; network-free component fixtures exercise malformed quantities, credential conflicts, immutable artifacts and exact API signing.
+2. I1/I2: recorded real responses, hashed outside Git, pass the actual consumer `market_view`; executable quote evidence must pass `_quote_at_cap`. Missing router decode, expiry, fee or exact gas proof exposes measurements only. Never invent these fields or backdate observations. USDT planner units (6 decimals) map exactly to BSC units (18 decimals).
+3. Quote collection: five names, about 40 USDT, hourly or faster; retain availability, impact, round-trip quoted cost, latency, errors and exact simulation failures. Stop on auth/compliance/rate-limit failures. Summary by Oct 19; three days including a weekend remains a time-dependent requirement.
+4. Signer: isolated-host configuration, one secret source, matching wallet; immutable signed-byte registry and current fencing/authorization before release. Mutation and restart tests prove exact transaction bytes and hash/sender binding with ephemeral test keys only.
+5. Nonce/finality: chain 56, latest/pending counts, transaction/receipt identity, canonical blocks and verified finalized head. Missing or inconsistent evidence keeps the barrier. Replacement disabled.
+6. I3/I4: consume commands via `PostgresStore.command`; enforce identity, expiry and exact input/receive scales. Broadcast facts never reach accounting. Final receipt facts contain actual transfer/gas evidence and pass `advance_accounting`; repeated observations are idempotent.
+7. Production execution and signer-registry storage require Keegan's fenced atomic PostgreSQL boundary. Crash tests before sign, after sign, after broadcast and after receipt must pass in CI before live activation; SQLite is not production evidence.
+8. Check BNB read-only first. A missing/zero balance blocks transactions. USDT→native BNB is allowed only for explicit GAS_TOP_UP intents; final-wallet run identity, nonce and audit directories stay separate.
+9. One minimum-size approve/swap with durable decision and official round logs is NOT RUN until router/chain, first gas, production storage, manifest and audit gates pass.
+
+## I3 mapping and integration requests
+
+`command_id = payload.intent_id`; command/payload `decision_id` and `expires_ms` must agree. External run, wallet and registered version come from the trusted store/run configuration. Reservation identity is the intent ID. BUY pays USDT and converts planner `pay_units × 10^12`; SELL pays token units unchanged and converts USDT minimum receive `× 10^12`. `receive_decimals` must match the consumer convention. Router and gas caps are current risk-authorized inputs, never API defaults. Explicit GAS_TOP_UP buys native BNB only.
+
+Keegan owns shared docs/locks/index/backlog/migrations: retain the existing IDEA-039 index reservation; record requested PostgreSQL execution CAS/event storage, restricted immutable signer registry and fenced release/settlement integration. Coordinate I1/I2/I7 with Keith; no owner agreement is assumed from local fixtures. EXP-005 verdict updates are requested through the shared-document owner; no capability is promoted by synthetic tests.
+
+## Open dependencies
+
+- Isaac: verified router ABI/implementation, nested RFQ expiry/economics and decoder; EXP-005 currently inconclusive.
+- Team/Keegan: permitted RPC endpoint and manifest entry, signer host runtime secrets, first BNB, production storage/release/audit gates.
+- Keith: session-builder I2 validator, live profile/impact/gas values, gas-top-up accounting contract.
+- Isaac: start quote measurements and record summaries and coverage; an initial cycle cannot satisfy multi-day acceptance.
+
+## 2026-10-12 SGT implementation and evidence
+
+Implementation `fc0b3ef` was pushed before all runs. [Draft PR14](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/14) targets `codex/engine-foundation`; no merge to main or live activation.
+
+- PASS: targeted 98 tests, including foundation/W04/W08, actual market/planner validators on synthetic proof fixtures and real recorded Binance responses, receipt facts through actual accounting, and real EVM cryptography using ephemeral test keys.
+- PASS: full local pytest in a temporary environment using the CI lock: 534 tests, 764 subtests; 90 skips because disposable PostgreSQL and Linux isolation are unavailable locally. Earlier full runs in base/Conda Python failed due missing numpy/AWS test dependencies; no code defect was inferred from those environment failures.
+- PASS: [CI on fc0b3ef](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156124100), all three checks. PostgreSQL-backed run: 621 tests, 780 subtests, 3 skips (external recorded responses and signer dependency). The four new PostgreSQL tests cover pre-sign/post-sign restart, post-broadcast/post-receipt restart, wallet barrier/stale CAS, and registry restart/identity. These are restart simulations over real PostgreSQL and fake venue/signatures; they do not establish power-loss, multi-host or actual chain recovery.
+- INCONCLUSIVE: balance artifact `2b75d769b93396aeb8a091dadf65d35d793259f87dfbf7d28af51ee8d5abe683` in ignored `data/execution-live/`: no native BNB entry returned. Per the captured kit zero balances are omitted. No canonical chain balance was collected; first gas remains unresolved and transactions are blocked.
+- PASS for read-only collection, not readiness: 40-USDT cycle `ef42ceccbf9963d45f71169adaa871aab1103062e880052e3b5bc368aaa47749`, 2026-10-11 16:33:30.512–16:33:47.993 UTC. All five token/underlying states open; every exact swap gas simulation unavailable. Raw response bytes are retained in private hash-addressed artifacts unless credentials are reflected, in which case only redacted parsed data and the response hash are stored.
+
+| Name | Sequential quoted round-trip bp | Buy impact bp | Sell impact bp |
+|---|---:|---:|---:|
+| NVDAB | 2.0609 | 0.1763 | 0 |
+| GOOGLB | 8.1549 | 0.0408 | 0.0408 |
+| SKHYB | -3.3239 | 0.1697 | 0 |
+| TSLAB | 7.7633 | 0.0579 | 0.0507 |
+| MSFTB | 22.8609 | 0 | 0 |
+
+One pair per name is not a median, spread estimate or opportunity/profit signal: the prices can move between the two calls. Gas is separate and unavailable; these numbers do not satisfy B4's total-cost criterion.
+
+Router search for the exact observed address did not produce a verified ABI. Official [BNB RPC documentation](https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/bsc-api-list/) and [BNB node RPC reference](https://github.com/bnb-chain/bsc/blob/master/rpc/json-rpc-api.md) describe finality methods; provider availability and this wallet's nonce/finality evidence remain NOT RUN pending service configuration. Same-nonce replacement stays disabled.
+
+## Integration handoff details and remaining acceptance
+
+- PostgreSQL extension: `larp/execution_live/store.py:SCHEMA` proposes `execution_records` (restricted state/CAS), `execution_journal` (public events/hash chain) and `execution_signatures` (restricted immutable attempt bytes). Atomic commits lock W02's run and compare epoch/state version. The wallet barrier is across economic intents; production startup does not install tables. Keegan must adopt migrations, role grants, backup/restore coverage and atomic command/reservation/observation/outbox wiring. Local tests cannot count as agreement from Keegan.
+- Signer requires current authorization and checks fencing before returning persisted bytes. Keegan must add eth-account and its pinned transitives to the deployment/CI signer dependency set; existing full-project requirements already pin eth-account. Local signer tests pass, CI presently skips them.
+- I4 broadcasts are stable audit-only events. `ReceiptFacts` uses a durable W04 finalization timestamp and a persisted attempt-specific BNB valuation; the runtime must persist/publicize identical bytes on retry before advancing. Settlement reads actual ERC20 Transfer logs and receipt gas, rejects quantities unrepresentable in the accounting money scale, and includes all USDT transfers in net cash without double-booking an assumed quote fee.
+- Native BNB top-up intent validation exists, but actual native receipt/balance-delta settlement and Keith's gas accounting are still needed. No gas conversion is run while first BNB is unresolved.
+- I2 supplies raw candle rows and UTC reported timestamps with hashes. Open/close semantics remain explicitly unverified; Keith must establish those semantics in the real session-builder validator. Null open/close values are flagged unresolved fields, not assumed data.
+- Live Executor bundles remain rejected until route/expiry and production release gates are evidenced. Development approve/swap acceptance remains NOT RUN. No real wallet transaction signing, broadcasts, official ai-seeds logs, paid services or organiser messages occurred.
+- Logger long-running operation and multi-day/weekend summary remain pending; subsequent dated results below record them. The default balance/one-cycle CLI does not start a background logger.
+
+### Follow-up preregistration: actual process death
+
+Additional PostgreSQL acceptance: child processes exit immediately before signing, after restricted signer-registry persistence but before W04 persistence, after a possible fake broadcast but before response persistence, and after receipt reading but before final-state persistence. Restart must recover the same signature/attempt, retain possible-send state, never retransmit, and finalize only from subsequent positive evidence. Both approve and swap paths are covered. The child only uses the disposable CI database and unbroadcastable fake signatures. This strengthens restart evidence; it is not a power-loss or chain test. Commit/push before running.
+
+### Collector operation / follow-up verification
+
+The read-only hourly collector was launched locally on pushed `cbf4440`, PID 96699. First cycle 2026-10-11 16:42:05.187–16:42:24.708 UTC, artifact `2883aca5c9ad96e099bd8a7d81de84f4a9428a9ea731f3552b2b5a1e5ebbb343`. All five names returned 300 raw hourly candles. Its private PID/log files are ignored under `data/execution-live/`; it has no signer or ai-seeds client. This laptop must stay awake and connected for coverage; Keegan must move/supervise collection on the deployment host for reliable multi-day evidence. Multi-day/weekend acceptance remains open.
+
+Local `cbf4440` full pytest: PASS, 538 tests, 767 subtests, 90 skips; raw recorded-response validation and ephemeral cryptographic tests enabled. CI/result hashes for the latest revision are recorded after completion.
+
+`cbf4440` CI: [PASS](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156516334), 624 tests, 780 subtests, 4 skips (3 signer tests due to missing CI dependency plus external recorded responses). All three checks pass.
+
+Additional receipt retry criterion: because finalized head advances between reads, preserve the first successful final observation and its proof in an immutable PostgreSQL `execution_observations` row. A retry must return those exact stored bytes before any new chain/valuation I/O. Changed bytes under the same event ID are rejected. This extension also needs Keegan's migration/role/outbox integration. A synthetic callback test and real PostgreSQL immutability test are preregistered before execution.
+
+### Final verification for this implementation stage
+
+- `ff945f6` local: PASS, 539 tests, 767 subtests, 93 skips (including the seven PostgreSQL tests, unavailable locally). External recorded-response and ephemeral signer tests are enabled and passing.
+- [`ff945f6` CI](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38156901734): PASS, 628 tests, 780 subtests, 4 skips, all three checks green. Both approve and swap process-death fixtures reached their intended exit codes and recovered from PostgreSQL state without re-signing or rebroadcasting. Final observations retain their first proof across restart and reject changed payloads.
+- Scope check: only Isaac's exclusive paths plus IDEA-039 changed. Shared docs, migrations, dependency locks, official kit and vendor copies untouched. This remains a draft implementation milestone, not deployment or live-trading acceptance.
+
+| Prompt deliverable | Implemented / verified | Remaining owner / dependency |
+|---|---|---|
+| 1 · I1/I2 market | Web3 read transport; real metadata/status/price responses; exact unit conversion; actual consumer validation; raw candles and hashes | Isaac: verified route/expiry/fee/gas proof for executable quotes. Keith: candle open/close semantics and actual session-builder validation. |
+| 2 · Logger | Running hourly locally; two successful 40-USDT cycles for five names; automatic summaries; 300 hourly candles/name | Isaac: multi-day/weekend coverage and Oct 19 summary. Keegan: reliable host supervision. |
+| 3 · Venue | Quote/unsigned approve/exact gas request adapters, verified-decoder boundary, matching vendor/router checks | Isaac: attributable router decoder. Keegan/Isaac: gated real broadcast/release and integrated W04 live activation. |
+| 4 · Signer/chain | Exact legacy EVM signature verification, one secret source, isolated-host/address checks, durable fenced PostgreSQL registry; synthetic canonical nonce/finality tests | Team: RPC configuration and signer host. Isaac: real provider/nonce/finality evidence. Keegan: signer role/secret provisioning and CI/deployment dependency lock. |
+| 5 · Execution service | Store.command mapping; W04 CAS/journal/registry adapter; replayable broadcast/final facts; actual accounting validator; PostgreSQL process-death tests | Keegan: adopt schema/migration/roles/restore coverage; atomically wire commands, reservations, ordered reducer, final observations and official audit outbox. Isaac/Keegan: integration review and live gates. |
+| 6 · Gas | Balance API checked; explicit USDT→native BNB validation | Team: first BNB absent/unproved. Keith/Isaac: top-up planner, native receipt/balance accounting and reserve floor. |
+| 7 · Wallet transition | Separate wallet/run audit paths and wallet-wide nonce namespace; mismatch rejection tests | Keegan/Isaac: wire configuration through actual host release and rehearse the final-wallet switch. |
+
+Second cycle summary at 16:42:24.708 UTC: two pairs/name; all observed token/underlying states open. Sequential round-trip median bp (range): NVDAB 0.4467 (-1.1675–2.0609), GOOGLB 2.3439 (-3.4672–8.1549), SKHYB -2.2610 (-3.3239–-1.1981), TSLAB 8.1148 (7.7633–8.4662), MSFTB 19.9120 (16.9631–22.8609). Negative pairs are retained as measurement evidence, not treated as arbitrage. Two samples cannot establish stable spreads, B4 values or profitability; exact gas remains unavailable.
+
+No live transaction, official log or production deployment was run. The next live-capability work is RPC/provider evidence plus router ABI/expiry resolution; the next integration work is Keegan's shared storage/release/audit wiring. The RPC configuration question remains unanswered in this session. No permission to choose a paid service or send organiser messages is assumed.
+
+## PR14 Keegan review corrections — preregistered 2026-10-12
+
+B1/B2/B3 and S1–S5 accepted. Pass criteria: fractional SELL proceeds settle conservatively with exact raw cash/dust retained; all credential parsing exceptions are sanitized; journal commits do not invalidate execution authority; takeover recovers existing bytes through the service without blind re-signing or broadcast. Unbroadcast aborts require atomic execution CAS/no-possible-send evidence and registry/release revocation, never receipt absence. Current projection CAS and fresh risk/nonce/market checks remain independent of stable execution fencing.
+
+Execution authority uses ownership epoch as the initial dedicated authority version: takeover changes it; quarantine/HALT blocks release through the store. Explicit authority revocation must take over or quarantine. Do not reuse journal version as execution authority. Keegan can replace the epoch-derived version with a dedicated column without changing the semantic contract. Production live bundles remain disabled pending his release integration.
+
+Additional criteria: pending/missing receipts are not identity mismatches; dependency failures have sanitized persisted reasons and durable backoff; exhausted fast probes transition to slower periodic reconciliation while retaining the wallet barrier; prepare budgets are per step; I3 enforces an explicit USDT cap; stale receipt producers cannot borrow current ownership; tests cover service publication crashes, takeover, SELL and real ephemeral signing against PostgreSQL. Consumer contracts from current strategy branch govern receipt/provenance/candle fields and BNB scaling. Unknown cost/timestamp semantics remain explicit and blocked, never filled with invented values. Test changes and code are committed/pushed before any run. Shared migrations/locks/backlog remain Keegan's; any required integration edits are recorded here.
+
+### 2026-10-12 I4 cross-owner remediation criteria (IDEA-043)
+
+Actual runtime validator on PR13 must accept produced broadcast and final facts: lowercase approve/swap step, durable observation timestamp, no settlement field on audit-only broadcasts, flat canonical block hash, explicit round_terminal boolean. Round completion is a supplied consumer attestation, never guessed from one intent. ABORTED with no possible swap produces NOT_SUBMITTED so reservations can release, retaining prior approval gas facts. Tests call the actual runtime validator once integrated; isolated component skips that unavailable consumer explicitly. These are interface fixes only; no live release permission. Commit/push before executing changes.
+
+### PR14 review correction results (2026-10-12)
+
+Review fixes and acceptance tests are pushed through `980529a`. Concurrent I4 edits (`c5508be`, IDEA-043) were retained by a normal merge; no force push or history rewriting. `SCHEMA` remains unchanged, so PR13 migration 008 does not require a DDL update for these fixes.
+
+- B1: SELL proceeds round down to six-decimal cash; `actual_cash_chain_units` and `cash_dust_chain_units` retain exact receipt amounts. BUY exact-input checks remain strict. SELL passes both the old and actual new accounting consumers, with committed round identity.
+- B2: all credential-parser exceptions are sanitized with suppressed exception context; mnemonic ValidationError regression asserts no phrase/marker in the rendered traceback.
+- B3: `Gates.execution_version` separates release authority from projection `state_version`. PostgreSQL release authority is epoch-derived; projection commits still CAS `runs.version`. The service pins its own epoch/version and cannot adopt a newer controller's lease. It calls registry recovery and reauthorization before first submission after takeover. Atomic ABORTED state is the tombstone: registry issuance/lookup and `check_broadcast` reject revoked attempts. A durable possible-send record cannot be aborted/re-authorized. Signed bytes are retained, never deleted as cancellation evidence.
+- S1/S2: normal pending/absent evidence is distinguished from mismatches; RPC outages persist sanitized reasons and backoff without exhausting the successful-chain-probe budget. Live venues continue slower reconciliation after the fast budget, retaining the wallet barrier. Prepare budgets reset only at final approve success; the service aborts genuinely unissued work at exhaustion. W04's direct exhaustion API still raises Blocked. Unknown market/nonce facts block signing while permitting receipt reconciliation.
+- S3/S4: I3 requires an independent per-trade cap, cash/pay binding and explicit gas scale conversion. Fresh quote caps are checked again. LiveGuards obtains API market status and chain nonce; authorization facts default false. Receipt producers retain their captured lease rather than borrowing current ownership; cached facts are fenced too.
+- S5/interfaces: added service takeover, registry-before-state crash, publication-loss replay, immutable NOT_SUBMITTED replay, SELL, and real ephemeral EVM signing against PostgreSQL. Runtime facts use the actual lowercase step/timestamps/round-terminal/receipt contracts. Unknown candle semantics stay raw; `session_candles` emits the actual consumer shape only with explicit OPEN semantics and evidence hash. Independent quote limits replace self-derived limits. Markets carry WEB3_OPEN_API origin and paired-quote cost provenance; unavailable costs remain null/blocked, never default zero. Negative sampled net costs receive no cost credit and the signed measurement remains recorded. Logger summaries include quote latency and effective quoted spread (sequential, fees/movement included).
+
+Verification:
+- Local PR14 `980529a`: PASS, 565 tests, 773 subtests, 100 skips (PostgreSQL/Linux and not-yet-integrated consumers unavailable locally; real recorded responses and ephemeral signer tests enabled).
+- [PR14 CI on 980529a](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38228852535): PASS, 760 tests, 1068 subtests, 8 skips; all three checks green.
+- Isolated validation branch `codex/pr14-review-validation` at `156fd9b`, combining runtime `6d33280`, strategy `ab3adc1` and PR14: actual adapter-consumer subset PASS locally, 57 tests + 19 subtests, 13 skips (PostgreSQL and external recordings unavailable in that worktree).
+- [Isolated PostgreSQL/signer CI](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38228856478): 797 passed, 827 subtests, 1 skipped; one failure remains in Keith's already-reviewed `tests/strategy/test_live_profiles.py::test_live_cost_cap_still_blocks_without_double_counting_impact` (IDEA-042 §4.4). All execution, real PostgreSQL signer, runtime-observation and candle-consumer tests passed. Full cross-owner integration is therefore NOT PASS; this unrelated fixture is Keith's remaining item. Earlier integration failure on redacted/corrupt execution records was corrected to a sanitized Conflict; the actual backup/restore consumer now passes.
+- The separate Actions dispatch initially could not complete automatic approval review (429 retry limit). Retrying through the same approval path succeeded; no approval check was bypassed.
+
+Collector restarted on pushed `980529a`, local PID 1921. First updated cycle `0be55946e0ff7e928fb2ade110c790f53d365d30f7fb57e81d67d7e29466b51a`, 2026-10-12 09:19:25.259–09:19:51.606 UTC, all five pairs collected. Quote latencies 126–173 ms; effective quoted spread bp: NVDAB -1.5004, GOOGLB 5.3674, SKHYB -2.2570, TSLAB -1.5346, MSFTB 12.5828. These are sequential samples with price-movement noise, not profitable arbitrage evidence. Artifacts remain private and ignored.
+
+Remaining integration requests: Keegan wires LiveGuards/epoch-derived execution authority and `check_broadcast` at the actual release boundary, uses pinned ownership in publication, and adopts NOT_SUBMITTED reservation release. HALT/revocation must quarantine or advance execution authority; ordinary journal commits must not. A future dedicated authority column may replace epoch derivation under the same interface. Keith supplies calibrated independent quote limits, actual gas/BNB scales and verified candle semantics. Confirmed first BNB, RPC/provider/router capability proof and live activation/rehearsal remain pending; no registered-wallet signatures, transactions or official logs were run by these fixes. Update the reserved IDEA-039 ledger row/backlog through Keegan; no whole shared backlog item is closed here.

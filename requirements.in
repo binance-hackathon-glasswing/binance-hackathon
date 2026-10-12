@@ -16,6 +16,7 @@ pandas==3.0.6
 numpy==2.5.3
 pyarrow==25.0.1
 psycopg[binary]==3.3.6
+tzdata==2026.4  # explicit calendar provenance across hosts
 
 # Decision model (Laya encoder) and baselines
 torch==2.14.1
@@ -25,6 +26,7 @@ huggingface-hub==1.33.0  # <2.0 required by tokenizers 0.23.x
 scikit-learn==1.9.1
 
 # Services and validation
+boto3==1.43.111  # Archive/backup operations only; no wallet SDK.
 fastapi==0.142.2
 uvicorn==0.54.0
 pydantic==2.13.5

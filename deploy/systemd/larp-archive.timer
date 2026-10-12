@@ -1,0 +1,11 @@
+[Unit]
+Description=Check durable LARP archive jobs every minute
+
+[Timer]
+OnBootSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+Unit=larp-archive.service
+
+[Install]
+WantedBy=timers.target

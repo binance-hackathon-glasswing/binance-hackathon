@@ -1,0 +1,26 @@
+# Signer host profile (Isaac's larp/signer, IDEA-039; IDEA-042 §4 X4). The runtime pins plus eth-account and its
+# transitive dependencies, every version taken unchanged from requirements.lock (resolved 2026-10-12 with pip
+# --dry-run against those pins). The coordinator image (requirements-runtime.lock) carries no signing package.
+-r requirements-runtime.lock
+annotated-types==0.8.0
+bitarray==3.11.0
+ckzg==2.1.8
+cytoolz==1.1.0
+eth-account==0.14.0
+eth-hash==0.8.0
+eth-keyfile==0.10.0
+eth-keys==0.8.0
+eth-rlp==3.0.0
+eth-typing==6.0.0
+eth-utils==6.0.0
+eth_abi==6.0.0
+hexbytes==2.0.0
+parsimonious==0.10.0
+py-ecc==8.0.0
+pycryptodome==3.23.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+regex==2026.9.29
+rlp==5.0.0
+toolz==1.1.0
+typing-inspection==0.4.4

@@ -1,0 +1,9 @@
+*
+!larp/
+!larp/**
+!migrations/
+!migrations/**
+!deploy/
+!deploy/requirements-runtime.lock
+**/__pycache__/
+**/*.pyc

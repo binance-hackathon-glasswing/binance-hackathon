@@ -1,0 +1,55 @@
+{
+  "schema": "IntelligenceConfig.v1",
+  "provenance": {
+    "set_by": "IDEA-025 (Yao Zhu build record), 2026-10-10",
+    "budget": "plan.md G-50 [POLICY], adopted: <= 6 tool calls and 60 s per decision, <= 3 tool types; PARALLEL_BUILD.md repeats it",
+    "parameters": "development values are synthetic-fixture defaults, uncalibrated; every live value is null, so live startup fails until a team decision sets it with provenance",
+    "bounds_and_lifecycle": "IDEA-031 S2.4-S2.5, 2026-10-10: work bounds (document chars, facts/statements per document, prior records, statement comparisons, model-input chars as a token proxy) and statement review lifecycle (attempts, backoff, retention). Synthetic development values chosen for offline tests, uncalibrated; live values null until a team decision",
+    "severity": "mechanical 8-K item map: IDEA-007 Track A label source 1 (filer-assigned item codes) and IDEA-018's declared falsifier items {4.02, 1.05, 2.06}; keyword events cover 6-K filers, which have no item codes. Not a validated severity model"
+  },
+  "budget": {"max_tool_calls": 6, "max_deadline_ms": 60000, "max_tool_types": 3},
+  "tools": ["fetch_document", "prior_context", "compare_facts"],
+  "prompt": {"path": "prompts/assessor.v2.txt", "sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be"},
+  "limits": {"max_documents_per_filing": 6, "max_tool_result_chars": 20000, "max_claims": 64,
+             "max_known_accessions": 5000, "max_known_facts": 200, "max_fetch_attempts": 3,
+             "max_document_chars": 4000000, "max_facts_per_document": 400, "max_statements_per_document": 200,
+             "max_prior_records": 40, "max_statement_comparisons": 4000, "max_model_input_chars": 400000,
+             "max_statements_registry": 400},
+  "parameters": {
+    "initial_backfill_ms": {"development": 2592000000, "live": null},
+    "max_clock_skew_ms": {"development": 300000, "live": null},
+    "max_source_staleness_ms": {"development": 7200000, "live": null},
+    "result_ttl_ms": {"development": 3600000, "live": null},
+    "reassess_delay_ms": {"development": 21600000, "live": null},
+    "retry_delay_ms": {"development": 600000, "live": null},
+    "job_validity_ms": {"development": 86400000, "live": null},
+    "job_max_attempts": {"development": 3, "live": null},
+    "max_review_attempts": {"development": 3, "live": null},
+    "max_review_backoff_ms": {"development": 172800000, "live": null},
+    "statement_retention_ms": {"development": 7776000000, "live": null}
+  },
+  "severity": {
+    "items": {
+      "4.02": ["ADVERSE", 3], "1.05": ["ADVERSE", 3], "3.01": ["ADVERSE", 3],
+      "2.06": ["ADVERSE", 2], "1.02": ["ADVERSE", 2], "2.05": ["ADVERSE", 2],
+      "5.02": ["UNKNOWN", 1], "2.02": ["UNKNOWN", 1], "1.01": ["UNKNOWN", 1],
+      "2.01": ["UNKNOWN", 1], "2.03": ["UNKNOWN", 1], "8.01": ["UNKNOWN", 1], "7.01": ["UNKNOWN", 1]
+    },
+    "keywords": {
+      "RESTATEMENT": ["ADVERSE", 3], "CYBERSECURITY_INCIDENT": ["ADVERSE", 3], "DELISTING": ["ADVERSE", 3],
+      "IMPAIRMENT": ["ADVERSE", 2], "OFFICER_DEPARTURE": ["UNKNOWN", 1]
+    },
+    "comparisons": {
+      "GUIDANCE_LOWERED": ["ADVERSE", 2], "GUIDANCE_RAISED": ["FAVOURABLE", 1],
+      "REPORTED_BELOW_PRIOR_GUIDANCE": ["ADVERSE", 1], "REPORTED_ABOVE_PRIOR_GUIDANCE": ["FAVOURABLE", 1],
+      "REPORTED_WITHIN_PRIOR_GUIDANCE": ["IMMATERIAL", 0]
+    }
+  },
+  "default_falsifiers": [
+    {"falsifier_id": "F-ITEM-4.02", "type": "ITEM", "item": "4.02"},
+    {"falsifier_id": "F-ITEM-1.05", "type": "ITEM", "item": "1.05"},
+    {"falsifier_id": "F-ITEM-2.06", "type": "ITEM", "item": "2.06"},
+    {"falsifier_id": "F-RESTATEMENT", "type": "EVENT", "event": "RESTATEMENT"},
+    {"falsifier_id": "F-REVENUE-GUIDANCE-CUT", "type": "GUIDANCE_LOWERED", "metric": "revenue"}
+  ]
+}

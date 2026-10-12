@@ -1,0 +1,306 @@
+{
+ "schema": "DeviationsRegister.v1",
+ "updated": "2026-10-12",
+ "proposal": "docs/proposal/proposal_answers.md",
+ "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 §4.3); details that exist only in owner code not yet integrated are added when it is integrated.",
+ "rows": [
+  {
+   "id": "DEV-01",
+   "area": "Model layer",
+   "declared": "It is a bidirectional encoder with a typed decision head, which we fine-tune on our own point-in-time labels and calibrate on validation data.",
+   "v1_behaviour": "No trained decision model ships. The pre-registered default is the rule-based base book (equal weight, IDEA-037); H-02/EXP-001 are recorded as NOT RUN.",
+   "reason": "Training and evaluation data are on hold, so H-02 cannot be run; the proposal's own fallback (a pre-registered default) applies.",
+   "evidence": [
+    "D-08",
+    "H-02",
+    "EXP-001",
+    "GAP-56",
+    "IDEA-009"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-02",
+   "area": "Entry rule",
+   "declared": "P(UP) and the margin P(UP) − P(DOWN) clear thresholds fit on validation data.",
+   "v1_behaviour": "Entries follow the equal-weight book: the time window, a fresh review, no unresolved red flag, the price-impact and entry-cost gates, and the 75% top-up threshold. There are no probability thresholds.",
+   "reason": "No decision model (DEV-01); the team set an 80% invested target (B5) after F-115 made a mostly-cash default unsuitable.",
+   "evidence": [
+    "IDEA-035",
+    "IDEA-037",
+    "F-115",
+    "D-12"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-03",
+   "area": "Sizing",
+   "declared": "Position size = 1% of equity ÷ (2 × expected 5-session volatility).",
+   "v1_behaviour": "Equal weight: four names at 20% of equity each (80% gross); topped up while gross is below 75%; never resized on drift.",
+   "reason": "Team decision B5 (Option 1); equal weight needs no estimate and fits the declared caps.",
+   "evidence": [
+    "IDEA-035",
+    "IDEA-037",
+    "D-12",
+    "G-21"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-04",
+   "area": "Cash floor",
+   "declared": "≤ 80% gross exposure, so at least 20% stays in cash.",
+   "v1_behaviour": "80% gross is a buy-time ceiling. Price drift may take gross above it; forced trims start only above 25% per name or 90% gross.",
+   "reason": "Avoids cap-trim micro-trades that would sell on every small rally (IDEA-017); decided with the B5 rebalance rule.",
+   "evidence": [
+    "IDEA-037",
+    "G-21",
+    "GAP-62"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-05",
+   "area": "Liquidity cap",
+   "declared": "The order is ≤ 10% of the quoted depth.",
+   "v1_behaviour": "Price-impact limit: impact ≤ min(50 bp, 2 × logged median) and total entry cost (spread + impact + gas ÷ size) ≤ 50 bp.",
+   "reason": "The Web3 Open API quote has no depth field; the impact fields replace it.",
+   "evidence": [
+    "GAP-51",
+    "I-68",
+    "IDEA-035",
+    "F-96"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-06",
+   "area": "Price data",
+   "declared": "licensed historical daily prices of the underlying US shares, for training labels. The vendor will be declared at onboarding.",
+   "v1_behaviour": "No licensed share-price vendor. Sizing and session inputs use the kit's own bStock token candles (Web3 Open API).",
+   "reason": "Zero paid budget and kit-first data; no trained model needs share-price labels (DEV-01).",
+   "evidence": [
+    "D-09",
+    "GAP-56",
+    "IDEA-035"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-07",
+   "area": "Exit triggers",
+   "declared": "a confident DOWN signal on a held name,",
+   "v1_behaviour": "Exits: red-flag Class 1 (verified 8-K Item 4.02) sells; Class 2 (Items 1.05, 2.06) blocks new buys for 5 sessions without a forced sale; risk-limit triggers; and the end-of-run flatten finished by 2026-11-11 15:00 UTC. A name may be bought again once its finding is corrected or withdrawn at the source.",
+   "reason": "No decision model to give a DOWN signal (DEV-01); the LLM only assesses evidence (D-11); flat at the end so both scoring readings agree (C4).",
+   "evidence": [
+    "D-11",
+    "IDEA-035",
+    "IDEA-032",
+    "Q-06"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-08",
+   "area": "Agent tools",
+   "declared": "`fetch_issuer_release`",
+   "v1_behaviour": "Three tools: fetch_document, prior_context, compare_facts. No issuer-release tool; feature lookup is internal context construction, not a tool.",
+   "reason": "Issuer newsroom terms do not allow automated use; the three-tool limit is kept.",
+   "evidence": [
+    "IDEA-035",
+    "IDEA-009",
+    "D-11"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-09",
+   "area": "Second source",
+   "declared": "**GDELT news events:** the second independent source.",
+   "v1_behaviour": "GDELT is disabled. Official free sources (SEC press, Federal Register, DOJ, European Commission) are recorded as SHADOW_ONLY event flags; EDGAR stays the only source of verified company claims.",
+   "reason": "Copies of a common release are not independent corroboration; the official sources have clear terms.",
+   "evidence": [
+    "IDEA-031",
+    "IDEA-029",
+    "GAP-25",
+    "GAP-23"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-10",
+   "area": "Macro data",
+   "declared": "**FRED/ALFRED macro data:** vintage data, so each value is as it was known at the time.",
+   "v1_behaviour": "Not used.",
+   "reason": "FRED terms prohibit machine-learning use, and no trained model ships (DEV-01).",
+   "evidence": [
+    "GAP-57",
+    "IDEA-009",
+    "D-08"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-11",
+   "area": "Issuer releases",
+   "declared": "**Issuer investor-relations releases and RSS feeds.**",
+   "v1_behaviour": "Not fetched (issuer-newsrooms disabled in the source register).",
+   "reason": "Issuer terms do not allow automated use.",
+   "evidence": [
+    "IDEA-009",
+    "IDEA-031",
+    "GAP-23"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-12",
+   "area": "Triage model",
+   "declared": "**Small self-hosted finance sentiment/relevance model:** used for triage.",
+   "v1_behaviour": "Not shipped.",
+   "reason": "No model-layer track passed a gate; the evidence path is deterministic verification plus an assessment-only model (or the deterministic assessor).",
+   "evidence": [
+    "IDEA-009",
+    "GAP-57"
+   ],
+   "decided": "2026-10-10",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-13",
+   "area": "Releases during the run",
+   "declared": "Improvements are versioned releases, at most one a day, each run in shadow first.",
+   "v1_behaviour": "No releases during the scored run: the build registered at final activation runs unchanged.",
+   "reason": "Organiser answer: improve during development only.",
+   "evidence": [
+    "F-117",
+    "F-114",
+    "IDEA-009"
+   ],
+   "decided": "2026-10-08",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-14",
+   "area": "Human halt",
+   "declared": "Humans can halt the agent but never trade.",
+   "v1_behaviour": "No human action during the run. HALT is autonomous code (clock, delivery deadline, repeated failures; integrity quarantines), and a supervisor restarts the same build after a crash, each logged as an incident.",
+   "reason": "Organiser answer: no changes once the run starts; team position C5 on automatic restart.",
+   "evidence": [
+    "F-114",
+    "Q-40",
+    "IDEA-035",
+    "IDEA-042"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-15",
+   "area": "Safe-mode build",
+   "declared": "registered safe-mode build",
+   "v1_behaviour": "No separate safe-mode build; safe behaviour (HALT, holds) is inside the one registered build.",
+   "reason": "Only one build may run unchanged during the run.",
+   "evidence": [
+    "F-117",
+    "IDEA-042"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-16",
+   "area": "Execution flow",
+   "declared": "Web3 API quote/build/simulate",
+   "v1_behaviour": "Kit flow: quote → approve exactly the order amount → re-quote → gas estimate → swap; recovery by nonce and transaction hash.",
+   "reason": "The Web3 Open API has no build/simulate or order-hash flow for bStocks.",
+   "evidence": [
+    "I-68",
+    "F-96",
+    "F-97"
+   ],
+   "decided": "2026-10-05",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-17",
+   "area": "Branch protection",
+   "declared": "The challenge branch is protected: no force-pushes and no rewrites.",
+   "v1_behaviour": "No force-pushes and no rewrites, enforced by the team rule; GitHub branch protection is not available on the plan.",
+   "reason": "Checked 2026-10-03: branch protection unavailable on the repository's plan.",
+   "evidence": [
+    "G-40",
+    "F-61"
+   ],
+   "decided": "2026-10-03",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-18",
+   "area": "Standby",
+   "declared": "The deployment is one primary runtime plus a fenced cold standby.",
+   "v1_behaviour": "OPEN: primary with automatic supervisor restart is built; the fenced cold standby is decided after exploring AWS.",
+   "reason": "Team decision deferred (GAP-02); standby promotion stays disabled until then.",
+   "evidence": [
+    "D-05",
+    "GAP-02",
+    "IDEA-035"
+   ],
+   "decided": "OPEN",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-19",
+   "area": "Assessor model",
+   "declared": "**Hosted reasoning LLM for the evidence step:**",
+   "v1_behaviour": "OPEN: Claude or ChatGPT chosen after system testing (B8), or the deterministic assessor (no model call) declared as v1.0.",
+   "reason": "Model choice and budget deferred; paid APIs need a budget.",
+   "evidence": [
+    "IDEA-035",
+    "GAP-57",
+    "D-03"
+   ],
+   "decided": "OPEN",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-20",
+   "area": "Event planner",
+   "declared": "an event-calendar planner,",
+   "v1_behaviour": "OPEN: not built. Scheduled macro and earnings events have no per-class rule in v1.0 code; only the end-of-run schedule exists.",
+   "reason": "Not yet decided (GAP-64); listed so the register is complete.",
+   "evidence": [
+    "GAP-64",
+    "IDEA-018"
+   ],
+   "decided": "OPEN",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-21",
+   "area": "Gas reserve",
+   "declared": "A gas-reserve floor keeps enough gas for exits.",
+   "v1_behaviour": "The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT → BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. The first BNB must already be in the wallet (Q-03).",
+   "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled.",
+   "evidence": [
+    "IDEA-035",
+    "GAP-49",
+    "Q-03"
+   ],
+   "decided": "2026-10-11",
+   "status": "DRAFT"
+  }
+ ]
+}
