@@ -99,7 +99,8 @@ class CoordinatorWithStrategy(DatabaseCase):
         runtime = Coordinator(self.store, FakeAssessor(), StrategyPolicy(),
             RuntimePlanner(job_validity_ms=60000,job_max_attempts=3), execution=FakeExecution(),
             run_id='run',version_id='synthetic',profile_hash=profile_hash,address='0x'+'1'*40,
-            context_builder=builder,initial_policy_state=initial_policy_state('run',profile))
+            context_builder=builder,initial_policy_state=initial_policy_state('run',profile),
+            clock_ms=lambda:int(fixture.observed_at.timestamp()*1000))
         now = int(fixture.observed_at.timestamp()*1000)
         request = runtime_request('BUY').read()
         request.update(policy_profile_hash=profile_hash,cutoff_ms=now)
