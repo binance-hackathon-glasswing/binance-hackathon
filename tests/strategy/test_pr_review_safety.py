@@ -75,10 +75,12 @@ def test_affordable_sale_is_not_preempted_by_another_tokens_higher_gas_budget():
     from tests.strategy.live_fixtures import summary, registry
     from tests.strategy.test_live_profiles import rebound
     measured=summary().read()
-    measured['symbols']['SKHYB'].update(approve_gas_bnb_units=50000,swap_gas_bnb_units=50000)
+    measured['symbols']['SKHYB'].update(approve_gas_bnb_units=20000,swap_gas_bnb_units=20000)
     p=build_live_profiles(Document.from_dict(measured),registry())['FINAL'].read()
     s=live_snapshot(held={'NVDAB':6000},gas_low=True)
-    s=with_quotes(rebound(s,p))
+    s=rebound(s,p)
+    c=s.context.read();c["portfolio"]["bnb_units"]=30000
+    s=with_quotes(changed(s,portfolio=c["portfolio"]))
     c=s.context.read()
     for m in c['markets']:
         for q in m['quotes']:q['origin']='WEB3_OPEN_API'
