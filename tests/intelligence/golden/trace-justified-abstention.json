@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": false,
-  "assessment_key": "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df",
+  "assessment_key": "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "UNKNOWN",
@@ -32,7 +32,7 @@
   "impact_ordinal": null,
   "issuer_id": "FIXTURE-CIK-9900001",
   "missing_codes": [],
-  "model_hash": "4ed9a62e9a6af354b9070ab12ff937c5c946d2fa2b35a7f2b4a4cb36e19e134d",
+  "model_hash": "55f8ac00da5ee82abcba9d4739132acaa40d0438e4fccdb2d8a20d7adc1c43e6",
   "n_changed": 1,
   "n_conflicts": 1,
   "n_falsifiers_fired": 0,
@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:7772e58bdfc65c7d540ace07fb72384811e3db13b200aa14d5f1d4f7783c97c1",
+  "result_id": "res:c122d93838fe66a7681cf04325a6092cef52f9ac070725427217acd78170c917",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -57,10 +57,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df"
+    "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b"
    ],
    "accepted_result_ids": [
-    "res:7772e58bdfc65c7d540ace07fb72384811e3db13b200aa14d5f1d4f7783c97c1"
+    "res:c122d93838fe66a7681cf04325a6092cef52f9ac070725427217acd78170c917"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,19 +141,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:75e829a9ad2a15d3e3f5c39c02a107f33e1b0d2a2d47da2912a760eed425b772",
+   "batch_id": "state:7951995ff3e173d5332ce0d60d1ee2ff3f2a091f1bfbc5c3f8b822706385b208",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:899b3b3d59ff821d3042e61f9a79a4bb4db3eeefd6feaae99ca4a1be0966993b",
+     "job_id": "evidence:20724e24f81b7d684f66c747695971a681bcd8e9661c3ef8f89c1b0c47c19205",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df",
+      "after_assessment_key": "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:7772e58bdfc65c7d540ace07fb72384811e3db13b200aa14d5f1d4f7783c97c1",
+   "result_id": "res:c122d93838fe66a7681cf04325a6092cef52f9ac070725427217acd78170c917",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df"
+     "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b"
     ],
     "accepted_result_ids": [
-     "res:7772e58bdfc65c7d540ace07fb72384811e3db13b200aa14d5f1d4f7783c97c1"
+     "res:c122d93838fe66a7681cf04325a6092cef52f9ac070725427217acd78170c917"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:75e829a9ad2a15d3e3f5c39c02a107f33e1b0d2a2d47da2912a760eed425b772",
+   "batch_id": "state:7951995ff3e173d5332ce0d60d1ee2ff3f2a091f1bfbc5c3f8b822706385b208",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -391,7 +391,7 @@
   }
  },
  "result": {
-  "assessment_key": "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df",
+  "assessment_key": "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 4,
@@ -531,13 +531,13 @@
   "job_id": "demo:justified-abstention",
   "missingness": [],
   "model": {
-   "checkpoint_sha256": "419d9c5a1b75ff92e477c6ceef733f8d6a5bf649ec5d0e6c4a9986f26535e46e",
+   "checkpoint_sha256": "f962608b5769670be426485d79aa0387d3f4b0d20d685f27191c83a48603ea1e",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "4ed9a62e9a6af354b9070ab12ff937c5c946d2fa2b35a7f2b4a4cb36e19e134d",
+  "model_hash": "55f8ac00da5ee82abcba9d4739132acaa40d0438e4fccdb2d8a20d7adc1c43e6",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -768,7 +768,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "419d9c5a1b75ff92e477c6ceef733f8d6a5bf649ec5d0e6c4a9986f26535e46e",
+       "checkpoint_sha256": "f962608b5769670be426485d79aa0387d3f4b0d20d685f27191c83a48603ea1e",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1108,7 +1108,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "419d9c5a1b75ff92e477c6ceef733f8d6a5bf649ec5d0e6c4a9986f26535e46e",
+       "checkpoint_sha256": "f962608b5769670be426485d79aa0387d3f4b0d20d685f27191c83a48603ea1e",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1757,7 +1757,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "419d9c5a1b75ff92e477c6ceef733f8d6a5bf649ec5d0e6c4a9986f26535e46e",
+       "checkpoint_sha256": "f962608b5769670be426485d79aa0387d3f4b0d20d685f27191c83a48603ea1e",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2398,7 +2398,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "419d9c5a1b75ff92e477c6ceef733f8d6a5bf649ec5d0e6c4a9986f26535e46e",
+       "checkpoint_sha256": "f962608b5769670be426485d79aa0387d3f4b0d20d685f27191c83a48603ea1e",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2587,7 +2587,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:7772e58bdfc65c7d540ace07fb72384811e3db13b200aa14d5f1d4f7783c97c1",
+  "result_id": "res:c122d93838fe66a7681cf04325a6092cef52f9ac070725427217acd78170c917",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",
@@ -2693,12 +2693,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:899b3b3d59ff821d3042e61f9a79a4bb4db3eeefd6feaae99ca4a1be0966993b",
+     "job_id": "evidence:20724e24f81b7d684f66c747695971a681bcd8e9661c3ef8f89c1b0c47c19205",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "d37dc9550c752c399b300e10cdd38006ab2beb43e7fa04141d3f87915c4267df",
+      "after_assessment_key": "e02d393ec3fb81dfa7805643f70e49ac457372b1bbe1d19b7ce3a00cd643c95b",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -2709,7 +2709,7 @@
     },
     "kind": "REASSESS",
     "reason": "CONFLICT_RESOLUTION",
-    "request_id": "evidence:899b3b3d59ff821d3042e61f9a79a4bb4db3eeefd6feaae99ca4a1be0966993b"
+    "request_id": "evidence:20724e24f81b7d684f66c747695971a681bcd8e9661c3ef8f89c1b0c47c19205"
    }
   ],
   "review_scope": null,
