@@ -44,6 +44,18 @@ NEGATION = re.compile(r"\b(?:no|not|none|neither|nor|never|without|cannot|absenc
 NOT_A_CUE = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+be\s+relied\s+upon\b|"
                        r"\b(?-i:May)\s+(?:\d{1,2}|\d{4})\b|\bbut\s+not\s+limited\s+to\b|\bwithout\s+limitation\b|"
                        r"\bnot\s+only\b", re.I)
+# Item 4.02 wording beyond the exact phrase above (IDEA-041 R07): "should not / cannot / can no longer be relied on",
+# "should no longer rely upon", optionally "... and should be restated". It is not a negation only where it is the
+# RESTATEMENT trigger itself; anywhere else ("pro forma amounts cannot be relied upon as a substitute", "reports of an
+# incident cannot be relied upon") its negation still counts (IDEA-041 review V02).
+NON_RELIANCE = re.compile(
+    r"\b(?:(?:should|must|can)\s+no\s+longer|should\s+not|must\s+not|cannot|can\s+not)\s+"
+    r"(?:be\s+relied|rely)\s+(?:up)?on\b(?:\s*,?\s+and\s+(?:should|will|must)\s+be\s+restated\b)?", re.I)
+# Around that trigger, a reversal or denial verb negates it as a "not" would ("declined to conclude that ...",
+# "disagrees with the assertion that ...", "rescinded its determination that ...", V01).
+REVERSAL = re.compile(r"\bdeclin(?:e|es|ed|ing)\s+to\b|\bdisagree\w*|\bdisput\w*|\brescind\w*|\bwithdr[ae]w\w*|"
+                      r"\breject\w*|\bden(?:y|ies|ied|ial)\b|\bretract\w*|\brevers(?:e|ed|es|ing)\s+(?:its|the|their)\b",
+                      re.I)
 ATTRIBUTION = re.compile(
     r"\b(?:rumou?r(?:s|ed)?|reportedly|allegedly|alleg(?:e|es|ed|ing|ation|ations)|according\s+to|"
     r"sources?\s+(?:said|say|says|familiar|close)|people\s+(?:familiar|close)|(?:is|are|was|were)\s+said\s+to|"
@@ -69,7 +81,7 @@ OCCURRENCE = {
                                          r"(?:was|were)\s+(?:the\s+)?(?:target|subject|victim))\b|\bis\s+investigating\b",
                                          re.I),
     "RESTATEMENT": re.compile(_GENERIC_PAST + r"|\brestated\b|\brestating\b|\bwill\s+restate\b|"
-                              r"\bshould\s+no\s+longer\s+be\s+relied\s+upon\b|\bnon-?reliance\b", re.I),
+                              + NON_RELIANCE.pattern + r"|\bnon-?reliance\b", re.I),
     "DELISTING": re.compile(_GENERIC_PAST + r"|\b(?:was|were|been)\s+(?:delisted|suspended)\b|\bdelisted\b|"
                             r"\breceived\s+(?:a\s+)?(?:notice|notification|letter|determination)\b|\bfiled\s+(?:a\s+)?Form\s+25\b",
                             re.I),
@@ -286,6 +298,12 @@ def classify_event(text: str, start: int, end: int, *, event: str, document_ms=N
     raw_clause = text[lo:hi]
     clause = NOT_A_CUE.sub(lambda m: " " * len(m.group(0)), raw_clause)
     t_lo, t_hi = start - lo, end - lo
+    reliance = False  # the trigger is Item 4.02 non-reliance wording: its own "not" is no negation
+    if event == "RESTATEMENT":
+        for m in NON_RELIANCE.finditer(raw_clause):
+            if m.start() < t_hi and t_lo < m.end():
+                clause = clause[:m.start()] + " " * (m.end() - m.start()) + clause[m.end():]
+                reliance = True
     cues, attribution = [], "SOURCE_ASSERTS"
     quote = _quote(raw_clause, t_lo)
     speaker_actor = None
@@ -319,6 +337,10 @@ def classify_event(text: str, start: int, end: int, *, event: str, document_ms=N
     if predicate is not None:
         found = [m for m in predicate.finditer(raw_segment)]
         inside = [m for m in found if t_lo <= m.start() < t_hi]
+        before = [m for m in found if m.end() <= t_lo]
+        if reliance and before:  # "the Audit Committee concluded that investors should no longer rely upon ...": the
+            inside = []          # governing verb, not the reliance phrase, names who asserts the event
+            found = before
         pred = inside[0] if inside else (min(found, key=lambda m: abs(m.start() - t_lo)) if found else None)
     verb_trigger = pred is not None and t_lo <= pred.start() < t_hi
     future = bool(DECISION.search(segment) or FUTURE_MARK.search(segment))
@@ -334,7 +356,7 @@ def classify_event(text: str, start: int, end: int, *, event: str, document_ms=N
     if TOC.search(raw_clause):
         assertion = "MENTION_ONLY"
         cues.append("TABLE_OF_CONTENTS")
-    elif NEGATION.search(segment):
+    elif NEGATION.search(segment) or (reliance and REVERSAL.search(segment)):
         assertion = "NEGATED"
         cues.append("NEGATION_IN_CONJUNCT")
     elif ATTRIBUTION.search(clause):

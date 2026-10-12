@@ -16,8 +16,8 @@ from its semantic signature, so rereading the same filing, a syndicated copy or 
 paraphrase maps to the same entry, and records review status with bounded retries:
 
 PENDING_REVIEW -> ACKNOWLEDGED (seen again by a complete assessment with prior history checked)
-PENDING_REVIEW -> PENDING_REVIEW (incomplete reassessment, or any accepted result after the due time that did
-                  not observe it; attempts+1, exponential backoff)
+PENDING_REVIEW -> PENDING_REVIEW (an incomplete reassessment, or a result of the statement's own review job after
+                  the due time that did not observe it; attempts+1, exponential backoff)
 PENDING_REVIEW -> REVIEW_EXHAUSTED (max attempts; stays visible as uncertainty, no further jobs)
 any -> SUPERSEDED / CORRECTED / WITHDRAWN (its only supporting record was revised or withdrawn)
 CORRECTED / WITHDRAWN -> PENDING_REVIEW (a newer revision of a support was not completely read, so its correction
@@ -140,11 +140,15 @@ def needs_review(label: str) -> bool:
     return label in ("FIRST_SEEN", "CHANGED", "UNCERTAIN_MATCH", "HISTORY_UNAVAILABLE", "PRIOR_NOT_CHECKED")
 
 
-def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, complete: bool, policy: dict) -> dict:
+def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, complete: bool, policy: dict,
+            review_scope=None) -> dict:
     """Apply one verified statement from an accepted, ASSESSED result. Returns the updated entry.
 
     `statement`: AssessmentResult event_statements item (statement_id, event, semantics, novelty, source).
     `policy`: {"review_base_delay_ms", "max_review_attempts", "max_backoff_ms"}.
+    `review_scope`: statement IDs whose own review job produced this result, or None for a result that predates
+    review scopes (then any result counts, the v1.0 rule). An incomplete sighting is a failed review attempt only
+    within scope (IDEA-035 A4, GAP-28); a complete one acknowledges the statement whichever job produced it.
     """
     sid = statement["statement_id"]
     if sid not in registry and statement.get("fingerprint"):
@@ -175,7 +179,8 @@ def observe(registry: dict, statement: dict, *, result_id: str, now_ms: int, com
         entry["source_resolutions"] = {k: v for k, v in entry["source_resolutions"].items() if k not in keys}
     if record not in entry["records"]:
         entry["records"] = (entry["records"] + [record])[-8:]
-    if entry["status"] == "PENDING_REVIEW" and result_id != entry["review"]["last_result_id"]:
+    in_scope = review_scope is None or sid in review_scope
+    if entry["status"] == "PENDING_REVIEW" and result_id != entry["review"]["last_result_id"] and (complete or in_scope):
         entry["review"]["last_result_id"] = result_id
         if complete:
             entry["status"] = "ACKNOWLEDGED"
@@ -202,16 +207,21 @@ def _failed_attempt(entry: dict, now_ms: int, policy: dict) -> None:
         entry["review"]["next_due_ms"] = now_ms + delay
 
 
-def missed_reviews(registry: dict, *, result_id: str, now_ms: int, policy: dict) -> list:
-    """Count an accepted result that did not observe a due statement as one incomplete review attempt.
+def missed_reviews(registry: dict, *, result_id: str, now_ms: int, policy: dict, review_scope=None) -> list:
+    """Count a result of a due statement's own review job that did not observe it as one incomplete attempt.
 
     A reassessment can abstain, be unavailable or not reread the filing; without this, `observe` never runs for the
-    statement and its review stays due forever instead of reaching REVIEW_EXHAUSTED (IDEA-033 R18). Statements
-    `observe` already handled for this result are skipped. Returns the IDs charged an attempt.
+    statement and its review stays due forever instead of reaching REVIEW_EXHAUSTED (IDEA-033 R18). Only statements
+    in `review_scope` (the IDs the result's review job was for) are charged (IDEA-035 A4, GAP-28): an unrelated
+    result is not a review attempt. `review_scope=None` is a result that predates review scopes; it keeps the v1.0
+    rule (any accepted result after the due time counts) so journaled results replay to the same state.
+    Statements `observe` already handled for this result are skipped. Returns the IDs charged an attempt.
     """
     charged = []
     for entry in due_reviews(registry, now_ms):
         if entry["review"]["last_result_id"] == result_id:
+            continue
+        if review_scope is not None and entry["statement_id"] not in review_scope:
             continue
         entry = dict(entry, review=dict(entry["review"], last_result_id=result_id))
         _failed_attempt(entry, now_ms, policy)

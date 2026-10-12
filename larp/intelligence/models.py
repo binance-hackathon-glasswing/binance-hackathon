@@ -80,9 +80,9 @@ def response(request: dict, *, status: str, output, latency_ms: int, usage=None,
     artifact sink, the request payload and any reply bytes are stored before anything is parsed."""
     request_ref, raw_ref = _store(artifacts, request_payload), _store(artifacts, raw)
     if output is not None:
-        try:  # floats, NaN or other non-canonical JSON from a provider make the output invalid
+        try:  # floats, NaN, deep nesting or other non-canonical JSON from a provider make the output invalid
             Document.from_dict({"output": output})
-        except ContractError:
+        except (ContractError, RecursionError, MemoryError):
             status, output, error = "INVALID", None, "OUTPUT_NOT_CANONICAL_JSON"
     return Document.from_dict({
         "schema": "ModelResponse.v1", "request_id": request["request_id"], "status": status, "output": output,
