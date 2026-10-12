@@ -28,7 +28,7 @@ profile by `authority(profile)`:
 from functools import lru_cache
 
 from larp.contracts import Document
-from larp.intelligence.common import digest
+from larp.intelligence.common import IntelligenceError, digest
 from larp.intelligence.redflags import load_predicates
 
 SCHEMA = "EvidenceContext.v1"
@@ -53,13 +53,23 @@ def red_flag_predicates() -> tuple:
 
 
 def _red_flag_authority(profile: dict) -> dict:
-    predicates, set_sha = red_flag_predicates()
+    """A profile without red_flag_authority never depends on the predicate set: if the set cannot be loaded, every
+    predicate is still SHADOW (an empty map) and nothing else changes (IDEA-041 R14). A profile that names the
+    set needs it to load."""
     spec = profile.get("red_flag_authority")
-    rights = {pid: "SHADOW" for pid in sorted(predicates)}
     if spec is None:
-        return {"set_sha256": set_sha, "predicates": rights}
+        try:
+            predicates, set_sha = red_flag_predicates()
+        except (IntelligenceError, OSError, ValueError, KeyError, TypeError):
+            return {"set_sha256": None, "predicates": {}}
+        return {"set_sha256": set_sha, "predicates": {pid: "SHADOW" for pid in sorted(predicates)}}
     if type(spec) is not dict or set(spec) != {"set_sha256", "enabled"} or type(spec["enabled"]) is not list:
         raise AuthorityError("red_flag_authority must be {set_sha256, enabled}")
+    try:
+        predicates, set_sha = red_flag_predicates()
+    except (IntelligenceError, OSError, ValueError, KeyError, TypeError) as exc:
+        raise AuthorityError(f"red_flag_authority names a predicate set this build cannot load: {exc}") from None
+    rights = {pid: "SHADOW" for pid in sorted(predicates)}
     if spec["set_sha256"] != set_sha:
         raise AuthorityError("red_flag_authority names a different red-flag predicate set than this build")
     unknown = sorted(set(map(str, spec["enabled"])) - set(predicates))
@@ -140,6 +150,7 @@ def _red_flag_view(latch: dict) -> dict:
             "class": flag["class"], "set_sha256": flag["set_sha256"], "item": flag["item"],
             "accession": flag["accession"], "record_id": flag["record_id"], "form": flag["form"],
             "amendment": flag["amendment"], "event_original_ms": flag["event_original_ms"],
+            "event_time_basis": flag.get("event_time_basis"), "amends_accession": flag.get("amends_accession"),
             "latched_ms": latch.get("latched_ms"), "span": flag["span"],
             "affected_periods": flag["affected_periods"]}
 
@@ -153,6 +164,8 @@ def red_flag_directives(record: dict, profile: dict) -> list:
     amendment, restarts_block (an original filing restarts a Class 2 block; an 8-K/A never does) and latched_ms.
     """
     rights = authority(profile)["red_flags"]["predicates"]
+    if set(rights.values()) <= {"SHADOW"}:
+        return []  # nothing enabled: no directive, and no need to load the predicate set
     predicates, set_sha = red_flag_predicates()
     out = {}
     for finding in record.get("falsifier_findings", []):

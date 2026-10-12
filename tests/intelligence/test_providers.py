@@ -335,6 +335,17 @@ class AnthropicSchema(unittest.TestCase):
         from larp.intelligence.providers import anthropic_schema_problems
         self.assertEqual(provider_schema_violations(ACTION_SCHEMA), [])
         self.assertEqual(anthropic_schema_problems(ACTION_SCHEMA), [])
+        for bad in ({"type": "object", "additionalProperties": False, "properties": {"a": {"type": "array",
+                                                                                          "minItems": True}}},
+                    {"type": "object", "additionalProperties": False, "properties": {"a": {"type": "string",
+                                                                                          "format": "regex"}}},
+                    {"type": "object", "additionalProperties": False, "properties": {"a": {"enum": [{"x": 1}]}}}):
+            with self.subTest(production_checker=bad):
+                self.assertTrue(anthropic_schema_problems(bad))
+        deep = {"type": "string"}
+        for _ in range(60):
+            deep = {"type": "object", "additionalProperties": False, "required": ["a"], "properties": {"a": deep}}
+        self.assertTrue(anthropic_schema_problems(deep))
         for bad in ({"type": "object", "properties": {"a": {"type": "object"}}},
                     {"type": "object", "additionalProperties": False, "properties": {"a": {"type": "string",
                                                                                           "minLength": 1}}},
@@ -414,6 +425,13 @@ class AnthropicSchema(unittest.TestCase):
                 self.assertEqual(r["status"], "ASSESSED", r["reasons"])
                 self.assertEqual(r["rejected_claims"], [])
                 self.assertTrue(r["claims"])
+                # A restated harness fact confirms that fact; it is not a second, differently identified copy.
+                from larp.intelligence.models import RuleBaselineModel
+                base = self.w.assessor(RuleBaselineModel(self.w.clock)).assess(
+                    self.w.request([key], issuer_id=EXSEMI, job_id=f"base-{key}")).read()
+                self.assertEqual(sorted(c["fact_id"] for c in r["claims"]),
+                                 sorted(c["fact_id"] for c in base["claims"]))
+                self.assertTrue(all(c["model_confirmed"] for c in r["claims"]))
 
 
 class BytesBeforeParsing(unittest.TestCase):
@@ -440,14 +458,34 @@ class BytesBeforeParsing(unittest.TestCase):
                  "negative usage": (message % "-3").encode(), "bool usage": (message % "true").encode(),
                  "huge usage": (message % ("9" * 400)).encode(),
                  "deep nesting": b"[" * 100_000 + b"]" * 100_000, "not utf-8": b"\xff\xfe{}"}
+        nested = json.dumps('{"action": ' + "[" * 990 + "]" * 990 + "}")  # parses, but too deep for the record
+        cases["parseable deep output"] = (message.replace(text, nested) % "5").encode()
         for name, raw in cases.items():
             with self.subTest(case=name):
                 reply = self.model(raw).step(request(), 60_000).read()
-                self.assertEqual(reply["status"], "ERROR")
+                self.assertIn(reply["status"], ("ERROR", "INVALID"))
                 self.assertIsNone(reply["output"])
                 self.assertEqual(reply["raw_response_artifact"], sha256_hex(raw))
                 self.assertEqual(self.artifacts.get(reply["raw_response_artifact"]), raw)
                 self.assertIsNotNone(self.artifacts.get(reply["request_payload_artifact"]))
+
+
+class LateReplyIsKept(unittest.TestCase):
+    """Review of R10: a whole reply that arrives after the deadline is a timeout whose bytes are still recorded."""
+
+    def test_late_reply_bytes_are_recorded(self):
+        from larp.intelligence.providers import LateReply
+        config, artifacts = load_config(), MemoryArtifacts()
+        raw = json.dumps(anthropic_reply(FINISH)({"model": "example-model-id"})).encode()
+
+        def late(url, headers, body, timeout_s):
+            raise LateReply(200, raw)
+        model = AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=config.prompt_text,
+                                       prompt_sha256=config.prompt_sha256, clock_ms=FakeClock(1), artifacts=artifacts,
+                                       transport=late)
+        reply = model.step(request(), 60_000).read()
+        self.assertEqual((reply["status"], reply["output"]), ("TIMEOUT", None))
+        self.assertEqual(artifacts.get(reply["raw_response_artifact"]), raw)
 
 
 class HardTransportDeadline(unittest.TestCase):

@@ -446,14 +446,21 @@ class GapReportUsesLoggedCadence(unittest.TestCase):
 
     def test_logged_cadence_decides(self):
         slow = [self.line(T0 + i * 600_000, 600_000) for i in range(145)]  # every 10 min for a day
-        report = live.gap_report(slow, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        report = live.gap_report(slow, cadences={"edgar:ISS-A": 600_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
         self.assertEqual(report["verdict"], "PASS", report)
         self.assertEqual(report["targets"]["edgar:ISS-A"]["logged_cadences_ms"], [600_000])
+        # Review of R13: a run that logs a slower cadence than declared cannot pass by its own account.
+        report = live.gap_report(slow, cadences={"edgar:ISS-A": 250_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertTrue(report["targets"]["edgar:ISS-A"]["slower_than_declared"])
+        twelve_hourly = [self.line(T0 + i * 12 * HOUR, 12 * HOUR) for i in range(3)]
+        report = live.gap_report(twelve_hourly, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 25 * HOUR)
+        self.assertEqual(report["verdict"], "FAIL")
         gapped = [self.line(T0 + i * 300_000, 300_000) for i in range(289) if i not in (100, 101)]
         report = live.gap_report(gapped, cadences={"edgar:ISS-A": 900_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
         self.assertEqual(report["verdict"], "FAIL")  # a 15 min gap at a logged 5 min cadence
         legacy = [self.line(T0 + i * 600_000) for i in range(145)]  # lines without cadence_ms: declared cadence
-        report = live.gap_report(legacy, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        report = live.gap_report(legacy, cadences={"edgar:ISS-A": 200_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
         self.assertEqual(report["verdict"], "FAIL")
 
 

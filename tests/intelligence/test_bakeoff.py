@@ -76,6 +76,13 @@ class ReviewMetrics(unittest.TestCase):
         self.assertEqual(metrics["cost_micro_usd"]["calls_abandoned_at_deadline"], 2)
         self.assertTrue(metrics["cost_micro_usd"]["lower_bound"])
 
+    def test_timed_out_calls_make_cost_a_lower_bound(self):
+        model = self.anthropic(lambda url, headers, body, timeout_s: (_ for _ in ()).throw(TimeoutError()))
+        requests = [self.w.request([KEYS[0]], issuer_id=EXSEMI, job_id="timeout")]
+        metrics = bakeoff.metrics(bakeoff.run({"m": model}, requests, self.w.assessor)["m"])
+        self.assertEqual(metrics["cost_micro_usd"]["calls_without_usage"], 1)
+        self.assertTrue(metrics["cost_micro_usd"]["lower_bound"])
+
 
 if __name__ == "__main__":
     unittest.main()

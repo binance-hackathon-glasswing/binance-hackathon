@@ -7,10 +7,12 @@ artifact directory holds the permitted raw item bytes and saved text that model 
 it must live outside the repository (F-49 raw inputs; F-61 no private data in Git).
 """
 
+from functools import wraps
 from pathlib import Path
 import hashlib
 import json
 import sqlite3
+import threading
 
 from larp.contracts import Document
 
@@ -72,6 +74,14 @@ class SQLiteSourceStore:
         self.db.close()
 
 
+def _locked(method):
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return call
+
+
 class SQLiteEvidenceStore:
     """Durable EDGAR evidence store (EvidenceStore port of larp.intelligence.ingest) for the live ingestion runner.
 
@@ -79,11 +89,16 @@ class SQLiteEvidenceStore:
     (a reused ID with different bytes is an integrity error), immutable records and jobs. One SQLite transaction
     per batch. It serves the hosted shadow ingestion run until the runtime's PostgreSQL store takes this role
     (Keegan, IDEA-042).
+
+    The assessor reads evidence on its own worker thread (and an abandoned worker may still be reading), so the one
+    connection is opened for use from any thread and every method holds a re-entrant lock: reads, and each commit's
+    whole transaction, never interleave (IDEA-041 R01).
     """
 
     def __init__(self, path: str):
         self.path = path
-        self.db = sqlite3.connect(path, isolation_level=None)
+        self._lock = threading.RLock()
+        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.execute("PRAGMA journal_mode=WAL") if path != ":memory:" else None
         for table in ("batches (batch_id TEXT PRIMARY KEY, doc BLOB)",
                       "ecursors (source_id TEXT, issuer_id TEXT, version INTEGER, doc BLOB, PRIMARY KEY (source_id, issuer_id))",
@@ -92,25 +107,30 @@ class SQLiteEvidenceStore:
                       "estates (issuer_id TEXT PRIMARY KEY, version INTEGER, doc BLOB)"):
             self.db.execute("CREATE TABLE IF NOT EXISTS " + table)
 
+    @_locked
     def read_cursor(self, source_id: str, issuer_id: str):
         row = self.db.execute("SELECT doc FROM ecursors WHERE source_id=? AND issuer_id=?",
                               (source_id, issuer_id)).fetchone()
         return None if row is None else Document(bytes(row[0]))
 
+    @_locked
     def records(self, issuer_id: str) -> tuple:
         return tuple(Document(bytes(r[0])) for r in self.db.execute(
             "SELECT doc FROM erecords WHERE issuer_id=? ORDER BY rowid", (issuer_id,)))
 
+    @_locked
     def read_state(self, issuer_id: str):
         row = self.db.execute("SELECT doc FROM estates WHERE issuer_id=?", (issuer_id,)).fetchone()
         return None if row is None else Document(bytes(row[0]))
 
+    @_locked
     def jobs(self) -> list:
         return [Document(bytes(r[0])).read() for r in self.db.execute("SELECT doc FROM ejobs ORDER BY rowid")]
 
     def _receipt(self, batch_id, status, **extra) -> Document:
         return Document.from_dict({"schema": "CommitReceipt.v1", "batch_id": batch_id, "status": status, **extra})
 
+    @_locked
     def commit(self, batch: Document) -> Document:
         b = batch.read()
         batch_id = b.get("batch_id")
@@ -162,6 +182,7 @@ class SQLiteEvidenceStore:
             raise
         return self._receipt(batch_id, "COMMITTED")
 
+    @_locked
     def close(self):
         self.db.close()
 

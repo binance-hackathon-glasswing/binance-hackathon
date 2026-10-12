@@ -47,6 +47,20 @@
    "steps": [
     "with only a stale original 8-K (2026-09-25) in the index, the amendment is STALE_EVENT and yields no directive"
    ]
+  },
+  {
+   "sequence_id": "RF-AMENDED-TWO-ORIGINALS",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "amended",
+   "review": "V04",
+   "fixtures": [
+    "RF2-2.06-ORIGINAL-AUGUST",
+    "RF2-2.06-UNRELATED-OCTOBER",
+    "RF2-2.06-AMENDED-NO-DATE"
+   ],
+   "steps": [
+    "with two same-item originals indexed and no stated date, the amendment cannot be dated: AMENDED_ORIGINAL_UNKNOWN and no directive (it is never dated by the latest, unrelated original)"
+   ]
   }
  ],
  "fixtures": [
@@ -1074,6 +1088,432 @@
      "This amendment provides additional information.",
      "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
      "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "AMENDED_ORIGINAL_UNKNOWN",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-DECLINED-CANNOT",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "negated",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V01), frozen before the fix: a declined conclusion is no occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000401",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T20:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee declined to conclude that the previously issued financial statements for fiscal 2026 cannot be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-DISAGREES",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "negated",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V01), frozen before the fix: the issuer disputes non-reliance.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000402",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T20:02:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "The Company disagrees with the assertion that its previously issued financial statements for fiscal 2026 cannot be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-RESCINDED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "negated",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V01), frozen before the fix: a rescinded determination is no occurrence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000403",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T20:04:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee rescinded its earlier determination that the financial statements for fiscal 2026 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-DENIAL-CANNOT-BE-RELIED",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "negated",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V02), frozen before the fix: 'cannot be relied upon' about posts claiming an incident is a denial, not an occurrence (non-reliance wording only counts for Item 4.02).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000404",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T20:06:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "Posts claiming the Company suffered a cybersecurity incident cannot be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AND-SHOULD-BE-RESTATED",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V03), frozen before the fix: '... should no longer be relied upon and should be restated'.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000405",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T20:08:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon and should be restated."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-RELY-UPON",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V03), frozen before the fix: 'investors should no longer rely upon'.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000406",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T20:10:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee concluded that investors should no longer rely upon the previously issued financial statements for the second quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-COMBINED-HEADING",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "supported",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V03), frozen before the fix: a heading that lists two items (common in restructuring 8-Ks).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000407",
+    "form": "8-K",
+    "items": [
+     "2.05",
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T20:12:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Items 2.05 and 2.06. Costs Associated with Exit or Disposal Activities; Material Impairments.",
+     "On October 7, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment for the third quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": true
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-TITLE-WORD-STARTS-BODY",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "supported",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V03), frozen before the fix: the body starts with the title's word ('Impairment charges ... were recorded'); the title must not swallow it.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000408",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T20:14:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Impairment charges of $1.4 billion for goodwill of the networking segment were recorded on October 7, 2026."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": true
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-AMENDED-PREVIOUSLY-AMENDED-DATE",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "amended-unknown-original",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: the only date is when the original was previously amended, not when it was filed; no original is indexed.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000409",
+    "form": "8-K/A",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-09T15:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "This Amendment No. 2 amends the Current Report on Form 8-K filed in July 2026, as previously amended on October 7, 2026, to provide additional information.",
+     "Item 1.05 Material Cybersecurity Incidents.",
+     "On July 6, 2026, the Company identified a cybersecurity incident affecting its internal business systems."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "AMENDED_ORIGINAL_UNKNOWN",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-AMENDED-FILED-WITHOUT-ON",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "stale",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: 'filed August 3, 2026' (no 'on').",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000410",
+    "form": "8-K/A",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-09T15:02:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "This Amendment No. 1 amends the Current Report on Form 8-K filed August 3, 2026 to provide the amount of the charge.",
+     "Item 2.06 Material Impairments.",
+     "On July 31, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-AMENDED-DATED-NB-HYPHEN",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "stale",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: 'Form 8‑K dated July 31, 2026' with a non-breaking hyphen.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000411",
+    "form": "8-K/A",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-09T15:04:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "This Amendment No. 1 amends the Current Report on Form 8‑K dated July 31, 2026 to provide the amount of the charge.",
+     "Item 2.06 Material Impairments.",
+     "On July 31, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMENDED-FUTURE-STATED-DATE",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "amended-unknown-original",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: a stated original date after the amendment's own acceptance is impossible and is ignored.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000412",
+    "form": "8-K/A",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-09T15:06:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on December 15, 2026.",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "AMENDED_ORIGINAL_UNKNOWN",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMENDED-OLD-CONCLUSION",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "stale",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: an amendment whose verified clause dates the conclusion months back is no fresh event, whatever date it gives for the original.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000413",
+    "form": "8-K/A",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-09T15:08:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on October 8, 2026.",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On July 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the first quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-ORIGINAL-AUGUST",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "stale",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: a stale original 2.06 8-K (2026-08-03), for the F1 sequence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000414",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-08-03T20:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "On July 31, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-UNRELATED-OCTOBER",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "ambiguous",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: a later, unrelated 2.06 8-K that does not verify (conditional), for the F1 sequence.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000415",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-06T20:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 2.06 Material Impairments.",
+     "The Board of Directors believes that an impairment charge would be required if the networking segment is sold."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NOT_ASSERTED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-AMENDED-NO-DATE",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "amended-unknown-original",
+   "note": "Added 2026-10-12 from the internal red-team of the review fixes (IDEA-041 §7.2 V04), frozen before the fix: an 8-K/A naming no date; alone it is unknown.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000416",
+    "form": "8-K/A",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T21:30:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "This Amendment No. 1 amends the Original Report to provide the amount of the charge.",
+     "Item 2.06 Material Impairments.",
+     "On July 31, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment."
     ]
    },
    "expect": {
