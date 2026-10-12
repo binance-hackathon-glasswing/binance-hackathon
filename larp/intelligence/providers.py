@@ -385,6 +385,15 @@ def _json_object(text: str):
     value = json.loads(text)
     if type(value) is not dict:
         raise _ProviderReply("OUTPUT_NOT_JSON_OBJECT")
+    pending = [(value, 0)]
+    while pending:
+        node, depth = pending.pop()
+        if depth > 64:
+            raise _ProviderReply("OUTPUT_TOO_DEEP")
+        if type(node) is dict:
+            pending.extend((v, depth + 1) for v in node.values())
+        elif type(node) is list:
+            pending.extend((v, depth + 1) for v in node)
     return value
 
 

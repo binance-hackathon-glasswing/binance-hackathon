@@ -508,3 +508,5 @@ Next (not in this commit): adapters for G1–G4 and the full thin path from PARA
 ## 2026-10-12 RT21 — PR #9 remediation (IDEA-043), prospective criteria
 
 C2 must use an exact capture of the reviewed producer golden request/result. C4 must use ContextBuilder, StrategyPolicy and RuntimePlanner against disposable PostgreSQL and commit a BUY execution command with resource reservations; remove the obsolete expected-failure raw wiring. C1/C3 remain real producer/consumer validation. Commit/push before execution. Whole-system/host acceptance stays separate.
+
+RT21 correction: combined-suite/CI diagnostics found the deep-provider-output rejection depended on the Python recursion limit. Bound parsed output depth explicitly at 64, preserving raw reply artifacts and fail-closed ERROR. Existing hostile-output regression must pass at ordinary and raised interpreter recursion limits; this is a deterministic record-safety fix, not a live provider result.
