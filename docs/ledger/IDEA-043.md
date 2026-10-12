@@ -29,3 +29,10 @@ NOT RUN. Initial checkout is clean main at origin/main. Five open PRs; #13/#14 a
 - PR14: author B1/B2/B3 and S1-S5 fixes preserved; independently found I4 producer/runtime shape mismatches and added actual-consumer regressions. Focused component suite before final author follow-up: 125 passed, 3 consumer/recorded-response skips, 58 subtests. Latest author head 980529a adds immutable NOT_SUBMITTED facts and safe recovery authority.
 - Combined PR13 diagnostics at 8f7830e: 907 passed, 4 skips, 1105 subtests, 3 failures (deep output recursion dependence, obsolete purpose test assertion, controlled refusal on malformed restored execution state). Fixed without relaxing validators. At c78e2a9, combined integration/receipt/restore/provider focus: 150 passed, 96 subtests, no skips. Earlier context tests exposed minimal offline fixture mode handling, now fixed while actual runtime mode remains authoritative.
 - Outstanding: final combined system regressions/full suite/Linux CI; PR9/14/13 merges; foundation PR11 review/merge; separate system-testing branch and initial run. Production activation gates stay open.
+
+### Final integration verification before PR13/PR11 promotion
+
+- PR9 merged after CI 38230505451 PASS; PR14 merged after CI 38229704347 PASS (latest 173b35c differs from the verified code only in its result docs).
+- At c4aec12: complete PostgreSQL suite **913 passed, 4 skipped, 1109 subtests** (108.22 s). Skips are three Linux bubblewrap checks and the external recorded-market artifact test. Actual service/receipt/reservation/audit/replay test and published RF1 independent-risk test PASS.
+- Follow-up at 411ced9: focused safety/profile/manifest/operations tests **17 passed, 2 PostgreSQL-dependent skips, 3 subtests**. Prompts and Dockerfile are manifested; tampering either refuses release. Asymmetric gas regression ensures another token's larger budget cannot preempt an affordable mandatory sale. Full Linux CI on final head is required before merging.
+- Kit/vendor copies unchanged; no secrets, environment files or private captures added. Final docs update leaves broad production/real-data backlog items open with explicit owners.
