@@ -335,3 +335,22 @@ Each of the ten comments was checked against the code at `092d9c5` before writin
 - **V10 · One set of constants.** `larp/ports.py` and `larp/runtime/live.py` import `SYMBOLS`, `TX` and `ADDRESS` from `larp.audit.protocol` instead of copying them.
 
 Pass: every test above, the full suite on PostgreSQL, and CI green. Each thread gets a reply naming the commit.
+
+#### 4.5 Results (2026-10-12)
+Criteria pushed at `e05a577` (CI green, [run 38207095863](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38207095863)) before any change below. Fixes at `6228b84`, Linux CI green incl. Terraform ([run 38207800824](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38207800824)). Local PostgreSQL 16 run: 665 passed, 4 skipped, 808 subtests. The V1 and V3 tests were also run against the old coordinator and protocol code, and all three fail there, so they catch the reported bugs.
+- **V1 · PASS.** `larp/runtime/coordinator.py` (probe; `record_round_health(counted=...)`); `test_h3_h5_v1_repeated_failures_halt_clears_only_when_the_planner_works`, `test_v1_a_round_blocked_by_the_clock_does_not_count`. Runbook §3 updated.
+- **V2 · PASS.** `larp/runtime/register.py`; `test_v2_a_register_without_its_proposal_is_refused`.
+- **V3 · PASS.** `check_orders` accepts zero orders in a GAS_TOP_UP round; `test_v3_a_rejected_gas_top_up_round_still_closes_and_logs`.
+- **V4 · PASS for the exit code; secrets delivery still OPEN.**
+  - Exit 4 covers `LiveStartRefused` and start-phase contract refusals. Storage `Conflict` and `IntegrityError`, and anything raised inside a round, still exit 1 and restart.
+  - The unit has `RestartPreventExitStatus=2 3 4`. Tests: `test_v4_*` and the unit test.
+  - **Open (Keegan, host step):** nothing delivers the runtime secrets into the process (no `EnvironmentFile`, no Secrets Manager loader). Runbook §1. Its review thread is left open.
+- **V5 · PASS.** PR #13 description updated.
+- **V6 · PASS.** `switch_wallet` checks `execution_records`; the W3 test no longer updates `commands` as the owner.
+- **V7 · PASS.** Three queries whatever the number of events; `test_v7_status_queries_do_not_grow_with_events`.
+- **V8 · PASS.**
+  - Column-level grant without `signed`, the redaction marker in the export, and the catalogue-based column list.
+  - Tests: `test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes`, `test_x2_v8_backup_round_trip_keeps_the_execution_rows_but_never_signed_bytes`. The second checks Isaac's `lookup` refusing a restored row once his module is merged (skipped until then).
+  - Depends on the PR #14 B3 recovery rule for never-broadcast signed attempts after a restore. Its review thread is left open for the reviewer.
+- **V9 · PASS.** `archive_retention_days >= 82`; Terraform test with 81 is refused (CI).
+- **V10 · PASS.** Shared constants imported from `larp.audit.protocol`.
