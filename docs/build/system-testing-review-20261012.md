@@ -6,6 +6,7 @@ The user requested a comprehensive review of the entire system-testing codebase,
 
 - Repository: `/Users/songyaozhu/binance-hackathon`, remote `https://github.com/binance-hackathon-glasswing/binance-hackathon.git`.
 - Work branch: `codex/system-testing-review-20261012`, based on `213a782`.
+- Published implementation commit: `5dc42de6d330c8e26a1e6f719b3c27da55d2f516`. Draft PR: [#18](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/18).
 - **PR base: `codex/system-testing-20261012`**, explicitly corrected by the user. Discover the existing draft PR with `gh pr list --head codex/system-testing-review-20261012`; update that PR rather than creating a duplicate. No merge is authorized.
 - Read `AGENTS.md`, then `docs/skill/SKILL.md` under its reading rules, the LEDGER table, this file, `docs/ledger/IDEA-044.md`, and relevant `docs/INCOMPLETE_WORK.md` entries.
 - Code affecting decisions/trades/logging **must be committed and pushed before execution, including offline tests**. This was followed: no modified repo Python/tests/demos/probes ran before this checkpoint. Every subsequent code fix must also be published before testing it. Never force-push/rebase/amend pushed history.
@@ -44,3 +45,5 @@ Implemented fixes cover expired unsigned attempts, RPC/market/signer failures, c
 `larp.runtime.service.build_driver` deliberately raises `NotIntegrated`; live Executor/router/native-BNB-finality and hosted recovery/signing/source/model/economic/calendar evidence remain unqualified. Existing owners: Keegan + Isaac (runtime/execution/host), Keith + Isaac (market/cost/first BNB), Yao Zhu + independent annotator (real documents/rights/model), team (hosting/rota/final freeze). Original-data research reruns under GAP-66 remain pending. Synthetic fixes do not establish live readiness.
 
 This is a **published implementation checkpoint**, not a completed/verified session. Functional validation, generated fixtures, final review and PR readiness remain open. The shared worktree also retains user-owned untracked material, so the strict AGENTS clean-worktree handoff check is not satisfied. List any actual unpushed commits if publication failed; do not call it fully ready while these conditions remain.
+
+Verified at publication: no unpushed review-branch commits and no unstaged tracked changes; only `Claude outputs/` is untracked. Local `main` is `a21d03432c1436dc676ff5fb4afefbf223dfa520`; cached `origin/main` is `5e945e148314b395a09ffe3e8a1461467b617114`, so the strict main-equality check also fails. Both refs were left untouched; this PR's target is the separate testing branch. Do not rewrite or synchronize main as a side effect of resuming this review.

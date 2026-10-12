@@ -4,6 +4,7 @@
 - Status: implementation checkpoint at user-requested usage stop; **NOT VALIDATED**. Prospective acceptance below, repository tests NOT RUN. Continue from `docs/build/system-testing-review-20261012.md` and the draft PR targeting the testing branch.
 - Scope: all first-party code, configuration, migrations, deployment definitions and tests on `codex/system-testing-20261012` at `213a782`. Immutable official-kit/vendor copies are references only. Existing untracked `Claude outputs/` is user material, excluded.
 - Delivery: ordinary commits on `codex/system-testing-review-20261012`, PR **to `codex/system-testing-20261012`** as explicitly requested. No merge or live activation is implied.
+- Published checkpoint: implementation `5dc42de6d330c8e26a1e6f719b3c27da55d2f516`, draft [PR #18](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/18). No local functional execution. CI/final validation remains continuation work.
 - Method: inspect components, record expected counterexamples, implement fixes, publish before execution, validate components then integration/system, independently re-review fixes and red-team important boundaries. External effects use synthetic ports and disposable databases; no production credentials, transactions, uploads or cloud provisioning.
 
 ## Prospective acceptance (recorded before implementation/testing)
