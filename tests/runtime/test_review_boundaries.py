@@ -76,8 +76,9 @@ class ArchiveAdapter(DatabaseCase):
         def transport(dsn, *a, **kw):
             seen.append(dsn)
             return connect(self.store._dsn)
+        expected = self.store.verify('run')  # outside the patch: only the IAM store's connections are counted
         with patch('psycopg.connect', side_effect=transport):
-            self.assertEqual(store.verify('run'), self.store.verify('run'))
+            self.assertEqual(store.verify('run'), expected)
             store.load('run')
             store.verified_snapshot('run')
         self.assertEqual(rds.generate_db_auth_token.call_count, len(seen))
