@@ -85,6 +85,7 @@ class CoordinatorWithStrategy(DatabaseCase):
             'operating_name_weight':[1,5], 'operating_gross_weight':[4,5],
             'regime_gross_weight':[4,5], 'top_up_below_gross_weight':[3,4]}))
         context = fixture.context.read()
+        context['portfolio'].update(run_id='run',wallet_id='wallet')
         profile = context['profile']
         profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
         with self.store.transaction() as db:
@@ -105,7 +106,7 @@ class CoordinatorWithStrategy(DatabaseCase):
         runtime.start('r',doc(request),now,defer_close=True)
         with self.store.transaction() as db:
             commands = db.execute("SELECT payload FROM commands WHERE run_id='run'").fetchall()
-        self.assertEqual(len(commands),1)
+        self.assertEqual(len(commands),1,self.store.load('run').read()['projection']['round_records']['r']['plan'])
         command = Document(bytes(commands[0][0])).read()
         self.assertEqual(command['kind'],'EXECUTION_REQUEST')
         self.assertEqual(command['payload']['side'],'BUY')
