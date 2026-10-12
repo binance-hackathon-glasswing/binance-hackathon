@@ -1,0 +1,30 @@
+{
+  "branch": "codex/system-testing-20261012",
+  "checks": [
+    {
+      "elapsed_seconds": 38.721,
+      "exit_code": 0,
+      "log_sha256": "d0835aaba610b0b020ff9216c9c9a481a939e916eb435af0d5bd76c9fc13205e",
+      "name": "system",
+      "passed": 78,
+      "status": "PASS",
+      "subtests_passed": 31
+    },
+    {
+      "ci_run": "38234572440",
+      "execution": "GITHUB_ACTIONS_LINUX",
+      "name": "offline_demo",
+      "proof": "Successful runtime/demo steps and identical runtime/config/deploy/migration tree",
+      "status": "PASS",
+      "tested_commit": "e44e5b84ecbcf89108b9187ba1d0bb7f19ad996e",
+      "url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38234572440"
+    }
+  ],
+  "commit": "52d35197e84a5875bea20d01d8efce9d93c85119",
+  "completed_utc": "2026-10-12T10:15:29.436604+00:00",
+  "schema": "SystemTestReport.v1",
+  "scope": "Disposable PostgreSQL; local fake HTTP/EDGAR/venue/chain/signing; no production credentials",
+  "started_utc": "2026-10-12T10:14:50.715037+00:00",
+  "status": "PASS",
+  "synthetic": true
+}
