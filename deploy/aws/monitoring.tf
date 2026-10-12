@@ -30,6 +30,22 @@ resource "aws_cloudwatch_metric_alarm" "host" {
   alarm_actions       = var.alarm_topic_arns
   dimensions          = { InstanceId = each.value.id }
 }
+# Moves the instance to healthy hardware with the same disk and address when AWS reports a host fault; the
+# services restart under systemd without a human action (F-114). Missing data never triggers a recovery.
+resource "aws_cloudwatch_metric_alarm" "recover" {
+  for_each            = aws_instance.host
+  alarm_name          = "${var.name}-${each.key}-auto-recover"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed_System"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = concat(["arn:aws:automate:${var.region}:ec2:recover"], var.alarm_topic_arns)
+  dimensions          = { InstanceId = each.value.id }
+}
 resource "aws_cloudwatch_metric_alarm" "maintenance" {
   for_each            = toset(["Healthy", "Heartbeat"])
   alarm_name          = "${var.name}-archive-${lower(each.key)}"
