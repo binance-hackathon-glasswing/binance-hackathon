@@ -203,6 +203,13 @@ class PostgresExecutionTests(DatabaseCase):
         from larp.execution import Signed
         e,v=self.execution_store.execution_authority()
         with self.assertRaises(Conflict):self.execution_store.check_broadcast(Signed(a.raw_hex,a.tx_hash),e,v)
+        facts=[]
+        service=self.service(facts.append)
+        service.advance(key,1002)
+        service.round_terminal=lambda _:True
+        service.advance(key,1003)
+        self.assertEqual(facts[0],facts[1])
+        self.assertEqual(facts[0]['kind'],'NOT_SUBMITTED')
 
     @unittest.skipUnless(importlib.util.find_spec('eth_account'),'signer dependency supplied by integration CI lock')
     def test_real_ephemeral_signer_uses_postgres_registry(self):

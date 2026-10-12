@@ -104,13 +104,17 @@ class ExecutionService:
                 self.observe(fact)
         if state.status == 'ABORTED' and not any(a.step == 'SWAP' and a.broadcast_at is not None
                                                  for a in state.attempts):
-            from datetime import datetime, timezone
-            self.observe(dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER',
+            identity = state.intent.key+':not-submitted'
+            fact = self.executor.store.lookup_observation(identity)
+            if fact is None:
+                fact = dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER',
                 kind='NOT_SUBMITTED', settlement='FINAL', run_id=state.intent.run_id, wallet_id=self.wallet_id,
                 round_id=state.intent.round_id, intent_id=state.intent.intent_id,
-                event_id=state.intent.key+':not-submitted', observed_at=datetime.fromtimestamp(
+                event_id=identity, observed_at=datetime.fromtimestamp(
                     state.last_observed_at, timezone.utc).isoformat(), intent_terminal=True,
-                round_terminal=self.round_terminal(state), reason='ABORTED_BEFORE_SWAP_BROADCAST'))
+                round_terminal=self.round_terminal(state), reason='ABORTED_BEFORE_SWAP_BROADCAST')
+                fact = self.executor.store.put_observation(fact, self.epoch, self.authority_version)
+            self.observe(fact)
         if state.status!='ACTIVE':return state
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':
             if state.prepare_probes >= state.intent.max_prepare_probes:
