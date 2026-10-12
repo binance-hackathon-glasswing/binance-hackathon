@@ -370,3 +370,15 @@ Authorized by the user on 2026-10-12 ("fix all the comments on the PR"). Finding
 - **S4 · Terraform.** A `runtime` secret (metadata only; values are provisioned outside Terraform) is readable only by the primary and standby hosts. A Terraform test asserts the secret exists. CI validate and plan pass.
 
 Pass: tests above, full suite, CI green; runbook §1 updated; the V4 review thread replied to and resolved.
+
+#### 4.6 Results (2026-10-12)
+Criteria pushed at `fa5bf74` (CI green, [run 38215968402](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38215968402)) before any change below.
+- Code at `08ebb80`. Its Terraform test failed in CI: `safe_defaults` still asserted three service secrets, and I had not searched the tests for that count. Fixed at `1a388a8`, Linux CI green incl. Terraform ([run 38216749291](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38216749291)).
+- Local PostgreSQL 16 run: 670 passed, 4 skipped, 808 subtests.
+
+Results:
+- **S1 · PASS.** `larp/runtime/credentials.py` (named so it cannot shadow the standard `secrets` module); `tests/runtime/test_credentials.py`. A provider error whose text carries a value surfaces only its type.
+- **S2 · PASS.** `larp/runtime/service.py` no longer imports `os`, and a test checks that. `runtime_secrets` loads nothing for `offline` and `paper`, and refuses `dev` and `live` without a secret ID or region (exit 4). It returns the stored values even when the environment holds different ones.
+- **S3 · PASS.** `RUNTIME_SECRETS` is `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY`, `BINANCE_SECRET_KEY`. `AI_SEEDS_SECRET` is refused on the runtime host (`UPLOADER_ONLY`). W1 is updated. **This supersedes §3.2 W1's list**, which required the audit secret in the runtime.
+- **S4 · PASS.** `deploy/aws/hosts.tf`: `local.secret_readers` maps each secret to its only readers, with `runtime` read by primary and standby. The `runtime_secret_exists` test passes and `safe_defaults` counts four secrets.
+- Runbook §1 and §6 (activation) updated. The V4 review thread is closed; review comment V8 also had no remaining work in this PR.
