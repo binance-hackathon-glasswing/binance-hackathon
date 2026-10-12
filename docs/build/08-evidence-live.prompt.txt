@@ -1,0 +1,29 @@
+You are building Yao Zhu's part of LARP's deployment: the live evidence path. Today the assessor runs on synthetic filings with a deterministic rule baseline, the free sources are configured but not switched on, and the red-flag classes exist only as a decision. When your PR is integrated with the other three, LARP must ingest real filings and official releases continuously, assess them within budget with complete records, and hand verified red-flag findings to the policy.
+
+Start on a new branch codex/deploy-evidence from origin/codex/engine-foundation at the commit that adds docs/build/DEPLOYMENT_BUILD.md. That brief is part of this prompt: read it first, then AGENTS.md, docs/skill/SKILL.md (§0, the never-do list, F-49, F-62, Q-16), the LEDGER table, IDEA-035 (A2, A4, A8, B1, B2, B8, §6, §7 items 7-9, §8.2), IDEA-031, IDEA-033, IDEA-029/030, IDEA-018 §4.4, IDEA-032 S1, and GAP-23/24/26/28/57/67 in docs/INCOMPLETE_WORK.md. Record all work in IDEA-041 (create docs/ledger/IDEA-041.md). Your reviewer is Keith.
+
+Own only the paths the brief assigns to you. Shared docs and the ledger index are Keegan's: list the edits you need in IDEA-041, including licence-register rows and deviations.
+
+Deliver:
+
+1. Live sources on (DR-12; GAP-23/24). Switch the configured basket (SEC EDGAR filings and SEC news, Federal Register/BIS and public inspection, DOJ and EC original material; FTC stays disabled until its connectivity is resolved) from configuration to running ingestion: a real SEC User-Agent from LARP_SEC_USER_AGENT (no fabricated contact), dated terms captures with their hashes (terms_evidence_sha256 must not be null for any enabled source), an artifact store outside Git (LARP_ARTIFACT_ROOT) with hashes in the records, and a polling cadence per source that respects fair-access limits. Prove a 24-hour live ingestion run with no unexplained gap, and record each source's licence-register row for Keegan.
+
+2. Assessor model (B8; DR-11; interface I5). Build a hosted-model adapter for the two candidates the team named (Claude, ChatGPT) behind the existing deterministic verifier, with a pinned model ID, request/response records complete enough for F-49 (c) and a reasoning summary suitable for the ai-seeds cot. Keep the deterministic assessor as the fallback and as the v1.0 default if no model is chosen. Run the bake-off the team asked for after system testing: 15-25 recent real 8-K/6-K filings for the five issuers, fetched by our own tools; measure schema-valid rate, claim-verification pass rate, latency within the 60 s / 6-tool budget, and cost per assessment. Record a recommendation by Oct 19; the team decides by Oct 22. Note for the team: choosing ChatGPT keeps the proposal's declared provider, choosing Claude is a deviation (IDEA-035 §8.2); budget or free credits are needed either way.
+
+3. Red-flag predicate records (B1; DR-10; interface I8; with Keith). A versioned record per enabled class: Class 1 Item 4.02 (sell), Class 2 Items 1.05 and 2.06 (block buys for 5 sessions), with factual condition, issuer, affected period, required sources and fields, action, block/expiry/reset conditions, and verification fixtures (IDEA-018 §4.4, IDEA-032 S1): supported, unsupported, negated, stale, amended, corrected and wrong-issuer cases. Class 3 statements stay SHADOW (B2). Zero unsupported or ambiguous fixtures may produce a finding that authorizes action. Publish the records for Keith on Oct 14.
+
+4. Evidence authority and review jobs. Wire the adopted classes into larp/integration/contract.py authority (default still SHADOW for anything not adopted). Finish the GAP-28 follow-up: count a review attempt only for results of the statement's own review job (IDEA-035 A4). Make sure the issuer evidence state survives restart and replay (A2), and that a correction or withdrawal at the source releases the latch (A8) only after the newer revision is read completely (R25).
+
+5. Model I/O for the official round log (DR-07; interface I5; with Keegan). Guarantee that every AssessmentResult carries what Keegan's round-log builder needs: the exact model requests and responses (or a stable reference to stored bytes), the reasoning summary, tool calls and results, and a rationale that does not invent reasoning. Rounds with no model call must still say so. Test against Keegan's builder once he publishes it (Oct 14).
+
+6. Real-document evaluation (GAP-67 T01). With an annotator who did not implement the verifier, label a small rights-cleared set of real filings and run the prepared evaluation. Report it as PASS, FAIL or INCONCLUSIVE with sample counts; it informs the team's B8 and B1 decisions and is not a profit claim.
+
+Acceptance (write criteria in IDEA-041 and push them before running anything):
+- All existing tests pass, including the red-team suites and the 13 foundation tests.
+- Live mode refuses to start for any enabled source missing its terms hash, User-Agent or artifact store.
+- The 24-hour ingestion run, the model bake-off and the predicate fixtures are recorded with commit SHAs.
+- Assessments stay within the declared budget (6 tool calls, 60 s); an over-budget assessment abstains rather than blocks the round.
+
+Dates: interfaces I5/I8 agreed Oct 12; SEC User-Agent and sources live by Oct 14; predicate records Oct 14; bake-off recommendation Oct 19; final model or fallback by the Oct 22 cut line.
+
+You need from the team: the SEC contact identity, the model provider choice, API key and budget (or the decision to ship the deterministic assessor), an independent annotator for T01. Nothing here authorizes organiser messages, paid services beyond the agreed budget, or merges to main.
