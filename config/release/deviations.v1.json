@@ -1,8 +1,8 @@
 {
  "schema": "DeviationsRegister.v1",
- "updated": "2026-10-11",
+ "updated": "2026-10-12",
  "proposal": "docs/proposal/proposal_answers.md",
- "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows from IDEA-039-041 are added when those records exist.",
+ "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 §4.3); details that exist only in owner code not yet integrated are added when it is integrated.",
  "rows": [
   {
    "id": "DEV-01",
@@ -286,6 +286,20 @@
     "IDEA-018"
    ],
    "decided": "OPEN",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-21",
+   "area": "Gas reserve",
+   "declared": "A gas-reserve floor keeps enough gas for exits.",
+   "v1_behaviour": "The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT → BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. The first BNB must already be in the wallet (Q-03).",
+   "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled.",
+   "evidence": [
+    "IDEA-035",
+    "GAP-49",
+    "Q-03"
+   ],
+   "decided": "2026-10-11",
    "status": "DRAFT"
   }
  ]

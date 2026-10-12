@@ -178,6 +178,7 @@ Dev-wallet budget (F-65): ≤ ~30% for plumbing tests, ~20% for the dress rehear
 | DEV-18 | Standby | "The deployment is one primary runtime plus a fenced cold standby." | OPEN: primary with automatic supervisor restart is built; the fenced cold standby is decided after exploring AWS. | Team decision deferred (GAP-02); standby promotion stays disabled until then. | D-05, GAP-02, IDEA-035 | OPEN | DRAFT |
 | DEV-19 | Assessor model | "**Hosted reasoning LLM for the evidence step:**" | OPEN: Claude or ChatGPT chosen after system testing (B8), or the deterministic assessor (no model call) declared as v1.0. | Model choice and budget deferred; paid APIs need a budget. | IDEA-035, GAP-57, D-03 | OPEN | DRAFT |
 | DEV-20 | Event planner | "an event-calendar planner," | OPEN: not built. Scheduled macro and earnings events have no per-class rule in v1.0 code; only the end-of-run schedule exists. | Not yet decided (GAP-64); listed so the register is complete. | GAP-64, IDEA-018 | OPEN | DRAFT |
+| DEV-21 | Gas reserve | "A gas-reserve floor keeps enough gas for exits." | The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT → BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. The first BNB must already be in the wallet (Q-03). | Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled. | IDEA-035, GAP-49, Q-03 | 2026-10-11 | DRAFT |
 
 <!-- deviations:end -->
 
