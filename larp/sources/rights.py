@@ -6,6 +6,7 @@ by the publisher's reuse terms, is rejected. Every removal is recorded so the au
 This is a conservative filter, not legal advice; a notice it does not recognise is not proof of permission.
 """
 
+from html import unescape
 import re
 
 MEDIA = re.compile(r"<(?:img|figure|video|audio|iframe|object|embed|picture|svg)\b[^>]*?(?:/>|>.*?</(?:figure|video|audio|"
@@ -20,16 +21,24 @@ NOT_COVERED = re.compile(r"\bnot\s+(?:covered|licensed)\s+(?:by|under)\b|\bmay\s
 PARAGRAPH = re.compile(r"(<p\b[^>]*>.*?</p>|<li\b[^>]*>.*?</li>|<blockquote\b[^>]*>.*?</blockquote>)", re.I | re.S)
 
 
+def _visible(value: str) -> str:
+    # Inline markup can split one word; block markup separates words. Normalize
+    # entities and invisible formatting before applying the same rights predicates.
+    value = unescape(value)
+    value = re.sub(r"</?(?:p|li|div|br|h[1-6]|blockquote)\b[^>]*>", " ", value, flags=re.I)
+    return re.sub(r"[\u200b-\u200d\ufeff]", "", re.sub(r"<[^>]+>", "", value))
+
+
 def filter_item(title: str | None, body: str | None) -> tuple:
     """(permitted body or None, exclusions list, rejection reason or None)."""
     exclusions = []
-    if title and NOTICE.search(title):
+    if title and NOTICE.search(_visible(title)):
         return None, ["TITLE_THIRD_PARTY_NOTICE"], "THIRD_PARTY_RIGHTS"
     if body is None:
         return None, exclusions, None
     first = PARAGRAPH.search(body)
     head = first.group(0) if first else body[:200]  # the item's header: its first paragraph
-    if NOTICE.search(re.sub(r"<[^>]+>", " ", head)) or NOT_COVERED.search(body):
+    if NOTICE.search(_visible(head)) or NOT_COVERED.search(_visible(body)):
         return None, ["ITEM_LEVEL_RIGHTS_NOTICE"], "THIRD_PARTY_RIGHTS"
     kept = body
     for pattern, label in ((MEDIA, "MEDIA_REMOVED"), (ATTACHMENT, "ATTACHMENT_REMOVED")):
@@ -41,7 +50,7 @@ def filter_item(title: str | None, body: str | None) -> tuple:
 
     def drop(match):
         nonlocal removed
-        if NOTICE.search(re.sub(r"<[^>]+>", " ", match.group(0))):
+        if NOTICE.search(_visible(match.group(0))):
             removed += 1
             return " "
         return match.group(0)
@@ -49,6 +58,6 @@ def filter_item(title: str | None, body: str | None) -> tuple:
     kept = PARAGRAPH.sub(drop, kept)
     if removed:
         exclusions.append(f"THIRD_PARTY_PARAGRAPHS_REMOVED:{removed}")
-    if NOTICE.search(re.sub(r"<[^>]+>", " ", kept)):
+    if NOTICE.search(_visible(kept)):
         return None, exclusions + ["UNSEPARABLE_THIRD_PARTY_NOTICE"], "THIRD_PARTY_RIGHTS"
     return kept, exclusions, None

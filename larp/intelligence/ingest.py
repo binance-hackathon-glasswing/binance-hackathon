@@ -88,6 +88,7 @@ class Ingestor:
         if listing.status == "OK":
             try:
                 check_identity(listing.submissions, entry.cik, entry.entity_name)
+                rows = listing_rows(listing.submissions, listing.history)
             except IntelligenceError as exc:
                 listing = type(listing)("INVALID", listing.retrieved_ms, None, listing.response_sha256, str(exc))
         if listing.status != "OK":
@@ -100,8 +101,7 @@ class Ingestor:
         old_watermark, newest = cursor["watermark_ms"], cursor["watermark_ms"]
         if listing.history_status == "PARTIAL":
             outcome["status"] = "PARTIAL_HISTORY"
-        for row in sorted(listing_rows(listing.submissions, listing.history),
-                          key=lambda r: (r["original_ms"] or 0, r["accession"] or "")):
+        for row in sorted(rows, key=lambda r: (r["original_ms"] or 0, str(r["accession"] or ""))):
             if row["malformed"]:
                 outcome["malformed_rows"] += 1
                 continue
@@ -119,7 +119,8 @@ class Ingestor:
                 outcome["rejected_future"].append(accession)
                 continue
             known = cursor["known"].get(accession)
-            if (known or accession in cursor["dead_letter"]) and accession not in recheck:
+            if (known or accession in cursor["dead_letter"]) and accession not in recheck \
+                    and accession not in cursor["pending"]:
                 outcome["duplicates"] += 1
                 continue
             record = self._ingest(entry, row, form_class, cursor, known, mode, old_watermark, outcome,
@@ -133,8 +134,14 @@ class Ingestor:
                 newest = row["original_ms"] if newest is None else max(newest, row["original_ms"])
         cursor["watermark_ms"] = newest
         self._bound_known(cursor)
-        health.update(status="OK", last_success_ms=listing.retrieved_ms, unavailable_since_ms=None,
-                      consecutive_failures=0, last_error=None)
+        incomplete = (listing.history_status == "PARTIAL" or outcome["malformed_rows"]
+                      or outcome["unexpected_forms"] or outcome["rejected_future"]
+                      or cursor["pending"] or cursor["dead_letter"]
+                      or any(k.get("incomplete") for k in cursor["known"].values()))
+        health.update(status="INCOMPLETE" if incomplete else "OK", last_success_ms=listing.retrieved_ms,
+                      unavailable_since_ms=None, consecutive_failures=0,
+                      last_error="EVIDENCE_COVERAGE_INCOMPLETE" if incomplete else None)
+        outcome["coverage_complete"] = not bool(incomplete)
         return self._commit(cursor, expected_version, health, records, jobs, outcome, listing)
 
     def _ingest(self, entry, row, form_class, cursor, known, mode, old_watermark, outcome, listing_hash):
@@ -171,8 +178,14 @@ class Ingestor:
             outcome["dead_letter"].append(accession)
         else:
             quality = "SYNTHETIC" if self.synthetic else "VALID"
-        content_hash = digest("larp.intel.content.v1", {"documents": sorted(
-            [d["name"], d["text_sha256"]] for d in documents if d["text_sha256"])})
+            cursor["dead_letter"].pop(accession, None)
+        incomplete = bool((failed and primary_ok) or fetched.truncated)
+        content = {"documents": sorted([d["name"], d["text_sha256"]] for d in documents if d["text_sha256"])}
+        if incomplete:
+            # Completeness is part of what was observed. A complete reread of identical
+            # bytes after an index failure or a bound must create a recoverable revision.
+            content["incomplete"] = True
+        content_hash = digest("larp.intel.content.v1", content)
         if known and known["content_hash"] == content_hash:
             outcome["duplicates"] += 1
             return None
@@ -188,11 +201,13 @@ class Ingestor:
                   "revision": known["revision"] + 1 if known else 0,
                   "supersedes": known["content_hash"] if known else None,
                   "content_hash": content_hash, "quality": quality,
-                  "incomplete": failed and primary_ok, "index_status": fetched.index_status,
+                  "incomplete": incomplete, "index_status": fetched.index_status,
                   "listing_sha256": listing_hash, "documents": documents}
         record["record_id"] = "rec:" + digest("larp.intel.record.v1", record)
         cursor["known"][accession] = {"original_ms": row["original_ms"], "content_hash": content_hash,
                                       "revision": record["revision"], "record_id": record["record_id"]}
+        if incomplete:
+            cursor["known"][accession]["incomplete"] = True
         (outcome["revisions"] if known else outcome["new_records"]).append(record["record_id"])
         if late:
             outcome["late"].append(accession)

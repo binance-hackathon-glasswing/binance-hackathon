@@ -76,9 +76,10 @@ Class 1 creates an independent mandatory sell requirement, including when policy
 is unavailable; Class 2 blocks retain their five-session clock through a Class 1
 latch and clear. Legacy offline fixture registries are compatibility inputs.
 
-For gas rounds the live health port must explicitly provide
+For stock purchases and gas rounds the live health port must explicitly provide
 `new_spending_ok: true` after checking degraded/reconciliation/spending gates;
-absence blocks resource spending. Gas quotes declare `receive_decimals` equal
+absence blocks new spending in LIVE. Mandatory stock reductions retain their
+independent risk path. Gas quotes declare `receive_decimals` equal
 to the portfolio's BNB decimals. These additions need Isaac/Keegan agreement.
 
 One GAS_TOP_UP intent per dedicated resource round: BUY BNB, amount = exact USDT

@@ -138,7 +138,10 @@ class ContextBuilder:
             context, anchor = self._context(current, evidence, decisions, now_ms)
         except Exception as exc:
             raise ContextUnavailable(updates) from exc
-        return context, dict(updates, session_anchor=anchor)
+        updates = dict(updates, session_anchor=anchor)
+        if "last_discretionary_observed_ms" in context:
+            updates["last_discretionary_session"] = context["last_discretionary_session"]
+        return context, updates
 
     def _context(self, current: dict, evidence: dict, decisions: list, now_ms: int) -> tuple:
         projection = current["projection"]
@@ -155,6 +158,16 @@ class ContextBuilder:
             ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
+        last_discretionary_session = projection.get("last_discretionary_session")
+        broadcast_ms = projection.get("last_discretionary_observed_ms")
+        if broadcast_ms is not None:
+            if type(broadcast_ms) is not int or not 0 <= broadcast_ms <= now_ms:
+                raise ContractError("Discretionary broadcast time is future or malformed")
+            submitted_session = self.calendar(broadcast_ms)["index"]
+            if type(submitted_session) is not int or submitted_session < 0:
+                raise ContractError("Discretionary broadcast has no valid calendar session")
+            last_discretionary_session = max(submitted_session, last_discretionary_session) \
+                if type(last_discretionary_session) is int else submitted_session
         markets = self.market(now_ms)
         # The first decision time seen in this session fixes the session's review jobs (IDEA-033 R15).
         anchor = projection.get("session_anchor") or {}
@@ -166,12 +179,14 @@ class ContextBuilder:
             "markets": markets, "series": self.series(now_ms) if self.series else {},
             "session_index": session["index"], "remaining_sessions": session["remaining"],
             "session_started_ms": anchor["first_ms"],
-            "last_discretionary_session": projection.get("last_discretionary_session"),
+            "last_discretionary_session": last_discretionary_session,
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
         if self.gas_quotes is not None:
             context["gas_quotes"] = self.gas_quotes(now_ms)
+        if broadcast_ms is not None:
+            context["last_discretionary_observed_ms"] = broadcast_ms
         return context, anchor
 
     def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:

@@ -40,12 +40,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root, for larp.intelligence
 from larp.intelligence.text import document_text  # noqa: E402
 
-try:  # read the git-ignored .env (SEC_USER_AGENT) if python-dotenv is installed (requirements.in)
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
-
 # Issuer CIKs for the five eligible bStocks (SKILL.md F-91). SK hynix: CIK 2120882, Nasdaq SKHY, files 6-K
 # (data.sec.gov submissions, checked 2026-10-08, IDEA-009 §C.2). The script checks each name in the response.
 ISSUERS = {
@@ -162,6 +156,11 @@ def pick_document(form, docs, primary):
 
 
 def main():
+    try:  # Credentials/configuration are loaded only by the CLI, never helper imports.
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--user-agent", default=os.environ.get("LARP_SEC_USER_AGENT") or os.environ.get("SEC_USER_AGENT"),
                     help="required by the SEC: who you are + contact, e.g. 'Glasswing research you@example.com' (team name: Glasswing)")

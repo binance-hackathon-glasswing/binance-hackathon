@@ -335,7 +335,7 @@ class EvidenceAssessor:
             return
         last = health.get("last_success_ms")
         if health.get("status") != "OK" or type(last) is not int or \
-                state.cutoff - last > self.config.p("max_source_staleness_ms"):
+                not 0 <= state.cutoff - last <= self.config.p("max_source_staleness_ms"):
             state.missing.append("SOURCE_STALE")
 
     def _call_tool(self, state, tool, args):
@@ -758,7 +758,12 @@ class EvidenceAssessor:
                                               "record_id": new["source"].get("record_id")}]})
         unique, seen = [], set()
         for finding in findings:
-            key = (finding["type"], finding.get("metric"), finding.get("period"))
+            # Separate filings are separate correction obligations. Deduplicating only by
+            # event type discards another filing's support (and its red-flag provenance).
+            # Repeated spans of the same event within one filing still count once.
+            sources = tuple(sorted((s.get("accession") or "", s.get("record_id") or "")
+                                   for s in finding.get("sources", [])))
+            key = (finding["type"], finding.get("metric"), finding.get("period"), sources)
             if key in seen:
                 continue
             seen.add(key)

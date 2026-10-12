@@ -11,6 +11,7 @@ INCONCLUSIVE with the registered default (fallback) unchanged.
 """
 
 from pathlib import Path
+import re
 import subprocess
 
 from larp.contracts import ContractError, Document
@@ -31,7 +32,7 @@ def validate(spec: dict) -> list:
         return ["SCHEMA"]
     exp = spec.get("exp_id")
     study = spec.get("study_id")
-    if type(exp) is not str or not exp.startswith("EXP-") or type(study) is not str or not study or \
+    if type(exp) is not str or re.fullmatch(r"EXP-[0-9]{3,}", exp) is None or type(study) is not str or not study or \
             not _committed(LEDGER / f"{exp}.md") or study not in (LEDGER / f"{exp}.md").read_text(encoding="utf-8"):
         reasons.append("NO_COMMITTED_EXP_RECORD")
     data = spec.get("dataset") or {}
@@ -56,12 +57,13 @@ def validate(spec: dict) -> list:
 
 
 def _committed(path: Path) -> bool:
-    """The EXP record exists and is tracked by git (an untracked or unrelated file does not register a study)."""
-    if not path.exists():
+    """Registration bytes must already exist unchanged in HEAD, not just the index."""
+    if not path.is_file() or path.is_symlink():
         return False
     try:
-        return subprocess.run(["git", "ls-files", "--error-unmatch", str(path)], cwd=path.parent, capture_output=True,
-                              timeout=10).returncode == 0
+        committed = subprocess.run(["git", "show", "HEAD:./" + path.name], cwd=path.parent,
+                                   capture_output=True, timeout=10)
+        return committed.returncode == 0 and committed.stdout == path.read_bytes()
     except (OSError, subprocess.SubprocessError):
         return False
 

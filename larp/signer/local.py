@@ -10,7 +10,8 @@ from larp.execution import Blocked, Signed, address, validate_payload
 
 def verify(payload,signed):
     from eth_account import Account
-    from eth_utils import keccak
+    from eth_utils import keccak, ValidationError
+    from eth_keys.exceptions import BadSignature
     import rlp
     try:
         raw=bytes.fromhex(signed.raw_hex.removeprefix('0x'))
@@ -25,7 +26,8 @@ def verify(payload,signed):
                 and '0x'+fields[5].hex()==payload.data.lower()
                 and Account.recover_transaction(raw).lower()==payload.sender
                 and '0x'+keccak(raw).hex()==signed.tx_hash.lower())
-    except (ValueError,TypeError,IndexError,rlp.exceptions.RLPException):
+    except (ValueError,TypeError,IndexError,AttributeError,OverflowError,
+            ValidationError,BadSignature,rlp.exceptions.RLPException):
         return False
 
 

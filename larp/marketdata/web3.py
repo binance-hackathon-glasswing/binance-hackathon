@@ -162,7 +162,10 @@ class Web3Client:
                 outcome = 'api_or_http_error'
             record.update(outcome=outcome, response=body)
             # Keep exact public response bytes, unless they reflect a credential.
-            if not any(secret.encode() in raw for secret in (self.key, self.secret, sig)):
+            secrets = (self.key, self.secret, sig)
+            # JSON escapes can hide a reflected credential in the raw bytes.
+            # Inspect parsed keys/values too before retaining a reversible copy.
+            if not any(secret.encode() in raw for secret in secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
                 record['raw_body_omitted'] = 'credential_reflection'

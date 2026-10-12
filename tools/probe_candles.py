@@ -29,6 +29,9 @@ from urllib.parse import quote
 import requests
 from dotenv import load_dotenv
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.probe_http import ProbeStopped, envelope, stop_if_refused  # noqa: E402
+
 BASE_URL = "https://web3.binance.com/build"
 CHAIN_ID = "56"
 TOKENS = {  # participant-kit.md K3
@@ -42,10 +45,9 @@ MIN_INTERVAL_S = 0.35  # the kit's demo keeps >= 0.3 s between calls (K9)
 BAR_MS = {"1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000, "1h": 3_600_000,
           "4h": 14_400_000, "1d": 86_400_000}
 
-load_dotenv()
-API_KEY = os.getenv("BINANCE_API_KEY")
-SECRET = os.getenv("BINANCE_SECRET_KEY")
-RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
+API_KEY = None
+SECRET = None
+RECV_WINDOW = None
 _last_call = 0.0
 
 
@@ -55,7 +57,7 @@ def _ts():
 
 
 def get(path, params):
-    """Signed GET (K5). Returns the parsed envelope; never raises on API error codes."""
+    """Signed GET (K5); stop the probe on authentication/compliance/rate refusal."""
     global _last_call
     query = "&".join(f"{quote(str(k), safe='')}={quote(str(v), safe='')}" for k, v in params.items())
     target = f"{path}?{query}" if query else path
@@ -69,15 +71,16 @@ def get(path, params):
         headers = {"X-OC-APIKEY": API_KEY, "X-OC-TIMESTAMP": ts, "X-OC-SIGN": sign}
         if RECV_WINDOW:
             headers["X-OC-RECV-WINDOW"] = RECV_WINDOW
-        resp = requests.get(BASE_URL + target, headers=headers, timeout=20)
-        _last_call = time.monotonic()
         try:
-            body = resp.json()
-        except ValueError:
-            body = {"code": None, "msg": f"HTTP {resp.status_code}, not JSON", "data": None}
-        if resp.status_code == 429 or body.get("code") == 42900:
-            time.sleep(int(resp.headers.get("Retry-After", 2 ** attempt)))
+            resp = requests.get(BASE_URL + target, headers=headers, timeout=20, allow_redirects=False)
+        except requests.RequestException:
+            _last_call = time.monotonic()
+            body = {"code": None, "msg": "network error", "data": None}
+            time.sleep(2 ** attempt)
             continue
+        _last_call = time.monotonic()
+        body = envelope(resp, (API_KEY, SECRET, sign))
+        stop_if_refused(resp.status_code, body)
         return body
     return body
 
@@ -89,13 +92,19 @@ def iso(ms):
 def summarise(rows, bar, limit):
     if not rows:
         return {"rows": 0}
-    stamps = [int(r[5]) for r in rows]
+    try:
+        if not isinstance(rows, list) or any(not isinstance(r, list) or len(r) < 6 for r in rows):
+            raise ValueError("invalid candle rows")
+        stamps = [int(r[5]) for r in rows]
+        oldest, newest = iso(stamps[0]), iso(stamps[-1])
+    except (TypeError, ValueError, OverflowError, OSError):
+        return {"rows": 0, "note": "malformed candle rows"}
     step = BAR_MS.get(bar)
     gaps = sum(1 for a, b in zip(stamps, stamps[1:]) if step and b - a > step)
     return {
         "rows": len(rows),
-        "oldest": iso(stamps[0]),
-        "newest": iso(stamps[-1]),
+        "oldest": oldest,
+        "newest": newest,
         "span_days": round((stamps[-1] - stamps[0]) / 86_400_000, 1),
         "gaps": gaps,  # missing bars = periods with no trades (kit: only periods with trades are returned)
         "capped_by_limit": len(rows) >= limit,
@@ -149,25 +158,33 @@ def try_paging(addr, bar, oldest_ms, raw, max_limit):
         val = oldest_ms if name in ("before", "endTime") else oldest_ms - 7 * 86_400_000
         body = candles(addr, bar, max_limit, raw, **{name: val})
         rows = (body.get("data") or []) if body.get("code") == 0 else []
+        summary = summarise(rows, bar, max_limit)
+        if summary.get("note"):
+            out[name] = summary["note"]
+            continue
         older = [r for r in rows if int(r[5]) < oldest_ms]
         out[name] = (f"code {body.get('code')}" if body.get("code") != 0
                      else f"{len(rows)} rows, {len(older)} older than the oldest seen")
     return out
 
 
-def main():
+def _main():
+    global API_KEY, SECRET, RECV_WINDOW
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--bars", default="1d,4h,1h,15m,1m")
     ap.add_argument("--try-paging", action="store_true")
     args = ap.parse_args()
+    load_dotenv()
+    API_KEY, SECRET = os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_SECRET_KEY")
+    RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
     if not API_KEY or not SECRET:
         sys.exit("BINANCE_API_KEY / BINANCE_SECRET_KEY missing from .env")
     raw, report = [], {"run_utc": _ts(), "tokens": {}}
 
     toks = get("/api/v1/dex/market/rwa/tokens", {"platformId": "bstock"})
     raw.append({"endpoint": "rwa/tokens", "response": toks})
-    listed = {t.get("tokenContractAddress", "").lower(): t for t in (toks.get("data") or [])
-              if isinstance(t, dict)} if toks.get("code") == 0 else {}
+    listed = {str(t.get("tokenContractAddress", "")).lower(): t for t in toks["data"]
+              if isinstance(t, dict)} if toks.get("code") == 0 and isinstance(toks.get("data"), list) else {}
     print(f"rwa/tokens: code {toks.get('code')}, {len(listed)} tokens listed\n")
 
     max_limit = find_max_limit(TOKENS["NVDAB"], raw)
@@ -217,5 +234,13 @@ def main():
     print(f"Saved data/probe/candles_probe_{stamp}.json and _summary.json (git-ignored).")
 
 
+def main():
+    try:
+        return _main()
+    except ProbeStopped as exc:
+        print(f"STOPPED: {exc.outcome}; no further API requests.")
+        return 2
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

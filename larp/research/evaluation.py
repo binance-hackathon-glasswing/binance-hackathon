@@ -111,6 +111,13 @@ OUTCOME_FIELDS = ("variant", "cluster_id", "dataset_hash", "opening_equity_units
 
 def _outcome_window(o, w, d):
     """Outcome provenance must sit inside its registered decision/label window and the frozen horizon."""
+    integer(o["opening_equity_units"], 1)
+    if type(o["wallet_net_units"]) is not int:
+        raise ContractError("Wallet net units must be a signed integer")
+    if integer(o["maximum_drawdown_bps"]) > 10000:
+        raise ContractError("Drawdown exceeds total wallet equity")
+    for key in ("first_session", "last_session", "detection_delay_sessions"):
+        integer(o[key])
     decided, labelled = instant(o["decision_at"]), instant(o["label_end_at"])
     if not decided < labelled:
         raise ContractError("Outcome label ends before its decision")
@@ -181,6 +188,11 @@ def evaluate(registration: Document, outcomes):
             return Document.from_dict({"schema": "EconomicReport.v2", "status": "NOT_RUN",
                                        "reason": "Paired portfolios differ in initial capital",
                                        "promotion_authorized": False})
+        if (a["first_session"] != b["first_session"] or a["last_session"] != b["last_session"]
+                or instant(a["label_end_at"]) != instant(b["label_end_at"])):
+            return Document.from_dict({"schema": "EconomicReport.v2", "status": "NOT_RUN",
+                                       "reason": "Paired portfolios use different evaluation horizons",
+                                       "promotion_authorized": False})
         incomplete += (a["complete"] is not True) + (b["complete"] is not True)
         E = integer(a["opening_equity_units"], 1)
         net = lambda o: o["wallet_net_units"] - (o["service_units"] if after_service else 0)
@@ -225,12 +237,13 @@ def evaluate(registration: Document, outcomes):
                   baseline_absolute_mean=ratio(mean(baseline_absolute)), warnings=warnings)
     kill_bound = Fraction(0) if d["kill_rule"] == "UPPER_BOUND_BELOW_ZERO" else margin
     bounds_support = low > margin and absolute_low > 0
+    means_in_bounds = low <= mean(paired) <= high and absolute_low <= treatment_mean <= absolute_high
     if incomplete:
         result["reason"] = "INCOMPLETE_OUTCOMES_RETAINED"
     elif absolute_high <= 0:
         # Confidently does not make money: not worth adopting whatever the paired difference (IDEA-034).
         result.update(status="NOT_SUPPORTED", reason="TREATMENT_ABSOLUTE_NET_NOT_POSITIVE")
-    elif bounds_support and mean(paired) > margin and treatment_mean > 0:
+    elif bounds_support and means_in_bounds:
         result["status"] = "SUPPORTED"
     elif high < kill_bound:
         result["status"] = "NOT_SUPPORTED"
@@ -247,17 +260,20 @@ def evaluate(registration: Document, outcomes):
 def fusion_rows(request: Document):
     """Guard chronological OOF upstream features; no model/checkpoint is trained."""
     d = request.read()
-    if not d.get("rights_cleared") or not d.get("rows"):
+    if d.get("rights_cleared") is not True or not d.get("rows"):
         return Document.from_dict({"schema": "FusionDataset.v1", "status": "INCONCLUSIVE",
                                    "reason": "NO_RIGHTS_CLEARED_ALIGNED_DATA", "rows": []})
     rows = []
+    for key in ("purge_sessions", "embargo_sessions"):
+        integer(d[key])
     for row in d["rows"]:
         decision = instant(row["decision_at"])
+        integer(row["session_index"])
         for upstream in (row["evidence_prediction"], row["price_prediction"]):
+            integer(upstream["training_last_session"])
             if (upstream.get("origin") != "CHRONOLOGICAL_OOF" or not upstream.get("fold_id")
-                    or instant(upstream["training_label_end"]) >= decision
-                    or instant(upstream["predicted_at"]) > decision
-                    or instant(upstream["available_at"]) > decision
+                    or not instant(upstream["training_label_end"]) < instant(upstream["predicted_at"])
+                        <= instant(upstream["available_at"]) <= decision
                     or upstream["training_last_session"] + d["purge_sessions"] + d["embargo_sessions"] >= row["session_index"]):
                 raise ContractError("Leaky/non-OOF upstream prediction")
         rows.append(row)

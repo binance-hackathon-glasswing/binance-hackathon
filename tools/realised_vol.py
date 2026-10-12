@@ -19,6 +19,9 @@ import json
 import math
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from larp.research.candles import capture_cutoff_ms, closed_bstock_bars
 
 TOKENS = ["NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"]
 HALF_LIFE = 20
@@ -43,7 +46,7 @@ def stats(rows):
     mean = sum(rets) / n
     sd = math.sqrt(sum((r - mean) ** 2 for r in rets) / (n - 1))
     span_days = (rows[-1][0] - rows[0][0]) / 86_400_000
-    bars_per_year = len(rows) / span_days * 365
+    bars_per_year = n / span_days * 365
     lam = 0.5 ** (1 / HALF_LIFE)
     var = sum(r * r for r in rets[:HALF_LIFE]) / HALF_LIFE  # seed with the first 20 squared returns
     for r in rets[HALF_LIFE:]:
@@ -58,52 +61,48 @@ def stats(rows):
 def bstock_series(path, *, as_of_ms=None):
     with open(path, encoding="utf-8") as source:
         capture = json.load(source)
-    raw = capture["raw"]
-    if as_of_ms is None:
-        captured = capture.get("report", {}).get("run_utc")
-        if not captured:
-            raise ValueError("Capture cutoff missing; supply explicit as_of_ms")
-        cutoff = datetime.fromisoformat(captured.replace("Z", "+00:00"))
-        if cutoff.tzinfo is None:
-            raise ValueError("Capture cutoff needs timezone")
-        as_of_ms = int(cutoff.timestamp() * 1000)
-    # Legacy captures lack symbols on candle responses: use the explicit preceding
-    # entity marker, never the position of a successful response in the array.
-    out, current = {symbol: {} for symbol in TOKENS}, None
-    for r in raw:
-        if r.get("endpoint") == "rwa/underlying-market":
-            current = r.get("symbol")
-            if current not in out:
-                raise ValueError("Unknown entity marker")
-        if r.get("bar") != "1d":
-            continue
-        symbol = r.get("symbol", current)
-        if symbol not in out:
-            raise ValueError("Daily response lacks verified entity context")
-        body = r.get("response", {})
-        if body.get("code") != 0 or not isinstance(body.get("data"), list):
-            continue
-        for c in body["data"]:
-            timestamp, close = int(c[5]), float(c[3])
-            if timestamp + 86_400_000 > as_of_ms:
-                continue  # never use the still-open calendar-day bar
-            if timestamp in out[symbol] and out[symbol][timestamp] != close:
-                raise ValueError("Conflicting versions of a saved candle")
-            out[symbol][timestamp] = close
-    return {symbol: sorted(rows.items()) for symbol, rows in out.items()}
+    bars = closed_bstock_bars(capture, "1d", 86_400_000, as_of_ms=as_of_ms)
+    return {symbol: [(stamp, row[3]) for stamp, row in rows.items()] for symbol, rows in bars.items()}
 
 
-def ondo_series(path):
+def ondo_series(path, *, as_of_ms=None):
     d = json.load(open(path))
+    cutoff = capture_cutoff_ms(d, as_of_ms)
     rep, raw = d["report"]["B_tokenized_securities_info"], d["raw"]
     out = {}
     for tok in TOKENS:
-        ondo = rep[tok]["ondo_token"]
-        rows = []
+        ondo = rep.get(tok, {}).get("ondo_token")
+        if not ondo:
+            continue
+        rows = {}
         for r in raw:
             if ondo["contract"] in r.get("url", "") and "kline" in r["url"]:
-                rows += [(int(k[0]), float(k[4])) for k in r["body"]["data"]["klineInfos"]]
-        out[ondo["symbol"]] = rows
+                body = r.get("body")
+                if r.get("status") != 200 or r.get("error") or type(body) is not dict:
+                    continue
+                if body.get("success") is False or body.get("code") not in (None, 0, "000000", "0"):
+                    continue
+                for k in (body.get("data") or {}).get("klineInfos") or []:
+                    if type(k) is not list or len(k) < 7:
+                        raise ValueError("Malformed Ondo candle")
+                    times = [k[0], k[6]]
+                    for index, value in enumerate(times):
+                        if type(value) is str and value.isdigit():
+                            times[index] = int(value)
+                        elif type(value) is not int:
+                            raise ValueError("Ondo timestamps must be integer milliseconds")
+                    if type(k[4]) is bool:
+                        raise ValueError("Boolean Ondo close is invalid")
+                    stamp, closed = times
+                    close = float(k[4])
+                    if stamp < 0 or closed < stamp or not math.isfinite(close) or close <= 0:
+                        raise ValueError("Invalid Ondo candle")
+                    if max(stamp + 86_400_000, closed + 1) > cutoff:
+                        continue
+                    if stamp in rows and rows[stamp] != close:
+                        raise ValueError("Conflicting versions of a saved Ondo candle")
+                    rows[stamp] = close
+        out[ondo["symbol"]] = sorted(rows.items())
     return out
 
 

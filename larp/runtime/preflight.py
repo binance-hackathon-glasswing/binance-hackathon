@@ -70,7 +70,12 @@ def tracked_release_files(root, git):
     return names
 
 
-def build_manifest(root, services, registration_evidence=None, operations_config=None):
+def verify_runtime_config(manifest, raw):
+    if manifest.get('runtime_config_sha256') != hashlib.sha256(raw).hexdigest():
+        raise ContractError('Runtime configuration differs from the registered manifest')
+
+
+def build_manifest(root, services, registration_evidence=None, operations_config=None, runtime_config=None):
     root = Path(root).resolve()
     def git(*args):
         result = subprocess.run(['git', '-C', str(root), *args], capture_output=True,
@@ -91,7 +96,8 @@ def build_manifest(root, services, registration_evidence=None, operations_config
     return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit,
         repository=remote, remote_verified=True, services=services,
         registration_evidence=registration_evidence, files=files, release_register=load_register(root),
-        operations_config_sha256=hashlib.sha256(operations_config).hexdigest() if operations_config else None))
+        operations_config_sha256=hashlib.sha256(operations_config).hexdigest() if operations_config else None,
+        runtime_config_sha256=hashlib.sha256(runtime_config).hexdigest() if runtime_config is not None else None))
 
 
 def main(argv=None):
@@ -102,6 +108,7 @@ def main(argv=None):
     parser.add_argument('--services')
     parser.add_argument('--registration-evidence')
     parser.add_argument('--config')
+    parser.add_argument('--runtime-config')
     args = parser.parse_args(argv)
     try:
         if args.build_output:
@@ -111,7 +118,8 @@ def main(argv=None):
             evidence = (json.loads(Path(args.registration_evidence).read_text(encoding='utf-8'))
                         if args.registration_evidence else None)
             config = Path(args.config).read_bytes() if args.config else None
-            manifest = build_manifest(args.root, services, evidence, config)
+            runtime_config = Path(args.runtime_config).read_bytes() if args.runtime_config else None
+            manifest = build_manifest(args.root, services, evidence, config, runtime_config)
             # Exclusive creation avoids replacing a release's provenance.
             with Path(args.build_output).open('xb') as stream:
                 stream.write(manifest.payload)
@@ -121,6 +129,8 @@ def main(argv=None):
             verify_environment(args.root)
             if args.config and hashlib.sha256(Path(args.config).read_bytes()).hexdigest() != m.get('operations_config_sha256'):
                 raise ContractError('Operations configuration differs from the registered manifest')
+            if args.runtime_config:
+                verify_runtime_config(m, Path(args.runtime_config).read_bytes())
             print(json.dumps(dict(release_verified=True, signing_enabled=False)))
         return 0
     except Exception:

@@ -50,7 +50,7 @@ import time
 from urllib.parse import urlsplit
 
 from larp.intelligence.common import IntelligenceError, require_hash, sha256_hex
-from larp.intelligence.models import ModelIdentity, response
+from larp.intelligence.models import ModelIdentity, allowed_endpoint, response
 
 ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_HOSTS = frozenset({"api.anthropic.com"})
@@ -262,7 +262,7 @@ class _ProviderReply(Exception):
 
     def __init__(self, code: str, served: str | None = None):
         super().__init__(code)
-        self.code, self.served = code, served
+        self.code, self.served = code, served if type(served) is str else None
 
 
 class HostedModel:
@@ -273,8 +273,7 @@ class HostedModel:
     def __init__(self, *, model_id: str, endpoint: str, allowed_hosts: frozenset, api_key: str, prompt_text: str,
                  prompt_sha256: str, clock_ms, artifacts, price: dict | None = None, transport=None,
                  max_output_tokens: int = 16000):
-        parts = urlsplit(endpoint)
-        if parts.scheme != "https" or parts.hostname not in allowed_hosts:
+        if not allowed_endpoint(endpoint, allowed_hosts):
             raise IntelligenceError("Hosted model endpoint is outside the declared allowlist")
         if not api_key:
             raise IntelligenceError("Hosted model needs a credential from the runtime secret store")

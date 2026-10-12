@@ -7,30 +7,19 @@ from datetime import datetime, timezone, timedelta
 import numpy as np
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from larp.research.candles import roll_estimate, ar_estimate
+from larp.research.candles import roll_estimate, ar_estimate, closed_bstock_bars
 
 def main(path):
     P = path
     print("sha256", hashlib.sha256(open(P, "rb").read()).hexdigest())
-    raw = json.load(open(P))["raw"]
+    capture = json.load(open(P))
     TOK = ["NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"]
     H = 3_600_000
 
-    # --- collect series per token: raw blocks follow "<SYM> rwa/underlying-market" markers
-    blocks, cur = {t: [] for t in TOK}, None
-    for r in raw:
-        if r.get("endpoint") == "rwa/underlying-market":
-            cur = r["symbol"]; continue
-        if cur and r.get("bar") and isinstance(r["response"].get("data"), list):
-            blocks[cur].append(r)
-
+    intervals = {"1h": H, "1m": 60_000, "1d": 86_400_000}
+    captured = {bar: closed_bstock_bars(capture, bar, interval) for bar, interval in intervals.items()}
     def rows(tok, bar):
-        out = {}
-        for r in blocks[tok]:
-            if r["bar"] == bar:
-                for c in r["response"]["data"]:
-                    out[int(c[5])] = [float(x) for x in c[:5]] + [int(c[6]) if c[6] is not None else -1]
-        return dict(sorted(out.items()))
+        return captured[bar][tok]
 
     ET_OFF = -4  # EDT throughout Sep 5 - Oct 7 2026
     HOLI = {"2026-09-07"}  # Labor Day
@@ -53,6 +42,10 @@ def main(path):
     res = {}
     for tok in TOK:
         d = rows(tok, "1h"); ts = list(d)
+        if not ts:
+            res[tok] = ({c: [0.0, 0, 0] for c in CATS}, [], d)
+            print(tok, "INCONCLUSIVE: no closed hourly bars")
+            continue
         chunks, start = [], ts[0]
         for a, b in zip(ts, ts[1:]):
             if b - a > 48 * H:
@@ -93,6 +86,9 @@ def main(path):
         vr = {c: acc[c][0] / acc[c][1] for c in CATS}
         tot = sum(acc[c][0] for c in CATS); toth = sum(acc[c][1] for c in CATS)
         on = acc["RTH"][0] + acc["open-hour"][0]; onh = acc["RTH"][1] + acc["open-hour"][1]
+        if not tot or not on or not vr["RTH"]:
+            print(tok, "INCONCLUSIVE: zero reference variance")
+            continue
         off_var = 1 - on / tot; off_time = 1 - onh / toth
         ratio = ((tot - on) / (toth - onh)) / (on / onh)
         print(f"{tok:7}" + "".join(f"{vr[c]/vr['RTH']:>11.2f} ({acc[c][1]:3d}h)" for c in CATS)
@@ -120,6 +116,9 @@ def main(path):
         r_rth = [(b, r) for b, r in rr if cat(b) == "RTH"]
         r_wk = [(b, r) for b, r in rr if cat(b) == "weekend/holiday"]
         m = rows(tok, "1m"); mt = list(m)
+        if not m or not d:
+            print(tok, "INCONCLUSIVE: missing closed minute/hourly bars for spread proxies")
+            continue
         r1 = [(b, math.log(m[b][3] / m[a][3])) for a, b in zip(mt, mt[1:]) if b - a == 60_000]
         # No clock-time estimator across gaps; historical any-gap output withdrawn.
         span_m = (mt[-1] - mt[0]) // 60_000 + 1
@@ -150,22 +149,42 @@ def main(path):
                 co.append(math.log(p13 / prev[1])); oc.append(math.log(p20 / p13))
             if p20: prev = (dt, p20)
         co, oc = np.array(co), np.array(oc)
+        if len(co) < 3 or co.std() == 0 or oc.std() == 0:
+            print(tok, "INCONCLUSIVE: insufficient nonconstant overnight/session pairs")
+            continue
         allco += list(co / co.std()); alloc += list(oc / oc.std())
         b = np.polyfit(co, oc, 1)[0]
         print(f"{tok:7} n={len(co):2d} corr(CO,OC)={np.corrcoef(co, oc)[0,1]:+.2f} slope={b:+.2f} sd CO {co.std()*1e2:.2f}% sd OC {oc.std()*1e2:.2f}% "
               f"var share CO {co.var()/(co.var()+oc.var()):.0%}")
     allco, alloc = np.array(allco), np.array(alloc)
-    n = len(allco); rho = np.corrcoef(allco, alloc)[0, 1]
-    print(f"pooled (vol-standardised) n={n} corr={rho:+.2f}  approx 95% CI half-width {1.96/math.sqrt(n-3):.2f} (names not independent)")
+    n = len(allco)
+    if n >= 3:
+        rho = np.corrcoef(allco, alloc)[0, 1]
+        print(f"pooled (vol-standardised) n={n} descriptive corr={rho:+.2f}; no confidence interval: names/dates are dependent")
+    else:
+        print("pooled INCONCLUSIVE: insufficient overnight/session pairs")
 
     print("\n== Daily (24/7 calendar) bStock candles: vol, kurtosis, correlations ==")
     D = {t: rows(t, "1d") for t in TOK}
     common = sorted(set.intersection(*[set(D[t]) for t in TOK]))
+    if len(common) < 3:
+        print("INCONCLUSIVE: fewer than three common closed daily bars")
+        return
     print("common days", len(common), datetime.fromtimestamp(common[0]/1000, tz=timezone.utc).date(), "->", datetime.fromtimestamp(common[-1]/1000, tz=timezone.utc).date())
     R = np.array([[math.log(D[t][b][3] / D[t][a][3]) for a, b in zip(common, common[1:]) if b - a == 86_400_000] for t in TOK])
+    if R.shape[1] < 2:
+        print("INCONCLUSIVE: fewer than two adjacent daily returns")
+        return
     for i, t in enumerate(TOK):
-        x = R[i]; k = ((x - x.mean())**4).mean() / x.var()**2
+        x = R[i]
+        if x.var() == 0:
+            print(t, "INCONCLUSIVE: zero daily variance")
+            continue
+        k = ((x - x.mean())**4).mean() / x.var()**2
         print(f"{t:7} daily sd {x.std()*100:.2f}% (cal-day), excess kurtosis {k-3:+.1f}, n={len(x)}")
+    if any(x.var() == 0 for x in R):
+        print("INCONCLUSIVE: correlation requires nonconstant daily returns in every name")
+        return
     C = np.corrcoef(R); print("corr matrix (calendar-day returns):"); print(np.round(C, 2))
     US = [0, 1, 3, 4]
     print("mean pairwise corr 4 US names:", round(np.mean([C[i, j] for i in US for j in US if i < j]), 2))

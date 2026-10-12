@@ -231,7 +231,7 @@ def verify_item(predicate: dict, *, record: dict, texts: dict, issuer_names: tup
     out.update(event_original_ms=when, event_time_basis=None if when is None else basis, amends_accession=amends)
     if when is None and basis == "AMENDED_ORIGINAL_UNKNOWN":
         return fail("AMENDED_ORIGINAL_UNKNOWN")
-    if type(when) is not int or cutoff_ms - when > freshness["max_event_age_ms"]:
+    if type(when) is not int or not 0 <= cutoff_ms - when <= freshness["max_event_age_ms"]:
         return fail("STALE_EVENT")
     original = record.get("original_ms")  # the document's own date, for reading its tense and stated dates
     title = heading_pattern(item, trigger["title_pattern"])

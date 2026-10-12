@@ -10,7 +10,9 @@ refused (live-start checks, configuration, release or session contract). 2, 3 an
 """
 
 import argparse
+import hashlib
 import json
+import math
 from pathlib import Path
 import signal
 import time
@@ -73,16 +75,39 @@ class Service:
 
 def validate_config(value):
     required = ('run_id', 'build_id', 'database_dsn_file', 'max_failures', 'clear_after', 'interval_seconds')
-    if value.get('schema') != 'RuntimeService.v1':
+    if type(value) is not dict or value.get('schema') != 'RuntimeService.v1':
         raise ContractError('Invalid runtime service configuration schema')
     missing = [k for k in required if value.get(k) in (None, '')]
     if missing:
         raise ContractError('Missing runtime settings: ' + ','.join(missing))
+    for key in ('max_failures', 'clear_after'):
+        if type(value[key]) is not int or value[key] < 1:
+            raise ContractError('Invalid positive integer setting: ' + key)
+    interval = value['interval_seconds']
+    if type(interval) not in (int, float) or not math.isfinite(interval) or interval <= 0:
+        raise ContractError('Invalid runtime interval')
+    if value.get('mode', 'offline') not in ('offline', 'paper', 'dev', 'live'):
+        raise ContractError('Unknown runtime mode')
     return value
 
 
 def build_driver(config, store, secrets):
     raise NotIntegrated('Round driver not integrated yet (IDEA-042 item 10)')
+
+
+def verify_registered_manifest(store, config, manifest):
+    """Bind the local release to the journaled authority, including configuration."""
+    run = store.verified_snapshot(config['run_id'])
+    if run['mode'] != config.get('mode', 'offline'):
+        raise StartRefused('Configured mode differs from the registered run')
+    registered = Document(bytes(run['projection'])).read().get('registered_version')
+    if not registered:
+        if run['mode'] in ('dev', 'live'):
+            raise StartRefused('Live run requires prior version registration')
+        return
+    if (registered.get('build_id') != config['build_id']
+            or registered.get('manifest_sha256') != hashlib.sha256(manifest.payload).hexdigest()):
+        raise StartRefused('Release differs from the registered manifest')
 
 
 def main(argv=None):
@@ -93,10 +118,13 @@ def main(argv=None):
     parser.add_argument('--root', required=True)
     args = parser.parse_args(argv)
     try:
-        from larp.runtime.preflight import verify_release
+        from larp.runtime.preflight import verify_release, verify_runtime_config
         try:
-            c = validate_config(json.loads(Path(args.config).read_text(encoding='utf-8')))
-            manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+            raw_config = Path(args.config).read_bytes()
+            c = validate_config(json.loads(raw_config))
+            manifest_document = Document(Path(args.manifest).read_bytes())
+            manifest = verify_release(manifest_document, args.root)
+            verify_runtime_config(manifest, raw_config)
             if manifest['build_id'] != c['build_id']:
                 raise ContractError('Configured build differs from the verified release')
         except (ContractError, ValueError, OSError) as refused:
@@ -106,6 +134,7 @@ def main(argv=None):
             return 0
         from larp.storage.postgres import PostgresStore
         store = PostgresStore(Path(c['database_dsn_file']).read_text(encoding='utf-8').strip())
+        verify_registered_manifest(store, c, manifest_document)
         # Secrets only from the configured Secrets Manager entry, never the environment (IDEA-042 S2).
         from larp.runtime.credentials import runtime_secrets
         secrets = runtime_secrets(c)

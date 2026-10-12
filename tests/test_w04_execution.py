@@ -320,6 +320,14 @@ class ExecutionTests(unittest.TestCase):
         state = self.engine.abort_unsigned(self.key, 11)
         self.assertEqual(state.status, "ABORTED")
         self.assertEqual(state.attempts[-1].state, "ABORTED")
+        self.assertEqual(state.last_observed_at, 11)
+
+    def test_unsigned_abort_rejects_clock_regression_without_releasing_barrier(self):
+        self.engine.create(self.economic, 10)
+        before = self.engine.prepare(self.key, 11)
+        with self.assertRaisesRegex(Blocked, 'clock regression'):
+            self.engine.abort_unsigned(self.key, 10)
+        self.assertEqual(self.store.load(self.key), before)
 
     def test_live_bundle_and_replacement_disabled(self):
         with self.assertRaises(Blocked):

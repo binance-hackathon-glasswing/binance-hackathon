@@ -67,6 +67,19 @@ run "runtime_secret_exists" {
     error_message = "The runtime host's secret (wallet address and market-data keys) must exist; values stay outside Terraform."
   }
 }
+run "host_database_users_match_sql_roles" {
+  command = plan
+  assert {
+    condition = local.db_users == {
+      primary  = "larp_runtime"
+      standby  = "larp_runtime"
+      archive  = "larp_archive"
+      uploader = "larp_uploader"
+      signer   = "larp_signer"
+    }
+    error_message = "IAM database login resources must use provisioned service roles, not host names."
+  }
+}
 run "reject_final_interactive_access" {
   command = plan
   variables {

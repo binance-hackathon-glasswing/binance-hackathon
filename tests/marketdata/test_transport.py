@@ -31,6 +31,26 @@ class TransportTests(unittest.TestCase):
             o=Opener(b'{"code":0,"data":{"echo":"fixture-secret"}}')
             r=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=o).request('GET','market/rwa/tokens',{})
             self.assertNotIn('fixture-secret',json.dumps(r))
+
+    def test_escaped_credential_reflections_never_retain_reversible_raw_body(self):
+        for raw in (b'{"code":0,"data":{"echo":"fixture-\\u0073ecret"}}',
+                    b'{"code":0,"data":{"fixture-\\u0073ecret":"echo"}}'):
+            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as root:
+                r = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root),
+                               opener=Opener(raw)).request('GET', 'market/rwa/tokens', {})
+                self.assertNotIn('response_body_base64', r)
+                self.assertEqual(r['raw_body_omitted'], 'credential_reflection')
+                from pathlib import Path
+                artifact = json.loads((Path(root) / (r['artifact_sha256'] + '.json')).read_bytes())
+                self.assertNotIn('fixture-secret', json.dumps(artifact))
+                self.assertNotIn('response_body_base64', artifact)
+
+    def test_untainted_response_keeps_exact_raw_evidence(self):
+        raw = b'{ "code":0, "data":{"public":"value"} }'
+        with tempfile.TemporaryDirectory() as root:
+            r = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root),
+                           opener=Opener(raw)).request('GET', 'market/rwa/tokens', {})
+            self.assertEqual(base64.b64decode(r['response_body_base64']), raw)
     def test_business_error_and_redirect_do_not_succeed(self):
         with tempfile.TemporaryDirectory() as root:
             c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=Opener(b'{"code":40435,"data":[]}'))

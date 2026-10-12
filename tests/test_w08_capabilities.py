@@ -79,6 +79,8 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(w.retry_after("Sat, 10 Oct 2026 00:00:10 GMT", now), 10)
         self.assertEqual(w.retry_after("12", now), 12)
         self.assertIsNone(w.retry_after("bad", now))
+        for value in ("nan", "inf", "-inf", "1e999"):
+            self.assertIsNone(w.retry_after(value, now))
 
     def test_transport_errors_do_not_persist_exception_secrets(self):
         client = w.ReadClient("fake-key", "fake-secret", FakeOpener(error=URLError("fake-secret")))
@@ -146,12 +148,29 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(client.records[-1]["endpoint"], "market/rwa/tokens")
 
     def test_authentication_and_rate_limit_stop_collection(self):
-        for code, expected in [(40102, "authentication_error"), (42900, "rate_limited")]:
+        for code, expected in [(code, "authentication_error") for code in range(40100, 40105)] + [
+                (42900, "rate_limited")]:
             client = w.ReadClient("fake-key", "fake-secret", FakeOpener(json.dumps({"code": code}).encode()))
             with self.assertRaises(w.ProbeStopped) as stopped:
                 w.collect(client, w.USDT, ["NVDAB"], "1", [])
             self.assertEqual(stopped.exception.outcome, expected)
             self.assertEqual(len(client.records), 1)
+
+    def test_unclassified_forbidden_after_connectivity_stops_collection(self):
+        class LaterForbidden:
+            def __init__(self):
+                self.records = []
+
+            def request(self, method, endpoint, params):
+                record = {"outcome": "ok" if not self.records else "http_forbidden_unclassified"}
+                self.records.append(record)
+                return record
+
+        client = LaterForbidden()
+        with patch.object(w.time, "sleep"), self.assertRaises(w.ProbeStopped) as stopped:
+            w.collect(client, w.USDT, ["NVDAB"], "1", [])
+        self.assertEqual(stopped.exception.outcome, "http_forbidden_unclassified")
+        self.assertEqual(len(client.records), 2)
 
     def test_full_fake_flow_keeps_calldata_and_failed_gas_without_fallback(self):
         class ScriptedClient:

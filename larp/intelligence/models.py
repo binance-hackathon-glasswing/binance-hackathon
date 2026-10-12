@@ -162,10 +162,19 @@ class ScriptedModel:
 
 
 def _openai_chat_transport(url: str, headers: dict, body: bytes, timeout_s: float) -> tuple:
-    import urllib.request
-    request = urllib.request.Request(url, data=body, headers=headers, method="POST")
-    with urllib.request.urlopen(request, timeout=timeout_s) as reply:  # noqa: S310 - endpoint allowlisted
-        return reply.status, reply.read()
+    # The shared transport uses a direct bounded HTTPS exchange and never follows
+    # redirects, so an Authorization header cannot escape to a Location target.
+    from larp.intelligence.providers import https_post
+    return https_post(url, headers, body, timeout_s)
+
+
+def allowed_endpoint(endpoint: str, hosts: frozenset) -> bool:
+    try:
+        parts = urlsplit(endpoint)
+        return (parts.scheme == "https" and parts.hostname in hosts and parts.port in (None, 443)
+                and not parts.username and not parts.password and not parts.fragment)
+    except ValueError:
+        return False
 
 
 class HostedChatModel:
@@ -185,8 +194,7 @@ class HostedChatModel:
     def __init__(self, *, provider: str, model_id: str, revision: str, endpoint: str, allowed_hosts: frozenset,
                  api_key: str, prompt_text: str, prompt_sha256: str, clock_ms, artifacts, price: dict | None = None,
                  transport=None):
-        parts = urlsplit(endpoint)
-        if parts.scheme != "https" or parts.hostname not in allowed_hosts:
+        if not allowed_endpoint(endpoint, allowed_hosts):
             raise IntelligenceError("Hosted model endpoint is outside the declared allowlist")
         if not api_key:
             raise IntelligenceError("Hosted model needs a credential from the runtime secret store")
@@ -206,24 +214,40 @@ class HostedChatModel:
     def __repr__(self):
         return f"HostedChatModel({self.identity.provider!r}, {self.identity.revision!r})"
 
-    def step(self, request: Document, remaining_ms: int) -> Document:
+    def request_payload(self, request: Document) -> bytes:
         r = request.read()
-        body = json.dumps({"model": self.identity.revision, "temperature": 0,
+        return json.dumps({"model": self.identity.revision, "temperature": 0,
                            "response_format": {"type": "json_object"},
                            "messages": [{"role": "system", "content": self._prompt},
                                         {"role": "user", "content": json.dumps(r["input"], sort_keys=True)}]},
                           sort_keys=True).encode("utf-8")
+
+    def has_artifact(self, digest: str) -> bool:
+        return self._artifacts.get(digest) is not None
+
+    def step(self, request: Document, remaining_ms: int) -> Document:
+        from larp.intelligence.providers import LateReply, MAX_USAGE_TOKENS, _ProviderReply, _json_object
+        r = request.read()
+        body = self.request_payload(request)
         headers = {"Authorization": f"Bearer {self._key}", "Content-Type": "application/json"}
         record = dict(artifacts=self._artifacts, request_payload=body)
+        _store(self._artifacts, body)  # a timed-out or abandoned paid call still has its exact request
         started = self.clock()
         try:
             status, raw = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
+        except LateReply as exc:
+            return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
+                            error="DEADLINE_EXCEEDED", raw=exc.raw, **record)
         except (socket.timeout, TimeoutError):
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
                             error="DEADLINE_EXCEEDED", **record)
         except OSError as exc:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error=type(exc).__name__, **record)
+        if type(raw) is not bytes:
+            return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
+                            error="TRANSPORT_REPLY_NOT_BYTES", **record)
+        _store(self._artifacts, raw)  # persist before parsing even adversarially malformed JSON
         record["raw"] = raw
         latency = self.clock() - started
         if latency > remaining_ms:
@@ -233,13 +257,24 @@ class HostedChatModel:
         try:
             payload = json.loads(raw.decode("utf-8"))
             served = payload.get("model")
-            message = payload["choices"][0]["message"]
-            output = json.loads(message["content"])
-            usage = {"input_tokens": int(payload["usage"]["prompt_tokens"]),
-                     "output_tokens": int(payload["usage"]["completion_tokens"])}
-        except (AttributeError, KeyError, IndexError, TypeError, ValueError, UnicodeDecodeError):
+            choice = payload["choices"][0]
+            message = choice["message"]
+            if message.get("refusal"):
+                raise _ProviderReply("PROVIDER_REFUSAL", served)
+            if choice.get("finish_reason") != "stop":
+                raise _ProviderReply("INCOMPLETE_RESPONSE", served)
+            output = _json_object(message["content"])
+            usage = {"input_tokens": payload["usage"]["prompt_tokens"],
+                     "output_tokens": payload["usage"]["completion_tokens"]}
+            if not all(type(value) is int and 0 <= value <= MAX_USAGE_TOKENS for value in usage.values()):
+                raise _ProviderReply("USAGE_MALFORMED", served)
+        except _ProviderReply as exc:
+            return response(r, status="ERROR", output=None, latency_ms=latency, error=exc.code,
+                            served_model=exc.served, **record)
+        except (AttributeError, KeyError, IndexError, TypeError, ValueError, UnicodeDecodeError, OverflowError,
+                RecursionError, MemoryError):
             return response(r, status="ERROR", output=None, latency_ms=latency, error="RESPONSE_UNPARSEABLE", **record)
-        if served is not None and served != self.identity.revision:
+        if served != self.identity.revision:
             return response(r, status="ERROR", output=None, latency_ms=latency, error="SERVED_MODEL_MISMATCH",
                             served_model=str(served), **record)
         cost = {"amount_micro_usd": None, "basis": "UNKNOWN_NO_PRICE_SOURCE"}

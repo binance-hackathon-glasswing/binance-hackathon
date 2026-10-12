@@ -3,17 +3,14 @@ IDEA-018 §2.1 (review script, offline, reads only the given probe file).
 Usage: python -I variants.py <candles_probe.json>"""
 import json, math, sys
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from larp.research.candles import closed_bstock_bars
 def main(path):
-    raw = json.load(open(path))["raw"]; TOK = ["NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"]; H = 3600000
-    blocks, cur = {t: [] for t in TOK}, None
-    for r in raw:
-        if r.get("endpoint") == "rwa/underlying-market": cur = r["symbol"]; continue
-        if cur and r.get("bar") == "1h" and isinstance(r["response"].get("data"), list): blocks[cur].append(r)
+    capture = json.load(open(path)); TOK = ["NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"]; H = 3600000
+    captured = closed_bstock_bars(capture, "1h", H)
     def series(t):
-        d = {}
-        for r in blocks[t]:
-            for c in r["response"]["data"]: d[int(c[5])] = float(c[3])
-        return dict(sorted(d.items()))
+        return {stamp: row[3] for stamp, row in captured[t].items()}
     def is_on(ms, mode):
         t = datetime.fromtimestamp(ms / 1000, tz=timezone.utc) - timedelta(hours=4)
         if t.weekday() >= 5 or t.strftime("%Y-%m-%d") == "2026-09-07": return False
@@ -29,7 +26,8 @@ def main(path):
                 r = math.log(d[b] / d[a])
                 if is_on(b, mode): on += r * r
                 else: off += r * r
-            out.append(f"{t} {off/(on+off):.0%}")
+            out.append(f"{t} {off/(on+off):.0%}" if on + off > 0 else
+                       f"{t} INCONCLUSIVE: insufficient nonconstant closed returns")
         print(f"{mode:28}", out)
 
 

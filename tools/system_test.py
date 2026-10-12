@@ -22,12 +22,15 @@ SYSTEM_CASES = [
     'tests/integration/test_published_red_flag_policy.py',
     'tests/integration/test_live_replay.py',
     'tests/integration/test_settlement.py',
+    'tests/integration/test_cadence.py',
+    'tests/integration/test_evidence_pipeline.py',
     'tests/execution/test_postgres_execution.py',
     'tests/execution/test_runtime_consumer.py',
     'tests/audit/test_round_logging.py',
     'tests/runtime/test_supervision.py',
     'tests/runtime/test_anchors_roles.py',
     'tests/runtime/test_manifest_prompts.py',
+    'tests/runtime/test_review_boundaries.py',
 ]
 GUARD = '''import socket
 _original_connect = socket.socket.connect
