@@ -354,3 +354,19 @@ Criteria pushed at `e05a577` (CI green, [run 38207095863](https://github.com/bin
   - Depends on the PR #14 B3 recovery rule for never-broadcast signed attempts after a restore. Its review thread is left open for the reviewer.
 - **V9 · PASS.** `archive_retention_days >= 82`; Terraform test with 81 is refused (CI).
 - **V10 · PASS.** Shared constants imported from `larp.audit.protocol`.
+
+### 4.6 Secrets delivery to the runtime process (the open half of review comment V4). Prospective criteria (2026-10-12)
+Authorized by the user on 2026-10-12 ("fix all the comments on the PR"). Finding behind it: nothing delivered the runtime secrets into the process. Checking that also showed `check_live_start` required `AI_SEEDS_SECRET` in the coordinator. The infrastructure design (`docs/build/runtime-infrastructure.md`, Secrets row) gives the audit secret to the uploader only, and only `larp/audit/delivery.py` uses it. Terraform also granted the primary host no secret at all.
+- **S1 · Loader.** `larp/runtime/secrets.py` reads one Secrets Manager secret (one `GetSecretValue`). Its `SecretString` must be a JSON object of non-empty strings.
+  - It returns only the runtime's names.
+  - A wallet key or the audit secret in it is refused, as is malformed content.
+  - No secret value appears in any exception text, log line or repr.
+  - Tested with a fake client.
+- **S2 · Never the environment.** The service takes secrets only from the loader, given the non-secret `runtime_secret_id` in its configuration, and never from `os.environ`.
+  - A `dev` or `live` start without a secret ID is refused (exit 4).
+  - `offline` and `paper` load nothing.
+  - Tested, including a live check that ignores matching environment variables.
+- **S3 · Least privilege.** The runtime needs `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY` and `BINANCE_SECRET_KEY`. `AI_SEEDS_SECRET` (uploader only) is refused on the runtime host, like the wallet keys (signer only). The W1 tests are updated.
+- **S4 · Terraform.** A `runtime` secret (metadata only; values are provisioned outside Terraform) is readable only by the primary and standby hosts. A Terraform test asserts the secret exists. CI validate and plan pass.
+
+Pass: tests above, full suite, CI green; runbook §1 updated; the V4 review thread replied to and resolved.
