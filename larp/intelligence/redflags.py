@@ -22,6 +22,7 @@ the action, the assessment only establishes the fact.
 """
 
 from pathlib import Path
+from datetime import datetime, timezone
 import json
 import re
 
@@ -34,10 +35,10 @@ VERIFICATION = "RedFlagVerification.v1"
 CLASSES = {1: "EXIT", 2: "BLOCK_NEW_BUYS", 3: "SHADOW"}
 REASONS = ("VERIFIED", "OUT_OF_SCOPE_FORM", "OUT_OF_SCOPE_FILER", "ITEM_NOT_IN_METADATA", "BACKFILL_NOT_ACTIONABLE",
            "STALE_EVENT", "NO_ITEM_SECTION", "NO_CONDITION_TEXT", "NEGATED", "THIRD_PARTY", "NOT_CURRENT",
-           "NOT_ASSERTED")
+           "NOT_ASSERTED", "AMENDMENT_ORIGIN_UNKNOWN")
 REQUIRED = ("predicate_id", "version", "class", "factual_condition", "issuer_scope", "trigger", "required_sources",
             "required_fields", "affected_period", "freshness", "directive", "reset", "resolution", "reentry", "fixtures")
-ANY_ITEM_HEADING = re.compile(r"\bItem\s+(\d{1,2}\.\d{2})\b", re.I)
+ANY_ITEM_HEADING = re.compile(r"^[ \t]*Item\s+(\d{1,2}\.\d{2})\b", re.I | re.M)
 SECTION_MAX_CHARS = 20_000
 PERIOD = re.compile(r"\b(?:(?:first|second|third|fourth)\s+(?:fiscal\s+)?quarter(?:\s+of\s+(?:fiscal\s+)?\d{4})?|"
                     r"(?:fiscal\s+)?(?:year|quarter|period|months?)s?\s+ended\s+[A-Z][a-z]+\s+\d{1,2},\s+\d{4}|"
@@ -86,13 +87,21 @@ def _heading_clause(text: str, lo: int, hi: int) -> bool:
     """The condition sits in an item heading's own clause, e.g. 'Item 4.02 Non-Reliance on ...'. Only that clause
     is excluded: a heading and its body in one paragraph still leave the body's sentences readable."""
     c_lo, c_hi = clause_bounds(text, lo, hi)
-    return bool(ANY_ITEM_HEADING.search(text[c_lo:c_hi]))
+    clause = text[c_lo:c_hi]
+    heading = ANY_ITEM_HEADING.match(clause.lstrip())
+    if not heading:
+        return False
+    # A body sentence in the heading paragraph still asserts an occurrence.
+    return not re.search(r"\b(?:the\s+(?:company|board|audit\s+committee)|our|we|on\s+[A-Z][a-z]+)\b",
+                         clause[heading.end():], re.I)
 
 
 def sections(text: str, item: str, heading: re.Pattern) -> list:
     """(start, end) of each section that starts at the item's heading and ends at the next other item's heading."""
     out = []
-    for m in heading.finditer(text):
+    for m in ANY_ITEM_HEADING.finditer(text):
+        if m.group(1) != item or not heading.search(m.group(0)):
+            continue
         end = min(len(text), m.end() + SECTION_MAX_CHARS)
         for other in ANY_ITEM_HEADING.finditer(text, m.end(), end):
             if other.group(1) != item:
@@ -127,7 +136,23 @@ def verify_item(predicate: dict, *, record: dict, texts: dict, issuer_names: tup
     if record.get("ingest_mode") == "BACKFILL" and not freshness.get("backfill_actionable"):
         return fail("BACKFILL_NOT_ACTIONABLE")
     original = record.get("original_ms")
-    if type(original) is not int or cutoff_ms - original > freshness["max_event_age_ms"]:
+    if record["form"].endswith("/A"):
+        # SEC acceptance of an amendment does not refresh the underlying occurrence.
+        dates = []
+        reference = re.compile(r"(?:Current\s+Report\s+on\s+)?Form\s+8-K(?:\s+originally)?\s+filed\s+(?:on\s+)?"
+                               r"([A-Z][a-z]+\s+\d{1,2},\s+\d{4})", re.I)
+        for doc in record.get("documents") or []:
+            for match in reference.finditer(texts.get(doc.get("text_sha256"), "")):
+                try:
+                    dates.append(int(datetime.strptime(match.group(1), "%B %d, %Y").replace(
+                        tzinfo=timezone.utc).timestamp() * 1000))
+                except ValueError:
+                    continue
+        if not dates:
+            return fail("AMENDMENT_ORIGIN_UNKNOWN")
+        original = min(dates)
+        out["event_original_ms"] = original
+    if type(original) is not int or original > cutoff_ms or cutoff_ms - original > freshness["max_event_age_ms"]:
         return fail("STALE_EVENT")
     heading = re.compile(trigger["heading_pattern"], re.I)
     condition = re.compile(trigger["condition_pattern"], re.I)
@@ -159,7 +184,7 @@ def verify_item(predicate: dict, *, record: dict, texts: dict, issuer_names: tup
     actors = {s["actor"] for s in seen}
     reason = ("NEGATED" if "NEGATED" in assertions else
               "THIRD_PARTY" if "THIRD_PARTY" in actors else
-              "NOT_CURRENT" if assertions == {"OCCURRED"} else "NOT_ASSERTED")
+              "NOT_CURRENT" if assertions == {"OCCURRED"} else "NOT_ASSERTED", "AMENDMENT_ORIGIN_UNKNOWN")
     return fail(reason, checked=[s["assertion"] for s in seen])
 
 

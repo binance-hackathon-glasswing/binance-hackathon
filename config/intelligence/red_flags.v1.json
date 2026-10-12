@@ -20,7 +20,7 @@
                        "identity": "The filing belongs to the registered issuer (CIK checked at ingestion) and the occurrence clause's actor is the issuer (the company, its board or audit committee), not a third party such as an investee or supplier."},
       "trigger": {"forms": ["8-K", "8-K/A"], "item": "4.02", "event": "RESTATEMENT",
                   "heading_pattern": "\\bItem\\s+4\\.02\\b",
-                  "condition_pattern": "\\bno\\s+longer\\s+be\\s+relied\\s+upon\\b"},
+                  "condition_pattern": "\\bno\\s+longer\\s+be\\s+relied\\s+(?:upon|on)\\b"},
       "required_sources": ["SEC EDGAR submissions JSON (items field) for the issuer's CIK", "the filing's primary document, saved text with its SHA-256"],
       "required_fields": ["accession", "form", "items", "acceptanceDateTime (original_ms)", "available_ms", "primary document text_sha256", "verified clause span"],
       "affected_period": {"required": false, "extracted": "period phrases named in the verified clause (e.g. 'second quarter of fiscal 2027', 'year ended December 31, 2025')",

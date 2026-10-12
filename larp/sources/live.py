@@ -61,7 +61,7 @@ def require_committed(state: dict, allow_dirty: bool) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ terms captures
-def capture_terms(sources: dict, fetch, artifacts, clock_ms) -> list:
+def capture_terms(sources: dict, fetch, artifacts, clock_ms, *, sec_user_agent=None) -> list:
     """Fetch each enabled source's terms page, store its bytes and return dated rows with their SHA-256.
 
     `fetch(url, headers, timeout_s) -> (status, headers, body)` must not follow redirects; same-host https
@@ -78,7 +78,14 @@ def capture_terms(sources: dict, fetch, artifacts, clock_ms) -> list:
                 row = {"status": "REFUSED", "error": "REDIRECT_OR_URL_NOT_SAME_HTTPS_HOST"}
                 break
             try:
-                status, headers, body = fetch(url, {"User-Agent": "LARP-terms-capture/1 (IDEA-041)"}, 30)
+                if host == "sec.gov" or host.endswith(".sec.gov"):
+                    if not sec_user_agent:
+                        row = {"status": "REFUSED", "error": "SEC_CONTACT_REQUIRED"}
+                        break
+                    user_agent = sec_user_agent
+                else:
+                    user_agent = "LARP-terms-capture/1 (IDEA-041)"
+                status, headers, body = fetch(url, {"User-Agent": user_agent}, 30)
             except OSError as exc:
                 row = {"status": "FAILED", "error": type(exc).__name__}
                 break
@@ -134,7 +141,12 @@ class PollLog:
 
     def append(self, line: dict) -> None:
         data = (json.dumps(line, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
-        with open(self.path, "ab") as handle:
+        with open(self.path, "a+b") as handle:
+            handle.seek(0, os.SEEK_END)
+            if handle.tell():
+                handle.seek(-1, os.SEEK_END)
+                if handle.read(1) != b"\n":
+                    handle.write(b"\n")  # preserve and frame a torn tail before the new record
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
@@ -143,10 +155,10 @@ class PollLog:
         if not self.path.exists():
             return []
         out = []
-        for raw in self.path.read_text("utf-8").splitlines():
+        for raw in self.path.read_bytes().splitlines():
             try:
                 out.append(json.loads(raw))
-            except ValueError:
+            except (ValueError, UnicodeDecodeError):
                 out.append({"corrupt": True})  # a torn last line after a crash is reported, not dropped silently
         return out
 
@@ -225,6 +237,11 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
     corrupt = sum(1 for line in lines if line.get("corrupt"))
     targets = {}
     for key, cadence in sorted(cadences.items()):
+        recorded = {l.get("cadence_ms") for l in lines if l.get("target") == key
+                    and start_ms <= l.get("started_ms", -1) <= end_ms
+                    and type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
+        if recorded:
+            cadence = min(recorded)  # a changed CLI default cannot relax recorded commitments
         ok = sorted(l["started_ms"] for l in lines if l.get("target") == key and l.get("status") in OK_STATUSES
                     and start_ms <= l["started_ms"] <= end_ms)
         failures = sum(1 for l in lines if l.get("target") == key and l.get("status") not in OK_STATUSES
@@ -415,7 +432,8 @@ def main(argv=None, env=None) -> int:
         root = env.get("LARP_ARTIFACT_ROOT")
         if not root:
             raise SystemExit("LARP_ARTIFACT_ROOT is required (terms bytes are stored outside Git)")
-        rows = capture_terms(load_register()[0], urllib_fetch, FileArtifacts(str(Path(root) / "artifacts")), epoch_ms)
+        rows = capture_terms(load_register()[0], urllib_fetch, FileArtifacts(str(Path(root) / "artifacts")), epoch_ms,
+                             sec_user_agent=env.get("LARP_SEC_USER_AGENT"))
         if args.write_register:
             for source_id in write_register_terms(REGISTER, rows):
                 print(f"register updated: {source_id}", file=sys.stderr)

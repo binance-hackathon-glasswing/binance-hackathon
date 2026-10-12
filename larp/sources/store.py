@@ -11,6 +11,16 @@ from pathlib import Path
 import hashlib
 import json
 import sqlite3
+import threading
+from functools import wraps
+
+
+def _synchronized(method):
+    @wraps(method)
+    def locked(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return locked
 
 from larp.contracts import Document
 
@@ -22,26 +32,31 @@ class StoreConflict(RuntimeError):
 class SQLiteSourceStore:
     def __init__(self, path: str):
         self.path = path
-        self.db = sqlite3.connect(path, isolation_level=None)
+        self._lock = threading.RLock()
+        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.execute("PRAGMA journal_mode=WAL") if path != ":memory:" else None
         self.db.execute("CREATE TABLE IF NOT EXISTS cursors (source_id TEXT PRIMARY KEY, version INTEGER, doc BLOB)")
         self.db.execute("CREATE TABLE IF NOT EXISTS records (record_id TEXT PRIMARY KEY, source_id TEXT, item_id TEXT,"
                         " version INTEGER, doc BLOB)")
 
+    @_synchronized
     def cursor(self, source_id: str) -> dict | None:
         row = self.db.execute("SELECT doc FROM cursors WHERE source_id=?", (source_id,)).fetchone()
         return None if row is None else Document(bytes(row[0])).read()
 
+    @_synchronized
     def latest(self, source_id: str, item_id: str) -> dict | None:
         """Durable item index: the newest stored version of an item, independent of the bounded cursor cache."""
         row = self.db.execute("SELECT doc FROM records WHERE source_id=? AND item_id=? ORDER BY version DESC LIMIT 1",
                               (source_id, item_id)).fetchone()
         return None if row is None else Document(bytes(row[0])).read()
 
+    @_synchronized
     def records(self, source_id: str | None = None) -> list:
         query = "SELECT doc FROM records" + (" WHERE source_id=?" if source_id else "") + " ORDER BY rowid"
         return [Document(bytes(r[0])).read() for r in self.db.execute(query, (source_id,) if source_id else ())]
 
+    @_synchronized
     def commit(self, batch: dict) -> dict:
         cursor = batch["cursor"]
         raw_cursor = Document.from_dict(cursor).payload
@@ -68,6 +83,7 @@ class SQLiteSourceStore:
             raise
         return {"status": "COMMITTED", "cursor_version": cursor["version"], "records": len(batch["records"])}
 
+    @_synchronized
     def close(self):
         self.db.close()
 
@@ -83,7 +99,8 @@ class SQLiteEvidenceStore:
 
     def __init__(self, path: str):
         self.path = path
-        self.db = sqlite3.connect(path, isolation_level=None)
+        self._lock = threading.RLock()
+        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.execute("PRAGMA journal_mode=WAL") if path != ":memory:" else None
         for table in ("batches (batch_id TEXT PRIMARY KEY, doc BLOB)",
                       "ecursors (source_id TEXT, issuer_id TEXT, version INTEGER, doc BLOB, PRIMARY KEY (source_id, issuer_id))",
@@ -92,25 +109,30 @@ class SQLiteEvidenceStore:
                       "estates (issuer_id TEXT PRIMARY KEY, version INTEGER, doc BLOB)"):
             self.db.execute("CREATE TABLE IF NOT EXISTS " + table)
 
+    @_synchronized
     def read_cursor(self, source_id: str, issuer_id: str):
         row = self.db.execute("SELECT doc FROM ecursors WHERE source_id=? AND issuer_id=?",
                               (source_id, issuer_id)).fetchone()
         return None if row is None else Document(bytes(row[0]))
 
+    @_synchronized
     def records(self, issuer_id: str) -> tuple:
         return tuple(Document(bytes(r[0])) for r in self.db.execute(
             "SELECT doc FROM erecords WHERE issuer_id=? ORDER BY rowid", (issuer_id,)))
 
+    @_synchronized
     def read_state(self, issuer_id: str):
         row = self.db.execute("SELECT doc FROM estates WHERE issuer_id=?", (issuer_id,)).fetchone()
         return None if row is None else Document(bytes(row[0]))
 
+    @_synchronized
     def jobs(self) -> list:
         return [Document(bytes(r[0])).read() for r in self.db.execute("SELECT doc FROM ejobs ORDER BY rowid")]
 
     def _receipt(self, batch_id, status, **extra) -> Document:
         return Document.from_dict({"schema": "CommitReceipt.v1", "batch_id": batch_id, "status": status, **extra})
 
+    @_synchronized
     def commit(self, batch: Document) -> Document:
         b = batch.read()
         batch_id = b.get("batch_id")
@@ -162,6 +184,7 @@ class SQLiteEvidenceStore:
             raise
         return self._receipt(batch_id, "COMMITTED")
 
+    @_synchronized
     def close(self):
         self.db.close()
 

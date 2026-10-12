@@ -42,12 +42,35 @@ OPENAI_ENDPOINT = "https://api.openai.com/v1/responses"
 OPENAI_HOSTS = frozenset({"api.openai.com"})
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 # The model's reply: one assessor action (prompts/assessor.v2.txt). Enforced again by models.parse_output.
-ACTION_SCHEMA = {
-    "type": "object", "additionalProperties": False, "required": ["action"],
-    "properties": {"action": {"type": "string", "enum": ["CALL_TOOL", "FINISH"]},
-                   "tool": {"type": "string"}, "args": {"type": "object"},
-                   "claims": {"type": "array", "items": {"type": "object"}}, "notes": {"type": "string"}},
-}
+def _object(properties, required=()):
+    return {"type": "object", "additionalProperties": False,
+            "properties": properties, "required": list(required)}
+
+
+_NULL_TEXT = {"type": ["string", "null"]}
+_SPAN = _object({"doc": {"type": "string"}, "start": {"type": "integer"},
+                 "end": {"type": "integer"}, "text": {"type": "string"}}, ("doc", "start", "end", "text"))
+_NULL_SPAN = {"anyOf": [_SPAN, {"type": "null"}]}
+_CLAIM = _object({
+    **{k: _NULL_TEXT for k in ("kind", "metric", "period", "value", "tolerance_pct", "unit", "direction",
+                              "security_scope", "basis")},
+    "range": {"anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "null"}]},
+    "scale_exp10": {"type": ["integer", "null"]}, "precision_exp10": {"type": ["integer", "null"]},
+    **{k: _NULL_SPAN for k in ("span", "period_span", "scale_span")},
+    "statement": {"anyOf": [_object({k: _NULL_TEXT for k in ("assertion", "actor", "temporal", "effective")}),
+                            {"type": "null"}]},
+    "source": {"anyOf": [_object({**{k: _NULL_TEXT for k in ("record_id", "accession", "doc_name")},
+                                   **{k: {"type": ["integer", "null"]} for k in ("available_ms", "original_ms")}}),
+                         {"type": "null"}]},
+})
+# Action-specific branches retain parse_output's exact top-level shape; every nested object is closed.
+ACTION_SCHEMA = _object({
+    "action": {"type": "string", "enum": ["CALL_TOOL", "FINISH"]},
+    "tool": {"type": "string", "enum": ["fetch_document", "prior_context", "compare_facts"]},
+    "args": _object({k: {"type": "string"} for k in ("accession", "name", "metric")}),
+    "claims": {"type": "array", "items": _CLAIM}, "notes": {"type": "string"},
+}, ("action",))
+
 
 
 def https_post(url: str, headers: dict, body: bytes, timeout_s: float) -> tuple:
@@ -123,6 +146,8 @@ class HostedModel:
         r = request.read()
         body = json.dumps(self._body(r["input"]), sort_keys=True, separators=(",", ":")).encode("utf-8")
         record = dict(artifacts=self._artifacts, request_payload=body)
+        # Persist the exact request before network I/O, and the reply before parsing.
+        self._artifacts.put(body)
         started = self.clock()
         try:
             status, raw = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
@@ -132,6 +157,7 @@ class HostedModel:
         except OSError as exc:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error=type(exc).__name__, **record)
+        self._artifacts.put(raw)
         record["raw"] = raw
         latency = self.clock() - started
         if latency > remaining_ms:
@@ -146,7 +172,8 @@ class HostedModel:
         except _ProviderReply as exc:
             return response(r, status="ERROR", output=None, latency_ms=latency, error=exc.code,
                             served_model=exc.served, **record)
-        except (AttributeError, KeyError, IndexError, TypeError, ValueError, UnicodeDecodeError):
+        except (AttributeError, KeyError, IndexError, TypeError, ValueError, UnicodeDecodeError,
+                OverflowError, RecursionError):
             return response(r, status="ERROR", output=None, latency_ms=latency, error="RESPONSE_UNPARSEABLE", **record)
         if served != self.identity.model_id:
             return response(r, status="ERROR", output=None, latency_ms=latency, error="SERVED_MODEL_MISMATCH",

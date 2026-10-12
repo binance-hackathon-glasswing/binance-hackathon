@@ -879,6 +879,8 @@ def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cuto
                   policy_profile_hash: str, allowed_tools: list, tool_calls: int, deadline_ms: int,
                   source_health: dict | None) -> Document:
     """AssessmentRequest.v1 from an ingestion or review job and the records it references."""
+    if job.get("kind") == "REASSESS_ISSUER" and type(job.get("payload")) is not dict:
+        raise IntelligenceError("REASSESS_ISSUER job requires its payload")
     refs = [{"record_id": x["record_id"], "accession": x["accession"], "source": x["source_id"],
              "quality": x["quality"], "observed_ms": x["retrieved_ms"], "available_ms": x["available_ms"],
              "content_hash": x["content_hash"]} for x in records]

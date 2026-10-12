@@ -47,13 +47,16 @@ def _proposed_claims(result: dict) -> int:
 
 
 def metrics(results: list, baseline: list | None = None) -> dict:
-    replies = valid = proposed = rejected = 0
+    replies = valid = proposed = rejected = transport_failures = 0
     elapsed, tools, costs, unknown_cost, statuses, agree = [], [], [], 0, {}, []
     for i, r in enumerate(results):
         statuses[r["status"]] = statuses.get(r["status"], 0) + 1
         for step in r["model_io"].get("steps", []):
             reply = step.get("response")
             if reply is None or reply.get("raw_response_sha256") is None and reply["status"] != "OK":
+                continue
+            if str(reply.get("error", "")).startswith("HTTP "):
+                transport_failures += 1
                 continue
             replies += 1
             try:
@@ -77,7 +80,7 @@ def metrics(results: list, baseline: list | None = None) -> dict:
     n = len(results)
     return {
         "assessments": n, "status_counts": dict(sorted(statuses.items())),
-        "model_replies": replies, "schema_valid_rate": None if not replies else round(valid / replies, 4),
+        "model_replies": replies, "transport_failures": transport_failures, "schema_valid_rate": None if not replies else round(valid / replies, 4),
         "claims_proposed": proposed, "claims_rejected": rejected,
         "claim_verification_pass_rate": None if not proposed else round((proposed - rejected) / proposed, 4),
         "latency_ms": {"p50": _quantile(elapsed, 0.5), "p95": _quantile(elapsed, 0.95),

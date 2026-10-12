@@ -101,7 +101,7 @@ class Terms(unittest.TestCase):
             if url.startswith("https://www.archives.gov/"):
                 return 500, {}, None
             return 200, {}, ("synthetic terms for " + url).encode()
-        rows = {r["source_id"]: r for r in live.capture_terms(self.sources, fetch, self.artifacts, lambda: T0)}
+        rows = {r["source_id"]: r for r in live.capture_terms(self.sources, fetch, self.artifacts, lambda: T0, sec_user_agent=AGENT)}
         self.assertEqual(rows["sec-press"]["status"], "CAPTURED")
         self.assertEqual(rows["sec-press"]["final_url"], "https://www.sec.gov/privacy-notice")
         self.assertEqual(self.artifacts.get(rows["sec-press"]["sha256"]), b"<html>synthetic SEC terms page</html>")
