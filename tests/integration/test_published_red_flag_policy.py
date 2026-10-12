@@ -16,7 +16,8 @@ from larp.intelligence.scenarios import EXSEMI
 
 class PublishedPredicatePolicy(unittest.TestCase):
     def test_real_rf1_producer_is_mandatory_even_without_policy(self):
-        run=Run('RF1-4.02-SUPPORTED'); result=run.assess('RF1-4.02-SUPPORTED')
+        run=Run('RF1-4.02-SUPPORTED'); original_context=run.state['context']
+        result=run.assess('RF1-4.02-SUPPORTED')
         _,sha=red_flag_predicates()
         s=snapshot(held={'NVDAB':2000},now=instant('2026-10-10T14:00:00Z'),profile_changes={
             'baseline':'EQUAL_WEIGHT','top_up_below_gross_weight':[3,4], 'red_flag_policy':'IDEA-035-B1',
@@ -26,8 +27,8 @@ class PublishedPredicatePolicy(unittest.TestCase):
         s=replace(s,observed_at=datetime.fromtimestamp(result['completed_ms']/1000,timezone.utc))
         now_ms=result['completed_ms']
         result.update(run_id=s.run_id,policy_profile_hash=s.policy_profile_hash)
-        state=dict(initial_state(EXSEMI,s.policy_profile_hash),context=run.state['context'],
-                   context_hash=context_hash(run.state['context']))
+        state=dict(initial_state(EXSEMI,s.policy_profile_hash),context=original_context,
+                   context_hash=context_hash(original_context))
         decision,state=accept(state,Document.from_dict(result),profile_hash=s.policy_profile_hash,now_ms=now_ms)
         self.assertEqual(decision,'ACCEPT')
         record=build_evidence_context(consume(state,now_ms),state,run_id=s.run_id,token='NVDAB',
