@@ -70,7 +70,8 @@ def decide(snapshot, state):
             shadow.append({"symbol": symbol, "red_flag_directives": directives,
                            "statements_pending": len((a or {}).get("statements_pending", []))})
             update_directive_blocks(blocked, finding_sessions, symbol, directives, session=session,
-                run_id=snapshot.run_id, allow_resolution=bool(a and a.get("review_complete") is True))
+                run_id=snapshot.run_id, allow_resolution=bool(a and (a.get("review_complete") is True
+                    or a.get("review_complete_excluding_timed_blocks") is True)))
         if classified and not published:
             classified_findings = [f for f in findings if f["predicate_id"] in records]
             if a is not None:
