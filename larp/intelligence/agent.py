@@ -23,7 +23,9 @@ result existed (feature availability); `cutoff_ms` is the evidence observation t
 import threading
 
 from larp.contracts import Document
-from larp.intelligence.common import INCOMPLETE_EVIDENCE, IntelligenceError, assert_no_trade_fields, digest, is_hash
+from larp.intelligence.common import (
+    INCOMPLETE_EVIDENCE, IntelligenceError, assert_no_trade_fields, digest, is_hash, sha256_hex,
+)
 from larp.intelligence import lifecycle
 from larp.intelligence.facts import METRIC_NAMES, is_statement, issuer_names, statement_event, values_agree
 from larp.intelligence.semantics import finding_eligible
@@ -254,12 +256,15 @@ class EvidenceAssessor:
                          "input": model_input}
             step += 1
             io["started"] += 1
+            io["in_flight"] = m_request  # what an abandoned result records if the deadline passes during this call
             try:
                 m_response = self.model.step(Document.from_dict(m_request), remaining).read()
             except Exception as exc:  # adapter defect: unavailable, never a silent success
                 model_io.append({"request_id": m_request["request_id"], "error": type(exc).__name__})
                 status, reasons = "UNAVAILABLE", ["MODEL_ERROR"]
                 break
+            finally:
+                io["in_flight"] = None
             model_io.append({"request": m_request, "response": m_response})
             if m_response["status"] == "TIMEOUT" or self.clock() - start > deadline:
                 status, reasons = "UNAVAILABLE", ["MODEL_TIMEOUT"]
@@ -371,9 +376,21 @@ class EvidenceAssessor:
             if fact["source"].get("accession") not in state.current_accessions:
                 rejected.append({"index": i, "reason": "CLAIM_NOT_FROM_ASSESSED_FILING"})
                 continue
+            fact = self._harness_twin(state, fact) or fact
             state.facts.setdefault(fact["fact_id"], fact)
             verified.append(fact["fact_id"])
         return verified, rejected
+
+    @staticmethod
+    def _harness_twin(state, fact):
+        """The extracted fact a verified model claim restates. A claim does not state the harness-only fields
+        (`basis`, `precision_exp10`; the provider schema does not offer them), so without this a confirmation would
+        be a second, differently identified copy of the same fact (IDEA-041 R02 review)."""
+        if fact.get("basis") != "MODEL_CLAIM_VERIFIED":
+            return None
+        own = {k: v for k, v in fact.items() if k not in _HARNESS_ONLY}
+        return next((f for f in state.facts.values() if f.get("basis") != "MODEL_CLAIM_VERIFIED"
+                     and {k: v for k, v in f.items() if k not in _HARNESS_ONLY} == own), None)
 
     def _bind_source(self, state, claim):
         """A claim naming no source record is attributed to the record holding its cited document.
@@ -517,6 +534,7 @@ class EvidenceAssessor:
         """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
         completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
         steps = list(io["steps"])
+        in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
         key = digest("larp.intel.assessment-key.v1", {
@@ -545,15 +563,35 @@ class EvidenceAssessor:
                                  if "response" in x and x["response"]["reasoning_summary"]],
                          "model_called": io["started"] > 0, "requests_started": io["started"],
                          "no_model_call_reason": None if io["started"] else "ASSESSMENT_DEADLINE_EXCEEDED",
+                         "in_flight": in_flight,
                          "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
-                                 "audit only; a call in flight at the deadline is counted in requests_started; tool "
-                                 "results are not part of this result"},
+                                 "audit only; a call in flight at the deadline is counted in requests_started and "
+                                 "named in in_flight with its stored request bytes; tool results are not part of "
+                                 "this result"},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
+
+    def _in_flight(self, m_request):
+        """The model call still running at the deadline: its request ID and, for a hosted adapter (which stores its
+        request bytes before calling), their SHA-256 and artifact address, so those bytes have a record."""
+        if m_request is None:
+            return None
+        out = {"request_id": m_request["request_id"], "status": "IN_FLIGHT_AT_DEADLINE",
+               "request_payload_sha256": None, "request_payload_artifact": None}
+        payload, stored = getattr(self.model, "request_payload", None), getattr(self.model, "has_artifact", None)
+        if callable(payload):
+            try:
+                digest_ = sha256_hex(payload(Document.from_dict(m_request)))
+                out["request_payload_sha256"] = digest_
+                if callable(stored) and stored(digest_):  # the deadline may fall before the adapter stored it
+                    out["request_payload_artifact"] = digest_
+            except Exception:  # noqa: BLE001 - the record still names the request
+                return out
+        return out
 
     def _novelty(self, state, current, priors):
         by_fact, counts = {}, {"NEW": 0, "CHANGED": 0, "UNCHANGED": 0, "NO_PRIOR_AVAILABLE": 0,
@@ -657,7 +695,8 @@ class EvidenceAssessor:
             record = state.index.all_by_id[fact["source"]["record_id"]]
             check = verify_item(predicate, record=record, texts=state.texts, issuer_names=issuer_names(state.entry),
                                 filer_class=state.entry.filer_class, cutoff_ms=state.cutoff,
-                                set_sha256=self.red_flag_set_sha256)
+                                set_sha256=self.red_flag_set_sha256,
+                                prior_records=tuple(state.index.by_accession.values()))
             out[fact["fact_id"]] = check
             if not check["verified"]:
                 state.missing.append(f"EVIDENCE_RED_FLAG_UNVERIFIED:{item}:{check['reason']}:{record['accession']}")
@@ -866,6 +905,9 @@ def _rationale(result, entry):
     return f"{parts[0]}. {second}. {third}."
 
 
+_HARNESS_ONLY = ("fact_id", "basis", "precision_exp10")
+
+
 def review_scope(job: dict) -> dict | None:
     """The statements a job reviews: from a STATEMENT_REVIEW_DUE job payload (larp.integration.runtime), else None.
     The result echoes it, and only results of a statement's own review job count as its review attempts (A4)."""
@@ -875,12 +917,35 @@ def review_scope(job: dict) -> dict | None:
     return {"job_id": job["job_id"], "statement_ids": sorted(payload.get("statement_ids") or [])}
 
 
+EVIDENCE_JOB_KINDS = ("ASSESS_FILING", "REASSESS_ISSUER")
+
+
+def check_job(job: dict, issuer_id: str) -> None:
+    """A scheduled evidence job (lane `evidence`, or an `evidence:` job ID) must arrive whole, with its payload: the
+    payload carries a review job's scope, and without it no review attempt would ever be counted, so the statement
+    would stay pending and the issuer unbuyable with no error (IDEA-041 R09). Refuses such a job with no payload, an
+    unknown kind, another issuer, or a STATEMENT_REVIEW_DUE payload without its statement IDs."""
+    if type(job) is not dict or type(job.get("job_id")) is not str:
+        raise IntelligenceError("Job needs a string job_id")
+    if job.get("lane") != "evidence" and not job["job_id"].startswith("evidence:"):
+        return  # an unscheduled request (bake-off, demo, test): it reviews nothing
+    payload = job.get("payload")
+    if type(payload) is not dict or payload.get("kind") not in EVIDENCE_JOB_KINDS:
+        raise IntelligenceError("EVIDENCE_JOB_WITHOUT_PAYLOAD: pass the whole scheduled job, including its payload")
+    if payload.get("issuer_id") != issuer_id:
+        raise IntelligenceError("EVIDENCE_JOB_OTHER_ISSUER")
+    ids = payload.get("statement_ids")
+    if payload.get("reason") == "STATEMENT_REVIEW_DUE" and (
+            type(ids) is not list or not ids or any(type(x) is not str or not x for x in ids)):
+        raise IntelligenceError("STATEMENT_REVIEW_JOB_WITHOUT_STATEMENT_IDS")
+
+
 def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cutoff_ms: int, context: dict,
                   policy_profile_hash: str, allowed_tools: list, tool_calls: int, deadline_ms: int,
                   source_health: dict | None) -> Document:
-    """AssessmentRequest.v1 from an ingestion or review job and the records it references."""
-    if job.get("kind") == "REASSESS_ISSUER" and type(job.get("payload")) is not dict:
-        raise IntelligenceError("REASSESS_ISSUER job requires its payload")
+    """AssessmentRequest.v1 from an ingestion or review job and the records it references. A scheduled evidence job
+    must be passed whole (`check_job`)."""
+    check_job(job, issuer_id)
     refs = [{"record_id": x["record_id"], "accession": x["accession"], "source": x["source_id"],
              "quality": x["quality"], "observed_ms": x["retrieved_ms"], "available_ms": x["available_ms"],
              "content_hash": x["content_hash"]} for x in records]

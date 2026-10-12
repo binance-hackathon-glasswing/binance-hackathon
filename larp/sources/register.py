@@ -57,12 +57,27 @@ def load_register(path: Path = CONFIG) -> tuple:
     return sources, {k: list(v) for k, v in data["issuer_aliases"].items()}, sha256_hex(raw)
 
 
-def live_preflight(sources: dict, env: dict) -> list:
+def load_edgar_terms(path: Path = CONFIG) -> dict:
+    """The EDGAR filings path's rights entry (`edgar` in the register): source_id, terms URL, capture date and hash."""
+    data = json.loads(Path(path).read_bytes().decode("utf-8"))
+    edgar = data.get("edgar")
+    if type(edgar) is not dict or edgar.get("source_id") != "sec-edgar" or type(edgar.get("rights")) is not dict:
+        raise IntelligenceError("The source register lacks the EDGAR rights entry")
+    rights = edgar["rights"]
+    missing = [k for k in REQUIRED_RIGHTS if not rights.get(k)]
+    evidence = rights.get("terms_evidence_sha256")
+    if missing or (evidence is not None and not is_hash(evidence)):
+        raise IntelligenceError(f"EDGAR rights entry incomplete or malformed: {missing}")
+    return {"source_id": "sec-edgar", "requires_user_agent": edgar.get("requires_user_agent"), **rights}
+
+
+def live_preflight(sources: dict, env: dict, edgar: dict | None = None) -> list:
     """Reasons live ingestion must not start (IDEA-041 AC-1.1, DR-12); empty means it may start.
 
-    Every enabled source needs a dated terms capture (`terms_evidence_sha256`, GAP-23); a source that needs a
-    User-Agent needs a real one with contact details (SEC fair access; no placeholder); EDGAR filings always need
-    the SEC User-Agent; `LARP_ARTIFACT_ROOT` must be an absolute, writable directory outside the repository.
+    Every enabled source needs a dated terms capture (`terms_evidence_sha256`, GAP-23), and so does the EDGAR
+    filings path (`edgar`, default: the committed register's entry); a source that needs a User-Agent needs a real
+    one with contact details (SEC fair access; no placeholder); EDGAR filings always need the SEC User-Agent;
+    `LARP_ARTIFACT_ROOT` must be an absolute, writable directory outside the repository.
     """
     from larp.intelligence.config import sec_user_agent
     reasons = []
@@ -73,6 +88,13 @@ def live_preflight(sources: dict, env: dict) -> list:
             reasons.append(f"TERMS_EVIDENCE_MISSING:{source.source_id}")
         if source.requires_user_agent and not env.get(source.requires_user_agent):
             reasons.append(f"USER_AGENT_MISSING:{source.source_id}:{source.requires_user_agent}")
+    try:
+        edgar = load_edgar_terms() if edgar is None else edgar
+    except IntelligenceError:
+        reasons.append("TERMS_EVIDENCE_MISSING:sec-edgar")
+    else:
+        if not edgar.get("terms_evidence_sha256"):
+            reasons.append("TERMS_EVIDENCE_MISSING:sec-edgar")
     try:
         sec_user_agent(env)
     except IntelligenceError:

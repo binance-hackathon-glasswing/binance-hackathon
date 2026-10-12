@@ -61,31 +61,49 @@ def require_committed(state: dict, allow_dirty: bool) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ terms captures
-def capture_terms(sources: dict, fetch, artifacts, clock_ms, *, sec_user_agent=None) -> list:
-    """Fetch each enabled source's terms page, store its bytes and return dated rows with their SHA-256.
+SEC_AGENT_ENV = "LARP_SEC_USER_AGENT"
+
+
+def _agent_env(host: str, required: str | None) -> str | None:
+    """The environment variable naming the User-Agent a terms fetch must declare: the source's own requirement, and
+    the SEC contact for any sec.gov host (SEC fair access applies to the whole site)."""
+    if required:
+        return required
+    return SEC_AGENT_ENV if host == "sec.gov" or host.endswith(".sec.gov") else None
+
+
+def capture_terms(sources: dict, fetch, artifacts, clock_ms, *, user_agents: dict | None = None,
+                  edgar: dict | None = None) -> list:
+    """Fetch each enabled source's terms page (and the EDGAR path's, `edgar`), store its bytes and return dated rows
+    with their SHA-256.
 
     `fetch(url, headers, timeout_s) -> (status, headers, body)` must not follow redirects; same-host https
-    redirects are followed here (at most 3). Rows record failures too; a failed capture has no hash.
+    redirects are followed here (at most 3). A page on a host that needs a declared User-Agent (the source's
+    requirement, or the SEC contact for sec.gov) is fetched with the agent from `user_agents` {env name: agent};
+    with none configured it is not fetched (FAILED: USER_AGENT_NOT_CONFIGURED). Other hosts get the generic agent.
+    Rows record failures too; a failed capture has no hash.
     """
     from urllib.parse import urljoin, urlsplit
+    from larp.sources.transport import USER_AGENT_DEFAULT
+    user_agents = user_agents or {}
+    targets = [(s.source_id, s.rights["terms_url"], s.requires_user_agent)
+               for s in sorted(sources.values(), key=lambda s: s.source_id) if s.enabled]
+    if edgar is not None:
+        targets.append((edgar["source_id"], edgar["terms_url"], edgar.get("requires_user_agent")))
     rows = []
-    for source in sorted(sources.values(), key=lambda s: s.source_id):
-        if not source.enabled:
-            continue
-        url, host, row = source.rights["terms_url"], urlsplit(source.rights["terms_url"]).hostname, None
+    for source_id, terms_url, required in targets:
+        url, host, row = terms_url, urlsplit(terms_url).hostname or "", None
+        env_name = _agent_env(host, required)
+        agent = user_agents.get(env_name) if env_name else USER_AGENT_DEFAULT
         for _ in range(4):
+            if not agent:
+                row = {"status": "FAILED", "error": "USER_AGENT_NOT_CONFIGURED"}
+                break
             if urlsplit(url).scheme != "https" or urlsplit(url).hostname != host:
                 row = {"status": "REFUSED", "error": "REDIRECT_OR_URL_NOT_SAME_HTTPS_HOST"}
                 break
             try:
-                if host == "sec.gov" or host.endswith(".sec.gov"):
-                    if not sec_user_agent:
-                        row = {"status": "REFUSED", "error": "SEC_CONTACT_REQUIRED"}
-                        break
-                    user_agent = sec_user_agent
-                else:
-                    user_agent = "LARP-terms-capture/1 (IDEA-041)"
-                status, headers, body = fetch(url, {"User-Agent": user_agent}, 30)
+                status, headers, body = fetch(url, {"User-Agent": agent}, 30)
             except OSError as exc:
                 row = {"status": "FAILED", "error": type(exc).__name__}
                 break
@@ -105,7 +123,7 @@ def capture_terms(sources: dict, fetch, artifacts, clock_ms, *, sec_user_agent=N
         else:
             row = {"status": "FAILED", "error": "TOO_MANY_REDIRECTS"}
         now = clock_ms()
-        rows.append({"source_id": source.source_id, "terms_url": source.rights["terms_url"],
+        rows.append({"source_id": source_id, "terms_url": terms_url, "user_agent_env": env_name,
                      "captured_ms": now, "captured_utc": iso(now), **row})
     return rows
 
@@ -140,13 +158,17 @@ class PollLog:
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def append(self, line: dict) -> None:
+        """Append one record. If the file ends in a torn record (no final newline, e.g. after a crash mid-write), a
+        newline is written first: the damaged bytes stay as they are and read back as one corrupt line, and this
+        record stays a line of its own (IDEA-041 R04)."""
         data = (json.dumps(line, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
         with open(self.path, "a+b") as handle:
             handle.seek(0, os.SEEK_END)
-            if handle.tell():
+            if handle.tell() > 0:
                 handle.seek(-1, os.SEEK_END)
                 if handle.read(1) != b"\n":
-                    handle.write(b"\n")  # preserve and frame a torn tail before the new record
+                    data = b"\n" + data
+            handle.seek(0, os.SEEK_END)
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
@@ -155,11 +177,16 @@ class PollLog:
         if not self.path.exists():
             return []
         out = []
-        for raw in self.path.read_bytes().splitlines():
+        for raw in self.path.read_bytes().split(b"\n"):
+            if not raw:
+                continue
             try:
-                out.append(json.loads(raw))
-            except (ValueError, UnicodeDecodeError):
-                out.append({"corrupt": True})  # a torn last line after a crash is reported, not dropped silently
+                line = json.loads(raw.decode("utf-8"))
+                if type(line) is not dict:
+                    raise ValueError("not an object")
+                out.append(line)
+            except ValueError:  # a torn line after a crash is reported, not dropped silently
+                out.append({"corrupt": True, "bytes": len(raw), "sha256": sha256_hex(raw)})
         return out
 
 
@@ -232,29 +259,37 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
                required_ms: int = 86_400_000, tolerance: int = 2) -> dict:
     """DR-12 evidence from the poll log. A gap is the time between consecutive successful polls of one target (and
     from `start_ms` to the first, and from the last to `end_ms`); it is unexplained when it exceeds `tolerance` x
-    cadence and no incident {target, from_ms, to_ms, reason} covers it. PASS needs a window of at least
+    cadence and no incident {target, from_ms, to_ms, reason} covers it. The cadence is the stricter of the declared
+    one (`cadences`, which also names the targets) and the one the runner logged with the poll that opens the gap
+    (the first logged one in the window for the gap from `start_ms`); so a run at a faster logged cadence is held
+    to it, and a run that logged a slower cadence than declared cannot pass (IDEA-041 R13). The report lists the
+    logged cadences per target. PASS needs a window of at least
     `required_ms`, no unexplained gap and no corrupt log line; a shorter window is INCONCLUSIVE."""
     corrupt = sum(1 for line in lines if line.get("corrupt"))
     targets = {}
-    for key, cadence in sorted(cadences.items()):
-        recorded = {l.get("cadence_ms") for l in lines if l.get("target") == key
-                    and start_ms <= l.get("started_ms", -1) <= end_ms
-                    and type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
-        if recorded:
-            cadence = min(recorded)  # a changed CLI default cannot relax recorded commitments
-        ok = sorted(l["started_ms"] for l in lines if l.get("target") == key and l.get("status") in OK_STATUSES
+    for key, declared in sorted(cadences.items()):
+        mine = [l for l in lines if l.get("target") == key and type(l.get("started_ms")) is int]
+        logged = {l["started_ms"]: l["cadence_ms"] for l in mine
+                  if type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
+        ok = sorted(l["started_ms"] for l in mine if l.get("status") in OK_STATUSES
                     and start_ms <= l["started_ms"] <= end_ms)
-        failures = sum(1 for l in lines if l.get("target") == key and l.get("status") not in OK_STATUSES
-                       and start_ms <= l.get("started_ms", -1) <= end_ms)
+        failures = sum(1 for l in mine if l.get("status") not in OK_STATUSES and start_ms <= l["started_ms"] <= end_ms)
         points = [start_ms] + ok + [end_ms]
-        allowed, gaps = tolerance * cadence, []
+        after = [t for t in logged if t >= start_ms]
+        first = logged[min(after)] if after else declared  # the cadence the run logged at its first poll in the window
+        gaps = []
         for a, b in zip(points, points[1:]):
-            if b - a > allowed:
+            # The stricter of the logged and the declared cadence: a run that logs a slower cadence than the
+            # declared one cannot pass by its own account (review of R13).
+            cadence = min(logged.get(a, first if a == start_ms else declared), declared)
+            if b - a > tolerance * cadence:
                 cover = [i for i in incidents if i.get("target") in (key, "*") and i["from_ms"] <= a + cadence
                          and i["to_ms"] >= b - cadence]
                 gaps.append({"from_ms": a, "to_ms": b, "gap_ms": b - a, "from_utc": iso(a), "to_utc": iso(b),
                              "explained_by": cover[0]["reason"] if cover else None})
-        targets[key] = {"cadence_ms": cadence, "successful_polls": len(ok), "failed_polls": failures,
+        targets[key] = {"cadence_ms": declared, "logged_cadences_ms": sorted(set(logged.values())),
+                        "slower_than_declared": any(c > declared for c in logged.values()),
+                        "successful_polls": len(ok), "failed_polls": failures,
                         "max_gap_ms": max((b - a for a, b in zip(points, points[1:])), default=None),
                         "gaps_over_tolerance": gaps,
                         "unexplained_gaps": sum(1 for g in gaps if g["explained_by"] is None)}
@@ -409,7 +444,8 @@ def main(argv=None, env=None) -> int:
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)
     rep.add_argument("--incidents", help="JSON list of {target, from_ms, to_ms, reason}")
-    rep.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
+    rep.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS,
+                     help="cadence for EDGAR log lines that logged none (each line's own cadence_ms is used)")
     bake = sub.add_parser("bakeoff")
     bake.add_argument("--days", type=int, default=120)
     bake.add_argument("--per-issuer", type=int, default=5)
@@ -432,8 +468,17 @@ def main(argv=None, env=None) -> int:
         root = env.get("LARP_ARTIFACT_ROOT")
         if not root:
             raise SystemExit("LARP_ARTIFACT_ROOT is required (terms bytes are stored outside Git)")
-        rows = capture_terms(load_register()[0], urllib_fetch, FileArtifacts(str(Path(root) / "artifacts")), epoch_ms,
-                             sec_user_agent=env.get("LARP_SEC_USER_AGENT"))
+        from larp.intelligence.config import sec_user_agent
+        from larp.sources.register import load_edgar_terms
+        register = load_register()[0]
+        agents = {s.requires_user_agent: env[s.requires_user_agent] for s in register.values()
+                  if s.requires_user_agent and env.get(s.requires_user_agent)}
+        try:
+            agents[SEC_AGENT_ENV] = sec_user_agent(env)  # a real SEC contact, never a placeholder
+        except IntelligenceError:
+            agents.pop(SEC_AGENT_ENV, None)
+        rows = capture_terms(register, urllib_fetch, FileArtifacts(str(Path(root) / "artifacts")), epoch_ms,
+                             user_agents=agents, edgar=load_edgar_terms())
         if args.write_register:
             for source_id in write_register_terms(REGISTER, rows):
                 print(f"register updated: {source_id}", file=sys.stderr)

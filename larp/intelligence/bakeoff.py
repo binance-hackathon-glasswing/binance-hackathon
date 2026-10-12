@@ -3,11 +3,16 @@
 `run(candidates, requests, make_assessor)` assesses every request with every candidate through the real assessor,
 verifier and budget, and `report(...)` computes, per candidate:
 
-- schema-valid rate: model replies that parse as one allowed assessor action / model replies received;
+- schema-valid rate: model replies that parse as one allowed assessor action / model replies received. A reply is
+  an HTTP-200 provider message; HTTP errors (429, 5xx), provider error objects and timeouts are `provider_errors`,
+  reported separately and never counted as schema-invalid (IDEA-041 R15);
 - claim-verification pass rate: claims the model proposed at FINISH that the verifier accepted / proposed;
 - latency: assessment elapsed time p50/p95/max on the assessor clock, and how many stayed within 60 s;
 - tool calls: max and mean (the declared ceiling is 6);
-- cost per assessment from the adapters' token usage and declared price (UNKNOWN when no price was given);
+- cost per assessment from the adapters' token usage and declared price (UNKNOWN when no price was given). A call
+  still in flight when an assessment was abandoned at its deadline, a timed-out call and an adapter failure have
+  no usage record although the provider may bill them: they are counted (`calls_abandoned_at_deadline`,
+  `calls_without_usage`) and the cost is then a lower bound (R10);
 - status counts, and agreement of finding types with the baseline on the same filing.
 
 This is an engineering comparison on real filings, not a profit claim and not a validated accuracy estimate:
@@ -46,17 +51,29 @@ def _proposed_claims(result: dict) -> int:
     return len(claims) if type(claims) is list else 0
 
 
+def _provider_error(reply: dict) -> bool:
+    """No model message came back: a timeout, an HTTP error status or the provider's own error object."""
+    error = reply.get("error") or ""
+    return reply["status"] == "TIMEOUT" or error.startswith("HTTP ") or error == "PROVIDER_ERROR" or (
+        reply["status"] == "ERROR" and reply.get("raw_response_sha256") is None)
+
+
 def metrics(results: list, baseline: list | None = None) -> dict:
-    replies = valid = proposed = rejected = transport_failures = 0
+    replies = valid = proposed = rejected = provider_errors = abandoned = unmetered = 0
     elapsed, tools, costs, unknown_cost, statuses, agree = [], [], [], 0, {}, []
     for i, r in enumerate(results):
         statuses[r["status"]] = statuses.get(r["status"], 0) + 1
-        for step in r["model_io"].get("steps", []):
+        io = r["model_io"]
+        if (io.get("in_flight") or {}).get("status") == "IN_FLIGHT_AT_DEADLINE":
+            abandoned += 1
+        for step in io.get("steps", []):
             reply = step.get("response")
-            if reply is None or reply.get("raw_response_sha256") is None and reply["status"] != "OK":
+            if reply is None or reply["status"] == "TIMEOUT":
+                unmetered += 1  # an adapter defect or a timed-out call: the provider may have billed it
+            if reply is None:
                 continue
-            if str(reply.get("error", "")).startswith("HTTP "):
-                transport_failures += 1
+            if _provider_error(reply):
+                provider_errors += 1
                 continue
             replies += 1
             try:
@@ -80,7 +97,8 @@ def metrics(results: list, baseline: list | None = None) -> dict:
     n = len(results)
     return {
         "assessments": n, "status_counts": dict(sorted(statuses.items())),
-        "model_replies": replies, "transport_failures": transport_failures, "schema_valid_rate": None if not replies else round(valid / replies, 4),
+        "model_replies": replies, "provider_errors": provider_errors,
+        "schema_valid_rate": None if not replies else round(valid / replies, 4),
         "claims_proposed": proposed, "claims_rejected": rejected,
         "claim_verification_pass_rate": None if not proposed else round((proposed - rejected) / proposed, 4),
         "latency_ms": {"p50": _quantile(elapsed, 0.5), "p95": _quantile(elapsed, 0.95),
@@ -88,7 +106,9 @@ def metrics(results: list, baseline: list | None = None) -> dict:
                        "within_deadline": sum(1 for e in elapsed if e <= DEADLINE_MS)},
         "tool_calls": {"max": max(tools, default=None), "mean": None if not tools else round(sum(tools) / len(tools), 3)},
         "cost_micro_usd": {"total_known": sum(costs), "per_assessment_mean": None if not costs else sum(costs) // len(costs),
-                           "assessments_with_unknown_cost": unknown_cost},
+                           "assessments_with_unknown_cost": unknown_cost,
+                           "calls_abandoned_at_deadline": abandoned, "calls_without_usage": unmetered,
+                           "lower_bound": abandoned + unmetered > 0},
         "finding_agreement_with_baseline": None if baseline is None or not agree else round(sum(agree) / len(agree), 4),
     }
 

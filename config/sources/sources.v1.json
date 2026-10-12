@@ -122,5 +122,14 @@
      "rights": {"basis": "NOT_ESTABLISHED", "licence_id": null, "terms_url": "https://news.skhynix.com/en/terms-of-use/",
                 "terms_checked": "2026-10-10", "terms_evidence_sha256": null, "attribution": null, "exclusions": []},
      "limits": {}}
-  ]
+  ],
+  "edgar": {"source_id": "sec-edgar", "publisher": "U.S. Securities and Exchange Commission",
+            "status_reason": "EDGAR filings path (larp.intelligence.edgar), polled per issuer; not a register source, but live preflight needs its terms capture like any enabled source (IDEA-041 R08, AC-1.1)",
+            "endpoints": ["https://data.sec.gov/submissions/", "https://www.sec.gov/Archives/edgar/data/"],
+            "requires_user_agent": "LARP_SEC_USER_AGENT",
+            "rights": {"basis": "SEC_PUBLIC_DISSEMINATION", "licence_id": "US-GOV-SEC-WEBSITE",
+                       "terms_url": "https://www.sec.gov/privacy",
+                       "terms_checked": "2026-10-10", "terms_evidence_sha256": null,
+                       "attribution": "Source: U.S. Securities and Exchange Commission (sec.gov)",
+                       "exclusions": ["third-party exhibits as filed"]}}
 }

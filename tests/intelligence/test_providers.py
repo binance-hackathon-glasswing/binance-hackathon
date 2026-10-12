@@ -228,5 +228,337 @@ class ThroughTheAssessor(unittest.TestCase):
                 self.assertEqual(result.read()["status"], "ABSTAIN")
 
 
+# ---------------------------------------------------------------------------------------- R02, R06, R10 (PR #15 review)
+# Anthropic structured outputs (platform.claude.com, "JSON schema limitations", read 2026-10-12): every object needs
+# additionalProperties false; no numeric/string-length constraints; arrays only minItems 0 or 1; no recursion; at
+# most 24 optional and 16 union-typed parameters per request; an unsupported schema is refused with HTTP 400.
+ALLOWED_KEYWORDS = {"type", "properties", "required", "additionalProperties", "items", "enum", "const", "anyOf",
+                    "allOf", "description", "minItems", "default", "format", "$ref", "$defs", "definitions"}
+
+
+def provider_schema_violations(schema) -> list:
+    """Independent re-implementation of the documented limits, so the test does not trust the production checker."""
+    out, counts = [], {"optional": 0, "union": 0}
+
+    def walk(node, path):
+        if not isinstance(node, dict):
+            out.append(f"{path}: not a schema object")
+            return
+        out.extend(f"{path}: unsupported keyword {k}" for k in set(node) - ALLOWED_KEYWORDS)
+        if "$ref" in node:
+            out.append(f"{path}: $ref (recursion risk) not expected here")
+        types = node.get("type")
+        if isinstance(types, list) or "anyOf" in node:
+            counts["union"] += 1
+        if types == "object" or "properties" in node:
+            if node.get("additionalProperties") is not False:
+                out.append(f"{path}: object without additionalProperties false")
+            props = node.get("properties", {})
+            counts["optional"] += len(set(props) - set(node.get("required", [])))
+            out.extend(f"{path}: required {k} not a property" for k in set(node.get("required", [])) - set(props))
+            for key, sub in props.items():
+                walk(sub, f"{path}.{key}")
+        if "items" in node:
+            walk(node["items"], f"{path}[]")
+        if node.get("minItems") not in (None, 0, 1):
+            out.append(f"{path}: minItems {node['minItems']}")
+        for i, sub in enumerate(node.get("anyOf", [])):
+            walk(sub, f"{path}|{i}")
+    walk(schema, "$")
+    if counts["optional"] > 24:
+        out.append(f"{counts['optional']} optional parameters > 24")
+    if counts["union"] > 16:
+        out.append(f"{counts['union']} union-typed parameters > 16")
+    return out
+
+
+def schema_errors(value, schema, path="$") -> list:
+    """Minimal JSON-schema instance check for the keywords the action schema uses (what constrained decoding allows)."""
+    if "anyOf" in schema:
+        return [] if any(not schema_errors(value, s, path) for s in schema["anyOf"]) else [f"{path}: no anyOf branch"]
+    if "const" in schema and value != schema["const"]:
+        return [f"{path}: not {schema['const']!r}"]
+    if "enum" in schema and value not in schema["enum"]:
+        return [f"{path}: {value!r} not in enum"]
+    kinds = {"object": dict, "array": list, "string": str, "null": type(None), "boolean": bool}
+    wanted = schema.get("type")
+    if wanted is not None:
+        names = wanted if isinstance(wanted, list) else [wanted]
+        ok = any((type(value) is int if n == "integer" else type(value) in (int, float) if n == "number"
+                  else type(value) is kinds[n]) for n in names)
+        if not ok:
+            return [f"{path}: type {type(value).__name__} not {wanted}"]
+    errors = []
+    if isinstance(value, dict) and "properties" in schema:
+        errors += [f"{path}: extra key {k}" for k in set(value) - set(schema["properties"])]
+        errors += [f"{path}: missing {k}" for k in schema.get("required", []) if k not in value]
+        for k, v in value.items():
+            if k in schema["properties"]:
+                errors += schema_errors(v, schema["properties"][k], f"{path}.{k}")
+    if isinstance(value, list) and "items" in schema:
+        for i, v in enumerate(value):
+            errors += schema_errors(v, schema["items"], f"{path}[{i}]")
+    return errors
+
+
+def model_claim(claim: dict) -> dict:
+    """A claimable fact as a model states it under the schema: decimals as strings, the source by its record ID, and
+    nothing the harness sets itself (basis, precision)."""
+    from decimal import Decimal
+
+    def dec(v):
+        return None if v is None else (str(Decimal(v[0]) / Decimal(v[1])) if isinstance(v, list) else v)
+    out = {k: claim.get(k) for k in ("kind", "metric", "period", "unit", "scale_exp10", "direction", "security_scope",
+                                      "span", "period_span", "scale_span", "statement")}
+    out.update(value=dec(claim.get("value")), tolerance_pct=dec(claim.get("tolerance_pct")),
+               range=None if claim.get("range") is None else [dec(v) for v in claim["range"]],
+               source=None if not (claim.get("source") or {}).get("record_id") else
+               {"record_id": claim["source"]["record_id"]})
+    if out["statement"] is not None:
+        out["statement"] = {k: out["statement"].get(k) for k in ("assertion", "actor", "temporal", "effective")}
+    return out
+
+
+class AnthropicSchema(unittest.TestCase):
+    """R02 (Keith P1, Keegan 2): a closed, provider-compatible schema that still admits every valid action."""
+
+    def setUp(self):
+        self.w = build_world(["EXSEMI_Q2_8K", "EXSEMI_Q3_8K", "EXSEMI_402_8K"])
+
+    def claimable(self, key):
+        from larp.intelligence.models import RuleBaselineModel
+        r = self.w.assessor(RuleBaselineModel(self.w.clock)).assess(
+            self.w.request([key], issuer_id=EXSEMI, job_id=f"c-{key}")).read()
+        return r["model_io"]["steps"][-1]["request"]["input"]["claimable"]
+
+    def test_schema_meets_the_documented_limits(self):
+        from larp.intelligence.providers import anthropic_schema_problems
+        self.assertEqual(provider_schema_violations(ACTION_SCHEMA), [])
+        self.assertEqual(anthropic_schema_problems(ACTION_SCHEMA), [])
+        for bad in ({"type": "object", "additionalProperties": False, "properties": {"a": {"type": "array",
+                                                                                          "minItems": True}}},
+                    {"type": "object", "additionalProperties": False, "properties": {"a": {"type": "string",
+                                                                                          "format": "regex"}}},
+                    {"type": "object", "additionalProperties": False, "properties": {"a": {"enum": [{"x": 1}]}}}):
+            with self.subTest(production_checker=bad):
+                self.assertTrue(anthropic_schema_problems(bad))
+        deep = {"type": "string"}
+        for _ in range(60):
+            deep = {"type": "object", "additionalProperties": False, "required": ["a"], "properties": {"a": deep}}
+        self.assertTrue(anthropic_schema_problems(deep))
+        for bad in ({"type": "object", "properties": {"a": {"type": "object"}}},
+                    {"type": "object", "additionalProperties": False, "properties": {"a": {"type": "string",
+                                                                                          "minLength": 1}}},
+                    {"type": "object", "additionalProperties": False,
+                     "properties": {f"p{i}": {"type": "string"} for i in range(25)}}):
+            with self.subTest(bad=bad):
+                self.assertTrue(provider_schema_violations(bad))
+                self.assertTrue(anthropic_schema_problems(bad))
+
+    def test_valid_actions_pass_schema_parser_and_claim_checks(self):
+        from larp.intelligence.models import parse_output
+        from larp.intelligence.verify import claim_schema_error
+        claims = [model_claim(c) for key in ("EXSEMI_Q3_8K", "EXSEMI_402_8K") for c in self.claimable(key)]
+        kinds = {(c["kind"], c["metric"].split(":")[0] if c["metric"].startswith(("ITEM:", "STATEMENT:")) else "x")
+                 for c in claims}
+        self.assertTrue({("REPORTED", "x"), ("EVENT", "ITEM")} <= kinds, kinds)
+        record = self.w.record("EXSEMI_402_8K")
+        examples = [
+            {"action": "CALL_TOOL", "tool": "fetch_document", "args": {"accession": record["accession"],
+                                                                       "name": record["documents"][0]["name"]}},
+            {"action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue"}},
+            {"action": "CALL_TOOL", "tool": "compare_facts", "args": {"metric": "revenue"}},
+            {"action": "FINISH", "claims": claims, "notes": "confirmed"},
+            {"action": "FINISH", "claims": [], "notes": "nothing verifiable"},
+        ]
+        for example in examples:
+            with self.subTest(action=example["action"], tool=example.get("tool")):
+                self.assertEqual(schema_errors(example, ACTION_SCHEMA), [])
+                self.assertEqual(parse_output(example), example)
+                for claim in example.get("claims", []):
+                    self.assertIsNone(claim_schema_error(claim))
+
+    def test_open_or_extra_fields_are_refused_by_the_schema(self):
+        claim = model_claim(self.claimable("EXSEMI_Q3_8K")[0])
+        for bad in ({"action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue", "url": "x"}},
+                    {"action": "CALL_TOOL", "tool": "browse", "args": {"metric": "revenue"}},
+                    {"action": "FINISH", "claims": [dict(claim, basis="TABLE_V1")], "notes": "x"},
+                    {"action": "FINISH", "claims": [dict(claim, source={"record_id": "r", "accession": "a"})], "notes": "x"},
+                    {"action": "FINISH", "claims": [], "notes": "x", "orders": []},
+                    {"action": "SELL"}):
+            with self.subTest(bad=bad):
+                self.assertTrue(schema_errors(bad, ACTION_SCHEMA))
+
+    def test_adapter_refuses_a_schema_the_provider_would_refuse(self):
+        from unittest import mock
+        from larp.intelligence import providers
+        with mock.patch.object(providers, "ACTION_SCHEMA", {"type": "object", "properties": {"args": {"type": "object"}}}):
+            with self.assertRaises(IntelligenceError):
+                AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=self.w.config.prompt_text,
+                                       prompt_sha256=self.w.config.prompt_sha256, clock_ms=self.w.clock,
+                                       artifacts=self.w.artifacts)
+
+    def test_strict_fake_drives_the_assessor_with_every_claim_verified(self):
+        """The fake sends only what the provider's constrained decoding could produce from the schema it was sent."""
+        problems = []
+
+        def send(url, headers, body, timeout_s):
+            self.w.clock.advance(700)
+            sent = json.loads(body)
+            schema = sent["output_config"]["format"]["schema"]
+            problems.extend(provider_schema_violations(schema))
+            state = json.loads(sent["messages"][0]["content"])
+            if state["remaining_tool_calls"] > 0 and state["gaps"]:
+                output = {"action": "CALL_TOOL", "tool": state["gaps"][0]["tool"], "args": state["gaps"][0]["args"]}
+            else:
+                output = {"action": "FINISH", "claims": [model_claim(c) for c in state["claimable"]], "notes": "ok"}
+            problems.extend(schema_errors(output, schema))
+            return 200, json.dumps(anthropic_reply(output)(sent)).encode()
+        for key in ("EXSEMI_Q3_8K", "EXSEMI_402_8K"):
+            with self.subTest(filing=key):
+                model = AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET,
+                                               prompt_text=self.w.config.prompt_text,
+                                               prompt_sha256=self.w.config.prompt_sha256, clock_ms=self.w.clock,
+                                               artifacts=self.w.artifacts, transport=send)
+                r = self.w.assessor(model).assess(self.w.request([key], issuer_id=EXSEMI, job_id=f"strict-{key}")).read()
+                self.assertEqual(problems, [])
+                self.assertEqual(r["status"], "ASSESSED", r["reasons"])
+                self.assertEqual(r["rejected_claims"], [])
+                self.assertTrue(r["claims"])
+                # A restated harness fact confirms that fact; it is not a second, differently identified copy.
+                from larp.intelligence.models import RuleBaselineModel
+                base = self.w.assessor(RuleBaselineModel(self.w.clock)).assess(
+                    self.w.request([key], issuer_id=EXSEMI, job_id=f"base-{key}")).read()
+                self.assertEqual(sorted(c["fact_id"] for c in r["claims"]),
+                                 sorted(c["fact_id"] for c in base["claims"]))
+                self.assertTrue(all(c["model_confirmed"] for c in r["claims"]))
+
+
+class BytesBeforeParsing(unittest.TestCase):
+    """R06 (Keegan 3): request bytes are stored before the call and reply bytes before any parsing."""
+
+    def setUp(self):
+        self.config, self.clock, self.artifacts = load_config(), FakeClock(1_000), MemoryArtifacts()
+
+    def model(self, raw, status=200):
+        def send(url, headers, body, timeout_s):
+            from larp.intelligence.common import sha256_hex
+            self.assertEqual(self.artifacts.get(sha256_hex(body)), body)  # stored before the call
+            return status, raw
+        return AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=self.config.prompt_text,
+                                      prompt_sha256=self.config.prompt_sha256, clock_ms=self.clock,
+                                      artifacts=self.artifacts, transport=send)
+
+    def test_hostile_replies_are_errors_and_their_bytes_are_kept(self):
+        from larp.intelligence.common import sha256_hex
+        text = json.dumps(json.dumps(FINISH))
+        message = ('{"id":"m","type":"message","model":"example-model-id","stop_reason":"end_turn",'
+                   '"content":[{"type":"text","text":' + text + '}],"usage":{"input_tokens":%s,"output_tokens":1}}')
+        cases = {"overflow": (message % "1e400").encode(), "float usage": (message % "12.5").encode(),
+                 "negative usage": (message % "-3").encode(), "bool usage": (message % "true").encode(),
+                 "huge usage": (message % ("9" * 400)).encode(),
+                 "deep nesting": b"[" * 100_000 + b"]" * 100_000, "not utf-8": b"\xff\xfe{}"}
+        nested = json.dumps('{"action": ' + "[" * 990 + "]" * 990 + "}")  # parses, but too deep for the record
+        cases["parseable deep output"] = (message.replace(text, nested) % "5").encode()
+        for name, raw in cases.items():
+            with self.subTest(case=name):
+                reply = self.model(raw).step(request(), 60_000).read()
+                self.assertIn(reply["status"], ("ERROR", "INVALID"))
+                self.assertIsNone(reply["output"])
+                self.assertEqual(reply["raw_response_artifact"], sha256_hex(raw))
+                self.assertEqual(self.artifacts.get(reply["raw_response_artifact"]), raw)
+                self.assertIsNotNone(self.artifacts.get(reply["request_payload_artifact"]))
+
+
+class LateReplyIsKept(unittest.TestCase):
+    """Review of R10: a whole reply that arrives after the deadline is a timeout whose bytes are still recorded."""
+
+    def test_late_reply_bytes_are_recorded(self):
+        from larp.intelligence.providers import LateReply
+        config, artifacts = load_config(), MemoryArtifacts()
+        raw = json.dumps(anthropic_reply(FINISH)({"model": "example-model-id"})).encode()
+
+        def late(url, headers, body, timeout_s):
+            raise LateReply(200, raw)
+        model = AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=config.prompt_text,
+                                       prompt_sha256=config.prompt_sha256, clock_ms=FakeClock(1), artifacts=artifacts,
+                                       transport=late)
+        reply = model.step(request(), 60_000).read()
+        self.assertEqual((reply["status"], reply["output"]), ("TIMEOUT", None))
+        self.assertEqual(artifacts.get(reply["raw_response_artifact"]), raw)
+
+
+class HardTransportDeadline(unittest.TestCase):
+    """R10 (Keegan 7): the transport ends the whole exchange by its timeout, even when every single read is quick."""
+
+    def setUp(self):
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                trickle = self.path == "/trickle"
+                payload = b'{"ok": true}' * (1 if not trickle else 40)
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                try:
+                    for i in range(0, len(payload), 4 if trickle else len(payload)):
+                        self.wfile.write(payload[i:i + (4 if trickle else len(payload))])
+                        self.wfile.flush()
+                        if trickle:
+                            time.sleep(0.05)
+                except OSError:
+                    pass
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.server.daemon_threads = True
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.addCleanup(self.server.server_close)
+        self.addCleanup(self.server.shutdown)
+
+    def post(self, path, timeout_s):
+        import http.client
+        from larp.intelligence.providers import post_with_deadline
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_address[1], timeout=timeout_s)
+        return post_with_deadline(conn, path, {"Content-Type": "application/json"}, b"{}", timeout_s)
+
+    def test_fast_reply_is_returned(self):
+        self.assertEqual(self.post("/fast", 2.0), (200, b'{"ok": true}'))
+
+    def test_trickling_reply_is_cut_at_the_deadline(self):
+        started = time.monotonic()
+        with self.assertRaises(TimeoutError):
+            self.post("/trickle", 0.3)  # 120 bytes, 4 every 50 ms: about 1.5 s in total, each read quick
+        self.assertLess(time.monotonic() - started, 0.8)
+
+
+class InFlightAtTheDeadline(unittest.TestCase):
+    """R10: an abandoned assessment points at the stored request bytes of the call still in flight."""
+
+    def test_in_flight_call_is_recorded(self):
+        from larp.intelligence.common import sha256_hex
+        w, bodies = build_world(["EXSEMI_Q2_8K", "EXSEMI_Q3_8K"]), []
+
+        def send(url, headers, body, timeout_s):
+            bodies.append(body)
+            time.sleep(1.0)
+            return 200, json.dumps(anthropic_reply(FINISH)(json.loads(body))).encode()
+        model = AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=w.config.prompt_text,
+                                       prompt_sha256=w.config.prompt_sha256, clock_ms=w.clock, artifacts=w.artifacts,
+                                       transport=send)
+        r = w.assessor(model).assess(w.request(["EXSEMI_Q3_8K"], issuer_id=EXSEMI, job_id="late",
+                                               deadline_ms=200)).read()
+        self.assertEqual(r["reasons"], ["ASSESSMENT_DEADLINE_EXCEEDED"])
+        flight = r["model_io"]["in_flight"]
+        self.assertEqual(flight["request_id"], "late:step:0")
+        self.assertEqual(flight["request_payload_sha256"], sha256_hex(bodies[0]))
+        self.assertEqual(w.artifacts.get(flight["request_payload_artifact"]), bodies[0])
+
+
 if __name__ == "__main__":
     unittest.main()
