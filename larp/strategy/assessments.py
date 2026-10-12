@@ -31,7 +31,7 @@ def consume(snapshot, state, market, falsifier_ids):
         try:
             required = {"job_id", "issuer_id", "cutoff_ms", "completed_ms", "expiry_ms",
                         "status", "falsifiers", "claims", "proposed_thesis", "evidence_used"}
-            if type(a) is not dict or a.get("schema") != "AssessmentResult.v1" or not required <= a.keys():
+            if type(a) is not dict or a.get("schema") not in ("AssessmentResult.v1", "AssessmentResult.v2") or not required <= a.keys():
                 raise ContractError("ASSESSMENT_SCHEMA_UNRECOGNISED")
             if symbol is None:
                 raise ContractError("ASSESSMENT_ISSUER_UNAVAILABLE")
@@ -55,6 +55,9 @@ def consume(snapshot, state, market, falsifier_ids):
             cutoff, completed, expiry = [integer(a[k]) for k in ("cutoff_ms", "completed_ms", "expiry_ms")]
             if cutoff != request.get("cutoff_ms") or not cutoff <= completed <= now < expiry:
                 raise ContractError("ASSESSMENT_STALE_OR_FUTURE")
+            if a["schema"] == "AssessmentResult.v2":
+                from larp.runtime.schema import assessment_result
+                assessment_result(Document.from_dict(a), Document.from_dict(request), now)
             if not all(_hash(a.get(k)) for k in ("model_hash", "prompt_hash")):
                 raise ContractError("ASSESSMENT_PROVENANCE_INVALID")
             if a["status"] != "ASSESSED":
