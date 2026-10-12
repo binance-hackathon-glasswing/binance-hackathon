@@ -139,5 +139,49 @@ class RestartAndReplay(Harness):
         self.assertEqual({s["review"]["attempts"] for s in after["statements"].values()}, {1})
 
 
+class EvidenceJobsNeedTheirPayload(Harness):
+    """R09 (Keegan 6): a scheduled evidence job passed without its payload fails loudly instead of losing its scope."""
+
+    def build(self, job, issuer_id=EXSEMI):
+        self.run_one("CLEAN", job="seed")
+        return build_request(job=job, run_id=RUN_ID, issuer_id=issuer_id, records=[self.w.record("CLEAN")],
+                             cutoff_ms=self.w.clock(), context=EMPTY_CONTEXT, policy_profile_hash=PROFILE,
+                             allowed_tools=list(self.w.config.tools), tool_calls=6, deadline_ms=60000, source_health=None)
+
+    def test_scheduled_jobs_without_or_with_a_wrong_payload_are_refused(self):
+        from larp.intelligence.common import IntelligenceError
+        planner = RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3)
+        review = planner._job({"kind": "REASSESS_ISSUER", "issuer_id": EXSEMI, "reason": "STATEMENT_REVIEW_DUE",
+                               "state_version": 1, "statement_ids": ["stmt:a"]}, self.w.clock(), 40)
+        bad = {
+            "id only": {"job_id": review["job_id"]},
+            "lane only": {"job_id": "x", "lane": "evidence"},
+            "payload not a dict": dict(review, payload=["REASSESS_ISSUER"]),
+            "unknown kind": dict(review, payload=dict(review["payload"], kind="TRADE")),
+            "other issuer": dict(review, payload=dict(review["payload"], issuer_id="FIXTURE-CIK-0000001")),
+            "no statement ids": dict(review, payload={k: v for k, v in review["payload"].items() if k != "statement_ids"}),
+            "empty statement ids": dict(review, payload=dict(review["payload"], statement_ids=[])),
+            "non-string statement id": dict(review, payload=dict(review["payload"], statement_ids=[7])),
+        }
+        for name, job in bad.items():
+            with self.subTest(job=name), self.assertRaises(IntelligenceError):
+                self.build(job)
+
+    def test_real_jobs_still_build(self):
+        planner = RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3)
+        review = planner._job({"kind": "REASSESS_ISSUER", "issuer_id": EXSEMI, "reason": "STATEMENT_REVIEW_DUE",
+                               "state_version": 1, "statement_ids": ["stmt:b", "stmt:a"]}, self.w.clock(), 40)
+        self.assertEqual(self.build(review).read()["review"], {"job_id": review["job_id"],
+                                                              "statement_ids": ["stmt:a", "stmt:b"]})
+        other = planner._job({"kind": "REASSESS_ISSUER", "issuer_id": EXSEMI, "reason": "RETRY_AFTER_UNAVAILABLE",
+                              "session": 3}, self.w.clock(), 50)
+        self.assertIsNone(self.build(other).read()["review"])
+        ingest = next(Document(raw).read() for raw in self.w.store.jobs.values()
+                      if Document(raw).read()["payload"]["kind"] == "ASSESS_FILING")
+        self.assertEqual(ingest["payload"]["kind"], "ASSESS_FILING")
+        self.assertIsNone(self.build(ingest).read()["review"])
+        self.assertIsNone(self.build({"job_id": "bakeoff:0001"}).read()["review"])  # unscheduled: no scope to lose
+
+
 if __name__ == "__main__":
     unittest.main()

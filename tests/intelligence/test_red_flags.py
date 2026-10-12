@@ -192,6 +192,39 @@ class Sequences(unittest.TestCase):
         directives = red_flag_directives(run.context(), enabled_profile())
         self.assertEqual([(d["amendment"], d["restarts_block"]) for d in directives], [(False, True), (True, False)])
 
+    def test_amendment_takes_its_event_time_from_the_original_in_the_index(self):
+        """R05: an 8-K/A naming no original date is dated by the original 8-K of the same item in the index."""
+        original, amendment = "RF1-4.02-SUPPORTED", "RF1-4.02-AMENDED-NO-ORIGINAL"
+        run = Run(original, amendment)
+        run.assess(original)
+        result = run.assess(amendment)
+        check = next(c for c in result["red_flag_checks"] if c["accession"] == BY_ID[amendment]["filing"]["accession"])
+        self.assertEqual((check["verified"], check["reason"]), (True, "VERIFIED"))
+        self.assertEqual(check["event_time_basis"], "AMENDED_FILING_IN_INDEX")
+        self.assertEqual(check["amends_accession"], BY_ID[original]["filing"]["accession"])
+        self.assertEqual(check["event_original_ms"], run.w.record(original)["original_ms"])
+        directives = red_flag_directives(run.context(), enabled_profile())
+        self.assertEqual(sorted((d["accession"], d["kind"], d["amendment"]) for d in directives),
+                         sorted([(BY_ID[original]["filing"]["accession"], "EXIT", False),
+                                 (BY_ID[amendment]["filing"]["accession"], "EXIT", True)]))
+
+    def test_amendment_of_a_stale_original_is_stale(self):
+        """R05: the event is as old as the original filing, whatever the amendment's own acceptance time."""
+        original, amendment = "RF1-4.02-STALE", "RF1-4.02-AMENDED-NO-ORIGINAL"
+        run = Run(original, amendment)
+        run.assess(original)
+        result = run.assess(amendment)
+        check = next(c for c in result["red_flag_checks"] if c["accession"] == BY_ID[amendment]["filing"]["accession"])
+        self.assertEqual((check["verified"], check["reason"]), (False, "STALE_EVENT"))
+        self.assertEqual(red_flag_directives(run.context(), enabled_profile()), [])
+
+    def test_stated_original_date_is_recorded(self):
+        """R05: the date the amendment gives for its original is the event time when no original is indexed."""
+        run = Run("RF2-1.05-AMENDED")
+        check = run.assess("RF2-1.05-AMENDED")["red_flag_checks"][0]
+        self.assertEqual((check["verified"], check["event_time_basis"]), (True, "AMENDMENT_STATES_ORIGINAL_DATE"))
+        self.assertEqual(check["event_original_ms"], 1_791_417_600_000)  # 2026-10-08T00:00:00Z
+
     def test_red_flag_latch_survives_a_state_round_trip(self):
         """AC-4.3 (part): the latch and its red flag survive the canonical state document."""
         from larp.contracts import Document
@@ -220,6 +253,22 @@ class Authority(unittest.TestCase):
                     ["RF1-ITEM-4.02"]):
             with self.subTest(spec=bad), self.assertRaises(AuthorityError):
                 authority({"evidence_mode": "SHADOW", "red_flag_authority": bad})
+
+    def test_profiles_without_red_flag_authority_never_need_the_predicate_set(self):
+        """R14: a set that cannot be loaded leaves profiles without red_flag_authority as before (all SHADOW)."""
+        from unittest import mock
+        from larp.integration import contract
+        run = Run("RF1-4.02-SUPPORTED")
+        run.assess("RF1-4.02-SUPPORTED")
+        record = run.context()
+        broken = mock.Mock(side_effect=IntelligenceError("malformed set"))
+        with mock.patch.object(contract, "red_flag_predicates", broken):
+            rights = authority({"evidence_mode": "SHADOW"})
+            self.assertEqual(rights["falsifier"], "SHADOW")
+            self.assertEqual(set(rights["red_flags"]["predicates"].values()) - {"SHADOW"}, set())
+            self.assertEqual(red_flag_directives(record, {"evidence_mode": "SHADOW"}), [])
+            with self.assertRaises(AuthorityError):
+                authority(enabled_profile())
 
     def test_tampered_red_flag_in_a_record_is_rejected_or_inert(self):
         run = Run("RF1-4.02-SUPPORTED")

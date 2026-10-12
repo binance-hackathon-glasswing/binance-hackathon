@@ -207,10 +207,11 @@ class World:
                              tool_calls=tool_calls, deadline_ms=deadline_ms, source_health=source_health)
 
 
-def build_world(keys: list, *, now_ms: int = NOW, extra_filings: dict | None = None) -> World:
+def build_world(keys: list, *, now_ms: int = NOW, extra_filings: dict | None = None, store=None) -> World:
     """Ingest the named synthetic filings in acceptance order, each shortly after acceptance.
 
-    `extra_filings` adds test-only fixtures without changing the evaluation pack (FILINGS).
+    `extra_filings` adds test-only fixtures without changing the evaluation pack (FILINGS). `store` replaces the
+    in-memory evidence store (e.g. the durable SQLiteEvidenceStore).
     """
     filings = dict(FILINGS, **(extra_filings or {}))
     config = load_config("development")
@@ -218,7 +219,7 @@ def build_world(keys: list, *, now_ms: int = NOW, extra_filings: dict | None = N
     first = min(parse_acceptance_ms(filings[k]["acceptance"]) for k in keys)
     clock = FakeClock(first)
     source = FakeFilingSource(clock, ENTITIES)
-    store, artifacts = MemoryEvidenceStore(), MemoryArtifacts()
+    store, artifacts = (MemoryEvidenceStore() if store is None else store), MemoryArtifacts()
     ingestor = Ingestor(registry=registry, source=source, store=store, artifacts=artifacts, config=config,
                         clock_ms=clock, run_id=RUN_ID, synthetic=True)
     for key in sorted(keys, key=lambda k: filings[k]["acceptance"]):

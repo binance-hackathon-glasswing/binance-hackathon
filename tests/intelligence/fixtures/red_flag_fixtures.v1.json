@@ -25,6 +25,28 @@
     "after the supported Class 2 filing the evidence status is ADVERSE, but review_complete_excluding_timed_blocks is true, so the policy can let the 5-session block expire",
     "after the supported Class 1 filing review_complete_excluding_timed_blocks is false"
    ]
+  },
+  {
+   "sequence_id": "RF-AMENDED-ORIGINAL-IN-INDEX",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "amended",
+   "review": "R05",
+   "base_fixture": "RF1-4.02-SUPPORTED",
+   "amendment_fixture": "RF1-4.02-AMENDED-NO-ORIGINAL",
+   "steps": [
+    "with the original 8-K (2026-10-08) in the index, the amendment that names no date is VERIFIED; its event time is the original's acceptance (event_time_basis AMENDED_FILING_IN_INDEX) and the profile gets EXIT directives for both accessions"
+   ]
+  },
+  {
+   "sequence_id": "RF-AMENDED-STALE-ORIGINAL",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "stale",
+   "review": "R05",
+   "base_fixture": "RF1-4.02-STALE",
+   "amendment_fixture": "RF1-4.02-AMENDED-NO-ORIGINAL",
+   "steps": [
+    "with only a stale original 8-K (2026-09-25) in the index, the amendment is STALE_EVENT and yields no directive"
+   ]
   }
  ],
  "fixtures": [
@@ -706,6 +728,357 @@
    "expect": {
     "verified": false,
     "reason": "NO_CONDITION_TEXT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-WRONG-SECTION-MENTION",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "wrong-section",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R03), frozen before the fix: Item 4.02 is only mentioned inside an Item 8.01 section; there is no Item 4.02 heading (Keith's reproduction).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000301",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 8.01 Other Events.",
+     "We discussed the disclosure requirements under Item 4.02 in our training materials.",
+     "Our previously issued statements should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_ITEM_SECTION",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-CROSS-REFERENCE-IN-SECTION",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R03), frozen before the fix: A genuine Item 4.02 section whose first line cross-references Item 8.01; the cross-reference must not end the section (Keith's reproduction).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000302",
+    "form": "8-K",
+    "items": [
+     "4.02",
+     "8.01"
+    ],
+    "acceptance": "2026-10-08T23:02:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "As described in Item 8.01 below.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon.",
+     "Item 8.01 Other Events.",
+     "The Company will hold a conference call to discuss these matters."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF2-2.06-ITEM-OF-FORM-MENTION",
+   "predicate_id": "RF2-ITEM-2.06",
+   "case": "wrong-section",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R03), frozen before the fix: A line that starts with 'Item 2.06 of Form 8-K requires' is a body sentence, not a heading; the impairment text sits in Item 8.01.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000303",
+    "form": "8-K",
+    "items": [
+     "2.06"
+    ],
+    "acceptance": "2026-10-08T23:04:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 8.01 Other Events.",
+     "Item 2.06 of Form 8-K requires disclosure when a company concludes that a material impairment charge is required.",
+     "On October 7, 2026, the Board of Directors concluded that a material impairment charge of $1.4 billion is required for goodwill of the networking segment for the third quarter of fiscal 2027."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NO_ITEM_SECTION",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-RELIED-ON",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: 'relied on' instead of 'relied upon' (Keegan's finding 4).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000304",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:06:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied on."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-SHOULD-NOT-BE-RELIED-UPON",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: 'should not be relied upon', a common filed wording.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000305",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:08:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should not be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-HEADING-BODY-NO-PERIOD",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Heading and body in one paragraph with no period after the heading (Keegan's finding 4).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000306",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:10:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-UPPERCASE-HEADING",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Upper-case heading with a period after the item number.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000307",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:12:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "ITEM 4.02. NON-RELIANCE ON PREVIOUSLY ISSUED FINANCIAL STATEMENTS OR A RELATED AUDIT REPORT OR COMPLETED INTERIM REVIEW.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-TABLE-HEADING",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Heading laid out as a table row (item number and title in separate cells).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000308",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:14:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "<table><tr><td>Item 4.02</td><td>Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review</td></tr></table>",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "EXIT",
+    "restarts_block": false
+   }
+  },
+  {
+   "fixture_id": "RF2-1.05-HEADING-BODY-NO-PERIOD",
+   "predicate_id": "RF2-ITEM-1.05",
+   "case": "supported",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Class 2 heading and body in one paragraph with no period: the heading's own title is not the occurrence, the body is.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000309",
+    "form": "8-K",
+    "items": [
+     "1.05"
+    ],
+    "acceptance": "2026-10-08T23:16:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 1.05 Material Cybersecurity Incidents On October 7, 2026, the Company determined that a cybersecurity incident affecting its internal business systems, which it detected on October 3, 2026, was material."
+    ]
+   },
+   "expect": {
+    "verified": true,
+    "reason": "VERIFIED",
+    "directive": "BLOCK_NEW_BUYS",
+    "restarts_block": true
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-CONDITIONAL-RELIED-ON",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "ambiguous",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Conditional wording with the widened phrase still asserts nothing.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000310",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:18:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "If the review finds errors, the Audit Committee may conclude that the previously issued financial statements should not be relied on."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NOT_ASSERTED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-NEGATED-RELIED-ON",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "negated",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R07), frozen before the fix: Negation with the widened phrase.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000311",
+    "form": "8-K",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-08T23:20:00+00:00",
+    "paragraphs": [
+     "FORM 8-K",
+     "Example Semiconductor Corp",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "The Audit Committee has not concluded that any previously issued financial statements should no longer be relied on."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "NEGATED",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMENDED-OLD-EVENT",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "stale",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R05), frozen before the fix: An 8-K/A accepted 2026-10-09 that amends an 8-K filed 2026-07-08 re-reports an old event (Keegan's finding 1).",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000312",
+    "form": "8-K/A",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-09T13:30:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "Amendment No. 1 amends the Current Report on Form 8-K filed on July 8, 2026 to provide the letter of the independent registered public accounting firm.",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On July 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the first quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "STALE_EVENT",
+    "directive": null
+   }
+  },
+  {
+   "fixture_id": "RF1-4.02-AMENDED-NO-ORIGINAL",
+   "predicate_id": "RF1-ITEM-4.02",
+   "case": "amended-unknown-original",
+   "note": "Added 2026-10-12 for the PR #15 review (IDEA-041 §7 R05), frozen before the fix: An 8-K/A that names no original filing date, with no original 8-K in the evidence index: its event time is unknown.",
+   "filing": {
+    "cik": 9900001,
+    "accession": "0009900001-26-000313",
+    "form": "8-K/A",
+    "items": [
+     "4.02"
+    ],
+    "acceptance": "2026-10-09T14:00:00+00:00",
+    "paragraphs": [
+     "FORM 8-K/A",
+     "Example Semiconductor Corp",
+     "This amendment provides additional information.",
+     "Item 4.02 Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review.",
+     "On October 7, 2026, the Audit Committee of the Board of Directors concluded that the previously issued financial statements for the second quarter of fiscal 2027 should no longer be relied upon."
+    ]
+   },
+   "expect": {
+    "verified": false,
+    "reason": "AMENDED_ORIGINAL_UNKNOWN",
     "directive": null
    }
   }

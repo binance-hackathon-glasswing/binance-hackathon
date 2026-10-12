@@ -33,6 +33,11 @@ def with_terms(sources: dict) -> dict:
     return {k: replace(s, rights=dict(s.rights, terms_evidence_sha256="a" * 64)) for k, s in sources.items()}
 
 
+def edgar_ready() -> dict:
+    from larp.sources.register import load_edgar_terms
+    return dict(load_edgar_terms(), terms_evidence_sha256="e" * 64)
+
+
 class Preflight(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -41,12 +46,12 @@ class Preflight(unittest.TestCase):
         self.env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": self.tmp.name}
 
     def test_ready_register_and_environment_pass(self):
-        self.assertEqual(live_preflight(with_terms(self.sources), self.env), [])
+        self.assertEqual(live_preflight(with_terms(self.sources), self.env, edgar=edgar_ready()), [])
 
     def test_committed_register_is_refused_until_terms_are_captured(self):
         reasons = live_preflight(self.sources, self.env)
         enabled = sorted(s.source_id for s in self.sources.values() if s.enabled)
-        self.assertEqual(reasons, [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled])
+        self.assertEqual(reasons, [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled] + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
         self.assertNotIn("ftc-press", enabled)  # stays disabled until its connectivity is resolved
 
     def test_each_missing_piece_refuses(self):
@@ -62,9 +67,9 @@ class Preflight(unittest.TestCase):
         for reason, change in cases.items():
             env = {k: v for k, v in dict(self.env, **change).items() if v is not None}
             with self.subTest(reason=reason):
-                self.assertIn(reason, live_preflight(ready, env))
+                self.assertIn(reason, live_preflight(ready, env, edgar=edgar_ready()))
         one_missing = dict(ready, **{"doj-press": self.sources["doj-press"]})
-        self.assertEqual(live_preflight(one_missing, self.env), ["TERMS_EVIDENCE_MISSING:doj-press"])
+        self.assertEqual(live_preflight(one_missing, self.env, edgar=edgar_ready()), ["TERMS_EVIDENCE_MISSING:doj-press"])
 
     def test_cli_preflight_refuses_and_reports_unset_live_parameters(self):
         self.assertEqual(live.main(["preflight"], env={}), 1)
@@ -101,7 +106,8 @@ class Terms(unittest.TestCase):
             if url.startswith("https://www.archives.gov/"):
                 return 500, {}, None
             return 200, {}, ("synthetic terms for " + url).encode()
-        rows = {r["source_id"]: r for r in live.capture_terms(self.sources, fetch, self.artifacts, lambda: T0)}
+        rows = {r["source_id"]: r for r in live.capture_terms(self.sources, fetch, self.artifacts, lambda: T0,
+                                                              user_agents={"LARP_SEC_USER_AGENT": AGENT})}
         self.assertEqual(rows["sec-press"]["status"], "CAPTURED")
         self.assertEqual(rows["sec-press"]["final_url"], "https://www.sec.gov/privacy-notice")
         self.assertEqual(self.artifacts.get(rows["sec-press"]["sha256"]), b"<html>synthetic SEC terms page</html>")
@@ -269,6 +275,186 @@ class EvidenceStore(unittest.TestCase):
                  "state": {"version": 1}}
         self.assertEqual(store.commit(Document.from_dict(state)).read()["status"], "COMMITTED")
         self.assertEqual(store.read_state("I").read(), {"version": 1})
+
+
+class DurableStoreUnderTheAssessor(unittest.TestCase):
+    """R01 (Keith P1): the assessor reads evidence on its own worker thread, so the durable store must serve it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_assessor_worker_thread_reads_the_sqlite_store(self):
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.intelligence.scenarios import EXSEMI, build_world
+        store = SQLiteEvidenceStore(os.path.join(self.tmp.name, "evidence.sqlite"))
+        w = build_world(["EXSEMI_Q2_8K", "EXSEMI_Q3_8K"], store=store)
+        result = w.assessor(RuleBaselineModel(w.clock)).assess(
+            w.request(["EXSEMI_Q3_8K"], issuer_id=EXSEMI, job_id="sqlite")).read()
+        self.assertEqual(result["status"], "ASSESSED", result["reasons"])
+
+    def test_concurrent_reads_from_several_threads(self):
+        import threading
+        from larp.intelligence.scenarios import EXSEMI, build_world
+        store = SQLiteEvidenceStore(os.path.join(self.tmp.name, "evidence.sqlite"))
+        build_world(["EXSEMI_Q2_8K"], store=store)
+        errors, counts = [], []
+
+        def read():
+            try:
+                for _ in range(20):
+                    counts.append(len(store.records(EXSEMI)))
+                    store.read_cursor("sec-edgar", EXSEMI)
+            except Exception as exc:  # noqa: BLE001 - the failure itself is the result
+                errors.append(exc)
+        threads = [threading.Thread(target=read) for _ in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(errors, [])
+        self.assertEqual(set(counts), {1})
+
+    def test_bakeoff_wiring_runs_on_the_durable_store(self):
+        """`run_bakeoff` itself, with the EDGAR source and the preflight faked (no network, no credentials)."""
+        import argparse
+        from unittest import mock
+        from larp.intelligence import config as intel_config, edgar
+        from larp.intelligence.fakes import FakeFilingSource
+        from larp.intelligence.issuers import IssuerRegistry
+        filing = FILINGS["EXSEMI_402_8K"]
+        now = live.epoch_ms()
+        fake = FakeFilingSource(live.epoch_ms, ENTITIES)
+        fake.add(filing["cik"], accession=filing["accession"], form=filing["form"], items=filing["items"],
+                 acceptance=live.iso(now - 2 * 86_400_000).replace("Z", "+00:00"), documents=filing["documents"])
+        args = argparse.Namespace(config_mode="development", days=30, per_issuer=5, min_filings=1, max_filings=25,
+                                  candidate=None, price=None)
+        with mock.patch.object(live, "_env_root", lambda env, mode="live": Path(self.tmp.name)), \
+                mock.patch.object(intel_config, "load_registry", lambda: IssuerRegistry.from_dict(FIXTURE_REGISTRY)), \
+                mock.patch.object(edgar, "EdgarHttpSource", lambda agent, clock_ms: fake):
+            report = live.run_bakeoff({"LARP_SEC_USER_AGENT": AGENT}, args, "test-commit")
+        metrics = report["candidates"]["rule-baseline"]["metrics"]
+        self.assertEqual(metrics["assessments"], 1)
+        self.assertEqual(metrics["status_counts"], {"ASSESSED": 1})
+        self.assertTrue(all(Path(p).exists() for p in report["written_to"]))
+
+
+class TornTail(unittest.TestCase):
+    """R04 (Keith P2): a torn last line stays visible and never swallows the next complete record."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name) / "live" / live.LOG_NAME
+        self.path.parent.mkdir(parents=True)
+        self.torn = b'{"schema":"LivePoll.v1","target":"edgar:ISS-A"'
+        self.path.write_bytes(self.torn)
+        self.clock = FakeClock(T0)
+
+    def runner(self):
+        return live.LiveRunner(register={}, issuers=["ISS-A"], source_ingestor=FakeIngestor(), edgar_ingestor=FakeEdgar(),
+                               log=live.PollLog(self.path), clock_ms=self.clock, edgar_interval_ms=300_000,
+                               commit="test-commit")
+
+    def test_append_after_a_torn_tail_keeps_both(self):
+        log = live.PollLog(self.path)
+        ok = {"schema": "LivePoll.v1", "target": "edgar:ISS-A", "cadence_ms": 300_000, "started_ms": T0,
+              "finished_ms": T0 + 5, "commit": "c", "status": "OK"}
+        log.append(ok)
+        lines = log.lines()
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(lines[0].get("corrupt"))
+        self.assertEqual(lines[1], ok)
+        self.assertTrue(self.path.read_bytes().startswith(self.torn))  # the damaged bytes are kept, not rewritten
+        report = live.gap_report(lines, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 300_000)
+        self.assertEqual(report["corrupt_log_lines"], 1)
+
+    def test_restart_after_a_torn_tail_resumes_cadence(self):
+        self.assertEqual(len(self.runner().tick()), 1)
+        self.clock.advance(60_000)
+        self.assertEqual(self.runner().tick(), [])  # the poll written after the torn tail is read back
+        self.clock.advance(60_000)
+        self.assertEqual(self.runner().tick(), [])
+        lines = live.PollLog(self.path).lines()
+        self.assertEqual([bool(l.get("corrupt")) for l in lines], [True, False])
+
+
+class TermsUserAgentAndEdgar(unittest.TestCase):
+    """R08 (Keegan 5): terms pages are fetched with the declared agent; EDGAR's terms are part of preflight."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.sources = load_register()[0]
+        self.artifacts = FileArtifacts(os.path.join(self.tmp.name, "artifacts"))
+        self.sent = []
+
+    def fetch(self, url, headers, timeout):
+        self.sent.append((url, headers))
+        return 200, {"Content-Type": "text/html"}, ("synthetic terms for " + url).encode()
+
+    def test_sec_hosts_get_the_declared_agent_and_edgar_is_captured(self):
+        from larp.sources.register import load_edgar_terms
+        rows = {r["source_id"]: r for r in live.capture_terms(
+            self.sources, self.fetch, self.artifacts, lambda: T0, user_agents={"LARP_SEC_USER_AGENT": AGENT},
+            edgar=load_edgar_terms())}
+        self.assertEqual(rows["sec-edgar"]["status"], "CAPTURED")
+        for url, headers in self.sent:
+            with self.subTest(url=url):
+                if "sec.gov" in url:
+                    self.assertEqual(headers["User-Agent"], AGENT)
+                else:
+                    self.assertNotIn("@", headers["User-Agent"])  # no SEC contact sent to other publishers
+
+    def test_missing_agent_fails_without_fetching(self):
+        from larp.sources.register import load_edgar_terms
+        rows = {r["source_id"]: r for r in live.capture_terms(
+            self.sources, self.fetch, self.artifacts, lambda: T0, user_agents={}, edgar=load_edgar_terms())}
+        for source_id in ("sec-press", "sec-edgar"):
+            self.assertEqual((rows[source_id]["status"], rows[source_id]["error"]),
+                             ("FAILED", "USER_AGENT_NOT_CONFIGURED"))
+        self.assertFalse([u for u, _ in self.sent if "sec.gov" in u])
+
+    def test_preflight_requires_edgar_terms(self):
+        from larp.sources.register import load_edgar_terms
+        env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": self.tmp.name}
+        edgar = load_edgar_terms()
+        self.assertIsNone(edgar["terms_evidence_sha256"])
+        self.assertIn("TERMS_EVIDENCE_MISSING:sec-edgar", live_preflight(with_terms(self.sources), env))
+        self.assertEqual(live_preflight(with_terms(self.sources), env, edgar=dict(edgar, terms_evidence_sha256="c" * 64)), [])
+
+    def test_register_update_covers_edgar(self):
+        from larp.sources.register import load_edgar_terms
+        copy = Path(self.tmp.name) / "sources.v1.json"
+        shutil.copy(REGISTER, copy)
+        rows = [{"source_id": "sec-edgar", "status": "CAPTURED", "sha256": "d" * 64, "captured_utc": "2026-10-13T08:00:00Z"}]
+        self.assertEqual(live.write_register_terms(copy, rows), ["sec-edgar"])
+        self.assertEqual(load_edgar_terms(copy)["terms_evidence_sha256"], "d" * 64)
+        self.assertEqual(load_edgar_terms(copy)["terms_checked"], "2026-10-13")
+        self.assertEqual(load_register(copy)[0]["sec-press"].rights, load_register()[0]["sec-press"].rights)
+
+
+class GapReportUsesLoggedCadence(unittest.TestCase):
+    """R13 (Keegan nit): each gap is judged against the cadence the runner logged, not the report's CLI value."""
+
+    @staticmethod
+    def line(ms, cadence=None):
+        out = {"schema": "LivePoll.v1", "target": "edgar:ISS-A", "started_ms": ms, "finished_ms": ms + 5, "status": "OK"}
+        if cadence is not None:
+            out["cadence_ms"] = cadence
+        return out
+
+    def test_logged_cadence_decides(self):
+        slow = [self.line(T0 + i * 600_000, 600_000) for i in range(145)]  # every 10 min for a day
+        report = live.gap_report(slow, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        self.assertEqual(report["verdict"], "PASS", report)
+        self.assertEqual(report["targets"]["edgar:ISS-A"]["logged_cadences_ms"], [600_000])
+        gapped = [self.line(T0 + i * 300_000, 300_000) for i in range(289) if i not in (100, 101)]
+        report = live.gap_report(gapped, cadences={"edgar:ISS-A": 900_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        self.assertEqual(report["verdict"], "FAIL")  # a 15 min gap at a logged 5 min cadence
+        legacy = [self.line(T0 + i * 600_000) for i in range(145)]  # lines without cadence_ms: declared cadence
+        report = live.gap_report(legacy, cadences={"edgar:ISS-A": 300_000}, start_ms=T0, end_ms=T0 + 24 * HOUR)
+        self.assertEqual(report["verdict"], "FAIL")
 
 
 if __name__ == "__main__":

@@ -40,5 +40,42 @@ class Bakeoff(unittest.TestCase):
         self.assertIsNone(report["candidates"]["baseline"]["metrics"]["finding_agreement_with_baseline"])
 
 
+class ReviewMetrics(unittest.TestCase):
+    """R15: provider errors are not schema-invalid replies. R10: calls abandoned at the deadline are counted."""
+
+    def setUp(self):
+        self.w = build_world(["EXSEMI_Q2_8K"] + KEYS)
+
+    def anthropic(self, send):
+        from larp.intelligence.providers import AnthropicMessagesModel
+        from tests.intelligence.test_providers import SECRET
+        return AnthropicMessagesModel(model_id="example-model-id", api_key=SECRET, prompt_text=self.w.config.prompt_text,
+                                      prompt_sha256=self.w.config.prompt_sha256, clock_ms=self.w.clock,
+                                      artifacts=self.w.artifacts, transport=send)
+
+    def test_http_errors_are_provider_errors_not_invalid_replies(self):
+        statuses = iter([429, 500, 503])
+        model = self.anthropic(lambda url, headers, body, timeout_s: (next(statuses), b'{"type":"error"}'))
+        requests = [self.w.request([k], issuer_id=EXSEMI, job_id=f"err-{k}") for k in KEYS]
+        metrics = bakeoff.metrics(bakeoff.run({"m": model}, requests, self.w.assessor)["m"])
+        self.assertEqual(metrics["model_replies"], 0)
+        self.assertIsNone(metrics["schema_valid_rate"])
+        self.assertEqual(metrics["provider_errors"], 3)
+
+    def test_calls_abandoned_at_the_deadline_are_counted(self):
+        import json
+        import time
+        from tests.intelligence.test_providers import FINISH, anthropic_reply
+
+        def slow(url, headers, body, timeout_s):
+            time.sleep(0.6)
+            return 200, json.dumps(anthropic_reply(FINISH)(json.loads(body))).encode()
+        requests = [self.w.request([k], issuer_id=EXSEMI, job_id=f"slow-{k}", deadline_ms=150) for k in KEYS[:2]]
+        metrics = bakeoff.metrics(bakeoff.run({"m": self.anthropic(slow)}, requests, self.w.assessor)["m"])
+        self.assertEqual(metrics["status_counts"], {"UNAVAILABLE": 2})
+        self.assertEqual(metrics["cost_micro_usd"]["calls_abandoned_at_deadline"], 2)
+        self.assertTrue(metrics["cost_micro_usd"]["lower_bound"])
+
+
 if __name__ == "__main__":
     unittest.main()
