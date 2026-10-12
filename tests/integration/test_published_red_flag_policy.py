@@ -20,7 +20,8 @@ class PublishedPredicatePolicy(unittest.TestCase):
         result=run.assess('RF1-4.02-SUPPORTED')
         _,sha=red_flag_predicates()
         s=snapshot(held={'NVDAB':2000},now=instant('2026-10-10T14:00:00Z'),profile_changes={
-            'baseline':'EQUAL_WEIGHT','top_up_below_gross_weight':[3,4], 'red_flag_policy':'IDEA-035-B1',
+            'baseline':'EQUAL_WEIGHT','operating_name_weight':[1,5],'operating_gross_weight':[4,5],
+            'regime_gross_weight':[4,5],'top_up_below_gross_weight':[3,4], 'red_flag_policy':'IDEA-035-B1',
             'falsifier_ids':['F-ITEM-4.02'], 'red_flag_authority':{'set_sha256':sha,'enabled':['RF1-ITEM-4.02']}})
         now_ms=int(s.observed_at.timestamp()*1000)
         # Consume promptly; only identity is rebound, evidence bytes remain the producer's.
