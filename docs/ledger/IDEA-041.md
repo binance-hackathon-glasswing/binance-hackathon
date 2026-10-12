@@ -135,3 +135,9 @@ FTC stays disabled: its feeds returned 404 (2026-10-10), and no permitted path w
 - A resolved latch drops the directive (A8). The policy's existing `EVIDENCE_LATCH_RESOLVED` unblocking applies.
 - `larp.strategy.assessments.consume` accepts only `AssessmentResult.v1`. The evidence producer emits v2, and the integrated path uses EvidenceContext.v1 instead. Brief I5 lists `consume` as a validator; please confirm it is not on the live path, or extend it.
 - Policy tests should use the real records and the fixture file `tests/intelligence/fixtures/red_flag_fixtures.v1.json`.
+
+## 2026-10-12 PR #15 remediation — prospective criteria (IDEA-043)
+
+Before executing changed code: SQLite-backed assessor/bake-off reads must work across the assessor worker boundary with serialized transactions; nested provider objects must be closed while accepting real tool arguments and verified claims; exact request/reply bytes survive overflow/deep-JSON errors. Cross-references cannot start/end an item section; supported same-paragraph and relied-on wording work; amended event freshness uses the source's original report date or refuses unknown provenance. Torn poll tails preserve bytes and subsequent records/cadence. Terms capture uses the supplied SEC contact; review jobs without payload refuse; logged cadence governs gap reports; HTTP transport failures are reported separately from schema-invalid model replies. Regression fixtures use synthetic data and no credentials. Full suite and focused tests required; real providers, T01 and 24-hour live ingestion remain NOT RUN.
+
+Schema source checked 2026-10-12: https://platform.claude.com/docs/en/build-with-claude/structured-outputs (raw schemas; additionalProperties false on objects).
