@@ -23,7 +23,9 @@ result existed (feature availability); `cutoff_ms` is the evidence observation t
 import threading
 
 from larp.contracts import Document
-from larp.intelligence.common import INCOMPLETE_EVIDENCE, IntelligenceError, assert_no_trade_fields, digest, is_hash
+from larp.intelligence.common import (
+    INCOMPLETE_EVIDENCE, IntelligenceError, assert_no_trade_fields, digest, is_hash, sha256_hex,
+)
 from larp.intelligence import lifecycle
 from larp.intelligence.facts import METRIC_NAMES, is_statement, issuer_names, statement_event, values_agree
 from larp.intelligence.semantics import finding_eligible
@@ -31,6 +33,7 @@ from larp.intelligence.tools import (
     STATEMENTS, EvidenceIndex, ToolError, check_allowlist, comparable_pairs, load_document, load_items, run_tool,
 )
 from larp.intelligence.models import parse_output
+from larp.intelligence.redflags import item_predicates, load_predicates, verify_item
 from larp.intelligence.verify import detect_conflicts, fact_as_claim, verify_claim
 
 EMPTY_CONTEXT = {"thesis": None, "known_facts": []}
@@ -140,8 +143,11 @@ class _State:
 class EvidenceAssessor:
     """Implements the shared Assessor port: assess(request: Document) -> Document."""
 
-    def __init__(self, *, registry, reader, model, config, clock_ms):
+    def __init__(self, *, registry, reader, model, config, clock_ms, red_flags: tuple | None = None):
         self.registry, self.reader, self.model, self.config, self.clock = registry, reader, model, config, clock_ms
+        # RedFlagPredicateSet.v1 (IDEA-041): an item code becomes a finding only when its own section verifies.
+        predicates, self.red_flag_set_sha256 = red_flags or load_predicates()
+        self.item_predicates = item_predicates(predicates)
 
     # ------------------------------------------------------------------ request
     def _validate(self, r: dict):
@@ -172,6 +178,10 @@ class EvidenceAssessor:
             raise IntelligenceError("TOOL_NOT_ALLOWLISTED") from None
         refs = r.get("evidence_refs")
         need(type(refs) is list and refs, "NO_EVIDENCE_REFS")
+        review = r.get("review")
+        need(review is None or (type(review) is dict and set(review) == {"job_id", "statement_ids"}
+                                and review["job_id"] == r["job_id"] and type(review["statement_ids"]) is list
+                                and all(type(x) is str for x in review["statement_ids"])), "REVIEW_SCOPE_MALFORMED")
         return entry, cutoff, calls, deadline, tools, context, refs
 
     def _rejected(self, r: dict, reason: str, now: int) -> Document:
@@ -183,7 +193,8 @@ class EvidenceAssessor:
                   "missingness": [reason], "confidence": {"level": "UNKNOWN", "calibrated": False},
                   "falsifiers": [], "expiry_ms": now + 1, "review_requests": [], "proposed_thesis": None,
                   "rationale": f"Request rejected before assessment: {reason}.",
-                  "model_io": {"steps": [], "tool_calls": [], "note": "no model call"},
+                  "model_io": {"steps": [], "tool_calls": [], "cot": [], "model_called": False,
+                               "requests_started": 0, "no_model_call_reason": reason, "note": "no model call"},
                   "started_ms": now, "completed_ms": now}
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -197,10 +208,11 @@ class EvidenceAssessor:
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
         box, cancel = {}, threading.Event()
+        io = {"steps": [], "started": 0}  # model I/O as it happens, so a deadline result can still record it
 
         def work():
             try:
-                box["result"] = self._assess(r, start, validated, cancel)
+                box["result"] = self._assess(r, start, validated, cancel, io)
             except BaseException as exc:  # re-raised in the caller's thread
                 box["error"] = exc
 
@@ -209,18 +221,18 @@ class EvidenceAssessor:
         worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
         if worker.is_alive():
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
-            return self._abandoned(r, validated, start)
+            return self._abandoned(r, validated, start, io)
         if "error" in box:
             raise box["error"]
         return box["result"]
 
-    def _assess(self, r, start, validated, cancel) -> Document:
+    def _assess(self, r, start, validated, cancel, io) -> Document:
         entry, cutoff, max_calls, deadline, tools, context, refs = validated
         index = EvidenceIndex(self.reader, entry, cutoff)
         state = _State(entry, index, self.config, cutoff, tools, context)
         self._load_refs(state, refs)
         self._source_health(state, r.get("source_health"))
-        status, reasons, model_io, claims_out, rejected = None, [], [], None, []
+        status, reasons, model_io, claims_out, rejected = None, [], io["steps"], None, []
         if not state.current_records:
             status, reasons = "UNAVAILABLE", ["NO_USABLE_EVIDENCE"]
         step = 0
@@ -243,12 +255,16 @@ class EvidenceAssessor:
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
                          "input": model_input}
             step += 1
+            io["started"] += 1
+            io["in_flight"] = m_request  # what an abandoned result records if the deadline passes during this call
             try:
                 m_response = self.model.step(Document.from_dict(m_request), remaining).read()
             except Exception as exc:  # adapter defect: unavailable, never a silent success
                 model_io.append({"request_id": m_request["request_id"], "error": type(exc).__name__})
                 status, reasons = "UNAVAILABLE", ["MODEL_ERROR"]
                 break
+            finally:
+                io["in_flight"] = None
             model_io.append({"request": m_request, "response": m_response})
             if m_response["status"] == "TIMEOUT" or self.clock() - start > deadline:
                 status, reasons = "UNAVAILABLE", ["MODEL_TIMEOUT"]
@@ -360,9 +376,21 @@ class EvidenceAssessor:
             if fact["source"].get("accession") not in state.current_accessions:
                 rejected.append({"index": i, "reason": "CLAIM_NOT_FROM_ASSESSED_FILING"})
                 continue
+            fact = self._harness_twin(state, fact) or fact
             state.facts.setdefault(fact["fact_id"], fact)
             verified.append(fact["fact_id"])
         return verified, rejected
+
+    @staticmethod
+    def _harness_twin(state, fact):
+        """The extracted fact a verified model claim restates. A claim does not state the harness-only fields
+        (`basis`, `precision_exp10`; the provider schema does not offer them), so without this a confirmation would
+        be a second, differently identified copy of the same fact (IDEA-041 R02 review)."""
+        if fact.get("basis") != "MODEL_CLAIM_VERIFIED":
+            return None
+        own = {k: v for k, v in fact.items() if k not in _HARNESS_ONLY}
+        return next((f for f in state.facts.values() if f.get("basis") != "MODEL_CLAIM_VERIFIED"
+                     and {k: v for k, v in f.items() if k not in _HARNESS_ONLY} == own), None)
 
     def _bind_source(self, state, claim):
         """A claim naming no source record is attributed to the record holding its cited document.
@@ -419,8 +447,9 @@ class EvidenceAssessor:
         coverage["complete"] = not (coverage["truncated"] or state.unread_exhibits())
         if coverage["truncated"]:
             state.missing.append("COVERAGE_TRUNCATED")
-        findings = self._findings(state, current)
-        thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread))
+        red_flags = self._red_flags(state, current)
+        findings = self._findings(state, current, red_flags)
+        thesis, falsifiers = self._thesis(r, state, current, findings, status, bool(unread), red_flags)
         missing = sorted(set(state.missing))
         if state.injection:
             missing.append("UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE")
@@ -441,6 +470,7 @@ class EvidenceAssessor:
             "content": sorted(x["content_hash"] for x in records), "context_hash": r["context_hash"],
             "policy_profile_hash": r["policy_profile_hash"], "model_hash": self.model.identity.model_hash,
             "prompt_sha256": config.prompt_sha256, "config_sha256": config.config_sha256,
+            "red_flag_set_sha256": self.red_flag_set_sha256,
             "tools": list(state.allowed_tools), "budget": r["budget"]})
         ids = {s["fact_id"]: s["statement_id"] for s in statements}
         claims = [self._claim(f, novelty, confirmed, ids) for f in current] if status == "ASSESSED" else []
@@ -454,8 +484,11 @@ class EvidenceAssessor:
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"],
             "cutoff_ms": state.cutoff, "assessment_key": key, "status": status, "reasons": reasons,
+            "review_scope": r.get("review"),
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": config.prompt_sha256, "config_sha256": config.config_sha256,
+            "red_flag_set_sha256": self.red_flag_set_sha256,
+            "red_flag_checks": sorted(red_flags.values(), key=lambda v: (v["accession"], v["item"])),
             "instrument_scope": {"issuer_id": entry.issuer_id, "token": entry.token,
                                  "token_underlying_status": entry.token_underlying_status,
                                  "note": "issuer-level evidence; not converted to any listing or token"},
@@ -484,7 +517,12 @@ class EvidenceAssessor:
                      "basis": sorted({c["basis"] for c in steps_cost})},
             "model_io": {"steps": model_io, "tool_calls": state.tool_calls,
                          "cot": [s["response"]["reasoning_summary"] for s in model_io
-                                 if "response" in s and s["response"]["reasoning_summary"]]},
+                                 if "response" in s and s["response"]["reasoning_summary"]],
+                         # I5 (IDEA-041): a result always says whether a model was called, and if not, why.
+                         "model_called": bool(model_io), "requests_started": len(model_io),
+                         "no_model_call_reason": None if model_io else (
+                             reasons[0] if reasons else "EVIDENCE_MODEL_INPUT_OVER_CAP"
+                             if "EVIDENCE_MODEL_INPUT_OVER_CAP" in missing else "NOT_CALLED")},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
@@ -492,8 +530,11 @@ class EvidenceAssessor:
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
-    def _abandoned(self, r, validated, start) -> Document:
-        """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is read or used."""
+    def _abandoned(self, r, validated, start, io) -> Document:
+        """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
+        completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
+        steps = list(io["steps"])
+        in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
         key = digest("larp.intel.assessment-key.v1", {
@@ -504,7 +545,7 @@ class EvidenceAssessor:
         result = {
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"], "cutoff_ms": cutoff,
-            "assessment_key": key, "status": "UNAVAILABLE", "reasons": reasons,
+            "assessment_key": key, "status": "UNAVAILABLE", "reasons": reasons, "review_scope": r.get("review"),
             "model": self.model.identity.record(), "model_hash": self.model.identity.model_hash,
             "prompt_hash": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
             "evidence_used": [], "claims": [], "retained_facts": [], "rejected_claims": [], "novelty": {},
@@ -517,14 +558,40 @@ class EvidenceAssessor:
             "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
             "budget_used": {"tool_calls": None, "model_steps": None, "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
-            "model_io": {"steps": [], "tool_calls": [],
-                         "note": "worker abandoned at the deadline; its records are not part of this result"},
+            "model_io": {"steps": steps, "tool_calls": [],
+                         "cot": [x["response"]["reasoning_summary"] for x in steps
+                                 if "response" in x and x["response"]["reasoning_summary"]],
+                         "model_called": io["started"] > 0, "requests_started": io["started"],
+                         "no_model_call_reason": None if io["started"] else "ASSESSMENT_DEADLINE_EXCEEDED",
+                         "in_flight": in_flight,
+                         "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
+                                 "audit only; a call in flight at the deadline is counted in requests_started and "
+                                 "named in in_flight with its stored request bytes; tool results are not part of "
+                                 "this result"},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
+
+    def _in_flight(self, m_request):
+        """The model call still running at the deadline: its request ID and, for a hosted adapter (which stores its
+        request bytes before calling), their SHA-256 and artifact address, so those bytes have a record."""
+        if m_request is None:
+            return None
+        out = {"request_id": m_request["request_id"], "status": "IN_FLIGHT_AT_DEADLINE",
+               "request_payload_sha256": None, "request_payload_artifact": None}
+        payload, stored = getattr(self.model, "request_payload", None), getattr(self.model, "has_artifact", None)
+        if callable(payload):
+            try:
+                digest_ = sha256_hex(payload(Document.from_dict(m_request)))
+                out["request_payload_sha256"] = digest_
+                if callable(stored) and stored(digest_):  # the deadline may fall before the adapter stored it
+                    out["request_payload_artifact"] = digest_
+            except Exception:  # noqa: BLE001 - the record still names the request
+                return out
+        return out
 
     def _novelty(self, state, current, priors):
         by_fact, counts = {}, {"NEW": 0, "CHANGED": 0, "UNCHANGED": 0, "NO_PRIOR_AVAILABLE": 0,
@@ -616,12 +683,42 @@ class EvidenceAssessor:
             kept.append(fact)
         return kept, sorted(set(failed))
 
-    def _findings(self, state, current):
+    def _red_flags(self, state, current) -> dict:
+        """{fact_id: RedFlagVerification.v1} for every item fact that has a red-flag predicate. An unverified one is
+        recorded as missing evidence, so it can neither raise a finding nor let the evidence look clear."""
+        out = {}
+        for fact in current:
+            item = fact["metric"][5:] if fact["metric"].startswith("ITEM:") else None
+            predicate = self.item_predicates.get(item)
+            if predicate is None:
+                continue
+            record = state.index.all_by_id[fact["source"]["record_id"]]
+            check = verify_item(predicate, record=record, texts=state.texts, issuer_names=issuer_names(state.entry),
+                                filer_class=state.entry.filer_class, cutoff_ms=state.cutoff,
+                                set_sha256=self.red_flag_set_sha256,
+                                prior_records=tuple(state.index.by_accession.values()))
+            out[fact["fact_id"]] = check
+            if not check["verified"]:
+                state.missing.append(f"EVIDENCE_RED_FLAG_UNVERIFIED:{item}:{check['reason']}:{record['accession']}")
+        return out
+
+    def _same_event(self, red_flags) -> dict:
+        """{(record_id, keyword event): verification} of each verified item: the filing's keyword event of the same
+        kind is the same disclosed event and carries the same red flag."""
+        return {(v["record_id"], self.item_predicates[v["item"]]["trigger"]["event"]): v
+                for v in red_flags.values() if v["verified"]}
+
+    def _findings(self, state, current, red_flags):
         severity = self.config.severity
         findings = []
+        # The filing's keyword event of the same kind is the same disclosed event as its verified item: it carries the
+        # item's red flag, so one disclosure gets one class (else a Class 2 block could never expire).
+        same_event = self._same_event(red_flags)
         for fact in current:
             if fact["kind"] != "EVENT" or is_statement(fact["metric"]):
                 continue  # a statement about an event is never a finding (event_statements, review)
+            if fact["fact_id"] in red_flags and not red_flags[fact["fact_id"]]["verified"]:
+                continue  # an item code without its own verified section text is not a finding (IDEA-032 S1)
             if fact["metric"].startswith("ITEM:"):
                 rule = severity["items"].get(fact["metric"][5:])
             elif fact.get("statement") is not None and finding_eligible(fact["statement"]):
@@ -629,10 +726,14 @@ class EvidenceAssessor:
             else:
                 rule = None  # legacy event fact without recorded semantics: kept, never a finding
             if rule:
-                findings.append({"type": fact["metric"], "impact": rule[0], "severity": rule[1],
-                                 "fact_ids": [fact["fact_id"]],
-                                 "sources": [{"accession": fact["source"].get("accession"),
-                                              "record_id": fact["source"].get("record_id")}]})
+                finding = {"type": fact["metric"], "impact": rule[0], "severity": rule[1],
+                           "fact_ids": [fact["fact_id"]],
+                           "sources": [{"accession": fact["source"].get("accession"),
+                                        "record_id": fact["source"].get("record_id")}]}
+                flag = red_flags.get(fact["fact_id"]) or same_event.get((fact["source"].get("record_id"), fact["metric"]))
+                if flag:
+                    finding["red_flag"] = flag
+                findings.append(finding)
         labels = {("GUIDANCE", "LOWER"): "GUIDANCE_LOWERED", ("GUIDANCE", "HIGHER"): "GUIDANCE_RAISED",
                   ("REPORTED_VS_PRIOR_GUIDANCE", "BELOW"): "REPORTED_BELOW_PRIOR_GUIDANCE",
                   ("REPORTED_VS_PRIOR_GUIDANCE", "ABOVE"): "REPORTED_ABOVE_PRIOR_GUIDANCE",
@@ -665,17 +766,20 @@ class EvidenceAssessor:
             unique.append(finding)
         return sorted(unique, key=lambda f: f["finding_id"])
 
-    def _thesis(self, r, state, current, findings, status, unread):
+    def _thesis(self, r, state, current, findings, status, unread, red_flags):
         prior = (r.get("context") or EMPTY_CONTEXT)["thesis"]
         definitions = list(prior["falsifiers"]) if prior else [dict(f) for f in self.config.default_falsifiers]
+        same_event = self._same_event(red_flags)
         is_8k = any(state.index.all_by_id[x]["form"].startswith("8-K") for x in state.current_records)
         types = {f["type"] for f in findings}
         states = []
         for f in definitions:
             kind, fired, basis = f["type"], "UNKNOWN", []
             if kind == "ITEM":
-                hit = [x["fact_id"] for x in current if x["metric"] == f"ITEM:{f['item']}"]
-                fired = "FIRED" if hit else ("NOT_FIRED" if is_8k else "NOT_APPLICABLE")
+                coded = [x["fact_id"] for x in current if x["metric"] == f"ITEM:{f['item']}"]
+                hit = [i for i in coded if i not in red_flags or red_flags[i]["verified"]]
+                # An item code whose own section does not verify is neither a firing nor a clean reading.
+                fired = "FIRED" if hit else "UNKNOWN" if coded else ("NOT_FIRED" if is_8k else "NOT_APPLICABLE")
                 basis = hit
             elif kind == "EVENT":
                 hit = [x["fact_id"] for x in current if x["metric"] == f["event"]]
@@ -692,7 +796,16 @@ class EvidenceAssessor:
                 fired = ("FIRED" if hit else ("UNKNOWN" if unread else "NOT_APPLICABLE") if not has_fact else
                          "NOT_FIRED" if compared else "UNKNOWN")
                 basis = [i for x in hit for i in x["fact_ids"]]
-            states.append({"falsifier_id": f["falsifier_id"], "type": kind, "state": fired, "fact_ids": basis})
+            entry = {"falsifier_id": f["falsifier_id"], "type": kind, "state": fired, "fact_ids": basis}
+            flag = None
+            if kind == "ITEM" and fired == "FIRED" and basis:
+                flag = red_flags.get(basis[0])
+            elif kind == "EVENT" and fired == "FIRED" and basis:
+                fact = state.facts.get(basis[0]) or {}
+                flag = same_event.get(((fact.get("source") or {}).get("record_id"), fact.get("metric")))
+            if flag and flag["verified"]:
+                entry["red_flag"] = flag  # the evidence state latches it with its class (I8)
+            states.append(entry)
         if status != "ASSESSED":
             return None, states
         adverse = any(x["impact"] == "ADVERSE" for x in findings)
@@ -792,10 +905,47 @@ def _rationale(result, entry):
     return f"{parts[0]}. {second}. {third}."
 
 
+_HARNESS_ONLY = ("fact_id", "basis", "precision_exp10")
+
+
+def review_scope(job: dict) -> dict | None:
+    """The statements a job reviews: from a STATEMENT_REVIEW_DUE job payload (larp.integration.runtime), else None.
+    The result echoes it, and only results of a statement's own review job count as its review attempts (A4)."""
+    payload = job.get("payload") if type(job.get("payload")) is dict else {}
+    if payload.get("reason") != "STATEMENT_REVIEW_DUE":
+        return None
+    return {"job_id": job["job_id"], "statement_ids": sorted(payload.get("statement_ids") or [])}
+
+
+EVIDENCE_JOB_KINDS = ("ASSESS_FILING", "REASSESS_ISSUER")
+
+
+def check_job(job: dict, issuer_id: str) -> None:
+    """A scheduled evidence job (lane `evidence`, or an `evidence:` job ID) must arrive whole, with its payload: the
+    payload carries a review job's scope, and without it no review attempt would ever be counted, so the statement
+    would stay pending and the issuer unbuyable with no error (IDEA-041 R09). Refuses such a job with no payload, an
+    unknown kind, another issuer, or a STATEMENT_REVIEW_DUE payload without its statement IDs."""
+    if type(job) is not dict or type(job.get("job_id")) is not str:
+        raise IntelligenceError("Job needs a string job_id")
+    if job.get("lane") != "evidence" and not job["job_id"].startswith("evidence:"):
+        return  # an unscheduled request (bake-off, demo, test): it reviews nothing
+    payload = job.get("payload")
+    if type(payload) is not dict or payload.get("kind") not in EVIDENCE_JOB_KINDS:
+        raise IntelligenceError("EVIDENCE_JOB_WITHOUT_PAYLOAD: pass the whole scheduled job, including its payload")
+    if payload.get("issuer_id") != issuer_id:
+        raise IntelligenceError("EVIDENCE_JOB_OTHER_ISSUER")
+    ids = payload.get("statement_ids")
+    if payload.get("reason") == "STATEMENT_REVIEW_DUE" and (
+            type(ids) is not list or not ids or any(type(x) is not str or not x for x in ids)):
+        raise IntelligenceError("STATEMENT_REVIEW_JOB_WITHOUT_STATEMENT_IDS")
+
+
 def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cutoff_ms: int, context: dict,
                   policy_profile_hash: str, allowed_tools: list, tool_calls: int, deadline_ms: int,
                   source_health: dict | None) -> Document:
-    """AssessmentRequest.v1 from an ingestion job and the records it references."""
+    """AssessmentRequest.v1 from an ingestion or review job and the records it references. A scheduled evidence job
+    must be passed whole (`check_job`)."""
+    check_job(job, issuer_id)
     refs = [{"record_id": x["record_id"], "accession": x["accession"], "source": x["source_id"],
              "quality": x["quality"], "observed_ms": x["retrieved_ms"], "available_ms": x["available_ms"],
              "content_hash": x["content_hash"]} for x in records]
@@ -803,4 +953,5 @@ def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cuto
         "schema": "AssessmentRequest.v1", "job_id": job["job_id"], "run_id": run_id, "issuer_id": issuer_id,
         "cutoff_ms": cutoff_ms, "evidence_refs": refs, "context": context, "context_hash": context_hash(context),
         "policy_profile_hash": policy_profile_hash, "allowed_tools": allowed_tools,
-        "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health})
+        "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health,
+        "review": review_scope(job)})

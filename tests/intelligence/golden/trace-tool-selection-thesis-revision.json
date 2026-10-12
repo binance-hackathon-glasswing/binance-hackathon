@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": true,
-  "assessment_key": "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7",
+  "assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "LOW",
@@ -38,7 +38,7 @@
   "missing_codes": [
    "PRIOR_MISSING"
   ],
-  "model_hash": "88e679eba3bcc71444ff909de32b83b0794501bed0c5c7454f28a99a1fd21baf",
+  "model_hash": "bf92909663a01d7d022c4db17a9422698a15be732b134987a7c4b8abb708aae4",
   "n_changed": 1,
   "n_conflicts": 0,
   "n_falsifiers_fired": 1,
@@ -50,7 +50,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 1,
   "n_verified_claims": 8,
-  "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+  "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
   "schema": "FeatureRow.v1",
   "severity": 2,
   "source_stale": false,
@@ -63,11 +63,12 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7"
+    "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d"
    ],
    "accepted_result_ids": [
-    "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153"
+    "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6"
    ],
+   "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
    "availability": "AVAILABLE",
    "context": {
@@ -429,6 +430,11 @@
    },
    "context_hash": "1c379e4a657e22f3f7f743b4c020797f298f3d428038d106733ea3ed667286b7",
    "evidence_gate": "ADVERSE",
+   "gate_excluding_timed": "ADVERSE",
+   "gate_excluding_timed_reasons": [
+    "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT",
+    "GUIDANCE_LOWERED"
+   ],
    "gate_reasons": [
     "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT",
     "GUIDANCE_LOWERED"
@@ -469,7 +475,7 @@
      "cutoff_ms": 1791590400000,
      "finding_id": "find:be36e3939c47252010c673f183fa526db6e06c844650fee90fb028681aad5671",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+     "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
      "source_resolutions": {},
      "source_revisions": {
       "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -484,9 +490,9 @@
     },
     {
      "cutoff_ms": 1791590400000,
-     "finding_id": "falsifier:12befbe7d596a3e75773a8c5eb866aa83e04fe2a3e69b3785b3770e9d9d7e48b",
+     "finding_id": "falsifier:2b17407ed3b51b543cb55f91e95ade821b9df5068483e05f844b04dbdfe62a77",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+     "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
      "source_resolutions": {},
      "source_revisions": {
       "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -505,19 +511,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:83c0fc51d616bf753ded72cc99dcc694d7a3fd2944a6c5a341a3fde51bb17877",
+   "batch_id": "state:2d85fdd545b5ab3e777f36236cf7d0788746b66ff6a1944f2c00855cf9d142a4",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:4b817974b92bb2dada9836099aba8f22fba57d00d1e87af50056bb3bdca79a78",
+     "job_id": "evidence:cf8bafb3158cf2bc137864933d208012c461198f9527e037673e72662e1efb72",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7",
+      "after_assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -527,15 +533,16 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+   "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7"
+     "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d"
     ],
     "accepted_result_ids": [
-     "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153"
+     "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6"
     ],
+    "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
     "availability": "AVAILABLE",
     "context": {
@@ -897,6 +904,11 @@
     },
     "context_hash": "1c379e4a657e22f3f7f743b4c020797f298f3d428038d106733ea3ed667286b7",
     "evidence_gate": "ADVERSE",
+    "gate_excluding_timed": "ADVERSE",
+    "gate_excluding_timed_reasons": [
+     "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT",
+     "GUIDANCE_LOWERED"
+    ],
     "gate_reasons": [
      "FALSIFIER_FIRED:F-REVENUE-GUIDANCE-CUT",
      "GUIDANCE_LOWERED"
@@ -937,7 +949,7 @@
       "cutoff_ms": 1791590400000,
       "finding_id": "find:be36e3939c47252010c673f183fa526db6e06c844650fee90fb028681aad5671",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+      "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
       "source_resolutions": {},
       "source_revisions": {
        "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -952,9 +964,9 @@
      },
      {
       "cutoff_ms": 1791590400000,
-      "finding_id": "falsifier:12befbe7d596a3e75773a8c5eb866aa83e04fe2a3e69b3785b3770e9d9d7e48b",
+      "finding_id": "falsifier:2b17407ed3b51b543cb55f91e95ade821b9df5068483e05f844b04dbdfe62a77",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+      "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
       "source_resolutions": {},
       "source_revisions": {
        "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -972,7 +984,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:83c0fc51d616bf753ded72cc99dcc694d7a3fd2944a6c5a341a3fde51bb17877",
+   "batch_id": "state:2d85fdd545b5ab3e777f36236cf7d0788746b66ff6a1944f2c00855cf9d142a4",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -1104,6 +1116,7 @@
   "issuer_id": "FIXTURE-CIK-9900001",
   "job_id": "demo:tool-selection-thesis-revision",
   "policy_profile_hash": "8388034e435758ef7e89de488ef4c17e71958a37184bd60e787a350bc224f87b",
+  "review": null,
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentRequest.v1",
   "source_health": {
@@ -1112,7 +1125,7 @@
   }
  },
  "result": {
-  "assessment_key": "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7",
+  "assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -1619,13 +1632,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+   "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "88e679eba3bcc71444ff909de32b83b0794501bed0c5c7454f28a99a1fd21baf",
+  "model_hash": "bf92909663a01d7d022c4db17a9422698a15be732b134987a7c4b8abb708aae4",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -1634,6 +1647,9 @@
     "Rule baseline: close gap compare_facts.",
     "Rule baseline: no open gap within budget; finish."
    ],
+   "model_called": true,
+   "no_model_call_reason": null,
+   "requests_started": 5,
    "steps": [
     {
      "request": {
@@ -1874,7 +1890,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2652,7 +2668,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3560,7 +3576,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4461,7 +4477,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -5354,7 +5370,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "ed7280fe5f67c00f606bc65326135c5205988f9c962e34ec6c8595ec0115aa74",
+       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -5806,8 +5822,10 @@
   },
   "rationale": "Example Semiconductor Corp (8-K 0009900001-26-000187): 6 verified numerical fact(s); revenue FY2027-Q4 guidance lowered; revenue FY2027-Q3 reported above prior guidance; events ITEM:2.02. No earlier comparison point was available for gross_margin:REPORTED:FY2027-Q2, gross_margin:REPORTED:FY2027-Q3. Proposed thesis BROKEN (v4); falsifiers fired: F-REVENUE-GUIDANCE-CUT; confidence LOW (uncalibrated).",
   "reasons": [],
+  "red_flag_checks": [],
+  "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:fdd0736b8bbe5634149ca05b85ce9e259f3d23520822aa2d128008843d3ee153",
+  "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
   "retained_facts": [],
   "review_requests": [
    {
@@ -5815,12 +5833,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:4b817974b92bb2dada9836099aba8f22fba57d00d1e87af50056bb3bdca79a78",
+     "job_id": "evidence:cf8bafb3158cf2bc137864933d208012c461198f9527e037673e72662e1efb72",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "9b523bf21a1f4a6f6b82ac7605ebba9f415894311992e3d6adfd38b1733d32b7",
+      "after_assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -5831,9 +5849,10 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:4b817974b92bb2dada9836099aba8f22fba57d00d1e87af50056bb3bdca79a78"
+    "request_id": "evidence:cf8bafb3158cf2bc137864933d208012c461198f9527e037673e72662e1efb72"
    }
   ],
+  "review_scope": null,
   "run_id": "synthetic-evidence-run",
   "schema": "AssessmentResult.v2",
   "severity": 2,
