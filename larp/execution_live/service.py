@@ -3,6 +3,8 @@
 The service only drives an injected W04 Executor. The existing Executor still rejects live
 bundles pending verified decoder, production store, manifest and logging integration.
 """
+from datetime import datetime, timezone
+
 from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer
 from larp.marketdata.port import TOKENS
 
@@ -61,18 +63,20 @@ def broadcast_observation(state,attempt,*,wallet_id):
     if not wallet_id:raise Blocked('configured wallet identity required')
     if not attempt.tx_hash or attempt.broadcast_at is None:raise Blocked('no durable broadcast attempt')
     intent=state.intent
-    return dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',settlement='UNKNOWN',
+    return dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',
                 run_id=intent.run_id,wallet_id=wallet_id,round_id=intent.round_id,intent_id=intent.intent_id,
                 event_id=attempt.attempt_id+':broadcast',attempt_id=attempt.attempt_id,tx_hash=attempt.tx_hash,
-                decision_id=intent.decision_id,version_id=intent.version_id,step=attempt.step)
+                decision_id=intent.decision_id,version_id=intent.version_id,step=attempt.step.lower(),
+                observed_at=datetime.fromtimestamp(attempt.broadcast_at, timezone.utc).isoformat())
 
 
 class ExecutionService:
-    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None):
+    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None,round_terminal=None):
         self.store,self.executor,self.mapping,self.observe=store,executor,mapping,observe
         if not wallet_id:raise Blocked('configured wallet identity required')
         self.wallet_id=wallet_id
         self.settlement=settlement
+        self.round_terminal = round_terminal or (lambda state: False)
         self.epoch, self.authority_version = epoch, authority_version
     def create_from_command(self,run_id,command_id,epoch,now_ms):
         if epoch != self.epoch:raise Blocked('command caller ownership mismatch')
@@ -98,6 +102,15 @@ class ExecutionService:
                         or fact.get('attempt_id')!=attempt.attempt_id or fact.get('tx_hash')!=attempt.tx_hash):
                     raise Blocked('settlement fact identity mismatch')
                 self.observe(fact)
+        if state.status == 'ABORTED' and not any(a.step == 'SWAP' and a.broadcast_at is not None
+                                                 for a in state.attempts):
+            from datetime import datetime, timezone
+            self.observe(dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER',
+                kind='NOT_SUBMITTED', settlement='FINAL', run_id=state.intent.run_id, wallet_id=self.wallet_id,
+                round_id=state.intent.round_id, intent_id=state.intent.intent_id,
+                event_id=state.intent.key+':not-submitted', observed_at=datetime.fromtimestamp(
+                    state.last_observed_at, timezone.utc).isoformat(), intent_terminal=True,
+                round_terminal=self.round_terminal(state), reason='ABORTED_BEFORE_SWAP_BROADCAST'))
         if state.status!='ACTIVE':return state
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':
             if state.prepare_probes >= state.intent.max_prepare_probes:
