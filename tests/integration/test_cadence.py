@@ -97,3 +97,25 @@ class Cadence(pipeline.PipelineHarness):
         self.assertTrue(intent['mandatory'])
         self.send(c, intent, 'mandatory', 'broadcast', 'BROADCAST_ATTEMPTED')
         self.assertIsNone(self.store.load(RUN).read()['projection']['last_discretionary_session'])
+
+    def test_future_dated_broadcast_blocks_only_discretionary_cadence(self):
+        # An execution-host clock step must not make every later context unavailable (which
+        # would also stop mandatory reductions); it spends the current session's allowance.
+        c = self.runtime()
+        started = self.w.clock()
+        self.round(c, 'clock-step', 'EXSEMI_402_8K')
+        intent = self.intent('clock-step')
+        future = datetime.fromtimestamp((started + 10 * 86400000) / 1000, timezone.utc).isoformat()
+        self.send(c, intent, 'clock-step', 'broadcast', 'BROADCAST_ATTEMPTED', observed_at=future)
+        self.send(c, intent, 'clock-step', 'revert', 'REVERT', observed_at=future)
+        c.close('clock-step', started + 1000, 'COMPLETE')
+        current = self.store.load(RUN).read()
+        c.context_builder.calendar = lambda ms: {'index': 80 if ms < started + 1000 else 81, 'remaining': 10}
+        context, updates = c.context_builder(current, {}, None, started + 2000)
+        self.assertEqual((context['session_index'], context['last_discretionary_session']), (81, 81))
+        self.assertEqual(updates['last_discretionary_session'], 81)
+        from larp.integration.replay import RecordedPorts
+        recorded = RecordedPorts(c.context_builder).builder_for({'policy_input': {'context': context}})
+        c.context_builder.calendar = lambda ms: (_ for _ in ()).throw(AssertionError('live calendar used'))
+        replayed, _ = recorded(current, {}, None, started + 2000)
+        self.assertEqual(replayed, context)

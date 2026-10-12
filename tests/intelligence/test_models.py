@@ -143,6 +143,23 @@ class HostedAdapterTests(unittest.TestCase):
 
         self.assertEqual(self.model(refused).step(request(), 60_000).read()["status"], "ERROR")
 
+    def test_credential_echo_is_never_stored(self):
+        from larp.intelligence.providers import LateReply
+        escaped = SECRET.replace("s", "\\u0073", 1)
+        for raw in (json.dumps({"error": SECRET}).encode(), ('{"error":"%s","error":null}' % escaped).encode()):
+            for late in (False, True):
+                with self.subTest(raw=raw, late=late):
+                    self.artifacts = MemoryArtifacts()
+                    def transport(*_):
+                        if late:
+                            raise LateReply(200, raw)
+                        return 200, raw
+                    reply = self.model(transport).step(request(), 60_000).read()
+                    self.assertEqual(reply["status"], "TIMEOUT" if late else "ERROR")
+                    self.assertIsNone(reply["raw_response_artifact"])
+                    self.assertFalse(any(SECRET.encode() in blob or escaped.encode() in blob
+                                         for blob in self.artifacts.blobs.values()))
+
     def test_default_transport_uses_bounded_no_redirect_provider_transport(self):
         from larp.intelligence.models import _openai_chat_transport
         with patch("larp.intelligence.providers.https_post", return_value=(302, b"redirect")) as post:

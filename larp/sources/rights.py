@@ -8,6 +8,7 @@ This is a conservative filter, not legal advice; a notice it does not recognise 
 
 from html import unescape
 import re
+import unicodedata
 
 MEDIA = re.compile(r"<(?:img|figure|video|audio|iframe|object|embed|picture|svg)\b[^>]*?(?:/>|>.*?</(?:figure|video|audio|"
                    r"iframe|object|picture|svg)>|>)", re.I | re.S)
@@ -21,12 +22,18 @@ NOT_COVERED = re.compile(r"\bnot\s+(?:covered|licensed)\s+(?:by|under)\b|\bmay\s
 PARAGRAPH = re.compile(r"(<p\b[^>]*>.*?</p>|<li\b[^>]*>.*?</li>|<blockquote\b[^>]*>.*?</blockquote>)", re.I | re.S)
 
 
+INVISIBLE = re.compile(r"[\u00ad\u200b-\u200d\u2060\ufeff]")
+
+
 def _visible(value: str) -> str:
     # Inline markup can split one word; block markup separates words. Normalize
-    # entities and invisible formatting before applying the same rights predicates.
+    # entities, compatibility forms and invisible formatting before applying the same
+    # rights predicates. An invisible character may join a word or separate two, so
+    # both readings are searched (NUL is never whitespace, so they cannot run together).
     value = unescape(value)
     value = re.sub(r"</?(?:p|li|div|br|h[1-6]|blockquote)\b[^>]*>", " ", value, flags=re.I)
-    return re.sub(r"[\u200b-\u200d\ufeff]", "", re.sub(r"<[^>]+>", "", value))
+    value = unicodedata.normalize("NFKC", re.sub(r"<[^>]+>", "", value))
+    return INVISIBLE.sub("", value) + "\x00" + INVISIBLE.sub(" ", value)
 
 
 def filter_item(title: str | None, body: str | None) -> tuple:

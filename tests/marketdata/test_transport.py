@@ -34,7 +34,9 @@ class TransportTests(unittest.TestCase):
 
     def test_escaped_credential_reflections_never_retain_reversible_raw_body(self):
         for raw in (b'{"code":0,"data":{"echo":"fixture-\\u0073ecret"}}',
-                    b'{"code":0,"data":{"fixture-\\u0073ecret":"echo"}}'):
+                    b'{"code":0,"data":{"fixture-\\u0073ecret":"echo"}}',
+                    b'{"code":0,"data":"fixture-\\u0073ecret","data":[]}',  # an earlier duplicate key
+                    b'{"code":0,"data":["fixture\\u002d\\u0073ecret"]}'):
             with self.subTest(raw=raw), tempfile.TemporaryDirectory() as root:
                 r = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root),
                                opener=Opener(raw)).request('GET', 'market/rwa/tokens', {})

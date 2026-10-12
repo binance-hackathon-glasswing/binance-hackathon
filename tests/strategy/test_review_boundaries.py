@@ -62,3 +62,17 @@ def test_explicit_offline_spending_block_is_respected():
     health["new_spending_ok"] = False
     s = changed(s, health=health)
     assert not plan(s, decide(s, s.policy_state)).read()["intents"]
+
+
+@pytest.mark.parametrize("held", [{}, {"GOOGLB": 100}])
+def test_explicitly_unavailable_offline_cost_ranks_last_instead_of_failing_the_round(held):
+    # MarketPort records an unavailable cost as None; outside LIVE that name stays eligible
+    # (an entry candidate or a held top-up) but must sort after every measured cost.
+    s = five_names(held=held)
+    markets = s.context.read()["markets"]
+    for market in markets:
+        if market["symbol"] == "GOOGLB":
+            market["measured_roundtrip_bps"] = None
+    s = with_quotes(changed(s, markets=markets))
+    result = plan(s, decide(s, s.policy_state)).read()
+    assert result["intents"][0]["symbol"] == "NVDAB"

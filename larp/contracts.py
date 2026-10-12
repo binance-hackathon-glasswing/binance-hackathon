@@ -11,10 +11,27 @@ from enum import Enum
 from fractions import Fraction
 import hashlib
 import json
+import re
 
 
 class ContractError(ValueError):
     """Input violates the policy boundary contract."""
+
+
+_JSON_ESCAPE = re.compile(r"\\(?:u([0-9a-fA-F]{4})|(.))", re.S)
+_JSON_SIMPLE = {'"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t"}
+
+
+def reflects_secret(raw: bytes, secrets) -> bool:
+    """True when reply bytes carry a credential literally or behind JSON string escapes.
+
+    Escapes are decoded over the whole text rather than a parsed value, so duplicate keys, deep
+    nesting and non-JSON replies cannot hide a reflection."""
+    secrets = [s for s in secrets if s]
+    text = raw.decode("utf-8", "replace")
+    plain = _JSON_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)) if m.group(1)
+                             else _JSON_SIMPLE.get(m.group(2), m.group(0)), text)
+    return any(s in text or s in plain for s in secrets)
 
 
 def _identifier(value: str) -> None:

@@ -189,6 +189,7 @@ def evaluate(registration: Document, outcomes):
                                        "reason": "Paired portfolios differ in initial capital",
                                        "promotion_authorized": False})
         if (a["first_session"] != b["first_session"] or a["last_session"] != b["last_session"]
+                or instant(a["decision_at"]) != instant(b["decision_at"])
                 or instant(a["label_end_at"]) != instant(b["label_end_at"])):
             return Document.from_dict({"schema": "EconomicReport.v2", "status": "NOT_RUN",
                                        "reason": "Paired portfolios use different evaluation horizons",

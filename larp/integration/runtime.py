@@ -161,9 +161,12 @@ class ContextBuilder:
         last_discretionary_session = projection.get("last_discretionary_session")
         broadcast_ms = projection.get("last_discretionary_observed_ms")
         if broadcast_ms is not None:
-            if type(broadcast_ms) is not int or not 0 <= broadcast_ms <= now_ms:
-                raise ContractError("Discretionary broadcast time is future or malformed")
-            submitted_session = self.calendar(broadcast_ms)["index"]
+            if type(broadcast_ms) is not int or broadcast_ms < 0:
+                raise ContractError("Discretionary broadcast time is malformed")
+            # A broadcast stamped after this decision (an execution-host clock step) has no
+            # knowable session yet. Treat the allowance as spent now, so only discretionary
+            # trades wait; mandatory reductions must still be planned.
+            submitted_session = self.calendar(min(broadcast_ms, now_ms))["index"]
             if type(submitted_session) is not int or submitted_session < 0:
                 raise ContractError("Discretionary broadcast has no valid calendar session")
             last_discretionary_session = max(submitted_session, last_discretionary_session) \

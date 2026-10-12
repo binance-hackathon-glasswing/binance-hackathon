@@ -77,7 +77,8 @@ class Artifacts(unittest.TestCase):
         self.assertEqual(self.artifacts.get(digest), b"durable content")
         with patch.object(self.artifacts, "_sync_directory", wraps=self.artifacts._sync_directory) as sync:
             self.assertEqual(self.artifacts.put(b"durable content"), digest)
-        self.assertEqual([call.args[0] for call in sync.call_args_list], [self.root / digest[:2], self.root])
+        root = self.root.resolve()  # FileArtifacts resolves its root (macOS /tmp is /private/tmp)
+        self.assertEqual([call.args[0] for call in sync.call_args_list], [root / digest[:2], root])
 
 
 class CoverageReports(unittest.TestCase):
@@ -119,8 +120,10 @@ class LiveRevisionGuard(unittest.TestCase):
             args = command[1:]
             if args == ["rev-parse", "HEAD"]:
                 result = head
-            elif args == ["status", "--porcelain"]:
+            elif args == ["status", "--porcelain", "--untracked-files=all", "--ignore-submodules=none"]:
                 result = ""
+            elif args == ["ls-files", "-v"]:
+                result = "H larp/sources/live.py"
             elif args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
                 result = "codex/test"
             elif args == ["config", "--get", "branch.codex/test.remote"]:
@@ -133,6 +136,26 @@ class LiveRevisionGuard(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, stdout=result, stderr="not returned")
         with patch("larp.sources.live.subprocess.run", side_effect=run):
             self.assertEqual(live.git_state(), {"commit": head, "dirty": False, "pushed": True})
+
+    def test_hidden_index_flags_and_untracked_settings_cannot_hide_modified_code(self):
+        def git(repo, *args):
+            subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@fixture.invalid", *args], cwd=repo,
+                           check=True, capture_output=True)
+        for hide in ("--skip-worktree", "--assume-unchanged", "untracked"):
+            with self.subTest(hide=hide), tempfile.TemporaryDirectory() as tmp:
+                repo = Path(tmp)
+                git(repo, "init", "-q")
+                (repo / "code.py").write_text("SAFE = True\n")
+                git(repo, "add", "code.py")
+                git(repo, "commit", "-q", "-m", "fixture")
+                self.assertFalse(live.git_state(repo)["dirty"])
+                if hide == "untracked":
+                    git(repo, "config", "status.showUntrackedFiles", "no")
+                    (repo / "extra.py").write_text("SAFE = False\n")
+                else:
+                    git(repo, "update-index", hide, "code.py")
+                    (repo / "code.py").write_text("SAFE = False\n")
+                self.assertTrue(live.git_state(repo)["dirty"])
 
     def test_unreachable_remote_fails_closed(self):
         def run(command, **kwargs):
@@ -149,7 +172,9 @@ class RightsEntities(unittest.TestCase):
     def test_entity_encoded_notices_are_excluded_like_literal_notices(self):
         for notice in ("&copy; 2026 Example", "&#169; 2026 Example", "&#xA9; 2026 Example",
                        "all&nbsp;rights&nbsp;reserved", "copy<span>right</span> 2026 Example",
-                       "all&#x200b; rights reserved", "copy&#x200b;right 2026 Example"):
+                       "all&#x200b; rights reserved", "copy&#x200b;right 2026 Example",
+                       "All\u200brights reserved", "All rights re&shy;served", "All rights re\u2060served",
+                       "\uff21ll rights reserved"):
             with self.subTest(notice=notice):
                 self.assertEqual(filter_item(notice, "<p>Release</p>")[2], "THIRD_PARTY_RIGHTS")
                 self.assertEqual(filter_item("Release", f"<p>{notice}</p>")[2], "THIRD_PARTY_RIGHTS")

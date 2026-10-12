@@ -30,7 +30,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 
-from larp.contracts import ContractError, Document
+from larp.contracts import ContractError, Document, reflects_secret
 from larp.intelligence.common import (
     IntelligenceError, assert_no_trade_fields, digest, forbidden_key_paths, is_hash, require_hash, sha256_hex,
 )
@@ -236,8 +236,9 @@ class HostedChatModel:
         try:
             status, raw = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
         except LateReply as exc:
+            late = exc.raw if type(exc.raw) is bytes and not reflects_secret(exc.raw, (self._key,)) else None
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
-                            error="DEADLINE_EXCEEDED", raw=exc.raw, **record)
+                            error="DEADLINE_EXCEEDED", raw=late, **record)
         except (socket.timeout, TimeoutError):
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
                             error="DEADLINE_EXCEEDED", **record)
@@ -247,6 +248,9 @@ class HostedChatModel:
         if type(raw) is not bytes:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error="TRANSPORT_REPLY_NOT_BYTES", **record)
+        if reflects_secret(raw, (self._key,)):  # an echoed credential never reaches the artifact store
+            return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
+                            error="CREDENTIAL_REFLECTION", **record)
         _store(self._artifacts, raw)  # persist before parsing even adversarially malformed JSON
         record["raw"] = raw
         latency = self.clock() - started

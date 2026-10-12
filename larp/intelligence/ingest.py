@@ -24,7 +24,7 @@ the store owns attempts, status and scheduling. Jobs carry no trade command.
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError, digest
-from larp.intelligence.edgar import check_identity, listing_rows
+from larp.intelligence.edgar import check_identity, listing_rows, parse_acceptance_ms
 from larp.intelligence.issuers import DOMESTIC_FORMS, FOREIGN_PRIVATE_FORMS
 from larp.intelligence.text import document_text
 
@@ -101,19 +101,31 @@ class Ingestor:
         old_watermark, newest = cursor["watermark_ms"], cursor["watermark_ms"]
         if listing.history_status == "PARTIAL":
             outcome["status"] = "PARTIAL_HISTORY"
+
+        def in_scope(original_ms):
+            return (original_ms >= cursor["floor_ms"] if mode == "LIVE"
+                    else window[0] <= original_ms <= window[1])
+
         for row in sorted(rows, key=lambda r: (r["original_ms"] or 0, str(r["accession"] or ""))):
             if row["malformed"]:
-                outcome["malformed_rows"] += 1
+                # A malformed row outside the polled scope cannot hide current evidence; one
+                # whose time is unreadable, or that names a pending accession, might.
+                try:
+                    stamp = parse_acceptance_ms(row["acceptance_raw"])
+                except (IntelligenceError, ValueError, TypeError):
+                    stamp = None
+                pending = type(row["accession"]) is str and row["accession"] in cursor["pending"]
+                if stamp is None or in_scope(stamp) or pending:
+                    outcome["malformed_rows"] += 1
                 continue
             accession, form_class = row["accession"], entry.form_class(row["form"])
+            relevant = in_scope(row["original_ms"]) or accession in cursor["pending"]
             if form_class is None:
-                if row["form"] in ALL_PERIODIC_AND_CURRENT:
+                if row["form"] in ALL_PERIODIC_AND_CURRENT and relevant:
                     outcome["unexpected_forms"].append([accession, row["form"]])
                 outcome["ignored_forms"] += 1
                 continue
-            in_scope = (row["original_ms"] >= cursor["floor_ms"] if mode == "LIVE"
-                        else window[0] <= row["original_ms"] <= window[1])
-            if not in_scope and accession not in cursor["pending"]:
+            if not relevant:
                 continue
             if row["original_ms"] > now + self.config.p("max_clock_skew_ms"):
                 outcome["rejected_future"].append(accession)
@@ -134,10 +146,14 @@ class Ingestor:
                 newest = row["original_ms"] if newest is None else max(newest, row["original_ms"])
         cursor["watermark_ms"] = newest
         self._bound_known(cursor)
+        # Issuer health covers this poll's gaps and retries still owed. A filing that stays
+        # unreadable (dead letter) or bounded keeps that on its own record, which assessments
+        # report as FILING_UNREADABLE / FILING_INCOMPLETE; it must not stall the issuer forever,
+        # since nothing during the scored run can clear it by hand.
         incomplete = (listing.history_status == "PARTIAL" or outcome["malformed_rows"]
                       or outcome["unexpected_forms"] or outcome["rejected_future"]
-                      or cursor["pending"] or cursor["dead_letter"]
-                      or any(k.get("incomplete") for k in cursor["known"].values()))
+                      or cursor["pending"] or outcome["dead_letter"]
+                      or any(r["incomplete"] for r in records))
         health.update(status="INCOMPLETE" if incomplete else "OK", last_success_ms=listing.retrieved_ms,
                       unavailable_since_ms=None, consecutive_failures=0,
                       last_error="EVIDENCE_COVERAGE_INCOMPLETE" if incomplete else None)

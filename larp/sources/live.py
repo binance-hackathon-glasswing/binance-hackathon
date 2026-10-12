@@ -52,7 +52,11 @@ def iso(ms: int) -> str:
 def git_state(repo: Path = REPO) -> dict:
     def git(*args):
         return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
-    state = {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain")), "pushed": False}
+    # Hidden index flags (assume-unchanged is lowercase, skip-worktree is "S") and an untracked-files
+    # setting can each make plain status report a modified tree as clean.
+    hidden = any(line[:1].islower() or line[:1] == "S" for line in git("ls-files", "-v").splitlines())
+    dirty = hidden or bool(git("status", "--porcelain", "--untracked-files=all", "--ignore-submodules=none"))
+    state = {"commit": git("rev-parse", "HEAD"), "dirty": dirty, "pushed": False}
     try:
         branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
         remote = git("config", "--get", f"branch.{branch}.remote")

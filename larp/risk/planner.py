@@ -273,8 +273,9 @@ def plan(snapshot, proposal_or_none):
     if p["baseline"] == "EQUAL_WEIGHT" and actions and not actions[0][3]:
         # Candidate selection and actual child execution must use the same cost
         # priority; alphabetical planning otherwise spends the daily slot first.
-        actions.sort(key=lambda a: (a[1] != "SELL",
-                                   market[a[0]].get("measured_roundtrip_bps", 10**9), a[0]))
+        # An explicitly unavailable cost (None outside LIVE) ranks last, like a missing one.
+        cost = lambda symbol: market[symbol].get("measured_roundtrip_bps")
+        actions.sort(key=lambda a: (a[1] != "SELL", 10**9 if cost(a[0]) is None else cost(a[0]), a[0]))
     for symbol, side, quantity, mandatory, why in actions:
         m = market.get(symbol)
         if m is None:

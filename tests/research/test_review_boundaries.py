@@ -128,3 +128,14 @@ def test_oof_chronology_control_and_explicit_rights():
     assert fusion_rows(Document.from_dict(request)).read()["status"] == "NOT_RUN"
     request["rights_cleared"] = "false"
     assert fusion_rows(Document.from_dict(request)).read()["status"] == "INCONCLUSIVE"
+
+
+def test_different_decision_time_cannot_be_paired_inside_registered_window():
+    from datetime import timedelta
+    from larp.strategy.schema import instant
+    rows = [o for pair in econ_outcomes([10_000] * 4) for o in pair]
+    # Still inside the registered decision window, but the treatment decided six hours later.
+    rows[1]["decision_at"] = (instant(rows[1]["decision_at"]) + timedelta(hours=6)).isoformat()
+    report = evaluate(Document.from_dict(econ_registration(4)), [Document.from_dict(o) for o in rows]).read()
+    assert report["status"] == "NOT_RUN"
+    assert "different evaluation horizons" in report["reason"]

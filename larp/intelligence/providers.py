@@ -49,6 +49,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 
+from larp.contracts import reflects_secret
 from larp.intelligence.common import IntelligenceError, require_hash, sha256_hex
 from larp.intelligence.models import ModelIdentity, allowed_endpoint, response
 
@@ -333,7 +334,7 @@ class HostedModel:
         try:
             status, raw = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
         except LateReply as exc:  # paid for and complete, but late: a timeout whose bytes are kept
-            if type(exc.raw) is bytes:
+            if type(exc.raw) is bytes and not reflects_secret(exc.raw, (self._key,)):
                 self._keep(exc.raw)
                 record["raw"] = exc.raw
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
@@ -347,6 +348,9 @@ class HostedModel:
         if type(raw) is not bytes:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error="TRANSPORT_REPLY_NOT_BYTES", **record)
+        if reflects_secret(raw, (self._key,)):  # an echoed credential never reaches the artifact store
+            return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
+                            error="CREDENTIAL_REFLECTION", **record)
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started

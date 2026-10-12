@@ -95,6 +95,10 @@ class EdgarCoverage(IngestHarness):
         record = self.records()[0]
         self.assertTrue(record["incomplete"])
         self.assertFalse(outcome["coverage_complete"])
+        later = self.poll()  # the bound is permanent; it stays on the record, not on the issuer
+        self.assertTrue(later["coverage_complete"])
+        self.assertEqual(self.cursor()["health"]["status"], "OK")
+        self.assertTrue(self.records()[-1]["incomplete"])
         request = build_request(job={"job_id": "bounded-read"}, run_id=RUN_ID, issuer_id=EXSEMI,
                                 records=[record], cutoff_ms=self.clock(), context=EMPTY_CONTEXT,
                                 policy_profile_hash=PROFILE, allowed_tools=list(self.config.tools), tool_calls=6,
@@ -135,8 +139,46 @@ class EdgarCoverage(IngestHarness):
         for _ in range(3):
             self.assertFalse(self.poll()["coverage_complete"])
             self.assertEqual(self.cursor()["health"]["status"], "INCOMPLETE")
+        # Once dead-lettered, the unreadable filing is a MISSING record (FILING_UNREADABLE to
+        # assessments) and no longer stalls the whole issuer on ordinary polls.
+        self.assertTrue(self.poll()["coverage_complete"])
+        self.assertEqual(self.cursor()["health"]["status"], "OK")
+        self.assertIn(spec["accession"], self.cursor()["dead_letter"])
+        self.assertEqual(self.records()[-1]["quality"], "MISSING")
         self.assertTrue(self.poll(recheck=frozenset({spec["accession"]}))["coverage_complete"])
         self.assertEqual(self.cursor()["dead_letter"], {})
+
+    def with_rows(self, *rows):
+        original = self.source.list_filings
+        def listing(*args, **kwargs):
+            result = original(*args, **kwargs)
+            recent = result.submissions["filings"]["recent"]
+            for accession, form, acceptance, primary in rows:
+                for key, value in (("accessionNumber", accession), ("form", form), ("items", ""),
+                                   ("acceptanceDateTime", acceptance), ("filingDate", acceptance[:10]),
+                                   ("reportDate", ""), ("primaryDocument", primary)):
+                    recent[key].append(value)
+            return result
+        self.source.list_filings = listing
+
+    def test_only_in_scope_or_undatable_listing_gaps_mark_coverage_incomplete(self):
+        from larp.intelligence.ingest import ALL_PERIODIC_AND_CURRENT
+        entry = self.registry.by_issuer(EXSEMI)
+        unexpected = sorted(f for f in ALL_PERIODIC_AND_CURRENT if entry.form_class(f) is None)[0]
+        old, recent = "2010-03-01T16:00:00-05:00", "2026-10-01T20:00:00+00:00"
+        cases = [((("0009900001-10-000001", "8-K", old, ""), ("0009900001-10-000002", unexpected, old, "a.htm")),
+                  True),
+                 ((("0009900001-26-000901", "8-K", recent, ""),), False),
+                 ((("0009900001-26-000902", unexpected, recent, "a.htm"),), False),
+                 ((("0009900001-26-000903", "8-K", "not-a-time", ""),), False)]
+        for rows, complete in cases:
+            with self.subTest(rows=rows):
+                self.setUp()
+                self.with_rows(*rows)
+                outcome = self.poll()
+                self.assertEqual(outcome["coverage_complete"], complete)
+                self.assertEqual(self.cursor()["health"]["status"], "OK" if complete else "INCOMPLETE")
+                self.assertEqual(self.poll()["coverage_complete"], complete)  # relisting is judged the same
 
     def test_bad_listing_preserves_unavailable_health_without_records(self):
         self.add("EXSEMI_Q3_8K")
