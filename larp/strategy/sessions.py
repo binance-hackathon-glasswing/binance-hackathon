@@ -43,7 +43,10 @@ def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale
     for raw in d["candles"]:
         if type(raw) is not list or len(raw) != 7:
             raise ContractError("Invalid Web3 candle row")
-        ts = integer(raw[5])
+        try:
+            ts = integer(int(raw[5])) if type(raw[5]) is str and raw[5].isdigit() else integer(raw[5])
+        except (ContractError, ValueError):
+            continue  # unusable rows leave an explicit missing session
         if ts in seen:
             raise ContractError("Duplicate raw candle")
         seen.add(ts)
@@ -51,11 +54,14 @@ def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale
         closed = opened + timedelta(seconds=step)
         try:
             close = Decimal(str(raw[3])) * price_scale
-            if not close.is_finite() or close <= 0 or close != close.to_integral_value():
+            if not close.is_finite() or close <= 0:
                 raise ValueError("nonpositive or nonrepresentable price")
         except (InvalidOperation, ValueError) as exc:
-            raise ContractError("Invalid candle close") from exc
-        integer(raw[6], 1)  # no-trade intervals cannot supply an observed close
+            continue  # no fill-forward or fabricated close
+        try:
+            integer(raw[6], 1)
+        except ContractError:
+            continue  # no-trade intervals cannot supply an observed close
         rows.append((opened, closed, int(close)))
     rows.sort()
     if any(b[0] < a[1] for a, b in zip(rows, rows[1:])):

@@ -10,10 +10,10 @@ from datetime import timedelta
 from fractions import Fraction
 
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
-from larp.integration.contract import accept_for_strategy, authority
+from larp.integration.contract import accept_for_strategy, authority, red_flag_directives
 from .features import declared_weight, features
 from .schema import fraction, instant, integer, markets, profile, value, equity
-from .predicates import predicate_records, update_blocks
+from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
 def decide(snapshot, state):
@@ -34,8 +34,9 @@ def decide(snapshot, state):
     finding_sessions = dict(data.get("finding_sessions", {}))
     registry = c.get("red_flag_predicates")
     classified = p.get("red_flag_policy") == "IDEA-035-B1"
-    records = predicate_records(registry) if classified else {}
-    if classified and Document.from_dict(registry).digest("RedFlagRegistry.v1") != p["predicate_registry_hash"]:
+    published = classified and "red_flag_authority" in p
+    records = predicate_records(registry) if classified and not published else {}
+    if classified and not published and Document.from_dict(registry).digest("RedFlagRegistry.v1") != p["predicate_registry_hash"]:
         raise ContractError("Predicate registry differs from the active profile")
     reviews, shadow, targets = [], [], []
     rights = authority(p)
@@ -64,7 +65,13 @@ def decide(snapshot, state):
                     if f.get("predicate_id") in p["falsifier_ids"]
                     and f.get("supported") is True and f.get("verifier_accepted") is True
                     and f.get("supporting_spans")]
-        if classified:
+        if published:
+            directives = red_flag_directives(a, p) if a is not None else []
+            shadow.append({"symbol": symbol, "red_flag_directives": directives,
+                           "statements_pending": len((a or {}).get("statements_pending", []))})
+            update_directive_blocks(blocked, finding_sessions, symbol, directives, session=session,
+                run_id=snapshot.run_id, allow_resolution=bool(a and a.get("review_complete") is True))
+        if classified and not published:
             classified_findings = [f for f in findings if f["predicate_id"] in records]
             if a is not None:
                 if any(type(f.get("finding_id")) is not str or not f["finding_id"] for f in classified_findings):
@@ -102,7 +109,8 @@ def decide(snapshot, state):
             targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory and not entry_only
                                   else TargetKind.KEEP_QUANTITY,
                                   "CLASS_2_ENTRY_BLOCK" if entry_only else
-                                  "MANDATORY_REDUCTION_BY_RISK" if mandatory else "BOUNDED_FALSIFIER"))
+                                  "MANDATORY_REDUCTION_BY_RISK" if mandatory else
+                                  "CLASS_1_EXIT" if blocked[symbol]["reason"] == "CLASS_1_EXIT" else "BOUNDED_FALSIFIER"))
             status = "HELD_ENTRY_BLOCKED" if units and entry_only else "EXIT_REQUIRED" if units else "BLOCKED"
         elif m is None or not m.get("basis_verified"):
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "MISSING_MARKET_OR_BASIS"))
@@ -110,12 +118,14 @@ def decide(snapshot, state):
             # IDEA-037: no estimate, so no price-history features. Names are never sold on drift (the
             # planner's hard lines handle extremes). Only while gross is below the top-up threshold, a held
             # name below the equal weight is bought back up to it and unheld names are entry candidates.
-            fresh_review = bool(a and a.get("review_complete") is True)
+            fresh_review = bool(a and (a.get("review_complete") is True or
+                (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))
             if due and fresh_review:
                 last_review = session
             weight = fraction(p["operating_name_weight"])
             below = gross < fraction(p["top_up_below_gross_weight"])
-            gates = (window_open and (not p["assessment_required"] or fresh_review)
+            gates = (window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
+                     and (not p["assessment_required"] or fresh_review)
                      and not (rights["statement"] == "ENTRY_BLOCK" and pending))
             if units:
                 if below and gates and value(units, m) < weight * (E - p["cost_reserve_units"]):
@@ -141,7 +151,8 @@ def decide(snapshot, state):
                           expected_instrument="TOKEN" if p.get("series_kind") == "TOKEN" else "UNDERLYING_SHARE",
                           expected_token=m["token_id"] if p.get("series_kind") == "TOKEN" else None) if series else
                  Document.from_dict({"status": "MISSING"}))
-            fresh_review = bool(a and a.get("review_complete") is True)
+            fresh_review = bool(a and (a.get("review_complete") is True or
+                (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))
             if due and fresh_review:
                 last_review = session
             if f.read()["status"] != "VALID":

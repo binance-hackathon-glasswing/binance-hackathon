@@ -5,6 +5,8 @@ measurement. Publication of profile files awaits actual captures and owner revie
 """
 
 from fractions import Fraction
+import json
+from larp.intelligence.redflags import CONFIG as PREDICATE_CONFIG
 
 from larp.contracts import ContractError, Document
 from .schema import SYMBOLS, ceil, instant, integer
@@ -12,9 +14,9 @@ from .predicates import predicate_records
 
 WINDOWS = {
     "REHEARSAL": ("2026-10-21T00:00:00Z", "2026-10-24T00:00:00Z",
-                  "2026-10-25T00:00:00Z", "2026-10-26T15:00:00Z"),
+                  "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"),
     "FINAL": ("2026-10-29T00:00:00Z", "2026-11-09T00:00:00Z",
-              "2026-11-10T00:00:00Z", "2026-11-11T15:00:00Z"),
+              "2026-11-10T00:00:00Z", "2026-11-11T14:45:00Z"),
 }
 
 
@@ -42,7 +44,7 @@ def _quote_summary(summary):
     for row in summary["symbols"].values():
         integer(row["samples"], 1)
         for field in ("median_impact_bps", "spread_bps", "fee_bps"):
-            integer(row[field])
+            integer(row[field], 1 if field == "median_impact_bps" else 0)
         for field in ("approve_gas_bnb_units", "swap_gas_bnb_units", "slippage_bps", "quote_ttl_seconds"):
             integer(row[field], 1)
         if row["spread_bps"] + min(50, 2 * row["median_impact_bps"]) + row["fee_bps"] >= 50:
@@ -126,7 +128,14 @@ def build_live_profiles(summary: Document, registry: Document):
     This function neither runs a market experiment nor grants signer authority.
     """
     s, reg = quote_summary(summary.read()), registry.read()
-    records = predicate_records(reg)
+    published = reg.get("schema") == "RedFlagPredicateSet.v1"
+    if published:
+        from larp.integration.contract import red_flag_predicates
+        records, set_sha = red_flag_predicates()
+        if reg != json.loads(PREDICATE_CONFIG.read_text()):
+            raise ContractError("Published predicate set differs from this build")
+    else:
+        records = predicate_records(reg)
     pairs = [r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in s["symbols"].values()]
     pair = max(pairs)
     gas_value = ceil(Fraction(pair * s["bnb_price_units"], 10**s["bnb_decimals"]))
@@ -156,6 +165,10 @@ def build_live_profiles(summary: Document, registry: Document):
         "series_kind": "TOKEN", "gas_floor_bnb_units": floor_bnb, "gas_top_up_cash_units": top_up_cash,
         "gas_top_up_min_receive_units": top_up_receive, "gas_top_up_max_gas_bnb_units": pair,
         "quote_cost_summary": s}
+    if published:
+        base["red_flag_authority"] = {"set_sha256": set_sha, "enabled": sorted(
+            pid for pid, r in records.items() if r["class"] in (1, 2))}
+        base["falsifier_ids"] = ["F-ITEM-" + r["trigger"]["item"] for r in records.values() if r["class"] in (1, 2)]
     profiles = {}
     for env, window in WINDOWS.items():
         capital = 100_000_000 if env == "REHEARSAL" else 200_000_000

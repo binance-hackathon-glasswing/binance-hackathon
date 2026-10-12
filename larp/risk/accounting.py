@@ -61,7 +61,7 @@ def advance_accounting(portfolio: Document, observation: Document):
         raise ContractError("Provisional events require execution/finality integration")
     if e.get("origin") not in ("SCRIPTED_FAKE", "EXECUTION_RECONCILER"):
         raise ContractError("Untrusted execution origin")
-    if d.get("mode") == "LIVE" and e.get("origin") != "EXECUTION_RECONCILER":
+    if e.get("origin") == "SCRIPTED_FAKE" and d.get("mode") not in ("OFFLINE", "offline"):
         raise ContractError("Fake receipt cannot enter live accounting")
     instant(e["observed_at"])
     reservation = d["reservations"].get(e["intent_id"])

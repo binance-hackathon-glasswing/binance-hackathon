@@ -132,8 +132,8 @@ def market_view(observations, universe, cutoff, p):
         if p.get("mode") == "LIVE" and (m.get("origin") != "WEB3_OPEN_API"
                 or m.get("source_id") in ("SCRIPTED_FAKE", "SYNTHETIC")):
             raise ContractError("Fake or unidentified market observation in LIVE")
-        if p.get("mode") == "LIVE":
-            integer(m.get("measured_roundtrip_bps"))
+        if m.get("measured_roundtrip_bps") is not None:
+            integer(m["measured_roundtrip_bps"])
         integer(m["decimals"])
         if m["decimals"] > 30 or m["currency"] != "USDT" or m["money_scale"] != MONEY_SCALE:
             raise ContractError("Unsupported units/currency")

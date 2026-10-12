@@ -62,7 +62,7 @@ def plan_top_up(snapshot, p, ledger, result):
     except (ContractError, KeyError, TypeError, ValueError):
         result["rejections"].append({"symbol": "BNB", "reason": "GAS_TOP_UP_QUOTE_OR_RESERVE"})
         return True
-    intent = {"kind": "GAS_TOP_UP", "purpose": "GAS_TOPUP", "symbol": "BNB", "side": "BUY", "mandatory": False,
+    intent = {"kind": "GAS_TOP_UP", "symbol": "BNB", "side": "BUY", "mandatory": False,
         "token_units": receive, "decimals": ledger["bnb_decimals"], "receive_asset": "BNB",
         "receive_decimals": ledger["bnb_decimals"], "cash_units": cash, "fee_units": fee,
         "gas_bnb_units": gas, "amount_kind": "EXACT_IN", "pay_asset": "USDT", "pay_units": pay,
@@ -70,7 +70,7 @@ def plan_top_up(snapshot, p, ledger, result):
         "parent_remaining_units": 0, "reasons": ["GAS_RESOURCE_FLOOR"], "own_round": True}
     intent["intent_id"] = Document.from_dict({"snapshot_id": snapshot.snapshot_id, **intent}).digest("EconomicIntent.v1")
     result["intents"].append(intent)
-    result["reservation_deltas"].append({"intent_id": intent["intent_id"], "kind": "GAS_TOP_UP", "purpose": "GAS_TOPUP",
+    result["reservation_deltas"].append({"intent_id": intent["intent_id"], "kind": "GAS_TOP_UP",
         "symbol": "BNB", "side": "BUY", "cash_units": cash + fee, "bnb_units": gas,
         "token_units": receive, "pay_units": pay, "min_receive_units": minimum})
     result["gas_top_up_value_units"] = ceil(Fraction(receive * ledger["bnb_price_units"], 10**ledger["bnb_decimals"]))

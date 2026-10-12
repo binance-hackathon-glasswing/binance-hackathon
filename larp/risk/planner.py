@@ -79,7 +79,8 @@ def plan(snapshot, proposal_or_none):
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
                           | {v["symbol"] for v in ledger["reservations"].values()
-                             if v["side"] == "BUY" and market.get(v["symbol"]) is None})
+                             if v["side"] == "BUY" and v.get("kind") != "GAS_TOP_UP"
+                             and v.get("symbol") != "BNB" and market.get(v["symbol"]) is None})
         E = equity(ledger, market, allow_missing=True)
         # Incomplete valuation is not a loss observation. Preserve latches/peak;
         # block buys and use only the disclosed lower bound for healthy-name trims.
@@ -127,7 +128,7 @@ def plan(snapshot, proposal_or_none):
     for reservation in ledger["reservations"].values():
         reserved_cash += integer(reservation["cash_units"])
         reserved_bnb += integer(reservation["bnb_units"])
-        if reservation["side"] == "BUY":
+        if reservation["side"] == "BUY" and reservation.get("symbol") != "BNB":
             s = reservation["symbol"]
             pending_buy[s] = pending_buy.get(s, 0) + integer(reservation["token_units"])
     gross = sum((value(q + pending_buy.get(s, 0), market[s]) for s, q in held.items()
@@ -184,6 +185,9 @@ def plan(snapshot, proposal_or_none):
         if index >= 4:
             cap = 0
             reason.append("POSITION_COUNT_CAP")
+        if targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT":
+            cap = 0
+            reason.append("CLASS_1_EXIT")
         if terminal:
             cap = 0
             reason.append("TERMINAL_FLATTEN")
@@ -217,7 +221,10 @@ def plan(snapshot, proposal_or_none):
 
     # Gas replenishment has its own round, no position slot or gross allocation.
     # A blocked top-up cannot hide mandatory sale requirements already recorded.
-    gas_short = not terminal and plan_top_up(snapshot, p, risk_ledger, result)
+    sale_gas = max((row["approve_gas_bnb_units"] + row["swap_gas_bnb_units"]
+                    for row in p.get("quote_cost_summary", {}).get("symbols", {}).values()), default=0)
+    mandatory_can_pay = bool(result["requirements"]) and ledger["bnb_units"] >= sale_gas
+    gas_short = not terminal and not mandatory_can_pay and plan_top_up(snapshot, p, risk_ledger, result)
     if gas_short:
         if result["intents"] or result["quote_requests"]:
             return Document.from_dict(result)
@@ -356,7 +363,8 @@ def plan(snapshot, proposal_or_none):
         intent = {"symbol": symbol, "side": side, "token_units": q, "decimals": m["decimals"],
                   "cash_units": cash, "fee_units": fee, "gas_bnb_units": gas,
                   "mandatory": mandatory, "reasons": why, "quote_id": quote["quote_id"],
-                  "quote_expiry": quote["expires_at"], "parent_remaining_units": quantity - q,
+                  "quote_expiry": min(instant(quote["expires_at"]), instant(p["signing_end"])).isoformat(),
+                  "parent_remaining_units": quantity - q,
                   "amount_kind": "EXACT_IN", "pay_asset": quote["pay_asset"], "pay_units": quote["pay_units"],
                   "min_receive_units": quote["min_receive_units"],
                   "receive_decimals": m["decimals"] if side == "BUY" else 6}
