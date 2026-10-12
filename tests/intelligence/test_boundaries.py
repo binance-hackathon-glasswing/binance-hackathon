@@ -11,7 +11,7 @@ from larp.intelligence.tools import TOOLS, ToolError, run_tool
 
 PACKAGE = Path(__file__).resolve().parents[2] / "larp" / "intelligence"
 NETWORK = {"urllib", "socket", "http", "ssl", "requests", "httpx", "aiohttp"}
-NETWORK_MODULES = {"edgar.py", "models.py"}
+NETWORK_MODULES = {"edgar.py", "models.py", "providers.py"}  # providers.py: hosted assessor adapters (IDEA-041)
 
 
 def imports(path: Path) -> set:

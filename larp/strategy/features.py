@@ -7,7 +7,8 @@ from larp.contracts import ContractError, Document
 from .schema import instant, integer, ratio
 
 
-def features(series: Document, *, cutoff, expected_entity, max_age_seconds):
+def features(series: Document, *, cutoff, expected_entity, max_age_seconds,
+             expected_instrument="UNDERLYING_SHARE", expected_token=None):
     d = series.read()
     base = {"schema": "PriceFeatures.v1", "entity_id": expected_entity,
             "cutoff": cutoff.isoformat(), "status": "MISSING", "reasons": [],
@@ -16,7 +17,8 @@ def features(series: Document, *, cutoff, expected_entity, max_age_seconds):
     required = ("source_id", "content_hash", "calendar_id", "corporate_action_version")
     if (d.get("schema") != "PriceSeries.v1" or d.get("entity_id") != expected_entity
             or any(not d.get(k) for k in required) or d.get("currency") != "USD"
-            or d.get("instrument_kind") != "UNDERLYING_SHARE"
+            or d.get("instrument_kind") != expected_instrument
+            or expected_token is not None and d.get("token_id") != expected_token
             or d.get("quality") != "VALID"):
         base["reasons"] = ["IDENTITY_UNITS_OR_PROVENANCE"]
         return Document.from_dict(base)

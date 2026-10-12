@@ -105,8 +105,11 @@ def markets_of(s):
 class AuthorityProbes(unittest.TestCase):
     def test_c01_control_default_authority_is_shadow_and_only_mandatory_creates_constraints(self):
         """CONTROL. Default SHADOW; NONE/SHADOW/DISCRETIONARY_EXIT never create planner reduction constraints."""
-        self.assertEqual(authority(synthetic_profile()), {"falsifier": "SHADOW", "statement": "SHADOW",
-                                                          "max_context_age_ms": 3_600_000})
+        rights = authority(synthetic_profile())
+        self.assertEqual({k: v for k, v in rights.items() if k != "red_flags"},
+                         {"falsifier": "SHADOW", "statement": "SHADOW", "max_context_age_ms": 3_600_000})
+        # IDEA-041: every red-flag predicate defaults to SHADOW unless the profile enables it.
+        self.assertEqual(set(rights["red_flags"]["predicates"].values()), {"SHADOW"})
         p = synthetic_profile(falsifier_ids=["F-ITEM-4.02"])
         _, state, _ = evidence_state(["EXSEMI_402_8K"], p)
         for mode in ("NONE", "SHADOW", "DISCRETIONARY_EXIT"):
