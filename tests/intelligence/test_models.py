@@ -163,7 +163,7 @@ class HostedAdapterTests(unittest.TestCase):
         cases += [(dict(base, usage={"prompt_tokens": value, "completion_tokens": 1}), "USAGE_MALFORMED")
                   for value in (-1, True, "10", 10**10)]
         cases.append((dict(base, choices=[{"finish_reason": "stop", "message": {
-            "content": '{"nested":' * 40 + '{}' + '}' * 40}}]), "OUTPUT_TOO_DEEP"))
+            "content": '{"nested":' * 65 + '{}' + '}' * 65}}]), "OUTPUT_TOO_DEEP"))  # bound is depth 64
         for payload, error in cases:
             raw = json.dumps(payload).encode()
             def transport(url, headers, body, timeout):
