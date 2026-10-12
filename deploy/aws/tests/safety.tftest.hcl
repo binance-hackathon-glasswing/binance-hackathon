@@ -39,7 +39,7 @@ run "safe_defaults" {
     error_message = "Host startup, internet access and signing must be opt-in or blocked."
   }
   assert {
-    condition     = length(aws_secretsmanager_secret.service) == 3 && length(aws_iam_role.host) == 6
+    condition     = length(aws_secretsmanager_secret.service) == 4 && length(aws_iam_role.host) == 6
     error_message = "Service credentials/identities must remain separated."
   }
 }
@@ -65,10 +65,6 @@ run "runtime_secret_exists" {
   assert {
     condition     = aws_secretsmanager_secret.service["runtime"].name == "larp-fixture/runtime"
     error_message = "The runtime host's secret (wallet address and market-data keys) must exist; values stay outside Terraform."
-  }
-  assert {
-    condition     = length(aws_secretsmanager_secret.service) == 4
-    error_message = "One secret each for signer, uploader, evidence and runtime."
   }
 }
 run "reject_final_interactive_access" {
