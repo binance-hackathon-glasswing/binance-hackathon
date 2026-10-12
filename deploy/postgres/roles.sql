@@ -24,8 +24,8 @@ GRANT CONNECT ON DATABASE larp TO larp_archive, larp_uploader, larp_runtime, lar
 GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader, larp_runtime, larp_execution, larp_signer;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,
-  swap_owners,jobs,command_checks,process_sessions,execution_authority,executions,execution_events,
-  execution_signatures TO larp_archive;
+  swap_owners,jobs,command_checks,process_sessions,execution_records,execution_journal,execution_signatures,
+  execution_observations TO larp_archive;  -- the daily backup exports every table larp.storage.backup restores
 -- SELECT ... FOR UPDATE needs update privilege; restrict it to the clock column.
 -- The archive/uploader implementations only lock runs; they never write this field.
 GRANT UPDATE (clock_ms) ON runs TO larp_archive, larp_uploader;
@@ -44,14 +44,22 @@ GRANT SELECT,INSERT ON events,commands,audit_events,audit_chunks,swap_owners,com
 GRANT SELECT,INSERT,UPDATE ON reservations,rounds,jobs,process_sessions TO larp_runtime;
 GRANT USAGE ON SEQUENCE command_checks_check_id_seq TO larp_runtime;
 
--- W04 execution store and command claims (larp.storage.execution_store, PostgresStore.claim_command). Reads the
--- journal to verify it; never writes it. Locking runs needs an UPDATE privilege: only the clock column.
+-- Execution service (Isaac's larp.execution_live, IDEA-042 §4 X2). Reads the journal to verify it and takes
+-- commands through PostgresStore.command; never writes the run journal. Locking runs needs an UPDATE privilege:
+-- only the clock column. Reads signed bytes to broadcast them; never writes them.
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,swap_owners,jobs TO larp_execution;
 GRANT UPDATE (clock_ms) ON runs TO larp_execution;
-GRANT UPDATE (status,execution_key) ON commands TO larp_execution;
-GRANT SELECT,INSERT ON command_checks,execution_events TO larp_execution;
-GRANT SELECT,INSERT,UPDATE ON execution_authority,executions TO larp_execution;
-GRANT USAGE ON SEQUENCE command_checks_check_id_seq,execution_events_sequence_seq TO larp_execution;
+GRANT SELECT,INSERT ON command_checks TO larp_execution;
+GRANT USAGE ON SEQUENCE command_checks_check_id_seq TO larp_execution;
+GRANT SELECT,INSERT,UPDATE ON execution_records TO larp_execution;
+GRANT SELECT,INSERT ON execution_journal,execution_observations TO larp_execution;
+GRANT SELECT ON execution_signatures TO larp_execution;
 
--- Signer registry only (signed bytes; the wallet key itself never enters the database).
+-- Signer registry only (signed bytes; the wallet key itself never enters the database). The registry write is
+-- fenced on the run's owner epoch and version, which locks the run row.
+GRANT SELECT ON runs TO larp_signer;
+GRANT UPDATE (clock_ms) ON runs TO larp_signer;
 GRANT SELECT,INSERT ON execution_signatures TO larp_signer;
+
+-- The coordinator settles from the public execution journal and final observations; never the state or signatures.
+GRANT SELECT ON execution_journal,execution_observations TO larp_runtime;

@@ -38,12 +38,12 @@ class AcceptanceDay(pipeline.PipelineHarness):
 
         # 1. A clean filing: assessed, held.
         self.round(c, 'r1', 'EXSEMI_Q2_8K')
-        # 2. An Item 4.02 filing: mandatory reduction planned, claimed by one execution, settled, closed.
+        # 2. An Item 4.02 filing: mandatory reduction planned, its command taken by the execution side, settled, closed.
         self.round(c, 'r2', 'EXSEMI_402_8K')
         record = self.store.load(RUN).read()['projection']['round_records']['r2']
         intent = record['plan']['intents'][0]
-        claimed = self.store.claim_command(RUN, intent['intent_id'], self.epoch, 'w04:key-r2', self.w.clock())
-        self.assertEqual(claimed.read()['payload']['side'], 'SELL')
+        command = self.store.command(RUN, intent['intent_id'], self.epoch, self.w.clock())
+        self.assertEqual(command.read()['payload']['side'], 'SELL')
         for o in (observation(intent, 'r2', 'r2:b', 'BROADCAST_ATTEMPTED'),
                   observation(intent, 'r2', 'r2:f', 'FILL', symbol='NVDAB', side='SELL',
                               token_units=intent['token_units'], cash_units=intent['min_receive_units'], fee_units=0)):

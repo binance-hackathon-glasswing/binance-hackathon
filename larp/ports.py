@@ -47,7 +47,7 @@ class Receiver(Protocol):
 BSTOCKS = frozenset(("NVDAB", "GOOGLB", "SKHYB", "TSLAB", "MSFTB"))
 TX_HASH = re.compile(r"^0x[0-9a-fA-F]{64}$")
 DECIMAL = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$")
-PURPOSES = ("TRADE", "GAS_TOPUP")  # I7: a gas top-up is its own round with exactly one USDT -> BNB intent
+INTENT_KINDS = ("BSTOCK_TRADE", "GAS_TOP_UP")  # I7: a gas top-up is its own round with exactly one USDT -> BNB intent
 OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
 FINAL_KINDS = ("APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
 # Accounting fields: a broadcast attempt must not carry them (I4 boundary 1).
@@ -91,8 +91,9 @@ def validate_execution_request(command: dict) -> dict:
 
     Envelope: command_id == payload.intent_id, kind, round_id, decision_id == payload.decision_id, expires_ms.
     Payload: Keith's exact-input intent plus the runtime's decision_id, expires_ms and amount (A10: BUY amount is
-    the USDT paid at money scale 6, SELL amount the tokens sold at the token's decimals). I7: purpose GAS_TOPUP is
-    the only intent that may buy BNB, and only with USDT.
+    the USDT paid at money scale 6, SELL amount the tokens sold at the token's decimals). I7: the intent's `kind` is
+    BSTOCK_TRADE (the default when absent) or GAS_TOP_UP, the only intent that may buy BNB, and only with USDT. Same
+    field and values as Keith's planner and Isaac's map_command (IDEA-042 §4 X3).
     """
     if type(command) is not dict or command.get("kind") != "EXECUTION_REQUEST":
         raise ContractError("Expected an EXECUTION_REQUEST command")
@@ -107,9 +108,9 @@ def validate_execution_request(command: dict) -> dict:
         raise ContractError("Command identity differs from its intent")
     if _int(command.get("expires_ms"), "expires_ms", 1) != p.get("expires_ms"):
         raise ContractError("Command expiry differs from its intent")
-    purpose = p.get("purpose", "TRADE")
-    if purpose not in PURPOSES:
-        raise ContractError("Unknown intent purpose")
+    kind = p.get("kind", "BSTOCK_TRADE")
+    if kind not in INTENT_KINDS or "purpose" in p:
+        raise ContractError("Unknown intent kind")
     side, symbol = p.get("side"), p.get("symbol")
     if p.get("amount_kind") != "EXACT_IN" or type(p.get("mandatory")) is not bool:
         raise ContractError("Intent must be exact-input with an explicit mandatory flag")
@@ -119,7 +120,7 @@ def validate_execution_request(command: dict) -> dict:
         _int(p.get(key), "payload." + key)
     _int(p.get("decimals"), "payload.decimals"); _int(p.get("receive_decimals"), "payload.receive_decimals")
     _instant(p.get("quote_expiry"), "payload.quote_expiry")
-    if purpose == "GAS_TOPUP":
+    if kind == "GAS_TOP_UP":
         if (symbol, side, p.get("pay_asset")) != ("BNB", "BUY", "USDT"):
             raise ContractError("A gas top-up is exactly one USDT -> BNB buy")
     elif symbol not in BSTOCKS or side not in ("BUY", "SELL"):

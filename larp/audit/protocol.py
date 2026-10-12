@@ -14,7 +14,7 @@ TX = re.compile(r'^0x[0-9a-fA-F]{64}$')
 # A gas top-up is its own round with exactly one USDT -> BNB buy (interface I7, IDEA-035 B11). Every other round
 # trades only the five bStocks. The kind travels in the event envelope only when it is not a trade round, so
 # existing events keep their exact bytes.
-ROUND_KINDS = ('TRADE','GAS_TOPUP')
+ROUND_KINDS = ('TRADE','GAS_TOP_UP')
 
 
 def compact(value):
@@ -65,18 +65,18 @@ def event_id_for(run_id,address,round_id,head,timestamp_ms):
 def check_orders(orders,round_kind='TRADE'):
     """Orders the code decided to place, in the form the audit log accepts.
 
-    BNB is accepted only in a GAS_TOPUP round, and then only as its single BUY (I7)."""
+    BNB is accepted only in a GAS_TOP_UP round, and then only as its single BUY (I7)."""
     if type(orders) is not list:
         raise ContractError('Orders must be a list')
     if round_kind not in ROUND_KINDS:
         raise ContractError('Unknown round kind')
-    if round_kind=='GAS_TOPUP' and [(o.get('symbol'),o.get('side')) if type(o) is dict else None
+    if round_kind=='GAS_TOP_UP' and [(o.get('symbol'),o.get('side')) if type(o) is dict else None
                                     for o in orders]!=[('BNB','BUY')]:
         raise ContractError('A gas top-up round logs exactly one BNB buy')
     for order in orders:
         if type(order) is not dict:
             raise ContractError('Unsupported audit order')
-        allowed = {'BNB'} if round_kind=='GAS_TOPUP' else SYMBOLS
+        allowed = {'BNB'} if round_kind=='GAS_TOP_UP' else SYMBOLS
         if order.get('symbol') not in allowed or order.get('side') not in ('BUY','SELL'):
             raise ContractError('Unsupported audit order')
         if not isinstance(order.get('amount'),str) or not order['amount'].strip():

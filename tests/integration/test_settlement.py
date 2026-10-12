@@ -63,7 +63,10 @@ class Contracts(unittest.TestCase):
             validate_execution_request(command(dict(intent, amount=str(intent["token_units"]))))
         with self.assertRaises(ContractError):  # BNB only as a gas top-up (I7)
             validate_execution_request(command(dict(intent, symbol="BNB")))
-        validate_execution_request(command(dict(intent, symbol="BNB", purpose="GAS_TOPUP")))
+        validate_execution_request(command(dict(intent, symbol="BNB", kind="GAS_TOP_UP")))
+        for old in (dict(kind="GAS_TOPUP"), dict(purpose="GAS_TOPUP"), dict(kind="GAS_TOP_UP", purpose="TRADE")):
+            with self.subTest(old), self.assertRaises(ContractError):  # the pre-agreement spelling (IDEA-042 §4 X3)
+                validate_execution_request(command(dict(intent, symbol="BNB", **old)))
 
     def test_i4_boundaries(self):
         intent = {"intent_id": "i"}

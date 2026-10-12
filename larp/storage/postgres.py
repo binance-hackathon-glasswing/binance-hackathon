@@ -312,34 +312,6 @@ class PostgresStore:
                        'VALUES(%s,%s,%s,%s,%s)',(run_id,command_id,epoch,run['version'],now_ms))
             return result
 
-    def claim_command(self,run_id,command_id,epoch,execution_key,now_ms):
-        """Hand a pending EXECUTION_REQUEST to exactly one W04 execution (IDEA-042 E3).
-
-        Same fencing as command(): current owner epoch and state version, not halted, not expired. The first claim binds
-        the command to `execution_key`; the same claim again is idempotent, any other key is refused.
-        """
-        verified=self.verified_snapshot(run_id,full=False)
-        with self.transaction() as db:
-            run=self._run(db,run_id)
-            self._owned(run,epoch)
-            self._same_snapshot(verified,run)
-            if (Document(bytes(run['projection'])).read().get('halt') or {}).get('reasons'):
-                raise Conflict('Run is halted; signing blocked')
-            row=db.execute('SELECT payload,epoch,state_version,status,execution_key FROM commands '
-                           'WHERE run_id=%s AND command_id=%s FOR UPDATE',(run_id,command_id)).fetchone()
-            if not row or row[1]!=epoch or row[2]!=run['version'] or row[3] not in ('PENDING','CLAIMED'):
-                raise Conflict('Command needs current reauthorization')
-            if row[4] is not None and row[4]!=execution_key:
-                raise Conflict('Command already handed to another execution')
-            result=Document(bytes(row[0]))
-            if result.read()['expires_ms']<=now_ms:
-                raise Conflict('Expired command')
-            db.execute("UPDATE commands SET status='CLAIMED',execution_key=%s WHERE run_id=%s AND command_id=%s",
-                       (execution_key,run_id,command_id))
-            db.execute('INSERT INTO command_checks(run_id,command_id,epoch,state_version,checked_ms) '
-                       'VALUES(%s,%s,%s,%s,%s)',(run_id,command_id,epoch,run['version'],now_ms))
-            return result
-
     @staticmethod
     def _verify(db,run_id,run,base=None):
         """Verify the journal, projection, reservations and outboxes; return a checkpoint.

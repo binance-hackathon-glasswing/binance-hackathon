@@ -40,7 +40,7 @@ The round driver arrives with integration (item 10). Until then `service run` ex
 While halted:
 - every round still runs and is logged (`HALTED:<reasons>`, no orders);
 - no command is committed;
-- `store.command()` and `store.claim_command()` refuse every signature, mandatory exits included.
+- `store.command()` refuses every signature, mandatory exits included.
 
 Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.py` (H3–H6).
 

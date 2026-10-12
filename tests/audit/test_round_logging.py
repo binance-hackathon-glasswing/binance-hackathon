@@ -149,7 +149,7 @@ class RoundLogging(DatabaseCase):
         self.assertNotIn('round_kind', event)  # trade rounds keep the existing envelope bytes
 
     def test_l3_l4_gas_topup_round(self):
-        top = intent('gas', symbol='BNB', amount='1', purpose='GAS_TOPUP')
+        top = intent('gas', symbol='BNB', amount='1', kind='GAS_TOP_UP')
         planner = Planned([top], [dict(intent_id='intent:gas', asset='USDT', units=1)])
         c = self.coordinator(planner=planner)
         c.start('g', request('BUY'), NOW)
@@ -159,12 +159,12 @@ class RoundLogging(DatabaseCase):
                                 simulated=True)), mapping_reducer)
         c.recover(NOW + 1)
         event, log = self.one_log('g')
-        self.assertEqual(event['round_kind'], 'GAS_TOPUP')
+        self.assertEqual(event['round_kind'], 'GAS_TOP_UP')
         self.assertEqual(log['orders'], [dict(symbol='BNB', side='BUY', amount='1', tx_hash=TX)])
         self.assertTrue(log['cot'].startswith('Gas top-up round'))
 
     def test_l4_a_top_up_mixed_with_trades_is_refused(self):
-        planner = Planned([intent('gas', symbol='BNB', amount='1', purpose='GAS_TOPUP'), intent('x')],
+        planner = Planned([intent('gas', symbol='BNB', amount='1', kind='GAS_TOP_UP'), intent('x')],
                           [dict(intent_id='intent:x', asset='USDT', units=10)])
         self.coordinator(planner=planner).start('r', request('BUY'), NOW)
         _, log = self.one_log('r')
@@ -177,11 +177,11 @@ class RoundLogging(DatabaseCase):
         with self.assertRaises(ContractError):
             build_event(orders=bnb, **common)
         with self.assertRaises(ContractError):
-            build_event(orders=bnb + [dict(symbol='NVDAB', side='BUY', amount='1')], round_kind='GAS_TOPUP',
+            build_event(orders=bnb + [dict(symbol='NVDAB', side='BUY', amount='1')], round_kind='GAS_TOP_UP',
                         **common)
         with self.assertRaises(ContractError):
-            build_event(orders=[dict(symbol='BNB', side='SELL', amount='1')], round_kind='GAS_TOPUP', **common)
-        build_event(orders=bnb, round_kind='GAS_TOPUP', **common)
+            build_event(orders=[dict(symbol='BNB', side='SELL', amount='1')], round_kind='GAS_TOP_UP', **common)
+        build_event(orders=bnb, round_kind='GAS_TOP_UP', **common)
 
     # ---------------------------------------------------------------- L1: cot and input content
     def test_l1_cot_is_the_providers_summaries_in_order(self):

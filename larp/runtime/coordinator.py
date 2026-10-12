@@ -27,14 +27,14 @@ def batch_for(current,event_id,event,*,projection=None,policy_state=None,executi
 
 
 def round_kind(intents):
-    """GAS_TOPUP when the plan is exactly one gas top-up intent (I7); TRADE otherwise. A top-up mixed with trades is
+    """GAS_TOP_UP when the plan is exactly one gas top-up intent (I7); TRADE otherwise. A top-up mixed with trades is
     refused: a gas top-up is its own round."""
-    purposes=[i.get('purpose','TRADE') if type(i) is dict else None for i in intents]
-    if 'GAS_TOPUP' not in purposes:
+    kinds=[i.get('kind','BSTOCK_TRADE') if type(i) is dict else None for i in intents]
+    if 'GAS_TOP_UP' not in kinds:
         return 'TRADE'
-    if purposes!=['GAS_TOPUP']:
+    if kinds!=['GAS_TOP_UP']:
         raise ContractError('A gas top-up is its own round')
-    return 'GAS_TOPUP'
+    return 'GAS_TOP_UP'
 
 
 # Round errors that count towards a repeated-failure HALT (larp/runtime/supervision.py). A missing assessment is a
@@ -59,7 +59,7 @@ def record_round_health(projection,errors,decision_ms):
     projection['last_decision_ms']=max(decision_ms,projection.get('last_decision_ms',decision_ms))
 
 
-GAS_TOPUP_COT='Gas top-up round: USDT -> BNB swap to keep the BNB floor for transaction fees (B11); no trading decision.'
+GAS_TOP_UP_COT='Gas top-up round: USDT -> BNB swap to keep the BNB floor for transaction fees (B11); no trading decision.'
 
 
 def round_cot(assessment,kind='TRADE'):
@@ -76,8 +76,8 @@ def round_cot(assessment,kind='TRADE'):
         cot='Model called; the provider returned no reasoning summary. Assessment rationale: '+assessment['rationale']
     else:
         cot='No model call this round. Deterministic assessment: '+assessment['rationale']
-    if kind=='GAS_TOPUP':
-        return [GAS_TOPUP_COT]+cot if type(cot) is list else GAS_TOPUP_COT+' '+cot
+    if kind=='GAS_TOP_UP':
+        return [GAS_TOP_UP_COT]+cot if type(cot) is list else GAS_TOP_UP_COT+' '+cot
     return cot
 
 
@@ -229,8 +229,8 @@ class Coordinator:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):
             record['evidence_decisions']=updates['evidence_decisions']
-        if plan['intents'] and round_kind(plan['intents'])=='GAS_TOPUP':
-            record['round_kind']='GAS_TOPUP'  # absent for trade rounds, so their records keep their bytes
+        if plan['intents'] and round_kind(plan['intents'])=='GAS_TOP_UP':
+            record['round_kind']='GAS_TOP_UP'  # absent for trade rounds, so their records keep their bytes
         projection.setdefault('round_records',{})[round_id]=record
         commands=[dict(command_id=i['intent_id'],kind='EXECUTION_REQUEST',payload=i,round_id=round_id,
                        decision_id=i['decision_id'],expires_ms=i['expires_ms']) for i in plan['intents']]

@@ -88,7 +88,7 @@ def switch_wallet(store, *, old_run, new_run, new_wallet, chain_id, initial_proj
     if old['reservations']:
         raise LiveStartRefused('Old run still holds reservations')
     with store.transaction() as db:
-        pending = db.execute("SELECT count(*) FROM commands WHERE run_id=%s AND status IN ('PENDING','CLAIMED')",
+        pending = db.execute("SELECT count(*) FROM commands WHERE run_id=%s AND status='PENDING'",
                              (old_run,)).fetchone()[0]
     if pending:
         raise LiveStartRefused('Old run still has pending execution commands')

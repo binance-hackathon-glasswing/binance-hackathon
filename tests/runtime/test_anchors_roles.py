@@ -1,4 +1,4 @@
-"""Anchor verification (IDEA-042 A1-A3; IDEA-036 #3, #5, #6) and least-privilege database roles (G1-G2)."""
+"""Anchor verification (IDEA-042 A1-A3; IDEA-036 #3, #5, #6) and least-privilege database roles (G1-G2, §4 X2)."""
 
 from contextlib import contextmanager
 from pathlib import Path
@@ -9,7 +9,6 @@ from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePlanner, Fake
 from larp.runtime.maintenance import ANCHOR_FIELDS, HOUR_MS, Maintenance, verify_anchors
 from larp.storage.archive import S3Archive
 from larp.storage.backup import export, restore
-from larp.storage.execution_store import PostgresExecutionStore
 from larp.storage.postgres import IntegrityError, PostgresStore, Unavailable, doc
 from tests.storage.test_archive import FakeS3
 from tests.support import DatabaseCase, request
@@ -103,7 +102,24 @@ class Roles(Rounds):
             database = db.execute('SELECT current_database()').fetchone()[0]
             db.execute(script.replace('ON DATABASE larp ', 'ON DATABASE ' + database + ' ')
                        .replace('SCHEMA public ', 'SCHEMA ' + self.schema + ' '))
-        self.as_role = {r: RoleStore(self.store._dsn, r) for r in ('larp_runtime', 'larp_execution', 'larp_signer')}
+        self.as_role = {r: RoleStore(self.store._dsn, r) for r in ('larp_runtime', 'larp_execution', 'larp_signer', 'larp_archive')}
+
+    def refused(self, role, *statements):
+        for sql in statements:
+            with self.subTest(role=role, sql=sql), self.assertRaises(Unavailable):
+                with self.as_role[role].transaction() as db:
+                    db.execute(sql)
+
+    def execution_rows(self):
+        """One row in each execution table, written as the execution service and the signer would."""
+        with self.as_role['larp_execution'].transaction() as db:
+            db.execute("INSERT INTO execution_records VALUES('key-1','run','0xw',56,false,1,'\\x00','s')")
+            db.execute("UPDATE execution_records SET revision=2 WHERE economic_key='key-1'")
+            db.execute("INSERT INTO execution_journal VALUES('key-1',1,'\\x00','s','p','h')")
+            db.execute("INSERT INTO execution_observations VALUES('key-1:final','run','\\x00','o')")
+        with self.as_role['larp_signer'].transaction() as db:
+            db.execute("SELECT epoch FROM runs WHERE run_id='run' FOR UPDATE")  # the registry write is fenced
+            db.execute("INSERT INTO execution_signatures VALUES('attempt-1','run','p','\\x00','g')")
 
     def test_g2_runtime_runs_rounds_settlement_and_close(self):
         runtime = self.as_role['larp_runtime']
@@ -114,33 +130,39 @@ class Roles(Rounds):
             c.observe(name, doc(dict(kind=kind, observation_id=name, round_id='r', tx_hash=tx, simulated=True)), settle)
         c.recover(NOW + 1)
         self.assertEqual(runtime.load('run').read()['projection']['balances']['NVDAB'], 2)
-        for sql in ('SELECT * FROM execution_signatures', 'SELECT * FROM executions',
-                    "UPDATE runs SET initial='\\x00'::bytea", 'DELETE FROM events'):
-            with self.subTest(sql), self.assertRaises(Unavailable):
-                with runtime.transaction() as db:
-                    db.execute(sql)
+        self.execution_rows()
+        with runtime.transaction() as db:  # settlement reads the public execution facts
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_journal').fetchone()[0], 1)
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_observations').fetchone()[0], 1)
+        self.refused('larp_runtime', 'SELECT * FROM execution_signatures', 'SELECT * FROM execution_records',
+                     "INSERT INTO execution_observations VALUES('x','run','\\x00','o')",
+                     "UPDATE runs SET initial='\\x00'::bytea", 'DELETE FROM events')
 
-    def test_g2_execution_store_and_claims_but_never_the_journal(self):
+    def test_g2_execution_service_store_and_commands_but_never_the_journal(self):
         self.coordinator().start('r', request('BUY'), NOW)
         command_id = self.store.load('run').read()['projection']['round_records']['r']['plan']['intents'][0]['intent_id']
         execution = self.as_role['larp_execution']
-        self.assertEqual(execution.claim_command('run', command_id, self.epoch, 'key-1', NOW).read()['command_id'],
-                         command_id)
-        store = PostgresExecutionStore(execution, 'run')
-        store.ensure()
-        store.advance_guard()
-        self.assertEqual(store.authority(), (self.epoch, 2))
-        for sql in ("INSERT INTO events VALUES('run','x',99,'\\x00','h','h','h','h','\\x00')",
-                    'SELECT * FROM execution_signatures', "UPDATE runs SET projection='\\x00'::bytea"):
-            with self.subTest(sql), self.assertRaises(Unavailable):
-                with execution.transaction() as db:
-                    db.execute(sql)
+        self.assertEqual(execution.command('run', command_id, self.epoch, NOW).read()['command_id'], command_id)
+        self.execution_rows()
+        with execution.transaction() as db:  # reads signed bytes to broadcast them
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_signatures').fetchone()[0], 1)
+        self.refused('larp_execution', "INSERT INTO events VALUES('run','x',99,'\\x00','h','h','h','h','\\x00')",
+                     "UPDATE runs SET projection='\\x00'::bytea",
+                     "INSERT INTO execution_signatures VALUES('a2','run','p','\\x00','g')",
+                     "UPDATE execution_journal SET head='x'", 'DELETE FROM execution_journal',
+                     "UPDATE execution_observations SET observation_hash='x'", 'DELETE FROM execution_records')
 
     def test_g2_signer_registry_only(self):
-        signer = self.as_role['larp_signer']
-        with signer.transaction() as db:
-            db.execute("INSERT INTO execution_signatures VALUES('attempt-1','payload-hash','{}')")
-        for sql in ('SELECT * FROM runs', 'SELECT * FROM executions', "DELETE FROM execution_signatures"):
-            with self.subTest(sql), self.assertRaises(Unavailable):
-                with signer.transaction() as db:
-                    db.execute(sql)
+        self.execution_rows()
+        self.refused('larp_signer', 'SELECT * FROM execution_records', 'SELECT * FROM execution_journal',
+                     'SELECT * FROM execution_observations', 'SELECT * FROM commands',
+                     "UPDATE runs SET projection='\\x00'::bytea", "UPDATE execution_signatures SET signed_hash='x'",
+                     'DELETE FROM execution_signatures')
+
+    def test_g2_archive_backs_up_execution_tables_but_never_writes_them(self):
+        self.execution_rows()
+        with self.as_role['larp_archive'].transaction() as db:  # the daily backup exports all four (IDEA-042 §4 X2)
+            for table in ('execution_records', 'execution_journal', 'execution_signatures', 'execution_observations'):
+                self.assertEqual(len(db.execute('SELECT * FROM ' + table).fetchall()), 1)
+        self.refused('larp_archive', "UPDATE execution_records SET terminal=true", 'DELETE FROM execution_signatures',
+                     "INSERT INTO execution_observations VALUES('x','run','\\x00','o')")
