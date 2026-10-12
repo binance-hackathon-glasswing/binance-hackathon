@@ -16,7 +16,8 @@ def release_files(root):
     root = Path(root).resolve()
     files = set()
     patterns = [('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock'),
-                ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'), ('config', '*.json')]
+                ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'),
+                ('deploy', 'Dockerfile'), ('config', '*.json'), ('config', '*.txt')]
     for directory, pattern in patterns:
         for path in (root / directory).rglob(pattern):
             # Host-local configuration and downloaded Terraform modules are not release code.
