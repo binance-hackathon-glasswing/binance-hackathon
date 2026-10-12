@@ -176,7 +176,7 @@ def test_resource_plan_passes_real_published_runtime_i3_validator_when_integrate
     intent = RuntimePlanner(job_validity_ms=60000, job_max_attempts=2).plan(s, None).read()["intents"][0]
     command = {"kind": "EXECUTION_REQUEST", "command_id": intent["intent_id"], "round_id": "synthetic-round",
                "decision_id": intent["decision_id"], "expires_ms": intent["expires_ms"], "payload": intent}
-    assert ports.validate_execution_request(command)["payload"]["purpose"] == "GAS_TOPUP"
+    assert ports.validate_execution_request(command)["payload"]["kind"] == "GAS_TOP_UP"
 
 
 def test_real_published_runtime_i4_validator_and_accounting_share_one_observation_when_integrated():

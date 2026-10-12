@@ -22,12 +22,15 @@ price history or quoted depth: what the market port does not supply stays missin
 the resulting capability blockers.
 """
 
+from larp.integration.contract import red_flag_directives
+
 from datetime import datetime, timezone
 
 from larp.contracts import ContractError, Document, PolicyState
 from larp.intelligence.common import digest
 from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
+from larp.ports import decimal_string as decimal_amount  # exact decimal of base units (one implementation)
 from larp.risk.planner import plan as risk_plan
 from larp.strategy.policy import decide
 from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
@@ -41,16 +44,6 @@ INCOMING = "INCOMING:"
 
 def iso_ms(value: str) -> int:
     return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000)
-
-
-def decimal_amount(units: int, decimals: int) -> str:
-    """Exact decimal string of integer base units (no float)."""
-    if type(units) is not int or units < 0 or type(decimals) is not int or decimals < 0:
-        raise ValueError("Amount requires nonnegative integer units and decimals")
-    whole, frac = divmod(units, 10 ** decimals)
-    if not decimals or not frac:
-        return str(whole)
-    return f"{whole}.{str(frac).rjust(decimals, '0').rstrip('0')}"
 
 
 def ledger_from(projection: dict, reservations: list) -> dict:
@@ -113,10 +106,11 @@ class ContextBuilder:
     """Coordinator context builder. `issuers`: {issuer_id: {"token": symbol, "underlying_id": id}}."""
 
     def __init__(self, *, profile: dict, profile_hash: str, run_id: str, issuers: dict, market, health,
-                 calendar, lifecycle_policy: dict | None = None, series=None, universe=None):
+                 calendar, lifecycle_policy: dict | None = None, series=None, universe=None, gas_quotes=None):
         self.profile, self.profile_hash, self.run_id = profile, profile_hash, run_id
         self.issuers, self.market, self.health, self.calendar = issuers, market, health, calendar
         self.lifecycle_policy, self.series = lifecycle_policy, series
+        self.gas_quotes = gas_quotes
         self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
@@ -157,6 +151,8 @@ class ContextBuilder:
                                                    token=meta["token"], underlying_id=meta["underlying_id"],
                                                    policy_profile_hash=self.profile_hash))
         ledger = ledger_from(projection, current["reservations"])
+        if current.get("mode") is not None:
+            ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
         session = self.calendar(now_ms)
         markets = self.market(now_ms)
@@ -174,6 +170,8 @@ class ContextBuilder:
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
+        if self.gas_quotes is not None:
+            context["gas_quotes"] = self.gas_quotes(now_ms)
         return context, anchor
 
     def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:
@@ -189,7 +187,12 @@ class ContextBuilder:
                                      markets=parsed, known_versions=versions, profile=self.profile,
                                      universe=self.universe)
         usable = [r for r in contexts if accepted.get(r["token"], {}).get("context_hash") == r["context_hash"]]
-        return mandatory_reductions(usable, self.profile, held)
+        reductions = mandatory_reductions(usable, self.profile, held)
+        for record in usable:
+            for directive in red_flag_directives(record, self.profile):
+                if directive["kind"] == "EXIT" and held.get(record["token"], 0):
+                    reductions.append({"symbol": record["token"], "max_units": 0, "reason": "CLASS_1_EXIT"})
+        return reductions
 
 
 class RuntimePlanner:

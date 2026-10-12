@@ -11,11 +11,28 @@ from decimal import Decimal
 from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
 
-TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks')
+TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks',
+        # IDEA-042 item 5 and §4 X2: process sessions and the execution service's store recover with the journal
+        # (FK order: records before their journal).
+        'process_sessions','execution_records','execution_journal','execution_signatures','execution_observations')
 # Payloads of earlier backups must never be embedded recursively in new backups.
 # These delivery tables are rebuilt only after quarantine/reconciliation and a new
 # archive namespace; remote object versions/receipts are retained independently.
 MAINTENANCE_TABLES=('archive_clock','archive_outbox')
+# Signed transaction bytes never leave the database (IDEA-042 V8): anyone holding a backup could otherwise broadcast
+# a swap the runtime had abandoned. The archive role cannot read the column; the export writes this marker instead,
+# so a restored registry lookup fails its digest check (closed) rather than returning usable bytes.
+REDACTED={'execution_signatures':{'signed':b'{"redacted":"signed bytes are never backed up (IDEA-042 V8)"}'}}
+
+
+def select_sql(db,table):
+    """The export query for `table`: every column, with redacted columns replaced by their marker."""
+    # Column names from the catalogue: `SELECT *` would need the redacted column's privilege.
+    columns=[r[0] for r in db.execute('SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND attnum>0 '
+                                       'AND NOT attisdropped ORDER BY attnum',(table,))]
+    redacted=REDACTED.get(table,{})
+    names=','.join(f'%s::bytea AS {c}' if c in redacted else c for c in columns)
+    return f'SELECT {names} FROM {table} ORDER BY 1,2',[redacted[c] for c in columns if c in redacted]
 
 
 def export(store):
@@ -26,7 +43,7 @@ def export(store):
         for run_id, in db.execute('SELECT run_id FROM runs').fetchall():
             store._verify(db,run_id,store._run(db,run_id,lock=False))
         for table in TABLES:
-            cursor=db.execute(f'SELECT * FROM {table} ORDER BY 1,2')
+            cursor=db.execute(*select_sql(db,table))
             columns=[d.name for d in cursor.description]
             rows=[]
             for row in cursor:

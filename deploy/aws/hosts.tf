@@ -10,9 +10,14 @@ resource "aws_iam_instance_profile" "host" {
   name     = "${var.name}-${each.key}"
   role     = aws_iam_role.host[each.key].name
 }
-# Secret metadata only. Values are provisioned outside Terraform and never in state.
+# Secret metadata only. Values are provisioned outside Terraform and never in state. `runtime` holds the coordinator's
+# public wallet address and Web3 market-data key pair only (IDEA-042 S3/S4).
+locals {
+  # Which hosts may read which secret: each secret has its own readers, nothing else.
+  secret_readers = { signer = ["signer"], uploader = ["uploader"], evidence = ["evidence"], runtime = ["primary", "standby"] }
+}
 resource "aws_secretsmanager_secret" "service" {
-  for_each                = toset(["signer", "uploader", "evidence"])
+  for_each                = toset(keys(local.secret_readers))
   name                    = "${var.name}/${each.key}"
   description             = "Separate ${each.key} credentials; no values managed by Terraform"
   recovery_window_in_days = 30
@@ -28,9 +33,10 @@ resource "aws_iam_role_policy" "host" {
     { Effect = "Allow", Action = ["cloudwatch:PutMetricData"], Resource = "*", Condition = { StringEquals = { "cloudwatch:namespace" = "LARP/Runtime" } } }
     ], contains(local.db_hosts, each.key) ? [
     { Effect = "Allow", Action = ["rds-db:connect"], Resource = "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${aws_db_instance.larp.resource_id}/larp_${each.key}" }
-    ] : [], contains(["signer", "uploader", "evidence"], each.key) ? [
-    { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.service[each.key].arn }
-    ] : [], [for statement in [
+    ] : [], [for secret, readers in local.secret_readers :
+    { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.service[secret].arn }
+    if contains(readers, each.key)
+    ], [for statement in [
       { Effect = "Allow", Action = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion", "s3:GetObjectRetention", "s3:PutObjectRetention"], Resource = "${aws_s3_bucket.archive.arn}/archive/*" },
       { Effect = "Allow", Action = ["kms:GenerateDataKey"], Resource = aws_kms_key.data.arn, Condition = { StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" } } }
   ] : statement if each.key == "archive"]) })

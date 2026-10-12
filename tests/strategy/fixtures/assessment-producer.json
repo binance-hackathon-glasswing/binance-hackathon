@@ -4804,9 +4804,6 @@
   "started_ms": 1791590400000,
   "status": "ASSESSED"
  },
- "schema": "AssessmentProducerFixture.v1",
- "source_file": "tests/intelligence/golden/trace-tool-selection-thesis-revision.json",
- "source_sha256": "214bfa6dd4e631bf89835f961f8c7e580824e71ca8af3e3c3258dcc150065272",
  "source_trace": "tests/intelligence/golden/trace-tool-selection-thesis-revision.json",
  "synthetic": true
 }

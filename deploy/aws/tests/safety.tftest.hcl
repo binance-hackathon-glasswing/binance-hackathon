@@ -39,7 +39,7 @@ run "safe_defaults" {
     error_message = "Host startup, internet access and signing must be opt-in or blocked."
   }
   assert {
-    condition     = length(aws_secretsmanager_secret.service) == 3 && length(aws_iam_role.host) == 6
+    condition     = length(aws_secretsmanager_secret.service) == 4 && length(aws_iam_role.host) == 6
     error_message = "Service credentials/identities must remain separated."
   }
 }
@@ -60,6 +60,13 @@ run "host_isolation" {
     error_message = "No external egress by default."
   }
 }
+run "runtime_secret_exists" {
+  command = plan
+  assert {
+    condition     = aws_secretsmanager_secret.service["runtime"].name == "larp-fixture/runtime"
+    error_message = "The runtime host's secret (wallet address and market-data keys) must exist; values stay outside Terraform."
+  }
+}
 run "reject_final_interactive_access" {
   command = plan
   variables {
@@ -67,4 +74,12 @@ run "reject_final_interactive_access" {
     enable_development_ssm = true
   }
   expect_failures = [aws_iam_role_policy_attachment.development_ssm]
+}
+
+run "archive_retention_reaches_end_of_2026" {
+  command = plan
+  variables {
+    archive_retention_days = 81
+  }
+  expect_failures = [var.archive_retention_days]
 }

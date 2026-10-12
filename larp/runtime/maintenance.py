@@ -6,6 +6,32 @@ from larp.storage.backup import export
 from larp.storage.postgres import Conflict, IntegrityError, Unavailable, digest, doc
 
 HOUR_MS = 3600000
+# An anchor carries identifiers, times and hashes only: never keys, credentials or evidence text (IDEA-036 #6).
+ANCHOR_FIELDS = frozenset(('schema', 'run_id', 'slot_ms', 'captured_ms', 'sequence', 'head', 'owner_epoch'))
+ZERO_HEAD = '0' * 64
+
+
+def verify_anchors(store, run_id, anchors):
+    """Check every anchored (sequence, head) against the verified journal (IDEA-036 #3, #5; IDEA-042 A1-A3).
+
+    `anchors`: Anchor.v2 documents as read back from the write-once archive. A journal rewritten after an anchor no
+    longer reproduces its head; a restore behind the latest anchor is stale. Returns the newest anchored sequence.
+    """
+    head = store.verify(run_id)
+    items = [a.read() if isinstance(a, Document) else a for a in anchors]
+    for a in items:
+        if a.get('schema') != 'Anchor.v2' or set(a) != ANCHOR_FIELDS or a['run_id'] != run_id:
+            raise IntegrityError('Not an Anchor.v2 record of this run')
+    with store.transaction() as db:
+        version = store._run(db, run_id, lock=False)['version']
+        heads = dict(db.execute('SELECT sequence,head FROM events WHERE run_id=%s AND sequence=ANY(%s)',
+                                (run_id, [a['sequence'] for a in items])).fetchall())
+    for a in items:
+        if a['sequence'] > version:
+            raise IntegrityError('Restore is behind an anchored head; stale')
+        if (ZERO_HEAD if a['sequence'] == 0 else heads.get(a['sequence'])) != a['head']:
+            raise IntegrityError('Journal differs from an anchored head')
+    return dict(head=head, anchors=len(items), latest_sequence=max((a['sequence'] for a in items), default=None))
 
 
 class Maintenance:

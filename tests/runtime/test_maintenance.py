@@ -126,7 +126,7 @@ class MaintenanceTests(DatabaseCase):
         # Apply the production grants inside a rolled-back PG transaction, using
         # existing fixture roles and schema. No global roles survive the test.
         from pathlib import Path
-        from larp.storage.backup import TABLES
+        from larp.storage.backup import TABLES, select_sql
         script = Path('deploy/postgres/roles.sql').read_text()
         import psycopg
         with psycopg.connect(self.store._dsn) as db:
@@ -155,7 +155,7 @@ class MaintenanceTests(DatabaseCase):
             run = self.store._run(db, 'run')
             self.store._verify(db, 'run', run)
             for table in TABLES:
-                db.execute('SELECT * FROM '+table).fetchall()
+                db.execute(*select_sql(db,table)).fetchall()  # the backup's own queries (signed bytes redacted)
             db.execute("INSERT INTO archive_clock VALUES('run',100)")
             db.execute("INSERT INTO archive_outbox(run_id,kind,slot_ms,payload,sha256) "
                        "VALUES('run','anchor',0,'{}'::bytea,'synthetic')")

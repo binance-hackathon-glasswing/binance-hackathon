@@ -1,13 +1,13 @@
 # LIVE configuration — IDEA-040
 
 Actual rehearsal/final profile files await Isaac's measured cost summary and
-Yao Zhu's pinned predicate registry. No synthetic profile is shipped as LIVE.
+the published RedFlagPredicateSet.v1 and its pinned set hash. No synthetic profile is shipped as LIVE.
 `build_live_profiles(summary, registry)` returns both canonical Documents; write
 their `.payload` bytes to separate files outside Git if captures are private,
 review/freeze their hashes in the manifest, and run `schema.profile(snapshot)`
 in release preflight. The LIVE label grants no signing permission.
 
-The proposed consumer inputs are documented in `larp/strategy/profiles.py`,
+The versioned consumer inputs are documented in `larp/strategy/profiles.py`,
 `sessions.py`, `predicates.py`, and `larp/risk/accounting.py`. Producer agreement
 and real captures remain I1/I2/I4/I8 integration gates. Tests are synthetic.
 
@@ -28,6 +28,8 @@ gas trigger floor = `6*G` (four exits, one top-up, next entry). Top-up min recei
 = `12*G`; USDT spend = its marked value divided by `0.995`, rounded up (50 bp
 execution allowance). Top-up max gas = `G`. A zero-BNB wallet is still blocked.
 The proposed trigger is conservative resource policy, not an organiser rule.
+An affordable mandatory sale is planned before replenishment; the gas budget of
+another token cannot preempt it.
 
 Per-trade cap = `equity/5 + cost_reserve`, completing a full 20% position.
 Cost reserve = 50 bp of that full position. Slippage cap = min(50, largest
@@ -43,10 +45,11 @@ remains a visible unresolved requirement, not a completed/dust flatten.
 
 | Environment | Start | New risk ends | Flatten starts | Signing ends |
 |---|---|---|---|---|
-| Rehearsal (~100 USDT) | Oct 21 00:00 UTC | Oct 24 00:00 UTC | Oct 25 00:00 UTC | Oct 26 15:00 UTC |
-| Final (~200 USDT) | Oct 29 00:00 UTC | Nov 9 00:00 UTC | Nov 10 00:00 UTC | Nov 11 15:00 UTC |
+| Rehearsal (~100 USDT) | Oct 21 00:00 UTC | Oct 22 00:00 UTC | Oct 23 00:00 UTC | Oct 26 14:45 UTC |
+| Final (~200 USDT) | Oct 29 00:00 UTC | Nov 9 00:00 UTC | Nov 10 00:00 UTC | Nov 11 14:45 UTC |
 
-Signing end implements the decided IDEA-035 C4 deadline. Earlier cut/flatten
+The candidate signing cut leaves 15 minutes before the IDEA-035 C4 completion deadline;
+this is a provisional engineering margin to freeze/rehearse, not a guarantee of finality. Earlier cut/flatten
 offsets are conservative IDEA-040 candidate choices for owner/team review;
 source data, values and profile hashes must be frozen by Oct 22. These dates
 do not prove every sale will execute. Clock/market/gas failures preserve
@@ -60,14 +63,18 @@ reservation, and attach final receipt facts to prevent fake settlement. The
 execution owner supplies chain proof: canonical/finality flags alone are trusted
 producer assertions, not independent RPC verification.
 
-Runtime PR #13 now publishes `purpose: GAS_TOPUP` for its narrow BNB exception;
-the resource intent/reservation retains that purpose as well as kind GAS_TOP_UP.
-Its I4 receipt evidence is flat `tx_hash`, `block_hash`, `canonical: true`, plus
-`settlement: FINAL`. Accounting consumes that form and validates an optional
-detailed `receipt` if supplied. Keegan must preserve those fields and round_id
-when calling accounting, and copy round_id/resource purpose into the committed
-reservation view. PR #13 currently strips those fields; real-reconciler settlement
-will deliberately reject until that integration change is made.
+I3 uses `kind: GAS_TOP_UP` for the narrow BNB exception; the obsolete `purpose`
+field is refused. I4 retains `round_id`, `tx_hash`, `block_hash`, `canonical`,
+`settlement: FINAL`, and optional detailed receipt evidence through accounting.
+The committed reservation carries its round and resource kind. Actual runtime
+mode controls receipt provenance; fake receipts require an explicitly offline ledger.
+The integrated execution service/receipt/settlement/audit/replay regression is
+`tests/integration/test_service_system.py` (synthetic transports only).
+
+Published I8 directives are enabled only by the profile's exact set hash and IDs.
+Class 1 creates an independent mandatory sell requirement, including when policy
+is unavailable; Class 2 blocks retain their five-session clock through a Class 1
+latch and clear. Legacy offline fixture registries are compatibility inputs.
 
 For gas rounds the live health port must explicitly provide
 `new_spending_ok: true` after checking degraded/reconciliation/spending gates;

@@ -11,6 +11,10 @@ SYMBOLS = frozenset(('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'))
 EVENT_ID = re.compile(r'^[A-Za-z0-9._:-]{1,128}$')
 ADDRESS = re.compile(r'^0x[0-9a-fA-F]{40}$')
 TX = re.compile(r'^0x[0-9a-fA-F]{64}$')
+# A gas top-up is its own round with exactly one USDT -> BNB buy (interface I7, IDEA-035 B11). Every other round
+# trades only the five bStocks. The kind travels in the event envelope only when it is not a trade round, so
+# existing events keep their exact bytes.
+ROUND_KINDS = ('TRADE','GAS_TOP_UP')
 
 
 def compact(value):
@@ -22,7 +26,7 @@ def sign(secret,method,path,timestamp,nonce,address,content):
     return hmac.new(secret.encode('utf-8'),message.encode('utf-8'),hashlib.sha256).hexdigest()
 
 
-def _validate(log):
+def _validate(log,round_kind='TRADE'):
     if type(log['timestamp']) is not int or not 0 <= log['timestamp'] < 2**63:
         raise ContractError('Invalid log timestamp')
     data = log['data']
@@ -30,7 +34,7 @@ def _validate(log):
         value = data.get(key)
         if value is None or value == {} or value == [] or (isinstance(value,str) and not value.strip()):
             raise ContractError('Required audit content is empty')
-    check_orders(data['orders'])
+    check_orders(data['orders'],round_kind)
 
 
 DAY_MS = 86400000
@@ -58,14 +62,23 @@ def event_id_for(run_id,address,round_id,head,timestamp_ms):
     return f'evt-{timestamp_ms}-{scope[:12]}'
 
 
-def check_orders(orders):
-    """Orders the code decided to place, in the form the audit log accepts."""
+def check_orders(orders,round_kind='TRADE'):
+    """Orders the code decided to place, in the form the audit log accepts.
+
+    BNB is accepted only in a GAS_TOP_UP round, and then only as its single BUY (I7). A top-up round that placed
+    nothing (rejected at commit, or an audit fallback) logs no orders, so it can still close (IDEA-042 V3)."""
     if type(orders) is not list:
         raise ContractError('Orders must be a list')
+    if round_kind not in ROUND_KINDS:
+        raise ContractError('Unknown round kind')
+    if round_kind=='GAS_TOP_UP' and orders and [(o.get('symbol'),o.get('side')) if type(o) is dict else None
+                                                for o in orders]!=[('BNB','BUY')]:
+        raise ContractError('A gas top-up round logs its one BNB buy, or nothing if none was placed')
     for order in orders:
         if type(order) is not dict:
             raise ContractError('Unsupported audit order')
-        if order.get('symbol') not in SYMBOLS or order.get('side') not in ('BUY','SELL'):
+        allowed = {'BNB'} if round_kind=='GAS_TOP_UP' else SYMBOLS
+        if order.get('symbol') not in allowed or order.get('side') not in ('BUY','SELL'):
             raise ContractError('Unsupported audit order')
         if not isinstance(order.get('amount'),str) or not order['amount'].strip():
             raise ContractError('Amount must be an explicit unit-scaled string')
@@ -105,18 +118,21 @@ def chunks(log_bytes,address):
 
 
 def build_event(*,event_id,round_id,version_id,decision_ids,address,timestamp_ms,
-                input_record,rationale,output,orders,swap_mappings=(),secrets=()):
+                input_record,rationale,output,orders,swap_mappings=(),secrets=(),round_kind='TRADE'):
     if not EVENT_ID.fullmatch(event_id) or not ADDRESS.fullmatch(address):
         raise ContractError('Invalid event/address')
     from larp.runtime.release import redact
     log = dict(timestamp=timestamp_ms,data=dict(input=redact(input_record,secrets),cot=redact(rationale,secrets),
                output=redact(output,secrets),orders=orders))
-    _validate(log)
+    _validate(log,round_kind)
     raw = compact(log)
-    event = Document.from_dict(dict(schema='AuditEvent.v1',event_id=event_id,round_id=round_id,
+    envelope = dict(schema='AuditEvent.v1',event_id=event_id,round_id=round_id,
         version_id=version_id,decision_ids=list(decision_ids),address=address,timestamp_ms=timestamp_ms,
         log=raw.decode('utf-8'),log_sha256=hashlib.sha256(raw).hexdigest(),chunks=chunks(raw,address),
-        swap_mappings=list(swap_mappings)))
+        swap_mappings=list(swap_mappings))
+    if round_kind != 'TRADE':
+        envelope['round_kind'] = round_kind
+    event = Document.from_dict(envelope)
     verify_event(event)
     return event
 
@@ -127,7 +143,9 @@ def verify_event(event):
         raise ContractError('Invalid audit envelope')
     raw = e['log'].encode('utf-8')
     log = json.loads(raw)
-    _validate(log)
+    if 'round_kind' in e and e['round_kind'] == 'TRADE':
+        raise ContractError('Trade rounds carry no round kind')  # one byte form per event
+    _validate(log,e.get('round_kind','TRADE'))
     if (hashlib.sha256(raw).hexdigest() != e['log_sha256'] or
             chunks(raw,e['address']) != e['chunks'] or log['timestamp'] != e['timestamp_ms']):
         raise ContractError('Audit bytes or chunk boundaries changed')

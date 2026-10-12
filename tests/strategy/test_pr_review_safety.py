@@ -68,3 +68,23 @@ def test_signing_stops_with_confirmation_margin_and_expiry_is_bounded():
     assert instant(result['intents'][0]['quote_expiry']) <= instant('2026-11-11T14:45:00Z')
     s = live_snapshot(held={'NVDAB':1000}, now=instant('2026-11-11T14:45:00Z'), quoted=True)
     assert not plan(s,None).read()['intents']
+
+
+def test_affordable_sale_is_not_preempted_by_another_tokens_higher_gas_budget():
+    from larp.strategy.profiles import build_live_profiles
+    from tests.strategy.live_fixtures import summary, registry
+    from tests.strategy.test_live_profiles import rebound
+    measured=summary().read()
+    measured['symbols']['SKHYB'].update(approve_gas_bnb_units=20000,swap_gas_bnb_units=20000)
+    p=build_live_profiles(Document.from_dict(measured),registry())['FINAL'].read()
+    s=live_snapshot(held={'NVDAB':6000},gas_low=True)
+    s=rebound(s,p)
+    c=s.context.read();c["portfolio"]["bnb_units"]=30000
+    s=with_quotes(changed(s,portfolio=c["portfolio"]))
+    c=s.context.read()
+    for m in c['markets']:
+        for q in m['quotes']:q['origin']='WEB3_OPEN_API'
+    s=changed(s,markets=c['markets'])
+    result=plan(s,decide(s,s.policy_state)).read()
+    assert result['intents'][0]['side']=='SELL'
+    assert result['intents'][0]['symbol']=='NVDAB'

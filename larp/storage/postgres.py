@@ -296,6 +296,9 @@ class PostgresStore:
             run = self._run(db,run_id)
             self._owned(run,epoch)
             self._same_snapshot(verified,run)
+            # HALT (larp/runtime/supervision.py, DR-13) stops every signature, mandatory ones included.
+            if (Document(bytes(run['projection'])).read().get('halt') or {}).get('reasons'):
+                raise Conflict('Run is halted; signing blocked')
             row = db.execute('SELECT payload,epoch,state_version,status FROM commands WHERE run_id=%s AND command_id=%s',
                              (run_id,command_id)).fetchone()
             if not row or row[1] != epoch or row[2] != run['version'] or row[3] != 'PENDING':

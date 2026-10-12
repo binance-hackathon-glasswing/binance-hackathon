@@ -221,8 +221,10 @@ def plan(snapshot, proposal_or_none):
 
     # Gas replenishment has its own round, no position slot or gross allocation.
     # A blocked top-up cannot hide mandatory sale requirements already recorded.
-    sale_gas = max((row["approve_gas_bnb_units"] + row["swap_gas_bnb_units"]
-                    for row in p.get("quote_cost_summary", {}).get("symbols", {}).values()), default=0)
+    gas_rows = p.get("quote_cost_summary", {}).get("symbols", {})
+    sale_gas = min((gas_rows[req["symbol"]]["approve_gas_bnb_units"]
+                    + gas_rows[req["symbol"]]["swap_gas_bnb_units"]
+                    for req in result["requirements"] if req["symbol"] in gas_rows), default=0)
     mandatory_can_pay = bool(result["requirements"]) and ledger["bnb_units"] >= sale_gas
     gas_short = not terminal and not mandatory_can_pay and plan_top_up(snapshot, p, risk_ledger, result)
     if gas_short:
