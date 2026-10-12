@@ -37,10 +37,13 @@ CREATE TABLE IF NOT EXISTS execution_observations (
 
 
 def _decode(raw):
-    value = json.loads(bytes(raw))
-    value['intent'] = Intent(**value['intent'])
-    value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
-    return Execution(**value)
+    try:
+        value = json.loads(bytes(raw))
+        value['intent'] = Intent(**value['intent'])
+        value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
+        return Execution(**value)
+    except (ValueError, TypeError, KeyError):
+        raise Conflict('execution record schema/integrity rejected') from None
 
 
 class ExecutionStore:
