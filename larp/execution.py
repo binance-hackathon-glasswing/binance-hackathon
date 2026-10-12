@@ -374,7 +374,7 @@ class Executor:
         if now < state.last_observed_at:
             raise Blocked("clock regression")
         if state.prepare_probes >= state.intent.max_prepare_probes:
-            return state  # Persisted blocked state; scheduler must not spin or raise forever.
+            raise Blocked('prepare probe budget exhausted')
         gates = self.guards.snapshot(state.intent, now)
         step = "SWAP" if state.attempts else "APPROVE"
         # Persist the work budget before any quote/estimate I/O; restart cannot reset it.
