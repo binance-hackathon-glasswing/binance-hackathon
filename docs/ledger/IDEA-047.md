@@ -37,6 +37,8 @@ Out of scope (recorded as remaining work): signing and the I3 → execution-serv
 | D7 | `build_driver`: `signing: true` and a model assessor raise `NotIntegrated`; a missing driver block, a profile or calendar hash mismatch, an unknown issuer token or a missing evidence store refuse the start (exit 4 through `main`); a valid configuration builds a driver whose ports pass `check_live_start` (no fakes) in `dev` mode. |
 | D8 | Full suite against disposable PostgreSQL and Linux CI pass; any skip reported with its reason. |
 
+- 2026-10-13 amendment (before running it): **D1b** — a round that opened but crashed before its plan committed is closed by `recover` as interrupted (logged `PROCESS_INTERRUPTED`) and its work runs again under the next attempt number (`#2`), at most three attempts; a planned round is never rerun. Added because a mutation check showed nothing tested this retry rule.
+
 ## Results
 
 NOT RUN.

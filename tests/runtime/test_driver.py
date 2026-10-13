@@ -87,6 +87,22 @@ class Driver(DriverHarness):
         filings = [r for r in self.logs() if r.startswith('filing:')]
         self.assertEqual(filings, [first['round_id']])
 
+    def test_d1b_a_round_interrupted_before_planning_is_retried_under_the_next_attempt(self):
+        self.world(['EXSEMI_402_8K'])
+        driver = self.driver()
+        item = driver.work.next(self.w.clock(), self.epoch)
+        crashed = item['round_id']
+        self.assertTrue(crashed.endswith('#1'))
+        # A crash after the round opened and before its plan committed (e.g. during assessment).
+        self.store.open_round(RUN, crashed, driver.work.request(item, self.store.load(RUN).read(), self.w.clock()),
+                              self.epoch)
+        summary = self.tick(driver)
+        self.assertEqual(summary['round_id'], crashed[:-1] + '2')
+        logs = self.logs()
+        self.assertEqual(sorted(logs), [crashed, summary['round_id']])
+        self.assertEqual(logs[crashed]['output']['errors'], ['PROCESS_INTERRUPTED'])
+        self.assertFalse((self.tick(driver)['round_id'] or '').startswith('filing:'))
+
     def test_d2_shadow_ends_every_intent_unsigned_and_releases_reservations(self):
         self.world(['EXSEMI_402_8K'])
         before = self.store.load(RUN).read()['projection']['balances']
