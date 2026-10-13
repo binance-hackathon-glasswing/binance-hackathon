@@ -1,7 +1,7 @@
 # IDEA-047 — Round driver for the supervised runtime (shadow, no signing)
 
 - Date / owner: 2026-10-13 / Claude for the user (pre-deployment review session). Runtime files are Keegan's (IDEA-038); this entry asks for his review, and Isaac's for the execution boundary.
-- Status: open; prospective criteria written before any implementation or test run.
+- Status: open; D1–D8 PASS on synthetic fixtures (locally and Linux CI); Gate A still blocked (see "Still open").
 - Base: `claude/pre-deployment-review-4zxz7p`, fast-forwarded to the head of the PR #18 → #19 → #20 stack (`79abab4`), because the stack changes `larp/runtime/service.py` (configuration binding, IAM database). `main` is not touched.
 - Links: IDEA-042 item 10 (the missing round driver), DR-07, DR-13, DR-19, Gate A in `docs/build/DEPLOYMENT_BUILD.md`, GAP-65.
 
@@ -39,6 +39,34 @@ Out of scope (recorded as remaining work): signing and the I3 → execution-serv
 
 - 2026-10-13 amendment (before running it): **D1b** — a round that opened but crashed before its plan committed is closed by `recover` as interrupted (logged `PROCESS_INTERRUPTED`) and its work runs again under the next attempt number (`#2`), at most three attempts; a planned round is never rerun. Added because a mutation check showed nothing tested this retry rule.
 
-## Results
+## Results (2026-10-13)
 
-NOT RUN.
+Commits: criteria `c8b2fdb`; implementation and tests `91a75ef`; D1b test and amendment `b6ce5e0`.
+
+- **Procedure deviation:** the first local run of `tests/runtime/test_driver.py` (10 passed) happened on the uncommitted working tree, before `91a75ef` was pushed. That is against the commit-before-run rule (AGENTS.md). Everything was re-run from the pushed commits; only those runs count below. Synthetic fixtures only; no credentials, network, signing or upload in any run.
+- Focused, at `b6ce5e0` against disposable PostgreSQL 16 (Python 3.13 venv from `deploy/requirements-test.lock`): **11 passed, 16 subtests**.
+- Mutation checks (each reverted): a wrong abort reason, ingestion ahead of review jobs, no settlement after a new round, and rerunning an interrupted round under the same ID each make exactly one test fail. The last one survived before D1b was added.
+- Full suite at `b6ce5e0`: **1071 passed, 4 skipped, 1353 subtests**. The skips are three Linux bubblewrap checks and the opt-in recorded-market test.
+- Linux CI on `b6ce5e0` (workflow_dispatch, all jobs: pytest with PostgreSQL, isolated demo, Docker smoke, both Terraform directories): **PASS**, [run 38392373400](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38392373400).
+
+| ID | Result | Evidence |
+|---|---|---|
+| D1 | PASS | `test_d1_an_ingested_filing_runs_once_across_cycles_and_restart` |
+| D1b | PASS | `test_d1b_a_round_interrupted_before_planning_is_retried_under_the_next_attempt` |
+| D2 | PASS | `test_d2_shadow_ends_every_intent_unsigned_and_releases_reservations` (`store.command` patched to fail) |
+| D3 | PASS | `test_d3_cadence_rounds_run_once_per_slot_and_skip_issuers_without_records` |
+| D4 | PASS | `test_d4_a_scheduled_review_job_runs_first_and_is_finished` |
+| D5 | PASS | `test_d5_the_driver_journal_replays_to_the_same_head_without_live_ports` |
+| D6 | PASS | `test_d6_index_and_remaining_across_session_boundaries` |
+| D7 | PASS | four `test_d7_*` tests (composition, NotIntegrated, refusals, exit codes through `main`) |
+| D8 | PASS | full suite and CI above |
+
+## Still open before Gate A (not done here)
+
+1. **No way to start a dev run.** Nothing initializes a `dev`/`live` run, commits its version event, or performs the reviewed takeover that lifts a production run's quarantine (`PostgresStore.takeover` leaves non-offline runs quarantined; `Service` exits 3 on a quarantined run). Owner Keegan + Isaac; a design decision, since it is the step that authorizes the run.
+2. **Inputs the driver refuses to start without:** a `LIVE` strategy profile (DR-09; needs the quote-cost summary), a frozen `USRegularSessions.v1` calendar covering the run, live intelligence parameters (`config/intelligence/intelligence.v1.json` `live` values are all null), and the market `underlying_id` per token (the issuer registry marks every token↔share mapping UNVERIFIED).
+3. **Uploader process:** round logs are written to the outbox but only `DeliveryWorker` sends them, and no deployed process runs it with `AI_SEEDS_SECRET` (DR-07 on the host).
+4. **Ingestion process on the host:** `python -m larp.sources.live run` must run beside the runtime to fill the evidence store (DR-12).
+5. **Gate B paths:** I3 → execution service → signer, and the planner's `quote_requests` loop (quotes stay non-executable until router decoding is verified).
+6. Review by Keegan (runtime owner) and Isaac (the shadow `EXECUTION_RECONCILER` observations).
+

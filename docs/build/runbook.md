@@ -24,7 +24,14 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
-The round driver arrives with integration (item 10). Until then `service run` exits 2 (not integrated) and systemd does not restart it.
+5. **Round driver (shadow only; [IDEA-047](../ledger/IDEA-047.md)):** the `driver` block of `/etc/larp/runtime.json` names:
+   - the strategy profile and session calendar files, each with its SHA-256;
+   - the evidence root (`evidence.sqlite` and `artifacts/`, written by the separate ingestion process `python -m larp.sources.live run`);
+   - the market artifact directory, the intelligence configuration mode and the cadence;
+   - `issuers` (issuer ID → token and the market's `underlying_id`);
+   - `signing: false` and `assessor: "deterministic"`.
+
+   Each cycle runs at most one round: a scheduled review job first, then an ingested filing, otherwise one cadence round per slot. Every planned order ends `NOT_SUBMITTED` with reason `SHADOW_NO_SIGNING`, so nothing is signed and the round log lists it without a `tx_hash`. `signing: true` or a hosted model assessor exits 2 (not integrated); a missing or mismatched file, hash or issuer exits 4. systemd restarts neither. Round logs are uploaded by the uploader process, not by the runtime.
 
 ## 2. Automatic restart (C5) — **host** drill at Gate A
 
