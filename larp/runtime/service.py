@@ -18,6 +18,7 @@ import signal
 import time
 import uuid
 
+from larp.audit.protocol import ADDRESS
 from larp.contracts import ContractError, Document
 from larp.runtime.database import IAM_SETTINGS, check_iam_settings
 from larp.runtime.live import LiveStartRefused, check_live_start
@@ -27,7 +28,7 @@ EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
-    """The round driver (scheduler -> coordinator with live ports) arrives with IDEA-042 item 10."""
+    """A configuration asks for a path that is not built yet: signing (Gate B) or a hosted model assessor (DR-11)."""
 
 
 class StartRefused(ContractError):
@@ -108,8 +109,96 @@ def open_store(config):
     return IamPostgresStore(config, rds_client(config['region']))
 
 
-def build_driver(config, store, secrets):
-    raise NotIntegrated('Round driver not integrated yet (IDEA-042 item 10)')
+DRIVER_KEYS = ('signing', 'assessor', 'intelligence_mode', 'evidence_root', 'market_artifact_root', 'cadence_ms',
+               'strategy_profile_file', 'strategy_profile_sha256', 'session_calendar_file', 'session_calendar_sha256',
+               'issuers')
+
+
+def _pinned_json(path, sha256, what):
+    raw = Path(path).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != sha256:
+        raise ContractError(what + ' differs from its pinned hash')
+    return json.loads(raw)
+
+
+def build_driver(config, store, secrets, *, clock_ms=None):
+    """The shadow round driver (IDEA-047) from the `driver` block of the manifest-bound runtime configuration.
+
+    Signing (Gate B) and hosted model assessors (DR-11) are not integrated: asking for either raises NotIntegrated.
+    Any other missing or inconsistent input is a ContractError, which `main` turns into a start refusal (exit 4)."""
+    from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
+    from larp.integration.settlement import ExecutionBridge
+    from larp.intelligence.agent import EvidenceAssessor
+    from larp.intelligence.config import load_config, load_registry
+    from larp.intelligence.gate import lifecycle_policy_from
+    from larp.intelligence.models import RuleBaselineModel
+    from larp.intelligence.tools import PortEvidenceReader
+    from larp.marketdata.port import MarketPort
+    from larp.marketdata.web3 import Artifacts, Web3Client
+    from larp.runtime.coordinator import Coordinator
+    from larp.runtime.driver import EvidenceWork, RoundDriver, RuntimeHealth, SessionCalendar
+    from larp.sources.store import FileArtifacts, SQLiteEvidenceStore
+    clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
+    d = config.get('driver')
+    if type(d) is not dict:
+        raise ContractError('Runtime configuration has no driver block')
+    missing = [k for k in DRIVER_KEYS if d.get(k) in (None, '')]
+    if missing:
+        raise ContractError('Missing driver settings: ' + ','.join(missing))
+    if d['signing'] is not False:
+        raise NotIntegrated('Signing is not integrated (Gate B: DR-02/03/04)')
+    if d['assessor'] != 'deterministic':
+        raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
+    mode = config.get('mode', 'offline')
+    profile = _pinned_json(d['strategy_profile_file'], d['strategy_profile_sha256'], 'Strategy profile')
+    if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1':
+        raise ContractError('Expected a StrategyProfile.v1 file')
+    if mode in ('dev', 'live') and profile.get('mode') != 'LIVE':
+        raise ContractError('A dev or live run needs a LIVE strategy profile')
+    calendar = SessionCalendar(_pinned_json(d['session_calendar_file'], d['session_calendar_sha256'],
+                                            'Session calendar'))
+    profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
+    intelligence = load_config(d['intelligence_mode'])
+    registry = load_registry()
+    issuers = d['issuers']
+    if type(issuers) is not dict or not issuers:
+        raise ContractError('Driver issuers must map issuer IDs to tokens')
+    for issuer_id, meta in issuers.items():
+        known = [e for e in registry.entries if e.issuer_id == issuer_id]
+        if (not known or type(meta) is not dict or meta.get('token') != known[0].token
+                or type(meta.get('underlying_id')) is not str or not meta['underlying_id']):
+            raise ContractError('Driver issuer does not match the issuer registry: ' + issuer_id)
+    if type(d['cadence_ms']) is not int:
+        raise ContractError('Invalid cadence')
+    root = Path(d['evidence_root'])
+    if not (root / 'evidence.sqlite').is_file():
+        raise ContractError('Evidence store missing; the ingestion process creates it')
+    evidence = SQLiteEvidenceStore(str(root / 'evidence.sqlite'))
+    artifacts = FileArtifacts(str(root / 'artifacts'))
+    key, secret, wallet = secrets.get('BINANCE_API_KEY'), secrets.get('BINANCE_SECRET_KEY'), config.get('wallet_address')
+    if not key or not secret or type(wallet) is not str or not ADDRESS.fullmatch(wallet):
+        raise ContractError('Market data needs the Web3 key pair and the public wallet address')
+    market = MarketPort(Web3Client(key, secret, artifacts=Artifacts(d['market_artifact_root'])), wallet)
+    run = store.load(config['run_id']).read()
+    lifecycle = lifecycle_policy_from(intelligence)
+    builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'],
+                             issuers={i: dict(token=m['token'], underlying_id=m['underlying_id'])
+                                      for i, m in issuers.items()},
+                             market=market, health=RuntimeHealth(store, config['run_id'], run['epoch']),
+                             calendar=calendar, lifecycle_policy=lifecycle)
+    assessor = EvidenceAssessor(registry=registry, reader=PortEvidenceReader(evidence, artifacts),
+                                model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
+    coordinator = Coordinator(store, assessor, StrategyPolicy(),
+                              RuntimePlanner(job_validity_ms=intelligence.p('job_validity_ms'),
+                                             job_max_attempts=intelligence.p('job_max_attempts')),
+                              execution=ExecutionBridge(), run_id=config['run_id'], version_id=config['build_id'],
+                              profile_hash=profile_hash, address=wallet, context_builder=builder,
+                              initial_policy_state=initial_policy_state(config['run_id'], profile), clock_ms=clock_ms,
+                              test_rounds=mode != 'live', require_version=True)
+    work = EvidenceWork(store=store, evidence_store=evidence, run_id=config['run_id'], config=intelligence,
+                        issuers=list(issuers), profile_hash=profile_hash, cadence_ms=d['cadence_ms'],
+                        lifecycle_policy=lifecycle)
+    return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence))
 
 
 def verify_registered_manifest(store, config, manifest):
@@ -159,6 +248,8 @@ def main(argv=None):
         except NotIntegrated:
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
+        except (ContractError, ValueError, OSError) as refused:
+            raise StartRefused(type(refused).__name__) from None  # restarting the same inputs cannot cure it
         def start_check():
             check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=secrets,
                              wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
