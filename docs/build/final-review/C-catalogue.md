@@ -403,5 +403,17 @@ statements. There are now 59 source requirements; actual final counts and CI
 checkout provenance are recorded in C-RESULT-005. Live/host/shared dependencies
 continue to prevent whole-section completion.
 
+### Signed-state security amendment, 2026-10-15 SGT
+
+C-REQ-012/036/037 also cover C's archive-visible execution state: new signatures
+must remain only in the restricted registry, and restarts release bytes solely
+through the original fenced authority. Add C-UC-091: backup/restore samples a
+SIGNED_DURABLE execution; diagnostic state contains hashes, not usable raw bytes,
+and missing restored registry evidence never becomes permission to sign/resend.
+C owns this serialization/release fix under PR67's explicit owner request.
+D retains legacy export/restore, archive grants and its deliberately injected
+legacy-state regression; no marker/assertion is removed by C. Trace is WEAK
+pending C-FND-010 tests; complete #23 acceptance still needs both owners.
+
 This maps the execution-service aspect of the existing declared version gate;
 it does not grant C edits to D's runtime, uploader or system-test runner.
