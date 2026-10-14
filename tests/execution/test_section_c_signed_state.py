@@ -11,12 +11,22 @@ from tests.execution_fixtures import FakeDecoder, FakeVenue, WALLET, intent
 from tests.support import DatabaseCase
 
 
+class Venue(FakeVenue):
+    before_send = None
+
+    def broadcast(self, signed, epoch, version):
+        if self.before_send is not None:
+            self.before_send(epoch, version)
+        self.store.check_broadcast(signed, epoch, version)
+        return super().broadcast(signed, epoch, version)
+
+
 class SignedState(DatabaseCase):
     def setUp(self):
         super().setUp()
         self.registry = ExecutionStore(self.store, run_id='run', wallet=WALLET)
         self.guards = fixtures.ExecutionGuards(self.registry)
-        self.venue = FakeVenue(self.registry)
+        self.venue = Venue(self.registry)
         self.restart()
         self.key = intent().key
         self.executor.create(intent(), 10)
@@ -57,7 +67,6 @@ class SignedState(DatabaseCase):
     def test_c_req_036_restart_broadcasts_original_registry_bytes_once(self):
         self.restart()
         sent = self.executor.broadcast(self.key, 14)
-        self.registry.check_broadcast(self.signature, self.attempt.epoch, self.attempt.guard_version)
         self.restart()
         self.executor.broadcast(self.key, 15)
         self.assertEqual(self.venue.broadcasts, [self.signature.tx_hash])
@@ -82,10 +91,12 @@ class SignedState(DatabaseCase):
         self.assertEqual(self.venue.broadcasts, [])
 
     def test_c_req_037_forged_raw_bytes_cannot_reuse_a_possible_send_hash(self):
+        def forge(epoch, version):
+            with self.assertRaises(Conflict):
+                self.registry.check_broadcast(Signed(self.signature.raw_hex + '00', self.signature.tx_hash),
+                                              epoch, version)
+        self.venue.before_send = forge
         self.executor.broadcast(self.key, 14)
-        with self.assertRaises(Conflict):
-            self.registry.check_broadcast(Signed(self.signature.raw_hex + '00', self.signature.tx_hash),
-                                          self.attempt.epoch, self.attempt.guard_version)
 
     def test_c_req_037_restored_backup_is_quarantined_without_signature_authority(self):
         import psycopg
