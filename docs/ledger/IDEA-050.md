@@ -101,3 +101,17 @@ Findings from the first runs (each fixed in its own pushed commit before the cou
 2. **Team decisions:** what each HALT reason blocks (#34; this build keeps "HALT stops every signature", now also for executions under way, #52); proposal, signing and router lifetimes (#27); the day-roll window and cadence (null in `config/runtime/runtime.example.json`, so a start refuses until set).
 3. **Review:** Keegan (runtime) and Isaac (`larp/execution_live/loop.py`, `main.py`; the guard facts and the round-terminal attestation) before merge. This branch depends on PR #41.
 4. **Hosted checks:** `init`/`activate` on the real database, both units under systemd with their state directories, and the kill/HALT drills.
+
+## R — PR #66 review fixes (Isaac, 2026-10-14; criteria recorded before the tests and fixes)
+
+Source: Isaac's review comment on PR #66 at `223c7ae`. All three findings were verified against the code and the kit before this entry.
+
+| ID | Finding | Prospective check |
+|---|---|---|
+| R1 (P1) | `RawTransactionSubmitter` sends through RPC `eth_sendRawTransaction`; the kit's only order channel is the Web3 Open API (F-104, never-do #3; `POST /api/v1/dex/pre-transaction/broadcast-transaction`, body `binanceChainId`, `signedTransaction`, `address`, answer `txHash`). | The release boundary submits through an authenticated Web3 client that allows that one endpoint and nothing else; the read client still refuses it. The request carries exactly those three fields; the returned `txHash` must equal the signed transaction's hash; the stored artifact does not keep the signed bytes; a transport or API failure leaves the attempt as a possible send (never re-signed with another nonce). No RPC submission path or `broadcast_rpc_url` setting remains. |
+| R2 (P1) | `DayRoll` values the marks at the cycle's clock, read before the fetch; the real client stamps `available_at` after the response, so a held position is never usable and the anchor never rolls. | With a market whose fetch advances the clock and stamps observations at completion, the roll succeeds (fails before the fix). The decision time is read after the fetch, and the day and window are checked again at that time; a fetch that ends past the window does not roll. |
+| R3 (P2) | A runtime restart commits a RESTART incident, which makes a planned but unclaimed command stale; nothing reauthorizes it, so it expires `NOT_SUBMITTED`. | Through real `Service` startup after a simulated crash between planning and claiming: the restart incident is journaled, then one `COMMAND_REAUTHORIZED` event re-binds the still-valid command to the current version, and the execution loop claims it. Not reauthorized: an expired intent, a halted or quarantined run, an intent with an execution record, a final intent or one without its reservation, or another registered build. Replay reproduces the event. The command's bytes never change; only its authority (epoch, state version) moves forward, in the same journaled commit. |
+
+Order: these tests are pushed and run first (expected red for R1–R3), then the fixes are pushed and the same tests, the full suite and Linux CI are run.
+
+Results: NOT RUN.
