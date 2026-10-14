@@ -304,3 +304,29 @@ SQLite's documented modes/source were checked: [WAL read-only caveats](https://s
 
 Required evidence: focused and full offline tests, two-user host-bundle CI, PostgreSQL CI, existing real-systemd
 and mock Terraform checks. Hosted/performance/rehearsal gates remain open. No whole GAP is completed by this scope.
+
+### R14–R15 results (2026-10-14, Isaac / Codex): PASS offline
+
+Criteria `9675fce`; implementation `c34e8ad`; final tested revision `d774f67`. All runtime code was pushed before
+testing. [CI 38554156578](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38554156578)
+passes all four jobs.
+
+| ID | Evidence |
+|---|---|
+| R14 | `SecretUnavailable` sanitizes fetch exceptions and follows the exit-1 restart path. Pinned-release tests verify no database access on failed fetch, no provider text/secret in output or traceback, and permanent exit-4 refusal for invalid response/content/wallet/foreign credentials. Real PostgreSQL fixture keeps the run quarantined, retains the committed queued log after a failed fetch, then drains it to ACK after recovery. |
+| R15 | The live writer explicitly selects DELETE journaling; private writers retain WAL. Default read-only views check the [SQLite header version bytes (18/19)](https://www.sqlite.org/fileformat.html#file_format_version_numbers) before opening a legacy WAL file. Local tests cover private WAL opt-in, live builder wiring, legacy conversion and an abrupt writer exit with committed data still in WAL: the reader does not change the WAL, and writer migration preserves the data. AL2023 two-user check opens the runtime reader while the writer is closed, then restarts/commits the writer while that reader remains open, confirms the new state, closes the reader and reopens the writer again. No WAL/SHM files are created. The runtime has no writable evidence mount; artifact access remains shared at 0640. |
+
+- Local Python 3.12.14: **947 passed, 215 skipped, 1372 subtests**. Skips require PostgreSQL, Linux/systemd or opt-in
+  external recorded artifacts. Focused service/store/unit checks pass; shell syntax passes. Docker remains unavailable
+  locally, so two-user/container and PostgreSQL evidence is from CI, not a local claim.
+- Linux Python 3.12.15, disposable PostgreSQL 14.24: **1158 passed, 4 skipped, 1480 subtests**. Three systemd tests
+  then execute explicitly: **3 passed, 5 subtests**. The remaining skip is the opt-in recorded market.
+- Host-bundle (both AL2023 roles, networking disabled), packaged preflight, two-user evidence restart, offline demo,
+  Docker smoke, Terraform **15/15 + 1/1**: PASS.
+- Fixture corrections are preserved without history rewrite: `ab1db26` isolates live terms preflight (terms remain
+  an open deployment prerequisite), `da025fb` uses the permitted minute polling interval, and `c2dec5f` seeds the
+  durable outbox without trying to activate the quarantined dev fixture. The initial fixture failures are not new
+  runtime defects. `d774f67` adds committed-WAL crash/migration proof.
+- No AWS action, hosted migration, registered secret use, signing/trading or real source/model evaluation occurred.
+  Keegan + Isaac still own stopped-services legacy migration and real-host validation; Yao Zhu owns live terms and
+  parameters, and infrastructure approvals; existing integration, signer and rehearsal dependencies remain open.
