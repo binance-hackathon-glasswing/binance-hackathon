@@ -7,6 +7,7 @@ missing production midnight scheduler or the unmerged IDEA-048 driver.
 
 from copy import deepcopy
 from datetime import timedelta
+from fractions import Fraction
 import json
 
 from larp.contracts import Document
@@ -18,7 +19,7 @@ from larp.research.fixtures import with_quotes
 from larp.risk.accounting import roll_day, update_risk
 from larp.runtime.coordinator import Coordinator, batch_for
 from larp.runtime.fixtures import assess as model_response
-from larp.strategy.schema import equity, instant
+from larp.strategy.schema import equity, instant, value
 from larp.strategy.profiles import build_live_profiles
 from tests.strategy.live_fixtures import live_snapshot, summary
 from tests.support import DatabaseCase, request
@@ -141,6 +142,15 @@ class FourteenDayRun(DatabaseCase):
                     assert self.store.load("run").read()["projection"]["balances"][intent["symbol"]] > 0
                     break
                 observed["markets"] = [dict(m, quotes=[]) for m in observed["markets"]]
+            settled = self.store.load("run").read()
+            ledger = ledger_from(settled["projection"], settled["reservations"])
+            marks = {m["symbol"]: m for m in observed["markets"]}
+            safe_equity = equity(ledger, marks) - p["cost_reserve_units"]
+            if day == 1:
+                assert value(ledger["positions"]["NVDAB"]["units"], marks["NVDAB"]) <= Fraction(safe_equity, 5)
+            if day == 4:
+                gross = sum(value(pos["units"], marks[symbol]) for symbol, pos in ledger["positions"].items())
+                assert gross <= Fraction(safe_equity * 2, 5)
             previous_marks = deepcopy(observed["markets"])
         final = self.store.load("run").read()
         assert reverted and terminal_gas >= 20000

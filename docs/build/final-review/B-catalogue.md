@@ -265,7 +265,7 @@ Test keys are exact files:
 | REQ | Implementation | Passing acceptance / exact later check | Verdict |
 |---|---|---|---|
 | 001 | POL,SCH,PLAN; contracts.Target/validate_proposal | BQ::test_b_req_001_generated_portfolios_cannot_create_short_leveraged_or_ineligible_positions; CON::test_invalid_weights_and_instruction_shapes / test_duplicate_unknown_and_excess_total_rejected. Structural authority: eligible market whitelist, nonnegative integer settled holdings, bounded targets, sell≤held, buy≤cash; C validates transaction identities. | COVERED consumer; C live transport separate |
-| 002 | SCH:value/integer; ACC; GAS; larp.ports:decimal_string | MECH::test_exact_input_buy_records_variable_received_quantity; SYS::test_execution_service_final_receipt_settlement_audit_and_replay (18-decimal BNB); RR::test_actual_sell_proceeds_fee_and_basis_are_used. Internal micro-USDT is deliberate; C owns exact 18-decimal transport conversion. | COVERED arithmetic; C transport acceptance required |
+| 002 | SCH:value/integer; ACC; GAS; larp.ports:decimal_string | MECH::test_exact_input_buy_records_variable_received_quantity; SYS::test_command_to_actual_service_receipt_audit_restart_and_replay (18-decimal BNB); BR::test_b_req_002_035_planned_native_gas_scale_agrees_with_execution_mapping (6/8/18); RR::test_actual_sell_proceeds_fee_and_basis_are_used. Internal micro-USDT is deliberate; C owns exact 18-decimal transport conversion. | COVERED arithmetic; C transport acceptance required |
 | 003 | PLAN executable gates; POL window | MECH::test_mandatory_bypasses_minimum_and_cadence_but_market_blocks; LT::test_terminal_retains_unfilled_position_when_execution_gate_blocks; B14 closed weekend. | COVERED |
 | 004 | SCH:usable; strategy.features; integration.contract:accept_for_strategy | POLT::test_future_perturbation_does_not_change_decisions_or_features; SES::test_duplicate_future_capture_wrong_timestamp_and_bad_calendar_reject; CON::test_expiry_boundary_and_clock_reversal. | COVERED |
 | 005 | SCH:equity; PLAN partial lower-bound valuation | TRIM::test_partial_valuation_defers_allocation_until_all_marks_recover; MECH::test_stale_name_does_not_block_healthy_terminal_or_cap_exit. Production tokenPrice vs liquidation mark and BNB freshness do not meet the full declared executable-quote contract (#36/#38). | WEAK; B-RISK-03/04 |
@@ -293,9 +293,9 @@ Test keys are exact files:
 | 027 | PLAN:_quote_at_cap cap/requote; GAS | MECH::test_split_parent_replanned_after_actual_fill_and_fee / test_better_sell_price_requests_smaller_quote_and_can_progress; LT mandatory-slippage tests. C fresh post-approval deadline/slippage proof still required. | COVERED B; C #27/#40 |
 | 028 | PRO validate_live; SCH profile hash | LP::test_missing_unsourced_and_unset_live_fields_reject / test_bad_measurements_and_impossible_cost_budget_reject; BQ cap-mutation rejection. Validation of fields cannot certify the source/adopter actually approved them; release acceptance029. | COVERED schema; adoption029 |
 | 029 | PRO mathematical candidates; config/strategy/LIVE.md | LP impossible-budget/source checks. No actual five-name cost artifact or approved live profile supplied. Team reviews all formulas/values and manifest hash at Oct22 freeze after C DR01. | NOT-OFFLINE; B-RISK-02 |
-| 030 | POL,PRED; independent ContextBuilder reduction | PUB::test_real_rf1_producer_is_mandatory_even_without_policy; PS::test_class1_exit_precedes_buy_and_bypasses_discretionary_filters. Real ingestion/verifier producer, synthetic external filing. | COVERED consumer; A SKHYB coverage039 separate |
+| 030 | POL,PRED; independent ContextBuilder reduction | PUB::test_real_rf1_producer_is_mandatory_even_without_policy; PS::test_class1_exit_precedes_buy_and_bypasses_discretionary_filters. Real ingestion/verifier producer, synthetic external filing. Sell action covered, but DEC35 §10.1's DISCRETIONARY_EXIT qualifier conflicts with mandatory precedence; B-CON007 requires disposition. | WEAK priority adoption; B-FND-010/team; A SKHYB coverage039 separate |
 | 031 | POL,PRED session expiry/history | RF::test_class2_never_sells_expires_after_five_sessions_and_replay_cannot_renew; PUB::test_resolved_critical_latch_does_not_survive_only_timed_adverse_evidence. Calendar index quality is C/D check; SES tests DST, not holiday producer. | COVERED session-index consumer; ASM007 calendar risk |
-| 032 | POL shadow authority | RF::test_class3_statement_does_not_veto_and_bad_registry_reject; POLT::test_shadow_and_explicit_bounded_variant; actual published predicate tests in A. | COVERED B |
+| 032 | POL shadow authority | RF::test_class3_statement_does_not_veto_and_bad_registry_rejects; POLT::test_shadow_and_explicit_bounded_variant; actual published predicate tests in A. | COVERED B |
 | 033 | POL,PRED fresh re-entry/critical+timed | RF::test_class1_exits_latches_without_context_and_clears_on_verified_resolution; PS::test_critical_clearance_preserves_unexpired_timed_block; POLT::test_stale_assessment_cannot_clear_reentry. | COVERED B |
 | 034 | GAS; PLAN mandatory affordability precedence | BQ::test_b_req_034_opening_200_usdt_without_bnb_needs_bootstrap_and_cannot_spend; RR::test_top_up_own_round_does_not_occupy_stock_slot_or_gross; PS::test_low_gas_above_one_sale_budget_never_starves_mandatory_trim. First BNB needs authorised source before GateB. | COVERED consumer; NOT-OFFLINE bootstrap B-RISK-01 |
 | 035 | GAS decimals; ACC resource settlement | RR::test_top_up_requires_actual_quote_then_accounts_actual_bnb_separately / test_real_fill_uses_variable_actual_output_not_estimated_output; SYS integrated real receipt/replay; existing9bfffcd fix retained. C full native quote producer in unmerged PR41 not claimed tested here. | COVERED B; C producer pending |
@@ -328,7 +328,28 @@ defaults requiring source/adoption checks. These are not new permissions.
 | 019 | Journaled INCIDENT boundary facts in B14 model a trusted external midnight observation. | VALIDATED test distinction only; not production capability. D owner midnight/replay hook plus driver before integration, blocking. |
 | 020 | Candidate same-slippage cap protects buys and mandatory sells. | PARTIAL B validators pass; declared separate exit allowance/cap adoption not documented. Team/C/B approves exit convention before Oct22, blocking. |
 | 021 | Research variance tools' EDT constants describe Sep5–Oct7 captures, not a general session calendar; MC coefficients are historical illustrative inputs. | PARTIAL: inspected date comments, gap/terminal/adjacency regressions pass; no fresh real-data rerun. Keith owns dated/hash-bound rerun before reuse; blocking if statistics promoted to live/economic evidence. |
+| 022 | Class1 DISCRETIONARY_EXIT may be upgraded to mandatory independently of cost/minimum/cadence. | UNVALIDATED adoption: DEC35 §10.1 explicitly says DISCRETIONARY_EXIT; published producer/consumer tests show mandatory. Team+A+B must resolve B-CON007 before Oct22, blocking. |
 
 ASM001–015 keep their frozen evidence/status; tested subsets do not silently
 validate whole live assumptions. All PARTIAL/UNVALIDATED items map to the
 owner/deadline/blocking deployment-risk text requested in IDEA-049-B.
+
+## B-AMD-02 — source recheck amendments (2026-10-14)
+
+- **B-COR-001:** SKILL Q08 still called the gas logging convention undecided,
+  although DEC35 B11 explicitly adopted it. Corrected the summary in this PR
+  under common protocol §1.2's shared-SKILL exception. No organiser confirmation
+  invented; first-BNB bootstrap Q03 remains unresolved.
+- **B-CON007:** DEC35 §10.1 says Class1 sell `(DISCRETIONARY_EXIT)`, while the
+  current published consumer makes it mandatory. The sell requirement030 is
+  unchanged; its priority/gate semantics require a team disposition. Conservative
+  action: retain the existing safety path while activation stays blocked, rather
+  than silently strengthening the source or changing the policy in review.
+  Team wording to resolve: "Should a verified Class1 finding bypass the minimum
+  size, profitability and cadence gates as a mandatory reduction, or retain the
+  adopted discretionary exit controls?" This is an internal policy decision,
+  not a question for organisers.
+- The synthetic14-day test covers risk/cap/closed/terminal/replay consumers,
+  with Class1/2/3 tested separately. It is not the prompt's complete integrated
+ 14-day proof of every decided rule; that combined driver/evidence/calendar run
+  remains required after D/C/A integration. No done claim is made.
