@@ -213,3 +213,52 @@ Remaining before section work starts (unchanged by this entry): merge of PR #21
 into `codex/system-testing-20261012` (team review), the IDEA-048 driver PR or a
 recorded partial-scope exclusion (Keegan + Isaac/team), and Keith's original
 tracker #22 record under an unused ID. D's section review itself is NOT RUN.
+
+## WR-L — review leftovers #59, #61, #64 (2026-10-15)
+
+Three small leftovers named in the 2026-10-14 status comments on #59 (WR17),
+#61 (WR19) and #64 (WR22), fixed test-first on `codex/system-testing-20261012`
+at `0820b0d`. Branch `claude/wr-leftovers-20261015`. Nothing else is in scope:
+#64 items 3–4 (Keith; Yao Zhu + Keegan) and #59 acceptance 1's host systemd test
+stay open.
+
+Prospective checks, recorded before any test is written or run:
+- WR-L1 (#59): an `OSError` while binding `ai_seeds_dir`/`nonce_dir` is a
+  refused start. New tests, committed and pushed before the fix, fail on
+  `0820b0d` with the predicted outcome: (a) `check_live_start` with
+  `ai_seeds_dir` below a regular file raises `NotADirectoryError`, not
+  `LiveStartRefused`; (b) a read-only, empty directory raises `PermissionError`
+  when the marker is written (skipped when run as root, where the mode does not
+  bind); (c) `larp.runtime.service.main(['run', …])` in `dev` mode with that
+  unbindable directory returns 1 (`RUNTIME_FAILED`), not 4. After the fix all
+  three pass: `LiveStartRefused` naming the path and the error class, never a
+  secret value; `main` returns 4 with `LIVE_START_REFUSED`; the existing
+  W1–W4 and D7 tests pass unchanged.
+- WR-L2 (#61 acceptance 2): a repository grep (excluding `vendor/` and the
+  verbatim kit) finds no reader of the `evidence` managed secret: no
+  `*_secret_id` naming it and no `GetSecretValue` for `<name>/evidence`; the
+  evidence unit and `config/hosts/evidence.example.env` hold non-secret
+  settings only. The Terraform test is changed first and pushed, and fails on
+  the unchanged `hosts.tf`: exactly two managed secrets, `runtime` and
+  `uploader`, and no `evidence` reader grant. After removing `evidence` from
+  `secret_readers`, `terraform fmt -check -recursive`, `init -backend=false`,
+  `validate` and `test` pass in `hashicorp/terraform:1.13.5` with no
+  credentials: `deploy/aws` 15/15, `deploy/bootstrap` 1/1 (counts unchanged:
+  one assertion changes, no run is added). The next `apply` of the core stack
+  schedules `larp-dev/evidence` for deletion (30-day recovery window); that
+  apply is not part of this change.
+- WR-L3 (#64 item 2): new tests, pushed before the fix, fail on `0820b0d`
+  because an `http.client.HTTPException` escapes: `Rpc.call` with a response
+  whose `read` raises `IncompleteRead` raises that, not
+  `DependencyUnavailable('RPC unavailable')`; `Web3Client.request` with
+  `IncompleteRead` on read or `BadStatusLine` on open raises it, not
+  `Unavailable('transport_error')`. After adding `http.client.HTTPException`
+  to the except clauses in `larp/execution_live/chain.py` and
+  `larp/marketdata/web3.py` (the Web3 transport lives there, not under
+  `execution_live/`), they pass and the Web3 failure still stores a
+  `transport_error` artifact with no credential in it.
+- WR-L4: full suite on Python 3.12 from `deploy/requirements-test.lock`
+  against a disposable `postgres:14.24-bookworm` (`LARP_TEST_DATABASE_URL`):
+  the D §10 local count (1252 passed, 7 skipped, 1 xfailed) plus only this
+  change's new tests, with no new failure or skip.
+- WR-L5: PR-head Linux CI passes all jobs.
