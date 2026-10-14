@@ -95,3 +95,5 @@ the signer trusts gate facts it cannot observe offline (nonce, market, risk, hea
 check the run's registered version against its release, because `larp_signer` cannot read the journal (`events`);
 swaps stay refused until a verified router decoder exists (GAP-29); the execution service stops `NOT_INTEGRATED`
 until the round driver lands.
+
+- 2026-10-14 CI (Claude): T01 → PASS. Linux CI run [38510435235](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38510435235) at `3aaa19c`: infrastructure (Terraform `deploy/aws`, `deploy/bootstrap`), runtime (pytest with PostgreSQL 14, demo, Docker smoke) and `host-bundle` (x86_64 bundle built from the pushed head and provisioned offline, both roles) all succeeded.
