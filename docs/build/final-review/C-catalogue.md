@@ -372,3 +372,12 @@ same-build/different-manifest cases precede their new tests and fix.
 
 Proposal startup/version sentences and G03's signer aspect now map explicitly
 to C-REQ-058; D continues ownership of other service startup/manifest checks.
+
+### C-REQ-059 — execution-side source closure, 2026-10-15 SGT
+
+| ID | Statement | Source / short quote | Obligation | Acceptance | Use cases | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-059 | Before execution service startup or new execution authorization, its verified release and immutable intent must match the run's registered build and manifest. | DECLARED proposal_answers.md Reproducibility/Versions, same startup quote as C-REQ-058; RULE-PAGE trade/version mapping | MUST | Missing/build/hash mismatch refuses before credential access; matching release reaches capability gate; authorization rejects stale intent/manifest. | C-UC-080/089/090 | yes, real PostgreSQL and synthetic release |
+
+This maps the execution-service aspect of the existing declared version gate;
+it does not grant C edits to D's runtime, uploader or system-test runner.
