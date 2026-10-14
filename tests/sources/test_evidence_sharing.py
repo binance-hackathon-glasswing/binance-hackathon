@@ -4,6 +4,8 @@ import io
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -91,6 +93,35 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
         self.addCleanup(reader.close)
         self.assertEqual(writer.db.execute('PRAGMA journal_mode').fetchone()[0], 'wal')
         self.assertEqual(reader.read_state('ISSUER').read()['version'], 1)
+
+    def test_r15_migration_preserves_committed_data_left_in_wal_after_a_crash(self):
+        path = str(Path(self.path).with_name('crashed-writer.sqlite'))
+        source = '''
+import os, sys
+from larp.contracts import Document
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore(sys.argv[1])
+store.commit(Document.from_dict({'schema':'EvidenceStateBatch.v1', 'batch_id':'crash', 'issuer_id':'ISSUER',
+                                 'expected_state_version':0, 'state':{'version':1}, 'jobs':[]}))
+os._exit(0)
+'''
+        subprocess.run([sys.executable, '-c', source, path], cwd=Path(__file__).resolve().parents[2],
+                       capture_output=True, check=True, timeout=15)
+        self.assertTrue(Path(path + '-wal').exists())
+        wal = Path(path + '-wal').read_bytes()
+        with self.assertRaisesRegex(sqlite3.OperationalError, 'migration'):
+            SQLiteEvidenceStore(path, read_only=True)
+        self.assertEqual(Path(path + '-wal').read_bytes(), wal)
+        writer = SQLiteEvidenceStore(path, journal_mode='DELETE')
+        try:
+            self.assertEqual(writer.read_state('ISSUER').read()['version'], 1)
+        finally:
+            writer.close()
+        reader = SQLiteEvidenceStore(path, read_only=True)
+        try:
+            self.assertEqual(reader.read_state('ISSUER').read()['version'], 1)
+        finally:
+            reader.close()
 
     def test_r15_live_runner_wires_the_shared_writer_in_delete_mode(self):
         with tempfile.TemporaryDirectory() as directory:
