@@ -3,6 +3,7 @@ import base64
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import http.client
 import json
 import os
 from pathlib import Path
@@ -178,7 +179,7 @@ class Web3Client:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
                 record['raw_body_omitted'] = 'credential_reflection'
-        except (URLError, TimeoutError, OSError):
+        except (URLError, TimeoutError, OSError, http.client.HTTPException):
             record['outcome'] = 'transport_error'
         except Unavailable as e:
             record['outcome'] = str(e)
