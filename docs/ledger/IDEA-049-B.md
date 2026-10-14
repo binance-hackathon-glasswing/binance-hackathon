@@ -108,6 +108,26 @@ valid stock/gas and equivalent-rational/stress controls pass. Fixes require exac
 decided fraction equality, aware UTC normalization and explicit blocked quote
 collection outcomes. No decided value, threshold or test assertion is relaxed.
 
+Focused retest at d1c7c77:21 passed,1.53s. Full suite at d1c7c77:
+1184 passed,4 skipped,1491 subtests,138.40s. Relative to baseline:+21 tests,
+unchanged skips/subtests. Full system runner follows after the replay additions.
+
+### B-REG-02 — fourteen-day consumer replay criteria
+
+Before first execution: Oct29–Nov11 inclusive, real coordinator, context builder,
+policy, risk, settlement, PostgreSQL reservations and recorded-port replay.
+Synthetic external marks/RFQs/model outage/final chain facts only; no signer.
+Journal explicit UTC boundary observations before intraday shocks. Assert name
+drift trim,3/8/12 loss latches, daily-only reset, closed-market retention, no
+buys under spending block, terminal revert retains inventory and spends gas,
+subsequent flat final ledger before deadline, duplicate final facts idempotent,
+reservations released once and exact replay head/projection equality. Exact
+loss-boundary tests distinguish one unit above from equality and recovery latches.
+Midnight inputs are test INCIDENT facts, not evidence of D's absent production
+hook; replay recomputes policy/planner/settlement, not that missing scheduler.
+Published Class1/2 evidence is separately exercised by existing real-producer
+tests; this replay does not fabricate an evidence producer or economic edge.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
