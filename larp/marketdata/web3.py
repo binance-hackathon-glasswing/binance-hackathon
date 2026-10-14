@@ -105,6 +105,11 @@ class Artifacts:
 
 
 class Web3Client:
+    # The read/build client can never submit a transaction; a submit-only subclass replaces this set
+    # (larp/execution_live/loop.py Web3Broadcaster). Values of `private_params` are stored only as hashes.
+    endpoints = READS
+    private_params = ()
+
     mode = 'live'
 
     def __init__(self, key, secret, *, artifacts, opener=None, min_interval=0.35, timeout=20):
@@ -115,7 +120,7 @@ class Web3Client:
         self.min_interval, self.timeout, self.last = min_interval, timeout, 0
 
     def request(self, method, endpoint, params):
-        if (method, endpoint) not in READS:
+        if (method, endpoint) not in self.endpoints:
             raise Unavailable('endpoint outside read/build allowlist')
         time.sleep(max(0, self.min_interval - (time.monotonic() - self.last)))
         self.last = time.monotonic()
@@ -130,8 +135,10 @@ class Web3Client:
                       data=payload if method == 'POST' else None,
                       headers={'X-OC-APIKEY': self.key, 'X-OC-TIMESTAMP': stamp, 'X-OC-SIGN': sig,
                                'Content-Type': 'application/json'})
+        stored = {k: ('sha256:' + hashlib.sha256(str(v).encode()).hexdigest() if k in self.private_params else v)
+                  for k, v in params.items()}
         record = dict(schema='Web3Observation.v1', source_id='BINANCE_WEB3', endpoint=endpoint,
-                      method=method, params=params, requested_at=stamp)
+                      method=method, params=stored, requested_at=stamp)
         start = time.monotonic()
         try:
             try:

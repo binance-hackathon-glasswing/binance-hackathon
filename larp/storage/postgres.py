@@ -139,6 +139,29 @@ class PostgresStore:
                        (epoch,not offline,run_id))
             return epoch
 
+    def activate(self, run_id, expected_epoch):
+        """Lift a dev/live run's quarantine under a new epoch, after a person reviewed it (IDEA-050).
+
+        The full journal must verify, no round may be open and no execution record unfinished: activation never
+        adopts work that a previous controller may still have in flight. The caller journals RUN_ACTIVATED next."""
+        with self.transaction() as db:
+            run = self._run(db,run_id)
+            if run['epoch'] != expected_epoch:
+                raise Conflict('Stale ownership')
+            if run['mode'] not in ('dev','live'):
+                raise Conflict('Only a dev or live run is activated; offline runs use takeover')
+            if not run['quarantined']:
+                raise Conflict('Run is already active')
+            self._verify(db,run_id,run)
+            if db.execute("SELECT 1 FROM rounds WHERE run_id=%s AND status='OPEN' LIMIT 1",(run_id,)).fetchone():
+                raise Conflict('A round is still open')
+            if db.execute('SELECT 1 FROM execution_records WHERE run_id=%s AND NOT terminal LIMIT 1',
+                          (run_id,)).fetchone():
+                raise Conflict('An execution record is unfinished')
+            epoch = expected_epoch + 1
+            db.execute('UPDATE runs SET epoch=%s,quarantined=false WHERE run_id=%s',(epoch,run_id))
+            return epoch
+
     def quarantine(self, run_id):
         with self.transaction() as db:
             db.execute('UPDATE runs SET quarantined=true,epoch=epoch+1 WHERE run_id=%s',(run_id,))
@@ -190,6 +213,14 @@ class PostgresStore:
             for command in b.get('commands',[]):
                 self._immutable(db,'commands','command_id',b['run_id'],command['command_id'],
                                 doc(command).payload,('epoch','state_version'),(run['epoch'],sequence))
+            for command_id in b.get('reauthorize',[]):
+                # Same bytes, new authority: a still-pending command is re-bound to this event (IDEA-050 R3).
+                row = db.execute('SELECT status FROM commands WHERE run_id=%s AND command_id=%s',
+                                 (b['run_id'],command_id)).fetchone()
+                if not row or row[0] != 'PENDING':
+                    raise Conflict('Only a pending command can be reauthorized')
+                db.execute('UPDATE commands SET epoch=%s,state_version=%s WHERE run_id=%s AND command_id=%s',
+                           (run['epoch'],sequence,b['run_id'],command_id))
             for audit in b.get('audit',[]):
                 self._audit(db,b['run_id'],audit)
             receipt = doc(dict(schema='CommitReceipt.v1',run_id=b['run_id'],event_id=b['event_id'],

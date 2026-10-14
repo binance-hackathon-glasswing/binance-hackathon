@@ -2,23 +2,27 @@
 
     python -m larp.execution_live.main check|run --config /etc/larp/execution.json --manifest /etc/larp/release.json --root R
 
-The service will drive the W04 Executor through `ExecutionService` with the database-backed `RemoteSigner`
-(larp/execution_live/signing.py): it never holds a wallet key, and a configuration that names one is refused. Until the
-round driver lands (IDEA-042 item 10; `larp.runtime.service.build_driver`), `run` verifies the release, its pinned
-configuration and the run binding, then exits 2 NOT_INTEGRATED, which systemd does not restart.
+The service drives the W04 Executor through `ExecutionService` and `ExecutionLoop` (larp/execution_live/loop.py) with
+the database-backed `RemoteSigner` (larp/execution_live/signing.py): it never holds a wallet key, and a configuration
+that names one is refused. `build_execution` composes the live ports (IDEA-050). The `Executor` itself still accepts
+only fake capability bundles (verified router decoder, GAP-29), so `run` stops there with exit 2 NOT_INTEGRATED and
+reason EXECUTOR_CAPABILITY_GATE, which systemd does not restart. Nothing here lifts that gate.
 
-Exit codes as the runtime service: 0 clean stop; 1 failure; 2 not integrated; 4 start refused.
+Exit codes as the runtime service: 0 clean stop; 1 failure; 2 not integrated; 3 run quarantined; 4 start refused.
 """
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
 import re
+import signal
+import time
 
 from larp.contracts import ContractError, Document
 
-EXIT_NOT_INTEGRATED, EXIT_REFUSED = 2, 4
+EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 SCHEMA = 'ExecutionService.v1'
 SERVICE = 'execution'
 DATABASE_USER = 'larp_execution'
@@ -57,8 +61,84 @@ def validate_config(value):
     return value
 
 
-def build_execution(config, store):
-    raise NotIntegrated('Execution needs the round driver (IDEA-042 item 10)')
+BUILD_KEYS = ('market_artifact_root', 'chain_artifact_root', 'rpc_url', 'rpc_source_id', 'router', 'token_decimals', 'max_gas', 'max_gas_price', 'gas_budget', 'strategy_profile_file',
+              'strategy_profile_sha256')
+
+
+def _pinned_json(path, sha256, what):
+    raw = Path(path).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != sha256:
+        raise ContractError(what + ' differs from its pinned hash')
+    return json.loads(raw)
+
+
+def build_execution(config, store, secrets, *, clock_s=None):
+    """The execution loop over live ports (IDEA-050). Raises NotIntegrated at the Executor's capability gate.
+
+    Mapping limits come from the pinned strategy profile (per-trade cap, slippage: #40, C-OPEN-001) and the configured
+    gas limits; quotes request the profile slippage. A missing or inconsistent input is a ContractError (exit 4)."""
+    from larp.execution import Blocked, Executor
+    from larp.execution_live.chain import ChainEvidence, Rpc
+    from larp.execution_live.guards import LiveGuards
+    from larp.execution_live.loop import (ExecutionLoop, FencedRelease, PlanValuation, RoundTerminal,
+                                         RunAuthorization, Web3Broadcaster)
+    from larp.execution_live.service import ExecutionService
+    from larp.execution_live.settlement import ReceiptFacts
+    from larp.execution_live.signing import RemoteSigner
+    from larp.execution_live.store import ExecutionStore
+    from larp.execution_live.venue import LiveVenue, UnverifiedRouter
+    from larp.marketdata.port import MarketPort, TOKENS
+    from larp.marketdata.web3 import Artifacts, Web3Client
+    clock_s = clock_s or (lambda: int(time.time()))
+    missing = [k for k in BUILD_KEYS if config.get(k) in (None, '')]
+    if missing:
+        raise ContractError('Missing execution settings: ' + ','.join(missing))
+    if not _ADDRESS.fullmatch(str(config['router'])):
+        raise ContractError('Invalid router address')
+    decimals = config['token_decimals']
+    if type(decimals) is not dict or set(decimals) != set(TOKENS) or any(
+            type(v) is not int or not 0 <= v <= 30 for v in decimals.values()):
+        raise ContractError('token_decimals must give each bStock its decimals')
+    for key in ('max_gas', 'max_gas_price', 'gas_budget'):
+        if type(config[key]) is not int or config[key] <= 0:
+            raise ContractError('Invalid positive integer setting: ' + key)
+    profile = _pinned_json(config['strategy_profile_file'], config['strategy_profile_sha256'], 'Strategy profile')
+    if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
+        raise ContractError('Execution needs the run\'s LIVE StrategyProfile.v1')
+    key, secret = secrets.get('BINANCE_API_KEY'), secrets.get('BINANCE_SECRET_KEY')
+    if not key or not secret:
+        raise ContractError('Quotes need the Web3 key pair')
+    run_id, wallet = config['run_id'], config['wallet_address']
+    registry = ExecutionStore(store, run_id=run_id, wallet=wallet)
+    epoch, _ = registry.execution_authority()
+    client = Web3Client(key, secret, artifacts=Artifacts(config['market_artifact_root']))
+    chain = ChainEvidence(Rpc(config['rpc_url'], artifacts=Artifacts(config['chain_artifact_root']),
+                              source_id=config['rpc_source_id']))
+    market = MarketPort(client, wallet, quote_limits=profile)
+    guards = LiveGuards(store=registry, market=market, chain=chain,
+                        authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id']))
+    venue = LiveVenue(client, chain, decoder=UnverifiedRouter(),
+                      release=FencedRelease(registry, Web3Broadcaster(
+                          key, secret, wallet=wallet,
+                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast'))))
+    signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
+                          timeout_s=config.get('signer_timeout_seconds', 20))
+    try:
+        executor = Executor(registry, guards, venue, signer, UnverifiedRouter())
+    except Blocked:
+        raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
+    terminal = RoundTerminal(store, run_id=run_id)
+    loop = ExecutionLoop(store=store, registry=registry, service=None, run_id=run_id, wallet=wallet, epoch=epoch)
+    facts = ReceiptFacts(chain, wallet_id=wallet, valuation=PlanValuation(store, registry, run_id=run_id),
+                         registry=registry, epoch=epoch, authority_version=epoch, round_terminal=terminal)
+    mapping = dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
+                   limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
+                               max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
+                               gas_budget=config['gas_budget']))
+    loop.service = ExecutionService(store=store, executor=executor, mapping=mapping, observe=loop.publish,
+                                    wallet_id=wallet, epoch=epoch, authority_version=epoch, settlement=facts,
+                                    round_terminal=terminal)
+    return loop
 
 
 def main(argv=None):
@@ -89,11 +169,24 @@ def main(argv=None):
             run = PostgresStore._run(db, config['run_id'], lock=False)
         if run['mode'] != config['mode'] or str(run['wallet_id']).lower() != config['wallet_address']:
             raise StartRefused('run differs from the execution configuration')
+        if run['quarantined']:
+            print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
+            return EXIT_QUARANTINED
+        from larp.runtime.credentials import runtime_secrets
+        secrets = runtime_secrets(config)
         try:
-            build_execution(config, store)
-        except NotIntegrated:
-            print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
+            loop = build_execution(config, store, secrets)
+        except NotIntegrated as gate:
+            print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', detail=str(gate), signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
+        except (ContractError, ValueError, OSError) as refused:
+            raise StartRefused(type(refused).__name__) from None
+        stopping = []
+        signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
+        while not stopping:
+            loop.once(time.time_ns() // 1_000_000)
+            if not stopping:
+                time.sleep(config['interval_seconds'])
         return 0
     except StartRefused:
         print(json.dumps(dict(started=False, reason='START_REFUSED', signing_enabled=False)))

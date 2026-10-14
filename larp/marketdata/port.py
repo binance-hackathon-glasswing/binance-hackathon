@@ -42,6 +42,14 @@ def integer(v):
     return n
 
 
+def slippage_percent(bps):
+    """An independently accepted integer bp limit, expressed as an API percent."""
+    if type(bps) is not int or not 0 <= bps < 10000:
+        raise Unavailable('invalid independent slippage limit')
+    value = format(Decimal(bps) / 100, 'f')
+    return value.rstrip('0').rstrip('.') if '.' in value else value
+
+
 def observation_boundary(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
@@ -174,9 +182,16 @@ class MarketPort:
         metadata = self.metadata()
         return [self.observation(s, metadata[s]) for s in TOKENS]
 
-    def quote(self, symbol, side, pay_units, decimals, slippage='0.5'):
+    def quote(self, symbol, side, pay_units, decimals, slippage=None):
         if symbol not in TOKENS or side not in ('BUY', 'SELL') or type(pay_units) is not int or pay_units <= 0:
             raise Unavailable('invalid quote request')
+        if self.quote_limits is not None:
+            configured = slippage_percent(self.quote_limits.get('slippage_bps'))
+            if slippage is not None and number(slippage) > number(configured):
+                raise Unavailable('quote cannot widen independent slippage limit')
+            slippage = configured if slippage is None else str(slippage)
+        elif slippage is None:
+            slippage = '0.5'  # Unqualified read-only measurements retain the legacy sampling setting.
         pay, receive = (USDT, TOKENS[symbol]) if side == 'BUY' else (TOKENS[symbol], USDT)
         return self.call('aggregator/quote-and-swap', dict(amount=str(pay_units), fromTokenAddress=pay,
                         toTokenAddress=receive, userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=slippage))
@@ -312,3 +327,98 @@ class MarketPort:
         r = self.client.request('POST', 'balance/token-balances-by-address', dict(address=self.wallet,
             tokenContractAddresses=[dict(binanceChainId='56', tokenContractAddress=t) for t in ('', USDT, *TOKENS.values())]))
         return r
+
+
+class NativeGasQuotePort:
+    """USDT -> native BNB quote input for the existing resource planner.
+
+    An injected verifier must establish route bytes, exact gas and fee units.
+    The port provides no signer, broadcaster, receipt/trace proof or driver wiring.
+    Missing proof yields no execution authority; timestamps are never backdated.
+    """
+    mode = 'live'
+
+    def __init__(self, client, wallet, *, quote_limits, pay_units, receive_decimals,
+                 quote_verifier=None):
+        if not re.fullmatch(r'0x[0-9a-fA-F]{40}', wallet or ''):
+            raise Unavailable('public wallet address required')
+        if type(pay_units) is not int or pay_units <= 0:
+            raise Unavailable('positive gas quote cash amount required')
+        if type(receive_decimals) is not int or not 0 <= receive_decimals <= 18:
+            raise Unavailable('unsupported native accounting scale')
+        self.client, self.wallet = client, wallet.lower()
+        self.limits = dict(quote_limits)
+        self.slippage = slippage_percent(self.limits.get('slippage_bps'))
+        self.pay_units, self.receive_decimals = integer(pay_units), receive_decimals
+        self.verifier = quote_verifier
+
+    @observation_boundary
+    def __call__(self, now_ms):
+        from larp.execution import Payload, SwapEconomics
+        amount = self.pay_units * 10**12
+        integer(amount)
+        request = dict(schema='MarketRequest.v1', symbol='BNB', kind='GAS_TOP_UP', side='BUY',
+                       amount_kind='EXACT_IN', pay_asset='USDT', pay_units=self.pay_units, pay_decimals=6,
+                       receive_decimals=self.receive_decimals)
+        raw = self.client.request('GET', 'aggregator/quote-and-swap', dict(binanceChainId='56',
+            amount=str(amount), fromTokenAddress=USDT, toTokenAddress=NATIVE,
+            userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=self.slippage))
+        q = single(raw); rr, tx = q['routerResult'], q['tx']
+        if (q.get('executionMode') != 'SWAP' or q.get('rfq') is not None
+                or rr.get('vendorName') != 'LiquidMesh'
+                or str(rr['fromToken']['tokenContractAddress']).lower() != USDT
+                or str(rr['toToken']['tokenContractAddress']).lower() != NATIVE
+                or integer(rr['fromToken']['decimal']) != 18
+                or integer(rr['toToken']['decimal']) != 18
+                or integer(rr['fromTokenAmount']) != amount or integer(tx['value']) != 0):
+            raise Unavailable('native quote identity/economics rejected')
+        received, minimum = integer(rr['toTokenAmount']), integer(tx['minReceiveAmount'])
+        if not 0 < minimum <= received or minimum < received * (10000 - self.limits['slippage_bps']) // 10000:
+            raise Unavailable('native quote minimum output exceeds slippage limit')
+        proof = self.verifier(raw, request) if self.verifier is not None else None
+        if proof is None:
+            return []
+        economics, payload = proof.get('economics'), proof.get('payload')
+        if (proof.get('source_hash') != raw['artifact_sha256']
+                or not re.fullmatch('[0-9a-f]{64}', raw['artifact_sha256'])
+                or proof.get('route_valid') is not True or proof.get('exact_gas_verified') is not True
+                or not isinstance(economics, SwapEconomics) or not isinstance(payload, Payload)
+                or type(payload.chain_id) is not int or payload.chain_id != 56
+                or payload.sender != self.wallet or payload.to != str(tx['to']).lower()
+                or payload.data != tx['data'] or payload.value != 0
+                or economics.pay_token != USDT or economics.receive_token != NATIVE
+                or economics.amount != amount or economics.recipient != self.wallet
+                or economics.minimum_output != minimum or economics.native_value != 0):
+            raise Unavailable('native quote proof is not bound to exact route bytes')
+        if (not re.fullmatch(r'0x[0-9a-f]{40}', payload.to)
+                or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})+', payload.data)
+                or any(type(v) is not int or not 0 <= v < 2**256
+                       for v in (payload.value, payload.nonce, economics.native_value, economics.deadline))
+                or any(type(v) is not int or not 0 < v < 2**256 for v in (payload.gas, payload.gas_price))):
+            raise Unavailable('native quote decoded payload fields rejected')
+        available = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
+        if available.tzinfo is None:
+            raise Unavailable('native quote availability must be timezone aware')
+        deadline = integer(economics.deadline)
+        if deadline <= available.timestamp():
+            raise Unavailable('native quote expired at retrieval completion')
+        # Do not silently weaken a minimum by rounding it to an accounting scale.
+        factor = 10 ** (18 - self.receive_decimals)
+        if received % factor or minimum % factor:
+            raise Unavailable('native quote cannot be represented exactly in accounting scale')
+        fee, gas = integer(proof['fee_units']), integer(proof['gas_bnb_units'])
+        if gas <= 0 or (fee and (proof.get('fee_asset') != 'USDT' or proof.get('fee_decimals') != 6)):
+            raise Unavailable('native quote gas/fee denomination proof required')
+        if gas * factor < payload.gas * payload.gas_price:
+            raise Unavailable('native quote gas allowance underreserves decoded payload')
+        impact = int((number(rr['priceImpactPercent']) * 100).to_integral_value(rounding='ROUND_CEILING'))
+        if (impact > self.limits['impact_bps']
+                or self.pay_units + fee > self.limits['per_trade_cap_units']):
+            raise Unavailable('native quote exceeds independent policy limits')
+        return [dict(kind='GAS_TOP_UP', symbol='BNB', side='BUY', receive_asset='BNB',
+            receive_decimals=self.receive_decimals, origin='WEB3_OPEN_API', quote_id=raw['artifact_sha256'],
+            amount_kind='EXACT_IN', pay_asset='USDT', pay_units=self.pay_units, cash_units=self.pay_units,
+            fee_units=fee, gas_bnb_units=gas, token_units=received // factor, min_receive_units=minimum // factor,
+            route_valid=True, slippage_bps=self.limits['slippage_bps'], impact_bps=impact,
+            observed_at=raw['available_at'], available_at=raw['available_at'],
+            expires_at=datetime.fromtimestamp(deadline, timezone.utc).isoformat())]

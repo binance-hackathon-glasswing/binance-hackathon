@@ -11,5 +11,23 @@
   "database_name": "larp",
   "database_ca_file": "/etc/larp/rds-ca.pem",
   "database_ca_sha256": null,
-  "region": "ap-southeast-2"
+  "region": "ap-southeast-2",
+  "runtime_secret_id": "larp-dev/runtime",
+  "market_artifact_root": "/var/lib/larp-execution/market",
+  "chain_artifact_root": "/var/lib/larp-execution/chain",
+  "rpc_url": null,
+  "rpc_source_id": null,
+  "router": null,
+  "token_decimals": {
+    "NVDAB": null,
+    "GOOGLB": null,
+    "SKHYB": null,
+    "TSLAB": null,
+    "MSFTB": null
+  },
+  "max_gas": null,
+  "max_gas_price": null,
+  "gas_budget": null,
+  "strategy_profile_file": "/etc/larp/strategy-profile.json",
+  "strategy_profile_sha256": null
 }

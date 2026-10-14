@@ -87,7 +87,7 @@ Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 
 
 ## Open items not owned by this runbook
 
-- The round driver (Keegan + Isaac).
+- The round driver is built (IDEA-050); its run activation (`service init`/`activate`) is in `docs/build/runbook.md` §1.6. The Executor's capability gate stays with Isaac (next item).
 - The verified swap decoder (Isaac, GAP-29).
 - Signer version binding (Keegan).
 - Journald log shipping (Keegan).
