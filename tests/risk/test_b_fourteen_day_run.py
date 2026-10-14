@@ -67,7 +67,7 @@ class FourteenDayRun(DatabaseCase):
         plans = []
         for day in range(14):
             boundary = start + timedelta(days=day)
-            at = boundary + timedelta(hours=15)
+            at = boundary + (timedelta(hours=14, minutes=40) if day == 13 else timedelta(hours=15))
             if at.weekday() < 5:
                 session += 1
             observed.update(day=day, session=session, now_ms=int(at.timestamp() * 1000))

@@ -133,6 +133,11 @@ profile mode OFFLINE rather than OFFLINE_FIXTURE, so risk output was absent;
 not an application finding. Correct the synthetic mode and explicitly assert
 real policy output before the day4 external-model outage. Loss assertions remain.
 
+Second replay run at3150cdd:1 failed,1 passed,5.85s. Its final observation was
+15:00 UTC, after the candidate14:45 signing stop. The planner correctly refused
+another sale and retained holdings. Move the retry stimulus to14:40 (market open,
+before the cutoff) to exercise recovery; retain flat/gas assertions unchanged.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
