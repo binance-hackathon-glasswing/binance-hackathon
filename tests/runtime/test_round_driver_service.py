@@ -305,7 +305,10 @@ class EndToEnd(ServiceHarness):
         log_data = self.logs()[round_id]
         swap = execution.venue.broadcasts[-1]
         self.assertEqual([o.get('tx_hash') for o in log_data['orders']], [swap])
-        self.assertEqual([m['tx_hash'] for m in log_data['swap_mappings']], [swap])
+        with self.store.transaction() as db:
+            raw = db.execute('SELECT document FROM audit_events WHERE run_id=%s AND round_id=%s',
+                             (RUN, round_id)).fetchone()[0]
+        self.assertEqual([m['tx_hash'] for m in Document(bytes(raw)).read()['swap_mappings']], [swap])
         self.assertNotIn('aborted', log_data['output'])
         uploader = DeliveryWorker(self.store, FakeReceiver(), retry_ms=1)
         while uploader.once(RUN, self.epoch, self.w.clock()):
