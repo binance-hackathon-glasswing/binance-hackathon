@@ -1,7 +1,7 @@
 # IDEA-049: Final pre-deployment review against first-principles requirements
 
 - Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Sections assigned by random draw at Yao Zhu's request: A Keith, B Keegan, C Isaac, D Yao Zhu (D integrates).
-- Status: **planned; PR #21 amendments in progress.** The four-section review is NOT RUN; runner prerequisite regressions are recorded separately below.
+- Status: **planned; PR #21 comments amended, focused regressions PASS.** The four-section review is NOT RUN; runner prerequisite regressions are recorded separately below.
 - Prompts: `docs/build/final-review/` (README, common protocol, four section prompts).
 - Starts after: PR #20 and amended PR #21 are merged into `codex/system-testing-20261012`, with the IDEA-048 driver integrated or an explicitly recorded partial-scope disposition (protocol §0.1).
 - Links: IDEA-043/044 (earlier system testing and review), IDEA-045–047 (hosting), `docs/build/DEPLOYMENT_BUILD.md` (DR-01..DR-22), IDEA-021 (AT01–AT20), `docs/build/AWS_RUNBOOK.md`.
@@ -111,3 +111,25 @@ and before phase-2 implementation changes, so preflight failures cannot steer
 the independent phase-1 catalogue. This is a workflow amendment, not a runtime
 or trading-policy change. No section review, cloud action or issue remediation
 was run. Open inputs remain in protocol §0.1/§2.1 and the prior-issue inventory.
+
+### PR21-V — focused verification (2026-10-14)
+
+At pushed implementation `7498d17`, the unchanged fail-first test file passes:
+**5 tests and 11 subtests passed** on Windows Python 3.12.14 (0.29 s), with
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. This verifies direct section-branch acceptance
+and dirty/unpublished/malformed branch refusal through the runner's actual CLI
+preflight; accepted clean pushed branches still hit the disposable database guard.
+No downstream child suite or database/network operation is executed by this test.
+`git diff --check` passes. The complete amendment diff and all eighteen issue-owner
+rows were inspected. The runtime change is restricted to branch admission in
+`tools/system_test.py`; no trading/decision/signing code or policy value changed.
+
+PR-head Linux CI is to be dispatched/checked separately: GitHub had not attached
+checks to the new pushed heads when queried. Earlier CI at `767b4d1` is not evidence
+for these amendments. Full runtime/PostgreSQL/demo/container, Terraform and host
+bundle results must come from the new run; no local full-suite claim is made.
+
+Remaining before the final review: PR #20/#21 integration (D), reviewed driver
+PR and execution-scope disposition (Keegan + Isaac/team), and original tracker
+#22 record/evidence publication with a unique ID (Keith, reconciliation by D).
+The eighteen runtime findings are review inputs, not fixed by this prompt PR.
