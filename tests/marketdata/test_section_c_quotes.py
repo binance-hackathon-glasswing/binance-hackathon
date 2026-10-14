@@ -126,7 +126,9 @@ def gas_proof(raw, request):
     return dict(source_hash=raw['artifact_sha256'], route_valid=True, exact_gas_verified=True,
         payload=Payload(56, WALLET, ROUTER, 0, 0, 200000, 1, tx['data']),
         economics=SwapEconomics(USDT, NATIVE_BNB, int(rr['fromTokenAmount']), WALLET,
-            int(tx['minReceiveAmount']), 1793282430, 0), fee_units=0, gas_bnb_units=10000)
+        int(tx['minReceiveAmount']), 1793282430, 0), fee_units=0,
+        gas_bnb_units=max(10000, (200000 + 10**(18-request.get('receive_decimals', 6))-1)
+                           // 10**(18-request.get('receive_decimals', 6))))
 
 
 class GasQuoteRequirements(unittest.TestCase):
@@ -177,3 +179,21 @@ class GasQuoteRequirements(unittest.TestCase):
     def test_c_req_015_gas_quote_retains_retrieval_time_even_after_cutoff(self):
         quote = self.port(GasClient())(0)[0]
         self.assertEqual(quote['available_at'], '2026-10-29T14:00:00+00:00')
+
+    def test_c_req_018_native_gas_proof_cannot_underreserve_signed_payload(self):
+        with self.assertRaises(Unavailable):
+            self.port(GasClient(), scale=18,
+                verifier=lambda *a: dict(gas_proof(*a), gas_bnb_units=1))(0)
+
+    def test_c_req_049_native_proof_rejects_invalid_payload_fields(self):
+        for field, value in (('gas', 0), ('gas_price', True), ('nonce', -1), ('to', 'invalid'),
+                             ('data', 'not-calldata')):
+            def invalid(raw, request):
+                value_proof = gas_proof(raw, request)
+                value_proof['payload'] = replace(value_proof['payload'], **{field:value})
+                # The HTTP fixture can echo the same invalid bytes; equality alone is insufficient.
+                if field == 'data':
+                    raw['response']['data'][0]['tx']['data'] = value
+                return value_proof
+            with self.subTest(field=field), self.assertRaises(Unavailable):
+                self.port(GasClient(), verifier=invalid)(0)
