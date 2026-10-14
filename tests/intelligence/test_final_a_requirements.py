@@ -218,13 +218,14 @@ class CredentialCapture(unittest.TestCase):
 class AuditRecovery(RealEvidence):
     def test_a_req_061_hard_deadline_preserves_already_completed_tool_results(self):
         original = self.add(752, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
-        release, calls = threading.Event(), []
+        release, calls, workers = threading.Event(), [], []
         def send(url, headers, body, timeout):
             sent = json.loads(body)
             state = json.loads(sent['messages'][0]['content'])
             if not calls:
                 output = {'action': 'CALL_TOOL', 'tool': state['gaps'][0]['tool'], 'args': state['gaps'][0]['args']}
             else:
+                workers.append(threading.current_thread())
                 release.wait(2)
                 output = FINISH
             calls.append(True)
@@ -235,6 +236,8 @@ class AuditRecovery(RealEvidence):
             result = self.assess(original, model, deadline_ms=200)
         finally:
             release.set()
+            for worker in workers:
+                worker.join(3)  # let late audit capture finish before removing its temporary artifact directory
         self.assertEqual(result['status'], 'UNAVAILABLE')
         self.assertIn('ASSESSMENT_DEADLINE_EXCEEDED', result['reasons'])
         self.assertEqual(result['model_io']['requests_started'], 2)

@@ -56,9 +56,11 @@ class Preflight(unittest.TestCase):
     def test_committed_register_is_refused_until_terms_are_captured(self):
         reasons = live_preflight(self.sources, self.env)
         enabled = sorted(s.source_id for s in self.sources.values() if s.enabled)
-        expected = [(f"TERMS_ARTIFACT_UNAVAILABLE:{s}" if self.sources[s].rights.get("terms_evidence_sha256")
-                     else f"TERMS_EVIDENCE_MISSING:{s}") for s in enabled]
-        self.assertEqual(reasons, expected + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
+        missing = [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled
+                   if not self.sources[s].rights.get("terms_evidence_sha256")]
+        unavailable = [f"TERMS_ARTIFACT_UNAVAILABLE:{s}" for s in enabled
+                       if self.sources[s].rights.get("terms_evidence_sha256")]
+        self.assertEqual(reasons, missing + ["TERMS_EVIDENCE_MISSING:sec-edgar"] + unavailable)
         absent = {k: replace(s, rights=dict(s.rights, terms_evidence_sha256=None)) for k, s in self.sources.items()}
         self.assertEqual(live_preflight(absent, self.env),
                          [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled] + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
@@ -78,7 +80,8 @@ class Preflight(unittest.TestCase):
             env = {k: v for k, v in dict(self.env, **change).items() if v is not None}
             with self.subTest(reason=reason):
                 self.assertIn(reason, live_preflight(ready, env, edgar=edgar_ready(self.artifacts)))
-        one_missing = dict(ready, **{"doj-press": self.sources["doj-press"]})
+        source = ready["doj-press"]
+        one_missing = dict(ready, **{"doj-press": replace(source, rights=dict(source.rights, terms_evidence_sha256=None))})
         self.assertEqual(live_preflight(one_missing, self.env, edgar=edgar_ready(self.artifacts)),
                          ["TERMS_EVIDENCE_MISSING:doj-press"])
 
@@ -140,7 +143,7 @@ class Terms(unittest.TestCase):
         sources = load_register(copy)[0]
         self.assertEqual(sources["sec-press"].rights["terms_evidence_sha256"], "b" * 64)
         self.assertEqual(sources["sec-press"].rights["terms_checked"], "2026-10-12")
-        self.assertIsNone(sources["doj-press"].rights["terms_evidence_sha256"])
+        self.assertEqual(sources["doj-press"].rights, load_register(REGISTER)[0]["doj-press"].rights)
 
 
 class FakeIngestor:

@@ -302,3 +302,9 @@ Prospective **A-T22 / A-REQ-060–061 / A-UC-100**: a hosted assessment complete
 A-T22 fails at pushed `edcba22`: the result correctly reports UNAVAILABLE with two started model calls, but zero retained tools after one tool completed. **A-FND-016 P1**: hard abandonment drops declared tool call/result audit records. Correction shares the completed-call list with the deadline snapshot and copies those calls into the abandoned result. They are audit-only; evidence/claims remain empty, no late output revives authority. Tool count is the number of completed retained calls; any call still executing is not claimed complete. Normal successful traces are unchanged.
 
 The committed-register refusal test now handles real partial capture metadata: captured hashes with no bytes in its synthetic empty root must return ARTIFACT_UNAVAILABLE; uncaptured SEC hashes return EVIDENCE_MISSING. A second all-null fixture preserves every original missing-capture assertion. No refusal is weakened or source declared cleared.
+
+### Amendment 19: completed audit assertions and stable fixture cleanup
+
+At `bb2834f`, the A-T22 audit retention assertions pass, but its released late worker races TemporaryDirectory cleanup. Join that real worker after releasing the external HTTP block before deleting test artifacts; no application assertion changes. Three A source readiness fixture failures assumed the old all-null committed register or obsolete mixed-refusal ordering. Make the single-missing fixture explicitly null, check unchanged failed-capture source's entire original rights record, and preserve the exact all-null refusal test. Actual hash-bearing metadata still requires bytes in the configured root; no guard is bypassed.
+
+Full/focused results from this round are retained externally; application fixes will be retested after pushing these fixture corrections. Outside-A red-team/strategy fixture permission remains unanswered; no outside path has been edited.
