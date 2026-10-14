@@ -4,7 +4,7 @@
 - Branch: `review/final-d-20261014`, cut from `codex/system-testing-20261012` at **`c1b6daf`** (merge of PR #66).
 - Catalogue: [`docs/build/final-review/D-catalogue.md`](../build/final-review/D-catalogue.md).
 - Protocol: [`00-common-protocol.md`](../build/final-review/00-common-protocol.md) and [the D prompt](../build/final-review/D-accountability-operations.prompt.md).
-- Status: phase 1 frozen at `3ab45dc`. Phase 2: trace and pre-registration below.
+- Status: **partial review; deployment blocked.** Phase 1 frozen at `3ab45dc`; phase 2–3 fixes pushed through `e11654d`; open P1 #23 (C's code) and team decisions (§5); integration not started (§9).
 
 ## 0. Preconditions (protocol §0.1), checked 2026-10-14 before section work
 
@@ -218,4 +218,15 @@ Checked 2026-10-15: A has no branch or PR; B's PR #65 is open and green (head `4
 
 ## 10. Final counts and CI
 
-To be filled with the final run of this branch.
+| Run | Commit | Result |
+|---|---|---|
+| Local baseline (§3) | `3ab45dc` | 1229 passed, 7 skipped, 1561 subtests |
+| Local full suite after fixes | `b1450fa` | 1252 passed, 7 skipped, 1 xfailed (#23), 1593 subtests |
+| Linux CI [38593987008](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38593987008) | `bb8fb3d` | all four jobs PASS; pytest 1254 passed, 4 skipped, 1 xfailed, 1593 subtests |
+| Linux CI [38594705007](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38594705007) | `e11654d` (last code change) | all four jobs PASS; pytest **1256 passed, 4 skipped, 1 xfailed, 1593 subtests**; systemd conditions 3/3; Terraform `deploy/aws` 15/15, `deploy/bootstrap` 1/1; host bundle provisioned and uploaded as artifact `larp-bundle-x86_64` |
+| `tools/system_test.py` (full mode, fresh clone of the pushed head, disposable PostgreSQL 14.24, macOS + Linux CI for the demo) | `a56eb25` | **PASS**: system 112 passed, 70 subtests (log sha256 `03b629e0…2729`); full suite 1253 passed, 7 skipped, 1593 subtests (log sha256 `d12932c0…1979`); offline demo PASS on CI 38594705007 at `e11654d` with an identical runtime/config/deploy/migration tree. SystemTestReport.v1 kept outside Git (synthetic data only). |
+| Terraform, local | working tree = `bb8fb3d` | `hashicorp/terraform:1.13.5` (linux/amd64): fmt, init (readonly lock), validate, test: 15/15 and 1/1 |
+
+The seven local skips are the baseline's environmental ones; Linux CI runs the bubblewrap cases and the systemd cases separately.
+
+**Not established offline:** delivery to the real ai-seeds receiver; hosted routes, IAM and secrets; EC2 recover/reboot; RDS failover and the restore drill; cycle durations under real load; the 14-day unattended run; any signed transaction (C's gates stay closed).
