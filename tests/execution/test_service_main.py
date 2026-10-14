@@ -1,11 +1,17 @@
-"""IDEA-047 E01: the execution service entry point holds no key and stops NOT_INTEGRATED until the round driver."""
+"""IDEA-047 E01, IDEA-050 E9: the execution entry point holds no key, refuses an unactivated run and stops at the
+Executor's capability gate."""
 from contextlib import redirect_stdout
+import hashlib
 import io
 import json
 from pathlib import Path
 import tempfile
 
-from larp.execution_live.main import EXIT_NOT_INTEGRATED, EXIT_REFUSED, main
+from unittest.mock import patch
+
+from larp.execution_live.main import EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED, main
+from larp.marketdata.port import TOKENS
+from larp.research.fixtures import synthetic_profile
 from larp.storage.postgres import doc
 from tests.host_support import BUILD, synthetic_release
 from tests.support import DatabaseCase
@@ -36,8 +42,24 @@ class ExecutionCommand(DatabaseCase):
 
     def test_e01_check_then_not_integrated(self):
         self.assertEqual(self.run_main('check'), (0, dict(configuration_valid=True, signing_enabled=False)))
-        code, out = self.run_main('run')
-        self.assertEqual((code, out['reason'], out['signing_enabled']), (EXIT_NOT_INTEGRATED, 'NOT_INTEGRATED', False))
+        code, out = self.run_main('run')  # a new run is quarantined until `service activate` (IDEA-050)
+        self.assertEqual((code, out['reason'], out['signing_enabled']), (EXIT_QUARANTINED, 'QUARANTINED', False))
+        self.store.activate('live-run', self.store.load('live-run').read()['epoch'])
+        profile = json.dumps(dict(synthetic_profile(), mode='LIVE')).encode()
+        (Path(self.tmp.name) / 'profile.json').write_bytes(profile)
+        full = dict(self.config, market_artifact_root=str(Path(self.tmp.name) / 'market'),
+                    chain_artifact_root=str(Path(self.tmp.name) / 'chain'), rpc_url='https://rpc.invalid/',
+                    rpc_source_id='fixture', broadcast_rpc_url='https://submit.invalid/', router='0x' + '2' * 40,
+                    token_decimals={s: 18 for s in TOKENS}, max_gas=500000, max_gas_price=10**10, gas_budget=10**16,
+                    strategy_profile_file=str(Path(self.tmp.name) / 'profile.json'),
+                    strategy_profile_sha256=hashlib.sha256(profile).hexdigest())
+        secrets = dict(BINANCE_API_KEY='synthetic-key', BINANCE_SECRET_KEY='synthetic-secret')
+        with patch('larp.runtime.credentials.runtime_secrets', return_value=secrets):
+            code, out = self.run_main('run', full)
+            self.assertEqual((code, out['reason'], out['detail'], out['signing_enabled']),
+                             (EXIT_NOT_INTEGRATED, 'NOT_INTEGRATED', 'EXECUTOR_CAPABILITY_GATE', False))
+            code, out = self.run_main('run')  # an active run without the build settings never starts
+            self.assertEqual((code, out['reason']), (EXIT_REFUSED, 'START_REFUSED'))
 
     def test_e01_refusals(self):
         cases = {

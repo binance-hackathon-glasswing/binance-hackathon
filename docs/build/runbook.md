@@ -24,14 +24,22 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
-5. **Round driver (shadow only; [IDEA-048](../ledger/IDEA-048.md)):** the `driver` block of `/etc/larp/runtime.json` names:
+5. **Round driver ([IDEA-048](../ledger/IDEA-048.md), completed in [IDEA-050](../ledger/IDEA-050.md)):** the `driver` block of `/etc/larp/runtime.json` (example: `config/runtime/runtime.example.json`) names:
    - the strategy profile and session calendar files, each with its SHA-256;
-   - the evidence root (`evidence.sqlite` and `artifacts/`, written by the separate ingestion process `python -m larp.sources.live run`);
-   - the market artifact directory, the intelligence configuration mode and the cadence;
+   - the evidence root (`evidence.sqlite` and `artifacts/`, written by the separate ingestion process `python -m larp.sources.live run`; the runtime opens it read-only);
+   - the market artifact directory (under `/var/lib/larp-runtime`), the intelligence configuration mode and the cadence;
    - `issuers` (issuer ID → token and the market's `underlying_id`);
-   - `signing: false` and `assessor: "deterministic"`.
+   - `execution`: `"shadow"` (every planned order ends `NOT_SUBMITTED`, reason `SHADOW_NO_SIGNING`) or `"service"` (committed commands go to the execution service), with `expiry_grace_ms` for service;
+   - optionally `day_roll_window_ms` (daily risk anchor), `max_quote_rounds` and `max_quote_requests` (quote follow-up);
+   - `assessor: "deterministic"`; a hosted model assessor exits 2 (not integrated).
 
-   Each cycle runs at most one round: a scheduled review job first, then an ingested filing, otherwise one cadence round per slot. Every planned order ends `NOT_SUBMITTED` with reason `SHADOW_NO_SIGNING`, so nothing is signed and the round log lists it without a `tx_hash`. `signing: true` or a hosted model assessor exits 2 (not integrated); a missing or mismatched file, hash or issuer exits 4. systemd restarts neither. Round logs are uploaded by the uploader process, not by the runtime.
+   Each cycle: journal the execution service's observations and end commands that expired unclaimed (`COMMAND_EXPIRED_UNCLAIMED`); close finished rounds; **commit nothing while a command still waits for the execution service to claim it**; roll the daily anchor in the first `day_roll_window_ms` after UTC midnight (no roll means no new risk that day); then run at most one round (a scheduled review job first, then an ingested filing, otherwise one cadence round per slot), fetching the market before the round so its decision time follows the data. A round that asked for quotes gets at most `max_quote_rounds` follow-up rounds, only when an executable quote comes back. A missing or mismatched file, hash, issuer or setting exits 4. systemd restarts neither 2 nor 4. Round logs are uploaded by the uploader process, not by the runtime.
+
+6. **Run activation (operator, before the scored run and after any restore; IDEA-050):**
+   - `python -m larp.runtime.service init --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current` creates the configured `dev`/`live` run, quarantined, from `initial_state_file` (a `PortfolioState.v1` pinned by `initial_state_sha256`: the wallet's attested starting balances). It refuses an existing run or a wallet that already has one.
+   - `python -m larp.runtime.service activate … --reviewer NAME --review-ref REF` is the reviewed step that authorizes the run: it verifies the full journal and the release, refuses if a round is open or an execution record is unfinished, lifts the quarantine under a new epoch, registers the running build if none is registered (another registered build is refused), and journals `RUN_ACTIVATED` with the reviewer and reference. Start `larp-runtime` and `larp-execution` only after it.
+
+7. **Execution service (`larp-execution`, IDEA-050):** each cycle it claims current commands, advances every execution and writes its facts to `execution_observations`; the runtime journals them. Its guard facts come from the journal at every step, so a HALT stops the next signature of an execution already under way, while reconciliation of a possible send continues. Today `run` exits 2 `NOT_INTEGRATED` with reason `EXECUTOR_CAPABILITY_GATE`: the W04 Executor accepts only fake capability bundles until the verified router decoder exists (GAP-29, Isaac). The broadcast path is `FencedRelease`: it re-checks the durable possible-send record before submitting through a submit-only RPC client.
 
 ## 2. Automatic restart (C5) — **host** drill at Gate A
 

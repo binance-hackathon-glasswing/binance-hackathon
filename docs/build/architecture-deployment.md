@@ -40,7 +40,7 @@ decision in `AWS_RUNBOOK.md` step 5.
 | Host | Unit (user) | Entry point | Config (pinned in the release manifest) |
 |---|---|---|---|
 | primary | `larp-runtime` | `larp.runtime.service` | `/etc/larp/runtime.json` |
-| primary | `larp-execution` | `larp.execution_live.main` (stops `NOT_INTEGRATED` until the round driver) | `/etc/larp/execution.json` |
+| primary | `larp-execution` | `larp.execution_live.main` (composes the live ports; stops `NOT_INTEGRATED` at the Executor's capability gate until the verified decoder, GAP-29) | `/etc/larp/execution.json` |
 | primary | `larp-uploader` | `larp.audit.service` (reads only `AI_SEEDS_SECRET` from `larp/uploader`) | `/etc/larp/uploader.json` |
 | primary | `larp-evidence` | `larp.sources.live run --release-manifest …` | `/etc/larp/evidence.env` (non-secret) |
 | primary | `larp-archive` (timer) | `larp.runtime.operations` | `/etc/larp/operations.json` |
