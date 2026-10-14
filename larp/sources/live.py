@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 import argparse
+import http.client
 import json
 import os
 import re
@@ -142,7 +143,7 @@ def capture_terms(sources: dict, fetch, artifacts, clock_ms, *, user_agents: dic
                 break
             try:
                 status, headers, body = fetch(url, {"User-Agent": agent}, 30)
-            except OSError as exc:
+            except (OSError, http.client.HTTPException) as exc:
                 row = {"status": "FAILED", "error": type(exc).__name__}
                 break
             headers = {k.lower(): v for k, v in (headers or {}).items()}
