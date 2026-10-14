@@ -97,6 +97,17 @@ review record/ID collision remains a D/Keith input; findings are not authority.
 Section completion remains blocked while these owned/cross-section dependencies
 or unaccepted P2 decisions remain open; passing baseline is not review acceptance.
 
+### B-FIX-01 — fail-first evidence
+
+Tests and criteria pushed at fc1334e before execution. Focused run at that head:
+18 failed,3 passed,2.29s (regressions-red.log). B-FND-001 P1 reproduced for four
+threshold mutations; lowering gross alone already fails the existing top-up
+consistency guard. B-FND-002 P2 reproduced for offset dates and naive acceptance.
+B-FND-003 P2 reproduced for malformed/ambiguous stock and gas collections;
+valid stock/gas and equivalent-rational/stress controls pass. Fixes require exact
+decided fraction equality, aware UTC normalization and explicit blocked quote
+collection outcomes. No decided value, threshold or test assertion is relaxed.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.

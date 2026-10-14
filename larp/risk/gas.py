@@ -35,8 +35,16 @@ def plan_top_up(snapshot, p, ledger, result):
     request = {"schema": "MarketRequest.v1", "symbol": "BNB", "kind": "GAS_TOP_UP",
                "side": "BUY", "amount_kind": "EXACT_IN", "pay_asset": "USDT",
                "pay_units": pay, "pay_decimals": 6, "mandatory": False}
-    quote = next((q for q in c.get("gas_quotes", []) if q.get("kind") == "GAS_TOP_UP"
-                  and q.get("symbol") == "BNB" and q.get("pay_units") == pay), None)
+    quotes = c.get("gas_quotes", [])
+    if type(quotes) is not list or any(type(q) is not dict for q in quotes):
+        result["rejections"].append({"symbol": "BNB", "reason": "GAS_TOP_UP_QUOTE_COLLECTION_INVALID"})
+        return True
+    matches = [q for q in quotes if q.get("kind") == "GAS_TOP_UP"
+               and q.get("symbol") == "BNB" and q.get("pay_units") == pay]
+    if len(matches) > 1:
+        result["rejections"].append({"symbol": "BNB", "reason": "GAS_TOP_UP_QUOTE_COLLECTION_AMBIGUOUS"})
+        return True
+    quote = matches[0] if matches else None
     if quote is None:
         result["quote_requests"].append(request)
         return True
