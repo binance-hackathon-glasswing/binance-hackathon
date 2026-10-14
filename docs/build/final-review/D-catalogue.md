@@ -525,3 +525,37 @@ Code read at base `c1b6daf`. Tests named `path::test`; "TF" = `deploy/aws/tests/
 | 136 | `preflight.verify_release` | `test_service_configs.py` | COVERED | — |
 | 137 | `live.check_live_start` | `test_w1_each_refusal` | COVERED | — |
 | 138 | `coordinator` audit fallback, `protocol.chunks` | `test_l6_*`, `test_oversize_*` | COVERED | — |
+
+## 9. Amendments (dated; frozen rows above are unchanged)
+
+**2026-10-14/15, phase 2 (reason: assumptions found in the code or introduced by fixes).**
+
+| ID | Assumption and where it is relied on | Status | Evidence | How to validate | If wrong |
+|---|---|---|---|---|---|
+| D-ASM-031 | A healthy runtime cycle (guard, market fetch, assessment, quote follow-ups, ingestion; full journal verification after a restart) finishes well within `cycle_timeout_seconds` = 600 s (example config; D-FND-004). | UNVALIDATED | No hosted cycle measured. | Log cycle durations in the hosted shadow run (Gate A); full verification time at the projected journal size. | A slow but healthy cycle is killed and restarted in a loop (D-DN-06). |
+| D-ASM-032 | One incident backup per hour bounds archive and database growth in a crash loop, and an ACKed archive object is a sufficient copy once its database payload is released (D-FND-021). | PARTIAL | Rate limit and release tested (`test_d_req_089_*`); S3 Object Lock COMPLIANCE keeps the object (D-ASM-013). | Restore drill from an archived backup (IDEA-036 #5) at Gate B. | Database fills, or a released payload is needed after a lost archive object. |
+| D-ASM-033 | The receiver accepts a resend of the same bytes after a 401/403/408/409 (only payload refusals are final; D-FND-001). | PARTIAL | PROTOCOL §5 client actions ("Check your clock", "Register with the organizers"); de-duplication by event ID + chunk index (§4). | Gate A shadow round (R-01). | A 4xx retried forever with backoff; visible in `OverdueLogs`. |
+
+**Post-fix trace (verdict changes only; code at `e11654d`).**
+
+| Req | New verdict | Tests |
+|---|---|---|
+| 001, 003 | COVERED | `tests/runtime/test_final_review_d.py::PendingBroadcast::test_d_req_003_*` |
+| 014, 075 (delivery HALT) | COVERED | `tests/audit/test_final_review_d.py::*` |
+| 018 | COVERED | `test_d_req_018_*` |
+| 026 | COVERED (continuous) | Every broadcast swap is logged at disposition and its lateness is guarded (`test_d_req_003_*`, `test_d_req_018_*`); the daily chain-side check stays with B's #36 (D-REQ-039). |
+| 032 (rejection path) | COVERED | `test_d_req_032_*` |
+| 035 | COVERED | `test_d_req_035_*`, `test_d_req_089_*` |
+| 036, 085 | COVERED | `test_d_req_085_*` |
+| 055 | COVERED (repo side) | `test_d_req_055_*`; CI artifact on run 38593987008 |
+| 059 | COVERED | `test_d_req_059_*` |
+| 062 | COVERED | `CredentialScan::*` (CI pytest on every push/PR) |
+| 070 | COVERED | `test_d_req_070_*` |
+| 076 | COVERED | `test_d_req_076_*` |
+| 089 | WEAK | Growth measured only in tests; host-disk alarm still missing (R-09, R-10). |
+| 103, 105, 111, 135 | COVERED | `HostingDefinitions::*`; TF `host_isolation`, `budget_alerts_with_recipient` |
+| 023 | CONTRADICTED (open) | `SignedBytesInBackups` (xfail; C) |
+| 025, 039, 108, 110 | unchanged | DECISION-NEEDED / owned by B / NOT-OFFLINE |
+| 075 (clock HALT) | CONTRADICTED (decision) | D-DN-10 |
+
+**Final adversarial pass (2026-10-15).** Re-read `source_page.md`, Guide pp. 2–3/12–18, `PROTOCOL.md`, `logging.md`, the SDK README, the proposal's Reproducibility and Team capability sections, IDEA-035 §1–§4/§7–§10.1, IDEA-036, IDEA-046 B1–B4 and the DR list, asking only which requirement or use case is missing. Found and added: D-ASM-031..033 above; D-FND-021 (a regression risk in this review's own fix, now fixed). No new requirement row was needed: the missing items mapped to existing rows (D-REQ-089, 035, 052). A second complete pass after the integration merge is still owed (protocol §4.5) because A's and C's final changes are not on this tree.

@@ -96,18 +96,126 @@ The deliverable test for #23 (`test_d_req_023_…`) is committed with `unittest.
 
 Every round of fixes is followed by the full suite, `tools/system_test.py` on this pushed branch, and Linux CI (Terraform and host-bundle jobs included).
 
-## 5. DECISION-NEEDED
+### 4.3 Findings: fixes and retests
 
-Candidates from phase 1 (to be confirmed in phase 2): D-CON-03 (standby vs two hosts), D-CON-04 (rehearsal length), D-CON-09 (latched HALTs vs autonomous recovery).
+Commits (each pushed before it ran): criteria `c609dc5`; failing tests `b5b0f23`; fixes `bb8fb3d`; D-FND-020 test `6a15214`, fix `b1450fa`; D-FND-021 test `620a83e`, fix `e11654d`. Retest counts are in §10.
+
+| ID | Sev | Status | Evidence (red before fix) | Fix | Retest |
+|---|---|---|---|---|---|
+| D-FND-001 | P0 | **Fixed** | `tests/audit/test_final_review_d.py::test_d_req_014_*` red at `b5b0f23` (chunk PERMANENT after 401) | `bb8fb3d` `larp/audit/delivery.py`: only 400/413/422 are permanent; every other refusal keeps the capped backoff | green; `test_delivery.py::test_permanent_and_transient_errors_remain_visible` now expects 401 PENDING (that line asserted the defect; 400/413 stay PERMANENT) |
+| D-FND-002 | P0 | **Fixed** | `test_d_req_003_*` (0 logs while the swap was unconfirmed), `test_d_req_018_*` (no HALT) red at `b5b0f23` | `bb8fb3d`: `Coordinator.disposed/log_round`, `ServiceExecution.log_disposed`; `close` of a logged round writes no second log; `recover` closes logged rounds once final; replay of `ROUND_LOGGED` and log-less `ROUND_CLOSED`; `unlogged_rounds` in the guard and `OverdueLogs` | green; E1–E10, settlement, live replay unchanged and green |
+| D-FND-003 | P1 | **Fixed** | `test_d_req_070_*` red at `b5b0f23` (exit 4) | `bb8fb3d` `larp/runtime/credentials.py`: `DEFINITE_SECRET_ERRORS` refuse; anything else raises `SecretsUnavailable` → exit 1 → restart | green; `test_credentials.py` fake now raises a definite `AccessDeniedException` (an unclassified error is now restartable by design, covered by the new test) |
+| D-FND-004 | P1 | **Fixed** | `test_d_req_076_*` red at `b5b0f23` | `bb8fb3d` new `larp/runtime/watchdog.py`; `Service(cycle_timeout_s=…)`; `cycle_timeout_seconds` required for dev/live; example 600 s (D-ASM-031) | green |
+| D-FND-005 | P1 | **Open (C)** | `test_d_req_023_*` red; committed as `expectedFailure` | Owner C: keep `raw_hex` only in `execution_signatures` (§7) | xfail |
+| D-FND-008 | P1 | **Fixed** | `test_d_req_035_*` red at `b5b0f23` | `bb8fb3d` `Maintenance.prepare` + `migrations/010_incident_backups.sql` (`covers_sequence`) | green |
+| D-FND-009 | P2 | **Fixed** | `test_d_req_085_*` red at `b5b0f23` | `bb8fb3d` `Maintenance.health`: `missed` slots listed; blocked only until a newer slot of the kind is ACKed (amendment A1) | green; existing exhaustion test unchanged and green |
+| D-FND-010 | P1 | **Fixed** | `test_d_req_059_*` red at `b5b0f23` | `bb8fb3d` `register.load_register` reports `draft_deviations`; `activate_run` refuses a `live` run with OPEN/DRAFT rows | green. **Consequence:** the final activation is blocked until the team makes every deviation row FINAL (D-DN-01..03). |
+| D-FND-011 | P1 | **Fixed (repo side)** | `test_d_req_055_*` red at `b5b0f23` | `bb8fb3d`: gzip header without time or name; CI `push` on `main`, `codex/system-testing-*`, `review/final-*`; bundle + `.sha256` uploaded (`actions/upload-artifact` pinned `ea165f8…`, v4.6.2, 90 days) | green; CI run 38593987008 `host-bundle` uploaded the artifact. Remaining procedure items under #62 (manifest built in CI, runbook text). |
+| D-FND-013 | P1 | **Fixed** | — (the scan is the test) | `b5b0f23` `tests/runtime/test_final_review_d.py::CredentialScan` runs in the CI pytest job on every push/PR | green: no credential file or populated secret tracked |
+| D-FND-014 | P2 | **Open (decision)** | — | D-DN-07 | — |
+| D-FND-015 | P2 | **Open** | — | Host-disk metric/alarm not built; growth estimate in §6 R-09 | — |
+| D-FND-016 | P2 | **Fixed** | `test_d_req_103_*` red at `b5b0f23` | `bb8fb3d` `aws_budgets_budget.credit` (2026-10-01 → 2027-04-12, $100, ACTUAL 50/75/90 + FORECASTED 100) | green; TF `budget_alerts_with_recipient` asserts it |
+| D-FND-017 | P1 | **Fixed** | `test_d_req_105_*` red at `b5b0f23` | `bb8fb3d` `aws_cloudwatch_metric_alarm.reboot` per host | green; TF `host_isolation` asserts it |
+| D-FND-018 | P2 | **Fixed** | `test_d_req_135_*` red | `bb8fb3d` `IPAddressDeny=169.254.169.254/32` in `larp-evidence.service` | green. The unused `evidence` secret in `hosts.tf` stays (Terraform change for Keegan/team; harmless). |
+| D-FND-019 | P3 | **Fixed** | `test_d_req_111_*` red | `bb8fb3d` `After=… time-sync.target` | green |
+| D-FND-020 | P2 | **Fixed** | `test_d_req_032_*` red at `6a15214` | `b1450fa` `record_rejection(…, updates)`; `PLAN_REJECTED` carries `updates`; replay re-applies them | green |
+| D-FND-021 | P1 | **Fixed** | `test_d_req_089_*` red at `620a83e` (30 backups in an hour) | `e11654d` one incident backup per hour; ACKed payloads released | green |
+
+Test changes beyond new tests, disclosed: two existing assertions encoded behaviour this review found contradicted (`test_delivery.py` e401, `test_credentials.py` fake error), changed with comments, never weakened; in my own new test file the CI-trigger regex now tolerates a comment line and the planted private-key fixture is split so the scanner does not flag its own source. Terraform: `fmt`, `init -backend=false -lockfile=readonly`, `validate`, `test` run locally in `hashicorp/terraform:1.13.5` (linux/amd64, copy of the tracked files, no credentials): `deploy/aws` 15/15, `deploy/bootstrap` 1/1.
+
+### 4.4 Prior issues reconciled on this tree (protocol §2.1; trackers #22 and #42 re-fetched 2026-10-14)
+
+Mapped severity per protocol §3. "Resolved here" means verified on `review/final-d-20261014`; closing the GitHub issue is the team's step after merge.
+
+| Issue | Primary | Mapped sev | Disposition on this tree |
+|---|---|---|---|
+| #23 R01 signed bytes in backups | D (code in C) | P1 | **Open.** D-FND-005; failing test in tree (xfail). Needs C's state change (§7). |
+| #24 R02 market after cutoff | C | P1 | Runtime side verified: `test_e7_the_decision_time_is_never_before_the_market_observations` (PR #66). Producer side with C. |
+| #25 R03 issuer IDs | A | P1 | Not D. Open with A. |
+| #26 R04 stranded command | D | P1 | **Resolved here** by PR #66: `ServiceExecution.reauthorize` (restart moved the version), `expire` (HALT-refused or unclaimed commands end NOT_SUBMITTED and release reservations); tests `test_r3_*`, `test_e4_*` green on real PostgreSQL. |
+| #27 R05 swap deadline | C | P1 | Not D. Open with C. |
+| #28 R06 pending broadcast unlogged | D | **P0** | **Resolved here** (D-FND-002). |
+| #29 R07 audit outage | D | P1 | **Resolved here**: transient part by IDEA-047 R1; 4xx by D-FND-001; archive side by D-FND-009. Old `EXHAUSTED` audit rows: no hosted run exists yet, so none to migrate. |
+| #30 R08 gas top-up path | C | P1 | D side (round kind, BNB order, mapping) covered by `test_l3_l4_gas_topup_round`; native receipts refused (C-OPEN-005). Open with C. |
+| #31 R09 daily anchor | B | P1 | D side (journaled `DAY_ROLLED`, replay) verified by `test_e8_*`, `test_r2_*`. Policy with B. |
+| #32 R10 deployment routes | D | P1 | Two-host layout: execution and evidence on `primary` (HTTPS egress when enabled), signer through the database; TF `internet_reaches_primary_only`. **Open as a hosted check** (Gate A, AWS_RUNBOOK): reach Web3/RPC/SEC/ai-seeds from `primary`. |
+| #33 R11 blocked application | D (+C) | P1 | Driver integrated (PR #66). **Open blocking dependency:** C's capability gates (fake-only Executor, GAP-29 decoder, C-OPEN-005), live profile/calendar/issuers, terms hashes, hosted assessor (DR-11). |
+| #34 R12 HALT vs mandatory planning | B | P1 | Team decision (D-DN-09). D runtime acceptance: `test_e5_*` show current semantics (HALT stops every signature, reconciliation continues). |
+| #35 R13 hang supervision | D | **P1** | **Resolved here** (D-FND-004) + heartbeat alarm (IDEA-047 R5). |
+| #36 R14 balance reconciliation | B | P1 | Not built (D-REQ-039 MISSING). Open with B; D provides scheduling once it exists. |
+| #37–#39 | B/A | P2 | Not D. |
+| #40 R18 slippage | C | P1 | Fixed by PR #41 (C). |
+| #43 WR01 secrets at boot | D | P1 | **Resolved here** (D-FND-003); uploader side already restartable (IDEA-047 R14). |
+| #44–#48, #53–#58 | A/B/C | — | Not D. |
+| #49 WR07 release integrity | D | P1 | **Resolved here, repo side** (D-FND-011). Remaining: manifest produced in CI and only verified on hosts (#62 item 3, runbook procedure). |
+| #50 WR08 4xx permanent | D | **P0** | **Resolved here** (D-FND-001). |
+| #51 WR09 rejected plan drops evidence | D | P2 | **Resolved here** (D-FND-020). |
+| #52 WR10 HALT and in-flight signing | C/D | P2 | PR #66 `RunAuthorization` reads HALT; `test_e5_a_halt_after_the_approval_stops_the_swap_signature`. Final semantics with #34 (D-DN-09). |
+| #59 WR17 runtime unit paths | D | P2 | **Resolved** by PR #66 (`StateDirectory=larp-runtime`, `config/runtime/runtime.example.json`, `test_e9_*`). |
+| #60 WR18 memory / instance check | D | P1 / P2 | Instance-status reboot **resolved here** (D-FND-017). Memory limits vs `t3.small`: D-DN-08. |
+| #61 WR19 IMDS from evidence | D | P2 | **Resolved here** (D-FND-018). |
+| #62 WR20 runbooks vs code | D | P2 | Shared-doc edits at integration (§8). |
+| #63 WR21 budget | D | P2 | **Resolved here** (D-FND-016). |
+| #64 WR22 item 1 archive retries | D | P3 | **Resolved here** (D-FND-009). Items 2–4: C/B/A. |
+
+**Review-record collision:** tracker #22 still names the trading review "IDEA-046 / GAP-68"; `docs/ledger/IDEA-046.md` stays the hosting record. No published original record under a new ID was found on the integration, B or C branches (checked 2026-10-15). Input gap, owner Keith, before full completion.
+
+## 5. DECISION-NEEDED (team)
+
+| ID | Question | Options | Recommendation |
+|---|---|---|---|
+| D-DN-01 | Standby (D-CON-03): declared "one primary runtime plus a fenced cold standby"; IDEA-046 B1 built two hosts and no standby; DEV-18 is OPEN. | (a) Decide DEV-18 as a deviation: no standby; recovery = supervisor restart + EC2 recover/reboot + RDS; record reason (budget, B1) and evidence. (b) Build a fenced cold standby (third host, cost). | (a), with the RTO/RPO in §6 stated in the register. Final activation is refused until DEV-18 is decided (D-FND-010). |
+| D-DN-02 | Rehearsal (D-CON-04): declared 5+ days incl. a weekend at minimum size, signer on; signing is still gated (C) and Gate B (Oct 20) is at risk. | (a) Keep: signed rehearsal Oct 21–26 covering Oct 24–25. (b) Shadow rehearsal + shorter signed window, recorded as a deviation. | Decide by Oct 19; if C's gates are not lifted by Oct 20, take (b) and record it the same day (GAP-04). |
+| D-DN-03 | Every DEV row is DRAFT; DEV-19 (assessor) and DEV-20 (event planner) are OPEN. | Finalize each row by Oct 26. | Required: the live activation now refuses otherwise. |
+| D-DN-04 | Delivery bound before the 02:00 UTC deadline (D-REQ-025): today signing continues while round logs are undelivered until the deadline passes. | (a) Add a guard HALT when the oldest unacknowledged log is older than B (e.g. 2 h). (b) Accept the risk. | (a) with B = 2 h: it limits how many fills can become "fill without log" during a receiver outage. Needs B's view on HALT semantics (#34). |
+| D-DN-05 | Routes for migrations/roles on RDS and for provisioning the signer (D-REQ-108): no host can read the RDS admin secret; the signer has no internet. | (a) One-off development SSM session on `primary` to run migrations with the admin secret, before Gate A; signer bundle from the S3 gateway endpoint (artifact bucket) with the key copied over SSM. (b) Temporary bastion. | (a); never during the scored run; record each step in the AWS runbook. |
+| D-DN-06 | Watchdog timeout (`cycle_timeout_seconds`, example 600 s). | Value per measured cycle length. | Keep 600 s unless rehearsal shows cycles above 300 s (D-ASM-031). |
+| D-DN-07 | Crash loop on a deterministic error (D-FND-014): restarts every 10 s forever, one RESTART incident each. | (a) Accept (the agent fails closed; incidents are rate-limited for backups). (b) Escalate to a HALT after N restarts per hour. | (a) for v1.0 unless rehearsal shows a loop; incident volume is bounded by D-FND-021. |
+| D-DN-08 | Memory (#60): unit `MemoryMax` sum 3 GiB on a 2 GiB `t3.small`. | (a) `t3.medium` (cost vs credit). (b) Tighter limits + `MemoryHigh` + swap. | Measure RSS in the hosted shadow run (Gate A), then choose; instance-status reboot now covers an OOM hang. |
+| D-DN-09 | HALT semantics (#34, #52; B owns): HALT now blocks every signature including mandatory sells; reconciliation continues. | B's options. | B decides; D's guard and tests follow. |
+| D-DN-10 | Clock HALT (D-CON-09) is latched for the run: one backward clock step stops trading until the end. | (a) Keep latched. (b) Autonomous clear after the clock is monotonic and NTP-synchronised for N minutes; integrity quarantine stays latched. | (b) with N = 30 min, because F-114 forbids a person clearing it; needs B's agreement with D-DN-09. |
+| D-DN-11 | Restore during the scored run: a restored run is quarantined and needs `activate` by a person (F-114 forbids it). | (a) Accept: losing the database ends trading for the run (single-AZ RDS, 1-day PITR, daily + incident backups). (b) Pre-registered automatic re-activation after anchor-verified restore. | (a), stated as a deployment risk; (b) is too much new code after the cut line. |
 
 ## 6. Deployment risks
 
-To be filled.
+| ID | Risk | Owner | Validation step | Deadline | Blocking? |
+|---|---|---|---|---|---|
+| R-01 | Hosted round logs never tested against the real receiver (401/413 behaviour, clock, address registration). | Keegan + Yao Zhu | Gate A: one dev-wallet shadow round, committed code, ACK stored | Gate A | yes (Gate A) |
+| R-02 | Final wallet's `AI_SEEDS_SECRET` (Q-35/D-ASM-018). | Team | Confirm with organisers' Telegram contact; uploader `check` with the new secret | Oct 26 | yes (Gate C) |
+| R-03 | AWS credit exhaustion closes the account (D-ASM-008/009). | Team | Credit budget alerts (D-FND-016) applied; spend projection at Gates B/C | Gate B | yes |
+| R-04 | EC2 recover/reboot behaviour and service restart after it (D-ASM-010/011). | Keegan + Isaac | Host drill: stop the runtime, reboot `primary`, check RESTART incident and resumed delivery | Gate B | no (drill) |
+| R-05 | Single-AZ RDS failure or maintenance; 1-day PITR; restore needs a person (D-DN-11). | Team | Restore drill into an empty DB with anchors (IDEA-036 #5) | Gate B | no (accepted risk if D-DN-11 = a) |
+| R-06 | Signer journald and primary journald are not shipped; collected by EBS snapshot at teardown (AWS_RUNBOOK "Journald log shipping"). | Keegan | Snapshot procedure in teardown checklist; test once | Before teardown | no |
+| R-07 | Hosted network routes (#32): Web3, RPC, SEC, ai-seeds from `primary`; signer via DB only. | Keegan + Isaac | Gate A read-only reachability check | Gate A | yes |
+| R-08 | Clock: no in-process absolute drift check; relies on chrony/Amazon Time Sync (D-REQ-111). | Keegan (A/B for G-05) | `chronyc tracking` on both hosts at Gate A; alarm on drift | Gate A | no |
+| R-09 | Database growth over 18 days (D-FND-015): journal + model I/O + backups. ACKed backups no longer stay in the DB (D-FND-021); measured bytes/round needed. | Keegan | Measure bytes per round in the hosted shadow run; extrapolate × 18 days vs 20→30 GiB | Gate B | no |
+| R-10 | Host disk (journald, evidence artifacts) has no alarm (D-FND-015). | Keegan | Add a disk metric or size journald limits | Gate B | no |
+| R-11 | Week-one checkpoint commit and progress note (F-13) not yet recorded. | Team | Commit + note | Oct 19 | yes (deliverable) |
+| R-12 | On-call rota (GAP-37): during the run people observe only (F-114). | Team | Dated rota in the activation pack | Oct 26 | no |
+| R-13 | Restart and coded HALT are team positions (Q-40, C5), not organiser answers (D-ASM-016). | Team | Ask with the open questions (wording in D-CON-01) | Before Oct 27 | no |
+| R-14 | Bundle reproducibility depends on the live RDS CA download and on PyPI serving the same wheels (D-ASM-021). | Keegan | Rebuild the CI bundle locally from the activation commit and compare hashes | Gate C | no |
 
 ## 7. For other sections
 
-To be filled.
+| To | Item | Evidence |
+|---|---|---|
+| C (Isaac) | **#23 / D-FND-005 (P1):** keep signed bytes only in `execution_signatures`; remove `raw_hex` from `execution_records.state` (`larp/execution.py` Attempt, `execution_live/store.py`), broadcasting by registry lookup. Then remove `expectedFailure` from `tests/runtime/test_final_review_d.py::SignedBytesInBackups`. | Failing test in tree; C's record assigns #23 to D but the code is C's. |
+| C (Isaac) | Signed rehearsal depends on lifting the capability gates (#33): fake-only `Executor`, GAP-29 decoder, C-OPEN-005. | §4.4 |
+| B (Keegan) | #34/#52 HALT semantics (D-DN-09), clock HALT clearing (D-DN-10), delivery bound (D-DN-04), #36 reconciliation (D-REQ-039 MISSING; D adds scheduling). | §5 |
+| A (Keith) | Publish the trading review under an unused ledger ID with its evidence (tracker #22 collision); G-05 absolute clock check (R-08). | §4.4 |
+| All | New migration `010_incident_backups.sql` is taken; coordinate any further number with D. | `migrations/` |
 
-## 8. Requested shared edits
+## 8. Requested shared edits (D applies at integration)
 
-To be filled at integration.
+- `docs/INCOMPLETE_WORK.md`: GAP-35 — add "missed anchor/backup slots are listed by `health().missed`, superseded by later ACKs (D-FND-009); incident uploads (D-FND-008/021)". GAP-46 — "round logs are committed when orders are disposed, before finality (D-FND-002); only payload refusals are permanent (D-FND-001)". GAP-62 — "final activation refuses OPEN/DRAFT rows (D-FND-010)". Add the deployment risks R-01..R-14 not already listed.
+- `docs/build/AWS_RUNBOOK.md` and `docs/build/runbook.md` (#62): wallet key is `/etc/larp/signer/wallet.key` on the signer host (no Secrets Manager entry); uploader secret ID is `${name}/uploader`; the release manifest is built in CI with the bundle and only verified on hosts; take the bundle and its `.sha256` from the CI artifact `larp-bundle-x86_64`; `cycle_timeout_seconds` in `runtime.json`; migrations route per D-DN-05.
+- `docs/LEDGER.md`: add rows IDEA-049-D (this record) and, once published, Keith's trading review under its new ID.
+- `docs/skill/SKILL.md`: none required by D (no summary found unfaithful; F-106/F-111 could not be re-checked, input gap D-ASM-029).
+
+## 9. Integration status (protocol: D runs it last)
+
+Checked 2026-10-15: A has no branch or PR; B's PR #65 is open and green (head `4711ce6`, 15 commits behind the base); C's PR #41 merged, and `review/final-c-20261014` has 27 newer commits with no open PR. Integration step 1 needs all three PRs, so **integration has not started**. D's own PR is opened for review. Overall: **partial review; deployment blocked** (open P1 #23 and the blocking dependencies above).
+
+## 10. Final counts and CI
+
+To be filled with the final run of this branch.
