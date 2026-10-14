@@ -15,6 +15,8 @@ from larp.execution import Blocked, Conflict, Gates, canonical, digest
 
 SCHEMA = 'SigningRequest.v1'
 REASON_LIMIT = 200
+MAX_REQUEST_BYTES = 64 * 1024
+MAX_REQUEST_DEPTH = 64
 
 
 def request_document(state, attempt, gates, now_s):
@@ -45,9 +47,31 @@ def _check_gates(gates):
 def read_request(request_id, raw):
     """The stored request, refused unless its bytes hash to its ID and it has the expected shape."""
     try:
-        value = json.loads(bytes(raw))
+        raw = bytes(raw)
+        if len(raw) > MAX_REQUEST_BYTES:
+            raise ValueError
+        # Bound recursive JSON decoding and canonicalization before either runs. Braces inside strings (including
+        # escaped quotes/backslashes) are data, not containers. json.loads still owns syntax validation.
+        depth, quoted, escaped = 0, False, False
+        for byte in raw:
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif byte == 92:
+                    escaped = True
+                elif byte == 34:
+                    quoted = False
+            elif byte == 34:
+                quoted = True
+            elif byte in (91, 123):
+                depth += 1
+                if depth > MAX_REQUEST_DEPTH:
+                    raise ValueError
+            elif byte in (93, 125):
+                depth -= 1
+        value = json.loads(raw)
         if (type(value) is not dict or value.get('schema') != SCHEMA or digest(value) != request_id
-                or canonical(value).encode() != bytes(raw)):
+                or canonical(value).encode() != raw):
             raise ValueError
         gates = Gates(**value['gates'])
         _check_gates(gates)
@@ -57,7 +81,7 @@ def read_request(request_id, raw):
         for key in ('epoch', 'guard_version', 'requested_s'):
             if type(value[key]) is not int:
                 raise ValueError
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError, KeyError, RecursionError):
         raise Blocked('malformed signing request') from None
     return value, gates
 

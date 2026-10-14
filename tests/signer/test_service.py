@@ -281,6 +281,20 @@ class SignerRefusals(SigningCase):
                 self.service.once()
         self.assertNotIn(other, self.refusals())
 
+    def test_r9_nested_poison_is_refused_and_next_request_is_signed(self):
+        state, attempt = self.authorized()
+        valid, _ = self.request(state, attempt)
+        poison = b'{"schema":"SigningRequest.v1","x":' + b'{"x":' * 10000 + b'0' + b'}' * 10000 + b'}'
+        request_id = '0' * 64
+        with self.store.transaction() as db:
+            db.execute('INSERT INTO signing_requests VALUES(%s,%s,%s,%s,%s,%s)',
+                       (request_id, 'run', attempt.attempt_id, attempt.payload.hash, poison, 0))
+        self.assertEqual(self.service.once(), 2)
+        self.assertIn('malformed signing request', self.refusals()[request_id])
+        self.assertNotIn(valid, self.refusals())
+        self.assertEqual([row[0] for row in self.signatures()], [attempt.attempt_id])
+        self.assertEqual(self.service.once(), 0)
+
     def test_s04_another_runs_request_is_never_answered(self):
         self.store.initialize('run2', 'wallet-2', 56, doc(dict(balances=dict(USDT=1))))
         state, attempt = self.authorized()

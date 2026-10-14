@@ -39,7 +39,7 @@ SCHEMA = 'SignerService.v1'
 SERVICE = 'signer'
 DATABASE_USER = 'larp_signer'
 _CREDENTIAL = re.compile(r'[A-Za-z0-9_.-]{1,64}')
-MALFORMED = (TypeError, ValueError, KeyError, AttributeError, OverflowError)
+MALFORMED = (TypeError, ValueError, KeyError, AttributeError, OverflowError, RecursionError)
 
 
 class StartRefused(ContractError):

@@ -137,6 +137,10 @@ run "budget_alerts_with_recipient" {
     condition     = length(aws_budgets_budget.monthly) == 1 && aws_budgets_budget.monthly[0].limit_amount == "90.00" && length(aws_budgets_budget.monthly[0].notification) == 3
     error_message = "A monthly budget alerts at 50, 75 and 90 percent of actual spend."
   }
+  assert {
+    condition     = !aws_budgets_budget.monthly[0].cost_types[0].include_credit
+    error_message = "Credits must not hide usage consuming the shared credit balance."
+  }
 }
 run "teardown_lifts_only_operational_protection" {
   command = plan
@@ -165,6 +169,26 @@ run "reject_final_interactive_access" {
   command = plan
   variables {
     environment            = "final"
+    enable_development_ssm = true
+    enable_external_https  = true
+  }
+  expect_failures = [aws_iam_role_policy_attachment.development_ssm]
+}
+
+run "development_ssm_reaches_primary_only" {
+  command = plan
+  variables {
+    enable_development_ssm = true
+    enable_external_https  = true
+  }
+  assert {
+    condition     = keys(aws_iam_role_policy_attachment.development_ssm) == ["primary"]
+    error_message = "Only the reachable primary host receives development SSM permissions."
+  }
+}
+run "development_ssm_requires_https" {
+  command = plan
+  variables {
     enable_development_ssm = true
   }
   expect_failures = [aws_iam_role_policy_attachment.development_ssm]

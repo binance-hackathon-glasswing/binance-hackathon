@@ -17,7 +17,9 @@ def release_files(root):
     files = set()
     patterns = [('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock'),
                 ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'),
-                ('deploy', 'Dockerfile'), ('config', '*.json'), ('config', '*.txt')]
+                ('deploy', 'Dockerfile'), ('config', '*.json'), ('config', '*.txt'),
+                # The deviations register validates verbatim quotes against this file at every host startup.
+                ('docs/proposal', 'proposal_answers.md')]
     for directory, pattern in patterns:
         for path in (root / directory).rglob(pattern):
             # Host-local configuration and downloaded Terraform modules are not release code.

@@ -8,6 +8,9 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from larp.contracts import ContractError, Document
+from larp.runtime.preflight import release_files, verify_release
+from larp.runtime.register import load_register
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
@@ -99,7 +102,27 @@ class ReleaseBundle(unittest.TestCase):
             self.assertEqual((env['arch'], env['python_version'], env['python_sha256']),
                              ('x86_64', '3.12.15', hashlib.sha256(PYTHON).hexdigest()))
             self.assertEqual(env['rds_ca_sha256'], hashlib.sha256(CA).hexdigest())
-            self.assertNotIn(top + 'release/docs/proposal/proposal_answers.md', members)  # not a release file
+            self.assertEqual(read('release/docs/proposal/proposal_answers.md'),
+                             (ROOT / 'docs/proposal/proposal_answers.md').read_bytes())
+
+    def test_r8_extracted_release_verifies_and_binds_the_proposal(self):
+        result = self.build()
+        extracted = Path(self.tmp.name) / 'extracted'
+        with tarfile.open(result['bundle']) as tar:
+            tar.extractall(extracted, filter='data')
+        root = next(extracted.glob('larp-*')) / 'release'
+        build = result['build_id']
+        manifest = Document.from_dict(dict(
+            schema='ReleaseManifest.v1', build_id=build, repository='synthetic', remote_verified=True,
+            services=['synthetic'], registration_evidence=dict(schema='RegistrationEvidence.v1',
+                evidence_ref='synthetic-only', build_id=build, repository='synthetic'),
+            files={name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in release_files(root)},
+            release_register=load_register(root)))
+        self.assertEqual(verify_release(manifest, root)['build_id'], build)
+        proposal = root / 'docs/proposal/proposal_answers.md'
+        proposal.write_text(proposal.read_text() + '\nchanged after packaging\n')
+        with self.assertRaisesRegex(ContractError, 'hash mismatch'):
+            verify_release(manifest, root)
 
     def test_h01_committed_bytes_not_the_working_tree(self):
         (self.repo / 'scratch.txt').write_text('untracked files are not released')

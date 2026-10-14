@@ -133,3 +133,10 @@ Remaining before the final review: PR #20/#21 integration (D), reviewed driver
 PR and execution-scope disposition (Keegan + Isaac/team), and original tracker
 #22 record/evidence publication with a unique ID (Keith, reconciliation by D).
 The eighteen runtime findings are review inputs, not fixed by this prompt PR.
+
+PR21-V base reconciliation: PR #21's ledger conflicted with base `185704e` because
+it lacked the hosting R8–R13 updates. Merge the hosting branch with an ordinary
+merge commit, preserve its full IDEA-047 result row and this IDEA-049 row, and
+re-run the focused tests and final CI on the merged head. The earlier manual run
+38544874242 at `40ac02a` is not the final merged-tree verification. Incoming
+runtime/host changes remain PR #20's work, not new fixes attributed to PR #21.

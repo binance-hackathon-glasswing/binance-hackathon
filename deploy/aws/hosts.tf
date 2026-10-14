@@ -49,13 +49,18 @@ resource "aws_iam_role_policy" "host" {
   ] : statement if each.key == "primary"]) })
 }
 resource "aws_iam_role_policy_attachment" "development_ssm" {
-  for_each   = var.enable_development_ssm ? local.hosts : toset([])
+  # Only primary can reach Systems Manager. The isolated signer needs a separate provisioning decision.
+  for_each   = var.enable_development_ssm ? toset(["primary"]) : toset([])
   role       = aws_iam_role.host[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   lifecycle {
     precondition {
       condition     = var.environment == "development"
       error_message = "Interactive SSM access is permitted by this template only in development."
+    }
+    precondition {
+      condition     = var.enable_external_https
+      error_message = "Development SSM requires primary HTTPS egress; it never enables signer access."
     }
   }
 }

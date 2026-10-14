@@ -14,8 +14,8 @@ Group=larp-execution
 WorkingDirectory=/opt/larp/current
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
-ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config execution=/etc/larp/execution.json
-ExecStart=/opt/larp/current/.venv/bin/python -m larp.execution_live.main run --config /etc/larp/execution.json --manifest /etc/larp/release.json --root /opt/larp/current
+# Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.launch --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config execution=/etc/larp/execution.json -- -m larp.execution_live.main run --config /etc/larp/execution.json --manifest /etc/larp/release.json --root /opt/larp/current
 Restart=always
 RestartSec=10
 # 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none.
