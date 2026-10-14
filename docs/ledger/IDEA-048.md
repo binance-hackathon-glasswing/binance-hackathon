@@ -1,4 +1,4 @@
-# IDEA-047 — Round driver for the supervised runtime (shadow, no signing)
+# IDEA-048 — Round driver for the supervised runtime (shadow, no signing)
 
 - Date / owner: 2026-10-13 / Claude for the user (pre-deployment review session). Runtime files are Keegan's (IDEA-038); this entry asks for his review, and Isaac's for the execution boundary.
 - Status: open; D1–D8 PASS on synthetic fixtures (locally and Linux CI); Gate A still blocked (see "Still open").
@@ -69,4 +69,7 @@ Commits: criteria `c8b2fdb`; implementation and tests `91a75ef`; D1b test and am
 4. **Ingestion process on the host:** `python -m larp.sources.live run` must run beside the runtime to fill the evidence store (DR-12).
 5. **Gate B paths:** I3 → execution service → signer, and the planner's `quote_requests` loop (quotes stay non-executable until router decoding is verified).
 6. Review by Keegan (runtime owner) and Isaac (the shadow `EXECUTION_RECONCILER` observations).
+7. Evidence store access on the host: PR #20 makes `/var/lib/larp-evidence` `0700` to `larp-evidence`; the runtime user needs read access, or the store moves to PostgreSQL (PR #20 review, 2026-10-14).
 
+- 2026-10-14 note: renumbered from IDEA-047 before merge. PR #20 (`codex/hosting-option-b-20261012`) had already used IDEA-047 for its host services, so this entry's earlier commits (`c8b2fdb`, `91a75ef`, `b6ce5e0`, `e30a054`) say IDEA-047. Nothing else changed.
+- 2026-10-14 note: the PR #20 review found the evidence store is `0700` to `larp-evidence` on the host, so the driver's `evidence_root` cannot be read by `larp-runtime` as deployed. The sharing mechanism is now item 7 under "Still open".

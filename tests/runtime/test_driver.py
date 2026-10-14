@@ -1,4 +1,4 @@
-"""IDEA-047 D1-D7: the shadow round driver over real components; external ports synthetic, nothing signed.
+"""IDEA-048 D1-D7: the shadow round driver over real components; external ports synthetic, nothing signed.
 
 Real modules: Ingestor (fake EDGAR) -> SQLiteEvidenceStore jobs -> EvidenceWork -> EvidenceAssessor -> ContextBuilder
 -> strategy -> RuntimePlanner -> Coordinator/PostgresStore -> ShadowExecution -> settlement -> round log -> replay.

@@ -24,7 +24,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
-5. **Round driver (shadow only; [IDEA-047](../ledger/IDEA-047.md)):** the `driver` block of `/etc/larp/runtime.json` names:
+5. **Round driver (shadow only; [IDEA-048](../ledger/IDEA-048.md)):** the `driver` block of `/etc/larp/runtime.json` names:
    - the strategy profile and session calendar files, each with its SHA-256;
    - the evidence root (`evidence.sqlite` and `artifacts/`, written by the separate ingestion process `python -m larp.sources.live run`);
    - the market artifact directory, the intelligence configuration mode and the cadence;

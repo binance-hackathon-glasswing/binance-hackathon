@@ -1,4 +1,4 @@
-"""Round driver for the supervised runtime (IDEA-047; IDEA-042 item 10). Shadow only: nothing is ever signed.
+"""Round driver for the supervised runtime (IDEA-048; IDEA-042 item 10). Shadow only: nothing is ever signed.
 
 `Service` calls `RoundDriver.once(now_ms)` once per tick. A cycle:
 

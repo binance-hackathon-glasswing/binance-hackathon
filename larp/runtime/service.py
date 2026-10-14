@@ -122,7 +122,7 @@ def _pinned_json(path, sha256, what):
 
 
 def build_driver(config, store, secrets, *, clock_ms=None):
-    """The shadow round driver (IDEA-047) from the `driver` block of the manifest-bound runtime configuration.
+    """The shadow round driver (IDEA-048) from the `driver` block of the manifest-bound runtime configuration.
 
     Signing (Gate B) and hosted model assessors (DR-11) are not integrated: asking for either raises NotIntegrated.
     Any other missing or inconsistent input is a ContractError, which `main` turns into a start refusal (exit 4)."""
