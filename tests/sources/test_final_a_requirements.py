@@ -53,3 +53,9 @@ class FinalASources(Harness):
         self.ingestor(net).poll(source.source_id)
         self.assertFalse(coverage(self.register, self.store, {'c': [source.source_id]}, T0, 1000)
                          ['consumers']['c']['complete'])
+
+    def test_a_req_018_live_pagination_needs_budget_for_head_and_history(self):
+        from larp.sources.register import live_preflight
+        source = replace(self.register['fr-bis'], limits=dict(self.register['fr-bis'].limits, max_pages=1))
+        reasons = live_preflight({source.source_id: source}, {})
+        self.assertIn('PAGINATION_PAGE_BUDGET_TOO_SMALL:fr-bis', reasons)

@@ -29,6 +29,7 @@ from functools import lru_cache
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError, digest
+from larp.intelligence.config import load_registry
 from larp.intelligence.redflags import load_predicates
 
 SCHEMA = "EvidenceContext.v1"
@@ -200,6 +201,30 @@ def _finding_ok(f) -> bool:
             and bool(f["supporting_spans"]))
 
 
+@lru_cache(maxsize=1)
+def _issuer_registry():
+    return load_registry()
+
+
+def _issuer_matches(record: dict, underlying: str) -> bool:
+    """Issuer evidence and a quoted security have separate namespaces; no share conversion is implied."""
+    if record.get("underlying_id") != underlying:
+        return False
+    try:
+        registry = _issuer_registry()
+        entry = registry.by_token(record["token"])
+    except (IntelligenceError, OSError, ValueError, KeyError, TypeError):
+        # Existing offline contracts may use one fixture identity for both namespaces.
+        return record.get("issuer_id") == underlying
+    if record.get("issuer_id") == underlying:
+        # Preserve synthetic issuer fixtures, but a real registered issuer cannot impersonate another token.
+        known = {e.issuer_id for e in registry.entries}
+        return underlying not in known or underlying == entry.issuer_id
+    securities = {s.security_id for s in entry.securities}
+    tickers = {s.split(":", 1)[-1] for s in securities}
+    return record.get("issuer_id") == entry.issuer_id and underlying in securities | tickers
+
+
 def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None, max_age_ms=None,
             universe=None) -> str | None:
     """The first reason `record` is unusable, or None. Intrinsic checks (schema, field types, hash, internal
@@ -237,8 +262,7 @@ def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None
         market = markets.get(record["token"])
         if (universe is not None and record["token"] not in universe) or market is None:
             return "UNKNOWN_TOKEN"
-        if record.get("issuer_id") != market.get("underlying_id") or \
-                record.get("underlying_id") != market.get("underlying_id"):
+        if not _issuer_matches(record, market.get("underlying_id")):
             return "WRONG_ISSUER"
     if now_ms is not None:
         if record["as_of_ms"] > now_ms:

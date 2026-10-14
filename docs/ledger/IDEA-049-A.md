@@ -129,3 +129,22 @@ Pushed tests `7bdecf4` ran with no implementation change. Initial report: 20 fai
 ### Amendment 3: corrected red proofs and audit fixture strengthening
 
 At `d48a3cf`, independent regressions reported **13 failed / 7 passed / 4 subtests passed** (failure count includes subtest failures). Confirmed #25 identity rejection, #47 clause-order miss, #48 loss of pending uncertainty, #58 rights/pagination failures, request credential capture and unsanitized exception-code reflection. Real store fourteen-day restart and foreign-filer non-authority tests passed. The audit fixture had no tool gap and therefore only one model call: switch it to synthetic guidance text requiring prior-context retrieval so it tests a genuine multistep audit, without changing assertions. Strengthen the correction test with an unreadable intermediate revision before a complete reread. These remain pre-registered A-T03/A-T07 boundaries; push fixture changes before the rerun.
+
+
+### Amendment 4: findings before first fix / additional source-budget criterion
+
+The `c84ab55` audit fixture reaches a real two-call loop and fails because the retained tool call contains only `result_sha256`, not the returned content. Corrected proof artifact SHA-256 `5512d2170a0c6717f64ab3ff0c213a9bddf6f1ea44ed52f0113c6a5eeea8e577`. Findings are now application proofs, not the earlier fixture profile mismatch.
+
+| Finding | Severity | Proof before fix | Planned correction |
+|---|---|---|---|
+| A-FND-001 | P1 | #25 / A-T01 `WRONG_ISSUER` for canonical NVIDIA CIK + actual NVDA market ticker | Separate issuer/security namespaces and bind through registry; keep synthetic legacy contract compatibility. D still owns runtime review-job ID mapping. |
+| A-FND-002 | P1 | #47 / A-T02 reversed restatement clause has no Class 1 finding | Extend only the non-reliance compound phrase; retain external negation/condition/actor checks. |
+| A-FND-003 | P1 | #48 / A-T03 unrelated clean result becomes CLEAR after writer restart | Persist accession/predicate uncertainty separately from verified adverse latches; resolve only verification or a complete newer source correction/withdrawal, with provenance. |
+| A-FND-004 | P1 | #58 part 1 / A-T04 permanent legal exclusion keeps permitted-source coverage incomplete | Hash/register-bind policy exclusion; preserve genuine processing/parse incompleteness and audit exclusion counts. |
+| A-FND-005 | P1 | #58 part 2 / A-T05 new head ignored while saved history continues | Reserve one head page within existing budget, preserve history after known-head overlap, otherwise restart history from changed head; deduplicate through durable store. |
+| A-FND-006 | P0 | A-T06: key in request reaches artifact sink/transport; OSError.code reflects key into response | Refuse unsafe request payload before capture/network; normalize transport errors without arbitrary exception text. |
+| A-FND-007 | P1 | A-T07: multistep audit cannot retrieve a full tool result from its hash-only call record | Capture the bounded original tool result with the call before constructing a reduced model view. |
+
+Additional pre-registered A-T05b: live paginated source with a page budget of one must refuse startup, since one request cannot serve both a fresh head and an archive continuation. This is a derived engineering capability constraint, not a new trading policy or changed live parameter value. Add its failing test before implementing the preflight guard. Offline one-page legacy recovery fixtures remain supported; the shipped paginated sources already allow three pages. Current first-fix code has no guard yet.
+
+First correction is to be committed/pushed before any execution. Golden fixtures will necessarily change because complete tool-result capture, optional pending state and model-code identity change audit bytes. Regenerate only from pushed code, preserve all former decisions/source facts and separately review structural/hash changes; do not remove any test or weaken its acceptance.

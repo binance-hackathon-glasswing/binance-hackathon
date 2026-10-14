@@ -263,7 +263,9 @@ class LiveRunner:
                 outcome = self.sources.poll(ident)
                 summary = {"status": outcome["status"], "pages": outcome.get("pages"),
                            "new": len(outcome.get("new", [])), "versions": len(outcome.get("versions", [])),
-                           "withdrawn": len(outcome.get("withdrawn", [])), "rejected": len(outcome.get("rejected", [])),
+                           "withdrawn": len(outcome.get("withdrawn", [])),
+                           "rejected": len(outcome.get("rejected", [])) - len(outcome.get("policy_rejected", [])),
+                           "policy_rejected": len(outcome.get("policy_rejected", [])),
                            "truncated": outcome.get("truncated"), "error": outcome.get("error")}
             else:
                 outcome = self.edgar.poll(ident).read()

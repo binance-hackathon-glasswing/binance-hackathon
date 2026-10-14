@@ -347,7 +347,8 @@ class EvidenceAssessor:
         try:
             result = run_tool(state, tool, args)
             record.update(status=result.get("status", "OK"), error=None,
-                          result_sha256=Document.from_dict({"r": result}).digest("larp.intel.tool.v1"))
+                          result_sha256=Document.from_dict({"r": result}).digest("larp.intel.tool.v1"),
+                          result=result)
             summary = {k: v for k, v in result.items() if k != "excerpt"}
             state.tool_results.append(dict(summary, tool=tool, excerpt=result.get("excerpt")))
         except ToolError as exc:
