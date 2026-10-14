@@ -1,12 +1,17 @@
 """C-REQ-037/043/049: independent run authority, real PostgreSQL, throwaway keys."""
 from unittest.mock import patch
 
-from larp.execution import Conflict
-from larp.storage.postgres import doc
 from tests.signer import test_service as fixtures
 
 
 class SignerAuthority(fixtures.SigningCase):
+    def setUp(self):
+        super().setUp()
+        # Bind the genesis row before the first journal event. Changing it after
+        # registration would invalidate the journal, obscuring the authority test.
+        with self.store.transaction() as db:
+            db.execute('UPDATE runs SET wallet_id=%s WHERE run_id=%s', (self.wallet, 'run'))
+
     def projection(self, **changes):
         current = self.store.load('run').read()
         projection = dict(current['projection'], **changes)
