@@ -285,3 +285,48 @@ All four jobs pass in [Linux CI 38538487692](https://github.com/binance-hackatho
   evaluation occurred. No whole GAP is complete. Remaining owners and work are in INCOMPLETE_WORK and the runbook:
   Keegan + Isaac for signer access/first-host checks and integration; Keegan for signer version binding/log shipping;
   Yao Zhu for live evidence inputs and approval of any infrastructure update; team for rehearsal/final freeze.
+
+## New PR #20 review R14–R15 (2026-10-14, Isaac / Codex): prospective criteria
+
+Review at `185704e` (wtvlol, review submitted 09:24 UTC) reports two valid additional failure paths. User requested
+assessment and fixes. Criteria are pushed before implementation/testing; no AWS action or live credential use.
+
+| ID | Pass criterion / implementation decision |
+|---|---|
+| R14 | Exceptions fetching the uploader secret become a sanitized retryable failure (exit 1), so Restart=always retries after provider recovery. Invalid configuration, malformed secret response/content, wrong wallet and foreign credentials remain exit-4 refusals. A pinned-release test exercises failure then recovery, including queued-log delivery with disposable PostgreSQL; no credential or arbitrary provider exception text appears in output/tracebacks. |
+| R15 | Keep SQLite and use DELETE rollback journaling for the **shared live evidence writer only**, leaving private stores' WAL default unchanged. The read-only runtime needs no writable evidence mount and cannot create WAL/SHM sidecars. A two-user AL2023 regression closes the writer, opens the reader first, restarts the writer, verifies new commits while the reader stays open, then reopens again after reader close; data survives and no incompatible WAL/SHM files appear. Test conversion from legacy WAL with committed data and document a stopped-services ownership repair for legacy sidecars; never delete a WAL that may hold committed data. |
+
+R15 rationale: group-writable database modes plus setgid would share sidecars but broaden database write access.
+Rollback journaling removes that dependency and lets ProtectSystem=strict protect the evidence directory on the
+runtime. Ingestion is low cadence; concurrent reads remain supported through SQLite locking. A crash with a hot
+rollback journal requires writer recovery before read-only consumption; the runtime cannot repair or mutate it.
+SQLite's documented modes/source were checked: [WAL read-only caveats](https://sqlite.org/wal.html#read_only_databases).
+
+Required evidence: focused and full offline tests, two-user host-bundle CI, PostgreSQL CI, existing real-systemd
+and mock Terraform checks. Hosted/performance/rehearsal gates remain open. No whole GAP is completed by this scope.
+
+### R14–R15 results (2026-10-14, Isaac / Codex): PASS offline
+
+Criteria `9675fce`; implementation `c34e8ad`; final tested revision `d774f67`. All runtime code was pushed before
+testing. [CI 38554156578](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38554156578)
+passes all four jobs.
+
+| ID | Evidence |
+|---|---|
+| R14 | `SecretUnavailable` sanitizes fetch exceptions and follows the exit-1 restart path. Pinned-release tests verify no database access on failed fetch, no provider text/secret in output or traceback, and permanent exit-4 refusal for invalid response/content/wallet/foreign credentials. Real PostgreSQL fixture keeps the run quarantined, retains the committed queued log after a failed fetch, then drains it to ACK after recovery. |
+| R15 | The live writer explicitly selects DELETE journaling; private writers retain WAL. Default read-only views check the [SQLite header version bytes (18/19)](https://www.sqlite.org/fileformat.html#file_format_version_numbers) before opening a legacy WAL file. Local tests cover private WAL opt-in, live builder wiring, legacy conversion and an abrupt writer exit with committed data still in WAL: the reader does not change the WAL, and writer migration preserves the data. AL2023 two-user check opens the runtime reader while the writer is closed, then restarts/commits the writer while that reader remains open, confirms the new state, closes the reader and reopens the writer again. No WAL/SHM files are created. The runtime has no writable evidence mount; artifact access remains shared at 0640. |
+
+- Local Python 3.12.14: **947 passed, 215 skipped, 1372 subtests**. Skips require PostgreSQL, Linux/systemd or opt-in
+  external recorded artifacts. Focused service/store/unit checks pass; shell syntax passes. Docker remains unavailable
+  locally, so two-user/container and PostgreSQL evidence is from CI, not a local claim.
+- Linux Python 3.12.15, disposable PostgreSQL 14.24: **1158 passed, 4 skipped, 1480 subtests**. Three systemd tests
+  then execute explicitly: **3 passed, 5 subtests**. The remaining skip is the opt-in recorded market.
+- Host-bundle (both AL2023 roles, networking disabled), packaged preflight, two-user evidence restart, offline demo,
+  Docker smoke, Terraform **15/15 + 1/1**: PASS.
+- Fixture corrections are preserved without history rewrite: `ab1db26` isolates live terms preflight (terms remain
+  an open deployment prerequisite), `da025fb` uses the permitted minute polling interval, and `c2dec5f` seeds the
+  durable outbox without trying to activate the quarantined dev fixture. The initial fixture failures are not new
+  runtime defects. `d774f67` adds committed-WAL crash/migration proof.
+- No AWS action, hosted migration, registered secret use, signing/trading or real source/model evaluation occurred.
+  Keegan + Isaac still own stopped-services legacy migration and real-host validation; Yao Zhu owns live terms and
+  parameters, and infrastructure approvals; existing integration, signer and rehearsal dependencies remain open.

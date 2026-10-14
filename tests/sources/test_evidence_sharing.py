@@ -4,6 +4,8 @@ import io
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -27,10 +29,10 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.path = str(Path(tmp.name) / "evidence.sqlite")
-        self.writer = SQLiteEvidenceStore(self.path)
+        self.writer = SQLiteEvidenceStore(self.path, journal_mode='DELETE')
         self.addCleanup(self.writer.close)
 
-    def test_r3_reader_sees_committed_batches_of_a_live_wal_writer(self):
+    def test_r3_reader_sees_committed_batches_of_a_live_shared_writer(self):
         self.assertEqual(self.writer.commit(state_batch("b1", 1)).read()["status"], "COMMITTED")
         reader = SQLiteEvidenceStore(self.path, read_only=True)
         self.addCleanup(reader.close)
@@ -38,7 +40,7 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
         # The writer keeps going while the reader is open; the reader sees each new commit.
         self.assertEqual(self.writer.commit(state_batch("b2", 2)).read()["status"], "COMMITTED")
         self.assertEqual(reader.read_state("ISSUER").read()["version"], 2)
-        self.assertEqual(self.writer.db.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        self.assertEqual(self.writer.db.execute("PRAGMA journal_mode").fetchone()[0], "delete")
 
     def test_r3_reader_refuses_every_write(self):
         self.writer.commit(state_batch("b1", 1))
@@ -47,7 +49,7 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
         with self.assertRaises(StoreConflict):
             reader.commit(state_batch("b2", 2))
         for sql in ("INSERT INTO ejobs VALUES ('j', x'00')", "DELETE FROM estates",
-                    "CREATE TABLE extra (x)", "PRAGMA journal_mode=DELETE"):
+                    "CREATE TABLE extra (x)", "PRAGMA journal_mode=WAL"):
             with self.subTest(sql=sql), self.assertRaises(sqlite3.OperationalError):
                 reader.db.execute(sql).fetchall()
         self.assertEqual(self.writer.read_state("ISSUER").read()["version"], 1)
@@ -59,6 +61,86 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
         self.assertFalse(Path(missing).exists())
         with self.assertRaises(ValueError):
             SQLiteEvidenceStore(":memory:", read_only=True)
+
+    def test_r15_legacy_wal_reader_refuses_before_sidecar_creation_and_writer_migrates(self):
+        path = str(Path(self.path).with_name('legacy.sqlite'))
+        legacy = SQLiteEvidenceStore(path)
+        legacy.commit(state_batch('b1', 1))
+        legacy.close()
+        self.assertFalse(Path(path + '-wal').exists())
+        with self.assertRaisesRegex(sqlite3.OperationalError, 'migration'):
+            SQLiteEvidenceStore(path, read_only=True)
+        self.assertFalse(Path(path + '-wal').exists())
+        self.assertFalse(Path(path + '-shm').exists())
+        writer = SQLiteEvidenceStore(path, journal_mode='DELETE')
+        self.assertEqual(writer.read_state('ISSUER').read()['version'], 1)
+        writer.close()
+        reader = SQLiteEvidenceStore(path, read_only=True)
+        self.addCleanup(reader.close)
+        writer = SQLiteEvidenceStore(path, journal_mode='DELETE')
+        self.addCleanup(writer.close)
+        writer.commit(state_batch('b2', 2))
+        self.assertEqual(reader.read_state('ISSUER').read()['version'], 2)
+        self.assertFalse(Path(path + '-wal').exists())
+        self.assertFalse(Path(path + '-shm').exists())
+
+    def test_r15_private_wal_store_still_supports_an_explicit_private_reader(self):
+        path = str(Path(self.path).with_name('private.sqlite'))
+        writer = SQLiteEvidenceStore(path)
+        self.addCleanup(writer.close)
+        writer.commit(state_batch('private', 1))
+        reader = SQLiteEvidenceStore(path, read_only=True, journal_mode='WAL')
+        self.addCleanup(reader.close)
+        self.assertEqual(writer.db.execute('PRAGMA journal_mode').fetchone()[0], 'wal')
+        self.assertEqual(reader.read_state('ISSUER').read()['version'], 1)
+
+    def test_r15_migration_preserves_committed_data_left_in_wal_after_a_crash(self):
+        path = str(Path(self.path).with_name('crashed-writer.sqlite'))
+        source = '''
+import os, sys
+from larp.contracts import Document
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore(sys.argv[1])
+store.commit(Document.from_dict({'schema':'EvidenceStateBatch.v1', 'batch_id':'crash', 'issuer_id':'ISSUER',
+                                 'expected_state_version':0, 'state':{'version':1}, 'jobs':[]}))
+os._exit(0)
+'''
+        subprocess.run([sys.executable, '-c', source, path], cwd=Path(__file__).resolve().parents[2],
+                       capture_output=True, check=True, timeout=15)
+        self.assertTrue(Path(path + '-wal').exists())
+        wal = Path(path + '-wal').read_bytes()
+        with self.assertRaisesRegex(sqlite3.OperationalError, 'migration'):
+            SQLiteEvidenceStore(path, read_only=True)
+        self.assertEqual(Path(path + '-wal').read_bytes(), wal)
+        writer = SQLiteEvidenceStore(path, journal_mode='DELETE')
+        try:
+            self.assertEqual(writer.read_state('ISSUER').read()['version'], 1)
+        finally:
+            writer.close()
+        reader = SQLiteEvidenceStore(path, read_only=True)
+        try:
+            self.assertEqual(reader.read_state('ISSUER').read()['version'], 1)
+        finally:
+            reader.close()
+
+    def test_r15_live_runner_wires_the_shared_writer_in_delete_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = {'LARP_SEC_USER_AGENT': AGENT, 'LARP_ARTIFACT_ROOT': directory}
+            # Exercise real store wiring only; live terms are an explicitly open deployment prerequisite.
+            # No source port is called in this synthetic constructor test.
+            with patch.object(live, 'preflight', return_value=[]):
+                runner = live.build_runner(env, config_mode='development', edgar_interval_ms=60000,
+                                           commit='b' * 40)
+            try:
+                self.assertEqual(runner.edgar.store.db.execute('PRAGMA journal_mode').fetchone()[0], 'delete')
+                reader = SQLiteEvidenceStore(str(Path(directory) / 'evidence.sqlite'), read_only=True)
+                try:
+                    self.assertEqual(reader.records('ISSUER'), ())
+                finally:
+                    reader.close()
+            finally:
+                runner.edgar.store.close()
+                runner.sources.store.db.close()
 
 
 class RefusedStart(unittest.TestCase):
@@ -105,7 +187,7 @@ class EvidenceUnits(unittest.TestCase):
         self.assertEqual(value(evidence, "StateDirectoryMode"), ["0770"])
         self.assertEqual(value(evidence, "UMask"), ["0007"])
         self.assertEqual(value(runtime, "SupplementaryGroups"), ["larp-evidence"])
-        self.assertEqual(value(runtime, "ReadWritePaths"), ["-/var/lib/larp-evidence"])
+        self.assertEqual(value(runtime, "ReadWritePaths"), [])
         self.assertEqual(value(runtime, "UMask"), ["0077"])
         for unit in ("larp-signer", "larp-execution", "larp-uploader", "larp-archive"):
             d = directives(unit)

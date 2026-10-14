@@ -76,8 +76,10 @@ ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under sy
 **Evidence store sharing (IDEA-047 R3, decided 2026-10-14).** The poller's SQLite store and artifacts under
 `/var/lib/larp-evidence` are group `larp-evidence` (`StateDirectoryMode=0770`, `UMask=0007`); others get nothing. The
 coordinator (`larp-runtime`) joins that group (`SupplementaryGroups=`) and opens the store with
-`SQLiteEvidenceStore(path, read_only=True)`, which refuses every write; its only writable path is that directory,
-because SQLite readers of a WAL database must write the `-shm` lock file. Artifact reads verify each file's hash.
+`SQLiteEvidenceStore(path, read_only=True)`, which refuses every write. The shared writer uses `journal_mode='DELETE'`
+(IDEA-047 R15), so readers require no WAL/SHM file creation or writable evidence mount. `ProtectSystem=strict`
+keeps the evidence directory read-only for runtime. Private stores keep WAL by default; an explicit private WAL
+reader uses `journal_mode='WAL'`. Artifact reads verify each file's hash.
 The live writer explicitly publishes document files at `0640` before linking/fsync (IDEA-047 R12); umask alone
 does not change the `0600` mode of a temporary file. Other artifact sinks retain their private `0600` default.
 
@@ -91,6 +93,19 @@ find /var/lib/larp-evidence/artifacts -type f -exec chmod 0640 {} +
 
 Keep the directory group/traversal permissions from R3. Verify an artifact read as `larp-runtime` with its
 supplementary group before starting the reviewed release. This migration is not run by this PR.
+
+If an earlier build populated the shared evidence database in WAL mode, keep both services stopped and preserve
+a protected copy of the database **and all its sidecars together** before migration. Restore their writer ownership
+as root if the old runtime created incompatible sidecars:
+
+```bash
+find /var/lib/larp-evidence -maxdepth 1 -type f -name 'evidence.sqlite*' -exec chown larp-evidence:larp-evidence {} +
+```
+
+Start the reviewed evidence writer first: it recovers any committed WAL data and selects DELETE journaling before
+the runtime reads it. The runtime refuses a legacy WAL database before opening it rather than recreating sidecars.
+Do not delete an old WAL to fix permissions: it may hold committed records. After a crash with a hot rollback journal,
+writer recovery must finish before read-only consumption can resume. These host steps remain unperformed here.
 
 **The evidence unit cannot start yet (IDEA-047 R4).** Its live preflight refuses while
 `config/intelligence/intelligence.v1.json` has null `live` parameters and the enabled sources have null
@@ -114,6 +129,10 @@ While `enable_hosts` is on, each has an alarm that treats missing data as breach
 email subscribers come from `alarm_notification_emails` in the uncommitted tfvars (each address must confirm the AWS
 subscription email), plus any `alarm_topic_arns`. Not shipped: journald to CloudWatch Logs (no agent is installed),
 and per-unit liveness of the evidence poller (its gaps show in the DR-12 report, `live report`).
+
+**Uploader secret recovery (IDEA-047 R14).** Failure to fetch the secret is a sanitized exit-1 failure: the unit
+retries through its existing Restart=always. Invalid configuration, malformed secret response/content, wrong-wallet
+binding and foreign credentials remain permanent exit-4 refusals. No fetch failure authorizes an upload.
 
 **Signer logs.** The signer has no internet route and no Logs or Monitoring endpoint (IDEA-046, cost). Its outcomes
 (signatures and refusals with reasons) are database rows, archived with the daily backup; its liveness is judged

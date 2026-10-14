@@ -388,7 +388,8 @@ def build_runner(env, *, config_mode: str, edgar_interval_ms: int, commit: str, 
                              client=AllowlistedClient(urllib_fetch, user_agents={"LARP_SEC_USER_AGENT": agent}),
                              store=SQLiteSourceStore(str(root / "sources.sqlite")), artifacts=artifacts, clock_ms=clock_ms)
     edgar = Ingestor(registry=registry, source=EdgarHttpSource(agent, clock_ms=clock_ms),
-                     store=SQLiteEvidenceStore(str(root / "evidence.sqlite")), artifacts=artifacts, config=config,
+                     store=SQLiteEvidenceStore(str(root / "evidence.sqlite"), journal_mode='DELETE'),
+                     artifacts=artifacts, config=config,
                      clock_ms=clock_ms, run_id=f"live-ingest:{commit[:12]}")
     return LiveRunner(register=register, issuers=[e.issuer_id for e in registry.entries], source_ingestor=sources,
                       edgar_ingestor=edgar, log=PollLog(root / "live" / LOG_NAME), clock_ms=clock_ms,
