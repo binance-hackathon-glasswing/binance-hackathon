@@ -222,3 +222,69 @@ P2, contained read-only startup defect: user-provided `.env` has literal Web3 ke
 Assumption C-ASM-009: empty optional fields are equivalent to omission; validate this interface assumption independently, never treat a config default as an organiser rule. Pass criteria: blank, quoted-empty and comment-only public-address/alias fields preserve an existing API pair; a truly missing pair, conflicting nonempty aliases and nonliteral interpolation remain refused. Write and push a fixture-only test, run red, then skip optional empties without relaxing literal/alias checks. Measurements use an API-only private copy and a public address; first-gas evidence remains unavailable until the registered public address is supplied.
 
 Credential-selector red at pushed `8612fc9`: **4 failing blank-field subcases, 2 passed, 3 subtests passed**, 0.05 seconds. Log `/private/tmp/larp-final-c-20261015-credentials-red.log`, SHA-256 `bcbe78e37666c4546c856fc0fc7abc32007d11555e31046537e2a24e4816518f`. Ignore empty optional file entries; missing required pairs and conflicting/nonliteral nonempty entries still fail closed. No change to the user's `.env`.
+
+## C-RESULT-004 — resumed offline repairs and integrated coverage
+
+At pushed `c5cb1455471e2de2d696661b697a40b1bddd7022`:
+
+- Focused C plus merged driver: **259 passed, 1 skipped, 234 subtests**, 54.33 seconds. Skip is the opt-in external recorded-artifact test. Log `/private/tmp/larp-final-c-20261015-focused-complete.log`, SHA-256 `2f417a5886da15338745aee02400d2b753ca9555b0339c150c4c7456e39b6c49`.
+- Full Python 3.12.14 / PostgreSQL 14.24 suite: **1246 passed, 7 skipped, 1583 subtests**, 140.61 seconds. This is **+17 tests / +22 subtests** against unchanged C-BASE-002; the same seven Linux/systemd/external-artifact skips. Log `/private/tmp/larp-final-c-20261015-full-complete.log`, SHA-256 `6a19e44f2417d64d564bd451eac075243c7bf5d16090c78cedc97788e036e786`.
+- [Linux CI 38604152158](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38604152158) at this exact SHA: all four jobs SUCCESS (runtime, host-bundle and both infrastructure jobs). Exact Linux counts and guarded system-runner results are recorded separately below after log inspection/execution.
+- C-FND-005 fixed by `9d59556`, refined by `1adfed5`/`0286a4e`; C-FND-006 fixed by `9d59556` with refusal-order compatibility at `bc8d645`; C-FND-007 fixed by `c5cb145`. Their fail-first published proofs and retests are above. No independent contained P2 remains from these three repairs.
+- Integrated PR66 R1/R2/R3 and Y1/Y2 checks now pass in the local real-PostgreSQL suite: Web3 channel, rollover clock, actual Service restart/reauthorization, multi-intent seal and interrupted quote resume. Historical C-OPEN-001 driver exclusion is resolved for offline execution-side coverage; D still accepts the complete final merged tree.
+
+Source/adversarial recheck: reread scoped verbatim page/Guide/API/trading-flow text, exact submitted execution/reproducibility commitments, F/K/Q settled notes and the adopted execution decisions/DR/AT acceptance. No F/K summary correction is needed. Frozen statements and decided values are unchanged. The private-response representation pass found the encoded/duplicate-pair refinement and the real credential-selection check found the optional-field defect; both were added as dated, pushed red proofs before repairs. Following those repairs, the final pass over the modified C boundaries found no additional independent implementation defect. This is **partial review; deployment blocked**, not the protocol §4 whole-section exit gate: the dependencies below remain unfulfilled.
+
+## C-MEASURE-002 — real unsigned quote and balance observations
+
+All calls use committed code at `c5cb145`, with only a Web3 API pair in an isolated subprocess/private API-only file. The temporary credential files were removed. No AI_SEEDS_SECRET, wallet key, real transaction signing/broadcast, upload or AWS call. These are genuine API observations, not canonical chain proof or economic validation.
+
+Command: `/private/tmp/larp-pr20-venv/bin/python -m larp.marketdata.logger --env-file <temporary API-only file> --address 0x1111111111111111111111111111111111111111 --sizes 10,40 --symbols NVDAB,GOOGLB,SKHYB,TSLAB,MSFTB --artifact-root /private/tmp/larp-final-c-20261015-quotes --cycles 1`.
+
+- Time **2026-10-15 01:09:49–01:10:40 SGT** (artifact UTC `2026-10-14T17:09:49.536Z`–`17:10:40.677Z`). The public fixture address was used because the user had not yet populated AI_SEEDS_ADDRESS; quotes do not require funds. It is not represented as the registered wallet.
+- One cycle: **10 successful buy/sell quote pairs**, two sizes for each of five names; all ten observed markets open. Read-only pre-approval gas estimates all return `api_or_http_error`; no executable gas allowance is inferred.
+- External cycle artifact SHA-256 `d610aa8722fc9aedc702e1449b1d3ec118c7bdd339ff3d95a0faf5f4d0ec3232` under `/private/tmp/larp-final-c-20261015-quotes/`. Individual request artifacts are content-addressed there; `summarize` verifies every filename/hash. Measurement log SHA-256 `df3889806bd56c80cb5d92cbecc5afed0cb9c8131ae16c10bd700ad06c1df293`.
+
+| Name | Pairs | Median sequential effective quoted spread (bp) | Median quoted impact (bp) |
+|---|---|---|---|
+| NVDAB | 2 | 0.913 | 0 |
+| GOOGLB | 2 | -0.441 | 0.00383723 |
+| SKHYB | 2 | -0.240 | 0 |
+| TSLAB | 2 | -1.964 | 0 |
+| MSFTB | 2 | 40.190 | 0.27657756 |
+
+Sequential quote differences include market movement and reflected fees; negative values are not profit/edge evidence. These are two-size snapshot medians, not profile inputs. DR01 still needs at least three days including a weekend, independently hashed retention and B's cost/profile acceptance.
+
+After the user populated the public AI_SEEDS_ADDRESS, command: `/private/tmp/larp-pr20-venv/bin/python -m larp.marketdata.logger --env-file <temporary API-only file with the user-provided public address> --artifact-root /private/tmp/larp-final-c-20261015-balances --balance-only`.
+
+- Time **2026-10-15 01:14:54 SGT** (artifact requested `2026-10-14T17:14:54.738Z`, available `17:14:54.949Z`); successful API envelope.
+- API reports **NO_NATIVE_ENTRY**, not canonical proof of zero balance or of first-gas funding. First-gas readiness remains unverified. Never solve it by adding personal BNB.
+- Observation SHA-256 `19609b6fa8d8ba6cde7b235a7bdbed55ef13f98f87bdc59c3e54cf02a9bb3737` under the balance artifact directory. Log SHA-256 `491de86f17fc063bd53c489c130a4cd0b68730e6be2b75ab5cf966159c0f3a13`.
+
+## Current blocking requirements, owners and decisions
+
+| Gate | Remaining requirement / classification | Owner, exact validation and deadline |
+|---|---|---|
+| C-OPEN-003 / #27 | P1; DECISION-NEEDED: proposal freshness, signing lifetime and encoded router expiry | B/C/D before Oct22 cut. Options: measured bounded signing lifetime; or shorter independently qualified router deadline. Recommend measure approval latency/TTL, then explicitly freeze the relationship; preserve strict existing expiry now. |
+| C-OPEN-004 / GAP29 / DR02–03 | P1 dependency: attributable chain-56 router/proxy/nested ABI, recorded route mutations and verified quote/decoder evidence | Isaac before Gate B / Oct20 target. Obtain primary implementation/ABI and bytecode hashes, recorded unsigned shapes, and mutation acceptance. Executor fake-only and signer swap refusals stay enforced. |
+| C-OPEN-005 / #30 / DR06 | P1 dependency: transaction-bound native receipt/trace proof and first gas | C with B/D before Gate B / Oct20 target. Native proof must exclude unrelated changes and include USDT debit, BNB receipt/gas, reservations and dedicated round settlement. The API balance observation above does not prove a funded first transaction. Team addresses organiser funding if canonical evidence shows no BNB. |
+| C-OPEN-006 / DR01 | NOT-OFFLINE: three-day/weekend measured five-name costs | Isaac before Oct22 profile cut; propose collection Oct16–19 spanning Oct17–18 weekend, API-only process, hourly cycles, retained hashes, dated summary passed to B. Schedule is proposed, not an unattended process started here. Record slip if unavailable. |
+| C-OPEN-007 / DR03/17 | NOT-OFFLINE: real host access, credentials/clock, RDS grants, nonce/finality and fresh-wallet switch/rehearsal | C/D before Gate B / Oct20 (dev host), final switch reminder by Oct26 and activation Oct27–29. Follow named AWS_RUNBOOK host checks; no AWS or registered-wallet transactions in this review. Signer registered-build/HALT comparisons are now implemented offline; the other host/trust checks remain. |
+| C-OPEN-008 / #23 | P0 shared secrecy dependency: nested backup/restore and archive-visible execution raw bytes | D primary with C, before combined review closure / Oct20. C broadcast-response leak fixed; this does not repair restricted signature separation in execution_records/backup. Verify SIGNED_DURABLE export traversal, archive grants, hash-compatible restore and quarantine. |
+| C-OPEN-008 / #36 | P1 shared accounting dependency: canonical balance-to-ledger reconciliation | B with C/D before combined review closure / Oct20. Bind block/finality and BNB mark freshness; startup/periodic unsolicited-adjustment/restore-divergence cases; no fabricated fills. |
+| C-OPEN-008 / #28 and final driver acceptance | Shared audit/delivery and final merged-tree coverage | D with C before combined review closure / Oct20. C supplies stable broadcast/receipt identities and restart evidence; D proves pre-final broadcast audit/deadline and full-tree integration. |
+
+Tracker reconciliation on this base: #40 CLOSED and adapter/profile/merged composition regressions pass; #26 CLOSED and actual Service restart/immutable command reauthorization/claim/replay tests pass; #24 remains OPEN but C acquisition and merged cutoff/day-roll acceptance pass, with D final tree acceptance required. #27 and #30 remain OPEN, as do shared #23/#36. No tracker issue is closed by this task, and closing status alone is not used as evidence. The prior inventory's original trading-review ID collision remains D's shared-document reconciliation item, not hosting IDEA-046.
+
+## Requested shared edits — resumed exact text for D
+
+Replace the earlier C ledger suggestion with:
+`| IDEA-049-C | Final review C: execution, signing and wallet boundaries | partial; offline fixes verified, deployment gates remain | 57 source requirements; merged-driver/PG14.24 verification; 17 additional regressions; local 1246 passed / 7 skipped / 1583 subtests; broadcast reflection and independent signer authority fixed; real unsigned five-name snapshot and API balance evidence; PR70; remaining owners/checks in record | 2026-10-15 | [ledger/IDEA-049-C.md](ledger/IDEA-049-C.md) |`
+
+Replace the stale C/driver-unmerged paragraphs in INCOMPLETE_WORK with:
+`IDEA-049-C / PR70 continues the frozen catalogue on merged base c1b6daf. PR20/21/41/66 integration and offline driver/profile/cutoff/command-restart coverage are verified. C fixes reflected signed bytes in broadcast artifacts, independently checks signer registered build/wallet/HALT before key use and registry release, and accepts blank optional credential fields. Local PG14.24 full suite: 1246 passed / 7 skipped / 1583 subtests. No whole GAP is closed: C-OPEN-003..008 retain deadline/decoder/native-proof/first-gas/three-day-weekend/host-wallet-rehearsal and D/B backup/audit/reconciliation owners and named checks. Actual unsigned snapshot and NO_NATIVE_ENTRY API balance evidence are recorded in IDEA-049-C; neither proves live readiness.`
+
+Runbook/README readiness addition:
+`Section C's merged offline tests and unsigned API sample do not enable live execution. Before Gate B, verify attributable router/proxy/nested decoding, canonical nonce/finality and transaction-bound native receipts, first-gas funding, accepted lifetimes, real signer host credential/clock/RDS checks, and backup/balance/audit acceptance. Before profile approval, require all five names' three-day/weekend retained cost evidence; before final activation, rehearse separate fresh-wallet namespaces and confirm its audit secret by Oct26. The signer must match its verified build to the authoritative registered run build and reject HALT, even for a previously queued request.`
+
+D alone applies shared index/backlog/README/runbook edits. Completed portions must be removed from the live backlog once integrated and verified; keep remaining checks with their owners/deadlines. No SKILL F/K summary correction was found, so no shared summary edit is requested. Do not delete whole GAP lines while the host/live/cross-section evidence above remains outstanding.
