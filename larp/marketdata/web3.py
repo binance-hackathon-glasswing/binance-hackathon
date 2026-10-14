@@ -195,7 +195,7 @@ class Web3Client:
             if private_values:
                 # Preserve all pairs for screening: a parser's last-key-wins rule
                 # must not hide an escaped/mixed-case private value in raw exports.
-                pairs = json.loads(raw, object_pairs_hook=list)
+                pairs = json.loads(raw, object_pairs_hook=lambda items: [list(item) for item in items])
                 private_reflection = redact(pairs, private_values, ignore_case=True) != pairs
             if not private_reflection and not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
