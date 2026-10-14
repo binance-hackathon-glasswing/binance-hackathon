@@ -73,8 +73,14 @@ class Maintenance:
                                   "AND (event_id LIKE 'incident:%%' OR event_id LIKE 'halt:%%')", (run_id,)).fetchone()[0]
             covered = db.execute("SELECT max(covers_sequence) FROM archive_outbox WHERE run_id=%s AND kind='backup'",
                                  (run_id,)).fetchone()[0]
+            # At most one incident backup per hour: a crash loop journals an incident every few seconds, and each
+            # backup is a full export (IDEA-049 D-FND-021). Scheduled backups sit on interval boundaries.
+            recent = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
+                                'AND slot_ms %% %s <> 0 AND slot_ms > %s LIMIT 1',
+                                (run_id, self.backup_interval_ms, now_ms - HOUR_MS)).fetchone()
             version = run['version']
-        needs_incident_backup = incident is not None and (covered is None or covered < incident)
+        needs_incident_backup = (incident is not None and (covered is None or covered < incident)
+                                 and recent is None)
         if needs_anchor:
             # Full verification uses a read-only snapshot, never a wallet lock.
             # The anchor identifies that snapshot even if new rounds commit later.
@@ -147,9 +153,12 @@ class Maintenance:
         with self.store.transaction() as db:
             # A late failure must never overwrite another worker's ACK. An old
             # attempt cannot clobber a later attempt, even after lease expiration.
-            db.execute('UPDATE archive_outbox SET status=%s,last_error=%s,acknowledgement=%s '
+            # Once the write-once archive holds the bytes (receipt and SHA-256 kept), the database copy is released,
+            # so daily and incident backups do not accumulate in the database (IDEA-049 D-FND-021).
+            db.execute("UPDATE archive_outbox SET status=%s,last_error=%s,acknowledgement=%s,"
+                       "payload=CASE WHEN %s THEN ''::bytea ELSE payload END "
                        "WHERE run_id=%s AND kind=%s AND slot_ms=%s AND status<>'ACK' AND attempts=%s",
-                       (status, error, receipt.payload if status == 'ACK' else None,
+                       (status, error, receipt.payload if status == 'ACK' else None, status == 'ACK',
                         run_id, kind, slot, attempts + 1))
         return True
 
