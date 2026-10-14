@@ -4,7 +4,7 @@ from larp.execution_live.loop import RunAuthorization
 from larp.execution_live.store import ExecutionStore
 from larp.marketdata.port import TOKENS
 from larp.runtime.coordinator import batch_for
-from tests.execution_fixtures import intent, ROUTER
+from tests.execution_fixtures import intent
 from tests.support import DatabaseCase
 
 
@@ -81,7 +81,8 @@ class Resources(DatabaseCase):
 
     def test_c_req_028_final_approval_gas_counts_against_remaining_budget(self):
         self.planned(gas=1)
-        payload = Payload(56, self.economic.wallet, USDT, '0x00', 0, 0, 1000, 10**9)
+        payload = Payload(chain_id=56, sender=self.economic.wallet, to=USDT,
+                          data='0x00', value=0, nonce=0, gas=1000, gas_price=10**9)
         attempt = Attempt('fixture-approval', 'APPROVE', 'FINAL_SUCCESS', payload,
                           self.epoch, self.epoch, gas_used=1000)
         state = Execution(self.economic, attempts=(attempt,))
