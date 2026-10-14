@@ -6,7 +6,7 @@ import unittest
 from larp.execution import Blocked, NATIVE_BNB, Payload, SwapEconomics, USDT
 from larp.execution_live.service import map_command
 from larp.execution_live.venue import LiveVenue
-from larp.marketdata.port import MarketPort, TOKENS
+from larp.marketdata.port import MarketPort, TOKENS, slippage_percent
 from larp.marketdata.web3 import Unavailable
 from larp.research.fixtures import changed
 from larp.risk.planner import plan
@@ -25,6 +25,7 @@ class BoundQuotes(QuoteClient):
         raw = super().request(method, endpoint, params)
         if endpoint == 'aggregator/quote-and-swap':
             q = raw['response']['data'][0]
+            q['executionMode'] = 'SWAP'
             received = int(q['routerResult']['toTokenAmount'])
             bps = self.minimum_bps if self.minimum_bps is not None else int(float(params['slippagePercent']) * 100)
             q['tx']['minReceiveAmount'] = str(received * (10000 - bps) // 10000)
@@ -40,6 +41,12 @@ class SlippageRequirements(unittest.TestCase):
                   impact_bps=50, per_trade_cap_units=50000000)
     request = dict(schema='MarketRequest.v1', symbol='NVDAB', side='BUY', amount_kind='EXACT_IN',
                    pay_asset='USDT', pay_units=40000000, pay_decimals=6)
+
+    def test_c_req_014_percent_conversion_preserves_integral_percent_zeros(self):
+        for bps, expected in ((0, '0'), (1, '0.01'), (20, '0.2'), (50, '0.5'),
+                              (100, '1'), (1000, '10'), (9999, '99.99')):
+            with self.subTest(bps=bps):
+                self.assertEqual(slippage_percent(bps), expected)
 
     def test_c_req_014_initial_quote_uses_independent_20bp_profile(self):
         client = BoundQuotes()
@@ -87,6 +94,15 @@ class SlippageRequirements(unittest.TestCase):
                 max_gas=1000000, max_gas_price=10, gas_budget=20000000))
         self.assertEqual(economic.max_slippage_bps, 20)
 
+    def test_c_req_014_post_approval_quote_cannot_weaken_its_minimum_output(self):
+        client = BoundQuotes(); client.minimum_bps = 50
+        class Decoder:
+            def decode(self, payload):
+                return SwapEconomics(USDT, TOKENS['NVDAB'], 40 * 10**18, WALLET, 1, 1000, 0)
+        with self.assertRaises(Blocked):
+            LiveVenue(client, None, decoder=Decoder()).quote(
+                replace(intent(), amount=40 * 10**18, max_slippage_bps=20), 1)
+
 
 class GasClient:
     def __init__(self, *, scale=6):
@@ -96,10 +112,10 @@ class GasClient:
         q = dict(executionMode='SWAP', routerResult=dict(
             fromToken=dict(tokenContractAddress=USDT, decimal='18'),
             toToken=dict(tokenContractAddress=NATIVE_BNB, decimal='18'),
-            fromTokenAmount=params['amount'], toTokenAmount=str(10**15),
+            fromTokenAmount=params['amount'], toTokenAmount=str(241000 * 10**12),
             vendorName='LiquidMesh', priceImpactPercent='0.1'),
             tx=dict(to=ROUTER, data='0xdeadbeef', value='0', gas='200000', gasPrice='1',
-                    minReceiveAmount=str(10**15 * 998 // 1000)))
+                    minReceiveAmount=str(241000 * 10**12 * 998 // 1000)))
         self.mutation(q)
         return dict(response={'data':[q]}, available_at='2026-10-29T14:00:00+00:00',
                     artifact_sha256='a' * 64)
@@ -130,7 +146,7 @@ class GasQuoteRequirements(unittest.TestCase):
         self.assertEqual(client.params['toTokenAddress'], NATIVE_BNB)
         self.assertEqual(client.params['slippagePercent'], '0.2')
         self.assertEqual(quotes[0]['receive_decimals'], 6)
-        self.assertEqual(quotes[0]['token_units'], 1000)
+        self.assertEqual(quotes[0]['token_units'], 241000)
 
     def test_c_req_047_no_verified_proof_means_no_executable_quote(self):
         self.assertEqual(self.port(GasClient(), verifier=None)(0), [])
@@ -139,7 +155,7 @@ class GasQuoteRequirements(unittest.TestCase):
         mutations = [lambda q: q['routerResult']['toToken'].update(tokenContractAddress=TOKENS['NVDAB']),
             lambda q: q['routerResult'].update(fromTokenAmount='1'),
             lambda q: q['tx'].update(value='1'),
-            lambda q: q['tx'].update(minReceiveAmount=str(10**15 * 995 // 1000)),
+            lambda q: q['tx'].update(minReceiveAmount=str(241000 * 10**12 * 995 // 1000)),
             lambda q: q['routerResult'].update(vendorName='Unknown')]
         for mutation in mutations:
             client = GasClient(); client.mutation = mutation
@@ -155,7 +171,7 @@ class GasQuoteRequirements(unittest.TestCase):
 
     def test_c_req_048_native_chain_scale_is_not_accounting_scale(self):
         quote = self.port(GasClient(), scale=18)(0)[0]
-        self.assertEqual(quote['token_units'], 10**15)
+        self.assertEqual(quote['token_units'], 241000 * 10**12)
         self.assertEqual(quote['receive_decimals'], 18)
 
     def test_c_req_015_gas_quote_retains_retrieval_time_even_after_cutoff(self):
