@@ -9,6 +9,7 @@
 3. while a committed command still waits to be claimed by the execution service, nothing else is committed: any
    commit would make the command stale (I3, `PostgresStore.command` needs the run's current version);
 4. the first cycle of a UTC day rolls the daily risk anchor at the prefetched marks (`DayRoll`);
+   a round whose orders are all broadcast or final is logged at once (`log_disposed`), before receipts are final;
 5. at most one unit of evidence work (`EvidenceWork.next`) runs as one coordinator round, after the market
    observations are fetched, so the decision time is never before them (#24); if the round asked for quotes and an
    executable one comes back, a bounded follow-up round plans from it;
@@ -321,11 +322,22 @@ class ServiceExecution:
             sealed.append(round_id)
         return sealed
 
+    def log_disposed(self, now_ms):
+        """Log every open round whose orders are all disposed (broadcast or final) but not yet final (#28)."""
+        c = self.coordinator
+        logged = []
+        for round_id, record in sorted(c.store.load(c.run_id).read()['projection'].get('round_records', {}).items()):
+            if record.get('execution_pending') and not record.get('logged') and c.disposed(record):
+                c.log_round(round_id, now_ms)
+                logged.append(round_id)
+        return logged
+
     def settle_open(self, now_ms):
         applied, refused = self.ingest()
         self.ingested, self.refused = applied, refused
         self.expired = self.expire(now_ms)
         self.sealed = self.seal()
+        self.logged = self.log_disposed(now_ms)
         return []  # rounds close through Coordinator.recover once every intent is final
 
 
@@ -644,7 +656,7 @@ class RoundDriver:
     def once(self, now_ms):
         c = self.coordinator
         summary = dict(closed=len(self.execution.settle_open(now_ms)), round_id=None)
-        for key in ('ingested', 'refused', 'expired', 'sealed'):
+        for key in ('ingested', 'refused', 'expired', 'sealed', 'logged'):
             if getattr(self.execution, key, None):
                 summary[key] = list(getattr(self.execution, key))
         c.recover(now_ms)

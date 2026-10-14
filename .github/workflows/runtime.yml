@@ -1,7 +1,8 @@
 name: Runtime acceptance
 on:
   push:
-    branches: [codex/runtime-audit-platform]
+    # Every branch that can ship: the challenge branch, the integration branch and the review branches (#49).
+    branches: [main, 'codex/system-testing-*', 'review/final-*']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -76,4 +77,13 @@ jobs:
               echo "| \`$(git rev-parse HEAD)\` | \`$(basename "$f")\` | \`$(sha256sum "$f" | cut -d' ' -f1)\` |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
+      # Keep the exact bundle whose hash the summary records, for the activation pack (IDEA-047 R6; #49).
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: larp-bundle-x86_64
+          path: |
+            /tmp/larp-bundle/larp-*-x86_64.tar.gz
+            /tmp/larp-bundle/larp-*-x86_64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 90
       - run: bash tools/test_host_bundle.sh /tmp/larp-bundle/larp-*-x86_64.tar.gz

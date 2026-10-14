@@ -355,7 +355,7 @@ for _name in [n for n in dir(bundle_tests.ReleaseBundle) if n.startswith('test_'
 class ContinuousIntegration(unittest.TestCase):
     def test_d_req_055_ci_keeps_the_bundle_and_runs_on_the_branches_that_ship(self):
         workflow = (ROOT / '.github/workflows/runtime.yml').read_text(encoding='utf-8')
-        push = re.search(r'push:\s*\n\s*branches:\s*\[([^\]]*)\]', workflow)
+        push = re.search(r'push:\s*\n(?:\s*#.*\n)*\s*branches:\s*\[([^\]]*)\]', workflow)
         branches = {b.strip().strip('\'"') for b in push.group(1).split(',')} if push else set()
         for branch in ('main', 'codex/system-testing-*', 'review/final-*'):
             self.assertIn(branch, branches)
@@ -401,7 +401,7 @@ def credential_findings(files):
 class CredentialScan(unittest.TestCase):
     def test_d_req_062_the_scanner_flags_each_planted_kind(self):
         planted = {
-            'a.txt': b'-----BEGIN EC PRIVATE KEY-----\nAAAA\n',
+            'a.txt': b'-----BEGIN EC PRIVATE' + b' KEY-----\nAAAA\n',  # split so this file does not match
             'b.txt': b'key AKIA' + b'ABCDEFGHIJKLMNOP' + b' here',
             'c.json': b'{"AI_SEEDS_SECRET": "' + b'ab' * 32 + b'"}',
             'd.env.sample': b'WALLET_PRIVATE_KEY=0x' + b'cd' * 32,

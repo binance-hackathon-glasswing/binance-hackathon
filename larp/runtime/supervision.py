@@ -13,7 +13,7 @@ run's owner epoch; epoch takeover stays reserved for standby promotion, which is
   failure quarantines the run (every write and signature fenced) and reports the incident through the health check.
 """
 
-from larp.audit.delivery import deadline_breaches
+from larp.audit.delivery import deadline_breaches, unlogged_rounds
 from larp.contracts import ContractError, Document
 from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.storage.postgres import IntegrityError
@@ -120,6 +120,7 @@ class Guard:
             return actions  # no other check is meaningful against a clock that moved backward
         with self.store.transaction() as db:
             overdue = deadline_breaches(db, self.run_id, now_ms)
+        overdue = overdue + ['round:' + r for r in unlogged_rounds(projection, now_ms)]
         if overdue and 'DELIVERY_DEADLINE' not in active:
             self._halt('DELIVERY_DEADLINE', now_ms, dict(events=overdue[:20], count=len(overdue)))
             actions.append('HALT:DELIVERY_DEADLINE')

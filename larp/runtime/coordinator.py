@@ -370,12 +370,49 @@ class Coordinator:
             decision_ids=decisions,address=self.address,timestamp_ms=now_ms,input_record=inputs,rationale=rationale,
             output=output,orders=record['orders'],swap_mappings=record['swap_mappings'],round_kind=kind)
 
+    @staticmethod
+    def disposed(record):
+        """True when every planned intent of the round is final or has its swap broadcast: the round's orders, and
+        every `tx_hash` they will ever carry, are then known (kit: tx_hash once broadcast, whatever the outcome)."""
+        final=set(record.get('final_intents',[]))
+        intents=record['plan'].get('intents',[])
+        return bool(intents) and all(i['intent_id'] in final or record['orders'][n].get('tx_hash') is not None
+                                     for n,i in enumerate(intents))
+
+    def log_round(self,round_id,now_ms):
+        """Commit the round's one ai-seeds log as soon as its orders are disposed, before receipts are final
+        (IDEA-049 D-FND-002, #28). The round stays open in the projection until every intent is final, so later
+        receipt facts still settle into the journal; `close` then writes no second log."""
+        previous=self.store.receipt(self.run_id,'logged:'+round_id)
+        if previous:
+            return previous
+        current=self.store.load(self.run_id)
+        projection=current.read()['projection']
+        record=projection.get('round_records',{}).get(round_id)
+        if record is None or not record.get('execution_pending') or record.get('logged') or not self.disposed(record):
+            raise Conflict('Round is not awaiting a log of its disposed orders')
+        audit=self.audit_record(record,round_id,now_ms,'BROADCAST_PENDING_FINALITY',current.read()['head'])
+        record['logged']=dict(event_id=audit.read()['event_id'],at_ms=now_ms)
+        return self.store.commit(batch_for(current,'logged:'+round_id,
+                                           dict(kind='ROUND_LOGGED',round_id=round_id,at_ms=now_ms),
+                                           projection=projection,audit=[audit]))
+
     def close(self,round_id,now_ms,status):
         previous=self.store.receipt(self.run_id,'close:'+round_id)
         if previous:
             return previous
         current=self.store.load(self.run_id)
         record=current.read()['projection'].get('round_records',{}).get(round_id)
+        if record is not None and record.get('logged'):
+            # Its log was committed when its orders were disposed (log_round); closing only ends the round.
+            if record.get('execution_pending'):
+                raise Conflict('Round awaits terminal execution reconciliation')
+            projection=current.read()['projection']
+            projection['round_records'].pop(round_id)
+            projection.pop('closed_rounds',None)
+            return self.store.commit(batch_for(current,'close:'+round_id,
+                dict(kind='ROUND_CLOSED',status=status,round_id=round_id,logged_event_id=record['logged']['event_id']),
+                projection=projection))
         close_event=dict(kind='ROUND_CLOSED',status=status,round_id=round_id)
         if record is None:
             request=dict(self.store.open_rounds(self.run_id))[round_id].read()
@@ -405,6 +442,15 @@ class Coordinator:
                 receipts.append(self.close(round_id,now_ms,status))
             except ContractError as exc:
                 failures.append((round_id,type(exc).__name__))
+        # A round whose log was committed before finality (log_round) is no longer an open `rounds` row; close it
+        # once every intent is final.
+        records=self.store.load(self.run_id).read()['projection'].get('round_records',{})
+        for round_id,record in sorted(records.items()):
+            if record.get('logged') and not record.get('execution_pending'):
+                try:
+                    receipts.append(self.close(round_id,now_ms,'COMPLETE'))
+                except ContractError as exc:
+                    failures.append((round_id,type(exc).__name__))
         if failures:
             raise RecoveryIncomplete(receipts,failures)
         return receipts

@@ -112,6 +112,29 @@ variable "monthly_budget_usd" {
     error_message = "Budget must be positive."
   }
 }
+variable "credit_budget_usd" {
+  description = "The one-off AWS credit (IDEA-046: $100, expiring 2027-04-12); the whole-period budget alerts against it."
+  type        = number
+  default     = 100
+  validation {
+    condition     = var.credit_budget_usd > 0
+    error_message = "Credit budget must be positive."
+  }
+}
+variable "credit_period_start" {
+  description = "Start of the credit budget period (AWS format YYYY-MM-DD_hh:mm), before the first hosted spend."
+  type        = string
+  default     = "2026-10-01_00:00"
+}
+variable "credit_period_end" {
+  description = "End of the credit budget period: the credit expiry (IDEA-046), after the winner audit and archive."
+  type        = string
+  default     = "2027-04-12_00:00"
+  validation {
+    condition     = can(regex("^20[0-9]{2}-[0-9]{2}-[0-9]{2}_[0-9]{2}:[0-9]{2}$", var.credit_period_end)) && tonumber(replace(substr(var.credit_period_end, 0, 10), "-", "")) >= 20270101
+    error_message = "The credit budget must run in the AWS format until at least 2027-01-01."
+  }
+}
 variable "budget_notification_emails" {
   description = "Alert recipients. Supplied in an uncommitted tfvars file; no budget alert is created without one."
   type        = list(string)
