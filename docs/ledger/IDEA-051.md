@@ -25,4 +25,12 @@
 3. **The full suite stays green**, with both new tests included.
 
 ## Results
-- (fill after running)
+- 2026-10-14 UTC: criteria committed at `3c156f7`, before the tools existed. Tools and tests committed at `426a7a5`, before any run.
+- **Criterion 1: PASS (synthetic).** `PutServiceSecrets` uses a fake `aws` on the PATH. It checks that exactly the runtime and uploader names are written, that values arrive on stdin only (never in argv, stdout or stderr), that declining writes nothing, and that a bad address, bad audit secret, bad name or empty key are refused. A real AWS CLI call with a dummy `{}` against a non-existent secret ID reached the API (`ResourceNotFoundException`), so `file:///dev/stdin` is accepted. **No real secret value was written.**
+- **Criterion 2: PASS (synthetic).** `RenderHostConfigs`: only infrastructure keys are filled; secret IDs come from the ARNs; the wallet is lowercased; a filled uploader config passes `larp.audit.service.validate_config`; there are refusals for wallet, ARN, account mix and missing output; files are `0600`; it refuses a non-ignored directory; there is no overwrite without `--force`. A parse-only run against the real `terraform output -json` resolved name `larp-dev`, region `ap-southeast-2` and secret IDs `larp-dev/{runtime,uploader,evidence}`, and listed every unset value. **No config was written** (no wallet address yet).
+- **Criterion 3: PASS locally, CI pending.** Full suite on macOS, Python 3.12.15, without PostgreSQL: 1007 passed, 262 skipped (database and Linux-only cases), 1460 subtests. Linux CI with PostgreSQL runs on the PR.
+- **Findings for deployment day:**
+  - The SNS alarm subscription is `PendingConfirmation`.
+  - The Session Manager plugin is not installed on the Mac.
+  - The latest AL2023 x86_64 AMI is `ami-0c82c1a90be4dccc1` (2026-10-14).
+  - A `dev` run needs a LIVE profile (`larp/runtime/service.py:191`), which needs a measured `QuoteCostSummary.v1` that no tool produces yet. This blocks Gate A until Isaac/Keith supply it.
