@@ -1,18 +1,25 @@
 """IDEA-049-C requirement-derived quotes; synthetic external responses only."""
 from dataclasses import replace
+import base64
+import hashlib
+import hmac
+import tempfile
 import unittest
+from unittest.mock import patch
+from urllib.parse import urlencode
 
 from larp.execution import Blocked, NATIVE_BNB, Payload, SwapEconomics, USDT
 from larp.execution_live.service import map_command
 from larp.execution_live.venue import LiveVenue
 from larp.marketdata.port import MarketPort, TOKENS, slippage_percent
-from larp.marketdata.web3 import Unavailable
+from larp.marketdata.web3 import Artifacts, Unavailable, Web3Client
 from larp.research.fixtures import changed
 from larp.risk.planner import plan
 from tests.strategy.live_fixtures import live_snapshot
 from tests.marketdata.test_quote_contract import QuoteClient, proof, WALLET, ROUTER, STAMP
 from tests.execution import test_live_boundaries as command_fixtures
 from tests.execution_fixtures import intent
+from tests.marketdata.test_transport import Opener
 
 
 class BoundQuotes(QuoteClient):
@@ -46,6 +53,21 @@ class SlippageRequirements(unittest.TestCase):
                               (100, '1'), (1000, '10'), (9999, '99.99')):
             with self.subTest(bps=bps):
                 self.assertEqual(slippage_percent(bps), expected)
+
+    def test_c_req_007_get_signature_binds_escaped_query_and_fixed_timestamp(self):
+        params = {'binanceChainId': '56', 'tokenContractAddresses': '0xabc,0xdef', 'note': 'a+b c'}
+        target = '/api/v1/dex/market/rwa/price?' + urlencode(params)
+        timestamp = '2026-10-14T12:00:00.123Z'
+        expected = base64.b64encode(hmac.new(b'fixture-secret',
+            (timestamp + 'GET/build' + target).encode(), hashlib.sha256).digest()).decode()
+        with tempfile.TemporaryDirectory() as root, patch('larp.marketdata.web3.utc', return_value=timestamp):
+            opener = Opener(b'{"code":0,"data":[]}')
+            client = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root), opener=opener)
+            client.request('GET', 'market/rwa/price', params)
+        sent = opener.calls[0]
+        self.assertEqual(sent.full_url, 'https://web3.binance.com/build' + target)
+        self.assertEqual(sent.get_header('X-oc-sign'), expected)
+        self.assertIsNone(sent.data)
 
     def test_c_req_014_initial_quote_uses_independent_20bp_profile(self):
         client = BoundQuotes()
