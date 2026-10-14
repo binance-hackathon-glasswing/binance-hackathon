@@ -56,7 +56,12 @@ class Preflight(unittest.TestCase):
     def test_committed_register_is_refused_until_terms_are_captured(self):
         reasons = live_preflight(self.sources, self.env)
         enabled = sorted(s.source_id for s in self.sources.values() if s.enabled)
-        self.assertEqual(reasons, [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled] + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
+        expected = [(f"TERMS_ARTIFACT_UNAVAILABLE:{s}" if self.sources[s].rights.get("terms_evidence_sha256")
+                     else f"TERMS_EVIDENCE_MISSING:{s}") for s in enabled]
+        self.assertEqual(reasons, expected + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
+        absent = {k: replace(s, rights=dict(s.rights, terms_evidence_sha256=None)) for k, s in self.sources.items()}
+        self.assertEqual(live_preflight(absent, self.env),
+                         [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled] + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
         self.assertNotIn("ftc-press", enabled)  # stays disabled until its connectivity is resolved
 
     def test_each_missing_piece_refuses(self):

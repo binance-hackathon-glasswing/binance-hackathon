@@ -296,3 +296,9 @@ New code assumptions:
 A-T19/A-T20 pass initially at `621f687`: **7 passed**, including real SQLite source-URI retention and real PostgreSQL provider-failure trail/retry/idempotency. A-T21 reaches the actual validated OPEN/DRAFT DEV-20 and fails its assertion; this confirms A-FND-015's unmet declaration, not an import/setup error. A-REQ-038 is now component COVERED; D still owns hosted incident delivery.
 
 Prospective **A-T22 / A-REQ-060–061 / A-UC-100**: a hosted assessment completes one real allowlisted tool, then the next external model call hangs past the 200 ms test deadline. The result must be UNAVAILABLE while retaining the completed tool call and full original result pointer/hash for audit. No late model reply may revive it. Real store/artifacts are used; only model HTTP is blocked with an event. Suspected abandoned-worker result currently drops all tool calls. Commit and push test before run and before any fix.
+
+### Amendment 18: audit abandonment finding and fix
+
+A-T22 fails at pushed `edcba22`: the result correctly reports UNAVAILABLE with two started model calls, but zero retained tools after one tool completed. **A-FND-016 P1**: hard abandonment drops declared tool call/result audit records. Correction shares the completed-call list with the deadline snapshot and copies those calls into the abandoned result. They are audit-only; evidence/claims remain empty, no late output revives authority. Tool count is the number of completed retained calls; any call still executing is not claimed complete. Normal successful traces are unchanged.
+
+The committed-register refusal test now handles real partial capture metadata: captured hashes with no bytes in its synthetic empty root must return ARTIFACT_UNAVAILABLE; uncaptured SEC hashes return EVIDENCE_MISSING. A second all-null fixture preserves every original missing-capture assertion. No refusal is weakened or source declared cleared.

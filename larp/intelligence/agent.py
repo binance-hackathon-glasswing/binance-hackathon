@@ -210,7 +210,7 @@ class EvidenceAssessor:
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
         box, cancel = {}, threading.Event()
-        io = {"steps": [], "started": 0}  # model I/O as it happens, so a deadline result can still record it
+        io = {"steps": [], "started": 0, "tool_calls": []}  # completed I/O survives hard abandonment
 
         def work():
             try:
@@ -232,6 +232,7 @@ class EvidenceAssessor:
         entry, cutoff, max_calls, deadline, tools, context, refs = validated
         index = EvidenceIndex(self.reader, entry, cutoff)
         state = _State(entry, index, self.config, cutoff, tools, context)
+        state.tool_calls = io["tool_calls"]
         self._load_refs(state, refs)
         self._source_health(state, r.get("source_health"))
         status, reasons, model_io, claims_out, rejected = None, [], io["steps"], None, []
@@ -543,6 +544,7 @@ class EvidenceAssessor:
         """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
         completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
         steps = list(io["steps"])
+        tool_calls = [dict(c) for c in io["tool_calls"]]
         in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
@@ -565,9 +567,9 @@ class EvidenceAssessor:
             "freshness": None, "falsifiers": [], "proposed_thesis": None,
             "expiry_ms": now + self.config.p("result_ttl_ms"),
             "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
-            "budget_used": {"tool_calls": None, "model_steps": None, "elapsed_ms": now - start},
+            "budget_used": {"tool_calls": len(tool_calls), "model_steps": None, "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
-            "model_io": {"steps": steps, "tool_calls": [],
+            "model_io": {"steps": steps, "tool_calls": tool_calls,
                          "cot": [x["response"]["reasoning_summary"] for x in steps
                                  if "response" in x and x["response"]["reasoning_summary"]],
                          "model_called": io["started"] > 0, "requests_started": io["started"],
@@ -575,8 +577,8 @@ class EvidenceAssessor:
                          "in_flight": in_flight,
                          "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
                                  "audit only; a call in flight at the deadline is counted in requests_started and "
-                                 "named in in_flight with its stored request bytes; tool results are not part of "
-                                 "this result"},
+                                 "named in in_flight with its stored request bytes; completed tool calls/results "
+                                 "are retained for audit only, never used as decision evidence"},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
