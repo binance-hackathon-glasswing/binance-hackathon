@@ -285,3 +285,22 @@ All four jobs pass in [Linux CI 38538487692](https://github.com/binance-hackatho
   evaluation occurred. No whole GAP is complete. Remaining owners and work are in INCOMPLETE_WORK and the runbook:
   Keegan + Isaac for signer access/first-host checks and integration; Keegan for signer version binding/log shipping;
   Yao Zhu for live evidence inputs and approval of any infrastructure update; team for rehearsal/final freeze.
+
+## New PR #20 review R14–R15 (2026-10-14, Isaac / Codex): prospective criteria
+
+Review at `185704e` (wtvlol, review submitted 09:24 UTC) reports two valid additional failure paths. User requested
+assessment and fixes. Criteria are pushed before implementation/testing; no AWS action or live credential use.
+
+| ID | Pass criterion / implementation decision |
+|---|---|
+| R14 | Exceptions fetching the uploader secret become a sanitized retryable failure (exit 1), so Restart=always retries after provider recovery. Invalid configuration, malformed secret response/content, wrong wallet and foreign credentials remain exit-4 refusals. A pinned-release test exercises failure then recovery, including queued-log delivery with disposable PostgreSQL; no credential or arbitrary provider exception text appears in output/tracebacks. |
+| R15 | Keep SQLite and use DELETE rollback journaling for the **shared live evidence writer only**, leaving private stores' WAL default unchanged. The read-only runtime needs no writable evidence mount and cannot create WAL/SHM sidecars. A two-user AL2023 regression closes the writer, opens the reader first, restarts the writer, verifies new commits while the reader stays open, then reopens again after reader close; data survives and no incompatible WAL/SHM files appear. Test conversion from legacy WAL with committed data and document a stopped-services ownership repair for legacy sidecars; never delete a WAL that may hold committed data. |
+
+R15 rationale: group-writable database modes plus setgid would share sidecars but broaden database write access.
+Rollback journaling removes that dependency and lets ProtectSystem=strict protect the evidence directory on the
+runtime. Ingestion is low cadence; concurrent reads remain supported through SQLite locking. A crash with a hot
+rollback journal requires writer recovery before read-only consumption; the runtime cannot repair or mutate it.
+SQLite's documented modes/source were checked: [WAL read-only caveats](https://sqlite.org/wal.html#read_only_databases).
+
+Required evidence: focused and full offline tests, two-user host-bundle CI, PostgreSQL CI, existing real-systemd
+and mock Terraform checks. Hosted/performance/rehearsal gates remain open. No whole GAP is completed by this scope.
