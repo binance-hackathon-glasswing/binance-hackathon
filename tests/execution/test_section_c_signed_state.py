@@ -1,6 +1,5 @@
 """C-REQ-012/036/037: legitimately produced PostgreSQL state has no signed bytes."""
 import base64
-import json
 import uuid
 
 from larp.execution import Blocked, Conflict, Executor, Signed
@@ -48,7 +47,12 @@ class SignedState(DatabaseCase):
                     if type(value) is dict and 'bytes' in value:
                         raw = base64.b64decode(value['bytes'])
                         self.assertNotIn(self.signature.raw_hex.encode(), raw)
-        self.assertEqual(tables['execution_signatures']['rows'], [])
+        item = tables['execution_signatures']
+        signed_column = item['columns'].index('signed')
+        self.assertEqual(len(item['rows']), 1)
+        marker = base64.b64decode(item['rows'][0][signed_column]['bytes'])
+        self.assertNotIn(self.signature.raw_hex.encode(), marker)
+        self.assertIn(b'redacted', marker)
 
     def test_c_req_036_restart_broadcasts_original_registry_bytes_once(self):
         self.restart()
@@ -99,4 +103,5 @@ class SignedState(DatabaseCase):
         self.assertTrue(target.load('run').read()['quarantined'])
         restored = ExecutionStore(target, run_id='run', wallet=WALLET)
         self.assertEqual(restored.load(self.key).attempts[-1].tx_hash, self.signature.tx_hash)
-        self.assertIsNone(restored.lookup(self.attempt.attempt_id, self.attempt.payload.hash))
+        with self.assertRaises(Conflict):
+            restored.lookup(self.attempt.attempt_id, self.attempt.payload.hash)
