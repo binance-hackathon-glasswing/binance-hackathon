@@ -125,6 +125,23 @@ Two independent read-only reviewers (runtime/execution/deployment; evidence/rese
 
 The reviewer's unverified HCL concern (`local.db_users[each.key]` in the unselected branch for `evidence`) is cleared: CI `terraform test` plans the host policy for every host, including `evidence`.
 
+## PR #18 review follow-up: V01 listing rows (2026-10-14, Claude)
+
+Keegan's PR #18 review asked whether one malformed or unexpected listing row can keep an issuer `INCOMPLETE` for the whole run (V01), and posed two checks.
+
+- **Real data (check 2), read-only, run before any code change:** `data.sec.gov/submissions` for the five issuers (CIKs 1045810, 1652044, 1318605, 789019, 2120882), fetched 2026-10-14 with the repo's SEC user agent and parsed with this branch's `listing_rows` at `393c2d8`: 4,036 rows (`filings.recent` back to 2018–2023; SK hynix 34 rows from 2026-03-24), **0 malformed rows** (no empty `primaryDocument`, no non-string column values) and **0 other-class periodic/current forms**. Raw files stay outside Git.
+- **Unwatched forms (check 1):** a malformed row whose form is readable and is neither watched for the issuer nor a periodic/current form of either filer class (Form 4, 144, SC 13G, …) cannot hide watched evidence, so it should not count as a coverage gap.
+
+Prospective acceptance for V12 (recorded before implementation):
+
+| ID | Criterion |
+|---|---|
+| V12 | In `Ingestor.poll`, an in-scope malformed row whose `form` is a non-empty string with `entry.form_class(form) is None` and `form` not in `ALL_PERIODIC_AND_CURRENT`, and whose accession is not pending, is counted in `ignored_forms` and leaves coverage complete (`health.status == "OK"`), on the first poll and on relisting. Malformed rows with an empty or unreadable form, a watched form, an other-class periodic/current form, or a pending accession still mark `INCOMPLETE` as before. A regression test fails on `393c2d8` and passes after the fix; the IDEA-044 V01 test, `tests/intelligence` and the full suite pass. |
+
+Result (2026-10-14): **V12 PASS.** Test `test_malformed_rows_of_unwatched_forms_are_not_coverage_gaps` pushed at `df08b23`; on unfixed `ingest.py` it failed (2 of 5 subtests: Form 4 and SC 13G rows marked `INCOMPLETE`). Fix pushed at `7a996ba`, then: the new and V01 tests pass, `tests/intelligence` 281 passed (936 subtests), full suite 1059 passed, 4 skipped (environment), 1335 subtests, with PostgreSQL 14.24 in Docker (macOS, Python 3.12.14).
+
+Not changed: an in-scope malformed row of a watched form, and an in-scope other-class periodic/current form, still mark the issuer `INCOMPLETE` on every poll in which they are listed (fail closed). The real-data check found neither for any issuer; turning them into a once-per-accession record, as the dead-letter rule does, remains part of the V01 owner confirmation (Yao Zhu).
+
 ## Remaining production work
 
 Existing GAP-13/23/24/26/27/35/36/37/41/44/45/49/50/52/57/62/64/65/67 remain governed by `docs/INCOMPLETE_WORK.md`. In particular the executable service still deliberately refuses with `NOT_INTEGRATED` until its production driver is wired and independently qualified (Keegan + Isaac); real signing/nonce/finality/first BNB, real source/model/economic evidence, hosted restore/alert drills and final parameters are not established by synthetic testing. This review does not activate any pending authority.

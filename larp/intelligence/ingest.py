@@ -115,6 +115,12 @@ class Ingestor:
                 except (IntelligenceError, ValueError, TypeError):
                     stamp = None
                 pending = type(row["accession"]) is str and row["accession"] in cursor["pending"]
+                # A readable form no filer class watches (Form 4, 144, SC 13G, ...) cannot hide
+                # watched evidence either (IDEA-044 V12).
+                if not pending and row["form"] and entry.form_class(row["form"]) is None \
+                        and row["form"] not in ALL_PERIODIC_AND_CURRENT:
+                    outcome["ignored_forms"] += 1
+                    continue
                 if stamp is None or in_scope(stamp) or pending:
                     outcome["malformed_rows"] += 1
                 continue

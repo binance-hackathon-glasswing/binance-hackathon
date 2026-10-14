@@ -180,6 +180,28 @@ class EdgarCoverage(IngestHarness):
                 self.assertEqual(self.cursor()["health"]["status"], "OK" if complete else "INCOMPLETE")
                 self.assertEqual(self.poll()["coverage_complete"], complete)  # relisting is judged the same
 
+    def test_malformed_rows_of_unwatched_forms_are_not_coverage_gaps(self):
+        # IDEA-044 V12: a readable form that no issuer class watches cannot hide watched evidence.
+        from larp.intelligence.ingest import ALL_PERIODIC_AND_CURRENT
+        entry = self.registry.by_issuer(EXSEMI)
+        watched = next(f for f in ("8-K", "6-K") if entry.form_class(f) is not None)
+        other = sorted(f for f in ALL_PERIODIC_AND_CURRENT if entry.form_class(f) is None)[0]
+        recent = "2026-10-01T20:00:00+00:00"
+        cases = [((("0009900001-26-000911", "4", recent, ""),), True),
+                 ((("0009900001-26-000912", "SC 13G", "not-a-time", ""),), True),
+                 ((("0009900001-26-000913", watched, recent, ""),), False),
+                 ((("0009900001-26-000914", other, recent, ""),), False),
+                 ((("0009900001-26-000915", "", recent, ""),), False)]
+        for rows, complete in cases:
+            with self.subTest(rows=rows):
+                self.setUp()
+                self.with_rows(*rows)
+                outcome = self.poll()
+                self.assertEqual(outcome["coverage_complete"], complete)
+                self.assertEqual(self.cursor()["health"]["status"], "OK" if complete else "INCOMPLETE")
+                self.assertEqual(outcome["malformed_rows"], 0 if complete else 1)
+                self.assertEqual(self.poll()["coverage_complete"], complete)
+
     def test_bad_listing_preserves_unavailable_health_without_records(self):
         self.add("EXSEMI_Q3_8K")
         original = self.source.list_filings
