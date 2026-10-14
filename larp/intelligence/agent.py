@@ -347,6 +347,9 @@ class EvidenceAssessor:
         state.attempted.add(key)
         record = {"index": len(state.tool_calls), "tool": tool, "args": args if type(args) is dict else {},
                   "started_ms": started}
+        # Publish an immutable dispatch record before any tool I/O; a hard stop can occur in that I/O.
+        state.tool_calls.append(dict(record, status="STARTED", error=None, result_sha256=None,
+                                     result_artifact=None, latency_ms=None))
         try:
             result = run_tool(state, tool, args)
             # Original results are audit artifacts, never executable destinations in the call summary.
@@ -364,7 +367,7 @@ class EvidenceAssessor:
             state.tool_results.append({"tool": tool, "status": "TOOL_ERROR", "error": str(exc)})
             state.missing.append(f"TOOL_ERROR:{tool}:{exc}")
         record["latency_ms"] = self.clock() - started
-        state.tool_calls.append(record)
+        state.tool_calls[record["index"]] = record  # atomically replace the dispatch with completed audit data
 
     # ------------------------------------------------------------------ result
     def _verify_claims(self, state, claims):
@@ -545,6 +548,9 @@ class EvidenceAssessor:
         completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
         steps = list(io["steps"])
         tool_calls = [dict(c) for c in io["tool_calls"]]
+        for call in tool_calls:
+            if call["status"] == "STARTED":
+                call["status"] = "IN_FLIGHT_AT_DEADLINE"
         in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
