@@ -8,6 +8,8 @@ to reproduce the local checks. Isaac's independent review remains required.
 
 ## Current target: lean two-host deployment (IDEA-046, 2026-10-12)
 
+**Current AWS state, login steps and the next steps in order: [AWS_RUNBOOK.md](AWS_RUNBOOK.md).**
+
 The six-host design below is **superseded for deployment** by IDEA-046 Option B, which fits the team's $100 AWS
 credit budget. Rows below that say six hosts, NAT or interface endpoints describe the earlier template; Git history keeps it.
 
