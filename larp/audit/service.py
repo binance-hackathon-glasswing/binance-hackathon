@@ -48,9 +48,14 @@ def validate_config(value):
     interval = value['interval_seconds']
     if type(interval) not in (int, float) or not math.isfinite(interval) or interval <= 0:
         raise ContractError('Invalid uploader interval')
-    for key, default in (('max_attempts', 8), ('retry_ms', 30000), ('batch', 50)):
+    if 'max_attempts' in value:
+        # Round logs are retried until acknowledged (IDEA-047 R1); an attempt cap would latch a delivery HALT.
+        raise ContractError('max_attempts is not supported: transient delivery failures are retried until ACKed')
+    for key, default in (('retry_ms', 30000), ('max_backoff_ms', 300000), ('batch', 50)):
         if type(value.get(key, default)) is not int or value.get(key, default) < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    if value.get('max_backoff_ms', 300000) < value.get('retry_ms', 30000):
+        raise ContractError('max_backoff_ms must be at least retry_ms')
     foreign = [k for k in value if (k.endswith('_secret_id') and k != 'uploader_secret_id')
                or 'private_key' in k or 'mnemonic' in k or k in ('key_file', 'key_credential')]
     if foreign:
@@ -152,8 +157,8 @@ def main(argv=None, *, client_factory=secrets_client, receiver_factory=None,
         store = open_service_store(config)
         receiver = (receiver_factory or HttpReceiver)(config['wallet_address'], secret)
         uploader = Uploader(store, config['run_id'], config['wallet_address'],
-                            DeliveryWorker(store, receiver, max_attempts=config.get('max_attempts', 8),
-                                           retry_ms=config.get('retry_ms', 30000)),
+                            DeliveryWorker(store, receiver, retry_ms=config.get('retry_ms', 30000),
+                                           max_backoff_ms=config.get('max_backoff_ms', 300000)),
                             batch=config.get('batch', 50))
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))

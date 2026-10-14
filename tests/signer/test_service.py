@@ -251,6 +251,36 @@ class SignerRefusals(SigningCase):
         self.service.once()
         self.assertEqual(len(self.signatures()), 2)
 
+    def test_r2_mistyped_gates_are_refused_and_the_cycle_continues(self):
+        """IDEA-047 R2: a malformed request is refused; the next valid one is signed in the same cycle."""
+        state, attempt = self.authorized()
+        good = self.guards.snapshot(state.intent, 12)
+        bad = {}
+        for name, change in (('observed_at', '12'), ('expires_at', None), ('epoch', True), ('state_version', 1.0),
+                             ('nonce', '7'), ('risk_valid', 1)):
+            bad[name], _ = self.request(state, attempt, gates=replace(good, **{name: change}))
+        valid, _ = self.request(state, attempt, gates=good)
+        self.service.once()
+        refusals = self.refusals()
+        for name, request_id in bad.items():
+            with self.subTest(field=name):
+                self.assertIn('malformed signing request', refusals[request_id])
+        self.assertNotIn(valid, refusals)
+        self.assertEqual([row[0] for row in self.signatures()], [attempt.attempt_id])
+
+    def test_r2_an_unexpected_data_error_is_a_refusal_but_an_outage_is_not(self):
+        state, attempt = self.authorized()
+        request_id, _ = self.request(state, attempt)
+        with patch('larp.signer.service.validate_sequence', side_effect=TypeError('shape')):
+            self.service.once()
+        self.assertEqual(self.refusals()[request_id], 'malformed signing request: TypeError')
+        from larp.storage.postgres import Unavailable
+        other, _ = self.request(state, attempt, gates=replace(self.guards.snapshot(state.intent, 12), observed_at=13))
+        with patch.object(type(self.service), '_sign', side_effect=Unavailable('database down')):
+            with self.assertRaises(Unavailable):
+                self.service.once()
+        self.assertNotIn(other, self.refusals())
+
     def test_s04_another_runs_request_is_never_answered(self):
         self.store.initialize('run2', 'wallet-2', 56, doc(dict(balances=dict(USDT=1))))
         state, attempt = self.authorized()

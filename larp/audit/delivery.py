@@ -25,7 +25,8 @@ def delivery_status(db,run_id):
     """Delivery proof per audit event (DR-07, IDEA-042 L7).
 
     An event is DELIVERED only when every chunk its document lists is ACK with the receiver's acknowledgement stored.
-    FAILED: a chunk was refused permanently (4xx) or exhausted its attempts; it stays visible. PENDING otherwise.
+    FAILED: a chunk was refused permanently (4xx), or exhausted its attempts under a build before IDEA-047 R1; it
+    stays visible. PENDING otherwise.
     `pending_chunks` is a health figure only: an empty outbox never makes an event DELIVERED.
     """
     # One grouped query for all chunks (IDEA-042 V7): the cost does not grow with one query per event.
@@ -77,11 +78,18 @@ class HttpReceiver:
 
 
 class DeliveryWorker:
-    def __init__(self,store,receiver,*,max_attempts=8,retry_ms=30000):
-        if max_attempts<1 or retry_ms<1:
+    def __init__(self,store,receiver,*,retry_ms=30000,max_backoff_ms=300000):
+        # Transient failures are retried until acknowledged, never exhausted: a chunk given up on stays overdue and
+        # latches the guard's DELIVERY_DEADLINE HALT for the rest of the run (IDEA-047 R1). The kit SDK likewise
+        # re-sends its spool without an attempt cap (F-101).
+        if type(retry_ms) is not int or type(max_backoff_ms) is not int or not 1<=retry_ms<=max_backoff_ms:
             raise ValueError('Invalid delivery budget')
         self.store,self.receiver=store,receiver
-        self.max_attempts,self.retry_ms=max_attempts,retry_ms
+        self.retry_ms,self.max_backoff_ms=retry_ms,max_backoff_ms
+
+    def backoff_ms(self,attempts):
+        """Delay after the `attempts`-th send: retry_ms doubling per attempt, capped at max_backoff_ms."""
+        return min(self.retry_ms*2**min(attempts-1,32),self.max_backoff_ms)
 
     def once(self,run_id,epoch,now_ms):
         # Persist attempt and short lease BEFORE any remote side effect. Lease
@@ -96,13 +104,9 @@ class DeliveryWorker:
             if not row:
                 return False
             event_id,index,raw,attempts=row
-            if attempts>=self.max_attempts:
-                db.execute("UPDATE audit_chunks SET status='EXHAUSTED' WHERE run_id=%s AND event_id=%s AND chunk_index=%s",
-                           (run_id,event_id,index))
-                return True
             attempts+=1
             db.execute('UPDATE audit_chunks SET attempts=%s,next_ms=%s WHERE run_id=%s AND event_id=%s AND chunk_index=%s',
-                       (attempts,now_ms+self.retry_ms,run_id,event_id,index))
+                       (attempts,now_ms+self.backoff_ms(attempts),run_id,event_id,index))
         try:
             response=self.receiver.deliver(doc(dict(event_id=event_id,chunk_index=index,body=bytes(raw).decode('utf-8'))))
             result=response.read()

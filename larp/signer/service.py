@@ -39,6 +39,7 @@ SCHEMA = 'SignerService.v1'
 SERVICE = 'signer'
 DATABASE_USER = 'larp_signer'
 _CREDENTIAL = re.compile(r'[A-Za-z0-9_.-]{1,64}')
+MALFORMED = (TypeError, ValueError, KeyError, AttributeError, OverflowError)
 
 
 class StartRefused(ContractError):
@@ -70,6 +71,12 @@ class SignerService:
                 self._sign(request_id, raw, now)
             except (Blocked, ContractError) as refused:
                 signing.refuse(self.store, self.run_id, request_id, refused, now)
+            except MALFORMED as error:
+                # A request whose content breaks a check is refused, never retried: left unanswered it would be
+                # served first again after every restart (IDEA-047 R2). A database outage (`Unavailable`, a
+                # RuntimeError) is not in MALFORMED and still stops the cycle.
+                signing.refuse(self.store, self.run_id, request_id, 'malformed signing request: '
+                               + type(error).__name__, now)
             handled += 1
         return handled
 

@@ -118,6 +118,9 @@ class UploaderCommand(DatabaseCase):
             'runtime secret id': ({**self.config, 'runtime_secret_id': 'larp/runtime'}, True),
             'wallet key file': ({**self.config, 'key_file': '/etc/larp/signer/wallet.key'}, True),
             'other build': ({**self.config, 'build_id': 'c' * 40}, True),
+            # IDEA-047 R1: an attempt cap would latch a delivery HALT; an old config cannot keep it.
+            'max_attempts cap': ({**self.config, 'max_attempts': 8}, True),
+            'backoff below retry': ({**self.config, 'retry_ms': 30000, 'max_backoff_ms': 1000}, True),
             'signer database role': ({k: v for k, v in self.config.items() if k != 'database_dsn_file'} | dict(
                 database_host='h', database_user='larp_signer', database_name='larp', database_ca_file='/x',
                 database_ca_sha256='0'), True),

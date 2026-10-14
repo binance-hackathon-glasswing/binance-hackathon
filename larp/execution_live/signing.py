@@ -7,7 +7,7 @@ snapshot it just evaluated and waits a bounded time for the signer's answer: the
 larp/signer/service.py. No key, and no signed byte other than the registry's, passes through these tables.
 """
 
-from dataclasses import asdict
+from dataclasses import asdict, fields
 import json
 import time
 
@@ -23,6 +23,25 @@ def request_document(state, attempt, gates, now_s):
                 epoch=attempt.epoch, guard_version=attempt.guard_version, gates=asdict(gates), requested_s=now_s)
 
 
+GATE_INTEGERS = ('epoch', 'state_version', 'observed_at', 'expires_at')
+GATE_OPTIONAL_INTEGERS = ('nonce', 'execution_version')
+
+
+def _check_gates(gates):
+    """Every gate field has its declared type, so a malformed request is refused instead of raising later in the
+    signer's checks (IDEA-047 R2). A bool is never accepted where an int is required."""
+    for field in fields(gates):
+        value = getattr(gates, field.name)
+        if field.name in GATE_INTEGERS:
+            ok = type(value) is int
+        elif field.name in GATE_OPTIONAL_INTEGERS:
+            ok = value is None or type(value) is int
+        else:
+            ok = type(value) is bool
+        if not ok:
+            raise ValueError(field.name)
+
+
 def read_request(request_id, raw):
     """The stored request, refused unless its bytes hash to its ID and it has the expected shape."""
     try:
@@ -31,6 +50,7 @@ def read_request(request_id, raw):
                 or canonical(value).encode() != bytes(raw)):
             raise ValueError
         gates = Gates(**value['gates'])
+        _check_gates(gates)
         for key in ('run_id', 'economic_key', 'attempt_id', 'step', 'payload_hash'):
             if type(value[key]) is not str or not value[key]:
                 raise ValueError
