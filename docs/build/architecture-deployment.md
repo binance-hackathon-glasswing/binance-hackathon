@@ -6,6 +6,157 @@ authorized implementing what is possible, but has not selected an account, regio
 budget, image, retention durations or registered deployment. No credentials are needed
 to reproduce the local checks. Isaac's independent review remains required.
 
+## Current target: lean two-host deployment (IDEA-046, 2026-10-12)
+
+**Current AWS state, login steps and the next steps in order: [AWS_RUNBOOK.md](AWS_RUNBOOK.md).**
+
+The six-host design below is **superseded for deployment** by IDEA-046 Option B, which fits the team's $100 AWS
+credit budget. Rows below that say six hosts, NAT or interface endpoints describe the earlier template; Git history keeps it.
+
+| Item | Lean deployment |
+|---|---|
+| Account / region | New-AWS-experience project on the Free plan ($100 credits). An AWS-managed policy denies Singapore, so **Sydney (`ap-southeast-2`) for now**. The agent would trade from an Australian address (G-17; Q-12 open): **revisit before final activation (Oct 27)**, either a Singapore account or a written jurisdiction check. |
+| Hosts | `primary` (`t3.small`): coordinator, execution service, evidence worker, uploader, archive maintenance, each as its own Linux user and systemd unit. `signer` (`t3.micro`): wallet key only. Both use standard CPU credits (never billed above baseline), IMDSv2, encrypted disks, and automatic EC2 recovery. |
+| Network | No NAT gateway, no interface endpoints. `enable_external_https` (default off) adds an internet gateway route, a public IPv4 and HTTPS egress for `primary` only. `signer` sits in a private subnet with no internet route; it reaches only the database and the free S3 gateway endpoint. |
+| Secrets | Managed secrets `runtime`, `uploader`, `evidence`, readable only by `primary`. **The wallet key is a root-only file on the signer's encrypted disk** (no Secrets Manager entry or endpoint), handed to the signer service by systemd `LoadCredential`; `larp.signer.keyfile` refuses anything but a regular single-link file owned by root or the service user with no group/other bits (IDEA-047). |
+| Signer image | No internet: the release bundle (`tools/build_release_bundle.py`) carries CPython 3.12.15, every wheel, the RDS CA bundle and the release; `deploy/host/provision.sh` installs it offline from the artifact bucket via the S3 gateway endpoint (IDEA-047). |
+| Database | RDS PostgreSQL 14.24 `db.t4g.micro`, single zone, 20 GiB gp3, IAM login, TLS, 1-day automated backups (the AWS Free plan refuses longer; the daily logical backup to the locked archive is separate), no CloudWatch log export by default. `primary` may log in as `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader`; `signer` only as `larp_signer`. |
+| Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of usage cost before credit offsets (`include_credit=false`) when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
+| Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. Terraform's S3 backend cannot read an `aws login` session, and exported tokens expire in about 15 minutes (too short for a database create). Run Terraform with `AWS_CONFIG_FILE` pointing to a file outside the repo holding `[profile larp-tf]` with `credential_process = /usr/bin/env AWS_CONFIG_FILE=$HOME/.aws/config aws configure export-credentials --profile larp --format process`, and `AWS_PROFILE=larp-tf` (IDEA-046, 2026-10-14). |
+
+Estimated cost (official Sydney prices, 2026-10-12, 730 h): servers $28.91, database $21.01, disks $3.84, public IPv4
+$3.65, KMS/secrets ≈ $2.60, alarms/logs/S3 ≈ $2.50 → **≈ $62/month**, ≈ $66 to Nov 12. Hosts and the public IPv4 cost
+nothing while `enable_hosts`/`enable_external_https` are off; stopped instances bill only their disks.
+
+The monthly budget resets in November and does not measure the remaining lifetime $100 credit balance. The account
+owner checks the remaining credits separately in Billing before each approved deployment step and through the run;
+include usage since account creation when planning the margin. This code correction does not update the already
+applied budget: its next saved Terraform plan must include the cost-type change and receive the owner's approval.
+Development SSM is available only for `primary`, with HTTPS egress enabled; signer provisioning remains the open
+decision in `AWS_RUNBOOK.md` step 5.
+
+### Host services, bundle and provisioning (IDEA-047, 2026-10-14)
+
+| Host | Unit (user) | Entry point | Config (pinned in the release manifest) |
+|---|---|---|---|
+| primary | `larp-runtime` | `larp.runtime.service` | `/etc/larp/runtime.json` |
+| primary | `larp-execution` | `larp.execution_live.main` (stops `NOT_INTEGRATED` until the round driver) | `/etc/larp/execution.json` |
+| primary | `larp-uploader` | `larp.audit.service` (reads only `AI_SEEDS_SECRET` from `larp/uploader`) | `/etc/larp/uploader.json` |
+| primary | `larp-evidence` | `larp.sources.live run --release-manifest …` | `/etc/larp/evidence.env` (non-secret) |
+| primary | `larp-archive` (timer) | `larp.runtime.operations` | `/etc/larp/operations.json` |
+| signer | `larp-signer` | `larp.signer.service` (key via `LoadCredential`) | `/etc/larp/signer.json` |
+
+The execution service and the signer talk only through the database: the execution service writes an immutable
+signing request (migration `009`) with its gate snapshot; the signer re-checks fencing, the journaled attempt, the
+G-01 allow-list, the step sequence, the gas budget and its own clock, then signs once through the fenced registry or
+records a refusal. Swaps are refused until a verified router decoder exists (GAP-29). Examples: `config/hosts/`.
+
+Build and install (no AWS cost to build; each AWS step still needs the owner's OK):
+
+```bash
+python tools/build_release_bundle.py --arch x86_64 --out dist   # from the pushed branch head
+bash tools/test_host_bundle.sh dist/larp-<build>-x86_64.tar.gz  # optional: offline AL2023 container check
+# upload dist/*.tar.gz and .sha256 to s3://<artifact bucket>/releases/, then on each host as root:
+#   aws s3 cp s3://<artifact bucket>/releases/<bundle> /root/
+#   bash provision.sh <primary|signer> /root/<bundle> --expect-sha256 <SHA-256 from the CI job summary>
+```
+
+**Bundle authenticity (IDEA-047 R6).** `SHA256SUMS` and the Python pin come from inside the bundle, so they only show
+the bundle is self-consistent. The `host-bundle` CI job writes the bundle's SHA-256 to its job summary; record that
+value (with the build ID) in the activation pack, and pass it to `provision.sh --expect-sha256`. Provisioning refuses
+a missing or different hash before extracting anything. Upload the CI-built bundle, not a local rebuild, unless its
+hash matches the CI value.
+
+Then, as root: write each service's config (the RDS CA SHA-256 printed by the builder goes in `database_ca_sha256`),
+build `/etc/larp/release.json` with `python -m larp.runtime.preflight --build-output … --service-config NAME=PATH`
+for every service config, and on the signer write the key as `/etc/larp/signer/wallet.key` (root, `0600`). Provisioning
+never writes configs or keys and never starts a service. Still to check on the first real hosts: `LoadCredential`
+ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under systemd (`docs/INCOMPLETE_WORK.md`).
+
+**Evidence store sharing (IDEA-047 R3, decided 2026-10-14).** The poller's SQLite store and artifacts under
+`/var/lib/larp-evidence` are group `larp-evidence` (`StateDirectoryMode=0770`, `UMask=0007`); others get nothing. The
+coordinator (`larp-runtime`) joins that group (`SupplementaryGroups=`) and opens the store with
+`SQLiteEvidenceStore(path, read_only=True)`, which refuses every write. The shared writer uses `journal_mode='DELETE'`
+(IDEA-047 R15), so readers require no WAL/SHM file creation or writable evidence mount. `ProtectSystem=strict`
+keeps the evidence directory read-only for runtime. Private stores keep WAL by default; an explicit private WAL
+reader uses `journal_mode='WAL'`. Artifact reads verify each file's hash.
+The live writer explicitly publishes document files at `0640` before linking/fsync (IDEA-047 R12); umask alone
+does not change the `0600` mode of a temporary file. Other artifact sinks retain their private `0600` default.
+
+For an evidence directory populated by an earlier build, before rehearsal and with both evidence/runtime services
+stopped, migrate only file permissions as root (never change artifact bytes):
+
+```bash
+find /var/lib/larp-evidence/artifacts -type f -exec chgrp larp-evidence {} +
+find /var/lib/larp-evidence/artifacts -type f -exec chmod 0640 {} +
+```
+
+Keep the directory group/traversal permissions from R3. Verify an artifact read as `larp-runtime` with its
+supplementary group before starting the reviewed release. This migration is not run by this PR.
+
+If an earlier build populated the shared evidence database in WAL mode, keep both services stopped and preserve
+a protected copy of the database **and all its sidecars together** before migration. Restore their writer ownership
+as root if the old runtime created incompatible sidecars:
+
+```bash
+find /var/lib/larp-evidence -maxdepth 1 -type f -name 'evidence.sqlite*' -exec chown larp-evidence:larp-evidence {} +
+```
+
+Start the reviewed evidence writer first: it recovers any committed WAL data and selects DELETE journaling before
+the runtime reads it. The runtime refuses a legacy WAL database before opening it rather than recreating sidecars.
+Do not delete an old WAL to fix permissions: it may hold committed records. After a crash with a hot rollback journal,
+writer recovery must finish before read-only consumption can resume. These host steps remain unperformed here.
+
+**The evidence unit cannot start yet (IDEA-047 R4).** Its live preflight refuses while
+`config/intelligence/intelligence.v1.json` has null `live` parameters and the enabled sources have null
+`terms_evidence_sha256` (DR-12, GAP-23). A refused start exits 4 and the unit stays stopped
+(`RestartPreventExitStatus=4`) instead of restarting every minute. Set the live parameters and capture the terms
+(`python -m larp.sources.live terms --write-register`) in a reviewed, pushed commit first.
+
+Release verification for every long-running unit now uses `larp.runtime.launch` inside `ExecStart` (IDEA-047 R13):
+a preflight refusal exits 4 and stays stopped; success execs the service on the same PID. `RestartPreventExitStatus` covers only the main process, so it cannot
+stop an `ExecStartPre` failure loop. Older systemd also restarts failed `ExecCondition` checks with `Restart=always`;
+the wrapper avoids that version dependency. Archive maintenance remains timer-driven. The upstream semantics are in the
+[systemd service documentation](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml#L1001-L1006).
+
+**Monitoring (IDEA-047 R5).** `larp-archive` (every minute, as `larp_archive`) publishes to `LARP/Runtime`:
+- `runtime` `Heartbeat` (an open session heartbeat at most 10 minutes old), `Halted` (active HALT reasons) and
+  `Quarantined`;
+- `uploader` `OverdueLogs` (round logs past their upload deadline);
+- `signer` `UnansweredRequests` (signing requests older than 120 s with neither a signature nor a refusal).
+
+While `enable_hosts` is on, each has an alarm that treats missing data as breaching. Alarms notify an SNS topic whose
+email subscribers come from `alarm_notification_emails` in the uncommitted tfvars (each address must confirm the AWS
+subscription email), plus any `alarm_topic_arns`. Not shipped: journald to CloudWatch Logs (no agent is installed),
+and per-unit liveness of the evidence poller (its gaps show in the DR-12 report, `live report`).
+
+**Uploader secret recovery (IDEA-047 R14).** Failure to fetch the secret is a sanitized exit-1 failure: the unit
+retries through its existing Restart=always. Invalid configuration, malformed secret response/content, wrong-wallet
+binding and foreign credentials remain permanent exit-4 refusals. No fetch failure authorizes an upload.
+
+**Signer logs.** The signer has no internet route and no Logs or Monitoring endpoint (IDEA-046, cost). Its outcomes
+(signatures and refusals with reasons) are database rows, archived with the daily backup; its liveness is judged
+from `primary` (`UnansweredRequests`). Its journald log stays on its encrypted disk (`/var/log/journal`). After a
+rehearsal, or at teardown, collect it from an EBS snapshot of the signer's volume attached to a temporary instance;
+never by opening an internet route to the signer.
+
+**Signer trust boundary.** On two hosts `larp_execution` (on `primary`) can write `execution_records`, so the signer's
+"registered, AUTHORIZED attempt" check is not independent of a compromised `primary`. What the signer enforces on
+its own is the payload: the G-01 allow-list (approve token, spender and exact amount), the gas budget and the swap
+block until a verified decoder exists (GAP-29). That is IDEA-046 B1's accepted trade-off. It sits next to the open
+**signer version binding** item: the signer verifies its own release but not the run's registered version, because
+`larp_signer` cannot read `events`.
+
+### Teardown after the winner audit (not before Nov 20, F-17)
+
+1. Download the archive, final logs and a database export; keep them with the registered version records.
+2. Set `allow_teardown = true` and apply: this lifts database deletion protection, instance termination protection and artifact-bucket protection.
+3. Destroy everything except the archive and its KMS key, which keep `prevent_destroy` (COMPLIANCE objects cannot be deleted before their retention date):
+   `terraform -chdir=deploy/aws destroy -var-file=development.tfvars -target=aws_vpc.larp -target=aws_iam_role.host -target=aws_secretsmanager_secret.service -target=aws_cloudwatch_log_group.host -target=aws_s3_bucket.artifacts -target=aws_cloudwatch_metric_alarm.database_storage -target=aws_cloudwatch_metric_alarm.maintenance -target=aws_cloudwatch_metric_alarm.service -target=aws_sns_topic.alarms -target=aws_db_parameter_group.larp`
+   (destroying the VPC also destroys every host, the database and the network that depend on it). Review the destroy plan before confirming.
+4. Delete the RDS final snapshot once the export is verified (it bills per GB-month).
+5. Next day, check Billing → Bills and Cost Explorer. What remains is the KMS key (≈ $1/month) and the archive (cents) until the retention date; then delete them and close the account.
+
 ## What is now implemented
 
 | Layer | Implemented artifact | Current boundary |

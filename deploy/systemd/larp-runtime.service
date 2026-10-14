@@ -11,11 +11,14 @@ Type=simple
 User=larp-runtime
 Group=larp-runtime
 WorkingDirectory=/opt/larp/current
+# The shared evidence writer uses DELETE journaling (IDEA-047 R15). A read-only connection needs no writable
+# path, so ProtectSystem=strict also prevents the runtime from modifying evidence files or creating WAL sidecars.
+SupplementaryGroups=larp-evidence
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 # The verified release is the registered build; the service refuses any other (never-do #5, F-117).
-ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --runtime-config /etc/larp/runtime.json
-ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.service run --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current
+# Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.launch --manifest /etc/larp/release.json --root /opt/larp/current --runtime-config /etc/larp/runtime.json -- -m larp.runtime.service run --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current
 Restart=always
 RestartSec=10
 # 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none (larp/runtime/service.py).

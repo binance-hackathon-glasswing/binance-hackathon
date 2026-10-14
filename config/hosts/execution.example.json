@@ -1,0 +1,15 @@
+{
+  "schema": "ExecutionService.v1",
+  "run_id": null,
+  "build_id": null,
+  "mode": "dev",
+  "wallet_address": null,
+  "interval_seconds": 1,
+  "signer_timeout_seconds": 20,
+  "database_host": null,
+  "database_user": "larp_execution",
+  "database_name": "larp",
+  "database_ca_file": "/etc/larp/rds-ca.pem",
+  "database_ca_sha256": null,
+  "region": "ap-southeast-2"
+}

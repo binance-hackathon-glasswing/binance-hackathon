@@ -1,0 +1,50 @@
+[Unit]
+Description=LARP evidence poller (public filings and registered sources; no trading authority, IDEA-041/047)
+Wants=network-online.target
+After=network-online.target time-sync.target
+StartLimitIntervalSec=0
+ConditionPathExists=/etc/larp/role-primary
+ConditionPathExists=/etc/larp/evidence.env
+
+[Service]
+Type=simple
+User=larp-evidence
+Group=larp-evidence
+WorkingDirectory=/opt/larp/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+# Non-secret settings only: LARP_SEC_USER_AGENT and LARP_ARTIFACT_ROOT=/var/lib/larp-evidence. The poller needs no key.
+EnvironmentFile=/etc/larp/evidence.env
+StateDirectory=larp-evidence
+# Shared read-only with the coordinator (larp-runtime joins this group; IDEA-047 R3). Nothing for others.
+StateDirectoryMode=0770
+# Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
+# Each run covers 24 hours and exits 0; the restart resumes cadence from the poll log (larp/sources/live.py).
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.launch --manifest /etc/larp/release.json --root /opt/larp/current --profile host -- -m larp.sources.live run --hours 24 --release-manifest /etc/larp/release.json --release-root /opt/larp/current
+Restart=always
+RestartSec=60
+# 4 = start refused (live preflight, release or build check): restarting cures none (IDEA-047 R4).
+RestartPreventExitStatus=4
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=60
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0007
+MemoryMax=512M
+TasksMax=32
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

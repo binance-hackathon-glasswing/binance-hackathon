@@ -308,6 +308,20 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         raise Blocked("unsupported transaction step")
 
 
+def validate_sequence(state, step, payload, gates):
+    """Checks across the execution's steps; the remote signer repeats them (larp/signer/service.py)."""
+    if step == "SWAP" and state.attempts:
+        approval = state.attempts[0]
+        if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
+            raise Blocked("approved nonce consumption and current wallet count disagree")
+    previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
+                         and attempt.gas_used is not None
+                         else attempt.payload.gas) * attempt.payload.gas_price
+                        for attempt in state.attempts if attempt.step != step)
+    if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
+        raise Blocked("parent gas budget exceeded")
+
+
 class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
         if any(getattr(port, "mode", None) != "fake" for port in (guards, venue, signer, decoder)):
@@ -353,16 +367,7 @@ class Executor:
         if now < state.last_observed_at:
             raise Blocked("clock regression")
         validate_payload(state.intent, step, payload, gates, now, self.decoder)
-        if step == "SWAP" and state.attempts:
-            approval = state.attempts[0]
-            if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
-                raise Blocked("approved nonce consumption and current wallet count disagree")
-        previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
-                             and attempt.gas_used is not None
-                             else attempt.payload.gas) * attempt.payload.gas_price
-                            for attempt in state.attempts if attempt.step != step)
-        if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
-            raise Blocked("parent gas budget exceeded")
+        validate_sequence(state, step, payload, gates)
 
     def prepare(self, key, now):
         state = self._load(key)

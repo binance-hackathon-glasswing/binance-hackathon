@@ -71,8 +71,14 @@ variable "db_storage_gib" {
 variable "db_max_storage_gib" { type = number }
 variable "db_free_storage_alarm_bytes" { type = number }
 variable "multi_az" {
-  type    = bool
-  default = true
+  description = "A second-zone standby doubles the database cost (IDEA-046 B1)."
+  type        = bool
+  default     = false
+}
+variable "db_log_exports" {
+  description = "PostgreSQL log types exported to CloudWatch (billed per GB ingested)."
+  type        = list(string)
+  default     = []
 }
 variable "enable_hosts" {
   type    = bool
@@ -83,18 +89,50 @@ variable "ami_id" {
   default  = null
   nullable = true
 }
-variable "host_instance_type" {
-  type    = string
-  default = "t3.small"
+variable "host_instance_types" {
+  type    = map(string)
+  default = { primary = "t3.small", signer = "t3.micro" }
+  validation {
+    condition = (toset(keys(var.host_instance_types)) == toset(["primary", "signer"])
+    && alltrue([for t in values(var.host_instance_types) : can(regex("^t[34]g?\\.", t))]))
+    error_message = "Give a burstable (t3/t4g) type for exactly the primary and signer hosts; standard credits apply."
+  }
+}
+variable "allow_teardown" {
+  description = "Only for the post-audit teardown: lifts database deletion and instance termination protection."
+  type        = bool
+  default     = false
+}
+variable "monthly_budget_usd" {
+  description = "Monthly AWS cost budget; alerts at 50, 75 and 90 percent of actual spend."
+  type        = number
+  default     = 90
+  validation {
+    condition     = var.monthly_budget_usd > 0
+    error_message = "Budget must be positive."
+  }
+}
+variable "budget_notification_emails" {
+  description = "Alert recipients. Supplied in an uncommitted tfvars file; no budget alert is created without one."
+  type        = list(string)
+  default     = []
+  sensitive   = true
+}
+variable "alarm_notification_emails" {
+  description = "Alarm email recipients (IDEA-047 R5). Supplied in an uncommitted tfvars file; no topic is created without one."
+  type        = list(string)
+  default     = []
+  sensitive   = true
 }
 variable "enable_external_https" {
-  description = "Opt-in NAT and HTTPS egress for provider and uploader hosts; no services start."
+  description = "Opt-in internet gateway, public IPv4 and HTTPS egress for the primary host only; no services start."
   type        = bool
   default     = false
 }
 variable "enable_development_ssm" {
-  type    = bool
-  default = false
+  description = "Development access to primary only; requires enable_external_https. Never provides signer access."
+  type        = bool
+  default     = false
 }
 variable "alarm_topic_arns" {
   description = "Existing explicitly authorized destinations; empty creates silent alarms only."

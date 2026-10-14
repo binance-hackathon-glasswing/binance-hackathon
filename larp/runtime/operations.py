@@ -49,11 +49,25 @@ def cloud_clients(c):
     return {name: session.client(name, config=settings) for name in ('s3', 'rds', 'cloudwatch')}
 
 
-def publish_health(client, deployment, healthy):
-    dimensions = [dict(Name='Deployment', Value=deployment), dict(Name='Service', Value='archive')]
-    client.put_metric_data(Namespace='LARP/Runtime', MetricData=[
-        dict(MetricName='Heartbeat', Value=1, Unit='Count', Dimensions=dimensions),
-        dict(MetricName='Healthy', Value=int(healthy), Unit='Count', Dimensions=dimensions)])
+def _metric(deployment, service, name, value):
+    return dict(MetricName=name, Value=value, Unit='Count',
+                Dimensions=[dict(Name='Deployment', Value=deployment), dict(Name='Service', Value=service)])
+
+
+def publish_health(client, deployment, healthy, services=None):
+    """Archive heartbeat and health, plus the service-level signals (IDEA-047 R5). `services` is a ServiceHealth.v1
+    dict, or None when the database could not be read: then only the runtime heartbeat is sent, as 0, and the other
+    service alarms see missing data, which they treat as breaching."""
+    data = [_metric(deployment, 'archive', 'Heartbeat', 1), _metric(deployment, 'archive', 'Healthy', int(healthy))]
+    if services is None:
+        data.append(_metric(deployment, 'runtime', 'Heartbeat', 0))
+    else:
+        data += [_metric(deployment, 'runtime', 'Heartbeat', int(services['runtime_alive'])),
+                 _metric(deployment, 'runtime', 'Halted', len(services['halt_reasons'])),
+                 _metric(deployment, 'runtime', 'Quarantined', int(services['quarantined'])),
+                 _metric(deployment, 'uploader', 'OverdueLogs', services['audit_overdue']),
+                 _metric(deployment, 'signer', 'UnansweredRequests', services['signing_unanswered'])]
+    client.put_metric_data(Namespace='LARP/Runtime', MetricData=data)
 
 
 def main(argv=None):
@@ -103,7 +117,8 @@ def main(argv=None):
             health['healthy']=False
             health['reasons']=sorted(set(health['reasons']+['ARCHIVE_PREPARATION_FAILED']))
             health['preparation_error']=preparation_error
-        publish_health(clients['cloudwatch'], c['deployment'], health['healthy'])
+        health['services'] = worker.service_health(c['run_id'], int(time.time() * 1000)).read()
+        publish_health(clients['cloudwatch'], c['deployment'], health['healthy'], health['services'])
         print(json.dumps(health, sort_keys=True))
         return 0 if health['healthy'] else 1
     except Exception:

@@ -134,6 +134,23 @@ class Supervision(DatabaseCase):
         self.assertEqual(self.guard().evaluate(late + 3), ['CLEAR:DELIVERY_DEADLINE'])
         self.assertNotIn('halt', self.projection())
 
+    def test_r1_a_long_receiver_outage_past_the_deadline_still_clears_the_halt(self):
+        """IDEA-047 R1: many failed sends, the deadline passes, then the receiver recovers: the HALT clears."""
+        self.coordinator().start('r1', request('HOLD'), NOW)
+        receiver = FakeReceiver(code=503)
+        worker = DeliveryWorker(self.store, receiver, retry_ms=1000, max_backoff_ms=60_000)
+        now = NOW
+        for _ in range(30):  # far more failures than the old 8-attempt cap
+            now += 60_000
+            self.assertTrue(worker.once('run', self.epoch, now))
+        late = NOW + 2 * DAY
+        self.assertEqual(self.guard().evaluate(late), ['HALT:DELIVERY_DEADLINE'])
+        receiver.code = 200
+        while worker.once('run', self.epoch, late + 1):
+            pass
+        self.assertEqual(self.guard().evaluate(late + 2), ['CLEAR:DELIVERY_DEADLINE'])
+        self.assertNotIn('halt', self.projection())
+
     def test_h3_h5_v1_repeated_failures_halt_clears_only_when_the_planner_works(self):
         planner = Toggle()
         c = self.coordinator(planner=planner)
@@ -229,7 +246,7 @@ class SupervisorUnit(unittest.TestCase):
         for required in ('Restart=always', 'RestartSec=10', 'StartLimitIntervalSec=0', 'KillMode=control-group',
                          'RestartPreventExitStatus=2 3 4', 'User=larp-runtime'):
             self.assertIn(required, d)
-        self.assertTrue(any(x.startswith('ExecStartPre=') and 'larp.runtime.preflight --manifest' in x for x in d))
+        self.assertTrue(any(x.startswith('ExecStart=') and 'larp.runtime.launch --manifest' in x for x in d))
         self.assertTrue(any(x.startswith('ExecStart=') and 'larp.runtime.service run' in x for x in d))
         hardening = [x for x in self.directives('larp-archive.service') if x.split('=')[0] in (
             'NoNewPrivileges', 'ProtectSystem', 'ProtectHome', 'PrivateTmp', 'PrivateDevices', 'ProtectKernelTunables',

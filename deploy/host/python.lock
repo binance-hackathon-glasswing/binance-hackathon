@@ -1,0 +1,7 @@
+# CPython for both hosts (IDEA-047 H01): python-build-standalone release 20261001, CPython 3.12.15, install_only
+# builds for Linux glibc. Checksums copied from that release's SHA256SUMS (fetched 2026-10-14). Changing a line here
+# is a version change (G-03, G-12).
+tag=20261001
+version=3.12.15
+x86_64=0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260
+aarch64=6a1b2e68c6fe749b78bbacb8fa42ff9bc844a72de7ed3ee52428f09a42f2ffc1

@@ -6,6 +6,8 @@ from larp.storage.backup import export
 from larp.storage.postgres import Conflict, IntegrityError, Unavailable, digest, doc
 
 HOUR_MS = 3600000
+RUNTIME_HEARTBEAT_MS = 600000   # a runtime session heartbeat older than this counts as down (IDEA-047 R5)
+SIGNER_ANSWER_S = 120           # a signing request unanswered for longer counts against the signer (IDEA-047 R5)
 # An anchor carries identifiers, times and hashes only: never keys, credentials or evidence text (IDEA-036 #6).
 ANCHOR_FIELDS = frozenset(('schema', 'run_id', 'slot_ms', 'captured_ms', 'sequence', 'head', 'owner_epoch'))
 ZERO_HEAD = '0' * 64
@@ -141,6 +143,34 @@ class Maintenance:
                        (status, error, receipt.payload if status == 'ACK' else None,
                         run_id, kind, slot, attempts + 1))
         return True
+
+    def service_health(self, run_id, now_ms):
+        """Service-level signals for CloudWatch (IDEA-047 R5), read with the larp_archive grants only.
+
+        Runtime: age of the newest open process-session heartbeat (None: no running session), active HALT reasons and
+        quarantine. Uploader: audit events past their upload deadline. Signer: signing requests older than
+        SIGNER_ANSWER_S with neither a refusal nor a signature for their attempt and payload. The signer has no
+        internet route (IDEA-046 B2), so its liveness is judged from the database by this primary-side check."""
+        now_s = now_ms // 1000
+        with self.store.transaction() as db:
+            run = self.store._run(db, run_id, lock=False)
+            projection = Document(bytes(run['projection'])).read()
+            beat = db.execute('SELECT max(heartbeat_ms) FROM process_sessions WHERE run_id=%s AND ended_ms IS NULL',
+                              (run_id,)).fetchone()[0]
+            overdue = len(deadline_breaches(db, run_id, now_ms))
+            unanswered, oldest = db.execute(
+                'SELECT count(*),min(r.requested_s) FROM signing_requests r WHERE r.run_id=%s AND r.requested_s<%s '
+                'AND NOT EXISTS (SELECT 1 FROM signing_refusals f WHERE f.request_id=r.request_id) '
+                'AND NOT EXISTS (SELECT 1 FROM execution_signatures s WHERE s.attempt_id=r.attempt_id '
+                'AND s.payload_hash=r.payload_hash)', (run_id, now_s - SIGNER_ANSWER_S)).fetchone()
+        age = None if beat is None else max(0, now_ms - beat)
+        return doc(dict(schema='ServiceHealth.v1', runtime_heartbeat_age_ms=age,
+                        runtime_alive=age is not None and age <= RUNTIME_HEARTBEAT_MS,
+                        halt_reasons=sorted((projection.get('halt') or {}).get('reasons', {})),
+                        quarantined=bool(run['quarantined']), audit_overdue=overdue,
+                        signing_unanswered=unanswered,
+                        signing_oldest_unanswered_s=None if oldest is None else now_s - oldest,
+                        signing_enabled=False))
 
     def health(self, run_id, now_ms):
         with self.store.transaction() as db:

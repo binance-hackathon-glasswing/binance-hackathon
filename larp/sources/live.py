@@ -72,11 +72,30 @@ def git_state(repo: Path = REPO) -> dict:
     return state
 
 
+class Refused(SystemExit):
+    """A start refusal: the configuration, release or build is not fit to run, and restarting cannot cure it.
+    `run` exits 4 for it (larp-evidence.service: RestartPreventExitStatus=4, IDEA-047 R4); elsewhere it behaves as the
+    SystemExit it is (exit 1 with the message)."""
+
+
+def release_state(manifest: str | None, root: str | None) -> dict:
+    """The build a verified release manifest names, in git_state's shape; refuses an unverified release."""
+    from larp.contracts import ContractError
+    from larp.runtime.preflight import verify_release
+    if not manifest or not root:
+        raise Refused("A release run needs both --release-manifest and --release-root")
+    try:
+        verified = verify_release(Document(Path(manifest).read_bytes()), root)
+    except (ContractError, ValueError, OSError):
+        raise Refused("Refusing live execution: the release does not verify against its manifest") from None
+    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}
+
+
 def require_committed(state: dict, allow_dirty: bool) -> None:
     if state["dirty"]:
-        raise SystemExit("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
+        raise Refused("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
     if state.get("pushed") is not True:
-        raise SystemExit("Refusing live execution until HEAD is verified at its configured remote branch")
+        raise Refused("Refusing live execution until HEAD is verified at its configured remote branch")
 
 
 # ------------------------------------------------------------------------------------------------ terms captures
@@ -348,7 +367,7 @@ def preflight(env, config_mode: str = "live") -> list:
 def _env_root(env, config_mode: str = "live") -> Path:
     reasons = preflight(env, config_mode)
     if reasons:
-        raise SystemExit("Live preflight refused:\n  " + "\n  ".join(reasons))
+        raise Refused("Live preflight refused:\n  " + "\n  ".join(reasons))
     return Path(env["LARP_ARTIFACT_ROOT"]).resolve()
 
 
@@ -363,13 +382,14 @@ def build_runner(env, *, config_mode: str, edgar_interval_ms: int, commit: str, 
     root = _env_root(env, config_mode)
     register, aliases, register_sha = load_register()
     config, registry = load_config(config_mode), load_registry()
-    artifacts = FileArtifacts(str(root / "artifacts"))
+    artifacts = FileArtifacts(str(root / "artifacts"), group_readable=True)
     agent = sec_user_agent(env)
     sources = SourceIngestor(register=register, register_sha256=register_sha, aliases=aliases,
                              client=AllowlistedClient(urllib_fetch, user_agents={"LARP_SEC_USER_AGENT": agent}),
                              store=SQLiteSourceStore(str(root / "sources.sqlite")), artifacts=artifacts, clock_ms=clock_ms)
     edgar = Ingestor(registry=registry, source=EdgarHttpSource(agent, clock_ms=clock_ms),
-                     store=SQLiteEvidenceStore(str(root / "evidence.sqlite")), artifacts=artifacts, config=config,
+                     store=SQLiteEvidenceStore(str(root / "evidence.sqlite"), journal_mode='DELETE'),
+                     artifacts=artifacts, config=config,
                      clock_ms=clock_ms, run_id=f"live-ingest:{commit[:12]}")
     return LiveRunner(register=register, issuers=[e.issuer_id for e in registry.entries], source_ingestor=sources,
                       edgar_ingestor=edgar, log=PollLog(root / "live" / LOG_NAME), clock_ms=clock_ms,
@@ -470,6 +490,9 @@ def main(argv=None, env=None) -> int:
     run.add_argument("--config-mode", default="live", choices=("live", "development"))
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
     run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
+    # Hosts run a verified release bundle, not a git checkout (IDEA-047 V01): the manifest replaces the git check.
+    run.add_argument("--release-manifest", help="verified release manifest (hosts without a git checkout)")
+    run.add_argument("--release-root", help="release directory the manifest covers")
     rep = sub.add_parser("report")
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)
@@ -529,14 +552,21 @@ def main(argv=None, env=None) -> int:
                             incidents=incidents)
         print(json.dumps(report, indent=1, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
-    state = git_state()
-    require_committed(state, args.allow_dirty)
     if args.command == "run":
-        runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
-                              commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
+        try:
+            state = (release_state(args.release_manifest, args.release_root)
+                     if args.release_manifest or args.release_root else git_state())
+            require_committed(state, args.allow_dirty)
+            runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
+                                  commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
+        except Refused as refusal:
+            print(refusal, file=sys.stderr)
+            return 4
         polls = runner.run(epoch_ms() + int(args.hours * 3_600_000))
         print(json.dumps({"polls": polls, "log": str(runner.log.path)}))
         return 0
+    state = git_state()
+    require_committed(state, args.allow_dirty)
     report = run_bakeoff(env, args, state["commit"] + ("+dirty" if state["dirty"] else ""))
     print(json.dumps({k: report[k] for k in ("commit", "candidates", "written_to")}, indent=1, sort_keys=True))
     return 0

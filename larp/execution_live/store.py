@@ -93,6 +93,11 @@ class ExecutionStore:
                     return state, attempt
         raise Conflict('unknown registered execution attempt')
 
+    def attempt(self, attempt_id):
+        """(execution, attempt) for a registered attempt, journal verified; Conflict if unknown."""
+        with self.store.transaction() as db:
+            return self._attempt(db, attempt_id)
+
     def check_broadcast(self, signed, epoch, version):
         with self.store.transaction() as db:
             self._release_authority(db, epoch, version)
