@@ -39,8 +39,8 @@ run "safe_defaults" {
     error_message = "Host startup, internet access and signing must be opt-in or blocked."
   }
   assert {
-    condition     = length(aws_secretsmanager_secret.service) == 3 && length(aws_iam_role.host) == 2
-    error_message = "IDEA-046: two host identities and three managed secrets; the wallet key is not a managed secret."
+    condition     = keys(aws_secretsmanager_secret.service) == ["runtime", "uploader"] && length(aws_iam_role.host) == 2
+    error_message = "IDEA-046: two host identities and two managed secrets, runtime and uploader; the wallet key is not a managed secret and the evidence poller reads none (#61)."
   }
   assert {
     condition     = !aws_db_instance.larp.multi_az && length(aws_db_instance.larp.enabled_cloudwatch_logs_exports) == 0
@@ -103,6 +103,10 @@ run "internet_reaches_primary_only" {
   assert {
     condition     = !contains(flatten(values(local.secret_readers)), "signer")
     error_message = "The signer reads no managed secret (wallet key is a root-only file, IDEA-046 B2)."
+  }
+  assert {
+    condition     = !contains(keys(local.secret_readers), "evidence")
+    error_message = "No reader grant for an evidence secret: the poller needs no key (#61, IDEA-049 WR-L2)."
   }
 }
 run "runtime_secret_exists" {
