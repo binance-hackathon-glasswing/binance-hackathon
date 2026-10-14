@@ -181,6 +181,7 @@ run "service_alarms_follow_the_hosts" {
   command = plan
   variables {
     enable_hosts = true
+    ami_id       = "ami-0123456789abcdef0"
   }
   assert {
     condition = toset(keys(aws_cloudwatch_metric_alarm.service)) == toset(
@@ -204,6 +205,7 @@ run "alarm_emails_create_one_topic" {
   command = plan
   variables {
     enable_hosts              = true
+    ami_id                    = "ami-0123456789abcdef0"
     alarm_notification_emails = ["ops@fixture.invalid", "backup@fixture.invalid"]
   }
   assert {
