@@ -98,7 +98,7 @@ class ReadOnlyEvidenceStore(unittest.TestCase):
             # Exercise real store wiring only; live terms are an explicitly open deployment prerequisite.
             # No source port is called in this synthetic constructor test.
             with patch.object(live, 'preflight', return_value=[]):
-                runner = live.build_runner(env, config_mode='development', edgar_interval_ms=1000,
+                runner = live.build_runner(env, config_mode='development', edgar_interval_ms=60000,
                                            commit='b' * 40)
             try:
                 self.assertEqual(runner.edgar.store.db.execute('PRAGMA journal_mode').fetchone()[0], 'delete')
