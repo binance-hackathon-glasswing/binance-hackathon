@@ -21,12 +21,19 @@ credit budget. Rows below that say six hosts, NAT or interface endpoints describ
 | Secrets | Managed secrets `runtime`, `uploader`, `evidence`, readable only by `primary`. **The wallet key is a root-only file on the signer's encrypted disk** (no Secrets Manager entry or endpoint), handed to the signer service by systemd `LoadCredential`; `larp.signer.keyfile` refuses anything but a regular single-link file owned by root or the service user with no group/other bits (IDEA-047). |
 | Signer image | No internet: the release bundle (`tools/build_release_bundle.py`) carries CPython 3.12.15, every wheel, the RDS CA bundle and the release; `deploy/host/provision.sh` installs it offline from the artifact bucket via the S3 gateway endpoint (IDEA-047). |
 | Database | RDS PostgreSQL 14.24 `db.t4g.micro`, single zone, 20 GiB gp3, IAM login, TLS, 1-day automated backups (the AWS Free plan refuses longer; the daily logical backup to the locked archive is separate), no CloudWatch log export by default. `primary` may log in as `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader`; `signer` only as `larp_signer`. |
-| Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of actual spend when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
+| Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of usage cost before credit offsets (`include_credit=false`) when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
 | Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. Terraform's S3 backend cannot read an `aws login` session, and exported tokens expire in about 15 minutes (too short for a database create). Run Terraform with `AWS_CONFIG_FILE` pointing to a file outside the repo holding `[profile larp-tf]` with `credential_process = /usr/bin/env AWS_CONFIG_FILE=$HOME/.aws/config aws configure export-credentials --profile larp --format process`, and `AWS_PROFILE=larp-tf` (IDEA-046, 2026-10-14). |
 
 Estimated cost (official Sydney prices, 2026-10-12, 730 h): servers $28.91, database $21.01, disks $3.84, public IPv4
 $3.65, KMS/secrets ≈ $2.60, alarms/logs/S3 ≈ $2.50 → **≈ $62/month**, ≈ $66 to Nov 12. Hosts and the public IPv4 cost
 nothing while `enable_hosts`/`enable_external_https` are off; stopped instances bill only their disks.
+
+The monthly budget resets in November and does not measure the remaining lifetime $100 credit balance. The account
+owner checks the remaining credits separately in Billing before each approved deployment step and through the run;
+include usage since account creation when planning the margin. This code correction does not update the already
+applied budget: its next saved Terraform plan must include the cost-type change and receive the owner's approval.
+Development SSM is available only for `primary`, with HTTPS egress enabled; signer provisioning remains the open
+decision in `AWS_RUNBOOK.md` step 5.
 
 ### Host services, bundle and provisioning (IDEA-047, 2026-10-14)
 
@@ -71,12 +78,30 @@ ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under sy
 coordinator (`larp-runtime`) joins that group (`SupplementaryGroups=`) and opens the store with
 `SQLiteEvidenceStore(path, read_only=True)`, which refuses every write; its only writable path is that directory,
 because SQLite readers of a WAL database must write the `-shm` lock file. Artifact reads verify each file's hash.
+The live writer explicitly publishes document files at `0640` before linking/fsync (IDEA-047 R12); umask alone
+does not change the `0600` mode of a temporary file. Other artifact sinks retain their private `0600` default.
+
+For an evidence directory populated by an earlier build, before rehearsal and with both evidence/runtime services
+stopped, migrate only file permissions as root (never change artifact bytes):
+
+```bash
+find /var/lib/larp-evidence/artifacts -type f -exec chgrp larp-evidence {} +
+find /var/lib/larp-evidence/artifacts -type f -exec chmod 0640 {} +
+```
+
+Keep the directory group/traversal permissions from R3. Verify an artifact read as `larp-runtime` with its
+supplementary group before starting the reviewed release. This migration is not run by this PR.
 
 **The evidence unit cannot start yet (IDEA-047 R4).** Its live preflight refuses while
 `config/intelligence/intelligence.v1.json` has null `live` parameters and the enabled sources have null
 `terms_evidence_sha256` (DR-12, GAP-23). A refused start exits 4 and the unit stays stopped
 (`RestartPreventExitStatus=4`) instead of restarting every minute. Set the live parameters and capture the terms
 (`python -m larp.sources.live terms --write-register`) in a reviewed, pushed commit first.
+
+Release verification for every long-running unit now uses `ExecCondition` (IDEA-047 R13): a preflight refusal exits
+4 and skips `ExecStart` without restart. `RestartPreventExitStatus` covers only the main process, so it cannot
+stop an `ExecStartPre` failure loop. Archive maintenance remains timer-driven. The upstream semantics are in the
+[systemd service documentation](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml#L1001-L1006).
 
 **Monitoring (IDEA-047 R5).** `larp-archive` (every minute, as `larp_archive`) publishes to `LARP/Runtime`:
 - `runtime` `Heartbeat` (an open session heartbeat at most 10 minutes old), `Halted` (active HALT reasons) and

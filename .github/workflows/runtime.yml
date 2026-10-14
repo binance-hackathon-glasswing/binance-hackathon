@@ -48,6 +48,8 @@ jobs:
       - run: python -m pip install -r deploy/requirements-test.lock
       - run: python -m pip check
       - run: python -m pytest -q -p no:cacheprovider
+      # R13: real systemd conditions/refusal/restart behavior, with synthetic releases and disposable units only.
+      - run: LARP_TEST_SYSTEMD=1 python -m pytest -q tests/runtime/test_systemd_conditions.py -p no:cacheprovider
       - run: python -m larp.runtime.demo > /tmp/larp-offline-trace.json
       - run: docker build -f deploy/Dockerfile -t larp-runtime:ci .
       - run: docker run --rm --network none --read-only --cap-drop ALL larp-runtime:ci

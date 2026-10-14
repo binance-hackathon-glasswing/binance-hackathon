@@ -204,7 +204,10 @@ class SQLiteEvidenceStore:
 class FileArtifacts:
     """Content-addressed bytes under `root` (outside the repository)."""
 
-    def __init__(self, root: str):
+    def __init__(self, root: str, *, group_readable: bool = False):
+        # Shared public evidence is readable by the runtime's supplementary group. Other artifact sinks remain
+        # private. NamedTemporaryFile always starts at 0600, regardless of the process umask.
+        self.file_mode = 0o640 if group_readable else 0o600
         self.root = Path(root).resolve()
         repo = Path(__file__).resolve().parents[2]
         if self.root.resolve() == repo or repo in self.root.resolve().parents:
@@ -244,6 +247,8 @@ class FileArtifacts:
                 temporary = Path(handle.name)
                 handle.write(content)
                 handle.flush()
+                if os.name != "nt":
+                    os.fchmod(handle.fileno(), self.file_mode)
                 os.fsync(handle.fileno())
             try:
                 # Publish without replacing a competing writer's immutable object.

@@ -44,6 +44,25 @@ for module in larp.signer.service larp.execution_live.main larp.audit.service la
               larp.runtime.operations larp.runtime.preflight larp.sources.live; do
   (cd /opt/larp/current && $py -m "$module" --help >/dev/null) || fail "entry point $module"
 done
+# R8: exercise startup preflight on the packaged release with synthetic registration evidence. No service starts.
+(cd /opt/larp/current && $py - <<'PY'
+import hashlib
+from pathlib import Path
+from larp.contracts import Document
+from larp.runtime.preflight import release_files
+from larp.runtime.register import load_register
+root = Path.cwd()
+build = root.resolve().name
+manifest = dict(schema='ReleaseManifest.v1', build_id=build, repository='synthetic', remote_verified=True,
+                services=['synthetic'], registration_evidence=dict(schema='RegistrationEvidence.v1',
+                    evidence_ref='synthetic-only', build_id=build, repository='synthetic'),
+                files={p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in release_files(root)},
+                release_register=load_register(root))
+Path('/tmp/synthetic-release.json').write_bytes(Document.from_dict(manifest).payload)
+PY
+) || fail "packaged register cannot be validated"
+(cd /opt/larp/current && $py -m larp.runtime.preflight --manifest /tmp/synthetic-release.json \
+  --root /opt/larp/current --profile host) || fail "packaged release preflight"
 [[ -z $(find /opt/larp ! -user root) ]] || fail "non-root files under /opt/larp"
 [[ -z $(find /opt/larp/releases /opt/larp/python -perm -o+w ! -type l) ]] || fail "world-writable files"
 [[ $(stat -c %a /etc/larp) == 755 && $(stat -c %U /etc/larp) == root ]] || fail "/etc/larp mode"
@@ -92,9 +111,12 @@ else
 os.setgroups([]); os.setgid($ev_gid); os.setuid($ev_uid); os.umask(0o007)
 from larp.contracts import Document
 from larp.sources.store import SQLiteEvidenceStore
+from larp.sources.store import FileArtifacts
 store = SQLiteEvidenceStore('$state/evidence.sqlite')
 store.commit(Document.from_dict({'schema': 'EvidenceStateBatch.v1', 'batch_id': 'b1', 'issuer_id': 'ISSUER',
                                  'expected_state_version': 0, 'state': {'version': 1}, 'jobs': []}))
+artifacts = FileArtifacts('$state/artifacts', group_readable=True)
+open('$state/artifact.sha256', 'w').write(artifacts.put(b'synthetic public filing'))
 open('$state/ready', 'w').close()
 time.sleep(120)"
   (cd /opt/larp/current && exec $py -c "$writer") &
@@ -104,8 +126,11 @@ time.sleep(120)"
   reader="import os, sqlite3, sys
 os.setgroups([int(g) for g in sys.argv[1:]]); os.setgid($rt_gid); os.setuid($rt_uid)
 from larp.sources.store import SQLiteEvidenceStore
+from larp.sources.store import FileArtifacts
 store = SQLiteEvidenceStore('$state/evidence.sqlite', read_only=True)
 assert store.read_state('ISSUER').read()['version'] == 1
+saved = open('$state/artifact.sha256').read()
+assert FileArtifacts('$state/artifacts').get(saved) == b'synthetic public filing'
 try:
     store.db.execute('DELETE FROM estates')
 except sqlite3.OperationalError:

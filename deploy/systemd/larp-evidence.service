@@ -18,7 +18,8 @@ EnvironmentFile=/etc/larp/evidence.env
 StateDirectory=larp-evidence
 # Shared read-only with the coordinator (larp-runtime joins this group; IDEA-047 R3). Nothing for others.
 StateDirectoryMode=0770
-ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host
+# A permanent release refusal skips startup without entering the automatic restart path.
+ExecCondition=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host
 # Each run covers 24 hours and exits 0; the restart resumes cadence from the poll log (larp/sources/live.py).
 ExecStart=/opt/larp/current/.venv/bin/python -m larp.sources.live run --hours 24 --release-manifest /etc/larp/release.json --release-root /opt/larp/current
 Restart=always

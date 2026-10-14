@@ -130,6 +130,7 @@ variable "enable_external_https" {
   default     = false
 }
 variable "enable_development_ssm" {
+  description = "Development access to primary only; requires enable_external_https. Never provides signer access."
   type    = bool
   default = false
 }

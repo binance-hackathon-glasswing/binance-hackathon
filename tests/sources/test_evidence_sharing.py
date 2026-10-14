@@ -1,6 +1,7 @@
 """IDEA-047 R3/R4: the runtime reads the poller's evidence store read-only; a refused evidence start stops its unit."""
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -9,7 +10,7 @@ from unittest.mock import patch
 
 from larp.contracts import Document
 from larp.sources import live
-from larp.sources.store import SQLiteEvidenceStore, StoreConflict
+from larp.sources.store import FileArtifacts, SQLiteEvidenceStore, StoreConflict
 from tests.host_support import synthetic_release
 from tests.runtime.test_host_units import directives, value
 from tests.sources.test_live import AGENT
@@ -116,6 +117,24 @@ class EvidenceUnits(unittest.TestCase):
         d = directives("larp-evidence")
         self.assertEqual(value(d, "RestartPreventExitStatus"), ["4"])
         self.assertIn("Restart=always", d)  # the clean exit after each 24 h run still restarts
+
+
+@unittest.skipIf(os.name == 'nt', 'POSIX artifact permissions')
+class SharedArtifacts(unittest.TestCase):
+    def test_r12_public_artifacts_are_group_readable_but_private_stores_stay_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous = os.umask(0o007)
+            try:
+                for shared, expected in ((False, 0o600), (True, 0o640)):
+                    artifacts = FileArtifacts(str(Path(directory) / str(shared)), group_readable=shared)
+                    saved = artifacts.put(b'synthetic public filing')
+                    path = artifacts._path(saved)
+                    self.assertEqual(path.stat().st_mode & 0o777, expected)
+                    self.assertEqual(artifacts.get(saved), b'synthetic public filing')
+                    self.assertEqual(artifacts.put(b'synthetic public filing'), saved)
+                    self.assertEqual(path.stat().st_mode & 0o777, expected)
+            finally:
+                os.umask(previous)
 
 
 if __name__ == "__main__":

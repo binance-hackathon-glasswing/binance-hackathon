@@ -40,8 +40,9 @@ class HostUnits(unittest.TestCase):
                 self.assertIn('Restart=always', d)
                 self.assertIn('StartLimitIntervalSec=0', d)
                 self.assertIn(f'ConditionPathExists=/etc/larp/role-{role}', d)
-                pre, start = value(d, 'ExecStartPre'), value(d, 'ExecStart')
+                pre, start = value(d, 'ExecCondition'), value(d, 'ExecStart')
                 self.assertEqual(len(pre), 1)
+                self.assertEqual(value(d, 'ExecStartPre'), [])
                 self.assertEqual(len(start), 1)
                 self.assertIn('-m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current '
                               '--profile host', pre[0])

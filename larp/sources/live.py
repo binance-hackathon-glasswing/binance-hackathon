@@ -382,7 +382,7 @@ def build_runner(env, *, config_mode: str, edgar_interval_ms: int, commit: str, 
     root = _env_root(env, config_mode)
     register, aliases, register_sha = load_register()
     config, registry = load_config(config_mode), load_registry()
-    artifacts = FileArtifacts(str(root / "artifacts"))
+    artifacts = FileArtifacts(str(root / "artifacts"), group_readable=True)
     agent = sec_user_agent(env)
     sources = SourceIngestor(register=register, register_sha256=register_sha, aliases=aliases,
                              client=AllowlistedClient(urllib_fetch, user_agents={"LARP_SEC_USER_AGENT": agent}),

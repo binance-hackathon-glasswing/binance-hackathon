@@ -246,7 +246,7 @@ class SupervisorUnit(unittest.TestCase):
         for required in ('Restart=always', 'RestartSec=10', 'StartLimitIntervalSec=0', 'KillMode=control-group',
                          'RestartPreventExitStatus=2 3 4', 'User=larp-runtime'):
             self.assertIn(required, d)
-        self.assertTrue(any(x.startswith('ExecStartPre=') and 'larp.runtime.preflight --manifest' in x for x in d))
+        self.assertTrue(any(x.startswith('ExecCondition=') and 'larp.runtime.preflight --manifest' in x for x in d))
         self.assertTrue(any(x.startswith('ExecStart=') and 'larp.runtime.service run' in x for x in d))
         hardening = [x for x in self.directives('larp-archive.service') if x.split('=')[0] in (
             'NoNewPrivileges', 'ProtectSystem', 'ProtectHome', 'PrivateTmp', 'PrivateDevices', 'ProtectKernelTunables',

@@ -14,7 +14,8 @@ Group=larp-execution
 WorkingDirectory=/opt/larp/current
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
-ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config execution=/etc/larp/execution.json
+# A permanent release refusal skips startup without entering the automatic restart path.
+ExecCondition=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config execution=/etc/larp/execution.json
 ExecStart=/opt/larp/current/.venv/bin/python -m larp.execution_live.main run --config /etc/larp/execution.json --manifest /etc/larp/release.json --root /opt/larp/current
 Restart=always
 RestartSec=10

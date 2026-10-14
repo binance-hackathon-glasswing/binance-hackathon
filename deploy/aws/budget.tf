@@ -6,6 +6,10 @@ resource "aws_budgets_budget" "monthly" {
   time_unit    = "MONTHLY"
   limit_amount = format("%.2f", var.monthly_budget_usd)
   limit_unit   = "USD"
+  # Promotional credits pay the bill but still consume the shared credit balance.
+  cost_types {
+    include_credit = false
+  }
   dynamic "notification" {
     for_each = toset([50, 75, 90])
     content {
