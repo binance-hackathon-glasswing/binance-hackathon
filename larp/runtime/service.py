@@ -41,13 +41,18 @@ class StartRefused(ContractError):
 
 class Service:
     def __init__(self, store, run_id, build_id, *, guard, driver, clock_ms, interval_s=5.0, sleep=time.sleep,
-                 session_id=None, start_check=None):
+                 session_id=None, start_check=None, cycle_timeout_s=None, on_hang=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
         self.guard, self.driver, self.clock, self.interval, self.sleep = guard, driver, clock_ms, interval_s, sleep
         self.session_id = session_id or 'session:' + uuid.uuid4().hex
         self.sessions = Sessions(store, run_id)
         self.stopping = False
         self.start_check = start_check  # live/dev refusals (larp/runtime/live.py), before any session opens
+        # A cycle longer than this ends the process for a supervised restart (larp/runtime/watchdog.py, #35).
+        self.watchdog = None
+        if cycle_timeout_s is not None:
+            from larp.runtime.watchdog import Watchdog
+            self.watchdog = Watchdog(cycle_timeout_s, **({} if on_hang is None else dict(on_hang=on_hang)))
 
     def stop(self, *args):
         self.stopping = True
@@ -66,15 +71,25 @@ class Service:
         except ContractError as refused:
             raise StartRefused(str(refused)) from refused  # e.g. another build, a reused session ID
         cycles = 0
-        while not self.stopping and (max_cycles is None or cycles < max_cycles):
-            now = self.clock()
-            if 'QUARANTINED:INTEGRITY' in self.guard.evaluate(now):
-                return EXIT_QUARANTINED  # no clean end: the next start reports the stop as an incident
-            self.driver.once(now)
-            self.sessions.heartbeat(self.session_id, self.clock())
-            cycles += 1
-            if not self.stopping and (max_cycles is None or cycles < max_cycles):
-                self.sleep(self.interval)
+        if self.watchdog is not None:
+            self.watchdog.start()
+        try:
+            while not self.stopping and (max_cycles is None or cycles < max_cycles):
+                if self.watchdog is not None:
+                    self.watchdog.begin()
+                now = self.clock()
+                if 'QUARANTINED:INTEGRITY' in self.guard.evaluate(now):
+                    return EXIT_QUARANTINED  # no clean end: the next start reports the stop as an incident
+                self.driver.once(now)
+                self.sessions.heartbeat(self.session_id, self.clock())
+                if self.watchdog is not None:
+                    self.watchdog.end()
+                cycles += 1
+                if not self.stopping and (max_cycles is None or cycles < max_cycles):
+                    self.sleep(self.interval)
+        finally:
+            if self.watchdog is not None:
+                self.watchdog.stop()
         self.sessions.end(self.session_id, self.clock())
         return 0
 
@@ -94,6 +109,11 @@ def validate_config(value):
         raise ContractError('Invalid runtime interval')
     if value.get('mode', 'offline') not in ('offline', 'paper', 'dev', 'live'):
         raise ContractError('Unknown runtime mode')
+    # A hosted run needs the hung-cycle watchdog (#35): without it a stuck cycle is never restarted.
+    timeout = value.get('cycle_timeout_seconds')
+    if timeout is not None or value.get('mode', 'offline') in ('dev', 'live'):
+        if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
+            raise ContractError('Invalid or missing cycle_timeout_seconds')
     # Exactly one connection: a local DSN file, or RDS IAM settings (hosted roles are IAM-only).
     # `region` alone also serves the secret store, so it does not select IAM.
     dsn = value.get('database_dsn_file') not in (None, '')
@@ -295,6 +315,12 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
         raise StartRefused('Configured mode differs from the run, or the run is not dev/live')
     if run['wallet_id'] != config.get('wallet_address'):
         raise StartRefused('Configured wallet differs from the run')
+    if run['mode'] == 'live':
+        # The final build runs unchanged for the whole scored run (F-117), so its declared deviations must be final
+        # before it is activated: no OPEN decision and no DRAFT row (G-11; plan.md §6.5; IDEA-049 D-FND-010).
+        register = manifest.read().get('release_register') or {}
+        if register.get('open_deviations') != [] or register.get('draft_deviations') != []:
+            raise StartRefused('Final activation needs a final deviations register: no OPEN or DRAFT rows')
     registered = run['projection'].get('registered_version')
     manifest_sha = hashlib.sha256(manifest.payload).hexdigest()
     if registered and (registered.get('build_id') != config['build_id']
@@ -367,7 +393,7 @@ def main(argv=None):
         service = Service(store, c['run_id'], c['build_id'], driver=driver,
                           guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
                           clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'],
-                          start_check=start_check)
+                          start_check=start_check, cycle_timeout_s=c.get('cycle_timeout_seconds'))
         signal.signal(signal.SIGTERM, service.stop)
         return service.run()
     except LiveStartRefused as refused:

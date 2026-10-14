@@ -1,6 +1,6 @@
 """Durable archive maintenance, independent of model and trade scheduling."""
 
-from larp.audit.delivery import deadline_breaches
+from larp.audit.delivery import deadline_breaches, unlogged_rounds
 from larp.contracts import ContractError, Document
 from larp.storage.backup import export
 from larp.storage.postgres import Conflict, IntegrityError, Unavailable, digest, doc
@@ -67,6 +67,20 @@ class Maintenance:
                                           "AND kind='anchor' AND slot_ms=%s", (run_id, slot)).fetchone()
             needs_backup = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
                                           "AND kind='backup' AND slot_ms=%s", (run_id, backup_slot)).fetchone()
+            # Declared: the journal is uploaded daily "and after any incident" (IDEA-049 D-FND-008). An incident
+            # (supervisor restart, HALT) committed after the newest backup gets one more backup now.
+            incident = db.execute("SELECT max(sequence) FROM events WHERE run_id=%s "
+                                  "AND (event_id LIKE 'incident:%%' OR event_id LIKE 'halt:%%')", (run_id,)).fetchone()[0]
+            covered = db.execute("SELECT max(covers_sequence) FROM archive_outbox WHERE run_id=%s AND kind='backup'",
+                                 (run_id,)).fetchone()[0]
+            # At most one incident backup per hour: a crash loop journals an incident every few seconds, and each
+            # backup is a full export (IDEA-049 D-FND-021). Scheduled backups sit on interval boundaries.
+            recent = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
+                                'AND slot_ms %% %s <> 0 AND slot_ms > %s LIMIT 1',
+                                (run_id, self.backup_interval_ms, now_ms - HOUR_MS)).fetchone()
+            version = run['version']
+        needs_incident_backup = (incident is not None and (covered is None or covered < incident)
+                                 and recent is None)
         if needs_anchor:
             # Full verification uses a read-only snapshot, never a wallet lock.
             # The anchor identifies that snapshot even if new rounds commit later.
@@ -78,9 +92,10 @@ class Maintenance:
                                owner_epoch=run['epoch']))
             with self.store.transaction() as db:
                 self._enqueue(db, run_id, 'anchor', slot, payload)
-        if needs_backup:
+        if needs_backup or needs_incident_backup:
             # Snapshot in a separate repeatable-read transaction. Competing
-            # preparers keep the first persisted payload for this immutable slot.
+            # preparers keep the first persisted payload for this immutable slot. The snapshot is taken after
+            # `version` was read, so it covers at least that sequence.
             payload = export(self.store)
             if len(payload.payload) > self.max_payload_bytes:
                 raise ContractError('Backup exceeds configured bound; no truncation performed')
@@ -88,13 +103,13 @@ class Maintenance:
                 run = self.store._run(db, run_id, lock=False)
                 if run['quarantined']:
                     raise Conflict('Run quarantined during backup preparation')
-                self._enqueue(db, run_id, 'backup', backup_slot, payload)
+                self._enqueue(db, run_id, 'backup', backup_slot if needs_backup else now_ms, payload, version)
 
     @staticmethod
-    def _enqueue(db, run_id, kind, slot, payload):
-        db.execute('INSERT INTO archive_outbox(run_id,kind,slot_ms,payload,sha256) '
-                   'VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
-                   (run_id, kind, slot, payload.payload, digest(payload.payload)))
+    def _enqueue(db, run_id, kind, slot, payload, covers=None):
+        db.execute('INSERT INTO archive_outbox(run_id,kind,slot_ms,payload,sha256,covers_sequence) '
+                   'VALUES(%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
+                   (run_id, kind, slot, payload.payload, digest(payload.payload), covers))
 
     def once(self, run_id, now_ms):
         with self.store.transaction() as db:
@@ -138,9 +153,12 @@ class Maintenance:
         with self.store.transaction() as db:
             # A late failure must never overwrite another worker's ACK. An old
             # attempt cannot clobber a later attempt, even after lease expiration.
-            db.execute('UPDATE archive_outbox SET status=%s,last_error=%s,acknowledgement=%s '
+            # Once the write-once archive holds the bytes (receipt and SHA-256 kept), the database copy is released,
+            # so daily and incident backups do not accumulate in the database (IDEA-049 D-FND-021).
+            db.execute("UPDATE archive_outbox SET status=%s,last_error=%s,acknowledgement=%s,"
+                       "payload=CASE WHEN %s THEN ''::bytea ELSE payload END "
                        "WHERE run_id=%s AND kind=%s AND slot_ms=%s AND status<>'ACK' AND attempts=%s",
-                       (status, error, receipt.payload if status == 'ACK' else None,
+                       (status, error, receipt.payload if status == 'ACK' else None, status == 'ACK',
                         run_id, kind, slot, attempts + 1))
         return True
 
@@ -157,7 +175,7 @@ class Maintenance:
             projection = Document(bytes(run['projection'])).read()
             beat = db.execute('SELECT max(heartbeat_ms) FROM process_sessions WHERE run_id=%s AND ended_ms IS NULL',
                               (run_id,)).fetchone()[0]
-            overdue = len(deadline_breaches(db, run_id, now_ms))
+            overdue = len(deadline_breaches(db, run_id, now_ms)) + len(unlogged_rounds(projection, now_ms))
             unanswered, oldest = db.execute(
                 'SELECT count(*),min(r.requested_s) FROM signing_requests r WHERE r.run_id=%s AND r.requested_s<%s '
                 'AND NOT EXISTS (SELECT 1 FROM signing_refusals f WHERE f.request_id=r.request_id) '
@@ -179,6 +197,8 @@ class Maintenance:
             counts = dict(db.execute('SELECT status,count(*) FROM archive_outbox WHERE run_id=%s GROUP BY status', (run_id,)))
             latest = dict(db.execute("SELECT kind,max(slot_ms) FROM archive_outbox WHERE run_id=%s "
                                      "AND status='ACK' GROUP BY kind", (run_id,)))
+            failed = db.execute("SELECT kind,slot_ms FROM archive_outbox WHERE run_id=%s "
+                                "AND status IN ('PERMANENT','EXHAUSTED') ORDER BY kind,slot_ms", (run_id,)).fetchall()
             audit_failures = db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s "
                                         "AND status IN ('PERMANENT','EXHAUSTED')", (run_id,)).fetchone()[0]
             breaches = len(deadline_breaches(db, run_id, now_ms))
@@ -191,10 +211,14 @@ class Maintenance:
         for kind, limit in (('anchor', 2 * HOUR_MS), ('backup', 2 * self.backup_interval_ms)):
             if ages[kind] is None or ages[kind] > limit:
                 reasons.append(kind.upper() + '_STALE')
-        if counts.get('PERMANENT', 0) or counts.get('EXHAUSTED', 0):
+        # A slot that could not be delivered is never written late (IDEA-036 #2); it is listed as missed for good.
+        # It blocks health only until a newer slot of its kind is acknowledged: a later anchor and a later full
+        # backup supersede it (IDEA-049 D-FND-009, #64 item 1).
+        missed = {kind: [slot for k, slot in failed if k == kind] for kind in ('anchor', 'backup')}
+        if any(slot >= latest.get(kind, -1) for kind, slots in missed.items() for slot in slots):
             reasons.append('ARCHIVE_DELIVERY_BLOCKED')
         if audit_failures or breaches:
             reasons.append('AUDIT_DELIVERY_BLOCKED')
         return doc(dict(schema='MaintenanceHealth.v1', healthy=not reasons, reasons=reasons,
-                        counts=counts, age_ms=ages, audit_failures=audit_failures,
+                        counts=counts, age_ms=ages, missed=missed, audit_failures=audit_failures,
                         audit_deadline_breaches=breaches, signing_enabled=False))

@@ -7,6 +7,7 @@
   "max_failures": 3,
   "clear_after": 2,
   "interval_seconds": 5,
+  "cycle_timeout_seconds": 600,
   "runtime_secret_id": "larp-dev/runtime",
   "region": "ap-southeast-2",
   "database_host": null,
