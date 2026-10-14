@@ -189,3 +189,22 @@ Pass: every test above, the full suite against PostgreSQL 14, Terraform `deploy/
 - 2026-10-14 amendments (Claude, with the R3–R7 code, before any R3–R7 test run):
   - R5: the service alarms exist only while `enable_hosts` is true. With hosts off, every one would sit in ALARM on missing data and, with emails set, notify continuously. The Terraform test checks both states.
   - R3: the runtime's path is `ReadWritePaths=-/var/lib/larp-evidence`. The `-` lets the runtime start before the poller has first created the directory.
+
+### R3–R7 results (2026-10-14)
+
+Criteria pushed at `ddc4d62` (cadence correction `f2fd317`) before any change. Code, tests and docs at `d82020b`, plus a Terraform test-fixture fix at `7065595`. Local run: macOS, Python 3.12.14 venv from `deploy/requirements-test.lock`, PostgreSQL 14.24 in Docker, Terraform 1.13.5. Synthetic data only.
+
+| ID | Result | Evidence |
+|---|---|---|
+| R3 | PASS | `tests/sources/test_evidence_sharing.py`: a read-only store sees a live WAL writer's commits as they land; it refuses `commit`, inserts, deletes, DDL and a journal-mode change; it never creates a missing file; units are as specified, and no other unit joins the group. H02 container (aarch64, `--network none`): a writer as `larp-evidence` (umask `0007`, `0770` state directory) holds a WAL store open, `larp-runtime` with the `larp-evidence` group reads it and cannot write, without the group it is refused, and no file is accessible to others. |
+| R4 | PASS | `RefusedStart`: null live parameters and terms hashes give exit 4 with `Live preflight refused` / `INTELLIGENCE_CONFIG_REFUSED:live` on stderr and no store created; a changed or incomplete release gives exit 4; `preflight` still returns 1. `test_v01_git_path_is_unchanged` now expects exit 4 for a dirty checkout. The unit sets `RestartPreventExitStatus=4` and keeps `Restart=always`. |
+| R5 | PASS | `tests/runtime/test_service_health.py`, run as `larp_archive` with the real `roles.sql` grants on PostgreSQL 14: no session gives no heartbeat, and an ended one does not count; a heartbeat of exactly 600 s is fresh and 600 s + 1 ms is stale; HALT reasons and quarantine are reported; only the overdue unacknowledged audit event counts; only old requests count as unanswered (signed, refused and fresh ones do not, but a signature for another payload does not answer). Publishing sends the 7 metrics with `Deployment`/`Service` dimensions; a database failure sends archive `Healthy=0` and runtime `Heartbeat=0`. Terraform `deploy/aws` 13/13: five service alarms with breaching missing data while hosts run, none without hosts, an SNS topic with one subscription per address only when emails are given. |
+| R6 | PASS | H02 container, both roles: a missing, upper-case or different hash is refused before anything is installed, and the correct hash installs (twice, idempotent). A tampered bundle is refused against the original hash, and also against its own hash (by `SHA256SUMS`). The CI job writes the hash to its summary (to confirm in the CI run). |
+| R7 | PASS | `docs/build/architecture-deployment.md`: bundle hash procedure, evidence sharing, evidence-unit prerequisites, monitoring signals and alarm emails, signer log collection, and the signer trust boundary next to version binding. The teardown target list includes the new alarms and topic. Open items are in `docs/INCOMPLETE_WORK.md`. |
+
+- **Tests catch the bugs:** against the pre-fix `larp/` and `deploy/` files (`f2fd317`) with the new tests, 9 tests fail and `test_service_health.py` fails at import (no `service_health`). They pass at `d82020b`.
+- **Full suite:** 1138 passed, 4 skipped (three Linux bubblewrap, one opt-in recorded-market), 1466 subtests, at `d82020b`. Terraform: `deploy/aws` 13/13 and `deploy/bootstrap` 1/1 at `7065595`.
+- **Process note:** the first Terraform test run, at `d82020b`, failed 1 of 13 runs because the new host-enabled test runs gave no AMI (a precondition). I fixed the fixture and ran the tests once before committing the fix. The recorded 13/13 is the rerun on the pushed `7065595`.
+- **H02:** `tools/test_host_bundle.sh` on the aarch64 bundle built from pushed `7065595` (SHA-256 `5cc6cf94…f630`): PASS for both roles.
+- **Linux CI:** see the PR #20 checks on the pushed head.
+- **Not established (need hosts):** the units under real systemd (`SupplementaryGroups`, `ReadWritePaths`, `StateDirectoryMode`); alarms and email delivery in AWS; a persistent journal on the signer.
