@@ -19,9 +19,8 @@ Environment=PYTHONUNBUFFERED=1
 # The wallet key stays a root-only file (IDEA-046 B2); systemd hands this service a private copy under
 # $CREDENTIALS_DIRECTORY, which larp.signer.keyfile checks before use. No secret ID, no environment value.
 LoadCredential=wallet.key:/etc/larp/signer/wallet.key
-# A permanent release refusal skips startup without entering the automatic restart path.
-ExecCondition=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config signer=/etc/larp/signer.json
-ExecStart=/opt/larp/current/.venv/bin/python -m larp.signer.service run --config /etc/larp/signer.json --manifest /etc/larp/release.json --root /opt/larp/current
+# Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.launch --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config signer=/etc/larp/signer.json -- -m larp.signer.service run --config /etc/larp/signer.json --manifest /etc/larp/release.json --root /opt/larp/current
 Restart=always
 RestartSec=10
 # 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none.

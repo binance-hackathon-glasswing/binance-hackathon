@@ -98,9 +98,10 @@ supplementary group before starting the reviewed release. This migration is not 
 (`RestartPreventExitStatus=4`) instead of restarting every minute. Set the live parameters and capture the terms
 (`python -m larp.sources.live terms --write-register`) in a reviewed, pushed commit first.
 
-Release verification for every long-running unit now uses `ExecCondition` (IDEA-047 R13): a preflight refusal exits
-4 and skips `ExecStart` without restart. `RestartPreventExitStatus` covers only the main process, so it cannot
-stop an `ExecStartPre` failure loop. Archive maintenance remains timer-driven. The upstream semantics are in the
+Release verification for every long-running unit now uses `larp.runtime.launch` inside `ExecStart` (IDEA-047 R13):
+a preflight refusal exits 4 and stays stopped; success execs the service on the same PID. `RestartPreventExitStatus` covers only the main process, so it cannot
+stop an `ExecStartPre` failure loop. Older systemd also restarts failed `ExecCondition` checks with `Restart=always`;
+the wrapper avoids that version dependency. Archive maintenance remains timer-driven. The upstream semantics are in the
 [systemd service documentation](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml#L1001-L1006).
 
 **Monitoring (IDEA-047 R5).** `larp-archive` (every minute, as `larp_archive`) publishes to `LARP/Runtime`:
