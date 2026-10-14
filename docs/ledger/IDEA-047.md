@@ -1,7 +1,7 @@
 # IDEA-047 — Host services for the two-host deployment: signer key file, signer service, service units and host images
 
 - Date / owner: 2026-10-14 / Yao Zhu (scope decision) with Claude. Hosting owners remain Keegan + Isaac (review).
-- Status: **pre-registered** (criteria below committed before implementation).
+- Status: **implemented and validated offline** (every row PASS, 2026-10-14; hosted checks NOT RUN, see results). Pre-registered at `67e26bd`.
 - Branch: `codex/hosting-option-b-20261012` (PR #20, stacked on #19 → #18). Nothing is applied to AWS.
 - Links: IDEA-046 (two-host layout, B1/B2), IDEA-045 (IAM database login), IDEA-042 (runtime service, exit codes, S1–S3
   secrets), G-01/G-18 (signer allow-list, at-most-once signing), G-03 (version gate covers configs), G-09 (key
@@ -63,3 +63,35 @@ Pass = every row PASS with evidence. A row that cannot be run offline is reporte
   immutable and keyed by their own content hash (an identical re-send is a no-op); a `signing_attempts` row binds each
   attempt ID to one payload hash, and the database refuses (foreign key) any request for that attempt with another
   payload hash. Refusals are per request.
+
+## Validation results (2026-10-14)
+
+Criteria committed at `67e26bd` (S01 corrected at `eac591f`) before implementation. Code `4310f0a` (services, units,
+migration 009), `0ea7ca6` + `3e67bf4` (bundle, provisioning), `45e9d00` (CI job). Local: macOS, Python 3.12.14 venv
+from `deploy/requirements-test.lock`, PostgreSQL 14.24 in Docker, Terraform 1.13.5.
+
+| ID | Result | Evidence |
+|---|---|---|
+| K01 | PASS | `tests/signer/test_keyfile.py`: hex key with/without `0x`, 12–24-word mnemonics, `0400`/`0600`, readable `0755` directory; the result builds a `LocalSigner` for the same address. |
+| K02 | PASS | Same file: missing, symlinked file and parent, directory, FIFO, every group/other bit, other owner, second hard link, group/other-writable directory, swap between check and open (`changed`), empty/oversized/unrecognised/double content; a marker key never appears in any refusal, traceback or repr. |
+| S01 | PASS (as corrected) | Migration `009`; `SigningProtocol.test_s01_*`: identical re-send is a no-op, another payload for the attempt is refused by the code and by the database foreign key. `SigningRoles` (real `roles.sql` grants): signing and refusing work as `larp_execution`/`larp_signer`; each role's forbidden inserts/updates/deletes fail; the runtime cannot read the tables; the archive role exports all three; backup `TABLES` include them. |
+| S02 | PASS | `test_s02_timeout_and_refusal_reach_the_caller`: bounded timeout, refusal reason passed through, fresh request after a refusal is signed, payload mismatch refused. `RemoteSigner` holds no key. |
+| S03 | PASS | `test_s03_*`: the W04 Executor signs an approve through `RemoteSigner` → `SignerService`; bytes verify and recover the wallet; a second pass, a restarted signer and a duplicate request leave the signature unchanged; the port returns stored bytes without a new request. |
+| S04 | PASS | `SignerRefusals`: quarantined, fenced epoch, unknown attempt, aborted attempt, payload hash, authority, gate window and intent expiry by the signer's clock, signer clock behind, nonce, approve spender/amount/destination/selector authorized by a patched (compromised) primary, swap without a verified decoder (signed once a decoder is supplied: the decoder is the only barrier), another run's request never answered. |
+| S05 | PASS | `SignerCommand`: `check`, quarantined run → 3, running loop → 0; unpinned config, offline mode, secret ID, key value, two key sources, other build, wrong database role, wallet or mode different from the run → 4; group-readable key file and another wallet's key → 4 `KEY_REFUSED`; systemd credentials directory path; no output contains the key. |
+| E01 | PASS | `tests/execution/test_service_main.py`: `check` → 0, `run` → 2 `NOT_INTEGRATED`; key fields, paper mode, unpinned config, other build, wrong role, wallet/mode mismatch → 4. |
+| U01 | PASS | `tests/audit/test_uploader_service.py`: only `AI_SEEDS_SECRET` (+ matching address) accepted, foreign names and provider errors refused without the secret in tracebacks; repr hides it while HMAC uses it; delivery bounded per cycle, follows a new owner epoch, continues while quarantined; CLI check/run and refusals → 4. |
+| V01 | PASS | `tests/sources/test_release_mode.py`: verified release names the build; tampered or incomplete release refused; `run` never calls git in release mode; git path unchanged. |
+| M01 | PASS | `tests/runtime/test_service_configs.py`: `service_configs_sha256` recorded only when given (old manifests unchanged); changed or unrecorded config refused through the CLI; `--profile host` checks the signer lock. |
+| D01 | PASS | `tests/runtime/test_host_units.py` over the four new units and the example configs in `config/hosts/`. |
+| H01 | PASS | `tests/runtime/test_release_bundle.py` (throwaway repo and remote): contents, checksums, committed bytes only, root ownership; refuses uncommitted tracked change, unpushed commit, unpinned arch, Python checksum mismatch, missing wheel, unknown arch. Real bundles built for `aarch64` and `x86_64` at `3e67bf4` (Python checksum verified, every locked package has a wheel). |
+| H02 | PASS | `tools/test_host_bundle.sh` in `amazonlinux:2023` with `--network none`, both roles, twice each: `aarch64` native and `x86_64` emulated, PASS. Checks: Python 3.12.15, imports, `pip check`, seven entry points answer `--help`, everything root-owned and not world-writable, correct users/units per role, `/etc/larp/signer` `0700`, the service user cannot read the root-only key but can read a `0400` credential copy, a group-readable copy is refused, the other role and a tampered bundle are refused. CI job `host-bundle` repeats it natively on Linux x86_64. |
+| T01 | PASS locally; CI pending at writing | Local: 1117 passed, 4 skipped (baseline 1060 + 57 new), Terraform 10/10 and 1/1. Linux CI: see PR #20 checks. |
+
+**Not established (NOT RUN, need hosts):** systemd `LoadCredential` ownership and mode on the real AMI (the loader
+refuses group bits, so an ACL-based copy would be refused, failing closed); the units under real systemd; RDS IAM
+login as `larp_signer`/`larp_execution`/`larp_uploader`; clock sync on the signer (Amazon Time Sync). **Known limits:**
+the signer trusts gate facts it cannot observe offline (nonce, market, risk, health) from the request; it does not
+check the run's registered version against its release, because `larp_signer` cannot read the journal (`events`);
+swaps stay refused until a verified router decoder exists (GAP-29); the execution service stops `NOT_INTEGRATED`
+until the round driver lands.

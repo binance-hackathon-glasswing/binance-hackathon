@@ -16,8 +16,8 @@ credit budget. Rows below that say six hosts, NAT or interface endpoints describ
 | Account / region | New-AWS-experience project on the Free plan ($100 credits). An AWS-managed policy denies Singapore, so **Sydney (`ap-southeast-2`) for now**. The agent would trade from an Australian address (G-17; Q-12 open): **revisit before final activation (Oct 27)**, either a Singapore account or a written jurisdiction check. |
 | Hosts | `primary` (`t3.small`): coordinator, execution service, evidence worker, uploader, archive maintenance, each as its own Linux user and systemd unit. `signer` (`t3.micro`): wallet key only. Both use standard CPU credits (never billed above baseline), IMDSv2, encrypted disks, and automatic EC2 recovery. |
 | Network | No NAT gateway, no interface endpoints. `enable_external_https` (default off) adds an internet gateway route, a public IPv4 and HTTPS egress for `primary` only. `signer` sits in a private subnet with no internet route; it reaches only the database and the free S3 gateway endpoint. |
-| Secrets | Managed secrets `runtime`, `uploader`, `evidence`, readable only by `primary`. **The wallet key is a root-only file on the signer's encrypted disk** (no Secrets Manager entry or endpoint). The signer service, still `NOT_INTEGRATED`, must refuse a key file that is not a regular file owned by root or the signer user, or that is readable by group or other. |
-| Signer image | No internet: everything the signer runs (Python 3.12.15 venv and wheels from the pinned locks, the release) must be in its AMI or fetched from the artifact bucket through the S3 gateway endpoint. |
+| Secrets | Managed secrets `runtime`, `uploader`, `evidence`, readable only by `primary`. **The wallet key is a root-only file on the signer's encrypted disk** (no Secrets Manager entry or endpoint), handed to the signer service by systemd `LoadCredential`; `larp.signer.keyfile` refuses anything but a regular single-link file owned by root or the service user with no group/other bits (IDEA-047). |
+| Signer image | No internet: the release bundle (`tools/build_release_bundle.py`) carries CPython 3.12.15, every wheel, the RDS CA bundle and the release; `deploy/host/provision.sh` installs it offline from the artifact bucket via the S3 gateway endpoint (IDEA-047). |
 | Database | RDS PostgreSQL 14.24 `db.t4g.micro`, single zone, 20 GiB gp3, IAM login, TLS, 7-day backups, no CloudWatch log export by default. `primary` may log in as `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader`; `signer` only as `larp_signer`. |
 | Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of actual spend when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
 | Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. |
@@ -25,6 +25,37 @@ credit budget. Rows below that say six hosts, NAT or interface endpoints describ
 Estimated cost (official Sydney prices, 2026-10-12, 730 h): servers $28.91, database $21.01, disks $3.84, public IPv4
 $3.65, KMS/secrets ≈ $2.60, alarms/logs/S3 ≈ $2.50 → **≈ $62/month**, ≈ $66 to Nov 12. Hosts and the public IPv4 cost
 nothing while `enable_hosts`/`enable_external_https` are off; stopped instances bill only their disks.
+
+### Host services, bundle and provisioning (IDEA-047, 2026-10-14)
+
+| Host | Unit (user) | Entry point | Config (pinned in the release manifest) |
+|---|---|---|---|
+| primary | `larp-runtime` | `larp.runtime.service` | `/etc/larp/runtime.json` |
+| primary | `larp-execution` | `larp.execution_live.main` (stops `NOT_INTEGRATED` until the round driver) | `/etc/larp/execution.json` |
+| primary | `larp-uploader` | `larp.audit.service` (reads only `AI_SEEDS_SECRET` from `larp/uploader`) | `/etc/larp/uploader.json` |
+| primary | `larp-evidence` | `larp.sources.live run --release-manifest …` | `/etc/larp/evidence.env` (non-secret) |
+| primary | `larp-archive` (timer) | `larp.runtime.operations` | `/etc/larp/operations.json` |
+| signer | `larp-signer` | `larp.signer.service` (key via `LoadCredential`) | `/etc/larp/signer.json` |
+
+The execution service and the signer talk only through the database: the execution service writes an immutable
+signing request (migration `009`) with its gate snapshot; the signer re-checks fencing, the journaled attempt, the
+G-01 allow-list, the step sequence, the gas budget and its own clock, then signs once through the fenced registry or
+records a refusal. Swaps are refused until a verified router decoder exists (GAP-29). Examples: `config/hosts/`.
+
+Build and install (no AWS cost to build; each AWS step still needs the owner's OK):
+
+```bash
+python tools/build_release_bundle.py --arch x86_64 --out dist   # from the pushed branch head
+bash tools/test_host_bundle.sh dist/larp-<build>-x86_64.tar.gz  # optional: offline AL2023 container check
+# upload dist/*.tar.gz and .sha256 to s3://<artifact bucket>/releases/, then on each host as root:
+#   aws s3 cp s3://<artifact bucket>/releases/<bundle> /root/ && bash provision.sh <primary|signer> /root/<bundle>
+```
+
+Then, as root: write each service's config (the RDS CA SHA-256 printed by the builder goes in `database_ca_sha256`),
+build `/etc/larp/release.json` with `python -m larp.runtime.preflight --build-output … --service-config NAME=PATH`
+for every service config, and on the signer write the key as `/etc/larp/signer/wallet.key` (root, `0600`). Provisioning
+never writes configs or keys and never starts a service. Still to check on the first real hosts: `LoadCredential`
+ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under systemd (`docs/INCOMPLETE_WORK.md`).
 
 ### Teardown after the winner audit (not before Nov 20, F-17)
 
