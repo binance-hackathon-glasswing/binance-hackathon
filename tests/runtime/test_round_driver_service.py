@@ -338,6 +338,7 @@ class Ingestion(ServiceHarness):
         return ExecutionStore(self.store, run_id=RUN, wallet=self.wallet).load(key)
 
     def test_e2_every_observation_is_journaled_once_in_an_order_the_reducer_accepts(self):
+        before = self.store.load(RUN).read()['projection']['portfolio']['bnb_units']
         round_id, rows = self.execute_without_driver()
         self.assertEqual(len(rows), 4)  # approve broadcast + final, swap broadcast + final
         driver = self.service_driver()  # a restarted runtime
@@ -346,6 +347,8 @@ class Ingestion(ServiceHarness):
         self.assertEqual(sorted(summary['ingested']), sorted(rows))
         self.assertNotIn('refused', summary)
         self.assertTrue(self.closed(round_id))
+        # Both receipts' gas (500 units each at price 1) is accounted: the approval was journaled before the fill.
+        self.assertEqual(self.store.load(RUN).read()['projection']['portfolio']['bnb_units'], before - 1000)
         for event_id in rows:
             self.assertIsNotNone(self.store.event(RUN, event_id))
         again = self.service_driver()
