@@ -14,6 +14,17 @@ from tests.intelligence.test_red_flags import enabled_profile
 
 
 class AdditionalEvidence(RealEvidence):
+    def test_a_req_007_retained_sec_document_preserves_original_source_uri(self):
+        record = self.add(779, NONRELIANCE)
+        [document] = record['documents']
+        self.assertEqual(document['url'], f"synthetic://edgar/{self.entry.cik}/{record['accession']}/filing.htm")
+        self.store.close()
+        from larp.sources.store import SQLiteEvidenceStore
+        self.store = SQLiteEvidenceStore(self.path, journal_mode='DELETE')
+        retained = next(r.read() for r in self.store.records(self.entry.issuer_id)
+                        if r.read()['record_id'] == record['record_id'])
+        self.assertEqual(retained['documents'][0]['url'], document['url'])
+
     def test_a_req_017_partial_http_response_is_unavailable_then_recovers(self):
         replies = [http.client.IncompleteRead(b'UNTRUSTED_PARTIAL_MARKER', 20),
                    (200, 'application/json', json.dumps(self.source.list_filings(self.entry.cik).submissions).encode())]
