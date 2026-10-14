@@ -283,6 +283,19 @@ class Composition(unittest.TestCase):
             with self.subTest(config=config.get('mode'), secrets=bool(secrets)), self.assertRaises(ContractError):
                 build_driver(config, Store(), secrets)
 
+    def test_e9_the_runtime_example_names_every_setting_the_service_reads(self):
+        from larp.runtime.service import DRIVER_KEYS, OPTIONAL_DRIVER_INTEGERS, validate_config
+        example = json.loads((Path(__file__).resolve().parents[2] / 'config/runtime/runtime.example.json').read_text())
+        self.assertEqual(example['schema'], 'RuntimeService.v1')
+        self.assertTrue(set(DRIVER_KEYS) | set(OPTIONAL_DRIVER_INTEGERS) <= set(example['driver']))
+        for key in ('ai_seeds_dir', 'nonce_dir'):
+            self.assertTrue(example[key].startswith('/var/lib/larp-runtime/'))  # the unit's StateDirectory
+        self.assertTrue(example['driver']['market_artifact_root'].startswith('/var/lib/larp-runtime/'))
+        self.assertFalse([k for k in json.dumps(example).lower().split('"') if 'private' in k or 'mnemonic' in k])
+        filled = dict(example, run_id='run', build_id='a' * 40, wallet_address=self.wallet, database_host='db.invalid',
+                      database_ca_sha256='0' * 64)
+        validate_config(filled)
+
     def test_d7_main_maps_refusals_to_exit_codes_without_restart_loops(self):
         raw = json.dumps(dict(self.config(), database_dsn_file='/synthetic', max_failures=3, clear_after=2,
                               interval_seconds=5)).encode()
