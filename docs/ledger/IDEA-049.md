@@ -36,3 +36,36 @@ The review as a whole passes when D's integration record shows:
 ## Results
 
 NOT RUN.
+
+## PR21-R — prompt review amendments (2026-10-14)
+
+Task: the user requested review of PR #21 and implementation of its comments.
+Source: Keegan4 review 5515562621 (GitHub review node PRR_kwDOU5Ify88AAAABSMDOfQ)
+at `767b4d1`. Scope is amendment of the review package and its runner prerequisite;
+the four section reviews themselves remain NOT RUN. PR #20 is still OPEN.
+
+Prospective checks, recorded before execution:
+- PR21-R1: the common protocol names `claude/pre-deployment-review-4zxz7p`, requires
+  an integrated reviewed driver or explicit partial-scope disposition, and never
+  treats the current `build_driver` stub or the shadow-only driver as live proof.
+- PR21-R2: every finding #23–#40 under tracker #22 has a primary section and any
+  cross-section consumers; external P1 cannot be downgraded out of the exit gate.
+  Hosting IDEA-046 remains distinct from the tracker using the same ID. The missing
+  original review/GAP-68 record is explicitly assigned for publication/reconciliation.
+- PR21-R3/R6: C owns DR-01 measurements, B consumes the cost summary; B owns
+  `tools/fetch_h10_krw.py`. All DR-01..22 and tracked issues have an owner.
+- PR21-R4: clean pushed `review/final-[a-d]-<8-digit-date>` branches reach the
+  disposable-local-database guard without aliases. Dirty/unpublished heads and
+  unrelated/malformed branches remain refused; existing system branches work.
+  Run `tests/runtime/test_system_test_branch.py` before the fix (expected four
+  section subcases fail at branch refusal), then after the pushed fix (all pass).
+- PR21-R5/R7/R8: the stale BNB-decimal hint becomes a regression check; milestone
+  dates and slip handling are explicit; D's temporary shared-doc responsibility
+  is cross-referenced in the older build brief without relaxing AGENTS hard rules.
+- Final verification: `git diff --check`, inspect the complete amended diff, run
+  the focused branch-guard regressions, and require PR-head Linux CI. No AWS,
+  credentials, signing, broadcast, organiser contact or full final review here.
+
+Results: NOT RUN at this criteria/test commit. No backlog item is completed by
+publishing prompts. Driver integration and original review-record publication
+remain work for their owners, not implied results of this PR.
