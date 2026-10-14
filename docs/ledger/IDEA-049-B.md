@@ -28,7 +28,74 @@ contact. Source/PDF reads are not execution experiments.
 
 ## Results
 
-Catalogue work in progress; baseline, regressions and fixes NOT RUN.
+Requirements freeze pushed at `d2ed620` before opening B code/tests.
+
+### B-BASE-01 — baseline (2026-10-14)
+
+Fresh Python3.12.15 venv from deploy/requirements-test.lock; PostgreSQL14.24
+dedicated cluster/database at loopback55434, no production credentials. Raw
+logs outside Git under `/home/theruin08/.local/share/larp-final-b-20261014/`.
+The first attempt incorrectly began after a database-start failure (unwritable
+default Unix socket directory): 208 failed,955 passed,4 skipped,1383 subtests,
+67.47s. These environmental failures are retained in baseline.log, not declared
+implementation defects. The process had completed when interruption was attempted.
+
+After a task-owned writable socket directory and verified PostgreSQL14.24 startup,
+unchanged baseline at d2ed620: **1163 passed,4 skipped,1491 subtests**,141.86s.
+The four skips are three opt-in real-systemd tests and recorded external-market
+data; Linux bubblewrap is installed and its ordinary isolation tests ran.
+The clean baseline log is baseline-db-ready.log. No test threshold was relaxed.
+
+### B-REG-01 — prospective first regression pass
+
+Write and push tests before their first run; then fixes must be separately pushed.
+These tests are requirement checks, not an economic experiment:
+
+- B-REQ010/012–016/028/050: LIVE EQUAL_WEIGHT must reject changing decided
+  operating20%/80%, hard25%/90% or top-up75% thresholds without a new recorded
+  team decision. Equivalent rational representations are accepted; stress regime
+  budget may tighten separately. Suspected defect: validate_live checks upper
+  bounds, not equality to these adopted values; provenance strings alone are not
+  an adopted change. B-FND-001, P1 if reproduced.
+- B-REQ018: update_risk must evaluate the UTC date, including an equivalent
+  timezone-offset datetime; reject naive time. Same UTC-day loss must latch even
+  if the input's local date differs. Suspected helper defect, B-FND-002, P2.
+- B-REQ022/026/040/044: null/scalar/mixed/duplicate quote collections must return
+  a blocked quote outcome with reductions retained, never a planner exception
+  or an arbitrary first competing quote. Include stock and gas collections and
+  controls showing valid quotes still work. Suspected B-FND-003, P2.
+- B-REQ017–020/030–033/039–040/045/047: add requirement-named boundaries and a
+  synthetic14-day policy/risk/accounting replay across UTC days, DST, timed
+  blocks, halt and terminal costs. External observations synthetic; no real
+  profit/source capability claim. Existing accounting/idempotence components used.
+
+Focused tests, full suite and system_test must run against the dedicated database
+after the criteria/tests/fixes are pushed. Use CI for real-systemd/host bundle;
+Docker is unavailable locally. No deploy files/locks are edited by B.
+
+### B-INPUT-01 — prior finding reconciliation (phase2)
+
+GitHub #31 maps REQ018: roll_day exists but runtime has no production caller.
+Keep P1 open; B verifies the reducer, D owns trusted journaled midnight hook.
+#34 maps REQ021: B plan(None) retains mandatory reductions but coordinator/store
+HALT gating suppresses the integrated path; classify as blocking P0 where safety
+or unrecoverable-halt definitions apply, never hide it as a benign deliberate gate.
+D owns coordinator/command correction and the team decides allowed HALT semantics.
+#36 maps REQ005/038: no production balance-only reconciliation or BNB-mark
+freshness contract; P1 open. C owns trusted chain facts, D startup/periodic hook;
+B owns financial consumer validation after the interface is agreed.
+#37 maps REQ046/ASM011, P2: after-cost support evaluator exists, real economic
+comparison and default-policy acceptance remain NOT RUN/DECISION-NEEDED.
+#38 maps REQ005/011/024/042 and ASM004/013: token mark vs executable liquidation,
+actual-size all-in cost ranking, concentration and staggered4-session build need
+explicit policy/measurement decisions. No silent restoration of volatility sizing.
+#27/#30/#40 are C's expiry/native-gas/slippage interfaces; B's final tests verify
+consumer constraints, without merging unreviewed C code. #39 is A's SKHYB evidence
+coverage, with B policy-risk acceptance still needed. Original tracker #22
+review record/ID collision remains a D/Keith input; findings are not authority.
+
+Section completion remains blocked while these owned/cross-section dependencies
+or unaccepted P2 decisions remain open; passing baseline is not review acceptance.
 
 ## For other sections
 
