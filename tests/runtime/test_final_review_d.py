@@ -268,6 +268,25 @@ class Archive(DatabaseCase):
             worker.once('run', 3 * HOUR_MS + 200)
         self.assertEqual(sum('/backup/' in k for k in self.client.objects), 3)
 
+    def test_d_req_089_incident_backups_are_rate_limited_and_acked_payloads_released(self):
+        worker = self.worker()
+        worker.prepare('run', 100)
+        for n in range(30):  # a crash loop: a RESTART incident every ~10 s, maintenance every minute
+            Sessions(self.store, 'run').begin(session_id=f's{n}', build_id='b', now_ms=1_000 + n * 10_000)
+            worker.prepare('run', 1_000 + n * 10_000 + 5_000)
+        self.assertEqual(len(self.backups()), 2, 'at most one incident backup per hour')
+        Sessions(self.store, 'run').begin(session_id='later', build_id='b', now_ms=HOUR_MS + 400_000)
+        worker.prepare('run', HOUR_MS + 500_000)
+        self.assertEqual(len(self.backups()), 3)
+        for _ in range(10):
+            worker.once('run', HOUR_MS + 600_000)
+        with self.store.transaction() as db:
+            rows = db.execute("SELECT status,length(payload),sha256,acknowledgement IS NOT NULL FROM archive_outbox "
+                              "ORDER BY kind,slot_ms").fetchall()
+        self.assertTrue(rows and all(status == 'ACK' and size == 0 and len(sha) == 64 and receipt
+                                     for status, size, sha, receipt in rows), rows)
+        self.assertTrue(worker.health('run', HOUR_MS + 600_000).read()['healthy'])
+
     def test_d_req_085_a_newer_ack_supersedes_an_exhausted_slot_in_archive_health(self):
         class Down:
             def put(self, *args, **kwargs):
