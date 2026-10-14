@@ -44,6 +44,7 @@ EXPIRED_REASON = 'COMMAND_EXPIRED_UNCLAIMED'
 SOURCE = 'sec-edgar'
 MAX_ATTEMPTS = 3
 DAY_MS = 86_400_000
+STEP_ORDER = {'approve': 0, 'swap': 1}
 
 
 def iso(ms):
@@ -153,8 +154,8 @@ class ServiceExecution:
 
     - `ingest` journals the observations the execution service wrote to `execution_observations` (the only table it
       shares with the runtime for facts), each event ID once. A row whose bytes do not hash to its stored hash is never
-      committed. The reducer refuses a fact that arrives before the one it depends on (a final swap before its
-      broadcast); passes repeat until none makes progress, so arrival order does not matter.
+      committed. Facts are applied in causal order (approval before swap, broadcast before final); the reducer refuses
+      a fact that arrives before the one it depends on, and passes repeat until none makes progress.
     - `expire` ends a planned intent that has no execution record once its command expired more than `grace_ms` ago:
       the execution service can no longer claim it (`PostgresStore.command` refuses an expired command and
       `Executor.create` an expired intent), so the round would otherwise stay open forever (#26).
@@ -223,6 +224,12 @@ class ServiceExecution:
                 refused.append(event_id)  # an execution outbox row changed after it was written
                 continue
             pending.append(value)
+        # Causal order within an intent: the approval before the swap, a broadcast before its final fact. A final
+        # swap fact ends the intent, so an approval fact applied after it would be refused for good (and its gas
+        # never accounted). Passes below still absorb ordering across intents.
+        pending.sort(key=lambda v: (v.get('round_id', ''), v.get('intent_id', ''),
+                                    STEP_ORDER.get(v.get('step'), 2), v.get('kind') != 'BROADCAST_ATTEMPTED',
+                                    v.get('observed_at', ''), v['event_id']))
         progress = True
         while pending and progress:
             progress, later = False, []
