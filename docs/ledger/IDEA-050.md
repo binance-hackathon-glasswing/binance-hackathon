@@ -1,7 +1,7 @@
 # IDEA-050 — Complete round driver: execution hand-off, observation ingestion and run activation
 
 - Date / owner: 2026-10-14 / Keegan (runtime owner, IDEA-038), built with Claude. Isaac reviews the execution-service side (`larp/execution_live/`), which is his module; nothing in it lifts one of his capability gates.
-- Status: criteria registered; NOT RUN.
+- Status: E1–E11 PASS on synthetic ports, disposable PostgreSQL and Linux CI (run 38574664846). Live signing remains blocked by the capability gates listed under "What stays gated".
 - Base: `claude/round-driver-20261014` = integration head `c829fae` + IDEA-048 shadow driver (`claude/pre-deployment-review-4zxz7p`, ordinary merge) + PR #41 section C (`review/final-c-20261014`, ordinary merge; this branch depends on #41).
 - Links: IDEA-048 (shadow driver and its "Still open" list), IDEA-049 protocol §0.1 and C-OPEN-001, IDEA-042 item 10, DR-07/13/19, I3/I4 (`docs/build/DEPLOYMENT_BUILD.md`), issues #24, #26, #31, #40, #52 and tracker #42.
 
@@ -72,4 +72,32 @@ Out of scope (unchanged, recorded as remaining): lifting `Executor`'s fake-only 
 ## Results
 
 - Baseline before any IDEA-050 code, at merge `f565f19` (Python 3.13 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 16): **1194 passed, 7 skipped, 1541 subtests**. Skips: three Linux bubblewrap checks, three opt-in real-systemd checks and the opt-in recorded-market test.
-- Everything else: NOT RUN.
+- Every run below used pushed commits; synthetic fixtures only, with a throwaway signing key generated per test. No credentials, network, real wallet, broadcast or upload.
+
+Commits: criteria `7efd41f`; implementation and tests `8fc135c`; fixes found by the first runs `11a7dfa` (init refuses a wallet that already has a run) and `c21a58e` (causal order), test corrections `3f33b93`, `acd462f`, `21cfe49`, `6d20e12`; configuration examples `131b16e`.
+
+Findings from the first runs (each fixed in its own pushed commit before the counted run):
+1. **Ingestion order (real defect, caught by E2).** Event-ID order journaled a swap's FILL before its approval; the approval facts were then refused as the intent was already final, so the approval gas was never accounted. Facts are now applied in causal order (approval before swap, broadcast before final); E2 asserts both receipts' gas is accounted.
+2. **`init` on a wallet that already has a run** raised a database error (exit 1). Runs are unique per wallet and chain; it now refuses (exit 4).
+3. **IDEA-047 E01 expectation.** A new dev run is quarantined until `activate`, so the execution entry point now exits 3 before the gate; after activation a full configuration exits 2 `EXECUTOR_CAPABILITY_GATE`. The test was updated to check both.
+
+| ID | Result | Evidence |
+|---|---|---|
+| E1 | PASS | `HandOff.test_e1_nothing_is_committed_until_the_execution_service_claims_the_command` (three cycles: no commit, cadence due; then the claim succeeds) |
+| E2 | PASS | `Ingestion.test_e2_every_observation_is_journaled_once_…` (four facts after a runtime restart, once each, both gas charges accounted); `…_a_changed_outbox_row_is_refused_and_never_journaled` |
+| E3 | PASS | `EndToEnd.test_e3_evidence_to_fill_settlement_round_log_upload_and_replay`: SELL NVDAB from a 4.02 filing → approve and swap signed by `SignerService` through `RemoteSigner`, both broadcasts through `FencedRelease` → FILL → no reservation, position 0 → round log with the swap `tx_hash` and mapping → uploader DELIVERED → `replay_live` head equal |
+| E4 | PASS | `Expiry.test_e4_…`: nothing ended 1 ms before the grace; then `COMMAND_EXPIRED_UNCLAIMED`, reservations released, round closed, no later claim, `reservation_valid` false |
+| E5 | PASS | `Halt.test_e5_a_halt_after_the_approval_stops_the_swap_signature` (one signature, one broadcast, intent aborted before the swap); `…_reconciliation_of_a_broadcast_swap_continues_under_halt` |
+| E6 | PASS | `Quotes.test_e6_*` (one follow-up round with the executable quote; none without one; bound 0 requests nothing); profile bound to the market port in `test_e9_service_execution_builds_and_binds_the_profile_to_quotes` |
+| E7 | PASS | `Cutoff.test_e7_the_decision_time_is_never_before_the_market_observations`; `…_without_the_prefetch_the_same_market_is_future_data` shows the #24 defect the prefetch removes |
+| E8 | PASS | `DayRolls.test_e8_one_roll_per_day_at_the_prefetched_marks` (anchor = equity at the marks, not repeated, replay equal); `…_no_roll_outside_the_window_or_without_a_mark` |
+| E9 | PASS | `tests/execution/test_execution_loop.py` (gate, refusals, exit codes, release boundary, submit-only client); `tests/execution/test_service_main.py`; `Composition.test_e9_*` in `tests/runtime/test_driver.py` |
+| E10 | PASS | `Lifecycle.test_e10_init_then_activate_…` (reviewer journaled, replay equal); `Lifecycle.test_e10_refusals` (pinned file, mode, other build, open round, unfinished execution, journal, offline run, wallet with a run) |
+| E11 | PASS | Full suite at `6d20e12`, disposable PostgreSQL 16, Python 3.13: **1218 passed, 7 skipped, 1564 subtests** (baseline 1194/1541); the same seven environment skips as the baseline. Mutations, each reverted: no hand-off wait → E1 fails; ending before the grace → E4 fails; HALT ignored in `RunAuthorization` → E5 fails; no hash check → E2 fails; no causal order → E2 fails; no prefetch → E7 fails. Linux CI at `6d20e12` (workflow_dispatch): all four jobs PASS — runtime (pytest with PostgreSQL, isolated demo, Docker smoke), host bundle, Terraform `deploy/aws` and `deploy/bootstrap`: [run 38574664846](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38574664846). |
+
+## Still open (not done here)
+
+1. **Capability gates (Isaac):** the `Executor`'s fake-only check, the verified router decoder and quote verifier (GAP-29), native top-up settlement (C-OPEN-005). Until they are lifted, `larp-execution` exits 2 and `execution: "service"` plans commands that expire unclaimed (`COMMAND_EXPIRED_UNCLAIMED`), which is truthful but trades nothing. Gate A rehearsals should use `execution: "shadow"`.
+2. **Team decisions:** what each HALT reason blocks (#34; this build keeps "HALT stops every signature", now also for executions under way, #52); proposal, signing and router lifetimes (#27); the day-roll window and cadence (null in `config/runtime/runtime.example.json`, so a start refuses until set).
+3. **Review:** Keegan (runtime) and Isaac (`larp/execution_live/loop.py`, `main.py`; the guard facts and the round-terminal attestation) before merge. This branch depends on PR #41.
+4. **Hosted checks:** `init`/`activate` on the real database, both units under systemd with their state directories, and the kill/HALT drills.
