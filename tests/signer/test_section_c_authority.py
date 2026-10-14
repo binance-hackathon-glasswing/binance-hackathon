@@ -17,12 +17,16 @@ class SignerAuthority(fixtures.SigningCase):
         projection = dict(current['projection'], **changes)
         self.store.commit(self.batch(event_id='authority:' + str(current['version']), projection=projection))
 
-    def production(self, registered='version', build='version', wallet=None):
-        self.projection(registered_version={} if registered is None else dict(build_id=registered))
+    def production(self, registered='version', build='version', wallet=None, manifest='a' * 64):
+        self.projection(registered_version={} if registered is None else dict(
+            build_id=registered, manifest_sha256=manifest))
         with self.store.transaction() as db:
             db.execute('UPDATE runs SET mode=%s,wallet_id=%s WHERE run_id=%s',
                        ('dev', wallet or self.wallet, 'run'))
         self.service.build_id = build  # the signer's own verified release identity
+        self.service.manifest_sha256 = 'a' * 64
+        self.service.registry.signer_build_id = build
+        self.service.registry.signer_manifest_sha256 = 'a' * 64
 
     def halt(self):
         self.projection(halt=dict(reasons=dict(CLOCK=dict(since_ms=13000, latched=True))))
@@ -122,3 +126,24 @@ class SignerAuthority(fixtures.SigningCase):
         self.projection(registered_version=dict(build_id='another-build'))
         request_id, _ = self.request(state, attempt)
         self.assert_no_key_use(request_id)
+
+    def test_c_req_058_same_build_different_manifest_refuses_before_signing(self):
+        state, attempt = self.authorized()
+        self.production(manifest='b' * 64)
+        request_id, _ = self.request(state, attempt)
+        self.assert_no_key_use(request_id)
+
+    def test_c_req_058_manifest_change_before_registry_commit_cannot_release_bytes(self):
+        state, attempt = self.authorized()
+        self.production()
+        request_id, _ = self.request(state, attempt)
+        put = self.service.registry.put_if_absent
+
+        def intervene(*args):
+            self.projection(registered_version=dict(build_id='version', manifest_sha256='b' * 64))
+            return put(*args)
+
+        with patch.object(self.service.registry, 'put_if_absent', side_effect=intervene):
+            self.service.once()
+        self.assertEqual(self.signatures(), [])
+        self.assertIn(request_id, self.refusals())
