@@ -13,7 +13,7 @@ artifact_bucket_name = "<unique>-larp-dev-artifacts"
 
 # 82 days is the floor (covers all of 2026-12-31). COMPLIANCE retention can never be shortened once objects exist.
 archive_retention_days = 82
-backup_retention_days  = 7
+backup_retention_days  = 1 # the AWS Free plan refuses longer automated RDS backups (IDEA-046, 2026-10-14)
 log_retention_days     = 14
 
 # Matches the PostgreSQL version CI tests (14.24 is available on db.t4g.micro in Sydney, checked 2026-10-12).
