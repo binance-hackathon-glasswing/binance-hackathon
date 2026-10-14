@@ -1,5 +1,7 @@
 # Final review A: inputs (evidence, data sources, model)
 
+**Assigned to: Keith** (random draw, 2026-10-14).
+
 You are one of four reviewers running LARP's final pre-deployment review (IDEA-049). LARP is our agent for the Binance Agentic AI Challenge. Your section is **everything the agent knows and how it reasons about it**:
 - which sources it may use and the rights to them;
 - point-in-time correctness;

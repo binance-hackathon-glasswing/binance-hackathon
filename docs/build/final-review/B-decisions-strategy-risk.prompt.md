@@ -1,5 +1,7 @@
 # Final review B: decisions (strategy, risk, accounting, scoring)
 
+**Assigned to: Keegan** (random draw, 2026-10-14).
+
 You are one of four reviewers running LARP's final pre-deployment review (IDEA-049). LARP is our agent for the Binance Agentic AI Challenge. Your section is **how the agent turns information into positions, and what it may hold**:
 - the trading policy;
 - eligible instruments;

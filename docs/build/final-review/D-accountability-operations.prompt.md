@@ -1,5 +1,7 @@
 # Final review D: accountability and operations (logging, audit, release, runtime, hosting)
 
+**Assigned to: Yao Zhu** (random draw, 2026-10-14).
+
 You are one of four reviewers running LARP's final pre-deployment review (IDEA-049). LARP is our agent for the Binance Agentic AI Challenge. Your section is **the decision trail and the platform it runs on**:
 - the coordinator and rounds;
 - write-ahead decision records;

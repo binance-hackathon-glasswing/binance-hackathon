@@ -10,7 +10,7 @@ The last comprehensive review of the whole system before hosts are started and a
 
 ## How to use
 
-1. Pick a section below.
+1. Find your section below (assigned by random draw, 2026-10-14).
 2. Give your LLM this instruction:
 
    > Read `docs/build/final-review/00-common-protocol.md` and `docs/build/final-review/<your section file>` in this repository, and follow them exactly.
@@ -20,12 +20,12 @@ The last comprehensive review of the whole system before hosts are started and a
    - every DECISION-NEEDED item comes back to the team;
    - no AWS, wallet, ai-seeds logging or organiser contact happens during the review.
 
-| Section | Prompt | Covers | Branch | Record |
-|---|---|---|---|---|
-| A: Inputs | [A-inputs-evidence-model.prompt.md](A-inputs-evidence-model.prompt.md) | Data sources and rights, point-in-time, EDGAR and source ingestion, evidence agent, claim verification, red-flag findings, model or deterministic assessor, F-49 retention | `review/final-a-<date>` | `docs/ledger/IDEA-049-A.md` |
-| B: Decisions | [B-decisions-strategy-risk.prompt.md](B-decisions-strategy-risk.prompt.md) | Policy, eligible instruments, sizing and caps, loss controls, HALT precedence, `openState`, costs, accounting, equity valuation, end-of-run, scoring alignment | `review/final-b-<date>` | `docs/ledger/IDEA-049-B.md` |
-| C: Actions | [C-actions-execution-signing.prompt.md](C-actions-execution-signing.prompt.md) | Web3 Open API venue, signing, signer service and key file, allow-list, nonce and finality, gas and first BNB, funding, final-wallet switch, execution store and service | `review/final-c-<date>` | `docs/ledger/IDEA-049-C.md` |
-| D: Accountability and operations | [D-accountability-operations.prompt.md](D-accountability-operations.prompt.md) | Coordinator, decision records, journal, ai-seeds logs and delivery, versioning, manifests, release, deviations, supervision, HALT, recovery, storage, anchors, restore, AWS hosting and monitoring, timeline; **runs the final integration** | `review/final-d-<date>` | `docs/ledger/IDEA-049-D.md` |
+| Section | Assigned to | Prompt | Covers | Branch | Record |
+|---|---|---|---|---|---|
+| A: Inputs | **Keith** | [A-inputs-evidence-model.prompt.md](A-inputs-evidence-model.prompt.md) | Data sources and rights, point-in-time, EDGAR and source ingestion, evidence agent, claim verification, red-flag findings, model or deterministic assessor, F-49 retention | `review/final-a-<date>` | `docs/ledger/IDEA-049-A.md` |
+| B: Decisions | **Keegan** | [B-decisions-strategy-risk.prompt.md](B-decisions-strategy-risk.prompt.md) | Policy, eligible instruments, sizing and caps, loss controls, HALT precedence, `openState`, costs, accounting, equity valuation, end-of-run, scoring alignment | `review/final-b-<date>` | `docs/ledger/IDEA-049-B.md` |
+| C: Actions | **Isaac** | [C-actions-execution-signing.prompt.md](C-actions-execution-signing.prompt.md) | Web3 Open API venue, signing, signer service and key file, allow-list, nonce and finality, gas and first BNB, funding, final-wallet switch, execution store and service | `review/final-c-<date>` | `docs/ledger/IDEA-049-C.md` |
+| D: Accountability and operations | **Yao Zhu** | [D-accountability-operations.prompt.md](D-accountability-operations.prompt.md) | Coordinator, decision records, journal, ai-seeds logs and delivery, versioning, manifests, release, deviations, supervision, HALT, recovery, storage, anchors, restore, AWS hosting and monitoring, timeline; **runs the final integration** | `review/final-d-<date>` | `docs/ledger/IDEA-049-D.md` |
 
 Why this split: it follows the system's own flow. A is what the agent knows, B what it decides, C what it does, D how it is recorded and kept running. Each section's code paths are exclusive (listed in each prompt), so the four branches rarely touch the same files. Each source item (F-, K-, G-items, never-do lines, declared sentences, DR and AT items) has one owning section, with split items assigned by aspect. D's integration step checks that nothing ended up unowned.
 

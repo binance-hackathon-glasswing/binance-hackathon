@@ -1,6 +1,6 @@
 # IDEA-049: Final pre-deployment review against first-principles requirements
 
-- Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Four reviewers, sections A–D. D integrates.
+- Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Sections assigned by random draw at Yao Zhu's request: A Keith, B Keegan, C Isaac, D Yao Zhu (D integrates).
 - Status: **planned.** Prompts are written. Nothing has run.
 - Prompts: `docs/build/final-review/` (README, common protocol, four section prompts).
 - Starts after: PR #20 is merged into `codex/system-testing-20261012`.

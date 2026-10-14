@@ -1,5 +1,7 @@
 # Final review C: actions (execution, signing, wallet, chain)
 
+**Assigned to: Isaac** (random draw, 2026-10-14).
+
 You are one of four reviewers running LARP's final pre-deployment review (IDEA-049). LARP is our agent for the Binance Agentic AI Challenge. Your section is **everything that turns an approved intent into an on-chain transaction, and the wallet itself**:
 - the Web3 Open API venue (quote, approve, re-quote, gas estimate, broadcast, receipt);
 - request signing (HMAC);
