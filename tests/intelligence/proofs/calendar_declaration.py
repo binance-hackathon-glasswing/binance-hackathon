@@ -7,7 +7,8 @@ from pathlib import Path
 from larp.runtime.register import load_register
 
 root = Path(__file__).resolve().parents[3]
-services, deviations = load_register(root)
+register = load_register(root)
+deviations = register['deviations']
 row = next(r for r in deviations['rows'] if r['id'] == 'DEV-20')
 print({'declaration': row['declared'], 'current_behaviour': row['v1_behaviour'],
        'status': row['status'], 'decided': row['decided']})

@@ -4,7 +4,7 @@ Only EDGAR/market/model HTTP and unused execution port are synthetic external bo
 """
 from pathlib import Path
 import tempfile
-from larp.intelligence.providers import AnthropicModel
+from larp.intelligence.providers import AnthropicMessagesModel
 from larp.intelligence.scenarios import build_world
 from larp.sources.store import FileArtifacts, SQLiteEvidenceStore
 from tests.integration.test_evidence_pipeline import PipelineHarness, EXTRA, RUN, EXSEMI
@@ -26,7 +26,7 @@ class DurableIncident(PipelineHarness):
         def unavailable(*args):
             calls.append(True)
             raise OSError(SECRET)
-        model = AnthropicModel(api_key=SECRET, model_id='example-model-id', prompt_text=self.w.config.prompt_text,
+        model = AnthropicMessagesModel(api_key=SECRET, model_id='example-model-id', prompt_text=self.w.config.prompt_text,
                                prompt_sha256=self.w.config.prompt_sha256, clock_ms=self.w.clock,
                                artifacts=self.w.artifacts, transport=unavailable)
         coordinator = self.coordinator()
