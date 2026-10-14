@@ -178,6 +178,18 @@ Wrong market rows escaped with AttributeError; the portfolio fallback crashed
 on malformed maps/rows. Fix validates required collection shapes up front and
 retains only factual positive integer holdings in the rejection outcome.
 
+Focused retest at e3aafaf:36 passed,16.85s. System-runner first invocation failed
+before testing: Linux git cannot parse the managed worktree's Windows gitdir.
+Read-only GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE mapping plus process-local
+core.autocrlf=true proves the actual clean pushed tree; no runner guard removed.
+
+### B-REG-05 — exact cap trigger coverage
+
+Before execution: isolate decided strict25%/90% triggers with synthetic zero
+cost reserve, assert exact equality creates no reduction and one token unit over
+creates durable20%/80% targets. This is a mathematical fixture, not a LIVE
+cost-reserve change; post-cost convention still needs ASM004 team acceptance.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.

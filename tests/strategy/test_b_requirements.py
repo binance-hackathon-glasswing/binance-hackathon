@@ -12,7 +12,7 @@ from larp.risk.planner import plan
 from larp.strategy.policy import decide
 from larp.strategy.schema import profile
 from tests.strategy.live_fixtures import live_snapshot
-from tests.strategy.test_equal_weight import five_names
+from tests.strategy.test_equal_weight import ew, five_names
 
 
 def bind_profile(snapshot, values):
@@ -79,3 +79,22 @@ def test_b_req_034_opening_200_usdt_without_bnb_needs_bootstrap_and_cannot_spend
     assert not result["intents"]
     assert any(r["reason"] == "FIRST_BNB_REQUIRED" for r in result["rejections"])
     assert all(pos["units"] == 0 for pos in ledger["positions"].values())
+
+
+def test_b_req_015_016_hard_lines_are_strict_at_exact_fraction_boundaries():
+    # Zero synthetic cost reserve isolates the decided trigger inequalities.
+    exact_name = ew(held={"NVDAB": 5000}, profile_changes={"cost_reserve_units": 0})
+    assert not plan(exact_name, None).read()["requirements"]
+    over_name = ew(held={"NVDAB": 5001}, profile_changes={"cost_reserve_units": 0})
+    required = plan(over_name, None).read()["requirements"]
+    assert required[0]["max_units"] == 4000
+    names = ("NVDAB", "GOOGLB", "MSFTB", "TSLAB")
+    held = {s: 4500 for s in names}
+    exact_gross = ew(held=held, profile_changes={"cost_reserve_units": 0})
+    assert not plan(exact_gross, None).read()["requirements"]
+    held["NVDAB"] += 1
+    over_gross = ew(held=held, profile_changes={"cost_reserve_units": 0})
+    required = plan(over_gross, None).read()["requirements"]
+    assert len(required) == 4
+    assert all("GROSS_OR_REGIME_CAP" in r["reasons"] for r in required)
+    assert sum(r["max_units"] for r in required) <= 16000
