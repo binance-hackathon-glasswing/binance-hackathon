@@ -45,3 +45,8 @@
   - `larp-dev/uploader` has one from 17:23:09 UTC. The first pass stored only the runtime secret; the uploader was rerun with `--only uploader`.
   - Checked with `list-secret-version-ids` only. No value was read, shown or recorded.
   - The wallet private key is not stored anywhere yet: it goes to the signer host at Gate B.
+- **2026-10-14 ~17:45 UTC: alert emails moved to a working inbox (Yao Zhu's OK, after reviewing the saved plan).**
+  - The alarm subscription and both budgets had been sent to an Apple "Sign in with Apple" relay address. That kind of address only passes on mail from its own app, so AWS's confirmation never arrived and the budget alerts would have been dropped too.
+  - `development.tfvars` (git-ignored) now names Yao Zhu's own inbox for `alarm_notification_emails` and `budget_notification_emails`. The address isn't recorded here (AWS_RUNBOOK rule).
+  - Apply result: **1 added, 2 changed, 1 destroyed**. The budget alerts (credit 50/75/90/forecast 100, monthly 50/75/90) now go to the new address, and the SNS email subscription was replaced. A fresh plan shows **No changes**.
+  - The new subscription is `PendingConfirmation` until Yao Zhu clicks AWS's email. The old relay subscription still shows as pending: AWS can't unsubscribe an unconfirmed subscription and deletes it after 3 days.

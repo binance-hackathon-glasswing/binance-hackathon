@@ -13,7 +13,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 | Item | State | Who |
 |---|---|---|
 | Core AWS stack (VPC, RDS `larp-dev`, buckets, KMS, alarms, secret metadata) | **Applied**, and in sync with `0820b0d`. The credit budget `larp-dev-credit` was added 2026-10-14 ~17:10 UTC; `terraform plan` now shows no changes | — |
-| Alarm email subscription | **Pending confirmation**: click the link in AWS's email | Yao Zhu |
+| Alarm email subscription | Moved off the Apple relay address (which dropped AWS mail) to Yao Zhu's own inbox on 2026-10-14. **Pending confirmation**: click the link in AWS's email. Budget alerts go to the same inbox | Yao Zhu |
 | Service secrets `larp-dev/runtime`, `larp-dev/uploader` | **Stored** 2026-10-14 ~17:20 UTC by Yao Zhu with `put_service_secrets.sh` (dev wallet; checked by version metadata only). The final wallet's values replace them at the switch (runbook §5) | — |
 | Hosts `primary`, `signer` | **Off** (`host_ids = {}`) | needs a spend OK, step 3 |
 | Database tables and service roles | **Not migrated** | step 6 |
