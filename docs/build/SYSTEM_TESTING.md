@@ -4,6 +4,12 @@ The working branch is `codex/system-testing-20261012`. The original PRs were rev
 
 `tools/system_test.py` requires a clean branch whose exact head has been pushed. It runs real coordinator, PostgreSQL execution-store/service, receipt settlement, reservation release, audit ACK, restart/recovery, restore, replay and release-manifest checks with synthetic external transports. Child tests receive no production credentials and may connect only to local fixtures. Raw output stays outside Git; the committed report records counts, tested commit and output hashes.
 
+Accepted branches are `codex/system-testing-*` and the final-review section format
+`review/final-[a-d]-<yyyymmdd>` (eight date digits). IDEA-049 reviewers push and run
+their own section branch directly; no integration-prefix alias is needed. Both
+formats retain the clean-worktree, exact pushed-head and disposable-local-database
+checks. Integrate PR #21's runner amendment before beginning the section reviews.
+
 Use Python 3.12 with `deploy/requirements-test.lock`. Set `LARP_TEST_DATABASE_URL` to a disposable local database whose name starts with `larp_test`, and `LARP_SYSTEM_TEST_DISPOSABLE=1`. The session's database is available at `postgresql://postgres@127.0.0.1:55432/larp_test` in container `larp-system-postgres-20261012`. `deploy/compose.test.yml` defines the same pinned disposable database for another session.
 
 ```sh

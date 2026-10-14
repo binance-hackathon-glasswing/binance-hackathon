@@ -60,8 +60,10 @@ def main():
     parser.add_argument('--linux-ci-run', help='Successful runtime CI run for platforms without bubblewrap')
     args = parser.parse_args()
     branch, commit = git('branch', '--show-current'), git('rev-parse', 'HEAD')
-    if not branch.startswith('codex/system-testing-') or git('status', '--porcelain'):
-        parser.error('Use a clean codex/system-testing-* branch')
+    allowed_branch = (branch.startswith('codex/system-testing-')
+                      or re.fullmatch(r'review/final-[a-d]-[0-9]{8}', branch) is not None)
+    if not allowed_branch or git('status', '--porcelain'):
+        parser.error('Use a clean codex/system-testing-* or review/final-[a-d]-<yyyymmdd> branch')
     if git('rev-parse', '--verify', 'origin/' + branch) != commit:
         parser.error('Commit and push the tested head first')
     dsn = os.environ.get('LARP_TEST_DATABASE_URL', '')
