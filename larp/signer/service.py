@@ -94,17 +94,17 @@ class SignerService:
         if (state.intent.key != request['economic_key'] or attempt.step != request['step']
                 or attempt.payload.hash != request['payload_hash']):
             raise Blocked('request does not match the registered attempt')
-        # Primary-supplied gate flags cannot override the signer's own release,
-        # the registered run identity, or a HALT raised since it queued the request.
-        with self.store.transaction() as db:
-            run = self.registry._release_authority(db, request['epoch'], request['guard_version'])
-            if run['mode'] != 'offline' and not self.build_id:
-                raise Blocked('verified signer build identity required')
-            self.registry.check_signing_run(run, state.intent, self.build_id)
         authority = (attempt.epoch, attempt.guard_version)
         if authority != (request['epoch'], request['guard_version']) or authority != (gates.epoch,
                                                                                       gates.authority_version):
             raise Blocked('stale signing authority')
+        # Primary-supplied gate flags cannot override the signer's own release,
+        # the registered run identity, or a HALT raised since it queued the request.
+        with self.store.transaction() as db:
+            run = self.registry._release_authority(db, *authority)
+            if run['mode'] != 'offline' and not self.build_id:
+                raise Blocked('verified signer build identity required')
+            self.registry.check_signing_run(run, state.intent, self.build_id)
         if now + self.max_skew < gates.observed_at:
             raise Blocked('signer clock is behind the request')
         validate_sequence(state, attempt.step, attempt.payload, gates)
