@@ -56,3 +56,10 @@ pushed to PR #20 only; the team reviews and merges #18 → #19 → #20.
 | T01 | Full Python suite passes locally with real PostgreSQL 14 (baseline before this work: 1060 passed, 4 skipped); Terraform tests still 10/10 and 1/1; Linux CI green. |
 
 Pass = every row PASS with evidence. A row that cannot be run offline is reported NOT RUN, never PASS.
+
+- 2026-10-14 correction (Claude, before any S result): S01's "a different request for the same attempt is refused" is
+  too strict. A request whose gate window expired (e.g. the signer was down) must be re-sendable with fresh gates for
+  the same attempt, and `reauthorize_unbroadcast` keeps the attempt ID under a new epoch. Corrected S01: requests are
+  immutable and keyed by their own content hash (an identical re-send is a no-op); a `signing_attempts` row binds each
+  attempt ID to one payload hash, and the database refuses (foreign key) any request for that attempt with another
+  payload hash. Refusals are per request.
