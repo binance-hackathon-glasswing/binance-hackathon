@@ -243,8 +243,16 @@ host startup, live credential use or change to trading policy. Existing deployme
 | R10 | The monthly usage budget explicitly excludes credit offsets. Mock Terraform tests assert this. Docs distinguish monthly usage alerts from remaining lifetime credits across the October/November boundary. |
 | R11 | Development SSM attaches only to primary, requires development mode and primary HTTPS egress, and refuses unsupported configurations in mock plans. Signer provisioning remains a named, unselected dependency; no new network path or AWS resources are introduced. |
 | R12 | The live evidence writer explicitly publishes artifacts at 0640 before atomic linking/fsync; private artifact stores retain 0600. A separate runtime user in the evidence group reads actual artifact bytes in the host container check; an unrelated user cannot. Docs give an offline permissions migration for earlier artifacts. |
-| R13 | Permanent release preflight refusals use ExecCondition for coordinator, evidence, execution, signer and uploader. An invalid manifest skips the main process with no systemd restart; a valid condition permits normal main-process failure/restart. Static unit checks and a real-systemd Linux CI regression cover this, alongside extracted-release preflight in the host-bundle check. |
+| R13 | A main-process launch wrapper runs release preflight for coordinator, evidence, execution, signer and uploader, then execs the service only after success. A refusal exits 4 and RestartPreventExitStatus prevents restarts; transient service failures and clean evidence-cycle exits still restart. Static unit checks and a real-systemd Linux CI regression cover this, alongside extracted-release preflight in the host-bundle check. |
 
 Validation required: targeted regressions, full Python suite (PostgreSQL-dependent cases run in Linux CI), mock
 Terraform tests and host-bundle CI. Local unavailable capabilities are reported explicitly. No whole GAP item is
 claimed complete by these corrections. Results will be appended after testing the pushed implementation.
+
+R13 correction before the next implementation/test (2026-10-14): CI run 38537570547's real-systemd check found
+ExecCondition still auto-restarts on Ubuntu 22.04's older systemd with Restart=always (upstream issue
+[22257](https://github.com/systemd/systemd/issues/22257)). Its preflight also exits 1, not 4; the earlier review's
+exit-code description was inaccurate, though the ExecStartPre failure loop was real. Replace the condition design
+with the main-process wrapper above, mapping any preflight refusal to 4 and retaining direct exec/PID and signal
+behavior. Pass also requires a real valid-release failure/restart fixture and a clean exit/restart fixture. The
+initial failure is retained here as evidence; it does not validate R13.
