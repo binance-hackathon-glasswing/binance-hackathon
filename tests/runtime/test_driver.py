@@ -203,7 +203,7 @@ class Calendar(unittest.TestCase):
 
 class Store:
     def load(self, run_id):
-        return doc(dict(epoch=2, wallet_id='0x' + '1' * 40))
+        return doc(dict(epoch=2, wallet_id='0x' + '1' * 40, projection={'portfolio': {'bnb_decimals': 18}}))
 
 
 class Composition(unittest.TestCase):
@@ -214,12 +214,13 @@ class Composition(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         (self.root / 'evidence').mkdir()
-        SQLiteEvidenceStore(str(self.root / 'evidence' / 'evidence.sqlite')).close()
+        # The poller's DELETE-journal store; the runtime opens it read-only (IDEA-047 R15).
+        SQLiteEvidenceStore(str(self.root / 'evidence' / 'evidence.sqlite'), journal_mode='DELETE').close()
         profile = json.dumps(synthetic_profile()).encode()
         calendar = json.dumps(calendar_doc()).encode()
         (self.root / 'profile.json').write_bytes(profile)
         (self.root / 'calendar.json').write_bytes(calendar)
-        self.driver_block = dict(signing=False, assessor='deterministic', intelligence_mode='development',
+        self.driver_block = dict(execution='shadow', assessor='deterministic', intelligence_mode='development',
                                  evidence_root=str(self.root / 'evidence'),
                                  market_artifact_root=str(self.root / 'market'), cadence_ms=HOUR,
                                  strategy_profile_file=str(self.root / 'profile.json'),
@@ -242,9 +243,30 @@ class Composition(unittest.TestCase):
                          run_wallet=self.wallet, ai_seeds_dir=str(self.root / 'ai-seeds'),
                          nonce_dir=str(self.root / 'nonce'))
 
-    def test_d7_signing_and_hosted_models_are_not_integrated(self):
-        for change in (dict(signing=True), dict(assessor='anthropic:model:high')):
-            with self.subTest(change), self.assertRaises(NotIntegrated):
+    def test_d7_hosted_models_are_not_integrated(self):
+        with self.assertRaises(NotIntegrated):
+            build_driver(self.config(assessor='anthropic:model:high'), Store(), self.secrets)
+
+    def test_e9_service_execution_builds_and_binds_the_profile_to_quotes(self):
+        from larp.runtime.driver import ServiceExecution, ShadowExecution
+        driver = build_driver(self.config(execution='service', expiry_grace_ms=5000, day_roll_window_ms=900_000,
+                                          max_quote_rounds=1), Store(), self.secrets)
+        self.assertIsInstance(driver.execution, ServiceExecution)
+        self.assertIsNotNone(driver.day_roll)
+        self.assertEqual(driver.max_quote_rounds, 1)
+        market = driver.ports['market']
+        self.assertEqual(market.quote_limits['slippage_bps'], synthetic_profile()['slippage_bps'])
+        self.assertIs(driver.coordinator.context_builder.market, driver.market)  # the prefetched feed (#24)
+        self.assertTrue(driver.ports['evidence'].read_only)
+        shadow = build_driver(self.config(), Store(), self.secrets)
+        self.assertIsInstance(shadow.execution, ShadowExecution)
+        self.assertIsNone(shadow.day_roll)
+
+    def test_e9_execution_mode_must_be_named_and_known(self):
+        for change in (dict(execution=None), dict(execution='sign'), dict(signing=False),
+                       dict(execution='service'),  # no expiry grace
+                       dict(execution='service', expiry_grace_ms=-1), dict(max_quote_rounds='2')):
+            with self.subTest(change), self.assertRaises(ContractError):
                 build_driver(self.config(**change), Store(), self.secrets)
 
     def test_d7_inconsistent_inputs_refuse_the_start(self):

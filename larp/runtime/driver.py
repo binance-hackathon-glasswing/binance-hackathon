@@ -1,35 +1,49 @@
-"""Round driver for the supervised runtime (IDEA-048; IDEA-042 item 10). Shadow only: nothing is ever signed.
+"""Round driver for the supervised runtime (IDEA-048, IDEA-050; IDEA-042 item 10).
 
 `Service` calls `RoundDriver.once(now_ms)` once per tick. A cycle:
 
-1. ends every open round's pending intents through `ShadowExecution` (NOT_SUBMITTED, reason SHADOW_NO_SIGNING) and
-   closes the round;
-2. lets `Coordinator.recover` close any other closable round (an interrupted one closes truthfully);
-3. runs at most one unit of evidence work (`EvidenceWork.next`) as one coordinator round;
-4. repeats step 1, so a round planned in this cycle also closes in it.
+1. the execution step: `ShadowExecution` ends every pending intent unsigned (NOT_SUBMITTED, SHADOW_NO_SIGNING);
+   `ServiceExecution` instead journals the execution service's observations (I4) and ends intents whose command
+   expired unclaimed;
+2. `Coordinator.recover` closes every closable round (an interrupted one closes truthfully);
+3. while a committed command still waits to be claimed by the execution service, nothing else is committed: any
+   commit would make the command stale (I3, `PostgresStore.command` needs the run's current version);
+4. the first cycle of a UTC day rolls the daily risk anchor at the prefetched marks (`DayRoll`);
+5. at most one unit of evidence work (`EvidenceWork.next`) runs as one coordinator round, after the market
+   observations are fetched, so the decision time is never before them (#24); if the round asked for quotes and an
+   executable one comes back, a bounded follow-up round plans from it;
+6. step 1 again, so a shadow round planned in this cycle also closes in it.
 
 Work comes, in priority order, from planner review jobs in the PostgreSQL scheduler (lane `evidence`), from ingestion
 jobs the separate ingestion process wrote to the evidence store, and from a cadence round per slot when nothing else
 is due. Round IDs follow from the job ID or the slot, so a restart never runs the same work twice.
 
-The signing path (I3 -> execution service -> signer) is Gate B and is not wired here: `build_driver` in
-larp/runtime/service.py refuses a configuration that asks for it.
+The runtime never signs. Signing happens in the execution service (larp/execution_live/loop.py) and the signer host,
+behind their own capability gates.
 """
 
 from datetime import datetime, timezone
+from fractions import Fraction
+import json
 
 from larp.contracts import ContractError, Document
+from larp.execution import digest as execution_digest
 from larp.intelligence.agent import build_request
 from larp.intelligence.common import digest
 from larp.intelligence.gate import initial_state
+from larp.integration.runtime import ledger_from
 from larp.integration.settlement import settle
-from larp.runtime.coordinator import halt_reasons
+from larp.risk.accounting import roll_day
+from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.runtime.scheduler import Scheduler
-from larp.storage.postgres import IntegrityError
+from larp.storage.postgres import Conflict, IntegrityError
+from larp.strategy.schema import equity, market_view
 
 SHADOW_REASON = 'SHADOW_NO_SIGNING'
+EXPIRED_REASON = 'COMMAND_EXPIRED_UNCLAIMED'
 SOURCE = 'sec-edgar'
 MAX_ATTEMPTS = 3
+DAY_MS = 86_400_000
 
 
 def iso(ms):
@@ -102,6 +116,9 @@ class ShadowExecution:
     def __init__(self, coordinator, *, reducer=settle):
         self.coordinator, self.reducer = coordinator, reducer
 
+    def waiting(self, now_ms):
+        return []  # nothing is handed to an execution service
+
     def settle_open(self, now_ms):
         c = self.coordinator
         closed = []
@@ -121,6 +138,233 @@ class ShadowExecution:
                 c.observe(observation['event_id'], Document.from_dict(observation), self.reducer)
             closed.append(c.close(round_id, now_ms, 'COMPLETE'))
         return closed
+
+
+def not_submitted(current, round_id, intent_id, event_id, now_ms, reason, round_terminal):
+    """A final NOT_SUBMITTED fact for an intent that never reached the chain (larp/ports.py I4)."""
+    return dict(schema='ExecutionObservation.v1', run_id=current['run_id'], wallet_id=current['wallet_id'],
+                round_id=round_id, intent_id=intent_id, event_id=event_id, kind='NOT_SUBMITTED',
+                observed_at=iso(now_ms), settlement='FINAL', origin='EXECUTION_RECONCILER', intent_terminal=True,
+                round_terminal=round_terminal, reason=reason)
+
+
+class ServiceExecution:
+    """The runtime side of I3/I4 when a separate execution service executes committed commands.
+
+    - `ingest` journals the observations the execution service wrote to `execution_observations` (the only table it
+      shares with the runtime for facts), each event ID once. A row whose bytes do not hash to its stored hash is never
+      committed. The reducer refuses a fact that arrives before the one it depends on (a final swap before its
+      broadcast); passes repeat until none makes progress, so arrival order does not matter.
+    - `expire` ends a planned intent that has no execution record once its command expired more than `grace_ms` ago:
+      the execution service can no longer claim it (`PostgresStore.command` refuses an expired command and
+      `Executor.create` an expired intent), so the round would otherwise stay open forever (#26).
+    - `waiting` lists intents whose command is still claimable. The driver commits nothing while one exists.
+
+    `wallet` is the execution wallet address: an execution record's key is derived from it (`Intent.key`).
+    """
+
+    def __init__(self, coordinator, *, wallet, grace_ms, reducer=settle):
+        if type(grace_ms) is not int or grace_ms < 0:
+            raise ContractError('Invalid expiry grace')
+        if type(wallet) is not str or not wallet.startswith('0x') or len(wallet) != 42:
+            raise ContractError('Execution wallet address required')
+        self.coordinator, self.wallet, self.grace, self.reducer = coordinator, wallet.lower(), grace_ms, reducer
+
+    def key(self, intent_id):
+        c = self.coordinator
+        return execution_digest([c.run_id, 56, self.wallet, intent_id])  # larp.execution.Intent.key
+
+    def _pending(self, current):
+        """(round_id, record, intent) for every planned intent of an open round that has no final fact yet."""
+        for round_id, record in sorted(current['projection'].get('round_records', {}).items()):
+            if not record.get('execution_pending'):
+                continue
+            final = set(record.get('final_intents', []))
+            for intent in record['plan'].get('intents', []):
+                if intent['intent_id'] not in final:
+                    yield round_id, record, intent
+
+    def _records(self, keys):
+        if not keys:
+            return set()
+        with self.coordinator.store.transaction() as db:
+            return {r[0] for r in db.execute('SELECT DISTINCT economic_key FROM execution_journal '
+                                             'WHERE economic_key=ANY(%s)', (list(keys),))}
+
+    def waiting(self, now_ms):
+        c = self.coordinator
+        current = c.store.load(c.run_id).read()
+        if halt_reasons(current['projection']) or current['quarantined']:
+            return []  # no command can be claimed; they end at expiry
+        pending = [(r, i) for r, _, i in self._pending(current) if now_ms < i['expires_ms']]
+        if not pending:
+            return []
+        claimed = self._records([self.key(i['intent_id']) for _, i in pending])
+        with c.store.transaction() as db:
+            versions = dict(db.execute('SELECT command_id,state_version FROM commands WHERE run_id=%s '
+                                       'AND command_id=ANY(%s)', (c.run_id, [i['intent_id'] for _, i in pending])))
+        return [i['intent_id'] for _, i in pending if self.key(i['intent_id']) not in claimed
+                and versions.get(i['intent_id']) == current['version']]
+
+    def ingest(self):
+        """Journal every new execution observation; returns (applied, refused) event IDs."""
+        c = self.coordinator
+        with c.store.transaction() as db:
+            rows = db.execute('SELECT o.event_id,o.observation,o.observation_hash FROM execution_observations o '
+                              'WHERE o.run_id=%s AND NOT EXISTS (SELECT 1 FROM events e WHERE e.run_id=o.run_id '
+                              'AND e.event_id=o.event_id) ORDER BY o.event_id', (c.run_id,)).fetchall()
+        pending, refused, applied = [], [], []
+        for event_id, raw, stored_hash in rows:
+            try:
+                value = json.loads(bytes(raw))
+                if type(value) is not dict or execution_digest(value) != stored_hash or value.get('event_id') != event_id:
+                    raise ValueError
+            except ValueError:
+                refused.append(event_id)  # an execution outbox row changed after it was written
+                continue
+            pending.append(value)
+        progress = True
+        while pending and progress:
+            progress, later = False, []
+            for value in pending:
+                try:
+                    c.observe(value['event_id'], Document.from_dict(value), self.reducer)
+                except (ContractError, KeyError, TypeError) as error:
+                    if isinstance(error, (Conflict, IntegrityError)):
+                        raise
+                    later.append(value)  # depends on a fact not journaled yet, or invalid: retried next pass
+                else:
+                    applied.append(value['event_id']); progress = True
+            pending = later
+        return applied, refused + [v['event_id'] for v in pending]
+
+    def expire(self, now_ms):
+        c = self.coordinator
+        current = c.store.load(c.run_id).read()
+        due = [(r, rec, i) for r, rec, i in self._pending(current) if now_ms >= i['expires_ms'] + self.grace]
+        claimed = self._records([self.key(i['intent_id']) for _, _, i in due])
+        ended = []
+        for round_id, record, intent in due:
+            if self.key(intent['intent_id']) in claimed:
+                continue  # the execution service owns it and reports its outcome
+            current = c.store.load(c.run_id).read()
+            record = current['projection']['round_records'][round_id]
+            final = set(record.get('final_intents', [])) | {intent['intent_id']}
+            remaining = [i for i in record['plan'].get('intents', []) if i['intent_id'] not in final]
+            fact = not_submitted(current, round_id, intent['intent_id'], 'expired:' + intent['intent_id'], now_ms,
+                                 EXPIRED_REASON, not remaining)
+            c.observe(fact['event_id'], Document.from_dict(fact), self.reducer)
+            ended.append(intent['intent_id'])
+        return ended
+
+    def settle_open(self, now_ms):
+        applied, refused = self.ingest()
+        self.ingested, self.refused = applied, refused
+        self.expired = self.expire(now_ms)
+        return []  # rounds close through Coordinator.recover once every intent is final
+
+
+class MarketFeed:
+    """The context builder's market port: observations fetched once per round, before the round starts.
+
+    `refresh` performs the I/O; the coordinator reads its decision clock afterwards, so no observation is future data
+    at the round's cutoff (#24). Quoted observations from `quote` replace the plain ones for their symbol until
+    `clear_quotes`; a port failure is replayed to the builder, which records CONTEXT_UNAVAILABLE as before."""
+
+    def __init__(self, port, *, gas=None):
+        self.port, self.gas, self.result, self.quoted, self.gas_result = port, gas, None, {}, []
+
+    def refresh(self, now_ms):
+        try:
+            self.result = (True, self.port(now_ms))
+        except Exception as error:
+            self.result = (False, error)
+        if self.gas is not None:
+            try:
+                self.gas_result = list(self.gas(now_ms))
+            except Exception:
+                self.gas_result = []  # no gas quote: the planner asks again and tops up nothing
+        return self.result[0]
+
+    def gas_quotes(self, now_ms):
+        """The builder's `gas_quotes` port: native top-up quotes fetched with the market (PR #41 NativeGasQuotePort)."""
+        if self.result is None:
+            self.refresh(now_ms)
+        return list(self.gas_result)
+
+    def observations(self):
+        ok, value = self.result if self.result is not None else (False, ContractError('Market not fetched'))
+        return value if ok else None
+
+    def __call__(self, now_ms):
+        if self.result is None:
+            self.refresh(now_ms)
+        ok, value = self.result
+        if not ok:
+            raise value
+        return [self.quoted.get(o.get('symbol'), o) for o in value]
+
+    def quote(self, request):
+        """One MarketRequest.v1 through the port's quote path; True when it returned an executable quote."""
+        observation = self.port.observe(request)
+        if observation.get('quotes'):
+            self.quoted[observation['symbol']] = observation
+            return True
+        return False
+
+    def clear_quotes(self):
+        self.quoted = {}
+
+
+class DayRoll:
+    """The daily risk anchor (#31): `roll_day` at the first cycle of a UTC day, inside `window_ms` of midnight.
+
+    The anchor is the equity at the marks fetched for that cycle. Without a usable mark for every held position, or
+    outside the window, nothing is committed: the planner keeps refusing new risk for a day whose anchor is missing
+    (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact."""
+
+    def __init__(self, coordinator, *, window_ms):
+        if type(window_ms) is not int or not 0 < window_ms < DAY_MS:
+            raise ContractError('Invalid day-roll window')
+        self.coordinator, self.window = coordinator, window_ms
+
+    def due(self, current, now_ms):
+        projection = current['projection']
+        risk = projection.get('risk_state') or projection['portfolio'].get('risk') or {}
+        today = datetime.fromtimestamp(now_ms / 1000, timezone.utc).date().isoformat()
+        return type(risk.get('day')) is str and risk['day'] < today
+
+    def __call__(self, now_ms, observations):
+        c = self.coordinator
+        current = c.store.load(c.run_id).read()
+        if not self.due(current, now_ms):
+            return None
+        midnight = now_ms - now_ms % DAY_MS
+        if now_ms - midnight > self.window:
+            return 'OUTSIDE_WINDOW'
+        if observations is None:
+            return 'MARKET_UNAVAILABLE'
+        builder = c.context_builder
+        projection = current['projection']
+        ledger = ledger_from(projection, current['reservations'])
+        try:
+            market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
+                                 builder.profile)
+            anchor = int(equity(ledger, market))
+        except (ContractError, KeyError, TypeError, ValueError):
+            return 'MARK_UNAVAILABLE'
+        if anchor < 1:
+            return 'MARK_UNAVAILABLE'
+        boundary = datetime.fromtimestamp(midnight / 1000, timezone.utc).isoformat()
+        ledger.pop('reservations', None)
+        rolled = roll_day(Document.from_dict(dict(ledger, reservations={})), boundary=boundary,
+                          anchor_units=anchor).read()['risk']
+        projection['risk_state'] = rolled
+        marks = sorted((m['symbol'], m.get('content_hash')) for m in observations if type(m) is dict)
+        event = dict(kind='DAY_ROLLED', day=rolled['day'], boundary=boundary, anchor_units=anchor,
+                     decided_ms=now_ms, marks=[list(m) for m in marks])
+        c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
+        return 'ROLLED'
 
 
 class EvidenceWork:
@@ -220,28 +464,93 @@ class EvidenceWork:
 
 
 class RoundDriver:
-    """`Service` driver: `ports` for the live-start checks, `once(now_ms)` per tick."""
+    """`Service` driver: `ports` for the live-start checks, `once(now_ms)` per tick.
+
+    `market` (a MarketFeed) enables the decision cutoff after the fetch, the quote follow-up and, with `day_roll`, the
+    daily anchor. Without it the driver runs as IDEA-048's tests built it: the builder's port is called inside the
+    round."""
 
     signing = False
 
-    def __init__(self, coordinator, work, *, ports=None, execution=None):
+    def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
+                 max_quote_rounds=0, max_quote_requests=2):
         self.coordinator, self.work = coordinator, work
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
+        self.market, self.day_roll = market, day_roll
+        if type(max_quote_rounds) is not int or max_quote_rounds < 0 or type(max_quote_requests) is not int \
+                or max_quote_requests < 1:
+            raise ContractError('Invalid quote follow-up bounds')
+        self.max_quote_rounds, self.max_quote_requests = max_quote_rounds, max_quote_requests
+
+    def _plan(self, round_id):
+        event = self.coordinator.store.event(self.coordinator.run_id, 'plan:' + round_id)
+        return (event or {}).get('record', {}).get('plan') or {}
+
+    def _round(self, round_id, item, now_ms):
+        c = self.coordinator
+        if self.market is not None:
+            self.market.refresh(now_ms)  # before the round: its decision time follows the fetch (#24)
+        current = c.store.load(c.run_id).read()
+        c.start(round_id, self.work.request(item, current, now_ms), now_ms)
+
+    def _quotes(self, round_id, item, now_ms, summary):
+        """Bounded follow-up rounds while the last plan asked for quotes and an executable one came back."""
+        for n in range(1, self.max_quote_rounds + 1):
+            plan = self._plan(round_id)
+            requests = [r for r in plan.get('quote_requests', []) if r.get('symbol') != 'BNB']
+            if plan.get('intents') or not requests:
+                return
+            executable = False
+            for request in requests[:self.max_quote_requests]:
+                try:
+                    executable |= self.market.quote(request)
+                except Exception as error:  # an unavailable quote is a hold, never a failed round
+                    summary.setdefault('quote_errors', []).append(type(error).__name__)
+            summary.setdefault('quotes_requested', 0)
+            summary['quotes_requested'] += min(len(requests), self.max_quote_requests)
+            if not executable:
+                self.market.clear_quotes()
+                return
+            round_id = f"{item['round_id']}/quote{n}"
+            summary['quote_round_id'] = round_id
+            try:
+                c = self.coordinator
+                current = c.store.load(c.run_id).read()
+                # The quoted observations stand in for this round's fetch; the decision clock follows them.
+                c.start(round_id, self.work.request(item, current, now_ms), now_ms)
+            finally:
+                self.market.clear_quotes()
 
     def once(self, now_ms):
         c = self.coordinator
         summary = dict(closed=len(self.execution.settle_open(now_ms)), round_id=None)
+        for key in ('ingested', 'refused', 'expired'):
+            if getattr(self.execution, key, None):
+                summary[key] = list(getattr(self.execution, key))
         c.recover(now_ms)
+        waiting = self.execution.waiting(now_ms)
+        if waiting:
+            # I3 hand-off: any commit now would make these commands stale before the execution service claims them.
+            summary['waiting_for_claim'] = waiting
+            return summary
+        if self.day_roll is not None and self.market is not None:
+            current = c.store.load(c.run_id).read()
+            if self.day_roll.due(current, now_ms):
+                self.market.refresh(now_ms)
+                summary['day_roll'] = self.day_roll(now_ms, self.market.observations())
         current = c.store.load(c.run_id).read()
         item = self.work.next(now_ms, current['epoch'])
         if item is not None:
             summary['round_id'] = item['round_id']
             if item['round_id'] is not None and item['records']:
-                c.start(item['round_id'], self.work.request(item, current, now_ms), now_ms)
+                self._round(item['round_id'], item, now_ms)
+                if self.market is not None and self.max_quote_rounds:
+                    self._quotes(item['round_id'], item, now_ms, summary)
             if item['claim'] is not None:
                 # Finished only after its round committed: a crash leaves the job to be claimed again once its lease
                 # ends, and the round ID makes the rerun return the recorded round.
                 self.work.scheduler.finish(c.run_id, item['claim'])
-            summary['closed'] += len(self.execution.settle_open(now_ms))
+            if not self.execution.waiting(now_ms):  # never ingest over a command that still awaits its claim
+                summary['closed'] += len(self.execution.settle_open(now_ms))
         return summary

@@ -79,3 +79,5 @@ GRANT SELECT,INSERT ON signing_refusals TO larp_signer;
 
 -- The coordinator settles from the public execution journal and final observations; never the state or signatures.
 GRANT SELECT ON execution_journal,execution_observations TO larp_runtime;
+-- IDEA-050: activation refuses a run with an unfinished execution; the runtime never reads execution state (signed bytes).
+GRANT SELECT (economic_key,run_id,terminal) ON execution_records TO larp_runtime;

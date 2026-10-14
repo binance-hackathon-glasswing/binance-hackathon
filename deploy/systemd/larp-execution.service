@@ -12,6 +12,9 @@ Type=simple
 User=larp-execution
 Group=larp-execution
 WorkingDirectory=/opt/larp/current
+# The only writable path: /var/lib/larp-execution, for market and chain evidence artifacts (IDEA-050).
+StateDirectory=larp-execution
+StateDirectoryMode=0700
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 # Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
