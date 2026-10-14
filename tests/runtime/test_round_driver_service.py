@@ -197,7 +197,7 @@ class ServiceHarness(DriverHarness):
                                     projection=projection))
 
     def service_driver(self, *, grace_ms=5 * SECOND, market=None, day_roll_window_ms=None, max_quote_rounds=0,
-                       cadence=False, clock=None):
+                       cadence=False, clock=None, planner=None):
         self.profile = synthetic_profile(falsifier_ids=['F-ITEM-4.02'], falsifier_authority='MANDATORY_REDUCTION')
         self.h = pipeline.profile_hash(self.profile)
         lifecycle = lifecycle_policy_from(self.w.config)
@@ -207,7 +207,7 @@ class ServiceHarness(DriverHarness):
                                  health=RuntimeHealth(self.store, RUN, self.epoch),
                                  calendar=lambda now: {'index': 80, 'remaining': 10}, lifecycle_policy=lifecycle)
         coordinator = Coordinator(self.store, self.w.assessor(RuleBaselineModel(self.w.clock)), StrategyPolicy(),
-                                  RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3),
+                                  planner or RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3),
                                   execution=ExecutionBridge(), run_id=RUN, version_id=VERSION, profile_hash=self.h,
                                   address='0x' + '1' * 40, context_builder=builder,
                                   initial_policy_state=initial_policy_state(RUN, self.profile),
@@ -728,3 +728,117 @@ class Restart(ServiceHarness):
 
     def test_r3_a_claimed_intent_is_not_reauthorized(self):
         self.not_reauthorized(lambda: Execution(self, remote=False).loop.once(self.w.clock()))
+
+
+class SplitPlanner(RuntimePlanner):
+    """The real planner with its single SELL child split into two intents: a multi-intent round, which the coordinator
+    and settlement accept although the risk planner itself plans one child per round."""
+
+    def __init__(self):
+        super().__init__(job_validity_ms=86_400_000, job_max_attempts=3)
+
+    def plan(self, snapshot, proposal):
+        from larp.ports import decimal_string
+        p = super().plan(snapshot, proposal).read()
+        if len(p['intents']) != 1 or p['intents'][0]['side'] != 'SELL':
+            return Document.from_dict(p)
+        [i] = p['intents']
+        intents, deltas = [], []
+        for part in ('a', 'b'):
+            token = i['token_units'] // 2
+            identity = hashlib.sha256((i['intent_id'] + part).encode()).hexdigest()
+            intents.append(dict(i, token_units=token, pay_units=token, cash_units=i['cash_units'] // 2,
+                                min_receive_units=i['min_receive_units'] // 2, gas_bnb_units=i['gas_bnb_units'] // 2,
+                                intent_id=identity, decision_id='decision:' + identity,
+                                amount=decimal_string(token, i['decimals'])))
+            deltas += [dict(intent_id=identity, asset=i['symbol'], units=token),
+                       dict(intent_id=identity, asset='BNB', units=i['gas_bnb_units'] // 2)]
+        return Document.from_dict(dict(p, intents=intents, reservation_deltas=deltas))
+
+
+class TwoIntents(ServiceHarness):
+    def completed(self, execution, count):
+        states = [execution.registry.load(k).status for k in self.keys()]
+        return len(states) >= count and sum(s == 'COMPLETED' for s in states) >= count
+
+    def run_execution_only(self, execution, count):
+        for _ in range(120):
+            self.w.clock.now += SECOND
+            execution.once(self.w.clock())
+            if self.completed(execution, count):
+                execution.once(self.w.clock())  # publishes the last final fact
+                return
+        self.fail('executions did not complete')
+
+    def test_y1_two_intents_that_finish_before_any_ingestion_close_their_round(self):
+        driver = self.service_driver(planner=SplitPlanner())
+        execution = Execution(self, remote=False)
+        driver.once(self.w.clock())
+        [round_id] = self.planned()
+        self.assertEqual(len(self.planned()[round_id]['plan']['intents']), 2)
+        self.run_execution_only(execution, 2)  # the runtime is stopped while both execute
+        self.w.clock.now += SECOND
+        self.service_driver(planner=SplitPlanner()).once(self.w.clock())  # restarted runtime
+        self.assertTrue(self.closed(round_id))
+        self.assertEqual(self.store.load(RUN).read()['projection']['portfolio']['positions']['NVDAB']['units'], 0)
+        self.assertIsNotNone(self.store.event(RUN, 'sealed:' + round_id))
+
+    def test_y1_a_round_with_an_unfinished_intent_is_never_sealed(self):
+        driver = self.service_driver(planner=SplitPlanner())
+        execution = Execution(self, remote=False)
+        driver.once(self.w.clock())
+        [round_id] = self.planned()
+        self.run_execution_only(execution, 1)
+        self.w.clock.now += SECOND
+        driver.once(self.w.clock())  # journals the first intent's facts; the second is not final
+        self.assertFalse(self.closed(round_id))
+        self.assertIsNone(self.store.event(RUN, 'sealed:' + round_id))
+        self.assertTrue(self.run_both(driver, execution, until=lambda: self.closed(round_id)))
+
+
+class Crash(Exception):
+    pass
+
+
+class QuoteResume(ServiceHarness):
+    def crash_in_child(self, driver):
+        c = driver.coordinator
+        original = c.start
+
+        def start(round_id, request, now_ms, **kwargs):
+            if '/quote' in round_id:  # the child opens, then the process dies before its plan commits
+                c.store.open_round(c.run_id, round_id, request, c.store.load(c.run_id).read()['epoch'])
+                raise Crash()
+            return original(round_id, request, now_ms, **kwargs)
+        c.start = start
+
+    def parent(self):
+        [base] = [r for r in self.logs() if '/quote' not in r]
+        return base
+
+    def test_y2_an_interrupted_quote_follow_up_runs_again_after_a_restart(self):
+        driver = self.service_driver(market=QuoteMarket(self), max_quote_rounds=1)
+        self.crash_in_child(driver)
+        with self.assertRaises(Crash):
+            driver.once(self.w.clock())
+        base = self.parent()
+        self.w.clock.now += SECOND
+        market = QuoteMarket(self)
+        summary = self.service_driver(market=market, max_quote_rounds=1).once(self.w.clock())
+        self.assertEqual(summary['quote_round_id'], base + '/quote1#2')
+        self.assertEqual([r['symbol'] for r in market.requests], ['NVDAB'])  # quotes fetched again
+        self.assertEqual(list(self.planned()), [base + '/quote1#2'])
+        self.assertEqual(self.logs()[base + '/quote1']['output']['errors'], ['PROCESS_INTERRUPTED'])
+
+    def test_y2_without_an_executable_quote_the_resume_is_tried_once_per_process(self):
+        driver = self.service_driver(market=QuoteMarket(self), max_quote_rounds=1)
+        self.crash_in_child(driver)
+        with self.assertRaises(Crash):
+            driver.once(self.w.clock())
+        market = QuoteMarket(self, executable=False)
+        restarted = self.service_driver(market=market, max_quote_rounds=1)
+        for _ in range(3):
+            self.w.clock.now += SECOND
+            restarted.once(self.w.clock())
+        self.assertEqual(len(market.requests), 1)
+        self.assertEqual(self.planned(), {})
