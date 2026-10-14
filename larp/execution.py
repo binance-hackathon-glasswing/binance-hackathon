@@ -81,6 +81,7 @@ class Intent:
     timeout: int = 120
     kind: str = "BSTOCK_TRADE"
     max_cash_units: int | None = None
+    max_slippage_bps: int = 50
 
     @property
     def key(self):
@@ -104,6 +105,9 @@ class Intent:
                       and self.receive_token == NATIVE_BNB)
         if not (bstock or gas_top_up):
             raise Blocked("unsupported economic action")
+        integer(self.max_slippage_bps)
+        if self.max_slippage_bps >= 10000:
+            raise Blocked('invalid slippage authorization')
         if self.max_cash_units is not None:
             integer(self.max_cash_units, positive=True)
             if self.pay_token == USDT and self.amount > self.max_cash_units * 10**12:

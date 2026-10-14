@@ -52,7 +52,8 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
                         integer(p['min_receive_units'], positive=True) * minimum_factor,
                         router.lower(), command['expires_ms'] // 1000,
                         integer(limits['max_gas'], positive=True), integer(limits['max_gas_price'], positive=True),
-                        integer(limits['gas_budget'], positive=True), kind=kind, max_cash_units=cap)
+                        integer(limits['gas_budget'], positive=True), kind=kind, max_cash_units=cap,
+                        max_slippage_bps=limits.get('slippage_bps', 50))
         result.validate()
         return result
     except (KeyError, TypeError, ValueError, AttributeError):
