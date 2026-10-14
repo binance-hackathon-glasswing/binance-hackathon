@@ -94,6 +94,23 @@ class RealEvidence(unittest.TestCase):
 
 
 class IssuerContract(RealEvidence):
+    def test_a_req_020_production_market_cannot_use_equal_ticker_strings_as_issuer_authority(self):
+        self.assess(self.add(700, NONRELIANCE))
+        for ticker in ('NVDA', 'MSFT'):
+            class MetadataClient(Client):
+                def request(self, method, endpoint, params):
+                    reply = super().request(method, endpoint, params)
+                    if endpoint == 'market/rwa/tokens':
+                        for row in reply['response']['data']:
+                            if row['tokenSymbol'] == 'NVDAB':
+                                row['underlyingTicker'] = ticker
+                    return reply
+            markets = {m['symbol']: m for m in MarketPort(MetadataClient(), '0x' + '1' * 40)(0)}
+            context = dict(self.context(ticker), issuer_id=ticker)
+            context['context_hash'] = evidence_hash(context)
+            with self.subTest(ticker=ticker):
+                self.assertEqual(problem(context, markets=markets), 'WRONG_ISSUER')
+
     def test_a_req_020_real_market_ticker_accepts_registered_issuer_and_class1(self):
         record = self.add(701, NONRELIANCE)
         self.assess(record)

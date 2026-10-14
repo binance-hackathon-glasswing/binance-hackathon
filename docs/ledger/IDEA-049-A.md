@@ -423,3 +423,9 @@ The nominal final evidence in amendment20 is retained as round5 evidence, not an
 ### Amendment 26: in-flight tool finding/fix
 
 A-T23 fails at pushed `c6141cd`: the actual prior_context tool reaches its paused filesystem read, the hard deadline returns UNAVAILABLE, but the started call is absent. **A-FND-017 P1** (A-REQ-060). Correction publishes an immutable STARTED dispatch record before tool I/O, atomically replaces it with completion metadata, and marks a deadline snapshot's unfinished call IN_FLIGHT_AT_DEADLINE with no invented result. This counts all started calls against the budget, retains completed result pointers and keeps abandoned claims empty. Full normal traces are unchanged because completed metadata replaces the dispatch. Push before execution and repeat all required verification.
+
+### Amendment 27: round6 and final legacy-identity fault criterion
+
+At `fbcde28`, A **386 passed/1029 subtests**, 11.87s; full **3 failed/1252 passed/7 skipped/1572 subtests**,194.11s. The same two outside-A fixture files cause all three failures. Guarded system runner still exits2 before tests without equivalent green Linux tree. A-T23 passes; started and completed tool audit metadata are now preserved without fabricated results/late authority.
+
+Pre-register **A-T24 / A-REQ-020 / existing A-UC-012/015**: actual MarketPort (source_id BINANCE_WEB3) with only fake HTTP metadata must not authorize a forged context whose issuer_id and underlying_id are both ticker strings, either NVDA or MSFT on NVDAB. Recompute the unkeyed context hash so identity checks, not hash corruption, are tested. Suspected legacy synthetic same-namespace fallback bypasses registry binding. Preserve legacy synthetic fixtures explicitly; production MarketPort must require canonical issuer identity and registered security. Commit/push before running or fixing.
