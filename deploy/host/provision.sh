@@ -90,7 +90,8 @@ fi
 # The release and its venv: immutable once complete. A partial install from an interrupted run is redone.
 release=/opt/larp/releases/$build
 if [[ -f $release/.installed ]]; then
-  cmp -s "$release/.installed" "$src/SHA256SUMS" || die "release $build is already installed from different bytes"
+  [[ $(sha256sum < "$release/.installed") == $(sha256sum < "$src/SHA256SUMS") ]] \
+    || die "release $build is already installed from different bytes"
 else
   rm -rf "$release"
   install -d -m 0755 "$release"
