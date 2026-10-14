@@ -308,3 +308,114 @@ The committed-register refusal test now handles real partial capture metadata: c
 At `bb2834f`, the A-T22 audit retention assertions pass, but its released late worker races TemporaryDirectory cleanup. Join that real worker after releasing the external HTTP block before deleting test artifacts; no application assertion changes. Three A source readiness fixture failures assumed the old all-null committed register or obsolete mixed-refusal ordering. Make the single-missing fixture explicitly null, check unchanged failed-capture source's entire original rights record, and preserve the exact all-null refusal test. Actual hash-bearing metadata still requires bytes in the configured root; no guard is bypassed.
 
 Full/focused results from this round are retained externally; application fixes will be retested after pushing these fixture corrections. Outside-A red-team/strategy fixture permission remains unanswered; no outside path has been edited.
+
+
+### Amendment 20: final local/CI evidence and artifact index
+
+Tested review head **`10612f08d47e5c1c479de43d79193df351804035`**, original application base **`c1b6dafd62f8df7ea894a5177138da2726452696`**. Final focused intelligence/sources: **385 passed, 1029 subtests passed**, 11.43 s. Final complete local suite: **3 failed, 1251 passed, 7 skipped, 1572 subtests passed**, 192.68 s. Relative to unchanged baseline (1229 passed/7 skipped/1561 subtests), 25 additional tests are collected: 22 more passes and 3 existing consumer fixture failures. No test is weakened/skipped/deleted to achieve a green report.
+
+Three failures: `tests/integration/test_cross_component.py::AssessmentBoundary::test_c2_strategy_fixture_matches_current_evidence_output`, `tests/strategy/test_live_profiles.py::test_c2_fixture_matches_current_golden_trace_without_reconstruction` (both depend on one copied producer fixture), and `tests/redteam/test_integration_redteam.py::SourceProbes::test_d11_control_crash_between_pages_resumes_without_duplicates_and_versions_not_backdated` (obsolete history-only request map). The prepared two-file test-only diff is indexed below; explicit user scope exception or D written OK remains required. Neither outside path changed. Original crash/version/injection/decision assertions are preserved by the proposed diff.
+
+Seven local skips: external recorded-market artifact `tests/marketdata/test_recorded.py:29`; three explicit disposable-systemd opt-in cases (`test_systemd_conditions.py:81,97,107`); three Linux bubblewrap cases (`test_worker_release.py:46,57,62`). The guarded system runner at this head exits **2 before tests**: Linux bubblewrap unavailable, no successful equivalent runtime CI. It was invoked directly on the clean pushed final-A branch with the disposable DSN and `LARP_SYSTEM_TEST_DISPOSABLE=1`; no alias/bypass.
+
+Linux run [38612604846](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38612604846), head `10612f0`: **FAILED runtime**, **3 failed, 1278 passed, 4 skipped, 1 xfailed, 1604 subtests**, 254.16 s. The same three fixture failures occur. Host-bundle and both Terraform jobs PASS. CI pull-request checkout additionally includes D target changes; counts differ from local review tree and are not presented as the same baseline. Its xfail is an explicit D/C signed-bytes-backup blocker, not a passing proof. No deployment/bootstrap/host/workflow/lock edits by A; no local Terraform/host reruns were required by A scope. CI jobs are observed evidence, not AWS deployment.
+
+Integration advanced during this review: final fetch sees **`0820b0dd87219cb6b96f2ede34051129fab9f49c`** (merged D PR #67). Primary checkout is now detached at that exact requested latest origin target, clean; A worktree remains its isolated review branch. D must integrate/requalify A against the final combined tree; original c1b6daf baseline is preserved. No main/reset/rebase/force-push/GitHub merge was performed.
+
+| External artifact under `/private/tmp/larp-final-a-artifacts/` | SHA-256 |
+|---|---|
+| `baseline.log` | `6673e0b7a03ebb14035b92d460b5e820c17fbd999e2b1d86f9cffc7c8474dfcf` |
+| `proofs-red-final.log` | `5512d2170a0c6717f64ab3ff0c213a9bddf6f1ea44ed52f0113c6a5eeea8e577` |
+| `additional-red.log` | `43c205683b2108d1fab579ea42ffd3fd677fa9c45e6c289b137bc91318e75753` |
+| `additional-green.log` | `44091516c6f7d278c9900d796163d45f95d1ad1819370ffeeaf887bc704f2e38` |
+| `http-partial-red.log` | `62a9828274134b0b2c561a7d58aabb8b86ed18ceda45b48e1711934589f3c1b3` |
+| `http-partial-green.log` | `bef02fe18c206353337187db84524e59e29564442c4adac0853e97ff7383203b` |
+| `durable-proofs.log` | `e74116d41a6385ec4ff8d74607bc5b52f8c0fd51645f80c30b3b354dd068cb81` |
+| `deadline-audit-red.log` | `ee5ad7d8557eec287430192206fffe4e5acca4db464f3db7eb8754174e1460e9` |
+| `focused-round5.log` | `be21d2e4a22695e6d3bf733c597a7754020cb54acb4d21b309631e4d89dacf01` |
+| `full-final.log` | `fe520d4e765ed8b9321ce4dbcaf2cd8670ad8bc734cf968d910e336f577f525b` |
+| `system-final.log` | `60f5be8df99107432ceca4be791c1aea4e4337c2c63085fd051417c303308683` |
+| `linux-ci-38612604846.log` | `a82f1a7ca8bec49c54042c27faba8ed207c33b957a8595f4d8c909ebb5e578d1` |
+| `terms-capture.json` | `88fdbf8ed20aab3cd296f18cc219df3a6427c77ef9e51f9a9dadf4dad8682f02` |
+| `requested-test-exception.patch` | `5afc02da7eaffb2590646bd2bb1ab7cdc25773d80ec28e202008af794a1b7f83` |
+| `issue25-runtime-proof.log` | `7c2774f9a9b96a3311a96d602b2516368d3b4cc44f47ca34c3cc8abb7fc0e8dc` |
+| `calendar-proof.log` | `d522a0d5240e8e0a69c4a7a4065018bd38d7360a1d5635fe628f3d818eede2cb` |
+
+### Amendment 21: current finding disposition / prior-input reconciliation
+
+All retests below mean final focused/full evidence in amendment 20, with three unrelated but blocking fixture failures explicitly retained. They never mean full/system/CI PASS. Fourteen A component defects are corrected; two P1 findings remain owned outside A's implementation authority.
+
+| Finding | Severity | Pre-fix proof commit | Application fix | Current disposition |
+|---|---|---|---|---|
+| A-FND-001 canonical issuer/ticker rejection | P1 | d48a3cf | 32c79a0 | A component fixed; #25 overall remains open via FND-012. |
+| A-FND-002 reversed nonreliance | P1 | d48a3cf | 32c79a0 | Both orders and negative controls pass; #47 subsidiary unspecified phrasings are not certified. |
+| A-FND-003 forgotten unverified flag | P1 | d48a3cf | 32c79a0 | Persistent accession-specific uncertainty/correction passes; D must route exact original-support reviews. |
+| A-FND-004 permanent policy exclusion | P1 (tracker #58 P2 promoted: readiness cannot autonomously recover) | 7bdecf4 | 32c79a0 | Permitted coverage can complete; restricted bytes not retained, changed item/register reevaluated. |
+| A-FND-005 archive hides new head | P1 | 7bdecf4 | 32c79a0; 5047c6e | Fresh head within budget; single-page live pagination refused. External recovery fixture update pending. |
+| A-FND-006 request/exception credential leakage | P0 | 7bdecf4/d48a3cf | 32c79a0 | Both modern providers and legacy codec refuse reflected requests before persistence/send; normalized transport errors pass. |
+| A-FND-007 full tool results unavailable | P1 | c84ab55 | 32c79a0; 5047c6e | Complete private artifacts plus safe trace pointers; original injection assertion retained. |
+| A-FND-008 nonexistent/corrupt terms capture | P1 | 5047c6e | 63109ad | Real byte-integrity refusal passes; source rights remain partially validated. |
+| A-FND-009 future accepted timestamp used | P0 | 63109ad | 3557947 | Strict original/retrieval cutoff; after-stamp input usable, before-stamp excluded. |
+| A-FND-010 missing assessment dimensions | P1 | 63109ad | 3557947 | All dimensions explicit; uncalibrated/UNKNOWNs honest, no new trade authority. |
+| A-FND-011 registry failure accepts equal IDs | P1 | 101e770 | 3557947 | Failed identity authority rejects; synthetic compatibility does not mask load failure. |
+| A-FND-012 scheduled review ticker namespace | P1 | 3557947 explicit proof | NONE (D-owned) | OPEN, #25, A-REQ-020/022. Real policy/mapper proof prints NVDA instead of canonical SEC issuer. |
+| A-FND-013 EDGAR partial HTTP escapes | P1 | 27c11f0 | 34e5bfe | Real adapter reports sanitized UNAVAILABLE and next successful response recovers. |
+| A-FND-014 terms partial HTTP aborts basket | P2 | 27c11f0 | 34e5bfe | Failed capture recorded; partial body omitted; other sources continue. No written P2 acceptance needed because fixed. |
+| A-FND-015 unfulfilled calendar declaration | P1 | 621f687 explicit proof | NONE (team/D/B) | OPEN, A-REQ-078. DEV-20 OPEN/DRAFT cannot waive binding declaration. |
+| A-FND-016 abandoned completed-tool audit lost | P1 | edcba22 | bb2834f | Deadline snapshot preserves completed call/result, audit-only; stable late-worker cleanup at 10612f0. |
+
+Issue reconciliation: #25→A-REQ-020/022, component fix plus still-red D scheduling proof; #39→A-REQ-043–049/077, no domestic directives for foreign forms, P2 DECISION-NEEDED (A-DEC-005), no team acceptance inferred; #47→A-REQ-028/043–045/048, reversed nonreliance reproduced/fixed and exact current impairment determination passes on original base. Bare future/conditional Item2.06 wording remains nonactionable under the decided “current determination” predicate; unspecified Item1.05 phrasings need concrete independently labelled evidence before claiming general parser coverage. #48→A-REQ-017/028–030/047, persistence/restart/correction proof passes; original support review integration remains D's acceptance. #58→A-REQ-014/016–018, both symptoms reproduced/fixed and promoted P1 because DR-12 could never recover. #57 Class1 planner propagation belongs to B with A verified identity/latched record acceptance. #61 IAM belongs to D: PR67 records D-FND-018 fix; read its final merged record, do not conflate that with this branch's old host configuration. #64 source HTTP retries already caught HTTPException; EDGAR/terms residuals now fixed; shared live sidecars use R15 DELETE mode and local real restart tests pass. C owns chain/Web3 partial HTTP, B owns mandatory-sale ordering, D owns archive retries. #23–24/#26–38/#40 and #43–46/#49–56/#59–60/#62–63 remain assigned to B/C/D under prior-issues.md/current trackers; their current-tree integration evidence is not supplied by A.
+
+Original tracker22 evidence recovery: `/private/tmp/larp-codebase-review-20261014.py` exists, SHA-256 `e8a2ae47c54eb35c92cb51a4d9bb15006275c9b4523c4186565fc48be05468dd`; corresponding results JSON SHA-256 `c13b40b92725c6342a14a9a5b50b93c7e914885905773b5f074061e1ce9c37e6`. This review read them but did not rerun them. RV09 records NVDA/SEC-CIK-0001045810 WRONG_ISSUER and the old driver-not-integrated state. They contain no embedded exact baseline or full-suite counts; tracker22's baseline is a separate published reference, not authenticated execution provenance in these files. **Publication input gap remains:** Keith supplies a complete original record under an unused ledger ID with verified baseline/results/limits; D integrates the new row/backlog/cross-references, before overall IDEA-049 acceptance. Do not overwrite IDEA-046 hosting or claim these old results on today's tree. Exclusive A record scope prevents silently creating unrelated ledger entries in this PR.
+
+### Amendment 22: current deployment blockers / other-section requests
+
+The initial phase-1 risk/status text above is historical. Superseding current blockers:
+
+| Open item | Owner | Exact next verification / decision | Deadline | Blocks deployment |
+|---|---|---|---|---|
+| Two outside-A fixture updates (three failures) | wtvlol scope exception OR D written OK/application | Apply prepared patch, retain every existing acceptance, push, full suite + Linux CI + guarded system runner; no test-only green substituted for system evidence. | Before A offline exit | yes |
+| #25 scheduled canonical issuer | D, C producer acceptance, A consumer acceptance | Run issue25_runtime_review.py red proof; carry canonical token→issuer mapping through ContextBuilder/RuntimePlanner; preserve synthetic compatibility and exact job identity; cross-component real test. | Final integration / before activation | yes, P1 |
+| Original pending RF accession review | D + A | RuntimeWork._review must select explicit pending support refs, not unrelated latest filing; prove complete correction/verification after restart with real evidence store and scheduler. No default timer may clear uncertainty. | Final integration / before activation | yes |
+| Calendar / DEV-20 and declared source/model deviations | Team + D/B/A | Implement adopted planner or approve reasoned deviation; calendar_declaration.py must reach valid FINAL disposition; approve other draft deviations/agentic sufficiency. | Oct 22 decisions / Oct 26 release | yes, P1 declaration |
+| Chosen model, budget and driver integration | Team + Yao Zhu + D | Adopt deterministic release or integrate exact selected hosted adapter, rights/cutoff/latency/cost/budget and pinned fallback; DR-11, A-DEC-001/004. | Oct 19 evidence / Oct 22 choice | yes |
+| Eleven live values, runtime C, stale seven-day bound | Team + A + D/B | Decide amendment14 proposals with measured queue/model costs, five-session calendar and fourteen-day capacity; keep live nulls until accepted. | Oct 22 | yes |
+| #39 foreign-filer/SKHYB protection | A + B/team | Decide A-DEC-005; recommended block new buys until qualified rights-cleared coverage. Current fixture proves no fake domestic authority, not adequate foreign coverage. | Oct 22 / before affected live use | yes until decision; P2 requires written acceptance or fix |
+| Remaining source/model/component rights, originals transfer | A/team + C/D | Amendment15 inventory: genuine SEC contact/capture, prepublication scope, selected model/API/component licences, exact RPC/market endpoints; originals in final external artifact store, all hashes reverified. | Before Gate A / Oct 22–26 | yes |
+| Real T01/post-cutoff/anonymization/bake-off | Yao Zhu + independent annotators + team | Rights-cleared external frozen independent labels, exact model cutoff, distinct pre/post cohorts and anonymized historical prompts, actual source/syndication samples; report pass/fail/inconclusive. NOT RUN here. | Oct 19 evidence / Oct 22 disposition | yes; no synthetic accuracy/profitability claim |
+| 24 h live coverage and hosted shared-store capacity/recovery | A + D/host owners | Exact rights-cleared cadence/gap report; two-user DELETE mode/read-only mount/hot-journal restart, group artefact retrieval and actual fourteen-day capacity/archive retention. | Gate A / before rehearsal | yes |
+| Original tracker22 publication + final combined review | Keith + D, B/C boundary owners | Complete original unused-ID record, current issue reconciliation, final integrate/retest against target 0820b0d and later sections; complete final adversarial source pass after blockers resolved. | Before overall IDEA-049 acceptance | yes |
+
+A's latest source reread: official source_page top-to-bottom; declared proposal top-to-bottom; Guide pp.2–3/13–18 directly, relevant F/K/Q and decided-class/read-only-store supersessions checked. It added A-UC-100 and the deadline audit proof/fix, no new authoritative requirement ID. **Phase4 is not complete:** final full adversarial closure must be repeated on the final merged tree after these blockers, and currently full/system/runtime CI are not green. No generic organiser question replaces already-settled Q16/class/host rules. No SKILL summary correction established.
+
+### Amendment 23: exact superseding shared edits (D applies)
+
+These replace the earlier phase-1 requested text. D alone applies the shared files; no whole backlog item is completed by A's component tests.
+
+**docs/LEDGER.md — append this exact index row:**
+
+`| IDEA-049-A | Final review A: inputs, evidence, sources and model | partial review; deployment blocked; PR #68 | 78 independently frozen requirements, 100 use cases; baseline 1229/7/1561; final A 385 tests/1029 subtests PASS; full 1251 passed/3 failed/7 skipped/1572 subtests, Linux runtime FAIL; 14 component fixes, cross-owner/decision/rights/host gates remain | 2026-10-15 | [ledger/IDEA-049-A.md](ledger/IDEA-049-A.md) |`
+
+**docs/INCOMPLETE_WORK.md — replace the stale section-A status within the IDEA-049 final-review item, retaining unresolved whole GAPs, with:**
+
+`Section A (Keith for wtvlol, PR #68, IDEA-049-A): independent catalogue frozen/pushed at 990408d before code review; 78 requirements and 100 use cases. Tested head10612f0/basec1b6daf: A 385 tests/1029 subtests pass; full1251 passed,3 failed,7 skipped,1572 subtests; Linux38612604846 runtime FAIL (same three outside-A fixture dependencies), system runner refused unavailable equivalent green Linux tree. wtvlol/D must authorize/apply the two prepared test-only fixture updates, then rerun full/CI/system before A offline exit. D owns #25 canonical scheduled review mapping and original pending-RF support review, final combined-tree requalification (target advanced0820b0d), and shared integration. Team/D/B resolve declared calendar DEV-20 and final draft deviations; team/A decide all eleven intelligence live values plus cadence, seven-day age bound and #39 SKHYB scope by Oct22. Yao Zhu/team/independent annotator own model choice/budget/rights and real T01/post-cutoff/anonymized bake-off evidence (NOT RUN); A/team complete SEC/model/component/prepublication rights/originals transfer and 24h live coverage, D/host owners two-user restart/capacity/recovery before GateA/rehearsal. Keith publishes tracker22 original under unused ID with exact provenance; D reconciles it without overwriting hostingIDEA046. Fourteen A component defects fixed; P1/shared/input gates remain. No whole GAP-23/24/25/26/27/28/56/57/67 is closed.`
+
+**docs/skill/SKILL.md:** no summary correction requested. If adding the review status index, exact text: `IDEA-049 A: partial offline component review (PR #68; docs/ledger/IDEA-049-A.md). Synthetic/component passes do not establish real source rights, source/model accuracy, hosted integration, deployment or activation readiness. Team decisions and D combined-tree verification remain blocked as recorded there.`
+
+**README.md — replace stale A-not-run status with:**
+
+`Final review A is partial (PR #68, IDEA-049-A): independent catalogue and 14 component fixes are pushed; A-focused tests pass, but three outside-A fixture failures keep the full suite and Linux runtime CI red. System-test equivalent-green-tree guard is unsatisfied. Model/live-value/rights/calendar/SKHYB and hosted/real-evaluation gates remain open. Deployment is blocked.`
+
+**docs/build/AWS_RUNBOOK.md and runbook.md — add this exact A gate block to the existing GateA/B/C checklist, without changing their restrictions:**
+
+`A gates (IDEA-049-A, PR#68): (1) resolve/approve two fixture scope updates, canonical #25 review routing and original pending-support review; final combined full/CI/system pass with recorded counts. (2) adopt every intelligence live parameter jointly with per-issuer N×cadence, source freshness, model budget/queue delay, five-session horizon and fourteen-day capacity; no default or null is a team decision. (3) select/pin assessor and approved fallback; verify actual provider/cutoff/rights/budget or explicitly declare deterministic release; resolve calendar and draft declaration deviations. (4) genuine SEC contact, dated rights captures for every adopted source/model/API/component, prepublication/third-party exclusions and exact endpoint declarations; transfer original capture bytes to final external artifact root and reverify hashes. (5) A rights-cleared 24-hour live source gap report and independently labelled T01/post-cutoff/anonymized provider evidence, with explicit inconclusive/fallback disposition. (6) D/host owners two-user evidence writer restart while read-only reader stays open, DELETE/no-WAL-sidecar permission/recovery drill, group-readable original audit artifacts and measured fourteen-day capacity with post-run archive retention. Team/A/Yao Zhu decisions dueOct22; D final releaseOct26; host/source/rehearsal checks before their gates. Synthetic runs, raw hash metadata or a copied source terms page alone cannot satisfy these acceptances. No registered-key/ai-seeds/AWS/signing action is authorized by the review itself.`
+
+### Amendment 24: session status / strict handoff
+
+**Partial review; deployment blocked.** All A-authorized code/tests/catalogue/record changes are committed and pushed to the isolated review branch; no unpushed application commit remains. User explicitly authorized protocol-required branch pushes. No outside-A application edit, main history rewrite, registered wallet key, AI_SEEDS_SECRET, ai-seeds log call, AWS action, organiser contact or live signing/broadcast occurred. Public rights reads used only the pushed repo command and original bytes stayed outside Git. Main primary checkout is clean at latest fetched target0820b0d; A worktree is separate. PR #68 remains draft; no merge/approval claim.
+
+This is **not a strict ready-to-handoff declaration**: D shared edits and original-review publication are still requests, target integration/main equality is not asserted, and open inputs/decisions/P1 and suite/system/runtime CI block completion. Owners, exact next steps and deadlines are in amendment22. The two scope exceptions require user approval or D written OK before dependent fixture changes; the reviewed diff is concrete and outside Git. After those and other owner resolutions, repeat the guarded verification and final complete source pass; do not mark IDEA-049 or any whole GAP complete merely because A component tests pass.
+
+### Amendment 25: started-but-incomplete tool criterion
+
+The nominal final evidence in amendment20 is retained as round5 evidence, not an exit claim. A second boundary under the same frozen requirement remains suspect: `_call_tool` appends its record only after return. Pre-register **A-T23 / A-REQ-060 / A-UC-101**: pause only the external filesystem open for a prior document, then delegate to the real original read. Real tool, SQLite evidence and FileArtifacts remain unchanged; only an OS-read fault and synthetic model HTTP are injected. At the hard deadline, retain the started prior_context call/args as IN_FLIGHT_AT_DEADLINE, with no completed result hash/pointer and no claims/authority. Joining the released worker must not mutate the already returned result. Commit/push test before run/fix. If reproduced, record another P1 audit finding and repeat focused/full/CI/system checks; do not accept the earlier nominal final counts as completed review.

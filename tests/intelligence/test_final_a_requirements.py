@@ -6,6 +6,7 @@ import json
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from larp.contracts import Document
 from larp.intelligence.agent import build_request, context_hash
@@ -216,6 +217,50 @@ class CredentialCapture(unittest.TestCase):
 
 
 class AuditRecovery(RealEvidence):
+    def test_a_req_060_started_tool_is_recorded_if_filesystem_read_crosses_deadline(self):
+        accession = f'{self.entry.cik:010d}-26-000750'
+        self.source.add(self.entry.cik, accession=accession, form='8-K', items=['2.02'],
+                        acceptance='2026-10-08T20:00:00+00:00',
+                        documents=[doc('prior.htm', '8-K', page(p('Item 2.02 Results of Operations'),
+                            p('For the fourth quarter of fiscal 2026, we expect revenue of $4 billion.')))])
+        self.ingestor.poll(self.entry.issuer_id)
+        prior = next(r.read() for r in self.store.records(self.entry.issuer_id) if r.read()['accession'] == accession)
+        address = prior['documents'][0]['text_sha256']
+        target = self.artifacts.root / address[:2] / address
+        current = self.add(753, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
+        release, entered, workers = threading.Event(), threading.Event(), []
+        original_open = Path.open
+        def delayed_open(path, *args, **kwargs):
+            if path == target:
+                workers.append(threading.current_thread())
+                entered.set()
+                release.wait(2)  # filesystem fault only; delegate to the actual original file read
+            return original_open(path, *args, **kwargs)
+        def send(url, headers, body, timeout):
+            sent = json.loads(body)
+            state = json.loads(sent['messages'][0]['content'])
+            gap = state['gaps'][0]
+            return 200, json.dumps(anthropic_reply({'action': 'CALL_TOOL', 'tool': gap['tool'], 'args': gap['args']})(sent)).encode()
+        model = AnthropicMessagesModel(model_id='example-model-id', api_key=SECRET, prompt_text=self.config.prompt_text,
+                    prompt_sha256=self.config.prompt_sha256, clock_ms=self.clock, artifacts=self.artifacts, transport=send)
+        try:
+            with patch.object(Path, 'open', delayed_open):
+                result = self.assess(current, model, deadline_ms=200)
+        finally:
+            release.set()
+            for worker in workers:
+                worker.join(3)
+        self.assertTrue(entered.is_set(), 'The real prior-document tool must reach its file read')
+        self.assertEqual(result['status'], 'UNAVAILABLE')
+        self.assertIn('ASSESSMENT_DEADLINE_EXCEEDED', result['reasons'])
+        self.assertEqual(len(result['model_io']['tool_calls']), 1)
+        call = result['model_io']['tool_calls'][0]
+        self.assertEqual(call['tool'], 'prior_context')
+        self.assertEqual(call['status'], 'IN_FLIGHT_AT_DEADLINE')
+        self.assertIsNone(call['result_sha256'])
+        self.assertIsNone(call['result_artifact'])
+        self.assertEqual(result['claims'], [])
+
     def test_a_req_061_hard_deadline_preserves_already_completed_tool_results(self):
         original = self.add(752, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
         release, calls, workers = threading.Event(), [], []

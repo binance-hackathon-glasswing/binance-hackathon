@@ -762,3 +762,7 @@ Reason: real durable-producer verification closes weak incident/URI gaps; advers
 - A-REQ-038 changes WEAK→COVERED for real-component offline incident acceptance: `tests/intelligence/test_final_a_durable_incident.py::DurableIncident::test_a_req_038_real_provider_failure_has_durable_sanitized_incident_and_retry`, passing at `621f687`; actual hosted delivery remains D's later acceptance.
 - A-REQ-078 explicit negative release proof `tests/intelligence/proofs/calendar_declaration.py` fails at `621f687`, A-FND-015 P1. OPEN/DRAFT is not a waiver. Team/D/B own resolution.
 - A-REQ-060/061 remain provisional pending A-T22; normal sampled audit passes, abandonment boundary is not assumed covered.
+
+### UC/trace amendment 3 — 2026-10-15
+
+**A-UC-101:** a real prior-document tool starts, but its external filesystem read exceeds the hard deadline. Return UNAVAILABLE; retain exact started call/args and explicitly incomplete result, no fabricated result or late authority (A-REQ-026,060–061). Reason: final adversarial review of the same tool-audit obligation found the dispatch/return boundary was not explicitly tested. A-REQ-060 remains provisional until A-T23 passes; 101 use-case rows now exist. Frozen requirements unchanged.
