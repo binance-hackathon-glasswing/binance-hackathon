@@ -256,3 +256,32 @@ exit-code description was inaccurate, though the ExecStartPre failure loop was r
 with the main-process wrapper above, mapping any preflight refusal to 4 and retaining direct exec/PID and signal
 behavior. Pass also requires a real valid-release failure/restart fixture and a clean exit/restart fixture. The
 initial failure is retained here as evidence; it does not validate R13.
+
+### R8–R13 results (2026-10-14, Isaac / Codex): PASS offline
+
+Criteria pushed at `68d4fb2`; implementation `8288195`, Terraform format correction `c9535b5`, R13 revised criteria
+`53409d4`, final runtime implementation `9bfffcd`. Every runtime test ran after its code was committed/pushed.
+All four jobs pass in [Linux CI 38538487692](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38538487692).
+
+| ID | Result / evidence |
+|---|---|
+| R8 | PASS: extracted bundle verifies through `verify_release`; editing the proposal fails its manifest hash. The AL2023 host-bundle check now constructs a synthetic registration manifest and runs actual `preflight --profile host` on both provisioned roles. |
+| R9 | PASS: byte/depth checks run before JSON decoding; escaped string delimiters and the allowed depth boundary parse correctly; RecursionError becomes a refusal. Real PostgreSQL test refuses the 10,000-level poison request and signs the following valid request in one cycle, with no work on the second cycle. Existing outage propagation tests also pass. |
+| R10 | PASS: `cost_types.include_credit=false`, asserted by `budget_alerts_with_recipient`. Deployment guide distinguishes monthly usage from remaining lifetime credits. The deployed budget is not modified; an owner-approved saved plan/apply is still needed. |
+| R11 | PASS: SSM attaches only to primary, rejects missing egress, and rejects final-mode access; three mock plan cases pass. Signer provisioning remains the open decision in AWS_RUNBOOK step 5. |
+| R12 | PASS: private stores publish 0600; the live writer explicitly publishes 0640 via fchmod before fsync/link. AL2023 host check reads real artifact bytes as the runtime service user with the evidence group. An unrelated user cannot access the store. Earlier-file migration is documented, not run. |
+| R13 | PASS: `larp.runtime.launch` maps preflight refusal to main-process exit 4, and execs the service on success. Real Ubuntu systemd: all five units refuse a changed manifest with no service marker and zero restarts; a valid release still restarts an exit-1 service and a clean exit-0 evidence cycle. Three tests plus five subtests pass. |
+
+- Local Python 3.12.14 temporary environment with project test pins: **940 passed, 214 skipped, 1364 subtests**.
+  PostgreSQL, Linux/systemd and opt-in checks are unavailable locally. The first sandboxed suite had two localhost
+  bind failures; rerunning with localhost access passed. `pip check` and shell syntax checks pass.
+- Linux Python 3.12.15 / disposable PostgreSQL 14.24 full suite: **1150 passed, 4 skipped, 1472 subtests**. Three
+  skipped systemd tests then run explicitly: **3 passed, 5 subtests**; the other skip is the opt-in recorded market.
+- Mock Terraform: **deploy/aws 15/15**, **deploy/bootstrap 1/1**; fmt/validate pass. The initial AWS job failed fmt
+  on variables.tf; `c9535b5` corrected it without rewriting history.
+- Host-bundle: PASS, both provisioned AL2023 roles with network disabled, packaged release preflight and actual
+  artifact sharing. Linux offline demo and Docker smoke: PASS.
+- No AWS apply, production-host migration/start, registered audit upload, real signing/trading, or live data/model
+  evaluation occurred. No whole GAP is complete. Remaining owners and work are in INCOMPLETE_WORK and the runbook:
+  Keegan + Isaac for signer access/first-host checks and integration; Keegan for signer version binding/log shipping;
+  Yao Zhu for live evidence inputs and approval of any infrastructure update; team for rehearsal/final freeze.
