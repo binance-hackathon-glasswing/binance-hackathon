@@ -262,3 +262,28 @@ Prospective checks, recorded before any test is written or run:
   the D §10 local count (1252 passed, 7 skipped, 1 xfailed) plus only this
   change's new tests, with no new failure or skip.
 - WR-L5: PR-head Linux CI passes all jobs.
+
+Results (2026-10-15), local, each failing test pushed before its fix:
+- WR-L1 PASS: tests pushed at `5c89a81` failed on the unfixed code as
+  predicted (`NotADirectoryError`, `PermissionError`; `main` returned 1 with
+  `NotADirectoryError` escaping `Service.run`). Fix `eec0b9e`
+  (`bind_directory` maps `OSError` to `LiveStartRefused`); all three pass and
+  `test_live_start.py` + `test_driver.py` pass unchanged (24 passed).
+- WR-L2 PASS: the grep found no reader (only `runtime_secret_id` and
+  `uploader_secret_id` exist; `larp/sources` has no Secrets Manager call).
+  Test pushed at `8b768fe` failed on the unchanged `hosts.tf` (13 passed,
+  2 failed); fix `4552076`: fmt, init, validate, test PASS in
+  `hashicorp/terraform:1.13.5` (linux/amd64, no credentials): `deploy/aws`
+  15/15, `deploy/bootstrap` 1/1. Not applied (`docs/build/AWS_RUNBOOK.md`
+  names the expected plan; IDEA-046 B1 follow-up).
+- WR-L3 PASS: tests pushed at `bb838e4` failed on all four subtests with the
+  `HTTPException` escaping; fix `2ad73b3`; they pass.
+- WR-L4 PASS: Python 3.12.14 venv from `deploy/requirements-test.lock`
+  (`pip check` clean), disposable `postgres:14.24-bookworm` (pinned digest)
+  on 127.0.0.1:55488, removed afterwards. Base `0820b0d` on the same machine:
+  1253 passed, 7 skipped, 1 xfailed, 1593 subtests (D §10's 1252 was
+  `b1450fa`; later commits added one). This branch at `2ad73b3`: **1258
+  passed, 7 skipped, 1 xfailed, 1597 subtests** (+5 tests, +4 subtests: this
+  change only; same seven environmental skips). Log sha256 `40ca72cc…b623`,
+  kept outside Git.
+- WR-L5: see the PR.
