@@ -34,14 +34,38 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 ## Inputs the shadow run still needs (blocking Gate A)
 
-A `dev` run refuses to start without each of these. None is a deployment step: each needs an owner's work and a pushed commit first.
+`larp.runtime.service` refuses to start a `dev` run without each of these (`larp/runtime/service.py`). None of them is a deployment step: each needs an owner's work, review and a pushed commit before it can be used. The owners shown are suggestions from the build allocation.
 
-1. **LIVE strategy profile.** `build_live_profiles` needs a measured `QuoteCostSummary.v1`: per-symbol spread, impact, fee, approve and swap gas, slippage and quote TTL from real Web3 quotes, plus the BNB price. **No tool produces it yet:** `tools/probe_quote.py` measures round trips but not this summary. Owner: Isaac (I1), with Keith (B6 values). See `config/strategy/LIVE.md`.
-2. **Session calendar** (`USRegularSessions.v1`) for the run window, with its hash. Owner: Keith.
-3. **Issuers map** (issuer ID → token and the market's `underlying_id`), currently `{}`. Real issuer IDs can't yet pass the evidence contract (#25). Owner: Yao Zhu / Keith.
-4. **Evidence service live settings:** every `parameters.*.live` in `config/intelligence/intelligence.v1.json` (11 nulls) with provenance, plus the source terms hashes. Until then `larp-evidence` exits 4. Owner: Yao Zhu.
-5. **Initial state file** (`PortfolioState.v1`): the dev wallet's attested starting balances, pinned by SHA-256. Whether the wallet holds any BNB for the first gas is still open (Q-03). Owner: team, from a balance read.
-6. **Driver values:** `cadence_ms` and `day_roll_window_ms` (team, IDEA-050 "Still open").
+### 1. LIVE strategy profile (Isaac with Keith)
+- **What it is:** the frozen `StrategyProfile.v1` the planner trades by: minimum trade size, slippage and impact caps, quote age, gas floor and top-up size, and the rehearsal and final windows. Most values are computed from measured costs by `build_live_profiles(summary, registry)` (`larp/strategy/profiles.py`; the algebra is in `config/strategy/LIVE.md`). The allocation thresholds are already fixed by IDEA-035/037: 20/80, 25/90, 75%.
+- **Why the run refuses:** `service.py` rejects a dev or live run whose profile isn't `mode: "LIVE"`.
+- **What's missing:** the input `QuoteCostSummary.v1`. For **each of the five tokens** it needs `samples`, `median_impact_bps`, `spread_bps`, `fee_bps`, `approve_gas_bnb_units`, `swap_gas_bnb_units`, `slippage_bps` and `quote_ttl_seconds`. It also needs `bnb_price_units`, `bnb_decimals`, `observed_at`, `origin: "RECORDED_WEB3"` and a `capture_hash` of the raw responses. These must be measured from real Web3 Open API quotes, never invented. **No tool produces this summary yet:** `tools/probe_quote.py` measures buy/sell round trips but not gas or this shape. The validator also refuses any token whose spread + 2×impact + fee leaves no room under 50 bp.
+- **Registry:** the red-flag set `config/intelligence/red_flags.v1.json` (`RedFlagPredicateSet.v1`, 4 predicates) is already in the repo; its hash goes into the profile.
+- **Timing:** the rehearsal profile's window opens **Oct 21 00:00 UTC** (new risk until Oct 22, flatten from Oct 23, signing ends Oct 26 14:45 UTC); final is Oct 29 → Nov 11. **A shadow run before Oct 21 can test the hosts and logs, but it plans no buys**, because the planner holds new risk outside the window. Seeing real decisions earlier needs a team decision on a dev-shadow window: a new profile, recorded as a version event.
+- **Done when:** the summary and both profiles are committed or hash-pinned (captures can stay out of Git if private), `schema.profile` accepts them, and their hashes go into `runtime.json` and `execution.json`.
+
+### 2. Session calendar (Keith)
+- **What it is:** a `USRegularSessions.v1` document: `calendar_id`, `content_hash`, and `sessions` as consecutive `{session_index, open_at, close_at}` in UTC (regular 09:30–16:00 ET sessions, with half days marked as such). The runtime uses it for "which session is it and how many are left", and the strategy uses it to build daily closes.
+- **Why the run refuses:** a decision time **outside the calendar** is refused (`SessionCalendar` in `larp/runtime/driver.py`), so it must cover the whole run, from the first shadow day through the end of the final.
+- **Done when:** the file is committed with its SHA-256 in `runtime.json` (`driver.session_calendar_sha256`) and built from an official exchange holiday source cited in its provenance.
+
+### 3. Issuers map (Yao Zhu with Isaac and Keegan; blocked by #25)
+- **What it is:** `driver.issuers` in `runtime.json`, which maps each issuer ID in `config/intelligence/issuers.v1.json` (e.g. `SEC-CIK-0001045810`) to `{"token": "NVDAB", "underlying_id": …}`. It is currently `{}`, and an empty map is refused.
+- **What's blocking it (#25, P1):** the market side calls a stock by its ticker (`NVDA`), while evidence uses the SEC CIK. The evidence check requires them to be equal, so real filings for a token are rejected as `WRONG_ISSUER`, including Class 1 red flags. The code must carry issuer ID and ticker separately before the map can be filled correctly. Separately, `issuers.v1.json` marks every token-to-share mapping as UNVERIFIED (the kit gives no ratio or share class).
+- **Done when:** #25 is fixed and tested with real NVDA/CIK identities, and the five entries are filled.
+
+### 4. Evidence service live settings (Yao Zhu)
+- **What it is:** `config/intelligence/intelligence.v1.json` has **11 parameters whose `live` value is null**: `initial_backfill_ms`, `max_clock_skew_ms`, `max_source_staleness_ms`, `result_ttl_ms`, `reassess_delay_ms`, `retry_delay_ms`, `job_validity_ms`, `job_max_attempts`, `max_review_attempts`, `max_review_backoff_ms` and `statement_retention_ms`. Each has a `development` value to start from: 30 days of backfill, 5 min clock skew, 2 h staleness, 1 h result TTL, 6 h reassess, 10 min retry, 24 h job validity, 3 attempts, 3 reviews, 48 h backoff and 90 days retention. Live values need a decision and a provenance note.
+- **Source terms:** each **enabled** source needs a dated capture of its terms of use (`rights.terms_evidence_sha256` in `config/sources/sources.v1.json`). Five are enabled and none has one: `sec-press`, `fr-bis`, `fr-public-inspection`, `doj-press` and `ec-press`. The EDGAR entry needs one too (GAP-23).
+- **Why the run refuses:** `larp-evidence` exits 4 and isn't restarted. The runtime then also refuses, because the evidence store it reads doesn't exist.
+- **Also needed:** a real contact for `LARP_SEC_USER_AGENT` in `/etc/larp/evidence.env` (SEC fair access).
+
+### 5. Initial state file (team, from a balance read)
+- **What it is:** a `PortfolioState.v1` with the dev wallet's actual starting balances (USDT, BNB, any tokens) and run ID, pinned by SHA-256 in `runtime.json`. `service init` builds the run from it and refuses an unpinned file.
+- **Open:** whether the dev wallet holds any BNB for its first gas payment (Q-03). It matters at Gate B, not for shadow.
+
+### 6. Driver values (team decision)
+`driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.
 
 ## Order of work
 
