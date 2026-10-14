@@ -69,6 +69,35 @@ class SlippageRequirements(unittest.TestCase):
         self.assertEqual(sent.get_header('X-oc-sign'), expected)
         self.assertIsNone(sent.data)
 
+    def test_c_req_006_nondefault_bstock_decimals_reach_mapping_without_rescaling(self):
+        class EightDecimals(BoundQuotes):
+            def request(self, method, endpoint, params):
+                raw = super().request(method, endpoint, params)
+                if endpoint == 'market/rwa/tokens':
+                    raw['response']['data'][0]['decimals'] = '8'
+                elif endpoint == 'aggregator/quote-and-swap':
+                    q = raw['response']['data'][0]
+                    q['routerResult']['toToken']['decimal'] = '8'
+                    q['routerResult']['toTokenAmount'] = str(4 * 10**7)
+                    q['tx']['minReceiveAmount'] = str(4 * 10**7 * 998 // 1000)
+                return raw
+        row = MarketPort(EightDecimals(), WALLET, quote_limits=self.limits,
+                         cost_observation=lambda _: None).observe(self.request)
+        self.assertEqual(row['decimals'], 8)
+        self.assertEqual(row['quote_measurement']['receive_decimals'], 8)
+        command = command_fixtures.LiveBoundaries().command()
+        minimum = row['quote_measurement']['minimum_receive_raw']
+        command['payload'].update(receive_decimals=8, min_receive_units=int(minimum))
+        economic = map_command(command, run_id='run', wallet=WALLET, version_id='v', router=ROUTER,
+            token_decimals={'NVDAB':row['decimals']}, now_ms=100, limits=dict(self.limits,
+                max_gas=1000000, max_gas_price=10, gas_budget=20000000))
+        self.assertEqual(economic.minimum_output, int(minimum))
+        command['payload']['receive_decimals'] = 18
+        with self.assertRaises(Blocked):
+            map_command(command, run_id='run', wallet=WALLET, version_id='v', router=ROUTER,
+                token_decimals={'NVDAB':8}, now_ms=100, limits=dict(self.limits,
+                    max_gas=1000000, max_gas_price=10, gas_budget=20000000))
+
     def test_c_req_014_initial_quote_uses_independent_20bp_profile(self):
         client = BoundQuotes()
         row = MarketPort(client, WALLET, quote_limits=self.limits,
