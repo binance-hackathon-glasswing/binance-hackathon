@@ -276,9 +276,70 @@ or adoption/integration is absent. Therefore common protocol§4's all-MUST,
 no-open-P0/P1 and combined14-day exit gates are not met. Do not approve this
 record as complete solely from full-suite/system/CI counts. No GAP line removed.
 
-The final clean pushed-head runner/CI evidence will be appended below after
-verification. Local raw artifacts stay outside Git; results never establish
+The final clean pushed-head runner/CI evidence is recorded in B-VERIFY-01 below.
+Local raw artifacts stay outside Git; results never establish
 real-market execution, economic edge, AWS readiness or driver coverage.
+
+## B-VERIFY-01 — final verified consumer tree
+
+Tested clean, pushed head: `c3e58d11cb46add5c2e6ee78a26187ab08db41f9`.
+No files or HEAD changed during this final runner. B-REG07 strengthened replay:
+2 passed at that head,11.88s. Tests/fixes were committed and pushed before each
+run; initial fixture/environment failures and the superseded interim runner are
+retained above rather than hidden. No tests were weakened, skipped or removed
+to make these fixes pass.
+
+`tools/system_test.py` on Python3.12.15/PostgreSQL14.24/WSL Linux bubblewrap:
+started `2026-10-14T13:50:43.635630+00:00`, completed
+`2026-10-14T13:54:31.295588+00:00`, status PASS.
+
+| Check | Result | Raw-log SHA256 |
+|---|---|---|
+| system | 112 passed,70 subtests; no skips;51.373s | 67112927250222495b66ec7eb9fd1137f9390cf5b519e4a9afab04851d3f342f |
+| full_suite | 1203 passed,4 skipped,1491 subtests;174.971s | fa56afe3325e1e8595bfb1849c7a05e26984c2eabd3ba148966dc5f9f5b23eea |
+| isolated offline_demo | PASS;1.316s | b66a849e816f6c6ab9871945c283863b18d8500a0d6fb9df0698769f955bb480 |
+
+Report outside Git:
+`/home/theruin08/.local/share/larp-final-b-20261014/system-clean-c3e58d1/report.json`,
+SHA256 `41e113ca0d9dc9a6fead1ff730fa2a85c5dbdb7805caec8d7f0397be3d6c77d3`.
+The process-local Git path/CRLF mapping described above resolved the Windows
+worktree in WSL; clean/exact pushed-head/local-disposable/loopback guards stayed
+enabled. The synthetic demo uses fake external transports, never registered keys.
+
+Against unchanged valid baseline d2ed620 (1163/4/1491): **+40 tests**, unchanged
+skips/subtests. Three skips are opt-in actual-systemd tests, one needs external
+recorded market data. Local Docker unavailable; Linux CI supplies host/Docker
+evidence. No deploy/host/lock file changed in B.
+
+[Linux CI38575163069](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38575163069)
+on PR65 head c3e58d1: all four jobs SUCCESS. Runtime full suite:
+**1203 passed,4 skipped,1491 subtests**,164.20s; separate opt-in systemd:
+**3 passed,5 subtests**,6.36s. Isolated demo and Docker build/smoke succeeded.
+Host-bundle build/provision test succeeded. Terraform mock tests:
+deploy/aws **15 passed,0 failed**; deploy/bootstrap **1 passed,0 failed**.
+These CI Terraform tests make no AWS login/plan/apply call and do not establish
+deployment readiness.
+
+[Draft PR65](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/65)
+targets codex/system-testing-20261012. It is attached to this task. The record
+and shared-edit requests are a documentation follow-up to the tested consumer
+tree; no new executable change is made in the result commit.
+
+Source adversarial sweep rechecked PAGE, scoped Guide pages3–8/10/17, verbatim
+trading/OpenAPI/amount conventions, F/G/Q and K3/K6, every proposal risk/control/
+reproducibility sentence, decided plan/IDEA035/037 passages, IDEA040 adoption
+limits, B deviation rows and DR/AT gates. It added COR001 and CON007, then
+rechecked their exact sources; no additional owned implementation defect was
+found in the final consumer pass. This is **not** the protocol§4 no-open-findings
+exit: production/adoption MUSTs and the complete integrated14-day run remain
+blocked, as the trace/dispositions state.
+
+Final external-state recheck2026-10-14: integration branch still c829fae;
+no driver PR exists for claude/pre-deployment-review-4zxz7p; C PR41 remains open;
+#31/#34/#36 remain OPEN. Primary checkout clean; local main/origin/main and
+read-only remote main all5e945e148314b395a09ffe3e8a1461467b617114. D's shared index,
+backlog and runbook integration remains requested, so no full session/review
+handoff-readiness claim is made solely from Git cleanliness.
 
 ## For other sections
 
