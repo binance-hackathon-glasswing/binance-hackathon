@@ -1,0 +1,28 @@
+### IDEA-051 — Deployment pre-setup for the first hosted shadow run (Gate A)
+- Date / author: 2026-10-15 SGT (2026-10-14 UTC) / Yao Zhu with Claude Code
+- Status: open
+- What: prepare everything for the first hosted run that doesn't need spending, a secret in chat, or an unmade team decision. That means a checked state of the AWS stack, a hidden-prompt script the team runs to fill the two service secrets, a tool that fills each host config's infrastructure values from `terraform output`, and one checklist for deployment day ([DEPLOYMENT_DAY.md](../build/DEPLOYMENT_DAY.md)).
+- Why it might help: the Oct 14 Gate A milestone (DEPLOYMENT_BUILD.md) slipped. Once the reviews and final tests pass, the remaining host steps should be mechanical, with every blocker named in advance.
+- Cost / risk: no AWS spend in this entry. Starting hosts (≈ $23/month more) and applying the new credit budget need Yao Zhu's OK. Secret values never pass through chat, Git, argv or logs. **This entry gives no signing permission:** the Executor capability gate and the swap decoder (Isaac, GAP-29) still refuse every swap, so a hosted run can only be a shadow run (`execution: "shadow"`).
+- Links: AWS_RUNBOOK.md; runbook.md; IDEA-046, IDEA-047, IDEA-049-D (D-DN-05, R-01, R-07), IDEA-050; GAP-04, GAP-29; #25, #32, #33, #62.
+
+## State checked 2026-10-14 16:50 UTC (read-only)
+- `aws sts get-caller-identity --profile larp`: signed in to the credit account.
+- `terraform plan` (`deploy/aws`, `development.tfvars`, `-lock=false`) against `0820b0d`: **1 to add, 1 to change, 0 to destroy**. The add is `aws_budgets_budget.credit[0]` (IDEA-049-D D-FND-016); the change is an in-place update of `aws_budgets_budget.monthly[0]`. Nothing else has drifted. Not applied.
+- `terraform output`: `host_ids = {}` (no hosts), `signing_enabled = false`. Secrets `larp-dev/runtime`, `larp-dev/uploader` and `larp-dev/evidence` exist with **0 versions** (no values stored yet).
+
+## Pass criteria (written before the tools run)
+1. **`tools/deploy/put_service_secrets.sh`**
+   - Never echoes or saves a value, and never passes one on a command line (values reach `aws secretsmanager put-secret-value` on stdin).
+   - Writes only `larp-dev/runtime` = {`AI_SEEDS_ADDRESS`, `BINANCE_API_KEY`, `BINANCE_SECRET_KEY`} and `larp-dev/uploader` = {`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`}, matching `RUNTIME_SECRETS` (`larp/runtime/live.py`) and `ALLOWED_SECRETS` (`larp/audit/service.py`).
+   - Refuses an address that isn't `0x` + 40 hex characters, or an `AI_SEEDS_SECRET` that isn't 64 hex characters.
+   - Checked by a test that runs it against a fake `aws` on the PATH.
+2. **`tools/deploy/render_host_configs.py`**
+   - From a `terraform output -json` file, a wallet address and an optional RDS CA SHA-256, writes `runtime.json`, `execution.json`, `signer.json`, `uploader.json` and `operations.json` into a git-ignored directory.
+   - Each file is the matching example with only infrastructure values filled. The secret IDs come from the secret ARNs (`<name>/runtime`, `<name>/uploader`).
+   - Every value it leaves unset is listed by file. It reads no secret, refuses a directory Git would track, and doesn't overwrite without `--force`.
+   - Checked by unit tests on a synthetic Terraform output.
+3. **The full suite stays green**, with both new tests included.
+
+## Results
+- (fill after running)
