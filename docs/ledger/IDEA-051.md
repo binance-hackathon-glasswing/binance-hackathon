@@ -34,3 +34,9 @@
   - The Session Manager plugin is not installed on the Mac.
   - The latest AL2023 x86_64 AMI is `ami-0c82c1a90be4dccc1` (2026-10-14).
   - A `dev` run needs a LIVE profile (`larp/runtime/service.py:191`), which needs a measured `QuoteCostSummary.v1` that no tool produces yet. This blocks Gate A until Isaac/Keith supply it.
+- **2026-10-14 ~17:10 UTC: applied (Yao Zhu's OK in chat, after reviewing the saved plan).** The saved plan from `deploy/aws` (code identical to `0820b0d`) ran with `terraform apply <saved plan>`: **1 added, 1 changed, 0 destroyed.**
+  - Added `larp-dev-credit`: $100, 2026-10-01 → 2027-04-12, with alerts at actual 50/75/90% and forecast 100%.
+  - Changed `larp-dev-monthly`: `include_credit` went from true to false, so spend is counted before credits and the alerts can fire.
+  - A fresh plan shows **No changes**. `describe-budgets` confirms both budgets with `IncludeCredit = False`.
+  - No hosts and no cost: budgets are free.
+  - `CalculatedSpend` still read 0.0 right after the change; AWS recalculates budgets periodically, so check it again within a day.

@@ -12,7 +12,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 | Item | State | Who |
 |---|---|---|
-| Core AWS stack (VPC, RDS `larp-dev`, buckets, KMS, alarms, secret metadata) | **Applied**; `terraform plan` shows only D's credit budget to add (free) | — |
+| Core AWS stack (VPC, RDS `larp-dev`, buckets, KMS, alarms, secret metadata) | **Applied**, and in sync with `0820b0d`. The credit budget `larp-dev-credit` was added 2026-10-14 ~17:10 UTC; `terraform plan` now shows no changes | — |
 | Alarm email subscription | **Pending confirmation**: click the link in AWS's email | Yao Zhu |
 | Service secrets `larp-dev/runtime`, `larp-dev/uploader` | **Empty** (0 versions) | Yao Zhu, step 2 |
 | Hosts `primary`, `signer` | **Off** (`host_ids = {}`) | needs a spend OK, step 3 |
@@ -55,7 +55,7 @@ A `dev` run refuses to start without each of these. None is a deployment step: e
    ```
    It shows each secret ID and key name, asks before writing, and prints only the new version ID.
 3. **Terraform (spend OK first).** Use the refreshing-credentials setup in AWS_RUNBOOK "Log in and run Terraform".
-   - **First, with no hosts:** apply the credit budget (free).
+   - **Done 2026-10-14:** the credit budget is applied (IDEA-051).
    - **Then:** in `development.tfvars` set `ami_id`, `enable_hosts = true`, `enable_external_https = true` and `enable_development_ssm = true`. Plan, review, apply. That's about $23/month more, and it starts both hosts.
 4. **Bundle.** Download the CI artifact `larp-bundle-x86_64` from the final head's `host-bundle` job. Check that `sha256sum` matches the job summary, record the run ID and hash, and upload both files to `s3://<artifact bucket>/releases/`.
 5. **Provision `primary`** through SSM:
