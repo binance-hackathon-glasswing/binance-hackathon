@@ -85,6 +85,7 @@ class ExecutionService:
         intent=map_command(command,run_id=run_id,now_ms=now_ms,**self.mapping)
         return self.executor.create(intent,now_ms//1000)
     def advance(self,key,now):
+        integer(now)
         self.executor.store.check_authority(self.epoch, self.authority_version)
         state=self.executor._load(key)
         # Retry publishing persisted possible-send facts after a crash between
@@ -116,6 +117,11 @@ class ExecutionService:
                 fact = self.executor.store.put_observation(fact, self.epoch, self.authority_version)
             self.observe(fact)
         if state.status!='ACTIVE':return state
+        if (now >= state.intent.valid_until and (not state.attempts
+                or state.attempts[-1].state in ('PREPARED', 'FINAL_SUCCESS'))):
+            # No signature exists for the next step. Expiry must release this
+            # intent instead of leaving authorize() to fail on every restart.
+            return self.executor.abort_unsigned(key, now)
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':
             if state.prepare_probes >= state.intent.max_prepare_probes:
                 return self.executor.abort_unsigned(key, now)

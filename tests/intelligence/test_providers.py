@@ -141,6 +141,30 @@ class Adapters(unittest.TestCase):
             self.assertIsNone(reply["raw_response_artifact"])
             self.assertIsNotNone(reply["request_payload_artifact"])
 
+    def test_credential_echo_is_never_stored_including_escaped_duplicate_and_late_replies(self):
+        from larp.intelligence.providers import LateReply
+        escaped = SECRET.replace("s", "\\u0073", 1)
+        echoes = [json.dumps({"error": {"message": f"bad key {SECRET}"}}).encode(),
+                  ('{"error":{"message":"%s"}}' % escaped).encode(),
+                  ('{"error":"%s","error":"invalid"}' % escaped).encode()]
+        for cls in (AnthropicMessagesModel, OpenAIResponsesModel):
+            for raw in echoes:
+                for late in (False, True):
+                    with self.subTest(cls=cls.__name__, raw=raw, late=late):
+                        self.artifacts = MemoryArtifacts()
+                        def transport(*_):
+                            if late:
+                                raise LateReply(200, raw)
+                            return 401, raw
+                        reply = self.build(cls, transport=transport).step(request(), 60_000).read()
+                        self.assertEqual(reply["status"], "TIMEOUT" if late else "ERROR")
+                        if not late:
+                            self.assertEqual(reply["error"], "CREDENTIAL_REFLECTION")
+                        self.assertIsNone(reply["raw_response_artifact"])
+                        self.assertIsNotNone(reply["request_payload_artifact"])
+                        self.assertFalse(any(SECRET.encode() in blob or escaped.encode() in blob
+                                             for blob in self.artifacts.blobs.values()))
+
     def test_settings_select_the_provider(self):
         settings = LiveModelSettings("openai", "example-model-id", api_key=SECRET)
         model = hosted_model(settings, prompt_text=self.config.prompt_text, prompt_sha256=self.config.prompt_sha256,

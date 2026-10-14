@@ -8,6 +8,7 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 TOOL = Path(__file__).resolve().parents[2] / "tools" / "edgar_fetch.py"
 
@@ -26,6 +27,11 @@ class EdgarToolTests(unittest.TestCase):
     def test_tool_keeps_table_cell_boundaries(self):
         raw = b"<table><tr><td>Revenue</td><td>100</td><td>90</td></tr></table>"
         self.assertEqual(self.tool.html_to_text(raw), "Revenue | 100 | 90")
+
+    def test_import_does_not_load_private_environment(self):
+        with patch("dotenv.load_dotenv") as load:
+            load_tool()
+            load.assert_not_called()
 
     def test_recorded_hash_equals_hash_of_saved_file_bytes(self):
         raw = "<p>Café ₩1,000\r\n— 실적</p>".encode("utf-8")

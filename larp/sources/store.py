@@ -9,12 +9,14 @@ it must live outside the repository (F-49 raw inputs; F-61 no private data in Gi
 
 from functools import wraps
 from pathlib import Path
-import hashlib
 import json
+import os
 import sqlite3
+import tempfile
 import threading
 
 from larp.contracts import Document
+from larp.intelligence.common import require_hash, sha256_hex
 
 
 class StoreConflict(RuntimeError):
@@ -191,25 +193,68 @@ class FileArtifacts:
     """Content-addressed bytes under `root` (outside the repository)."""
 
     def __init__(self, root: str):
-        self.root = Path(root)
+        self.root = Path(root).resolve()
         repo = Path(__file__).resolve().parents[2]
         if self.root.resolve() == repo or repo in self.root.resolve().parents:
             raise ValueError("Artifacts must be stored outside the repository (no source text in Git)")
         self.root.mkdir(parents=True, exist_ok=True)
 
-    def put(self, content: bytes) -> str:
-        digest = hashlib.sha256(content).hexdigest()
+    def _path(self, digest: str) -> Path:
+        require_hash(digest, "artifact address")
         path = self.root / digest[:2] / digest
-        if not path.exists():
-            path.parent.mkdir(exist_ok=True)
-            tmp = path.with_suffix(".tmp")
-            tmp.write_bytes(content)
-            tmp.replace(path)
+        if path.parent.is_symlink() or path.is_symlink() or self.root not in path.resolve().parents:
+            raise StoreConflict("Artifact path is not confined to its store")
+        return path
+
+    @staticmethod
+    def _sync_directory(path: Path) -> None:
+        if os.name == "nt":  # Windows does not support opening directories for fsync.
+            return
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+    def put(self, content: bytes) -> str:
+        digest = sha256_hex(content)
+        path = self._path(digest)
+        held = self.get(digest)
+        if held is not None:
+            self._sync_directory(path.parent)
+            self._sync_directory(self.root)
+            return digest
+        path.parent.mkdir(exist_ok=True)
+        self._path(digest)  # refuse a pre-existing symlink directory
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".artifact-", delete=False) as handle:
+                temporary = Path(handle.name)
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            try:
+                # Publish without replacing a competing writer's immutable object.
+                os.link(temporary, path)
+            except FileExistsError:
+                if self.get(digest) != content:
+                    raise StoreConflict("Artifact content address collision") from None
+            self._sync_directory(path.parent)
+            self._sync_directory(self.root)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
         return digest
 
     def get(self, digest: str) -> bytes | None:
-        path = self.root / digest[:2] / digest
-        return path.read_bytes() if path.exists() else None
+        path = self._path(digest)
+        try:
+            content = path.read_bytes()
+        except FileNotFoundError:
+            return None
+        if sha256_hex(content) != digest:
+            raise StoreConflict("Artifact bytes differ from their content address")
+        return content
 
 
 def canonical(value) -> bytes:

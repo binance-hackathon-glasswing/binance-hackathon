@@ -152,12 +152,48 @@ class Roles(Rounds):
                      "UPDATE execution_journal SET head='x'", 'DELETE FROM execution_journal',
                      "UPDATE execution_observations SET observation_hash='x'", 'DELETE FROM execution_records')
 
-    def test_g2_signer_registry_only(self):
+    def test_g2_signer_registry_and_read_only_authorization_evidence(self):
         self.execution_rows()
-        self.refused('larp_signer', 'SELECT * FROM execution_records', 'SELECT * FROM execution_journal',
-                     'SELECT * FROM execution_observations', 'SELECT * FROM commands',
+        with self.as_role['larp_signer'].transaction() as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_records').fetchone()[0], 1)
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_journal').fetchone()[0], 1)
+            db.execute('SELECT revision FROM execution_records FOR UPDATE')
+        self.refused('larp_signer', 'SELECT * FROM execution_observations', 'SELECT * FROM commands',
+                     "UPDATE execution_records SET state='\\x00'::bytea",
+                     "UPDATE execution_records SET state_hash='x'", "UPDATE execution_records SET terminal=true",
+                     "UPDATE execution_journal SET head='x'", 'DELETE FROM execution_records',
                      "UPDATE runs SET projection='\\x00'::bytea", "UPDATE execution_signatures SET signed_hash='x'",
                      'DELETE FROM execution_signatures')
+
+    def test_g2_real_registry_api_uses_signer_role_and_preserves_authorization_checks(self):
+        from larp.execution import Conflict, Executor
+        from larp.execution_live.store import ExecutionStore
+        from tests.execution.test_postgres_execution import ExecutionGuards, RegistrySigner
+        from tests.execution_fixtures import FakeDecoder, FakeSigner, FakeVenue, WALLET, intent
+        execution = ExecutionStore(self.as_role['larp_execution'], run_id='run', wallet=WALLET)
+        registry = ExecutionStore(self.as_role['larp_signer'], run_id='run', wallet=WALLET)
+        signer = RegistrySigner(registry)
+        engine = Executor(execution, ExecutionGuards(execution), FakeVenue(execution), signer, FakeDecoder())
+        i = intent()
+        engine.create(i, 10)
+        engine.prepare(i.key, 11)
+        state = engine.authorize(i.key, 12)
+        attempt = state.attempts[-1]
+        signed = signer.sign(attempt.attempt_id, attempt.payload, attempt.epoch, attempt.guard_version)
+        recovered = ExecutionStore(self.as_role['larp_signer'], run_id='run', wallet=WALLET)
+        self.assertEqual(recovered.lookup(attempt.attempt_id, attempt.payload.hash), signed)
+        self.assertEqual(signed, FakeSigner.expected(attempt.payload))
+        with self.assertRaises(Conflict):
+            registry.lookup(attempt.attempt_id, 'different-payload')
+        with self.assertRaises(Conflict):
+            registry.put_if_absent(attempt.attempt_id, attempt.payload.hash, signed,
+                                   attempt.epoch, attempt.guard_version + 1)
+        engine.abort_unbroadcast(i.key, 13)
+        with self.assertRaises(Conflict):
+            recovered.lookup(attempt.attempt_id, attempt.payload.hash)
+        with self.assertRaises(Conflict):
+            registry.put_if_absent(attempt.attempt_id, attempt.payload.hash, signed,
+                                   attempt.epoch, attempt.guard_version)
 
     def test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes(self):
         self.execution_rows()

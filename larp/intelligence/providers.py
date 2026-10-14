@@ -49,8 +49,9 @@ import threading
 import time
 from urllib.parse import urlsplit
 
+from larp.contracts import reflects_secret
 from larp.intelligence.common import IntelligenceError, require_hash, sha256_hex
-from larp.intelligence.models import ModelIdentity, response
+from larp.intelligence.models import ModelIdentity, allowed_endpoint, response
 
 ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_HOSTS = frozenset({"api.anthropic.com"})
@@ -262,7 +263,7 @@ class _ProviderReply(Exception):
 
     def __init__(self, code: str, served: str | None = None):
         super().__init__(code)
-        self.code, self.served = code, served
+        self.code, self.served = code, served if type(served) is str else None
 
 
 class HostedModel:
@@ -273,8 +274,7 @@ class HostedModel:
     def __init__(self, *, model_id: str, endpoint: str, allowed_hosts: frozenset, api_key: str, prompt_text: str,
                  prompt_sha256: str, clock_ms, artifacts, price: dict | None = None, transport=None,
                  max_output_tokens: int = 16000):
-        parts = urlsplit(endpoint)
-        if parts.scheme != "https" or parts.hostname not in allowed_hosts:
+        if not allowed_endpoint(endpoint, allowed_hosts):
             raise IntelligenceError("Hosted model endpoint is outside the declared allowlist")
         if not api_key:
             raise IntelligenceError("Hosted model needs a credential from the runtime secret store")
@@ -334,7 +334,7 @@ class HostedModel:
         try:
             status, raw = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
         except LateReply as exc:  # paid for and complete, but late: a timeout whose bytes are kept
-            if type(exc.raw) is bytes:
+            if type(exc.raw) is bytes and not reflects_secret(exc.raw, (self._key,)):
                 self._keep(exc.raw)
                 record["raw"] = exc.raw
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
@@ -348,6 +348,9 @@ class HostedModel:
         if type(raw) is not bytes:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error="TRANSPORT_REPLY_NOT_BYTES", **record)
+        if reflects_secret(raw, (self._key,)):  # an echoed credential never reaches the artifact store
+            return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
+                            error="CREDENTIAL_REFLECTION", **record)
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started

@@ -7,6 +7,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError
@@ -49,7 +50,8 @@ class HostedAdapterTests(unittest.TestCase):
             message = {"role": "assistant", "content": content}
             if reasoning:
                 message["reasoning_content"] = reasoning
-            payload = {"choices": [{"message": message}], "usage": {"prompt_tokens": 1000, "completion_tokens": 200}}
+            payload = {"choices": [{"message": message, "finish_reason": "stop"}],
+                       "usage": {"prompt_tokens": 1000, "completion_tokens": 200}}
             if served is not None:
                 payload["model"] = json.loads(body)["model"] if served == "echo" else served
             return status, json.dumps(payload).encode()
@@ -58,6 +60,9 @@ class HostedAdapterTests(unittest.TestCase):
     def test_construction_requires_allowlisted_https_pinned_revision_and_prompt(self):
         ok = self.reply("{}")
         for change in ({"endpoint": "https://evil.test/v1"}, {"endpoint": "http://api.example-provider.test/v1"},
+                       {"endpoint": "https://user:password@api.example-provider.test/v1"},
+                       {"endpoint": "https://api.example-provider.test:444/v1"},
+                       {"endpoint": "https://api.example-provider.test:invalid/v1"},
                        {"revision": "latest"}, {"revision": "example-model-latest"}, {"revision": ""},
                        {"revision": "default"}, {"api_key": ""}, {"prompt_sha256": "0" * 64}, {"artifacts": None}):
             with self.subTest(change=change), self.assertRaises(IntelligenceError):
@@ -94,7 +99,7 @@ class HostedAdapterTests(unittest.TestCase):
                          ("ERROR", "SERVED_MODEL_MISMATCH", None))
         self.assertEqual(swapped["served_model"], "example-model-2026-11-15")
         unstated = self.model(self.reply(output, served=None)).step(request(), 60_000).read()
-        self.assertEqual((unstated["status"], unstated["served_model"]), ("OK", None))
+        self.assertEqual((unstated["status"], unstated["error"]), ("ERROR", "SERVED_MODEL_MISMATCH"))
 
     def test_request_and_reply_bytes_are_recoverable_and_exclude_the_credential(self):
         def malformed(url, headers, body, timeout):
@@ -137,6 +142,54 @@ class HostedAdapterTests(unittest.TestCase):
             raise ConnectionRefusedError()
 
         self.assertEqual(self.model(refused).step(request(), 60_000).read()["status"], "ERROR")
+
+    def test_credential_echo_is_never_stored(self):
+        from larp.intelligence.providers import LateReply
+        escaped = SECRET.replace("s", "\\u0073", 1)
+        for raw in (json.dumps({"error": SECRET}).encode(), ('{"error":"%s","error":null}' % escaped).encode()):
+            for late in (False, True):
+                with self.subTest(raw=raw, late=late):
+                    self.artifacts = MemoryArtifacts()
+                    def transport(*_):
+                        if late:
+                            raise LateReply(200, raw)
+                        return 200, raw
+                    reply = self.model(transport).step(request(), 60_000).read()
+                    self.assertEqual(reply["status"], "TIMEOUT" if late else "ERROR")
+                    self.assertIsNone(reply["raw_response_artifact"])
+                    self.assertFalse(any(SECRET.encode() in blob or escaped.encode() in blob
+                                         for blob in self.artifacts.blobs.values()))
+
+    def test_default_transport_uses_bounded_no_redirect_provider_transport(self):
+        from larp.intelligence.models import _openai_chat_transport
+        with patch("larp.intelligence.providers.https_post", return_value=(302, b"redirect")) as post:
+            result = _openai_chat_transport("https://api.example-provider.test/v1", {"Authorization": SECRET}, b"{}", 1)
+        self.assertEqual(result, (302, b"redirect"))
+        post.assert_called_once_with("https://api.example-provider.test/v1", {"Authorization": SECRET}, b"{}", 1)
+
+    def test_request_is_persisted_before_transport_and_bad_replies_are_retained(self):
+        output = json.dumps({"action": "FINISH", "claims": [], "notes": ""})
+        base = {"model": "example-model-2026-09-01", "choices": [{"finish_reason": "stop",
+                "message": {"content": output}}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+        cases = [(dict(base, choices=[{"finish_reason": "length", "message": {"content": output}}]),
+                  "INCOMPLETE_RESPONSE"),
+                 (dict(base, choices=[{"finish_reason": "stop", "message": {"refusal": "declined"}}]),
+                  "PROVIDER_REFUSAL"),
+                 (dict(base, model={"malformed": 0.5}, choices=[{"finish_reason": "length", "message": {}}]),
+                  "INCOMPLETE_RESPONSE")]
+        cases += [(dict(base, usage={"prompt_tokens": value, "completion_tokens": 1}), "USAGE_MALFORMED")
+                  for value in (-1, True, "10", 10**10)]
+        cases.append((dict(base, choices=[{"finish_reason": "stop", "message": {
+            "content": '{"nested":' * 65 + '{}' + '}' * 65}}]), "OUTPUT_TOO_DEEP"))  # bound is depth 64
+        for payload, error in cases:
+            raw = json.dumps(payload).encode()
+            def transport(url, headers, body, timeout):
+                self.assertEqual(self.artifacts.get(hashlib.sha256(body).hexdigest()), body)
+                return 200, raw
+            with self.subTest(error=error):
+                reply = self.model(transport).step(request(), 60_000).read()
+                self.assertEqual((reply["status"], reply["error"]), ("ERROR", error))
+                self.assertEqual(self.artifacts.get(reply["raw_response_artifact"]), raw)
 
 
 class LocalAndRuleModelTests(unittest.TestCase):

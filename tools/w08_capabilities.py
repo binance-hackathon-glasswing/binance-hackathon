@@ -12,6 +12,7 @@ from email.utils import parsedate_to_datetime
 import hashlib
 import hmac
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -97,7 +98,8 @@ def scrub(value, secrets):
 
 def retry_after(value, now):
     try:
-        return max(0.0, float(value))
+        seconds = float(value)
+        return max(0.0, seconds) if math.isfinite(seconds) else None
     except (ValueError, TypeError):
         try:
             return max(0.0, parsedate_to_datetime(value).timestamp() - now)
@@ -111,7 +113,7 @@ def classify(status, body):
         return "compliance_restriction"
     if status == 429 or code == 42900:
         return "rate_limited"
-    if code == 40102 or status == 401:
+    if code in (40100, 40101, 40102, 40103, 40104) or status == 401:
         return "authentication_error"
     if status == 403:
         return "http_forbidden_unclassified"
@@ -230,7 +232,8 @@ def collect(client, address, symbols, amount, tx_hashes):
         if client.records:
             time.sleep(0.35)
         result = client.request(method, endpoint, params)
-        if result["outcome"] in {"compliance_restriction", "authentication_error", "rate_limited"}:
+        if result["outcome"] in {"compliance_restriction", "authentication_error", "rate_limited",
+                                 "http_forbidden_unclassified"}:
             raise ProbeStopped(result["outcome"])
         return result
 

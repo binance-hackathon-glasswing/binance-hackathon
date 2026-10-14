@@ -16,6 +16,12 @@ from .schema import fraction, instant, integer, markets, profile, value, equity
 from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
+def _cost_rank(market: dict) -> int:
+    # Outside LIVE a cost may be explicitly unavailable (None); it ranks after every measured cost.
+    cost = market.get("measured_roundtrip_bps")
+    return 10**9 if cost is None else cost
+
+
 def decide(snapshot, state):
     if state != snapshot.policy_state:
         raise ContractError("Stale policy state")
@@ -142,7 +148,7 @@ def decide(snapshot, state):
                 elif not below:
                     targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "ABOVE_TOP_UP_THRESHOLD"))
                 else:
-                    candidates.append((m.get("measured_roundtrip_bps", 10**9), symbol, weight))
+                    candidates.append((_cost_rank(m), symbol, weight))
                 if previously_held:
                     status = "CASH_REVIEW"
         else:
@@ -180,7 +186,7 @@ def decide(snapshot, state):
                     momentum = f.read()["momentum_5"]
                     entry_ok &= Fraction(momentum[0], momentum[1]) > Fraction(p["price_threshold_bps"], 10000)
                 if entry_ok:
-                    candidates.append((m.get("measured_roundtrip_bps", 10**9), symbol,
+                    candidates.append((_cost_rank(m), symbol,
                                        min(declared_weight(f), fraction(p["operating_name_weight"]))))
                 else:
                     targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "ENTRY_OR_REENTRY_UNAVAILABLE"))

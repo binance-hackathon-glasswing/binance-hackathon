@@ -253,6 +253,7 @@ def plan(snapshot, proposal_or_none):
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
             if side == "BUY":
                 if (gas_short or unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
+                        or c.get("health", {}).get("new_spending_ok", p.get("mode") != "LIVE") is not True
                         or now.date().isoformat() != r["day"]
                         or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
@@ -269,6 +270,12 @@ def plan(snapshot, proposal_or_none):
             if q > 0:
                 actions.append((symbol, side, q, False, [t.reason]))
 
+    if p["baseline"] == "EQUAL_WEIGHT" and actions and not actions[0][3]:
+        # Candidate selection and actual child execution must use the same cost
+        # priority; alphabetical planning otherwise spends the daily slot first.
+        # An explicitly unavailable cost (None outside LIVE) ranks last, like a missing one.
+        cost = lambda symbol: market[symbol].get("measured_roundtrip_bps")
+        actions.sort(key=lambda a: (a[1] != "SELL", 10**9 if cost(a[0]) is None else cost(a[0]), a[0]))
     for symbol, side, quantity, mandatory, why in actions:
         m = market.get(symbol)
         if m is None:

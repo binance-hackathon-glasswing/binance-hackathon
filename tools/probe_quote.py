@@ -36,12 +36,15 @@ import socket
 import sys
 import time
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import quote
 
 import requests
 from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.probe_http import ProbeStopped, envelope, stop_if_refused  # noqa: E402
 
 BASE_URL = "https://web3.binance.com/build"
 CHAIN_ID = "56"
@@ -54,13 +57,11 @@ TOKENS = {  # participant-kit.md K3
     "TSLAB": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
     "MSFTB": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
 }
-COMPLIANCE_CODE = 40304
 MIN_INTERVAL_S = 0.35  # the kit's demo keeps >= 0.3 s between calls (K9)
 
-load_dotenv()
-API_KEY = os.getenv("BINANCE_API_KEY")
-SECRET = os.getenv("BINANCE_SECRET_KEY")
-RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
+API_KEY = None
+SECRET = None
+RECV_WINDOW = None
 RAW = []
 _last_call = 0.0
 
@@ -71,7 +72,7 @@ def _ts():
 
 
 def get(path, params):
-    """Signed GET (K5). Returns (http_status, envelope, local_ms_at_response); never raises on API errors."""
+    """Signed GET (K5); stop the probe on authentication/compliance/rate refusal."""
     global _last_call
     query = "&".join(f"{quote(str(k), safe='')}={quote(str(v), safe='')}" for k, v in params.items())
     target = f"{path}?{query}" if query else path
@@ -88,7 +89,7 @@ def get(path, params):
             headers["X-OC-RECV-WINDOW"] = RECV_WINDOW
         fetched = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         try:
-            resp = requests.get(BASE_URL + target, headers=headers, timeout=20)
+            resp = requests.get(BASE_URL + target, headers=headers, timeout=20, allow_redirects=False)
         except requests.RequestException as exc:
             status, body = None, {"code": None, "msg": f"network error: {type(exc).__name__}", "data": None}
             RAW.append({"path": path, "params": params, "fetched_utc": fetched, "status": None, "error": body["msg"]})
@@ -98,15 +99,10 @@ def get(path, params):
         _last_call = time.monotonic()
         local_ms = int(time.time() * 1000)
         status = resp.status_code
-        try:
-            body = resp.json()
-        except ValueError:
-            body = {"code": None, "msg": f"HTTP {status}, not JSON", "data": None}
+        body = envelope(resp, (API_KEY, SECRET, sign))
         RAW.append({"path": path, "params": params, "fetched_utc": fetched, "status": status,
                     "sha256": hashlib.sha256(resp.content).hexdigest(), "response": body})
-        if status == 429 or body.get("code") == 42900:
-            time.sleep(int(resp.headers.get("Retry-After", 2 ** attempt)))
-            continue
+        stop_if_refused(status, body)
         return status, body, local_ms
     return status, body, local_ms
 
@@ -114,8 +110,8 @@ def get(path, params):
 def first(data):
     """quote-and-swap and rwa endpoints may wrap the payload in a list."""
     if isinstance(data, list):
-        return data[0] if data else {}
-    return data or {}
+        data = data[0] if len(data) == 1 else None
+    return data if isinstance(data, dict) else {}
 
 
 def units(amount_str, decimals):
@@ -131,15 +127,19 @@ def quote_swap(amount_smallest, from_addr, to_addr, address, slippage):
         return None, f"code {body.get('code')} {body.get('msg')} (HTTP {status})"
     d = first(body.get("data"))
     rr, tx = d.get("routerResult") or {}, d.get("tx") or {}
-    if rr.get("toTokenAmount") in (None, ""):
-        return None, "no toTokenAmount in response"
+    if not isinstance(rr, dict) or not isinstance(tx, dict):
+        return None, "malformed quote payload"
+    amount = rr.get("toTokenAmount")
+    if not isinstance(amount, str) or not re.fullmatch(r"[1-9][0-9]{0,77}", amount) or int(amount) >= 2**256:
+        return None, "invalid toTokenAmount in response"
     return {"toTokenAmount": rr.get("toTokenAmount"), "priceImpactPercent": rr.get("priceImpactPercent"),
             "estimateGasFee": rr.get("estimateGasFee"), "vendorName": rr.get("vendorName"),
             "tx_to": tx.get("to"), "tx_gas": tx.get("gas"), "minReceiveAmount": tx.get("minReceiveAmount"),
             "executionMode": d.get("executionMode")}, None
 
 
-def main():
+def _main():
+    global API_KEY, SECRET, RECV_WINDOW
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--address", required=True, help="public wallet address used as userWalletAddress (no key needed)")
     ap.add_argument("--sizes", default="10", help="buy sizes in USDT, comma-separated (default 10)")
@@ -147,6 +147,9 @@ def main():
     ap.add_argument("--slippage", default="1", help="slippagePercent sent with each quote (default 1)")
     args = ap.parse_args()
 
+    load_dotenv()
+    API_KEY, SECRET = os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_SECRET_KEY")
+    RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
     if not API_KEY or not SECRET:
         sys.exit("BINANCE_API_KEY / BINANCE_SECRET_KEY not found in .env")
     if not re.fullmatch(r"0x[0-9a-fA-F]{40}", args.address):
@@ -155,7 +158,13 @@ def main():
     unknown = [s for s in symbols if s not in TOKENS]
     if unknown:
         sys.exit(f"not an eligible bStock: {unknown} (F-91)")
-    sizes = [Decimal(s.strip()) for s in args.sizes.split(",") if s.strip()]
+    try:
+        sizes = [Decimal(s.strip()) for s in args.sizes.split(",") if s.strip()]
+    except InvalidOperation:
+        ap.error("--sizes must contain positive finite USDT amounts")
+    if not sizes or any(not s.is_finite() or s < Decimal(1).scaleb(-USDT_DECIMALS)
+                        or s >= Decimal(2**256) / 10**USDT_DECIMALS for s in sizes):
+        ap.error("--sizes must contain positive finite USDT amounts fitting base units")
     # Presence only, never values: a probe host should not hold wallet or ai-seeds secrets (IDEA-010 §7).
     present = [n for n in ("WALLET_PRIVATE_KEY", "WALLET_MNEMONIC", "AI_SEEDS_SECRET") if os.getenv(n)]
     if present:
@@ -172,15 +181,12 @@ def main():
     code = body.get("code")
     summary["checks"]["signed_read"] = {"http": status, "code": code, "msg": body.get("msg")}
     print(f"Signed read (supported/chain): HTTP {status}, code {code}")
-    if code == COMPLIANCE_CODE or status in (401, 403):
-        print("REFUSED: this host cannot use the Web3 API. Do not use a VPN or relay (G-17); choose another host.")
-        return finish(summary, 2)
     if code != 0:
         print(f"FAILED signed read: {body.get('msg')}")
         return finish(summary, 2)
 
     # 4. Clock check against the API envelope timestamp (ms)
-    if isinstance(body.get("timestamp"), (int, float)) and local_ms:
+    if type(body.get("timestamp")) is int and local_ms:
         skew = local_ms - int(body["timestamp"])
         summary["checks"]["clock_skew_ms_vs_api"] = skew
         print(f"Clock: local - API = {skew} ms (includes network latency; G-05 threshold 500 ms)")
@@ -188,7 +194,7 @@ def main():
     # 2. Decimals and market state
     status, body, _ = get("/api/v1/dex/market/rwa/tokens", {"platformId": "bstock"})
     info = {}
-    if body.get("code") == 0:
+    if body.get("code") == 0 and isinstance(body.get("data"), list):
         for row in body.get("data") or []:  # a flat list of tokens (probe_candles.py, K6a)
             if not isinstance(row, dict):
                 continue
@@ -205,6 +211,7 @@ def main():
     print(f"\n{'symbol':7} {'size':>6} {'open':>5} {'buy impact%':>11} {'sell impact%':>12} {'round trip bp':>13}")
     for sym in symbols:
         st = (info.get(sym) or {}).get("statusInfo") or {}
+        st = st if isinstance(st, dict) else {}
         open_state = st.get("openState")
         dec = (info.get(sym) or {}).get("decimals")
         for size in sizes:
@@ -221,7 +228,7 @@ def main():
                 proceeds = units(sell["toTokenAmount"], USDT_DECIMALS)
                 rt_bp = (1 - proceeds / size) * 10_000
                 rec["round_trip_cost_bp"] = float(round(rt_bp, 2))
-                if dec is not None:
+                if type(dec) is int and 0 <= dec <= 36:
                     qty = units(buy["toTokenAmount"], dec)
                     rec["tokens_bought"] = str(qty)
                     rec["buy_price_usdt"] = str(round(size / qty, 6)) if qty else None
@@ -248,6 +255,14 @@ def finish(summary, code):
                                                            encoding="utf-8")
     print(f"\nSaved data/probe/quote_probe_{stamp}.json and _summary.json (git-ignored). Exit code {code}.")
     return code
+
+
+def main():
+    try:
+        return _main()
+    except ProbeStopped as exc:
+        print(f"STOPPED: {exc.outcome}; no further API requests.")
+        return finish({"blocked": exc.outcome}, 2)
 
 
 if __name__ == "__main__":

@@ -575,13 +575,17 @@ class Executor:
         state = self._load(key)
         if state.status in TERMINAL:
             return state
+        integer(now)
+        if now < state.last_observed_at:
+            raise Blocked("clock regression")
         attempts = state.attempts
         if attempts and attempts[-1].state not in FINAL | {"PREPARED"}:
             raise Blocked("issued or possibly issued capability must reconcile")
         if attempts and attempts[-1].state == "PREPARED":
             attempts = attempts[:-1] + (replace(attempts[-1], state="ABORTED"),)
         gates = self.guards.snapshot(state.intent, now)
-        return self._save(state, replace(state, status="ABORTED", attempts=attempts), "ABORTED_UNSIGNED", gates)
+        return self._save(state, replace(state, status="ABORTED", attempts=attempts,
+                                        last_observed_at=now), "ABORTED_UNSIGNED", gates)
 
 
 def possible_swap_hashes(state):

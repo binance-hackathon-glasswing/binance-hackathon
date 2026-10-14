@@ -17,7 +17,7 @@ from larp.intelligence.facts import extract_document, issuer_names, normalized
 from larp.intelligence.issuers import IssuerRegistry
 from larp.intelligence.scenarios import EXSEMI, FIXTURE_REGISTRY
 from larp.intelligence.semantics import classify_event, classify_source_statement
-from larp.intelligence.verify import verify_claim
+from larp.intelligence.verify import compare, fact_as_claim, verify_claim
 
 ENTRY = IssuerRegistry.from_dict(FIXTURE_REGISTRY).by_issuer(EXSEMI)
 NAMES = issuer_names(ENTRY)
@@ -283,6 +283,32 @@ class EventControls(unittest.TestCase):
 
 # ===================================================================== D. numeric sign / kind / range / change
 class NumericProbes(unittest.TestCase):
+    def test_tolerance_must_be_bound_to_the_same_amount(self):
+        text = "The company expects revenue of $30 billion, an increase of 10% over last year."
+        claim = fact_as_claim(numeric_facts(text, "revenue")[0])
+        claim["span"] = {"doc": _sha(text), "start": 0, "end": len(text), "text": text}
+        for value in ("10", "30", "-10"):
+            with self.subTest(value=value):
+                self.assertEqual(verify_claim(dict(claim, tolerance_pct=value), {_sha(text): text})[1],
+                                 "TOLERANCE_NOT_STATED")
+        control = "The company expects revenue of $30 billion, plus or minus 10%."
+        fact = numeric_facts(control, "revenue")[0]
+        self.assertIsNone(verify_claim(fact_as_claim(fact), {_sha(control): control})[1])
+        self.assertEqual(verify_claim(dict(fact_as_claim(fact), tolerance_pct=None), {_sha(control): control})[1],
+                         "TOLERANCE_NOT_STATED")
+        self.assertEqual(verify_claim(dict(fact_as_claim(fact), range=["30", "10"]), {_sha(control): control})[1],
+                         "POINT_AND_RANGE")
+
+    def test_negative_guidance_tolerance_and_loss_range_use_ordered_bounds(self):
+        for guidance in ("The company expects net loss for Q3 FY27 of $1.0 billion, plus or minus 10%.",
+                         "The company expects net loss for Q3 FY27 of $0.9 billion to $1.1 billion."):
+            prior = numeric_facts(guidance, "net_income")[0]
+            self.assertIsNone(verify_claim(fact_as_claim(prior), {_sha(guidance): guidance})[1])
+            for level, expected in (("0.85", "ABOVE"), ("1.0", "WITHIN"), ("1.15", "BELOW")):
+                text = f"Net loss for Q3 FY27 was ${level} billion."
+                with self.subTest(guidance=guidance, level=level):
+                    self.assertEqual(compare(numeric_facts(text, "net_income")[0], prior)["relation"], expected)
+
     def test_d01_second_metric_sign_borrowed_from_first(self):
         # P1. Whole-sentence span: the loss form of the FIRST metric ("Net loss") is applied to every number, so a
         # claim net_income = -0.3 (the second metric is "net income of $0.3 billion", i.e. +0.3) must fail.

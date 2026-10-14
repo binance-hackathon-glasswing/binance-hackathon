@@ -148,7 +148,8 @@ accepted a build. Keep this evidence root-owned. Without it service startup fail
 ```sh
 python -m larp.runtime.preflight --root . \
   --build-output /secure/release.json --services /secure/services.json \
-  --registration-evidence /secure/registration.json --config /secure/operations.json
+  --registration-evidence /secure/registration.json --config /secure/operations.json \
+  --runtime-config /secure/runtime.json
 python -m larp.runtime.operations check --config /secure/operations.json
 ```
 

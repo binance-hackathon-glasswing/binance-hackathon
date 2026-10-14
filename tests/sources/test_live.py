@@ -85,7 +85,7 @@ class Preflight(unittest.TestCase):
     def test_uncommitted_code_is_refused(self):
         with self.assertRaises(SystemExit):
             live.require_committed({"commit": "abc", "dirty": True}, allow_dirty=False)
-        live.require_committed({"commit": "abc", "dirty": False}, allow_dirty=False)
+        live.require_committed({"commit": "abc", "dirty": False, "pushed": True}, allow_dirty=False)
 
 
 class Terms(unittest.TestCase):

@@ -1,6 +1,7 @@
 """Live observation producer. Unknown route/gas/fee evidence never becomes execution authority."""
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, localcontext
+from functools import wraps
 import hashlib
 import re
 
@@ -41,6 +42,16 @@ def integer(v):
     return n
 
 
+def observation_boundary(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except (KeyError, TypeError, ValueError, AttributeError, OverflowError, InvalidOperation):
+            raise Unavailable('market response schema rejected') from None
+    return wrapped
+
+
 class MarketPort:
     mode = 'live'
 
@@ -56,6 +67,7 @@ class MarketPort:
     def call(self, endpoint, params=None, method='GET'):
         return self.client.request(method, endpoint, {'binanceChainId': '56', **(params or {})})
 
+    @observation_boundary
     def metadata(self):
         r = self.call('market/rwa/tokens', {'platformId': 'bstock'})
         rows = data(r)
@@ -75,6 +87,7 @@ class MarketPort:
             result[symbol] = (row, r)
         return result
 
+    @observation_boundary
     def observation(self, symbol, entry):
         row, metadata = entry
         r = self.call('market/rwa/underlying-market', {'tokenContractAddress': TOKENS[symbol]})
@@ -104,7 +117,10 @@ class MarketPort:
         try:
             cost = (self.cost_observation(symbol) if self.cost_observation is not None
                     else self.measure_cost(symbol, result['decimals']))
-        except Unavailable:
+        except Unavailable as error:
+            if str(error) in ('authentication_error', 'compliance_restriction',
+                              'http_forbidden_unclassified', 'rate_limited'):
+                raise
             cost = None
         if cost is not None:
             if (cost.get('symbol') != symbol or cost.get('origin') != 'WEB3_OPEN_API'
@@ -165,6 +181,7 @@ class MarketPort:
         return self.call('aggregator/quote-and-swap', dict(amount=str(pay_units), fromTokenAddress=pay,
                         toTokenAddress=receive, userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=slippage))
 
+    @observation_boundary
     def observe(self, request):
         if hasattr(request, 'read'):
             request = request.read()
@@ -268,6 +285,7 @@ class MarketPort:
                     token_adjustment_version=token_adjustment_version,
                     available_at=raw['available_at'], content_hash=raw['content_hash'])
 
+    @observation_boundary
     def candles(self, symbol, *, bar='1m', limit=100):
         if symbol not in TOKENS or bar not in ('1m', '5m', '15m', '1h', '4h', '1d') or type(limit) is not int or not 1 <= limit <= 300:
             raise Unavailable('invalid candle request')

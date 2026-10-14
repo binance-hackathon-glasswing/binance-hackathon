@@ -356,6 +356,8 @@ class PostgresStore:
         elif base['fields'] is None:
             if bytes(run['projection'])!=bytes(run['initial']):
                 raise IntegrityError('Initial projection changed')
+            if any(bytes(run[field]) != doc({}).payload for field in ('policy_state', 'execution_state')):
+                raise IntegrityError('Initial policy or execution state changed')
         elif {field:digest(bytes(run[field])) for field in FIELDS}!=base['fields']:
             raise IntegrityError('Projection does not match journal')
         actual={(r[0],r[1]):int(r[2]) for r in db.execute(

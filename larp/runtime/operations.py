@@ -15,6 +15,8 @@ from larp.storage.postgres import PostgresStore, Unavailable, doc
 
 
 def validate_config(value):
+    if not isinstance(value, dict):
+        raise ContractError('Invalid operations configuration object')
     required = ('deployment', 'region', 'account_id', 'run_id', 'archive_bucket',
                 'archive_prefix', 'kms_key', 'retention_days', 'backup_interval_hours',
                 'database_host', 'database_user', 'database_name', 'database_ca_file', 'database_ca_sha256',
@@ -27,6 +29,10 @@ def validate_config(value):
     for key in ('retention_days', 'backup_interval_hours', 'max_attempts', 'retry_seconds', 'max_archive_bytes'):
         if type(value[key]) is not int or value[key] < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    # Explicit per-object Object Lock expiry overrides the bucket default.
+    # Match deploy/aws/variables.tf, including the full archive retention window.
+    if value['retention_days'] < 82:
+        raise ContractError('Archive retention must be at least 82 days')
     if value['archive_prefix'].split('/')[0] != 'archive':
         raise ContractError('Archive namespace must begin with archive/')
     if value['database_user'] != 'larp_archive':
@@ -40,6 +46,9 @@ def validate_config(value):
 
 class IamPostgresStore(PostgresStore):
     def __init__(self, config, rds):
+        # Snapshot verification owns per-process checkpoints even though this
+        # adapter generates its DSN afresh inside every transaction.
+        super().__init__(None)
         self.config, self.rds = config, rds
 
     @contextmanager

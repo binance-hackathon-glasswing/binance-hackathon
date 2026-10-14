@@ -30,6 +30,26 @@ a cost estimate, or a change to the submitted primary/cold-standby and write-onc
 audit commitments. Start with the existing disposable local stack for development;
 select cloud sizes after measuring load rather than extrapolating from 55 short tests.
 
+IDEA-044 role correction (2026-10-12): primary and standby IAM database logins use
+the provisioned `larp_runtime` role; archive, uploader and signer use their matching
+service roles. The signer also reads committed execution records and their journal
+to verify attempt authorization. Its record lock requires PostgreSQL `UPDATE`
+privilege on one column, restricted to `revision`; changing it fails the serialized
+revision/hash checks. The signer cannot update transaction state, state hashes,
+terminal flags, journal rows or existing signature bytes. These grants support
+the current registry API; production deployment and signing remain gated.
+
+IDEA-044 release checks also bind the exact runtime service configuration bytes
+using `preflight --runtime-config`; the service refuses an absent or changed hash
+before loading credentials or constructing a driver. Operations enforces the same
+82-day archive retention floor as Terraform, since an explicit object expiry can
+override the bucket default. This preserves the deployed policy and is not a new
+claim about official retention rules.
+Runtime startup also compares the manifest's exact SHA-256 with the durable
+`VERSION_REGISTERED` record, including when the code build is unchanged, and
+requires the configured mode to match the stored run. Register the verified
+manifest before starting a dev/live service; startup cannot create that authority.
+
 ## Concrete choices still needed before provisioning
 
 Keegan and the team select account/region, spending limit, database version and size,

@@ -31,7 +31,10 @@ class PortEvidenceReader:
         return [doc.read() for doc in self.store.records(issuer_id)]
 
     def text(self, sha256: str) -> str:
-        saved = self.artifacts.get(sha256)
+        try:
+            saved = self.artifacts.get(sha256)
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise ToolError("ARTIFACT_INTEGRITY_ERROR") from exc
         if saved is None:
             raise ToolError("ARTIFACT_MISSING")
         if sha256_hex(saved) != sha256:

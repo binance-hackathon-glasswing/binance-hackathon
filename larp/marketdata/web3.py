@@ -12,6 +12,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from larp.contracts import reflects_secret
+
 BASE = 'https://web3.binance.com/build/api/v1/dex/'
 READS = frozenset({('GET', p) for p in (
     'aggregator/supported/chain', 'market/rwa/tokens', 'market/rwa/price',
@@ -162,7 +164,10 @@ class Web3Client:
                 outcome = 'api_or_http_error'
             record.update(outcome=outcome, response=body)
             # Keep exact public response bytes, unless they reflect a credential.
-            if not any(secret.encode() in raw for secret in (self.key, self.secret, sig)):
+            secrets = (self.key, self.secret, sig)
+            # JSON escapes or a duplicate key can hide a reflected credential in the raw bytes.
+            # Inspect every parsed key/value too before retaining a reversible copy.
+            if not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
                 record['raw_body_omitted'] = 'credential_reflection'

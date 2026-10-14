@@ -63,6 +63,12 @@ GRANT SELECT ON execution_signatures TO larp_execution;
 GRANT SELECT ON runs TO larp_signer;
 GRANT UPDATE (clock_ms) ON runs TO larp_signer;
 GRANT SELECT,INSERT ON execution_signatures TO larp_signer;
+-- ExecutionStore verifies the committed attempt and its journal before issuing/recovering a signature.
+-- Its SELECT FOR UPDATE needs UPDATE on one column. Revision is sufficient for locking; changing it
+-- cannot authorize bytes because _load also checks the serialized revision and state/journal hashes.
+-- Do not grant UPDATE on state, state_hash, terminal or the immutable journal/signature tables.
+GRANT SELECT ON execution_records,execution_journal TO larp_signer;
+GRANT UPDATE (revision) ON execution_records TO larp_signer;
 
 -- The coordinator settles from the public execution journal and final observations; never the state or signatures.
 GRANT SELECT ON execution_journal,execution_observations TO larp_runtime;

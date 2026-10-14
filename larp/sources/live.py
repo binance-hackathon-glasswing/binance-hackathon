@@ -36,7 +36,7 @@ from larp.intelligence.common import IntelligenceError, sha256_hex
 
 REPO = Path(__file__).resolve().parents[2]
 LOG_NAME = "polls.jsonl"
-OK_STATUSES = ("OK", "NOT_MODIFIED", "PARTIAL_HISTORY")
+OK_STATUSES = ("OK", "NOT_MODIFIED")
 DEFAULT_EDGAR_INTERVAL_MS = 300_000
 MAX_TERMS_BYTES = 4_000_000
 
@@ -52,12 +52,31 @@ def iso(ms: int) -> str:
 def git_state(repo: Path = REPO) -> dict:
     def git(*args):
         return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
-    return {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))}
+    # Hidden index flags (assume-unchanged is lowercase, skip-worktree is "S") and an untracked-files
+    # setting can each make plain status report a modified tree as clean.
+    hidden = any(line[:1].islower() or line[:1] == "S" for line in git("ls-files", "-v").splitlines())
+    dirty = hidden or bool(git("status", "--porcelain", "--untracked-files=all", "--ignore-submodules=none"))
+    state = {"commit": git("rev-parse", "HEAD"), "dirty": dirty, "pushed": False}
+    try:
+        branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
+        remote = git("config", "--get", f"branch.{branch}.remote")
+        target = git("config", "--get", f"branch.{branch}.merge")
+        if remote and remote != "." and not remote.startswith("-") and target.startswith("refs/heads/"):
+            # Query the remote itself; a stale tracking ref is no proof of a push.
+            # Never return a remote URL or git's stderr (either can contain credentials).
+            reply = subprocess.run(["git", "ls-remote", "--exit-code", remote, target], cwd=repo,
+                                   capture_output=True, text=True, timeout=30, check=True)
+            state["pushed"] = any(line.split() == [state["commit"], target] for line in reply.stdout.splitlines())
+    except (subprocess.SubprocessError, OSError):
+        pass  # no upstream or no connectivity: refuse live execution
+    return state
 
 
 def require_committed(state: dict, allow_dirty: bool) -> None:
-    if state["dirty"] and not allow_dirty:
+    if state["dirty"]:
         raise SystemExit("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
+    if state.get("pushed") is not True:
+        raise SystemExit("Refusing live execution until HEAD is verified at its configured remote branch")
 
 
 # ------------------------------------------------------------------------------------------------ terms captures
@@ -233,7 +252,12 @@ class LiveRunner:
                            "revisions": len(outcome.get("revisions", [])), "late": len(outcome.get("late", [])),
                            "dead_letter": len(outcome.get("dead_letter", [])), "jobs": len(outcome.get("jobs", [])),
                            "error": (outcome.get("receipt") or {}).get("status") if outcome["status"] == "CONFLICT"
-                           else None}
+                           else None,
+                           "coverage_complete": outcome.get("coverage_complete"),
+                           "retry_pending": len(outcome.get("retry_pending", [])),
+                           "malformed_rows": outcome.get("malformed_rows", 0),
+                           "unexpected_forms": len(outcome.get("unexpected_forms", [])),
+                           "rejected_future": len(outcome.get("rejected_future", []))}
         except Exception as exc:  # one failing target never stops the others; the failure is logged
             summary = {"status": "EXCEPTION", "error": type(exc).__name__}
         line = {"schema": "LivePoll.v1", "target": target.key, "cadence_ms": target.cadence_ms, "started_ms": started,
@@ -271,9 +295,15 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
         mine = [l for l in lines if l.get("target") == key and type(l.get("started_ms")) is int]
         logged = {l["started_ms"]: l["cadence_ms"] for l in mine
                   if type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
-        ok = sorted(l["started_ms"] for l in mine if l.get("status") in OK_STATUSES
-                    and start_ms <= l["started_ms"] <= end_ms)
-        failures = sum(1 for l in mine if l.get("status") not in OK_STATUSES and start_ms <= l["started_ms"] <= end_ms)
+        def complete(line):
+            finished = line.get("finished_ms", line["started_ms"])  # legacy log without a completion clock
+            return (line.get("status") in OK_STATUSES and line.get("coverage_complete") is not False
+                    and not any(line.get(k) for k in ("truncated", "rejected", "dead_letter", "retry_pending",
+                                                       "malformed_rows", "unexpected_forms", "rejected_future"))
+                    and type(finished) is int and line["started_ms"] <= finished <= end_ms)
+
+        ok = sorted(l["started_ms"] for l in mine if complete(l) and start_ms <= l["started_ms"] <= end_ms)
+        failures = sum(1 for l in mine if not complete(l) and start_ms <= l["started_ms"] <= end_ms)
         points = [start_ms] + ok + [end_ms]
         after = [t for t in logged if t >= start_ms]
         first = logged[min(after)] if after else declared  # the cadence the run logged at its first poll in the window
@@ -439,7 +469,7 @@ def main(argv=None, env=None) -> int:
     run.add_argument("--hours", type=float, default=24.0)
     run.add_argument("--config-mode", default="live", choices=("live", "development"))
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
-    run.add_argument("--allow-dirty", action="store_true", help="development only: run from uncommitted code")
+    run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
     rep = sub.add_parser("report")
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)

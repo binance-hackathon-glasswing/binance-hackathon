@@ -84,7 +84,8 @@ class FakeFilingSource:
         self.fetch_calls += 1
         spec = next(s for s in self.filings[cik] if s["accession"] == row["accession"])
         index_rows = tuple((d["type"], d["name"], d.get("description", "")) for d in spec["documents"])
-        chosen = select_documents(index_rows, row["primary_document"], row["form"], max_documents)
+        all_documents = select_documents(index_rows, row["primary_document"], row["form"], len(index_rows) + 1)
+        chosen = all_documents[:max_documents]
         by_name = {d["name"]: d for d in spec["documents"]}
         documents = []
         for doc in chosen:
@@ -98,7 +99,7 @@ class FakeFilingSource:
             source = by_name[doc["name"]]
             documents.append(FetchedDocument(doc["name"], doc["doc_type"], doc["role"], url, "OK", self.clock(),
                                              source["content"], source.get("content_type", "text/html")))
-        return FetchedFiling(row["accession"], "OK", tuple(documents))
+        return FetchedFiling(row["accession"], "OK", tuple(documents), truncated=len(all_documents) > len(chosen))
 
 
 class MemoryArtifacts:
