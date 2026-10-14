@@ -54,7 +54,7 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                     clock_ms=lambda:record.get('decision_ms',record['started_ms']))
                 if kind=='PLAN_REJECTED':
                     target.open_round(run_id,record['round_id'],doc(record['request']),current['epoch'])
-                    runtime.record_rejection(record['round_id'],record)
+                    runtime.record_rejection(record['round_id'],record,event.get('updates'))
                 else:
                     runtime.start(record['round_id'],doc(record['request']),record['started_ms'],defer_close=True)
             elif kind in RECORDED_FACTS:
@@ -63,6 +63,12 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
             elif kind=='OBSERVATION':
                 if runtime is None: raise IntegrityError('Replay observation has no round context')
                 runtime.observe(b['event_id'],doc(event['observation']),reducer)
+            elif kind=='ROUND_LOGGED':
+                if runtime is None: raise IntegrityError('Replay log has no round context')
+                runtime.log_round(event['round_id'],event['at_ms'])
+            elif kind=='ROUND_CLOSED' and event.get('logged_event_id'):
+                if runtime is None: raise IntegrityError('Replay closure has no round context')
+                runtime.close(event['round_id'],0,event['status'])  # no log: it was committed by ROUND_LOGGED
             elif kind=='ROUND_CLOSED':
                 audit=b['audit'][0]
                 request=event.get('request')

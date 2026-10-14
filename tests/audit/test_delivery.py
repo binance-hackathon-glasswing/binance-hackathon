@@ -44,7 +44,9 @@ class Delivery(DatabaseCase):
         with self.store.transaction() as db:
             statuses=dict(db.execute('SELECT event_id,status FROM audit_chunks'))
         self.assertEqual('PERMANENT',statuses['e400'])
-        self.assertEqual('PERMANENT',statuses['e401'])
+        # A 401 (clock skew, secret not yet registered) can clear without new bytes, so it is retried (IDEA-049
+        # D-FND-001, #50); only payload refusals are permanent.
+        self.assertEqual('PENDING',statuses['e401'])
         self.assertEqual('PERMANENT',statuses['e413'])
         self.assertEqual('PENDING',statuses['e429'])
         self.assertEqual(7,len(worker.deadline_breaches('run',1791676800000+7200000)))
