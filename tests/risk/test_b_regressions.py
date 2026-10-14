@@ -9,8 +9,13 @@ from larp.contracts import ContractError, Document
 from larp.research.fixtures import changed
 from larp.risk.accounting import update_risk
 from larp.risk.planner import plan
+from larp.integration.runtime import RuntimePlanner
+from larp.execution_live.service import map_command
+from larp.strategy.profiles import build_live_profiles
 from tests.risk.test_live_resource_receipts import gas_quote
-from tests.strategy.live_fixtures import live_snapshot
+from tests.strategy.live_fixtures import live_snapshot, summary, registry
+from tests.strategy.test_live_profiles import rebound
+from tests.execution_fixtures import WALLET, ROUTER
 
 
 def test_b_req_018_offset_loss_observation_uses_utc_day():
@@ -98,3 +103,30 @@ def test_b_req_022_bad_portfolio_cannot_escape_the_input_rejection_path(malforme
     result = plan(changed(live_snapshot(), portfolio=malformed), None).read()
     assert not result["intents"]
     assert result["rejections"][0]["reason"] == "INVALID_REQUIRED_INPUT"
+
+
+@pytest.mark.parametrize("scale", [6, 8, 18])
+def test_b_req_002_035_planned_native_gas_scale_agrees_with_execution_mapping(scale):
+    factor = 10 ** (scale - 6)
+    capture = summary().read()
+    capture["bnb_decimals"] = scale
+    for cost in capture["symbols"].values():
+        cost["approve_gas_bnb_units"] *= factor
+        cost["swap_gas_bnb_units"] *= factor
+    values = build_live_profiles(Document.from_dict(capture), registry())["FINAL"].read()
+    snapshot = rebound(live_snapshot(gas_low=True), values)
+    ledger = snapshot.context.read()["portfolio"]
+    ledger.update(bnb_decimals=scale, bnb_units=60_000 * factor)
+    quote = gas_quote(snapshot)
+    quote.update(receive_decimals=scale, gas_bnb_units=10_000 * factor)
+    snapshot = changed(snapshot, portfolio=ledger, gas_quotes=[quote])
+    intent = RuntimePlanner(job_validity_ms=60000, job_max_attempts=3).plan(snapshot, None).read()["intents"][0]
+    assert intent["decimals"] == intent["receive_decimals"] == scale
+    command = dict(kind="EXECUTION_REQUEST", payload=intent, command_id=intent["intent_id"],
+                   decision_id=intent["decision_id"], round_id="gas-scale", expires_ms=intent["expires_ms"])
+    mapped = map_command(command, run_id=snapshot.run_id, wallet=WALLET, version_id="synthetic-scale",
+                         router=ROUTER, token_decimals={}, now_ms=int(snapshot.observed_at.timestamp() * 1000),
+                         limits=dict(per_trade_cap_units=values["per_trade_cap_units"], max_gas=1_000_000,
+                                     max_gas_price=10, gas_budget=10**18))
+    assert mapped.minimum_output == intent["min_receive_units"] * 10 ** (18 - scale)
+    assert mapped.amount == intent["pay_units"] * 10**12

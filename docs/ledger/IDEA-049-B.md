@@ -190,6 +190,20 @@ cost reserve, assert exact equality creates no reduction and one token unit over
 creates durable20%/80% targets. This is a mathematical fixture, not a LIVE
 cost-reserve change; post-cost convention still needs ASM004 team acceptance.
 
+B-REG-05 retest at6105a69:9 passed,5.37s. The interim system run started at
+e3aafaf reported112 system tests/70 subtests,1199 full/4 skipped/1491 subtests,
+and demo PASS. Its full phase overlapped the later test addition: **superseded,
+not final fixed-head evidence**. Repeat after all source/trace changes are pushed.
+
+### B-REG-06 — native gas planner/mapping scale contract
+
+Before execution: generate profiles from synthetic quote-cost inputs with
+6/8/18 BNB decimals; real GAS planner→RuntimePlanner→map_command must preserve
+the ledger receive scale, native minimum output18-decimal conversion and USDT
+pay conversion exactly. This specifically guards9bfffcd at the producer/consumer
+boundary rather than testing a manually constructed command alone. No gas
+profile is adopted and no signer runs. Push these tests before execution.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.

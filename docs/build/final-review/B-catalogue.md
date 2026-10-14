@@ -229,3 +229,106 @@ cross-section acceptance. Unadopted opinions and build results are not requireme
 
 Baseline, trace and code-derived amendments are appended only after this catalogue
 is committed and pushed. No section completion or activation claim follows freeze.
+
+## B-TRC-01 — Trace (2026-10-14, after freeze d2ed620)
+
+This is a partial review, not a green deployment checklist. COVERED means the
+named deterministic acceptance is exercised; synthetic passing evidence does
+not validate external transports, policy adoption or profitability. Split rows
+retain the weaker whole-requirement verdict when integration is absent.
+Names after `::` are test functions (class prefixes omitted where unique).
+
+Code keys: **POL** `larp/strategy/policy.py:decide`; **SCH**
+`larp/strategy/schema.py:profile/market_view/equity`; **PRO**
+`larp/strategy/profiles.py:validate_live/build_live_profiles`; **PLAN**
+`larp/risk/planner.py:plan/_quote_at_cap`; **ACC**
+`larp/risk/accounting.py:advance_accounting/update_risk/roll_day`; **GAS**
+`larp/risk/gas.py:plan_top_up`; **PRED**
+`larp/strategy/predicates.py:update_directive_blocks/update_blocks`.
+
+Test keys are exact files:
+
+- **BR** `tests/risk/test_b_regressions.py`; **BQ** `tests/strategy/test_b_requirements.py`.
+- **B14** `tests/risk/test_b_fourteen_day_run.py`.
+- **EW** `tests/strategy/test_equal_weight.py`; **TRIM** `tests/strategy/test_trim_replanning.py`.
+- **MECH** `tests/risk/test_mechanics.py`; **LP** `tests/strategy/test_live_profiles.py`.
+- **LT** `tests/risk/test_live_terminal.py`; **RR** `tests/risk/test_live_resource_receipts.py`.
+- **RB** `tests/strategy/test_review_boundaries.py`; **PS** `tests/strategy/test_pr_review_safety.py`.
+- **RF** `tests/strategy/test_red_flag_classes.py`; **SES** `tests/strategy/test_token_sessions.py`.
+- **POLT** `tests/strategy/test_policy.py`; **CON** `tests/test_contracts.py`.
+- **PUB** `tests/integration/test_published_red_flag_policy.py`.
+- **PG** `tests/storage/test_postgres.py`; **SYS** `tests/integration/test_service_system.py`.
+- **SET** `tests/integration/test_settlement.py`; **EX** `tests/test_w04_execution.py`.
+- **RES** `tests/research/test_research.py`; **ABS** `tests/research/test_absolute_return.py`.
+- **REC** `tests/research/test_recorded_candles.py`.
+
+| REQ | Implementation | Passing acceptance / exact later check | Verdict |
+|---|---|---|---|
+| 001 | POL,SCH,PLAN; contracts.Target/validate_proposal | BQ::test_b_req_001_generated_portfolios_cannot_create_short_leveraged_or_ineligible_positions; CON::test_invalid_weights_and_instruction_shapes / test_duplicate_unknown_and_excess_total_rejected. Structural authority: eligible market whitelist, nonnegative integer settled holdings, bounded targets, sell≤held, buy≤cash; C validates transaction identities. | COVERED consumer; C live transport separate |
+| 002 | SCH:value/integer; ACC; GAS; larp.ports:decimal_string | MECH::test_exact_input_buy_records_variable_received_quantity; SYS::test_execution_service_final_receipt_settlement_audit_and_replay (18-decimal BNB); RR::test_actual_sell_proceeds_fee_and_basis_are_used. Internal micro-USDT is deliberate; C owns exact 18-decimal transport conversion. | COVERED arithmetic; C transport acceptance required |
+| 003 | PLAN executable gates; POL window | MECH::test_mandatory_bypasses_minimum_and_cadence_but_market_blocks; LT::test_terminal_retains_unfilled_position_when_execution_gate_blocks; B14 closed weekend. | COVERED |
+| 004 | SCH:usable; strategy.features; integration.contract:accept_for_strategy | POLT::test_future_perturbation_does_not_change_decisions_or_features; SES::test_duplicate_future_capture_wrong_timestamp_and_bad_calendar_reject; CON::test_expiry_boundary_and_clock_reversal. | COVERED |
+| 005 | SCH:equity; PLAN partial lower-bound valuation | TRIM::test_partial_valuation_defers_allocation_until_all_marks_recover; MECH::test_stale_name_does_not_block_healthy_terminal_or_cap_exit. Production tokenPrice vs liquidation mark and BNB freshness do not meet the full declared executable-quote contract (#36/#38). | WEAK; B-RISK-03/04 |
+| 006 | ACC; economic_views; research evaluation | MECH::test_approvals_reverts_gas_service_and_terminal_equity; RR::test_approval_and_revert_spend_gas_only; B14 terminal gas once; RES::test_mc_midnight_and_terminal_gas_counterexamples. Actual costs change balances once, not a second equity subtraction. | COVERED consumer |
+| 007 | research.evaluation:evaluate; research.replay | RES::test_outcome_provenance_windows_purge_and_incomplete; B14 full Oct29–Nov11 decision/settlement journal plus final wallet. Full official scored timestamps/valuation remain unavailable. | NOT-OFFLINE; team official-window acceptance then D full-window rehearsal/report |
+| 008 | B-CON001, ASM010; no invented score implementation | PAGE/ORG conflict rechecked; Q39 owner team must record final scoring/open-position/BNB treatment before Oct22. No trade-count threshold introduced. | NOT-OFFLINE; B-RISK-01 |
+| 009 | SCH hash identity; D release/version gates | CON::test_hash_binds_every_snapshot_version / test_wrong_policy_and_state_ownership_rejected; D must run unchanged-build zero-human scored-duration rehearsal and release checks, driver merged first. | NOT-OFFLINE; B-RISK-06 |
+| 010 | POL equal-weight branch; PRO exact decided fractions | EW::test_p01_initial_build_takes_four_cheapest; LP::test_profiles_are_distinct_complete_and_full_position_capable; BQ::test_b_req_010_equivalent_fractions_and_separate_stress_budget_are_valid. One discretionary child/session implies staggered build, not instant80% claim. | COVERED targets; ASM013 economic/concentration decision open |
+| 011 | POL:_cost_rank; PLAN intent ordering | EW::test_p02_red_flagged_name_is_replaced_by_the_next_cheapest; RB::test_cheapest_selected_name_receives_the_first_execution_slot / test_equal_cost_execution_priority_is_stable_by_symbol. C cost currently fixed-size/excludes route gas; actual-size all-in rank convention needed (#38). | WEAK; B-RISK-04 |
+| 012 | POL equal-weight top-up branch | EW::test_p03_no_buy_at_or_above_threshold / test_p14_p15_tops_up_held_names_and_skips_small_gaps / test_p16_no_top_up_at_or_above_threshold. | COVERED |
+| 013 | PLAN capacities; RuntimePlanner incoming; PostgresStore reserve | MECH::test_post_cost_caps_at_both_wallet_sizes / test_pending_buy_and_sell_block_allocation_and_retain_requirement; PG::test_concurrent_reservations_only_one_wins; BQ generated portfolios. | COVERED consumer/store |
+| 014 | POL KEEP; PLAN hard lines | EW::test_p05_no_sell_on_drift; TRIM::test_no_trim_for_drift_without_a_prior_trigger. | COVERED |
+| 015 | PLAN durable name cap_trims | BQ::test_b_req_015_016_hard_lines_are_strict_at_exact_fraction_boundaries; TRIM::test_capped_name_trim_continues_below_trigger_until_target; EW::test_p06_hard_per_name_line. | COVERED under documented post-cost convention; ASM004 team review |
+| 016 | PLAN durable gross_shares | Same BQ exact test; TRIM::test_gross_trim_continues_below_trigger_until_target_after_reload / test_costly_gross_trim_keeps_dust_residual_explicit. | COVERED under documented post-cost convention |
+| 017 | ACC:update_risk; PLAN new-risk gates | B14::test_b_req_017_019_020_exact_loss_boundaries_and_utc_reset; EW::test_p17_loss_stop_blocks_top_ups. | COVERED |
+| 018 | ACC:roll_day/update_risk; production hook absent | BR::test_b_req_018_offset_loss_observation_uses_utc_day / test_b_req_018_naive_loss_observation_is_rejected; B14 explicitly supplies midnight facts. Search found roll_day called only in research/test paths, no runtime producer (#31). | MISSING production; B-FND-005/D |
+| 019 | ACC run_halt; PLAN exits | B14 exact loss test/replay; MECH::test_strictest_reduction_and_no_discretionary_buy; EW::test_p17_loss_stop_blocks_top_ups. | COVERED |
+| 020 | ACC deep_cut; PLAN gross≤40% obligations | EW::test_p08_deep_drawdown_trims_at_forty_percent; B14 threshold/replay; TRIM residual tests. | COVERED consumer |
+| 021 | PLAN spending gate; D coordinator/store HALT | RB::test_spending_block_preserves_mandatory_sales_and_healthy_buy_control passes B. Coordinator.start discards HALT plans; PostgresStore command gates all HALT (#34). | CONTRADICTED integrated; B-FND-006/D |
+| 022 | PLAN input/policy rejection; B-FND003/004 fixes | BR::test_b_req_022_bad_market_collection_is_explicit_and_preserves_holdings / test_b_req_022_bad_portfolio_cannot_escape_the_input_rejection_path; MECH::test_invalid_and_absent_policy_still_reduce; B14 day4 model outage. | COVERED B; integrated HALT remains021 |
+| 023 | PLAN quote impact / median; PRO sourced medians | LP::test_live_entry_without_depth_passes_cost_and_impact_and_rejects_high_impact / test_live_per_name_median_rule_cannot_use_larger_global_limit. Real medians need C capture/adoption029. | COVERED inequality; NOT-OFFLINE measurements029 |
+| 024 | PLAN economic quote difference + fee + gas | LP::test_live_cost_cap_still_blocks_without_double_counting_impact; MECH::test_costly_opportunity_rejected. Quote/reference convention and actual marks require ASM004. | COVERED algebra; live inputs B-RISK-04 |
+| 025 | PRO exit gas reserve; research terminal legs | MECH::test_exit_may_spend_exit_gas_reserve_but_zero_gas_blocks and RES paired-cost tests cover gas/terminal charges. No adopted explicit future exit-spread allowance in live entry record; tests would not catch omission. | MISSING complete declared allowance; B-FND-009/team |
+| 026 | PLAN mandatory branch | LT::test_mandatory_sale_bypasses_impact_cost_minimum_and_cadence; PS::test_class1_exit_precedes_buy_and_bypasses_discretionary_filters. | COVERED B |
+| 027 | PLAN:_quote_at_cap cap/requote; GAS | MECH::test_split_parent_replanned_after_actual_fill_and_fee / test_better_sell_price_requests_smaller_quote_and_can_progress; LT mandatory-slippage tests. C fresh post-approval deadline/slippage proof still required. | COVERED B; C #27/#40 |
+| 028 | PRO validate_live; SCH profile hash | LP::test_missing_unsourced_and_unset_live_fields_reject / test_bad_measurements_and_impossible_cost_budget_reject; BQ cap-mutation rejection. Validation of fields cannot certify the source/adopter actually approved them; release acceptance029. | COVERED schema; adoption029 |
+| 029 | PRO mathematical candidates; config/strategy/LIVE.md | LP impossible-budget/source checks. No actual five-name cost artifact or approved live profile supplied. Team reviews all formulas/values and manifest hash at Oct22 freeze after C DR01. | NOT-OFFLINE; B-RISK-02 |
+| 030 | POL,PRED; independent ContextBuilder reduction | PUB::test_real_rf1_producer_is_mandatory_even_without_policy; PS::test_class1_exit_precedes_buy_and_bypasses_discretionary_filters. Real ingestion/verifier producer, synthetic external filing. | COVERED consumer; A SKHYB coverage039 separate |
+| 031 | POL,PRED session expiry/history | RF::test_class2_never_sells_expires_after_five_sessions_and_replay_cannot_renew; PUB::test_resolved_critical_latch_does_not_survive_only_timed_adverse_evidence. Calendar index quality is C/D check; SES tests DST, not holiday producer. | COVERED session-index consumer; ASM007 calendar risk |
+| 032 | POL shadow authority | RF::test_class3_statement_does_not_veto_and_bad_registry_reject; POLT::test_shadow_and_explicit_bounded_variant; actual published predicate tests in A. | COVERED B |
+| 033 | POL,PRED fresh re-entry/critical+timed | RF::test_class1_exits_latches_without_context_and_clears_on_verified_resolution; PS::test_critical_clearance_preserves_unexpired_timed_block; POLT::test_stale_assessment_cannot_clear_reentry. | COVERED B |
+| 034 | GAS; PLAN mandatory affordability precedence | BQ::test_b_req_034_opening_200_usdt_without_bnb_needs_bootstrap_and_cannot_spend; RR::test_top_up_own_round_does_not_occupy_stock_slot_or_gross; PS::test_low_gas_above_one_sale_budget_never_starves_mandatory_trim. First BNB needs authorised source before GateB. | COVERED consumer; NOT-OFFLINE bootstrap B-RISK-01 |
+| 035 | GAS decimals; ACC resource settlement | RR::test_top_up_requires_actual_quote_then_accounts_actual_bnb_separately / test_real_fill_uses_variable_actual_output_not_estimated_output; SYS integrated real receipt/replay; existing9bfffcd fix retained. C full native quote producer in unmerged PR41 not claimed tested here. | COVERED B; C producer pending |
+| 036 | PLAN incoming/cash/gas; RuntimePlanner; PostgresStore | PG::test_concurrent_reservations_only_one_wins / test_atomic_rollback_of_every_component; B14 real store/settlement; SET::test_b5_2_buy_fill_releases_usdt_bnb_and_incoming. | COVERED arithmetic/store; C/D production reconciliation remains |
+| 037 | ACC; ExecutionBridge/settle | RR::test_duplicate_approval_receipt_cannot_spend_gas_again_with_new_event_id; SET::test_b5_1_sell_broadcast_then_fill; B14 duplicate facts and exact replay; EX finality/reorg tests. | COVERED synthetic final-fact consumer |
+| 038 | No chain-balance-only reducer/production hook | #36 proof: ACC accepts only ExecutionObservation/ServiceCostObservation; ContextBuilder checks ledger-vs-projection, not authoritative chain-only changes. C/D agree facts + B validated reducer before startup/periodic new-risk clearance. | MISSING; B-FND-007/C+D+B |
+| 039 | POL/PLAN temporal gates; GAS spending cutoff | LT::test_no_buys_before_start_or_after_new_risk_cut; RR::test_top_up_respects_all_spending_and_wallet_barriers; EX::test_expired_or_closed_after_approval_blocks_swap. C #27 encoded deadline acceptance required. | COVERED B; candidate cut values029 |
+| 040 | PLAN terminal obligations; ACC final holdings | LT::test_terminal_survives_absent_policy_and_blocked_rounds_until_final_receipt; B14 revert→retry→flat14:40; PS::test_signing_stops_with_confirmation_margin_and_expiry_is_bounded; TRIM dust residual. Real closure before15:00 needs rehearsal and driver. | COVERED consumer; NOT-OFFLINE integrated terminal rehearsal |
+| 041 | initial_projection; store run/wallet binding; ACC identity | CON::test_wrong_policy_and_state_ownership_rejected; RR wrong-round/fake receipt rejection; BQ zero-BNB fresh ledger. Team/C verifies actual final wallet balances/nonce/secret; D fresh activation manifest. | NOT-OFFLINE; B-RISK-06 |
+| 042 | POL/PLAN consume static regime_gross_weight | BQ stress-budget control validates tighter static budget; no runtime high-volatility/stress producer found. Declared dynamic governor is not satisfied by a static field or a passing clamp. | MISSING; B-FND-008/team+B |
+| 043 | DEV20 OPEN; no adopted event-class rule | Team chooses preregistered hold/reduce/flatten classes or records justified declared deviation. No numeric trigger invented. Implementation/test follows adopted ABI/calendar. | MISSING decision; B-RISK-05 |
+| 044 | validate_proposal; PLAN independence/rejections | CON invalid/unknown/duplicate/expiry/ownership tests; MECH::test_invalid_and_absent_policy_still_reduce; BR malformed collections; BQ unknown shape contracts. | COVERED B; finite tests are not exhaustive enumeration |
+| 045 | pure POL/PLAN/ACC; replay_live | B14 exact head and final-state replay; RES::test_exact_replay_and_policy_failure_fallback_hashes / test_accounting_replay_matches_direct_settlement_and_duplicate_hashes; SYS service replay. Midnight INCIDENT facts are replayed inputs, not a scheduler proof. | COVERED downstream; driver/D hook blocked |
+| 046 | research.evaluation absolute+paired gates; records | ABS::test_losing_but_better_is_never_supported / test_profitable_and_better_is_supported; RES invalid-registration checks. H02/EXP001 and actual default economic evaluation NOT RUN; team accepts risk or preregisters real evaluation. | NOT-OFFLINE real edge; B-RISK-04/P2 #37 |
+| 047 | strategy.sessions:token_sessions; strategy.features | SES::test_fixed_us_close_utc_dst_and_first_date / test_missing_trade_interval_remains_missing_session / test_short_session_and_bar_crossing_close_cannot_supply_1600_close / test_token_history_is_explicit_optional_and_not_underlying_share_history; REC capture validation. C real timestamp/calendar metadata still required. | COVERED consumer; ASM007 live evidence |
+| 048 | PLAN reservations; C Executor/store | MECH pending-intent test; EX::test_guard_change_after_signature_preserves_reservation_and_hash / test_timeout_probe_budget_and_restart_never_release_wallet_barrier / test_wallet_barrier_spans_run_ids_and_changed_parent_cannot_duplicate; PG fences. | COVERED synthetic financial guard; C live proof |
+| 049 | PLAN strictest bounds/cap_trims; serial replanning | MECH::test_strictest_reduction_and_no_discretionary_buy / test_rejected_cost_overrun_does_not_rescale_other_requirements; TRIM stable proportional residual; PS critical+timed collision; B14 post-settlement children. | COVERED B |
+| 050 | SCH hash; PRO exact decided fractions; D manifests | BQ::test_b_req_050_live_profile_cannot_change_adopted_caps; CON snapshot hashes/ownership; policy never updates profile hash. D final manifest/deviations and unchanged-build rehearsal required. | COVERED B; D release check NOT-OFFLINE |
+
+## B-AMD-01 — code-derived assumptions (2026-10-14)
+
+Frozen requirements above are unchanged. Reasons: phase2 exposed implementation
+defaults requiring source/adoption checks. These are not new permissions.
+
+| ASM | Observed dependency | Status / disposition |
+|---|---|---|
+| 016 | Internal USDT scale1e6, native transport18; integer conversion must be exact, sub-micro cash refused rather than rounded. | VALIDATED internal design by SCH/ports and RR/SYS arithmetic; live transport producer acceptance C before GateB. |
+| 017 | Candidate profiles use6G gas floor,4G exit reserve,12G top-up,15s proposal,30s quote,4d features, zero dust and Nov9/10/11 cuts. | UNVALIDATED as adopted values. Mathematical derivations checked in PRO/LIVE.md; no actual C measurements. Team+B review all at Oct22, blocking. |
+| 018 | Fixed-size40-USDT measured_roundtrip_bps excludes gas and ranks entries of different actual/rehearsal sizes. | PARTIAL schema/cost-rank tests; #38 all-in rank convention and size-dependent observations still open. Isaac+C+B/team before Oct22, blocking. |
+| 019 | Journaled INCIDENT boundary facts in B14 model a trusted external midnight observation. | VALIDATED test distinction only; not production capability. D owner midnight/replay hook plus driver before integration, blocking. |
+| 020 | Candidate same-slippage cap protects buys and mandatory sells. | PARTIAL B validators pass; declared separate exit allowance/cap adoption not documented. Team/C/B approves exit convention before Oct22, blocking. |
+| 021 | Research variance tools' EDT constants describe Sep5–Oct7 captures, not a general session calendar; MC coefficients are historical illustrative inputs. | PARTIAL: inspected date comments, gap/terminal/adjacency regressions pass; no fresh real-data rerun. Keith owns dated/hash-bound rerun before reuse; blocking if statistics promoted to live/economic evidence. |
+
+ASM001–015 keep their frozen evidence/status; tested subsets do not silently
+validate whole live assumptions. All PARTIAL/UNVALIDATED items map to the
+owner/deadline/blocking deployment-risk text requested in IDEA-049-B.
