@@ -86,6 +86,10 @@ All run against real PostgreSQL 14.24 (`LARP_TEST_DATABASE_URL`) with fakes only
 | `…::test_d_req_111_runtime_starts_after_time_sync` | 111 | `larp-runtime.service` has `After=` including `time-sync.target`. |
 | `…::test_d_req_103_a_budget_covers_the_whole_credit_period` | 103 | Terraform declares a COST budget with a custom period from the deployment start to at least 2027-01-01 with the $100 credit as its limit, besides the monthly pace budget. |
 
+**Amendment A1 (2026-10-14, before any fix; disclosed ordering).** The criterion for `test_d_req_085_…` is replaced by `test_d_req_085_a_newer_ack_supersedes_an_exhausted_slot_in_archive_health`: an archive slot that exhausted its attempts stays EXHAUSTED (the existing `test_persistent_failures_exhaust_without_hiding_health` keeps per-cycle work bounded, and IDEA-036 #2 forbids writing a past anchor slot late), `health()` lists every exhausted slot under `missed` (the logged record of a missed anchor/backup), keeps `ARCHIVE_DELIVERY_BLOCKED` while no newer slot of that kind is ACKed, and drops it once a newer anchor and backup are ACKed. Reason: a later full backup and a later anchor supersede the missed ones, so retrying a past anchor would break the no-late-write rule. Disclosure: this test was run once locally (red, `KeyError: 'missed'`) a few minutes before this amendment was committed; no fix existed at that time.
+
+The deliverable test for #23 (`test_d_req_023_…`) is committed with `unittest.expectedFailure`: the fix belongs to C's execution-state code (D-FND-005, §7). The marker must be removed in the same change that fixes it; an unexpected pass fails the suite.
+
 Every round of fixes is followed by the full suite, `tools/system_test.py` on this pushed branch, and Linux CI (Terraform and host-bundle jobs included).
 
 ## 5. DECISION-NEEDED
