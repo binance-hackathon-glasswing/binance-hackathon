@@ -1,5 +1,6 @@
 """Live-mode refusals and the final-wallet switch (IDEA-042 W1-W4; DR-17)."""
 
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -71,6 +72,21 @@ class Refusals(unittest.TestCase):
         unmarked.mkdir()
         (unmarked / 'spool.jsonl').write_text('{}')
         self.refused('unmarked records', ai_seeds_dir=unmarked)
+
+    def test_w2_an_unbindable_directory_is_a_refused_start_not_a_crash(self):
+        # #59 (WR17): an OSError must refuse the start (exit 4), or Restart=always loops on it.
+        blocker = Path(self.tmp.name) / 'blocker'
+        blocker.write_text('not a directory')
+        refusal = self.refused('cannot be bound', ai_seeds_dir=blocker / '.ai-seeds')
+        self.assertIn('NotADirectoryError', str(refusal))
+
+    @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0, 'root ignores the directory mode')
+    def test_w2_a_read_only_directory_is_a_refused_start(self):
+        read_only = Path(self.tmp.name) / 'read-only'
+        read_only.mkdir(mode=0o500)
+        self.addCleanup(read_only.chmod, 0o700)
+        refusal = self.refused('cannot be bound', nonce_dir=read_only)
+        self.assertIn('PermissionError', str(refusal))
 
 
 class Switch(DatabaseCase):
