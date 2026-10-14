@@ -358,7 +358,8 @@ class NativeGasQuotePort:
         amount = self.pay_units * 10**12
         integer(amount)
         request = dict(schema='MarketRequest.v1', symbol='BNB', kind='GAS_TOP_UP', side='BUY',
-                       amount_kind='EXACT_IN', pay_asset='USDT', pay_units=self.pay_units, pay_decimals=6)
+                       amount_kind='EXACT_IN', pay_asset='USDT', pay_units=self.pay_units, pay_decimals=6,
+                       receive_decimals=self.receive_decimals)
         raw = self.client.request('GET', 'aggregator/quote-and-swap', dict(binanceChainId='56',
             amount=str(amount), fromTokenAddress=USDT, toTokenAddress=NATIVE,
             userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=self.slippage))
@@ -389,6 +390,12 @@ class NativeGasQuotePort:
                 or economics.amount != amount or economics.recipient != self.wallet
                 or economics.minimum_output != minimum or economics.native_value != 0):
             raise Unavailable('native quote proof is not bound to exact route bytes')
+        if (not re.fullmatch(r'0x[0-9a-f]{40}', payload.to)
+                or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})+', payload.data)
+                or any(type(v) is not int or not 0 <= v < 2**256
+                       for v in (payload.value, payload.nonce, economics.native_value, economics.deadline))
+                or any(type(v) is not int or not 0 < v < 2**256 for v in (payload.gas, payload.gas_price))):
+            raise Unavailable('native quote decoded payload fields rejected')
         available = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
         if available.tzinfo is None:
             raise Unavailable('native quote availability must be timezone aware')
@@ -402,6 +409,8 @@ class NativeGasQuotePort:
         fee, gas = integer(proof['fee_units']), integer(proof['gas_bnb_units'])
         if gas <= 0 or (fee and (proof.get('fee_asset') != 'USDT' or proof.get('fee_decimals') != 6)):
             raise Unavailable('native quote gas/fee denomination proof required')
+        if gas * factor < payload.gas * payload.gas_price:
+            raise Unavailable('native quote gas allowance underreserves decoded payload')
         impact = int((number(rr['priceImpactPercent']) * 100).to_integral_value(rounding='ROUND_CEILING'))
         if (impact > self.limits['impact_bps']
                 or self.pay_units + fee > self.limits['per_trade_cap_units']):
