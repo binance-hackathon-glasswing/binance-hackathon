@@ -198,3 +198,9 @@ Corrected red at pushed `9b15163`: **16 failures, 5 passed, 5 subtests passed**,
 ### C-RETEST-004 — first repair run
 
 At pushed `9d59556`, focused C plus integrated driver: **256 passed, 1 failed, 1 skipped, 223 subtests passed**, 51.80 seconds. All new requirement regressions pass. An existing stale-request test detects a changed refusal reason: the new run check executes before the immutable attempt/request authority comparison. Preserve its original `stale signing authority` disposition by doing that comparison first; keep all independent run/build/HALT checks before key use. No test assertion is changed. Log `/private/tmp/larp-final-c-20261015-focused.log`, SHA-256 `f4502ffb7a3325a10c6c80661f68ede08350b5d043f30a3559d3c9411d548705`.
+
+### C-RETEST-005 — full repair pass and next adversarial criterion
+
+At pushed `bc8d645`, full Python 3.12 / PostgreSQL 14.24 suite: **1244 passed, 7 skipped, 1572 subtests**, 134.42 seconds, +15 tests/+11 subtests against C-BASE-002. Log `/private/tmp/larp-final-c-20261015-full.log`, SHA-256 `34739d227d230e1863d12e150eb4a3e1cf9bb59ff9ab970d10e3097e7189e427`.
+
+The final adversarial pass asks whether a reflected private value remains reconstructable after mixed hex case or Base64 encoding, including an escaped overwritten key. Extend C-FND-005's tests for mixed-case hex, Base64 of the hex string, Base64 of decoded bytes, and duplicate-key mixed-case JSON. Publish and run those assertions before any refinement. Preserve exact untainted public response evidence and existing credential redaction; no broadcast retry or result-contract change.

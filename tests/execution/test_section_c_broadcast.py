@@ -26,12 +26,17 @@ class BroadcastRequirements(unittest.TestCase):
         return client
 
     def test_c_req_012_signed_parameter_reflections_are_not_exported(self):
-        echoes = (self.raw, self.raw[2:], self.raw.upper(), self.raw[2:].upper())
+        mixed = '0x' + 'f8Ab' * 40
+        echoes = (self.raw, self.raw[2:], self.raw.upper(), self.raw[2:].upper(), mixed,
+                  base64.b64encode(self.raw.encode()).decode(),
+                  base64.b64encode(bytes.fromhex(self.raw[2:])).decode())
         variants = [json.dumps(dict(code=0, data=[dict(txHash=self.tx_hash)], echo=v)).encode()
                     for v in echoes]
         variants += [
             json.dumps(dict(code=0, data=[dict(txHash=self.tx_hash)], echo={self.raw: [self.raw]})).encode(),
             ('{"code":0,"echo":"\\u0030' + self.raw[1:] + '","echo":"safe",'
+             '"data":[{"txHash":"' + self.tx_hash + '"}]}').encode(),
+            ('{"code":0,"echo":"\\u0030' + mixed[1:] + '","echo":"safe",'
              '"data":[{"txHash":"' + self.tx_hash + '"}]}').encode(),
         ]
         for response in variants:
