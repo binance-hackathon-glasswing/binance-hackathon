@@ -434,6 +434,94 @@ IDEA-049 section D. Reviewer: Yao Zhu, with Claude. Record: [`docs/ledger/IDEA-0
 | GAP-62 | D-REQ-051, 059, 060. |
 | GAP-65 | D-REQ-087, 078 (runtime side). |
 
-## 8. Trace (phase 2)
 
-Not started. Filled only after this catalogue is frozen and pushed (protocol §2).
+## 8. Trace (phase 2, written 2026-10-14 after the freeze at `3ab45dc`)
+
+Code read at base `c1b6daf`. Tests named `path::test`; "TF" = `deploy/aws/tests/safety.tftest.hcl`. Verdicts per protocol §2.1. Suspected defects are pre-registered in the record (IDEA-049-D §4) before any new test runs.
+
+| Req | Implementing code | Existing tests | Verdict | Note |
+|---|---|---|---|---|
+| 001 | `runtime/coordinator.py:Coordinator.start/close`, `driver.py:RoundDriver.once` | `tests/audit/test_round_logging.py::test_l3_*` | WEAK | One log per *closed* round. A round whose swap is broadcast but never final is never closed, so never logged (#28, D-FND-002). |
+| 002 | `integration/settlement.py:settle` (NOT_SUBMITTED → `output.aborted`), `coordinator.audit_record` | `test_round_logging.py::test_l3_*`, `tests/integration/test_settlement.py::test_not_submitted_releases_without_accounting`, `test_round_driver_service.py::test_e4_*` | COVERED | — |
+| 003 | `settlement.settle` (BROADCAST_ATTEMPTED → order `tx_hash`), `coordinator.close` | `test_round_logging.py::test_l3_l2_executed_round_logs_its_swap`, `test_round_driver_service.py::test_e3_*` | CONTRADICTED | The hash reaches a log only after every intent of the round is final; an unresolved broadcast never does (#28). |
+| 004 | `settlement.settle` (only `step == swap` sets `tx_hash`) | `test_settlement.py::test_b5_2_approval_releases_its_gas_only`, `test_e3_*` | COVERED | — |
+| 005 | `audit/protocol.py:_validate,check_orders,build_event` | `tests/audit/test_protocol.py::*` | COVERED | Timestamp int-ms checked. |
+| 006 | `coordinator.audit_record` (`inputs`: request, assessment incl. `model_io`, policy input/state) | `test_round_logging.py::test_l1_*` | COVERED | Deterministic assessor only in v1.0 (DR-11). |
+| 007 | `coordinator.round_cot` | `test_round_logging.py::test_l1_*` | COVERED | — |
+| 008 | `coordinator.start` (orders = planner intents after risk) | `test_l3_*` | COVERED | — |
+| 009 | `audit/protocol.check_orders` | `test_protocol.py::test_orders_require_hash_mapping_and_eligible_symbol`, `test_l4_*` | COVERED | — |
+| 010 | `coordinator.audit_record` (`version_id`, `round_id`, `decision_ids`), `postgres._audit` (`swap_owners`) | `test_settlement.py`, `test_round_logging.py::test_l3_l2_*` | COVERED | — |
+| 011 | `protocol.event_id_for` (deterministic), `postgres._audit` (immutable), `delivery.DeliveryWorker` | `tests/audit/test_delivery.py::test_lost_ack_restart_has_one_immutable_event`, `tests/storage/test_process_crash.py::test_process_death_after_receiver_write_resends_identical_bytes` | COVERED | — |
+| 012 | `delivery.delivery_status` | `test_round_logging.py::test_l7_*` | COVERED | — |
+| 013 | `delivery.DeliveryWorker.once/backoff_ms` | `test_delivery.py::test_r1_*` | COVERED | — |
+| 014 | `delivery.DeliveryWorker.once` (`permanent=400<=code<500 and code!=429`) | `test_delivery.py::test_permanent_and_transient_errors_remain_visible` | CONTRADICTED | Any 4xx incl. 401 TIMESTAMP_SKEW is PERMANENT and never resent; the delivery HALT never clears (#50, D-FND-001). |
+| 015 | `protocol._validate`, `protocol.chunks` (254 KiB escaped ceiling) | `test_protocol.py::test_unicode_and_escaping_preserve_exact_bytes`, `test_oversize_*` | COVERED | D-ASM-005 also holds in code (split when escaped > 254 KiB). |
+| 016 | `coordinator.start` (4 MiB budget → `audit_fallback`) | `test_round_logging.py::test_l6_*` | COVERED | — |
+| 017 | `protocol.sign`, `protocol.chunks`, `delivery.HttpReceiver` | `test_protocol.py::test_official_vectors` | COVERED | — |
+| 018 | `protocol.breach_cutoff_ms`, `delivery.deadline_breaches`, `supervision.Guard` | `test_supervision.py::test_h3_h5_*`, `test_r1_a_long_receiver_outage_*` | WEAK | Deadline counts only existing `audit_events`; an open round with a broadcast has no event, so its lateness is invisible (#28). |
+| 019 | `postgres._audit` (immutable bytes), `coordinator.close` (`INTERRUPTED_UNRESOLVED`, `PROCESS_INTERRUPTED`) | `test_l3_interrupted_round_closed_by_recovery`, `test_delivery.py::test_same_audit_id_different_bytes_rolls_back` | COVERED | — |
+| 020 | `driver.RoundDriver.once` (recover before new work) | `tests/runtime/test_driver.py::test_d1b_*` | COVERED | — |
+| 021 | `service.main` → `preflight.verify_release`; `audit/service.load_config` | `test_uploader_service.py::test_u01_refusals_exit_4_without_secrets`, `tests/runtime/test_service_configs.py` | COVERED | — |
+| 022 | `coordinator.audit_record` (`example: true` when `test_rounds`), `service.build_driver` (`test_rounds=mode!='live'`) | `test_l5_*` | COVERED | — |
+| 023 | `release.redact`, `credentials.Secrets`, `audit/service.Secret`, `backup.REDACTED` | `test_credentials.py`, `test_uploader_service.py`, `test_anchors_roles.py::test_g2_v8_*` | WEAK | Signed transaction bytes remain in `execution_records.state` (`raw_hex`) and are exported (#23, D-FND-005). Not a credential, but usable signed bytes. |
+| 024 | `live.check_live_start`, `live.bind_directory`, `audit/service.load_uploader_secret` | `test_live_start.py::test_w1_*`, `test_w2_*` | COVERED | — |
+| 025 | `store.command` (HALT), `execution_live/loop.py` RunAuthorization | `test_round_driver_service.py::test_e5_*` | MISSING | No bound before the 02:00 deadline: signing continues while logs are undelivered until the deadline passes (DECISION-NEEDED, D-DN-04). |
+| 026 | — | — | MISSING | No daily broadcast-swap ↔ ACKed-log check; reconciliation is B's #36. D adds the runtime check (D-FND-012). |
+| 030 | `coordinator.start` (commands carry `decision_id`), `store.command`, `require_version` | `test_release_register.py::test_r5_*`, `test_e3_*` | COVERED | Approvals map through the intent's decision. |
+| 031 | `postgres.commit` (ROUND_PLANNED with command before any signature) | `test_e1_*`, `test_storage/test_process_crash.py` | COVERED | — |
+| 032 | `coordinator.start` record; `settlement.settle` appended facts | `test_e3_*`, `test_settlement.py` | WEAK | Probability vector absent by design (DEV-01); content owned by A/B. |
+| 033 | `coordinator.start` (hold rounds journaled) | `test_l3_hold` | COVERED | — |
+| 034 | `postgres._verify`, grants in `deploy/postgres/roles.sql` | `test_postgres.py::test_corrupt_tail_*`, `test_anchors_roles.py::test_g2_*` | COVERED | — |
+| 035 | `maintenance.Maintenance.prepare` (backup per `backup_interval_ms`) | `test_maintenance.py::test_hourly_anchor_with_unchanged_head_and_daily_backup` | MISSING | No upload after an incident (D-FND-008). |
+| 036 | `maintenance.prepare` (Anchor.v2 per hour slot) | `test_maintenance.py::test_hourly_anchor_*` | WEAK | A missed slot leaves no incident record; anchors become EXHAUSTED after 8 tries and block health forever (#64, D-FND-009). |
+| 037 | `maintenance.verify_anchors`, `postgres.verify(anchored_head)` | `test_anchors_roles.py::test_a1_*`, `test_a2_*` | COVERED | — |
+| 038 | `maintenance.ANCHOR_FIELDS` | `test_anchors_roles.py::test_a1_a3_*` | COVERED | — |
+| 039 | — (B's #36) | — | MISSING | No production reconciliation path or schedule (owned by B, #36). |
+| 040 | `supervision.Sessions.heartbeat`, `maintenance.service_health` | `test_service_health.py::test_r5_runtime_heartbeat_*` | COVERED | Heartbeat written after each cycle only (see 076). |
+| 041 | `Sessions.begin` (RESTART), `Guard` (HALT), round `errors` | `test_supervision.py` | WEAK | Restart/HALT journaled; other classes appear as round errors or facts, not incident events (P3). |
+| 042 | `coordinator` record (`assessment.model_io`), `backup.export` | `test_maintenance.py`, `test_l1_*` | COVERED | Retention via archive (086). |
+| 050 | `preflight.build_manifest`, `release_files` | `test_release_bundle.py`, `test_service_configs.py` | COVERED | Model snapshot IDs: deterministic assessor (no model). |
+| 051 | `register.load_register`, `preflight.verify_release` | `test_release_register.py::test_r1_*`, `test_r4_*` | COVERED | — |
+| 052 | `preflight.verify_release`, `verify_runtime_config`, `verify_service_config`; units `ExecStart=… launch` | `test_service_configs.py`, `test_host_units.py` | COVERED | — |
+| 053 | `store.command` (version), `loop.py` RunAuthorization (registered build) | `test_r5_no_command_before_the_version_event`, `test_e5_*` | COVERED | — |
+| 054 | `coordinator.require_version`, `service.verify_registered_manifest`, `activate_run` | `test_r5_*`, `test_e10_*` | COVERED | — |
+| 055 | `tools/build_release_bundle.py`, `deploy/host/provision.sh --expect-sha256`, `.github/workflows/runtime.yml` | `test_release_bundle.py`, `tools/test_host_bundle.sh` | CONTRADICTED | Bundle not reproducible (gzip time, live CA download); CI keeps no artifact; CI push trigger misses the integration/review branches (#49, D-FND-011). |
+| 056 | `deploy/*.lock`, `provision.sh` (`--no-index`), `preflight.verify_environment` | `test_release_bundle.py` | WEAK | Versions pinned; no artifact hashes in deployable locks (D-ASM-020: P3). |
+| 057 | `Sessions.begin`, `verify_registered_manifest` | `test_supervision.py::test_h1_a_different_build_is_refused` | COVERED | — |
+| 058 | journal `VERSION_REGISTERED`, `backup.export` | `test_r5_version_event_replays` | WEAK | No audit-export listing of all versions; covered through the journal (P3). |
+| 059 | `register.validate_deviations`, `tools/render_deviations.py` | `test_release_register.py::test_r2_*`, `test_r3_*` | MISSING | Nothing refuses a live activation while rows are OPEN or DRAFT (D-FND-010). |
+| 060 | `config/release/services.v1.json` (`fallback`), deviations | `test_r1_services_list` | COVERED | — |
+| 061 | AGENTS.md; `build_manifest` (pushed head) | — | NOT-OFFLINE | Procedural; no technical guard available (G-40). |
+| 062 | — | — | MISSING | No secret scan in CI (G-41 TEST) (D-FND-013). |
+| 070 | systemd units, `Service.run`, `credentials.load_runtime_secrets` | `test_supervision.py`, `test_driver.py::test_d7_main_*` | CONTRADICTED | A transient Secrets Manager error exits 4, which systemd never restarts (#43, D-FND-003). |
+| 071 | `Sessions.begin`, `larp-runtime.service` | `test_h1_*`, `test_h2_runtime_unit` | COVERED | Host drill NOT-OFFLINE (DR-13). |
+| 072 | `RestartSec=10`, no start limit | `test_h2_runtime_unit` | WEAK | A deterministic exception in `driver.once` crash-loops with a RESTART incident every 10 s (P2 risk, D-FND-014). |
+| 073 | `supervision.Guard.evaluate` | `test_supervision.py::test_h3_*` | COVERED | — |
+| 074 | `coordinator.start` (HALTED → empty plan), `store.command` | `test_h3_h4_*` | COVERED | — |
+| 075 | `Guard._clear` | `test_h3_h5_*`, `test_r1_a_long_receiver_outage_*` | CONTRADICTED | Delivery HALT never clears after a 4xx (#50); clock HALT latched for the run (D-CON-09 DECISION-NEEDED). |
+| 076 | — | — | MISSING | No watchdog: a hung `driver.once` stops rounds and heartbeats but never restarts (#35, D-FND-004). |
+| 077 | `runtime/replay.py` `RECORDED_FACTS` | `test_h6_supervision_events_replay` | COVERED | — |
+| 078 | `driver.RoundDriver.once` (settle_open, recover, reauthorize before new work) | `test_e2_*`, `test_r3_*` | COVERED | — |
+| 079 | `driver.ServiceExecution.ingest` | `test_e2_*` | COVERED | — |
+| 085 | `maintenance.prepare` + `backup.export/restore` | `test_maintenance.py`, `test_postgres.py::test_restore_*` | WEAK | Backup slot EXHAUSTED after 8 tries and never retried; health blocked for the run (#64.1, D-FND-009). |
+| 086 | `deploy/aws/storage.tf`, `variables.tf` (≥ 82 days), `operations.validate_config` | TF `safe_defaults` | COVERED (CI) | Terraform not run locally (see record). |
+| 087 | `runtime/replay.py`, `integration/replay.py` | `test_live_replay.py::*`, `test_d5_*` | COVERED | — |
+| 088 | `backup.export` | `test_maintenance.py` | WEAK | Export is a DB dump; no audit bundle command (P3). |
+| 089 | DB storage alarm (`monitoring.tf`) | TF | MISSING | No growth estimate; no host-disk metric or alarm (D-FND-015, P2). |
+| 100 | `deploy/aws/hosts.tf`, `network.tf` | TF `host_isolation`, `internet_reaches_primary_only` | COVERED (CI) | — |
+| 101 | `larp-signer.service` (`LoadCredential`), `live.check_live_start` | `test_host_units.py::test_d01_only_the_signer_*` | COVERED | — |
+| 102 | `variables.tf` region | TF | COVERED (CI) | No VPN resources. |
+| 103 | `budget.tf` (monthly) | TF `budget_alerts_with_recipient` | WEAK | Monthly budget cannot track the one-off $100 credit (#63, D-FND-016). |
+| 104 | `monitoring.tf`, `operations.publish_health` | `test_service_health.py`, TF | COVERED | Real destination NOT-OFFLINE. |
+| 105 | `monitoring.tf` `recover` (system status only) | TF `host_isolation` | WEAK | No instance-status recovery: an OS hang/OOM needs a person (#60, D-FND-017). |
+| 106 | `storage.tf`, `deploy/postgres/roles.sql` | `test_anchors_roles.py::test_g2_*`, TF | COVERED | `auto_minor_version_upgrade = false` (D-ASM-012 partly validated). |
+| 107 | `deploy/host/provision.sh` | `tools/test_host_bundle.sh` (CI) | COVERED (CI) | — |
+| 108 | — | — | NOT-OFFLINE | No route for migrations (admin secret) or signer provisioning (DECISION-NEEDED, D-DN-05). |
+| 109 | — | — | NOT-OFFLINE | Signer journald via EBS snapshot at teardown only (runbook item). |
+| 110 | — | — | MISSING | No standby; DEV-18 OPEN (D-CON-03, DECISION-NEEDED). |
+| 111 | `Guard` (clock behind), units `After=time-sync.target` | `test_h3_h4_*` | WEAK | `larp-runtime.service` lacks `After=time-sync.target` (P3); NTP on host NOT-OFFLINE. |
+| 120–128 | process | — | NOT-OFFLINE | Deliverables and drills; listed in the record's deployment risks. |
+| 135 | signer re-checks (C), two hosts | `tests/signer/*` (C) | COVERED | — |
+| 136 | `preflight.verify_release` | `test_service_configs.py` | COVERED | — |
+| 137 | `live.check_live_start` | `test_w1_each_refusal` | COVERED | — |
+| 138 | `coordinator` audit fallback, `protocol.chunks` | `test_l6_*`, `test_oversize_*` | COVERED | — |
