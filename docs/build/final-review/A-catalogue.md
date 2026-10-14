@@ -1,0 +1,668 @@
+# Final review A: independent requirements catalogue (IDEA-049)
+
+Date: 2026-10-15 SGT. Reviewer: Keith for `wtvlol`. Base: `c1b6dafd62f8df7ea894a5177138da2726452696`.
+Branch: `review/final-a-20261015`; isolated worktree `/private/tmp/larp-final-a-20261015`.
+
+Phase 1 only. Catalogue becomes frozen only when committed and pushed under protocol §1.8. No implementing application code, tests, configs or prior issue/review records were opened to build these requirements. Environment lockfiles and driver PR integration metadata were inspected solely under §0 setup. Exact requirement-source decision sections were read, including the later R15 decision narrowing R3. The existing October 14 A worktree was discovered via metadata and left untouched.
+
+Policy recommendations/placeholders are not requirements. Acceptance mechanisms below are proposed observations, not claims that implementation or tests exist. DECIDED-as-readiness/acceptance labels denote protocol-authorized DR/AT checklists, not organiser rules. Requirements remain subject to the conflicts below; phase 2 checks the actual release deviations without silently removing frozen rows.
+
+## Source verification
+
+Verbatim official page and submitted proposal read in full; in-scope F-08/20/30/31/32/49/63/71 checked against their quoted headings. Guide pp.2-3,13-18 read directly from the PDF: F-102/K15 provider-readable cot and encrypted-output exclusions, F-104/K2 named data Skills and Ondo limitation agree with their summaries. K18 data/model silence checked against the guide; silence supplies no permissions, quotas or winner sharing format. No in-scope summary correction established in this phase. Guide hash verified below. Its example provider configurations are technical examples, not evidence of present-day provider availability or rights.
+
+G-05/06/10/12/42 traced to original F sources; G-31..39/50..54 only promoted where declared proposal or dated adopted decision supplies authority. D-03 remains unresolved; latest B8 defers exact assessor choice. D-09 token-candle substitution is decided 2026-10-10; D-10 older training/Korean collection choices do not authorize v1.0 trained models after D-08/D-11. IDEA-035 §10.1 supersedes §6 proposal and earlier D-11 forced-sale scope. IDEA-041 §2.1 explicitly calls seven days an engineering value for team confirmation, so it is not a decided stale bound.
+
+Checked source file identities (SHA-256):
+
+| Source | SHA-256 |
+|---|---|
+| `docs/official/source_page.md` | `da694f5688e297496cd78f8df923bba00ea4da01186978ca37dceec9faa99ce7` |
+| `docs/official/kit/AI_Seeds_Participant_Guide.pdf` | `8b14a371c67f4d2105b62dde33d0b02f7be1ab914ed6a255fc3f0bf9fc586f86` |
+| `docs/official/kit/PROTOCOL.md` | `4969a243edd427e144305c9a1420de26516ff99ec8006887713c1c1207207638` |
+| `docs/official/kit/logging.md` | `5beb940e7835ab5078b790c39dd18f7cbf9307688990db90099dd79e950fa78a` |
+| `docs/official/kit/web3-open-api.md` | `7543300e7f956b8ab90c402eccb83ba09b0b98ba171ff3869a44fa8a575cdc43` |
+| `docs/proposal/proposal_answers.md` | `d3d96d3f42589adb00be9f2647ae9d4cf1ad653a434e7cea4ad3c8b21f81f335` |
+| `docs/skill/SKILL.md` | `f5be9a30e06c6816933d16ed446f6977e9d1f508de7697709264903ae8f69dcb` |
+| `docs/skill/reference/participant-kit.md` | `d7a50d358c925afce9cead26ae8b62f353332eb1c10d993ce198ba8fbc867639` |
+| `docs/skill/larp/plan.md` | `40252e1395d8c88c9220beb48b958be10c7346d4b1ae6c6e998750f7ec932648` |
+| `docs/ledger/IDEA-035.md` | `fa17fdec3c6c3d2a4c7d1f52329d4eeec988077fd6b10b42e37fbc31c1dd03b7` |
+| `docs/ledger/IDEA-037.md` | `fc82c7dea4e46ba2997d3019603405ff996ab709dd1ed2cb9b8991fd66a8f870` |
+| `docs/ledger/IDEA-046.md` | `5b631411bfc33ba8e4c021d0144ea8744ace979be812ac6a38aa6c7853b48c6e` |
+| `docs/ledger/IDEA-047.md` | `0f68f0137ac13db22dcc7f875979b2c663d68060f2cbd60c536365ae73adb25b` |
+| `docs/ledger/IDEA-041.md` | `f8820fee2a234fdb583443285ee04639489e3c2941a415bd7670b89638eba8c4` |
+| `docs/ledger/IDEA-021.md` | `3b71c244f1e0fd0074861c8557d3451ad8a15191dbc40dffef53d68351e0c14f` |
+| `docs/build/DEPLOYMENT_BUILD.md` | `1d94e71482eb9df554fe4df018df50e34eac65c72f0f6217cd4e0570f6dfc518` |
+
+## Requirements
+
+| ID | Statement | Source and short quote | Obligation | Acceptance | Use cases | Offline-testable? |
+|---|---|---|---|---|---|---|
+| A-REQ-001 | When a source is used, the system must restrict it to public or legally authorized information. | RULE-PAGE docs/official/source_page.md Rules & Restrictions (F-63): “Clean information” | MUST | Unregistered, private or unauthorized fixture cannot enter an actionable evidence context. | A-UC-001, A-UC-002, A-UC-003, A-UC-004, A-UC-005, A-UC-006, A-UC-007, A-UC-008 | yes |
+| A-REQ-002 | When any source, model, API or component is enabled, the release must carry its rights basis. | RULE-PAGE docs/official/source_page.md Eligibility (F-71): “Hold the rights” | MUST | Enumerate contacted endpoints/components and match each to a dated register record; separately verify actual terms. | A-UC-001, A-UC-002, A-UC-003, A-UC-004, A-UC-005, A-UC-006, A-UC-007, A-UC-008 | only in rehearsal: actual adopted-source terms and audit-disclosure rights |
+| A-REQ-003 | When a model or source is a principal third-party service, the manifest must declare it. | RULE-PAGE docs/official/source_page.md Repository integrity (F-61): “Third-party services are declared in your manifest” | MUST | Pinned service identity matches all evidence/model contacts; D owns manifest integration. | A-UC-001, A-UC-002, A-UC-003, A-UC-004, A-UC-005, A-UC-006, A-UC-007, A-UC-008 | yes |
+| A-REQ-004 | When an input becomes available after the decision point, the system must reject it from that decision. | RULE-PAGE docs/official/source_page.md The Challenge (F-20): “using only information available to it at each decision point” | MUST | Perturb future documents, timestamps and results; earlier context/action hashes remain unchanged. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-005 | When any input is retained, it must carry event time. | DECLARED docs/proposal/proposal_answers.md Data / tools used / Rules we follow: “event time” | MUST | Stored evidence exposes original event time distinct from retrieval and revision. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-006 | When any input is retained, it must carry retrieval time. | DECLARED docs/proposal/proposal_answers.md Data / tools used / Rules we follow: “retrieval time” | MUST | Fresh retrieval cannot be backdated into a historical context. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-007 | When any input is retained, it must carry source URI. | DECLARED docs/proposal/proposal_answers.md Data / tools used / Rules we follow: “source URI” | MUST | Sample retained input resolves to its exact source URI. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-008 | When any input is retained, it must carry SHA-256. | DECLARED docs/proposal/proposal_answers.md Data / tools used / Rules we follow: “SHA-256” | MUST | Artifact bytes hash to the recorded content identity; corruption fails closed. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-009 | When an EDGAR filing is dated, its publication basis must be the acceptance time. | DECLARED docs/proposal/proposal_answers.md Data / tools used / SEC EDGAR: “acceptance time” | MUST | Date-only filingDate is not silently substituted for acceptance datetime; timezone/precision retained. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-010 | When evaluating at decision time, source timestamps later than that time must be excluded. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / Point-in-time data: “rejects anything stamped later than the decision” | MUST | Boundary at t accepted; t+1 rejected; unknown/ambiguous timestamps cannot authorize new risk. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-011 | When evaluating at decision time, retrieval timestamps later than that time must be excluded. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / Point-in-time data: “our retrieval time” | MUST | Delayed fetch/result cannot overwrite or backdate an earlier accepted context. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-012 | When source revisions arrive, earlier decisions must continue to use their original input versions. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Rerun: “original inputs” | MUST | Original and amended text have separate hashes and time-qualified contexts; exact replay remains identical. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-013 | When SEC ingestion is activated, it must use a contact User-Agent. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-12: “SEC User-Agent” | MUST | Missing/malformed contact prevents SEC requests; actual contact handled outside Git. | A-UC-017, A-UC-018, A-UC-019, A-UC-020, A-UC-021, A-UC-022, A-UC-023, A-UC-024, A-UC-081, A-UC-082, A-UC-083 | yes |
+| A-REQ-014 | When a live source is activated, its register must contain a dated terms capture and hash. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-12: “dated terms captures with hashes” | MUST | Missing/nonmatching captures refuse live activation; actual terms bytes stored outside Git. | A-UC-001, A-UC-002, A-UC-003, A-UC-004, A-UC-005, A-UC-006, A-UC-007, A-UC-008 | only in rehearsal: capture rights-cleared adopted-source terms |
+| A-REQ-015 | When raw source artifacts are retained, they must be stored outside Git. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-12: “artifact store outside Git” | MUST | Repo-contained artifact path rejected; hash-addressed external artifact retrievable. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes |
+| A-REQ-016 | When live ingestion is accepted for Gate A, it must demonstrate a 24-hour run with no gaps. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-12: “a 24 h live ingestion run with no gaps” | MUST | Timestamped poll/catch-up report and artifact hashes establish complete watched-source coverage. | A-UC-017, A-UC-018, A-UC-019, A-UC-020, A-UC-021, A-UC-022, A-UC-023, A-UC-024, A-UC-081, A-UC-082, A-UC-083 | only on a host: 24-hour read-only ingestion report |
+| A-REQ-017 | When a source outage hides an adverse filing, timeout or elapsed 24 hours must not authorize a dependency-invalid buy. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT12: “24h elapsed and reassessment timeout” | MUST | Real catch-up/store/context components keep incomplete source coverage nonactionable. | A-UC-017, A-UC-018, A-UC-019, A-UC-020, A-UC-021, A-UC-022, A-UC-023, A-UC-024, A-UC-081, A-UC-082, A-UC-083 | yes |
+| A-REQ-018 | When ingestion catches up after outage, every relevant filing must be processed once. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT12: “Catch-up processes all filings once” | MUST | Paginated histories, duplicate rows and restarts preserve all relevant identities without duplicate economic directives. | A-UC-017, A-UC-018, A-UC-019, A-UC-020, A-UC-021, A-UC-022, A-UC-023, A-UC-024, A-UC-081, A-UC-082, A-UC-083 | yes |
+| A-REQ-019 | When an assessment is stale or context-mismatched, it must not overwrite newer state. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT12: “stale/context-mismatched assessments never overwrite newer state” | MUST | Deliver old/new results in both orders; newer state retained; invalid result recorded. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-020 | When source blocks are missing, shuffled or duplicated, the system must preserve entity identity. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT16: “preserve entity identity” | MUST | Use real issuer identifiers and reordered issuer lists; no evidence attaches to another token. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-021 | When a source is revised, the system must retain the revision as a new observation. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT16: “source revisions are new observations” | MUST | Amendment can coexist with its original without duplicate-ID rejection or overwritten history. | A-UC-009, A-UC-010, A-UC-011, A-UC-012, A-UC-013, A-UC-014, A-UC-015, A-UC-016, A-UC-096 | yes |
+| A-REQ-022 | When researching a held position, the agent must perform the bounded evidence review. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “For each held position” | MUST | Held names receive review attention independently of candidate ranking, with review result/reason retained. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-023 | When a candidate has a fresh catalyst, the agent must perform the bounded evidence review. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “each candidate with a fresh catalyst” | MUST | Fresh eligible catalyst creates a bounded review, or a recorded dependency refusal. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-024 | When the evidence loop requests tools, it must expose at most three tool types. | DECLARED docs/proposal/proposal_answers.md Team capability / What we deliver: “≤ 3 tool types” | MUST | Tool schema list contains at most three capabilities; decided exact tools audited separately. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-025 | When evidence research runs, it must make at most six tool calls per decision. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “6 calls” | MUST | Seventh requested call is refused without tool execution; budget decision recorded. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-026 | When evidence research runs, it must finish or fail within 60 seconds per decision. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “60 s per decision” | MUST | Hanging model/tool cannot exceed end-to-end budget or starve safety services. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-027 | When assessing evidence, the assessor must return a structured catalyst assessment. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “catalyst type, direction, strength, novelty, durability, source agreement and risks” | MUST | Schema-valid assessment retains each declared field or records an explicit deviation decision. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-028 | When an assessment makes a material claim, a separate verifier must check it against cited source text. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “checks every material claim” | MUST | Unsupported semantics, wrong issuer, mis-signed numbers and absent citation are rejected by real verifier. | A-UC-041, A-UC-042, A-UC-043, A-UC-044, A-UC-045, A-UC-046, A-UC-047, A-UC-048, A-UC-085 | yes |
+| A-REQ-029 | When a material claim is unsupported, the system must drop it from verified state. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “Unsupported claims are dropped” | MUST | Rejected claim remains auditable but never enters actionable state. | A-UC-041, A-UC-042, A-UC-043, A-UC-044, A-UC-045, A-UC-046, A-UC-047, A-UC-048, A-UC-085 | yes |
+| A-REQ-030 | When the core catalyst claim fails verification, the system must take no new risk from it. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “takes no new risk” | MUST | Unsupported core claim produces no actionable evidence authorization; B checks independent deterministic safety. | A-UC-041, A-UC-042, A-UC-043, A-UC-044, A-UC-045, A-UC-046, A-UC-047, A-UC-048, A-UC-085 | yes |
+| A-REQ-031 | When thesis memory is updated, only verified claims may enter it. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “Only verified claims update” | MUST | Unsupported/injected/corrupt evidence cannot become verified memory. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes |
+| A-REQ-032 | When a position thesis is retained, it must record its catalyst. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “the catalyst” | MUST | Sample stored thesis links the claimed catalyst to verified evidence. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes |
+| A-REQ-033 | When a position thesis is retained, it must record its expected horizon. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “expected horizon” | MUST | Stored thesis exposes horizon and lifecycle boundaries. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes |
+| A-REQ-034 | When a position thesis is retained, it must record explicit falsifiers. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “explicit falsifiers” | MUST | Stored thesis exposes testable falsifier predicate and evidence lineage. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes |
+| A-REQ-035 | When a research cycle runs, position falsifiers must be rechecked. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “re-checked every cycle” | MUST | New adverse/correcting evidence evaluates held thesis falsifiers; failure is recorded. | A-UC-041, A-UC-042, A-UC-043, A-UC-044, A-UC-045, A-UC-046, A-UC-047, A-UC-048, A-UC-085 | yes |
+| A-REQ-036 | When a verified falsifier fires, the evidence side must produce an exit candidate. | DECLARED docs/proposal/proposal_answers.md Your Proposal / How the agent works: “proposes an exit” | MUST | Evidence directive reaches contract with evidence identity; B/C retain trade authorization. | A-UC-041, A-UC-042, A-UC-043, A-UC-044, A-UC-045, A-UC-046, A-UC-047, A-UC-048, A-UC-085 | yes |
+| A-REQ-037 | When model, tool, data or schema failure occurs, the evidence side must return no new risk. | DECLARED docs/proposal/proposal_answers.md Position & risk management / Failure modes: “HOLD, no new risk” | MUST | Timeout/refusal/empty/oversized/malformed response is nonactionable; independent risk exits remain available. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-038 | When model, tool, data or schema failure occurs, the failure must create an incident record. | DECLARED docs/proposal/proposal_answers.md Position & risk management / Failure modes: “an incident record” | MUST | Durable sanitized incident exposes failure class, attempt and recovery disposition; D owns journal inclusion. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-039 | When model/evidence I/O is logged or errors are emitted, credentials must be absent. | RULE-PAGE docs/official/source_page.md Honest logging (F-62): “Credentials never appear in logs” | MUST | Synthetic credential echoed in body/error/repr/tool content is excluded from artifacts, structured logs and CLI output. | A-UC-057, A-UC-058, A-UC-059, A-UC-060, A-UC-061, A-UC-062, A-UC-063, A-UC-064, A-UC-084 | yes |
+| A-REQ-040 | When untrusted filing/tool content is processed, it must not change rules or destinations. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT19: “cannot change rules, signer destinations or secrets” | MUST | Prompt-injection document cannot add a destination, override pinned policy or invoke unauthorized tool. | A-UC-057, A-UC-058, A-UC-059, A-UC-060, A-UC-061, A-UC-062, A-UC-063, A-UC-064, A-UC-084 | yes |
+| A-REQ-041 | When assessor execution hangs, it must not starve recovery or upload work. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT19: “cannot starve recovery or upload” | MUST | Blocking provider/tool remains budgeted; D observes independent service progress. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-042 | When hostile/oversized model input arrives, response and storage budgets must hold. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT19: “response and storage budgets hold” | MUST | Bounded request/response/artifact consumption; oversize refused visibly, never truncated into false valid evidence. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+| A-REQ-043 | When a current verified 8-K Item 4.02 finding exists, evidence must classify it as Class 1. | DECIDED docs/ledger/IDEA-035.md §6 adopted in §10.1, SYZ 2026-10-11: “Class 1, Item 4.02” | MUST | Issuer-specific non-negated current item text yields Class 1 discretionary-exit evidence plus unresolved-entry latch; B tests selling. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-044 | When a current verified 8-K Item 1.05 finding exists, evidence must classify it as Class 2. | DECIDED docs/ledger/IDEA-035.md §6 adopted in §10.1, SYZ 2026-10-11: “Class 2, Items 1.05 and 2.06” | MUST | Verified current occurrence yields expiring buy-block evidence, no forced-sale directive; B tests five-session expiry. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-045 | When a current verified 8-K Item 2.06 finding exists, evidence must classify it as Class 2. | DECIDED docs/ledger/IDEA-035.md §6 adopted in §10.1, SYZ 2026-10-11: “Class 2, Items 1.05 and 2.06” | MUST | Verified current impairment yields expiring buy-block evidence, no forced-sale directive; B tests five-session expiry. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-046 | When Class 3 statement evidence is assessed, it must remain SHADOW. | DECIDED docs/ledger/IDEA-035.md §10.1, SYZ 2026-10-11: “Class 3, statements: SHADOW” | MUST | No unsupported class-3 statement can emit a live entry-block or exit directive. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-047 | When a finding is corrected or withdrawn at its source, evidence must allow its latch to resolve. | DECIDED docs/ledger/IDEA-035.md §1 A8 (team 2026-10-11); plan D-11 annotation: “corrected or withdrawn” | MUST | Complete authoritative correction resolves exactly its supports; partial/failed read cannot silently clear it; B tests re-entry. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-048 | When a live red-flag predicate is enabled, its versioned record and verification fixtures must exist. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-10: “Versioned predicate records + verification fixtures” | MUST | Each class/item has pinned record and positive, unsupported, negated, stale, amended, corrected and wrong-issuer fixtures. | A-UC-065, A-UC-066, A-UC-067, A-UC-068, A-UC-069, A-UC-070, A-UC-071, A-UC-072, A-UC-093, A-UC-094, A-UC-095 | yes |
+| A-REQ-049 | When an LLM is used in v1.0, it must provide assessment only. | DECIDED docs/skill/larp/plan.md D-11, team 2026-10-10: “evidence assessment only” | MUST | Model cannot choose size, sign, set limits or directly authorize an order. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-050 | When v1.0 is released, no trained return decision model may ship. | DECIDED docs/skill/larp/plan.md D-08/D-11, team 2026-10-10: “no trained decision model” | MUST | Release identifies rule-based fallback and assessment role; trained predictive paths disabled; deviations checked after freeze. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-051 | When the assessor is selected for activation, its identity or deterministic fallback must be explicitly declared. | DECIDED-as-readiness docs/build/DEPLOYMENT_BUILD.md §DR DR-11; IDEA-035 B8 deferred: “deterministic assessor declared as v1.0” | MUST | Choice, exact model ID, budget, fallback, measured cost and manifest declaration accepted by team. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | only in rehearsal: model/fallback choice and provider cost evidence |
+| A-REQ-052 | When a model call is made, its complete request must be retained. | RULE-PAGE docs/official/source_page.md Winner Deliverables (F-49c): “complete request and response records” | MUST | Retrieve every request byte/field for one sampled decision including prompts, tools, context and continuation. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-053 | When a model call returns, its complete response must be retained. | RULE-PAGE docs/official/source_page.md Winner Deliverables (F-49c): “complete request and response records” | MUST | Retrieve exact response including readable summaries and locally retained encrypted items, with mandatory credential redaction recorded. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-054 | When a winner audit samples a decision, exactly deployed original prompts must be retrievable. | RULE-PAGE docs/official/source_page.md Winner Deliverables (F-49b): “Full original prompts and tool definitions” | MUST | Sample decision resolves content/hash/version of original prompt; no substituted current prompt. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-055 | When a winner audit samples a decision, exactly deployed tool definitions must be retrievable. | RULE-PAGE docs/official/source_page.md Winner Deliverables (F-49b): “tool definitions exactly as deployed” | MUST | Sample decision resolves full tool schema and implementation version. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-056 | When a winner audit samples a model decision, readable reasoning output must be retrievable. | RULE-PAGE docs/official/source_page.md Winner Deliverables (F-49a): “the reasoning your agent produced” | MUST | Stored readable provider summary plus harness trace recovered for sampled decision; no invented hidden reasoning. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-057 | When a round makes several model calls, its cot must retain their readable reasoning in order. | RULE-KIT docs/official/kit/AI_Seeds_Participant_Guide.pdf pp.13,15-16 (F-102/K15): “all the reasoning in order” | MUST | Two-call fixture aggregates readable summaries in call order and records original input/final output. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-058 | When official output is built, encrypted reasoning blobs must be excluded. | RULE-KIT docs/official/kit/AI_Seeds_Participant_Guide.pdf p.15 (F-102/K15): “Don't pass encrypted reasoning blobs” | MUST | Redacted thinking/encrypted_content retained locally as complete I/O when present but absent from official output. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-059 | When a provider summary would be empty, the round must still contain nonempty truthful reasoning. | RULE-KIT docs/official/kit/AI_Seeds_Participant_Guide.pdf p.13; SKILL Q-16/Q-36 (team position 2026-10-08): “must not be empty” | MUST | Summary configuration enabled; empty/encrypted-only response becomes unavailable with truthful deterministic failure reason. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-060 | When evidence tools run, every call must be recorded. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Decision records: “every tool call and result” | MUST | Sample decision retrieves tool name, arguments, ordering and context/version. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-061 | When evidence tools return, every result must be recorded. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Decision records: “every tool call and result” | MUST | Sample decision retrieves result/failure content, evidence hashes and timestamps. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-062 | When claims are verified, the verification outcomes must be retained. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Decision records: “claim-verification results” | MUST | Accepted and rejected claims with reason/evidence resolve for sampled decision. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-063 | When HOLD or abstain is selected, the evidence decision trail must still be retained. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Decision records: “HOLD and abstain decisions are logged too” | MUST | Hold-only/failed round retains input, reasoning and output; D tests final official ACK trail. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-064 | When a deterministic replay runs, it must use captured model results without silently recomputing them. | DECIDED-as-acceptance docs/ledger/IDEA-021.md §4 AT13: “Recomputed LLM output is never silently substituted” | MUST | Network-free replay of recorded evidence reproduces evidence state/context/directive hashes. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-065 | When runtime consumes the shared evidence store, it must have read-only access. | DECIDED docs/ledger/IDEA-047.md R3 (Yao Zhu 2026-10-14), narrowed by R15: “read-only on the runtime side” | MUST | Real store reader sees committed writer changes and cannot create/update/delete; OS group/mount permissions rehearsed separately. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes; OS enforcement only on a host |
+| A-REQ-066 | When the shared live writer restarts, existing committed data must remain readable without writable reader sidecars. | DECIDED docs/ledger/IDEA-047.md R15 (2026-10-14 implementation decision): “DELETE rollback journaling” | MUST | Read-only reader open before writer restart sees new commits; legacy WAL conversion preserves committed data. | A-UC-025, A-UC-026, A-UC-027, A-UC-028, A-UC-029, A-UC-030, A-UC-031, A-UC-032, A-UC-088, A-UC-089, A-UC-090, A-UC-097 | yes; two-user systemd/permissions only on a host |
+| A-REQ-067 | When evidence research runs in v1.0, the exposed tools must be fetch_document, prior_context and compare_facts. | DECIDED docs/ledger/IDEA-035.md §4 GAP-03, team 2026-10-11: “fetch_document” | MUST | Exact allowed tool set and bounded execution; no issuer newsroom fetch capability implied. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-068 | When development evaluates a hosted evidence model, it must test events after the model cutoff. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / LLM memorisation: “after the model's training cutoff” | MUST | Dataset metadata/cutoff checked before score; unknown cutoff reported as limitation/inconclusive, never clean validation. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-069 | When historical prompts are evaluated, ticker, company and date must be anonymized. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / LLM memorisation: “anonymise the ticker, company and date” | MUST | Fixtures test all identifier fields and free text; residual name-the-firm probe result retained. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-070 | When memorisation evaluation is reported, pre-cutoff and post-cutoff results must be separate. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / LLM memorisation: “pre-cutoff and post-cutoff results separately” | MUST | Report separate populations and limitations; no aggregate presented as post-cutoff evidence. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-071 | When a hypothesis is evaluated, pass, fail and inconclusive criteria must precede its run. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / Keeping overfitting small: “Hypotheses are pre-registered” | MUST | Criteria commit predates execution; insufficient independent labels/sample reported inconclusive. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-072 | When an evidence-assisted predictive model is promoted, held-out matched-coverage after-cost validation must have passed. | DECLARED docs/proposal/proposal_answers.md Your Proposal / What we will test: “only if it passes on held-out data” | MUST | No predictive economic claim without prospective comparison; v1.0 no trained model decision supersedes predictive shipping, not honest evaluation. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-073 | When validation is performed for a trained-model research track, final evaluation data must be used once. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / Validation discipline: “the final test period is used once” | MUST | Chronological split, purge/embargo >= five sessions, fit-only-on-validation and trial records independently inspected; research-only for no-trained-model v1.0. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-074 | When parameters are chosen, development/scored PnL must not tune them. | DECLARED docs/proposal/proposal_answers.md How would you prevent future leakage / Validation discipline: “Nothing is tuned” | MUST | Per-value provenance uses measured costs, cadence/lifecycle and fixed requirements, with team decision; no PnL fitting. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-075 | When model/prompts/tools change before activation, their pinned release identities must change. | DECLARED docs/proposal/proposal_answers.md Reproducibility / Versions: “prompts and tool schemas” | MUST | Pinned prompts/schemas/config/model snapshot differ on mutation and release preflight refuses mismatch; D owns version event. | A-UC-049, A-UC-050, A-UC-051, A-UC-052, A-UC-053, A-UC-054, A-UC-055, A-UC-056, A-UC-091, A-UC-092, A-UC-098 | yes |
+| A-REQ-076 | When the scored run operates, its starting build and fallback must remain unchanged. | ORGANISER docs/skill/SKILL.md F-114/F-117, relayed 2026-10-06/08: “no changes allowed” | MUST | No automatic model substitution or provider fallback beyond the declared build; no human change to source/model configuration. | A-UC-073, A-UC-074, A-UC-075, A-UC-076, A-UC-077, A-UC-078, A-UC-079, A-UC-080, A-UC-086, A-UC-087 | yes |
+| A-REQ-077 | When kit-named data Skills are used, their data scope must not be promoted to another instrument/channel. | RULE-KIT docs/official/kit/AI_Seeds_Participant_Guide.pdf pp.17-18 (F-104/K2): “Covers Ondo only” | MUST | Ondo-only securities data never labelled bStocks; spot skill remains data-only; C owns prohibited trading channels. | A-UC-001, A-UC-002, A-UC-003, A-UC-004, A-UC-005, A-UC-006, A-UC-007, A-UC-008 | yes |
+| A-REQ-078 | When calendar research is declared, announced-event planning must be recorded. | DECLARED docs/proposal/proposal_answers.md Team capability / What we deliver: “an event-calendar planner” | MUST | Known events produce time-qualified research jobs/planning records, or an explicit approved deviation; schedule execution shared with B/D. | A-UC-033, A-UC-034, A-UC-035, A-UC-036, A-UC-037, A-UC-038, A-UC-039, A-UC-040, A-UC-099 | yes |
+
+## Use cases
+
+Each group is crossed with all eight protocol axes. Each row is a scenario family; phase 2 must expand meaningful dependency/data/crash boundaries into concrete cases. Upload/chain/resource operations themselves belong to D/C/B, while their evidence consequences remain here. The explicit rows ensure every section A use-case prompt has an independent expectation. Families are not a claim that all cases have passed.
+
+| ID | Group / axis | Trigger and state | Expected behaviour | Requirements |
+|---|---|---|---|---|
+| A-UC-001 | rights / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-002 | rights / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-003 | rights / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-004 | rights / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-005 | rights / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-006 | rights / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-007 | rights / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-008 | rights / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-001, A-REQ-002, A-REQ-003, A-REQ-014, A-REQ-077 |
+| A-UC-009 | pit / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-010 | pit / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-011 | pit / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-012 | pit / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-013 | pit / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-014 | pit / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-015 | pit / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-016 | pit / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-017 | ingest / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-018 | ingest / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-019 | ingest / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-020 | ingest / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-021 | ingest / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-022 | ingest / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-023 | ingest / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-024 | ingest / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-025 | store / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-026 | store / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-027 | store / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-028 | store / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-029 | store / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-030 | store / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-031 | store / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-032 | store / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-033 | loop / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-034 | loop / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-035 | loop / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-036 | loop / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-037 | loop / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-038 | loop / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-039 | loop / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-040 | loop / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+| A-UC-041 | verify / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-042 | verify / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-043 | verify / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-044 | verify / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-045 | verify / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-046 | verify / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-047 | verify / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-048 | verify / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-049 | audit / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-050 | audit / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-051 | audit / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-052 | audit / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-053 | audit / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-054 | audit / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-055 | audit / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-056 | audit / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-057 | security / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-039, A-REQ-040 |
+| A-UC-058 | security / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-039, A-REQ-040 |
+| A-UC-059 | security / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-039, A-REQ-040 |
+| A-UC-060 | security / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-039, A-REQ-040 |
+| A-UC-061 | security / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-039, A-REQ-040 |
+| A-UC-062 | security / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-039, A-REQ-040 |
+| A-UC-063 | security / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-039, A-REQ-040 |
+| A-UC-064 | security / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-039, A-REQ-040 |
+| A-UC-065 | redflag / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-066 | redflag / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-067 | redflag / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-068 | redflag / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-069 | redflag / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-070 | redflag / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-071 | redflag / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-072 | redflag / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-073 | model / phase | Development, activation with fresh wallet, scored freeze and post-run audit | Keep evidence versions and truthful authority per phase; preserve complete audit after Nov 12. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-074 | model / time | UTC midnight, 02:00 UTC deadline, Nov 1 DST, weekend/holiday, market closed, backward/skewed clock and run-end boundary | Use absolute availability and declared lifecycle; expired/future evidence cannot authorize new risk; retain pending logs. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-075 | model / dependency | Relevant SEC/Web3/model/store dependency slow, 429, 5xx, timeout, malformed or down for minutes/hours/a day | Bound work; record failure and incomplete coverage; catch up without fabricating evidence or replacing pinned models. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-076 | model / data | Empty, boundary, duplicate, late/out-of-order, future, revised, oversized, wrong-type or hostile input | Reject invalid authority; preserve identity/version and original audit content; verified-only state. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-077 | model / process | Crash before/after each fetch, artifact write, batch commit, assessment and memory write; restart, two writers, stale owner, backup restore and replay | No lost committed provenance, no duplicate directive and no stale overwrite; replay original captured result. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-078 | model / resources | Disk/database full, source/model budget exhausted or credits nearing exhaustion | Visible bounded failure; no unauthorized source/model substitution; recovery retains audit and blocks dependency-invalid new risk. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-079 | model / security | Credential echo, arbitrary provider error, hostile tool, tampered release or compromised peer | No secret persistence/disclosure; pinned tools/destinations/rights and verified memory remain enforced. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-080 | model / audit | Auditor samples an arbitrary round, trade, model call or version | Retrieve complete original evidence, prompts, tools, I/O, readable reasoning, verification and version lineage. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-081 | ingest / explicit | Accepted filing then amended or withdrawn | Preserve both versions; process correction completely before resolving affected supports. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-082 | ingest / explicit | Late, malformed, partial EDGAR recent rows and paginated history files | Report watched-source incompleteness and catch up all pages; no false complete review. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-083 | ingest / explicit | SEC 429 or missing contact User-Agent | Back off within configured cap; missing contact causes preflight refusal. | A-REQ-013, A-REQ-016, A-REQ-017, A-REQ-018 |
+| A-UC-084 | security / explicit | Document says ignore rules and transmit keys to a new URL | Treat instruction as untrusted data; never change tool destinations or expose keys. | A-REQ-039, A-REQ-040 |
+| A-UC-085 | verify / explicit | Syndicated copies repeat a single issuer release | One origin does not count as independent corroboration; provenance preserved. | A-REQ-028, A-REQ-029, A-REQ-030, A-REQ-035, A-REQ-036 |
+| A-UC-086 | model / explicit | Model timeout/refusal/malformed/oversized reply or credential echo | No new risk; sanitize persisted outputs and incident; recover through declared fallback. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-087 | model / explicit | Provider unavailable for a day | Bound attempts, retain backlog and truthful unavailable state; no undeclared provider/model switch. | A-REQ-049, A-REQ-050, A-REQ-051, A-REQ-067, A-REQ-068, A-REQ-069, A-REQ-070, A-REQ-071, A-REQ-072, A-REQ-073, A-REQ-074, A-REQ-076 |
+| A-UC-088 | store / explicit | Evidence store grows across 14 days plus winner-audit retention | Budgets remain bounded without losing original committed artifacts needed by audits. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-089 | store / explicit | Poller restarts at every 24-hour boundary | Catch-up/ledger survives and read-only runtime sees committed updates across every restart. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-090 | store / explicit | Runtime opens read-only while writer is live, closed, restarting or recovering hot journal | Reader cannot mutate or repair; failure visible until writer recovery; no false fresh context. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-091 | audit / explicit | cot would be empty or contain only encrypted reasoning | Truthful nonempty deterministic explanation; encrypted items excluded from official output. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-092 | audit / explicit | Winner requests original prompts, tools and all model I/O of one decision | Resolve exact version/bytes and redactions; no current-prompt substitution. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-093 | redflag / explicit | SKHYB lacks rights-cleared evidence sufficient for a US 8-K classifier | Never borrow another issuer evidence or claim US-form coverage; preserve unavailable coverage and deterministic risk path. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-094 | redflag / explicit | Class 2 reaches five US sessions across DST/weekend | Evidence keeps auditable finding; B expires buy block without forced sale; no general adverse latch defeating expiry. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-095 | redflag / explicit | Heading-only, negated, stale or wrong-issuer Item 4.02 | No actionable Class 1 directive without current supported issuer occurrence. | A-REQ-043, A-REQ-044, A-REQ-045, A-REQ-046, A-REQ-047, A-REQ-048 |
+| A-UC-096 | pit / explicit | Date-only publication, future acceptance, present-day fetch of old filing | Conservative availability prevents backdating; store precision and retrieval separately. | A-REQ-004, A-REQ-005, A-REQ-006, A-REQ-007, A-REQ-008, A-REQ-009, A-REQ-010, A-REQ-011, A-REQ-012, A-REQ-019, A-REQ-020, A-REQ-021 |
+| A-UC-097 | store / explicit | Corrupted content or deleted artifact referenced by committed batch | Refuse actionable context and surface missing evidence; never substitute newer text. | A-REQ-015, A-REQ-031, A-REQ-032, A-REQ-033, A-REQ-034, A-REQ-065, A-REQ-066 |
+| A-UC-098 | audit / explicit | ai-seeds/S3/CloudWatch/PostgreSQL unavailable during evidence capture | A retains full sanitized payload; D owns durable deadline/ACK/recovery and progress evidence. | A-REQ-038, A-REQ-052, A-REQ-053, A-REQ-054, A-REQ-055, A-REQ-056, A-REQ-057, A-REQ-058, A-REQ-059, A-REQ-060, A-REQ-061, A-REQ-062, A-REQ-063, A-REQ-064, A-REQ-075 |
+| A-UC-099 | loop / explicit | BNB/USDT exhausted or dust while valid adverse evidence exists | Evidence still assessed/logged; B/C own resource-safe exits, with no invented successful trade. | A-REQ-022, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-026, A-REQ-027, A-REQ-037, A-REQ-041, A-REQ-042, A-REQ-078 |
+
+## Assumptions register
+
+Every status below is review-produced source evidence or explicitly unvalidated, never inherited ledger test results. Code assumptions are added only as dated phase-2 amendments.
+
+| ID | Assumption and where relied on | Status / checked evidence | How to validate | If wrong / deployment blocking |
+|---|---|---|---|---|
+| A-ASM-001 | Rights-cleared adopted sources can be retained and disclosed for a winner audit. | UNVALIDATED: competition permission is not a third-party licence. | A checks dated original terms, exclusions and hashes for every contacted source/model. | Unauthorized use or unavailable audit; blocks activation. |
+| A-ASM-002 | SEC observed availability/acceptance timestamps and history pagination are complete. | UNVALIDATED: kit contains no SEC contract. | Primary SEC documentation and reproducible rights-cleared listing fixtures/measurements with hashes. | Missed or future evidence; blocks complete review. |
+| A-ASM-003 | SK Hynix can be protected by the chosen evidence source/forms. | UNVALIDATED: old D-10 Korean collection decision is not implemented-source evidence. | Independently verify issuer/form coverage and unavailable-source policy; team decision if insufficient. | Silent unprotected holding or misattribution; blocks activation. |
+| A-ASM-004 | Seven days is a safe red-flag event age. | UNVALIDATED: IDEA-041 §2.1 says engineering value for team confirmation. | Team adopts derivation from decision cadence/review horizon and real examples before Oct 22. | Adverse evidence dropped or revived; blocks affected live predicates. |
+| A-ASM-005 | A chosen hosted provider supplies readable summaries within budget. | UNVALIDATED: checked Guide examples are not a measurement. | Rights-cleared provider bake-off with model snapshot/cost/latency and stored request/response hashes. | Empty cot or unavailable assessor; blocks model activation; declared deterministic fallback requires decision. |
+| A-ASM-006 | One release can run for fourteen days with bounded evidence storage and audit retention. | UNVALIDATED. | Synthetic growth/restarts plus later measured host capacity/retention drill. | Disk exhaustion/lost logs/unrecoverable halt; blocks activation. |
+| A-ASM-007 | SQLite read-only group/mount arrangement works across live writer restarts. | PARTIAL: dated R3/R15 decision checked, prior test results not adopted as current proof. | Real-component concurrent-reader tests and two-user host drill including hot-journal recovery. | Missing evidence at restart or writable runtime evidence; blocks hosted acceptance. |
+| A-ASM-008 | Source copies provide independent corroboration. | UNVALIDATED; declared second independent source cannot be inferred from repeated release text. | Common-origin fixtures and independently labelled real syndicated releases. | False verification; blocks any use requiring independent support. |
+| A-ASM-009 | token candles/spot data/named Skills cover the five bStocks without substitution. | PARTIAL: Guide explicitly limits tokenized-securities skill to Ondo. | C/B verify real identity keyed candles and gaps with original response hashes; A checks register/data lineage. | Wrong-instrument or missing history; blocks affected analysis. |
+| A-ASM-010 | Exact live cadence, freshness, retries, TTL and lifecycle values are adopted. | UNVALIDATED: B6 decides derivation method, not values. | Phase-2 enumerate every live parameter and derive alternatives for team approval by Oct 22. | Refused startup or stale actionable evidence; blocks live activation. |
+| A-ASM-011 | Registered final-wallet setup and audit sharing format are settled. | PARTIAL: Q-16 answered in practice for summaries; Q-35 and Q-24 still unresolved scope. | Team final-wallet and winner-format checks; no organiser contact in this review. | Wrong-wallet trace or audit handoff failure; D owns gate. |
+| A-ASM-012 | Kit-named source model identifiers remain usable and appropriately licensed. | UNVALIDATED; examples checked only as issued text. | Verify chosen provider primary documentation and dated model/API rights at phase 2. | Wrong undeclared/unsupported model; blocks model activation. |
+
+## Conflicts and ambiguities
+
+| ID | Source texts / conflict | Conservative disposition | Question or owner |
+|---|---|---|---|
+| A-CON-001 | Page F-15 allows scored-run improvements; relayed F-114 says no changes and F-117 says improve in development only. | One registered starting build for entire scored run, no human source/model/prompt changes. | No deployment-change question; settled working rule. Q-40 automatic restart confirmation remains D-owned. |
+| A-CON-002 | Proposal calibrated encoder/training/triage/underlying-price labels; team D-08/D-09/D-11 decides rules first, token candles and assessment only. | No trained predictive model in v1.0; retain honest NOT RUN evaluation and check actual recorded deviation reasons/evidence in phase 2. | Team/D: finalize manifest deviations before Oct 26. |
+| A-CON-003 | Earlier D-11 allows forced EXIT for three 8-K items; IDEA-035 §10.1 adopts forced exit for 4.02 only and five-session buy blocks for 1.05/2.06. | Latest dated decision governs; B receives exact class/expiry origin. | No open class-length question. |
+| A-CON-004 | Proposal issuer/GDELT/FRED sources and four named tools; IDEA-035 §4 adopts exact three-tool set; plan §6.5 records disabled-source deviations as DRAFT. | No unauthorized data fetch; verify actual deviation records before declaring proposal obligations superseded. | Team/D: approve rights basis and release register; no automatic rights clearance. |
+| A-CON-005 | Source current adverse filing may be seven days old; IDEA-041 calls seven-day freshness an unconfirmed engineering value. | Treat stale bound as DECISION-NEEDED, never change decided policy to make a test pass. | Team + A, by Oct 22: retain seven days or derive another bound from review cadence and persistent adverse events. |
+| A-CON-006 | F-49 requires complete original I/O; F-62 prohibits credentials; kit excludes encrypted reasoning from output, not from private complete I/O. | Redact credentials before durable capture; retain all other original I/O locally; official output omits encrypted reasoning. Redaction must be auditable without secret bytes. | Q-16 daily-summary acceptance is answered in practice; do not re-open it. Exact winner-sharing terms remain Q-24, team-owned. |
+| A-CON-007 | R3 used WAL plus writable SHM sidecar; later R15 explicitly narrows shared live writer to DELETE and read-only runtime mount. | Latest implementation decision governs; private stores may retain WAL; hot-journal repair belongs to writer. | A test reader/writer ordering; D host recovery/legacy migration. |
+| A-CON-008 | F-30 calls for agentic/model/harness innovation while deterministic assessor is an allowed B8 candidate, not yet final choice. | Do not claim deterministic-only deployment satisfies agentic requirement merely because tests pass; document research-loop depth and obtain explicit choice/deviation. | Team/A by Oct 22; readiness and model selection remain blocked. |
+| A-CON-009 | F-115 relayed scoring differs from F-43/45/48/50. | No invented scoring weights or profitable-policy claim; follow already decided equity/flatten plan. | D/team owns Q-39; A does not contact organisers. |
+
+## Scope closure
+
+### Named F/K/never-do/guardrail inventory
+
+| Inventory item | Requirement or disposition |
+|---|---|
+| F-08 agentic, F-20 acquisition/reasoning | A-REQ-004,022–030,067,077; qualitative agentic sufficiency A-CON-008 |
+| F-30 model/harness innovation | A-REQ-022–036,049–051,067,077; no inferred training obligation |
+| F-31 rules supporting agent | A-CON-008; not a call-volume/spend metric; no numerical acceptance invented |
+| F-32 allowed data and costs | A-REQ-001–003,014,051 |
+| F-49a / F-49b / F-49c | A-REQ-052–057,060–064,075 |
+| F-63 / F-71 | A-REQ-001–003,004,039; eligibility identity portion D |
+| F-102 / K15 | A-REQ-056–059; checked Guide pp.13,15–16 |
+| F-104 / K2 data parts | A-REQ-077; checked Guide pp.17–18; trading channel C |
+| K18 data parts | A-ASM-001,002,009,011; no extra source rights/quotas implied |
+| Never-do #7 model/evidence logs | A-REQ-015,039; Git/CI secret enforcement D |
+| Never-do #8 | A-REQ-001–004,010–012 |
+| G-05 | A-REQ-004–012,019–021; clock enforcement D, exact 500ms policy unadopted here |
+| G-06 | A-REQ-039,052–064; encrypted local retention distinct from official output |
+| G-10 | A-REQ-001; additional human-view/other-finalist-copy policy not promoted without adoption |
+| G-12 | A-REQ-075; version gates D |
+| G-42 | A-REQ-002–003,014 |
+| G-31 | A-REQ-032–034; no probability vector for no-trained-model v1.0; size rationale B |
+| G-32 / G-33 | A-REQ-028–030,036–037; independent risk authorization B |
+| G-34 | A-REQ-037,042,049; retry placeholder not adopted; quantities B |
+| G-35 | A-REQ-004–012,031–035,064 |
+| G-36 | A-ASM-010; exact few-cycles-per-day policy not adopted; review scheduling B/D |
+| G-37 | Unadopted four-role numeric placeholder; no invented four-role MUST |
+| G-38 | A-REQ-038,063; final journal/incident-chain D |
+| G-39 | A-REQ-068–074; research scope conditional on chosen model |
+| G-50 | A-REQ-022–027,041–042,067; <=3 types and 6 calls/60s DECLARED |
+| G-51 | A-REQ-031–036; post-mortems not adopted, no extra MUST |
+| G-52 | A-REQ-078; B/D execution scheduling; planner deviation unresolved |
+| G-53 | A-REQ-028–030,035–036,048,062 |
+| G-54 | A-REQ-037–042; unspecified retry/token caps are A-ASM-010 |
+| D-03 / IDEA-035 B8 | A-REQ-051; deferred identity/budget, A-CON-008 |
+| D-09 / GAP-56 kit candles | A-ASM-009; sizing/session/bar convention B/C; declared substitute audited by D |
+| D-10 | Older train/Korean collection decisions conditional research; no-trained-model supersession A-CON-002; SKHYB coverage A-ASM-003 |
+| D-11 / GAP-57 | A-REQ-043–050; latest IDEA-035 §10.1 classes govern |
+| IDEA-035 §6 / §10.1 | A-REQ-043–048; B owns actual sell/buy expiry/re-entry |
+| IDEA-041 stale bound | A-ASM-004 and A-CON-005; checked §2.1 says engineering value, not adopted |
+| DR-10 / DR-11 / DR-12 | A-REQ-013–018,043–051 |
+| GAP-23 | A-REQ-001–003,014–016; rights captures remain deployment evidence |
+| GAP-24 | A-REQ-004–012,017–021 |
+| GAP-25 | A-ASM-008; duplicate-copy case |
+| GAP-26 | A-REQ-028–030,048,071; independent real-text labels required, not synthetic proof |
+| GAP-27 | A-REQ-039–042 |
+| GAP-28 evidence parts | A-REQ-022–023,031–035,065–066; A-REQ-078; shared job service B/D |
+| GAP-56 / GAP-57 | A-REQ-049–051; paid/model/research choice stays team-owned |
+| GAP-67 | A-REQ-028–030,043–051,068–074; real evaluation remains honest gate |
+
+### DR and AT closure
+
+| Item | Owner / A disposition |
+|---|---|
+| DR-01 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-02 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-03 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-04 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-05 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-06 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-07 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-08 | B primary / C data and execution; A evidence freshness/identity consequences |
+| DR-09 | B primary / C data and execution; A evidence freshness/identity consequences |
+| DR-10 | A-REQ-043–048; B policy-side acceptance |
+| DR-11 | A-REQ-051–064; team final choice |
+| DR-12 | A-REQ-013–018; A-ASM-001/002/006/010 |
+| DR-13 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-14 | B primary / C data and execution; A evidence freshness/identity consequences |
+| DR-15 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-16 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-17 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-18 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-19 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-20 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-21 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| DR-22 | D primary shared readiness; C/B co-own execution, account and resource portions; A supplies audit lineage and endpoints |
+| AT01 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT02 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT03 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT04 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT05 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT06 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT07 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT08 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT09 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT10 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT11 | D primary transport/durability/deadline; A-REQ-038,039,042,052–064 oversized sanitized I/O |
+| AT12 | A-REQ-017–021 (A evidence); B/D invalid-buy consumers |
+| AT13 | D/B primary replay; A-REQ-064 exact captured model/evidence replay |
+| AT14 | D primary scheduling/leases; A-REQ-017–019,041 recovery bounds |
+| AT15 | D/B primary timers; A-REQ-004–012 time-qualified evidence |
+| AT16 | A-REQ-004,019–021 (A source identity/revision); B/C bars |
+| AT17 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT18 | B/C/D primary policy, reservation, signer, nonce and ledger acceptance; no A-owned signer/financial mutation |
+| AT19 | A-REQ-039–042 (A assessor/tools); D isolation/service progress |
+| AT20 | D primary install/backup/rehearsal/export; A-REQ-052–066 complete evidence audit and store |
+
+### Every declared proposal sentence
+
+Rows below cover every nonempty proposal line. For a paragraph containing several sentences, the disposition covers each sentence on that line; feature subfields remain split in requirements above. Deferred/superseded statements stay visible until actual deviation records are verified in phase 2.
+
+| Proposal location | Disposition |
+|---|---|
+| `docs/proposal/proposal_answers.md:1` () | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:3` () | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:7` (Your Proposal) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:9` (Your Proposal) | A-REQ-004,028–030,037,049; B LONG/HOLD/EXIT mapping; harness claim tested via A-CON-008 |
+| `docs/proposal/proposal_answers.md:11` (Your Proposal) | A-REQ-022–023,078; source activation A-CON-004 |
+| `docs/proposal/proposal_answers.md:12` (Your Proposal) | A-REQ-005–012,024–026,067; issuer/second-source tools A-CON-004 |
+| `docs/proposal/proposal_answers.md:13` (Your Proposal) | A-REQ-027 |
+| `docs/proposal/proposal_answers.md:14` (Your Proposal) | A-REQ-028–030 |
+| `docs/proposal/proposal_answers.md:15` (Your Proposal) | A-REQ-031–036 |
+| `docs/proposal/proposal_answers.md:17` (Your Proposal) | A-REQ-050,068,070,072–073; calibrated encoder/UP-FLAT-DOWN requirements conditional research, pending actual DEV-01 decision verification (A-CON-002) |
+| `docs/proposal/proposal_answers.md:19` (Your Proposal) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:20` (Your Proposal) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:21` (Your Proposal) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:22` (Your Proposal) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:24` (Your Proposal) | A-REQ-049; write-ahead/registered version D/C |
+| `docs/proposal/proposal_answers.md:26` (Your Proposal) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:27` (Your Proposal) | A-REQ-071–073; predictive gate/fallback A-CON-002; manifest D |
+| `docs/proposal/proposal_answers.md:28` (Your Proposal) | B/C off-hours hypothesis and execution guard; A-ASM-009 unvalidated data, no edge claim |
+| `docs/proposal/proposal_answers.md:30` (Your Proposal) | A-REQ-063,071; no profitability claim |
+| `docs/proposal/proposal_answers.md:34` (Data / tools used) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:36` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:37` (Data / tools used) | C executable Web3 data; API/build/simulate deviation D; A-REQ-001–003 |
+| `docs/proposal/proposal_answers.md:38` (Data / tools used) | B valuation; D organizer-source unknowns; A-REQ-001–004 |
+| `docs/proposal/proposal_answers.md:39` (Data / tools used) | C/D chain reconciliation |
+| `docs/proposal/proposal_answers.md:40` (Data / tools used) | A-REQ-002–003,050,073; source/model substitute A-CON-002 |
+| `docs/proposal/proposal_answers.md:41` (Data / tools used) | B/C token/share measurement; A-ASM-009 and A-REQ-020 |
+| `docs/proposal/proposal_answers.md:43` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:44` (Data / tools used) | A-REQ-009,013–018,020–021 |
+| `docs/proposal/proposal_answers.md:45` (Data / tools used) | A-REQ-001–003,014; disabled newsroom deviation A-CON-004 |
+| `docs/proposal/proposal_answers.md:46` (Data / tools used) | A-REQ-001–003,028; A-ASM-008 source independence; disabled GDELT deviation A-CON-004 |
+| `docs/proposal/proposal_answers.md:47` (Data / tools used) | A-REQ-004–012; no unlicensed macro use; disabled FRED/ALFRED deviation A-CON-004 |
+| `docs/proposal/proposal_answers.md:48` (Data / tools used) | A-REQ-004–012,078; calendar planner choice remains explicit |
+| `docs/proposal/proposal_answers.md:50` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:51` (Data / tools used) | A-REQ-051–059; provider budget/choice not decided |
+| `docs/proposal/proposal_answers.md:52` (Data / tools used) | A-REQ-050,072–073; no trained-model v1.0 decision A-CON-002 |
+| `docs/proposal/proposal_answers.md:53` (Data / tools used) | A-CON-002/004; triage-model shipping requires recorded deviation or implementation/rights; no silently waived promise |
+| `docs/proposal/proposal_answers.md:55` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:56` (Data / tools used) | A-REQ-024–026,060–061,067; exact-tool substitution A-CON-004 |
+| `docs/proposal/proposal_answers.md:57` (Data / tools used) | A-REQ-024–026,060–061,067; disabled issuer fetch requires recorded deviation A-CON-004 |
+| `docs/proposal/proposal_answers.md:58` (Data / tools used) | A-REQ-024–026,060–061,067; second-source substitution A-CON-004/A-ASM-008 |
+| `docs/proposal/proposal_answers.md:59` (Data / tools used) | A-REQ-004–012; feature context B; internal-lookup tool substitution A-CON-004 |
+| `docs/proposal/proposal_answers.md:61` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:62` (Data / tools used) | C Web3/build/simulate flow; actual deviation D |
+| `docs/proposal/proposal_answers.md:63` (Data / tools used) | C signer allow-list |
+| `docs/proposal/proposal_answers.md:64` (Data / tools used) | D version gate; A-REQ-075 prompt/tool/model binding |
+| `docs/proposal/proposal_answers.md:65` (Data / tools used) | C/D reconciler |
+| `docs/proposal/proposal_answers.md:66` (Data / tools used) | D write-once uploader; A-REQ-052–064 payload |
+| `docs/proposal/proposal_answers.md:68` (Data / tools used) | D platform stack; A-REQ-065–066 decided shared SQLite evidence, not an inferred PostgreSQL-only requirement |
+| `docs/proposal/proposal_answers.md:70` (Data / tools used) | A-REQ-001–064,067–078; model/source deviations A-CON-002/004/008; risk/control/trade sentences B/C/D |
+| `docs/proposal/proposal_answers.md:71` (Data / tools used) | A-REQ-005–008 |
+| `docs/proposal/proposal_answers.md:72` (Data / tools used) | A-REQ-002,014,051 |
+| `docs/proposal/proposal_answers.md:73` (Data / tools used) | A-REQ-001,004 |
+| `docs/proposal/proposal_answers.md:74` (Data / tools used) | A-REQ-001–002 |
+| `docs/proposal/proposal_answers.md:78` (Position & risk management) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:80` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:81` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:82` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:84` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:85` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:86` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:87` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:88` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:89` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:90` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:92` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:93` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:94` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:95` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:96` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:97` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:98` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:100` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:101` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:102` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:103` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:104` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:105` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:107` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:108` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:109` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:110` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:111` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:112` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:114` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:115` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:116` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:117` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:118` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:120` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:121` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:122` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:123` (Position & risk management) | B/C/D primary; model/tool/schema failures A-REQ-037–042; LLM authority A-REQ-049 |
+| `docs/proposal/proposal_answers.md:127` (How would you prevent future leakage and overfitting?) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:129` (How would you prevent future leakage and overfitting?) | A-REQ-004–012,068–075; predictive training/validation conditional research A-CON-002; clock/version enforcement D |
+| `docs/proposal/proposal_answers.md:130` (How would you prevent future leakage and overfitting?) | A-REQ-005–006 |
+| `docs/proposal/proposal_answers.md:131` (How would you prevent future leakage and overfitting?) | A-REQ-010–011 |
+| `docs/proposal/proposal_answers.md:132` (How would you prevent future leakage and overfitting?) | A-REQ-009; macro vintage source disabled pending deviation A-CON-004 |
+| `docs/proposal/proposal_answers.md:133` (How would you prevent future leakage and overfitting?) | D server-clock guard; A-REQ-004,010–011 |
+| `docs/proposal/proposal_answers.md:135` (How would you prevent future leakage and overfitting?) | A-REQ-004–012,068–075; predictive training/validation conditional research A-CON-002; clock/version enforcement D |
+| `docs/proposal/proposal_answers.md:136` (How would you prevent future leakage and overfitting?) | A-REQ-073 conditional research: anchored walk-forward and >=5-session purge/embargo |
+| `docs/proposal/proposal_answers.md:137` (How would you prevent future leakage and overfitting?) | A-REQ-073: separate train/calibration/selection/final periods; conditional no-trained-model v1.0 |
+| `docs/proposal/proposal_answers.md:138` (How would you prevent future leakage and overfitting?) | A-REQ-073: fit thresholds/temperature only on validation, conditional research |
+| `docs/proposal/proposal_answers.md:139` (How would you prevent future leakage and overfitting?) | A-REQ-074,076 |
+| `docs/proposal/proposal_answers.md:140` (How would you prevent future leakage and overfitting?) | A-REQ-076: later relayed F-117 supersedes in-run release clause, D version-event integration |
+| `docs/proposal/proposal_answers.md:142` (How would you prevent future leakage and overfitting?) | A-REQ-004–012,068–075; predictive training/validation conditional research A-CON-002; clock/version enforcement D |
+| `docs/proposal/proposal_answers.md:143` (How would you prevent future leakage and overfitting?) | A-REQ-068; cutoff uncertainty A-ASM-005/012 |
+| `docs/proposal/proposal_answers.md:144` (How would you prevent future leakage and overfitting?) | A-REQ-069; identity-leak probe required; anonymity not assumed perfect |
+| `docs/proposal/proposal_answers.md:145` (How would you prevent future leakage and overfitting?) | A-REQ-070 |
+| `docs/proposal/proposal_answers.md:146` (How would you prevent future leakage and overfitting?) | A-REQ-050,073; any research encoder cutoff separately checked |
+| `docs/proposal/proposal_answers.md:148` (How would you prevent future leakage and overfitting?) | A-REQ-004–012,068–075; predictive training/validation conditional research A-CON-002; clock/version enforcement D |
+| `docs/proposal/proposal_answers.md:149` (How would you prevent future leakage and overfitting?) | A-CON-002; no-trained-model shipping supersedes small-calibrated-model promise pending deviation check |
+| `docs/proposal/proposal_answers.md:150` (How would you prevent future leakage and overfitting?) | A-REQ-071 |
+| `docs/proposal/proposal_answers.md:151` (How would you prevent future leakage and overfitting?) | A-REQ-072 |
+| `docs/proposal/proposal_answers.md:152` (How would you prevent future leakage and overfitting?) | A-REQ-072–073: selected-case calibration and bootstrap intervals conditional predictive research, not evidence-verifier accuracy |
+| `docs/proposal/proposal_answers.md:154` (How would you prevent future leakage and overfitting?) | A-ASM-009; B/C corporate-action/basis analysis; trained-share labels A-CON-002 |
+| `docs/proposal/proposal_answers.md:158` (Reproducibility plan — how can your run be rerun and verified?) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:160` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:161` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:162` (Reproducibility plan — how can your run be rerun and verified?) | D commit/dependency lock; A-REQ-075 any relevant evidence dependency |
+| `docs/proposal/proposal_answers.md:163` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-054–055,075 |
+| `docs/proposal/proposal_answers.md:164` (Reproducibility plan — how can your run be rerun and verified?) | B/D risk configuration; A-REQ-074–075 intelligence config |
+| `docs/proposal/proposal_answers.md:165` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-051,075; self-hosted research weights A-REQ-050/073 |
+| `docs/proposal/proposal_answers.md:166` (Reproducibility plan — how can your run be rerun and verified?) | D version-gate execution; A-REQ-075 pinning |
+| `docs/proposal/proposal_answers.md:167` (Reproducibility plan — how can your run be rerun and verified?) | D/C start-up check; A-REQ-075 evidence tools |
+| `docs/proposal/proposal_answers.md:168` (Reproducibility plan — how can your run be rerun and verified?) | D/C pre-order version enforcement |
+| `docs/proposal/proposal_answers.md:169` (Reproducibility plan — how can your run be rerun and verified?) | D protected-history procedure; no force-push |
+| `docs/proposal/proposal_answers.md:171` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:172` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-005–012; D write-ahead input references |
+| `docs/proposal/proposal_answers.md:173` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–062 |
+| `docs/proposal/proposal_answers.md:174` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-062; probability-vector model promise A-CON-002; B/D policy/risk check traces |
+| `docs/proposal/proposal_answers.md:175` (Reproducibility plan — how can your run be rerun and verified?) | B/C/D order record |
+| `docs/proposal/proposal_answers.md:176` (Reproducibility plan — how can your run be rerun and verified?) | C/D execution/abort append |
+| `docs/proposal/proposal_answers.md:177` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-063; D official round/ACK |
+| `docs/proposal/proposal_answers.md:179` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:180` (Reproducibility plan — how can your run be rerun and verified?) | D append-only sequence/hash chain |
+| `docs/proposal/proposal_answers.md:181` (Reproducibility plan — how can your run be rerun and verified?) | D daily/incident upload and hourly anchoring; A-REQ-052–064 retained evidence |
+| `docs/proposal/proposal_answers.md:182` (Reproducibility plan — how can your run be rerun and verified?) | D tamper/completeness guarantees |
+| `docs/proposal/proposal_answers.md:183` (Reproducibility plan — how can your run be rerun and verified?) | C/D transaction/decision/version reconciliation |
+| `docs/proposal/proposal_answers.md:184` (Reproducibility plan — how can your run be rerun and verified?) | D heartbeat/sequence completeness |
+| `docs/proposal/proposal_answers.md:186` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:187` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-064; B/D full deterministic replay |
+| `docs/proposal/proposal_answers.md:188` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-012,064 |
+| `docs/proposal/proposal_answers.md:189` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–053; any self-hosted weights research/archive D, no-trained-model v1.0 A-CON-002 |
+| `docs/proposal/proposal_answers.md:190` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-056–059; probability vector replaced only via recorded deviation A-CON-002 |
+| `docs/proposal/proposal_answers.md:192` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:193` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:194` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:195` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:197` (Reproducibility plan — how can your run be rerun and verified?) | A-REQ-052–066,076; version/journal/transport/nonce/deployment parts D/C |
+| `docs/proposal/proposal_answers.md:198` (Reproducibility plan — how can your run be rerun and verified?) | D identity/access; A-REQ-001–003 source/model rights |
+| `docs/proposal/proposal_answers.md:199` (Reproducibility plan — how can your run be rerun and verified?) | B/C/D action prerequisites; A-REQ-001–004,017 dependency-invalid evidence |
+| `docs/proposal/proposal_answers.md:200` (Reproducibility plan — how can your run be rerun and verified?) | A-ASM-001–012 explicit unknowns; D pinned documented fallback; A-REQ-051,076 |
+| `docs/proposal/proposal_answers.md:204` (Team capability + intended scope) | Metadata; no runtime obligation |
+| `docs/proposal/proposal_answers.md:206` (Team capability + intended scope) | Named roles/timeline D; A evidence/verification/model/cutoff/audit A-REQ-022–036,048–064,068–074,078; trained model A-CON-002; calendar unresolved A-CON-004 |
+| `docs/proposal/proposal_answers.md:207` (Team capability + intended scope) | Role metadata; current section A allocation comes from user prompt, no authority to change others roles |
+| `docs/proposal/proposal_answers.md:208` (Team capability + intended scope) | Role metadata; A point-in-time A-REQ-004–021 and evaluation A-REQ-068–074; B/C risk/data |
+| `docs/proposal/proposal_answers.md:209` (Team capability + intended scope) | Role metadata; C execution/security |
+| `docs/proposal/proposal_answers.md:210` (Team capability + intended scope) | Role metadata; D platform/audit |
+| `docs/proposal/proposal_answers.md:212` (Team capability + intended scope) | Named roles/timeline D; A evidence/verification/model/cutoff/audit A-REQ-022–036,048–064,068–074,078; trained model A-CON-002; calendar unresolved A-CON-004 |
+| `docs/proposal/proposal_answers.md:213` (Team capability + intended scope) | A-REQ-024–030,067 |
+| `docs/proposal/proposal_answers.md:214` (Team capability + intended scope) | A-REQ-031–036 |
+| `docs/proposal/proposal_answers.md:215` (Team capability + intended scope) | A-REQ-078 |
+| `docs/proposal/proposal_answers.md:216` (Team capability + intended scope) | A-CON-002; trained model/selection substitute pending actual deviation verification |
+| `docs/proposal/proposal_answers.md:217` (Team capability + intended scope) | B deterministic risk/regime |
+| `docs/proposal/proposal_answers.md:218` (Team capability + intended scope) | C restricted signer |
+| `docs/proposal/proposal_answers.md:219` (Team capability + intended scope) | D version/audit/recovery; A-REQ-052–066 evidence trail |
+| `docs/proposal/proposal_answers.md:221` (Team capability + intended scope) | D cut-line/standby and hosting deviation; A live predicate/model/source values require team decision before cut |
+| `docs/proposal/proposal_answers.md:223` (Team capability + intended scope) | Named roles/timeline D; A evidence/verification/model/cutoff/audit A-REQ-022–036,048–064,068–074,078; trained model A-CON-002; calendar unresolved A-CON-004 |
+| `docs/proposal/proposal_answers.md:224` (Team capability + intended scope) | D delivery milestones; A-REQ-068 post-cutoff evaluation |
+| `docs/proposal/proposal_answers.md:225` (Team capability + intended scope) | D onboarding milestones; A-REQ-003 declared services |
+| `docs/proposal/proposal_answers.md:226` (Team capability + intended scope) | D development milestone |
+| `docs/proposal/proposal_answers.md:227` (Team capability + intended scope) | C Web3 adapter |
+| `docs/proposal/proposal_answers.md:228` (Team capability + intended scope) | C/D signed rehearsal (outside this review authorization) |
+| `docs/proposal/proposal_answers.md:229` (Team capability + intended scope) | C/D reconciliation/heartbeat/upload |
+| `docs/proposal/proposal_answers.md:230` (Team capability + intended scope) | D checkpoint |
+| `docs/proposal/proposal_answers.md:231` (Team capability + intended scope) | D development/cut-line milestone |
+| `docs/proposal/proposal_answers.md:232` (Team capability + intended scope) | D/team 5+ day minimum-size rehearsal; not satisfied by offline synthetic tests |
+| `docs/proposal/proposal_answers.md:233` (Team capability + intended scope) | D/C recovery/soak; A store/security test components |
+| `docs/proposal/proposal_answers.md:234` (Team capability + intended scope) | B/C cost model; A-REQ-071–073 hypothesis readouts |
+| `docs/proposal/proposal_answers.md:235` (Team capability + intended scope) | D/team Oct 22 cut line; A decision deadlines |
+| `docs/proposal/proposal_answers.md:236` (Team capability + intended scope) | D self-check |
+| `docs/proposal/proposal_answers.md:237` (Team capability + intended scope) | D final-wallet/frozen manifest; no separate safe-mode release under F-117 |
+| `docs/proposal/proposal_answers.md:238` (Team capability + intended scope) | D daily reconciliation/uploads; A-REQ-076 later relayed no-change rule supersedes release clause |
+| `docs/proposal/proposal_answers.md:239` (Team capability + intended scope) | A-REQ-052–066; D audit bundle/version history |
+
+## Remaining shared source inventory
+
+These are ownership dispositions, not A coverage claims. Named A aspects above govern where an item splits.
+
+| Item | Disposition |
+|---|---|
+| F-01 | D governance/timeline/audit/integration |
+| F-02 | D governance/timeline/audit/integration |
+| F-03 | D governance/timeline/audit/integration |
+| F-04 | D governance/timeline/audit/integration |
+| F-05 | D governance/timeline/audit/integration |
+| F-06 | D governance/timeline/audit/integration |
+| F-07 | D governance/timeline/audit/integration |
+| F-09 | D governance/timeline/audit/integration |
+| F-18 | D governance/timeline/audit/integration |
+| F-19 | D governance/timeline/audit/integration |
+| F-21 | D governance/timeline/audit/integration |
+| F-22 | D governance/timeline/audit/integration |
+| F-23 | D governance/timeline/audit/integration |
+| F-24 | D governance/timeline/audit/integration |
+| F-25 | D governance/timeline/audit/integration |
+| F-33 | D governance/timeline/audit/integration |
+| F-34 | D governance/timeline/audit/integration |
+| F-35 | D governance/timeline/audit/integration |
+| F-40 | D governance/timeline/audit/integration |
+| F-41 | D governance/timeline/audit/integration |
+| F-42 | D governance/timeline/audit/integration |
+| F-43 | D governance/timeline/audit/integration |
+| F-44 | D governance/timeline/audit/integration |
+| F-45 | D governance/timeline/audit/integration |
+| F-46 | D governance/timeline/audit/integration |
+| F-47 | D governance/timeline/audit/integration |
+| F-48 | D governance/timeline/audit/integration |
+| F-50 | D governance/timeline/audit/integration |
+| F-51 | D governance/timeline/audit/integration |
+| F-52 | D governance/timeline/audit/integration |
+| F-60 | D governance/timeline/audit/integration |
+| F-61 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-62 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-64 | D governance/timeline/audit/integration |
+| F-65 | D governance/timeline/audit/integration |
+| F-66 | D governance/timeline/audit/integration |
+| F-70 | D governance/timeline/audit/integration |
+| F-72 | D governance/timeline/audit/integration |
+| F-73 | D governance/timeline/audit/integration |
+| F-80 | D governance/timeline/audit/integration |
+| F-90 | D governance/timeline/audit/integration |
+| F-91 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-92 | D governance/timeline/audit/integration |
+| F-93 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-94 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-95 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-96 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-97 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-98 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-99 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-100 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-101 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-103 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-105 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-106 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-107 | D governance/timeline/audit/integration |
+| F-108 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-109 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-110 | D official logs/security/versioning; A-REQ-039,052–064 evidence payload co-ownership |
+| F-111 | C trading/market-source contracts; B accounting/resource constraints; A retains relevant source identity/timing |
+| F-112 | D governance/timeline/audit/integration |
+| F-113 | D governance/timeline/audit/integration |
+| F-114 | A-REQ-076 frozen assessor/fallback; D overall no-change enforcement |
+| F-115 | D governance/timeline/audit/integration |
+| F-116 | D governance/timeline/audit/integration |
+| F-117 | A-REQ-076 frozen assessor/fallback; D overall no-change enforcement |
+| F-118 | D governance/timeline/audit/integration |
+| K1 | D source-map/SDK/log/transport integration; A audit payload |
+| K3 | C market/trading API; B resource/value consumers |
+| K4 | C market/trading API; B resource/value consumers |
+| K5 | C market/trading API; B resource/value consumers |
+| K6 | C market/trading API; B resource/value consumers |
+| K7 | C market/trading API; B resource/value consumers |
+| K8 | C market/trading API; B resource/value consumers |
+| K9 | C market/trading API; B resource/value consumers |
+| K10 | D source-map/SDK/log/transport integration; A audit payload |
+| K11 | D source-map/SDK/log/transport integration; A audit payload |
+| K12 | D source-map/SDK/log/transport integration; A audit payload |
+| K13 | D source-map/SDK/log/transport integration; A audit payload |
+| K14 | D source-map/SDK/log/transport integration; A audit payload |
+| K16 | C market/trading API; B resource/value consumers |
+| K17 | C market/trading API; B resource/value consumers |
+| Never-do #1 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #2 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #3 | B/C prohibited actions/resource/trade constraints |
+| Never-do #4 | B/C prohibited actions/resource/trade constraints |
+| Never-do #5 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #6 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #9 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #10 | B/C prohibited actions/resource/trade constraints |
+| Never-do #11 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #12 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| Never-do #13 | D history/version/audit/freeze/test authorization; A follows procedural rule |
+| G-01 | C economic/signing/market guards; B resource/risk contract |
+| G-02 | C economic/signing/market guards; B resource/risk contract |
+| G-03 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-04 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-07 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-08 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-09 | C economic/signing/market guards; B resource/risk contract |
+| G-11 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-13 | C economic/signing/market guards; B resource/risk contract |
+| G-17 | C economic/signing/market guards; B resource/risk contract |
+| G-18 | C economic/signing/market guards; B resource/risk contract |
+| G-19 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-40 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+| G-41 | D version/history/audit/no-human-action/security integration; A payload/provenance co-owner where applicable |
+
+## Trace
+
+NOT STARTED. Protocol §1.8 requires a frozen pushed catalogue before any implementation trace, prior-issue reconciliation, new test design or full-suite baseline. Do not infer COVERED from the acceptance descriptions. Add trace only as a dated phase-2 amendment.
+
+## Freeze closure and next gate
+
+All named A inventory items have a requirement, conditional/research disposition or named shared owner above. No application-driven values were added. Source-law/licensing clearance, independent real-document accuracy, provider bake-off, host storage and complete runtime audit are not established by this catalogue. Phase 2 must enumerate code assumptions and prove each row with committed/pushed tests or explicit later checks.
