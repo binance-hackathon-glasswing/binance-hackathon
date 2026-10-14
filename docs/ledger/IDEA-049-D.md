@@ -90,6 +90,8 @@ All run against real PostgreSQL 14.24 (`LARP_TEST_DATABASE_URL`) with fakes only
 
 The deliverable test for #23 (`test_d_req_023_…`) is committed with `unittest.expectedFailure`: the fix belongs to C's execution-state code (D-FND-005, §7). The marker must be removed in the same change that fixes it; an unexpected pass fails the suite.
 
+**Amendment A2 (2026-10-14, after the first fix round, before its test is written).** D-FND-020, P2, D-REQ-030/032 (#51): when a plan commit is rejected (`Conflict`), `record_rejection` reloads the projection and drops the evidence updates the context builder accepted that round, so the next round re-processes them against old evidence versions. Criterion for `tests/runtime/test_final_review_d.py::test_d_req_032_a_rejected_plan_keeps_the_rounds_evidence_updates`: after a round whose plan commit is rejected, the stored projection holds the builder's updates exactly as an accepted round would, the round still has one log with `COMMIT_REJECTED`, and replay of the journal reaches the same head. Disclosure: the criterion was written to the file before the test ran, but the single local red run (`evidence: None`) happened before this commit was pushed.
+
 Every round of fixes is followed by the full suite, `tools/system_test.py` on this pushed branch, and Linux CI (Terraform and host-bundle jobs included).
 
 ## 5. DECISION-NEEDED

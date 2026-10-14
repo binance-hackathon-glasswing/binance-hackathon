@@ -449,6 +449,45 @@ class SignedBytesInBackups(DatabaseCase):
         self.assertNotIn(base64.b64encode(bytes.fromhex(raw_hex[2:])), payload)
 
 
+# --- D-REQ-030 / 032: a rejected plan keeps the round's accepted evidence (#51) -----------------------------------
+
+class RejectedPlan(DatabaseCase):
+    def test_d_req_032_a_rejected_plan_keeps_the_rounds_evidence_updates(self):
+        import tests.audit.test_round_logging as logging_tests
+        from larp.runtime.coordinator import Coordinator
+        from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePolicy
+        from larp.runtime.replay import replay
+        from larp.storage.postgres import PostgresStore, doc
+        from tests.support import request
+        updates = dict(evidence={'ISSUER': dict(version=3, latch='ADVERSE')}, evidence_versions={'ISSUER': 3})
+
+        def builder(current, req, assessment, now_ms):
+            return dict(projection=current['projection'], reservations=current['reservations']), dict(updates)
+        planner = logging_tests.Planned([logging_tests.intent('x')],
+                                        [dict(intent_id='intent:x', asset='USDT', units=1000)])  # > balance
+
+        def coordinator(store):
+            return Coordinator(store, FakeAssessor(), FakePolicy(), planner, execution=FakeExecution(), run_id='run',
+                               version_id='synthetic', profile_hash='a' * 64, address=logging_tests.ADDRESS,
+                               clock_ms=lambda: logging_tests.NOW, context_builder=builder)
+        coordinator(self.store).start('r', request('BUY'), logging_tests.NOW)
+        projection = self.store.load('run').read()['projection']
+        self.assertEqual({k: projection.get(k) for k in updates}, updates)
+        with self.store.transaction() as db:
+            logs = [json.loads(Document(bytes(r[0])).read()['log'])['data'] for r in db.execute(
+                "SELECT document FROM audit_events WHERE run_id='run' AND round_id='r'")]
+        self.assertEqual(len(logs), 1)
+        self.assertIn('COMMIT_REJECTED', logs[0]['output']['errors'])
+        journal, expected = self.store.journal('run'), self.store.verify('run')
+        initial = doc(self.store.load('run').read()['initial'])
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        head = replay(journal, initial, self.store, run_id='run', wallet_id='wallet', chain_id=56,
+                      version_id='synthetic', profile_hash='a' * 64, address=logging_tests.ADDRESS, policy=FakePolicy(),
+                      planner=planner, execution=FakeExecution(), reducer=None, context_builder=builder)
+        self.assertEqual(head, expected)
+
+
 # --- D-REQ-105 / 103 / 111 / 135: hosting definitions --------------------------------------------------------------
 
 class HostingDefinitions(unittest.TestCase):
