@@ -218,3 +218,14 @@ Yao Zhu asked for proof that everything works offline (including the simulation)
   - On macOS the demo needs Linux bubblewrap, so it is proven by the Linux CI run on the same runtime tree (`--linux-ci-run <id>`). It is never reported as locally executed.
 - **Pass:** every phase exits zero, every skip is listed with its reason, and a SystemTestReport.v1 is written. It is committed under `docs/build/evidence/` with the tested commit, counts and log hashes.
 - **Not covered by this check:** real market, source or model data; a real wallet or signing; hosts. These stay open in `docs/INCOMPLETE_WORK.md`.
+
+### Offline readiness result (2026-10-14): PASS
+
+- **Tested:** `bd79da9`, the head of `codex/hosting-option-b-20261012`.
+  - The runner accepts only `codex/system-testing-*` branches, so it ran on the alias branch `codex/system-testing-pr20-20261014`, pushed at that identical commit and removed afterwards.
+  - Disposable PostgreSQL 14.24 in Docker; macOS with Python 3.12.14.
+- **Report:** `docs/build/evidence/system-test-20261014-pr20.json` (SystemTestReport.v1, status PASS).
+- **System cases:** 112 passed, 70 subtests. They cover the real coordinator, the PostgreSQL execution store and service, receipt settlement, reservation release, audit ACK, restart and recovery, restore, replay and release-manifest checks, with synthetic transports.
+- **Full suite:** 1138 passed, 4 skipped, 1466 subtests. The skips are three Linux-bubblewrap worker-isolation tests, which run in Linux CI, and one opt-in test that needs external recorded-market artifacts.
+- **Offline demo:** PASS on Linux CI [run 38532479457](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38532479457) at `1a6ae58`, whose runtime/config/deploy/migration tree is identical to `bd79da9` (checked by the runner).
+- **Scope:** synthetic engineering checks only. No real market, source or model data, wallet, signing or host is involved.
