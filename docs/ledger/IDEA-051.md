@@ -40,3 +40,8 @@
   - A fresh plan shows **No changes**. `describe-budgets` confirms both budgets with `IncludeCredit = False`.
   - No hosts and no cost: budgets are free.
   - `CalculatedSpend` still read 0.0 right after the change; AWS recalculates budgets periodically, so check it again within a day.
+- **2026-10-14 ~17:20 UTC: service secrets stored by Yao Zhu**, in their own terminal with `tools/deploy/put_service_secrets.sh` (dev wallet).
+  - `larp-dev/runtime` has an `AWSCURRENT` version from 17:20:41 UTC.
+  - `larp-dev/uploader` has one from 17:23:09 UTC. The first pass stored only the runtime secret; the uploader was rerun with `--only uploader`.
+  - Checked with `list-secret-version-ids` only. No value was read, shown or recorded.
+  - The wallet private key is not stored anywhere yet: it goes to the signer host at Gate B.

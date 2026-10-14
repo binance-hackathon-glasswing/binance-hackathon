@@ -14,7 +14,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 |---|---|---|
 | Core AWS stack (VPC, RDS `larp-dev`, buckets, KMS, alarms, secret metadata) | **Applied**, and in sync with `0820b0d`. The credit budget `larp-dev-credit` was added 2026-10-14 ~17:10 UTC; `terraform plan` now shows no changes | — |
 | Alarm email subscription | **Pending confirmation**: click the link in AWS's email | Yao Zhu |
-| Service secrets `larp-dev/runtime`, `larp-dev/uploader` | **Empty** (0 versions) | Yao Zhu, step 2 |
+| Service secrets `larp-dev/runtime`, `larp-dev/uploader` | **Stored** 2026-10-14 ~17:20 UTC by Yao Zhu with `put_service_secrets.sh` (dev wallet; checked by version metadata only). The final wallet's values replace them at the switch (runbook §5) | — |
 | Hosts `primary`, `signer` | **Off** (`host_ids = {}`) | needs a spend OK, step 3 |
 | Database tables and service roles | **Not migrated** | step 6 |
 | Session Manager plugin on the Mac | **Not installed** (needed for SSM shells and the database port-forward) | Yao Zhu |
@@ -46,7 +46,7 @@ A `dev` run refuses to start without each of these. None is a deployment step: e
 ## Order of work
 
 1. **Reviews in.** Merge the open PRs (B #65, D follow-up #69, WR leftovers #71 and any others) and wait for green CI on the final head of `codex/system-testing-20261012`. Note that head's SHA: it is the build.
-2. **Secrets (Yao Zhu, in your own terminal):**
+2. **Secrets (Yao Zhu, in your own terminal). Done 2026-10-14 for the dev wallet; rerun only to change a value:**
    ```bash
    aws login --profile larp --region ap-southeast-2
    ```
