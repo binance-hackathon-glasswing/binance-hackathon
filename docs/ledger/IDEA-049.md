@@ -1,7 +1,7 @@
 # IDEA-049: Final pre-deployment review against first-principles requirements
 
 - Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Sections assigned by random draw at Yao Zhu's request: A Keith, B Keegan, C Isaac, D Yao Zhu (D integrates).
-- Status: **planned; PR #21 comments amended, focused regressions and merged-tree CI PASS.** The four-section review is NOT RUN; runner prerequisite regressions and CI are recorded separately below.
+- Status: **planned; PR #21 comments amended, retargeted to `codex/system-testing-20261012` after PR #20 merged (Day 0 = 2026-10-14 SGT), merged-tree CI PASS.** The four-section review is NOT RUN; runner prerequisite regressions and CI are recorded separately below.
 - Prompts: `docs/build/final-review/` (README, common protocol, four section prompts).
 - Starts after: PR #20 and amended PR #21 are merged into `codex/system-testing-20261012`, with the IDEA-048 driver integrated or an explicitly recorded partial-scope disposition (protocol §0.1).
 - Links: IDEA-043/044 (earlier system testing and review), IDEA-045–047 (hosting), `docs/build/DEPLOYMENT_BUILD.md` (DR-01..DR-22), IDEA-021 (AT01–AT20), `docs/build/AWS_RUNBOOK.md`.
@@ -196,4 +196,20 @@ Prospective checks, recorded before execution:
   plus this PR's +5 tests / +11 subtests, with no new failures or skips.
 - No AWS, credentials, signing, broadcast, organiser contact or section review.
 
-Results: NOT RUN at this criteria commit.
+Results (2026-10-14), all PASS at pushed head `137a597` (code tree identical
+to merge `8d6cc4a`; the later commit adds only this criteria text):
+- PR21-V3a PASS: PR #21 retargeted to `codex/system-testing-20261012`;
+  MERGEABLE. Its diff lists only the 14 package files (shared-doc entries,
+  `docs/build/final-review/*`, IDEA-049, `tools/system_test.py` and
+  `tests/runtime/test_system_test_branch.py`); no PR #20 file appears.
+- PR21-V3b PASS: focused runner regression locally, **5 passed, 11 subtests**.
+- PR21-V3c PASS: [CI 38557319318](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38557319318),
+  all four jobs green. Full suite **1163 passed, 4 skipped, 1491 subtests**
+  (= base 1158/1480 + this PR's 5/11; same four skips); real-systemd
+  **3 passed, 5 subtests**; Terraform **deploy/aws 15 passed**, **deploy/bootstrap
+  1 passed**; host bundle PASS.
+
+Remaining before section work starts (unchanged by this entry): merge of PR #21
+into `codex/system-testing-20261012` (team review), the IDEA-048 driver PR or a
+recorded partial-scope exclusion (Keegan + Isaac/team), and Keith's original
+tracker #22 record under an unused ID. D's section review itself is NOT RUN.

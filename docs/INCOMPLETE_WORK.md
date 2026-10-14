@@ -154,7 +154,8 @@ GAP-01..GAP-40 (design and spec) are not organiser-blocked unless they cite an o
 ## Suggested order
 
 IDEA-049 final-review inputs (2026-10-14, PR #21 amendments): section reviews
-remain NOT RUN. Keegan + Isaac must open/review/integrate the IDEA-048 driver from
+remain NOT RUN. PR #21 is retargeted to `codex/system-testing-20261012` (PR #20
+merged at `faf9adc`, Day 0 = 2026-10-14 SGT) and awaits team review and merge. Keegan + Isaac must open/review/integrate the IDEA-048 driver from
 `claude/pre-deployment-review-4zxz7p`, or the team must record a partial-scope
 exclusion with owner and deadline before section work; D (Yao Zhu) verifies the
 merged path before overall completion. Keith must publish tracker #22's original
