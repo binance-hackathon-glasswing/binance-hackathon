@@ -14,7 +14,9 @@ from larp.storage.postgres import IntegrityError,doc,digest
 TABLES=('runs','events','reservations','commands','rounds','audit_events','audit_chunks','swap_owners','jobs','command_checks',
         # IDEA-042 item 5 and §4 X2: process sessions and the execution service's store recover with the journal
         # (FK order: records before their journal).
-        'process_sessions','execution_records','execution_journal','execution_signatures','execution_observations')
+        'process_sessions','execution_records','execution_journal','execution_signatures','execution_observations',
+        # IDEA-047 S01: signing requests and refusals (FK order: attempts, requests, refusals).
+        'signing_attempts','signing_requests','signing_refusals')
 # Payloads of earlier backups must never be embedded recursively in new backups.
 # These delivery tables are rebuilt only after quarantine/reconciliation and a new
 # archive namespace; remote object versions/receipts are retained independently.

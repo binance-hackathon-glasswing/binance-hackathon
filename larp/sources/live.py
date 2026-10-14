@@ -72,6 +72,19 @@ def git_state(repo: Path = REPO) -> dict:
     return state
 
 
+def release_state(manifest: str | None, root: str | None) -> dict:
+    """The build a verified release manifest names, in git_state's shape; refuses an unverified release."""
+    from larp.contracts import ContractError
+    from larp.runtime.preflight import verify_release
+    if not manifest or not root:
+        raise SystemExit("A release run needs both --release-manifest and --release-root")
+    try:
+        verified = verify_release(Document(Path(manifest).read_bytes()), root)
+    except (ContractError, ValueError, OSError):
+        raise SystemExit("Refusing live execution: the release does not verify against its manifest") from None
+    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}
+
+
 def require_committed(state: dict, allow_dirty: bool) -> None:
     if state["dirty"]:
         raise SystemExit("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
@@ -470,6 +483,9 @@ def main(argv=None, env=None) -> int:
     run.add_argument("--config-mode", default="live", choices=("live", "development"))
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
     run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
+    # Hosts run a verified release bundle, not a git checkout (IDEA-047 V01): the manifest replaces the git check.
+    run.add_argument("--release-manifest", help="verified release manifest (hosts without a git checkout)")
+    run.add_argument("--release-root", help="release directory the manifest covers")
     rep = sub.add_parser("report")
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)
@@ -529,7 +545,10 @@ def main(argv=None, env=None) -> int:
                             incidents=incidents)
         print(json.dumps(report, indent=1, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
-    state = git_state()
+    if args.command == "run" and (args.release_manifest or args.release_root):
+        state = release_state(args.release_manifest, args.release_root)
+    else:
+        state = git_state()
     require_committed(state, args.allow_dirty)
     if args.command == "run":
         runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,

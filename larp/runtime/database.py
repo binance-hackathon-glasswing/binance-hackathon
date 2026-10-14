@@ -27,6 +27,23 @@ def check_iam_settings(value: dict, user: str) -> None:
         raise ContractError('RDS certificate bundle hash differs from configuration')
 
 
+def check_database_settings(value: dict, user: str) -> None:
+    """Exactly one connection: a local DSN file, or RDS IAM settings for `user` (hosted roles are IAM-only)."""
+    dsn = value.get('database_dsn_file') not in (None, '')
+    iam = any(value.get(key) not in (None, '') for key in IAM_SETTINGS if key != 'region')
+    if dsn == iam:
+        raise ContractError('Configure exactly one database connection: database_dsn_file or RDS IAM settings')
+    if iam:
+        check_iam_settings(value, user)
+
+
+def open_service_store(config: dict):
+    """The store for a configuration that passed check_database_settings."""
+    if config.get('database_dsn_file'):
+        return PostgresStore(Path(config['database_dsn_file']).read_text(encoding='utf-8').strip())
+    return IamPostgresStore(config, rds_client(config['region']))
+
+
 def rds_client(region: str):
     import boto3
     from botocore.config import Config

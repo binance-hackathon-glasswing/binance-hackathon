@@ -1,0 +1,50 @@
+[Unit]
+Description=LARP signer (wallet key only; answers signing requests through the database, IDEA-047)
+Wants=network-online.target
+After=network-online.target time-sync.target
+# A crashed signer is always restarted on the same registered build (IDEA-035 C5).
+StartLimitIntervalSec=0
+# Installed on the signer host only (deploy/host/provision.sh writes the role marker).
+ConditionPathExists=/etc/larp/role-signer
+ConditionPathExists=/etc/larp/signer.json
+ConditionPathExists=/etc/larp/signer/wallet.key
+
+[Service]
+Type=simple
+User=larp-signer
+Group=larp-signer
+WorkingDirectory=/opt/larp/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+# The wallet key stays a root-only file (IDEA-046 B2); systemd hands this service a private copy under
+# $CREDENTIALS_DIRECTORY, which larp.signer.keyfile checks before use. No secret ID, no environment value.
+LoadCredential=wallet.key:/etc/larp/signer/wallet.key
+ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config signer=/etc/larp/signer.json
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.signer.service run --config /etc/larp/signer.json --manifest /etc/larp/release.json --root /opt/larp/current
+Restart=always
+RestartSec=10
+# 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none.
+RestartPreventExitStatus=2 3 4
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=256M
+TasksMax=16
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

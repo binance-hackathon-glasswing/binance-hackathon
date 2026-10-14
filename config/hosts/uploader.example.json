@@ -1,0 +1,18 @@
+{
+  "schema": "UploaderService.v1",
+  "run_id": null,
+  "build_id": null,
+  "mode": "dev",
+  "wallet_address": null,
+  "uploader_secret_id": "larp/uploader",
+  "region": "ap-southeast-2",
+  "interval_seconds": 5,
+  "max_attempts": 8,
+  "retry_ms": 30000,
+  "batch": 50,
+  "database_host": null,
+  "database_user": "larp_uploader",
+  "database_name": "larp",
+  "database_ca_file": "/etc/larp/rds-ca.pem",
+  "database_ca_sha256": null
+}

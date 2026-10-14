@@ -25,7 +25,7 @@ GRANT USAGE ON SCHEMA public TO larp_archive, larp_uploader, larp_runtime, larp_
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT ON runs,events,reservations,commands,rounds,audit_events,audit_chunks,
   swap_owners,jobs,command_checks,process_sessions,execution_records,execution_journal,
-  execution_observations TO larp_archive;  -- the daily backup exports every table larp.storage.backup restores
+  execution_observations,signing_attempts,signing_requests,signing_refusals TO larp_archive;  -- the daily backup exports every table larp.storage.backup restores
 -- Signed transaction bytes are never readable by the archive role or written to a backup (IDEA-042 V8).
 REVOKE SELECT ON execution_signatures FROM larp_archive;
 GRANT SELECT (attempt_id,run_id,payload_hash,signed_hash) ON execution_signatures TO larp_archive;
@@ -69,6 +69,13 @@ GRANT SELECT,INSERT ON execution_signatures TO larp_signer;
 -- Do not grant UPDATE on state, state_hash, terminal or the immutable journal/signature tables.
 GRANT SELECT ON execution_records,execution_journal TO larp_signer;
 GRANT UPDATE (revision) ON execution_records TO larp_signer;
+
+-- IDEA-047 S01: signing requests (migration 009). The execution service asks; the signer answers with a signature
+-- (above) or a refusal. Neither can change or delete a request, and only the signer can refuse.
+GRANT SELECT,INSERT ON signing_attempts,signing_requests TO larp_execution;
+GRANT SELECT ON signing_refusals TO larp_execution;
+GRANT SELECT ON signing_attempts,signing_requests TO larp_signer;
+GRANT SELECT,INSERT ON signing_refusals TO larp_signer;
 
 -- The coordinator settles from the public execution journal and final observations; never the state or signatures.
 GRANT SELECT ON execution_journal,execution_observations TO larp_runtime;

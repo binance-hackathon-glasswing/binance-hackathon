@@ -31,10 +31,17 @@ def release_files(root):
     return files
 
 
-def verify_environment(root):
-    """The operations service checks its own small installed dependency profile."""
+PROFILES = {
+    'operations': ('requirements-runtime.lock', 'requirements-aws.lock'),
+    # Both hosts run the signer lock too: the signer signs, and the execution service verifies signed bytes.
+    'host': ('requirements-runtime.lock', 'requirements-aws.lock', 'requirements-signer.lock'),
+}
+
+
+def verify_environment(root, profile='operations'):
+    """Each service checks its installed dependency profile against the release locks."""
     directory = Path(root) / 'deploy'
-    for filename in ('requirements-runtime.lock', 'requirements-aws.lock'):
+    for filename in PROFILES[profile]:
         for line in (directory / filename).read_text(encoding='utf-8').splitlines():
             value = line.split('#', 1)[0].strip()
             if not value or value.startswith('-r '):
@@ -75,7 +82,26 @@ def verify_runtime_config(manifest, raw):
         raise ContractError('Runtime configuration differs from the registered manifest')
 
 
-def build_manifest(root, services, registration_evidence=None, operations_config=None, runtime_config=None):
+def verify_service_config(manifest, name, raw):
+    """A host service's configuration is part of the registered version (G-03), as the runtime's is."""
+    recorded = manifest.get('service_configs_sha256')
+    if type(recorded) is not dict or recorded.get(name) != hashlib.sha256(raw).hexdigest():
+        raise ContractError('Service configuration differs from the registered manifest')
+
+
+def service_config_arguments(values):
+    """`NAME=PATH` arguments -> {name: bytes}; names are unique."""
+    configs = {}
+    for value in values or ():
+        name, separator, path = value.partition('=')
+        if not separator or not name or not path or name in configs:
+            raise ContractError('Service configs are NAME=PATH, each name once')
+        configs[name] = Path(path).read_bytes()
+    return configs
+
+
+def build_manifest(root, services, registration_evidence=None, operations_config=None, runtime_config=None,
+                   service_configs=None):
     root = Path(root).resolve()
     def git(*args):
         result = subprocess.run(['git', '-C', str(root), *args], capture_output=True,
@@ -93,11 +119,15 @@ def build_manifest(root, services, registration_evidence=None, operations_config
         raise ContractError('Build commit is not the pushed branch head')
     names = tracked_release_files(root, git)
     files = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in sorted(names)}
-    return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit,
+    value = dict(schema='ReleaseManifest.v1', build_id=commit,
         repository=remote, remote_verified=True, services=services,
         registration_evidence=registration_evidence, files=files, release_register=load_register(root),
         operations_config_sha256=hashlib.sha256(operations_config).hexdigest() if operations_config else None,
-        runtime_config_sha256=hashlib.sha256(runtime_config).hexdigest() if runtime_config is not None else None))
+        runtime_config_sha256=hashlib.sha256(runtime_config).hexdigest() if runtime_config is not None else None)
+    if service_configs:
+        value['service_configs_sha256'] = {name: hashlib.sha256(raw).hexdigest()
+                                           for name, raw in sorted(service_configs.items())}
+    return Document.from_dict(value)
 
 
 def main(argv=None):
@@ -109,6 +139,8 @@ def main(argv=None):
     parser.add_argument('--registration-evidence')
     parser.add_argument('--config')
     parser.add_argument('--runtime-config')
+    parser.add_argument('--service-config', action='append', metavar='NAME=PATH')
+    parser.add_argument('--profile', choices=tuple(PROFILES), default='operations')
     args = parser.parse_args(argv)
     try:
         if args.build_output:
@@ -119,18 +151,21 @@ def main(argv=None):
                         if args.registration_evidence else None)
             config = Path(args.config).read_bytes() if args.config else None
             runtime_config = Path(args.runtime_config).read_bytes() if args.runtime_config else None
-            manifest = build_manifest(args.root, services, evidence, config, runtime_config)
+            manifest = build_manifest(args.root, services, evidence, config, runtime_config,
+                                      service_config_arguments(args.service_config))
             # Exclusive creation avoids replacing a release's provenance.
             with Path(args.build_output).open('xb') as stream:
                 stream.write(manifest.payload)
             print(json.dumps(dict(manifest_created=True, registration_evidence_supplied=evidence is not None, signing_enabled=False)))
         else:
             m = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
-            verify_environment(args.root)
+            verify_environment(args.root, args.profile)
             if args.config and hashlib.sha256(Path(args.config).read_bytes()).hexdigest() != m.get('operations_config_sha256'):
                 raise ContractError('Operations configuration differs from the registered manifest')
             if args.runtime_config:
                 verify_runtime_config(m, Path(args.runtime_config).read_bytes())
+            for name, raw in service_config_arguments(args.service_config).items():
+                verify_service_config(m, name, raw)
             print(json.dumps(dict(release_verified=True, signing_enabled=False)))
         return 0
     except Exception:

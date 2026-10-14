@@ -1,0 +1,45 @@
+[Unit]
+Description=LARP uploader (delivers committed round logs to the ai-seeds receiver, IDEA-047)
+Wants=network-online.target
+After=network-online.target time-sync.target
+StartLimitIntervalSec=0
+# Installed on primary only (deploy/host/provision.sh writes the role marker).
+ConditionPathExists=/etc/larp/role-primary
+ConditionPathExists=/etc/larp/uploader.json
+
+[Service]
+Type=simple
+User=larp-uploader
+Group=larp-uploader
+WorkingDirectory=/opt/larp/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config uploader=/etc/larp/uploader.json
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.audit.service run --config /etc/larp/uploader.json --manifest /etc/larp/release.json --root /opt/larp/current
+Restart=always
+RestartSec=10
+# 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none.
+RestartPreventExitStatus=2 3 4
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=60
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=512M
+TasksMax=32
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
