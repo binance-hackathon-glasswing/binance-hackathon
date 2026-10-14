@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:8b59ac6b618d467cc739a8ca3daa07f05aab2df831adc2bf21cfa578bc0d9513",
+  "result_id": "res:e433a97988f4c27e6e18f3866f65b78fd4939e680c9dffe7334a4eeb0bc66ba4",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -60,7 +60,7 @@
     "6ef62aa68d9a240d050bd6c5b861e86d712c00ac847ea215c35a46a012960b00"
    ],
    "accepted_result_ids": [
-    "res:8b59ac6b618d467cc739a8ca3daa07f05aab2df831adc2bf21cfa578bc0d9513"
+    "res:e433a97988f4c27e6e18f3866f65b78fd4939e680c9dffe7334a4eeb0bc66ba4"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,7 +141,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:714cb7591e5853208823c630540c155a5d072ea592d8ffdd58951e20dd1df994",
+   "batch_id": "state:496500529de545c78a28c7c23dd0f3da3c24f4c420c86f55025b1c12e633fab1",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:8b59ac6b618d467cc739a8ca3daa07f05aab2df831adc2bf21cfa578bc0d9513",
+   "result_id": "res:e433a97988f4c27e6e18f3866f65b78fd4939e680c9dffe7334a4eeb0bc66ba4",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
      "6ef62aa68d9a240d050bd6c5b861e86d712c00ac847ea215c35a46a012960b00"
     ],
     "accepted_result_ids": [
-     "res:8b59ac6b618d467cc739a8ca3daa07f05aab2df831adc2bf21cfa578bc0d9513"
+     "res:e433a97988f4c27e6e18f3866f65b78fd4939e680c9dffe7334a4eeb0bc66ba4"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:714cb7591e5853208823c630540c155a5d072ea592d8ffdd58951e20dd1df994",
+   "batch_id": "state:496500529de545c78a28c7c23dd0f3da3c24f4c420c86f55025b1c12e633fab1",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -2590,7 +2590,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:8b59ac6b618d467cc739a8ca3daa07f05aab2df831adc2bf21cfa578bc0d9513",
+  "result_id": "res:e433a97988f4c27e6e18f3866f65b78fd4939e680c9dffe7334a4eeb0bc66ba4",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",
@@ -2720,7 +2720,42 @@
   "schema": "AssessmentResult.v2",
   "severity": null,
   "started_ms": 1791590400000,
-  "status": "ABSTAIN"
+  "status": "ABSTAIN",
+  "structured_assessment": {
+   "catalyst_type": [
+    "UNKNOWN"
+   ],
+   "direction": "UNKNOWN",
+   "durability": {
+    "basis": "No validated duration estimator.",
+    "status": "UNKNOWN"
+   },
+   "novelty": {
+    "already_seen": 0,
+    "changed": 1,
+    "first_seen": 0,
+    "history_unavailable": 0,
+    "new": 2,
+    "no_prior_available": 0,
+    "prior_not_checked": 0,
+    "repeated": 0,
+    "uncertain_match": 0,
+    "unchanged": 0
+   },
+   "risks": [
+    "CONFLICTING_EVIDENCE"
+   ],
+   "source_agreement": {
+    "basis": "Issuer SEC origin; filings/exhibits are not independent confirmations.",
+    "conflicts": true,
+    "independent_origins": 1
+   },
+   "strength": {
+    "basis": "Verified finding severity only; no forecast magnitude or probability.",
+    "calibrated": false,
+    "level": null
+   }
+  }
  },
  "schema": "IntelligenceTrace.v1",
  "synthetic": true,

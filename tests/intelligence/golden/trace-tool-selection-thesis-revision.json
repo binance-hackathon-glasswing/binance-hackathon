@@ -50,7 +50,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 1,
   "n_verified_claims": 8,
-  "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+  "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
   "schema": "FeatureRow.v1",
   "severity": 2,
   "source_stale": false,
@@ -66,7 +66,7 @@
     "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b"
    ],
    "accepted_result_ids": [
-    "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22"
+    "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -475,7 +475,7 @@
      "cutoff_ms": 1791590400000,
      "finding_id": "find:be36e3939c47252010c673f183fa526db6e06c844650fee90fb028681aad5671",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+     "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
      "source_resolutions": {},
      "source_revisions": {
       "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -490,9 +490,9 @@
     },
     {
      "cutoff_ms": 1791590400000,
-     "finding_id": "falsifier:b635a58ac06c376675e9953b6d2da5f735f0ca388e6aece428751f49efc5cd57",
+     "finding_id": "falsifier:b6bc32f44c80119987827d416e4bcf6555a3537448ad4ebcfc1f97cf2fe78eb2",
      "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-     "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+     "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
      "source_resolutions": {},
      "source_revisions": {
       "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -511,7 +511,7 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:a4aa71095f57371ea9259e21ac4735fa68c273fd60c6ce8fd90732980699105d",
+   "batch_id": "state:dac3876defe64b98c1ed48ea521a2b26999478756e374c21e3f75df80a2a8c60",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
@@ -533,14 +533,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+   "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
      "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b"
     ],
     "accepted_result_ids": [
-     "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22"
+     "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -949,7 +949,7 @@
       "cutoff_ms": 1791590400000,
       "finding_id": "find:be36e3939c47252010c673f183fa526db6e06c844650fee90fb028681aad5671",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+      "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
       "source_resolutions": {},
       "source_revisions": {
        "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -964,9 +964,9 @@
      },
      {
       "cutoff_ms": 1791590400000,
-      "finding_id": "falsifier:b635a58ac06c376675e9953b6d2da5f735f0ca388e6aece428751f49efc5cd57",
+      "finding_id": "falsifier:b6bc32f44c80119987827d416e4bcf6555a3537448ad4ebcfc1f97cf2fe78eb2",
       "resolution_rule": "SOURCE_CORRECTED_OR_WITHDRAWN",
-      "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+      "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
       "source_resolutions": {},
       "source_revisions": {
        "rec:88ec82057094e50f82dd24f2f09b2215dd5aae89c3a9dc6cf5f92c4e7e8f7024": 0
@@ -984,7 +984,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:a4aa71095f57371ea9259e21ac4735fa68c273fd60c6ce8fd90732980699105d",
+   "batch_id": "state:dac3876defe64b98c1ed48ea521a2b26999478756e374c21e3f75df80a2a8c60",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -5829,7 +5829,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:71f22acb51489fef62696dfc1e4ec7e54a95dabed6525199def5a0ecdd52fe22",
+  "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
   "retained_facts": [],
   "review_requests": [
    {
@@ -5861,7 +5861,43 @@
   "schema": "AssessmentResult.v2",
   "severity": 2,
   "started_ms": 1791590400000,
-  "status": "ASSESSED"
+  "status": "ASSESSED",
+  "structured_assessment": {
+   "catalyst_type": [
+    "revenue"
+   ],
+   "direction": "MIXED",
+   "durability": {
+    "basis": "No validated duration estimator.",
+    "status": "UNKNOWN"
+   },
+   "novelty": {
+    "already_seen": 0,
+    "changed": 1,
+    "first_seen": 0,
+    "history_unavailable": 0,
+    "new": 4,
+    "no_prior_available": 2,
+    "prior_not_checked": 0,
+    "repeated": 0,
+    "uncertain_match": 0,
+    "unchanged": 1
+   },
+   "risks": [
+    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q2",
+    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
+   ],
+   "source_agreement": {
+    "basis": "Issuer SEC origin; filings/exhibits are not independent confirmations.",
+    "conflicts": false,
+    "independent_origins": 1
+   },
+   "strength": {
+    "basis": "Verified finding severity only; no forecast magnitude or probability.",
+    "calibrated": false,
+    "level": 2
+   }
+  }
  },
  "schema": "IntelligenceTrace.v1",
  "synthetic": true,
