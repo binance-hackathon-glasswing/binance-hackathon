@@ -390,5 +390,18 @@ production scale is a refusal. Independent signer attestation of the primary's
 resource/risk/market/nonce facts remains C-OPEN-007 (B/C/D trust acceptance,
 before Oct20); these execution-side tests cannot establish that host boundary.
 
+### Final amended trace, 2026-10-15 SGT
+
+| Requirement | Implementing boundary | Independent tests / evidence | Verdict and limits |
+|---|---|---|---|
+| C-REQ-017/018/028 | `execution_live/loop.py:RunAuthorization.resources_reserved`; existing payload/sequence gas limits | `tests/execution/test_section_c_resources.py::Resources` (12 real-PG cases); full integrated driver suite | COVERED for separate committed pay/gas amounts and remaining cumulative gas. NOT-OFFLINE for canonical wallet-balance reconciliation / first gas: C-OPEN-005 and #36, B/C/D before Oct20, provider/block/finality plus zero/unsolicited/divergence acceptance. Untyped offline fixture compatibility is never production evidence. |
+| C-REQ-058 | `signer/service.py:main/_sign`; `execution_live/store.py:check_signing_run/put_if_absent` | `tests/signer/test_section_c_startup.py::RegisteredStartup`; `tests/signer/test_section_c_authority.py::SignerAuthority` startup/queued/late manifest cases | COVERED for verified build/full manifest startup and new-byte release, with real PG and throwaway keys. Host remote provenance/credentials remain C-OPEN-007. |
+| C-REQ-059 | `execution_live/main.py:main/build_execution`; `loop.py:RunAuthorization.facts` | `tests/execution/test_section_c_startup.py::ExecutionStartup/ExecutionAuthorization` (8 real-PG cases) | COVERED for startup before credentials and immutable intent/manifest authorization. Exact Executor capability refusal remains; no live composition is enabled. |
+
+These rows supersede the dated WEAK/prospective trace, not the frozen source
+statements. There are now 59 source requirements; actual final counts and CI
+checkout provenance are recorded in C-RESULT-005. Live/host/shared dependencies
+continue to prevent whole-section completion.
+
 This maps the execution-service aspect of the existing declared version gate;
 it does not grant C edits to D's runtime, uploader or system-test runner.
