@@ -328,6 +328,7 @@ class Ingestion(ServiceHarness):
             self.w.clock.now += SECOND
             execution.once(self.w.clock())
             if all(self.registry_state(k).status == 'COMPLETED' for k in self.keys()) and self.keys():
+                execution.once(self.w.clock())  # the cycle after completion publishes the final fact
                 break
         with self.store.transaction() as db:
             rows = [r[0] for r in db.execute('SELECT event_id FROM execution_observations WHERE run_id=%s', (RUN,))]
@@ -560,12 +561,14 @@ class Lifecycle(ServiceHarness):
                                        release_register=dict(services_sha256='a' * 64, deviations_sha256='c' * 64)))
 
     def config(self, run_id='dev-run', **changes):
-        ledger = dict(pipeline.pipeline_ledger(), run_id=run_id, wallet_id=self.wallet, mode='LIVE')
+        # One run per wallet and chain (runs_wallet_id_chain_id_key): each refusal case has its own wallet.
+        wallet = self.wallet if run_id == 'dev-run' else '0x' + hashlib.sha256(run_id.encode()).hexdigest()[:40]
+        ledger = dict(pipeline.pipeline_ledger(), run_id=run_id, wallet_id=wallet, mode='LIVE')
         raw = json.dumps(ledger).encode()
         path = Path(self.tmp.name) / f'{run_id}-initial.json'
         path.write_bytes(raw)
         return dict(schema='RuntimeService.v1', run_id=run_id, build_id=self.BUILD, mode='dev',
-                    wallet_address=self.wallet, initial_state_file=str(path),
+                    wallet_address=wallet, initial_state_file=str(path),
                     initial_state_sha256=hashlib.sha256(raw).hexdigest(), **changes)
 
     def activate(self, config, **kwargs):
@@ -640,3 +643,6 @@ class Lifecycle(ServiceHarness):
         with self.subTest('offline run'):
             with self.assertRaises(StartRefused):
                 init_run(dict(self.config('r7'), mode='offline'), self.store)
+        with self.subTest('wallet already has a run'):
+            with self.assertRaises(StartRefused):
+                init_run(dict(self.config('r2'), run_id='r8'), self.store)

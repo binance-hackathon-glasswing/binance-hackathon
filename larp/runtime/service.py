@@ -250,7 +250,7 @@ def init_run(config, store):
 
     Its starting balances are the operator's attested wallet state; the run stays quarantined until `activate_run`."""
     from larp.integration.runtime import initial_projection
-    from larp.storage.postgres import Conflict, doc
+    from larp.storage.postgres import Conflict, IntegrityError, doc
     mode = config.get('mode', 'offline')
     if mode not in ('dev', 'live'):
         raise StartRefused('init creates dev or live runs; offline runs are fixtures')
@@ -271,7 +271,10 @@ def init_run(config, store):
     else:
         raise StartRefused('Run already exists')
     projection = initial_projection(ledger)
-    store.initialize(config['run_id'], wallet, 56, doc(projection), mode=mode)
+    try:
+        store.initialize(config['run_id'], wallet, 56, doc(projection), mode=mode)
+    except IntegrityError:
+        raise StartRefused('Another run already uses this wallet on chain 56') from None
     return dict(initialized=True, run_id=config['run_id'], mode=mode, quarantined=True)
 
 
