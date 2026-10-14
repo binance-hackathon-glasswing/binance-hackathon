@@ -59,3 +59,19 @@ class FinalASources(Harness):
         source = replace(self.register['fr-bis'], limits=dict(self.register['fr-bis'].limits, max_pages=1))
         reasons = live_preflight({source.source_id: source}, {})
         self.assertIn('PAGINATION_PAGE_BUDGET_TOO_SMALL:fr-bis', reasons)
+
+    def test_a_req_014_live_terms_hash_needs_matching_retained_bytes(self):
+        from pathlib import Path
+        from larp.sources.register import live_preflight, load_edgar_terms
+        source = replace(self.register['fr-bis'], rights=dict(self.register['fr-bis'].rights,
+                                                             terms_evidence_sha256='f' * 64))
+        env = {'LARP_SEC_USER_AGENT': 'LARP test ops@larp-test.invalid', 'LARP_ARTIFACT_ROOT': self.tmp.name}
+        edgar = dict(load_edgar_terms(), terms_evidence_sha256='f' * 64)
+        self.assertIn('TERMS_ARTIFACT_UNAVAILABLE:fr-bis', live_preflight({source.source_id: source}, env, edgar))
+        blob = b'Synthetic terms fixture, not actual source clearance.'
+        sha = self.artifacts.put(blob)
+        source = replace(source, rights=dict(source.rights, terms_evidence_sha256=sha))
+        edgar['terms_evidence_sha256'] = sha
+        self.assertEqual(live_preflight({source.source_id: source}, env, edgar), [])
+        (self.artifacts.root / sha[:2] / sha).write_bytes(b'tampered')
+        self.assertIn('TERMS_ARTIFACT_UNAVAILABLE:fr-bis', live_preflight({source.source_id: source}, env, edgar))

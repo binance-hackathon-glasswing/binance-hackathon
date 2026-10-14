@@ -84,6 +84,8 @@ def live_preflight(sources: dict, env: dict, edgar: dict | None = None) -> list:
     for source in sorted(sources.values(), key=lambda x: x.source_id):
         if not source.enabled:
             continue
+        if source.format in ("FR_DOCUMENTS_JSON", "DOJ_PRESS_JSON") and source.limits.get("max_pages", 0) < 2:
+            reasons.append(f"PAGINATION_PAGE_BUDGET_TOO_SMALL:{source.source_id}")
         if not source.rights.get("terms_evidence_sha256"):
             reasons.append(f"TERMS_EVIDENCE_MISSING:{source.source_id}")
         if source.requires_user_agent and not env.get(source.requires_user_agent):

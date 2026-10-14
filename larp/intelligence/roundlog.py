@@ -52,7 +52,8 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
     called = io.get("model_called", bool(calls))
     reason = io.get("no_model_call_reason") or (None if called else io.get("note") or "NOT_CALLED")
     tools = [{"index": t["index"], "tool": t["tool"], "args": t["args"], "status": t["status"], "error": t["error"],
-              "result_sha256": t["result_sha256"], "latency_ms": t.get("latency_ms")} for t in io.get("tool_calls", [])]
+              "result_sha256": t["result_sha256"], "result_artifact": t.get("result_artifact"),
+              "latency_ms": t.get("latency_ms")} for t in io.get("tool_calls", [])]
     model = result.get("model") or {}
     lines = [f"Evidence assessment for {result.get('issuer_id')}: {result.get('status')}"
              + (f" ({', '.join(result.get('reasons') or [])})" if result.get("reasons") else "") + "."]

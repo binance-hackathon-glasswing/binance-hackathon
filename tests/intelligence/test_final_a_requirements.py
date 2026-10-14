@@ -248,8 +248,9 @@ class AuditRecovery(RealEvidence):
         self.assertTrue(recovered['model_io']['tool_calls'])
         for call in recovered['model_io']['tool_calls']:
             if call['result_sha256'] is not None:
-                self.assertIn('result', call, 'tool result hash alone does not reconstruct the returned content')
-                self.assertEqual(digest('larp.intel.tool.v1', {'r': call['result']}), call['result_sha256'])
+                self.assertIn('result_artifact', call, 'tool result hash alone does not reconstruct the returned content')
+                original_result = Document(self.artifacts.get(call['result_artifact'])).read()
+                self.assertEqual(digest('larp.intel.tool.v1', {'r': original_result}), call['result_sha256'])
 
     def test_a_req_065_fourteen_daily_writer_restarts_preserve_reader_and_artifacts(self):
         self.add(761, NONRELIANCE)
