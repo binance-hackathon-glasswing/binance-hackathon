@@ -161,6 +161,18 @@ Initial B-REG-03 run at023acb6:1 failed,7 passed,1.12s. Incorrect positional
 call to five_names keyword-only fixture; fix setup to five_names(), keeping
 all prohibition/capacity assertions unchanged. Zero-BNB control passed.
 
+B-REG-03 retest at98a65bd:8 passed,5.44s.
+
+### B-REG-04 — adversarial required-input collections
+
+Before execution: B-REQ022/044 malformed market/portfolio collections must return
+INVALID_REQUIRED_INPUT, no intent and retain any valid known holding; never
+escape with AttributeError in market_view or its error-recovery branch. Null,
+scalar,string,mixed rows and malformed position maps are covered. Suspected
+B-FND-004 P2: top-level market/portfolio shape checks absent and fallback itself
+assumes valid dictionaries. Runtime catches failures but B's typed safety outcome
+and known holding requirement must remain available. Tests pushed before fix/run.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.

@@ -81,3 +81,20 @@ def test_b_req_044_valid_stock_and_gas_quote_controls():
     assert plan(stock, None).read()["intents"][0]["side"] == "SELL"
     gas = live_snapshot(gas_low=True)
     assert plan(changed(gas, gas_quotes=[gas_quote(gas)]), None).read()["intents"][0]["kind"] == "GAS_TOP_UP"
+
+
+@pytest.mark.parametrize("malformed", [None, 7, "markets", [None], [{}, None]])
+def test_b_req_022_bad_market_collection_is_explicit_and_preserves_holdings(malformed):
+    snapshot = live_snapshot(held={"NVDAB": 1000})
+    result = plan(changed(snapshot, markets=malformed), None).read()
+    assert not result["intents"]
+    assert result["rejections"][0]["reason"] == "INVALID_REQUIRED_INPUT"
+    assert result["requirements"][0]["symbol"] == "NVDAB"
+    assert result["requirements"][0]["held_units"] == 1000
+
+
+@pytest.mark.parametrize("malformed", [None, 7, [], {"positions": None}, {"positions": []}, {"positions": {"NVDAB": None}}])
+def test_b_req_022_bad_portfolio_cannot_escape_the_input_rejection_path(malformed):
+    result = plan(changed(live_snapshot(), portfolio=malformed), None).read()
+    assert not result["intents"]
+    assert result["rejections"][0]["reason"] == "INVALID_REQUIRED_INPUT"
