@@ -143,6 +143,20 @@ assertions passed, but weekend marks triggered no reduction obligation, so the
 blocked-requirement assertion was not exercised. Increase the weekend NVDAB
 shock above25% while closed, retaining the required blocked-trim assertion.
 
+Fourth replay run at80c912c:2 passed,9.65s. Real PostgreSQL risk/terminal/replay
+criteria pass. This does not exercise Class1/2/3 in the14-day chain; their
+consumer/producers remain separate passing regressions and live coverage gates.
+
+### B-REG-03 — prohibited-position and fresh-wallet criteria
+
+Before execution:100 deterministic synthetic portfolios spanning zero cash,
+five held slots, dust, exact/over cap quantities; real policy/planner and external
+RFQs. All targets eligible and ≤20%; every sell ≤holdings, every buy paid by cash,
+no more than four held slots for an accepted buy, one child only. This finite
+exploration supplements schema/validator proof, not a claim of exhaustive state
+enumeration. Fresh200-USDT zero-BNB ledger must produce FIRST_BNB_REQUIRED and
+no spend/holding; external bootstrap remains C/team's blocked activation input.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
