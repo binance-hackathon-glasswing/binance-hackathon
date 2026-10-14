@@ -208,3 +208,13 @@ Criteria pushed at `ddc4d62` (cadence correction `f2fd317`) before any change. C
 - **H02:** `tools/test_host_bundle.sh` on the aarch64 bundle built from pushed `7065595` (SHA-256 `5cc6cf94…f630`): PASS for both roles.
 - **Linux CI:** see the PR #20 checks on the pushed head.
 - **Not established (need hosts):** the units under real systemd (`SupplementaryGroups`, `ReadWritePaths`, `StateDirectoryMode`); alarms and email delivery in AWS; a persistent journal on the signer.
+
+## Offline readiness check before starting hosts (2026-10-14, Claude). Prospective criteria
+
+Yao Zhu asked for proof that everything works offline (including the simulation) before any host is started, and wants teammates to review and fix first. This reruns IDEA-043's existing system test runner on PR #20's head. Nothing about it is new or changed.
+
+- **Command:** `tools/system_test.py`, full mode: the system cases, the complete pytest suite, and the offline runtime demonstration.
+  - Run from a clean, pushed head of `codex/hosting-option-b-20261012`, against a disposable `larp_test` PostgreSQL 14.24.
+  - On macOS the demo needs Linux bubblewrap, so it is proven by the Linux CI run on the same runtime tree (`--linux-ci-run <id>`). It is never reported as locally executed.
+- **Pass:** every phase exits zero, every skip is listed with its reason, and a SystemTestReport.v1 is written. It is committed under `docs/build/evidence/` with the tested commit, counts and log hashes.
+- **Not covered by this check:** real market, source or model data; a real wallet or signing; hosts. These stay open in `docs/INCOMPLETE_WORK.md`.
