@@ -1,6 +1,5 @@
 """IDEA-049-C requirement-derived quotes; synthetic external responses only."""
 from dataclasses import replace
-from datetime import datetime
 import unittest
 
 from larp.execution import Blocked, NATIVE_BNB, Payload, SwapEconomics, USDT
@@ -12,7 +11,7 @@ from larp.research.fixtures import changed
 from larp.risk.planner import plan
 from tests.strategy.live_fixtures import live_snapshot
 from tests.marketdata.test_quote_contract import QuoteClient, proof, WALLET, ROUTER, STAMP
-from tests.execution.test_live_boundaries import LiveBoundaries
+from tests.execution import test_live_boundaries as command_fixtures
 from tests.execution_fixtures import intent
 
 
@@ -88,7 +87,7 @@ class SlippageRequirements(unittest.TestCase):
             self.assertEqual(client.last_params['slippagePercent'], '0.2')
 
     def test_c_req_014_mapper_binds_accepted_profile_limit(self):
-        command = LiveBoundaries().command()
+        command = command_fixtures.LiveBoundaries().command()
         economic = map_command(command, run_id='run', wallet=WALLET, version_id='v', router=ROUTER,
             token_decimals={'NVDAB':18}, now_ms=100, limits=dict(self.limits,
                 max_gas=1000000, max_gas_price=10, gas_budget=20000000))
@@ -197,3 +196,21 @@ class GasQuoteRequirements(unittest.TestCase):
                 return value_proof
             with self.subTest(field=field), self.assertRaises(Unavailable):
                 self.port(GasClient(), verifier=invalid)(0)
+
+    def test_c_req_047_each_decoded_economic_field_is_independently_bound(self):
+        for field, value in (('pay_token', TOKENS['NVDAB']), ('receive_token', TOKENS['NVDAB']),
+                             ('amount', 1), ('recipient', ROUTER), ('minimum_output', 1),
+                             ('deadline', 1793282399), ('native_value', 1)):
+            def invalid(raw, request):
+                value_proof = gas_proof(raw, request)
+                value_proof['economics'] = replace(value_proof['economics'], **{field:value})
+                return value_proof
+            with self.subTest(field=field), self.assertRaises(Unavailable):
+                self.port(GasClient(), verifier=invalid)(0)
+
+    def test_c_req_048_native_minimum_is_not_weakened_by_accounting_rounding(self):
+        client = GasClient()
+        client.mutation = lambda q: q['tx'].update(
+            minReceiveAmount=str(241000 * 10**12 * 998 // 1000 + 1))
+        with self.assertRaises(Unavailable):
+            self.port(client)(0)
