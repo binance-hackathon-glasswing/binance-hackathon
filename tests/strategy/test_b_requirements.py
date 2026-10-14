@@ -6,13 +6,13 @@ import random
 
 import pytest
 
-from larp.contracts import ContractError, Document, TargetKind
+from larp.contracts import ContractError, Document
 from larp.research.fixtures import changed, with_quotes
 from larp.risk.planner import plan
 from larp.strategy.policy import decide
 from larp.strategy.schema import profile
 from tests.strategy.live_fixtures import live_snapshot
-from tests.strategy.test_equal_weight import ew, five_names
+from tests.strategy.test_equal_weight import five_names
 
 
 def bind_profile(snapshot, values):
@@ -48,7 +48,7 @@ def test_b_req_001_generated_portfolios_cannot_create_short_leveraged_or_ineligi
     # Deterministic boundary/state exploration, not a profitability experiment.
     rng = random.Random(20261014)
     for _ in range(100):
-        snapshot = five_names(ew())
+        snapshot = five_names()
         context = snapshot.context.read()
         ledger = context["portfolio"]
         ledger["cash_units"] = rng.choice([0, 1, 40_000_000, 200_000_000])

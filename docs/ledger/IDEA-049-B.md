@@ -157,6 +157,10 @@ exploration supplements schema/validator proof, not a claim of exhaustive state
 enumeration. Fresh200-USDT zero-BNB ledger must produce FIRST_BNB_REQUIRED and
 no spend/holding; external bootstrap remains C/team's blocked activation input.
 
+Initial B-REG-03 run at023acb6:1 failed,7 passed,1.12s. Incorrect positional
+call to five_names keyword-only fixture; fix setup to five_names(), keeping
+all prohibition/capacity assertions unchanged. Zero-BNB control passed.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
