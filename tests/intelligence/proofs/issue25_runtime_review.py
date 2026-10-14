@@ -21,6 +21,11 @@ def main():
         {'lifecycle': {'NVDAB': {'last_review_session': 70}}})))
     s = changed(s, markets=[m for m in MarketPort(Client(), '0x' + '1' * 40)(0)
                             if m['symbol'] in s.universe])
+    ledger = s.context.read()['portfolio']
+    for position in ledger['positions'].values():
+        position['units'] *= 10**14  # preserve quantity while matching actual 18-decimal token metadata
+        position['decimals'] = 18
+    s = changed(s, portfolio=ledger)
     proposal = decide(s, s.policy_state)
     jobs = RuntimePlanner(job_validity_ms=86400000, job_max_attempts=3)._jobs(s, proposal, int(s.observed_at.timestamp()*1000))
     wanted = load_registry().by_token('NVDAB').issuer_id

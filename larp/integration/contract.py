@@ -212,6 +212,9 @@ def _issuer_matches(record: dict, underlying: str) -> bool:
         return False
     try:
         registry = _issuer_registry()
+    except (IntelligenceError, OSError, ValueError, KeyError, TypeError):
+        return False  # an unavailable identity authority cannot validate supplied identifiers
+    try:
         entry = registry.by_token(record["token"])
     except (IntelligenceError, OSError, ValueError, KeyError, TypeError):
         # Existing offline contracts may use one fixture identity for both namespaces.

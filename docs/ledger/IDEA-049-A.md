@@ -182,3 +182,11 @@ Linux CI `38606727414` is FAILED (runtime); host-bundle and infrastructure jobs 
 A-T15 first run failed during fixture setup because actual MarketPort contains SKHYB but the research snapshot universe has four tokens. Filter boundary rows to that fixture universe, preserving actual identity/metadata and real policy/mapper; push before rerunning. That setup error is not evidence of #25's runtime symptom.
 
 Additional prospective A-T16 / A-REQ-020: when the canonical identity registry cannot load, even equal supplied issuer/security strings cannot authorize a record. Inject only a registry-read failure into the real contract after real ingest/assessment; expect WRONG_ISSUER. Suspected first-fix fallback accepts self-matching IDs after loader failure. This criterion/test is committed and pushed before execution and before any fix.
+
+### Amendment 8: strict point-in-time and explicit descriptive dimensions
+
+Pushed `101e770`: A-T16 fails (contract accepts equal IDs after registry-read failure), **A-FND-011 P1**. Additional proofs: 3 failed / 1 passed. Runtime proof still hits fixture unit mismatch before mapping; correct synthetic ledger scaling to real token decimals, retaining held quantity and cost basis. No D mapper fix is made.
+
+A-FND-009 correction excludes original_ms after cutoff in both the real evidence index and retained known-fact context. Ingestion may tolerate source clocks for storage but that grants no early decision authority. A-FND-010 adds all declared dimensions to regular, abandoned and rejected results: verified catalyst identifiers, existing impact, explicitly uncalibrated severity, novelty, UNKNOWN durability, honest one-origin SEC agreement and missingness/conflict risks. It introduces no return prediction, trading permission or live parameter change. A-FND-011 separates registry loading from unknown synthetic-token compatibility: loader failure always rejects identity.
+
+Push these corrections before execution. Subsequent golden refresh must preserve all former decision semantics and copy complete new metadata without inventing calibration or independent sources.

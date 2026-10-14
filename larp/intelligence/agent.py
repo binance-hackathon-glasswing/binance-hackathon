@@ -60,7 +60,8 @@ class _State:
                          "statement_comparisons": 0, "statement_comparisons_truncated": 0,
                          "model_input_truncated": False, "model_input_chars_max": 0}
         self.context_facts = [f for f in context["known_facts"]
-                              if f.get("source", {}).get("available_ms", self.cutoff + 1) <= cutoff]
+                              if f.get("source", {}).get("available_ms", self.cutoff + 1) <= cutoff
+                              and f.get("source", {}).get("original_ms", self.cutoff + 1) <= cutoff]
         for fact in self.context_facts:
             self.facts.setdefault(fact["fact_id"], fact)
 
@@ -196,6 +197,7 @@ class EvidenceAssessor:
                   "model_io": {"steps": [], "tool_calls": [], "cot": [], "model_called": False,
                                "requests_started": 0, "no_model_call_reason": reason, "note": "no model call"},
                   "started_ms": now, "completed_ms": now}
+        result["structured_assessment"] = _structured_assessment(result)
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
@@ -532,6 +534,7 @@ class EvidenceAssessor:
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
+        result["structured_assessment"] = _structured_assessment(result)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -577,6 +580,7 @@ class EvidenceAssessor:
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
+        result["structured_assessment"] = _structured_assessment(result)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -966,3 +970,26 @@ def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cuto
         "policy_profile_hash": policy_profile_hash, "allowed_tools": allowed_tools,
         "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health,
         "review": review_scope(job)})
+
+
+def _structured_assessment(result: dict) -> dict:
+    """Declared descriptive dimensions; no calibrated return prediction or trade authority.
+
+    This assessor consumes issuer SEC filings. Multiple filings/exhibits do not create independent
+    confirmations. Duration is deliberately unknown until a separately validated estimator exists.
+    """
+    findings = result.get("findings", []) + result.get("event_findings", [])
+    catalysts = sorted({f.get("event") or f.get("metric") for f in findings
+                        if f.get("event") or f.get("metric")})
+    risks = sorted(set(result.get("missingness", []) + result.get("reasons", [])
+                       + (["CONFLICTING_EVIDENCE"] if result.get("conflicts") else [])))
+    return {"catalyst_type": catalysts or ["UNKNOWN"],
+            "direction": result.get("impact", "UNKNOWN"),
+            "strength": {"level": result.get("severity"), "calibrated": False,
+                         "basis": "Verified finding severity only; no forecast magnitude or probability."},
+            "novelty": result.get("novelty", {}),
+            "durability": {"status": "UNKNOWN", "basis": "No validated duration estimator."},
+            "source_agreement": {"independent_origins": 1 if result.get("evidence_used") else 0,
+                                 "conflicts": bool(result.get("conflicts")),
+                                 "basis": "Issuer SEC origin; filings/exhibits are not independent confirmations."},
+            "risks": risks}
