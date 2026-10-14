@@ -137,3 +137,50 @@ Criteria pushed at `5c6fbe9` before any change. Code and tests at `0ae5684`. Loc
 - **Full suite:** 1121 passed, 4 skipped (three Linux bubblewrap, one opt-in recorded-market), 1451 subtests.
 - **Linux CI:** [run 38515356112](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38515356112) at `0ae5684`, all jobs passed: runtime, host-bundle, Terraform `deploy/aws` and `deploy/bootstrap`.
 - **Not changed:** the archive outbox (`larp/runtime/maintenance.py`) keeps its own `max_attempts` → `EXHAUSTED` rule. An exhausted archive item makes maintenance unhealthy, which the archive alarm reports, but it does not HALT trading. Whether it should also retry indefinitely is left to its owner (Keegan).
+
+## Review fixes R3–R7 (2026-10-14, Claude for the user). Prospective criteria
+
+From the rest of Keegan's PR #20 review (items 3–5 and the bundle note). Written and pushed before any change or test run below. Decision (Yao Zhu, 2026-10-14): the evidence store is shared through a group, read-only on the runtime side, not moved into PostgreSQL. Synthetic data only; no credentials, network or hosts.
+
+- **R3 · The runtime can read the evidence store, read-only.**
+  - `larp-evidence.service`: `StateDirectoryMode=0770` and `UMask=0007`, so the store, its WAL files and the artifacts are group `larp-evidence`, with no access for others.
+  - `larp-runtime.service`: `SupplementaryGroups=larp-evidence` and `ReadWritePaths=/var/lib/larp-evidence`. SQLite readers of a WAL database must write its `-shm` lock file; the runtime gets no other write path.
+  - `SQLiteEvidenceStore(path, read_only=True)` opens `file:<path>?mode=ro` without creating tables or changing the journal mode, and refuses `commit`. Its reads see what a writer has committed in WAL mode; any write through it fails. `FileArtifacts.get` already verifies each artifact's hash.
+  - Tests:
+    1. Static unit test of both units.
+    2. A read-only store reads a live WAL writer's committed batches and refuses `commit` and raw writes.
+    3. In the H02 container (primary role): a writer running as `larp-evidence` with umask `0007` keeps a WAL store open under a `0770` state directory. `larp-runtime` with the `larp-evidence` group reads it read-only; `larp-runtime` without that group is refused; no file is world-accessible.
+- **R4 · A refused evidence start stops the unit visibly.**
+  - In `python -m larp.sources.live run`, a start refusal exits 4 and prints its reasons to stderr: the live preflight (`_env_root`), an unverified or incomplete release, and the dirty or unpushed git checks. Other commands keep their exit codes.
+  - `larp-evidence.service` sets `RestartPreventExitStatus=4`. A clean exit after 24 h still restarts.
+  - Tests: the CLI returns 4 for null live parameters, null terms hashes and an invalid release. The static unit test checks the setting.
+- **R5 · Service-level signals reach CloudWatch, with alarms.**
+  - `Maintenance.service_health(run_id, now_ms)` (database only, `larp_archive` grants) reports:
+    - the newest open runtime session heartbeat age (`process_sessions`);
+    - active HALT reasons (run projection) and quarantine;
+    - the number of audit events past their upload deadline;
+    - the number and oldest age of signing requests older than 120 s that have neither a refusal nor a signature for their attempt and payload.
+  - `python -m larp.runtime.operations once|health` publishes these to `LARP/Runtime` on every run (every 15 minutes, by the existing timer), next to the archive metrics:
+    - `Service=runtime`: `Heartbeat` (1 if a heartbeat is at most 600 s old, else 0), `Halted` (count of HALT reasons) and `Quarantined` (0/1);
+    - `Service=uploader`: `OverdueLogs`;
+    - `Service=signer`: `UnansweredRequests`.
+
+    If the database read fails, it publishes `Heartbeat=0` for the runtime, as well as the archive `Healthy=0` it already sends.
+  - Terraform adds one alarm per metric (`Heartbeat < 1`, each count `> 0`), each with `treat_missing_data = "breaching"`. An optional `alarm_notification_emails` (sensitive, never committed) creates an SNS topic with email subscriptions, and every alarm notifies it plus `alarm_topic_arns`.
+  - Tests:
+    1. On real PostgreSQL: a fresh run reports no heartbeat; a recent session heartbeat is fresh and a stale one is not; HALT reasons and quarantine are reported; an overdue audit chunk is counted; an unanswered old signing request is counted, while a signed one, a refused one and a fresh one are not.
+    2. Publishing sends exactly the listed metrics and dimensions, and sends `Heartbeat=0` on a database failure.
+    3. Terraform test: the alarms exist with breaching missing data; without emails there is no topic; with emails, a topic and one subscription per address.
+- **R6 · Bundles are checked against the CI-built hash before provisioning.**
+  - `provision.sh` takes the bundle's expected SHA-256 as a required argument (`--expect-sha256 <64 hex>`), and refuses a missing, malformed or different hash before extracting anything.
+  - `tools/build_release_bundle.py` prints the bundle's SHA-256. The CI `host-bundle` job writes it to the job summary, where it is recorded for the activation pack.
+  - `tools/test_host_bundle.sh` passes the hash and checks that a wrong or missing hash is refused.
+- **R7 · Docs.** `docs/build/architecture-deployment.md` and the PR checklist state:
+  - the signer trust boundary next to signer version binding: on two hosts `larp_execution` can write `execution_records`, so the signer independently enforces only the payload (the G-01 allow-list, the gas budget and the swap block);
+  - that the evidence unit cannot start until the live intelligence parameters and the terms hashes are set (DR-12, GAP-23);
+  - where signer logs live and how they are collected: refusals and signatures are in the archived database, and journald stays on the signer's disk, collected at teardown from an EBS snapshot;
+  - the bundle hash comparison;
+  - the shared evidence group;
+  - the new alarms.
+
+Pass: every test above, the full suite against PostgreSQL 14, Terraform `deploy/aws` and `deploy/bootstrap` tests, the H02 container test locally, and Linux CI on the pushed head.
