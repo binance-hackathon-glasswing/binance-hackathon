@@ -1,4 +1,4 @@
-"""IDEA-044 C07/C08: actual archive adapter and configuration release boundary."""
+"""IDEA-044 C07/C08 and IDEA-045 H02/H03: archive/runtime IAM adapters and configuration release boundary."""
 import hashlib
 import json
 from pathlib import Path
@@ -61,6 +61,37 @@ class ArchiveAdapter(DatabaseCase):
             self.assertEqual(rds.generate_db_auth_token.call_count, transport.call_count - 1)
             self.assertGreater(rds.generate_db_auth_token.call_count, 5)
 
+    def test_runtime_service_iam_store_uses_fresh_verified_tls_token_per_connection(self):
+        """IDEA-045 H03: the hosted runtime role is IAM-only; a static DSN file would expire."""
+        import psycopg
+        from larp.runtime.service import open_store
+        connect, seen = psycopg.connect, []
+        rds = Mock()
+        rds.generate_db_auth_token.side_effect = lambda **kw: f"synthetic-token-{rds.generate_db_auth_token.call_count}"
+        config = dict(database_host='synthetic.rds.invalid', database_user='larp_runtime', region='synthetic',
+                      database_name='larp_test', database_ca_file='/synthetic/ca')
+        with patch('larp.runtime.database.rds_client', return_value=rds) as client:
+            store = open_store(config)
+        client.assert_called_once_with('synthetic')
+        def transport(dsn, *a, **kw):
+            seen.append(dsn)
+            return connect(self.store._dsn)
+        expected = self.store.verify('run')  # outside the patch: only the IAM store's connections are counted
+        with patch('psycopg.connect', side_effect=transport):
+            self.assertEqual(store.verify('run'), expected)
+            store.load('run')
+            store.verified_snapshot('run')
+        self.assertEqual(rds.generate_db_auth_token.call_count, len(seen))
+        self.assertGreaterEqual(len(seen), 3)
+        for index, dsn in enumerate(seen, 1):
+            self.assertIn('sslmode=verify-full', dsn)
+            self.assertIn('sslrootcert=/synthetic/ca', dsn)
+            self.assertIn('user=larp_runtime', dsn)
+            self.assertIn(f'synthetic-token-{index}', dsn)  # never reused across connections
+        rds.generate_db_auth_token.assert_called_with(DBHostname='synthetic.rds.invalid', Port=5432,
+                                                      DBUsername='larp_runtime', Region='synthetic')
+        self.assertNotIn('token', repr(store))
+
     def test_genesis_policy_and_execution_tampering_refuses_full_verification(self):
         self.assertEqual(self.store.verify('run'), '0' * 64)
         for field in ('policy_state', 'execution_state'):
@@ -98,6 +129,27 @@ class RuntimeConfiguration(unittest.TestCase):
                         self.assertEqual(main(['run'] + options), EXIT_REFUSED)
                     secrets.assert_not_called()
                     driver.assert_not_called()
+
+    def test_database_connection_is_exactly_one_pinned_choice(self):
+        """IDEA-045 H02: a DSN file or complete RDS IAM settings for larp_runtime, never both or neither."""
+        with tempfile.TemporaryDirectory() as directory:
+            ca = Path(directory) / 'rds-ca.pem'
+            ca.write_bytes(b'synthetic certificate bundle')
+            iam = dict(database_host='synthetic.rds.invalid', database_user='larp_runtime', database_name='larp',
+                       database_ca_file=str(ca), database_ca_sha256=hashlib.sha256(ca.read_bytes()).hexdigest(),
+                       region='ap-southeast-1')
+            base = {k: v for k, v in self.config().items() if k != 'database_dsn_file'}
+            validate_config(self.config())
+            validate_config(dict(base, **iam))
+            validate_config(dict(self.config(), region='ap-southeast-1'))  # region alone serves the secret store
+            refused = [base, dict(self.config(), **iam), dict(base, **dict(iam, database_ca_sha256=None)),
+                       dict(base, **dict(iam, database_user='larp_archive')),
+                       dict(base, **dict(iam, database_ca_sha256='0' * 64)),
+                       dict(base, **dict(iam, database_ca_file=str(ca) + '.missing')),
+                       dict(base, **dict(iam, region=''))]
+            for config in refused:
+                with self.subTest(config=config), self.assertRaises(ContractError):
+                    validate_config(config)
 
     def test_malformed_runtime_settings_are_start_refusals(self):
         for key, values in (('max_failures', [True, 0, '3']), ('clear_after', [False, -1, '2']),

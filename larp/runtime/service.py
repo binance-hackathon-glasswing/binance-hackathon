@@ -19,6 +19,7 @@ import time
 import uuid
 
 from larp.contracts import ContractError, Document
+from larp.runtime.database import IAM_SETTINGS, check_iam_settings
 from larp.runtime.live import LiveStartRefused, check_live_start
 from larp.runtime.supervision import Guard, Sessions
 
@@ -74,7 +75,7 @@ class Service:
 
 
 def validate_config(value):
-    required = ('run_id', 'build_id', 'database_dsn_file', 'max_failures', 'clear_after', 'interval_seconds')
+    required = ('run_id', 'build_id', 'max_failures', 'clear_after', 'interval_seconds')
     if type(value) is not dict or value.get('schema') != 'RuntimeService.v1':
         raise ContractError('Invalid runtime service configuration schema')
     missing = [k for k in required if value.get(k) in (None, '')]
@@ -88,7 +89,23 @@ def validate_config(value):
         raise ContractError('Invalid runtime interval')
     if value.get('mode', 'offline') not in ('offline', 'paper', 'dev', 'live'):
         raise ContractError('Unknown runtime mode')
+    # Exactly one connection: a local DSN file, or RDS IAM settings (hosted roles are IAM-only).
+    # `region` alone also serves the secret store, so it does not select IAM.
+    dsn = value.get('database_dsn_file') not in (None, '')
+    iam = any(value.get(key) not in (None, '') for key in IAM_SETTINGS if key != 'region')
+    if dsn == iam:
+        raise ContractError('Configure exactly one database connection: database_dsn_file or RDS IAM settings')
+    if iam:
+        check_iam_settings(value, 'larp_runtime')
     return value
+
+
+def open_store(config):
+    if config.get('database_dsn_file'):
+        from larp.storage.postgres import PostgresStore
+        return PostgresStore(Path(config['database_dsn_file']).read_text(encoding='utf-8').strip())
+    from larp.runtime.database import IamPostgresStore, rds_client
+    return IamPostgresStore(config, rds_client(config['region']))
 
 
 def build_driver(config, store, secrets):
@@ -132,8 +149,7 @@ def main(argv=None):
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
             return 0
-        from larp.storage.postgres import PostgresStore
-        store = PostgresStore(Path(c['database_dsn_file']).read_text(encoding='utf-8').strip())
+        store = open_store(c)
         verify_registered_manifest(store, c, manifest_document)
         # Secrets only from the configured Secrets Manager entry, never the environment (IDEA-042 S2).
         from larp.runtime.credentials import runtime_secrets

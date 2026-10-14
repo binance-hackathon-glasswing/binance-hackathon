@@ -121,6 +121,8 @@ Two independent read-only reviewers (runtime/execution/deployment; evidence/rese
 | V10 | P2 | No host has `rds-db:connect` for `larp_execution`, which holds the execution-store writes. | Pre-existing; the execution host is not yet integrated (`build_driver` → NOT_INTEGRATED). Deferred to INCOMPLETE_WORK (Keegan + Isaac). |
 | V11 | P2 | The runtime service reads a static `database_dsn_file`, but `larp_runtime` is IAM-only (tokens expire in 15 min; `IamPostgresStore` exists only for operations). | Pre-existing; deferred with V10. The service still refuses before trading. |
 
+- 2026-10-12 update (Claude): V10/V11 are implemented and validated offline in [IDEA-045](IDEA-045.md) on `codex/hosting-step1-20261012` (not merged). Hosted verification on RDS is still pending.
+
 The reviewer's unverified HCL concern (`local.db_users[each.key]` in the unselected branch for `evidence`) is cleared: CI `terraform test` plans the host policy for every host, including `evidence`.
 
 ## PR #18 review follow-up: V01 listing rows (2026-10-14, Claude)

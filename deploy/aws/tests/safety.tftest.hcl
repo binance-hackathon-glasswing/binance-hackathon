@@ -71,13 +71,23 @@ run "host_database_users_match_sql_roles" {
   command = plan
   assert {
     condition = local.db_users == {
-      primary  = "larp_runtime"
-      standby  = "larp_runtime"
-      archive  = "larp_archive"
-      uploader = "larp_uploader"
-      signer   = "larp_signer"
+      primary  = ["larp_runtime", "larp_execution"]
+      standby  = ["larp_runtime", "larp_execution"]
+      archive  = ["larp_archive"]
+      uploader = ["larp_uploader"]
+      signer   = ["larp_signer"]
     }
     error_message = "IAM database login resources must use provisioned service roles, not host names."
+  }
+  assert {
+    condition     = toset(keys(local.db_users)) == local.db_hosts && !contains(keys(local.db_users), "evidence")
+    error_message = "Exactly the database hosts receive database logins; the evidence host has none."
+  }
+  assert {
+    # Every role deploy/postgres/roles.sql grants rds_iam must be reachable from some host.
+    condition = toset(flatten(values(local.db_users))) == toset(
+    ["larp_archive", "larp_uploader", "larp_runtime", "larp_execution", "larp_signer"])
+    error_message = "Each IAM-authenticated SQL role needs a host that may request its token."
   }
 }
 run "reject_final_interactive_access" {
