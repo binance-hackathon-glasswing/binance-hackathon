@@ -1,7 +1,7 @@
 # IDEA-049: Final pre-deployment review against first-principles requirements
 
 - Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Sections assigned by random draw at Yao Zhu's request: A Keith, B Keegan, C Isaac, D Yao Zhu (D integrates).
-- Status: **planned; PR #21 comments amended, focused regressions PASS.** The four-section review is NOT RUN; runner prerequisite regressions are recorded separately below.
+- Status: **planned; PR #21 comments amended, focused regressions and merged-tree CI PASS.** The four-section review is NOT RUN; runner prerequisite regressions and CI are recorded separately below.
 - Prompts: `docs/build/final-review/` (README, common protocol, four section prompts).
 - Starts after: PR #20 and amended PR #21 are merged into `codex/system-testing-20261012`, with the IDEA-048 driver integrated or an explicitly recorded partial-scope disposition (protocol §0.1).
 - Links: IDEA-043/044 (earlier system testing and review), IDEA-045–047 (hosting), `docs/build/DEPLOYMENT_BUILD.md` (DR-01..DR-22), IDEA-021 (AT01–AT20), `docs/build/AWS_RUNBOOK.md`.
@@ -140,3 +140,30 @@ merge commit, preserve its full IDEA-047 result row and this IDEA-049 row, and
 re-run the focused tests and final CI on the merged head. The earlier manual run
 38544874242 at `40ac02a` is not the final merged-tree verification. Incoming
 runtime/host changes remain PR #20's work, not new fixes attributed to PR #21.
+
+### PR21-V2 — merged-tree CI PASS (2026-10-14)
+
+At pushed merge `1c90f53f708e76f6be9e931c18aeec6a6ccf87e8`, all four jobs pass in
+[CI 38545108167](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38545108167):
+- Linux Python 3.12.15 / disposable PostgreSQL 14.24 full suite: **1155 passed,
+  4 skipped, 1483 subtests passed**, 143.74 s. This is +5 tests/+11 subtests
+  against the hosting baseline recorded in IDEA-047. The four skips retain the
+  systemd opt-in and external recorded-market limitations.
+- Separate real-systemd opt-in run: **3 passed, 5 subtests**, 7.70 s.
+- `pip check`, isolated offline demo, Docker build and restricted smoke: PASS.
+- Terraform mocked tests: **deploy/aws 15 passed**, **deploy/bootstrap 1 passed**;
+  formatting, init and validate PASS. No actual cloud plan/apply.
+- Host bundle build and AL2023 offline provisioning/release/artifact checks: PASS.
+- The unchanged focused runner regression also passes locally at `1c90f53`:
+  **5 tests and 11 subtests**, 0.15 s.
+
+This verifies the combined PR tree's existing engineering checks and the branch
+admission amendment. It does not execute IDEA-049's four review catalogues or
+remediate tracker #22's eighteen findings. This section is later documentation;
+its commit is not the SHA tested above. The PR description carries current CI
+status; no earlier successful run is presented as a test of a different code tree.
+
+All review topics are dispositioned above. The driver and original trading-review
+record remain explicit owner inputs. PR #21 is open/mergeable, still stacked on
+#20; no PR was approved, retargeted or merged into its target by this task. Local
+main was fast-forwarded to its already-published origin/main for synchronization.
