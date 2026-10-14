@@ -66,6 +66,7 @@ Make sure your use cases include at least:
 ## After your catalogue is frozen (not before)
 
 Only then compare with these areas, which earlier work left open or flagged. They are hints for phase 2, not requirements:
+- **Prior issues (protocol §2.1):** own #25 (real issuer IDs/tickers through the evidence contract) and #39 (SKHYB evidence protection); provide evidence-side acceptance to B for #39. Review the inventory and current tracker #22, map each to your frozen requirements, and record verified dispositions. D owns #32's network routes; supply its SEC/model endpoint needs.
 - the `parameters.*.live` values in `config/intelligence/intelligence.v1.json` are all null, so live mode refuses to start;
 - every enabled source's `terms_evidence_sha256` is null (GAP-23);
 - the real-document evaluation T01 and the provider bake-off are NOT RUN;

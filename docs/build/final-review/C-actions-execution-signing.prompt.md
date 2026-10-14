@@ -12,6 +12,7 @@ You are one of four reviewers running LARP's final pre-deployment review (IDEA-0
 - funding;
 - the final-wallet switch;
 - the execution store and service;
+- the live market port and quote logger, including the five-name spread/impact measurements (DR-01);
 - settlement facts handed to accounting.
 
 **Before anything else, read `docs/build/final-review/00-common-protocol.md` in full. It is part of this prompt.** Then read `AGENTS.md`, and `docs/skill/SKILL.md` §0 (reading contract, never-do list). Follow the protocol's phases exactly:
@@ -69,6 +70,14 @@ Where an item is split between sections, you own only the aspect named here.
 - **Readiness and acceptance:** DR-02 (live venue adapter), DR-03 (isolated signer; refuses unless the key address = `AI_SEEDS_ADDRESS`; nonce and finality evidence that does not rely on the kit's history), DR-04 (execution service and crash recovery at each step), DR-05 (settlement facts: the execution side), DR-06 (first BNB and top-ups: the execution side), DR-17 (final-wallet switch: the wallet side); AT items about execution, nonce, finality and the signer (`docs/ledger/IDEA-021.md`).
 - **Backlog items to resolve or re-state:** GAP-29 (verified swap decoder), 30, 31, 32 (execution reservations), 41, 47, 49, 52.
 
+**DR-01 owner:** C owns the live market port and quote logger, measurement
+coverage for all five names, and their dated spread/impact summary (IDEA-039).
+Acceptance is the DR-01 logger evidence (at least three days including a weekend,
+artifacts hashed outside Git); a synthetic quote fixture is not measured evidence.
+Pass the summary to B for DR-09/GAP-13 derivations. Any unavailable measurement
+is a named read-only/host check with owner and deadline, and keeps the affected
+profile inputs blocked.
+
 ## Exclusive paths (you may edit)
 
 - Code: `larp/execution.py`, `larp/execution_live/`, `larp/signer/`, `larp/marketdata/`.
@@ -107,9 +116,10 @@ Make sure your use cases include at least:
 ## After your catalogue is frozen (not before)
 
 Only then compare with these areas, which earlier work left open or flagged. They are hints for phase 2, not requirements:
+- **Prior issues (protocol §2.1):** own #24 (market cutoff), #27 (encoded/proposal deadline), #30 (gas execution/settlement) and #40 (profile slippage). Provide execution-side acceptance for D's #23 (signed bytes in backups) and #26 (command/head durability), and B's #36 (chain-balance reconciliation). For #24 coordinate the round cutoff with D; for #27/#30/#40 coordinate decision acceptance with B. Read the current tracker #22 and record requirement mappings and verified dispositions.
 - **Swap decoder:** no verified router decoder exists, so the signer refuses every swap (GAP-29). Decide what the requirements demand before swaps may be signed, and specify the decoder's tests.
 - **First BNB:** how the first BNB is paid is still open (Q-03, GAP-49).
-- **Execution service:** it stops `NOT_INTEGRATED` until the round driver lands (Keegan's IDEA-048 branch). Check that the contract between the round driver and `RemoteSigner` and `ExecutionService` matches your requirements.
+- **Execution service and driver:** IDEA-048 is on `claude/pre-deployment-review-4zxz7p`, outside the review base until its PR is reviewed and merged (protocol §0.1). Its current documented design is shadow-only; signing integration is separate. Check the merged driver's contract with `RemoteSigner` and `ExecutionService`, including command consumption, broadcast/finality and settlement. If excluded, affected checks are `NOT-OFFLINE` and C reports partial coverage; a stub or unsigned driver cannot prove the signed-execution done criteria.
 - **Signer trust boundary:** on two hosts `larp_execution` can write `execution_records`. The signer independently enforces only the payload (IDEA-047 notes); check that this meets G-01 and G-18 as written.
 - **Signer version binding:** the signer does not check the run's registered version.
 - **Signer access:** there is no way yet to reach the signer host to provision it (`docs/build/AWS_RUNBOOK.md` step 5). This is a requirement gap for D, but you own what the signer needs at provisioning.

@@ -1,9 +1,9 @@
 # IDEA-049: Final pre-deployment review against first-principles requirements
 
 - Date / owner: 2026-10-14 / Yao Zhu (requested) with Claude (prompts). Sections assigned by random draw at Yao Zhu's request: A Keith, B Keegan, C Isaac, D Yao Zhu (D integrates).
-- Status: **planned.** Prompts are written. Nothing has run.
+- Status: **planned; PR #21 amendments in progress.** The four-section review is NOT RUN; runner prerequisite regressions are recorded separately below.
 - Prompts: `docs/build/final-review/` (README, common protocol, four section prompts).
-- Starts after: PR #20 is merged into `codex/system-testing-20261012`.
+- Starts after: PR #20 and amended PR #21 are merged into `codex/system-testing-20261012`, with the IDEA-048 driver integrated or an explicitly recorded partial-scope disposition (protocol §0.1).
 - Links: IDEA-043/044 (earlier system testing and review), IDEA-045–047 (hosting), `docs/build/DEPLOYMENT_BUILD.md` (DR-01..DR-22), IDEA-021 (AT01–AT20), `docs/build/AWS_RUNBOOK.md`.
 
 ## Request (Yao Zhu, 2026-10-14)
@@ -40,7 +40,7 @@ NOT RUN.
 ## PR21-R — prompt review amendments (2026-10-14)
 
 Task: the user requested review of PR #21 and implementation of its comments.
-Source: Keegan4 review 5515562621 (GitHub review node PRR_kwDOU5Ify88AAAABSMDOfQ)
+Source: Keegan4 review (GitHub review node PRR_kwDOU5Ify88AAAABSMDOfQ)
 at `767b4d1`. Scope is amendment of the review package and its runner prerequisite;
 the four section reviews themselves remain NOT RUN. PR #20 is still OPEN.
 
@@ -69,3 +69,45 @@ Prospective checks, recorded before execution:
 Results: NOT RUN at this criteria/test commit. No backlog item is completed by
 publishing prompts. Driver integration and original review-record publication
 remain work for their owners, not implied results of this PR.
+
+### PR21-R0 — verified inputs and red regression
+
+Read-only checks on 2026-10-14: PR #20 is OPEN at `185704e`; PR #21's base is
+`codex/hosting-option-b-20261012`. The current review tree's `build_driver` raises
+NotIntegrated. IDEA-048 is on `claude/pre-deployment-review-4zxz7p` at
+`2caeaed93aa27aac3d502cf8e7f65a0f74d55851`; GitHub compare found six commits ahead
+and 35 behind the hosting branch, with no open driver PR. The driver record on
+that branch describes shadow-only scope and explicitly deferred signed integration.
+No driver implementation or history was copied/merged by this amendment task.
+
+Tracker #22 now publishes all eighteen findings #23–#40 (14 P1, four P2).
+The original trading-review ledger/GAP-68 record is absent from this tree;
+`IDEA-046.md` is hosting and remains intact. The phase-2 inventory preserves
+access to the published issues without inventing the missing author record.
+
+Pushed criteria/tests `0b200d6`, Windows Python 3.12.14:
+`python -m pytest -q -p no:cacheprovider tests/runtime/test_system_test_branch.py`
+produced **5 failed, 4 passed, 7 subtests passed**. Four failures are the A/B/C/D
+allowed-review branch subcases; the fifth is the unpublished-head test being
+rejected too early by the branch guard. No child suite, database or network call
+was made by these patched preflight tests. This is the expected defect evidence;
+the same tests must pass unchanged after the pushed runner fix.
+
+### PR21-R1–R8 — amendment disposition
+
+| Review point | Change / remaining dependency |
+|---|---|
+| R1 driver missing | Protocol §0.1 names the actual branch, reviewed-merge or explicit partial exclusion, and blocks overall readiness until the needed driver is integrated. C/D distinguish shadow and signed paths. Keegan + Isaac own driver PR/review; D records disposition before section work. |
+| R2 missing findings / ID clash | Phase-2 inventory owns all #23–#40, protocol §2.1 maps severity and preserves phase-1 independence; §4/D integration includes current tracker blockers. Keith must publish original review/evidence under an unused ID by Day 3; D reconciles index/GAP-68/cross-references. No original author evidence was fabricated. |
+| R3 DR-01 | C owns five-name market/logger measurements and dated hashed cost summary; B consumes it for DR-09/GAP-13. Missing measured data blocks profile derivation. |
+| R4 alias branches | Runner accepts exact section branch format; original push/clean/disposable/network guards remain. Common protocol and SYSTEM_TESTING use direct section branches; prerequisite regression is fail-first. |
+| R5 stale BNB hint | B verifies the existing `9bfffcd` decimal fix as a regression rather than reporting the old disagreement as open. |
+| R6 unowned tool | B's exclusive paths include `tools/fetch_h10_krw.py`. |
+| R7 schedule | README sets Day 2 catalogue, Day 3 pre-registration, Oct 20 fix closure and pre-Oct 22 decisions; slip handling preserves phases and rehearsal risk. Targets are coordination proposals, not completed milestones. |
+| R8 shared docs | Common protocol, D prompt and DEPLOYMENT_BUILD clarify D's temporary review integration role; AGENTS hard rules and lock stewardship remain. |
+
+Additional consistency correction: the baseline run occurs after catalogue freeze
+and before phase-2 implementation changes, so preflight failures cannot steer
+the independent phase-1 catalogue. This is a workflow amendment, not a runtime
+or trading-policy change. No section review, cloud action or issue remediation
+was run. Open inputs remain in protocol §0.1/§2.1 and the prior-issue inventory.

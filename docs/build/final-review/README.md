@@ -6,7 +6,11 @@ The last comprehensive review of the whole system before hosts are started and a
 3. fixes what fails;
 4. repeats until a full pass over the sources finds nothing new and every assumption is validated or recorded as a deployment risk.
 
-**Start only after PR #20 is merged into `codex/system-testing-20261012`.**
+**Start only after PR #20 and this review package (PR #21, including the runner
+change) are merged into `codex/system-testing-20261012`.** The IDEA-048 driver on
+`claude/pre-deployment-review-4zxz7p` must be reviewed and integrated, or the team
+must record a partial-scope exclusion with owner/deadline (protocol §0.1). An
+exclusion does not establish whole-system readiness.
 
 ## How to use
 
@@ -37,8 +41,32 @@ Why this split: it follows the system's own flow. A is what the agent knows, B w
 - Tests assert requirements, not the current implementation. Never weaken a test to make it pass.
 - Team decisions are never changed to fit the code: such items are recorded as DECISION-NEEDED.
 - Shared docs (`docs/LEDGER.md`, `docs/INCOMPLETE_WORK.md`, `README.md`, runbooks) are edited only by D at integration. Other sections list "Requested shared edits" in their record. The exception is corrections to `SKILL.md` summaries that are proven wrong against the verbatim sources.
+- For IDEA-049, D temporarily holds Keegan's earlier shared-doc integration role; `DEPLOYMENT_BUILD.md` cross-references this scoped handoff. AGENTS.md hard rules remain in force.
 - Cross-section problems go in the record's "For other sections" list, with a failing test, and to the owning person.
 
 ## Timing
 
 Team dates (`docs/skill/SKILL.md` §0.4, IDEA-035): parameters freeze at the Oct 22 cut line, and the build freezes at final activation, Oct 27–29. After that no change is allowed (F-114, F-117). Plan the review so that its fixes and the team's DECISION-NEEDED answers land before Oct 22, leaving room for the hosted rehearsal (`docs/build/AWS_RUNBOOK.md`).
+
+Coordination targets for this review (not evidence that a milestone has happened):
+
+| Milestone | Target | Owner / output |
+|---|---|---|
+| Start/base readiness | Day 0 = PR #20 merge date in SGT; PR #21 integrated and driver disposition recorded before section work | D checks merge SHAs and each section records its base |
+| Catalogues frozen and pushed | By the end of Day 2 after the #20 merge | A/B/C/D; no phase-2 code reading before the freeze |
+| Phase-2 trace and test criteria pre-registered | By the end of Day 3 | A/B/C/D; include tracker #22's findings only after catalogue freeze |
+| Fix loops and combined verification closed | Oct 20 SGT | Section owners + D integration, green checks and issue dispositions |
+| DECISION-NEEDED answers / parameter cut | Before Oct 22 cut line | Team; D records unresolved blockers and rehearsal impact |
+
+If a late merge or driver dependency makes these dates infeasible, D records the
+slip, owners and revised plan immediately. Do not compress the requirements-first
+phases, waive open P0/P1 issues, or silently shorten the declared rehearsal to hit
+the cut. The team must explicitly resolve the resulting decision/rehearsal risk.
+
+## Prior findings (phase 2 only)
+
+[The issue inventory](prior-issues.md) assigns all eighteen current findings
+#23–#40 from tracker #22, including the later findings and P2s, to one primary
+section with cross-section consumers. Read it after catalogue freeze. Tracker
+#22's trading-review ID collision and missing original record remain assigned to
+Keith for publication and D for integration; hosting IDEA-046 stays intact.

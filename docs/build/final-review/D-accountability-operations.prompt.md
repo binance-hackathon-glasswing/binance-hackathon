@@ -81,6 +81,10 @@ Where an item is split between sections, you own only the aspect named here.
 - Records: your catalogue and record.
 - **Shared docs**, at integration only: `docs/LEDGER.md`, `docs/INCOMPLETE_WORK.md`, `README.md`, `docs/build/AWS_RUNBOOK.md`, `docs/build/architecture-deployment.md`.
 
+For IDEA-049 only, D temporarily holds the shared-doc integration role previously
+assigned to Keegan (protocol §0 and `DEPLOYMENT_BUILD.md`). Apply A/B/C's requested
+edits together; AGENTS.md hard rules continue to govern every section.
+
 ## Use-case prompts (in addition to protocol §1.5)
 
 Make sure your use cases include at least:
@@ -111,7 +115,9 @@ Make sure your use cases include at least:
 ## After your catalogue is frozen (not before)
 
 Only then compare with these areas, which earlier work left open or flagged. They are hints for phase 2, not requirements:
-- **Round driver:** the round driver integration is on Keegan's IDEA-048 branch (shadow only). Check its contract against your requirements and C's.
+- **Prior issues (protocol §2.1):** own #23 (signed bytes in backups, with C), #26 (stranded commands, with C), #28 (pending-broadcast audit), #29 (audit recovery), #32 (deployment routes, with A/C), #33 (blocked application/driver, with C) and #35 (hung-process supervision). Provide runtime acceptance for C's #24 (cutoff) and B's #31/#34/#36 (daily anchor, HALT planning, reconciliation). Reconcile all #23–#40 with the inventory and current tracker #22 before closing integration, including written P2 dispositions.
+- **Review-record collision:** tracker #22's "IDEA-046/GAP-68" refers to Keith's trading review, not the hosting B1–B4 decision record. Keith must publish the original review with an unused ledger ID and its evidence; D then reconciles index/backlog/cross-references. Track unavailable evidence as an input gap, not a silently closed finding.
+- **Round driver:** IDEA-048 is on `claude/pre-deployment-review-4zxz7p` (shadow only), not on the review base. Apply protocol §0.1: reviewed integration or explicit partial-scope exclusion; agree driver/ExecutionService boundaries with C. A working unsigned driver does not establish Gate B. Final overall completion requires the necessary driver path on the merged tree.
 - **Logs and monitoring:** no journald shipping exists. Signer logs are collected from a disk snapshot. Service alarms exist only while hosts run (IDEA-047 R5).
 - **Signer access:** there is no route to the signer host for provisioning (`docs/build/AWS_RUNBOOK.md` step 5). Specify the requirement, compare the options, and record DECISION-NEEDED.
 - **Migrations:** they need the RDS admin secret, which no host can read (runbook step 6).
@@ -126,6 +132,12 @@ When A, B and C have opened their PRs:
 2. Apply every section's "Requested shared edits".
 3. Run the full suite, `tools/system_test.py`, the Terraform tests and `tools/test_host_bundle.sh` on the merged head. Confirm Linux CI.
 4. Merge the four catalogues' coverage tables into `docs/build/final-review/MASTER-coverage.md`. Every F-item, K section, never-do line, `[RULE]`/`[RULE-DERIVED]` G-item, declared sentence, DR item and AT item must map to exactly one owning requirement or a stated "not applicable". Anything unowned goes back to the closest section for one more loop.
+   Re-fetch tracker #22 and reconcile every child finding (initial inventory #23–#40)
+   against its primary section, cross-section tests, current disposition and mapped
+   severity. Include newly filed blockers. Resolve the colliding review ID and
+   missing original evidence before claiming full completion. Verify the driver
+   PR/merge scope and SHA against the integration tree; exclusions leave the
+   overall review partial and deployment blocked.
 5. Write the IDEA-049 result in `docs/ledger/IDEA-049.md`, with:
    - final counts and CI links;
    - the open DECISION-NEEDED items with options;

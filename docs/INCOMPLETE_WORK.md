@@ -153,6 +153,21 @@ GAP-01..GAP-40 (design and spec) are not organiser-blocked unless they cite an o
 
 ## Suggested order
 
+IDEA-049 final-review inputs (2026-10-14, PR #21 amendments): section reviews
+remain NOT RUN. Keegan + Isaac must open/review/integrate the IDEA-048 driver from
+`claude/pre-deployment-review-4zxz7p`, or the team must record a partial-scope
+exclusion with owner and deadline before section work; D (Yao Zhu) verifies the
+merged path before overall completion. Keith must publish tracker #22's original
+trading-review record under an unused ledger ID and supply its GAP-68 text before
+phase-2 pre-registration (Day 3); its current "IDEA-046" name conflicts with the
+hosting decision record, which must stay intact. D reconciles index/backlog and
+issue cross-references at integration. All #23–#40 are inventoried for phase 2 in
+[prior-issues.md](build/final-review/prior-issues.md); these 14 P1 and four P2
+findings remain unremediated by publishing prompts. Full review/activation stays
+blocked by open P0/P1, missing integrated driver/evidence and unverified host or
+rehearsal gates. See [IDEA-049](ledger/IDEA-049.md) PR21-R and the review README
+for owners and milestone/slip rules. No whole existing GAP is closed here.
+
 Onboarding admin and questions (GAP-41/42) → trading-hours measurement (GAP-44, start now) → rescope for five names (GAP-43) → establish submitted commitments → reconcile the active plan → freeze target/baseline/fallback → assign onboarding gates → finish execution/audit contracts → pre-register experiments → attach readiness evidence to milestones.
 
 GAP-65/67 current integration status (2026-10-12, IDEA-043): PR7/main synchronization are incorporated; PR15, PR16 (strategy), PR14 and PR9 are merged into engine-foundation. Combined PR13 review demonstrates the actual execution-service command path, finalized receipt settlement, reservation release, ACKed round logging and exact replay with synthetic external ports. The recorded-port adapter now covers market/calendar/health/series/gas quotes. Remaining owners: Keegan + Isaac for hosted/recovery/signing drills and production adapter capability proof; Keith + Isaac for real profile/cost/candle evidence and first BNB; Yao Zhu + independent annotator for real documents, terms/source ingestion and model selection; team for hosting/rota and final freeze. PR13/PR11 promotion is complete after green Linux CI; the initial separate-branch system baseline and merged critical-clear follow-up are recorded in IDEA-043; final verification PASS: 78 local system checks and 919 Linux full tests, recorded in IDEA-043. These engineering fixes do not close whole GAP-65/67 or Gate A/B/C.

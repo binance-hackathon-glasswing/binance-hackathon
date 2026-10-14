@@ -54,7 +54,7 @@ Where an item is split between sections, you own only the aspect named here.
 - Code: `larp/strategy/`, `larp/risk/`, `larp/research/`.
 - Config: `config/strategy/`. Profile **values** need a team decision: propose them as DECISION-NEEDED with derivations.
 - Tests: `tests/strategy/`, `tests/risk/`, `tests/research/`.
-- Tools: `tools/realised_vol.py`, `tools/idea018/`.
+- Tools: `tools/realised_vol.py`, `tools/idea018/`, `tools/fetch_h10_krw.py` (research FX input and provenance).
 - Records: your catalogue and record.
 
 ## Use-case prompts (in addition to protocol §1.5)
@@ -79,9 +79,11 @@ Make sure your use cases include at least:
 ## After your catalogue is frozen (not before)
 
 Only then compare with these areas, which earlier work left open or flagged. They are hints for phase 2, not requirements:
+- **Prior issues (protocol §2.1):** own #31 (UTC daily anchor, with D's runtime hook), #34 (mandatory risk/terminal planning under HALT, with D), #36 (accounting reconciliation, with C/D), #37 (economic validation) and #38 (portfolio/cost conventions). Verify the decision side of C's #27 (proposal/encoded deadline), #30 (gas replenishment) and #40 (profile slippage), and A's #39 (SKHYB protection). Map the current tracker #22 findings to your frozen requirements and agree cross-section acceptance.
 - the live strategy profile still needs measured quote costs and an Oct 22 freeze (`config/strategy/LIVE.md`, GAP-13);
+- **DR-01 inputs:** C owns the live market port/logger and five-name measurements. Consume C's dated, hashed spread/impact summary when deriving DR-09/GAP-13 values; without measurements, record the profile as DECISION-NEEDED or blocked, never substitute synthetic costs as measured evidence.
 - the per-trade cap must cover one full 20 % position (IDEA-037);
-- Isaac's I3 mapping and Keith's intent disagreed on the BNB receive decimals (IDEA-042 §4);
+- verify the BNB-decimal fix recorded at `9bfffcd` still holds: the planner's `ledger["bnb_decimals"]` agrees with `map_command`'s declared receive scale for native-gas intents, including non-default scales. This is a regression check, not an assertion that the old disagreement remains open;
 - correlated-exposure treatment and simultaneous-order reservations are open (GAP-10);
 - risk precedence and reset semantics (GAP-12);
 - what the policy does when the registered default itself loses money (GAP-09).

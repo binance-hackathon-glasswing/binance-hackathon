@@ -16,7 +16,11 @@ Earlier reviews checked the code against itself and against our own write-ups. T
 
 ## 0. Preconditions and setup
 
-1. **PR #20 must be merged** into `codex/system-testing-20261012`. Check with `gh pr view 20 --json state`. If it is not merged, stop and tell the person you work for.
+1. **Integration prerequisites.** Record these dispositions before starting:
+   - **PR #20 must be merged** into `codex/system-testing-20261012`. Check with `gh pr view 20 --json state,baseRefName,mergedAt`. If it is not merged into that target, stop and tell the person you work for. PR #21 must also be integrated there, including the runner change in §0.4.
+   - **Round driver (IDEA-048):** its branch is `claude/pre-deployment-review-4zxz7p`. Keegan + Isaac must open/review a driver PR and merge it into `codex/system-testing-20261012` before C/D claim integrated driver coverage. Record that PR, its accepted scope (shadow or signed execution), merge SHA and tested base. A shadow driver is not proof of the `ExecutionService`/signer path.
+   - If the driver cannot land before catalogue work starts, the team must explicitly record its exclusion in IDEA-049 with owner and integration deadline. C/D must mark affected driver, execution-service and round-path requirements `NOT-OFFLINE`, name the later merged-driver check, and report **partial review; deployment blocked**. Testing a `build_driver` stub, or a driver on a different branch, cannot satisfy their done criteria. An exclusion allows independent section work, not overall completion or activation.
+   - D checks both integration inputs again on the final merged tree. There must be a working driver with the required execution path before the overall review can pass.
 2. Read `AGENTS.md`. Its hard rules apply to everything you do:
    - no secrets in Git;
    - no force-push, rebase, amend or other history rewriting;
@@ -29,8 +33,8 @@ Earlier reviews checked the code against itself and against our own write-ups. T
    - A disposable PostgreSQL 14.24 (`deploy/compose.test.yml`, or the pinned image used in `.github/workflows/runtime.yml`), with `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:<port>/larp_test`.
    - Terraform 1.13.5 for `deploy/` work.
    - Docker for `tools/test_host_bundle.sh`.
-   - The system test runner is `tools/system_test.py`; see `docs/build/SYSTEM_TESTING.md`. It only accepts `codex/system-testing-*` branches, so push an alias branch at your exact commit to run it, then delete the alias.
-5. **Baseline before any change.** Run the full suite, record `passed / skipped / subtests` and the commit, and write it in your record (§6). Every later count is compared with it.
+   - The system test runner is `tools/system_test.py`; see `docs/build/SYSTEM_TESTING.md`. It accepts clean, pushed `codex/system-testing-*` branches and `review/final-[a-d]-<yyyymmdd>` (exactly eight date digits). Run it directly on your own section branch; never create or delete an alias under the integration branch's prefix. The exact-head push, disposable local database and external-artifact guards still apply. D owns this runner; its change must be integrated before section work starts.
+5. **Baseline before implementation changes, after catalogue freeze.** Set up the environment without inspecting application code. Once phase 1 is frozen and pushed (§1.8), run the unchanged full suite at the recorded base before any phase-2 code/test change. Record `passed / skipped / subtests` and the commit in your record (§6). Every later count is compared with it. Do not let baseline failures steer the independent catalogue.
 6. **What you may never do in this review:**
    - use or request the registered wallets' keys or `AI_SEEDS_SECRET`;
    - call ai-seeds `log()`;
@@ -39,6 +43,13 @@ Earlier reviews checked the code against itself and against our own write-ups. T
    - contact the organisers.
 
    Read-only public data is allowed only through tools already committed in the repo, from a pushed commit. Examples: SEC EDGAR with the configured contact User-Agent; Web3 Open API quotes with a Web3 API key the person you work for already holds. Record every such call (command, time, artifact hash) and never put raw artifacts in Git.
+
+**Shared-doc responsibility for IDEA-049 only:** section D (Yao Zhu) temporarily
+performs the shared-doc integration assigned to Keegan by `DEPLOYMENT_BUILD.md`
+and `PARALLEL_BUILD.md`. D applies the other sections' requested edits at final
+integration (§6); the earlier ownership resumes outside this review. This scoped
+handoff does not relax AGENTS.md hard rules or grant cloud, wallet or activation
+authority. Only sections' proven SKILL.md summary corrections are independent edits.
 
 ## 1. Phase 1: requirements catalogue, built independently
 
@@ -177,6 +188,36 @@ Now read the code, tests, configs and records.
    - Name tests after the requirement ID (`test_b_req_014_…`).
    - Commit and push the tests, then run them. A red test is a finding.
 
+### 2.1 Existing findings: phase-2 input reconciliation
+
+Only **after** freezing your catalogue, read [the prior-issue inventory](prior-issues.md)
+and GitHub tracker [#22](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/22).
+Re-fetch its child issues and new linked findings: the inventory is a dated snapshot,
+not a substitute for current issue state. These are suspected defects to validate
+against your independently sourced requirements, never new authority for phase 1.
+Each section records issue → owning requirement → failing proof/test → disposition
+and mapped severity, including an explicit reason if a finding does not apply to
+the reviewed tree. D reconciles the complete list at integration.
+
+**ID collision:** tracker #22 calls its trading review "IDEA-046 / GAP-68", but
+`docs/ledger/IDEA-046.md` is the hosting decision record B1–B4. Do not treat the
+trading review as those hosting decisions or overwrite them. Refer to the review
+by GitHub tracker/child issue number until Keith publishes its original record
+under an unused ledger ID, with baseline and evidence, and supplies the GAP-68
+text. D reconciles the index/backlog and old cross-references at integration.
+The published child issues #23–#40 include R09–R18, including the P2 findings;
+they are available phase-2 inputs even while that original record is missing.
+If any referenced evidence is unavailable, record an input gap with owner/deadline;
+do not infer a test result or silently discard the finding.
+
+**Severity mapping:** the tracker's P1 means "resolve before live activation".
+It is at least P1 in this protocol, promoted to P0 wherever §3's P0 definition
+applies (e.g. leaked secrets, lost logs or unrecoverable HALT). A deliberate safety
+gate or missing production capability is still a blocking open dependency; its
+classification does not waive the exit gate. Existing P2 findings are reclassified
+against §3; contained P2s need a fix or explicit written team acceptance. Mapping
+never downgrades an external P1 to P2/P3 to obtain a green review.
+
 ## 3. Phase 3: find, fix, retest
 
 Record each finding as `<letter>-FND-NNN`:
@@ -209,7 +250,7 @@ Fix rules:
 Loop phases 2–3 until **all** of the following hold:
 1. Every MUST requirement is `COVERED` by a passing test, or `NOT-OFFLINE`. A `NOT-OFFLINE` item must name its host, rehearsal or live check and appear in `docs/build/AWS_RUNBOOK.md` or `docs/INCOMPLETE_WORK.md`.
 2. Every assumption is `VALIDATED`, or recorded as a deployment risk with owner, validation step, deadline and blocking flag. No assumption may be `CONTRADICTED` while the code still relies on it.
-3. No open P0 or P1 finding. Each P2 is fixed or accepted in writing by the team.
+3. No open P0 or P1 finding, including tracker #22's P1 child issues #23–#40 and any later linked blockers (§2.1). Closing a GitHub issue alone is not evidence: record the verified disposition on this merged tree. Every issue has a primary owner and cross-section acceptance where needed. Each P2 is fixed or accepted in writing by the team. Missing driver integration and unavailable review evidence remain explicit blocking inputs until resolved; a scoped exclusion never establishes overall readiness.
 4. Full suite, system test and CI are green, and counts are recorded against the baseline.
 5. **A final adversarial pass found nothing new.** Re-read every source in §1.1 for your scope from top to bottom, asking only: "Which requirement or use case is still missing?" Anything new goes back to phase 1 as an amendment and loops. You are done only after a complete pass adds nothing.
 
