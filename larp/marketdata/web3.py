@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import time
 from urllib.error import HTTPError, URLError
@@ -32,15 +33,17 @@ def encoded(v):
     return json.dumps(v, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
 
 
-def redact(value, secrets):
+def redact(value, secrets, *, ignore_case=False):
     if isinstance(value, dict):
-        return {redact(k, secrets): redact(v, secrets) for k, v in value.items()}
+        return {redact(k, secrets, ignore_case=ignore_case): redact(v, secrets, ignore_case=ignore_case)
+                for k, v in value.items()}
     if isinstance(value, list):
-        return [redact(v, secrets) for v in value]
+        return [redact(v, secrets, ignore_case=ignore_case) for v in value]
     if isinstance(value, str):
         for secret in secrets:
             if secret:
-                value = value.replace(secret, '[REDACTED]')
+                value = (re.sub(re.escape(secret), '[REDACTED]', value, flags=re.IGNORECASE)
+                         if ignore_case else value.replace(secret, '[REDACTED]'))
     return value
 
 
@@ -140,9 +143,14 @@ class Web3Client:
             value = params.get(name)
             if isinstance(value, str) and value:
                 private_values.append(value)
+                private_values.append(base64.b64encode(value.encode()).decode())
                 if value.startswith('0x'):
                     # A prefix or hex case change still leaves usable signed bytes.
-                    private_values.extend((value[2:], value.upper(), value[2:].upper()))
+                    private_values.append(value[2:])
+                    try:
+                        private_values.append(base64.b64encode(bytes.fromhex(value[2:])).decode())
+                    except ValueError:
+                        pass  # non-hex private parameters are still redacted
         secrets = (self.key, self.secret, sig, *private_values)
         stored = {k: ('sha256:' + hashlib.sha256(str(v).encode()).hexdigest() if k in self.private_params else v)
                   for k, v in params.items()}
@@ -183,11 +191,17 @@ class Web3Client:
             # request value is reflected, including overwritten JSON keys.
             # JSON escapes or a duplicate key can hide a reflected credential in the raw bytes.
             # Inspect every parsed key/value too before retaining a reversible copy.
-            if not reflects_secret(raw, secrets) and redact(body, secrets) == body:
+            private_reflection = False
+            if private_values:
+                # Preserve all pairs for screening: a parser's last-key-wins rule
+                # must not hide an escaped/mixed-case private value in raw exports.
+                pairs = json.loads(raw, object_pairs_hook=list)
+                private_reflection = redact(pairs, private_values, ignore_case=True) != pairs
+            if not private_reflection and not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
                 record['raw_body_omitted'] = ('private_parameter_reflection'
-                    if reflects_secret(raw, private_values) or redact(body, private_values) != body
+                    if private_reflection or reflects_secret(raw, private_values)
                     else 'credential_reflection')
         except (URLError, TimeoutError, OSError):
             record['outcome'] = 'transport_error'
@@ -197,6 +211,7 @@ class Web3Client:
         # Headers and exceptions are never captured. Private parameters must also
         # be removed from parsed response values and keys before artifact storage.
         record = redact(record, secrets)
+        record = redact(record, private_values, ignore_case=True)
         record['artifact_sha256'] = self.artifacts.put(record)
         if record['outcome'] != 'ok':
             raise Unavailable(record['outcome'])
