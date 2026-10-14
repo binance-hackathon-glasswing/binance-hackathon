@@ -1,9 +1,10 @@
 """Malformed and concurrent RPC evidence never becomes execution authority."""
+import http.client
 import json
 import tempfile
 import unittest
 
-from larp.execution import Blocked
+from larp.execution import Blocked, DependencyUnavailable
 from larp.execution_live.chain import ChainEvidence, Rpc, quantity
 from larp.marketdata.web3 import Artifacts
 from tests.execution.test_live_boundaries import RPC, HASH
@@ -18,6 +19,20 @@ class RpcBoundaryTests(unittest.TestCase):
                 rpc = Rpc('https://rpc.example', artifacts=Artifacts(root), source_id='fixture',
                           opener=Opener(json.dumps(response).encode()))
                 with self.assertRaises(Blocked):
+                    rpc.call('eth_chainId', [])
+
+    def test_a_truncated_or_malformed_http_response_is_unavailable(self):
+        # #64 (WR22) item 2: http.client.HTTPException is neither URLError nor OSError.
+        class Truncated(Response):
+            def read(self, n): raise http.client.IncompleteRead(b'{"jsonrpc":"2.0","id":1,"res', 100)
+        class TruncatedOpener:
+            def open(self, request, timeout): return Truncated(b'')
+        class BadStatus:
+            def open(self, request, timeout): raise http.client.BadStatusLine('garbled')
+        for opener in (TruncatedOpener(), BadStatus()):
+            with self.subTest(opener=type(opener).__name__), tempfile.TemporaryDirectory() as root:
+                rpc = Rpc('https://rpc.example', artifacts=Artifacts(root), source_id='fixture', opener=opener)
+                with self.assertRaisesRegex(DependencyUnavailable, 'RPC unavailable'):
                     rpc.call('eth_chainId', [])
 
     def test_interleaved_requests_bind_their_own_response_ids(self):
