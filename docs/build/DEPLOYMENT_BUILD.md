@@ -24,6 +24,13 @@ Each owner starts a new branch from the base above, in a separate clone or workt
 
 Rules carried over: Keegan alone edits shared docs, locks, the ledger index and the backlog; everyone else records in their own build record and lists requested shared edits there. Build records: **IDEA-039 Isaac, IDEA-040 Keith, IDEA-041 Yao Zhu, IDEA-042 Keegan** (reserved; create the file on first use). Experiment IDs are coordinated through Keegan before any run.
 
+**Scoped review handoff (IDEA-049 / PR #21, 2026-10-14):** for final-review
+integration only, section D (Yao Zhu) temporarily applies shared-doc, ledger-index
+and backlog edits requested by A/B/C, per
+[`final-review/00-common-protocol.md`](final-review/00-common-protocol.md) §0/§6.
+This exception is limited to that review; lock stewardship and AGENTS.md hard
+rules remain unchanged. Keegan's earlier shared-doc role resumes outside it.
+
 ## Frozen interfaces (agreed on day 1, Oct 12)
 
 These are the boundaries where this week's integration broke (RT20 G1–G6). For each one the **consumer's validator is the contract**: the producer's tests must call the consumer's real validator on a real output, not a hand-written copy. A change to any interface needs both owners' agreement, recorded in both build records, before code depends on it.
