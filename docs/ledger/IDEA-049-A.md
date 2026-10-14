@@ -1,5 +1,15 @@
 # IDEA-049-A — Final review A: inputs, evidence, data sources and model
 
+## Current disposition — 2026-10-15 amendment 30
+
+**Partial review; deployment blocked.** PR #68 for wtvlol. Catalogue: 79 requirements (78 frozen at990408d before code review, one authoritative-source amendment), 101 use cases, 18 assumptions, 10 conflicts. Sixteen component defects fixed with pushed pre-fix proofs; D scheduling, calendar/LLM-powered release, model/value/rights/real-evaluation/host decisions remain open.
+
+Latest tested application head `d2631543e65ff13d7b391dddbf6eaa05d896e216`: **A 387 passed /1031 subtests**; **full1253 passed /3 failed /7 skipped /1574 subtests**. Linux runtimeCI38616126552: **3 failed /1280 passed /4 skipped /1 xfailed /1606 subtests**; host-bundle and both infrastructure jobs pass. System runner exits2 before tests, no equivalent green Linux runtime. All three local/CI failures depend on two outside-A fixture files; concrete test-only patch awaits user scope exception or D written OK. Those files have not changed. Counts/limits and artifact hashes: amendment30 below.
+
+Primary checkout is clean at latest fetched target `0820b0d`; A remains isolated from original basec1b6daf. D owns final combined-tree requalification and requested shared edits. No whole GAP is closed, no strict handoff/completion/activation claim. Earlier phase1 status and round counts below are preserved history and are superseded here.
+
+## Historical phase-1 setup
+
 - Date: 2026-10-15 SGT.
 - Reviewer: Keith, working for GitHub user `wtvlol`.
 - Branch: `review/final-a-20261015`.
@@ -433,3 +443,46 @@ Pre-register **A-T24 / A-REQ-020 / existing A-UC-012/015**: actual MarketPort (s
 ### Amendment 28: production alias finding/fix
 
 A-T24 at pushed `4b7ed54` fails for both NVDA and MSFT equal-string contexts: **A-FND-018 P1**, A-REQ-020/#25 component residual. The actual producer marks BINANCE_WEB3. Correct the contract to require canonical issuer plus registered security for that production origin, never synthetic same-namespace fallback. Legacy synthetic same-namespace fixtures remain compatible, but even they cannot bind a known registered security of another token. Failed registry loading still rejects. Push before execution; rerun focused/full/system/CI. This does not fix D's separate scheduler namespace defect.
+
+### Amendment 29: authoritative LLM-powered release requirement
+
+The explicit official opening requires an LLM-powered system; the frozen catalogue had only treated that sentence in qualitative A-CON-008. Add dated **A-REQ-079** and **A-CON-010**, without changing prior frozen rows or strengthening to a call-volume metric. The complete competition starting build must actually include the chosen LLM. B8's deterministic-assessor option cannot by itself waive higher-authority RULE-PAGE or certify a fully rule-only starting agent. This is a **NOT-OFFLINE blocking release check**, team/A/D/Yao Zhu: exact model/rights/budget selection plus final integrated real safe model I/O and harness use before Oct22/26/activation. Deterministic shadow/development behavior remains legitimate component testing. No starting model/weight/provider licence was chosen or paid call made here.
+
+The final adversarial pass therefore added one authoritative requirement and two audit use cases, and found the already recorded A-FND-017/018 boundaries. Catalogue totals now **79 requirements / 101 use cases / 18 registered assumptions / 10 conflicts**. No final no-new-findings closure is claimed while external scope/decision/integration gates remain blocked.
+
+Superseding shared-request addition: D must add to IDEA-049's INCOMPLETE_WORK item and both runbook A gate blocks: `A-REQ-079 / A-CON-010: official page requires the complete starting system to be LLM-powered; B8 alone does not authorize a rule-only competition agent. Team/A/D/Yao Zhu select/pin rights-cleared LLM and budget, integrate it, and preserve sampled original real model I/O/harness evidence before activation (choiceOct22, releaseOct26). Rule/fake-provider tests are not this check.` Replace catalogue totals in the superseding ledger row/README with 79 requirements and101 use cases. This is a team/release input, not a claim that a currently unactivated system has already violated the rule.
+
+
+### Amendment 30: final authorized A evidence and superseding shared text
+
+Application/test head **d2631543e65ff13d7b391dddbf6eaa05d896e216**, basec1b6daf. A-focused **387 passed /1031 subtests**,11.88s; full **3 failed /1253 passed /7 skipped /1574 subtests**,193.52s. Against baseline1229/7/1561, 27 additional tests collected; 24 more passes and three pre-existing consumer-fixture failures. Seven skip reasons unchanged from amendment20. This is a failed full-suite result, never a system/deployment pass.
+
+Linux [38616126552](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38616126552) on d263154: runtime FAIL, **3 failed /1280 passed /4 skipped /1 xfailed /1606 subtests**,256.78s; same three fixture consumers. Additional D target tests explain count difference; signed-backup xfail remains a C/D blocker. Host-bundle and both infrastructure jobs PASS. Guarded system-only command from clean pushed d263154 exits2 before test collection: unavailable Linux bubblewrap and no equivalent green runtime CI. No affected deployment/lock changes by A.
+
+Final additional finding dispositions: **A-FND-017 P1**, redc6141cd→fixfbcde28, exact started/completed tool audit distinctions pass with empty abandoned claims; **A-FND-018 P1**, red4b7ed54 (two failed ticker subtests)→fixd263154, production canonical identity required and other-token aliases rejected, both controls pass. Total18 findings: **16 component fixes**, FND012 (D scheduled issuer) and FND015 (team/D/B calendar) remain open P1. #39 remains P2 DECISION-NEEDED without written acceptance. A-REQ-079 is an additional blocking release requirement, not an allegation against an already activated agent.
+
+Catalogue's frozen78-row Trace plus dated A-REQ-079 Trace now cover all79 requirements. A-REQ-060/061 completed+in-flight boundary proofs pass; A-REQ-020 overall remains CONTRADICTED only through D's canonical scheduling proof. MISSING/CONTRADICTED and NOT-OFFLINE rows never become completed merely because their safe startup/refusal tests pass. No final phase4 closure claimed: exact final merged source pass must follow cross-owner/input/decision/CI/system resolution.
+
+Exact latest prepared diff: `/private/tmp/larp-final-a-artifacts/requested-test-exception-final.patch` (two test-only files). It adds fresh-head HTTP responses while retaining existing crash/record/version assertions; copies exact pushed golden request/result into the C consumer fixture with producer d263154. No outside-A app edit, weakened assertion, deletion or skip. Approval or D written OK is still pending; pending answers do not count as approval. Earlier prepared patch retained separately for provenance.
+
+Superseding exact shared index row for D:
+
+`| IDEA-049-A | Final review A: inputs, evidence, sources and model | partial review; deployment blocked; PR #68 | 79 requirements,101 use cases; baseline1229/7/1561; A387 tests/1031 subtests PASS; full1253 passed/3 failed/7 skipped/1574 subtests, Linux runtime FAIL;16 component fixes, D/decision/rights/host gates remain | 2026-10-15 | [ledger/IDEA-049-A.md](ledger/IDEA-049-A.md) |`
+
+Superseding exact README A status: `Final review A is partial (PR#68, IDEA-049-A): independent catalogue and16 component fixes are pushed; A-focused387 tests/1031 subtests pass, but three failures from two outside-A fixture dependencies keep full suite/Linux runtime red and the system equivalent-tree guard unsatisfied. D review routing, LLM-powered starting release, calendar/model/live-value/rights/SKHYB/real-evaluation/host gates remain open. Deployment is blocked.`
+
+For INCOMPLETE_WORK and both runbooks, D applies amendment23's exact requested block, with these exact substitutions: `79 requirements and101 use cases`; `tested headd263154/basec1b6daf`; `A387 tests/1031 subtests`; `full1253 passed,3 failed,7 skipped,1574 subtests`; `Linux38616126552 runtime FAIL`; `sixteen A component defects fixed`; and amendment29's verbatim A-REQ-079 blocking check. SKILL summary correction remains none. Whole GAP lines remain incomplete. All owners/deadlines in amendment22 and amendment29 remain. No outside shared file was edited by A.
+
+Final raw evidence under `/private/tmp/larp-final-a-artifacts/`:
+
+| Artifact | SHA-256 |
+|---|---|
+| `issuer-alias-red.log` | `57de2830ec4ea71a0b753c71c67fa2bc3d68b8b451594a652f5e46d59f090987` |
+| `tool-start-red.log` | `f19e4c219edaa8a54fe2e3f8b3789b0d3e4f30f68d2757d7e0b87f5821d0e8d9` |
+| `focused-d263154.log` | `6bdbb22fb91e0d34e793abe9d1e574926d027b7a2e9b2ab16dc0be7f1e67d717` |
+| `full-d263154.log` | `0baef3c5d5eea2c0cbc1183b9b1ae2cd73f4cb01886d58083bfde072f0631c50` |
+| `system-d263154.log` | `60f5be8df99107432ceca4be791c1aea4e4337c2c63085fd051417c303308683` |
+| `linux-ci-38616126552.log` | `232bffdc2472cd917230623340b27dc1950cd0eabd2c39f103e34d3e243fcc23` |
+| `requested-test-exception-final.patch` | `6580e8eafc1c09ad894767ecf4adfcee70fbe813050aa125af4778ad107ef4dc` |
+
+All A-authorized changes are committed/pushed before execution. No unpushed application commit. Documentation-only evidence commits after d263154 do not change its tested application/test tree. Primary checkout at0820b0d remains clean. PR#68 remains draft. Strict handoff remains NOT READY for the explicit shared publication/integration, approval, decision and verification items above. Disposable PostgreSQL remains available for the pending authorized retest; its loopback-only fixture credentials are not production credentials.

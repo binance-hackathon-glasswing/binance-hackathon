@@ -766,3 +766,50 @@ Reason: real durable-producer verification closes weak incident/URI gaps; advers
 ### UC/trace amendment 3 — 2026-10-15
 
 **A-UC-101:** a real prior-document tool starts, but its external filesystem read exceeds the hard deadline. Return UNAVAILABLE; retain exact started call/args and explicitly incomplete result, no fabricated result or late authority (A-REQ-026,060–061). Reason: final adversarial review of the same tool-audit obligation found the dispatch/return boundary was not explicitly tested. A-REQ-060 remains provisional until A-T23 passes; 101 use-case rows now exist. Frozen requirements unchanged.
+
+## Authoritative-source amendment 4 — 2026-10-15
+
+Reason: the final top-to-bottom official-page reread found its explicit opening “LLM-powered” sentence had only been discussed as qualitative agentic sufficiency in A-CON-008. It needs its own release requirement; the source must not be weakened to fit the team's deterministic-assessor option. Frozen rows are unchanged. Catalogue now has **79 requirements, 101 use cases**; the new requirement uses existing meaningful release/provider/audit cases rather than inventing a call-volume threshold.
+
+| ID | Statement | Source | Obligation | Acceptance | Use cases | Offline-testable? |
+|---|---|---|---|---|---|---|
+| A-REQ-079 | When the competition starting agent is activated, the complete system must be LLM-powered. | RULE-PAGE `docs/official/source_page.md` Page body opening: “Build an LLM-powered Agentic AI system” | MUST | Final pinned starting manifest and sampled complete original model I/O demonstrate the chosen LLM is actually connected to the bounded agent/harness. A deterministic assessor may support/fallback within that build; a standalone rule-only agent is not certified compliant. Qualitative agentic judging remains unquantified: no spend or call-count threshold is invented. | A-UC-001, A-UC-033, A-UC-049, A-UC-073, A-UC-091, A-UC-092, A-UC-098 | only in rehearsal: exact model/provider choice, rights, budget and final integrated release are absent; fakes cannot demonstrate actual starting-build use |
+
+| ID | Conflicting texts / ambiguity | Conservative reading | Owner / next step |
+|---|---|---|---|
+| A-CON-010 | Official page explicitly requires an LLM-powered system; DECIDED IDEA-035 B8 permits a deterministic evidence assessor choice, while D08/D11 remove the trained return model. | Higher-authority official requirement wins. B8 permits a deterministic *assessor*, but does not itself authorize an LLM-free competition system. Rule-only development/shadow tests establish engineering behavior, not compliance of the competition starting build. | Team + A/D resolve starting-build composition before Oct22/26. No already-settled provider-summary or class question is reopened; no organiser contact occurs in this review. |
+
+Scope amendment: F-08's explicit opening framing→A-REQ-079, alongside existing A-REQ-022–030/067 and A-CON-008. Existing DECIDED B8 and A-REQ-051 remain selection/integration requirements; they cannot waive RULE-PAGE.
+
+Trace A-REQ-079: `larp/runtime/driver.py:build_driver`, `config/release/services.v1.json` assessor-model PENDING_DECISION; existing `tests/runtime/test_driver.py::Composition::test_d7_hosted_models_are_not_integrated` is a negative capability proof, not compliance. **NOT-OFFLINE**, exact later acceptance: team selects rights-cleared/pinned LLM and budget; D connects it on final starting release; A/Yao Zhu retrieve original safe real LLM requests/replies/prompts/tools and demonstrate bounded harness use before activation. Record this blocking check in the requested INCOMPLETE_WORK/runbook edits. A-REQ-079 is not COVERED by a deterministic or fake-provider test.
+
+Trace completion amendments for current A component fixes: A-REQ-060/061 additionally `AuditRecovery::test_a_req_060_started_tool_is_recorded_if_filesystem_read_crosses_deadline` and `test_a_req_061_hard_deadline_preserves_already_completed_tool_results` (test_final_a_requirements.py). Passing on fbcde28 proves completed/in-flight audit distinctions, with no late authority. A-REQ-020 additionally the production alias rejection test at d263154; D canonical scheduled review proof still blocks its overall verdict. Final final-source closure remains pending after cross-owner/decision/system/CI blockers.
+
+
+## Assumptions-register amendment 5 — 2026-10-15
+
+Reason: consolidate the phase-2 code assumptions and current validation/deployment risks into the catalogue as required by protocol §2.2. Frozen rows remain historical. This adds A-ASM-013–018 and explicitly updates original rows by dated amendment; every unresolved assumption has owner, validation step, deadline and blocking flag in IDEA-049-A amendment22.
+
+Frozen assumption rows remain historical; current dispositions:
+- A-ASM-001 PARTIAL: four actual rights captures checked above; SEC, selected models, component licences and exact prepublication scope remain blocking, A/team/C/D, Gate A/Oct 22–26.
+- A-ASM-002 PARTIAL: real-component deterministic timestamp/pagination/error fixtures pass, including strict future source cutoff; live completeness/timezone fidelity requires rights-cleared actual SEC samples and 24 h run, A, Gate A.
+- A-ASM-003 UNVALIDATED: actual registry's foreign-form scope tested, no domestic-items authority invented, but SKHYB protection/rights still decision-needed, A+B/team, Oct 22.
+- A-ASM-004 UNVALIDATED: seven-day value not adopted; A-DEC-003, team/A, Oct 22, blocks affected live predicates.
+- A-ASM-005 UNVALIDATED: synthetic provider summaries/timeouts/audit retrieval pass; real model latency/cost/rights/cutoff/budget not measured, Yao Zhu/team, Oct 19 evidence/Oct 22 choice.
+- A-ASM-006 PARTIAL: fourteen writer restarts/read-only accesses prove preserved committed records, **not 14-day worst-case capacity**. D/host owners must measure ingestion/IO volume, disk headroom, bounded registries and archive retention with selected model, before rehearsal.
+- A-ASM-007 PARTIAL: local DELETE-mode/writable writer/read-only reader, old WAL refusal/migration/corruption and concurrent access pass. Two-user group mounts, hot-journal recovery and host process restart remain D acceptance, Gate A.
+- A-ASM-008 PARTIAL: repeated/syndicated synthetic releases count once and descriptive SEC source agreement stays one; independently labelled actual syndication tests remain A/annotator input before any corroboration-based authority.
+- A-ASM-009 PARTIAL: Guide scope is checked and no conversion is synthesized; C/B actual bStock identity/candle coverage remains blocking before affected trading.
+- A-ASM-010 UNVALIDATED: all eleven live fields still null. Derivations are proposals above, not adoption; team/A/D Oct 22/26.
+- A-ASM-011 PARTIAL: Q16 readable daily summaries answered in practice, not reopened. D/team final-wallet/audit package checks remain; no organiser contact here.
+- A-ASM-012 UNVALIDATED: exact selected snapshot/API/licence and cutoff unknown; choose and verify original provider documents, Yao Zhu/team/A Oct 22.
+
+New code assumptions:
+| ID | Assumption / code reliance | Review disposition / validation | Risk owner, step, deadline, blocking |
+|---|---|---|---|
+| A-ASM-013 | Ingestion's 300,000 ms development clock allowance implies availability. | CONTRADICTED before A-FND-009; dependency removed by strict original+retrieval decision cutoff and A-T12 passing. This allowance is no longer early-authority evidence. | Live skew remains A-DEC-002; team/A/D adopt storage-only value and clock guard, Oct 22; yes. |
+| A-ASM-014 | Market ticker equals SEC issuer ID; registry-read failure validates equal supplied strings. | CONTRADICTED; A contract dependence removed by canonical registry binding and fail-closed loading, passing A-T01/A-T16. D scheduler still relies on ticker identity, explicit A-T15 remains red. | D fix mapping and original-ref review integration, before final review/activation; yes (#25). |
+| A-ASM-015 | Development bounds/limits fit actual fourteen-day data and provider token budget. | UNVALIDATED: max documents6, result chars20,000, claims64, known accessions5,000, known facts200, fetch attempts3, document chars4,000,000, facts400, statements/document200, prior records40, comparisons4,000, model-input chars400,000, statement registry400. Synthetic truncation is visible; no real-load calibration. | A/Yao Zhu + D measure selected-model costs/token limits, maximum ingestion and durable growth, before Gate A/rehearsal; yes. |
+| A-ASM-016 | Semantic matching Jaccard 0.8 same / 0.5 uncertain protects real issuer statements. | PARTIAL: thresholds inspected in lifecycle.py, synthetic actor/anchor/paraphrase tests pass. Real independent T01 remains NOT RUN. | A + independent annotator validate false positives/negatives against frozen corpus, Oct 19/22; yes. |
+| A-ASM-017 | One cadence slot refreshes all five issuers. | CONTRADICTED; proposals now explicitly use N×C and queue delay. Code still intentionally rotates one issuer; no reliance on all-name refresh is permitted. | D/team adopt C jointly with TTL/source budget and priority overload test, Oct 22; yes. |
+| A-ASM-018 | Terms hash presence establishes original capture and all content rights. | CONTRADICTED: integrity dependence removed by A-T11 guard; actual originals now partially captured. Hash cannot replace per-contact/per-item rights checking. | A/team current SEC/provider/component/public-inspection rights steps above, Gate A; yes. |
