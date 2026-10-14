@@ -61,12 +61,51 @@ class RunAuthorization:
         planned = record is not None and any(i['intent_id'] == intent.intent_id
                                              for i in record['plan'].get('intents', []))
         final = record is not None and intent.intent_id in record.get('final_intents', [])
-        held = sum(r['units'] for r in run['reservations'] if r['intent_id'] == intent.intent_id)
-        facts['reservation_valid'] = planned and not final and held > 0
+        facts['reservation_valid'] = planned and not final and self.resources_reserved(run, intent)
         plan = self.store.event(self.run_id, 'plan:' + intent.round_id)
         facts['audit_durable'] = bool(plan) and any(
             i['intent_id'] == intent.intent_id for i in plan.get('record', {}).get('plan', {}).get('intents', []))
         return facts
+
+    def resources_reserved(self, run, intent):
+        """Keep pay-token and BNB units separate; the parent gas cap covers all steps.
+
+        Production accounting scales come from the durable portfolio. Historical
+        untyped offline fixtures can attest only positive per-asset reservations.
+        """
+        from larp.execution import USDT
+        from larp.execution_live.store import ExecutionStore
+        from larp.marketdata.port import TOKENS
+        pay_asset = ('USDT' if intent.pay_token == USDT else
+                     next((s for s, token in TOKENS.items() if token == intent.pay_token), None))
+        if pay_asset is None:
+            return False
+        held = {r['asset']: r['units'] for r in run['reservations'] if r['intent_id'] == intent.intent_id}
+        pay, gas = held.get(pay_asset, 0), held.get('BNB', 0)
+        if type(pay) is not int or type(gas) is not int or pay <= 0 or gas <= 0:
+            return False
+        scale = (run['projection'].get('portfolio') or {}).get('bnb_decimals')
+        if scale is None and run['mode'] == 'offline':
+            return True
+        if type(scale) is not int or not 0 <= scale <= 18:
+            return False
+        if pay * (10**12 if pay_asset == 'USDT' else 1) < intent.amount:
+            return False
+        try:
+            state = ExecutionStore(self.store, run_id=self.run_id, wallet=intent.wallet).load(intent.key)
+        except Conflict:
+            return False
+        spent = 0
+        if state is not None:
+            if state.intent != intent:
+                return False
+            for attempt in state.attempts:
+                if attempt.state in ('FINAL_SUCCESS', 'FINAL_REVERT'):
+                    if type(attempt.gas_used) is not int or attempt.gas_used < 0:
+                        return False
+                    spent += attempt.gas_used * attempt.payload.gas_price
+        remaining = intent.gas_budget - spent
+        return remaining > 0 and gas * 10**(18 - scale) >= remaining
 
     def __call__(self, intent, epoch, state_version, now):
         return self.facts(intent, now)
