@@ -131,8 +131,8 @@ variable "enable_external_https" {
 }
 variable "enable_development_ssm" {
   description = "Development access to primary only; requires enable_external_https. Never provides signer access."
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
 }
 variable "alarm_topic_arns" {
   description = "Existing explicitly authorized destinations; empty creates silent alarms only."
