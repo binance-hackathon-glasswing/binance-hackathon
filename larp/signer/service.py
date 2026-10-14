@@ -47,8 +47,10 @@ class StartRefused(ContractError):
 
 
 class SignerService:
-    def __init__(self, *, store, run_id, wallet, credentials, clock_s, decoder=None, max_skew_s=2, batch=16):
+    def __init__(self, *, store, run_id, wallet, credentials, clock_s, decoder=None, max_skew_s=2, batch=16,
+                 build_id=None):
         self.store, self.run_id, self.clock = store, run_id, clock_s
+        self.build_id = build_id
         self.decoder = decoder if decoder is not None else UnverifiedRouter()
         self.max_skew, self.batch = max_skew_s, batch
         self.registry = ExecutionStore(store, run_id=run_id, wallet=address(wallet))
@@ -92,6 +94,13 @@ class SignerService:
         if (state.intent.key != request['economic_key'] or attempt.step != request['step']
                 or attempt.payload.hash != request['payload_hash']):
             raise Blocked('request does not match the registered attempt')
+        # Primary-supplied gate flags cannot override the signer's own release,
+        # the registered run identity, or a HALT raised since it queued the request.
+        with self.store.transaction() as db:
+            run = self.registry._release_authority(db, request['epoch'], request['guard_version'])
+            if run['mode'] != 'offline' and not self.build_id:
+                raise Blocked('verified signer build identity required')
+            self.registry.check_signing_run(run, state.intent, self.build_id)
         authority = (attempt.epoch, attempt.guard_version)
         if authority != (request['epoch'], request['guard_version']) or authority != (gates.epoch,
                                                                                       gates.authority_version):
@@ -194,7 +203,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],
                                     credentials=credentials, clock_s=clock_s,
-                                    max_skew_s=config.get('max_clock_skew_seconds', 2))
+                                    max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'])
         except Blocked as refused:
             # Key-file and wallet-binding refusals are fixed texts that never carry key material.
             print(json.dumps(dict(started=False, reason='KEY_REFUSED', detail=str(refused), signing_enabled=False)))

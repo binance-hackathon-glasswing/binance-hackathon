@@ -135,6 +135,15 @@ class Web3Client:
                       data=payload if method == 'POST' else None,
                       headers={'X-OC-APIKEY': self.key, 'X-OC-TIMESTAMP': stamp, 'X-OC-SIGN': sig,
                                'Content-Type': 'application/json'})
+        private_values = []
+        for name in self.private_params:
+            value = params.get(name)
+            if isinstance(value, str) and value:
+                private_values.append(value)
+                if value.startswith('0x'):
+                    # A prefix or hex case change still leaves usable signed bytes.
+                    private_values.extend((value[2:], value.upper(), value[2:].upper()))
+        secrets = (self.key, self.secret, sig, *private_values)
         stored = {k: ('sha256:' + hashlib.sha256(str(v).encode()).hexdigest() if k in self.private_params else v)
                   for k, v in params.items()}
         record = dict(schema='Web3Observation.v1', source_id='BINANCE_WEB3', endpoint=endpoint,
@@ -170,21 +179,24 @@ class Web3Client:
             else:
                 outcome = 'api_or_http_error'
             record.update(outcome=outcome, response=body)
-            # Keep exact public response bytes, unless they reflect a credential.
-            secrets = (self.key, self.secret, sig)
+            # Keep exact public response bytes only if no credential or private
+            # request value is reflected, including overwritten JSON keys.
             # JSON escapes or a duplicate key can hide a reflected credential in the raw bytes.
             # Inspect every parsed key/value too before retaining a reversible copy.
             if not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
-                record['raw_body_omitted'] = 'credential_reflection'
+                record['raw_body_omitted'] = ('private_parameter_reflection'
+                    if reflects_secret(raw, private_values) or redact(body, private_values) != body
+                    else 'credential_reflection')
         except (URLError, TimeoutError, OSError):
             record['outcome'] = 'transport_error'
         except Unavailable as e:
             record['outcome'] = str(e)
         record.update(available_at=utc(), elapsed_ms=round((time.monotonic() - start) * 1000))
-        # Headers and exceptions are never captured. Defensive redaction also covers a reflected credential.
-        record = redact(record, (self.key, self.secret, sig))
+        # Headers and exceptions are never captured. Private parameters must also
+        # be removed from parsed response values and keys before artifact storage.
+        record = redact(record, secrets)
         record['artifact_sha256'] = self.artifacts.put(record)
         if record['outcome'] != 'ok':
             raise Unavailable(record['outcome'])

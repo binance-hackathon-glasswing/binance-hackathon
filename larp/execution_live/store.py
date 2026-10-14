@@ -11,6 +11,7 @@ import json
 from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signed,
                             TERMINAL, canonical, digest)
 from larp.storage.postgres import IntegrityError
+from larp.contracts import Document
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS execution_records (
@@ -194,8 +195,9 @@ class ExecutionStore:
 
     def put_if_absent(self, attempt_id, payload_hash, signed, epoch, version):
         with self.store.transaction() as db:
-            self._release_authority(db, epoch, version)
+            run = self._release_authority(db, epoch, version)
             state, attempt = self._attempt(db, attempt_id)
+            self.check_signing_run(run, state.intent)
             if (state.status != 'ACTIVE' or attempt.state != 'AUTHORIZED'
                     or attempt.payload.hash != payload_hash or attempt.epoch != epoch
                     or attempt.guard_version != version):
@@ -209,6 +211,28 @@ class ExecutionStore:
             if row[0] != payload_hash or row[2] != digest(stored) or row[3] != self.run_id:
                 raise Conflict('immutable attempt signature conflicts')
             return Signed(**stored)
+
+    @staticmethod
+    def check_signing_run(run, intent, build_id=None):
+        """Independent signing facts from the locked run, writable only by runtime.
+
+        This check is specific to new signatures. Receipt publication and lookup
+        keep using release authority so HALT never prevents reconciliation.
+        """
+        projection = Document(bytes(run['projection'])).read()
+        if (projection.get('halt') or {}).get('reasons'):
+            raise Conflict('run is halted; signing blocked')
+        registered = projection.get('registered_version')
+        if registered is not None and type(registered) is not dict:
+            raise Conflict('invalid registered signing version')
+        version = (registered or {}).get('build_id')
+        if run['mode'] != 'offline' or registered is not None:
+            if not version or version != intent.version_id:
+                raise Conflict('intent differs from registered signing version')
+        if build_id is not None and (version != build_id or intent.version_id != build_id):
+            raise Conflict('signer build differs from registered signing version')
+        if run['mode'] != 'offline' and str(run['wallet_id']).lower() != intent.wallet:
+            raise Conflict('registered signing wallet mismatch')
 
     def lookup_observation(self, event_id):
         with self.store.transaction() as db:
