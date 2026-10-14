@@ -206,7 +206,7 @@ def _issuer_registry():
     return load_registry()
 
 
-def _issuer_matches(record: dict, underlying: str) -> bool:
+def _issuer_matches(record: dict, underlying: str, *, source_id: str | None = None) -> bool:
     """Issuer evidence and a quoted security have separate namespaces; no share conversion is implied."""
     if record.get("underlying_id") != underlying:
         return False
@@ -218,13 +218,19 @@ def _issuer_matches(record: dict, underlying: str) -> bool:
         entry = registry.by_token(record["token"])
     except (IntelligenceError, OSError, ValueError, KeyError, TypeError):
         # Existing offline contracts may use one fixture identity for both namespaces.
-        return record.get("issuer_id") == underlying
+        return source_id != "BINANCE_WEB3" and record.get("issuer_id") == underlying
+    securities = {s.security_id for s in entry.securities}
+    tickers = {s.split(":", 1)[-1] for s in securities}
     if record.get("issuer_id") == underlying:
+        if source_id == "BINANCE_WEB3":
+            return False  # production evidence must name the canonical issuer, not repeat a ticker
+        known_securities = {s.security_id for e in registry.entries for s in e.securities}
+        known_tickers = {s.split(":", 1)[-1] for s in known_securities}
+        if underlying in known_securities | known_tickers:
+            return underlying in securities | tickers
         # Preserve synthetic issuer fixtures, but a real registered issuer cannot impersonate another token.
         known = {e.issuer_id for e in registry.entries}
         return underlying not in known or underlying == entry.issuer_id
-    securities = {s.security_id for s in entry.securities}
-    tickers = {s.split(":", 1)[-1] for s in securities}
     return record.get("issuer_id") == entry.issuer_id and underlying in securities | tickers
 
 
@@ -265,7 +271,7 @@ def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None
         market = markets.get(record["token"])
         if (universe is not None and record["token"] not in universe) or market is None:
             return "UNKNOWN_TOKEN"
-        if not _issuer_matches(record, market.get("underlying_id")):
+        if not _issuer_matches(record, market.get("underlying_id"), source_id=market.get("source_id")):
             return "WRONG_ISSUER"
     if now_ms is not None:
         if record["as_of_ms"] > now_ms:
