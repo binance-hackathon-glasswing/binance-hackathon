@@ -64,6 +64,8 @@ def credentials(env_file=None, environ=None):
             key = key.strip()
             if sep and key in ENV_NAMES:
                 parts = shlex.split(val, comments=True)
+                if not parts or parts == ['']:
+                    continue  # optional empty fields do not replace supplied credentials
                 if len(parts) != 1 or '$' in parts[0] or '`' in parts[0]:
                     raise Unavailable('credentials must be literal values')
                 if key in selected and selected[key] != parts[0]:
