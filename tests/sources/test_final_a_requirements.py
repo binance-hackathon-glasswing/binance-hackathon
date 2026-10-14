@@ -1,10 +1,24 @@
 """A source recovery requirements, using the real durable store and fake HTTP only."""
 from dataclasses import replace
+import http.client
+from larp.sources.live import capture_terms
 from larp.sources.ingest import coverage
 from tests.sources.test_sources import Harness, FakeNet, T0, rss, fr
 
 
 class FinalASources(Harness):
+    def test_a_req_014_partial_terms_response_records_failure_and_continues(self):
+        def fetch(url, *args):
+            if 'justice.gov' in url:
+                raise http.client.IncompleteRead(b'UNTRUSTED_PARTIAL_MARKER', 20)
+            return 200, {}, b'synthetic permitted-source terms'
+        rows = {r['source_id']: r for r in capture_terms(self.register, fetch, self.artifacts, self.clock)}
+        self.assertEqual(rows['doj-press']['status'], 'FAILED')
+        self.assertEqual(rows['doj-press']['error'], 'IncompleteRead')
+        self.assertNotIn('sha256', rows['doj-press'])
+        self.assertEqual(rows['ec-press']['status'], 'CAPTURED')
+        self.assertNotIn('UNTRUSTED_PARTIAL_MARKER', str(rows))
+
     def test_a_req_014_policy_exclusion_does_not_make_permitted_coverage_incomplete(self):
         source = self.register['ec-press']
         items = [('Restricted', 'https://ec.europa.eu/commission/presscorner/detail/en/restricted',

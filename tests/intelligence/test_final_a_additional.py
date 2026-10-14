@@ -1,8 +1,11 @@
 """Additional source-derived A catalogue probes, preregistered before their first run."""
 from datetime import datetime, timezone
+import http.client
+import json
 from unittest.mock import patch
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.agent import EvidenceAssessor
+from larp.intelligence.edgar import EdgarHttpSource
 from larp.intelligence.models import RuleBaselineModel
 from larp.intelligence.scenarios import doc, page, p
 from larp.integration.contract import red_flag_directives, problem
@@ -11,6 +14,22 @@ from tests.intelligence.test_red_flags import enabled_profile
 
 
 class AdditionalEvidence(RealEvidence):
+    def test_a_req_017_partial_http_response_is_unavailable_then_recovers(self):
+        replies = [http.client.IncompleteRead(b'UNTRUSTED_PARTIAL_MARKER', 20),
+                   (200, 'application/json', json.dumps(self.source.list_filings(self.entry.cik).submissions).encode())]
+        def transport(*args):
+            reply = replies.pop(0)
+            if isinstance(reply, Exception):
+                raise reply
+            return reply
+        source = EdgarHttpSource('synthetic-contact@example.invalid', http_get=transport, clock_ms=self.clock)
+        broken = source.list_filings(self.entry.cik)
+        self.assertEqual(broken.status, 'UNAVAILABLE')
+        self.assertEqual(broken.error, 'IncompleteRead')
+        self.assertIsNone(broken.submissions)
+        self.assertNotIn('UNTRUSTED_PARTIAL_MARKER', str(broken))
+        self.assertEqual(source.list_filings(self.entry.cik).status, 'OK')
+
     def test_a_req_020_unavailable_identity_registry_cannot_accept_self_matching_ids(self):
         self.assess(self.add(780, NONRELIANCE))
         context = self.context(ticker=self.entry.issuer_id)
