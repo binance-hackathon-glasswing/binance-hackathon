@@ -32,8 +32,9 @@ def intent_key(run_id, wallet, intent_id):
 class RunAuthorization:
     """`LiveGuards.authorization`: run facts for one intent, from the journal at the moment of the snapshot."""
 
-    def __init__(self, store, *, run_id, build_id):
+    def __init__(self, store, *, run_id, build_id, manifest_sha256=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
+        self.manifest_sha256 = manifest_sha256
 
     def facts(self, intent, now_s):
         from larp.runtime.coordinator import halt_reasons
@@ -47,7 +48,12 @@ class RunAuthorization:
         run = self.store.load(self.run_id).read()
         projection = run['projection']
         halted = halt_reasons(projection)
-        facts['version_valid'] = (projection.get('registered_version') or {}).get('build_id') == self.build_id
+        registered = projection.get('registered_version')
+        facts['version_valid'] = (type(registered) is dict and registered.get('build_id') == self.build_id
+            and intent.version_id == self.build_id
+            and ((self.manifest_sha256 is not None
+                  and registered.get('manifest_sha256') == self.manifest_sha256)
+                 or (run['mode'] == 'offline' and self.manifest_sha256 is None)))
         facts['risk_valid'] = not halted and not run['quarantined']
         last = projection.get('last_decision_ms')
         facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
