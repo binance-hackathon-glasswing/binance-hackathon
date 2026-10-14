@@ -415,5 +415,15 @@ D retains legacy export/restore, archive grants and its deliberately injected
 legacy-state regression; no marker/assertion is removed by C. Trace is WEAK
 pending C-FND-010 tests; complete #23 acceptance still needs both owners.
 
+Final C-FND-010 trace: `execution_live/store.py:commit/_signature/check_broadcast`
+and `execution.py:Executor.broadcast`; seven real-PG cases in
+`tests/execution/test_section_c_signed_state.py::SignedState` cover new-state
+secrecy, exact first release after restart, missing/corrupt registry, raw-byte
+forgery and quarantined hash-compatible restore. **COVERED** for legitimately
+produced state/release. **MISSING (D)** for rejecting legacy/forged raw SQL rows
+at archive/export: D-REQ-023's existing expected failure is kept and #23 remains
+a shared P0 blocker. C-RESULT-007 supersedes earlier "final" counts after the
+ordinary merge of D's target changes and the signed-state amendment.
+
 This maps the execution-service aspect of the existing declared version gate;
 it does not grant C edits to D's runtime, uploader or system-test runner.
