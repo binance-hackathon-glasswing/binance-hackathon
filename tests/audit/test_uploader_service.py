@@ -6,10 +6,11 @@ from pathlib import Path
 import tempfile
 import traceback
 import unittest
+from unittest.mock import patch
 
 from larp.audit.delivery import DeliveryWorker
 from larp.audit.protocol import sign
-from larp.audit.service import Secret, Uploader, load_uploader_secret, main
+from larp.audit.service import Secret, SecretUnavailable, StartRefused, Uploader, load_uploader_secret, main
 from larp.runtime.fixtures import FakeReceiver
 from larp.storage.postgres import doc
 from tests.audit.test_protocol import event
@@ -51,6 +52,44 @@ class SecretLoading(unittest.TestCase):
         secret = Secret(SECRET)
         self.assertNotIn(SECRET, repr(secret) + str(secret) + f'{secret}')
         self.assertEqual(sign(secret, 'PUT', '/p', 1, 'n', WALLET, b'{}'), sign(SECRET, 'PUT', '/p', 1, 'n', WALLET, b'{}'))
+
+    def test_r14_fetch_failures_are_retryable_and_hide_provider_text(self):
+        for error in (TimeoutError(SECRET), RuntimeError('provider credential ' + SECRET)):
+            with self.subTest(kind=type(error).__name__):
+                try:
+                    load_uploader_secret(Client(error), 'synthetic-id', WALLET)
+                except SecretUnavailable:
+                    self.assertNotIn(SECRET, traceback.format_exc())
+                else:
+                    self.fail('fetch failure was not retryable')
+
+    def test_r14_malformed_provider_response_is_a_permanent_refusal(self):
+        for response in ({}, {'SecretString': None}, {'SecretString': b'bytes'}, []):
+            with self.subTest(response=response), patch.object(Client, 'get_secret_value', return_value=response):
+                with self.assertRaises(StartRefused):
+                    load_uploader_secret(Client({}), 'synthetic-id', WALLET)
+
+
+class UploaderFetchRestart(unittest.TestCase):
+    def test_r14_pinned_release_fetch_failure_exits_1_before_opening_database(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = dict(schema='UploaderService.v1', run_id='synthetic-run', build_id=BUILD, mode='dev',
+                          wallet_address=WALLET, uploader_secret_id='synthetic-id', region='ap-southeast-2',
+                          interval_seconds=1, database_dsn_file='/synthetic/not-contacted')
+            raw = json.dumps(config).encode()
+            path = Path(directory) / 'uploader.json'
+            path.write_bytes(raw)
+            root, manifest = synthetic_release(directory, {'uploader': raw})
+            args = ['run', '--config', str(path), '--manifest', str(manifest), '--root', str(root)]
+            for error in (TimeoutError(SECRET), RuntimeError('throttle ' + SECRET)):
+                with self.subTest(kind=type(error).__name__), patch('larp.runtime.database.open_service_store') as db:
+                    out = io.StringIO()
+                    with redirect_stdout(out):
+                        code = main(args, client_factory=lambda region: Client(error), max_cycles=1)
+                    self.assertEqual(code, 1)
+                    self.assertEqual(json.loads(out.getvalue())['reason'], 'UPLOADER_FAILED')
+                    self.assertNotIn(SECRET, out.getvalue())
+                    db.assert_not_called()
 
 
 class UploaderDelivery(DatabaseCase):
@@ -110,6 +149,25 @@ class UploaderCommand(DatabaseCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(self.received, [(WALLET, SECRET)])
         self.assertNotIn(SECRET, out)
+
+    def test_r14_failed_fetch_then_restart_delivers_committed_log(self):
+        from larp.audit.protocol import build_event
+        from larp.runtime.coordinator import batch_for
+        audit = build_event(event_id='evt-r14', round_id='round-r14', version_id='synthetic', decision_ids=[],
+                            address=WALLET, timestamp_ms=100, input_record={'synthetic': True},
+                            rationale='synthetic hold', output='HOLD', orders=[])
+        batch = batch_for(self.store.load('live-run'), 'r14', {'kind': 'SYNTHETIC'}, audit=[audit])
+        self.store.commit(batch)
+        args = self.args()
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = main(['run', *args], client_factory=lambda region: Client(TimeoutError(SECRET)), max_cycles=1)
+        self.assertEqual(code, 1)
+        self.assertNotIn(SECRET, out.getvalue())
+        self.assertEqual(self.store.metrics('live-run').read()['audit_pending'], 1)
+        code, out = self.run_main('run', args)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.store.metrics('live-run').read()['audit_pending'], 0)
 
     def test_u01_refusals_exit_4_without_secrets(self):
         cases = {

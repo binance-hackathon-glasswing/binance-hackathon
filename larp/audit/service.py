@@ -34,6 +34,10 @@ class StartRefused(ContractError):
     pass
 
 
+class SecretUnavailable(RuntimeError):
+    """A provider fetch failure, retried by systemd; never carries provider text or credentials."""
+
+
 def validate_config(value):
     if type(value) is not dict or value.get('schema') != SCHEMA:
         raise ContractError('Invalid uploader service configuration schema')
@@ -76,9 +80,12 @@ class Secret(str):
 
 def load_uploader_secret(client, secret_id, wallet_address):
     try:
-        raw = client.get_secret_value(SecretId=secret_id)['SecretString']
-    except Exception as exc:  # the provider's message is not trusted to be value-free
-        raise StartRefused('Uploader secret unavailable: ' + type(exc).__name__) from None
+        response = client.get_secret_value(SecretId=secret_id)
+    except Exception:  # unavailable credentials are retryable; arbitrary provider messages may contain secrets
+        raise SecretUnavailable('Uploader secret fetch failed') from None
+    if type(response) is not dict or type(response.get('SecretString')) is not str:
+        raise StartRefused('Uploader secret response must contain SecretString text')
+    raw = response['SecretString']
     try:
         values = json.loads(raw)
     except (TypeError, ValueError):

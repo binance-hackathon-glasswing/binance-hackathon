@@ -96,22 +96,40 @@ class SQLiteEvidenceStore:
     connection is opened for use from any thread and every method holds a re-entrant lock: reads, and each commit's
     whole transaction, never interleave (IDEA-041 R01).
 
-    `read_only=True` is the runtime's view of the poller's store on the primary host (IDEA-047 R3): SQLite opens it
-    with `mode=ro`, creates nothing, leaves the journal mode alone and refuses `commit`. It sees what the writer has
-    committed; the only file it writes is the WAL lock file (`-shm`), which SQLite readers need.
+    `read_only=True` defaults to a DELETE-journal database (IDEA-047 R15). It refuses a legacy WAL file before SQLite
+    can create incompatible sidecars, and leaves migration/recovery to the writer. Shared readers need no writable
+    mount. Private writers retain WAL by default; a private WAL reader must request journal_mode='WAL' explicitly.
     """
 
-    def __init__(self, path: str, *, read_only: bool = False):
+    def __init__(self, path: str, *, read_only: bool = False, journal_mode: str | None = None):
+        journal_mode = journal_mode if journal_mode is not None else ('DELETE' if read_only else 'WAL')
+        if journal_mode not in ('DELETE', 'WAL'):
+            raise ValueError('Unsupported evidence journal mode')
         self.path, self.read_only = path, read_only
         self._lock = threading.RLock()
         if read_only:
             if path == ":memory:":
                 raise ValueError("A read-only evidence store needs a database file")
+            if journal_mode == 'DELETE':
+                try:
+                    with open(path, 'rb') as stream:
+                        header = stream.read(20)
+                except OSError:
+                    raise sqlite3.OperationalError('Evidence database is not available for reading') from None
+                if header[:16] != b'SQLite format 3\x00' or header[18:20] != b'\x01\x01':
+                    raise sqlite3.OperationalError('Evidence database requires writer initialization/migration')
             self.db = sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True,
                                       isolation_level=None, check_same_thread=False)
             return
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
-        self.db.execute("PRAGMA journal_mode=WAL") if path != ":memory:" else None
+        if path != ':memory:':
+            try:
+                actual = self.db.execute('PRAGMA journal_mode=' + journal_mode).fetchone()[0]
+                if actual.upper() != journal_mode:
+                    raise sqlite3.OperationalError('Evidence journal mode unavailable')
+            except Exception:
+                self.db.close()
+                raise
         for table in ("batches (batch_id TEXT PRIMARY KEY, doc BLOB)",
                       "ecursors (source_id TEXT, issuer_id TEXT, version INTEGER, doc BLOB, PRIMARY KEY (source_id, issuer_id))",
                       "erecords (record_id TEXT PRIMARY KEY, issuer_id TEXT, doc BLOB)",

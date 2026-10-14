@@ -102,7 +102,7 @@ else
   expected="larp-archive.service larp-archive.timer larp-evidence.service larp-execution.service larp-runtime.service larp-uploader.service "
   [[ $units == "$expected" ]] || fail "units: $units"
   [[ ! -e /etc/larp/signer ]] || fail "signer key directory on primary"
-  # IDEA-047 R3: the poller (umask 0007, state directory 0770 as its unit sets) keeps a WAL store open; the runtime
+  # IDEA-047 R3/R15: the poller uses DELETE journaling; runtime readers never create WAL sidecars.
   # reads it read-only through the larp-evidence group, and nobody else can open it.
   state=/var/lib/larp-evidence
   install -d -m 0770 -o larp-evidence -g larp-evidence "$state"
@@ -112,7 +112,7 @@ os.setgroups([]); os.setgid($ev_gid); os.setuid($ev_uid); os.umask(0o007)
 from larp.contracts import Document
 from larp.sources.store import SQLiteEvidenceStore
 from larp.sources.store import FileArtifacts
-store = SQLiteEvidenceStore('$state/evidence.sqlite')
+store = SQLiteEvidenceStore('$state/evidence.sqlite', journal_mode='DELETE')
 store.commit(Document.from_dict({'schema': 'EvidenceStateBatch.v1', 'batch_id': 'b1', 'issuer_id': 'ISSUER',
                                  'expected_state_version': 0, 'state': {'version': 1}, 'jobs': []}))
 artifacts = FileArtifacts('$state/artifacts', group_readable=True)
@@ -124,7 +124,7 @@ time.sleep(120)"
   for _ in $(seq 100); do [[ -e $state/ready ]] && break; sleep 0.1; done
   [[ -e $state/ready ]] || fail "evidence writer did not start"
   reader="import os, sqlite3, sys
-os.setgroups([int(g) for g in sys.argv[1:]]); os.setgid($rt_gid); os.setuid($rt_uid)
+os.setgroups([int(g) for g in sys.argv[1:]]); os.setgid($rt_gid); os.setuid($rt_uid); os.umask(0o077)
 from larp.sources.store import SQLiteEvidenceStore
 from larp.sources.store import FileArtifacts
 store = SQLiteEvidenceStore('$state/evidence.sqlite', read_only=True)
@@ -141,6 +141,43 @@ else:
   ! (cd /opt/larp/current && $py -c "$reader" 2>/dev/null) || fail "runtime without the evidence group read the store"
   [[ -z $(find "$state" -perm /o=rwx) ]] || fail "evidence files accessible to others"
   kill "$writer_pid"; wait "$writer_pid" 2>/dev/null || true
+  # R15: the reader opens first while the writer is closed, and remains open through writer restart/commit.
+  first_reader="import os, time
+os.setgroups([$ev_gid]); os.setgid($rt_gid); os.setuid($rt_uid); os.umask(0o077)
+from pathlib import Path
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore('$state/evidence.sqlite', read_only=True)
+assert store.read_state('ISSUER').read()['version'] == 1
+assert not Path('$state/evidence.sqlite-wal').exists() and not Path('$state/evidence.sqlite-shm').exists()
+Path('$state/reader-ready').touch()
+deadline = time.monotonic() + 10
+while store.read_state('ISSUER').read()['version'] != 2:
+    assert time.monotonic() < deadline, 'writer restart/commit not visible'
+    time.sleep(0.05)
+store.close()"
+  (cd /opt/larp/current && exec $py -c "$first_reader") &
+  reader_pid=$!
+  for _ in $(seq 100); do [[ -e $state/reader-ready ]] && break; sleep 0.1; done
+  [[ -e $state/reader-ready ]] || fail "closed-writer reader did not start"
+  restart_writer="import os
+os.setgroups([]); os.setgid($ev_gid); os.setuid($ev_uid); os.umask(0o007)
+from larp.contracts import Document
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore('$state/evidence.sqlite', journal_mode='DELETE')
+assert store.read_state('ISSUER').read()['version'] == 1
+store.commit(Document.from_dict({'schema': 'EvidenceStateBatch.v1', 'batch_id': 'b2', 'issuer_id': 'ISSUER',
+                                 'expected_state_version': 1, 'state': {'version': 2}, 'jobs': []}))
+store.close()"
+  (cd /opt/larp/current && $py -c "$restart_writer") || fail "writer cannot restart with reader open"
+  wait "$reader_pid" || fail "reader did not see restarted writer's commit"
+  final_writer="import os
+os.setgroups([]); os.setgid($ev_gid); os.setuid($ev_uid)
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore('$state/evidence.sqlite', journal_mode='DELETE')
+assert store.read_state('ISSUER').read()['version'] == 2
+store.close()"
+  (cd /opt/larp/current && $py -c "$final_writer") || fail "writer cannot restart after reader closes"
+  [[ ! -e $state/evidence.sqlite-wal && ! -e $state/evidence.sqlite-shm ]] || fail "shared reader made WAL sidecars"
   rm -rf "$state"
 fi
 # The other role is refused on this host.
