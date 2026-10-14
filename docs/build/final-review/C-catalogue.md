@@ -242,3 +242,17 @@ Package prerequisite now resolved: PR21 merged at `c829fae`, incorporated withou
 | C-REQ-054 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
 | C-REQ-055 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
 | C-REQ-056 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+
+### C-TRACE-002 — later verification amendment (2026-10-14)
+
+C-REQ-006 supersedes its earlier WEAK trace disposition with **COVERED at the C
+metadata/mapping boundary**: published regression
+`tests/marketdata/test_section_c_quotes.py::SlippageRequirements::test_c_req_006_nondefault_bstock_decimals_reach_mapping_without_rescaling`
+passes for eight-decimal API metadata, exact chain minimum output and refusal of
+a mismatched receive scale. No frozen requirement statement changes.
+
+C-REQ-012 remains WEAK for complete backup/export secrecy (#23, D), despite C's
+passing diagnostic/event redaction. C-REQ-053 remains WEAK for complete production
+balance reconciliation (#36, B with C/D). These shared-owner gaps and the named
+NOT-OFFLINE gates prevent a full section or deployment PASS. Later integrated
+checks must use the merged driver, actual chain proof, and D's final review tree.
