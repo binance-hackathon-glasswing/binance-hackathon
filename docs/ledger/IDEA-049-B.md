@@ -138,6 +138,11 @@ Second replay run at3150cdd:1 failed,1 passed,5.85s. Its final observation was
 another sale and retained holdings. Move the retry stimulus to14:40 (market open,
 before the cutoff) to exercise recovery; retain flat/gas assertions unchanged.
 
+Third replay run at750f2bc:1 failed,1 passed,5.63s. Terminal recovery/flat/gas
+assertions passed, but weekend marks triggered no reduction obligation, so the
+blocked-requirement assertion was not exercised. Increase the weekend NVDAB
+shock above25% while closed, retaining the required blocked-trim assertion.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.

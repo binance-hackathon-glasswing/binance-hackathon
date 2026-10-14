@@ -87,7 +87,9 @@ class FourteenDayRun(DatabaseCase):
                     assert rolled["risk"]["run_halt"] and rolled["risk"]["deep_cut"]
             observed["markets"] = live_snapshot(now=at).context.read()["markets"]
             for m in observed["markets"]:
-                m["price_units"] = 75_000_000 if day >= 4 else 150_000_000 if day == 1 and m["symbol"] == "NVDAB" else 100_000_000
+                m["price_units"] = 75_000_000 if day >= 4 else 100_000_000
+                if m["symbol"] == "NVDAB" and 1 <= day <= 3:
+                    m["price_units"] = 150_000_000 if day == 1 else 220_000_000
                 m["token_open"] = m["underlying_open"] = at.weekday() < 5
                 m["quotes"] = []
             # Multiple mandatory children require a fresh settled-state plan.
