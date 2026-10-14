@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from larp.contracts import Document
-from larp.intelligence.agent import context_hash
+from larp.intelligence.agent import build_request, context_hash
 from larp.intelligence.common import IntelligenceError, digest, sha256_hex
 from larp.intelligence.config import load_config, load_registry
 from larp.intelligence.edgar import parse_acceptance_ms
@@ -64,7 +64,11 @@ class RealEvidence(unittest.TestCase):
     def assess(self, record, model=None):
         self.n += 1
         self.w.filings['active'] = dict(cik=self.entry.cik, accession=record['accession'])
-        req = self.w.request(['active'], issuer_id=self.entry.issuer_id, job_id=f'a-job-{self.n}', context=self.state['context'])
+        cursor = self.store.read_cursor('sec-edgar', self.entry.issuer_id).read()
+        req = build_request(job={'job_id': f'a-job-{self.n}'}, run_id=RUN, issuer_id=self.entry.issuer_id,
+                            records=[record], cutoff_ms=self.clock(), context=self.state['context'],
+                            policy_profile_hash=PROFILE, allowed_tools=list(self.config.tools), tool_calls=6,
+                            deadline_ms=60000, source_health=cursor['health'])
         r = self.w.assessor(model or RuleBaselineModel(self.clock)).assess(req)
         decision, after = accept(self.state, r, profile_hash=PROFILE, now_ms=self.clock())
         self.assertEqual(decision, 'ACCEPT', r.read().get('reasons'))

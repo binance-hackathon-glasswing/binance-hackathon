@@ -119,3 +119,8 @@ GitHub account verified with `gh api user`: `wtvlol`. Refreshed all issue bodies
 | A-T08 | A-REQ-049,077; A-ASM-003 | Actual SKHYB registry and foreign forms stay scoped; no domestic Item 4.02 directive is synthesized from 6-K, and SHADOW facts are not promoted. Scope decision remains team-owned. | #39: P2 decision needing written team acceptance; not a parser permission |
 
 No fixture or mutation has yet been executed for these new criteria. Runtime review-job ticker-to-issuer mapping is outside A's exclusive code paths (`larp/integration/runtime.py`); A will supply a failing test and D-owned fix request, without silently editing it. Live parameter values, stale bound and SKHYB policy remain unchanged. Source rights captures, provider bake-off and independent T01 corpus evaluation remain NOT RUN without authorized inputs/decisions.
+
+
+### Amendment 2: first prospective run and fixture correction
+
+Pushed tests `7bdecf4` ran with no implementation change. Initial report: 20 failed / 4 passed (subtest failures included), `/private/tmp/larp-final-a-artifacts/proofs-red.log`. Source policy-exclusion/pagination failures and both credential-path failures are direct proofs. Evidence tests instead hit a test-harness profile mismatch: `World.request` hardcodes the scenario profile, while this new fixture intentionally uses its own profile. They are not application findings yet. Correct the test helper to call the real `build_request` with the fixture profile/run/cursor; all original acceptance assertions remain intact. Push this correction before rerunning; no implementation fix yet.
