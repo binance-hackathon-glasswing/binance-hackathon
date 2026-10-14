@@ -26,6 +26,8 @@ Database `larp-dev`:
 
 No EC2 instance, internet gateway, NAT gateway or public IP exists.
 
+**Pending on the next core-stack apply (2026-10-15, IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The next `terraform plan` should show `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change.
+
 The alarm email subscription must be confirmed from the email AWS sent to the account owner's address.
 
 ## Local files (git-ignored, on Yao Zhu's Mac)
