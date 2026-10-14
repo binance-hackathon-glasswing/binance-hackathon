@@ -113,4 +113,24 @@ def live_preflight(sources: dict, env: dict, edgar: dict | None = None) -> list:
             reasons.append("ARTIFACT_ROOT_INSIDE_REPOSITORY")
         elif path.exists() and not (path.is_dir() and os.access(path, os.W_OK)):
             reasons.append("ARTIFACT_ROOT_NOT_WRITABLE")
+        else:
+            # A declared hash is not evidence that its original terms bytes were actually retained.
+            # Read only: preflight never creates the store or treats synthetic/unknown bytes as legal clearance.
+            captures = [(s.source_id, s.rights.get("terms_evidence_sha256")) for s in sources.values() if s.enabled]
+            if edgar is not None:
+                captures.append((edgar["source_id"], edgar.get("terms_evidence_sha256")))
+            for source_id, digest in sorted(captures):
+                if not digest:
+                    continue  # already reported as missing metadata above
+                candidate = path / "artifacts" / digest[:2] / digest if is_hash(digest) else None
+                try:
+                    if candidate is None or candidate.is_symlink() or candidate.parent.is_symlink() \
+                            or path not in candidate.resolve().parents:
+                        raise ValueError("Invalid terms artifact address")
+                    with candidate.open("rb") as stream:
+                        raw = stream.read(8_000_001)
+                    if not raw or len(raw) > 8_000_000 or sha256_hex(raw) != digest:
+                        raise ValueError("Terms artifact missing or corrupt")
+                except (OSError, ValueError):
+                    reasons.append(f"TERMS_ARTIFACT_UNAVAILABLE:{source_id}")
     return reasons

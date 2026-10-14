@@ -29,13 +29,16 @@ HOUR = 3_600_000
 T0 = 1791590400000  # 2026-10-10T00:00:00Z
 
 
-def with_terms(sources: dict) -> dict:
-    return {k: replace(s, rights=dict(s.rights, terms_evidence_sha256="a" * 64)) for k, s in sources.items()}
+def with_terms(sources: dict, artifacts=None) -> dict:
+    return {k: replace(s, rights=dict(s.rights, terms_evidence_sha256=(
+        artifacts.put(("Synthetic terms fixture for " + s.rights["terms_url"]).encode()) if artifacts else "a" * 64)))
+        for k, s in sources.items()}
 
 
-def edgar_ready() -> dict:
+def edgar_ready(artifacts=None) -> dict:
     from larp.sources.register import load_edgar_terms
-    return dict(load_edgar_terms(), terms_evidence_sha256="e" * 64)
+    return dict(load_edgar_terms(), terms_evidence_sha256=(
+        artifacts.put(b"Synthetic EDGAR terms fixture") if artifacts else "e" * 64))
 
 
 class Preflight(unittest.TestCase):
@@ -44,9 +47,11 @@ class Preflight(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.sources = load_register()[0]
         self.env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": self.tmp.name}
+        self.artifacts = FileArtifacts(os.path.join(self.tmp.name, "artifacts"))
 
     def test_ready_register_and_environment_pass(self):
-        self.assertEqual(live_preflight(with_terms(self.sources), self.env, edgar=edgar_ready()), [])
+        self.assertEqual(live_preflight(with_terms(self.sources, self.artifacts), self.env,
+                                        edgar=edgar_ready(self.artifacts)), [])
 
     def test_committed_register_is_refused_until_terms_are_captured(self):
         reasons = live_preflight(self.sources, self.env)
@@ -55,7 +60,7 @@ class Preflight(unittest.TestCase):
         self.assertNotIn("ftc-press", enabled)  # stays disabled until its connectivity is resolved
 
     def test_each_missing_piece_refuses(self):
-        ready = with_terms(self.sources)
+        ready = with_terms(self.sources, self.artifacts)
         repo = str(REGISTER.parents[2])
         cases = {
             "USER_AGENT_MISSING:sec-press:LARP_SEC_USER_AGENT": {"LARP_SEC_USER_AGENT": None},
@@ -67,9 +72,10 @@ class Preflight(unittest.TestCase):
         for reason, change in cases.items():
             env = {k: v for k, v in dict(self.env, **change).items() if v is not None}
             with self.subTest(reason=reason):
-                self.assertIn(reason, live_preflight(ready, env, edgar=edgar_ready()))
+                self.assertIn(reason, live_preflight(ready, env, edgar=edgar_ready(self.artifacts)))
         one_missing = dict(ready, **{"doj-press": self.sources["doj-press"]})
-        self.assertEqual(live_preflight(one_missing, self.env, edgar=edgar_ready()), ["TERMS_EVIDENCE_MISSING:doj-press"])
+        self.assertEqual(live_preflight(one_missing, self.env, edgar=edgar_ready(self.artifacts)),
+                         ["TERMS_EVIDENCE_MISSING:doj-press"])
 
     def test_cli_preflight_refuses_and_reports_unset_live_parameters(self):
         self.assertEqual(live.main(["preflight"], env={}), 1)
@@ -420,8 +426,8 @@ class TermsUserAgentAndEdgar(unittest.TestCase):
         env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": self.tmp.name}
         edgar = load_edgar_terms()
         self.assertIsNone(edgar["terms_evidence_sha256"])
-        self.assertIn("TERMS_EVIDENCE_MISSING:sec-edgar", live_preflight(with_terms(self.sources), env))
-        self.assertEqual(live_preflight(with_terms(self.sources), env, edgar=dict(edgar, terms_evidence_sha256="c" * 64)), [])
+        self.assertIn("TERMS_EVIDENCE_MISSING:sec-edgar", live_preflight(with_terms(self.sources, self.artifacts), env))
+        self.assertEqual(live_preflight(with_terms(self.sources, self.artifacts), env, edgar=edgar_ready(self.artifacts)), [])
 
     def test_register_update_covers_edgar(self):
         from larp.sources.register import load_edgar_terms
