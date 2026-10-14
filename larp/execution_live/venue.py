@@ -34,6 +34,10 @@ class LiveVenue:
         if d.get('executionMode')!='SWAP' or d.get('rfq') is not None:raise Blocked('unknown execution mode')
         vendor = d.get('routerResult', {}).get('vendorName')
         if vendor != 'LiquidMesh':raise Blocked('unexpected quote vendor')
+        received = integer(d['routerResult']['toTokenAmount'])
+        minimum = integer(tx['minReceiveAmount'])
+        if not 0 < minimum <= received or minimum * 10000 < received * (10000 - intent.max_slippage_bps):
+            raise Blocked('fresh quote minimum output exceeds intent slippage limit')
         cash = intent.amount if intent.pay_token == '0x55d398326f99059ff775485246999027b3197955' else integer(d['routerResult']['toTokenAmount'])
         if intent.max_cash_units is not None and cash > intent.max_cash_units * 10**12:
             raise Blocked('fresh quote exceeds execution cash cap')

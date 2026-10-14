@@ -46,7 +46,8 @@ def slippage_percent(bps):
     """An independently accepted integer bp limit, expressed as an API percent."""
     if type(bps) is not int or not 0 <= bps < 10000:
         raise Unavailable('invalid independent slippage limit')
-    return format(Decimal(bps) / 100, 'f').rstrip('0').rstrip('.') if bps else '0'
+    value = format(Decimal(bps) / 100, 'f')
+    return value.rstrip('0').rstrip('.') if '.' in value else value
 
 
 def observation_boundary(fn):
