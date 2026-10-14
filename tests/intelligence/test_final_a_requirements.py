@@ -4,6 +4,7 @@ from pathlib import Path
 import copy
 import json
 import tempfile
+import threading
 import unittest
 
 from larp.contracts import Document
@@ -61,14 +62,14 @@ class RealEvidence(unittest.TestCase):
         self.ingestor.poll(entry.issuer_id)
         return next(r.read() for r in self.store.records(entry.issuer_id) if r.read()['accession'] == accession)
 
-    def assess(self, record, model=None):
+    def assess(self, record, model=None, deadline_ms=60000):
         self.n += 1
         self.w.filings['active'] = dict(cik=self.entry.cik, accession=record['accession'])
         cursor = self.store.read_cursor('sec-edgar', self.entry.issuer_id).read()
         req = build_request(job={'job_id': f'a-job-{self.n}'}, run_id=RUN, issuer_id=self.entry.issuer_id,
                             records=[record], cutoff_ms=self.clock(), context=self.state['context'],
                             policy_profile_hash=PROFILE, allowed_tools=list(self.config.tools), tool_calls=6,
-                            deadline_ms=60000, source_health=cursor['health'])
+                            deadline_ms=deadline_ms, source_health=cursor['health'])
         r = self.w.assessor(model or RuleBaselineModel(self.clock)).assess(req)
         decision, after = accept(self.state, r, profile_hash=PROFILE, now_ms=self.clock())
         self.assertEqual(decision, 'ACCEPT', r.read().get('reasons'))
@@ -215,6 +216,34 @@ class CredentialCapture(unittest.TestCase):
 
 
 class AuditRecovery(RealEvidence):
+    def test_a_req_061_hard_deadline_preserves_already_completed_tool_results(self):
+        original = self.add(752, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
+        release, calls = threading.Event(), []
+        def send(url, headers, body, timeout):
+            sent = json.loads(body)
+            state = json.loads(sent['messages'][0]['content'])
+            if not calls:
+                output = {'action': 'CALL_TOOL', 'tool': state['gaps'][0]['tool'], 'args': state['gaps'][0]['args']}
+            else:
+                release.wait(2)
+                output = FINISH
+            calls.append(True)
+            return 200, json.dumps(anthropic_reply(output)(sent)).encode()
+        model = AnthropicMessagesModel(model_id='example-model-id', api_key=SECRET, prompt_text=self.config.prompt_text,
+                    prompt_sha256=self.config.prompt_sha256, clock_ms=self.clock, artifacts=self.artifacts, transport=send)
+        try:
+            result = self.assess(original, model, deadline_ms=200)
+        finally:
+            release.set()
+        self.assertEqual(result['status'], 'UNAVAILABLE')
+        self.assertIn('ASSESSMENT_DEADLINE_EXCEEDED', result['reasons'])
+        self.assertEqual(result['model_io']['requests_started'], 2)
+        self.assertEqual(len(result['model_io']['tool_calls']), 1)
+        call = result['model_io']['tool_calls'][0]
+        retained = Document(self.artifacts.get(call['result_artifact'])).read()
+        self.assertEqual(digest('larp.intel.tool.v1', {'r': retained}), call['result_sha256'])
+        self.assertEqual(model_trace(result)['tool_calls'][0]['result_artifact'], call['result_artifact'])
+
     def test_a_req_052_complete_multistep_original_io_and_tool_results_after_reopen(self):
         original = self.add(751, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
         bodies, replies = [], []
