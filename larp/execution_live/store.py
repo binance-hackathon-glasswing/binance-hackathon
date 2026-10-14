@@ -49,8 +49,9 @@ def _decode(raw):
 
 class ExecutionStore:
     revokes_unbroadcast = True
-    def __init__(self, store, *, run_id, wallet):
+    def __init__(self, store, *, run_id, wallet, signer_build_id=None, signer_manifest_sha256=None):
         self.store, self.run_id, self.wallet = store, run_id, wallet
+        self.signer_build_id, self.signer_manifest_sha256 = signer_build_id, signer_manifest_sha256
 
     def install_test_schema(self):
         with self.store.transaction() as db:
@@ -197,7 +198,7 @@ class ExecutionStore:
         with self.store.transaction() as db:
             run = self._release_authority(db, epoch, version)
             state, attempt = self._attempt(db, attempt_id)
-            self.check_signing_run(run, state.intent)
+            self.check_signing_run(run, state.intent, self.signer_build_id, self.signer_manifest_sha256)
             if (state.status != 'ACTIVE' or attempt.state != 'AUTHORIZED'
                     or attempt.payload.hash != payload_hash or attempt.epoch != epoch
                     or attempt.guard_version != version):
@@ -213,7 +214,7 @@ class ExecutionStore:
             return Signed(**stored)
 
     @staticmethod
-    def check_signing_run(run, intent, build_id=None):
+    def check_signing_run(run, intent, build_id=None, manifest_sha256=None):
         """Independent signing facts from the locked run, writable only by runtime.
 
         This check is specific to new signatures. Receipt publication and lookup
@@ -231,6 +232,8 @@ class ExecutionStore:
                 raise Conflict('intent differs from registered signing version')
         if build_id is not None and (version != build_id or intent.version_id != build_id):
             raise Conflict('signer build differs from registered signing version')
+        if manifest_sha256 is not None and (registered or {}).get('manifest_sha256') != manifest_sha256:
+            raise Conflict('signer manifest differs from registered signing version')
         if run['mode'] != 'offline' and str(run['wallet_id']).lower() != intent.wallet:
             raise Conflict('registered signing wallet mismatch')
 

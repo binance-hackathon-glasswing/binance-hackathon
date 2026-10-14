@@ -327,6 +327,14 @@ class SignerCommand(SigningCase):
         path = self.dir / 'signer.json'
         path.write_bytes(raw)
         root, manifest = synthetic_release(self.tmp.name, {'signer': raw} if pin else {})
+        # CLI/key-file tests start from a registered synthetic release. Separate
+        # C-REQ-058 tests cover missing/mismatched registration explicitly.
+        import hashlib
+        projection = dict(balances=dict(USDT=1), registered_version=dict(
+            build_id=BUILD, manifest_sha256=hashlib.sha256(doc(json.loads(manifest.read_bytes())).payload).hexdigest()))
+        with self.store.transaction() as db:
+            db.execute('UPDATE runs SET projection=%s,initial=%s WHERE run_id=%s',
+                       (doc(projection).payload, doc(projection).payload, 'live-run'))
         return ['--config', str(path), '--manifest', str(manifest), '--root', str(root)]
 
     def main(self, command, args, **kwargs):

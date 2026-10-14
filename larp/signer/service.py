@@ -18,6 +18,7 @@ Exit codes as the runtime service: 0 clean stop; 1 failure (restart); 3 run quar
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -48,12 +49,14 @@ class StartRefused(ContractError):
 
 class SignerService:
     def __init__(self, *, store, run_id, wallet, credentials, clock_s, decoder=None, max_skew_s=2, batch=16,
-                 build_id=None):
+                 build_id=None, manifest_sha256=None):
         self.store, self.run_id, self.clock = store, run_id, clock_s
         self.build_id = build_id
+        self.manifest_sha256 = manifest_sha256
         self.decoder = decoder if decoder is not None else UnverifiedRouter()
         self.max_skew, self.batch = max_skew_s, batch
-        self.registry = ExecutionStore(store, run_id=run_id, wallet=address(wallet))
+        self.registry = ExecutionStore(store, run_id=run_id, wallet=address(wallet),
+                                       signer_build_id=build_id, signer_manifest_sha256=manifest_sha256)
         self._current = None
         self.signer = LocalSigner.from_secret_store(dict(credentials, AI_SEEDS_ADDRESS=wallet),
                                                     registry=self.registry, authorization=self._authorize,
@@ -102,9 +105,9 @@ class SignerService:
         # the registered run identity, or a HALT raised since it queued the request.
         with self.store.transaction() as db:
             run = self.registry._release_authority(db, *authority)
-            if run['mode'] != 'offline' and not self.build_id:
-                raise Blocked('verified signer build identity required')
-            self.registry.check_signing_run(run, state.intent, self.build_id)
+            if run['mode'] != 'offline' and (not self.build_id or not self.manifest_sha256):
+                raise Blocked('verified signer build and manifest identity required')
+            self.registry.check_signing_run(run, state.intent, self.build_id, self.manifest_sha256)
         if now + self.max_skew < gates.observed_at:
             raise Blocked('signer clock is behind the request')
         validate_sequence(state, attempt.step, attempt.payload, gates)
@@ -158,19 +161,20 @@ def key_path(config, environ=os.environ):
     return Path(directory) / config['key_credential']
 
 
-def load_config(args):
+def load_config(args, *, with_manifest=False):
     """Validated configuration bound to the verified release (G-03); StartRefused otherwise."""
     from larp.runtime.preflight import verify_release, verify_service_config
     try:
         raw = Path(args.config).read_bytes()
         config = validate_config(json.loads(raw))
-        manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+        document = Document(Path(args.manifest).read_bytes())
+        manifest = verify_release(document, args.root)
         verify_service_config(manifest, SERVICE, raw)
         if manifest['build_id'] != config['build_id']:
             raise ContractError('Configured build differs from the verified release')
     except (ContractError, ValueError, OSError) as refused:
         raise StartRefused(type(refused).__name__) from None
-    return config
+    return (config, document) if with_manifest else config
 
 
 def run_state(store, run_id):
@@ -187,7 +191,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
     parser.add_argument('--root', required=True)
     args = parser.parse_args(argv)
     try:
-        config = load_config(args)
+        config, manifest = load_config(args, with_manifest=True)
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
             return 0
@@ -199,11 +203,17 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED
+        registered = Document(bytes(run['projection'])).read().get('registered_version')
+        manifest_sha256 = hashlib.sha256(manifest.payload).hexdigest()
+        if (type(registered) is not dict or registered.get('build_id') != config['build_id']
+                or registered.get('manifest_sha256') != manifest_sha256):
+            raise StartRefused('signer release differs from the registered manifest')
         try:
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],
                                     credentials=credentials, clock_s=clock_s,
-                                    max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'])
+                                    max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'],
+                                    manifest_sha256=manifest_sha256)
         except Blocked as refused:
             # Key-file and wallet-binding refusals are fixed texts that never carry key material.
             print(json.dumps(dict(started=False, reason='KEY_REFUSED', detail=str(refused), signing_enabled=False)))
