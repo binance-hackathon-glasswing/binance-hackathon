@@ -80,6 +80,11 @@ def plan(snapshot, proposal_or_none):
     try:
         p = profile(snapshot)
         ledger = c["portfolio"]
+        if (type(ledger) is not dict or type(ledger.get("positions")) is not dict
+                or type(ledger.get("reservations")) is not dict
+                or any(type(pos) is not dict for pos in ledger["positions"].values())
+                or any(type(res) is not dict for res in ledger["reservations"].values())):
+            raise ContractError("Portfolio positions and reservations must be objects")
         market = markets(snapshot, p)
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
@@ -100,8 +105,10 @@ def plan(snapshot, proposal_or_none):
     except (KeyError, TypeError, ContractError, ValueError) as exc:
         # Invalid valuation is explicit; terminal holdings remain outstanding.
         result["rejections"].append({"reason": "INVALID_REQUIRED_INPUT", "detail": str(exc)})
-        for symbol, pos in c.get("portfolio", {}).get("positions", {}).items():
-            if pos.get("units", 0):
+        portfolio = c.get("portfolio")
+        positions = portfolio.get("positions") if type(portfolio) is dict else None
+        for symbol, pos in (positions.items() if type(positions) is dict else ()):
+            if type(pos) is dict and type(pos.get("units")) is int and pos["units"] > 0:
                 result["requirements"].append({"symbol": symbol, "status": "BLOCKED_INPUT",
                                                "held_units": pos["units"],
                                                "reason": "RISK_REEVALUATION_REQUIRED"})

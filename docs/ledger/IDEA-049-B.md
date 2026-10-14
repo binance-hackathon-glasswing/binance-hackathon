@@ -173,6 +173,11 @@ B-FND-004 P2: top-level market/portfolio shape checks absent and fallback itself
 assumes valid dictionaries. Runtime catches failures but B's typed safety outcome
 and known holding requirement must remain available. Tests pushed before fix/run.
 
+B-FND-004 P2 reproduced at a9d6c03:8 failed,18 passed,2.47s, input-shapes-red.log.
+Wrong market rows escaped with AttributeError; the portfolio fallback crashed
+on malformed maps/rows. Fix validates required collection shapes up front and
+retains only factual positive integer holdings in the rejection outcome.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
