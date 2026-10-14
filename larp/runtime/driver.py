@@ -43,6 +43,7 @@ SHADOW_REASON = 'SHADOW_NO_SIGNING'
 EXPIRED_REASON = 'COMMAND_EXPIRED_UNCLAIMED'
 SOURCE = 'sec-edgar'
 MAX_ATTEMPTS = 3
+MAX_QUOTE_CHAIN = 8  # follow-up depth the work scans for an interrupted child; the driver bounds what it runs
 DAY_MS = 86_400_000
 STEP_ORDER = {'approve': 0, 'swap': 1}
 
@@ -298,10 +299,33 @@ class ServiceExecution:
             ended.append(intent['intent_id'])
         return ended
 
+    def seal(self):
+        """Clear `execution_pending` for every round whose planned intents all have a terminal fact in the journal.
+
+        The execution service attests `round_terminal` from what the journal held when it built each fact, so two
+        intents that finish before the runtime journals either both say false (PR #66 Y1). The journal's own terminal
+        facts are the authority the coordinator checks the attestation against; once every planned intent has one, the
+        round is terminal whatever the attestations said. One ROUND_SEALED event per round; replay recommits it."""
+        c = self.coordinator
+        sealed = []
+        current = c.store.load(c.run_id).read()
+        for round_id, record in sorted(current['projection'].get('round_records', {}).items()):
+            planned = {i['intent_id'] for i in record['plan'].get('intents', [])}
+            if not record.get('execution_pending') or not planned or not planned <= set(record.get('final_intents', [])):
+                continue
+            current = c.store.load(c.run_id).read()
+            projection = current['projection']
+            projection['round_records'][round_id]['execution_pending'] = False
+            event = dict(kind='ROUND_SEALED', round_id=round_id, final_intents=sorted(planned))
+            c.store.commit(batch_for(Document.from_dict(current), 'sealed:' + round_id, event, projection=projection))
+            sealed.append(round_id)
+        return sealed
+
     def settle_open(self, now_ms):
         applied, refused = self.ingest()
         self.ingested, self.refused = applied, refused
         self.expired = self.expire(now_ms)
+        self.sealed = self.seal()
         return []  # rounds close through Coordinator.recover once every intent is final
 
 
@@ -422,6 +446,7 @@ class EvidenceWork:
         self.issuers, self.profile_hash, self.cadence = list(issuers), profile_hash, cadence_ms
         self.lifecycle_policy = lifecycle_policy
         self.scheduler = Scheduler(store, lease_ms=lease_ms)
+        self.tried = set()  # quote follow-up children resumed by this process
 
     def round_for(self, base):
         """The round ID for the next attempt at `base`, or None when it is done. A round that planned (or recorded
@@ -434,6 +459,46 @@ class EvidenceWork:
                 return None
             if not self.store.receipt(self.run_id, 'close:' + round_id):
                 return round_id
+        return None
+
+    def _done(self, round_id):
+        return any(self.store.receipt(self.run_id, p + round_id) for p in ('plan:', 'rejected:'))
+
+    @staticmethod
+    def child_attempts(parent, n):
+        return [f'{parent}/quote{n}' + ('' if a == 1 else f'#{a}') for a in range(1, MAX_ATTEMPTS + 1)]
+
+    def child_round(self, parent, n):
+        """The next attempt ID of quote follow-up `n` of `parent`; None once one planned or the attempts are spent."""
+        open_ids = {r for r, _ in self.store.open_rounds(self.run_id)}
+        for round_id in self.child_attempts(parent, n):
+            if self._done(round_id) or round_id in open_ids:
+                return None
+            if not self.store.receipt(self.run_id, 'close:' + round_id):
+                return round_id
+        return None
+
+    def quote_resume(self, base):
+        """(source round, n, child round) when a quote follow-up of `base`'s planned round was interrupted (PR #66 Y2).
+
+        A follow-up child opens only after an executable quote came back, so an interrupted child is the only sign
+        that the follow-up was due; a parent whose follow-up never started is not resumed. Each child is retried at
+        most once per process (`tried`), and at most MAX_ATTEMPTS times in all."""
+        parent = next((f'{base}#{a}' for a in range(MAX_ATTEMPTS, 0, -1)
+                       if self.store.receipt(self.run_id, f'plan:{base}#{a}')), None)
+        if parent is None:
+            return None
+        source = parent
+        for n in range(1, MAX_QUOTE_CHAIN + 1):
+            attempts = self.child_attempts(parent, n)
+            planned = next((r for r in attempts if self._done(r)), None)
+            if planned is not None:
+                source = planned
+                continue
+            if not any(self.store.receipt(self.run_id, 'close:' + r) for r in attempts):
+                return None
+            child = self.child_round(parent, n)
+            return None if child is None or child in self.tried else (source, n, child)
         return None
 
     def _records(self, issuer, now_ms):
@@ -451,8 +516,10 @@ class EvidenceWork:
         job = claim.read()['job']
         issuer = job['payload'].get('issuer_id')
         records = self._latest(issuer, now_ms) if issuer in self.issuers else []
-        return dict(round_id=self.round_for('review:' + job['job_id'][len('evidence:'):]), job=job,
-                    issuer_id=issuer, records=records, claim=claim)
+        base = 'review:' + job['job_id'][len('evidence:'):]
+        round_id = self.round_for(base)
+        return dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=claim,
+                    resume=None if round_id is not None else self.quote_resume(base))
 
     def _ingested(self, now_ms):
         jobs = [j for j in self.evidence.jobs() if j.get('lane') == 'evidence'
@@ -460,20 +527,24 @@ class EvidenceWork:
                 and j['payload'].get('issuer_id') in self.issuers
                 and j['due_ms'] <= now_ms < j['valid_until_ms']]
         for job in sorted(jobs, key=lambda j: (j['priority'], j['due_ms'], j['job_id'])):
-            round_id = self.round_for('filing:' + job['job_id'][len('evidence:'):])
-            if round_id is None:
+            base = 'filing:' + job['job_id'][len('evidence:'):]
+            round_id = self.round_for(base)
+            resume = self.quote_resume(base) if round_id is None else None
+            if round_id is None and resume is None:
                 continue
             p = job['payload']
             records = [r for r in self._records(p['issuer_id'], now_ms) if r['record_id'] == p['record_id']]
             if not records:
                 continue  # not yet available at this cutoff
-            return dict(round_id=round_id, job=job, issuer_id=p['issuer_id'], records=records, claim=None)
+            return dict(round_id=round_id, job=job, issuer_id=p['issuer_id'], records=records, claim=None,
+                        resume=resume)
         return None
 
     def _cadence(self, now_ms):
         slot = now_ms // self.cadence
         round_id = self.round_for(f'cadence:{slot}')
-        if round_id is None or not self.issuers:
+        resume = self.quote_resume(f'cadence:{slot}') if round_id is None else None
+        if (round_id is None and resume is None) or not self.issuers:
             return None
         issuer = self.issuers[slot % len(self.issuers)]
         records = self._latest(issuer, now_ms)
@@ -484,7 +555,7 @@ class EvidenceWork:
                    due_ms=slot * self.cadence, valid_until_ms=(slot + 1) * self.cadence, max_attempts=1,
                    priority=60, calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
                    payload=payload)
-        return dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=None)
+        return dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=None, resume=resume)
 
     def next(self, now_ms, epoch):
         return self._review(now_ms, epoch) or self._ingested(now_ms) or self._cadence(now_ms)
@@ -535,9 +606,13 @@ class RoundDriver:
         current = c.store.load(c.run_id).read()
         c.start(round_id, self.work.request(item, current, now_ms), now_ms)
 
-    def _quotes(self, round_id, item, now_ms, summary):
-        """Bounded follow-up rounds while the last plan asked for quotes and an executable one came back."""
-        for n in range(1, self.max_quote_rounds + 1):
+    def _quotes(self, round_id, item, now_ms, summary, *, first=1, child=None):
+        """Bounded follow-up rounds while the last plan asked for quotes and an executable one came back.
+
+        `round_id` is the round whose plan holds the quote requests; a resumed follow-up (PR #66 Y2) starts at
+        follow-up `first` with the given `child` attempt ID."""
+        parent = round_id.split('/quote')[0]
+        for n in range(first, self.max_quote_rounds + 1):
             plan = self._plan(round_id)
             requests = [r for r in plan.get('quote_requests', []) if r.get('symbol') != 'BNB']
             if plan.get('intents') or not requests:
@@ -553,7 +628,10 @@ class RoundDriver:
             if not executable:
                 self.market.clear_quotes()
                 return
-            round_id = f"{item['round_id']}/quote{n}"
+            round_id = child if (n == first and child is not None) else self.work.child_round(parent, n)
+            if round_id is None:
+                self.market.clear_quotes()
+                return
             summary['quote_round_id'] = round_id
             try:
                 c = self.coordinator
@@ -566,7 +644,7 @@ class RoundDriver:
     def once(self, now_ms):
         c = self.coordinator
         summary = dict(closed=len(self.execution.settle_open(now_ms)), round_id=None)
-        for key in ('ingested', 'refused', 'expired'):
+        for key in ('ingested', 'refused', 'expired', 'sealed'):
             if getattr(self.execution, key, None):
                 summary[key] = list(getattr(self.execution, key))
         c.recover(now_ms)
@@ -592,10 +670,18 @@ class RoundDriver:
         item = self.work.next(now_ms, current['epoch'])
         if item is not None:
             summary['round_id'] = item['round_id']
+            resume = item.get('resume')
             if item['round_id'] is not None and item['records']:
                 self._round(item['round_id'], item, now_ms)
                 if self.market is not None and self.max_quote_rounds:
                     self._quotes(item['round_id'], item, now_ms, summary)
+            elif resume is not None and item['records'] and self.market is not None:
+                source, n, child = resume
+                self.work.tried.add(child)
+                summary['quote_resume'] = child
+                if n <= self.max_quote_rounds:
+                    self.market.refresh(now_ms)
+                    self._quotes(source, item, now_ms, summary, first=n, child=child)
             if item['claim'] is not None:
                 # Finished only after its round committed: a crash leaves the job to be claimed again once its lease
                 # ends, and the round ID makes the rerun return the recorded round.
