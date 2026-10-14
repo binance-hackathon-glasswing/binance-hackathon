@@ -125,3 +125,12 @@ Results (2026-10-14):
 | R1 | PASS | `test_r1_orders_are_broadcast_only_through_the_web3_open_api` (method, URL, exact three-field body, signed header, artifact without the signed bytes, submit-only client, failure = possible send, read client still refuses); `test_r1_no_rpc_submission_path_remains` |
 | R2 | PASS | `test_r2_the_roll_values_marks_at_a_time_read_after_the_fetch`; `test_r2_a_fetch_that_ends_after_the_window_does_not_roll` |
 | R3 | PASS | `Restart.test_r3_a_restart_reauthorizes_the_unclaimed_command_and_execution_claims_it` (real `Service` start: RESTART incident, one COMMAND_REAUTHORIZED, claim succeeds, command bytes unchanged, replay equal); expired, halted (latched CLOCK) and claimed intents are not reauthorized |
+
+## Y — PR #66 review by Yao Zhu (2026-10-14, at `29cc3c6`; criteria recorded before the tests and fixes)
+
+| ID | Finding | Prospective check |
+|---|---|---|
+| Y1 (P1 as filed) | Round completion depends on ingestion timing: with two intents that both finish before the runtime journals either, each terminal fact carries `round_terminal: false` (`RoundTerminal` saw the other intent as not yet final), so after ingestion every intent is final but the round stays `execution_pending` forever. Reachability today: the real planner plans at most one intent per round (`larp/risk/planner.py` stops after the first child), so this needs a multi-intent plan; the coordinator and settlement accept one, so it is fixed regardless. | A two-intent round whose executions both finish while the runtime is stopped closes after one ingestion: the runtime seals a round once the journal holds a terminal fact for every planned intent (`ROUND_SEALED`, recorded fact on replay). A round with any intent not yet final is never sealed. |
+| Y2 (P2) | A crash after a quote follow-up child opens and before its plan commits leaves the child interrupted; the parent's plan marks the filing, review or cadence work done, so the follow-up is never retried. | A crash between the child's `open_round` and `ROUND_PLANNED`, then a restart: the child closes as interrupted and the follow-up runs again under the next attempt (`<parent>/quote1#2`), re-fetching its quotes, at most `MAX_ATTEMPTS` attempts, and at most once per process when no executable quote returns (no refetch loop). A parent whose follow-up never started (no executable quote) is not resumed. |
+
+Results: NOT RUN.
