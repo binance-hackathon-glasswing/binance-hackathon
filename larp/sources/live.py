@@ -72,24 +72,30 @@ def git_state(repo: Path = REPO) -> dict:
     return state
 
 
+class Refused(SystemExit):
+    """A start refusal: the configuration, release or build is not fit to run, and restarting cannot cure it.
+    `run` exits 4 for it (larp-evidence.service: RestartPreventExitStatus=4, IDEA-047 R4); elsewhere it behaves as the
+    SystemExit it is (exit 1 with the message)."""
+
+
 def release_state(manifest: str | None, root: str | None) -> dict:
     """The build a verified release manifest names, in git_state's shape; refuses an unverified release."""
     from larp.contracts import ContractError
     from larp.runtime.preflight import verify_release
     if not manifest or not root:
-        raise SystemExit("A release run needs both --release-manifest and --release-root")
+        raise Refused("A release run needs both --release-manifest and --release-root")
     try:
         verified = verify_release(Document(Path(manifest).read_bytes()), root)
     except (ContractError, ValueError, OSError):
-        raise SystemExit("Refusing live execution: the release does not verify against its manifest") from None
+        raise Refused("Refusing live execution: the release does not verify against its manifest") from None
     return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}
 
 
 def require_committed(state: dict, allow_dirty: bool) -> None:
     if state["dirty"]:
-        raise SystemExit("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
+        raise Refused("Refusing to run live code from a working tree with uncommitted changes (commit and push first)")
     if state.get("pushed") is not True:
-        raise SystemExit("Refusing live execution until HEAD is verified at its configured remote branch")
+        raise Refused("Refusing live execution until HEAD is verified at its configured remote branch")
 
 
 # ------------------------------------------------------------------------------------------------ terms captures
@@ -361,7 +367,7 @@ def preflight(env, config_mode: str = "live") -> list:
 def _env_root(env, config_mode: str = "live") -> Path:
     reasons = preflight(env, config_mode)
     if reasons:
-        raise SystemExit("Live preflight refused:\n  " + "\n  ".join(reasons))
+        raise Refused("Live preflight refused:\n  " + "\n  ".join(reasons))
     return Path(env["LARP_ARTIFACT_ROOT"]).resolve()
 
 
@@ -545,17 +551,21 @@ def main(argv=None, env=None) -> int:
                             incidents=incidents)
         print(json.dumps(report, indent=1, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
-    if args.command == "run" and (args.release_manifest or args.release_root):
-        state = release_state(args.release_manifest, args.release_root)
-    else:
-        state = git_state()
-    require_committed(state, args.allow_dirty)
     if args.command == "run":
-        runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
-                              commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
+        try:
+            state = (release_state(args.release_manifest, args.release_root)
+                     if args.release_manifest or args.release_root else git_state())
+            require_committed(state, args.allow_dirty)
+            runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
+                                  commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
+        except Refused as refusal:
+            print(refusal, file=sys.stderr)
+            return 4
         polls = runner.run(epoch_ms() + int(args.hours * 3_600_000))
         print(json.dumps({"polls": polls, "log": str(runner.log.path)}))
         return 0
+    state = git_state()
+    require_committed(state, args.allow_dirty)
     report = run_bakeoff(env, args, state["commit"] + ("+dirty" if state["dirty"] else ""))
     print(json.dumps({k: report[k] for k in ("commit", "candidates", "written_to")}, indent=1, sort_keys=True))
     return 0

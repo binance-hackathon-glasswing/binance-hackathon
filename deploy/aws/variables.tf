@@ -118,6 +118,12 @@ variable "budget_notification_emails" {
   default     = []
   sensitive   = true
 }
+variable "alarm_notification_emails" {
+  description = "Alarm email recipients (IDEA-047 R5). Supplied in an uncommitted tfvars file; no topic is created without one."
+  type        = list(string)
+  default     = []
+  sensitive   = true
+}
 variable "enable_external_https" {
   description = "Opt-in internet gateway, public IPv4 and HTTPS egress for the primary host only; no services start."
   type        = bool

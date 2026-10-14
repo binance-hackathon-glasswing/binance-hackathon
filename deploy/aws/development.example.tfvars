@@ -31,3 +31,5 @@ enable_external_https = false
 
 monthly_budget_usd         = 90
 budget_notification_emails = ["<your email>"]
+# Alarm emails (each address confirms an SNS subscription). Optional; alarms stay silent without one.
+alarm_notification_emails = ["<your email>"]

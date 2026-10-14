@@ -25,8 +25,16 @@ cd /tmp
 tar -xzf /bundle.tar.gz --wildcards '*/provision.sh' '*/BUNDLE.env'
 provision=$(ls /tmp/larp-*/provision.sh)
 build=$(grep '^build_id=' /tmp/larp-*/BUNDLE.env | cut -d= -f2)
-bash "$provision" "$role" /bundle.tar.gz --no-systemctl
-bash "$provision" "$role" /bundle.tar.gz --no-systemctl  # idempotent
+sha=$(sha256sum /bundle.tar.gz | cut -d' ' -f1)
+# IDEA-047 R6: the bundle must match the CI-recorded hash; a missing, malformed or different hash is refused first.
+! bash "$provision" "$role" /bundle.tar.gz --no-systemctl >/dev/null 2>&1 || fail "missing hash accepted"
+! bash "$provision" "$role" /bundle.tar.gz --expect-sha256 "${sha^^}" --no-systemctl >/dev/null 2>&1 \
+  || fail "malformed hash accepted"
+! bash "$provision" "$role" /bundle.tar.gz --expect-sha256 "$(printf '0%.0s' {1..64})" --no-systemctl >/dev/null 2>&1 \
+  || fail "different hash accepted"
+[[ ! -e /opt/larp ]] || fail "a refused hash installed something"
+bash "$provision" "$role" /bundle.tar.gz --expect-sha256 "$sha" --no-systemctl
+bash "$provision" "$role" /bundle.tar.gz --expect-sha256 "$sha" --no-systemctl  # idempotent
 [[ $(readlink /opt/larp/current) == /opt/larp/releases/$build ]] || fail "current link"
 py=/opt/larp/current/.venv/bin/python
 [[ $($py -c 'import platform; print(platform.python_version())') == 3.12.15 ]] || fail "python version"
@@ -75,15 +83,54 @@ else
   expected="larp-archive.service larp-archive.timer larp-evidence.service larp-execution.service larp-runtime.service larp-uploader.service "
   [[ $units == "$expected" ]] || fail "units: $units"
   [[ ! -e /etc/larp/signer ]] || fail "signer key directory on primary"
+  # IDEA-047 R3: the poller (umask 0007, state directory 0770 as its unit sets) keeps a WAL store open; the runtime
+  # reads it read-only through the larp-evidence group, and nobody else can open it.
+  state=/var/lib/larp-evidence
+  install -d -m 0770 -o larp-evidence -g larp-evidence "$state"
+  ev_uid=$(id -u larp-evidence); ev_gid=$(id -g larp-evidence); rt_uid=$(id -u larp-runtime); rt_gid=$(id -g larp-runtime)
+  writer="import os, time
+os.setgroups([]); os.setgid($ev_gid); os.setuid($ev_uid); os.umask(0o007)
+from larp.contracts import Document
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore('$state/evidence.sqlite')
+store.commit(Document.from_dict({'schema': 'EvidenceStateBatch.v1', 'batch_id': 'b1', 'issuer_id': 'ISSUER',
+                                 'expected_state_version': 0, 'state': {'version': 1}, 'jobs': []}))
+open('$state/ready', 'w').close()
+time.sleep(120)"
+  (cd /opt/larp/current && exec $py -c "$writer") &
+  writer_pid=$!
+  for _ in $(seq 100); do [[ -e $state/ready ]] && break; sleep 0.1; done
+  [[ -e $state/ready ]] || fail "evidence writer did not start"
+  reader="import os, sqlite3, sys
+os.setgroups([int(g) for g in sys.argv[1:]]); os.setgid($rt_gid); os.setuid($rt_uid)
+from larp.sources.store import SQLiteEvidenceStore
+store = SQLiteEvidenceStore('$state/evidence.sqlite', read_only=True)
+assert store.read_state('ISSUER').read()['version'] == 1
+try:
+    store.db.execute('DELETE FROM estates')
+except sqlite3.OperationalError:
+    pass
+else:
+    raise SystemExit('read-only store wrote')"
+  (cd /opt/larp/current && $py -c "$reader" "$ev_gid") || fail "runtime with the evidence group cannot read"
+  ! (cd /opt/larp/current && $py -c "$reader" 2>/dev/null) || fail "runtime without the evidence group read the store"
+  [[ -z $(find "$state" -perm /o=rwx) ]] || fail "evidence files accessible to others"
+  kill "$writer_pid"; wait "$writer_pid" 2>/dev/null || true
+  rm -rf "$state"
 fi
 # The other role is refused on this host.
 other=$([[ $role == signer ]] && echo primary || echo signer)
-! bash "$provision" "$other" /bundle.tar.gz --no-systemctl >/dev/null 2>&1 || fail "other role accepted"
+! bash "$provision" "$other" /bundle.tar.gz --expect-sha256 "$sha" --no-systemctl >/dev/null 2>&1 \
+  || fail "other role accepted"
 # A tampered bundle is refused before anything is installed.
 mkdir -p /tmp/tamper && tar -xzf /bundle.tar.gz -C /tmp/tamper
 echo '# tampered' >> /tmp/tamper/larp-*/release/larp/__init__.py
 tar -czf /tmp/tampered.tar.gz -C /tmp/tamper .
-! bash "$provision" "$role" /tmp/tampered.tar.gz --no-systemctl >/dev/null 2>&1 || fail "tampered bundle accepted"
+! bash "$provision" "$role" /tmp/tampered.tar.gz --expect-sha256 "$sha" --no-systemctl >/dev/null 2>&1 \
+  || fail "tampered bundle accepted against the original hash"
+# Even with its own hash passed, the bundle's SHA256SUMS still refuses the changed file.
+! bash "$provision" "$role" /tmp/tampered.tar.gz --expect-sha256 "$(sha256sum /tmp/tampered.tar.gz | cut -d' ' -f1)" \
+  --no-systemctl >/dev/null 2>&1 || fail "tampered bundle accepted"
 echo "PASS[$role]: build $build, units: $units"
 EOF
 

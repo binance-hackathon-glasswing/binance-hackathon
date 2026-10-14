@@ -63,4 +63,15 @@ jobs:
         with:
           python-version: '3.12.15'
       - run: python tools/build_release_bundle.py --arch x86_64 --out /tmp/larp-bundle
+      # IDEA-047 R6: the bundle hash for the activation pack; provision.sh refuses any other bundle.
+      - run: |
+          {
+            echo '### Host bundle (x86_64)'
+            echo
+            echo '| Build | Bundle | SHA-256 |'
+            echo '|---|---|---|'
+            for f in /tmp/larp-bundle/larp-*-x86_64.tar.gz; do
+              echo "| \`$(git rev-parse HEAD)\` | \`$(basename "$f")\` | \`$(sha256sum "$f" | cut -d' ' -f1)\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
       - run: bash tools/test_host_bundle.sh /tmp/larp-bundle/larp-*-x86_64.tar.gz

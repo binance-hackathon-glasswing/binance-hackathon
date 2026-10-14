@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Install a LARP release bundle on a host (IDEA-047 H02). Run as root; safe to run again with the same bundle.
 #
-#   provision.sh <primary|signer> <larp-BUILD-ARCH.tar.gz> [--no-systemctl]
+#   provision.sh <primary|signer> <larp-BUILD-ARCH.tar.gz> --expect-sha256 <64 hex> [--no-systemctl]
 #
+# The expected hash is the CI-built bundle's SHA-256, recorded in the activation pack (CI job summary of the
+# `host-bundle` job). SHA256SUMS inside the bundle only shows it is self-consistent; this shows it is the bundle CI
+# built (IDEA-047 R6).
 # Works offline: the bundle (tools/build_release_bundle.py) carries CPython 3.12.15, every wheel and the RDS CA
 # bundle, so the signer host, which has no internet route (IDEA-046 B2), installs it from the artifact bucket via the
 # S3 gateway endpoint. It verifies every checksum, then installs:
@@ -18,12 +21,21 @@ umask 022
 
 die() { echo "provision: $*" >&2; exit 1; }
 
-[[ $# -ge 2 && $# -le 3 ]] || die "usage: provision.sh <primary|signer> <bundle.tar.gz> [--no-systemctl]"
+usage="usage: provision.sh <primary|signer> <bundle.tar.gz> --expect-sha256 <64 hex> [--no-systemctl]"
+[[ $# -ge 2 ]] || die "$usage"
 role=$1
 bundle=$2
+shift 2
 systemctl_enabled=1
-[[ ${3:-} == "" || ${3:-} == "--no-systemctl" ]] || die "unknown option ${3}"
-[[ ${3:-} == "--no-systemctl" ]] && systemctl_enabled=0
+expected=""
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --expect-sha256) [[ $# -ge 2 ]] || die "$usage"; expected=$2; shift 2 ;;
+    --no-systemctl) systemctl_enabled=0; shift ;;
+    *) die "unknown option $1" ;;
+  esac
+done
+[[ $expected =~ ^[0-9a-f]{64}$ ]] || die "the bundle's expected SHA-256 (64 lowercase hex, from the CI build) is required"
 [[ $(id -u) -eq 0 ]] || die "run as root"
 case $role in
   primary) other=signer; users=(larp-runtime larp-execution larp-uploader larp-evidence larp-archive)
@@ -36,6 +48,7 @@ for tool in tar gzip sha256sum useradd groupadd install; do
   command -v "$tool" >/dev/null || die "missing required tool: $tool"
 done
 [[ -f $bundle ]] || die "bundle not found"
+[[ $(sha256sum "$bundle" | cut -d' ' -f1) == "$expected" ]] || die "bundle differs from the expected SHA-256"
 [[ ! -e /etc/larp/role-$other ]] || die "this host is already provisioned as $other"
 
 work=$(mktemp -d /tmp/larp-provision.XXXXXX)

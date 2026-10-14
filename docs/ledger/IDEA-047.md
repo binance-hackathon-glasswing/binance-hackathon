@@ -186,3 +186,6 @@ From the rest of Keegan's PR #20 review (items 3–5 and the bundle note). Writt
 Pass: every test above, the full suite against PostgreSQL 14, Terraform `deploy/aws` and `deploy/bootstrap` tests, the H02 container test locally, and Linux CI on the pushed head.
 
 - 2026-10-14 correction (Claude, before any R3–R7 change): R5 says the timer runs every 15 minutes. It runs every minute (`larp-archive.timer`, `OnUnitInactiveSec=60s`). The metrics publish on each run. The new alarms use 300 s periods with 2 evaluation periods, like the existing archive alarms. R3 also changes the D01 hardening set for `larp-evidence` only: `UMask=0007` replaces `UMask=0077`.
+- 2026-10-14 amendments (Claude, with the R3–R7 code, before any R3–R7 test run):
+  - R5: the service alarms exist only while `enable_hosts` is true. With hosts off, every one would sit in ALARM on missing data and, with emails set, notify continuously. The Terraform test checks both states.
+  - R3: the runtime's path is `ReadWritePaths=-/var/lib/larp-evidence`. The `-` lets the runtime start before the poller has first created the directory.

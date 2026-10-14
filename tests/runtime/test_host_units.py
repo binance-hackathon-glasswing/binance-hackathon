@@ -35,7 +35,8 @@ class HostUnits(unittest.TestCase):
                 self.assertEqual(value(d, 'User'), [unit])
                 self.assertEqual(value(d, 'Group'), [unit])
                 for line in HARDENING:
-                    self.assertIn(line, d)
+                    # The evidence store is shared with the runtime's group (IDEA-047 R3).
+                    self.assertIn('UMask=0007' if unit == 'larp-evidence' and line == 'UMask=0077' else line, d)
                 self.assertIn('Restart=always', d)
                 self.assertIn('StartLimitIntervalSec=0', d)
                 self.assertIn(f'ConditionPathExists=/etc/larp/role-{role}', d)

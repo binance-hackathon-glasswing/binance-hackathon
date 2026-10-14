@@ -17,6 +17,8 @@ class OperationsTests(unittest.TestCase):
         worker.prepare.side_effect=ContractError('Synthetic oversized backup')
         worker.once.side_effect=[True,False]
         worker.health.return_value=Document.from_dict(dict(healthy=True,reasons=[]))
+        worker.service_health.return_value=Document.from_dict(dict(runtime_alive=False,halt_reasons=[],quarantined=False,
+                                                                audit_overdue=0,signing_unanswered=0))
         c=dict(run_id='run',deployment='fixture',archive_bucket='fixture',account_id='123456789012',
                kms_key='synthetic',archive_prefix='archive/dev',retention_days=7,max_archive_bytes=1,
                backup_interval_hours=24,max_attempts=2,retry_seconds=60)

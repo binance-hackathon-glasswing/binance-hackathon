@@ -1,5 +1,5 @@
 """IDEA-047 V01: the evidence runner on a host verifies its release bundle instead of a git checkout."""
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import io
 from pathlib import Path
 import tempfile
@@ -47,9 +47,10 @@ class ReleaseMode(unittest.TestCase):
         self.assertEqual((code, seen['commit']), (0, BUILD))
 
     def test_v01_git_path_is_unchanged(self):
-        with patch.object(live, 'git_state', return_value=dict(commit='c' * 40, dirty=True, pushed=False)):
-            with self.assertRaises(SystemExit):
-                live.main(['run', '--hours', '0'], env={})
+        # Still refused; since IDEA-047 R4 a refused run exits 4 instead of raising.
+        with patch.object(live, 'git_state', return_value=dict(commit='c' * 40, dirty=True, pushed=False)), \
+                patch.object(live, 'build_runner', side_effect=AssertionError('ran')), redirect_stderr(io.StringIO()):
+            self.assertEqual(live.main(['run', '--hours', '0'], env={}), 4)
 
 
 if __name__ == '__main__':

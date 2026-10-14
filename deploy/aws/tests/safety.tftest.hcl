@@ -177,3 +177,44 @@ run "archive_retention_reaches_end_of_2026" {
   }
   expect_failures = [var.archive_retention_days]
 }
+run "service_alarms_follow_the_hosts" {
+  command = plan
+  variables {
+    enable_hosts = true
+  }
+  assert {
+    condition = toset(keys(aws_cloudwatch_metric_alarm.service)) == toset(
+    ["runtime-heartbeat", "runtime-halted", "runtime-quarantined", "uploader-overdue", "signer-unanswered"])
+    error_message = "IDEA-047 R5: one alarm per service signal while hosts run."
+  }
+  assert {
+    condition     = alltrue([for a in aws_cloudwatch_metric_alarm.service : a.treat_missing_data == "breaching" && a.namespace == "LARP/Runtime"])
+    error_message = "A silent check must alarm like the failure it watches for."
+  }
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.service["runtime-heartbeat"].comparison_operator == "LessThanThreshold" && aws_cloudwatch_metric_alarm.service["signer-unanswered"].threshold == 0
+    error_message = "Heartbeat alarms below 1; counts alarm above 0."
+  }
+  assert {
+    condition     = length(aws_sns_topic.alarms) == 0 && length(aws_sns_topic_subscription.alarm_email) == 0
+    error_message = "No alarm topic without recipients."
+  }
+}
+run "alarm_emails_create_one_topic" {
+  command = plan
+  variables {
+    enable_hosts              = true
+    alarm_notification_emails = ["ops@fixture.invalid", "backup@fixture.invalid"]
+  }
+  assert {
+    condition     = length(aws_sns_topic.alarms) == 1 && length(aws_sns_topic_subscription.alarm_email) == 2
+    error_message = "One topic and one email subscription per address."
+  }
+}
+run "service_alarms_off_without_hosts" {
+  command = plan
+  assert {
+    condition     = length(aws_cloudwatch_metric_alarm.service) == 0
+    error_message = "With hosts off the service alarms would sit in ALARM on missing data."
+  }
+}

@@ -95,11 +95,21 @@ class SQLiteEvidenceStore:
     The assessor reads evidence on its own worker thread (and an abandoned worker may still be reading), so the one
     connection is opened for use from any thread and every method holds a re-entrant lock: reads, and each commit's
     whole transaction, never interleave (IDEA-041 R01).
+
+    `read_only=True` is the runtime's view of the poller's store on the primary host (IDEA-047 R3): SQLite opens it
+    with `mode=ro`, creates nothing, leaves the journal mode alone and refuses `commit`. It sees what the writer has
+    committed; the only file it writes is the WAL lock file (`-shm`), which SQLite readers need.
     """
 
-    def __init__(self, path: str):
-        self.path = path
+    def __init__(self, path: str, *, read_only: bool = False):
+        self.path, self.read_only = path, read_only
         self._lock = threading.RLock()
+        if read_only:
+            if path == ":memory:":
+                raise ValueError("A read-only evidence store needs a database file")
+            self.db = sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True,
+                                      isolation_level=None, check_same_thread=False)
+            return
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.execute("PRAGMA journal_mode=WAL") if path != ":memory:" else None
         for table in ("batches (batch_id TEXT PRIMARY KEY, doc BLOB)",
@@ -134,6 +144,8 @@ class SQLiteEvidenceStore:
 
     @_locked
     def commit(self, batch: Document) -> Document:
+        if self.read_only:
+            raise StoreConflict("Read-only evidence store")
         b = batch.read()
         batch_id = b.get("batch_id")
         self.db.execute("BEGIN IMMEDIATE")
