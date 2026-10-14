@@ -124,3 +124,8 @@ No fixture or mutation has yet been executed for these new criteria. Runtime rev
 ### Amendment 2: first prospective run and fixture correction
 
 Pushed tests `7bdecf4` ran with no implementation change. Initial report: 20 failed / 4 passed (subtest failures included), `/private/tmp/larp-final-a-artifacts/proofs-red.log`. Source policy-exclusion/pagination failures and both credential-path failures are direct proofs. Evidence tests instead hit a test-harness profile mismatch: `World.request` hardcodes the scenario profile, while this new fixture intentionally uses its own profile. They are not application findings yet. Correct the test helper to call the real `build_request` with the fixture profile/run/cursor; all original acceptance assertions remain intact. Push this correction before rerunning; no implementation fix yet.
+
+
+### Amendment 3: corrected red proofs and audit fixture strengthening
+
+At `d48a3cf`, independent regressions reported **13 failed / 7 passed / 4 subtests passed** (failure count includes subtest failures). Confirmed #25 identity rejection, #47 clause-order miss, #48 loss of pending uncertainty, #58 rights/pagination failures, request credential capture and unsanitized exception-code reflection. Real store fourteen-day restart and foreign-filer non-authority tests passed. The audit fixture had no tool gap and therefore only one model call: switch it to synthetic guidance text requiring prior-context retrieval so it tests a genuine multistep audit, without changing assertions. Strengthen the correction test with an unreadable intermediate revision before a complete reread. These remain pre-registered A-T03/A-T07 boundaries; push fixture changes before the rerun.

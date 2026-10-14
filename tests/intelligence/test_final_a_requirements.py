@@ -159,6 +159,14 @@ class PendingRedFlags(RealEvidence):
         self.clock.advance(60_000)
         self.ingestor.poll(self.entry.issuer_id, recheck=frozenset({original['accession']}))
         latest = max((r.read() for r in self.store.records(self.entry.issuer_id)), key=lambda r: r['revision'])
+        text_hash = next(d['text_sha256'] for d in latest['documents'] if d['role'] == 'PRIMARY')
+        artifact = self.artifacts.root / text_hash[:2] / text_hash
+        hidden = artifact.with_suffix('.held')
+        artifact.rename(hidden)
+        self.assess(latest)
+        self.assertTrue(self.state.get('pending_red_flags'), 'partial correction cannot clear uncertainty')
+        hidden.rename(artifact)
+        self.clock.advance(1_000)
         self.assess(latest)
         self.assertEqual(self.state.get('pending_red_flags'), [])
         self.assertTrue(any(x['accession'] == original['accession'] and x['resolution'] == 'SOURCE_CORRECTED'
@@ -208,7 +216,7 @@ class CredentialCapture(unittest.TestCase):
 
 class AuditRecovery(RealEvidence):
     def test_a_req_052_complete_multistep_original_io_and_tool_results_after_reopen(self):
-        original = self.add(751, NONRELIANCE)
+        original = self.add(751, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
         bodies, replies = [], []
         def send(url, headers, body, timeout):
             self.clock.advance(20)
