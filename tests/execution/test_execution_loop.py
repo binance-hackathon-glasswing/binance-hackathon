@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from larp.contracts import ContractError
 from larp.execution import Blocked, Signed
-from larp.execution_live.loop import FencedRelease, RawTransactionSubmitter
+from larp.execution_live.loop import FencedRelease, Web3Broadcaster
 from larp.execution_live.main import EXIT_NOT_INTEGRATED, EXIT_REFUSED, NotIntegrated, build_execution, main
 from larp.marketdata.port import TOKENS
 from larp.research.fixtures import synthetic_profile
@@ -37,8 +37,7 @@ class Composition(unittest.TestCase):
         self.config = dict(schema='ExecutionService.v1', run_id='run', build_id='a' * 40, mode='dev',
                            wallet_address=WALLET, interval_seconds=1, database_dsn_file='/synthetic',
                            market_artifact_root=str(self.root / 'market'), chain_artifact_root=str(self.root / 'chain'),
-                           rpc_url='https://rpc.invalid/', rpc_source_id='fixture-rpc',
-                           broadcast_rpc_url='https://submit.invalid/', router='0x' + '2' * 40,
+                           rpc_url='https://rpc.invalid/', rpc_source_id='fixture-rpc', router='0x' + '2' * 40,
                            token_decimals={s: 18 for s in TOKENS}, max_gas=500_000, max_gas_price=10**10,
                            gas_budget=10**16, strategy_profile_file=str(self.root / 'profile.json'),
                            strategy_profile_sha256=hashlib.sha256(profile).hexdigest())
@@ -51,7 +50,7 @@ class Composition(unittest.TestCase):
     def test_e9_inconsistent_inputs_are_refused(self):
         for change in (dict(router='0xnot'), dict(token_decimals={'NVDAB': 18}), dict(max_gas=0),
                        dict(strategy_profile_sha256='0' * 64), dict(rpc_url='http://rpc.invalid/'),
-                       dict(broadcast_rpc_url=None)):
+                       dict(rpc_source_id=None)):
             with self.subTest(change), self.assertRaises((ContractError, Blocked)):
                 build_execution(dict(self.config, **change), Store(), self.secrets)
         with self.assertRaises(ContractError):
@@ -123,15 +122,13 @@ class Release(unittest.TestCase):
         with self.assertRaises(Blocked):
             FencedRelease(Registry(True), Submitter('0x' + 'b' * 64))(signed, 3, 3)
 
-    def test_e9_the_submitter_speaks_only_eth_send_raw_transaction_over_https(self):
-        for url in ('http://rpc.invalid/', 'https://user:pw@rpc.invalid/', 'ftp://rpc.invalid/'):
-            with self.subTest(url), self.assertRaises(Blocked):
-                RawTransactionSubmitter(url)
+    def test_r1_orders_are_broadcast_only_through_the_web3_open_api(self):
+        wallet, raw, tx = '0x' + '5' * 40, '0x' + 'f8' * 40, '0x' + 'c' * 64
         sent = []
 
         class Response:
-            def __init__(self, body):
-                self.body = body
+            def __init__(self, body, code=200):
+                self.body, self.code = body, code
 
             def __enter__(self):
                 return self
@@ -143,14 +140,47 @@ class Release(unittest.TestCase):
                 return self.body
 
         class Opener:
+            def __init__(self, body):
+                self.body = body
+
             def open(self, request, timeout):
-                sent.append(json.loads(request.data))
-                return Response(json.dumps(dict(jsonrpc='2.0', id=1, result='0x' + 'c' * 64)).encode())
+                sent.append(request)
+                return Response(json.dumps(self.body).encode())
 
-        self.assertEqual(RawTransactionSubmitter('https://rpc.invalid/', opener=Opener()).send('0xabcd'),
-                         '0x' + 'c' * 64)
-        self.assertEqual([(s['method'], s['params']) for s in sent], [('eth_sendRawTransaction', ['0xabcd'])])
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        ok = dict(code=0, data=[dict(txHash=tx, orderId='o-1')])
+        broadcaster = Web3Broadcaster('synthetic-key', 'synthetic-secret', wallet=wallet,
+                                      artifacts=Path(tmp.name) / 'broadcast', opener=Opener(ok))
+        broadcaster.client.min_interval = 0
+        self.assertEqual(broadcaster.send(raw), tx)
+        [request] = sent
+        self.assertEqual((request.get_method(), request.full_url),
+                         ('POST', 'https://web3.binance.com/build/api/v1/dex/pre-transaction/broadcast-transaction'))
+        self.assertEqual(json.loads(request.data), dict(binanceChainId='56', signedTransaction=raw, address=wallet))
+        self.assertTrue(request.get_header('X-oc-sign'))  # authenticated like every Web3 Open API call
+        stored = b''.join(p.read_bytes() for p in (Path(tmp.name) / 'broadcast').glob('*.json'))
+        self.assertTrue(stored)
+        self.assertNotIn(raw[2:].encode(), stored)  # the signed bytes are not kept in the artifact record
+        with self.assertRaises(Exception):
+            broadcaster.client.request('GET', 'market/rwa/tokens', {})  # submit-only: no other endpoint
+        from larp.execution import DependencyUnavailable
+        refused = Web3Broadcaster('synthetic-key', 'synthetic-secret', wallet=wallet,
+                                  artifacts=Path(tmp.name) / 'refused', opener=Opener(dict(code=50000, msg='x')))
+        refused.client.min_interval = 0
+        with self.assertRaises(DependencyUnavailable):  # possibly sent: reconcile, never re-sign
+            refused.send(raw)
+        from larp.marketdata.web3 import Unavailable, Web3Client
+        reader = Web3Client('synthetic-key', 'synthetic-secret', artifacts=None, opener=Opener(ok))
+        with self.assertRaises(Unavailable):
+            reader.request('POST', 'pre-transaction/broadcast-transaction', {})  # the read client never sends
 
+    def test_r1_no_rpc_submission_path_remains(self):
+        root = Path(__file__).resolve().parents[2] / 'larp'
+        offenders = [str(p) for p in root.rglob('*.py') if 'eth_sendRawTransaction' in p.read_text(encoding='utf-8')]
+        self.assertEqual(offenders, [])
+        from larp.execution_live.main import BUILD_KEYS
+        self.assertNotIn('broadcast_rpc_url', BUILD_KEYS)
 
 if __name__ == '__main__':
     unittest.main()

@@ -544,6 +544,27 @@ class DayRolls(ServiceHarness):
         head, expected = self.replay_head(driver)
         self.assertEqual(head, expected)
 
+    def test_r2_the_roll_values_marks_at_a_time_read_after_the_fetch(self):
+        # The real client stamps available_at when the response arrives, after the cycle's clock was read.
+        def fetching(now_ms):
+            self.w.clock.now += 1500
+            return self.market(self.w.clock())
+        day = self.risk_day()
+        driver = self.service_driver(market=fetching, day_roll_window_ms=15 * 60 * SECOND)
+        self.w.clock.now = self.midnight_after(day) + 60 * SECOND
+        self.assertEqual(driver.once(self.w.clock())['day_roll'], 'ROLLED')
+        self.assertGreater(self.risk_day(), day)
+
+    def test_r2_a_fetch_that_ends_after_the_window_does_not_roll(self):
+        def fetching(now_ms):
+            self.w.clock.now += 1500
+            return self.market(self.w.clock())
+        day = self.risk_day()
+        driver = self.service_driver(market=fetching, day_roll_window_ms=15 * 60 * SECOND)
+        self.w.clock.now = self.midnight_after(day) + 15 * 60 * SECOND - 500
+        self.assertEqual(driver.once(self.w.clock())['day_roll'], 'OUTSIDE_WINDOW')
+        self.assertEqual(self.risk_day(), day)
+
     def test_e8_no_roll_outside_the_window_or_without_a_mark(self):
         day = self.risk_day()
         driver = self.service_driver(day_roll_window_ms=15 * 60 * SECOND)
@@ -649,3 +670,61 @@ class Lifecycle(ServiceHarness):
         with self.subTest('wallet already has a run'):
             with self.assertRaises(StartRefused):
                 init_run(dict(self.config('r2'), run_id='r8'), self.store)
+
+
+class Restart(ServiceHarness):
+    """R3: a crash between planning and claiming, then a real `Service` start (RESTART incident)."""
+
+    def service(self, driver):
+        from larp.runtime.service import Service
+        return Service(self.store, RUN, VERSION, guard=Guard(self.store, RUN, max_failures=3, clear_after=2),
+                       driver=driver, clock_ms=self.w.clock, sleep=lambda s: None)
+
+    def crash_after_planning(self):
+        crashed = self.service(self.service_driver())
+        crashed.sessions.begin(session_id=crashed.session_id, build_id=VERSION, now_ms=self.w.clock())
+        crashed.driver.once(self.w.clock())  # plans the command; the process dies before the claim
+        [command] = self.commands()
+        return command
+
+    def events(self, prefix):
+        with self.store.transaction() as db:
+            return [Document(bytes(r[0])).read()['event'] for r in db.execute(
+                'SELECT batch FROM events WHERE run_id=%s AND event_id LIKE %s ORDER BY sequence', (RUN, prefix + '%'))]
+
+    def test_r3_a_restart_reauthorizes_the_unclaimed_command_and_execution_claims_it(self):
+        command = self.crash_after_planning()
+        self.w.clock.now += SECOND
+        restarted = self.service(self.service_driver())
+        self.assertEqual(restarted.run(max_cycles=1), 0)
+        self.assertEqual([e['incident']['type'] for e in self.events('incident:restart:')], ['RESTART'])
+        [event] = self.events('reauthorize:')
+        self.assertEqual((event['kind'], event['commands']), ('COMMAND_REAUTHORIZED', [command]))
+        execution = Execution(self, remote=False)
+        self.assertEqual(execution.loop.once(self.w.clock())['claimed'], [command])
+        with self.store.transaction() as db:
+            payloads = {r[0] for r in db.execute('SELECT payload FROM commands WHERE run_id=%s', (RUN,))}
+        self.assertEqual(len(payloads), 1)  # the command's bytes never change, only its authority
+        head, expected = self.replay_head(restarted.driver)
+        self.assertEqual(head, expected)
+
+    def not_reauthorized(self, prepare):
+        self.crash_after_planning()
+        self.w.clock.now += SECOND
+        prepare()
+        self.service(self.service_driver()).run(max_cycles=1)
+        self.assertEqual(self.events('reauthorize:'), [])
+
+    def test_r3_an_expired_intent_is_not_reauthorized(self):
+        def expire():
+            intent = next(iter(self.planned().values()))['plan']['intents'][0]
+            self.w.clock.now = intent['expires_ms']
+        self.not_reauthorized(expire)
+
+    def test_r3_a_halted_run_reauthorizes_nothing(self):
+        # CLOCK is latched: the restarted guard does not clear it in the same cycle.
+        self.not_reauthorized(lambda: Guard(self.store, RUN, max_failures=3, clear_after=2)._halt(
+            'CLOCK', self.w.clock(), {}))
+
+    def test_r3_a_claimed_intent_is_not_reauthorized(self):
+        self.not_reauthorized(lambda: Execution(self, remote=False).loop.once(self.w.clock()))
