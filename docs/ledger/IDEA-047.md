@@ -229,3 +229,22 @@ Yao Zhu asked for proof that everything works offline (including the simulation)
 - **Full suite:** 1138 passed, 4 skipped, 1466 subtests. The skips are three Linux-bubblewrap worker-isolation tests, which run in Linux CI, and one opt-in test that needs external recorded-market artifacts.
 - **Offline demo:** PASS on Linux CI [run 38532479457](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38532479457) at `1a6ae58`, whose runtime/config/deploy/migration tree is identical to `bd79da9` (checked by the runner).
 - **Scope:** synthetic engineering checks only. No real market, source or model data, wallet, signing or host is involved.
+
+## PR #20 review follow-up R8–R13 (2026-10-14, Isaac / Codex)
+
+User requested implementation of the remaining PR review findings. This section is prospective: criteria are
+committed and pushed before changed runtime code is tested. Scope is the six review defects, with no AWS apply,
+host startup, live credential use or change to trading policy. Existing deployment dependencies remain open.
+
+| ID | Pass criterion |
+|---|---|
+| R8 | The proposal required by the deviations register is included in the release file set, manifest hashes and host bundle. A generated manifest verifies against the extracted/provisioned release; altering the proposal fails verification. |
+| R9 | Signing requests larger than 64 KiB or nested beyond 64 JSON containers are refused before recursive parsing/canonicalization. A nested poison row is durably refused and the next valid request is signed in the same cycle; database outages still propagate. |
+| R10 | The monthly usage budget explicitly excludes credit offsets. Mock Terraform tests assert this. Docs distinguish monthly usage alerts from remaining lifetime credits across the October/November boundary. |
+| R11 | Development SSM attaches only to primary, requires development mode and primary HTTPS egress, and refuses unsupported configurations in mock plans. Signer provisioning remains a named, unselected dependency; no new network path or AWS resources are introduced. |
+| R12 | The live evidence writer explicitly publishes artifacts at 0640 before atomic linking/fsync; private artifact stores retain 0600. A separate runtime user in the evidence group reads actual artifact bytes in the host container check; an unrelated user cannot. Docs give an offline permissions migration for earlier artifacts. |
+| R13 | Permanent release preflight refusals use ExecCondition for coordinator, evidence, execution, signer and uploader. An invalid manifest skips the main process with no systemd restart; a valid condition permits normal main-process failure/restart. Static unit checks and a real-systemd Linux CI regression cover this, alongside extracted-release preflight in the host-bundle check. |
+
+Validation required: targeted regressions, full Python suite (PostgreSQL-dependent cases run in Linux CI), mock
+Terraform tests and host-bundle CI. Local unavailable capabilities are reported explicitly. No whole GAP item is
+claimed complete by these corrections. Results will be appended after testing the pushed implementation.
