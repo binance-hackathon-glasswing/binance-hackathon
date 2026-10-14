@@ -20,7 +20,7 @@ credit budget. Rows below that say six hosts, NAT or interface endpoints describ
 | Signer image | No internet: the release bundle (`tools/build_release_bundle.py`) carries CPython 3.12.15, every wheel, the RDS CA bundle and the release; `deploy/host/provision.sh` installs it offline from the artifact bucket via the S3 gateway endpoint (IDEA-047). |
 | Database | RDS PostgreSQL 14.24 `db.t4g.micro`, single zone, 20 GiB gp3, IAM login, TLS, 7-day backups, no CloudWatch log export by default. `primary` may log in as `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader`; `signer` only as `larp_signer`. |
 | Cost guard | Monthly budget (default $90) alerting at 50/75/90 % of actual spend when `budget_notification_emails` is set. The Free plan never bills beyond the credits, but closes the account when they run out, which would stop the agent: keep the margin. |
-| Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. |
+| Settings | Copy `deploy/aws/development.example.tfvars` to an ignored `development.tfvars`. Terraform's S3 backend cannot read an `aws login` session: run Terraform with `eval "$(aws configure export-credentials --profile larp --format env)"` and `AWS_PROFILE` unset (IDEA-046, 2026-10-14). |
 
 Estimated cost (official Sydney prices, 2026-10-12, 730 h): servers $28.91, database $21.01, disks $3.84, public IPv4
 $3.65, KMS/secrets ≈ $2.60, alarms/logs/S3 ≈ $2.50 → **≈ $62/month**, ≈ $66 to Nov 12. Hosts and the public IPv4 cost

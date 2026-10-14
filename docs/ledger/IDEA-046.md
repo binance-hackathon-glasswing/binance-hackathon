@@ -43,3 +43,23 @@ Validation results (2026-10-12). Criteria committed at `62f53e0` before implemen
 | L08 | PASS | `docs/build/architecture-deployment.md`: lean target, cost, signer key-file and offline-image requirements, Sydney risk with the Oct 27 revisit, teardown checklist. Open items in `docs/INCOMPLETE_WORK.md`. |
 
 Read-only account checks used for B3 (2026-10-12, profile `larp`, role `AccountFullAccessRole`): Free plan ACTIVE, $100.00 credits, expiry 2027-04-12. Singapore EC2/RDS calls are denied by an AWS-managed SCP. In Sydney: no instances, databases, addresses, endpoints, NAT gateways, buckets or budgets, and the needed services are readable. PostgreSQL 14.24 is orderable on `db.t4g.micro`. Readable is not proof that creating is allowed; check creation permissions before the first apply.
+
+## AWS setup, free steps (2026-10-14, Claude for Yao Zhu)
+
+Yao Zhu approved the free steps only, stopping at a saved plan (2026-10-14). The account IDs are not recorded here (L06).
+
+- **Account:** Yao Zhu signed in to a **different AWS account** from the one checked on 2026-10-12, and confirmed it is the team's credit project.
+  - Read-only checks: Free plan `ACTIVE`, $100.00 credits, expiry 2027-04-12.
+  - Singapore EC2 calls are denied by the same AWS-managed service control policy, so Sydney remains (B3).
+  - Sydney held no instances, databases, buckets or budgets beforehand. PostgreSQL 14.24 is orderable on `db.t4g.micro`.
+  - Creation permissions: dry runs of `t3.small`/`t3.micro` launches (standard credits, IMDSv2), a VPC and an S3 gateway endpoint all return `DryRunOperation`. RDS has no dry run; creating the database is first tried at apply.
+- **Applied:**
+  1. `deploy/bootstrap`: the state bucket (versioned, AES256, public access blocked, TLS-only). Its local state stays in the ignored `deploy/bootstrap/terraform.tfstate`.
+  2. The budget only: `terraform apply` of a saved plan targeting `aws_budgets_budget.monthly` ($90/month, alerts at 50/75/90 % of actual spend to the account owner's email).
+- **Saved, not applied:** `deploy/aws/development.tfplan` (git-ignored), 51 resources.
+  - Included: VPC, private subnets, S3 gateway endpoint, security groups, KMS key, archive bucket (COMPLIANCE, 82 days) and artifact bucket, 3 service secrets, host IAM roles, the RDS instance and its groups, log groups, alarms, and the alarm SNS topic with one email subscription.
+  - Not included: instances, an internet gateway, NAT or public IPs (`enable_hosts`/`enable_external_https` off).
+  - Database: `db.t4g.micro`, 14.24, single-AZ, 20 GiB gp3 (autoscaling to 30), private, IAM auth, deletion protection, 7-day backups.
+  - Estimated cost with hosts off: about $24/month (database $21, KMS $1, secrets ≈ $1.60, alarms and logs cents). The KMS key and the locked archive outlive teardown (L05).
+- **Tooling note:** Terraform 1.13.5's S3 backend cannot read the CLI's new `aws login` session (`login_session` profiles); the AWS provider can. Run Terraform with `eval "$(aws configure export-credentials --profile larp --format env)"` and `AWS_PROFILE` unset. The credentials are short-lived and never written to a file.
+- **Next (needs Yao Zhu's OK, real spend):** review and apply `development.tfplan`. Then run the migrations and `roles.sql`, and verify IAM token login, TLS and grants for each role against the two-host map (IDEA-045's remaining check).
