@@ -153,6 +153,36 @@ class SlippageRequirements(unittest.TestCase):
             LiveVenue(client, None, decoder=Decoder()).quote(
                 replace(intent(), amount=40 * 10**18, max_slippage_bps=20), 1)
 
+    def test_c_req_014_fresh_minimum_matches_consumer_integer_floor(self):
+        class Rounded(BoundQuotes):
+            def request(self, *args):
+                raw = super().request(*args)
+                if args[1] == 'aggregator/quote-and-swap':
+                    q = raw['response']['data'][0]
+                    received = 4 * 10**17 + 1
+                    q['routerResult']['toTokenAmount'] = str(received)
+                    q['tx']['minReceiveAmount'] = str(received * 9980 // 10000)
+                return raw
+        class Decoder:
+            def decode(self, payload):
+                return SwapEconomics(USDT, TOKENS['NVDAB'], 40 * 10**18, WALLET, 1, 1000, 0)
+        client = Rounded()
+        self.assertIsInstance(LiveVenue(client, None, decoder=Decoder()).quote(
+            replace(intent(), amount=40 * 10**18, max_slippage_bps=20), 1), Payload)
+
+    def test_c_req_014_floor_minus_one_native_unit_still_fails(self):
+        class TooWeak(BoundQuotes):
+            def request(self, *args):
+                raw = super().request(*args)
+                if args[1] == 'aggregator/quote-and-swap':
+                    q = raw['response']['data'][0]
+                    received = int(q['routerResult']['toTokenAmount'])
+                    q['tx']['minReceiveAmount'] = str(received * 9980 // 10000 - 1)
+                return raw
+        with self.assertRaises(Blocked):
+            LiveVenue(TooWeak(), None, decoder=None).quote(
+                replace(intent(), amount=40 * 10**18, max_slippage_bps=20), 1)
+
 
 class GasClient:
     def __init__(self, *, scale=6):
@@ -265,3 +295,12 @@ class GasQuoteRequirements(unittest.TestCase):
             minReceiveAmount=str(241000 * 10**12 * 998 // 1000 + 1))
         with self.assertRaises(Unavailable):
             self.port(client)(0)
+
+    def test_c_req_047_native_minimum_matches_consumer_integer_floor(self):
+        client = GasClient()
+        def rounded(q):
+            received = int(q['routerResult']['toTokenAmount']) + 1
+            q['routerResult']['toTokenAmount'] = str(received)
+            q['tx']['minReceiveAmount'] = str(received * 9980 // 10000)
+        client.mutation = rounded
+        self.assertTrue(self.port(client, scale=18)(0))
