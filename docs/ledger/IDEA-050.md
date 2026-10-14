@@ -43,7 +43,7 @@ One cycle (`RoundDriver.once(now_ms)`):
   - `expires_at`: the intent's own deadline;
   - `native_resource_route_valid`: false (C-OPEN-005).
 - **`ExecutionLoop.once(now_ms)`**: claim each pending command that has no execution record, is unexpired and current (`ExecutionService.create_from_command`); advance every non-terminal execution record, and terminal ones whose final observation is not yet published; publish every observation to `execution_observations` (idempotent, fenced by the run epoch). The round-terminal attestation is true when every other planned intent of the round is already final.
-- **Broadcast release boundary**: `FencedRelease` re-checks the durable possible-send record (`ExecutionStore.check_broadcast`) and submits through a separate submit-only RPC client (`eth_sendRawTransaction` only), accepting only the signed transaction's own hash back.
+- **Broadcast release boundary**: `FencedRelease` re-checks the durable possible-send record (`ExecutionStore.check_broadcast`) and submits through the Web3 Open API `broadcast-transaction` endpoint (`Web3Broadcaster`, PR #66 R1; the first version used RPC and was replaced), accepting only the signed transaction's own hash back.
 - **`build_execution(config, store)`** composes ExecutionStore, MarketPort (profile limits), ChainEvidence, RunAuthorization, Guards, LiveVenue (UnverifiedRouter, FencedRelease), RemoteSigner, ReceiptFacts and the command mapping (profile per-trade cap and slippage, configured gas limits). The `Executor` refuses the live bundle; that refusal is reported as exit 2 `NOT_INTEGRATED` with reason `EXECUTOR_CAPABILITY_GATE`.
 
 ### Run lifecycle (`larp/runtime/service.py`)
@@ -114,4 +114,14 @@ Source: Isaac's review comment on PR #66 at `223c7ae`. All three findings were v
 
 Order: these tests are pushed and run first (expected red for R1–R3), then the fixes are pushed and the same tests, the full suite and Linux CI are run.
 
-Results: NOT RUN.
+Results (2026-10-14):
+- Red at test commit `cc7c06f`: R1 module import fails (`Web3Broadcaster` absent); both R2 tests return `MARK_UNAVAILABLE` (Isaac's finding reproduced); the R3 restart test finds no reauthorization. The three R3 refusal tests pass trivially before the fix (nothing reauthorizes).
+- Fix `b9260c7`: all R tests and the affected modules pass (97 passed, 1 skipped, 118 subtests). Mutations, each reverted, each caught: R3 without the HALT, expiry or claim check; R2 with the clock read before the fetch.
+- Full suite at `b9260c7`, disposable PostgreSQL 16: **1225 passed, 7 skipped, 1561 subtests** (the RPC submitter test, with three subtests, was replaced by two R1 tests; the same seven environment skips).
+- Linux CI at `b9260c7`: pull_request [run 38581176409](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38581176409) and workflow_dispatch [run 38581342042](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38581342042), both green.
+
+| ID | Result | Evidence |
+|---|---|---|
+| R1 | PASS | `test_r1_orders_are_broadcast_only_through_the_web3_open_api` (method, URL, exact three-field body, signed header, artifact without the signed bytes, submit-only client, failure = possible send, read client still refuses); `test_r1_no_rpc_submission_path_remains` |
+| R2 | PASS | `test_r2_the_roll_values_marks_at_a_time_read_after_the_fetch`; `test_r2_a_fetch_that_ends_after_the_window_does_not_roll` |
+| R3 | PASS | `Restart.test_r3_a_restart_reauthorizes_the_unclaimed_command_and_execution_claims_it` (real `Service` start: RESTART incident, one COMMAND_REAUTHORIZED, claim succeeds, command bytes unchanged, replay equal); expired, halted (latched CLOCK) and claimed intents are not reauthorized |
