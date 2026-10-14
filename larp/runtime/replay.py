@@ -15,7 +15,7 @@ from larp.runtime.coordinator import Coordinator
 from larp.storage.postgres import IntegrityError,digest,doc
 
 
-RECORDED_FACTS=('INCIDENT','HALT','HALT_CLEARED','VERSION_REGISTERED','DAY_ROLLED','RUN_ACTIVATED')
+RECORDED_FACTS=('INCIDENT','HALT','HALT_CLEARED','VERSION_REGISTERED','DAY_ROLLED','RUN_ACTIVATED','COMMAND_REAUTHORIZED')
 
 
 class RecordedAssessment:

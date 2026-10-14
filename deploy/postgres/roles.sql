@@ -81,3 +81,5 @@ GRANT SELECT,INSERT ON signing_refusals TO larp_signer;
 GRANT SELECT ON execution_journal,execution_observations TO larp_runtime;
 -- IDEA-050: activation refuses a run with an unfinished execution; the runtime never reads execution state (signed bytes).
 GRANT SELECT (economic_key,run_id,terminal) ON execution_records TO larp_runtime;
+-- IDEA-050 R3: a pending command's authority (never its bytes) moves forward with a COMMAND_REAUTHORIZED event.
+GRANT UPDATE (epoch,state_version) ON commands TO larp_runtime;

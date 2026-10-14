@@ -213,6 +213,14 @@ class PostgresStore:
             for command in b.get('commands',[]):
                 self._immutable(db,'commands','command_id',b['run_id'],command['command_id'],
                                 doc(command).payload,('epoch','state_version'),(run['epoch'],sequence))
+            for command_id in b.get('reauthorize',[]):
+                # Same bytes, new authority: a still-pending command is re-bound to this event (IDEA-050 R3).
+                row = db.execute('SELECT status FROM commands WHERE run_id=%s AND command_id=%s',
+                                 (b['run_id'],command_id)).fetchone()
+                if not row or row[0] != 'PENDING':
+                    raise Conflict('Only a pending command can be reauthorized')
+                db.execute('UPDATE commands SET epoch=%s,state_version=%s WHERE run_id=%s AND command_id=%s',
+                           (run['epoch'],sequence,b['run_id'],command_id))
             for audit in b.get('audit',[]):
                 self._audit(db,b['run_id'],audit)
             receipt = doc(dict(schema='CommitReceipt.v1',run_id=b['run_id'],event_id=b['event_id'],

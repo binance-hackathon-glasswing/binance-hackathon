@@ -207,6 +207,40 @@ class ServiceExecution:
         return [i['intent_id'] for _, i in pending if self.key(i['intent_id']) not in claimed
                 and versions.get(i['intent_id']) == current['version']]
 
+    def reauthorize(self, now_ms):
+        """Re-bind still-valid, unclaimed commands that a later commit made stale (PR #66 R3).
+
+        A restart journals a RESTART incident, which moves the run version past a command planned just before the
+        crash; `PostgresStore.command` would then refuse it. A command is reauthorized only if its intent is still
+        planned in an open round, not final, holds its reservation, is unexpired, has no execution record, and the run
+        is neither halted nor quarantined and still registered to this build. One journaled COMMAND_REAUTHORIZED event
+        moves the commands' authority (epoch, state version) to that event; their bytes never change."""
+        c = self.coordinator
+        current = c.store.load(c.run_id).read()
+        if halt_reasons(current['projection']) or current['quarantined']:
+            return []
+        if (current['projection'].get('registered_version') or {}).get('build_id') != c.version_id:
+            return []
+        held = {}
+        for r in current['reservations']:
+            held[r['intent_id']] = held.get(r['intent_id'], 0) + r['units']
+        pending = [i for _, _, i in self._pending(current) if now_ms < i['expires_ms'] and held.get(i['intent_id'], 0) > 0]
+        if not pending:
+            return []
+        claimed = self._records([self.key(i['intent_id']) for i in pending])
+        with c.store.transaction() as db:
+            versions = dict(db.execute("SELECT command_id,state_version FROM commands WHERE run_id=%s "
+                                       "AND status='PENDING' AND command_id=ANY(%s)",
+                                       (c.run_id, [i['intent_id'] for i in pending])))
+        stale = sorted(i['intent_id'] for i in pending if self.key(i['intent_id']) not in claimed
+                       and i['intent_id'] in versions and versions[i['intent_id']] != current['version'])
+        if not stale:
+            return []
+        event = dict(kind='COMMAND_REAUTHORIZED', commands=stale, at_ms=now_ms)
+        c.store.commit(batch_for(Document.from_dict(current), f"reauthorize:{current['version'] + 1}", event,
+                                 reauthorize=stale))
+        return stale
+
     def ingest(self):
         """Journal every new execution observation; returns (applied, refused) event IDs."""
         c = self.coordinator
@@ -536,6 +570,11 @@ class RoundDriver:
             if getattr(self.execution, key, None):
                 summary[key] = list(getattr(self.execution, key))
         c.recover(now_ms)
+        reauthorize = getattr(self.execution, 'reauthorize', None)
+        if reauthorize is not None:
+            reauthorized = reauthorize(now_ms)
+            if reauthorized:
+                summary['reauthorized'] = reauthorized
         waiting = self.execution.waiting(now_ms)
         if waiting:
             # I3 hand-off: any commit now would make these commands stale before the execution service claims them.
@@ -545,7 +584,10 @@ class RoundDriver:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):
                 self.market.refresh(now_ms)
-                summary['day_roll'] = self.day_roll(now_ms, self.market.observations())
+                # The marks are stamped when their responses arrive: value them at a time read after the fetch, and
+                # check the day and the window again at that time (PR #66 R2).
+                decided = max(now_ms, c.clock())
+                summary['day_roll'] = self.day_roll(decided, self.market.observations())
         current = c.store.load(c.run_id).read()
         item = self.work.next(now_ms, current['epoch'])
         if item is not None:

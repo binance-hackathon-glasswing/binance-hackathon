@@ -15,15 +15,18 @@ from larp.runtime.schema import assessment_request,assessment_result
 
 
 def batch_for(current,event_id,event,*,projection=None,policy_state=None,execution_state=None,
-              reservation_deltas=(),jobs=(),commands=(),audit=()):
+              reservation_deltas=(),jobs=(),commands=(),audit=(),reauthorize=()):
     c=current.read()
-    return doc(dict(schema='CommitBatch.v1',run_id=c['run_id'],wallet_id=c['wallet_id'],chain_id=c['chain_id'],
+    batch=dict(schema='CommitBatch.v1',run_id=c['run_id'],wallet_id=c['wallet_id'],chain_id=c['chain_id'],
         event_id=event_id,expected_version=c['version'],owner_epoch=c['epoch'],event=event,
         projection=c['projection'] if projection is None else projection,
         policy_state=c['policy_state'] if policy_state is None else policy_state,
         execution_state=c['execution_state'] if execution_state is None else execution_state,
         reservation_deltas=list(reservation_deltas),jobs=list(jobs),commands=list(commands),
-        audit=[a.read() if isinstance(a,Document) else a for a in audit]))
+        audit=[a.read() if isinstance(a,Document) else a for a in audit])
+    if reauthorize:
+        batch['reauthorize']=list(reauthorize)  # absent otherwise, so existing batches keep their bytes
+    return doc(batch)
 
 
 def round_kind(intents):

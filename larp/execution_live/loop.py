@@ -103,8 +103,8 @@ class PlanValuation:
 
 class FencedRelease:
     """`LiveVenue.release`: the only path to submission. It re-checks that these exact bytes are the current possible
-    send of an active attempt under this epoch and authority (`ExecutionStore.check_broadcast`), submits them, and
-    accepts only the transaction's own hash back."""
+    send of an active attempt under this epoch and authority (`ExecutionStore.check_broadcast`), submits them through
+    the Web3 Open API (`Web3Broadcaster`), and accepts only the transaction's own hash back."""
 
     def __init__(self, registry, submitter):
         self.registry, self.submitter = registry, submitter
@@ -117,36 +117,41 @@ class FencedRelease:
         return signed.tx_hash
 
 
-class RawTransactionSubmitter:
-    """Submit-only JSON-RPC client: `eth_sendRawTransaction` and nothing else, over a manifested HTTPS endpoint."""
+class Web3Broadcaster:
+    """The submitter for `FencedRelease`: the Web3 Open API's `broadcast-transaction` endpoint, the only order channel
+    the kit allows (F-104, never-do #3; guide p.8). A separate authenticated client allows that one endpoint and
+    nothing else, so the read/build client still cannot send. The artifact record keeps a hash of the signed bytes,
+    never the bytes. Any failure is "possibly sent": the attempt stays a possible send and reconciles from the chain;
+    it is never re-signed with another nonce."""
 
-    def __init__(self, url, *, opener=None, timeout=20):
-        from urllib.parse import urlsplit
-        from urllib.request import build_opener
-        from larp.marketdata.web3 import NoRedirect
-        parsed = urlsplit(url)
-        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
-            raise Blocked('manifested HTTPS submission endpoint required')
-        self.url, self.timeout = url, timeout
-        self.opener = opener or build_opener(NoRedirect())
+    ENDPOINT = ('POST', 'pre-transaction/broadcast-transaction')
+
+    def __init__(self, key, secret, *, wallet, artifacts, opener=None):
+        from larp.marketdata.web3 import Artifacts, Web3Client
+
+        class Client(Web3Client):
+            endpoints = frozenset({self.ENDPOINT})
+            private_params = ('signedTransaction',)
+
+        if type(wallet) is not str or not wallet.startswith('0x') or len(wallet) != 42:
+            raise Blocked('broadcast wallet address required')
+        self.wallet = wallet.lower()
+        self.client = Client(key, secret, artifacts=Artifacts(artifacts), opener=opener)
 
     def send(self, raw_hex):
-        from urllib.error import URLError
-        from urllib.request import Request
         from larp.execution import DependencyUnavailable
+        from larp.marketdata.web3 import Unavailable, single
         if type(raw_hex) is not str or not raw_hex.startswith('0x') or len(raw_hex) < 4:
             raise Blocked('signed transaction bytes required')
-        body = json.dumps(dict(jsonrpc='2.0', id=1, method='eth_sendRawTransaction', params=[raw_hex])).encode()
-        request = Request(self.url, data=body, headers={'Content-Type': 'application/json'}, method='POST')
         try:
-            with self.opener.open(request, timeout=self.timeout) as response:
-                result = json.loads(response.read(64 * 1024))
-        except (URLError, OSError, ValueError):
-            # Possibly sent: the attempt stays BROADCAST_ATTEMPTED/UNKNOWN and reconciles from the chain.
-            raise DependencyUnavailable('submission outcome unknown') from None
-        if type(result) is not dict or 'error' in result or type(result.get('result')) is not str:
-            raise Blocked('submission refused')
-        return result['result']
+            record = self.client.request(*self.ENDPOINT, dict(binanceChainId='56', signedTransaction=raw_hex,
+                                                              address=self.wallet))
+            tx_hash = single(record)['txHash']
+        except (Unavailable, KeyError, TypeError):
+            raise DependencyUnavailable('broadcast outcome unknown') from None
+        if type(tx_hash) is not str:
+            raise DependencyUnavailable('broadcast outcome unknown')
+        return tx_hash
 
 
 class ExecutionLoop:

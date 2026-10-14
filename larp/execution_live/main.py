@@ -61,8 +61,7 @@ def validate_config(value):
     return value
 
 
-BUILD_KEYS = ('market_artifact_root', 'chain_artifact_root', 'rpc_url', 'rpc_source_id', 'broadcast_rpc_url', 'router',
-              'token_decimals', 'max_gas', 'max_gas_price', 'gas_budget', 'strategy_profile_file',
+BUILD_KEYS = ('market_artifact_root', 'chain_artifact_root', 'rpc_url', 'rpc_source_id', 'router', 'token_decimals', 'max_gas', 'max_gas_price', 'gas_budget', 'strategy_profile_file',
               'strategy_profile_sha256')
 
 
@@ -81,8 +80,8 @@ def build_execution(config, store, secrets, *, clock_s=None):
     from larp.execution import Blocked, Executor
     from larp.execution_live.chain import ChainEvidence, Rpc
     from larp.execution_live.guards import LiveGuards
-    from larp.execution_live.loop import (ExecutionLoop, FencedRelease, PlanValuation, RawTransactionSubmitter,
-                                         RoundTerminal, RunAuthorization)
+    from larp.execution_live.loop import (ExecutionLoop, FencedRelease, PlanValuation, RoundTerminal,
+                                         RunAuthorization, Web3Broadcaster)
     from larp.execution_live.service import ExecutionService
     from larp.execution_live.settlement import ReceiptFacts
     from larp.execution_live.signing import RemoteSigner
@@ -119,7 +118,9 @@ def build_execution(config, store, secrets, *, clock_s=None):
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id']))
     venue = LiveVenue(client, chain, decoder=UnverifiedRouter(),
-                      release=FencedRelease(registry, RawTransactionSubmitter(config['broadcast_rpc_url'])))
+                      release=FencedRelease(registry, Web3Broadcaster(
+                          key, secret, wallet=wallet,
+                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast'))))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:

@@ -17,7 +17,6 @@
   "chain_artifact_root": "/var/lib/larp-execution/chain",
   "rpc_url": null,
   "rpc_source_id": null,
-  "broadcast_rpc_url": null,
   "router": null,
   "token_decimals": {
     "NVDAB": null,
