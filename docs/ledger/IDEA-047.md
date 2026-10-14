@@ -97,3 +97,29 @@ swaps stay refused until a verified router decoder exists (GAP-29); the executio
 until the round driver lands.
 
 - 2026-10-14 CI (Claude): T01 → PASS. Linux CI run [38510435235](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38510435235) at `3aaa19c`: infrastructure (Terraform `deploy/aws`, `deploy/bootstrap`), runtime (pytest with PostgreSQL 14, demo, Docker smoke) and `host-bundle` (x86_64 bundle built from the pushed head and provisioned offline, both roles) all succeeded.
+
+## Review fixes R1–R2 (2026-10-14, Claude for the user). Prospective criteria
+
+From the PR #20 review (comments on `larp/audit/service.py` and `larp/execution_live/signing.py`). Written and pushed before any change or test run below. Synthetic receivers and requests only; no credentials, network or hosts.
+
+- **R1 · Round logs are retried until acknowledged.** Before this fix, `DeliveryWorker` marks a chunk `EXHAUSTED` after `max_attempts` transient failures (8 × 30 s by default) and never sends it again. The chunk then stays overdue, and the runtime guard's `DELIVERY_DEADLINE` HALT never clears for the rest of the run.
+  - A transient failure (network error, 429, 5xx, a non-ACK 200) leaves the chunk `PENDING`, at any attempt count. Delivery is retried with capped exponential backoff: `min(retry_ms × 2^(attempts−1), max_backoff_ms)`, with defaults 30 s and 300 s. `max_attempts` no longer exists. Permanent 4xx other than 429 stays `PERMANENT`, as before.
+  - The uploader configuration refuses `max_attempts` (exit 4, so an old file cannot silently keep the cap). It accepts `max_backoff_ms` ≥ `retry_ms`. `config/hosts/uploader.example.json` is updated.
+  - Tests:
+    1. 20 failed sends followed by a recovered receiver still end `ACK`.
+    2. The backoff grows and stops at the cap.
+    3. With the runtime guard: an outage past the delivery deadline raises the `DELIVERY_DEADLINE` HALT, and it clears once the receiver recovers and the chunk is ACKed.
+    4. The old test expecting `EXHAUSTED` is replaced by test 1.
+    5. The uploader configuration refuses `max_attempts`.
+- **R2 · One malformed signing request cannot stop the signer.**
+  - `read_request` checks every `Gates` field's type:
+    - `int` for `epoch`, `state_version`, `observed_at` and `expires_at`;
+    - `int` or `None` for `nonce` and `execution_version`;
+    - `bool` for the flags.
+    - A `bool` is never accepted where an `int` is required.
+  - In `SignerService.once`, a data-shape error while evaluating one request (`TypeError`, `ValueError`, `KeyError`, `AttributeError`, `OverflowError`) becomes a refusal for that request. A database outage (`larp.storage.postgres.Unavailable`) still stops the cycle unrefused, as documented.
+  - Tests:
+    1. A request with a string `observed_at`, a null `expires_at`, a `bool` epoch or a non-bool flag is refused with a reason, and the next valid request is still signed in the same cycle.
+    2. A database outage while evaluating is not turned into a refusal.
+
+Pass: the tests above, the full suite against PostgreSQL and Linux CI on the pushed head.
