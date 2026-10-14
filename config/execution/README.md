@@ -27,3 +27,38 @@ Each logger cycle records its committed code revision and all five names’ raw 
 PR14 review interfaces: `LiveGuards` reads current authorization facts, Web3 market status and chain nonce; missing facts never grant authority. Set `Gates.execution_version` separately from projection CAS `state_version`. The current PostgreSQL adapter derives execution authority from ownership epoch. Service and ReceiptFacts constructors require the controller's pinned `epoch` and `authority_version`; never read a newer lease on behalf of a stale process. HALT/revocation must quarantine or advance authority. The actual broadcaster must use `check_broadcast` plus fresh runtime release checks; generic epoch checks alone do not grant submission.
 
 Command mapping requires `limits.per_trade_cap_units` in six-decimal money units, payload `cash_units`, and explicit receive decimals. BNB minimums convert from declared planner scale to chain scale. Markets provide origin and paired-quote cost provenance; unavailable costs are explicit. Supply `quote_limits` from the independent policy, not from a quote. `session_candles` requires timestamp convention/evidence and adjustment provenance; it does not invent OPEN semantics. Final receipt facts use the agreed `receipt` object and pinned round-completion attestation. Aborted work publishes an immutable NOT_SUBMITTED fact for the runtime's reservation reducer; it never invents a REVERT or gas charge.
+
+## IDEA-049-C quote limits and native resource quotes
+
+Supply `MarketPort(..., quote_limits=accepted_profile)` with the independent
+profile's integer `slippage_bps`. Initial buy/sell quotes then use that cap;
+an explicit override cannot widen it. Unconfigured read-only measurements retain
+the previous 50bp sampling setting, which is not a production policy decision.
+
+Command mapping accepts the same limit in `limits['slippage_bps']`, binding it
+into immutable `Intent.max_slippage_bps`. `LiveVenue` uses this value for every
+initial and post-approval re-quote, and refuses a minimum output permitting a
+larger loss. The 50bp compatibility default exists for old fixtures/callers;
+the eventual driver must explicitly provide the frozen profile value. That
+wiring and the proposal-versus-router lifetime decision are separate owner work.
+
+`NativeGasQuotePort(client, wallet, quote_limits=accepted_profile,
+pay_units=accepted_profile['gas_top_up_cash_units'], receive_decimals=ledger_scale,
+quote_verifier=verified_native_quote)` is an injectable quote producer for the
+existing `gas_quotes(now_ms)` boundary. It only reads/builds USDT -> native BNB.
+It retains retrieval completion time and never backdates to `now_ms`.
+
+The injected verifier receives `(raw_response, request)` and must return the
+response's `source_hash`, decoded `Payload` and `SwapEconomics`, `route_valid`,
+`exact_gas_verified`, `fee_units` in six-decimal USDT units and `gas_bnb_units`
+in the explicit `request['receive_decimals']` accounting scale. Nonzero fees also
+require `fee_asset='USDT'` and `fee_decimals=6`. Gas must cover at least the decoded
+swap allowance; the verifier must qualify the complete approve-plus-swap budget.
+The producer independently checks route identity/economics, validity at retrieval,
+minimum output, policy caps and exact conversion of native 18-decimal amounts.
+It refuses incompatible scales rather than rounding down a minimum.
+
+With no qualified verifier it returns an empty quote list. No verified production
+router decoder is supplied by this change. Native receipt/trace proof, settlement,
+first gas and driver wiring remain blocked under #30/GAP-29/GAP-49. Quote-only
+fixtures do not authorize production signing or claim those capabilities passed.

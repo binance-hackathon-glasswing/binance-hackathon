@@ -2,7 +2,7 @@
 from functools import wraps
 from larp.execution import Blocked, DependencyUnavailable, Payload
 from larp.marketdata.web3 import single, Unavailable
-from larp.marketdata.port import integer
+from larp.marketdata.port import integer, slippage_percent
 
 
 def boundary(fn):
@@ -29,11 +29,15 @@ class LiveVenue:
     def quote(self,intent,nonce):
         r=self.client.request('GET','aggregator/quote-and-swap',dict(binanceChainId='56',amount=str(intent.amount),
              fromTokenAddress=intent.pay_token,toTokenAddress=intent.receive_token,userWalletAddress=intent.wallet,
-             vendor='LiquidMesh',slippagePercent='0.5'))
+             vendor='LiquidMesh',slippagePercent=slippage_percent(intent.max_slippage_bps)))
         d=single(r);tx=d['tx']
         if d.get('executionMode')!='SWAP' or d.get('rfq') is not None:raise Blocked('unknown execution mode')
         vendor = d.get('routerResult', {}).get('vendorName')
         if vendor != 'LiquidMesh':raise Blocked('unexpected quote vendor')
+        received = integer(d['routerResult']['toTokenAmount'])
+        minimum = integer(tx['minReceiveAmount'])
+        if not 0 < minimum <= received or minimum < received * (10000 - intent.max_slippage_bps) // 10000:
+            raise Blocked('fresh quote minimum output exceeds intent slippage limit')
         cash = intent.amount if intent.pay_token == '0x55d398326f99059ff775485246999027b3197955' else integer(d['routerResult']['toTokenAmount'])
         if intent.max_cash_units is not None and cash > intent.max_cash_units * 10**12:
             raise Blocked('fresh quote exceeds execution cash cap')
