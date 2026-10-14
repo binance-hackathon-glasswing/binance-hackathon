@@ -123,3 +123,17 @@ From the PR #20 review (comments on `larp/audit/service.py` and `larp/execution_
     2. A database outage while evaluating is not turned into a refusal.
 
 Pass: the tests above, the full suite against PostgreSQL and Linux CI on the pushed head.
+
+### R1–R2 results (2026-10-14)
+
+Criteria pushed at `5c6fbe9` before any change. Code and tests at `0ae5684`. Local run: Python 3.13 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 16, synthetic receivers and requests only.
+
+| ID | Result | Evidence |
+|---|---|---|
+| R1 | PASS | `DeliveryWorker` has no attempt cap. Backoff is `min(retry_ms·2^(n−1), max_backoff_ms)`, defaults 30 s / 300 s. Tests: `test_r1_transient_failures_never_exhaust_and_deliver_once_the_receiver_recovers` (20 × 503, then ACK), `test_r1_backoff_doubles_up_to_its_cap`, and `test_r1_a_long_receiver_outage_past_the_deadline_still_clears_the_halt` in `tests/runtime/test_supervision.py` (30 failures, `HALT:DELIVERY_DEADLINE`, then `CLEAR`). The uploader refuses `max_attempts` and `max_backoff_ms < retry_ms` with exit 4 (`test_u01_refusals_exit_4_without_secrets`). The example config is updated. |
+| R2 | PASS | `read_request` type-checks every `Gates` field. In `SignerService.once`, `TypeError`/`ValueError`/`KeyError`/`AttributeError`/`OverflowError` while evaluating one request becomes a refusal for that request. Tests: `test_r2_mistyped_gates_are_refused_and_the_cycle_continues` (string, null, bool, float and int-for-bool fields refused; the valid request is signed in the same cycle) and `test_r2_an_unexpected_data_error_is_a_refusal_but_an_outage_is_not` (`Unavailable` propagates, no refusal row). |
+
+- **Tests catch the bugs:** every new R1/R2 test, and both new uploader refusal subtests, fail against the pre-fix `larp/` files (7 failed). They pass at `0ae5684`.
+- **Full suite:** 1121 passed, 4 skipped (three Linux bubblewrap, one opt-in recorded-market), 1451 subtests.
+- **Linux CI:** [run 38515356112](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38515356112) at `0ae5684`, all jobs passed: runtime, host-bundle, Terraform `deploy/aws` and `deploy/bootstrap`.
+- **Not changed:** the archive outbox (`larp/runtime/maintenance.py`) keeps its own `max_attempts` → `EXHAUSTED` rule. An exhausted archive item makes maintenance unhealthy, which the archive alarm reports, but it does not HALT trading. Whether it should also retry indefinitely is left to its owner (Keegan).
