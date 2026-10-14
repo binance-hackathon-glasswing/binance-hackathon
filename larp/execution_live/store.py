@@ -109,7 +109,8 @@ class ExecutionStore:
                 for attempt in state.attempts:
                     if (state.status == 'ACTIVE' and attempt.state == 'BROADCAST_ATTEMPTED'
                             and attempt.broadcast_at is not None and attempt.tx_hash == signed.tx_hash
-                            and attempt.raw_hex == signed.raw_hex and attempt.epoch == epoch
+                            and self._signature(db, attempt.attempt_id, attempt.payload.hash) == signed
+                            and attempt.epoch == epoch
                             and attempt.guard_version == version):
                         return
             raise Conflict('signed bytes have no current possible-send authority')
@@ -157,7 +158,10 @@ class ExecutionStore:
                             or stored.attempts[-1].broadcast_at is not None
                             or current.status != 'ABORTED' or current.attempts[-1].state != 'ABORTED'):
                         raise Conflict('no-positive-unbroadcast evidence for revocation')
-                new = replace(current, revision=1 if previous is None else previous.revision + 1)
+                # This table is archive-readable. Only the restricted signature
+                # registry may retain capability to submit an unbroadcast transaction.
+                new = replace(current, revision=1 if previous is None else previous.revision + 1,
+                              attempts=tuple(replace(a, raw_hex=None) for a in current.attempts))
                 raw, checksum = canonical(asdict(new)).encode(), digest(asdict(new))
                 if stored is None:
                     db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
@@ -182,17 +186,27 @@ class ExecutionStore:
 
     def lookup(self, attempt_id, payload_hash):
         with self.store.transaction() as db:
-            row = db.execute('SELECT payload_hash,signed,signed_hash,run_id FROM execution_signatures '
-                             'WHERE attempt_id=%s', (attempt_id,)).fetchone()
-            if row is None:
+            signed = self._signature(db, attempt_id, payload_hash)
+            if signed is None:
                 return None
             state, attempt = self._attempt(db, attempt_id)
             if state.status == 'ABORTED' or attempt.state == 'ABORTED':
                 raise Conflict('attempt signing authority revoked')
+            return signed
+
+    def _signature(self, db, attempt_id, payload_hash):
+        """Read exact bytes inside the caller's transaction; no second run lock."""
+        row = db.execute('SELECT payload_hash,signed,signed_hash,run_id FROM execution_signatures '
+                         'WHERE attempt_id=%s', (attempt_id,)).fetchone()
+        if row is None:
+            return None
+        try:
             value = json.loads(bytes(row[1]))
             if row[0] != payload_hash or row[2] != digest(value) or row[3] != self.run_id:
                 raise Conflict('immutable signer registry mismatch')
             return Signed(**value)
+        except (ValueError, TypeError):
+            raise Conflict('immutable signer registry mismatch') from None
 
     def put_if_absent(self, attempt_id, payload_hash, signed, epoch, version):
         with self.store.transaction() as db:

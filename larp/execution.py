@@ -191,7 +191,7 @@ class Attempt:
     payload: Payload
     epoch: int
     guard_version: int
-    raw_hex: str | None = None  # Restricted store only; omitted from audit events.
+    raw_hex: str | None = None  # Offline fixtures only; PostgreSQL state strips bytes before committing.
     tx_hash: str | None = None
     broadcast_at: int | None = None
     probes: int = 0
@@ -445,6 +445,11 @@ class Executor:
         if (gates.epoch, gates.authority_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
+        signed = self.signer.lookup(attempt.attempt_id, attempt.payload.hash)
+        if signed is None:
+            raise Blocked('issued signature registry evidence missing')
+        if signed.tx_hash != attempt.tx_hash or not self.signer.verify(attempt.payload, signed):
+            raise Blocked('durable signer bytes mismatch')
         # Initialize post-submission recovery in the same durable transition as
         # the first possible send. Earlier absence checks cannot consume it;
         # retries/restarts of a possibly submitted attempt never reset it.
@@ -452,7 +457,7 @@ class Executor:
                           probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
         try:
-            tx_hash = self.venue.broadcast(Signed(attempt.raw_hex, attempt.tx_hash), attempt.epoch, attempt.guard_version)
+            tx_hash = self.venue.broadcast(signed, attempt.epoch, attempt.guard_version)
             phase = "PENDING" if tx_hash == attempt.tx_hash else "UNKNOWN"
         except (TimeoutError, ConnectionError):
             phase = "UNKNOWN"
