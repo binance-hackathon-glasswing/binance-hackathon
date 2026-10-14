@@ -271,7 +271,7 @@ class Coordinator:
         except Conflict:
             # Rejection is itself a durable outcome, never a silent lost round.
             record['errors'].append('COMMIT_REJECTED')
-            receipt=self.record_rejection(round_id,record)
+            receipt=self.record_rejection(round_id,record,updates)
             return receipt if defer_close else self.close(round_id,now_ms,'REJECTED')
         if not commands and not defer_close:
             return self.close(round_id,now_ms,'COMPLETE')
@@ -282,16 +282,23 @@ class Coordinator:
         return dict(schema='PlanResult.v1',snapshot_id=snapshot.snapshot_id,reasons=[reason],
                     intents=[],reservation_deltas=[],jobs=[],proposed_state={})
 
-    def record_rejection(self,round_id,record):
-        """Persist an observed rejection; replay must not retry its rejected plan."""
+    def record_rejection(self,round_id,record,updates=None):
+        """Persist an observed rejection; replay must not retry its rejected plan.
+
+        `updates` are the facts the context builder accepted this round (evidence state, adverse latches, versions).
+        They are facts about the world, not part of the rejected plan, so they are committed with the rejection
+        exactly as an accepted round would commit them, and journaled for replay (IDEA-049 D-FND-020, #51)."""
         current=self.store.load(self.run_id)
         # A rejected plan places nothing, so its log lists no orders (kit K11).
         record=dict(record,execution_pending=False,orders=[])
         projection=current.read()['projection']
+        projection.update(updates or {})
         projection.setdefault('round_records',{})[round_id]=record
         record_round_health(projection,record['errors'],record.get('decision_ms',record['started_ms']))
-        return self.store.commit(batch_for(current,'rejected:'+round_id,
-            dict(kind='PLAN_REJECTED',record=record),projection=projection))
+        event=dict(kind='PLAN_REJECTED',record=record)
+        if updates:
+            event['updates']=updates  # absent otherwise, so earlier rejections keep their bytes
+        return self.store.commit(batch_for(current,'rejected:'+round_id,event,projection=projection))
 
     def register_version(self,manifest,now_ms):
         """Commit the VERSION_REGISTERED event for this build before anything trades (F-60/F-61, never-do #5).
