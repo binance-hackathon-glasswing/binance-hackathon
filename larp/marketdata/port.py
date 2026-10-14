@@ -373,7 +373,7 @@ class NativeGasQuotePort:
                 or integer(rr['fromTokenAmount']) != amount or integer(tx['value']) != 0):
             raise Unavailable('native quote identity/economics rejected')
         received, minimum = integer(rr['toTokenAmount']), integer(tx['minReceiveAmount'])
-        if not 0 < minimum <= received or minimum * 10000 < received * (10000 - self.limits['slippage_bps']):
+        if not 0 < minimum <= received or minimum < received * (10000 - self.limits['slippage_bps']) // 10000:
             raise Unavailable('native quote minimum output exceeds slippage limit')
         proof = self.verifier(raw, request) if self.verifier is not None else None
         if proof is None:
