@@ -292,8 +292,10 @@ class Composition(unittest.TestCase):
             self.assertTrue(example[key].startswith('/var/lib/larp-runtime/'))  # the unit's StateDirectory
         self.assertTrue(example['driver']['market_artifact_root'].startswith('/var/lib/larp-runtime/'))
         self.assertFalse([k for k in json.dumps(example).lower().split('"') if 'private' in k or 'mnemonic' in k])
+        ca = self.root / 'rds-ca.pem'
+        ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n')
         filled = dict(example, run_id='run', build_id='a' * 40, wallet_address=self.wallet, database_host='db.invalid',
-                      database_ca_sha256='0' * 64)
+                      database_ca_file=str(ca), database_ca_sha256=hashlib.sha256(ca.read_bytes()).hexdigest())
         validate_config(filled)
 
     def test_d7_main_maps_refusals_to_exit_codes_without_restart_loops(self):
