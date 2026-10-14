@@ -17,15 +17,21 @@ from larp.integration.settlement import ExecutionBridge, settle
 from larp.research.fixtures import with_quotes
 from larp.risk.accounting import roll_day, update_risk
 from larp.runtime.coordinator import Coordinator, batch_for
+from larp.runtime.fixtures import assess as model_response
 from larp.strategy.schema import equity, instant
 from larp.strategy.profiles import build_live_profiles
 from tests.strategy.live_fixtures import live_snapshot, summary
 from tests.support import DatabaseCase, request
 
 
-class UnavailableModel:
+class SyntheticModel:
+    def __init__(self, observations):
+        self.observations = observations
+
     def assess(self, request):
-        raise TimeoutError("Synthetic external model outage")
+        if self.observations["day"] >= 4:
+            raise TimeoutError("Synthetic external model outage")
+        return model_response(request)
 
 
 class FourteenDayRun(DatabaseCase):
@@ -34,7 +40,7 @@ class FourteenDayRun(DatabaseCase):
         seed = live_snapshot(now=start, held={s: 4000 for s in ("NVDAB", "GOOGLB", "MSFTB", "TSLAB")})
         p = build_live_profiles(summary(), Document.from_dict(json.loads(CONFIG.read_text())))['FINAL'].read()
         # Candidate amounts remain synthetic and confer no LIVE release authority.
-        p.update(mode="OFFLINE", values_origin="SYNTHETIC")
+        p.update(mode="OFFLINE_FIXTURE", values_origin="SYNTHETIC")
         profile_hash = Document.from_dict(p).digest("StrategyProfile.v1")
         ledger = seed.context.read()["portfolio"]
         ledger.update(run_id="run", wallet_id="wallet", mode="OFFLINE")
@@ -49,7 +55,7 @@ class FourteenDayRun(DatabaseCase):
             health=lambda _: {"integrity_ok": True, "journal_ok": True, "ownership_ok": True,
                               "clock_ok": True, "new_spending_ok": observed["day"] < 4},
             calendar=lambda _: {"index": observed["session"], "remaining": 14 - observed["day"]})
-        runtime = Coordinator(self.store, UnavailableModel(), StrategyPolicy(),
+        runtime = Coordinator(self.store, SyntheticModel(observed), StrategyPolicy(),
             RuntimePlanner(job_validity_ms=60000, job_max_attempts=3), execution=ExecutionBridge(),
             run_id="run", version_id="b-synthetic-14-day", profile_hash=profile_hash,
             address="0x" + "1" * 40, context_builder=builder,
@@ -97,6 +103,9 @@ class FourteenDayRun(DatabaseCase):
                 record = self.store.load("run").read()["projection"]["round_records"][round_id]
                 result = record["plan"]
                 plans.append(result)
+                assert result["risk_state"] is not None, record["errors"]
+                if day < 4:
+                    assert record["policy_output"] is not None, record["errors"]
                 assert all(i["side"] == "SELL" and i["symbol"] in snap.universe for i in result["intents"])
                 if day == 4:
                     assert result["risk_state"]["daily_halt"] and result["risk_state"]["run_halt"] and result["risk_state"]["deep_cut"]

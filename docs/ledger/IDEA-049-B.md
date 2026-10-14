@@ -128,6 +128,11 @@ hook; replay recomputes policy/planner/settlement, not that missing scheduler.
 Published Class1/2 evidence is separately exercised by existing real-producer
 tests; this replay does not fabricate an evidence producer or economic edge.
 
+First replay run at b26dff8:1 failed,1 passed,2.43s. Test setup used unsupported
+profile mode OFFLINE rather than OFFLINE_FIXTURE, so risk output was absent;
+not an application finding. Correct the synthetic mode and explicitly assert
+real policy output before the day4 external-model outage. Loss assertions remain.
+
 ## For other sections
 
 C/D own driver, signer, first-BNB and authoritative chain-fact integration.
