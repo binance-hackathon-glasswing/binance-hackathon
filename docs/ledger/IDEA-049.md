@@ -167,3 +167,33 @@ All review topics are dispositioned above. The driver and original trading-revie
 record remain explicit owner inputs. PR #21 is open/mergeable, still stacked on
 #20; no PR was approved, retargeted or merged into its target by this task. Local
 main was fast-forwarded to its already-published origin/main for synchronization.
+
+### PR21-V3 — retarget after PR #20 merge (D, 2026-10-14)
+
+Inputs checked read-only before this entry: PR #20 MERGED into
+`codex/system-testing-20261012` at 2026-10-14T11:27:54Z (19:27 SGT) as merge
+commit `faf9adc`, so **Day 0 = 2026-10-14 SGT** for the README milestones
+(catalogues frozen by end of 2026-10-16 SGT, phase-2 pre-registration by end of
+2026-10-17 SGT), counted only once PR #21 is integrated and the driver
+disposition is recorded. PR #21 conflicted with the new base (DIRTY) on
+`docs/LEDGER.md` only. Tracker #22 still lists exactly #23–#40 (no new child
+findings). The driver branch `claude/pre-deployment-review-4zxz7p` is unchanged
+at `2caeaed` with no PR, so the driver disposition remains open.
+
+Action: ordinary merge of `origin/codex/system-testing-20261012` (`faf9adc`)
+into this branch as `8d6cc4a`, keeping the incoming IDEA-047 row (R14–R15) and
+this IDEA-049 row; retarget PR #21 to `codex/system-testing-20261012`.
+
+Prospective checks, recorded before execution:
+- PR21-V3a: the PR #21 diff against its new base contains only this package's
+  files (prompts, records, shared-doc entries, runner change and its test); no
+  incoming PR #20 file appears as a PR #21 change.
+- PR21-V3b: `tests/runtime/test_system_test_branch.py` passes unchanged
+  (expect 5 tests, 11 subtests) on the merged head.
+- PR21-V3c: PR-head Linux CI passes all four jobs (runtime full suite with
+  real-systemd run, both Terraform roots, host bundle) on the pushed merged head;
+  full-suite counts are at least the base's recorded 1158 tests / 1480 subtests
+  plus this PR's +5 tests / +11 subtests, with no new failures or skips.
+- No AWS, credentials, signing, broadcast, organiser contact or section review.
+
+Results: NOT RUN at this criteria commit.
