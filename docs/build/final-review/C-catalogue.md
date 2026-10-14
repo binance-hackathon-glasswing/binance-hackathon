@@ -354,3 +354,21 @@ Native settlement requires transaction-bound proof, not unrelated balance deltas
 Every later check and its owner/deadline is recorded in IDEA-049-C's resumed
 closure table and requested shared backlog/runbook edits. Full section review and
 deployment remain blocked until those dependencies and host/measurement gates pass.
+
+## C-AMEND-004 — exact signer startup manifest, 2026-10-15 SGT
+
+Reason: source closure separates the submitted startup obligation from the
+existing per-transaction build mapping. This row and the corresponding
+same-build/different-manifest cases precede their new tests and fix.
+
+| ID | Statement | Source / short quote | Obligation | Acceptance | Use cases | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-058 | Before the signer starts, and before it releases a new signature, its verified release must match the active registered build and manifest hash. | DECLARED proposal_answers.md Reproducibility/Versions: “Every component checks its hash against the active registered version before it runs” | MUST | Startup missing/build/hash mismatches refuse before key loading; matching startup succeeds; queued and late registry manifest changes refuse new bytes. | C-UC-080/089/090 | yes with real PostgreSQL and synthetic releases/keys |
+
+| Use case | Trigger/state | Expected behaviour | Requirements |
+|---|---|---|---|
+| C-UC-089 | Valid local signer release differs from the active run manifest, even with the same commit. | Exit 4 before loading the key; no misleading started/signing-enabled report. | C-REQ-043/058 |
+| C-UC-090 | Manifest changes after request creation or before signature persistence. | Independently refuse new bytes under the run lock; existing signatures still reconcile. | C-REQ-037/043/058 |
+
+Proposal startup/version sentences and G03's signer aspect now map explicitly
+to C-REQ-058; D continues ownership of other service startup/manifest checks.
