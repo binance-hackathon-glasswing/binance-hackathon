@@ -152,12 +152,18 @@ class UploaderCommand(DatabaseCase):
 
     def test_r14_failed_fetch_then_restart_delivers_committed_log(self):
         from larp.audit.protocol import build_event
-        from larp.runtime.coordinator import batch_for
         audit = build_event(event_id='evt-r14', round_id='round-r14', version_id='synthetic', decision_ids=[],
                             address=WALLET, timestamp_ms=100, input_record={'synthetic': True},
                             rationale='synthetic hold', output='HOLD', orders=[])
-        batch = batch_for(self.store.load('live-run'), 'r14', {'kind': 'SYNTHETIC'}, audit=[audit])
-        self.store.commit(batch)
+        # Seed a committed outbox fixture without activating the dev-mode run. Uploads must also drain while
+        # quarantined; no coordinator or signing authority is needed to reproduce the startup-fetch failure.
+        e = audit.read()
+        with self.store.transaction() as db:
+            db.execute('INSERT INTO audit_events VALUES(%s,%s,%s,%s,%s)',
+                       ('live-run', e['event_id'], e['round_id'], audit.payload, e['timestamp_ms']))
+            for index, body in enumerate(e['chunks']):
+                db.execute('INSERT INTO audit_chunks(run_id,event_id,chunk_index,body) VALUES(%s,%s,%s,%s)',
+                           ('live-run', e['event_id'], index, body.encode()))
         args = self.args()
         out = io.StringIO()
         with redirect_stdout(out):
