@@ -96,7 +96,11 @@ class SigningProtocol(SigningCase):
         from larp.signer.local import verify
         stored = self.execution.lookup(attempt.attempt_id, attempt.payload.hash)
         self.assertTrue(verify(attempt.payload, stored))
-        self.assertEqual((signed.raw_hex, signed.tx_hash), (stored.raw_hex, stored.tx_hash))
+        # C-REQ-012: execution state is archive-readable, so only the restricted
+        # signer port returns bytes. Keep the original exact byte/hash comparison.
+        released = self.remote.sign(attempt.attempt_id, attempt.payload, attempt.epoch, attempt.guard_version)
+        self.assertEqual((released.raw_hex, signed.tx_hash), (stored.raw_hex, stored.tx_hash))
+        self.assertIsNone(signed.raw_hex)
         from eth_account import Account
         self.assertEqual(Account.recover_transaction(stored.raw_hex).lower(), self.wallet)
         before = self.signatures()
