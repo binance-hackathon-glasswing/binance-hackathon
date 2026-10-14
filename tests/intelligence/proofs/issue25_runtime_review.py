@@ -19,7 +19,8 @@ def main():
     s = snapshot(held={'NVDAB': 2000}, now=datetime(2026, 10, 11, 16, tzinfo=timezone.utc))
     s = replace(s, policy_state=replace(s.policy_state, data=Document.from_dict(
         {'lifecycle': {'NVDAB': {'last_review_session': 70}}})))
-    s = changed(s, markets=MarketPort(Client(), '0x' + '1' * 40)(0))
+    s = changed(s, markets=[m for m in MarketPort(Client(), '0x' + '1' * 40)(0)
+                            if m['symbol'] in s.universe])
     proposal = decide(s, s.policy_state)
     jobs = RuntimePlanner(job_validity_ms=86400000, job_max_attempts=3)._jobs(s, proposal, int(s.observed_at.timestamp()*1000))
     wanted = load_registry().by_token('NVDAB').issuer_id

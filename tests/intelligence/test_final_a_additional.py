@@ -1,14 +1,23 @@
 """Additional source-derived A catalogue probes, preregistered before their first run."""
 from datetime import datetime, timezone
+from unittest.mock import patch
+from larp.intelligence.common import IntelligenceError
 from larp.intelligence.agent import EvidenceAssessor
 from larp.intelligence.models import RuleBaselineModel
 from larp.intelligence.scenarios import doc, page, p
-from larp.integration.contract import red_flag_directives
+from larp.integration.contract import red_flag_directives, problem
 from tests.intelligence.test_final_a_requirements import RealEvidence, NONRELIANCE
 from tests.intelligence.test_red_flags import enabled_profile
 
 
 class AdditionalEvidence(RealEvidence):
+    def test_a_req_020_unavailable_identity_registry_cannot_accept_self_matching_ids(self):
+        self.assess(self.add(780, NONRELIANCE))
+        context = self.context(ticker=self.entry.issuer_id)
+        markets = {self.entry.token: {'underlying_id': self.entry.issuer_id}}
+        with patch('larp.integration.contract._issuer_registry', side_effect=IntelligenceError('broken registry')):
+            self.assertEqual(problem(context, markets=markets), 'WRONG_ISSUER')
+
     def test_a_req_010_future_acceptance_within_clock_tolerance_is_not_decision_input(self):
         accession = f'{self.entry.cik:010d}-26-000781'
         future = datetime.fromtimestamp((self.clock() + 1000) / 1000, timezone.utc).isoformat()

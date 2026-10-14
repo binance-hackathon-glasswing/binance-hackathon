@@ -172,3 +172,13 @@ Pre-register before execution:
 - **A-T15 / A-REQ-020/022, #25 cross-owner path:** explicitly run `PYTHONPATH=. python tests/intelligence/proofs/issue25_runtime_review.py`; a real policy review produced from actual NVDA market metadata must schedule canonical SEC issuer identity. The mapper implementation belongs to D (`larp/integration/runtime.py`) and must not be edited by A without an explicit exception/written owner OK. A failing explicit proof remains P1 even if default discovery is green.
 
 No implementation change for A-T12–15 yet. New tests/proof are pushed before they run. User scope answer for the existing red-team pagination fixture is still pending; no outside-exclusive test path changed.
+
+### Amendment 7: second-round proofs and identity-loader fault criterion
+
+At pushed `63109ad09f723b9a04b3cdd0f89a0ffa12c3c2c2`, focused **2 failed / 377 passed / 1028 subtests passed**, full **5 failed / 1243 passed / 7 skipped / 1571 subtests passed**, 195.22 s. A-T12 proves future acceptance can enter decision inputs within clock tolerance: **A-FND-009, P0**, because RULE-PAGE F-20 forbids unavailable inputs. A-T14 proves missing declared assessment dimensions: **A-FND-010, P1**. A-T13's current impairment determination already passes on this base; #47's second symptom is not reproduced for this exact narrow current-determination text. Broader “will record” is not automatically current fact.
+
+Linux CI `38606727414` is FAILED (runtime); host-bundle and infrastructure jobs passed. Logs: `focused-round2.log`, `full-round2.log` in the external artifact directory. The remaining full-suite failures are the two new requirements, old red-team history-only HTTP map, and copied strategy producer golden. A prepared test-only diff for the last two paths is `/private/tmp/larp-final-a-artifacts/requested-test-exception.patch`; explicit user scope exception requested because both are outside A paths. No outside application code changed.
+
+A-T15 first run failed during fixture setup because actual MarketPort contains SKHYB but the research snapshot universe has four tokens. Filter boundary rows to that fixture universe, preserving actual identity/metadata and real policy/mapper; push before rerunning. That setup error is not evidence of #25's runtime symptom.
+
+Additional prospective A-T16 / A-REQ-020: when the canonical identity registry cannot load, even equal supplied issuer/security strings cannot authorize a record. Inject only a registry-read failure into the real contract after real ingest/assessment; expect WRONG_ISSUER. Suspected first-fix fallback accepts self-matching IDs after loader failure. This criterion/test is committed and pushed before execution and before any fix.
