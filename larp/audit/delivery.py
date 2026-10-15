@@ -11,6 +11,7 @@ from larp.contracts import Document
 from larp.storage.postgres import Conflict,doc
 
 BASE_URL = 'https://api.commonservice.io/ai-seeds-event-log'
+PAYLOAD_REFUSALS = (400,413,422)
 
 
 def deadline_breaches(db,run_id,now_ms):
@@ -21,12 +22,21 @@ def deadline_breaches(db,run_id,now_ms):
         (run_id,breach_cutoff_ms(now_ms)))]
 
 
+def unlogged_rounds(projection,now_ms):
+    """Open rounds with planned orders and no round log yet, started before the current upload deadline.
+
+    Their log does not exist yet, so `deadline_breaches` cannot see them (IDEA-049 D-FND-002, #28)."""
+    cutoff=breach_cutoff_ms(now_ms)
+    return sorted(r for r,rec in (projection.get('round_records') or {}).items()
+                  if not rec.get('logged') and rec.get('started_ms',now_ms)<cutoff)
+
+
 def delivery_status(db,run_id):
     """Delivery proof per audit event (DR-07, IDEA-042 L7).
 
     An event is DELIVERED only when every chunk its document lists is ACK with the receiver's acknowledgement stored.
-    FAILED: a chunk was refused permanently (4xx), or exhausted its attempts under a build before IDEA-047 R1; it
-    stays visible. PENDING otherwise.
+    FAILED: a chunk's payload was refused (400/413/422), or exhausted its attempts under a build before IDEA-047 R1;
+    it stays visible. Other refusals stay PENDING and are retried until acknowledged. PENDING otherwise.
     `pending_chunks` is a health figure only: an empty outbox never makes an event DELIVERED.
     """
     # One grouped query for all chunks (IDEA-042 V7): the cost does not grow with one query per event.
@@ -118,7 +128,12 @@ class DeliveryWorker:
         if type(code) is not int:
             code=0
         ack=code==200 and body.get('status')=='STORED' and body.get('eventId')==event_id and body.get('chunkIndex')==index
-        permanent=400<=code<500 and code!=429
+        # Only a refusal of the payload itself is permanent (PROTOCOL §5: 400 VALIDATION_FAILED, 413 PAYLOAD_TOO_LARGE,
+        # 422): resending the same bytes cannot succeed. Every other refusal can clear without a change to the bytes,
+        # e.g. 401 TIMESTAMP_SKEW once the clock is right, 401 INVALID_SIGNATURE/INVALID_CREDENTIAL once the wallet's
+        # secret is registered, 403/408/409. Those keep the same backoff as a transient failure, so the log is
+        # delivered and a DELIVERY_DEADLINE HALT clears with no person acting (F-114; IDEA-049 D-FND-001, #50).
+        permanent=code in PAYLOAD_REFUSALS
         status='ACK' if ack else ('PERMANENT' if permanent else 'PENDING')
         with self.store.transaction() as db:
             if self.store._run(db,run_id)['epoch']!=epoch:

@@ -11,6 +11,18 @@ import json
 from larp.runtime.live import RUNTIME_SECRETS, LiveStartRefused, NOT_ON_RUNTIME
 
 
+# Definite answers from Secrets Manager: restarting the same configuration cannot cure them, so the start is refused
+# (exit 4). Every other failure (throttling, 5xx, timeouts, connection errors, credentials not yet available at boot)
+# is retried by the supervisor (exit 1): a refusal there would leave the agent down until a person acts (F-114;
+# IDEA-049 D-FND-003, #43).
+DEFINITE_SECRET_ERRORS = frozenset(('ResourceNotFoundException', 'AccessDeniedException', 'AccessDenied',
+                                    'InvalidParameterException', 'InvalidRequestException', 'DecryptionFailure'))
+
+
+class SecretsUnavailable(RuntimeError):
+    """A transient secret-store failure; carries the error type only, never provider text or a value."""
+
+
 class Secrets(dict):
     """A name -> value mapping whose repr names the keys only."""
 
@@ -26,8 +38,13 @@ def load_runtime_secrets(client, secret_id):
         raise LiveStartRefused('No runtime secret source configured (runtime_secret_id)')
     try:
         raw = client.get_secret_value(SecretId=secret_id)['SecretString']
-    except Exception as exc:  # the provider's message is not trusted to be value-free; only its type is kept
-        raise LiveStartRefused('Runtime secret unavailable: ' + type(exc).__name__) from None
+    except Exception as exc:  # the provider's message is not trusted to be value-free; only its type/code is kept
+        code = getattr(exc, 'response', {}).get('Error', {}).get('Code') if isinstance(
+            getattr(exc, 'response', None), dict) else None
+        if code in DEFINITE_SECRET_ERRORS:
+            raise LiveStartRefused('Runtime secret unavailable: ' + code) from None
+        raise SecretsUnavailable('Runtime secret temporarily unavailable: ' + (
+            code if type(code) is str and code.isalnum() else type(exc).__name__)) from None
     try:
         values = json.loads(raw)
     except (TypeError, ValueError):

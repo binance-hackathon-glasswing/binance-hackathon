@@ -70,6 +70,23 @@ resource "aws_cloudwatch_metric_alarm" "recover" {
   alarm_actions       = concat(["arn:aws:automate:${var.region}:ec2:recover"], local.alarm_actions)
   dimensions          = { InstanceId = each.value.id }
 }
+# An instance-status failure (kernel panic, memory exhaustion, broken network configuration) is not a hardware fault,
+# so `recover` does not act on it. A reboot keeps the instance, its disks and its address; the services start again
+# under systemd with no person acting (F-114; IDEA-049 D-FND-017, #60).
+resource "aws_cloudwatch_metric_alarm" "reboot" {
+  for_each            = aws_instance.host
+  alarm_name          = "${var.name}-${each.key}-auto-reboot"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 3
+  metric_name         = "StatusCheckFailed_Instance"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = concat(["arn:aws:automate:${var.region}:ec2:reboot"], local.alarm_actions)
+  dimensions          = { InstanceId = each.value.id }
+}
 resource "aws_cloudwatch_metric_alarm" "maintenance" {
   for_each            = toset(["Healthy", "Heartbeat"])
   alarm_name          = "${var.name}-archive-${lower(each.key)}"

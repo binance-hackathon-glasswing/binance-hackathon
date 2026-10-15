@@ -1,7 +1,8 @@
 [Unit]
 Description=LARP runtime (supervised; restarts the same registered build, no manual step)
 Wants=network-online.target
-After=network-online.target
+# The clock must be synchronised before decisions and log timestamps (±5 min upload window; IDEA-049 D-FND-019).
+After=network-online.target time-sync.target
 # No start limit: a crashed agent is always restarted (IDEA-035 C5). Each restart is a journal incident.
 StartLimitIntervalSec=0
 ConditionPathExists=/etc/larp/runtime.json

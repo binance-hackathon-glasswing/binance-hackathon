@@ -39,6 +39,9 @@ ProtectControlGroups=true
 RestrictSUIDSGID=true
 LockPersonality=true
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# The poller parses untrusted internet content and needs no AWS call, so it may not reach the instance metadata
+# service and the primary role's credentials (IDEA-049 D-FND-018, #61).
+IPAddressDeny=169.254.169.254/32
 CapabilityBoundingSet=
 UMask=0007
 MemoryMax=512M

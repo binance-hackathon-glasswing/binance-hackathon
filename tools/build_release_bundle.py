@@ -21,6 +21,7 @@ read access there through the S3 gateway endpoint). Nothing here contacts AWS.
 """
 
 import argparse
+import gzip
 import hashlib
 import io
 import json
@@ -198,7 +199,10 @@ def build(root, arch, out, *, region='ap-southeast-2', git=git, fetch=fetch, whe
         write_checksums(bundle)
         out.mkdir(parents=True, exist_ok=True)
         archive = out / (name + '.tar.gz')
-        with tarfile.open(archive, 'w:gz', format=tarfile.PAX_FORMAT) as tar:
+        # A fixed gzip header (no time, no name) and normalized entries make the archive a function of its inputs
+        # only, so anyone can rebuild the bundle CI hashed (IDEA-049 D-FND-011, #49).
+        with open(archive, 'wb') as raw, gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as packed, \
+                tarfile.open(fileobj=packed, mode='w', format=tarfile.PAX_FORMAT) as tar:
             for path in [bundle] + sorted(bundle.rglob('*')):
                 info = reset(tar.gettarinfo(str(path), arcname=path.relative_to(bundle.parent).as_posix()))
                 info.mode = 0o755 if path.is_dir() or path.name == 'provision.sh' else 0o644

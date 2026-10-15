@@ -102,7 +102,8 @@ def load_register(root):
     validate_deviations(deviations, proposal.read_text(encoding='utf-8'))
     return dict(schema='ReleaseRegister.v1', services_sha256=services_sha, deviations_sha256=deviations_sha,
                 services=len(services['services']), deviations=len(deviations['rows']),
-                open_deviations=sorted(r['id'] for r in deviations['rows'] if r['decided'] == 'OPEN'))
+                open_deviations=sorted(r['id'] for r in deviations['rows'] if r['decided'] == 'OPEN'),
+                draft_deviations=sorted(r['id'] for r in deviations['rows'] if r['status'] == 'DRAFT'))
 
 
 def render(doc):

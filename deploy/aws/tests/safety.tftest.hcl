@@ -47,7 +47,7 @@ run "safe_defaults" {
     error_message = "Lean defaults: single-zone database and no billed log export."
   }
   assert {
-    condition     = aws_vpc_endpoint.s3.vpc_endpoint_type == "Gateway" && length(aws_budgets_budget.monthly) == 0
+    condition     = aws_vpc_endpoint.s3.vpc_endpoint_type == "Gateway" && length(aws_budgets_budget.monthly) == 0 && length(aws_budgets_budget.credit) == 0
     error_message = "Only the free S3 gateway endpoint; no budget without a recipient."
   }
   assert {
@@ -79,6 +79,10 @@ run "host_isolation" {
   assert {
     condition     = length(aws_cloudwatch_metric_alarm.recover) == 2
     error_message = "Each host recovers automatically from an AWS hardware fault."
+  }
+  assert {
+    condition     = length(aws_cloudwatch_metric_alarm.reboot) == 2 && alltrue([for a in aws_cloudwatch_metric_alarm.reboot : a.metric_name == "StatusCheckFailed_Instance" && contains(a.alarm_actions, "arn:aws:automate:ap-southeast-2:ec2:reboot")])
+    error_message = "Each host reboots automatically on an instance-status failure (IDEA-049 D-FND-017)."
   }
 }
 run "internet_reaches_primary_only" {
@@ -136,6 +140,10 @@ run "budget_alerts_with_recipient" {
   assert {
     condition     = length(aws_budgets_budget.monthly) == 1 && aws_budgets_budget.monthly[0].limit_amount == "90.00" && length(aws_budgets_budget.monthly[0].notification) == 3
     error_message = "A monthly budget alerts at 50, 75 and 90 percent of actual spend."
+  }
+  assert {
+    condition     = length(aws_budgets_budget.credit) == 1 && aws_budgets_budget.credit[0].limit_amount == "100.00" && aws_budgets_budget.credit[0].time_period_end == "2027-04-12_00:00" && length(aws_budgets_budget.credit[0].notification) == 4
+    error_message = "A budget over the whole credit period alerts against the $100 credit (IDEA-049 D-FND-016)."
   }
   assert {
     condition     = !aws_budgets_budget.monthly[0].cost_types[0].include_credit
