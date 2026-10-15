@@ -224,6 +224,40 @@ def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quot
     return summary, report
 
 
+def run_capture(market, out_dir, *, round_fn=capture_round, until=None, rounds=None, interval_seconds=600,
+                now=lambda: datetime.now(timezone.utc), sleep=time.sleep, log=lambda line: None, **round_options):
+    """Capture rounds until `until` (UTC ISO time) or for `rounds` rounds; returns how many ran.
+
+    One file per UTC day (`capture-YYYY-MM-DD.jsonl`), appended round by round, so a stop loses at most the round in
+    progress. An unexpected error in a round becomes a FAILURE record (stage ROUND) and the loop goes on (Q8, Q9)."""
+    if (until is None) == (rounds is None):
+        raise ContractError('Give exactly one of --until and --rounds')
+    if interval_seconds < 0:
+        raise ContractError('Invalid interval')
+    end = None if until is None else datetime.fromisoformat(until.replace('Z', '+00:00')).astimezone(timezone.utc)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    done = 0
+    while (now() < end) if end is not None else done < rounds:
+        started = now()
+        try:
+            records = round_fn(market, **round_options)
+        except Exception as error:  # one bad round never ends a multi-day capture
+            records = [dict(kind='FAILURE', symbol=None, stage='ROUND', reason=type(error).__name__,
+                            at=started.isoformat(timespec='milliseconds').replace('+00:00', 'Z'))]
+        path = out / f'capture-{started.date().isoformat()}.jsonl'
+        with path.open('a', encoding='utf-8') as f:
+            for record in records:
+                f.write(json.dumps(record, sort_keys=True) + '\n')
+        done += 1
+        log(f'{started.isoformat(timespec="seconds")} round {done}: '
+            f'{sum(r.get("kind") == "SAMPLE" for r in records)} samples, '
+            f'{sum(r.get("kind") == "FAILURE" for r in records)} failures -> {path.name}')
+        if (end is None and done < rounds) or (end is not None and now() < end):
+            sleep(interval_seconds)
+    return done
+
+
 def read_captures(directory):
     records = []
     for path in sorted(Path(directory).glob('capture-*.jsonl')):
@@ -243,7 +277,8 @@ def main(argv=None):
     c = sub.add_parser('capture', help='read-only quote capture (needs BINANCE_API_KEY / BINANCE_SECRET_KEY)')
     c.add_argument('--address', required=True, help='a public wallet address (quotes check no balance)')
     c.add_argument('--out-dir', required=True)
-    c.add_argument('--rounds', type=int, default=1)
+    c.add_argument('--rounds', type=int, help='run this many rounds (or use --until)')
+    c.add_argument('--until', help='capture until this UTC time, e.g. 2026-10-19T00:00:00Z')
     c.add_argument('--interval-seconds', type=float, default=600)
     c.add_argument('--cash-units', type=int, default=40_000_000, help='quote size in USDT money units (6 decimals)')
     c.add_argument('--requote-seconds', type=float, default=15)
@@ -266,18 +301,11 @@ def main(argv=None):
             out = Path(args.out_dir)
             out.mkdir(parents=True, exist_ok=True)
             market = MarketPort(Web3Client(key, secret, artifacts=Artifacts(str(out / 'artifacts'))), args.address)
-            path = out / f"capture-{_now().replace(':', '').replace('.', '')}.jsonl"
-            for n in range(args.rounds):
-                if n:
-                    time.sleep(args.interval_seconds)
-                records = capture_round(market, cash_units=args.cash_units, requote_seconds=args.requote_seconds,
-                                        fallback_gas_limit=args.fallback_gas_limit)
-                with path.open('a', encoding='utf-8') as f:
-                    for record in records:
-                        f.write(json.dumps(record, sort_keys=True) + '\n')
-                done = sum(r['kind'] == 'SAMPLE' for r in records)
-                print(f'round {n + 1}/{args.rounds}: {done} samples, '
-                      f'{sum(r["kind"] == "FAILURE" for r in records)} failures -> {path}')
+            rounds = args.rounds if args.rounds is not None or args.until else 1  # both together are refused
+            run_capture(market, out, until=args.until, rounds=rounds,
+                        interval_seconds=args.interval_seconds, log=lambda line: print(line, flush=True),
+                        cash_units=args.cash_units, requote_seconds=args.requote_seconds,
+                        fallback_gas_limit=args.fallback_gas_limit)
             return 0
         output = Path(args.output)
         report_path = output.with_name(output.stem + '.report.json')
