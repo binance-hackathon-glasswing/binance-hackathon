@@ -489,4 +489,17 @@ Pass criteria, written before the repair:
 
 Known limit, not covered by this repair: an echo split by whitespace or line breaks (MIME-style wrapping) is not reassembled.
 
-Status: regression committed with these criteria; application repair NOT YET COMMITTED; nothing run from this commit yet.
+Status: regression committed with these criteria in `6f364bb`; application repair NOT YET COMMITTED; nothing run from this commit yet. (The probe above and one local red run of the uncommitted regression came before this commit; the red run is repeated from the pushed commit in C-RESULT-013.)
+
+## C-RESULT-013 — C-FND-012 repair, mirror CI and merge (2026-10-15)
+
+Yao Zhu with Claude Code, at Yao's request to fix final review C, run CI on the mirror and merge.
+
+- Target `67df600` (PR69) is in PR70 through ordinary merge `14492cc`. The only conflict was the LEDGER row order; the IDEA-049-C, IDEA-054 and IDEA-049-D rows are all kept. Nothing was rewritten or force-pushed.
+- Red at pushed regression `6f364bb`: `tests/execution/test_section_c_broadcast.py` gives **188 failed subtests**, 10 passed tests, 223 passing subtests. Every earlier C-REQ-012 method still passes.
+- Repair `fc7a653` (`larp/marketdata/web3.py`): the Base64 token screen now tries all four start offsets, so attached text cannot shift the alignment, and it decodes the final partial group instead of discarding the token. A suffix only adds trailing bytes after the exact echo bytes, so no trimming is needed. Literal matching, hex case folding, duplicate-key screening and the public-evidence path are unchanged.
+- Green at `fc7a653`: focused broadcast + market-data **59 passed, 1 skipped, 473 subtests**. The scratch probe (504 combinations) finds **0** leaks.
+- Complete local suite at `fc7a653` (Python 3.13.16 / PostgreSQL 16, not the CI pins): **1385 passed, 7 skipped, 1 xfailed, 2026 subtests**. The expected failure is still the separate legacy/forged-row archive/export case.
+- **Mirror CI**, commit `fc7a653`: [larp-ci-mirror run 38712281044](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38712281044) (pull_request into the identical base `67df600`, mirror PR #2) is **green on all four jobs**. Terraform aws and bootstrap pass. Runtime on Python 3.12.15 / PostgreSQL 14.24 gives **1388 passed, 4 skipped, 1 xfailed, 2026 subtests**, real systemd **3 passed / 5 subtests**, and the offline demo and Docker build/run pass. The x86_64 host bundle passes. Push runs [38712261021](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38712261021) (this head) and [38712261945](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38712261945) (base `67df600`) are also green. This is mirror evidence on native x86_64 GitHub runners, not org-repo CI, which stays blocked by billing.
+
+This closes C-FND-011's remaining CI and merge item: PR70 is merged into `codex/system-testing-20261012` after this documentation commit. Still open with their owners: the legacy/forged-row archive/export expected failure (#23, D), MIME-style wrapped echoes (the known limit above), proposal/signing/router lifetimes, the signer's trust in primary-supplied facts, the router/decoder/native-receipt/first-BNB capability gates, canonical balance reconciliation and the real host/wallet rehearsal. No deployment, real credential, signing, broadcast or AWS action took place.
