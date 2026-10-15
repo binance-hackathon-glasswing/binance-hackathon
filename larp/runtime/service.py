@@ -224,9 +224,9 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                                  receive_decimals=run['projection']['portfolio']['bnb_decimals'])
     feed = MarketFeed(market, gas=gas)
     lifecycle = lifecycle_policy_from(intelligence)
-    builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'],
-                             issuers={i: dict(token=m['token'], underlying_id=m['underlying_id'])
-                                      for i, m in issuers.items()},
+    # One registry-validated issuer map for evidence contexts and review jobs (#25).
+    issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
+    builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
                              market=feed, health=RuntimeHealth(store, config['run_id'], run['epoch']),
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
@@ -234,7 +234,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                                 model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
     coordinator = Coordinator(store, assessor, StrategyPolicy(),
                               RuntimePlanner(job_validity_ms=intelligence.p('job_validity_ms'),
-                                             job_max_attempts=intelligence.p('job_max_attempts')),
+                                             job_max_attempts=intelligence.p('job_max_attempts'), issuers=issuer_map),
                               execution=ExecutionBridge(), run_id=config['run_id'], version_id=config['build_id'],
                               profile_hash=profile_hash, address=wallet, context_builder=builder,
                               initial_policy_state=initial_policy_state(config['run_id'], profile), clock_ms=clock_ms,
