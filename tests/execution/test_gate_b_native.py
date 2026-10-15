@@ -5,7 +5,7 @@ import unittest
 
 from larp.contracts import Document
 from larp.execution import Blocked, NATIVE_BNB, Execution
-from larp.execution_live.chain import ChainEvidence
+from larp.execution_live.chain import ChainEvidence, Rpc, native_trace_options
 from larp.execution_live.settlement import final_observation
 from larp.execution_live.settlement import ReceiptFacts
 from larp.execution_live.loop import PlanValuation
@@ -17,6 +17,8 @@ from tests.execution_fixtures import WALLET, ROUTER
 from tests.support import DatabaseCase
 from larp.runtime.coordinator import batch_for
 from larp.storage.postgres import doc
+from larp.marketdata.web3 import Artifacts
+import tempfile
 
 
 class NativeSettlement(unittest.TestCase):
@@ -60,6 +62,7 @@ class NativeSettlement(unittest.TestCase):
                    dict(original['native_balance'], wallet=ROUTER),
                    dict(original['native_balance'], nonce=4),
                    dict(original['native_balance'], before_wei=True),
+                   dict(original['native_balance'], source_id=True),
                    dict(original['native_balance'], trace_sha256='bad')]
         for change in changes:
             with self.subTest(change=change):
@@ -68,7 +71,12 @@ class NativeSettlement(unittest.TestCase):
                     self.observed()
 
     def test_gb_native_exact_pay_and_minimum_output_are_still_required(self):
+        original = deepcopy(self.proof)
         self.proof['native_balance']['after_wei'] = 10**15 - 500000 + 1
+        with self.assertRaises(Blocked):
+            self.observed()
+        self.proof = original
+        self.proof['receipt']['logs'][0]['data'] = '0x' + hex(self.intent.amount - 1)[2:].zfill(64)
         with self.assertRaises(Blocked):
             self.observed()
 
@@ -97,6 +105,18 @@ class NativeSettlement(unittest.TestCase):
 
 
 class NativeRPC(unittest.TestCase):
+    def test_gb_trace_transport_refuses_other_options_or_invalid_hash_before_io(self):
+        class NoIO:
+            def open(self, *a, **k):
+                raise AssertionError('invalid trace must not reach transport')
+        with tempfile.TemporaryDirectory() as root:
+            rpc = Rpc('https://rpc.invalid', artifacts=Artifacts(root), source_id='fixture',
+                      opener=NoIO(), native_trace=True)
+            for params in ([fixtures.HASH, {}], ['not-a-hash', native_trace_options()],
+                           [fixtures.HASH, dict(native_trace_options(), timeout='999h')]):
+                with self.subTest(params=params), self.assertRaises(Blocked):
+                    rpc.call('debug_traceTransaction', params)
+
     def rpc(self, *, enabled=True, bad=None):
         case = fixtures.SettlementTests()
         case.setUp()

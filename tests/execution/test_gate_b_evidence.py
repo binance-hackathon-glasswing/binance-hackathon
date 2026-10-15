@@ -16,6 +16,7 @@ from tests.marketdata.test_transport import Response
 from tests.execution import test_execution_loop as composition
 from tests.strategy.live_fixtures import summary, registry
 from larp.strategy.profiles import build_live_profiles
+from larp.research.fixtures import snapshot
 
 WALLET = '0x' + '5' * 40
 ROUTER = '0x' + '2' * 40
@@ -117,6 +118,13 @@ class ReportTests(unittest.TestCase):
     def test_gb_report_rejects_stale_or_wrong_wallet_chain_capture(self):
         with tempfile.TemporaryDirectory() as root:
             capture = ChainEvidenceTests().probe(root, ChainOpener())
+        capture['source_id'] = 'fixture-rpc'
+        raw = json.dumps(capture).encode()
+        path = self.root / 'chain.json'
+        path.write_bytes(raw)
+        inputs = deepcopy(self.inputs)
+        inputs['files']['chain'] = dict(path=str(path), sha256=hashlib.sha256(raw).hexdigest())
+        self.assertIn('snapshot checked', self.report(inputs)['checks']['DR-03']['detail'])
         for changes in (dict(wallet=ROUTER), dict(chain_id=1), dict(observed_at='2026-10-14T01:00:00Z')):
             with self.subTest(changes=changes):
                 raw = json.dumps(dict(capture, **changes)).encode()
@@ -125,6 +133,26 @@ class ReportTests(unittest.TestCase):
                 inputs = deepcopy(self.inputs)
                 inputs['files']['chain'] = dict(path=str(path), sha256=hashlib.sha256(raw).hexdigest())
                 self.assertEqual(self.report(inputs)['checks']['DR-03']['status'], 'BLOCKED')
+                self.assertIn('missing, blocked, stale or mismatched', self.report(inputs)['checks']['DR-03']['detail'])
+
+    def test_gb_report_initial_projection_checks_exact_funded_native_scale(self):
+        with tempfile.TemporaryDirectory() as root:
+            capture = ChainEvidenceTests().probe(root, ChainOpener())
+        capture['source_id'] = 'fixture-rpc'
+        ledger = snapshot().context.read()['portfolio']
+        ledger.update(mode='dev', run_id='run', wallet_id=WALLET, bnb_decimals=18, bnb_units=10**18)
+        inputs = deepcopy(self.inputs)
+        for name, value in (('chain', capture), ('initial_state', ledger)):
+            path = self.root / (name + '.json')
+            raw = json.dumps(value).encode()
+            path.write_bytes(raw)
+            inputs['files'][name] = dict(path=str(path), sha256=hashlib.sha256(raw).hexdigest())
+        self.assertIn('funding/18-decimal ledger checked', self.report(inputs)['checks']['DR-06']['detail'])
+        ledger['bnb_decimals'] = 6
+        raw = json.dumps(ledger).encode()
+        path.write_bytes(raw)
+        inputs['files']['initial_state']['sha256'] = hashlib.sha256(raw).hexdigest()
+        self.assertIn('absent or mismatched', self.report(inputs)['checks']['DR-06']['detail'])
 
     def test_gb_report_untrusted_ready_flag_is_rejected(self):
         with self.assertRaises(Blocked):
