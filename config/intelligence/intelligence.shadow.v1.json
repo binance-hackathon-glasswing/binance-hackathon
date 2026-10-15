@@ -3,7 +3,7 @@
   "provenance": {
     "set_by": "IDEA-025 (Yao Zhu build record), 2026-10-10",
     "budget": "plan.md G-50 [POLICY], adopted: <= 6 tool calls and 60 s per decision, <= 3 tool types; PARALLEL_BUILD.md repeats it",
-    "parameters": "Development values are synthetic defaults. IDEA-057: user approved these bounded values for unsigned dev-shadow operation on 2026-10-16; each explicit shadow value is scope-checked by the runtime. Signed/live values remain null pending team review",
+    "parameters": "Development values are synthetic defaults. IDEA-058: user approved these bounded values for unsigned dev-shadow operation on 2026-10-16; each explicit shadow value is scope-checked by the runtime. Signed/live values remain null pending team review",
     "bounds_and_lifecycle": "IDEA-031 S2.4-S2.5, 2026-10-10: work bounds (document chars, facts/statements per document, prior records, statement comparisons, model-input chars as a token proxy) and statement review lifecycle (attempts, backoff, retention). Synthetic development values chosen for offline tests, uncalibrated; live values null until a team decision",
     "severity": "mechanical 8-K item map: IDEA-007 Track A label source 1 (filer-assigned item codes) and IDEA-018's declared falsifier items {4.02, 1.05, 2.06}; keyword events cover 6-K filers, which have no item codes. Not a validated severity model"
   },

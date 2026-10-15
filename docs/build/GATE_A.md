@@ -1,6 +1,6 @@
-# Gate A: prepare and qualify the unsigned runtime (IDEA-057)
+# Gate A: prepare and qualify the unsigned runtime (IDEA-058)
 
-Use current main plus the reviewed IDEA-057 change. IDEA-050 already supplies the
+Use current main plus the reviewed IDEA-058 change. IDEA-050 already supplies the
 round driver and `service init` / `activate`; IDEA-054 supplies the calendar.
 Gate A is hosted shadow operation, with real data and official test-round logs.
 The preparation tool below never enables execution, signs, activates a run, reads
@@ -110,7 +110,7 @@ verified Linux CI release bundle, with its hash and manifest.
 4. Record the real receiver's durable per-event/chunk ACK; ingestion over 24 h;
    restart drill; hourly anchoring; role/TLS checks; allowed network routes;
    `chronyc tracking`; an alarm reaching its owner. Record commit, input hashes,
-   timestamps and artifacts in IDEA-057/IDEA-042 before claiming Gate A PASS.
+   timestamps and artifacts in IDEA-058/IDEA-042 before claiming Gate A PASS.
 
 See [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md) for DR-01/07/11/12/13/15/16/18/20.
 Gate B remains separate: router/decoder and provider capability proof, signer

@@ -1,4 +1,4 @@
-"""IDEA-057 GA01..GA06. Synthetic responses only; no network, real keys, signing or upload."""
+"""IDEA-058 GA01..GA06. Synthetic responses only; no network, real keys, signing or upload."""
 import copy
 import hashlib
 import json
@@ -248,7 +248,7 @@ class GateAComposition(PipelineHarness):
                 repository='synthetic', runtime_config_sha256=gate_a.digest(encoded(config)),
                 release_register=dict(services_sha256='a'*64, deviations_sha256='c'*64)))
             activate_run(config, self.store, manifest, reviewer='synthetic-reviewer',
-                         review_ref='IDEA-057-GA06', now_ms=clock())
+                         review_ref='IDEA-058-GA06', now_ms=clock())
             verify_registered_manifest(self.store, config, manifest)
             original = copy.deepcopy(self.store.load(config['run_id']).read()['projection']['portfolio'])
             secrets = dict(AI_SEEDS_ADDRESS=WALLET, BINANCE_API_KEY='synthetic-key', BINANCE_SECRET_KEY='synthetic-secret')

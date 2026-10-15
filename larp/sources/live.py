@@ -368,7 +368,7 @@ def preflight(env, config_mode: str = "live") -> list:
 
 
 def check_shadow_scope(runtime_path, *, release_manifest=None, release_root=None):
-    """Shadow settings never authorize signed/final operation (IDEA-057). Read-only; no secrets or DB calls."""
+    """Shadow settings never authorize signed/final operation (IDEA-058). Read-only; no secrets or DB calls."""
     from larp.contracts import ContractError
     from larp.runtime.preflight import verify_release, verify_runtime_config
     try:

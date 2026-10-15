@@ -46,7 +46,7 @@ class RecordedPorts:
         # ContextBuilder takes the portfolio's mode from the run. Replay runs
         # remain OFFLINE for safety, but the decision originally saw DEV/LIVE.
         # Preserve that recorded input in the copied builder only; never change
-        # the target store's mode or activate its signing capability (IDEA-057).
+        # the target store's mode or activate its signing capability (IDEA-058).
         mode = (context.get('portfolio') or {}).get('mode')
         if mode in ('OFFLINE', 'PAPER', 'DEV', 'LIVE'):
             return RecordedMode(recorded, mode.lower())

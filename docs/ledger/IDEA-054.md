@@ -54,7 +54,7 @@ Gate A (DEPLOYMENT_BUILD.md) needs host work, secrets and team decisions that ca
 
 ## Open items
 
-- 2026-10-16 update (IDEA-057): the source-capture task below is now verified. The exact NYSE calendar page was retained outside Git, SHA-256 `79602f7be5a8f1d39c2b1cac4dd02c4c07f18cf9f92d70602834069154719bad`; URL, date and artifact location are in IDEA-057 GA-V01. It matches the ten holidays and two early closes. Calendar bytes/pin unchanged; Keith's review remains open. The following capture request is historical.
+- 2026-10-16 update (IDEA-058): the source-capture task below is now verified. The exact NYSE calendar page was retained outside Git, SHA-256 `79602f7be5a8f1d39c2b1cac4dd02c4c07f18cf9f92d70602834069154719bad`; URL, date and artifact location are in IDEA-058 GA-V01. It matches the ten holidays and two early closes. Calendar bytes/pin unchanged; Keith's review remains open. The following capture request is historical.
 
 - Capture the NYSE source (press release or Holidays & Trading Hours page) with a date and SHA-256 and record both here. The calendar file cites the source but holds no capture hash, so recording it does not change the pinned file. Calendar owner (Keith) or any team member with access; the content does not change unless NYSE amends its schedule.
 - Keith's review of the file and of B3's handling of early closes.

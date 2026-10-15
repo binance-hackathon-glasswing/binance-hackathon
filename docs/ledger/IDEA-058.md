@@ -1,4 +1,6 @@
-# IDEA-057 — Gate A configuration assembly and startup qualification
+# IDEA-058 — Gate A configuration assembly and startup qualification
+
+- 2026-10-15 renumbered (Claude Code session, at Keegan's request): this entry was first written as IDEA-057, which PR #88 (QuoteCostSummary producer) had already claimed five minutes earlier. It is now IDEA-058 (freed by closing PR #89). Commit messages before the rename still say IDEA-057.
 
 - Date / owner: 2026-10-16 SGT / Keegan with Codex.
 - Status: repository implementation and local Linux qualification PASS at `5e4e974`; PR review/integration and hosted Gate A remain open.

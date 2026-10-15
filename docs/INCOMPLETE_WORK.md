@@ -4,9 +4,9 @@ Initial inventory: 2026-10-04, based on a review of all 17 repository Markdown f
 
 This is a live checklist. Remove an entire item once its work is fully completed and verified. Keep partial or blocked items, narrowing them to the remaining work. Preserve supporting decisions, test evidence, and experimental results in their authoritative documents before removal. IDs are stable; do not renumber surviving items. This checklist does not override the rules in `skill/SKILL.md` or the append-only experiment ledger.
 
-Gate A current work (2026-10-16, [IDEA-057](ledger/IDEA-057.md)): latest fetched
+Gate A current work (2026-10-16, [IDEA-058](ledger/IDEA-058.md)): latest fetched
 main is PR81 `e410e49`, which already includes driver/init/activate, calendar and
-#25 issuer separation. IDEA-057's branch supplies explicit unsigned `shadow`
+#25 issuer separation. IDEA-058's branch supplies explicit unsigned `shadow`
 evidence settings (user-approved existing bounded values, 15-minute cadence,
 5-minute day-roll window), pinned metadata/balance/profile/config assembly and a
 dev-shadow exact-replay repair; it does not enable signing. Remaining: user owns

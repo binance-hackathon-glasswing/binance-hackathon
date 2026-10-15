@@ -1,4 +1,4 @@
-"""Prepare Gate A without signing, activation or cloud provisioning (IDEA-057).
+"""Prepare Gate A without signing, activation or cloud provisioning (IDEA-058).
 
 capture: two read-only Web3 endpoints, from committed/pushed code; artifacts outside Git.
 prepare: assemble local ignored host inputs using a separately reviewed LIVE rehearsal profile.

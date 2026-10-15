@@ -1,7 +1,7 @@
 """Validated evidence-path configuration and opt-in live settings.
 
 Development mode uses the labelled synthetic defaults in config/intelligence/.
-Shadow mode uses the explicitly approved unsigned-development settings (IDEA-057);
+Shadow mode uses the explicitly approved unsigned-development settings (IDEA-058);
 runtime/ingestion entry points enforce its dev-shadow scope. Live mode
 refuses to start while any live parameter is unset, while the prompt file differs from its
 pinned hash, or while the model/EDGAR environment settings are missing. Secret values are
@@ -49,7 +49,7 @@ def load_config(mode: str = "development", base: Path = CONFIG_DIR) -> Intellige
         raise IntelligenceError("Unknown configuration mode")
     # Keep the existing development/live configuration bytes and hashes stable.
     # Shadow is a separately versioned operational choice, not a mutation of the
-    # synthetic evaluation inputs or pending final/live parameters (IDEA-057).
+    # synthetic evaluation inputs or pending final/live parameters (IDEA-058).
     raw, config_hash = _load("intelligence.shadow.v1.json" if mode == "shadow" else "intelligence.v1.json", base)
     if raw.get("schema") != "IntelligenceConfig.v1":
         raise IntelligenceError("Unknown evidence configuration schema")
