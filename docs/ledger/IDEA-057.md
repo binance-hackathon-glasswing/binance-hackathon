@@ -56,3 +56,13 @@ Synthetic Web3 responses only; no credentials or network.
 | Q7 | Full suite: the base count plus only these tests, no new failure or skip. |
 
 Not in scope: running real captures (owners, with the dev wallet's key), choosing the size or coverage for the frozen profile (owners' review), and pinning the summary or profiles.
+
+## Capture runner (2026-10-15, criteria recorded before the tests)
+
+Reason: `summarize` refuses without a weekend sample, so captures have to run through **Sat Oct 17 – Sun Oct 18 UTC**. The next weekend (Oct 24–25) falls after the rehearsal window opens (Oct 21). The owners need a runner they can start once and leave.
+
+| ID | Check |
+|---|---|
+| Q8 | `capture --until <UTC time> --interval-seconds S` keeps capturing until that time: one round, then a wait, repeated. It writes one capture file per UTC day (`capture-YYYY-MM-DD.jsonl`), appending each round as it finishes, so a stop loses at most the round in progress. |
+| Q9 | An unexpected error in one round is written as a `FAILURE` record with stage `ROUND`, and the loop continues. `--rounds` keeps working; `--until` in the past runs no round; `--until` and `--rounds` together are refused. |
+| Q10 | `tools/run_quote_capture.sh` reads the key pair from the environment or a `.env` file without printing it, refuses to start without it, and runs `capture --until` in the background with a log file, keeping a Mac awake (`caffeinate`) when available. Its usage line names the weekend deadline. |
