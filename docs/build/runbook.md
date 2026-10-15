@@ -20,7 +20,8 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    **Secrets (IDEA-042 S1–S4):** in `dev` and `live` the service reads one AWS Secrets Manager entry, named by `runtime_secret_id` (and `region`) in `/etc/larp/runtime.json`. It never reads the process environment.
    - The entry is `<name>/runtime`, readable only by the primary and standby hosts.
    - It is a JSON object with `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY` and `BINANCE_SECRET_KEY`, and nothing else for this host.
-   - The audit secret `AI_SEEDS_SECRET` belongs in `<name>/uploader`, and the wallet key in `<name>/signer`. Either one in the runtime entry refuses the start.
+   - The audit secret `AI_SEEDS_SECRET` belongs in `<name>/uploader` (for example `larp-dev/uploader`; the uploader's `uploader_secret_id`). Either it or a wallet key in the runtime entry refuses the start.
+   - The wallet key is **not** in Secrets Manager. It is a root-only file, `/etc/larp/signer/wallet.key` (`0600`), on the signer host's encrypted disk, which systemd hands to `larp-signer` with `LoadCredential` (IDEA-046 B2; `deploy/aws/hosts.tf`, `larp/signer/keyfile.py`). Terraform creates no `signer` secret.
    - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
@@ -32,6 +33,8 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - `execution`: `"shadow"` (every planned order ends `NOT_SUBMITTED`, reason `SHADOW_NO_SIGNING`) or `"service"` (committed commands go to the execution service), with `expiry_grace_ms` for service;
    - optionally `day_roll_window_ms` (daily risk anchor), `max_quote_rounds` and `max_quote_requests` (quote follow-up);
    - `assessor: "deterministic"`; a hosted model assessor exits 2 (not integrated).
+
+   `cycle_timeout_seconds` (top level of `runtime.json`, required in `dev` and `live`; example 600 s) is the watchdog: a cycle that runs longer ends the process for a supervised restart of the same build ([IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-004, #35).
 
    Each cycle: journal the execution service's observations and end commands that expired unclaimed (`COMMAND_EXPIRED_UNCLAIMED`); close finished rounds; **commit nothing while a command still waits for the execution service to claim it**; roll the daily anchor in the first `day_roll_window_ms` after UTC midnight (no roll means no new risk that day); then run at most one round (a scheduled review job first, then an ingested filing, otherwise one cadence round per slot), fetching the market before the round so its decision time follows the data. A round that asked for quotes gets at most `max_quote_rounds` follow-up rounds, only when an executable quote comes back. A missing or mismatched file, hash, issuer or setting exits 4. systemd restarts neither 2 nor 4. Round logs are uploaded by the uploader process, not by the runtime.
 
@@ -80,7 +83,7 @@ Backups include the journal, outboxes, process sessions and the execution store.
 
 ## 5. Final-wallet switch (Oct 27–29; GAP-52, C7) — **host** rehearsal at Gate C
 
-1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7). Place the final secrets in Secrets Manager only, each in its host's entry: runtime (`AI_SEEDS_ADDRESS`, Binance keys), uploader (`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`), signer (wallet key, `AI_SEEDS_ADDRESS`).
+1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7). Place the final secrets in Secrets Manager, each in its own entry: runtime (`AI_SEEDS_ADDRESS`, Binance keys) and uploader (`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`). The final wallet key is not a Secrets Manager entry: replace `/etc/larp/signer/wallet.key` (root, `0600`) on the signer host and set the final `wallet_address` in `/etc/larp/signer.json`.
 2. **Old run:** after the development run's last round, it must have no open round, reservation or pending command, and hold no token.
 3. **Switch:** `larp.runtime.live.switch_wallet(...)` opens a fresh run for the final wallet with its own `.ai-seeds/` and nonce directories, marked for that wallet. The new run starts quarantined. The switch record (old run, final head, new run) goes into the activation pack.
 4. **New run:** register the version for the final build (step 1.2) and start. The live-start checks refuse any address mismatch.
