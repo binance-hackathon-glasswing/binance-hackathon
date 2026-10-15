@@ -180,3 +180,12 @@ Criteria pushed at `292b1e9`; red tests at `021931c`; test corrections at `c853a
 - Mirror CI.
 - On the first hosted run: a manifested BSC RPC that supports the `finalized` tag, and egress to it from the primary host.
 - Q-20 for automatic adoption of dividend or split adjustments.
+
+### Mirror CI (2026-10-15)
+
+Org Actions is out of funds, so CI ran in the private mirror `Keegan4/keegan4-larp-ci-mirror`: the workflow is unchanged, on GitHub's own runners, with branches pushed by Keegan. This is mirror evidence, not org-repo CI.
+- **This branch at `608b85b`** (merge of `02e2be9` into the build): [run 38772178760](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38772178760). **All four jobs passed, every step.**
+  - runtime: `pip check`, full pytest on Python 3.12.15 / PostgreSQL 14.24, real systemd, offline demo, Docker build and smoke test;
+  - host bundle: build plus the provisioning test;
+  - Terraform: `deploy/aws` and `deploy/bootstrap` fmt, init, validate and test.
+- **Base `02e2be9`**: [run 38772174598](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38772174598), all four jobs passed.
