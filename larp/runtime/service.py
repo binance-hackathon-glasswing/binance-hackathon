@@ -14,6 +14,7 @@ refused (live-start checks, configuration, release or session contract). 2, 3 an
 """
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import math
@@ -136,7 +137,27 @@ def open_store(config):
 DRIVER_KEYS = ('execution', 'assessor', 'intelligence_mode', 'evidence_root', 'market_artifact_root', 'cadence_ms',
                'strategy_profile_file', 'strategy_profile_sha256', 'session_calendar_file', 'session_calendar_sha256',
                'issuers')
-OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests')
+OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests',
+                            'balance_check_interval_ms', 'balance_check_max_age_ms')
+# IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
+BALANCE_KEYS = ('balance_rpc_url', 'balance_rpc_source_id', 'balance_check_interval_ms', 'balance_check_max_age_ms')
+
+
+def balance_settings(d, mode):
+    """The balance-check settings of a driver block, or None for an offline/paper run that names none of them."""
+    present = [k for k in BALANCE_KEYS if d.get(k) not in (None, '')]
+    if not present and mode not in ('dev', 'live'):
+        return None
+    missing = [k for k in BALANCE_KEYS if k not in present]
+    if missing:
+        raise ContractError('Missing balance-check settings: ' + ','.join(missing))
+    url, source = d['balance_rpc_url'], d['balance_rpc_source_id']
+    interval, max_age = d['balance_check_interval_ms'], d['balance_check_max_age_ms']
+    if type(url) is not str or not url.startswith('https://') or type(source) is not str:
+        raise ContractError('The balance RPC needs an HTTPS URL and a source ID')
+    if type(interval) is not int or type(max_age) is not int or not 0 < interval <= max_age:
+        raise ContractError('Invalid balance-check interval or maximum age')
+    return dict(rpc_url=url, source_id=source, interval_ms=interval, max_age_ms=max_age)
 
 
 def _pinned_json(path, sha256, what):
@@ -163,8 +184,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     from larp.marketdata.port import MarketPort, NativeGasQuotePort
     from larp.marketdata.web3 import Artifacts, Web3Client
     from larp.runtime.coordinator import Coordinator
-    from larp.runtime.driver import (DayRoll, EvidenceWork, MarketFeed, RoundDriver, RuntimeHealth, ServiceExecution,
-                                     SessionCalendar, ShadowExecution)
+    from larp.runtime.driver import (BalanceCheck, DayRoll, EvidenceWork, MarketFeed, RoundDriver, RuntimeHealth,
+                                     ServiceExecution, SessionCalendar, ShadowExecution)
     from larp.sources.store import FileArtifacts, SQLiteEvidenceStore
     clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
     d = config.get('driver')
@@ -231,8 +252,10 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     lifecycle = lifecycle_policy_from(intelligence)
     # One registry-validated issuer map for evidence contexts and review jobs (#25).
     issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
+    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port is used
+    health = RuntimeHealth(store, config['run_id'], run['epoch'])
     builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
-                             market=feed, health=RuntimeHealth(store, config['run_id'], run['epoch']),
+                             market=feed, health=health,
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
     assessor = EvidenceAssessor(registry=registry, reader=PortEvidenceReader(evidence, artifacts),
@@ -250,8 +273,21 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     execution = (ServiceExecution(coordinator, wallet=wallet, grace_ms=d['expiry_grace_ms'])
                  if d['execution'] == 'service' else ShadowExecution(coordinator))
     day_roll = DayRoll(coordinator, window_ms=d['day_roll_window_ms']) if d.get('day_roll_window_ms') else None
+    balance_check = None
+    if balance is not None:
+        from larp.execution_live.balances import read_balances
+        from larp.execution_live.chain import Rpc
+        rpc = Rpc(balance['rpc_url'], artifacts=Artifacts(str(Path(d['market_artifact_root']) / 'chain')),
+                  source_id=balance['source_id'])
+
+        def read(now_ms):
+            observed = datetime.fromtimestamp(now_ms / 1000, timezone.utc).isoformat()
+            return read_balances(rpc, wallet=wallet, observed_at=observed)
+        balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
+                                     max_age_ms=balance['max_age_ms'])
+        health.balances = balance_check
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
-                       execution=execution, market=feed, day_roll=day_roll,
+                       execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 

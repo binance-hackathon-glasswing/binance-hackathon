@@ -76,6 +76,8 @@ context; no hosted run or Gate A pass is established by this update.
 ### 6. Driver values (team decision)
 `driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.
 
+Also `driver.balance_rpc_url` and `driver.balance_rpc_source_id`: the manifested BSC RPC for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36). They are account-specific, null in the example, and required for a `dev` or `live` start. The interval and maximum age are set in the example (10 and 30 minutes).
+
 ## Order of work
 
 1. **Reviews in.** Merge the open PRs (B #65, D follow-up #69, WR leftovers #71 and any others) and wait for green CI on the final head of `codex/system-testing-20261012`. Note that head's SHA: it is the build.

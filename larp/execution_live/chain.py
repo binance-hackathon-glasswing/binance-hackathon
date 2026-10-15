@@ -9,11 +9,30 @@ from urllib.parse import urlsplit
 from urllib.request import Request, build_opener
 from urllib.error import URLError
 
-from larp.execution import Blocked, DependencyUnavailable, Outcome
+from larp.execution import USDT, Blocked, DependencyUnavailable, Outcome
 from larp.marketdata.web3 import NoRedirect, encoded, utc
 
 METHODS = frozenset(('eth_chainId', 'eth_getTransactionCount', 'eth_getTransactionByHash',
                      'eth_getTransactionReceipt', 'eth_getBlockByNumber', 'eth_getBalance', 'eth_getCode'))
+
+
+# IDEA-055 (#36): the one eth_call form, a balance read on a pinned contract at a numeric block. Nothing that could
+# move funds or reach another contract passes; ERC-20 `decimals()` and `balanceOf(address)` are views.
+DECIMALS_CALL = '0x313ce567'
+BALANCE_OF_CALL = '0x70a08231'
+
+
+def balance_call(params):
+    """Raise Blocked unless `params` is `[{to, data}, <hex block>]` for decimals()/balanceOf() on a pinned token."""
+    from larp.marketdata.port import TOKENS  # the pinned bStock contracts; USDT is the pay token
+    pinned = {USDT, *TOKENS.values()}
+    if (type(params) is not list or len(params) != 2 or type(params[0]) is not dict
+            or set(params[0]) != {'to', 'data'} or type(params[0]['to']) is not str
+            or params[0]['to'].lower() not in pinned or type(params[0]['data']) is not str
+            or not (params[0]['data'] == DECIMALS_CALL
+                    or re.fullmatch(BALANCE_OF_CALL + '0{24}[0-9a-f]{40}', params[0]['data']))):
+        raise Blocked('eth_call outside the balance-read allowlist')
+    quantity(params[1])
 
 
 def native_trace_options():
@@ -61,7 +80,9 @@ class Rpc:
     def call(self,method,params):
         trace = (self.native_trace and method == 'debug_traceTransaction'
                  and type(params) is list and len(params) == 2 and params[1] == native_trace_options())
-        if method not in METHODS and not trace:
+        if method == 'eth_call':
+            balance_call(params)
+        elif method not in METHODS and not trace:
             raise Blocked('RPC method outside read-only allowlist')
         if trace:
             hash_value(params[0])
