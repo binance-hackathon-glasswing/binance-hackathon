@@ -24,6 +24,7 @@ def roll_day(portfolio: Document, *, boundary, anchor_units):
 
 
 def update_risk(portfolio: Document, *, now, equity_units):
+    now = instant(now.isoformat())
     d = portfolio.read()
     r = d["risk"]
     integer(equity_units)

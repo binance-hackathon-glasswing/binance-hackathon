@@ -216,11 +216,14 @@ class HostedChatModel:
 
     def request_payload(self, request: Document) -> bytes:
         r = request.read()
-        return json.dumps({"model": self.identity.revision, "temperature": 0,
+        body = json.dumps({"model": self.identity.revision, "temperature": 0,
                            "response_format": {"type": "json_object"},
                            "messages": [{"role": "system", "content": self._prompt},
                                         {"role": "user", "content": json.dumps(r["input"], sort_keys=True)}]},
                           sort_keys=True).encode("utf-8")
+        if reflects_secret(body, (self._key,)):
+            raise IntelligenceError("Credential-bearing model request refused before capture or transport")
+        return body
 
     def has_artifact(self, digest: str) -> bool:
         return self._artifacts.get(digest) is not None
