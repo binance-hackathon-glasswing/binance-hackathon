@@ -452,3 +452,99 @@ no requirement should be labelled tested/settled merely from this partial review
 > integrity checks. Synthetic downstream replay and green CI do not authorize
 > signing, AWS deployment or a profitability claim. Owners and deadlines are
 > listed in docs/ledger/IDEA-049-B.md B-RISK01–07.
+
+## WR-B — review fixes #45 #46 #57 #64.3 (2026-10-15)
+
+Owner: Claude Code session for Yao Zhu (section D integrator), on branch
+`claude/wr-b-risk-fixes-0f380b` from base `7b7acd2` on
+`codex/system-testing-20261012`. Scope is B's code only (`larp/strategy`,
+`larp/risk`, the runtime market-view call site for #45) and B's tests. Team
+decisions #34, #36, #37, #38, #55 and #56 are out of scope and not decided here.
+No LIVE profile value changes. Synthetic tests only: no keys, signing, chain,
+ai-seeds or AWS calls.
+
+### Pass criteria (registered before any test or code change)
+
+All four issues still reproduce on `7b7acd2` (triage by the starting session).
+Each fix lands as failing tests pushed first, then the fix. The suite must pass
+with no existing test weakened, skipped or removed; any existing test whose
+expectation encodes the reported defect is named here with the reason before it
+is changed.
+
+**WRB-45 (#45, WR03, P1): one bad market row must not block other names.**
+- WRB-45-1. `market_view` is per row. A row with a row-level defect (wrong
+  schema; missing `token_id` or `underlying_id`; currency other than USDT;
+  `money_scale` other than 1,000,000; `decimals` missing, not an int or above 30;
+  `price_units` missing or below 1; malformed `measured_roundtrip_bps`) maps its
+  symbol to `None` and records the reason in a caller-supplied dict. It does not
+  raise.
+- WRB-45-2. Set-level problems still raise `ContractError`: the collection is not
+  a list, a row is not an object, a symbol is missing, unknown or outside the
+  universe, a symbol appears twice, or (LIVE) a row has a fake or unidentified
+  origin. The B-REG-04 tests (`test_b_req_022_*`) still pass unchanged.
+- WRB-45-3. Flatten window (LIVE FINAL profile, `2026-11-10T14:00Z`), NVDAB and
+  GOOGLB held and quoted, one bad row for unheld TSLAB (each defect in
+  WRB-45-1): the plan has no `INVALID_REQUIRED_INPUT`, has `TERMINAL_FLATTEN`
+  requirements for both held names, plans one mandatory SELL of a held name, and
+  records `{"reason": "INVALID_MARKET_ROW", "symbol": "TSLAB"}`.
+- WRB-45-4. Same, but the bad row is held NVDAB: NVDAB's requirement keeps its
+  full `remaining_sell_units` with status `BLOCKED_INPUT`; GOOGLB's mandatory
+  SELL is planned; the `INVALID_MARKET_ROW` rejection names NVDAB; new risk stays
+  blocked (`unvalued_symbols` includes NVDAB).
+- WRB-45-5. Non-terminal POSITION_CAP trim of a held name still plans its
+  mandatory SELL with a bad unheld row; `decide()` still returns a proposal with
+  a bad unheld row.
+- WRB-45-6. Runtime evidence path: `ContextBuilder._reductions` with a bad
+  unheld row still returns the `CLASS_1_EXIT` reduction for held NVDAB (real
+  RF1 producer fixture), instead of `[]`.
+
+**WRB-46 (#46, WR04, P1): gas above the reservation is charged, not rejected.**
+- WRB-46-1. A final reconciler FILL whose `gas_bnb_units` exceeds the
+  reservation's `bnb_units` but not the wallet's BNB balance is applied: BNB
+  falls by the actual gas, `gas_value_units` rises by the actual gas value, the
+  terminal fill deletes the reservation, and the overage is recorded in
+  `accounting.gas_over_reserve_bnb_units`.
+- WRB-46-2. Approve plus swap above the quote: reservation 10,000; approve
+  receipt 8,000 gas (non-terminal, reservation left at 2,000); swap receipt
+  15,000 gas is applied; total charged 23,000; no reservation remains. The same
+  sequence through `integration.settlement.settle` leaves no BNB reservation row
+  for the intent.
+- WRB-46-3. Gas above the actual BNB balance still raises `ContractError` and
+  changes nothing.
+- WRB-46-4. No LIVE profile value or validator changes (`larp/strategy/profiles.py`
+  untouched). The reservation margin over the quoted gas is a team/B decision,
+  recorded as B-DEC-08 below, not adopted.
+
+**WRB-57 (#57, WR15, P2): a Class 1 latch reaches the planner on its own.**
+- WRB-57-1. The planner reads `CLASS_1_EXIT` latches from the persisted policy
+  state (`snapshot.policy_state`, the state committed by the last round). With
+  an NVDAB latch, NVDAB partly sold and still held, GOOGLB held with a stale
+  mark, no proposal and no reduction constraints, the planner emits an NVDAB
+  requirement with `max_units` 0 and reason `CLASS_1_EXIT`, and plans a mandatory
+  NVDAB SELL when a quote exists. The scenario check: `decide()` raises on that
+  snapshot (so the old path had no target).
+- WRB-57-2. A latch on a name with zero units adds no requirement.
+- WRB-57-3. The latch clears only by the IDEA-035 rule: a later round with no
+  evidence keeps it (requirement still emitted from the next persisted state);
+  after `decide()` resolves it on a complete review with no Class 1 finding (A8),
+  the planner emits no `CLASS_1_EXIT` requirement from that persisted state. The
+  planner never clears or writes the latch itself. A resolution decided in the
+  current round takes effect from the next round (one-round lag, conservative).
+- WRB-57-4. A malformed `blocked` map in the persisted state fails closed as
+  `INVALID_REQUIRED_INPUT` with the held names kept.
+
+**WRB-64.3 (#64 item 3, P3): mandatory sells ordered by reason class, then value.**
+- WRB-64-1. Mandatory requirements are ordered by class first: any requirement
+  with `CLASS_1_EXIT` or `TERMINAL_FLATTEN` before all others; then by
+  descending notional value of `remaining_sell_units` at the current mark; then
+  by symbol. A requirement without a usable mark sorts after valued ones in its
+  class.
+- WRB-64-2. Two non-terminal requirements where the name with more token units
+  has the smaller notional: the larger-notional name gets the one intent.
+- WRB-64-3. A small Class 1 requirement is planned before a larger POSITION_CAP
+  trim.
+
+**Full suite.** Python 3.12 from `deploy/requirements-test.lock`, pinned
+`postgres:14.24-bookworm@sha256:5a05f61a…` with `LARP_TEST_DATABASE_URL`. Pass =
+the base's counts plus the new tests, with failures only in the same
+environment-only tests as the base run on this machine.
