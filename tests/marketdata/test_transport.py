@@ -64,3 +64,20 @@ class TransportTests(unittest.TestCase):
                 c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),
                              opener=Opener(json.dumps({'code':code}).encode()))
                 with self.assertRaisesRegex(Unavailable,outcome):c.request('GET','market/rwa/tokens',{})
+    def test_a_truncated_or_malformed_http_response_is_a_transport_error(self):
+        # #64 (WR22) item 2: http.client.HTTPException is neither URLError nor OSError.
+        import http.client
+        from pathlib import Path
+        class Truncated(Response):
+            def read(self,n):raise http.client.IncompleteRead(b'{"code":0,"da',100)
+        class TruncatedOpener(Opener):
+            def open(self,request,timeout):return Truncated(b'')
+        class BadStatus(Opener):
+            def open(self,request,timeout):raise http.client.BadStatusLine('fixture-secret')
+        for opener in (TruncatedOpener(b''),BadStatus(b'')):
+            with self.subTest(opener=type(opener).__name__), tempfile.TemporaryDirectory() as root:
+                c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=opener)
+                with self.assertRaisesRegex(Unavailable,'transport_error'):c.request('GET','market/rwa/tokens',{})
+                [artifact]=[json.loads(p.read_bytes()) for p in Path(root).glob('*.json')]
+                self.assertEqual(artifact['outcome'],'transport_error')
+                self.assertNotIn('fixture-secret',json.dumps(artifact))

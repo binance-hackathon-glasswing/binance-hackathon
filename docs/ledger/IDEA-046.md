@@ -76,3 +76,9 @@ Yao Zhu approved the free steps only, stopping at a saved plan (2026-10-14). The
   - Run Terraform through a scratch AWS config whose `credential_process` re-exports the `larp` login, so tokens refresh (`docs/build/architecture-deployment.md`).
 - **Cost now:** ≈ $24/month (database ≈ $21, KMS $1, secrets, alarms).
 - **Next (needs hosts):** migrations, `roles.sql` and the per-role IAM/TLS checks. The database is private with no public route, and there is no host yet, so this needs `primary` (`enable_hosts`, plus egress and development SSM to reach it): ≈ $19/month for `t3.small` plus $3.65 for its public IPv4. Waiting for Yao Zhu's OK.
+
+## B1 follow-up: evidence secret removed (2026-10-15, IDEA-049 WR-L2, #61)
+
+- The shared `primary` role (B1) could read three managed secrets. Nothing reads `evidence`: the poller needs no key, and since IDEA-049 D-FND-018 it cannot reach instance metadata (`IPAddressDeny=169.254.169.254/32`).
+- `deploy/aws/hosts.tf` now defines only `runtime` and `uploader`; `deploy/aws/tests/safety.tftest.hcl` asserts exactly those two and no `evidence` reader. B1's trade-off is otherwise unchanged: one role still reads both remaining secrets.
+- Not applied to AWS yet: the next core-stack apply deletes the live `larp-dev/evidence` secret (30-day recovery window; `docs/build/AWS_RUNBOOK.md`).

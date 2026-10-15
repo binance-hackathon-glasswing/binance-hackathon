@@ -1,5 +1,6 @@
 """Read-only chain-56 RPC evidence; finalized-tag support is mandatory, never guessed."""
 import hashlib
+import http.client
 import json
 import re
 from functools import wraps
@@ -72,7 +73,7 @@ class Rpc:
                 raw=response.read(2*1024*1024+1)
             if len(raw)>2*1024*1024:raise Blocked('RPC response too large')
             result=json.loads(raw)
-        except (URLError,OSError,ValueError):
+        except (URLError,OSError,ValueError,http.client.HTTPException):
             raise DependencyUnavailable('RPC unavailable') from None
         if (not isinstance(result,dict) or result.get('jsonrpc')!='2.0'
                 or type(result.get('id')) is not int or result['id']!=request_id

@@ -213,3 +213,96 @@ Remaining before section work starts (unchanged by this entry): merge of PR #21
 into `codex/system-testing-20261012` (team review), the IDEA-048 driver PR or a
 recorded partial-scope exclusion (Keegan + Isaac/team), and Keith's original
 tracker #22 record under an unused ID. D's section review itself is NOT RUN.
+
+## WR-L — review leftovers #59, #61, #64 (2026-10-15)
+
+Three small leftovers named in the 2026-10-14 status comments on #59 (WR17),
+#61 (WR19) and #64 (WR22), fixed test-first on `codex/system-testing-20261012`
+at `0820b0d`. Branch `claude/wr-leftovers-20261015`. Nothing else is in scope:
+#64 items 3–4 (Keith; Yao Zhu + Keegan) and #59 acceptance 1's host systemd test
+stay open.
+
+Prospective checks, recorded before any test is written or run:
+- WR-L1 (#59): an `OSError` while binding `ai_seeds_dir`/`nonce_dir` is a
+  refused start. New tests, committed and pushed before the fix, fail on
+  `0820b0d` with the predicted outcome: (a) `check_live_start` with
+  `ai_seeds_dir` below a regular file raises `NotADirectoryError`, not
+  `LiveStartRefused`; (b) a read-only, empty directory raises `PermissionError`
+  when the marker is written (skipped when run as root, where the mode does not
+  bind); (c) `larp.runtime.service.main(['run', …])` in `dev` mode with that
+  unbindable directory returns 1 (`RUNTIME_FAILED`), not 4. After the fix all
+  three pass: `LiveStartRefused` naming the path and the error class, never a
+  secret value; `main` returns 4 with `LIVE_START_REFUSED`; the existing
+  W1–W4 and D7 tests pass unchanged.
+- WR-L2 (#61 acceptance 2): a repository grep (excluding `vendor/` and the
+  verbatim kit) finds no reader of the `evidence` managed secret: no
+  `*_secret_id` naming it and no `GetSecretValue` for `<name>/evidence`; the
+  evidence unit and `config/hosts/evidence.example.env` hold non-secret
+  settings only. The Terraform test is changed first and pushed, and fails on
+  the unchanged `hosts.tf`: exactly two managed secrets, `runtime` and
+  `uploader`, and no `evidence` reader grant. After removing `evidence` from
+  `secret_readers`, `terraform fmt -check -recursive`, `init -backend=false`,
+  `validate` and `test` pass in `hashicorp/terraform:1.13.5` with no
+  credentials: `deploy/aws` 15/15, `deploy/bootstrap` 1/1 (counts unchanged:
+  one assertion changes, no run is added). The next `apply` of the core stack
+  schedules `larp-dev/evidence` for deletion (30-day recovery window); that
+  apply is not part of this change.
+- WR-L3 (#64 item 2): new tests, pushed before the fix, fail on `0820b0d`
+  because an `http.client.HTTPException` escapes: `Rpc.call` with a response
+  whose `read` raises `IncompleteRead` raises that, not
+  `DependencyUnavailable('RPC unavailable')`; `Web3Client.request` with
+  `IncompleteRead` on read or `BadStatusLine` on open raises it, not
+  `Unavailable('transport_error')`. After adding `http.client.HTTPException`
+  to the except clauses in `larp/execution_live/chain.py` and
+  `larp/marketdata/web3.py` (the Web3 transport lives there, not under
+  `execution_live/`), they pass and the Web3 failure still stores a
+  `transport_error` artifact with no credential in it.
+- WR-L4: full suite on Python 3.12 from `deploy/requirements-test.lock`
+  against a disposable `postgres:14.24-bookworm` (`LARP_TEST_DATABASE_URL`):
+  the D §10 local count (1252 passed, 7 skipped, 1 xfailed) plus only this
+  change's new tests, with no new failure or skip.
+- WR-L5: PR-head Linux CI passes all jobs.
+
+Results (2026-10-15), local, each failing test pushed before its fix:
+- WR-L1 PASS: tests pushed at `5c89a81` failed on the unfixed code as
+  predicted (`NotADirectoryError`, `PermissionError`; `main` returned 1 with
+  `NotADirectoryError` escaping `Service.run`). Fix `eec0b9e`
+  (`bind_directory` maps `OSError` to `LiveStartRefused`); all three pass and
+  `test_live_start.py` + `test_driver.py` pass unchanged (24 passed).
+- WR-L2 PASS: the grep found no reader (only `runtime_secret_id` and
+  `uploader_secret_id` exist; `larp/sources` has no Secrets Manager call).
+  Test pushed at `8b768fe` failed on the unchanged `hosts.tf` (13 passed,
+  2 failed); fix `4552076`: fmt, init, validate, test PASS in
+  `hashicorp/terraform:1.13.5` (linux/amd64, no credentials): `deploy/aws`
+  15/15, `deploy/bootstrap` 1/1. Not applied (`docs/build/AWS_RUNBOOK.md`
+  names the expected plan; IDEA-046 B1 follow-up).
+- WR-L3 PASS: tests pushed at `bb838e4` failed on all four subtests with the
+  `HTTPException` escaping; fix `2ad73b3`; they pass.
+- WR-L4 PASS: Python 3.12.14 venv from `deploy/requirements-test.lock`
+  (`pip check` clean), disposable `postgres:14.24-bookworm` (pinned digest)
+  on 127.0.0.1:55488, removed afterwards. Base `0820b0d` on the same machine:
+  1253 passed, 7 skipped, 1 xfailed, 1593 subtests (D §10's 1252 was
+  `b1450fa`; later commits added one). This branch at `2ad73b3`: **1258
+  passed, 7 skipped, 1 xfailed, 1597 subtests** (+5 tests, +4 subtests: this
+  change only; same seven environmental skips). Log sha256 `40ca72cc…b623`,
+  kept outside Git.
+- WR-L5 PASS for the change itself: [CI 38602538545](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38602538545)
+  on PR head `71f1276`: all four jobs green (runtime, both Terraform roots,
+  host bundle).
+- Base update (2026-10-15): merged `codex/system-testing-20261012` at
+  `421205b` (PR #68, section A) as `7459527`. The only conflict was this
+  row's `docs/LEDGER.md` line: kept the WR-L IDEA-049 row and the base's
+  new IDEA-049-A row. A touched none of this change's files. Local full suite
+  on `7459527` (same venv and disposable database): **1286 passed, 7
+  skipped, 1 xfailed, 1610 subtests**. Linux CI for `7459527`
+  ([run 38700735681](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38700735681))
+  did **not start**: GitHub refused every job for account billing, so no
+  Linux result exists for the merged head.
+- Second base update (2026-10-15): merged `codex/system-testing-20261012`
+  at `21ee21c` (PRs #65 B, #69 D, #70 C, #73). One conflict, in
+  `larp/marketdata/web3.py`'s response block: kept C's
+  `private_parameter_reflection` outcome and this change's
+  `http.client.HTTPException` in the transport `except`. Local full suite on
+  the merge (same venv, fresh disposable database): **1390 passed, 7
+  skipped, 1 xfailed, 2030 subtests**. `deploy/aws` is unchanged by the base,
+  so the Terraform result above stands.
