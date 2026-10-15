@@ -465,3 +465,7 @@ regression was exposed and no production fix was necessary. Container systemd
 results are supporting evidence only. Mirror CI and review/merge remain owned
 as above; #31 and #59 stay open. The feature branch is pushed, but this is not a
 strict main-branch handoff: the work intentionally remains in PR #80, not `main`.
+
+Status updates posted with PR and validation links:
+[#31](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/31#issuecomment-6195202713)
+and [#59](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/59#issuecomment-6195203392).
