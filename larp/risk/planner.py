@@ -25,11 +25,16 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
     """Walk observed smaller exact-in quotes; otherwise request the next size."""
     rejections = []
     quotes = m.get("quotes", [])
+    if type(quotes) is not list or any(type(q) is not dict for q in quotes):
+        return None, None, ["QUOTE_COLLECTION_INVALID"], "BLOCKED_QUOTE"
     asset = "USDT" if side == "BUY" else m["symbol"]
     for _ in range(len(quotes) + 1):
-        quote = next((x for x in quotes if type(x) is dict and x.get("side") == side
-                      and x.get("pay_asset") == asset and x.get("pay_units") == pay_units
-                      and x.get("amount_kind") == "EXACT_IN"), None)
+        matches = [x for x in quotes if x.get("side") == side
+                   and x.get("pay_asset") == asset and x.get("pay_units") == pay_units
+                   and x.get("amount_kind") == "EXACT_IN"]
+        if len(matches) > 1:
+            return None, None, rejections + ["QUOTE_COLLECTION_AMBIGUOUS"], "BLOCKED_QUOTE"
+        quote = matches[0] if matches else None
         if quote is None:
             return None, pay_units, rejections, "REQUOTE_REQUIRED" if rejections else "PENDING"
         try:
@@ -75,6 +80,11 @@ def plan(snapshot, proposal_or_none):
     try:
         p = profile(snapshot)
         ledger = c["portfolio"]
+        if (type(ledger) is not dict or type(ledger.get("positions")) is not dict
+                or type(ledger.get("reservations")) is not dict
+                or any(type(pos) is not dict for pos in ledger["positions"].values())
+                or any(type(res) is not dict for res in ledger["reservations"].values())):
+            raise ContractError("Portfolio positions and reservations must be objects")
         market = markets(snapshot, p)
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
@@ -95,8 +105,10 @@ def plan(snapshot, proposal_or_none):
     except (KeyError, TypeError, ContractError, ValueError) as exc:
         # Invalid valuation is explicit; terminal holdings remain outstanding.
         result["rejections"].append({"reason": "INVALID_REQUIRED_INPUT", "detail": str(exc)})
-        for symbol, pos in c.get("portfolio", {}).get("positions", {}).items():
-            if pos.get("units", 0):
+        portfolio = c.get("portfolio")
+        positions = portfolio.get("positions") if type(portfolio) is dict else None
+        for symbol, pos in (positions.items() if type(positions) is dict else ()):
+            if type(pos) is dict and type(pos.get("units")) is int and pos["units"] > 0:
                 result["requirements"].append({"symbol": symbol, "status": "BLOCKED_INPUT",
                                                "held_units": pos["units"],
                                                "reason": "RISK_REEVALUATION_REQUIRED"})

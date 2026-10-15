@@ -1,0 +1,84 @@
+"""Additional source-derived A catalogue probes, preregistered before their first run."""
+from datetime import datetime, timezone
+import http.client
+import json
+from unittest.mock import patch
+from larp.intelligence.common import IntelligenceError
+from larp.intelligence.agent import EvidenceAssessor
+from larp.intelligence.edgar import EdgarHttpSource
+from larp.intelligence.models import RuleBaselineModel
+from larp.intelligence.scenarios import doc, page, p
+from larp.integration.contract import red_flag_directives, problem
+from tests.intelligence.test_final_a_requirements import RealEvidence, NONRELIANCE
+from tests.intelligence.test_red_flags import enabled_profile
+
+
+class AdditionalEvidence(RealEvidence):
+    def test_a_req_007_retained_sec_document_preserves_original_source_uri(self):
+        record = self.add(779, NONRELIANCE)
+        [document] = record['documents']
+        self.assertEqual(document['url'], f"synthetic://edgar/{self.entry.cik}/{record['accession']}/filing.htm")
+        self.store.close()
+        from larp.sources.store import SQLiteEvidenceStore
+        self.store = SQLiteEvidenceStore(self.path, journal_mode='DELETE')
+        retained = next(r.read() for r in self.store.records(self.entry.issuer_id)
+                        if r.read()['record_id'] == record['record_id'])
+        self.assertEqual(retained['documents'][0]['url'], document['url'])
+
+    def test_a_req_017_partial_http_response_is_unavailable_then_recovers(self):
+        replies = [http.client.IncompleteRead(b'UNTRUSTED_PARTIAL_MARKER', 20),
+                   (200, 'application/json', json.dumps(self.source.list_filings(self.entry.cik).submissions).encode())]
+        def transport(*args):
+            reply = replies.pop(0)
+            if isinstance(reply, Exception):
+                raise reply
+            return reply
+        source = EdgarHttpSource('synthetic-contact@example.invalid', http_get=transport, clock_ms=self.clock)
+        broken = source.list_filings(self.entry.cik)
+        self.assertEqual(broken.status, 'UNAVAILABLE')
+        self.assertEqual(broken.error, 'IncompleteRead')
+        self.assertIsNone(broken.submissions)
+        self.assertNotIn('UNTRUSTED_PARTIAL_MARKER', str(broken))
+        self.assertEqual(source.list_filings(self.entry.cik).status, 'OK')
+
+    def test_a_req_020_unavailable_identity_registry_cannot_accept_self_matching_ids(self):
+        self.assess(self.add(780, NONRELIANCE))
+        context = self.context(ticker=self.entry.issuer_id)
+        markets = {self.entry.token: {'underlying_id': self.entry.issuer_id}}
+        with patch('larp.integration.contract._issuer_registry', side_effect=IntelligenceError('broken registry')):
+            self.assertEqual(problem(context, markets=markets), 'WRONG_ISSUER')
+
+    def test_a_req_010_future_acceptance_within_clock_tolerance_is_not_decision_input(self):
+        accession = f'{self.entry.cik:010d}-26-000781'
+        future = datetime.fromtimestamp((self.clock() + 1000) / 1000, timezone.utc).isoformat()
+        self.source.add(self.entry.cik, accession=accession, form='8-K', items=['2.02'], acceptance=future,
+            visible_ms=self.clock(), documents=[doc('future.htm', '8-K', page(p('Item 2.02 Results of Operations'),
+                p('For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.')))])
+        self.ingestor.poll(self.entry.issuer_id)
+        record = next(r.read() for r in self.store.records(self.entry.issuer_id) if r.read()['accession'] == accession)
+        result = self.assess(record)
+        self.assertEqual(result['evidence_used'], [])
+        self.assertEqual(result['claims'], [])
+        self.assertNotEqual(result['status'], 'ASSESSED')
+        self.clock.advance(2000)
+        self.ingestor.poll(self.entry.issuer_id)
+        after = self.assess(record)
+        self.assertTrue(after['evidence_used'])
+        self.assertTrue(after['claims'])
+
+    def test_a_req_045_current_impairment_determination_is_not_a_forecast_only(self):
+        record = self.add(791, 'The company determined that a material impairment charge is required and will record a goodwill impairment charge.', '2.06')
+        self.assess(record)
+        directives = red_flag_directives(self.context(), enabled_profile())
+        self.assertEqual([d['kind'] for d in directives], ['BLOCK_NEW_BUYS'])
+        self.assertEqual([d['block_sessions'] for d in directives], [5])
+
+    def test_a_req_027_declared_assessment_dimensions_have_explicit_unknowns(self):
+        result = self.assess(self.add(801, NONRELIANCE))
+        assessment = result.get('structured_assessment')
+        self.assertIsInstance(assessment, dict)
+        self.assertTrue({'catalyst_type', 'direction', 'strength', 'novelty', 'durability',
+                         'source_agreement', 'risks'} <= set(assessment))
+        self.assertEqual(assessment['durability']['status'], 'UNKNOWN')
+        self.assertFalse(assessment['strength']['calibrated'])
+        self.assertEqual(assessment['source_agreement']['independent_origins'], 1)
