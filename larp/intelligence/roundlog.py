@@ -34,7 +34,7 @@ def _call(step: dict, index: int) -> dict:
                 "request_sha256": None, "request_artifact": None, "response_sha256": None, "response_artifact": None,
                 "reasoning_summary": None}
     request, reply = step["request"], step["response"]
-    return {"index": index, "request_id": reply["request_id"], "status": reply["status"], "error": reply["error"],
+    value = {"index": index, "request_id": reply["request_id"], "status": reply["status"], "error": reply["error"],
             "latency_ms": reply["latency_ms"], "usage": reply["usage"], "cost": reply["cost"],
             "served_model": reply["served_model"],
             # Exact bytes when stored; otherwise the canonical hash of the in-record request (rule baseline).
@@ -42,6 +42,12 @@ def _call(step: dict, index: int) -> dict:
             "request_artifact": reply["request_payload_artifact"],
             "response_sha256": reply["raw_response_sha256"], "response_artifact": reply["raw_response_artifact"],
             "reasoning_summary": reply["reasoning_summary"]}
+    if step.get('routing_stage'):
+        value['routing_stage'] = step['routing_stage']
+        value['model'] = request.get('model', {})
+    if reply.get('provider_metadata'):
+        value['provider_metadata'] = reply['provider_metadata']
+    return value
 
 
 def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
@@ -61,7 +67,8 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
         lines.append(f"No model call: {reason}.")
     for call in calls:
         summary = call["reasoning_summary"]
-        lines.append(f"Model call {call['index'] + 1} ({model.get('provider')}/{model.get('model_id')}, "
+        actual_model = call.get('model') or model
+        lines.append(f"Model call {call['index'] + 1} ({actual_model.get('provider')}/{actual_model.get('model_id')}, "
                      f"{call['status']}{', ' + call['error'] if call['error'] else ''}): "
                      + (f"provider reasoning summary: {summary}" if summary else "no reasoning summary returned."))
     for tool in tools:

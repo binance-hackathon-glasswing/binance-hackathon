@@ -152,3 +152,7 @@ External prices deliberately excluded following the user's funding clarification
 | MR-06 | Approve/reject implementation and adoption after mixed **and external-only** evaluation | Team | Before Oct 22/final activation; otherwise retain as research |
 
 **Current result:** documentation and arithmetic review only. No model calls; routing/budget/fallback not implemented; real-data evaluation NOT RUN; no live model/policy selected; no deployment gate closed. The proposal PR requests review, not execution of this experiment.
+
+## 2026-10-15 amendment — AIand implementation requested
+
+Keith specified [AIand](https://docs.aiand.com/) as the provider for the funded Kimi/GLM calls, then explicitly requested both design and implementation. [IDEA-057](IDEA-057.md) records the separate shadow-only implementation branch, exact catalog IDs, persistent OpenAI budget and all-external fallback, prospective component tests and remaining evaluation/adoption gates. It does not change this idea's prior results or grant live authority. External prices remain excluded at the user's request.

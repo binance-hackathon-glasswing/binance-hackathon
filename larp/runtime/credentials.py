@@ -10,6 +10,8 @@ import json
 
 from larp.runtime.live import RUNTIME_SECRETS, LiveStartRefused, NOT_ON_RUNTIME
 
+OPTIONAL_MODEL_SECRETS = ('LARP_AIAND_API_KEY', 'LARP_MODEL_API_KEY')
+
 
 # Definite answers from Secrets Manager: restarting the same configuration cannot cure them, so the start is refused
 # (exit 4). Every other failure (throttling, 5xx, timeouts, connection errors, credentials not yet available at boot)
@@ -54,7 +56,7 @@ def load_runtime_secrets(client, secret_id):
     foreign = sorted(set(values) & set(NOT_ON_RUNTIME))
     if foreign:
         raise LiveStartRefused('Secret for another host present in the runtime secret: ' + ', '.join(foreign))
-    return Secrets({name: values[name] for name in RUNTIME_SECRETS if name in values})
+    return Secrets({name: values[name] for name in RUNTIME_SECRETS + OPTIONAL_MODEL_SECRETS if name in values})
 
 
 def runtime_secrets(config, client_factory=None):
