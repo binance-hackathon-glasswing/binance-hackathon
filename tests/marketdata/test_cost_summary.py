@@ -251,3 +251,85 @@ class Cli(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+# ------------------------------------------------------------------------------------------------ Q8-Q10 runner
+class Clock:
+    def __init__(self, start):
+        self.t = start
+
+    def now(self):
+        from datetime import datetime, timezone
+        return datetime.fromtimestamp(self.t, timezone.utc)
+
+    def sleep(self, seconds):
+        self.t += seconds
+
+
+def epoch(text):
+    from datetime import datetime
+    return datetime.fromisoformat(text.replace('Z', '+00:00')).timestamp()
+
+
+class Runner(unittest.TestCase):
+    def run_capture(self, tmp, round_fn, **options):
+        from larp.marketdata.cost_summary import run_capture
+        clock = Clock(epoch('2026-10-17T23:40:00Z'))
+        done = run_capture(object(), Path(tmp), round_fn=round_fn, now=clock.now, sleep=clock.sleep, **options)
+        return done, clock
+
+    def test_q8_until_loops_and_writes_one_file_per_utc_day(self):
+        calls = []
+
+        def round_fn(market, **kw):
+            calls.append(kw)
+            return [dict(kind='SAMPLE', symbol='NVDAB', n=len(calls))]
+        with tempfile.TemporaryDirectory() as tmp:
+            done, clock = self.run_capture(tmp, round_fn, until='2026-10-18T00:15:00Z', interval_seconds=600)
+            self.assertEqual(done, 4)  # 23:40, 23:50, 00:00, 00:10
+            files = sorted(p.name for p in Path(tmp).glob('capture-*.jsonl'))
+            self.assertEqual(files, ['capture-2026-10-17.jsonl', 'capture-2026-10-18.jsonl'])
+            lines = [json.loads(l) for f in files for l in (Path(tmp) / f).read_text().splitlines()]
+            self.assertEqual([r['n'] for r in lines], [1, 2, 3, 4])
+
+    def test_q9_a_failed_round_is_recorded_and_the_loop_continues(self):
+        calls = []
+
+        def round_fn(market, **kw):
+            calls.append(1)
+            if len(calls) == 2:
+                raise RuntimeError('network went away')
+            return [dict(kind='SAMPLE', symbol='NVDAB')]
+        with tempfile.TemporaryDirectory() as tmp:
+            done, _ = self.run_capture(tmp, round_fn, until='2026-10-17T23:59:00Z', interval_seconds=300)
+            records = [json.loads(l) for p in Path(tmp).glob('capture-*.jsonl') for l in p.read_text().splitlines()]
+            self.assertEqual(len(calls), 4)
+            failures = [r for r in records if r['kind'] == 'FAILURE']
+            self.assertEqual([(f['stage'], f['reason']) for f in failures], [('ROUND', 'RuntimeError')])
+            past, _ = self.run_capture(tmp, round_fn, until='2026-10-17T00:00:00Z', interval_seconds=300)
+            self.assertEqual(past, 0)
+            three, _ = self.run_capture(tmp, round_fn, rounds=3, interval_seconds=300)
+            self.assertEqual(three, 3)
+            with self.assertRaises(ContractError):
+                self.run_capture(tmp, round_fn, rounds=3, until='2026-10-18T00:00:00Z', interval_seconds=300)
+
+    def test_q10_the_wrapper_needs_the_key_pair_and_never_prints_it(self):
+        import os
+        import subprocess
+        script = Path(__file__).resolve().parents[2] / 'tools' / 'run_quote_capture.sh'
+        self.assertTrue(script.is_file())
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith('BINANCE_')}
+            result = subprocess.run(['bash', str(script), WALLET, '2026-10-19T00:00:00Z', tmp], cwd=tmp, env=env,
+                                    capture_output=True, text=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('BINANCE_API_KEY', result.stderr)
+            (Path(tmp) / '.env').write_text('BINANCE_API_KEY=k-synthetic-123\nBINANCE_SECRET_KEY=s-synthetic-456\n')
+            result = subprocess.run(['bash', str(script), '--dry-run', WALLET, '2026-10-19T00:00:00Z', tmp], cwd=tmp,
+                                    env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn('synthetic-123', result.stdout + result.stderr)
+            self.assertNotIn('synthetic-456', result.stdout + result.stderr)
+            self.assertIn('--until 2026-10-19T00:00:00Z', result.stdout)
+        usage = subprocess.run(['bash', str(script)], capture_output=True, text=True, timeout=30)
+        self.assertIn('weekend', usage.stderr.lower())
