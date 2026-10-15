@@ -174,8 +174,9 @@ def main(argv=None):
     parser.add_argument('--manifest')
     parser.add_argument('--root', required=True)
     parser.add_argument('--build-output')
-    # The CI-built release-manifest.json, verified here and written bound to this host at --build-output (#62).
+    # The CI-built release-manifest.json, verified here and written bound to this host at --output (#62 item 3).
     parser.add_argument('--bind', metavar='CI_MANIFEST')
+    parser.add_argument('--output')
     parser.add_argument('--services')
     parser.add_argument('--registration-evidence')
     parser.add_argument('--config')
@@ -185,8 +186,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.bind:
-            if not args.build_output:
-                raise ContractError('--bind writes to --build-output')
+            if not args.output or args.build_output:
+                raise ContractError('--bind writes to --output and never builds a manifest')
             ci = Document(Path(args.bind).read_bytes())
             evidence = (json.loads(Path(args.registration_evidence).read_text(encoding='utf-8'))
                         if args.registration_evidence else None)
@@ -194,7 +195,7 @@ def main(argv=None):
             runtime_config = Path(args.runtime_config).read_bytes() if args.runtime_config else None
             manifest = bind_manifest(ci, args.root, evidence, config, runtime_config,
                                      service_config_arguments(args.service_config))
-            with Path(args.build_output).open('xb') as stream:
+            with Path(args.output).open('xb') as stream:
                 stream.write(manifest.payload)
             print(json.dumps(dict(manifest_bound=True, ci_manifest_sha256=manifest.read()['ci_manifest_sha256'],
                                   registration_evidence_supplied=evidence is not None, signing_enabled=False)))

@@ -59,7 +59,7 @@ Path('/tmp/registration.json').write_text(json.dumps(dict(schema='RegistrationEv
 PY
 ) || fail "CI release manifest unreadable"
 (cd /opt/larp/current && $py -m larp.runtime.preflight --bind "$ci" --root /opt/larp/current \
-  --registration-evidence /tmp/registration.json --build-output /tmp/bound-release.json >/dev/null) \
+  --registration-evidence /tmp/registration.json --output /tmp/bound-release.json >/dev/null) \
   || fail "binding the CI release manifest"
 (cd /opt/larp/current && $py -m larp.runtime.preflight --manifest /tmp/bound-release.json \
   --root /opt/larp/current --profile host) || fail "packaged release preflight"

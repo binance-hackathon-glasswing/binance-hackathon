@@ -97,7 +97,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
    ```
    - The renderer lists what is still unset per file. Fill those from the inputs above.
    - Set `driver.execution` to **`"shadow"`** (the example says `"service"`).
-   - Copy the files to `/etc/larp` as root-owned files, then bind CI's manifest (#62 item 3): `python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current --build-output /etc/larp/release.json --registration-evidence <file> --runtime-config /etc/larp/runtime.json --service-config NAME=/etc/larp/NAME.json`. It only verifies the installed release against CI's manifest and adds the registration evidence and config hashes; nothing is rebuilt on the host.
+   - Copy the files to `/etc/larp` as root-owned files, then bind CI's manifest (#62 item 3): `python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current --output /etc/larp/release.json --registration-evidence <file> --runtime-config /etc/larp/runtime.json --service-config NAME=/etc/larp/NAME.json`. It only verifies the installed release against CI's manifest and adds the registration evidence and config hashes; nothing is rebuilt on the host.
 8. **Run.**
    - Start with `service init` (quarantined), then `service activate --reviewer … --review-ref …`. That's the team's reviewed step.
    - Then start `larp-evidence`, `larp-runtime` and `larp-uploader`, and enable `larp-archive.timer`.
