@@ -51,12 +51,15 @@ class Review(DatabaseCase):
         self.broadcast()
         self.coordinator.log_round('r', NOW + 1)
         self.store.quarantine('dev')
+        quarantined_epoch = self.store.load('dev').read()['epoch']
+        self.assertEqual(quarantined_epoch, self.dev_epoch + 1)
         # There is no unfinished execution record to protect this window: the runtime's outstanding round must.
+        # Present the current fencing epoch so this exercises the round barrier, not stale-owner rejection.
         with self.assertRaisesRegex(Conflict, 'round is still open'):
-            self.store.activate('dev', self.dev_epoch)
+            self.store.activate('dev', quarantined_epoch)
         run = self.store.load('dev').read()
         self.assertTrue(run['quarantined'])
-        self.assertEqual(run['epoch'], self.dev_epoch)
+        self.assertEqual(run['epoch'], quarantined_epoch)
 
     def test_archive_health_counts_overdue_unlogged_rounds_and_clears_after_ack(self):
         archive = S3Archive(FakeS3(), bucket='fixture', account_id='123456789012', kms_key='k',
