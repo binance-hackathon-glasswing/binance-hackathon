@@ -85,7 +85,8 @@ def plan(snapshot, proposal_or_none):
                 or any(type(pos) is not dict for pos in ledger["positions"].values())
                 or any(type(res) is not dict for res in ledger["reservations"].values())):
             raise ContractError("Portfolio positions and reservations must be objects")
-        market = markets(snapshot, p)
+        invalid = {}
+        market = markets(snapshot, p, invalid)
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
                           | {v["symbol"] for v in ledger["reservations"].values()
@@ -100,6 +101,9 @@ def plan(snapshot, proposal_or_none):
         result["risk_state"] = r
         result.update(valuation_status="LOWER_BOUND" if unvalued else "COMPLETE",
                       risk_equity_lower_bound_units=E, unvalued_symbols=unvalued)
+        # One bad row makes only its own symbol unusable; it is recorded, never silently dropped (#45).
+        result["rejections"].extend({"reason": "INVALID_MARKET_ROW", "symbol": s, "detail": invalid[s]}
+                                    for s in sorted(invalid))
         if unvalued:
             result["rejections"].append({"reason": "PARTIAL_VALUATION_NEW_RISK_BLOCKED", "symbols": unvalued})
     except (KeyError, TypeError, ContractError, ValueError) as exc:
@@ -168,7 +172,7 @@ def plan(snapshot, proposal_or_none):
         if m is None:
             result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
                 "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
-                "status": "BLOCKED_MARK"})
+                "status": "BLOCKED_INPUT" if symbol in invalid else "BLOCKED_MARK"})
             continue
         cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
@@ -371,7 +375,7 @@ def plan(snapshot, proposal_or_none):
             # Tighten bounds only after this child passes every execution gate.
             adjusted_equity = max(0, E - ceil(cost))
             for requirement in result["requirements"]:
-                if requirement["status"] == "BLOCKED_MARK":
+                if requirement["status"] in ("BLOCKED_MARK", "BLOCKED_INPUT"):
                     continue
                 old_bound = requirement["max_units"]
                 requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
