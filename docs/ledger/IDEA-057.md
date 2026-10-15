@@ -1,7 +1,7 @@
 # IDEA-057 — AIand implementation of external-first evidence routing
 
 - Date / author: 2026-10-15 SGT / Keith, implemented with Codex at the user's request to do both the AIand-specific design and implementation.
-- Status: open (implementation and synthetic regressions prepared; execution pending the required pushed-commit gate; no live adoption).
+- Status: open for review (shadow implementation; AR1–AR8 synthetic/local acceptance passed 2026-10-16; no real-provider inference or live adoption).
 - From: [IDEA-056](IDEA-056.md), draft PR #85. This branch is stacked on `codex/idea-056-model-routing` at `ab2e155`, not merged into main.
 - Scope: AIand adapter; opt-in external-first shadow assessor; durable $40 OpenAI admission plus $10 full-run reserve; complete external review after credit refusal; provenance and runtime secret loading. External funding is supplied by the user; K3/GLM prices are outside this comparison.
 - Out of scope: real-provider inference, private labels, independent real-document evaluation, source/model rights approval, scored/live activation, trading-policy adoption and AWS changes. These retain IDEA-056 MR-01–06 and GAP-23/24/57/62/67 owners.
@@ -51,3 +51,25 @@ Implementation: `larp/intelligence/aiand.py`, `model_budget.py`, `routing.py`, s
 ## Remaining work and owners
 
 Yao Zhu + independent annotator/Keith: real evidence labels, omission-aware mixed/external-only quality and deadline/cost measurement. Keegan + Yao Zhu: hosted Secrets Manager, private ledger/artifact permissions, single-primary backup/recovery and service/deviation declaration. Team: endpoint rights, org access, exact production revisions, model adoption and freeze. None is established by documentation or synthetic tests.
+
+### AR1–AR8 local acceptance — 2026-10-16 SGT
+
+Tested pushed code: `36a3166dedf8ba693827c316f90e69e3b0e91dba`. Local Docker Desktop runner: native ARM64 Ubuntu 22.04.5, Python 3.12.15, PostgreSQL 14.24, systemd 249 and bubblewrap 0.6.1. The suite ran as the unprivileged `ci` user in a disposable systemd container with a disposable PostgreSQL database. The final documentation-only commit does not change tested code.
+
+- Full suite: **1551 passed, 1 skipped, 2208 subtests passed** in 187.08 seconds, with `LARP_TEST_SYSTEMD=1`, disposable `LARP_TEST_DATABASE_URL`, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and `python -m pytest -q -p no:cacheprovider`. The single skip requires the optional external recorded-market dataset; no test failed or xfailed.
+- AR1–AR7 synthetic engineering checks pass: exact wire/metadata and credential exclusion, strict model/effort refusal, private durable/concurrent admission, credit versus transient-rate errors, external difficult-case primary/secondary, missing-key operation, deadline abandonment, bounded fallback configuration, consequence/event/falsifier disagreement, real consumer/gate/trace and pinned shadow-only runtime construction.
+- `pip check` passes. The real offline runtime demo passes with synthetic ports: audit pending 0, jobs pending 0, open rounds 0 and not quarantined. No live sender, signer or provider is constructed.
+- `deploy/Dockerfile` builds for `linux/amd64`; its default inspection command passes under `--network none --read-only --cap-drop ALL`. This is an image/packaging smoke, not hosted inference.
+- Changed Python AST, JSON, local Markdown links and `git diff --check` pass. The full suite includes tracked-credential scanning. Terraform and host-bundle infrastructure checks were not repeated because those inputs are unchanged.
+- Initial focused failures were code-identity-derived golden hashes. Both golden traces and the dependent strategy producer fixture were re-captured; verified assessment outcomes remained unchanged. Review also fixed missing failed/in-flight model provenance, limited fallback stages to the documented bound, compared full verified consequences and reported unknown hosted failure cost honestly.
+- Initial full-run harness failures used the wrong disposable database name and omitted git metadata. A real disposable checkout and the correct database resolved those setup failures. Initial network-disabled image builds lacked the dependency install cache; the successful build downloaded only pinned public packages. A demo invocation missing its required disposable DSN was corrected. These failed attempts are retained separately from the final passing results.
+- Hosted Actions are deliberately skipped (`[skip ci]`) at the user's request because the quota is exhausted. No workflow is changed. Native ARM64 local evidence is not a hosted x86_64 CI result.
+
+Artifacts are outside the repo at `/private/tmp/larp-aiand-validation/results/`: `summary.json`, `full.log`, `full.xml`, `environment.json`, `docker-build-final.log`, `docker-smoke.log`, `offline-demo.json` and `pip-check.log`. Final report hashes:
+
+- `full.log`: `15140ded5f63d53abd8c099ab6aa6e7ca08a11dbcb50bed7890403834e20715c`
+- `full.xml`: `2cf92e8de428fbf4bcb2b5fea90db8cbf2382f8c4cb8a584dc49801bed261f04`
+- `docker-smoke.log`: `51ca497439d15fde454e755a69b96ee3f4d565da83cdf6d764e4e94b7b7f4365`
+- `offline-demo.json`: `a9fee7ddbb681c0fbb649a6de628ce6d35b955508db8f77f9f45b89925909510`
+
+AR1–AR8 pass only for the stated synthetic/local scope. Real AIand/OpenAI inference, account entitlements, independent labels/omission rates, actual latency/usage, model/source rights, hosted secret/ledger recovery and live/scored adoption remain NOT RUN and retain the owners above. No whole GAP closes.
