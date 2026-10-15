@@ -529,3 +529,28 @@ Pass criteria, written before any test or code:
 **Whole PR.** Full offline suite on Python 3.12 / PostgreSQL 14.24 (pinned image): no new failures against the base baseline (1417 passed, 1 xfailed #23, plus environment-only failures). Mirror CI run on the head (Yao Zhu pushes to `Cookiemunchrr/larp-ci-mirror` and dispatches `runtime.yml`). Issues get one status comment each; none is closed and nothing is merged in this task.
 
 Status: criteria committed before any test or code. Results follow in WR-C results.
+
+## WR-C results — #44 #54 #53 (2026-10-15)
+
+Branch `claude/wr-c-execution-fixes-5c3ee3`, all commits ordinary and pushed before each run: criteria `27f5eec`; #44 red `1feb530`, fix `65cc297`; #54 red `09a5fd8`, fix `ced04ae`; #53 red `09e4a09`, fix `81e0d22`. Local runs: macOS, Python 3.12.14 from `deploy/requirements-test.lock`, pinned `postgres:14.24-bookworm@sha256:5a05f61a…`, plugin autoload disabled. No key, signing, broadcast, ai-seeds call or AWS change.
+
+| Issue | Red (pushed tests, unfixed code) | Green (fix) |
+|---|---|---|
+| #44 WR02 | `tests/signer/test_wr_c_policy.py`: 24 failed. Scratch probe on `7b7acd2`: approve(attacker, 2^256−1) registered as `larp_execution` → 1 signature, 0 refusals | all `tests/signer` 71 passed / 92 subtests; the malicious intent is refused before `sign_transaction` is called |
+| #54 WR12 | `tests/execution/test_wr_c_rejection.py`: 10 failed, 2 passed (every rejection was "broadcast outcome unknown"; record held the barrier) | 12 passed; insufficient-funds rejection → `REJECTED` → after 120 s, hash absent, chain nonce = attempt nonce → `NOT_SUBMITTED`/`ABORTED`, barrier freed, `NOT_SUBMITTED` fact (reason `BROADCAST_REJECTED`) |
+| #53 WR11 | `tests/execution/test_wr_c_guard_budget.py`: 10 failed, 3 passed. Base: **50 Web3 requests, 16.80 s spacing**, intent expired before the swap | 8 passed / 5 subtests. **9 requests, 2.10 s spacing** (criterion ≤ 12 / ≤ 7.5 s); with a 10 s approve confirmation 11 requests, 2.45 s; 47 unpaced RPC calls (fresh nonce at each step) |
+
+What changed:
+- **#44.** New `larp/signer/policy.py` (`SigningPolicy`). `SignerService` now requires a policy and checks every request against it before the key is used. The policy is read only from `signing_policy` in the signer's pinned config (`config/hosts/signer.example.json` carries example values marked `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` and `allowed_spenders: null`), and a `live` signer refuses to start with the example caps. GAP-29 swap refusal, manifest binding, fencing, HALT and clock checks are unchanged. No `deploy/` change was needed: the config file is already pinned by `verify_service_config`; only its contents grow. Doc: `docs/build/architecture-deployment.md` signer trust boundary paragraph updated.
+- **#54.** `larp.execution.Rejected` (fixed reason codes). `Web3Broadcaster` classifies from its in-memory, already-redacted artifact record (`_Recorded` wrapper; nothing new persisted). `already known`, `known transaction`, `replacement`, timeouts, transport errors, non-JSON, rate limits and unknown errors stay `DependencyUnavailable`. `Executor.broadcast`/`reconcile`, `ExecutionStore.commit` (NOT_SUBMITTED only from a rejected possible send), `ExecutionService.advance` and `ExecutionLoop._unpublished_terminal` use the new `possibly_submitted`. The C-REQ-012 secrecy tests still pass.
+- **#53.** `LiveGuards` reads open state only (bStock list + underlying market), cached per round and reused while fresher than `market_freshness_s` (default 10 s). No price request, no cost quotes from guards.
+
+Test corrections after the red commits (test bugs, not weakened criteria): #44 a distinct signing request per swap subtest and a DSN file in the example-config test; #54 nonce evidence restored before the barrier check; #53 the confirmation wait applies to the approve only. One test-only refactor: `tests/signer/test_service.py` fixtures split into `RolesCase`/`CommandCase` bases. One-line fixture change outside C's tests: `tests/runtime/test_round_driver_service.py` passes the test policy to `SignerService`.
+
+**Full suite** (sequential; an earlier parallel attempt crashed on shared-server faults and is discarded): head `81e0d22` **1449 passed, 7 skipped, 1 xfailed, 2105 subtests**, 203.5 s; base `7b7acd2` on the same machine and server **1419 passed, 7 skipped, 1 xfailed, 2059 subtests**. Identical (empty) failure lists; the xfail is still #23. +30 tests, +46 subtests. Mirror CI on Linux is pending (Yao Zhu runs it).
+
+**Decisions and residual limits (owners):**
+1. **Signer cap values** (Isaac with Keith; Keegan provisions): per-token input caps, the fee cap and `allowed_spenders` (from Gate B router evidence). The example (50 USDT, 1 token per bStock, 0.005 BNB fee) is not a decision. Tracked in `docs/INCOMPLETE_WORK.md`.
+2. **Rejected-then-landed residual** (Isaac): a swap released as NOT_SUBMITTED has no `tx_hash` in its round log. If the rejected bytes later landed anyway (they were absent from our RPC and the nonce unused after 120 s), the next execution's reconciliation sees unexplained nonce use and holds the barrier, but that hash would not be in a round log. Accepted as very unlikely; Isaac to confirm or require logging the hash.
+3. The rejection message list is matched on text the Web3 Open API passes through from the node; the kit documents only "nonce" messages, so the list needs a recorded-real check at Gate B (Isaac).
+4. The guard freshness window (10 s) is a default, not a reviewed value (Isaac).
