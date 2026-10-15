@@ -53,6 +53,8 @@ def main(argv=None):
     assembly.add_argument('--build-id', required=True, help='Exact CI bundle commit SHA')
     assembly.add_argument('--rds-ca-sha256', required=True)
     assembly.add_argument('--sec-contact', help='Public SEC User-Agent identity; never a credential')
+    assembly.add_argument('--balance-rpc-url', help='Manifested BSC RPC (HTTPS) for the chain-balance check (IDEA-055)')
+    assembly.add_argument('--balance-rpc-source-id', help='Source ID recorded with that RPC')
     assembly.add_argument('--out', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
@@ -77,7 +79,8 @@ def main(argv=None):
                                   wallet, args.rds_ca_sha256)
         files = prepare(configs, profile_raw=args.profile.read_bytes(), capture_raw=capture_raw,
                         calendar_raw=args.calendar.read_bytes(), run_id=args.run_id, build_id=args.build_id,
-                        now=utc(), sec_contact=args.sec_contact)
+                        now=utc(), sec_contact=args.sec_contact,
+                        balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id)
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.

@@ -166,7 +166,8 @@ def check_initial_state(state, capture):
         raise ContractError('The runtime cannot build its ledger from the initial state: ' + str(error)) from None
 
 
-def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None):
+def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
+            balance_rpc_url=None, balance_rpc_source_id=None):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage."""
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
@@ -195,6 +196,12 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if any(c.get('wallet_address') != wallet for c in (runtime, uploader)):
         raise ContractError('Infrastructure and captured wallet identities differ')
     runtime.update(run_id=run_id, build_id=build_id, mode='dev', initial_state_sha256=digest(state_raw))
+    # IDEA-055 (#84): a dev start needs the manifested BSC RPC for the chain-balance check (GA10). Without it the
+    # values stay null, the report names BALANCE_RPC, and the runtime refuses to start.
+    if balance_rpc_url is not None and (type(balance_rpc_url) is not str or not balance_rpc_url.startswith('https://')
+                                        or type(balance_rpc_source_id) is not str or not balance_rpc_source_id):
+        raise ContractError('The balance RPC needs an HTTPS URL and a source ID')
+    runtime['driver'].update(balance_rpc_url=balance_rpc_url, balance_rpc_source_id=balance_rpc_source_id)
     runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
                              strategy_profile_sha256=digest(profile_raw),
@@ -228,7 +235,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   runtime_mode='dev', execution='shadow', prepared=True, gate_a_passed=False,
                   # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA09, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
-                  + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)']),
+                  + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
+                  + ([] if balance_rpc_url else ['BALANCE_RPC']),
                   host_checks={name: 'NOT_RUN' for name in HOST_CHECKS},
                   input_hashes={n: digest(raw) for n, raw in files.items()},
                   notes=['No share ratio or basis verification granted',
