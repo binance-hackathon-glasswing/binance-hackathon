@@ -59,6 +59,94 @@ minimum output, policy caps and exact conversion of native 18-decimal amounts.
 It refuses incompatible scales rather than rounding down a minimum.
 
 With no qualified verifier it returns an empty quote list. No verified production
-router decoder is supplied by this change. Native receipt/trace proof, settlement,
-first gas and driver wiring remain blocked under #30/GAP-29/GAP-49. Quote-only
-fixtures do not authorize production signing or claim those capabilities passed.
+router decoder is supplied by this change. Gate B now implements transaction-local
+native receipt settlement as described below; provider qualification, first gas
+and native quote verifier/driver acceptance remain blocked under #30/GAP-29/GAP-49.
+Quote-only fixtures do not authorize production signing or claim those capabilities passed.
+
+## GB-20261015: Gate B evidence and native settlement
+
+From a committed, pushed checkout, capture public chain evidence without loading
+`.env`, an API credential, a signer key or the ai-seeds secret:
+
+```sh
+python -m larp.execution_live.gate_b probe-chain \
+  --rpc-url https://bsc-dataseed.bnbchain.org --source-id bnb-public-mainnet \
+  --wallet PUBLIC_DEV_WALLET --router OBSERVED_CHAIN56_ROUTER \
+  --artifact-root /absolute/external/gate-b-chain
+python -m larp.execution_live.gate_b report --artifact-root /absolute/external/gate-b-reports
+python -m larp.execution_live.gate_b report --inputs /absolute/external/gate-b-inputs.json \
+  --artifact-root /absolute/external/gate-b-reports
+```
+
+Replace the public-address placeholders before use. The public endpoint is listed
+in the [BNB endpoint documentation](https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/json-rpc-endpoint/).
+It is an optional observation provider, not an approved production dependency.
+The probe verifies chain56 and the canonical identity of a finalized block before
+and after reading its wallet balance and router code. Latest/pending nonces are
+separate snapshots requiring fresh reconciliation before any signing. Zero BNB,
+pending nonce differences or missing router code are explicit blockers. Presence
+and SHA-256 of bytecode do not qualify ABI, proxy implementation or route safety.
+The command saves each raw structured RPC observation and a hash-addressed
+`GateBChainEvidence.v1` file externally. Exit 0 means observations collected with
+no snapshot blocker; it grants no execution authority. Failure/blockers return 2.
+
+The offline report accepts exactly this public input shape:
+
+```json
+{
+  "schema": "GateBInputs.v1",
+  "build_id": "FULL_40_HEX_COMMIT",
+  "run_id": "DEV_RUN_ID",
+  "wallet": "PUBLIC_DEV_WALLET",
+  "chain_max_age_seconds": 300,
+  "files": {
+    "execution_config": {"path": "execution.json", "sha256": "RAW_FILE_SHA256"},
+    "chain": {"path": "chain.json", "sha256": "RAW_FILE_SHA256"},
+    "initial_state": {"path": "portfolio.json", "sha256": "RAW_FILE_SHA256"},
+    "quote_costs": {"path": "quote-costs.json", "sha256": "RAW_FILE_SHA256"}
+  }
+}
+```
+
+Paths resolve relative to the input file; absolute paths work. All values above
+are illustrative placeholders. The freshness budget is an explicit owner choice,
+not an execution policy introduced by this tool. Each input is limited to 2 MiB;
+hashes cover exact file bytes. Profile path/hash come from the pinned execution
+configuration. Missing optional evidence remains BLOCKED. Do not supply secret
+files; this tool reads only the public JSON paths supplied and the pinned profile,
+and never resolves DSN/key credential references or starts a service.
+
+`GateBReport.v1` inventories DR01–16,18–20, including Gate A dependencies.
+`VALIDATED` on DR04/09 describes configuration/profile checks only. The existing
+LIVE profile validator is used; a shape-valid synthetic profile cannot establish
+real measurement attribution. Initial portfolio checks use the actual integration
+projection/ledger adapters, run/wallet identity and exact native funding units;
+they do not prove all balances or complete accounting acceptance. `QuoteSummary.v1`
+from the logger is not the strategy's `QuoteCostSummary.v1`: no fees, gas or TTLs
+are invented to bridge them. Raw multi-day/weekend coverage needs separate owner
+review. The report always remains BLOCKED, `signing_enabled=false`, exit 2 until
+the external acceptance workflow is implemented and reviewed. It has no override
+or acceptance/activation command. No report is a substitute for the item-by-item
+IDEA-042 gate review, merged-branch CI, host drills or logged signed dev rehearsal.
+
+Native settlement uses a transaction-specific Geth `prestateTracer` diff,
+bracketed by matching canonical/finalized receipt evidence. Provider support and
+semantics must be independently qualified. Execution config `native_trace` is
+boolean and defaults to false. Enabling it permits only a fixed read-only trace
+request; it does not qualify the provider or lift the Executor/router gates.
+The trace is trusted-provider evidence, not a cryptographic state proof. Its
+`trace_sha256` hashes the canonical encoded trace result; the enclosing raw RPC
+observation has its own artifact hash. Whole-block balance differences cannot
+be used. Native output equals transaction-local balance change plus actual gas
+paid. Exact USDT debit and minimum output are enforced before I4 publication.
+Approval/revert receipts remain gas-only.
+
+The execution service reads BNB valuation and accounting decimals from the
+durable plan. Use 18-decimal BNB ledgers for Gate B: gas and native output must be
+exactly representable; other scales fail on any remainder, without rounding.
+Durably stored observations retain their first bytes across retries. The existing
+native quote verifier, router qualification, first BNB, accepted profile, full
+funding reconciliation and host/audit acceptance still need their named owners.
+See [IDEA-039 GB-20261015](../../docs/ledger/IDEA-039.md#gb-20261015--gate-b-implementation-prospective)
+for tests, evidence and remaining acceptance.

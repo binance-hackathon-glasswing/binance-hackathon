@@ -134,16 +134,24 @@ class PlanValuation:
     def __init__(self, store, registry, *, run_id):
         self.store, self.registry, self.run_id = store, registry, run_id
 
-    def __call__(self, attempt_id):
+    def portfolio(self, attempt_id):
         state, _ = self.registry.attempt(attempt_id)
         plan = self.store.event(self.run_id, 'plan:' + state.intent.round_id)
         if not plan:
             raise Blocked('attempt has no durable round plan')
-        portfolio = ((plan['record'].get('policy_input') or {}).get('context') or {}).get('portfolio') or {}
-        price = portfolio.get('bnb_price_units')
+        return ((plan['record'].get('policy_input') or {}).get('context') or {}).get('portfolio') or {}
+
+    def __call__(self, attempt_id):
+        price = self.portfolio(attempt_id).get('bnb_price_units')
         if type(price) is not int or price <= 0:
             raise Blocked('round plan carries no BNB valuation')
         return price
+
+    def bnb_decimals(self, attempt_id):
+        scale = self.portfolio(attempt_id).get('bnb_decimals')
+        if type(scale) is not int or not 0 <= scale <= 18:
+            raise Blocked('round plan carries no supported BNB accounting scale')
+        return scale
 
 
 class FencedRelease:
