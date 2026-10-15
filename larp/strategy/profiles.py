@@ -9,7 +9,7 @@ import json
 from larp.intelligence.redflags import CONFIG as PREDICATE_CONFIG
 
 from larp.contracts import ContractError, Document
-from .schema import SYMBOLS, ceil, instant, integer
+from .schema import SYMBOLS, ceil, fraction, instant, integer
 from .predicates import predicate_records
 
 WINDOWS = {
@@ -93,6 +93,15 @@ def validate_live(p):
                 or p["falsifier_authority"] != "DISCRETIONARY_EXIT"
                 or p["assessment_required"] is not False):
             raise ContractError("Live profile differs from decided v1 scope")
+        # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.
+        # A separate stress budget may still tighten regime_gross_weight.
+        decided_weights = {"operating_name_weight": Fraction(1, 5),
+                           "operating_gross_weight": Fraction(4, 5),
+                           "hard_name_weight": Fraction(1, 4),
+                           "hard_gross_weight": Fraction(9, 10),
+                           "top_up_below_gross_weight": Fraction(3, 4)}
+        if any(fraction(p[key]) != expected for key, expected in decided_weights.items()):
+            raise ContractError("Live allocation thresholds differ from IDEA-035/037 decisions")
         if p["per_trade_cap_units"] < ceil(Fraction(p["expected_equity_units"], 5)) + p["cost_reserve_units"]:
             raise ContractError("Per-trade cap cannot complete a full 20% position")
         if not 0 < p["slippage_bps"] <= 50 or not 0 < p["quote_age_seconds"] <= 30:
