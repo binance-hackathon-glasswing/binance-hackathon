@@ -372,3 +372,18 @@ Environment: Python 3.12 from `deploy/requirements-test.lock`, PostgreSQL 14.24 
 | WR-T8 | #59 control | `…::test_wr_t7_without_its_state_directory_the_start_is_refused` | The same unit without `StateDirectory=`/`StateDirectoryMode=`: main process exits 4 (`LIVE_START_REFUSED`), `NRestarts=0`, no marker file and no session. This shows WR-T7 would catch the original EROFS defect. |
 
 Overall: the full suite on PostgreSQL 14.24 shows no new failures against this base. WR-T7/WR-T8 need real systemd and run only in CI's runtime job (`LARP_TEST_SYSTEMD=1 … tests/runtime/test_systemd_conditions.py`); org Actions is out of quota, so they are checked on mirror CI (`Cookiemunchrr/larp-ci-mirror`), which Yao Zhu dispatches. A local Linux-container run with systemd, if done, is recorded as supporting evidence only.
+
+### WR-T continuation (2026-10-15, before execution)
+
+The handover is continued by Codex on the same branch. WR-T1..6 live in
+`tests/runtime/test_daily_anchor_window.py::DailyAnchorWindow` to keep the existing
+service harness small; WR-T3b and WR-T8 have their own unambiguous method names.
+Criteria are unchanged. The restart fixtures use real `Service` objects and an
+unclosed process session, following the existing `Restart` harness; they do not
+claim OS process-kill coverage. WR-T7/8 copy the full manifested release into a
+readable `/var/lib/larp-wrt-*` fixture (outside `PrivateTmp` and `ProtectHome`).
+The CA and initial-state paths are also substituted with synthetic host files;
+the wallet state paths and every sandbox directive remain the production ones.
+Only the three pre-registered external boundaries are replaced in the subprocess.
+The orphan `claude/issue31-day-roll-tests` branch was inspected but is not merged:
+its direct planner checks do not establish the registered driver-to-planner path.
