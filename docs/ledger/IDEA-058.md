@@ -82,3 +82,19 @@ PR #89 (initial-state builder and issuers map, stacked on #84) is closed in favo
 | GA09 | No BNB is not a refusal for the shadow run, which needs no gas. But `preparation-report.json` lists `FIRST_BNB (Q-03)` in `missing_inputs` whenever the captured native balance is 0, because Gate B (DR-06) refuses an unfunded wallet. |
 
 Not ported, because they need #84's finalized-block reader (`larp/execution_live/balances.py`), which this branch does not have: the pending-nonce refusal and a block-bound balance read. The kit's balance endpoint has no block identity. Follow-up after #84 merges: capture balances with `read_balances` and refuse while latest ≠ pending.
+
+### GA07–GA09 results (2026-10-15)
+
+- **Order of commits:** renumbering `d123272`; criteria `5a3bc9f`; red tests (3 failing for the predicted reasons: issuer rule not consulted, no self-check function, no `FIRST_BNB` entry); port `1c3edca`.
+- **Mutations.** Each was reverted, and each was caught: issuer rule not consulted; self-check not called; no `ledger_from` check; wei not required; no `FIRST_BNB` flag.
+- **Full suite.** Python 3.12.3 venv from `deploy/requirements-test.lock`, PostgreSQL 14.24 (the CI image's digest), bubblewrap installed.
+  - Before (`ef71126`): 1533 passed, 5 skipped, 2147 subtests.
+  - After (`1c3edca`): **1536 passed, 5 skipped, 2152 subtests** (+3 tests: this change only).
+  - `tests/runtime/test_gate_a.py` with the database: 15 passed, including GA06's PostgreSQL composition.
+- Mirror CI: not yet run on this head.
+
+| ID | Result | Evidence |
+|---|---|---|
+| GA07 | PASS | `PortedFromPr89.test_ga07_*` |
+| GA08 | PASS | `PortedFromPr89.test_ga08_*` |
+| GA09 | PASS | `PortedFromPr89.test_ga09_*` |
