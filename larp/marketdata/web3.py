@@ -163,6 +163,9 @@ class Web3Client:
             value = params.get(name)
             if isinstance(value, str) and value:
                 private_values.append(value)
+                # Keep literal matches too: an attached diagnostic prefix can
+                # shift token decoding while leaving the full encoding usable.
+                private_values.append(base64.b64encode(value.encode()).decode())
                 private_bytes.append(value.encode())
                 if value.startswith('0x'):
                     # A prefix or hex case change still leaves usable signed bytes.
@@ -170,6 +173,7 @@ class Web3Client:
                     try:
                         raw_private = bytes.fromhex(value[2:])
                         if raw_private:
+                            private_values.append(base64.b64encode(raw_private).decode())
                             private_bytes.append(raw_private)
                     except ValueError:
                         pass  # non-hex private parameters are still redacted
