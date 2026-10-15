@@ -414,3 +414,54 @@ WR-T4/5 are strengthened to start with `daily_halt=False`, so their stale-day
 refusals cannot be masked by a separate daily-loss latch. Production remains
 unchanged. Real host/RDS/Secrets Manager qualification and mirror CI remain
 separate from this disposable-container evidence.
+
+### WR-T publication and mirror CI handoff
+
+PR [#80](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/80)
+targets `codex/system-testing-20261012`; it is not merged and neither issue is
+closed. No production file changed. The example's `day_roll_window_ms` is still
+`null`; the 900,000 ms window exists only in synthetic tests.
+
+**Yao Zhu — mirror CI** (run from this repository; these push normally, never
+rewrite history). The mirror was not dispatched by this continuation:
+
+```sh
+git push mirror claude/wr-tests-31-59:refs/heads/claude/wr-tests-31-59
+gh workflow run runtime.yml --repo Cookiemunchrr/larp-ci-mirror --ref claude/wr-tests-31-59
+gh run list --repo Cookiemunchrr/larp-ci-mirror --workflow runtime.yml --branch claude/wr-tests-31-59 --limit 1 --json databaseId,headSha,status,conclusion,url
+```
+
+Verify `headSha` equals PR #80's head and retain the URL/results before claiming
+mirror acceptance. The runtime job runs the full suite followed by the opt-in
+systemd file; require **5 passed** in that separate systemd step. Infrastructure,
+Docker, demo and host-bundle jobs remain part of the existing workflow.
+
+Remaining owners: Yao Zhu dispatches mirror CI; D/Keegan reviews and integrates
+PR #80; the team chooses the production window/cadence under #31. Existing
+first-host/RDS/IAM/Secrets Manager and live qualification work is unchanged.
+No whole item from `INCOMPLETE_WORK.md` is completed by these synthetic tests.
+
+### WR-T final verification (2026-10-15)
+
+Test code revision: `9c8f9c3e5a0adcb30c6bae0a576d85484dff2fbe`, pushed before
+execution. Target remained `b6ab0a9`. All subsequent changes are documentation.
+
+| Check | Result |
+|---|---|
+| Full suite, macOS Python 3.12.14, pinned test lock, PostgreSQL 14.24 | **1526 passed, 9 skipped, 0 failed, 0 xfailed; 2127 subtests**, 195.39 s. The skips are the opt-in external dataset, three Linux isolation checks and five opt-in systemd checks. |
+| Focused native ARM64 Linux container, pinned test lock, PostgreSQL 14.24, `LARP_TEST_SYSTEMD=1` | **12 passed, 9 subtests**, 18.69 s: all seven daily-anchor methods and all five systemd methods (including existing R13 tests). No skips. |
+| Dependencies and diff | `pip check` passes in both environments; `git diff --check` passes. |
+| Production changes | None. No signing, broadcast, AWS changes or real service credentials. No policy/window selected. |
+| Cleanup | Removed `larp-wr-tests-pg`, `larp-wrt-sysd`, and the task's scratchpad `venv` after testing. Other containers/worktrees and user files were retained. |
+
+PostgreSQL reports `14.24 (Debian 14.24-1.pgdg12+2)`; container image ID matches
+the workflow pin `sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`.
+Raw logs retained outside Git:
+- `/private/tmp/larp-wrt-full-macos.log`, SHA-256 `886ca9942bde7cd4a3b480dcbc9487364599e188e26c269b86b947dd5a439d25`.
+- `/private/tmp/larp-wrt-linux-focused.log`, SHA-256 `6a54c9682998045947bc869293359d4c6f7529faed38323ef362843e41fb9bee`.
+
+All WR-T behavior passes with the documented fixture corrections; no runtime
+regression was exposed and no production fix was necessary. Container systemd
+results are supporting evidence only. Mirror CI and review/merge remain owned
+as above; #31 and #59 stay open. The feature branch is pushed, but this is not a
+strict main-branch handoff: the work intentionally remains in PR #80, not `main`.
