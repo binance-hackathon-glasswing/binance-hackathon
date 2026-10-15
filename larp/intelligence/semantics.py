@@ -49,7 +49,8 @@ NOT_A_CUE = re.compile(r"\b(?:no|not)\s+later\s+than\b|\bshould\s+no\s+longer\s+
 # RESTATEMENT trigger itself; anywhere else ("pro forma amounts cannot be relied upon as a substitute", "reports of an
 # incident cannot be relied upon") its negation still counts (IDEA-041 review V02).
 NON_RELIANCE = re.compile(
-    r"\b(?:(?:should|must|can)\s+no\s+longer|should\s+not|must\s+not|cannot|can\s+not)\s+"
+    r"\b(?:(?:should|will|must)\s+be\s+restated\s*,?\s+and\s+)?"
+    r"(?:(?:should|must|can)\s+no\s+longer|should\s+not|must\s+not|cannot|can\s+not)\s+"
     r"(?:be\s+relied|rely)\s+(?:up)?on\b(?:\s*,?\s+and\s+(?:should|will|must)\s+be\s+restated\b)?", re.I)
 # Around that trigger, a reversal or denial verb negates it as a "not" would ("declined to conclude that ...",
 # "disagrees with the assertion that ...", "rescinded its determination that ...", V01).

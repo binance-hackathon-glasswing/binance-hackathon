@@ -128,6 +128,9 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     statements = {k: dict(v) for k, v in state["statements"].items()}
     records_seen = dict(state["records_seen"])
     records_assessed = dict(state.get("records_assessed", {}))
+    pending_flags = {(f["predicate_id"], f["accession"]): dict(f)
+                     for f in state.get("pending_red_flags", [])}
+    resolved_reviews = list(state.get("resolved_red_flag_reviews", []))
     used_by_id = {u.get("record_id"): u for u in r["evidence_used"]}
 
     def supporting_revisions(sources):
@@ -163,6 +166,31 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     complete = (r["status"] == "ASSESSED" and (r.get("coverage") or {}).get("complete") is True
                 and not any(m.startswith(INCOMPLETE) for m in r["missingness"])
                 and not r["conflicts"] and not (r.get("novelty") or {}).get("prior_not_checked"))
+    # A declared, current Class 1/2 item whose text could not be verified is uncertainty about that
+    # accession, not a verified adverse event. An unrelated clean filing cannot erase it (#48).
+    # Older state documents lack this optional field and remain replayable until such an item is seen.
+    checks = r.get("red_flag_checks") or []
+    by_accession = {u["accession"]: u for u in r["evidence_used"]}
+    for key, pending in list(pending_flags.items()):
+        used = by_accession.get(pending["accession"])
+        own = [c for c in checks if (c["predicate_id"], c["accession"]) == key]
+        verified = any(c.get("verified") is True for c in own)
+        corrected = (complete and used is not None and used.get("revision", 0) > pending["revision"]
+                     and not any(c.get("verified") is False for c in own))
+        if verified or corrected:
+            pending_flags.pop(key)
+            resolved_reviews.append(dict(pending, resolved_ms=now_ms, resolved_result_id=rid,
+                                         resolution="VERIFIED" if verified else
+                                         "SOURCE_WITHDRAWN" if used.get("quality") == "WITHDRAWN"
+                                         else "SOURCE_CORRECTED"))
+    for check in checks:
+        if check.get("verified") is not False or check.get("class") not in (1, 2) or check.get("reason") in (
+                "OUT_OF_SCOPE_FORM", "OUT_OF_SCOPE_FILER", "ITEM_NOT_IN_METADATA", "BACKFILL_NOT_ACTIONABLE",
+                "STALE_EVENT"):
+            continue
+        key = (check["predicate_id"], check["accession"])
+        pending_flags[key] = dict(check, pending_since_ms=pending_flags.get(key, {}).get("pending_since_ms", now_ms),
+                                 result_id=rid)
     # Revisions and withdrawals first: they can resolve latches and correct statements from the old version.
     present_findings = {f["type"] for f in r.get("event_findings", []) + r.get("findings", [])}
     present_findings.update("FALSIFIER_FIRED:" + f["falsifier_id"] for f in r["falsifiers"] if f["state"] == "FIRED")
@@ -295,14 +323,18 @@ def accept(state: dict, result: Document, *, profile_hash: str, now_ms: int) -> 
     # Correction baselines still needed by an unresolved latch or a registry statement are never evicted (R23).
     keep = {s.get("accession") for a in adverse for s in a.get("sources") or []}
     keep |= {rec.get("accession") for entry in statements.values() for rec in entry["records"]}
+    keep |= {f["accession"] for f in pending_flags.values()}
     nxt.update(unresolved_adverse=adverse, resolved_adverse=resolved[-200:], statements=statements,
                records_seen=_bounded(records_seen, keep), records_assessed=_bounded(records_assessed, keep))
-    gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete)
+    if pending_flags or "pending_red_flags" in state:
+        nxt.update(pending_red_flags=[pending_flags[k] for k in sorted(pending_flags)],
+                   resolved_red_flag_reviews=resolved_reviews[-200:])
+    gate, reasons = _gate(r, adverse, nxt["availability"], statements, complete, bool(pending_flags))
     # The same reading without Class 2 red-flag latches (IDEA-041, B1): their buy block expires after a set number
     # of sessions, which only the session-aware policy can count. Their latches stay (the finding stays logged), so
     # the plain gate stays ADVERSE; this view lets the policy tell "only expiring blocks remain" from anything else.
     untimed = [a for a in adverse if (a.get("red_flag") or {}).get("class") != 2]
-    timed_gate, timed_reasons = _gate(r, untimed, nxt["availability"], statements, complete)
+    timed_gate, timed_reasons = _gate(r, untimed, nxt["availability"], statements, complete, bool(pending_flags))
     nxt.update(evidence_gate=gate, gate_reasons=reasons,
                assessed_until_ms=r["expiry_ms"] if gate == "CLEAR" else None,
                gate_excluding_timed=timed_gate, gate_excluding_timed_reasons=timed_reasons,
@@ -324,7 +356,7 @@ def _bounded(records: dict, keep: set, limit: int = MAX_RECORDS) -> dict:
     return dict(sorted(records.items()))
 
 
-def _gate(r: dict, adverse: list, availability: str, statements: dict, complete: bool) -> tuple:
+def _gate(r: dict, adverse: list, availability: str, statements: dict, complete: bool, pending_flags=False) -> tuple:
     if adverse:
         return "ADVERSE", sorted({a["type"] for a in adverse})
     pending = sorted(s["statement_id"] for s in statements.values() if s["status"] == "PENDING_REVIEW")
@@ -332,6 +364,8 @@ def _gate(r: dict, adverse: list, availability: str, statements: dict, complete:
         return "UNKNOWN", [f"LATEST_{availability}"] + list(r.get("reasons", [])) + (
             ["PENDING_STATEMENT_REVIEW"] if pending else [])
     reasons = [m for m in r["missingness"] if m.startswith(INCOMPLETE)]
+    if pending_flags:
+        reasons.append("PENDING_RED_FLAG_REVIEW")
     if not complete:
         reasons.append("COVERAGE_INCOMPLETE")
     if r["conflicts"]:
