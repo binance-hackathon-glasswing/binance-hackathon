@@ -9,6 +9,9 @@ hash-chained execution record, is the last one, is AUTHORIZED and carries the re
 the payload passes the G-01 allow-list (`validate_payload`), the step sequence and gas budget (`validate_sequence`);
 and its own clock lies inside the gate window and before the intent expires. The gate facts it cannot observe
 offline (wallet nonce, market open, risk, health) come from the request, as the execution service evaluated them.
+Because primary writes the intent, the signer also checks every request against its own pinned signing policy
+(larp/signer/policy.py; `signing_policy` in its config): allowed spenders and tokens, per-token input caps and a fee
+cap, so a compromised primary cannot get an approve to another spender or an unlimited approve signed (WR02, #44).
 A swap needs a verified router decoder; none exists yet (GAP-29), so swap requests are refused.
 
 It signs through `LocalSigner`, whose fenced registry keeps at most one signature per attempt. A failed check becomes
@@ -34,6 +37,7 @@ from larp.execution_live.store import ExecutionStore
 from larp.execution_live.venue import UnverifiedRouter
 from larp.signer.keyfile import load_key_file
 from larp.signer.local import LocalSigner
+from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
 
 EXIT_QUARANTINED, EXIT_REFUSED = 3, 4
 SCHEMA = 'SignerService.v1'
@@ -48,9 +52,12 @@ class StartRefused(ContractError):
 
 
 class SignerService:
-    def __init__(self, *, store, run_id, wallet, credentials, clock_s, decoder=None, max_skew_s=2, batch=16,
+    def __init__(self, *, store, run_id, wallet, credentials, clock_s, policy, decoder=None, max_skew_s=2, batch=16,
                  build_id=None, manifest_sha256=None):
-        self.store, self.run_id, self.clock = store, run_id, clock_s
+        if not isinstance(policy, SigningPolicy):
+            raise Blocked('signer signing policy required')
+        self.store, self.run_id, self.clock, self.policy = store, run_id, clock_s, policy
+        self.wallet = address(wallet)
         self.build_id = build_id
         self.manifest_sha256 = manifest_sha256
         self.decoder = decoder if decoder is not None else UnverifiedRouter()
@@ -111,6 +118,7 @@ class SignerService:
         if now + self.max_skew < gates.observed_at:
             raise Blocked('signer clock is behind the request')
         validate_sequence(state, attempt.step, attempt.payload, gates)
+        self.policy.check(state.intent, attempt.step, attempt.payload, self.decoder, self.wallet)
         self._current = (attempt.attempt_id, state.intent, attempt.step, gates, max(now, gates.observed_at),
                          self.decoder)
         try:
@@ -147,6 +155,9 @@ def validate_config(value):
     if value.get('key_credential') not in (None, '') and not (
             type(value['key_credential']) is str and _CREDENTIAL.fullmatch(value['key_credential'])):
         raise ContractError('Invalid key credential name')
+    policy = SigningPolicy.from_config(value.get('signing_policy'))
+    if value['mode'] == 'live' and policy.cap_basis == EXAMPLE_CAP_BASIS:
+        raise ContractError('A live signer needs decided signing caps, not the example values')
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
@@ -212,6 +223,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],
                                     credentials=credentials, clock_s=clock_s,
+                                    policy=SigningPolicy.from_config(config['signing_policy']),
                                     max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'],
                                     manifest_sha256=manifest_sha256)
         except Blocked as refused:
@@ -220,7 +232,8 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             return EXIT_REFUSED
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
-        print(json.dumps(dict(started=True, signing_enabled=True, swap_decoder='UNVERIFIED')))
+        print(json.dumps(dict(started=True, signing_enabled=True, swap_decoder='UNVERIFIED',
+                              cap_basis=service.policy.cap_basis)))
         cycles = 0
         while not stopping and (max_cycles is None or cycles < max_cycles):
             if run_state(store, config['run_id'])['quarantined']:

@@ -23,6 +23,18 @@ from tests.support import DatabaseCase
 HAS_ETH = importlib.util.find_spec('eth_account') is not None
 
 
+def policy_config():
+    """A wide test signing policy (WR02): the fixture router, every eligible token, caps far above the fixtures."""
+    from larp.signer.policy import UNIVERSE, NATIVE_BNB
+    return dict(cap_basis='TEST_FIXTURE', allowed_spenders=[ROUTER], allowed_tokens=sorted(UNIVERSE),
+                max_input_units={t: str(10**30) for t in sorted(UNIVERSE - {NATIVE_BNB})}, max_fee_wei=str(10**18))
+
+
+def fixture_policy():
+    from larp.signer.policy import SigningPolicy
+    return SigningPolicy.from_config(policy_config())
+
+
 class RemoteFixture(RemoteSigner):
     mode = 'fake'  # the W04 Executor accepts fake capability bundles only; the port itself is the live one
 
@@ -84,7 +96,8 @@ def signer_service(case, **kwargs):
     from larp.signer.service import SignerService
     return SignerService(store=case.store, run_id='run', wallet=case.wallet,
                          credentials=dict(WALLET_PRIVATE_KEY=case.account.key.hex()),
-                         clock_s=lambda: case.now if case.signer_now is None else case.signer_now, **kwargs)
+                         clock_s=lambda: case.now if case.signer_now is None else case.signer_now,
+                         **{'policy': fixture_policy(), **kwargs})
 
 
 class SigningProtocol(SigningCase):
@@ -326,7 +339,7 @@ class CommandCase(SigningCase):
         self.store.initialize('live-run', self.wallet, 56, doc(dict(balances=dict(USDT=1))), mode='dev')
         self.config = dict(schema='SignerService.v1', run_id='live-run', build_id=BUILD, mode='dev',
                            wallet_address=self.wallet, key_file=str(self.key), interval_seconds=1,
-                           database_dsn_file=str(dsn))
+                           database_dsn_file=str(dsn), signing_policy=policy_config())
 
     def write(self, config=None, pin=True):
         raw = json.dumps(config or self.config).encode()
@@ -445,7 +458,8 @@ class RolesCase(SigningCase):
         from larp.signer.service import SignerService
         self.service = SignerService(store=self.as_role['larp_signer'], run_id='run', wallet=self.wallet,
                                      credentials=dict(WALLET_PRIVATE_KEY=self.account.key.hex()),
-                                     clock_s=lambda: self.now if self.signer_now is None else self.signer_now)
+                                     clock_s=lambda: self.now if self.signer_now is None else self.signer_now,
+                                     policy=fixture_policy())
 
     def refused_as(self, role, *statements):
         from larp.storage.postgres import Unavailable

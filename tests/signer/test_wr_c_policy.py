@@ -88,10 +88,13 @@ class PolicyConfiguration(unittest.TestCase):
         from larp.signer.service import validate_config
         example = json.loads((ROOT / 'config/hosts/signer.example.json').read_text())
         self.assertEqual(example['signing_policy']['cap_basis'], EXAMPLE_CAP_BASIS)
-        filled = {**example, 'run_id': 'run', 'build_id': 'b' * 40, 'wallet_address': '0x' + '1' * 40,
-                  'database_host': 'h', 'database_ca_sha256': '0' * 64,
+        # The operator fills the nulls; a local DSN file stands in for the RDS settings here.
+        filled = {**{k: v for k, v in example.items() if not k.startswith('database_')}, 'run_id': 'run',
+                  'build_id': 'b' * 40, 'wallet_address': '0x' + '1' * 40, 'database_dsn_file': '/d',
                   'signing_policy': {**example['signing_policy'], 'allowed_spenders': [ROUTER]}}
         validate_config(filled)
+        with self.assertRaises(ContractError):  # the example caps never reach a live run
+            validate_config({**filled, 'mode': 'live'})
 
 
 class PolicyCase(fixtures.RolesCase):
@@ -167,20 +170,20 @@ class SignerPolicyRefusals(PolicyCase):
 
     def test_wr02_swap_is_checked_against_the_policy(self):
         state, swap = self.approved_swap()
-        for name, changes, fragment in (('input above the cap', dict(max_input_units={USDT: '99', TOKEN: '1'}), 'cap'),
-                                        ('router outside the list', dict(allowed_spenders=['0x' + '9' * 40]),
-                                         'spender')):
+        for offset, (name, changes, fragment) in enumerate((
+                ('input above the cap', dict(max_input_units={USDT: '99', TOKEN: '1'}), 'cap'),
+                ('router outside the list', dict(allowed_spenders=['0x' + '9' * 40]), 'spender'))):
             with self.subTest(name=name):
                 self.service = self.policy_signer(decoder=FakeDecoder(), **changes)
-                request_id, _ = self.request(state, swap, now=19)
+                request_id, _ = self.request(state, swap, now=19 + offset)  # a new request each time
                 with patch.object(self.service.signer.account, 'sign_transaction') as sign:
                     self.service.once()
                 sign.assert_not_called()
                 self.assertIn(fragment, self.refusals()[request_id])
                 self.assertEqual(len(self.signatures()), 1)  # the approval only
         self.service = self.policy_signer(decoder=FakeDecoder())
-        self.request(state, swap, now=20)
-        self.now = 20
+        self.request(state, swap, now=21)
+        self.now = 21
         self.service.once()
         self.assertEqual(len(self.signatures()), 2)
 

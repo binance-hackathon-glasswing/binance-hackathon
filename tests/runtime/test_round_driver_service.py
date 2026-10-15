@@ -44,6 +44,7 @@ from tests.execution.test_settlement import log
 from tests.execution_fixtures import BLOCK, FakeDecoder, FakeVenue, ROUTER, TOKEN, finalized
 from tests.integration import test_evidence_pipeline as pipeline
 from tests.runtime.test_driver import HOUR, DriverHarness
+from tests.signer.test_service import fixture_policy
 
 RUN = pipeline.RUN
 VERSION = 'integration-fixture'
@@ -147,7 +148,8 @@ class Execution:
             from larp.signer.service import SignerService
             self.signer_host = SignerService(store=store, run_id=RUN, wallet=wallet,
                                              credentials=dict(WALLET_PRIVATE_KEY=case.account.key.hex()),
-                                             clock_s=lambda: case.w.clock() // SECOND, decoder=FakeDecoder())
+                                             clock_s=lambda: case.w.clock() // SECOND, decoder=FakeDecoder(),
+                                             policy=fixture_policy())
             ticks = iter(range(10**6))
             signer = RemoteFixture(execution=self.registry, guards=self.guards, clock_s=lambda: case.w.clock() // SECOND,
                                    sleep=lambda s: self.signer_host.once(), monotonic=lambda: next(ticks),
