@@ -27,3 +27,9 @@
 5. **Static checks.** `bash -n` passes, and `shellcheck` passes if it is installed.
 
 ## Results
+- 2026-10-15 correction (Yao Zhu with Claude Code): **dropped before the script was built**; nothing was run. The team will run hosted CI on a private mirror repository instead, once teammates set it up. Rules for the mirror:
+  - Push each branch to the registered repository first (F-61: code runs only after it is pushed there).
+  - Then push the **same commits** (identical SHAs, same branch name) to the mirror with `git push <mirror> <branch>`. Never copy or paste files: new SHAs would break the mapping from CI result to registered commit and leave a history gap (F-47, F-48).
+  - The mirror runs `runtime.yml` unchanged, including the real-systemd test and the bundle artifact that a local run could not reproduce. `build_release_bundle.py` needs the commit to be the mirror branch's pushed head, which the same branch name gives.
+  - Cite results as "CI on mirror, commit `<sha>`, run `<url>`".
+  - The mirror must be private and outside this organisation's Actions quota (a repository in the same organisation shares the quota).
