@@ -61,7 +61,8 @@ def profile():
     s['bnb_price_units'] = 700_000_000
     for row in s['symbols'].values():
         row.update(approve_gas_bnb_units=10**10, swap_gas_bnb_units=2 * 10**10)
-    return build_live_profiles(Document.from_dict(s), registry())['REHEARSAL'].read()
+    published = Document((gate_a.ROOT / 'config/intelligence/red_flags.v1.json').read_bytes())
+    return build_live_profiles(Document.from_dict(s), published)['REHEARSAL'].read()
 
 
 def assembled(**changes):
@@ -277,6 +278,11 @@ class GateAComposition(PipelineHarness):
             self.assertEqual(current['projection']['portfolio'], original)
             self.assertFalse(current['reservations'])
             self.assertFalse(self.store.open_rounds(config['run_id']))
+            records = current['projection']['round_records']
+            self.assertTrue(records)
+            for record in records.values():
+                self.assertFalse([e for e in record['errors'] if e.startswith(('CONTEXT_UNAVAILABLE', 'PLANNER_UNAVAILABLE'))])
+                self.assertEqual(record['policy_input']['context']['portfolio']['mode'], 'DEV')
             with self.store.transaction() as db:
                 logs = db.execute('SELECT document FROM audit_events WHERE run_id=%s', (config['run_id'],)).fetchall()
                 executions = db.execute('SELECT count(*) FROM execution_records WHERE run_id=%s', (config['run_id'],)).fetchone()[0]
@@ -305,3 +311,4 @@ class GateAComposition(PipelineHarness):
                     execution=ExecutionBridge(), reducer=settle, test_rounds=True, require_version=True,
                     initial_policy_state=initial_policy_state(config['run_id'], json.loads(files['strategy-profile.json'])))
             self.assertEqual(replayed, head)
+            self.assertEqual(self.store.load(config['run_id']).read()['mode'], 'offline')

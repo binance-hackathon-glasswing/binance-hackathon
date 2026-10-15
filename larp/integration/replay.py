@@ -43,7 +43,27 @@ class RecordedPorts:
         recorded.health = lambda current: context["health"]
         recorded.series = lambda now_ms: context["series"]
         recorded.gas_quotes = (lambda now_ms: context["gas_quotes"]) if "gas_quotes" in context else None
+        # ContextBuilder takes the portfolio's mode from the run. Replay runs
+        # remain OFFLINE for safety, but the decision originally saw DEV/LIVE.
+        # Preserve that recorded input in the copied builder only; never change
+        # the target store's mode or activate its signing capability (IDEA-057).
+        mode = (context.get('portfolio') or {}).get('mode')
+        if mode in ('OFFLINE', 'PAPER', 'DEV', 'LIVE'):
+            return RecordedMode(recorded, mode.lower())
         return recorded
+
+
+class RecordedMode:
+    """Replay-only context mode; all other ports/attributes are the copied builder's."""
+
+    def __init__(self, builder, mode):
+        self.builder, self.mode = builder, mode
+
+    def __getattr__(self, name):
+        return getattr(self.builder, name)
+
+    def __call__(self, current, *args):
+        return self.builder(dict(current, mode=self.mode), *args)
 
 
 def replay_live(batches, initial, target, *, builder, **options):
