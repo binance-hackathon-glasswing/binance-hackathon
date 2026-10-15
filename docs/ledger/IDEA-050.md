@@ -143,3 +143,18 @@ Results (2026-10-14):
 |---|---|---|
 | Y1 | PASS | `TwoIntents.test_y1_two_intents_that_finish_before_any_ingestion_close_their_round` (real planner with its SELL split in two; both executions finish while the runtime is stopped; one restart journals both, seals and closes the round); `test_y1_a_round_with_an_unfinished_intent_is_never_sealed` (the second command, made stale by the first ingestion, is reauthorized by R3 and then completes) |
 | Y2 | PASS | `QuoteResume.test_y2_an_interrupted_quote_follow_up_runs_again_after_a_restart` (`<parent>/quote1` interrupted, `<parent>/quote1#2` plans with refetched quotes); `test_y2_without_an_executable_quote_the_resume_is_tried_once_per_process` |
+
+## D31 — #31 acceptance 2–3: day-roll tests (Claude Code session, 2026-10-15; criteria recorded before the tests)
+
+Source: issue #31, status comments of 2026-10-14 and 2026-10-15. `DayRoll` (E8, R2) is merged. What remains is tests for consecutive days, a restart across midnight and missing-boundary recovery (acceptance 2), and a check that entries and gas top-ups resume only after a valid new-day anchor while the peak, run-halt and deep-cut latches stay intact (acceptance 3). The value of `day_roll_window_ms` is a team decision and is **not** chosen here; the tests use 15 minutes, as E8 does.
+
+Synthetic ports, disposable PostgreSQL, no credentials, network, signing or upload. Expected: every check passes on the current code. A failure is a defect: it gets its own failing-test commit, then a fix commit.
+
+| ID | Prospective check |
+|---|---|
+| D31-1 | Consecutive days, one driver process: three UTC midnights in turn, each cycle inside the window, give exactly one `DAY_ROLLED` per day (`day:<date>`). Each boundary is that day's midnight; each anchor is the equity at that cycle's marks (the marks change from day to day); a second cycle the same day rolls nothing. `replay_live` reproduces the head. |
+| D31-2 | Restart across midnight through real `Service` starts: a `Service` cycle before midnight rolls nothing; a new `Service` started after midnight inside the window rolls once; a third `Service` started in the same window, after the roll committed, rolls nothing. One `DAY_ROLLED` for the day; replay equal. |
+| D31-3 | Missing boundary: with the process down through the whole window of day D, a cycle on D after the window returns `OUTSIDE_WINDOW`; a later cycle on D with lower marks (a post-loss mark) also returns `OUTSIDE_WINDOW`; `risk.day` and the anchor stay at D−1 and nothing is committed. The next midnight, inside the window, rolls straight to D+1 at D+1's marks. No `DAY_ROLLED` for D exists. |
+| D31-4 | Latches: with `peak_units` raised and `run_halt`, `deep_cut` and `daily_halt` set in the persisted risk state, a roll keeps `peak_units`, `run_halt` and `deep_cut`, clears `daily_halt` and sets the new day and anchor. |
+| D31-5 | Rounds read the rolled state: a round planned after the roll carries `risk.day` = today in its policy input; a round planned on a day whose boundary was missed carries the stale day. |
+| D31-6 | Planner gate (acceptance 3). On a stale day (`risk.day` = yesterday): an entry the planner would otherwise make is refused with `NEW_RISK_HALTED` and no BUY intent; a gas top-up below the floor is refused with `GAS_TOP_UP_SPENDING_BLOCKED` and no top-up intent or quote request. After the risk state is rolled exactly as `DayRoll` commits it (`roll_day` at today's midnight), the BUY intent and the top-up intent appear. With `run_halt` or `deep_cut` latched before the roll, both stay refused after it. |
