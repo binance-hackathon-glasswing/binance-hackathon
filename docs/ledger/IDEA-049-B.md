@@ -587,8 +587,17 @@ Full suite at fix head `ba81aa2` (clean pushed tree; macOS, Python 3.12.14 from
 container on loopback): **1474 passed, 7 skipped, 1 xfailed (#23), 2059 subtests,
 0 failed**, 204.87s. Base `7b7acd2` on the same machine and setup: 1419 passed,
 7 skipped, 1 xfailed, 2059 subtests, 0 failed. The difference is exactly the 55
-new tests. Linux mirror CI has not run on this branch yet (no push access to the
-mirror from this session). Synthetic checks only: no live data, signing or chain.
+new tests. Synthetic checks only: no live data, signing or chain.
+
+Linux mirror CI on PR #77 head `a853528` (pushed to the mirror and started by
+Yao Zhu): [run 38750352994](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38750352994),
+all four jobs SUCCESS. Runtime full suite **1477 passed, 4 skipped, 1 xfailed,
+2059 subtests**, 306.37s: the mirror base on `e5db681` (1422 passed, 4 skipped,
+1 xfailed, 2059 subtests) plus the 55 new tests. Opt-in systemd 3 passed,
+5 subtests; offline demo and Docker build/smoke passed (job success).
+Terraform mock tests: deploy/aws 15 passed, 0 failed; deploy/bootstrap 1 passed,
+0 failed. Host-bundle build/provision succeeded. These do not establish
+deployment readiness.
 
 B-DEC-08 (gas reservation margin) is added to the DECISION-NEEDED table above.
 WR-B does not change the PARTIAL REVIEW / DEPLOYMENT BLOCKED status.
