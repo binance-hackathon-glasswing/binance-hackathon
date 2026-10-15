@@ -321,3 +321,10 @@ Results (2026-10-15), local, each failing test pushed before its fix:
   WR-L5 on the merged base: CI on mirror, commit `e5db681`, [run 38745005867](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38745005867): all four jobs PASS (runtime: 1422 passed, 4 skipped, 1 xfailed, 2059 subtests, plus real-systemd 3 passed/5 subtests, demo and Docker smoke test; host bundle; Terraform `deploy/aws` and `deploy/bootstrap`).
   Still open, unchanged: #64 items 3–4, #59 acceptance 1, and the core-stack
   apply that schedules `larp-dev/evidence` for deletion.
+
+
+## MAIN-V01 — main promotion acceptance (2026-10-15)
+
+User authorization: review the integrated system-testing branch and merge into `main` if safe. Source frozen at `b6ab0a91464f6e31a3ca1c98fc4f708d02f03deb` (318 commits ahead of observed `main`, no divergent main commits), including PRs #75 and #77–79. This is repository integration only; hosted activation and wallet/signing authorization remain governed by the existing gates.
+
+Prospective acceptance: (1) no merge conflicts or whitespace errors, no secrets or verbatim kit/vendor changes introduced; (2) full offline suite with pinned Python 3.12.15/test dependencies and disposable PostgreSQL 14.24 on native ARM64 Linux, including unchanged bubblewrap isolation, no new failures or unexpected skips; (3) real systemd refusal/restart checks and offline demo pass; (4) Terraform fmt/validate/mock tests pass for both modules, with no cloud apply; (5) current x86_64 bundle builds with the pushed-head guard, includes the CI release manifest, and provisions both roles offline; (6) restricted runtime Docker smoke passes; (7) promotion PR preserves history with an ordinary merge. Record exact source, results and platform limits before merging. Hosted Actions are currently blocked before job start by account billing/spending limits; local evidence must not be labelled hosted CI or native x86_64 full-suite verification. Test artifacts stay outside Git. Status: NOT RUN.
