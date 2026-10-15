@@ -308,7 +308,9 @@ class SignerRefusals(SigningCase):
         self.assertEqual((self.signatures(), self.refusals()), ([], {}))
 
 
-class SignerCommand(SigningCase):
+class CommandCase(SigningCase):
+    """Fixture only: a key file, a DSN file and a registered dev run for the `main` command tests."""
+
     def setUp(self):
         super().setUp()
         self.tmp = tempfile.TemporaryDirectory()
@@ -353,6 +355,8 @@ class SignerCommand(SigningCase):
         with psycopg.connect(self.store._dsn) as db:
             db.execute("UPDATE runs SET quarantined=false WHERE run_id='live-run'")
 
+
+class SignerCommand(CommandCase):
     def test_s05_check_and_run(self):
         self.assertEqual(self.main('check', self.write())[0], 0)
         code, out = self.main('run', self.write(), max_cycles=1)
@@ -417,8 +421,8 @@ class SignerCommand(SigningCase):
 import tests.runtime.test_anchors_roles as roles  # noqa: E402  (module import: its TestCases are not re-collected)
 
 
-class SigningRoles(SigningCase):
-    """The same flow as the real database roles: the execution service asks, the signer answers (S01)."""
+class RolesCase(SigningCase):
+    """Fixture only: the same flow as the real database roles: the execution service asks, the signer answers."""
 
     def setUp(self):
         super().setUp()
@@ -449,6 +453,10 @@ class SigningRoles(SigningCase):
             with self.subTest(role=role, sql=sql), self.assertRaises(Unavailable):
                 with self.as_role[role].transaction() as db:
                     db.execute(sql)
+
+
+class SigningRoles(RolesCase):
+    """The same flow as the real database roles: the execution service asks, the signer answers (S01)."""
 
     def test_s01_grants_suffice_for_signing_and_refusing(self):
         state, attempt = self.authorized()
