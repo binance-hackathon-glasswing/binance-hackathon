@@ -81,7 +81,8 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
             native = proof.get('native_balance')
             if (intent.kind != 'GAS_TOP_UP' or intent.pay_token != USDT or type(native) is not dict
                     or native.get('schema') != 'TransactionNativeBalance.v1'
-                    or native.get('method') != 'GETH_PRESTATE_DIFF' or not native.get('source_id')
+                    or native.get('method') != 'GETH_PRESTATE_DIFF'
+                    or type(native.get('source_id')) is not str or not native['source_id']
                     or native.get('tx_hash') != attempt.tx_hash or native.get('block_hash') != proof['block_hash']
                     or native.get('wallet') != intent.wallet or type(native.get('nonce')) is not int
                     or native['nonce'] != payload.nonce or type(native.get('before_wei')) is not int

@@ -62,6 +62,8 @@ class Rpc:
                  and type(params) is list and len(params) == 2 and params[1] == native_trace_options())
         if method not in METHODS and not trace:
             raise Blocked('RPC method outside read-only allowlist')
+        if trace:
+            hash_value(params[0])
         request_id=next(self.sequence)
         body=encoded(dict(jsonrpc='2.0',id=request_id,method=method,params=params))
         req=Request(self.url,data=body,headers={'Content-Type':'application/json'},method='POST')
