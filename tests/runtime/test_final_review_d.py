@@ -418,7 +418,7 @@ class CiManifestBinding(bundle_tests.ReleaseBundle):
 
     def bind(self, ci=None, evidence='registration.json', out='release.json'):
         from larp.runtime.preflight import main
-        argv = ['--bind', str(ci or self.ci), '--root', str(self.root), '--build-output', str(self.etc / out),
+        argv = ['--bind', str(ci or self.ci), '--root', str(self.root), '--output', str(self.etc / out),
                 '--runtime-config', str(self.etc / 'runtime.json'),
                 '--service-config', 'signer=' + str(self.etc / 'signer.json')]
         if evidence:
@@ -432,8 +432,9 @@ class CiManifestBinding(bundle_tests.ReleaseBundle):
         self.assertEqual(self.bind(), 0)
         bound = Document((self.etc / 'release.json').read_bytes())
         value = bound.read()
+        from larp.runtime.preflight import HOST_BINDINGS
         for key, ci_value in self.ci_value.items():
-            if key != 'registration_evidence':
+            if key not in HOST_BINDINGS:  # the host adds only these; CI leaves them empty (WR-D3a)
                 self.assertEqual(value[key], ci_value, key)
         self.assertEqual(value['ci_manifest_sha256'], hashlib.sha256(self.ci.read_bytes()).hexdigest())
         self.assertEqual(value['registration_evidence']['build_id'], self.ci_value['build_id'])
@@ -485,9 +486,10 @@ class ReleaseProcedure(unittest.TestCase):
         self.assertIn('larp-bundle-x86_64', upload.group(1))
         self.assertIn('.release.json', upload.group(1))
         self.assertIn('.tar.gz.sha256', upload.group(1))
-        summary = re.search(r'GITHUB_STEP_SUMMARY', workflow)
-        self.assertIsNotNone(summary)
-        self.assertRegex(workflow, r'sha256sum[^\n]*release\.json|release\.json[^\n]*sha256sum')
+        summary = re.search(r'- run: \|\n((?:\s{10,}.*\n)+?)\s*\} >> "\$GITHUB_STEP_SUMMARY"', workflow)
+        self.assertIsNotNone(summary, 'the host-bundle job writes a step summary')
+        self.assertIn('release.json', summary.group(1))
+        self.assertIn('sha256sum', summary.group(1))
 
     def test_wr_d3_runbooks_never_build_the_manifest_on_a_host(self):
         for name in ('AWS_RUNBOOK.md', 'runbook.md', 'DEPLOYMENT_DAY.md'):

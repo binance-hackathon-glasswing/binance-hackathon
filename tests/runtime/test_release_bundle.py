@@ -130,7 +130,7 @@ class ReleaseBundle(unittest.TestCase):
         result = self.build()
         commit = result['build_id']
         beside = self.out / f'larp-{commit[:12]}-x86_64.release.json'
-        self.assertEqual(result['manifest'], str(beside))
+        self.assertEqual(Path(result['manifest']).resolve(), beside.resolve())
         self.assertEqual(result['manifest_sha256'], hashlib.sha256(beside.read_bytes()).hexdigest())
         extracted = Path(self.tmp.name) / 'extracted'
         with tarfile.open(result['bundle']) as tar:
