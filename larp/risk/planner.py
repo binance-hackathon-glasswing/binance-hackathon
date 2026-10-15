@@ -70,6 +70,18 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
     raise ContractError("Nondecreasing re-quote chain")
 
 
+def _class_1_latches(state):
+    """Names with a CLASS_1_EXIT latch in the persisted policy state (#57, WR15).
+
+    The policy alone sets and clears latches (IDEA-035, A8); the planner only reads the committed state, so
+    the exit holds without a proposal or fresh evidence. A resolution decided this round applies next round."""
+    blocked = state.data.read().get("blocked", {})
+    if type(blocked) is not dict or any(type(b) is not dict or type(b.get("reason")) is not str
+                                        for b in blocked.values()):
+        raise ContractError("Persisted policy latches must be objects")
+    return {symbol for symbol, b in blocked.items() if b["reason"] == "CLASS_1_EXIT"}
+
+
 def plan(snapshot, proposal_or_none):
     c, now = snapshot.context.read(), snapshot.observed_at
     result = {"schema": "PlanResult.v1", "snapshot_id": snapshot.snapshot_id,
@@ -85,6 +97,7 @@ def plan(snapshot, proposal_or_none):
                 or any(type(pos) is not dict for pos in ledger["positions"].values())
                 or any(type(res) is not dict for res in ledger["reservations"].values())):
             raise ContractError("Portfolio positions and reservations must be objects")
+        latched = _class_1_latches(snapshot.policy_state)
         invalid = {}
         market = markets(snapshot, p, invalid)
         unvalued = sorted({s for s, pos in ledger["positions"].items()
@@ -171,7 +184,8 @@ def plan(snapshot, proposal_or_none):
         m, qty = market.get(symbol), held[symbol]
         if m is None:
             result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
-                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
+                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"]
+                + (["CLASS_1_EXIT"] if symbol in latched else []),
                 "status": "BLOCKED_INPUT" if symbol in invalid else "BLOCKED_MARK"})
             continue
         cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
@@ -201,7 +215,7 @@ def plan(snapshot, proposal_or_none):
         if index >= 4:
             cap = 0
             reason.append("POSITION_COUNT_CAP")
-        if targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT":
+        if symbol in latched or (targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT"):
             cap = 0
             reason.append("CLASS_1_EXIT")
         if terminal:
