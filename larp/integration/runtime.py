@@ -33,6 +33,7 @@ from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
 from larp.ports import decimal_string as decimal_amount  # exact decimal of base units (one implementation)
 from larp.risk.planner import plan as risk_plan
+from larp.risk.reconcile import spendable_view
 from larp.strategy.policy import decide
 from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
 
@@ -155,6 +156,8 @@ class ContextBuilder:
                                                    token=meta["token"], underlying_id=meta["underlying_id"],
                                                    policy_profile_hash=self.profile_hash))
         ledger = ledger_from(projection, current["reservations"])
+        # A recorded chain deficit is subtracted in the planner's view only; the journaled ledger stays (IDEA-055).
+        ledger = spendable_view(ledger, (projection.get("balance_check") or {}).get("deficits") or {})
         if current.get("mode") is not None:
             ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
