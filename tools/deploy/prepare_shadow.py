@@ -41,6 +41,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest='command', required=True)
     capture = sub.add_parser('capture')
     capture.add_argument('--env-file', type=Path)
+    capture.add_argument('--wallet', help='Public dev wallet address; otherwise AI_SEEDS_ADDRESS from the input environment')
     capture.add_argument('--artifact-root', type=Path, required=True)
     capture.add_argument('--output', type=Path, required=True)
     assembly = sub.add_parser('prepare')
@@ -64,7 +65,7 @@ def main(argv=None):
                 raise ContractError('Capture already exists')
             keys = credentials(args.env_file)
             client = Web3Client(keys['BINANCE_API_KEY'], keys['BINANCE_SECRET_KEY'], artifacts=Artifacts(root))
-            value = capture_inputs(client, keys['AI_SEEDS_ADDRESS'])
+            value = capture_inputs(client, args.wallet or keys.get('AI_SEEDS_ADDRESS'))
             output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             with output.open('xb') as stream:
                 stream.write(encoded(value) + b'\n')

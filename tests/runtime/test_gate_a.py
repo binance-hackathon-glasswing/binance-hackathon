@@ -109,6 +109,14 @@ class GateAInputs(unittest.TestCase):
         rehash(c)
         with self.assertRaises(ContractError): gate_a.initial_state(c, profile(), 'run')
 
+    def test_ga04_an_unrelated_token_cannot_override_an_eligible_tokens_decimals(self):
+        c = captured()
+        c['metadata']['response']['data'].append(dict(tokenSymbol='NVDAB', decimals='4',
+            tokenContractAddress='0x' + '3' * 40, binanceChainId='56', underlyingTicker='NVDA'))
+        rehash(c)
+        gate_a.issuer_map(c)
+        self.assertEqual(gate_a.initial_state(c, profile(), 'run')['positions']['NVDAB']['decimals'], 18)
+
     def test_ga04_balance_identity_duplicates_scales_and_request_coverage_refuse(self):
         for defect in ('wallet', 'request', 'duplicate', 'negative', 'fraction', 'unknown', 'chain'):
             c = captured()
@@ -281,3 +289,19 @@ class GateAComposition(PipelineHarness):
             receiver = DeliveryWorker(self.store, FakeReceiver(), retry_ms=1)
             while receiver.once(config['run_id'], current['epoch'], clock()): pass
             self.assertEqual(len(receiver.status(config['run_id'])['delivered']), len(logs))
+            # Replay re-executes policy/planner from recorded ports; it must never call Web3.
+            from larp.integration.replay import replay_live
+            from larp.integration.runtime import initial_projection, initial_policy_state, StrategyPolicy, RuntimePlanner
+            from larp.integration.settlement import ExecutionBridge, settle
+            from larp.storage.postgres import doc as document
+            batches, head = self.store.journal(config['run_id']), self.store.verify(config['run_id'])
+            with self.store.transaction() as db:
+                db.execute('TRUNCATE runs CASCADE')  # only this harness's disposable schema
+            with patch('larp.marketdata.web3.Web3Client.request', side_effect=AssertionError('replay must be offline')):
+                replayed = replay_live(batches, document(initial_projection(original)), self.store,
+                    builder=driver.coordinator.context_builder, run_id=config['run_id'], wallet_id=WALLET,
+                    chain_id=56, version_id=config['build_id'], profile_hash=driver.coordinator.profile_hash,
+                    address=WALLET, policy=StrategyPolicy(), planner=driver.coordinator.planner,
+                    execution=ExecutionBridge(), reducer=settle, test_rounds=True, require_version=True,
+                    initial_policy_state=initial_policy_state(config['run_id'], json.loads(files['strategy-profile.json'])))
+            self.assertEqual(replayed, head)

@@ -129,7 +129,9 @@ def initial_state(capture, profile, run_id):
     if type(run_id) is not str or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id) or opening <= 0:
         raise ContractError('A funded run identity is required')
     rows = observation(capture, 'metadata', 'market/rwa/tokens', 'GET')
-    decimals = {r['tokenSymbol']: integer(r['decimals']) for r in rows if r.get('tokenSymbol') in TOKENS}
+    decimals = {s: integer(next(r['decimals'] for r in rows
+                               if r.get('tokenContractAddress', '').lower() == token))
+                for s, token in TOKENS.items()}
     day = instant(capture['observed_at']).date().isoformat()
     return dict(schema='PortfolioState.v1', mode='dev', run_id=run_id, wallet_id=wallet_address(capture['wallet']),
                 cash_units=cash, bnb_units=bnb, bnb_decimals=18, bnb_price_units=costs['bnb_price_units'],
