@@ -239,3 +239,16 @@ The seven local skips are the baseline's environmental ones; Linux CI runs the b
 - **Shared edits applied (§8) on the follow-up branch `review/final-d-open-20261014`:** GAP-35, GAP-46 and GAP-62 notes plus the R-01..R-14 summary in `docs/INCOMPLETE_WORK.md`; the IDEA-049-D row in `docs/LEDGER.md`; runbook corrections for #62 items 1–2 (the wallet key is the file `/etc/larp/signer/wallet.key`, not a `<name>/signer` secret; secret IDs are `${name}/…`, so `config/hosts/uploader.example.json` now uses `larp-dev/uploader`); the bundle comes from the CI artifact `larp-bundle-x86_64` with its hash checked against the job summary; `cycle_timeout_seconds`; the migrations route marked as D-DN-05.
 - **Correction to §8.** §8 asked the runbooks to say "the release manifest is built in CI with the bundle and only verified on hosts". That is not what the code does: CI uploads the bundle and its `.sha256`, but `/etc/larp/release.json` is still built on each host with `preflight --build-output` (it hashes the host's service configs). The runbooks now say this plainly and keep **#62 item 3 open** (a code and procedure change, owner Keegan).
 - **Still open from D:** D-FND-005 (#23, C's code), D-FND-014 (D-DN-07), D-FND-015 (R-09/R-10); decisions D-DN-01..11; risks R-01..R-14; #62 item 3; Keith's trading-review record under a new ledger ID (§4.4). Integration of the A/B/C requested shared edits (B's are listed in `IDEA-049-B.md`) waits for A's PR and for B's PR #65 to merge (§9).
+
+## 12. PR #69 independent review (2026-10-15, Keith with Codex)
+
+Reviewed head `bfe1f6c`, including the code merged by #67 (`c1b6daf..0820b0d`) as requested in #69. Both PRs had no inline review comments when fetched. Existing deployment decisions and hosted gates remain open.
+
+Pass criteria recorded before new tests or changed runtime code execute:
+
+| ID | Severity | Finding and acceptance criterion |
+|---|---|---|
+| D-RV-01 | P1 | `_audit` marks a round's SQL row CLOSED at early log creation, before runtime settlement. `open_rounds`, metrics and `activate` consult only that SQL status. Once the execution service has finished but before the runtime ingests its final fact, activation can change ownership despite an unsettled projection. Keep the round logically open until `Coordinator.close` removes its projection record; activation must refuse it even when no execution record is unfinished. After settlement/recovery, open-round checks clear, exactly one audit event remains, and downstream replay reproduces the head. |
+| D-RV-02 | P2 | `Maintenance.health` omits `unlogged_rounds`, unlike the guard and service health, and can report healthy with a missed round-log deadline. With current ACKed archives and an overdue unlogged round, health must include `AUDIT_DELIVERY_BLOCKED` and count the round; after its log is committed and ACKed the condition must clear. |
+
+Validation status: NOT RUN. Changes affecting decisions or logging must be committed and pushed before execution (AGENTS.md); push approval is required by the user's standing preference.

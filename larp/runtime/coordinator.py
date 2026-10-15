@@ -449,15 +449,7 @@ class Coordinator:
                 receipts.append(self.close(round_id,now_ms,status))
             except ContractError as exc:
                 failures.append((round_id,type(exc).__name__))
-        # A round whose log was committed before finality (log_round) is no longer an open `rounds` row; close it
-        # once every intent is final.
-        records=self.store.load(self.run_id).read()['projection'].get('round_records',{})
-        for round_id,record in sorted(records.items()):
-            if record.get('logged') and not record.get('execution_pending'):
-                try:
-                    receipts.append(self.close(round_id,now_ms,'COMPLETE'))
-                except ContractError as exc:
-                    failures.append((round_id,type(exc).__name__))
+        # open_rounds includes early-logged projection records until close removes them (IDEA-049 D-RV-01).
         if failures:
             raise RecoveryIncomplete(receipts,failures)
         return receipts
