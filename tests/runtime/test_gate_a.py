@@ -69,7 +69,8 @@ def assembled(**changes):
     configs = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
     args = dict(profile_raw=encoded(profile()), capture_raw=encoded(captured()),
                 calendar_raw=(gate_a.ROOT / 'config/runtime/session-calendar.2026.json').read_bytes(),
-                run_id='gate-a-test', build_id='b' * 40, now=NOW)
+                run_id='gate-a-test', build_id='b' * 40, now=NOW,
+                balance_rpc_url='https://rpc.invalid/', balance_rpc_source_id='synthetic-rpc')
     args.update(changes)
     return gate_a.prepare(configs, **args)
 
@@ -261,7 +262,12 @@ class GateAComposition(PipelineHarness):
                     return observed(endpoint, method, [row], params)
                 raise Unavailable('SYNTHETIC_UNQUALIFIED_QUOTE')
 
+            from larp.execution import DependencyUnavailable
+
+            def node_down(rpc, method, params):  # IDEA-055's balance check, kept offline: the node is unavailable
+                raise DependencyUnavailable('RPC unavailable')
             with patch('larp.marketdata.web3.Web3Client.request', transport), \
+                    patch('larp.execution_live.chain.Rpc.call', node_down), \
                     patch.object(self.store, 'command', side_effect=AssertionError('shadow must never claim signing authority')):
                 for attempt in range(2):
                     driver = build_driver(config, self.store, secrets, clock_ms=clock)
@@ -365,3 +371,19 @@ class PortedFromPr89(unittest.TestCase):
             dict(tokenContractAddress=USDT, rawBalance=str(100 * 10**18))]
         unfunded = json.loads(assembled(capture_raw=encoded(rehash(capture)))['preparation-report.json'])
         self.assertIn('FIRST_BNB (Q-03)', unfunded['missing_inputs'])
+
+
+class BalanceRpcSettings(unittest.TestCase):
+    """IDEA-058 GA10: #84 (IDEA-055) requires the balance RPC for a dev start."""
+
+    def test_ga10_the_balance_rpc_is_written_or_reported_missing(self):
+        driver = json.loads(assembled()['runtime.json'])['driver']
+        self.assertEqual((driver['balance_rpc_url'], driver['balance_rpc_source_id']),
+                         ('https://rpc.invalid/', 'synthetic-rpc'))
+        self.assertEqual((driver['balance_check_interval_ms'], driver['balance_check_max_age_ms']), (600000, 1800000))
+        files = assembled(balance_rpc_url=None, balance_rpc_source_id=None)
+        self.assertIsNone(json.loads(files['runtime.json'])['driver']['balance_rpc_url'])
+        self.assertIn('BALANCE_RPC', json.loads(files['preparation-report.json'])['missing_inputs'])
+        self.assertNotIn('BALANCE_RPC', json.loads(assembled()['preparation-report.json'])['missing_inputs'])
+        with self.assertRaises(ContractError):
+            assembled(balance_rpc_url='http://rpc.invalid/')

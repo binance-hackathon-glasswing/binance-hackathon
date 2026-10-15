@@ -98,3 +98,11 @@ Not ported, because they need #84's finalized-block reader (`larp/execution_live
 | GA07 | PASS | `PortedFromPr89.test_ga07_*` |
 | GA08 | PASS | `PortedFromPr89.test_ga08_*` |
 | GA09 | PASS | `PortedFromPr89.test_ga09_*` |
+
+### GA10: integration-branch base and #84's balance settings (2026-10-15, criteria recorded before the fix)
+
+#87 is retargeted from `main` to `codex/system-testing-20261012` (merge `7812c5c`), which now includes #84 (IDEA-055). #84 requires `balance_rpc_url` and `balance_rpc_source_id` for a `dev` start, and the assembled config has neither, so GA06 fails on the merged tree with `Missing balance-check settings` (observed before any fix).
+
+| ID | Check |
+|---|---|
+| GA10 | `prepare(…, balance_rpc_url=…, balance_rpc_source_id=…)` writes both into `runtime.json` `driver`, keeping the example's interval and max age. Without them, `preparation-report.json` lists `BALANCE_RPC` in `missing_inputs` and the values stay null, so the runtime still refuses a `dev` start (IDEA-055 intent). A non-HTTPS URL is refused. `tools/deploy/prepare_shadow.py` takes `--balance-rpc-url` and `--balance-rpc-source-id`. GA06 passes with fixture values: the real `build_driver` builds the balance check, and the round, restart and replay still hold. |
