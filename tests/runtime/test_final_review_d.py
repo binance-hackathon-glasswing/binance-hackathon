@@ -17,11 +17,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 from larp.contracts import ContractError, Document
+from larp.execution import canonical as execution_canonical, digest as execution_digest
 from larp.runtime.coordinator import halt_reasons
 from larp.runtime.maintenance import HOUR_MS, Maintenance
 from larp.runtime.supervision import Guard, Sessions
 from larp.storage.archive import S3Archive
 from larp.storage.backup import export
+import tests.execution.test_section_c_signed_state as execution_state_tests
 import tests.runtime.test_release_bundle as bundle_tests
 import tests.runtime.test_round_driver_service as service_tests
 from tests.runtime.test_round_driver_service import RUN, SECOND, Execution, FencedVenue
@@ -457,6 +459,35 @@ class CredentialScan(unittest.TestCase):
 
 # --- D-REQ-023: backups carry no usable signed bytes (#23; fix owned by C) ----------------------------------------
 
+def signed_forms(raw_hex):
+    """Every usable form of signed bytes: hex in either case, with or without 0x, and the raw bytes."""
+    body = raw_hex.removeprefix('0x')
+    return {body.lower().encode(), body.upper().encode(), bytes.fromhex(body)}
+
+
+def signed_bytes_found(backup, raw_hex):
+    """[(table, row, column)] of every exported cell, decoded, that holds `raw_hex` in a usable form (#23)."""
+    found, forms = [], signed_forms(raw_hex)
+    payload = backup.payload
+    if any(form in payload for form in forms) or base64.b64encode(bytes.fromhex(raw_hex[2:])) in payload:
+        found.append(('payload', None, None))
+    for table, item in backup.read()['tables'].items():
+        for index, row in enumerate(item['rows']):
+            for column, value in zip(item['columns'], row):
+                raw = base64.b64decode(value['bytes']) if type(value) is dict else str(value).encode()
+                if any(form in raw for form in forms):
+                    found.append((table, index, column))
+    return found
+
+
+def synthetic_signed_transaction():
+    """A validly signed BSC transaction from a throwaway key: never funded, never broadcast."""
+    from eth_account import Account
+    signed = Account.create().sign_transaction(dict(chainId=56, nonce=0, gas=21000, gasPrice=1, value=0,
+                                                    to='0x' + '2' * 40, data=b''))
+    return '0x' + bytes(signed.raw_transaction).hex()
+
+
 class SignedBytesInBackups(DatabaseCase):
     @unittest.expectedFailure  # D-FND-005: open until C keeps raw_hex only in execution_signatures (IDEA-049-D §7)
     def test_d_req_023_backups_carry_no_usable_signed_bytes(self):
@@ -466,11 +497,126 @@ class SignedBytesInBackups(DatabaseCase):
         with self.store.transaction() as db:
             db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
                        ('key-1', 'run', '0x' + '1' * 40, 56, False, 1, state, 's' * 64))
-        payload = export(self.store).payload
+        backup = export(self.store)
+        payload = backup.payload
         needle = raw_hex[2:].encode()
         self.assertNotIn(needle, payload)
         self.assertNotIn(base64.b64encode(state), payload)
         self.assertNotIn(base64.b64encode(bytes.fromhex(raw_hex[2:])), payload)
+        self.assertEqual(signed_bytes_found(backup, raw_hex), [])  # WR-D2a: every nested cell, decoded
+
+    def forged(self, key, state):
+        with self.store.transaction() as db:
+            db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
+                       (key, 'run', '0x' + key[-1] * 40, 56, True, 1, state, 's' * 64))
+
+    def test_d_req_023_forged_rows_carry_no_signed_bytes(self):
+        raw_hex = synthetic_signed_transaction()
+        attempt = dict(state='SIGNED_DURABLE', tx_hash='0x' + 'a' * 64)
+        self.forged('key-1', json.dumps(dict(attempts=[dict(attempt, signedTransaction=raw_hex)])).encode())
+        self.forged('key-2', json.dumps(dict(attempts=[dict(attempt, extra=dict(deep=[dict(raw_hex=raw_hex)]))]))
+                    .encode())
+        self.forged('key-3', json.dumps(dict(attempts=[dict(attempt, note=raw_hex.upper()[2:])])).encode())
+        self.forged('key-4', b'not json ' + raw_hex.encode() + bytes.fromhex(raw_hex[2:]))
+        self.forged('key-5', json.dumps(dict(attempts=[attempt])).encode())
+        event = json.dumps(dict(type='SIGNED', raw_hex=raw_hex)).encode()
+        with self.store.transaction() as db:
+            db.execute('INSERT INTO execution_journal VALUES(%s,%s,%s,%s,%s,%s)',
+                       ('key-5', 1, event, 's' * 64, '0' * 64, 'h' * 64))
+        self.assertEqual(signed_bytes_found(export(self.store), raw_hex), [])
+
+
+class LegacySignedState(execution_state_tests.SignedState):
+    """WR-D2b/d: a legitimately signed execution whose state still holds `raw_hex`, as rows written before C-FND-010."""
+
+    def setUp(self):
+        super().setUp()
+        self.raw_hex = self.signature.raw_hex
+        with self.store.transaction() as db:
+            state, = db.execute('SELECT state FROM execution_records WHERE economic_key=%s', (self.key,)).fetchone()
+            value = json.loads(bytes(state))
+            value['attempts'][-1]['raw_hex'] = self.raw_hex
+            self.state_hash = execution_digest(value)
+            revision, event, prior = db.execute(
+                'SELECT revision,event,previous_hash FROM execution_journal WHERE economic_key=%s '
+                'ORDER BY revision DESC LIMIT 1', (self.key,)).fetchone()
+            db.execute('UPDATE execution_records SET state=%s,state_hash=%s WHERE economic_key=%s',
+                       (execution_canonical(value).encode(), self.state_hash, self.key))
+            db.execute('UPDATE execution_journal SET state_hash=%s,head=%s WHERE economic_key=%s AND revision=%s',
+                       (self.state_hash, execution_digest([prior, json.loads(bytes(event)), self.state_hash]),
+                        self.key, revision))
+        self.assertEqual(self.registry.load(self.key).attempts[-1].raw_hex, self.raw_hex)  # a loadable legacy row
+
+    def rows(self, store, table):
+        with store.transaction() as db:
+            return [[base64.b64encode(bytes(v)).decode() if isinstance(v, (bytes, memoryview)) else v for v in row]
+                    for row in db.execute(f'SELECT * FROM {table} ORDER BY 1,2')]
+
+    def target(self):
+        import psycopg
+        import uuid
+        from psycopg.conninfo import make_conninfo
+        from larp.storage.postgres import PostgresStore
+        schema = 'larp_d_restore_' + uuid.uuid4().hex
+        with psycopg.connect(self.admin_dsn) as db:
+            db.execute('CREATE SCHEMA ' + schema)
+
+        def cleanup():
+            with psycopg.connect(self.admin_dsn) as db:
+                db.execute('DROP SCHEMA ' + schema + ' CASCADE')
+        self.addCleanup(cleanup)
+        target = PostgresStore(make_conninfo(self.admin_dsn, options='-c search_path=' + schema))
+        target.migrate()
+        return target
+
+    def assert_restored_closed(self, target):
+        from larp.execution import Conflict
+        from larp.execution_live.store import ExecutionStore
+        restored = target.load('run').read()
+        self.assertTrue(restored['quarantined'])
+        self.assertEqual(restored['epoch'], self.store.load('run').read()['epoch'] + 1)
+        with target.transaction() as db:
+            state, = db.execute('SELECT state FROM execution_records WHERE economic_key=%s', (self.key,)).fetchone()
+        self.assertFalse(any(form in bytes(state) for form in signed_forms(self.raw_hex)))
+        registry = ExecutionStore(target, run_id='run', wallet=execution_state_tests.WALLET)
+        with self.assertRaises(Conflict):
+            registry.load(self.key)
+        with self.assertRaises(Conflict):
+            registry.lookup(self.attempt.attempt_id, self.attempt.payload.hash)
+
+    def test_d_req_023_a_legacy_signed_state_is_redacted_and_restores_closed(self):
+        from larp.storage.backup import restore
+        backup = export(self.store)
+        self.assertEqual(signed_bytes_found(backup, self.raw_hex), [])
+        tables = backup.read()['tables']
+        records = tables['execution_records']
+        row = next(r for r in records['rows'] if r[0] == self.key)
+        self.assertEqual(row[records['columns'].index('state_hash')], self.state_hash)
+        self.assertEqual(tables['execution_journal']['rows'], self.rows(self.store, 'execution_journal'))
+        target = self.target()
+        restore(target, backup)
+        self.assert_restored_closed(target)
+
+    def test_d_req_023_restoring_an_old_backup_drops_signed_bytes(self):
+        from larp.storage.backup import restore
+        from larp.storage.postgres import digest, doc
+        tables = export(self.store).read()['tables']
+        records = tables['execution_records']
+        state = records['columns'].index('state')
+        with self.store.transaction() as db:
+            raw, = db.execute('SELECT state FROM execution_records WHERE economic_key=%s', (self.key,)).fetchone()
+        for row in records['rows']:
+            if row[0] == self.key:  # as the export before this fix wrote it: the state unchanged, bytes included
+                row[state] = {'bytes': base64.b64encode(bytes(raw)).decode()}
+        old = doc(dict(schema='Backup.v1', sha256=digest(doc(tables).payload), tables=tables))
+        self.assertNotEqual(signed_bytes_found(old, self.raw_hex), [])
+        target = self.target()
+        restore(target, old)
+        self.assert_restored_closed(target)
+
+
+for _name in [n for n in dir(execution_state_tests.SignedState) if n.startswith('test_')]:
+    setattr(LegacySignedState, _name, None)  # only this module's tests run here; the originals run in their module
 
 
 # --- D-REQ-030 / 032: a rejected plan keeps the round's accepted evidence (#51) -----------------------------------
