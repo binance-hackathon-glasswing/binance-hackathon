@@ -201,7 +201,8 @@ class Maintenance:
                                 "AND status IN ('PERMANENT','EXHAUSTED') ORDER BY kind,slot_ms", (run_id,)).fetchall()
             audit_failures = db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s "
                                         "AND status IN ('PERMANENT','EXHAUSTED')", (run_id,)).fetchone()[0]
-            breaches = len(deadline_breaches(db, run_id, now_ms))
+            projection = Document(bytes(run['projection'])).read()
+            breaches = len(deadline_breaches(db, run_id, now_ms)) + len(unlogged_rounds(projection, now_ms))
         ages = {kind: max(0, now_ms - latest[kind]) if kind in latest else None for kind in ('anchor', 'backup')}
         reasons = []
         if run['quarantined']:

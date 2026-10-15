@@ -4,7 +4,7 @@
   "build_id": null,
   "mode": "dev",
   "wallet_address": null,
-  "uploader_secret_id": "larp/uploader",
+  "uploader_secret_id": "larp-dev/uploader",
   "region": "ap-southeast-2",
   "interval_seconds": 5,
   "retry_ms": 30000,
