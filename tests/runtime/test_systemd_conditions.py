@@ -142,7 +142,10 @@ class RuntimeUnit(unittest.TestCase):
         for group in ('larp-runtime', 'larp-evidence'):
             if subprocess.run(['getent', 'group', group], capture_output=True).returncode:
                 self.command('groupadd', '--system', group)
-                self.addCleanup(lambda g=group: self.command('groupdel', g))
+                def remove_group(g=group):
+                    if subprocess.run(['getent', 'group', g], capture_output=True).returncode == 0:
+                        self.command('groupdel', g)
+                self.addCleanup(remove_group)
         if subprocess.run(['id', '-u', 'larp-runtime'], capture_output=True).returncode:
             self.command('useradd', '--system', '--gid', 'larp-runtime', '--no-create-home',
                          '--shell', '/usr/sbin/nologin', 'larp-runtime')

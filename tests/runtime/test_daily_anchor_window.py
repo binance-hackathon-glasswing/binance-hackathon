@@ -53,10 +53,14 @@ class EntryMarket:
 
 
 class DailyAnchorWindow(ServiceHarness):
-    def prepare(self, *, rounds=False, gas=False, **latches):
+    def prepare(self, *, rounds=False, gas=False, flat=False, **latches):
         # Seed the initial database state, rather than forging a risk event that replay cannot reproduce.
         self.initial = pipeline.pipeline_ledger()
         self.initial['risk'].update(peak_units=205_000_000, daily_halt=True, **latches)
+        if flat:
+            for position in self.initial['positions'].values():
+                self.initial['cash_units'] += position['cost_basis_units']
+                position.update(units=0, cost_basis_units=0)
         if gas:
             self.initial['bnb_units'] = 60_000
         with self.store.transaction() as db:
@@ -220,10 +224,12 @@ class DailyAnchorWindow(ServiceHarness):
         self.stable_latches(before)
 
     def test_wr_t6_a_valid_anchor_does_not_clear_run_halt_or_deep_cut(self):
-        for latch in ('run_halt', 'deep_cut'):
+        # Deep cut is reached after the lower run-halt threshold; use reachable persisted states.
+        for latches in (dict(run_halt=True), dict(run_halt=True, deep_cut=True)):
             for gas in (False, True):
-                with self.subTest(latch=latch, gas=gas):
-                    driver = self.prepare(rounds=True, gas=gas, **{latch: True})
+                with self.subTest(latches=latches, gas=gas):
+                    # No remaining holding to liquidate: the planner must expose its entry/gas refusal.
+                    driver = self.prepare(rounds=True, gas=gas, flat=True, **latches)
                     before = self.risk()
                     summary = self.tick(driver, midnight(before['day']) + 60 * SECOND)
                     self.assertEqual(summary['day_roll'], 'ROLLED')

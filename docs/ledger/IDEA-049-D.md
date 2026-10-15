@@ -392,3 +392,17 @@ First execution at `ea25577` stopped in test setup: `build_world([])` rejects an
 empty filing list (six test failures plus four subtest failures). This is a fixture
 defect, not a runtime finding. The fixture now ingests the neutral Q2 filing into
 a distinct evidence store for each scenario; acceptance assertions are unchanged.
+
+WR-T fixture corrections after the second execution (`2a43dce`): seven test
+methods passed, three latch subtests passed, and the deep-cut-only stock subtest
+failed its expected rejection reason. The planner was servicing a mandatory sale
+and therefore never entered its discretionary-entry rejection branch. WR-T6 now
+uses a flat portfolio (same equity) and reachable latches: `run_halt`, then
+`run_halt + deep_cut` (the 8% run halt precedes the 12% deep cut). This retains the
+registered `NEW_RISK_HALTED` and gas refusal assertions after the real roll and
+round; no production code or threshold changes. The earlier isolated deep-cut
+state was not a reachable drawdown state. The systemd first run at `ea25577`
+passed the three existing R13 tests; both new tests failed because the fixture
+script's import path omitted the verified release. Cleanup also attempted to
+remove a group already removed by `userdel`. Both are test harness corrections;
+preflight, service main and sandbox directives remain real and unchanged.

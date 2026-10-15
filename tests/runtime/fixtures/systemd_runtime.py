@@ -4,6 +4,9 @@ from pathlib import Path
 import sys
 from unittest.mock import patch
 
+# A script starts with its own directory on sys.path; the verified release is the last argument.
+sys.path.insert(0, sys.argv[-1])
+
 from larp.runtime import service
 from larp.storage.postgres import PostgresStore
 
