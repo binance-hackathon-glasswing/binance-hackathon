@@ -74,7 +74,8 @@ class Composition(unittest.TestCase):
             def transaction(self):
                 return Db()
 
-        run = dict(mode='dev', wallet_id=WALLET, quarantined=False)
+        run = dict(mode='dev', wallet_id=WALLET, quarantined=False, projection=doc(dict(
+            registered_version=dict(build_id='a' * 40, manifest_sha256=hashlib.sha256(b'{}').hexdigest()))).payload)
         for error, code in ((NotIntegrated('EXECUTOR_CAPABILITY_GATE'), EXIT_NOT_INTEGRATED),
                             (ContractError('refused'), EXIT_REFUSED)):
             with self.subTest(code=code), \

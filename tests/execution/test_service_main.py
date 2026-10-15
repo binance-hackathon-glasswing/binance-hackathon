@@ -35,6 +35,11 @@ class ExecutionCommand(DatabaseCase):
         path = Path(self.tmp.name) / 'execution.json'
         path.write_bytes(raw)
         root, manifest = synthetic_release(self.tmp.name, {'execution': raw} if pin else {})
+        projection = dict(balances=dict(USDT=1), registered_version=dict(
+            build_id=BUILD, manifest_sha256=hashlib.sha256(doc(json.loads(manifest.read_bytes())).payload).hexdigest()))
+        with self.store.transaction() as db:
+            db.execute('UPDATE runs SET projection=%s,initial=%s WHERE run_id=%s',
+                       (doc(projection).payload, doc(projection).payload, 'live-run'))
         out = io.StringIO()
         with redirect_stdout(out):
             code = main([command, '--config', str(path), '--manifest', str(manifest), '--root', str(root)])
