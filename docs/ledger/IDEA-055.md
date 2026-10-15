@@ -137,3 +137,46 @@ Synthetic RPC and market, disposable PostgreSQL; no credentials, network, signin
 | B8 | Replay of a run with checks, incidents and a deficit reproduces the head; `settled_block` follows applied receipts; no check ever changes the journaled ledger or balances. |
 | B9 | Configuration: a `dev` driver without the four settings is refused; with them it builds a `BalanceCheck` wired into `RuntimeHealth`; `runtime.example.json` names all four; `offline` drivers build as before. |
 | B10 | Full suite: the base count plus only these tests, no new failure or skip. Mutations, each reverted, must each be caught: drop the in-flight skip; compare without flooring; count an earlier process's check; let `spendable_view` go negative; apply the deficit to the journaled ledger; drop `balances_ok` from `RuntimeHealth`. |
+
+### Results (2026-10-15)
+
+Criteria pushed at `292b1e9`; red tests at `021931c`; test corrections at `c853a36`; build at `3b8a4bc`; runbooks and GAP-14 at `707d0f2`. Synthetic chain and market, disposable PostgreSQL 16.15, Python 3.12.3 venv from `deploy/requirements-test.lock`, Linux container. No credentials, network, signing or upload.
+
+- **Red first:** at `021931c`, 17 of 18 tests failed for the predicted reasons (missing `balances`/`reconcile` modules, `BalanceCheck`, `balance_settings`, `settled_block`, `balance_check` attribute, example keys). B7 passed, as expected: it pins a bound the current profiles already meet.
+- **Two test corrections before the counted run** (`c853a36`):
+  1. B5 read the round from `round_records`, but a round whose capped sale only requests a quote closes at once and leaves that map. It now reads the round's `ROUND_PLANNED` record.
+  2. A build review found that journaling every check would add one full projection copy per interval (about 4,300 per month). `BalanceCheck` now journals a check only when it is the process's first, when its outcome changes, or hourly, and keeps the last good time in memory (the gate trusts only this process's checks anyway). B3 was changed to expect that. No other test was changed.
+- **Mutations**, each reverted, each caught:
+
+  | Mutation | Failures |
+  |---|---|
+  | No in-flight skip | 2 |
+  | Compare without flooring | 6 |
+  | Count an earlier process's check | 1 |
+  | `spendable_view` goes negative | 1 |
+  | Deficit written to the journaled ledger | 1 |
+  | `balances_ok` dropped from `RuntimeHealth` | 4 |
+  | No deficit view in `ContextBuilder` | 1 |
+  | `settled_block` not recorded | 1 |
+  | `eth_call` unrestricted | 7 |
+
+- **Full suite:** base `b6ab0a9` 1518 passed, 8 skipped, 2123 subtests. This branch at `3b8a4bc`: **1536 passed, 8 skipped, 2143 subtests** (+18 tests, +20 subtests: this change only). The skips are the same eight environmental ones. Mirror CI not run.
+
+| ID | Result | Evidence |
+|---|---|---|
+| B1 | PASS | `Observation.test_b1_*`, `RpcAllowlist.test_b1_*` (7 refused forms) |
+| B2 | PASS | `Comparison.test_b2_*` (MATCH, dust floored, SURPLUS_ONLY, DEFICIT with exact differences, PENDING_NONCE, BLOCK_BEHIND_LEDGER, unknown asset, finer ledger, view) |
+| B3 | PASS | `Startup.test_b3_*` (no new spending before this process's check; a restarted process re-checks; one check per interval, journaled on change or hourly) |
+| B4 | PASS | `Surplus.test_b4_*` |
+| B5 | PASS | `Deficit.test_b5_*` (DEFICIT + incident; view 1500; `new_spending_ok` false; no `EXECUTION_BLOCKED`; the only NVDAB sale is for 1500; ledger unchanged) |
+| B6 | PASS | `Stale.test_b6_*` (RPC failure journaled; gate holds until the max age, then closes; retry restores it; nothing read or journaled while in flight) |
+| B7 | PASS | `BnbBound.test_b7_*` |
+| B8 | PASS | `Replay.test_b8_*` (replay head equal; `settled_block` = highest applied receipt block in the end-to-end signed flow) |
+| B9 | PASS | `Settings.test_b9_*`, `Composition.test_b9_*` |
+| B10 | PASS | full suite and mutations above |
+
+**Still open**
+- Owners' review of D1–D6 (Isaac, Keegan, Yao Zhu); they can overrule any decision before merge.
+- Mirror CI.
+- On the first hosted run: a manifested BSC RPC that supports the `finalized` tag, and egress to it from the primary host.
+- Q-20 for automatic adoption of dividend or split adjustments.
