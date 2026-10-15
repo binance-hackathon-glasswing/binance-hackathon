@@ -15,6 +15,7 @@ from larp.marketdata.web3 import encoded
 from larp.runtime import gate_a
 from larp.runtime.service import build_driver
 from larp.sources.live import Refused, check_shadow_scope
+from tests.integration.test_evidence_pipeline import PipelineHarness
 from tests.runtime.test_deploy_presetup import terraform_output
 from tests.strategy.live_fixtures import summary, registry
 from larp.strategy.profiles import build_live_profiles
@@ -192,3 +193,91 @@ class GateAInputs(unittest.TestCase):
             with patch('larp.runtime.preflight.verify_release'), self.assertRaises(Refused):
                 check_shadow_scope(p, release_manifest=m, release_root=tmp)
             with self.assertRaises(Refused): check_shadow_scope(None)
+
+
+class GateAComposition(PipelineHarness):
+    def test_ga06_prepared_inputs_initialize_activate_build_run_and_restart_real_components(self):
+        from larp.audit.delivery import DeliveryWorker
+        from larp.intelligence.fakes import FakeClock, FakeFilingSource
+        from larp.intelligence.ingest import Ingestor
+        from larp.intelligence.scenarios import cover, doc
+        from larp.marketdata.web3 import Unavailable
+        from larp.runtime.fixtures import FakeReceiver
+        from larp.runtime.service import Service, init_run, activate_run, verify_registered_manifest
+        from larp.runtime.supervision import Guard
+        from larp.sources.store import SQLiteEvidenceStore, FileArtifacts
+        from larp.runtime.live import check_live_start
+
+        files = assembled()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name, raw in files.items(): (root / name).write_bytes(raw)
+            config = json.loads(files['runtime.json'])
+            config['initial_state_file'] = str(root / 'initial-state.json')
+            config.update(ai_seeds_dir=str(root / 'ai-seeds'), nonce_dir=str(root / 'nonce'))
+            for key, name in (('strategy_profile_file', 'strategy-profile.json'),
+                              ('session_calendar_file', 'session-calendar.json')):
+                config['driver'][key] = str(root / name)
+            config['driver'].update(evidence_root=str(root / 'evidence'), market_artifact_root=str(root / 'market'))
+            clock = FakeClock(int(gate_a.instant(NOW).timestamp() * 1000))
+            evidence_root = root / 'evidence'
+            evidence_root.mkdir()
+            evidence = SQLiteEvidenceStore(str(evidence_root / 'evidence.sqlite'), journal_mode='DELETE')
+            artifacts = FileArtifacts(str(evidence_root / 'artifacts'), group_readable=True)
+            source = FakeFilingSource(clock, {1045810: 'NVIDIA'})
+            source.add(1045810, accession='0001045810-26-000001', form='8-K', items=['2.02'],
+                       acceptance='2026-10-19T11:59:00Z', documents=[doc('fixture.htm', '8-K', cover(
+                           'NVIDIA', '8-K', ['2.02'], ['Synthetic transport fixture: results were announced.']))])
+            ingestor = Ingestor(registry=load_registry(), source=source, store=evidence, artifacts=artifacts,
+                                config=load_config('shadow'), clock_ms=clock, run_id='fixture-ingest', synthetic=True)
+            result = ingestor.poll('SEC-CIK-0001045810').read()
+            self.assertEqual(result['status'], 'OK')
+            self.assertTrue(result['new_records'])
+            evidence.close()
+            init_run(config, self.store)
+            manifest = Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=config['build_id'],
+                repository='synthetic', runtime_config_sha256=gate_a.digest(encoded(config)),
+                release_register=dict(services_sha256='a'*64, deviations_sha256='c'*64)))
+            activate_run(config, self.store, manifest, reviewer='synthetic-reviewer',
+                         review_ref='IDEA-057-GA06', now_ms=clock())
+            verify_registered_manifest(self.store, config, manifest)
+            original = copy.deepcopy(self.store.load(config['run_id']).read()['projection']['portfolio'])
+            secrets = dict(AI_SEEDS_ADDRESS=WALLET, BINANCE_API_KEY='synthetic-key', BINANCE_SECRET_KEY='synthetic-secret')
+
+            def transport(client, method, endpoint, params):
+                if endpoint == 'market/rwa/tokens': return captured()['metadata']
+                if endpoint in ('market/rwa/underlying-market', 'market/rwa/price'):
+                    row = dict(tokenContractAddress=params.get('tokenContractAddress', params.get('tokenContractAddresses')),
+                               tokenPrice='100', statusInfo=dict(openState=True))
+                    return observed(endpoint, method, [row], params)
+                raise Unavailable('SYNTHETIC_UNQUALIFIED_QUOTE')
+
+            with patch('larp.marketdata.web3.Web3Client.request', transport), \
+                    patch.object(self.store, 'command', side_effect=AssertionError('shadow must never claim signing authority')):
+                for attempt in range(2):
+                    driver = build_driver(config, self.store, secrets, clock_ms=clock)
+                    self.addCleanup(driver.ports['evidence'].close)
+                    check_live_start(mode='dev', ports=driver.ports, secrets=secrets,
+                                     wallet_address=WALLET, run_wallet=WALLET,
+                                     ai_seeds_dir=config['ai_seeds_dir'], nonce_dir=config['nonce_dir'])
+                    service = Service(self.store, config['run_id'], config['build_id'],
+                                      guard=Guard(self.store, config['run_id'], max_failures=3, clear_after=2),
+                                      driver=driver, clock_ms=clock, session_id='shadow-test-' + str(attempt))
+                    self.assertEqual(service.run(max_cycles=1), 0)
+                    clock.advance(1000)
+            current = self.store.load(config['run_id']).read()
+            self.assertEqual(current['projection']['portfolio'], original)
+            self.assertFalse(current['reservations'])
+            self.assertFalse(self.store.open_rounds(config['run_id']))
+            with self.store.transaction() as db:
+                logs = db.execute('SELECT document FROM audit_events WHERE run_id=%s', (config['run_id'],)).fetchall()
+                executions = db.execute('SELECT count(*) FROM execution_records WHERE run_id=%s', (config['run_id'],)).fetchone()[0]
+            self.assertTrue(logs)
+            self.assertEqual(executions, 0)
+            for (raw,) in logs:
+                log = json.loads(Document(bytes(raw)).read()['log'])['data']
+                self.assertTrue(log['input']['example'])
+                self.assertTrue(all('tx_hash' not in order for order in log['orders']))
+            receiver = DeliveryWorker(self.store, FakeReceiver(), retry_ms=1)
+            while receiver.once(config['run_id'], current['epoch'], clock()): pass
+            self.assertEqual(len(receiver.status(config['run_id'])['delivered']), len(logs))
