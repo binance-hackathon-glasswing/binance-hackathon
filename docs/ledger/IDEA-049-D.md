@@ -406,3 +406,11 @@ passed the three existing R13 tests; both new tests failed because the fixture
 script's import path omitted the verified release. Cleanup also attempted to
 remove a group already removed by `userdel`. Both are test harness corrections;
 preflight, service main and sandbox directives remain real and unchanged.
+
+Focused verification at pushed `8c6e0f9`: WR-T1..6 **7 passed + 4 subtests**
+(macOS, PostgreSQL 14.24); real systemd **5 passed + 5 subtests**, including
+WR-T7/8, in the existing native ARM64 Debian container. Before the full suite,
+WR-T4/5 are strengthened to start with `daily_halt=False`, so their stale-day
+refusals cannot be masked by a separate daily-loss latch. Production remains
+unchanged. Real host/RDS/Secrets Manager qualification and mirror CI remain
+separate from this disposable-container evidence.

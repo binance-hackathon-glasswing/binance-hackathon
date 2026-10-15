@@ -56,7 +56,7 @@ class DailyAnchorWindow(ServiceHarness):
     def prepare(self, *, rounds=False, gas=False, flat=False, **latches):
         # Seed the initial database state, rather than forging a risk event that replay cannot reproduce.
         self.initial = pipeline.pipeline_ledger()
-        self.initial['risk'].update(peak_units=205_000_000, daily_halt=True, **latches)
+        self.initial['risk'].update(dict(peak_units=205_000_000, daily_halt=True) | latches)
         if flat:
             for position in self.initial['positions'].values():
                 self.initial['cash_units'] += position['cost_basis_units']
@@ -198,7 +198,7 @@ class DailyAnchorWindow(ServiceHarness):
         self.assertEqual(self.events('INCIDENT')[0]['incident']['type'], 'RESTART')
 
     def test_wr_t4_stock_entries_resume_only_after_a_valid_new_day_anchor(self):
-        driver = self.prepare(rounds=True)
+        driver = self.prepare(rounds=True, daily_halt=False)
         before = self.risk()
         blocked = self.plan_for(self.tick(driver, midnight(before['day']) + 30 * 60 * SECOND))
         self.assertFalse([i for i in blocked['intents'] if i['side'] == 'BUY'])
@@ -211,7 +211,7 @@ class DailyAnchorWindow(ServiceHarness):
         self.assertFalse(self.risk()['daily_halt'])
 
     def test_wr_t5_gas_top_ups_resume_only_after_a_valid_new_day_anchor(self):
-        driver = self.prepare(rounds=True, gas=True)
+        driver = self.prepare(rounds=True, gas=True, daily_halt=False)
         before = self.risk()
         blocked = self.plan_for(self.tick(driver, midnight(before['day']) + 30 * 60 * SECOND))
         self.assertIn('GAS_TOP_UP_SPENDING_BLOCKED', {r['reason'] for r in blocked['rejections']})
