@@ -71,19 +71,22 @@ jobs:
           {
             echo '### Host bundle (x86_64)'
             echo
-            echo '| Build | Bundle | SHA-256 |'
+            echo '| Build | File | SHA-256 |'
             echo '|---|---|---|'
-            for f in /tmp/larp-bundle/larp-*-x86_64.tar.gz; do
+            # The bundle, and the release manifest built with it that hosts verify and bind (#62 item 3).
+            for f in /tmp/larp-bundle/larp-*-x86_64.tar.gz /tmp/larp-bundle/larp-*-x86_64.release.json; do
               echo "| \`$(git rev-parse HEAD)\` | \`$(basename "$f")\` | \`$(sha256sum "$f" | cut -d' ' -f1)\` |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
-      # Keep the exact bundle whose hash the summary records, for the activation pack (IDEA-047 R6; #49).
+      # Keep the exact bundle and release manifest whose hashes the summary records, for the activation pack
+      # (IDEA-047 R6; #49, #62 item 3).
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: larp-bundle-x86_64
           path: |
             /tmp/larp-bundle/larp-*-x86_64.tar.gz
             /tmp/larp-bundle/larp-*-x86_64.tar.gz.sha256
+            /tmp/larp-bundle/larp-*-x86_64.release.json
           if-no-files-found: error
           retention-days: 90
       - run: bash tools/test_host_bundle.sh /tmp/larp-bundle/larp-*-x86_64.tar.gz

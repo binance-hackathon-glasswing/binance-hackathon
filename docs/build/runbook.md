@@ -6,7 +6,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 
 ## 1. Start (before anything trades)
 
-1. **Release check:** `python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current`. It refuses a file not in the manifest, a changed services list or deviations register, and missing registration evidence (`larp/runtime/preflight.py`; tests `tests/runtime/test_operations.py`, `tests/runtime/test_release_register.py`).
+1. **Release check:** `python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current`. The manifest is built in CI with the host bundle (`release-manifest.json` in the bundle, `larp-<build>-x86_64.release.json` in the CI artifact) and never on a host; a host only verifies and binds it once, with its registration evidence and config hashes: `python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current --build-output /etc/larp/release.json --registration-evidence <file> --runtime-config /etc/larp/runtime.json --service-config NAME=/etc/larp/NAME.json` (#62 item 3, [IDEA-049-D](../ledger/IDEA-049-D.md) WR-D3). It refuses a file not in the manifest, a changed services list or deviations register, and missing registration evidence (`larp/runtime/preflight.py`; tests `tests/runtime/test_operations.py`, `tests/runtime/test_release_register.py`).
 2. **Version event:** `Coordinator.register_version(manifest, now)` commits `VERSION_REGISTERED`. A coordinator with `require_version=True` commits no execution command before it (`tests/runtime/test_release_register.py`).
 3. **Live-start checks:** in `dev`/`live` mode, `larp.runtime.service run` refuses to open a session when:
    - a port is a fake;

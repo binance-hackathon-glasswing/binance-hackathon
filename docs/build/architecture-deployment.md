@@ -68,8 +68,10 @@ a missing or different hash before extracting anything. Upload the CI-built bund
 hash matches the CI value.
 
 Then, as root: write each service's config (the RDS CA SHA-256 printed by the builder goes in `database_ca_sha256`),
-build `/etc/larp/release.json` with `python -m larp.runtime.preflight --build-output … --service-config NAME=PATH`
-for every service config, and on the signer write the key as `/etc/larp/signer/wallet.key` (root, `0600`). Provisioning
+bind `/etc/larp/release.json` from the CI-built `release-manifest.json` that provisioning installed:
+`python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current
+--build-output /etc/larp/release.json --registration-evidence … --service-config NAME=PATH` for every service config
+(it verifies CI's code identity and adds only the evidence and config hashes; #62 item 3), and on the signer write the key as `/etc/larp/signer/wallet.key` (root, `0600`). Provisioning
 never writes configs or keys and never starts a service. Still to check on the first real hosts: `LoadCredential`
 ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under systemd (`docs/INCOMPLETE_WORK.md`).
 

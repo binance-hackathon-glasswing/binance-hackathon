@@ -44,24 +44,24 @@ for module in larp.signer.service larp.execution_live.main larp.audit.service la
               larp.runtime.operations larp.runtime.preflight larp.sources.live; do
   (cd /opt/larp/current && $py -m "$module" --help >/dev/null) || fail "entry point $module"
 done
-# R8: exercise startup preflight on the packaged release with synthetic registration evidence. No service starts.
+# R8 and #62 item 3: bind the CI-built manifest on the packaged release with synthetic registration evidence, then
+# run startup preflight against the bound manifest. No service starts.
+ci=/opt/larp/current/release-manifest.json
+[[ $(stat -c '%a %U' "$ci") == '444 root' ]] || fail "CI release manifest mode"
 (cd /opt/larp/current && $py - <<'PY'
-import hashlib
+import json
 from pathlib import Path
 from larp.contracts import Document
-from larp.runtime.preflight import release_files
-from larp.runtime.register import load_register
-root = Path.cwd()
-build = root.resolve().name
-manifest = dict(schema='ReleaseManifest.v1', build_id=build, repository='synthetic', remote_verified=True,
-                services=['synthetic'], registration_evidence=dict(schema='RegistrationEvidence.v1',
-                    evidence_ref='synthetic-only', build_id=build, repository='synthetic'),
-                files={p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in release_files(root)},
-                release_register=load_register(root))
-Path('/tmp/synthetic-release.json').write_bytes(Document.from_dict(manifest).payload)
+ci = Document(Path('release-manifest.json').read_bytes()).read()
+assert ci['build_id'] == Path.cwd().resolve().name, 'CI manifest is for another build'
+Path('/tmp/registration.json').write_text(json.dumps(dict(schema='RegistrationEvidence.v1',
+    evidence_ref='synthetic-only', build_id=ci['build_id'], repository=ci['repository'])))
 PY
-) || fail "packaged register cannot be validated"
-(cd /opt/larp/current && $py -m larp.runtime.preflight --manifest /tmp/synthetic-release.json \
+) || fail "CI release manifest unreadable"
+(cd /opt/larp/current && $py -m larp.runtime.preflight --bind "$ci" --root /opt/larp/current \
+  --registration-evidence /tmp/registration.json --build-output /tmp/bound-release.json >/dev/null) \
+  || fail "binding the CI release manifest"
+(cd /opt/larp/current && $py -m larp.runtime.preflight --manifest /tmp/bound-release.json \
   --root /opt/larp/current --profile host) || fail "packaged release preflight"
 [[ -z $(find /opt/larp ! -user root) ]] || fail "non-root files under /opt/larp"
 [[ -z $(find /opt/larp/releases /opt/larp/python -perm -o+w ! -type l) ]] || fail "world-writable files"
