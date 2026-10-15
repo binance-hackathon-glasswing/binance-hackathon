@@ -1,0 +1,211 @@
+"""Gate A input capture and assembly. No signer, broadcaster, uploader or activation call.
+
+Capture public metadata and wallet balances with the existing credential-screened
+Web3 transport. Preparation consumes those exact bytes and a separately reviewed
+LIVE rehearsal profile. It never invents quote costs or attests hosted readiness.
+"""
+import hashlib
+import json
+from pathlib import Path
+import re
+
+from larp.contracts import ContractError, Document
+from larp.execution import USDT
+from larp.intelligence.config import load_config, load_registry
+from larp.marketdata.port import MarketPort, NATIVE, TOKENS, integer
+from larp.marketdata.web3 import data, encoded, utc
+from larp.runtime.driver import SessionCalendar
+from larp.strategy.profiles import validate_live
+from larp.strategy.schema import instant
+
+ROOT = Path(__file__).resolve().parents[2]
+CADENCE_MS = 900_000
+DAY_ROLL_MS = 300_000
+HOST_CHECKS = ('REAL_RECEIVER_ACK', '24H_INGESTION', 'HOST_RESTART', 'HOURLY_ANCHOR',
+               'IAM_TLS_ROLES', 'NETWORK_ROUTES', 'TIME_SYNC', 'ALARM_RECEIVED')
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def wallet_address(value):
+    if type(value) is not str or not re.fullmatch(r'0x[0-9a-fA-F]{40}', value):
+        raise ContractError('A public wallet address is required')
+    return value.lower()
+
+
+def capture_inputs(client, wallet):
+    """Exactly two read-only endpoints, never quote-and-swap, signing or audit delivery."""
+    wallet = wallet_address(wallet)
+    port = MarketPort(client, wallet)
+    metadata = port.metadata()
+    meta = metadata[next(iter(TOKENS))][1]
+    balances = port.balances()
+    value = dict(schema='GateAInputs.v1', wallet=wallet, observed_at=utc(),
+                 metadata=meta, balances=balances)
+    # Validate before persisting a purported usable capture.
+    issuer_map(value)
+    raw_balances(value)
+    return value
+
+
+def observation(capture, name, endpoint, method):
+    r = capture[name]
+    if (r.get('schema') != 'Web3Observation.v1' or r.get('source_id') != 'BINANCE_WEB3'
+            or r.get('endpoint') != endpoint or r.get('method') != method or r.get('outcome') != 'ok'
+            or r.get('response', {}).get('code') != 0 or not re.fullmatch('[0-9a-f]{64}', r.get('artifact_sha256', ''))):
+        raise ContractError('Successful, attributed Web3 observation required')
+    instant(r['available_at'])
+    if digest(encoded({k: v for k, v in r.items() if k != 'artifact_sha256'})) != r['artifact_sha256']:
+        raise ContractError('Web3 capture bytes differ from their artifact hash')
+    return data(r)
+
+
+def issuer_map(capture):
+    """Bind observed tickers to SEC issuers; do not assert a share class or conversion ratio."""
+    rows = observation(capture, 'metadata', 'market/rwa/tokens', 'GET')
+    if type(rows) is not list:
+        raise ContractError('Metadata must contain token rows')
+    result = {}
+    for entry in load_registry().entries:
+        found = [r for r in rows if r.get('tokenContractAddress', '').lower() == TOKENS[entry.token]]
+        if len(found) != 1:
+            raise ContractError('Every eligible contract must appear exactly once')
+        row = found[0]
+        ticker = row.get('underlyingTicker')
+        tickers = {s.security_id.split(':', 1)[1] for s in entry.securities}
+        if (row.get('tokenSymbol') != entry.token or str(row.get('binanceChainId')) != '56'
+                or ticker not in tickers or integer(row['decimals']) > 30):
+            raise ContractError('Metadata identity, ticker or decimals differ from registry')
+        result[entry.issuer_id] = dict(token=entry.token, underlying_id=ticker)
+    return result
+
+
+def raw_balances(capture):
+    rows = observation(capture, 'balances', 'balance/token-balances-by-address', 'POST')
+    # Kit: omitted assets have zero balance; no account row is also a zero response.
+    if type(rows) is not list or len(rows) > 1:
+        raise ContractError('Expected one wallet balance result')
+    assets = [] if not rows else rows[0]['tokenAssets']
+    if type(assets) is not list:
+        raise ContractError('Balance assets must be a list')
+    known = {USDT, NATIVE, *TOKENS.values()}
+    result = dict.fromkeys(known, 0)
+    seen = set()
+    for asset in assets:
+        token = asset['tokenContractAddress'].lower()
+        if token not in known or token in seen or str(asset.get('binanceChainId', '56')) != '56':
+            raise ContractError('Unexpected or duplicate balance asset')
+        seen.add(token)
+        result[token] = integer(asset['rawBalance'])
+    params = capture['balances'].get('params', {})
+    requested = params.get('address')
+    wallet = wallet_address(capture['wallet'])
+    if requested not in (wallet, 'sha256:' + digest(wallet.encode())):
+        raise ContractError('Balance capture belongs to another wallet')
+    wanted = {(str(r['binanceChainId']), r['tokenContractAddress'].lower())
+              for r in params.get('tokenContractAddresses', [])}
+    if wanted != {('56', t) for t in ('', USDT, *TOKENS.values())}:
+        raise ContractError('Balance request must cover all eligible assets and native BNB')
+    return result
+
+
+def initial_state(capture, profile, run_id):
+    """Only a fresh, stock-flat dev wallet can be initialized without cost-basis history.
+
+    USDT is floored from chain 18 decimals into ledger micro-USDT. Exact raw
+    balances and the discarded sub-micro remainder stay in the pinned capture.
+    Native BNB stays in wei. Existing holdings need reviewed accounting history.
+    """
+    balances = raw_balances(capture)
+    if any(balances[token] for token in TOKENS.values()):
+        raise ContractError('Existing stock holdings require reviewed cost-basis history')
+    costs = profile['quote_cost_summary']
+    if costs['bnb_decimals'] != 18:
+        raise ContractError('Native BNB must be accounted in wei')
+    cash, bnb = balances[USDT] // 10**12, balances[NATIVE]
+    opening = cash + bnb * costs['bnb_price_units'] // 10**18
+    if type(run_id) is not str or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id) or opening <= 0:
+        raise ContractError('A funded run identity is required')
+    rows = observation(capture, 'metadata', 'market/rwa/tokens', 'GET')
+    decimals = {r['tokenSymbol']: integer(r['decimals']) for r in rows if r.get('tokenSymbol') in TOKENS}
+    day = instant(capture['observed_at']).date().isoformat()
+    return dict(schema='PortfolioState.v1', mode='dev', run_id=run_id, wallet_id=wallet_address(capture['wallet']),
+                cash_units=cash, bnb_units=bnb, bnb_decimals=18, bnb_price_units=costs['bnb_price_units'],
+                opening_equity_units=opening,
+                positions={s: dict(units=0, decimals=decimals[s], cost_basis_units=0) for s in sorted(TOKENS)},
+                reservations={}, applied_events={},
+                accounting=dict(realized_units=0, fees_units=0, gas_value_units=0, service_units=0, turnover_units=0),
+                risk=dict(day=day, day_anchor_units=opening, peak_units=opening,
+                          daily_halt=False, run_halt=False, deep_cut=False))
+
+
+def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None):
+    """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage."""
+    profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+    if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
+        raise ContractError('A separately reviewed LIVE profile is required')
+    validate_live(profile)
+    if profile.get('environment') != 'REHEARSAL':
+        raise ContractError('Gate A requires a dev rehearsal profile')
+    if capture.get('schema') != 'GateAInputs.v1' or not re.fullmatch('[0-9a-f]{40}', build_id or ''):
+        raise ContractError('Captured inputs and full pushed build SHA required')
+    age = (instant(now) - instant(capture['observed_at'])).total_seconds()
+    if not 0 <= age <= 300:
+        raise ContractError('Starting balance capture is future-dated or older than five minutes')
+    for name in ('metadata', 'balances'):
+        age = (instant(now) - instant(capture[name]['available_at'])).total_seconds()
+        if not 0 <= age <= 300:
+            raise ContractError('Underlying capture is future-dated or stale')
+    calendar = SessionCalendar(json.loads(calendar_raw))
+    calendar(int(instant(now).timestamp() * 1000))
+    calendar(int(instant(profile['signing_end']).timestamp() * 1000))
+    issuers = issuer_map(capture)
+    state = initial_state(capture, profile, run_id)
+    state_raw = encoded(state) + b'\n'
+    configs = json.loads(json.dumps(configs))
+    runtime, uploader, operations = (configs[n] for n in ('runtime.json', 'uploader.json', 'operations.json'))
+    wallet = state['wallet_id']
+    if any(c.get('wallet_address') != wallet for c in (runtime, uploader)):
+        raise ContractError('Infrastructure and captured wallet identities differ')
+    runtime.update(run_id=run_id, build_id=build_id, mode='dev', initial_state_sha256=digest(state_raw))
+    runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
+                             cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
+                             strategy_profile_sha256=digest(profile_raw),
+                             session_calendar_sha256=digest(calendar_raw), issuers=issuers)
+    uploader.update(run_id=run_id, build_id=build_id, mode='dev')
+    # Explicit bounded dev operations values; no trading-policy parameter changes.
+    operations.update(run_id=run_id, archive_prefix='archive/' + run_id, retention_days=82,
+                      backup_interval_hours=24, max_attempts=3, retry_seconds=60,
+                      max_archive_bytes=64 * 1024 * 1024)
+    files = {n: encoded(c) + b'\n' for n, c in
+             (('runtime.json', runtime), ('uploader.json', uploader), ('operations.json', operations))}
+    files.update({'strategy-profile.json': profile_raw, 'session-calendar.json': calendar_raw,
+                  'initial-state.json': state_raw, 'input-capture.json': capture_raw})
+    env = 'LARP_ARTIFACT_ROOT=/var/lib/larp-evidence\nLARP_EVIDENCE_CONFIG_MODE=shadow\n'
+    if sec_contact:
+        from larp.intelligence.config import sec_user_agent
+        sec_user_agent({'LARP_SEC_USER_AGENT': sec_contact})
+        if any(c in sec_contact for c in '\r\n\x00'):
+            raise ContractError('SEC contact must be one line')
+        # systemd EnvironmentFile supports a quoted value, with no shell execution.
+        env += 'LARP_SEC_USER_AGENT=' + json.dumps(sec_contact) + '\n'
+        files['evidence.env'] = env.encode()
+    from larp.sources.register import load_register
+    register = load_register()[0]
+    terms_missing = [s.source_id for s in register.values() if s.enabled and not s.rights.get('terms_evidence_sha256')]
+    from larp.sources.register import load_edgar_terms
+    if not load_edgar_terms().get('terms_evidence_sha256'):
+        terms_missing.append('sec-edgar')
+    load_config('shadow')
+    report = dict(schema='GateAPreparation.v1', build_id=build_id, run_id=run_id, signing_enabled=False,
+                  runtime_mode='dev', execution='shadow', prepared=True, gate_a_passed=False,
+                  missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing],
+                  host_checks={name: 'NOT_RUN' for name in HOST_CHECKS},
+                  input_hashes={n: digest(raw) for n, raw in files.items()},
+                  notes=['No share ratio or basis verification granted',
+                         'Rehearsal window unchanged; pre-Oct21 rounds may HOLD',
+                         'Copy retained terms artifacts to the evidence store before startup'])
+    files['preparation-report.json'] = encoded(report) + b'\n'
+    return files

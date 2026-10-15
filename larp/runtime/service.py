@@ -185,6 +185,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['assessor'] != 'deterministic':
         raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
     mode = config.get('mode', 'offline')
+    if d['intelligence_mode'] == 'shadow' and (mode != 'dev' or d['execution'] != 'shadow'):
+        raise ContractError('Shadow evidence settings require an unsigned dev run')
+    if mode in ('dev', 'live') and d['intelligence_mode'] != 'live' and not (
+            mode == 'dev' and d['execution'] == 'shadow' and d['intelligence_mode'] == 'shadow'):
+        raise ContractError('Hosted runs require live settings or explicit dev-shadow settings')
     profile = _pinned_json(d['strategy_profile_file'], d['strategy_profile_sha256'], 'Strategy profile')
     if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1':
         raise ContractError('Expected a StrategyProfile.v1 file')

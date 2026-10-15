@@ -16,7 +16,7 @@ from larp.intelligence.issuers import IssuerRegistry
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config" / "intelligence"
 KNOWN_TOOLS = ("fetch_document", "prior_context", "compare_facts")
-MODES = ("development", "live")
+MODES = ("development", "shadow", "live")
 
 
 def _load(name: str, base: Path) -> tuple:

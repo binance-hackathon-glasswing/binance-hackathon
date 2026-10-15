@@ -367,6 +367,28 @@ def preflight(env, config_mode: str = "live") -> list:
     return reasons
 
 
+def check_shadow_scope(runtime_path, *, release_manifest=None, release_root=None):
+    """Shadow settings never authorize signed/final operation (IDEA-057). Read-only; no secrets or DB calls."""
+    from larp.contracts import ContractError
+    from larp.runtime.preflight import verify_release, verify_runtime_config
+    try:
+        if runtime_path is None:
+            raise ValueError('Runtime configuration required')
+        raw = Path(runtime_path).read_bytes()
+        config = json.loads(raw)
+        if (config.get('mode') != 'dev' or config.get('driver', {}).get('execution') != 'shadow'
+                or config['driver'].get('intelligence_mode') != 'shadow'):
+            raise ValueError('Only unsigned dev-shadow operation is allowed')
+        if release_manifest or release_root:
+            if not release_manifest or not release_root:
+                raise ValueError('Both release arguments required')
+            manifest = Document(Path(release_manifest).read_bytes())
+            verify_release(manifest, release_root)
+            verify_runtime_config(manifest.read(), raw)
+    except (ContractError, ValueError, OSError, TypeError, AttributeError, KeyError):
+        raise Refused('Shadow ingestion needs the matching unsigned dev runtime configuration') from None
+
+
 def _env_root(env, config_mode: str = "live") -> Path:
     reasons = preflight(env, config_mode)
     if reasons:
@@ -485,12 +507,15 @@ def main(argv=None, env=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     pre = sub.add_parser("preflight")
-    pre.add_argument("--config-mode", default="live", choices=("live", "development"))
+    pre.add_argument("--config-mode", default="live", choices=("live", "development", "shadow"))
     terms = sub.add_parser("terms")
     terms.add_argument("--write-register", action="store_true", help="record captured hashes in the register file")
     run = sub.add_parser("run")
     run.add_argument("--hours", type=float, default=24.0)
-    run.add_argument("--config-mode", default="live", choices=("live", "development"))
+    run.add_argument("--config-mode", default=env.get("LARP_EVIDENCE_CONFIG_MODE", "live"),
+                     choices=("live", "development", "shadow"))
+    run.add_argument("--shadow-runtime-config", type=Path,
+                     help="Manifest-bound dev/shadow runtime configuration; required for shadow settings")
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
     run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
     # Hosts run a verified release bundle, not a git checkout (IDEA-047 V01): the manifest replaces the git check.
@@ -560,6 +585,9 @@ def main(argv=None, env=None) -> int:
             state = (release_state(args.release_manifest, args.release_root)
                      if args.release_manifest or args.release_root else git_state())
             require_committed(state, args.allow_dirty)
+            if args.config_mode == 'shadow':
+                check_shadow_scope(args.shadow_runtime_config, release_manifest=args.release_manifest,
+                                   release_root=args.release_root)
             runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
                                   commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
         except Refused as refusal:

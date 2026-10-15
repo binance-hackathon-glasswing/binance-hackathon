@@ -21,4 +21,6 @@
 
 ## Findings and results
 
+- 2026-10-16 user decision: use existing bounded evidence defaults explicitly for unsigned dev-shadow operation, 15-minute cadence and 5-minute UTC day-roll window. Deployment will use Yao Zhu's AWS environment. SEC contact not supplied; it remains a required host input. Signed/final parameters stay unadopted. Implementation uses a separate `shadow` evidence mode, never fills the pending `live` values.
+
 - 2026-10-16: `git fetch origin` succeeded after sandbox elevation; branch `codex/gate-a-readiness-20261016` starts at current main. The current tree already contains the driver and `init`/`activate`; Gate A's active blockers are deployment inputs and host evidence. Python 3.14 is on PATH; Linux/PostgreSQL availability still to be checked. No application code or tests run in this session yet.
