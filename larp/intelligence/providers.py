@@ -350,7 +350,8 @@ class HostedModel:
     def step(self, request, remaining_ms: int):
         r = request.read()
         body = self.request_payload(request)
-        record = dict(artifacts=self._artifacts, request_payload=body)
+        record = dict(artifacts=self._artifacts, request_payload=body,
+                      cost=dict(amount_micro_usd=None, basis='UNKNOWN_PROVIDER_USAGE'))
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
         try:
@@ -423,7 +424,8 @@ class HostedModel:
             cost = {"amount_micro_usd": (usage["input_tokens"] * self.price["input_micro_usd_per_mtok"]
                                          + usage["output_tokens"] * self.price["output_micro_usd_per_mtok"]) // 1_000_000,
                     "basis": "TOKENS_X_PUBLISHED_PRICE:" + self.price["source"]}
-        return response(r, status="OK", output=output, latency_ms=latency, usage=usage, cost=cost,
+        record['cost'] = cost
+        return response(r, status="OK", output=output, latency_ms=latency, usage=usage,
                         reasoning=reasoning, served_model=served, **record)
 
 

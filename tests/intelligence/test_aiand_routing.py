@@ -108,6 +108,12 @@ class AIandWire(unittest.TestCase):
         value=self.build(lambda p,h:(p.update(model=p['model'].upper()),h.update({'x-model':h['x-model'].upper()}))).step(request(),5000).read()
         self.assertEqual(value['status'],'OK')
 
+    def test_ar2_failed_hosted_call_has_unknown_cost_rather_than_zero_local_charge(self):
+        value=self.build(status=402).step(request(),5000).read()
+        self.assertEqual(value['status'],'ERROR')
+        self.assertIsNone(value['cost']['amount_micro_usd'])
+        self.assertEqual(value['cost']['basis'],'UNKNOWN_PROVIDER_USAGE')
+
     def test_ar2_refuse_alias_endpoint_unsupported_effort_or_bad_catalog_before_transport(self):
         for change in [dict(model_id='auto'), dict(endpoint='https://evil.test/v1/chat/completions'),
                        dict(effort='none'),dict(effort='medium'),dict(catalog={})]:
