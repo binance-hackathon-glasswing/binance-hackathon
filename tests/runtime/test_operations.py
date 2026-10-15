@@ -17,6 +17,8 @@ class OperationsTests(unittest.TestCase):
         worker.prepare.side_effect=ContractError('Synthetic oversized backup')
         worker.once.side_effect=[True,False]
         worker.health.return_value=Document.from_dict(dict(healthy=True,reasons=[]))
+        worker.service_health.return_value=Document.from_dict(dict(runtime_alive=False,halt_reasons=[],quarantined=False,
+                                                                audit_overdue=0,signing_unanswered=0))
         c=dict(run_id='run',deployment='fixture',archive_bucket='fixture',account_id='123456789012',
                kms_key='synthetic',archive_prefix='archive/dev',retention_days=7,max_archive_bytes=1,
                backup_interval_hours=24,max_attempts=2,retry_seconds=60)
@@ -65,12 +67,15 @@ class OperationsTests(unittest.TestCase):
             certificate.write_bytes(b'synthetic certificate')
             config = dict(schema='OperationsConfiguration.v1', deployment='fixture', region='us-east-1',
                           account_id='123456789012', run_id='run', archive_bucket='fixture',
-                          archive_prefix='archive/development', kms_key='synthetic', retention_days=7,
+                          archive_prefix='archive/development', kms_key='synthetic', retention_days=82,
                           backup_interval_hours=24, database_host='synthetic', database_user='larp_archive',
                           database_name='larp', database_ca_file=str(certificate),
                           database_ca_sha256=hashlib.sha256(certificate.read_bytes()).hexdigest(),
                           max_attempts=2, retry_seconds=60, max_archive_bytes=1024)
             validate_config(config)
+            for days in (1, 81, True, '82'):
+                with self.subTest(days=days), self.assertRaises(ContractError):
+                    validate_config(dict(config, retention_days=days))
             with self.assertRaises(ContractError): validate_config(dict(config, database_user='larp_admin'))
             certificate.write_bytes(b'changed')
             with self.assertRaises(ContractError): validate_config(config)

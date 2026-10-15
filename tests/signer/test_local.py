@@ -34,6 +34,19 @@ class SignerTests(unittest.TestCase):
         self.assertTrue(verify(self.payload,a));self.assertEqual(a,self.signer.sign('a',self.payload,1,1))
         self.assertFalse(verify(replace(self.payload,nonce=1),a))
         self.assertFalse(verify(replace(self.payload,to=TOKEN),a))
+
+    def test_corrupt_signature_fields_and_recovery_errors_fail_verification(self):
+        from eth_keys.exceptions import BadSignature
+        from eth_utils import ValidationError
+        from unittest.mock import patch
+        from larp.execution import Signed
+        for value in (None, Signed(None, '0x' + '0' * 64), Signed('0x', None)):
+            with self.subTest(value=value):
+                self.assertFalse(verify(self.payload, value))
+        signed = self.signer.sign('valid-fixture', self.payload, 1, 1)
+        for error in (BadSignature('PRIVATE_MARKER'), ValidationError('PRIVATE_MARKER')):
+            with self.subTest(error=type(error).__name__), patch('eth_account.Account.recover_transaction', side_effect=error):
+                self.assertFalse(verify(self.payload, signed))
     def test_fencing_and_wallet_binding(self):
         self.registry.authority=(2,2)
         with self.assertRaises(Blocked):self.signer.sign('a',self.payload,1,1)

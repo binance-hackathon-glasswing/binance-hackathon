@@ -31,6 +31,28 @@ class TransportTests(unittest.TestCase):
             o=Opener(b'{"code":0,"data":{"echo":"fixture-secret"}}')
             r=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=o).request('GET','market/rwa/tokens',{})
             self.assertNotIn('fixture-secret',json.dumps(r))
+
+    def test_escaped_credential_reflections_never_retain_reversible_raw_body(self):
+        for raw in (b'{"code":0,"data":{"echo":"fixture-\\u0073ecret"}}',
+                    b'{"code":0,"data":{"fixture-\\u0073ecret":"echo"}}',
+                    b'{"code":0,"data":"fixture-\\u0073ecret","data":[]}',  # an earlier duplicate key
+                    b'{"code":0,"data":["fixture\\u002d\\u0073ecret"]}'):
+            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as root:
+                r = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root),
+                               opener=Opener(raw)).request('GET', 'market/rwa/tokens', {})
+                self.assertNotIn('response_body_base64', r)
+                self.assertEqual(r['raw_body_omitted'], 'credential_reflection')
+                from pathlib import Path
+                artifact = json.loads((Path(root) / (r['artifact_sha256'] + '.json')).read_bytes())
+                self.assertNotIn('fixture-secret', json.dumps(artifact))
+                self.assertNotIn('response_body_base64', artifact)
+
+    def test_untainted_response_keeps_exact_raw_evidence(self):
+        raw = b'{ "code":0, "data":{"public":"value"} }'
+        with tempfile.TemporaryDirectory() as root:
+            r = Web3Client('fixture-api-key', 'fixture-secret', artifacts=Artifacts(root),
+                           opener=Opener(raw)).request('GET', 'market/rwa/tokens', {})
+            self.assertEqual(base64.b64decode(r['response_body_base64']), raw)
     def test_business_error_and_redirect_do_not_succeed(self):
         with tempfile.TemporaryDirectory() as root:
             c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=Opener(b'{"code":40435,"data":[]}'))
@@ -42,3 +64,20 @@ class TransportTests(unittest.TestCase):
                 c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),
                              opener=Opener(json.dumps({'code':code}).encode()))
                 with self.assertRaisesRegex(Unavailable,outcome):c.request('GET','market/rwa/tokens',{})
+    def test_a_truncated_or_malformed_http_response_is_a_transport_error(self):
+        # #64 (WR22) item 2: http.client.HTTPException is neither URLError nor OSError.
+        import http.client
+        from pathlib import Path
+        class Truncated(Response):
+            def read(self,n):raise http.client.IncompleteRead(b'{"code":0,"da',100)
+        class TruncatedOpener(Opener):
+            def open(self,request,timeout):return Truncated(b'')
+        class BadStatus(Opener):
+            def open(self,request,timeout):raise http.client.BadStatusLine('fixture-secret')
+        for opener in (TruncatedOpener(b''),BadStatus(b'')):
+            with self.subTest(opener=type(opener).__name__), tempfile.TemporaryDirectory() as root:
+                c=Web3Client('fixture-api-key','fixture-secret',artifacts=Artifacts(root),opener=opener)
+                with self.assertRaisesRegex(Unavailable,'transport_error'):c.request('GET','market/rwa/tokens',{})
+                [artifact]=[json.loads(p.read_bytes()) for p in Path(root).glob('*.json')]
+                self.assertEqual(artifact['outcome'],'transport_error')
+                self.assertNotIn('fixture-secret',json.dumps(artifact))

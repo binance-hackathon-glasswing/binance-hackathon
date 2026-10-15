@@ -20,7 +20,7 @@ refuses a reused event ID with changed bytes and returns the old receipt otherwi
 from copy import deepcopy
 
 from larp.contracts import ContractError, Document
-from larp.integration.runtime import INCOMING
+from larp.integration.runtime import INCOMING, iso_ms
 from larp.ports import validate_execution_observation
 from larp.risk.accounting import advance_accounting
 
@@ -115,6 +115,19 @@ def settle(current, observation):
             order["tx_hash"] = tx
             if not any(m["tx_hash"] == tx for m in record["swap_mappings"]):
                 record["swap_mappings"].append({"tx_hash": tx, "decision_id": intent["decision_id"], "step": "swap"})
+            if not intent["mandatory"] and intent.get("kind", "BSTOCK_TRADE") == "BSTOCK_TRADE":
+                # Consume the allowance only once economic submission is possible,
+                # not on quotes, approval, or a definitely unsubmitted intent.
+                # This captured session also makes recovery/replay deterministic.
+                session = record.get("policy_input", {}).get("context", {}).get("session_index")
+                if type(session) is not int or session < 0:
+                    raise ContractError("Discretionary swap has no recorded session")
+                previous_session = projection.get("last_discretionary_session")
+                projection["last_discretionary_session"] = max(session, previous_session) \
+                    if type(previous_session) is int else session
+                observed_ms = iso_ms(o["observed_at"])
+                projection["last_discretionary_observed_ms"] = max(
+                    observed_ms, projection.get("last_discretionary_observed_ms", observed_ms))
         return Document.from_dict({"projection": projection, "reservation_deltas": []})
     if o.get("step") == "approve" and kind in ("APPROVAL", "REVERT"):
         expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ":approve")

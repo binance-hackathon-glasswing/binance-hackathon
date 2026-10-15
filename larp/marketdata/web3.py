@@ -3,14 +3,18 @@ import base64
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import http.client
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+from larp.contracts import reflects_secret
 
 BASE = 'https://web3.binance.com/build/api/v1/dex/'
 READS = frozenset({('GET', p) for p in (
@@ -20,6 +24,7 @@ READS = frozenset({('GET', p) for p in (
     ('POST', 'balance/token-balances-by-address'), ('POST', 'pre-transaction/gas-limit')})
 ENV_NAMES = ('BINANCE_API_KEY', 'BINANCE_SECRET_KEY', 'BN_WEB3_API_KEY',
              'BN_WEB3_API_SECRET', 'BN_WEB3_SECRET_KEY', 'AI_SEEDS_ADDRESS')
+BASE64_TOKEN = re.compile(r'[A-Za-z0-9+/_-]+={0,2}')
 
 
 def utc():
@@ -30,15 +35,39 @@ def encoded(v):
     return json.dumps(v, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
 
 
-def redact(value, secrets):
+def redact(value, secrets, *, ignore_case=False, binary_secrets=()):
     if isinstance(value, dict):
-        return {redact(k, secrets): redact(v, secrets) for k, v in value.items()}
+        return {redact(k, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets):
+                redact(v, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets)
+                for k, v in value.items()}
     if isinstance(value, list):
-        return [redact(v, secrets) for v in value]
+        return [redact(v, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets) for v in value]
     if isinstance(value, str):
+        if binary_secrets:
+            # Decode equivalent Base64 alphabets/padding before comparison. Hex
+            # text is checked case-insensitively; binary transactions stay exact.
+            # Alphabet text attached before an echo shifts its alignment, so try
+            # every start offset; attached text after it only adds trailing bytes.
+            def screen(match):
+                token = match.group()
+                for start in range(4):
+                    part = token[start:].rstrip('=')
+                    part = part[:-1] if len(part) % 4 == 1 else part
+                    try:
+                        decoded = base64.b64decode(part + '=' * (-len(part) % 4),
+                                                   altchars=b'-_', validate=True)
+                    except ValueError:
+                        continue
+                    plain = decoded.decode('utf-8', errors='replace')
+                    if (any(secret in decoded for secret in binary_secrets)
+                            or redact(plain, secrets, ignore_case=ignore_case) != plain):
+                        return '[REDACTED]'
+                return token
+            value = BASE64_TOKEN.sub(screen, value)
         for secret in secrets:
             if secret:
-                value = value.replace(secret, '[REDACTED]')
+                value = (re.sub(re.escape(secret), '[REDACTED]', value, flags=re.IGNORECASE)
+                         if ignore_case else value.replace(secret, '[REDACTED]'))
     return value
 
 
@@ -59,6 +88,8 @@ def credentials(env_file=None, environ=None):
             key = key.strip()
             if sep and key in ENV_NAMES:
                 parts = shlex.split(val, comments=True)
+                if not parts or parts == ['']:
+                    continue  # optional empty fields do not replace supplied credentials
                 if len(parts) != 1 or '$' in parts[0] or '`' in parts[0]:
                     raise Unavailable('credentials must be literal values')
                 if key in selected and selected[key] != parts[0]:
@@ -103,6 +134,11 @@ class Artifacts:
 
 
 class Web3Client:
+    # The read/build client can never submit a transaction; a submit-only subclass replaces this set
+    # (larp/execution_live/loop.py Web3Broadcaster). Values of `private_params` are stored only as hashes.
+    endpoints = READS
+    private_params = ()
+
     mode = 'live'
 
     def __init__(self, key, secret, *, artifacts, opener=None, min_interval=0.35, timeout=20):
@@ -113,7 +149,7 @@ class Web3Client:
         self.min_interval, self.timeout, self.last = min_interval, timeout, 0
 
     def request(self, method, endpoint, params):
-        if (method, endpoint) not in READS:
+        if (method, endpoint) not in self.endpoints:
             raise Unavailable('endpoint outside read/build allowlist')
         time.sleep(max(0, self.min_interval - (time.monotonic() - self.last)))
         self.last = time.monotonic()
@@ -128,8 +164,30 @@ class Web3Client:
                       data=payload if method == 'POST' else None,
                       headers={'X-OC-APIKEY': self.key, 'X-OC-TIMESTAMP': stamp, 'X-OC-SIGN': sig,
                                'Content-Type': 'application/json'})
+        private_values, private_bytes = [], []
+        for name in self.private_params:
+            value = params.get(name)
+            if isinstance(value, str) and value:
+                private_values.append(value)
+                # Keep literal matches too: an attached diagnostic prefix can
+                # shift token decoding while leaving the full encoding usable.
+                private_values.append(base64.b64encode(value.encode()).decode())
+                private_bytes.append(value.encode())
+                if value.startswith('0x'):
+                    # A prefix or hex case change still leaves usable signed bytes.
+                    private_values.append(value[2:])
+                    try:
+                        raw_private = bytes.fromhex(value[2:])
+                        if raw_private:
+                            private_values.append(base64.b64encode(raw_private).decode())
+                            private_bytes.append(raw_private)
+                    except ValueError:
+                        pass  # non-hex private parameters are still redacted
+        secrets = (self.key, self.secret, sig, *private_values)
+        stored = {k: ('sha256:' + hashlib.sha256(str(v).encode()).hexdigest() if k in self.private_params else v)
+                  for k, v in params.items()}
         record = dict(schema='Web3Observation.v1', source_id='BINANCE_WEB3', endpoint=endpoint,
-                      method=method, params=params, requested_at=stamp)
+                      method=method, params=stored, requested_at=stamp)
         start = time.monotonic()
         try:
             try:
@@ -161,18 +219,32 @@ class Web3Client:
             else:
                 outcome = 'api_or_http_error'
             record.update(outcome=outcome, response=body)
-            # Keep exact public response bytes, unless they reflect a credential.
-            if not any(secret.encode() in raw for secret in (self.key, self.secret, sig)):
+            # Keep exact public response bytes only if no credential or private
+            # request value is reflected, including overwritten JSON keys.
+            # JSON escapes or a duplicate key can hide a reflected credential in the raw bytes.
+            # Inspect every parsed key/value too before retaining a reversible copy.
+            private_reflection = False
+            if private_values:
+                # Preserve all pairs for screening: a parser's last-key-wins rule
+                # must not hide an escaped/mixed-case private value in raw exports.
+                pairs = json.loads(raw, object_pairs_hook=lambda items: [list(item) for item in items])
+                private_reflection = redact(pairs, private_values, ignore_case=True,
+                                            binary_secrets=private_bytes) != pairs
+            if not private_reflection and not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
-                record['raw_body_omitted'] = 'credential_reflection'
-        except (URLError, TimeoutError, OSError):
+                record['raw_body_omitted'] = ('private_parameter_reflection'
+                    if private_reflection or reflects_secret(raw, private_values)
+                    else 'credential_reflection')
+        except (URLError, TimeoutError, OSError, http.client.HTTPException):
             record['outcome'] = 'transport_error'
         except Unavailable as e:
             record['outcome'] = str(e)
         record.update(available_at=utc(), elapsed_ms=round((time.monotonic() - start) * 1000))
-        # Headers and exceptions are never captured. Defensive redaction also covers a reflected credential.
-        record = redact(record, (self.key, self.secret, sig))
+        # Headers and exceptions are never captured. Private parameters must also
+        # be removed from parsed response values and keys before artifact storage.
+        record = redact(record, secrets)
+        record = redact(record, private_values, ignore_case=True, binary_secrets=private_bytes)
         record['artifact_sha256'] = self.artifacts.put(record)
         if record['outcome'] != 'ok':
             raise Unavailable(record['outcome'])

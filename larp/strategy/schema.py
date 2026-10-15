@@ -115,32 +115,52 @@ def usable(observation, cutoff, max_age):
         return False
 
 
-def markets(snapshot, p):
-    return market_view(snapshot.context.read().get("markets", []), snapshot.universe, snapshot.observed_at, p)
+def markets(snapshot, p, invalid=None):
+    return market_view(snapshot.context.read().get("markets", []), snapshot.universe, snapshot.observed_at, p,
+                       invalid=invalid)
 
 
-def market_view(observations, universe, cutoff, p):
+def _row_defect(m):
+    """Why one row cannot be used, or None. Only this row's symbol becomes unusable (#45, WR03)."""
+    if m.get("schema") != "MarketObservation.v1":
+        return "Wrong market schema"
+    try:
+        if m.get("measured_roundtrip_bps") is not None:
+            integer(m["measured_roundtrip_bps"])
+        integer(m["decimals"])
+        if m["decimals"] > 30 or m["currency"] != "USDT" or m["money_scale"] != MONEY_SCALE:
+            return "Unsupported units/currency"
+        if not m.get("token_id") or not m.get("underlying_id"):
+            return "Token/share identity required"
+        integer(m["price_units"], 1)
+    except ContractError as exc:
+        return str(exc)
+    except KeyError as exc:
+        return "Missing market field " + str(exc)
+    return None
+
+
+def market_view(observations, universe, cutoff, p, invalid=None):
     """symbol -> usable MarketObservation or None, as the strategy reads them (also used by the runtime so evidence
-    the strategy cannot use never becomes a planner constraint, IDEA-033 R17)."""
+    the strategy cannot use never becomes a planner constraint, IDEA-033 R17).
+
+    A row-level defect makes only that symbol None, like a stale row; its reason goes into `invalid` when given.
+    Problems with the set as a whole still raise: the collection shape, an unattributable or duplicate symbol, and
+    a fake or unidentified origin in LIVE."""
+    if type(observations) is not list or any(type(m) is not dict for m in observations):
+        raise ContractError("Market observations must be a list of objects")
     result = {}
     for m in observations:
         symbol = m.get("symbol")
         if symbol not in universe or symbol not in SYMBOLS or symbol in result:
             raise ContractError("Unknown or duplicate market entity")
-        if m.get("schema") != "MarketObservation.v1":
-            raise ContractError("Wrong market schema")
         if p.get("mode") == "LIVE" and (m.get("origin") != "WEB3_OPEN_API"
                 or m.get("source_id") in ("SCRIPTED_FAKE", "SYNTHETIC")):
             raise ContractError("Fake or unidentified market observation in LIVE")
-        if m.get("measured_roundtrip_bps") is not None:
-            integer(m["measured_roundtrip_bps"])
-        integer(m["decimals"])
-        if m["decimals"] > 30 or m["currency"] != "USDT" or m["money_scale"] != MONEY_SCALE:
-            raise ContractError("Unsupported units/currency")
-        if not m.get("token_id") or not m.get("underlying_id"):
-            raise ContractError("Token/share identity required")
-        integer(m["price_units"], 1)
-        result[symbol] = m if usable(m, cutoff, p["quote_age_seconds"]) else None
+        defect = _row_defect(m)
+        if defect is not None and invalid is not None:
+            invalid[symbol] = defect
+        result[symbol] = m if defect is None and usable(m, cutoff, p["quote_age_seconds"]) else None
     return result
 
 

@@ -20,7 +20,7 @@ BSTOCKS = frozenset({
     "0x5b1910eaad6450e50f816082aa078c41f10c292f",
     "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
 })
-FINAL = frozenset({"FINAL_SUCCESS", "FINAL_REVERT", "ABORTED"})
+FINAL = frozenset({"FINAL_SUCCESS", "FINAL_REVERT", "ABORTED", "NOT_SUBMITTED"})
 TERMINAL = frozenset({"COMPLETED", "FAILED", "ABORTED"})
 
 
@@ -34,6 +34,21 @@ class Conflict(Blocked):
 
 class DependencyUnavailable(Blocked):
     """A sanitized transient port failure, never evidence of transaction absence."""
+
+
+class Rejected(Blocked):
+    """The node definitely refused these signed bytes (WR12, #54). Never a timeout or a lost response.
+
+    The message is the fixed reason code only, never response text. A rejected attempt keeps its wallet barrier
+    until reconciliation proves non-submission (Executor.reconcile)."""
+    REASONS = frozenset({'INSUFFICIENT_FUNDS', 'NONCE_TOO_LOW', 'INTRINSIC_GAS_TOO_LOW', 'GAS_LIMIT_EXCEEDED',
+                         'INVALID_SENDER'})
+
+    def __init__(self, reason):
+        if reason not in self.REASONS:
+            raise ValueError('unknown rejection reason')
+        super().__init__(reason)
+        self.reason = reason
 
 
 def canonical(value):
@@ -81,6 +96,7 @@ class Intent:
     timeout: int = 120
     kind: str = "BSTOCK_TRADE"
     max_cash_units: int | None = None
+    max_slippage_bps: int = 50
 
     @property
     def key(self):
@@ -104,6 +120,9 @@ class Intent:
                       and self.receive_token == NATIVE_BNB)
         if not (bstock or gas_top_up):
             raise Blocked("unsupported economic action")
+        integer(self.max_slippage_bps)
+        if self.max_slippage_bps >= 10000:
+            raise Blocked('invalid slippage authorization')
         if self.max_cash_units is not None:
             integer(self.max_cash_units, positive=True)
             if self.pay_token == USDT and self.amount > self.max_cash_units * 10**12:
@@ -187,7 +206,7 @@ class Attempt:
     payload: Payload
     epoch: int
     guard_version: int
-    raw_hex: str | None = None  # Restricted store only; omitted from audit events.
+    raw_hex: str | None = None  # Offline fixtures only; PostgreSQL state strips bytes before committing.
     tx_hash: str | None = None
     broadcast_at: int | None = None
     probes: int = 0
@@ -308,6 +327,20 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         raise Blocked("unsupported transaction step")
 
 
+def validate_sequence(state, step, payload, gates):
+    """Checks across the execution's steps; the remote signer repeats them (larp/signer/service.py)."""
+    if step == "SWAP" and state.attempts:
+        approval = state.attempts[0]
+        if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
+            raise Blocked("approved nonce consumption and current wallet count disagree")
+    previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
+                         and attempt.gas_used is not None
+                         else attempt.payload.gas) * attempt.payload.gas_price
+                        for attempt in state.attempts if attempt.step != step)
+    if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
+        raise Blocked("parent gas budget exceeded")
+
+
 class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
         if any(getattr(port, "mode", None) != "fake" for port in (guards, venue, signer, decoder)):
@@ -353,16 +386,7 @@ class Executor:
         if now < state.last_observed_at:
             raise Blocked("clock regression")
         validate_payload(state.intent, step, payload, gates, now, self.decoder)
-        if step == "SWAP" and state.attempts:
-            approval = state.attempts[0]
-            if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
-                raise Blocked("approved nonce consumption and current wallet count disagree")
-        previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
-                             and attempt.gas_used is not None
-                             else attempt.payload.gas) * attempt.payload.gas_price
-                            for attempt in state.attempts if attempt.step != step)
-        if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
-            raise Blocked("parent gas budget exceeded")
+        validate_sequence(state, step, payload, gates)
 
     def prepare(self, key, now):
         state = self._load(key)
@@ -436,6 +460,11 @@ class Executor:
         if (gates.epoch, gates.authority_version) != (attempt.epoch, attempt.guard_version):
             raise Conflict("issued signature must reconcile after authority change")
         self._validate(state, attempt.step, attempt.payload, gates, now)
+        signed = self.signer.lookup(attempt.attempt_id, attempt.payload.hash)
+        if signed is None:
+            raise Blocked('issued signature registry evidence missing')
+        if signed.tx_hash != attempt.tx_hash or not self.signer.verify(attempt.payload, signed):
+            raise Blocked('durable signer bytes mismatch')
         # Initialize post-submission recovery in the same durable transition as
         # the first possible send. Earlier absence checks cannot consume it;
         # retries/restarts of a possibly submitted attempt never reset it.
@@ -443,8 +472,12 @@ class Executor:
                           probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
         try:
-            tx_hash = self.venue.broadcast(Signed(attempt.raw_hex, attempt.tx_hash), attempt.epoch, attempt.guard_version)
+            tx_hash = self.venue.broadcast(signed, attempt.epoch, attempt.guard_version)
             phase = "PENDING" if tx_hash == attempt.tx_hash else "UNKNOWN"
+        except Rejected as rejection:
+            # Still non-terminal: reconcile ends it only after the timeout and a nonce check.
+            return self._update_attempt(state, replace(attempt, state="REJECTED"), "BROADCAST_REJECTED", gates,
+                                        blocked_reason="broadcast rejected: " + rejection.reason)
         except (TimeoutError, ConnectionError):
             phase = "UNKNOWN"
         # If this save fails, BROADCAST_ATTEMPTED still preserves possible submission.
@@ -480,7 +513,8 @@ class Executor:
         except Blocked:
             return self._update_attempt(state, attempt, 'RECOVERY_BLOCKED', gates,
                                         blocked_reason='receipt evidence rejected; wallet barrier retained')
-        if outcome.status == 'UNKNOWN' and outcome.sender is None and outcome.nonce is None:
+        absent = outcome.status == 'UNKNOWN' and outcome.sender is None and outcome.nonce is None
+        if absent:
             outcome = replace(outcome, sender=state.intent.wallet, nonce=attempt.payload.nonce)
         if (outcome.tx_hash != attempt.tx_hash or outcome.sender != state.intent.wallet
                 or type(outcome.nonce) is not int or outcome.nonce != attempt.payload.nonce
@@ -488,6 +522,15 @@ class Executor:
             return self._update_attempt(state, replace(attempt, state="UNKNOWN"), "OUTCOME_MISMATCH", gates,
                                         blocked_reason="unexplained transaction/nonce evidence")
         timed_out = attempt.broadcast_at is not None and now >= attempt.broadcast_at + state.intent.timeout
+        if attempt.state == "REJECTED" and absent:
+            # WR12 (#54): the node refused these bytes. Release only once the timeout has passed and the wallet's
+            # chain nonce (latest = pending) still equals this attempt's nonce, so nothing used it; otherwise hold.
+            if timed_out and type(gates.nonce) is int and gates.nonce == attempt.payload.nonce:
+                return self._update_attempt(state, replace(attempt, state="NOT_SUBMITTED"), "NOT_SUBMITTED", gates,
+                                            status="ABORTED", blocked_reason="broadcast rejected; not submitted")
+            return self._update_attempt(state, attempt, "REJECTED_UNRESOLVED", gates, blocked_reason=(
+                "rejected broadcast nonce unresolved; wallet barrier retained" if timed_out
+                else "broadcast rejected; wallet barrier retained until timeout"))
         if outcome.status in {"PENDING", "UNKNOWN"}:
             if (outcome.status == "UNKNOWN" and attempt.state == "SIGNED_DURABLE"
                     and attempt.broadcast_at is None):
@@ -575,16 +618,25 @@ class Executor:
         state = self._load(key)
         if state.status in TERMINAL:
             return state
+        integer(now)
+        if now < state.last_observed_at:
+            raise Blocked("clock regression")
         attempts = state.attempts
         if attempts and attempts[-1].state not in FINAL | {"PREPARED"}:
             raise Blocked("issued or possibly issued capability must reconcile")
         if attempts and attempts[-1].state == "PREPARED":
             attempts = attempts[:-1] + (replace(attempts[-1], state="ABORTED"),)
         gates = self.guards.snapshot(state.intent, now)
-        return self._save(state, replace(state, status="ABORTED", attempts=attempts), "ABORTED_UNSIGNED", gates)
+        return self._save(state, replace(state, status="ABORTED", attempts=attempts,
+                                        last_observed_at=now), "ABORTED_UNSIGNED", gates)
+
+
+def possibly_submitted(attempt):
+    """A send was attempted and is not proved absent (a rejected attempt is proved only once NOT_SUBMITTED)."""
+    return attempt.broadcast_at is not None and attempt.state != "NOT_SUBMITTED"
 
 
 def possible_swap_hashes(state):
     """For W06 round closure: possible-broadcast swaps only, never approvals."""
     return tuple(attempt.tx_hash for attempt in state.attempts
-                 if attempt.step == "SWAP" and attempt.broadcast_at is not None and attempt.tx_hash)
+                 if attempt.step == "SWAP" and possibly_submitted(attempt) and attempt.tx_hash)

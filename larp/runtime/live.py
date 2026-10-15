@@ -37,18 +37,23 @@ def is_fake(port):
 
 
 def bind_directory(path, address):
-    """Mark `path` as belonging to `address`; refuse a directory already marked for another wallet (G-09)."""
+    """Mark `path` as belonging to `address`; refuse a directory already marked for another wallet (G-09).
+
+    A directory that cannot be created, read or marked is a refused start too: restarting cannot cure it (#59)."""
     path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
-    marker = path / MARKER
-    if marker.exists():
-        owner = marker.read_text(encoding='utf-8').strip()
-        if owner != address.lower():
-            raise LiveStartRefused(f'{path} belongs to another wallet')
-        return path
-    if any(p.name != MARKER for p in path.iterdir()):
-        raise LiveStartRefused(f'{path} holds unmarked records; refusing to adopt them for a wallet')
-    marker.write_text(address.lower() + '\n', encoding='utf-8')
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        marker = path / MARKER
+        if marker.exists():
+            owner = marker.read_text(encoding='utf-8').strip()
+            if owner != address.lower():
+                raise LiveStartRefused(f'{path} belongs to another wallet')
+            return path
+        if any(p.name != MARKER for p in path.iterdir()):
+            raise LiveStartRefused(f'{path} holds unmarked records; refusing to adopt them for a wallet')
+        marker.write_text(address.lower() + '\n', encoding='utf-8')
+    except OSError as error:
+        raise LiveStartRefused(f'{path} cannot be bound: {type(error).__name__}') from None
     return path
 
 

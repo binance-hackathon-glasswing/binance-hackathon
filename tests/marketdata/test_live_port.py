@@ -52,3 +52,48 @@ class LiveMarket(unittest.TestCase):
         self.assertEqual(units('40',18),40*10**18)
         for val in ('NaN','Infinity','-1','0.0000001'):
             with self.subTest(val=val),self.assertRaises(Unavailable):units(val,6)
+
+    def test_optional_cost_access_failures_stop_before_later_market_requests(self):
+        for failure in ('authentication_error', 'compliance_restriction',
+                        'http_forbidden_unclassified', 'rate_limited'):
+            class RefusedCostClient(Client):
+                def __init__(self): self.endpoints = []
+                def request(self, method, endpoint, params):
+                    self.endpoints.append(endpoint)
+                    if endpoint == 'aggregator/quote-and-swap':
+                        raise Unavailable(failure)
+                    return super().request(method, endpoint, params)
+            client = RefusedCostClient()
+            with self.subTest(failure=failure), self.assertRaisesRegex(Unavailable, failure):
+                MarketPort(client, '0x' + '1' * 40)(0)
+            self.assertEqual(client.endpoints, ['market/rwa/tokens', 'market/rwa/underlying-market',
+                                               'market/rwa/price', 'aggregator/quote-and-swap'])
+
+    def test_temporary_cost_outage_retains_explicit_unavailable_cost(self):
+        def missing_cost(symbol):
+            raise Unavailable('transport_error')
+        rows = MarketPort(Client(), '0x' + '1' * 40, cost_observation=missing_cost)(0)
+        self.assertEqual(len(rows), len(TOKENS))
+        self.assertTrue(all(row['cost_status'] == 'UNAVAILABLE' and
+                            row['measured_roundtrip_bps'] is None for row in rows))
+
+    def test_malformed_remote_schemas_raise_sanitized_unavailable(self):
+        for endpoint, body in (('market/rwa/tokens', ['PRIVATE_MARKER']),
+                               ('market/rwa/underlying-market', [dict(tokenContractAddress=TOKENS['NVDAB'],
+                                                                      statusInfo=None)]),
+                               ('market/rwa/price', [dict(tokenContractAddress=TOKENS['NVDAB'])])):
+            class MalformedClient(Client):
+                def request(self, method, current, params):
+                    r = super().request(method, current, params)
+                    if current == endpoint: r['response']['data'] = body
+                    return r
+            with self.subTest(endpoint=endpoint), self.assertRaisesRegex(Unavailable, 'market response schema rejected'):
+                MarketPort(MalformedClient(), '0x' + '1' * 40)(0)
+
+    def test_out_of_range_candle_timestamp_is_typed_unavailable(self):
+        class InvalidCandleClient(Client):
+            def request(self, *args):
+                return dict(response={'data': [['1', '1', '1', '1', '1', 2**255, 1]]},
+                            artifact_sha256='a' * 64, available_at='2026-10-11T16:00:00Z')
+        with self.assertRaisesRegex(Unavailable, 'market response schema rejected'):
+            MarketPort(InvalidCandleClient(), '0x' + '1' * 40).candles('NVDAB')

@@ -31,7 +31,10 @@ class PortEvidenceReader:
         return [doc.read() for doc in self.store.records(issuer_id)]
 
     def text(self, sha256: str) -> str:
-        saved = self.artifacts.get(sha256)
+        try:
+            saved = self.artifacts.get(sha256)
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise ToolError("ARTIFACT_INTEGRITY_ERROR") from exc
         if saved is None:
             raise ToolError("ARTIFACT_MISSING")
         if sha256_hex(saved) != sha256:
@@ -40,13 +43,14 @@ class PortEvidenceReader:
 
 
 class EvidenceIndex:
-    """Point-in-time view: one issuer, records with available_ms <= cutoff, latest revision each."""
+    """Point-in-time view: both publication and retrieval at/before cutoff, latest revision each."""
 
     def __init__(self, reader, entry, cutoff_ms: int):
         self.reader, self.entry, self.cutoff = reader, entry, cutoff_ms
         latest, every = {}, {}
         for record in reader.records(entry.issuer_id):
-            if record["issuer_id"] != entry.issuer_id or record["available_ms"] > cutoff_ms:
+            if (record["issuer_id"] != entry.issuer_id or record["available_ms"] > cutoff_ms
+                    or record["original_ms"] > cutoff_ms):
                 continue
             every[record["record_id"]] = record
             held = latest.get(record["accession"])

@@ -1,0 +1,429 @@
+# Section C requirements catalogue — IDEA-049-C
+
+Frozen-source catalogue, 2026-10-14. Sources are requirements, never the code or existing issue reports. Historical conversation includes earlier reviews, so this is source-derived, not a claim that the reviewer had no prior code exposure.
+
+## Scope and prerequisites
+
+- User explicitly requests section C first and excludes the unclear Keegan/Isaac driver work. Preparation is isolated from target `faf9adc`; PR21 `5968b19` is carried by an ordinary merge. PR21 is still open: formal common-protocol start gate is pending. No whole-system completion claim.
+- Driver orchestration, `build_driver`, execution entry-point integration and driver/receipt handshake are excluded. Owner remains Keegan + Isaac pending assignment; D records final integration deadline before overall review. Verify later against the merged driver with real PostgreSQL and fake external ports.
+- Registered keys, `.env`, audit secrets, real signing/broadcast, AWS and organiser contact are excluded. Synthetic signer/venue boundaries only.
+- Sources checked: official captured page; Participant Guide PDF pp2–9/17–18 and matching web3-open-api/bstocks-trading-guide; SKILL F/K/Q settled notes, G01/08/09/13/16/18/28/43; declared proposal; IDEA035 §4/§10.1; IDEA046 B1/B2; IDEA047 adopted scope; DR01–06/17 and AT source matrix. Detailed source locations below.
+
+## Requirements
+
+| ID | Statement (when applicable, system must…) | Source / short quote | Obligation | Offline acceptance | Use case | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-001 | Trade only eligible bStocks against USDT, with USDT to native BNB solely for gas maintenance. | RULE-KIT PG p4-5; F91/93; G01/13: “Only these five bStocks are eligible” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Reject other tokens, token variants and BNB investment intents. | C-UC-001 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-002 | Refuse transfers, bridges, withdrawals, deposits and arbitrary contract calls. | RULE-PAGE Rules & Restrictions; F64; G01: “Unrelated swaps or arbitrary contract calls” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Tampered destination or selector cannot obtain authorization. | C-UC-002 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-003 | Bind every signing request to the registered wallet. | RULE-KIT PG p3/5/9; F92; G09: “Trade only from the registered AI_SEEDS_ADDRESS” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Wrong key/address/environment is refused before signing. | C-UC-003 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-004 | Use BSC chain 56 for every API transaction request and locally signed transaction. | RULE-KIT PG p4; F94; K3: “binanceChainId = "56"” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Reject another chain, missing chain and mixed-chain response. | C-UC-004 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-005 | Accept amounts only as positive integer smallest-unit values at transaction boundaries. | RULE-KIT PG p4; F94; K3: “Integer strings in the smallest unit” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Reject negative, fractional, boolean, malformed or overprecision amounts. | C-UC-005 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-006 | Take token decimals from validated API metadata. | RULE-KIT PG p4/17; F91/111; K3: “always take decimals from the API” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Non-default decimals propagate consistently to order and receipt units. | C-UC-006 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-007 | Build request signatures from the exact encoded query and body sent. | RULE-KIT PG p5; F94; K5: “Sign and send the same encoded query string” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Independent HMAC vectors check GET escaping and compact POST bytes. | C-UC-007 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-008 | Use Base64 of raw HMAC-SHA256 with timestamp, method and /build-prefixed path. | RULE-KIT PG p5; F94; K5: “Base64(HMAC-SHA256(secret” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Known vector includes /build and millisecond UTC timestamp. | C-UC-008 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-009 | Send POST parameters in a JSON body. | RULE-KIT PG p5; F94/98; K5: “parameters in a JSON body” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Transport captures body and Content-Type; no form or query POST parameters. | C-UC-009 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-010 | Treat nonzero or missing API code as failure even on HTTP 200. | RULE-KIT PG p4; F94/108; K7: “Only code == 0 means success” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Malformed envelopes and API errors cannot produce usable quote/receipt. | C-UC-010 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-011 | Bound retries and back off for rate limiting without repeating ambiguous broadcasts. | RULE-KIT PG p17/18; F105; K9: “never lead to endless retries or repeated orders” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | 429, timeout and 5xx fixtures respect budgets; broadcast timeout goes to reconciliation. | C-UC-011 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-012 | Keep API credentials, key material and signed transaction capability out of diagnostic exports. | RULE-PAGE Honest logging; RULE-KIT PG p3; F103; G09: “Credentials never appear in logs” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Hostile error/response text cannot expose secrets in errors, repr or shared reports. | C-UC-012 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-013 | Quote with vendor LiquidMesh. | RULE-KIT PG p7/17; F96; K6: “vendor=LiquidMesh” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Captured requests carry the case-sensitive required vendor. | C-UC-013 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-014 | Quote with explicit slippage constrained by the accepted intent/profile. | DECLARED Position & risk management; RULE-KIT PG p17; F105: “The order aborts if quoted slippage exceeds its cap” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Stricter supported profile cannot be widened by an adapter default. | C-UC-014 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-015 | Reject market data unavailable at the supplied decision cutoff. | RULE-PAGE The Challenge; F20/63; G05: “using only information available to it at each decision point” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Future source/retrieval observations are refused, never backdated. | C-UC-015 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-016 | Refuse bStock orders when token or underlying openState is false. | RULE-KIT PG p6; F95; K6: “When openState is False” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Closure observed before authorization blocks approve/swap as applicable. | C-UC-016 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-017 | Check pay-token funds before live transaction authorization. | RULE-KIT PG p7/9; F96; K8: “check the pay token and BNB” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Insufficient funds, dust and concurrent reservations cannot overspend. | C-UC-017 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-018 | Check sufficient BNB for the authorized transaction gas budget. | RULE-KIT PG p5/9; F93; G28: “Gas is paid only in BNB” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Zero BNB refuses approval/top-up; no automatic external funding. | C-UC-018 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-019 | Approve exactly the pay-token amount of the approved intent. | RULE-KIT PG p7; F96; G01: “for exactly its amount” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Decoded approval verifies token, spender, zero value and exact amount. | C-UC-019 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-020 | Use the quote vendorName when requesting approval. | RULE-KIT PG p7; F96; K6: “takes the quote's vendorName as vendor” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Request uses verified vendor from the quote. | C-UC-020 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-021 | Wait for successful approve confirmation before authorizing the swap. | RULE-KIT PG p7; F96; K8: “Wait for its success, then re-quote” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Pending/reverted/unknown approval cannot advance to swap. | C-UC-021 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-022 | Fetch a fresh quote after approval confirmation. | RULE-KIT PG p7; F96; K8: “then re-quote” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Expired initial quote is not signed as the swap. | C-UC-022 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-023 | Require re-quote router to equal the approved spender. | RULE-KIT PG p7/9; F96; G01: “must equal the re-quote's tx.to” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Different router is refused before swap signing. | C-UC-023 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-024 | Validate encoded swap recipient as this wallet. | DECIDED G01 adopted; DECLARED restricted signer: “Decode and check minReceiveAmount and the recipient” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Independent decoder evidence is required; metadata alone cannot authorize. | C-UC-024 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-025 | Validate encoded pay/receive tokens and exact input amount against the intent. | DECIDED G01/13 adopted; RULE-PAGE F64: “pay/receive tokens” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Calldata tampering, extra route actions and unsupported shapes are refused. | C-UC-025 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-026 | Validate encoded minimum output against the accepted intent constraint. | DECIDED G01 adopted; DECLARED slippage cap: “Decode and check minReceiveAmount” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | A fresh quote cannot weaken the authorized minimum output. | C-UC-026 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-027 | Require a decoded swap deadline within intent expiry and still valid at authorization. | DECIDED G18(i); DECLARED stale quote: “must carry a router deadline in calldata” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Later deadline cannot prolong the proposal; elapsed deadline blocks authorization. | C-UC-027 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-028 | Estimate swap gas after approval and use at least max(quote gas, estimate times 1.2). | RULE-KIT PG p7/17; F96; K8: “max(tx.gas, gasLimit × 1.2)” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Estimate failure is explicitly handled; oversized gas cannot exceed reserved budget. | C-UC-028 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-029 | Sign only locally with legacy gasPrice transactions. | RULE-KIT PG p4; F94; K8: “legacy (gasPrice) transactions” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | No remote wallet/custodial signing or unreviewed typed-signature path. | C-UC-029 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-030 | Derive transaction hash from signed bytes and reject conflicting broadcast hashes. | RULE-KIT PG p8 example; K8; G18(e): “bytes(signed.hash).hex()” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Hash survives lost broadcast reply and maps to the same signed attempt. | C-UC-030 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-031 | Preserve success, revert and unconfirmed as distinct receipt outcomes. | RULE-KIT PG p8; F97; K8: “only txStatus == "success" means success” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Pending/absent/malformed receipts never become a fill. | C-UC-031 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-032 | Keep confirmation timeout unresolved because it may later mine. | RULE-KIT PG p8; F97; G18(j): “the transaction may still be mined” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Timeout retains nonce/resource barriers and reconciles later success. | C-UC-032 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-033 | Persist nonce authority across restarts, including approves absent from API history. | RULE-KIT PG p7/8; F97; G18: “The history doesn't include approves” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Restart cannot reuse an outstanding approve/swap nonce. | C-UC-033 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-034 | Reconcile nonce errors before allowing another signature. | DECIDED G18(j); DECLARED Recovery: “Do not copy the demo's nonce-error loop” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Lost acknowledgement never triggers nonce+1 duplicate execution. | C-UC-034 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-035 | Persist authorized payload and signing state before signature release. | DECIDED G18(a); DECLARED write-ahead: “Persist the authorized payload” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Injected durability failures emit no signature. | C-UC-035 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-036 | Sign at most once for each economic attempt and transaction step. | DECLARED Recovery; DECIDED G18 caveat: “A payload is signed at most once per decision” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Crash/retry reuses durable signature, rejects altered same-attempt payload. | C-UC-036 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-037 | Reject stale leadership epochs and quarantine at signer authorization. | DECIDED G18(c); AT08: “rejects epochs below the highest persisted” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Concurrent/zombie owner cannot sign after fencing; accepted prior signature stays reconciled. | C-UC-037 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-038 | Keep conflicting economic actions blocked while a wallet nonce is unresolved. | DECIDED G18 caveat; AT08: “nonce ordering is wallet-wide” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Another token cannot bypass missing nonce; unknown consumer remains explicit. | C-UC-038 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-039 | Do not invent cancellation or replacement capability. | RULE-KIT PG p10; F97; DECIDED G18(h); AT09: “No cancel” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Unsupported replacement disabled; no self-transfer cancellation. | C-UC-039 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-040 | Verify canonical finality before releasing resources and booking fills. | DECLARED reconciliation; DECIDED G18; AT07/09: “until the chain settles it” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Reorg/delayed index cannot create duplicate settlement or premature release. | C-UC-040 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-041 | Expose actual fill/fee/gas facts, not quoted expected amounts. | DECLARED Appended after execution; F111 N9; AT18: “fill, fees and gas” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Receipt transformation preserves actual amounts, non-default scales and revert gas. | C-UC-041 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-042 | Record the swap hash for every broadcast outcome while keeping approve hashes distinct. | RULE-KIT PG p3/9; F100; never-do12: “only the swap's, never the approve's” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Execution facts distinguish approval and swap even before final confirmation. | C-UC-042 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-043 | Bind every transaction to one version and write-ahead decision. | RULE-PAGE Rules & Restrictions; F60; never-do2: “one agent version and one unique decision record” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Request carries immutable decision/version mapping; missing binding refuses authorization. | C-UC-043 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-044 | Keep final-wallet nonce/signature state separate from development wallet state. | RULE-PAGE Final activation; F14; DECIDED G09: “Register a fresh final wallet” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Wrong environment refuses; unresolved old wallet cannot be silently discarded. | C-UC-044 | only host/rehearsal/read-only measurement for complete proof; offline boundary tests supplement |
+| C-REQ-045 | Generate no signature or broadcast in quote-only mode. | RULE-KIT PG p2/4/9; F103/105: “quotes but signs and broadcasts nothing” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Quote-only tests have no key/broadcast capability. | C-UC-045 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-046 | Enforce the per-trade cap before live execution. | RULE-KIT PG p17; F105; DECLARED limits: “orders above it are refused” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Boundary and above-cap requests tested for every supported action. | C-UC-046 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-047 | Use USDT to BNB only for an authorized resource round. | RULE-KIT PG p5; F93; IDEA035 §10.1 C1: “swap a little USDT for BNB” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Native gas receive is admitted; other BNB directions and speculative actions rejected. | C-UC-047 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-048 | Treat native BNB representation consistently across quote, balance and settlement. | RULE-KIT PG p5/6; F91; K3: “native BNB comes back as 0xeeee” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Empty balance request maps to native asset; native output is not an ERC20 transfer. | C-UC-048 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-049 | Refuse malformed, oversized or hostile signing requests without exposing credentials. | RULE-PAGE F62/64; DECIDED G01; AT19: “a restricted signer” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Bounded bytes/depth and typed validation before any signing operation. | C-UC-049 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-050 | Load a key only from the approved private credential file. | DECIDED IDEA046 B2; IDEA047 scope: “root-only file” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Wrong mode/owner, symlink, extra link, writable parent or changed identity refused. | C-UC-050 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-051 | Keep signer provisioning and network isolation explicit as a host prerequisite. | DECIDED IDEA046 B1/B2: “signer has no internet route” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Offline config/unit checks supplement later owner-approved real-host validation. | C-UC-051 | only host/rehearsal/read-only measurement for complete proof; offline boundary tests supplement |
+| C-REQ-052 | Retain all execution paths after crash as recoverable signed/broadcast/final states. | DECIDED G18; AT07; DR04: “crash at each step” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Real PostgreSQL crash fixtures cover before sign, after sign, broadcast and receipt. | C-UC-052 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-053 | Retain unsolicited balance changes as reconciliation facts without interacting with foreign assets. | DECIDED G13/43; DECLARED reconciliation: “including non-trade balance changes” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Unexpected inbound/outbound state becomes mismatch evidence; no automatic foreign transfer. | C-UC-053 | yes, synthetic external ports; PostgreSQL where durability applies |
+| C-REQ-054 | Measure all five names with dated quote cost artifacts before claiming DR01 complete. | DECIDED readiness DR01: “Logger output ≥ 3 days incl. a weekend” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Hashed artifacts outside Git and dated summary; synthetic data never substitutes. | C-UC-054 | only host/rehearsal/read-only measurement for complete proof; offline boundary tests supplement |
+| C-REQ-055 | Require recorded real responses and manifested development execution before DR02 complete. | DECIDED readiness DR02: “one approve + swap on the dev wallet” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Offline adapter coverage is partial until separately authorized live rehearsal. | C-UC-055 | only host/rehearsal/read-only measurement for complete proof; offline boundary tests supplement |
+| C-REQ-056 | Verify fresh-final-wallet setup before DR17 complete. | DECIDED readiness DR17; IDEA035 C7 via SKILL Q35: “Switch rehearsed on the dev host” | MUST; G/DR/AT implementation conditions are team commitments, not organiser rules | Throwaway switch proof and final secret reminder; no final key requested here. | C-UC-056 | only host/rehearsal/read-only measurement for complete proof; offline boundary tests supplement |
+
+## Use cases
+
+| ID | Trigger/state | Expected behaviour | Requirement |
+|---|---|---|---|
+| C-UC-001 | Boundary or failure of: Trade only eligible bStocks against USDT, with USDT to native BNB solely for gas maintenance. | Reject other tokens, token variants and BNB investment intents. | C-REQ-001 |
+| C-UC-002 | Boundary or failure of: Refuse transfers, bridges, withdrawals, deposits and arbitrary contract calls. | Tampered destination or selector cannot obtain authorization. | C-REQ-002 |
+| C-UC-003 | Boundary or failure of: Bind every signing request to the registered wallet. | Wrong key/address/environment is refused before signing. | C-REQ-003 |
+| C-UC-004 | Boundary or failure of: Use BSC chain 56 for every API transaction request and locally signed transaction. | Reject another chain, missing chain and mixed-chain response. | C-REQ-004 |
+| C-UC-005 | Boundary or failure of: Accept amounts only as positive integer smallest-unit values at transaction boundaries. | Reject negative, fractional, boolean, malformed or overprecision amounts. | C-REQ-005 |
+| C-UC-006 | Boundary or failure of: Take token decimals from validated API metadata. | Non-default decimals propagate consistently to order and receipt units. | C-REQ-006 |
+| C-UC-007 | Boundary or failure of: Build request signatures from the exact encoded query and body sent. | Independent HMAC vectors check GET escaping and compact POST bytes. | C-REQ-007 |
+| C-UC-008 | Boundary or failure of: Use Base64 of raw HMAC-SHA256 with timestamp, method and /build-prefixed path. | Known vector includes /build and millisecond UTC timestamp. | C-REQ-008 |
+| C-UC-009 | Boundary or failure of: Send POST parameters in a JSON body. | Transport captures body and Content-Type; no form or query POST parameters. | C-REQ-009 |
+| C-UC-010 | Boundary or failure of: Treat nonzero or missing API code as failure even on HTTP 200. | Malformed envelopes and API errors cannot produce usable quote/receipt. | C-REQ-010 |
+| C-UC-011 | Boundary or failure of: Bound retries and back off for rate limiting without repeating ambiguous broadcasts. | 429, timeout and 5xx fixtures respect budgets; broadcast timeout goes to reconciliation. | C-REQ-011 |
+| C-UC-012 | Boundary or failure of: Keep API credentials, key material and signed transaction capability out of diagnostic exports. | Hostile error/response text cannot expose secrets in errors, repr or shared reports. | C-REQ-012 |
+| C-UC-013 | Boundary or failure of: Quote with vendor LiquidMesh. | Captured requests carry the case-sensitive required vendor. | C-REQ-013 |
+| C-UC-014 | Boundary or failure of: Quote with explicit slippage constrained by the accepted intent/profile. | Stricter supported profile cannot be widened by an adapter default. | C-REQ-014 |
+| C-UC-015 | Boundary or failure of: Reject market data unavailable at the supplied decision cutoff. | Future source/retrieval observations are refused, never backdated. | C-REQ-015 |
+| C-UC-016 | Boundary or failure of: Refuse bStock orders when token or underlying openState is false. | Closure observed before authorization blocks approve/swap as applicable. | C-REQ-016 |
+| C-UC-017 | Boundary or failure of: Check pay-token funds before live transaction authorization. | Insufficient funds, dust and concurrent reservations cannot overspend. | C-REQ-017 |
+| C-UC-018 | Boundary or failure of: Check sufficient BNB for the authorized transaction gas budget. | Zero BNB refuses approval/top-up; no automatic external funding. | C-REQ-018 |
+| C-UC-019 | Boundary or failure of: Approve exactly the pay-token amount of the approved intent. | Decoded approval verifies token, spender, zero value and exact amount. | C-REQ-019 |
+| C-UC-020 | Boundary or failure of: Use the quote vendorName when requesting approval. | Request uses verified vendor from the quote. | C-REQ-020 |
+| C-UC-021 | Boundary or failure of: Wait for successful approve confirmation before authorizing the swap. | Pending/reverted/unknown approval cannot advance to swap. | C-REQ-021 |
+| C-UC-022 | Boundary or failure of: Fetch a fresh quote after approval confirmation. | Expired initial quote is not signed as the swap. | C-REQ-022 |
+| C-UC-023 | Boundary or failure of: Require re-quote router to equal the approved spender. | Different router is refused before swap signing. | C-REQ-023 |
+| C-UC-024 | Boundary or failure of: Validate encoded swap recipient as this wallet. | Independent decoder evidence is required; metadata alone cannot authorize. | C-REQ-024 |
+| C-UC-025 | Boundary or failure of: Validate encoded pay/receive tokens and exact input amount against the intent. | Calldata tampering, extra route actions and unsupported shapes are refused. | C-REQ-025 |
+| C-UC-026 | Boundary or failure of: Validate encoded minimum output against the accepted intent constraint. | A fresh quote cannot weaken the authorized minimum output. | C-REQ-026 |
+| C-UC-027 | Boundary or failure of: Require a decoded swap deadline within intent expiry and still valid at authorization. | Later deadline cannot prolong the proposal; elapsed deadline blocks authorization. | C-REQ-027 |
+| C-UC-028 | Boundary or failure of: Estimate swap gas after approval and use at least max(quote gas, estimate times 1.2). | Estimate failure is explicitly handled; oversized gas cannot exceed reserved budget. | C-REQ-028 |
+| C-UC-029 | Boundary or failure of: Sign only locally with legacy gasPrice transactions. | No remote wallet/custodial signing or unreviewed typed-signature path. | C-REQ-029 |
+| C-UC-030 | Boundary or failure of: Derive transaction hash from signed bytes and reject conflicting broadcast hashes. | Hash survives lost broadcast reply and maps to the same signed attempt. | C-REQ-030 |
+| C-UC-031 | Boundary or failure of: Preserve success, revert and unconfirmed as distinct receipt outcomes. | Pending/absent/malformed receipts never become a fill. | C-REQ-031 |
+| C-UC-032 | Boundary or failure of: Keep confirmation timeout unresolved because it may later mine. | Timeout retains nonce/resource barriers and reconciles later success. | C-REQ-032 |
+| C-UC-033 | Boundary or failure of: Persist nonce authority across restarts, including approves absent from API history. | Restart cannot reuse an outstanding approve/swap nonce. | C-REQ-033 |
+| C-UC-034 | Boundary or failure of: Reconcile nonce errors before allowing another signature. | Lost acknowledgement never triggers nonce+1 duplicate execution. | C-REQ-034 |
+| C-UC-035 | Boundary or failure of: Persist authorized payload and signing state before signature release. | Injected durability failures emit no signature. | C-REQ-035 |
+| C-UC-036 | Boundary or failure of: Sign at most once for each economic attempt and transaction step. | Crash/retry reuses durable signature, rejects altered same-attempt payload. | C-REQ-036 |
+| C-UC-037 | Boundary or failure of: Reject stale leadership epochs and quarantine at signer authorization. | Concurrent/zombie owner cannot sign after fencing; accepted prior signature stays reconciled. | C-REQ-037 |
+| C-UC-038 | Boundary or failure of: Keep conflicting economic actions blocked while a wallet nonce is unresolved. | Another token cannot bypass missing nonce; unknown consumer remains explicit. | C-REQ-038 |
+| C-UC-039 | Boundary or failure of: Do not invent cancellation or replacement capability. | Unsupported replacement disabled; no self-transfer cancellation. | C-REQ-039 |
+| C-UC-040 | Boundary or failure of: Verify canonical finality before releasing resources and booking fills. | Reorg/delayed index cannot create duplicate settlement or premature release. | C-REQ-040 |
+| C-UC-041 | Boundary or failure of: Expose actual fill/fee/gas facts, not quoted expected amounts. | Receipt transformation preserves actual amounts, non-default scales and revert gas. | C-REQ-041 |
+| C-UC-042 | Boundary or failure of: Record the swap hash for every broadcast outcome while keeping approve hashes distinct. | Execution facts distinguish approval and swap even before final confirmation. | C-REQ-042 |
+| C-UC-043 | Boundary or failure of: Bind every transaction to one version and write-ahead decision. | Request carries immutable decision/version mapping; missing binding refuses authorization. | C-REQ-043 |
+| C-UC-044 | Boundary or failure of: Keep final-wallet nonce/signature state separate from development wallet state. | Wrong environment refuses; unresolved old wallet cannot be silently discarded. | C-REQ-044 |
+| C-UC-045 | Boundary or failure of: Generate no signature or broadcast in quote-only mode. | Quote-only tests have no key/broadcast capability. | C-REQ-045 |
+| C-UC-046 | Boundary or failure of: Enforce the per-trade cap before live execution. | Boundary and above-cap requests tested for every supported action. | C-REQ-046 |
+| C-UC-047 | Boundary or failure of: Use USDT to BNB only for an authorized resource round. | Native gas receive is admitted; other BNB directions and speculative actions rejected. | C-REQ-047 |
+| C-UC-048 | Boundary or failure of: Treat native BNB representation consistently across quote, balance and settlement. | Empty balance request maps to native asset; native output is not an ERC20 transfer. | C-REQ-048 |
+| C-UC-049 | Boundary or failure of: Refuse malformed, oversized or hostile signing requests without exposing credentials. | Bounded bytes/depth and typed validation before any signing operation. | C-REQ-049 |
+| C-UC-050 | Boundary or failure of: Load a key only from the approved private credential file. | Wrong mode/owner, symlink, extra link, writable parent or changed identity refused. | C-REQ-050 |
+| C-UC-051 | Boundary or failure of: Keep signer provisioning and network isolation explicit as a host prerequisite. | Offline config/unit checks supplement later owner-approved real-host validation. | C-REQ-051 |
+| C-UC-052 | Boundary or failure of: Retain all execution paths after crash as recoverable signed/broadcast/final states. | Real PostgreSQL crash fixtures cover before sign, after sign, broadcast and receipt. | C-REQ-052 |
+| C-UC-053 | Boundary or failure of: Retain unsolicited balance changes as reconciliation facts without interacting with foreign assets. | Unexpected inbound/outbound state becomes mismatch evidence; no automatic foreign transfer. | C-REQ-053 |
+| C-UC-054 | Boundary or failure of: Measure all five names with dated quote cost artifacts before claiming DR01 complete. | Hashed artifacts outside Git and dated summary; synthetic data never substitutes. | C-REQ-054 |
+| C-UC-055 | Boundary or failure of: Require recorded real responses and manifested development execution before DR02 complete. | Offline adapter coverage is partial until separately authorized live rehearsal. | C-REQ-055 |
+| C-UC-056 | Boundary or failure of: Verify fresh-final-wallet setup before DR17 complete. | Throwaway switch proof and final secret reminder; no final key requested here. | C-REQ-056 |
+
+Cross-product expansion for phase 2: apply empty/wrong-type/duplicate/future/oversized inputs to each API boundary; apply 429/5xx/timeouts/down recovery to each external port; inject before/after durable authorize/sign/broadcast/receipt/settle with two owners and restart; apply UTC midnight, backward clock, weekend/DST and terminal cut to expiry/market/gas cases. Each meaningful additional case is a dated amendment with explicit affected requirements; do not claim exhaustive schedule coverage from a single fixture.
+
+## Assumptions register
+
+| ID | Assumption | Status / validation | If wrong / blocking |
+|---|---|---|---|
+| C-ASM-001 | Quote expiry roughly 30s | PARTIAL: PG p7 observation; validate decoded route expiry and time boundaries independently | Expired signing; blocks route qualification |
+| C-ASM-002 | Router calldata has a known independently verifiable ABI | UNVALIDATED: obtain recorded public response and primary contract/ABI provenance before enabling any production decoder | Unsafe route; blocks swaps |
+| C-ASM-003 | Venue history covers all wallet nonce consumers | CONTRADICTED by PG p7: approves omitted; never rely on history alone | Duplicate signing; durable local state and later capability proof required |
+| C-ASM-004 | Transaction detail exposes canonical actual native BNB output and finality facts | UNVALIDATED: verify recorded shapes and capability probe; synthetic fixtures supplement | Wrong resource settlement; blocks live gas top-up |
+| C-ASM-005 | Development wallet has first-gas BNB | UNVALIDATED: Q03 remains open; separately authorized read-only balance check before live rehearsal | No initial transaction possible; no external capital workaround |
+| C-ASM-006 | Final wallet receives a distinct audit secret | UNVALIDATED: Q35 assumed; team reminder by Oct26 and final activation check | Wallet/audit separation; blocks final activation |
+| C-ASM-007 | Quote cost measurements qualify all five names and weekend | UNVALIDATED: inspect dated/hashes only after catalogue freeze; no live measurement launched | DR01/profile blocked |
+| C-ASM-008 | Signer checks its own time and protects key file on actual host | PARTIAL: offline tests then provisioned-host clock/credential check by C+D | Wrong key or validity window; blocks hosted execution |
+
+## Conflicts and conservative dispositions
+
+- PG demo nonce+1 re-sign versus adopted G18(j): reconcile first; do not enable blind retry. PG gas-estimate fallback versus p17 checklist: retain fail-closed behavior until independent budget/estimate proof; no invented route gas assumption.
+- G16 suggests cancellation but kit exposes no cancel and G18(h) rejects self-transfer: retain unresolved ownership; replacement disabled.
+- Common phase-1 allowlist limits IDEA035 to §4/§10.1 although C inventory names C1/C7. C1 is in §10.1; C7 is recorded in SKILL Q35. No broader ledger analysis was used.
+- PR21 target integration is not yet complete. User-authorized preparation does not establish common-protocol completion. Driver exclusion remains until scope/deadline is assigned by team/D.
+
+## Scope coverage
+
+| Inventory | Mapping / other owner |
+|---|---|
+| F14 | C-REQ-044/056, D release/run |
+| F20/22/25/64/65/66 | C-REQ-001/002/003/015/043; D repository/audit; no personal capital or replenishment |
+| F91/92/93/94/95/96/97/98 | C-REQ-001–011/013–041/047–048 |
+| F103/104/105/107/108/111/116 | C-REQ-003/010–012/045–047/055; funding is team fact, first-gas remains open; D logging |
+| K3/K4/K5/K6/K7/K8/K9/K16 | C-REQ-001–048; demo observations remain assumptions; A market evidence identifiers, D logs |
+| Never-do 1/2/3/4/7/12 | C-REQ-001/002/003/012/042/043; D round logging and scored-run supervision |
+| G01/G08/G09/G13/G16/G18/G28/G43 | C-REQ-001/002/003/012/018–027/032–044/047–053; B accounting/gas policy, D scheduling/version checks |
+| IDEA035 C1/C7 and decided execution §10.1 | C-REQ-047/056; D settlement integration excluded |
+| IDEA046 B1/B2; IDEA047 scope | C-REQ-049–051; D units, database grants, provisioning |
+| DR01/02/03/04/05/06/17 | C-REQ-003/018/041/044/047/050/052/054–056; D driver/settlement/release, B accounting |
+| AT06/07/08/09/17 | C-REQ-019–040/045/052; driver-dependent portions excluded |
+| AT04/05/10/11/13/14/15/16/18/19/20 execution aspects | C-REQ-012/015/017/018/032/035–053; primary owners B/D/A per source matrix; cross-boundary tests requested |
+| AT01/02/03/12 | A/B primary policy/evidence, C checks received execution constraints |
+| GAP29/30/31/32/41/47/49/52 | C-REQ-003/017/018/024–040/044/047/052/056; driver/shared host work excluded |
+| Proposal “LLM never signs, sizes or sets limits”; write-ahead/version sentence; live quotes/chain reconciliation; restricted signer/version gate/reconciler | C-REQ-002/013–015/024–027/043/053; B sizing, D version gate |
+| Proposal order slippage/stale quote/degraded reconciliation/gas reserve sentences | C-REQ-014/018/022–027/032/038/047/053; B policy thresholds |
+| Proposal reproducibility order/hash/fill/fees/gas/abort; non-trade changes; recovery at-most-once/observable identifiers/unresolved | C-REQ-030–043/052/053; D complete journal/replay/audit |
+| Proposal onboarding gates, restricted signer deliverable, dev buy/sell, final fresh wallet, rehearsal | C-REQ-044–056; D hosting/rehearsal and B policy |
+
+## Trace
+
+NOT RUN at catalogue freeze. Add dated phase-2 mappings without silently editing frozen requirements.
+
+## Dated phase-2 trace amendment — 2026-10-14
+
+Package prerequisite now resolved: PR21 merged at `c829fae`, incorporated without rewriting history. Frozen statements above are unchanged. This trace reports boundaries, not whole-system/live qualification. WEAK and NOT-OFFLINE rows explicitly prevent full section completion; no green whole-review verdict.
+
+| Requirement | Implementation | Test/proof | Verdict | Practical limit / later check |
+|---|---|---|---|---|
+| C-REQ-001 | larp/execution.py:Intent.validate/validate_payload | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; test_approve_tampering; test_invalid_intent_values_and_topups_rejected | COVERED | Synthetic authorization boundaries; production route remains unqualified |
+| C-REQ-002 | larp/execution.py:Intent.validate/validate_payload | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; test_approve_tampering; test_invalid_intent_values_and_topups_rejected | COVERED | Synthetic authorization boundaries; production route remains unqualified |
+| C-REQ-003 | larp/signer/local.py:LocalSigner; larp/execution_live/config.py:WalletBinding | tests/signer/test_local.py::SignerTests::test_fencing_and_wallet_binding; tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace | COVERED | Wrong wallet refused; real wallet setup excluded |
+| C-REQ-004 | larp/execution.py:Intent.validate/validate_payload | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; test_approve_tampering; test_invalid_intent_values_and_topups_rejected | COVERED | Synthetic authorization boundaries; production route remains unqualified |
+| C-REQ-005 | larp/execution.py:Intent.validate/validate_payload | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; test_approve_tampering; test_invalid_intent_values_and_topups_rejected | COVERED | Synthetic authorization boundaries; production route remains unqualified |
+| C-REQ-006 | larp/marketdata/port.py:metadata/observe; larp/execution_live/service.py:map_command | tests/marketdata/test_live_port.py::LiveMarket::test_market_output_passes_consumer_validator_and_does_not_invent_basis; tests/execution/test_review_fixes.py::MappingReviewTests::test_gas_accounting_units_convert_to_native_chain_units | WEAK | API decimals and native non-default accounting checked; full non-default bStock metadata/mapping matrix remains needed |
+| C-REQ-007 | larp/marketdata/web3.py:Web3Client.request | tests/marketdata/test_section_c_quotes.py::SlippageRequirements::test_c_req_007_get_signature_binds_escaped_query_and_fixed_timestamp; tests/marketdata/test_transport.py::TransportTests::test_exact_signed_post_bytes_and_read_allowlist | COVERED | Exact independent GET and POST byte/signature vectors |
+| C-REQ-008 | larp/marketdata/web3.py:Web3Client.request | tests/marketdata/test_section_c_quotes.py::SlippageRequirements::test_c_req_007_get_signature_binds_escaped_query_and_fixed_timestamp; tests/marketdata/test_transport.py::TransportTests::test_exact_signed_post_bytes_and_read_allowlist | COVERED | Exact independent GET and POST byte/signature vectors |
+| C-REQ-009 | larp/marketdata/web3.py:Web3Client.request | tests/marketdata/test_section_c_quotes.py::SlippageRequirements::test_c_req_007_get_signature_binds_escaped_query_and_fixed_timestamp; tests/marketdata/test_transport.py::TransportTests::test_exact_signed_post_bytes_and_read_allowlist | COVERED | Exact independent GET and POST byte/signature vectors |
+| C-REQ-010 | larp/marketdata/web3.py:Web3Client.request; larp/execution_live/venue.py:boundary | tests/marketdata/test_transport.py::TransportTests::test_business_error_and_redirect_do_not_succeed; tests/execution/test_review_fixes.py::DependencyReviewTests::test_venue_response_errors_are_sanitized_blocked_errors | COVERED | No business-error quote authority |
+| C-REQ-011 | larp/execution.py:Executor.reconcile/prepare; larp/marketdata/web3.py:request | tests/execution/test_review_fixes.py::DependencyReviewTests::test_rpc_outage_has_persistent_backoff_without_spending_chain_probe_budget; tests/marketdata/test_live_port.py::LiveMarket::test_optional_cost_access_failures_stop_before_later_market_requests | COVERED | Rate refusal and durable bounded recovery; deployment adapters remain unqualified |
+| C-REQ-012 | larp/marketdata/web3.py:redact; larp/execution.py:Executor._save | tests/marketdata/test_transport.py::TransportTests::test_escaped_credential_reflections_never_retain_reversible_raw_body; tests/test_w04_execution.py::ExecutionTests::test_events_never_expose_signed_bytes | WEAK | C diagnostic redaction checked; #23 backup traversal is D-owned and remains open |
+| C-REQ-013 | larp/marketdata/port.py:quote/_executable_quote; larp/execution_live/venue.py:quote; larp/execution_live/service.py:map_command | tests/marketdata/test_section_c_quotes.py::SlippageRequirements; tests/marketdata/test_quote_contract.py::QuoteContractTests | COVERED | Independent profile cap and minimum-output boundary; driver must supply accepted limits |
+| C-REQ-014 | larp/marketdata/port.py:quote/_executable_quote; larp/execution_live/venue.py:quote; larp/execution_live/service.py:map_command | tests/marketdata/test_section_c_quotes.py::SlippageRequirements; tests/marketdata/test_quote_contract.py::QuoteContractTests | COVERED | Independent profile cap and minimum-output boundary; driver must supply accepted limits |
+| C-REQ-015 | larp/marketdata/port.py:observation/NativeGasQuotePort; D Coordinator/ContextBuilder | tests/marketdata/test_quote_contract.py::QuoteContractTests::test_fresh_quote_does_not_refresh_old_metadata; tests/marketdata/test_section_c_quotes.py::GasQuoteRequirements::test_c_req_015_gas_quote_retains_retrieval_time_even_after_cutoff | NOT-OFFLINE | #24 D must fix final cutoff and verify freshness/calendar/replay; C never backdates |
+| C-REQ-016 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-017 | larp/execution.py:validate_payload/validate_sequence; larp/execution_live/service.py:map_command | tests/test_w04_execution.py::ExecutionTests::test_parent_gas_budget_counts_approval_cost; tests/execution/test_review_fixes.py::MappingReviewTests::test_oversized_and_malformed_commands_block; tests/risk/test_live_resource_receipts.py::test_top_up_respects_all_spending_and_wallet_barriers | COVERED | Independent cash/gas caps and first-gas refusal; real balances still unknown |
+| C-REQ-018 | larp/execution.py:validate_payload/validate_sequence; larp/execution_live/service.py:map_command | tests/test_w04_execution.py::ExecutionTests::test_parent_gas_budget_counts_approval_cost; tests/execution/test_review_fixes.py::MappingReviewTests::test_oversized_and_malformed_commands_block; tests/risk/test_live_resource_receipts.py::test_top_up_respects_all_spending_and_wallet_barriers | COVERED | Independent cash/gas caps and first-gas refusal; real balances still unknown |
+| C-REQ-019 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-020 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-021 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-022 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-023 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-024 | larp/execution.py:validate_payload; larp/execution_live/venue.py:UnverifiedRouter | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; tests/execution/test_live_boundaries.py::LiveBoundaries::test_unknown_router_blocks_before_signing | NOT-OFFLINE | GAP29 attributable ABI/proxy/nested route proof absent; #27 B/C/D lifetime decision pending. Unverified swaps remain refused |
+| C-REQ-025 | larp/execution.py:validate_payload; larp/execution_live/venue.py:UnverifiedRouter | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; tests/execution/test_live_boundaries.py::LiveBoundaries::test_unknown_router_blocks_before_signing | NOT-OFFLINE | GAP29 attributable ABI/proxy/nested route proof absent; #27 B/C/D lifetime decision pending. Unverified swaps remain refused |
+| C-REQ-026 | larp/marketdata/port.py:quote/_executable_quote; larp/execution_live/venue.py:quote; larp/execution_live/service.py:map_command | tests/marketdata/test_section_c_quotes.py::SlippageRequirements; tests/marketdata/test_quote_contract.py::QuoteContractTests | COVERED | Independent profile cap and minimum-output boundary; driver must supply accepted limits |
+| C-REQ-027 | larp/execution.py:validate_payload; larp/execution_live/venue.py:UnverifiedRouter | tests/test_w04_execution.py::ExecutionTests::test_swap_economic_mutations; tests/execution/test_live_boundaries.py::LiveBoundaries::test_unknown_router_blocks_before_signing | NOT-OFFLINE | GAP29 attributable ABI/proxy/nested route proof absent; #27 B/C/D lifetime decision pending. Unverified swaps remain refused |
+| C-REQ-028 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-029 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-030 | larp/execution.py:Executor.prepare/authorize; larp/execution_live/venue.py:quote/approve/estimate_gas | tests/test_w04_execution.py::ExecutionTests::test_complete_flow_requotes_and_never_repeats_fill_or_broadcast; test_expired_or_closed_after_approval_blocks_swap; test_approve_tampering | COVERED | Synthetic state machine plus independent payload checks; live Gate B not established |
+| C-REQ-031 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-032 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-033 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-034 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-035 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-036 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-037 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-038 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-039 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-040 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-041 | larp/execution_live/settlement.py:final_observation/ReceiptFacts | tests/execution/test_settlement.py::SettlementTests::test_actual_receipt_passes_accounting_and_replay; test_approval_and_revert_only_charge_actual_gas; test_fractional_sell_cash_settles_with_exact_dust | NOT-OFFLINE | ERC20 facts covered; native successful fill intentionally refused until B/C transaction-bound native proof agreed (#30) |
+| C-REQ-042 | larp/execution.py:possible_swap_hashes/Executor._save; larp/execution_live/service.py:broadcast_observation | tests/execution/test_runtime_consumer.py::RuntimeConsumer::test_broadcast_and_receipts_pass_actual_consumer; tests/test_w04_execution.py::ExecutionTests::test_events_never_expose_signed_bytes; tests/execution/test_postgres_execution.py::PostgresExecutionTests | COVERED | Durable execution identity/hash propagation; #28 full pending audit mapping is D-owned |
+| C-REQ-043 | larp/execution.py:possible_swap_hashes/Executor._save; larp/execution_live/service.py:broadcast_observation | tests/execution/test_runtime_consumer.py::RuntimeConsumer::test_broadcast_and_receipts_pass_actual_consumer; tests/test_w04_execution.py::ExecutionTests::test_events_never_expose_signed_bytes; tests/execution/test_postgres_execution.py::PostgresExecutionTests | COVERED | Durable execution identity/hash propagation; #28 full pending audit mapping is D-owned |
+| C-REQ-044 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+| C-REQ-045 | larp/execution.py:Executor.__init__; larp/marketdata/web3.py:READS | tests/test_w04_execution.py::ExecutionTests::test_live_bundle_and_replacement_disabled; tests/marketdata/test_transport.py::TransportTests::test_exact_signed_post_bytes_and_read_allowlist | COVERED | Read/build client has no broadcast endpoint; trade-capable driver remains excluded |
+| C-REQ-046 | larp/execution.py:validate_payload/validate_sequence; larp/execution_live/service.py:map_command | tests/test_w04_execution.py::ExecutionTests::test_parent_gas_budget_counts_approval_cost; tests/execution/test_review_fixes.py::MappingReviewTests::test_oversized_and_malformed_commands_block; tests/risk/test_live_resource_receipts.py::test_top_up_respects_all_spending_and_wallet_barriers | COVERED | Independent cash/gas caps and first-gas refusal; real balances still unknown |
+| C-REQ-047 | larp/marketdata/port.py:NativeGasQuotePort; larp/execution_live/signing.py:read_request | tests/marketdata/test_section_c_quotes.py::GasQuoteRequirements; tests/execution/test_signing_request.py::RequestBudgets; tests/signer/test_service.py::SignerRefusals | COVERED | Native quote bytes/scales/economics tested; #30 native receipt/round integration still blocked |
+| C-REQ-048 | larp/marketdata/port.py:NativeGasQuotePort; larp/execution_live/signing.py:read_request | tests/marketdata/test_section_c_quotes.py::GasQuoteRequirements; tests/execution/test_signing_request.py::RequestBudgets; tests/signer/test_service.py::SignerRefusals | COVERED | Native quote bytes/scales/economics tested; #30 native receipt/round integration still blocked |
+| C-REQ-049 | larp/marketdata/port.py:NativeGasQuotePort; larp/execution_live/signing.py:read_request | tests/marketdata/test_section_c_quotes.py::GasQuoteRequirements; tests/execution/test_signing_request.py::RequestBudgets; tests/signer/test_service.py::SignerRefusals | COVERED | Native quote bytes/scales/economics tested; #30 native receipt/round integration still blocked |
+| C-REQ-050 | larp/signer/keyfile.py:load_key_file | tests/signer/test_keyfile.py::KeyFileTests | COVERED | Modes/owners/link/file-swap/size/credential redaction checked; actual host credential copy remains open |
+| C-REQ-051 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+| C-REQ-052 | larp/execution.py:Executor; larp/execution_live/store.py:ExecutionStore; larp/execution_live/chain.py:ChainEvidence | tests/test_w04_execution.py::ExecutionTests; tests/execution/test_postgres_execution.py::PostgresExecutionTests; tests/execution/test_chain_rpc.py::RpcBoundaryTests; tests/signer/test_service.py::SigningProtocol | COVERED | Synthetic external faults with real PostgreSQL proof in Linux CI; replacement disabled. Excluded production driver/receipt chain needs later integrated recheck |
+| C-REQ-053 | larp/execution_live/chain.py:ChainEvidence; B accounting; D reconciler | tests/execution/test_live_boundaries.py::LiveBoundaries::test_nonce_and_finality_bind_canonical_receipt; tests/risk/test_live_resource_receipts.py | WEAK | Unexpected transfers are not a C production reconciliation capability; #36 B/C/D path remains open |
+| C-REQ-054 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+| C-REQ-055 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+| C-REQ-056 | larp/execution_live/config.py:WalletBinding; larp/marketdata/logger.py:cycle/summarize; deployment configuration | tests/execution/test_settlement.py::SettlementTests::test_wallet_paths_and_nonce_namespace; tests/marketdata/test_logger.py::LoggerTests | NOT-OFFLINE | C-OPEN-001..006: independent host/live/read-only measurements and recorded responses; offline fixtures supplement only |
+
+### C-TRACE-002 — later verification amendment (2026-10-14)
+
+C-REQ-006 supersedes its earlier WEAK trace disposition with **COVERED at the C
+metadata/mapping boundary**: published regression
+`tests/marketdata/test_section_c_quotes.py::SlippageRequirements::test_c_req_006_nondefault_bstock_decimals_reach_mapping_without_rescaling`
+passes for eight-decimal API metadata, exact chain minimum output and refusal of
+a mismatched receive scale. No frozen requirement statement changes.
+
+C-REQ-012 remains WEAK for complete backup/export secrecy (#23, D), despite C's
+passing diagnostic/event redaction. C-REQ-053 remains WEAK for complete production
+balance reconciliation (#36, B with C/D). These shared-owner gaps and the named
+NOT-OFFLINE gates prevent a full section or deployment PASS. Later integrated
+checks must use the merged driver, actual chain proof, and D's final review tree.
+
+## C-AMEND-003 — merged-tree continuation, 2026-10-15 SGT
+
+Reason: PR20, PR21, PR41 and PR66 are now integrated at reviewed base
+`c1b6dafd62f8df7ea894a5177138da2726452696`. Their prior exclusions and
+NOT-OFFLINE labels remain historical statements, not the current disposition.
+The independent freeze `5763c86` and its requirement rows are preserved.
+The review record is IDEA-049-C, C-RESUME-001 onward; branch
+`review/final-c-20261015`. D retains overall merged-driver/activation acceptance.
+
+### Explicit trading-channel requirement
+
+The original coverage table accounted for F104 but did not give its submission
+channel a separate testable row. This dated source amendment closes that
+catalogue omission; it does not infer a requirement from the implementation.
+
+| ID | Statement | Source / short quote | Obligation | Acceptance | Use cases | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-057 | When submitting any approved transaction, use authenticated Binance Web3 Open API broadcast with local signing. | RULE-KIT Guide p18: “place orders only through the Web3 Open API with local signing”; p8 / web3-open-api.md broadcast endpoint | MUST | Capture the documented POST/body/HMAC, require exact returned hash, and refuse submission from read/build ports. | C-UC-057/062/088 | yes at fake HTTP boundary; actual venue success requires DR02 rehearsal |
+
+Scope coverage amendment: F20/F104, never-do #3 and K5/K8 map explicitly to
+C-REQ-057. The Guide p18 wording, p8 code and verbatim API endpoint were checked
+in this continuation. Their F104/K2 summaries are faithful; no summary edit.
+
+### Enumerated use-case amendment
+
+Reason: turn the original cross-product expansion instruction into individually
+addressable cases. These clarify existing acceptance axes without changing values.
+
+| ID | Trigger/state | Expected behaviour | Requirements |
+|---|---|---|---|
+| C-UC-057 | Development/final wallet has zero BNB before its first transaction. | Refuse signatures/top-up; record first-gas dependency, never add personal funds. | 001/002/018/047/057 |
+| C-UC-058 | Approval confirms after initial quote/proposal expires. | Requote; expired economic authority cannot authorize a swap or extend itself. | 021/022/027/032 |
+| C-UC-059 | Requote changes router, amount, tokens or recipient. | Independently decode and reject any mismatch before key use. | 019/023/024/025/026 |
+| C-UC-060 | Gas estimate fails before approval or exceeds the accepted gas budget afterward. | Stop safely without inventing an affordable executable route. | 018/028/046 |
+| C-UC-061 | Broadcast times out but is later canonically mined. | Retain possible-send hash/nonce/resources and settle the canonical result once. | 030/031/032/040/041 |
+| C-UC-062 | API rejects submission for nonce, rate, authentication or malformed envelope. | Bounded handling, no nonce+1 duplicate signing, retain reconciliation authority. | 010/011/034/038/057 |
+| C-UC-063 | Signed transaction is dropped or remains absent from one index. | Absence/TTL alone cannot release an uncertain wallet nonce. | 032/033/038/039/040 |
+| C-UC-064 | A previously observed receipt is reorganized. | Require current canonical finality; no duplicate fill or premature resource release. | 031/040/041/052 |
+| C-UC-065 | Swap reverts, including DeadlinePassed. | Book only actual gas and terminal revert facts; no quoted fill. | 027/031/041/042 |
+| C-UC-066 | Two intents/processes race the same wallet nonce. | Durable wallet barrier and immutable attempts prevent duplicate economic release. | 033/035/036/037/038 |
+| C-UC-067 | Crash before/after signature persistence or signer restarts. | Recover durable exact bytes once; no altered same-attempt signing. | 035/036/052 |
+| C-UC-068 | Crash after possible send but before observation publication. | Republish the same hash/identity and continue receipt recovery. | 030/032/042/043/052 |
+| C-UC-069 | An old owner acts after takeover or restored quarantine. | Refuse new signature release; reconcile already issued attempts. | 037/038/040/052 |
+| C-UC-070 | Signer is down while a mandatory exit is due. | Retain pending obligation/resources and bounded recovery; no operator transaction. | 032/038/052; B mandatory planning, D supervision |
+| C-UC-071 | Compromised primary queues a hostile, oversized or stale signing request. | Signer independently rejects bad payload, run/build/wallet/epoch, HALT and clock. | 002/003/004/005/037/043/049 |
+| C-UC-072 | Key file is permissive, linked, replaced or has a writable parent. | Fail before key use with fixed non-secret refusal. | 003/012/050 |
+| C-UC-073 | Configured key belongs to another wallet or environment. | Refuse startup/signing before any bytes are released. | 003/044/050/056 |
+| C-UC-074 | HTTP200 has nonzero/missing/wrong-type code, or malformed data. | No usable quote/fill/submission acknowledgement; preserve bounded failure. | 010/011/031 |
+| C-UC-075 | Each HTTP/chain dependency is slow, down or rate-limited. | Bound I/O/retries; retain unresolved attempts and future recovery. | 011/032/034/038/052 |
+| C-UC-076 | Validated decimals differ from defaults. | Preserve exact chain/accounting scale without fabricated precision. | 005/006/041/048 |
+| C-UC-077 | Dust, insufficient cash or exhausted gas is encountered. | No overspend or foreign funding; explicit refused/blocked outcome. | 005/017/018/046/047 |
+| C-UC-078 | Final activation switches wallets with an old transaction pending. | Isolate wallet namespaces and retain old reconciliation; reject key mismatch. | 003/033/044/056 |
+| C-UC-079 | Unsolicited assets or unexplained balance changes appear after restore. | Trusted mismatch/adjustment facts, no foreign transfer or invented fill. | 002/040/041/053; B/D integration |
+| C-UC-080 | Registered version or HALT changes while a signing request is queued. | Ignore stale primary flags; independently refuse before key use and registry release. | 037/043/049 |
+| C-UC-081 | UTC midnight, backward clock or expired proposal occurs during I/O. | Preserve real availability and recheck cutoff/window; never backdate. | 015/027/032; D rollover |
+| C-UC-082 | Weekend, holiday, DST transition or terminal window changes market state. | Revalidate current market/time gates; no expired or closed bStock order. | 015/016/022/027; B/D calendar |
+| C-UC-083 | Database/disk durability fails at authorization or signature commit. | No new signature release; recover existing immutable state after restart. | 035/036/052 |
+| C-UC-084 | Auditor samples a pending, reverted or final swap near the daily deadline. | Stable decision/version/round/hash/fact trail; approvals distinct from orders. | 030/041/042/043; D delivery/audit |
+| C-UC-085 | API echoes submitted private bytes in values, keys, escaped/overwritten JSON, hex case or Base64. | Neither parsed diagnostics nor reversible raw exports retain usable bytes. | 012/042 |
+| C-UC-086 | Known API pair is accompanied by blank optional address/alias fields. | Select API credentials without introducing wallet or audit secrets; literal/conflict rules remain. | C-ASM-009; 007/045 |
+| C-UC-087 | Archive/export traverses an unbroadcast signed attempt. | No usable bytes in any granted/exported nested representation; restore stays verifiable/quarantined. | 012/035/043; D primary #23 |
+| C-UC-088 | Read/build client is asked to broadcast or submitter returns another hash. | Endpoint isolation and possible-send fencing refuse it; no alternate RPC order channel. | 030/043/045/057 |
+
+### Current trace dispositions (superseding only named historical rows)
+
+| Requirement | Implementing code | Passing acceptance / required later check | Current disposition |
+|---|---|---|---|
+| C-REQ-003 | signer/service.py:_sign; execution_live/store.py:check_signing_run; signer/local.py | signer/test_section_c_authority.py::test_c_req_003_authoritative_run_wallet_must_match; existing wrong-key startup tests | COVERED offline; real registered wallet/host remains C-OPEN-007 |
+| C-REQ-007/008/009/010/011 | marketdata/web3.py; execution_live/loop.py:Web3Broadcaster | execution/test_section_c_broadcast.py; marketdata/test_transport.py; captured exact POST HMAC/body and ambiguity/no-retry | COVERED offline |
+| C-REQ-012 | marketdata/web3.py:request/redact; execution diagnostic boundaries | execution/test_section_c_broadcast.py reflection mutations; existing secret tests | COVERED for diagnostic boundary; WEAK for complete #23 backup/export until D accepts C-UC-087 |
+| C-REQ-014/026 | marketdata/port.py; execution_live/venue.py; execution_live/main.py:build_execution | marketdata/test_section_c_quotes.py and runtime/test_round_driver_service.py; pinned profile supplied to market and command mapping | COVERED offline, including merged-driver wiring; actual verified route remains open |
+| C-REQ-015 | marketdata/web3.py availability; merged driver prefetch/day-roll timing | runtime/test_round_driver_service.py::Cutoff and ::DayRolls, E7/R2; source availability never backdated | COVERED integrated offline; D checks final full review tree |
+| C-REQ-031/032/033/034/036/038/040/052 | execution.py; execution_live/store.py/service.py; signer/service.py; merged driver | execution/test_postgres_execution.py crash/restart/process-death/barrier tests; signer/test_service.py; driver EndToEnd/Restart/TwoIntents | COVERED with real PostgreSQL and synthetic external evidence; production nonce/finality qualification remains C-OPEN-004/007 |
+| C-REQ-037/043/049 | signer/service.py:_sign; execution_live/store.py:check_signing_run/put_if_absent | signer/test_section_c_authority.py: queued HALT/build/wallet and late commit mutations; existing hostile request tests | COVERED for added authority boundary; complete journal/risk/resource trust remains C/D acceptance |
+| C-REQ-024/025/027 | execution payload validation; UnverifiedRouter refusals | Existing tampering/refusal fixtures; attributable chain-56 ABI, proxy/route proof and lifetime decision required before enabling decoder | NOT-OFFLINE production qualification; C-OPEN-003/004 blocks swaps |
+| C-REQ-041/047/048 | native quote producer; final_observation native refusal | Gas quote/planner fixtures pass; native transaction-bound receipt/accounting/round proof still unavailable | NOT-OFFLINE whole native execution path; C-OPEN-005, #30 P1 |
+| C-REQ-044/050/051/056 | wallet binding, keyfile loader, signer host boundary | Offline separation/key tests; actual host clock/credential/role isolation and throwaway wallet switch required | NOT-OFFLINE host/rehearsal portion; C-OPEN-007 |
+| C-REQ-053 | receipt facts and market balance observations | Independent component facts exist; startup/periodic canonical balance-to-ledger reconciler is B/D-owned | WEAK whole production acceptance, #36 P1 |
+| C-REQ-054/055 | marketdata/logger.py and real venue adapters | C-MEASURE-001 sample does not satisfy three days/weekend or registered logged rehearsal | NOT-OFFLINE; C-OPEN-006/007 |
+| C-REQ-057 | execution_live/loop.py:Web3Broadcaster/FencedRelease | execution/test_execution_loop.py::Release::test_r1_orders_are_broadcast_only_through_the_web3_open_api; test_section_c_broadcast.py exact HMAC/ambiguity | COVERED offline; actual signing/broadcast not performed |
+
+Unlisted requirement traces retain their earlier component dispositions, now
+retested by the full merged-tree suite. Counts, hashes and exact tested SHAs are
+in C-BASE-002 and the resumed result entries, not inferred from test existence.
+C-ASM-009 is VALIDATED at the fixture interface only; it does not validate real
+funding, route provenance, market economics or host readiness.
+
+### Current closure limits
+
+No decided risk value or lifetime was changed. #27 remains DECISION-NEEDED:
+preserve the strict encoded deadline now; options are a measured bounded signing
+lifetime, or qualification of a route with a shorter encoded deadline. Recommend
+measuring approval latency/router TTL before the team freezes either relationship.
+Native settlement requires transaction-bound proof, not unrelated balance deltas.
+Every later check and its owner/deadline is recorded in IDEA-049-C's resumed
+closure table and requested shared backlog/runbook edits. Full section review and
+deployment remain blocked until those dependencies and host/measurement gates pass.
+
+## C-AMEND-004 — exact signer startup manifest, 2026-10-15 SGT
+
+Reason: source closure separates the submitted startup obligation from the
+existing per-transaction build mapping. This row and the corresponding
+same-build/different-manifest cases precede their new tests and fix.
+
+| ID | Statement | Source / short quote | Obligation | Acceptance | Use cases | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-058 | Before the signer starts, and before it releases a new signature, its verified release must match the active registered build and manifest hash. | DECLARED proposal_answers.md Reproducibility/Versions: “Every component checks its hash against the active registered version before it runs” | MUST | Startup missing/build/hash mismatches refuse before key loading; matching startup succeeds; queued and late registry manifest changes refuse new bytes. | C-UC-080/089/090 | yes with real PostgreSQL and synthetic releases/keys |
+
+| Use case | Trigger/state | Expected behaviour | Requirements |
+|---|---|---|---|
+| C-UC-089 | Valid local signer release differs from the active run manifest, even with the same commit. | Exit 4 before loading the key; no misleading started/signing-enabled report. | C-REQ-043/058 |
+| C-UC-090 | Manifest changes after request creation or before signature persistence. | Independently refuse new bytes under the run lock; existing signatures still reconcile. | C-REQ-037/043/058 |
+
+Proposal startup/version sentences and G03's signer aspect now map explicitly
+to C-REQ-058; D continues ownership of other service startup/manifest checks.
+
+### C-REQ-059 — execution-side source closure, 2026-10-15 SGT
+
+| ID | Statement | Source / short quote | Obligation | Acceptance | Use cases | Offline-testable |
+|---|---|---|---|---|---|---|
+| C-REQ-059 | Before execution service startup or new execution authorization, its verified release and immutable intent must match the run's registered build and manifest. | DECLARED proposal_answers.md Reproducibility/Versions, same startup quote as C-REQ-058; RULE-PAGE trade/version mapping | MUST | Missing/build/hash mismatch refuses before credential access; matching release reaches capability gate; authorization rejects stale intent/manifest. | C-UC-080/089/090 | yes, real PostgreSQL and synthetic release |
+
+### Resource trace correction, 2026-10-15 SGT
+
+The frozen C-REQ-017/018 statements are unchanged. Their original COVERED trace
+is superseded by **WEAK** pending C-FND-009: planner and intent-budget tests do
+not prove that RunAuthorization checks both per-asset committed reserves.
+Typed production checks must use the durable accounting scales and remaining
+cumulative gas expenditure, never add USDT/token/BNB units together. Missing
+production scale is a refusal. Independent signer attestation of the primary's
+resource/risk/market/nonce facts remains C-OPEN-007 (B/C/D trust acceptance,
+before Oct20); these execution-side tests cannot establish that host boundary.
+
+### Final amended trace, 2026-10-15 SGT
+
+| Requirement | Implementing boundary | Independent tests / evidence | Verdict and limits |
+|---|---|---|---|
+| C-REQ-017/018/028 | `execution_live/loop.py:RunAuthorization.resources_reserved`; existing payload/sequence gas limits | `tests/execution/test_section_c_resources.py::Resources` (12 real-PG cases); full integrated driver suite | COVERED for separate committed pay/gas amounts and remaining cumulative gas. NOT-OFFLINE for canonical wallet-balance reconciliation / first gas: C-OPEN-005 and #36, B/C/D before Oct20, provider/block/finality plus zero/unsolicited/divergence acceptance. Untyped offline fixture compatibility is never production evidence. |
+| C-REQ-058 | `signer/service.py:main/_sign`; `execution_live/store.py:check_signing_run/put_if_absent` | `tests/signer/test_section_c_startup.py::RegisteredStartup`; `tests/signer/test_section_c_authority.py::SignerAuthority` startup/queued/late manifest cases | COVERED for verified build/full manifest startup and new-byte release, with real PG and throwaway keys. Host remote provenance/credentials remain C-OPEN-007. |
+| C-REQ-059 | `execution_live/main.py:main/build_execution`; `loop.py:RunAuthorization.facts` | `tests/execution/test_section_c_startup.py::ExecutionStartup/ExecutionAuthorization` (8 real-PG cases) | COVERED for startup before credentials and immutable intent/manifest authorization. Exact Executor capability refusal remains; no live composition is enabled. |
+
+These rows supersede the dated WEAK/prospective trace, not the frozen source
+statements. There are now 59 source requirements; actual final counts and CI
+checkout provenance are recorded in C-RESULT-005. Live/host/shared dependencies
+continue to prevent whole-section completion.
+
+### Signed-state security amendment, 2026-10-15 SGT
+
+C-REQ-012/036/037 also cover C's archive-visible execution state: new signatures
+must remain only in the restricted registry, and restarts release bytes solely
+through the original fenced authority. Add C-UC-091: backup/restore samples a
+SIGNED_DURABLE execution; diagnostic state contains hashes, not usable raw bytes,
+and missing restored registry evidence never becomes permission to sign/resend.
+C owns this serialization/release fix under PR67's explicit owner request.
+D retains legacy export/restore, archive grants and its deliberately injected
+legacy-state regression; no marker/assertion is removed by C. Trace is WEAK
+pending C-FND-010 tests; complete #23 acceptance still needs both owners.
+
+Final C-FND-010 trace: `execution_live/store.py:commit/_signature/check_broadcast`
+and `execution.py:Executor.broadcast`; seven real-PG cases in
+`tests/execution/test_section_c_signed_state.py::SignedState` cover new-state
+secrecy, exact first release after restart, missing/corrupt registry, raw-byte
+forgery and quarantined hash-compatible restore. **COVERED** for legitimately
+produced state/release. **MISSING (D)** for rejecting legacy/forged raw SQL rows
+at archive/export: D-REQ-023's existing expected failure is kept and #23 remains
+a shared P0 blocker. C-RESULT-007 supersedes earlier "final" counts after the
+ordinary merge of D's target changes and the signed-state amendment.
+
+This maps the execution-service aspect of the existing declared version gate;
+it does not grant C edits to D's runtime, uploader or system-test runner.

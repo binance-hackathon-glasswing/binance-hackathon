@@ -23,3 +23,6 @@ trades.json
 crash.log
 deployment.local.json
 backend.local.hcl
+
+# Filled host configs for a deployment (IDEA-051); account-specific, never committed.
+/deploy/activation/

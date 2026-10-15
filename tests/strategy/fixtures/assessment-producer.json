@@ -1,5 +1,5 @@
 {
- "producer_commit": "18ef02d7353c751ea634212de27809d588d3a44f",
+ "producer_commit": "d2631543e65ff13d7b391dddbf6eaa05d896e216",
  "request": {
   "allowed_tools": [
    "fetch_document",
@@ -70,7 +70,7 @@
   }
  },
  "result": {
-  "assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
+  "assessment_key": "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -577,13 +577,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+   "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "bf92909663a01d7d022c4db17a9422698a15be732b134987a7c4b8abb708aae4",
+  "model_hash": "eaff775b2a02406e7efeadac88b714e744e8c2ea43e591b29934b0a42ebf479f",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -835,7 +835,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1613,7 +1613,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2521,7 +2521,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3422,7 +3422,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4315,7 +4315,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "710460028f2c3a1d75021a7da1440f4c06055e9b98eb09a8b702c989dd8b6281",
+       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4654,6 +4654,7 @@
      "error": null,
      "index": 0,
      "latency_ms": 0,
+     "result_artifact": "6a52f35cdca09fd5b8daf58f310394a55b45e7dcd2e891486e4311a218f518a4",
      "result_sha256": "0505def283e5a1f9ba00c1965c1576b1e28fcdc47896eaedb5dd8b7951225f39",
      "started_ms": 1791590400000,
      "status": "OK",
@@ -4666,6 +4667,7 @@
      "error": null,
      "index": 1,
      "latency_ms": 0,
+     "result_artifact": "2e43d45c0198671e6eb8e0e0dbb2aa6065f42ba184299f0d2bb9774e6252a517",
      "result_sha256": "87c2830c4bb3aa14d5b26f57e2c7fdae9c0585c5c6994c0828e71b580a70dfab",
      "started_ms": 1791590400000,
      "status": "OK",
@@ -4678,6 +4680,7 @@
      "error": null,
      "index": 2,
      "latency_ms": 0,
+     "result_artifact": "5b417268d1555ae68823d9778a17efe734d3983c4499454a4a1a1ab68eaaf795",
      "result_sha256": "6e62361c5bfd57a697dfca33085d238503b008028f68aca82fbc76158d575949",
      "started_ms": 1791590400000,
      "status": "NO_PRIOR",
@@ -4690,6 +4693,7 @@
      "error": null,
      "index": 3,
      "latency_ms": 0,
+     "result_artifact": "a1765d989438acfbdf4d935feb78ade9e00c5f65d5b6be85207d6c4dae7f4af9",
      "result_sha256": "56737d4b16f6dad4e2505f740dc537d60429f590ca2fd619deec77e73d3e5487",
      "started_ms": 1791590400000,
      "status": "OK",
@@ -4770,7 +4774,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:700318ac3999542716f5d352e83e8fd87bc2bcda93d68f93ed87da81eb5865f6",
+  "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
   "retained_facts": [],
   "review_requests": [
    {
@@ -4778,12 +4782,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:cf8bafb3158cf2bc137864933d208012c461198f9527e037673e72662e1efb72",
+     "job_id": "evidence:bbbccc4ff3e0bea8246dcf52fdbed9a998cbe8145f9d312d90611519f0bb81ca",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "ad25ca4d623f36d6fc7bf967d6c21fc96cfd29426ecfe46f37300fba4e9f6b8d",
+      "after_assessment_key": "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -4794,7 +4798,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:cf8bafb3158cf2bc137864933d208012c461198f9527e037673e72662e1efb72"
+    "request_id": "evidence:bbbccc4ff3e0bea8246dcf52fdbed9a998cbe8145f9d312d90611519f0bb81ca"
    }
   ],
   "review_scope": null,
@@ -4802,7 +4806,43 @@
   "schema": "AssessmentResult.v2",
   "severity": 2,
   "started_ms": 1791590400000,
-  "status": "ASSESSED"
+  "status": "ASSESSED",
+  "structured_assessment": {
+   "catalyst_type": [
+    "revenue"
+   ],
+   "direction": "MIXED",
+   "durability": {
+    "basis": "No validated duration estimator.",
+    "status": "UNKNOWN"
+   },
+   "novelty": {
+    "already_seen": 0,
+    "changed": 1,
+    "first_seen": 0,
+    "history_unavailable": 0,
+    "new": 4,
+    "no_prior_available": 2,
+    "prior_not_checked": 0,
+    "repeated": 0,
+    "uncertain_match": 0,
+    "unchanged": 1
+   },
+   "risks": [
+    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q2",
+    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
+   ],
+   "source_agreement": {
+    "basis": "Issuer SEC origin; filings/exhibits are not independent confirmations.",
+    "conflicts": false,
+    "independent_origins": 1
+   },
+   "strength": {
+    "basis": "Verified finding severity only; no forecast magnitude or probability.",
+    "calibrated": false,
+    "level": 2
+   }
+  }
  },
  "source_trace": "tests/intelligence/golden/trace-tool-selection-thesis-revision.json",
  "synthetic": true

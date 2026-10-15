@@ -545,5 +545,5 @@ def normalized(fact: dict):
     if fact.get("value") is not None:
         return Fraction(*fact["value"]) * factor
     if fact.get("range") is not None:
-        return tuple(Fraction(*v) * factor for v in fact["range"])
+        return tuple(sorted(Fraction(*v) * factor for v in fact["range"]))
     return None

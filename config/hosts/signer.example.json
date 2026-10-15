@@ -1,0 +1,38 @@
+{
+  "schema": "SignerService.v1",
+  "run_id": null,
+  "build_id": null,
+  "mode": "dev",
+  "wallet_address": null,
+  "key_credential": "wallet.key",
+  "interval_seconds": 1,
+  "max_clock_skew_seconds": 2,
+  "database_host": null,
+  "database_user": "larp_signer",
+  "database_name": "larp",
+  "database_ca_file": "/etc/larp/rds-ca.pem",
+  "database_ca_sha256": null,
+  "region": "ap-southeast-2",
+  "signing_policy": {
+    "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
+    "allowed_spenders": null,
+    "allowed_tokens": [
+      "0x55d398326f99059ff775485246999027b3197955",
+      "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+      "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+      "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+      "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+      "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    ],
+    "max_input_units": {
+      "0x55d398326f99059ff775485246999027b3197955": "50000000000000000000",
+      "0x02fca66c1d1afb4e2a7884261eb00f63598a7436": "1000000000000000000",
+      "0x3f53de71c126bdabae20f9cd64848d317f6c3238": "1000000000000000000",
+      "0xca750ef65f295bbecd685abf54e82caf297bdb61": "1000000000000000000",
+      "0x5b1910eaad6450e50f816082aa078c41f10c292f": "1000000000000000000",
+      "0x80106cb3ead06659a5ad19df39d9b4733863b9b0": "1000000000000000000"
+    },
+    "max_fee_wei": "5000000000000000"
+  }
+}

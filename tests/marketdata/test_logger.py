@@ -1,14 +1,32 @@
 import tempfile
 import unittest
+from decimal import Decimal
 from unittest.mock import patch
 
-from larp.marketdata.logger import summarize
+from larp.marketdata.logger import cycle, summarize
 from larp.marketdata.web3 import Artifacts, credentials
 from larp.marketdata.port import MarketPort
 from tests.marketdata.test_live_port import Client
 
 
 class LoggerTests(unittest.TestCase):
+    def test_nested_cost_refusal_stops_cycle_without_additional_requests(self):
+        from larp.marketdata.web3 import Unavailable
+        class RefusedClient(Client):
+            def __init__(self): self.calls = []
+            def request(self, method, endpoint, params):
+                self.calls.append(endpoint)
+                if endpoint == 'aggregator/quote-and-swap':
+                    raise Unavailable('compliance_restriction')
+                return super().request(method, endpoint, params)
+        client = RefusedClient()
+        report = cycle(MarketPort(client, '0x' + '1' * 40), [Decimal('40')], ['NVDAB', 'MSFTB'])
+        self.assertEqual(report['stopped'], 'compliance_restriction')
+        self.assertEqual(len(report['observations']), 1)
+        self.assertEqual(report['observations'][0]['status'], 'UNAVAILABLE')
+        self.assertEqual(client.calls[-1], 'aggregator/quote-and-swap')
+        self.assertEqual(len(client.calls), 4)
+
     def test_summary_uses_immutable_report_pairs_and_keeps_negative_samples(self):
         with tempfile.TemporaryDirectory() as root:
             a = Artifacts(root)

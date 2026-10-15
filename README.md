@@ -56,8 +56,11 @@ The [architecture deployment guide](docs/build/architecture-deployment.md) lists
 every remaining provisioning/integration step and owner. Terraform definitions are
 in `deploy/bootstrap/` and `deploy/aws/`; the optional archive host uses
 `deploy/requirements-aws.lock` and `deploy/systemd/larp-archive.timer`. These provide
-durable S3 backup/hourly anchor delivery, monitoring and release checks. No AWS
-resources are provisioned, no destinations are selected, and signing remains blocked.
+durable S3 backup/hourly anchor delivery, monitoring and release checks.
+
+**AWS (2026-10-14):** the core stack (network, private database, buckets, alarms,
+budget) is applied in Sydney with hosts off; signing remains blocked. Current state,
+login and the next steps in order are in the [AWS runbook](docs/build/AWS_RUNBOOK.md).
 
 ### Execution component (Isaac)
 W08's read-only execution capability collector, usage and W04 handoff are in

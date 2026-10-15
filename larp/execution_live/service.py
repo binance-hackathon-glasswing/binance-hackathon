@@ -5,7 +5,7 @@ bundles pending verified decoder, production store, manifest and logging integra
 """
 from datetime import datetime, timezone
 
-from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer
+from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_submitted
 from larp.marketdata.port import TOKENS
 
 
@@ -52,7 +52,8 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
                         integer(p['min_receive_units'], positive=True) * minimum_factor,
                         router.lower(), command['expires_ms'] // 1000,
                         integer(limits['max_gas'], positive=True), integer(limits['max_gas_price'], positive=True),
-                        integer(limits['gas_budget'], positive=True), kind=kind, max_cash_units=cap)
+                        integer(limits['gas_budget'], positive=True), kind=kind, max_cash_units=cap,
+                        max_slippage_bps=limits.get('slippage_bps', 50))
         result.validate()
         return result
     except (KeyError, TypeError, ValueError, AttributeError):
@@ -85,12 +86,14 @@ class ExecutionService:
         intent=map_command(command,run_id=run_id,now_ms=now_ms,**self.mapping)
         return self.executor.create(intent,now_ms//1000)
     def advance(self,key,now):
+        integer(now)
         self.executor.store.check_authority(self.epoch, self.authority_version)
         state=self.executor._load(key)
         # Retry publishing persisted possible-send facts after a crash between
         # the execution commit and observation publication. Consumer dedups event ID.
         for attempt in state.attempts:
-            if attempt.broadcast_at is not None:
+            if possibly_submitted(attempt) and attempt.state != 'REJECTED':
+                # A rejected send is logged only if the chain later shows it (reconcile then leaves REJECTED).
                 self.observe(broadcast_observation(state,attempt,wallet_id=self.wallet_id))
             if attempt.state in ('FINAL_SUCCESS','FINAL_REVERT'):
                 if self.settlement is None:
@@ -102,9 +105,10 @@ class ExecutionService:
                         or fact.get('attempt_id')!=attempt.attempt_id or fact.get('tx_hash')!=attempt.tx_hash):
                     raise Blocked('settlement fact identity mismatch')
                 self.observe(fact)
-        if state.status == 'ABORTED' and not any(a.step == 'SWAP' and a.broadcast_at is not None
+        if state.status == 'ABORTED' and not any(a.step == 'SWAP' and possibly_submitted(a)
                                                  for a in state.attempts):
             identity = state.intent.key+':not-submitted'
+            rejected = any(a.state == 'NOT_SUBMITTED' for a in state.attempts)
             fact = self.executor.store.lookup_observation(identity)
             if fact is None:
                 fact = dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER',
@@ -112,10 +116,16 @@ class ExecutionService:
                 round_id=state.intent.round_id, intent_id=state.intent.intent_id,
                 event_id=identity, observed_at=datetime.fromtimestamp(
                     state.last_observed_at, timezone.utc).isoformat(), intent_terminal=True,
-                round_terminal=self.round_terminal(state), reason='ABORTED_BEFORE_SWAP_BROADCAST')
+                round_terminal=self.round_terminal(state),
+                reason='BROADCAST_REJECTED' if rejected else 'ABORTED_BEFORE_SWAP_BROADCAST')
                 fact = self.executor.store.put_observation(fact, self.epoch, self.authority_version)
             self.observe(fact)
         if state.status!='ACTIVE':return state
+        if (now >= state.intent.valid_until and (not state.attempts
+                or state.attempts[-1].state in ('PREPARED', 'FINAL_SUCCESS'))):
+            # No signature exists for the next step. Expiry must release this
+            # intent instead of leaving authorize() to fail on every restart.
+            return self.executor.abort_unsigned(key, now)
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':
             if state.prepare_probes >= state.intent.max_prepare_probes:
                 return self.executor.abort_unsigned(key, now)
@@ -139,7 +149,7 @@ class ExecutionService:
                 return self.executor.sign(key, now)
         if stage=='SIGNED_DURABLE':
             state=self.executor.broadcast(key,now)
-            if state.attempts[-1].broadcast_at is not None:
+            if state.attempts[-1].broadcast_at is not None and state.attempts[-1].state != 'REJECTED':
                 self.observe(broadcast_observation(state,state.attempts[-1],wallet_id=self.wallet_id))
             return state
         return self.executor.reconcile(key,now)

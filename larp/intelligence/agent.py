@@ -60,7 +60,8 @@ class _State:
                          "statement_comparisons": 0, "statement_comparisons_truncated": 0,
                          "model_input_truncated": False, "model_input_chars_max": 0}
         self.context_facts = [f for f in context["known_facts"]
-                              if f.get("source", {}).get("available_ms", self.cutoff + 1) <= cutoff]
+                              if f.get("source", {}).get("available_ms", self.cutoff + 1) <= cutoff
+                              and f.get("source", {}).get("original_ms", self.cutoff + 1) <= cutoff]
         for fact in self.context_facts:
             self.facts.setdefault(fact["fact_id"], fact)
 
@@ -196,6 +197,7 @@ class EvidenceAssessor:
                   "model_io": {"steps": [], "tool_calls": [], "cot": [], "model_called": False,
                                "requests_started": 0, "no_model_call_reason": reason, "note": "no model call"},
                   "started_ms": now, "completed_ms": now}
+        result["structured_assessment"] = _structured_assessment(result)
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
@@ -208,7 +210,7 @@ class EvidenceAssessor:
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
         box, cancel = {}, threading.Event()
-        io = {"steps": [], "started": 0}  # model I/O as it happens, so a deadline result can still record it
+        io = {"steps": [], "started": 0, "tool_calls": []}  # completed I/O survives hard abandonment
 
         def work():
             try:
@@ -230,6 +232,7 @@ class EvidenceAssessor:
         entry, cutoff, max_calls, deadline, tools, context, refs = validated
         index = EvidenceIndex(self.reader, entry, cutoff)
         state = _State(entry, index, self.config, cutoff, tools, context)
+        state.tool_calls = io["tool_calls"]
         self._load_refs(state, refs)
         self._source_health(state, r.get("source_health"))
         status, reasons, model_io, claims_out, rejected = None, [], io["steps"], None, []
@@ -335,7 +338,7 @@ class EvidenceAssessor:
             return
         last = health.get("last_success_ms")
         if health.get("status") != "OK" or type(last) is not int or \
-                state.cutoff - last > self.config.p("max_source_staleness_ms"):
+                not 0 <= state.cutoff - last <= self.config.p("max_source_staleness_ms"):
             state.missing.append("SOURCE_STALE")
 
     def _call_tool(self, state, tool, args):
@@ -344,18 +347,30 @@ class EvidenceAssessor:
         state.attempted.add(key)
         record = {"index": len(state.tool_calls), "tool": tool, "args": args if type(args) is dict else {},
                   "started_ms": started}
+        # Publish an immutable dispatch record before any tool I/O; a hard stop can occur in that I/O.
+        state.tool_calls.append(dict(record, status="STARTED", error=None, result_sha256=None,
+                                     result_artifact=None, latency_ms=None))
         try:
             result = run_tool(state, tool, args)
+            # Original results are audit artifacts, never executable destinations in the call summary.
+            raw_result = Document.from_dict(result).payload
+            try:
+                address = state.index.reader.artifacts.put(raw_result)
+            except (OSError, ValueError, RuntimeError) as exc:  # a store failure is a tool error, not a crash
+                raise ToolError("ARTIFACT_WRITE_ERROR") from exc
+            if address != sha256_hex(raw_result):
+                raise ToolError("ARTIFACT_INTEGRITY_ERROR")
             record.update(status=result.get("status", "OK"), error=None,
-                          result_sha256=Document.from_dict({"r": result}).digest("larp.intel.tool.v1"))
+                          result_sha256=Document.from_dict({"r": result}).digest("larp.intel.tool.v1"),
+                          result_artifact=address)
             summary = {k: v for k, v in result.items() if k != "excerpt"}
             state.tool_results.append(dict(summary, tool=tool, excerpt=result.get("excerpt")))
         except ToolError as exc:
-            record.update(status="TOOL_ERROR", error=str(exc), result_sha256=None)
+            record.update(status="TOOL_ERROR", error=str(exc), result_sha256=None, result_artifact=None)
             state.tool_results.append({"tool": tool, "status": "TOOL_ERROR", "error": str(exc)})
             state.missing.append(f"TOOL_ERROR:{tool}:{exc}")
         record["latency_ms"] = self.clock() - started
-        state.tool_calls.append(record)
+        state.tool_calls[record["index"]] = record  # atomically replace the dispatch with completed audit data
 
     # ------------------------------------------------------------------ result
     def _verify_claims(self, state, claims):
@@ -526,6 +541,7 @@ class EvidenceAssessor:
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
+        result["structured_assessment"] = _structured_assessment(result)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -534,6 +550,10 @@ class EvidenceAssessor:
         """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
         completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
         steps = list(io["steps"])
+        tool_calls = [dict(c) for c in io["tool_calls"]]
+        for call in tool_calls:
+            if call["status"] == "STARTED":
+                call["status"] = "IN_FLIGHT_AT_DEADLINE"
         in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
         now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
@@ -556,9 +576,9 @@ class EvidenceAssessor:
             "freshness": None, "falsifiers": [], "proposed_thesis": None,
             "expiry_ms": now + self.config.p("result_ttl_ms"),
             "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
-            "budget_used": {"tool_calls": None, "model_steps": None, "elapsed_ms": now - start},
+            "budget_used": {"tool_calls": len(tool_calls), "model_steps": None, "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
-            "model_io": {"steps": steps, "tool_calls": [],
+            "model_io": {"steps": steps, "tool_calls": tool_calls,
                          "cot": [x["response"]["reasoning_summary"] for x in steps
                                  if "response" in x and x["response"]["reasoning_summary"]],
                          "model_called": io["started"] > 0, "requests_started": io["started"],
@@ -566,11 +586,12 @@ class EvidenceAssessor:
                          "in_flight": in_flight,
                          "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
                                  "audit only; a call in flight at the deadline is counted in requests_started and "
-                                 "named in in_flight with its stored request bytes; tool results are not part of "
-                                 "this result"},
+                                 "named in in_flight with its stored request bytes; completed tool calls/results "
+                                 "are retained for audit only, never used as decision evidence"},
             "started_ms": start, "completed_ms": now,
         }
         result["rationale"] = _rationale(result, entry)
+        result["structured_assessment"] = _structured_assessment(result)
         assert_no_trade_fields({k: v for k, v in result.items() if k != "model_io"}, "AssessmentResult")
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
@@ -758,7 +779,12 @@ class EvidenceAssessor:
                                               "record_id": new["source"].get("record_id")}]})
         unique, seen = [], set()
         for finding in findings:
-            key = (finding["type"], finding.get("metric"), finding.get("period"))
+            # Separate filings are separate correction obligations. Deduplicating only by
+            # event type discards another filing's support (and its red-flag provenance).
+            # Repeated spans of the same event within one filing still count once.
+            sources = tuple(sorted((s.get("accession") or "", s.get("record_id") or "")
+                                   for s in finding.get("sources", [])))
+            key = (finding["type"], finding.get("metric"), finding.get("period"), sources)
             if key in seen:
                 continue
             seen.add(key)
@@ -955,3 +981,26 @@ def build_request(*, job: dict, run_id: str, issuer_id: str, records: list, cuto
         "policy_profile_hash": policy_profile_hash, "allowed_tools": allowed_tools,
         "budget": {"tool_calls": tool_calls, "deadline_ms": deadline_ms}, "source_health": source_health,
         "review": review_scope(job)})
+
+
+def _structured_assessment(result: dict) -> dict:
+    """Declared descriptive dimensions; no calibrated return prediction or trade authority.
+
+    This assessor consumes issuer SEC filings. Multiple filings/exhibits do not create independent
+    confirmations. Duration is deliberately unknown until a separately validated estimator exists.
+    """
+    findings = result.get("findings", []) + result.get("event_findings", [])
+    catalysts = sorted({f.get("event") or f.get("metric") for f in findings
+                        if f.get("event") or f.get("metric")})
+    risks = sorted(set(result.get("missingness", []) + result.get("reasons", [])
+                       + (["CONFLICTING_EVIDENCE"] if result.get("conflicts") else [])))
+    return {"catalyst_type": catalysts or ["UNKNOWN"],
+            "direction": result.get("impact", "UNKNOWN"),
+            "strength": {"level": result.get("severity"), "calibrated": False,
+                         "basis": "Verified finding severity only; no forecast magnitude or probability."},
+            "novelty": result.get("novelty", {}),
+            "durability": {"status": "UNKNOWN", "basis": "No validated duration estimator."},
+            "source_agreement": {"independent_origins": 1 if result.get("evidence_used") else 0,
+                                 "conflicts": bool(result.get("conflicts")),
+                                 "basis": "Issuer SEC origin; filings/exhibits are not independent confirmations."},
+            "risks": risks}

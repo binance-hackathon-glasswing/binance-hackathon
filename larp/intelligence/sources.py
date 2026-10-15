@@ -43,6 +43,7 @@ class FetchedFiling:
     accession: str
     index_status: str  # OK | FAILED | NOT_REQUESTED
     documents: tuple
+    truncated: bool = False  # readable documents omitted by the retrieval bound
 
 
 class FilingSource(Protocol):

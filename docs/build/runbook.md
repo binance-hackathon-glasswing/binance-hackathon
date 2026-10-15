@@ -6,7 +6,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 
 ## 1. Start (before anything trades)
 
-1. **Release check:** `python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current`. It refuses a file not in the manifest, a changed services list or deviations register, and missing registration evidence (`larp/runtime/preflight.py`; tests `tests/runtime/test_operations.py`, `tests/runtime/test_release_register.py`).
+1. **Release check:** `python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current`. The manifest is built in CI with the host bundle (`release-manifest.json` in the bundle, `larp-<build>-x86_64.release.json` in the CI artifact) and never on a host; a host only verifies and binds it once, with its registration evidence and config hashes: `python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current --output /etc/larp/release.json --registration-evidence <file> --runtime-config /etc/larp/runtime.json --service-config NAME=/etc/larp/NAME.json` (#62 item 3, [IDEA-049-D](../ledger/IDEA-049-D.md) WR-D3). It refuses a file not in the manifest, a changed services list or deviations register, and missing registration evidence (`larp/runtime/preflight.py`; tests `tests/runtime/test_operations.py`, `tests/runtime/test_release_register.py`).
 2. **Version event:** `Coordinator.register_version(manifest, now)` commits `VERSION_REGISTERED`. A coordinator with `require_version=True` commits no execution command before it (`tests/runtime/test_release_register.py`).
 3. **Live-start checks:** in `dev`/`live` mode, `larp.runtime.service run` refuses to open a session when:
    - a port is a fake;
@@ -20,11 +20,29 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    **Secrets (IDEA-042 S1–S4):** in `dev` and `live` the service reads one AWS Secrets Manager entry, named by `runtime_secret_id` (and `region`) in `/etc/larp/runtime.json`. It never reads the process environment.
    - The entry is `<name>/runtime`, readable only by the primary and standby hosts.
    - It is a JSON object with `AI_SEEDS_ADDRESS`, `BINANCE_API_KEY` and `BINANCE_SECRET_KEY`, and nothing else for this host.
-   - The audit secret `AI_SEEDS_SECRET` belongs in `<name>/uploader`, and the wallet key in `<name>/signer`. Either one in the runtime entry refuses the start.
+   - The audit secret `AI_SEEDS_SECRET` belongs in `<name>/uploader` (for example `larp-dev/uploader`; the uploader's `uploader_secret_id`). Either it or a wallet key in the runtime entry refuses the start.
+   - The wallet key is **not** in Secrets Manager. It is a root-only file, `/etc/larp/signer/wallet.key` (`0600`), on the signer host's encrypted disk, which systemd hands to `larp-signer` with `LoadCredential` (IDEA-046 B2; `deploy/aws/hosts.tf`, `larp/signer/keyfile.py`). Terraform creates no `signer` secret.
    - Values are put in by the team, never through Terraform or Git.
 4. **Process session:** one durable session per process (`larp/runtime/supervision.py` `Sessions`).
 
-The round driver arrives with integration (item 10). Until then `service run` exits 2 (not integrated) and systemd does not restart it.
+5. **Round driver ([IDEA-048](../ledger/IDEA-048.md), completed in [IDEA-050](../ledger/IDEA-050.md)):** the `driver` block of `/etc/larp/runtime.json` (example: `config/runtime/runtime.example.json`) names:
+   - the strategy profile and session calendar files, each with its SHA-256;
+   - the evidence root (`evidence.sqlite` and `artifacts/`, written by the separate ingestion process `python -m larp.sources.live run`; the runtime opens it read-only);
+   - the market artifact directory (under `/var/lib/larp-runtime`), the intelligence configuration mode and the cadence;
+   - `issuers` (issuer ID → token and the market's `underlying_id`);
+   - `execution`: `"shadow"` (every planned order ends `NOT_SUBMITTED`, reason `SHADOW_NO_SIGNING`) or `"service"` (committed commands go to the execution service), with `expiry_grace_ms` for service;
+   - optionally `day_roll_window_ms` (daily risk anchor), `max_quote_rounds` and `max_quote_requests` (quote follow-up);
+   - `assessor: "deterministic"`; a hosted model assessor exits 2 (not integrated).
+
+   `cycle_timeout_seconds` (top level of `runtime.json`, required in `dev` and `live`; example 600 s) is the watchdog: a cycle that runs longer ends the process for a supervised restart of the same build ([IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-004, #35).
+
+   Each cycle: journal the execution service's observations and end commands that expired unclaimed (`COMMAND_EXPIRED_UNCLAIMED`); close finished rounds; **commit nothing while a command still waits for the execution service to claim it**; roll the daily anchor in the first `day_roll_window_ms` after UTC midnight (no roll means no new risk that day); then run at most one round (a scheduled review job first, then an ingested filing, otherwise one cadence round per slot), fetching the market before the round so its decision time follows the data. A round that asked for quotes gets at most `max_quote_rounds` follow-up rounds, only when an executable quote comes back. A missing or mismatched file, hash, issuer or setting exits 4. systemd restarts neither 2 nor 4. Round logs are uploaded by the uploader process, not by the runtime.
+
+6. **Run activation (operator, before the scored run and after any restore; IDEA-050):**
+   - `python -m larp.runtime.service init --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current` creates the configured `dev`/`live` run, quarantined, from `initial_state_file` (a `PortfolioState.v1` pinned by `initial_state_sha256`: the wallet's attested starting balances). It refuses an existing run or a wallet that already has one.
+   - `python -m larp.runtime.service activate … --reviewer NAME --review-ref REF` is the reviewed step that authorizes the run: it verifies the full journal and the release, refuses if a round is open or an execution record is unfinished, lifts the quarantine under a new epoch, registers the running build if none is registered (another registered build is refused), and journals `RUN_ACTIVATED` with the reviewer and reference. Start `larp-runtime` and `larp-execution` only after it.
+
+7. **Execution service (`larp-execution`, IDEA-050):** each cycle it claims current commands, advances every execution and writes its facts to `execution_observations`; the runtime journals them. Its guard facts come from the journal at every step, so a HALT stops the next signature of an execution already under way, while reconciliation of a possible send continues. Today `run` exits 2 `NOT_INTEGRATED` with reason `EXECUTOR_CAPABILITY_GATE`: the W04 Executor accepts only fake capability bundles until the verified router decoder exists (GAP-29, Isaac). The broadcast path is `FencedRelease`: it re-checks the durable possible-send record, then submits through the Web3 Open API `broadcast-transaction` endpoint with its own submit-only authenticated client (F-104; PR #66 R1).
 
 ## 2. Automatic restart (C5) — **host** drill at Gate A
 
@@ -65,7 +83,7 @@ Backups include the journal, outboxes, process sessions and the execution store.
 
 ## 5. Final-wallet switch (Oct 27–29; GAP-52, C7) — **host** rehearsal at Gate C
 
-1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7). Place the final secrets in Secrets Manager only, each in its host's entry: runtime (`AI_SEEDS_ADDRESS`, Binance keys), uploader (`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`), signer (wallet key, `AI_SEEDS_ADDRESS`).
+1. **By Oct 26:** confirm the final wallet's new `AI_SEEDS_SECRET` (C7). Place the final secrets in Secrets Manager, each in its own entry: runtime (`AI_SEEDS_ADDRESS`, Binance keys) and uploader (`AI_SEEDS_ADDRESS`, `AI_SEEDS_SECRET`). The final wallet key is not a Secrets Manager entry: replace `/etc/larp/signer/wallet.key` (root, `0600`) on the signer host and set the final `wallet_address` in `/etc/larp/signer.json`.
 2. **Old run:** after the development run's last round, it must have no open round, reservation or pending command, and hold no token.
 3. **Switch:** `larp.runtime.live.switch_wallet(...)` opens a fresh run for the final wallet with its own `.ai-seeds/` and nonce directories, marked for that wallet. The new run starts quarantined. The switch record (old run, final head, new run) goes into the activation pack.
 4. **New run:** register the version for the final build (step 1.2) and start. The live-start checks refuse any address mismatch.

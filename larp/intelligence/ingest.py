@@ -24,7 +24,7 @@ the store owns attempts, status and scheduling. Jobs carry no trade command.
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError, digest
-from larp.intelligence.edgar import check_identity, listing_rows
+from larp.intelligence.edgar import check_identity, listing_rows, parse_acceptance_ms
 from larp.intelligence.issuers import DOMESTIC_FORMS, FOREIGN_PRIVATE_FORMS
 from larp.intelligence.text import document_text
 
@@ -88,6 +88,7 @@ class Ingestor:
         if listing.status == "OK":
             try:
                 check_identity(listing.submissions, entry.cik, entry.entity_name)
+                rows = listing_rows(listing.submissions, listing.history)
             except IntelligenceError as exc:
                 listing = type(listing)("INVALID", listing.retrieved_ms, None, listing.response_sha256, str(exc))
         if listing.status != "OK":
@@ -100,26 +101,44 @@ class Ingestor:
         old_watermark, newest = cursor["watermark_ms"], cursor["watermark_ms"]
         if listing.history_status == "PARTIAL":
             outcome["status"] = "PARTIAL_HISTORY"
-        for row in sorted(listing_rows(listing.submissions, listing.history),
-                          key=lambda r: (r["original_ms"] or 0, r["accession"] or "")):
+
+        def in_scope(original_ms):
+            return (original_ms >= cursor["floor_ms"] if mode == "LIVE"
+                    else window[0] <= original_ms <= window[1])
+
+        for row in sorted(rows, key=lambda r: (r["original_ms"] or 0, str(r["accession"] or ""))):
             if row["malformed"]:
-                outcome["malformed_rows"] += 1
+                # A malformed row outside the polled scope cannot hide current evidence; one
+                # whose time is unreadable, or that names a pending accession, might.
+                try:
+                    stamp = parse_acceptance_ms(row["acceptance_raw"])
+                except (IntelligenceError, ValueError, TypeError):
+                    stamp = None
+                pending = type(row["accession"]) is str and row["accession"] in cursor["pending"]
+                # A readable form no filer class watches (Form 4, 144, SC 13G, ...) cannot hide
+                # watched evidence either (IDEA-044 V12).
+                if not pending and row["form"] and entry.form_class(row["form"]) is None \
+                        and row["form"] not in ALL_PERIODIC_AND_CURRENT:
+                    outcome["ignored_forms"] += 1
+                    continue
+                if stamp is None or in_scope(stamp) or pending:
+                    outcome["malformed_rows"] += 1
                 continue
             accession, form_class = row["accession"], entry.form_class(row["form"])
+            relevant = in_scope(row["original_ms"]) or accession in cursor["pending"]
             if form_class is None:
-                if row["form"] in ALL_PERIODIC_AND_CURRENT:
+                if row["form"] in ALL_PERIODIC_AND_CURRENT and relevant:
                     outcome["unexpected_forms"].append([accession, row["form"]])
                 outcome["ignored_forms"] += 1
                 continue
-            in_scope = (row["original_ms"] >= cursor["floor_ms"] if mode == "LIVE"
-                        else window[0] <= row["original_ms"] <= window[1])
-            if not in_scope and accession not in cursor["pending"]:
+            if not relevant:
                 continue
             if row["original_ms"] > now + self.config.p("max_clock_skew_ms"):
                 outcome["rejected_future"].append(accession)
                 continue
             known = cursor["known"].get(accession)
-            if (known or accession in cursor["dead_letter"]) and accession not in recheck:
+            if (known or accession in cursor["dead_letter"]) and accession not in recheck \
+                    and accession not in cursor["pending"]:
                 outcome["duplicates"] += 1
                 continue
             record = self._ingest(entry, row, form_class, cursor, known, mode, old_watermark, outcome,
@@ -133,8 +152,18 @@ class Ingestor:
                 newest = row["original_ms"] if newest is None else max(newest, row["original_ms"])
         cursor["watermark_ms"] = newest
         self._bound_known(cursor)
-        health.update(status="OK", last_success_ms=listing.retrieved_ms, unavailable_since_ms=None,
-                      consecutive_failures=0, last_error=None)
+        # Issuer health covers this poll's gaps and retries still owed. A filing that stays
+        # unreadable (dead letter) or bounded keeps that on its own record, which assessments
+        # report as FILING_UNREADABLE / FILING_INCOMPLETE; it must not stall the issuer forever,
+        # since nothing during the scored run can clear it by hand.
+        incomplete = (listing.history_status == "PARTIAL" or outcome["malformed_rows"]
+                      or outcome["unexpected_forms"] or outcome["rejected_future"]
+                      or cursor["pending"] or outcome["dead_letter"]
+                      or any(r["incomplete"] for r in records))
+        health.update(status="INCOMPLETE" if incomplete else "OK", last_success_ms=listing.retrieved_ms,
+                      unavailable_since_ms=None, consecutive_failures=0,
+                      last_error="EVIDENCE_COVERAGE_INCOMPLETE" if incomplete else None)
+        outcome["coverage_complete"] = not bool(incomplete)
         return self._commit(cursor, expected_version, health, records, jobs, outcome, listing)
 
     def _ingest(self, entry, row, form_class, cursor, known, mode, old_watermark, outcome, listing_hash):
@@ -171,8 +200,14 @@ class Ingestor:
             outcome["dead_letter"].append(accession)
         else:
             quality = "SYNTHETIC" if self.synthetic else "VALID"
-        content_hash = digest("larp.intel.content.v1", {"documents": sorted(
-            [d["name"], d["text_sha256"]] for d in documents if d["text_sha256"])})
+            cursor["dead_letter"].pop(accession, None)
+        incomplete = bool((failed and primary_ok) or fetched.truncated)
+        content = {"documents": sorted([d["name"], d["text_sha256"]] for d in documents if d["text_sha256"])}
+        if incomplete:
+            # Completeness is part of what was observed. A complete reread of identical
+            # bytes after an index failure or a bound must create a recoverable revision.
+            content["incomplete"] = True
+        content_hash = digest("larp.intel.content.v1", content)
         if known and known["content_hash"] == content_hash:
             outcome["duplicates"] += 1
             return None
@@ -188,11 +223,13 @@ class Ingestor:
                   "revision": known["revision"] + 1 if known else 0,
                   "supersedes": known["content_hash"] if known else None,
                   "content_hash": content_hash, "quality": quality,
-                  "incomplete": failed and primary_ok, "index_status": fetched.index_status,
+                  "incomplete": incomplete, "index_status": fetched.index_status,
                   "listing_sha256": listing_hash, "documents": documents}
         record["record_id"] = "rec:" + digest("larp.intel.record.v1", record)
         cursor["known"][accession] = {"original_ms": row["original_ms"], "content_hash": content_hash,
                                       "revision": record["revision"], "record_id": record["record_id"]}
+        if incomplete:
+            cursor["known"][accession]["incomplete"] = True
         (outcome["revisions"] if known else outcome["new_records"]).append(record["record_id"])
         if late:
             outcome["late"].append(accession)

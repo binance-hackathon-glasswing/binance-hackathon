@@ -15,6 +15,7 @@ from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 import json
+import http.client
 import re
 import time
 import urllib.error
@@ -28,6 +29,7 @@ SUBMISSIONS = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 SUBMISSIONS_FILE = "https://data.sec.gov/submissions/{name}"
 ARCHIVES = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/"
 ALLOWED_HOSTS = frozenset({"data.sec.gov", "www.sec.gov"})
+MAX_RESPONSE_BYTES = 8_000_000
 READABLE = (".htm", ".html", ".txt", ".xhtml")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 _MS = timedelta(milliseconds=1)
@@ -46,6 +48,8 @@ def parse_acceptance_ms(raw: object) -> int:
 
 
 def check_identity(submissions: dict, cik: int, entity_name: str) -> None:
+    if type(submissions) is not dict:
+        raise IntelligenceError("SUBMISSIONS_NOT_OBJECT")
     try:
         reported = int(str(submissions.get("cik", "")).lstrip("0") or "0")
     except ValueError:
@@ -58,8 +62,13 @@ def listing_rows(submissions: dict, history: tuple = ()) -> tuple:
     """Rows of filings.recent and of any fetched history blocks, each with a parsed original
     timestamp; malformed rows are flagged; an accession listed twice is kept once."""
     rows, seen = [], set()
-    for block in (submissions.get("filings", {}).get("recent", {}), *history):
-        for row in _block_rows(block if type(block) is dict else {}):
+    filings = submissions.get("filings")
+    if type(filings) is not dict or type(filings.get("recent")) is not dict:
+        raise IntelligenceError("SUBMISSIONS_FILINGS_MALFORMED")
+    for block in (filings["recent"], *history):
+        if type(block) is not dict:
+            raise IntelligenceError("SUBMISSIONS_COLUMNS_MALFORMED")
+        for row in _block_rows(block):
             if row["malformed"] is None:
                 if row["accession"] in seen:
                     continue
@@ -69,15 +78,23 @@ def listing_rows(submissions: dict, history: tuple = ()) -> tuple:
 
 
 def _block_rows(block: dict) -> list:
-    n = len(block.get("accessionNumber") or [])
     keys = ("accessionNumber", "form", "items", "acceptanceDateTime", "filingDate", "reportDate",
             "primaryDocument")
+    if type(block.get("accessionNumber")) is not list or \
+            any(block.get(k) is not None and type(block[k]) is not list for k in keys):
+        raise IntelligenceError("SUBMISSIONS_COLUMNS_MALFORMED")
+    n = len(block.get("accessionNumber") or [])
+    if any(block.get(k) and len(block[k]) != n for k in keys):
+        raise IntelligenceError("SUBMISSIONS_COLUMN_LENGTH_MISMATCH")
     columns = {k: (block.get(k) or [None] * n) for k in keys}
     rows = []
     for i in range(n):
         raw = {k: columns[k][i] if i < len(columns[k]) else None for k in keys}
-        row = {"accession": raw["accessionNumber"], "form": (raw["form"] or "").strip().upper(),
-               "items": [x.strip() for x in (raw["items"] or "").split(",") if x.strip()],
+        malformed = any(v is not None and type(v) is not str for v in raw.values())
+        row = {"accession": raw["accessionNumber"],
+               "form": raw["form"].strip().upper() if type(raw["form"]) is str else "",
+               "items": [x.strip() for x in (raw["items"] if type(raw["items"]) is str else "").split(",")
+                         if x.strip()],
                "acceptance_raw": raw["acceptanceDateTime"], "filing_date": raw["filingDate"],
                "report_date": raw["reportDate"] or None, "primary_document": raw["primaryDocument"],
                "original_ms": None, "malformed": None}
@@ -85,6 +102,10 @@ def _block_rows(block: dict) -> list:
             row["malformed"] = "ACCESSION"
         elif type(row["primary_document"]) is not str or not row["primary_document"]:
             row["malformed"] = "PRIMARY_DOCUMENT"
+        elif malformed:
+            row["malformed"] = "COLUMN_VALUE"
+        elif not row["form"]:
+            row["malformed"] = "FORM"
         else:
             try:
                 row["original_ms"] = parse_acceptance_ms(row["acceptance_raw"])
@@ -110,7 +131,13 @@ def history_files(submissions: dict, window: tuple) -> tuple:
     not an EDGAR submissions file name is never turned into a URL.
     """
     names, malformed = [], []
-    for entry in (submissions.get("filings", {}).get("files") or []):
+    filings = submissions.get("filings")
+    if type(filings) is not dict:
+        return (), ("filings",)
+    files = filings.get("files")
+    if files is not None and type(files) is not list:
+        return (), ("filings.files",)
+    for entry in files or []:
         name = entry.get("name") if type(entry) is dict else None
         if type(name) is not str or not _HISTORY_FILE.match(name):
             malformed.append(str(name)[:80])
@@ -157,10 +184,17 @@ def select_documents(index_rows: tuple, primary: str, form: str, max_documents: 
 
 
 def _urllib_get(url: str, headers: dict, timeout_s: float) -> tuple:
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *args, **kwargs):
+            return None
+
     request = urllib.request.Request(url, headers=headers, method="GET")
+    # A validated initial URL does not validate a Location header. Treat redirects as
+    # unavailable; never allow urllib to escape the allowlist or use an ambient proxy.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     try:
-        with urllib.request.urlopen(request, timeout=timeout_s) as response:  # noqa: S310 - host allowlisted
-            return response.status, response.headers.get("Content-Type"), response.read()
+        with opener.open(request, timeout=timeout_s) as response:  # noqa: S310 - host allowlisted
+            return response.status, response.headers.get("Content-Type"), response.read(MAX_RESPONSE_BYTES + 1)
     except urllib.error.HTTPError as exc:
         return exc.code, exc.headers.get("Content-Type") if exc.headers else None, b""
 
@@ -183,7 +217,13 @@ class EdgarHttpSource:
         self._max_history, self._last = max_history_files, None
 
     def _fetch(self, url: str) -> tuple:
-        if urlsplit(url).scheme != "https" or urlsplit(url).hostname not in ALLOWED_HOSTS:
+        try:
+            parts = urlsplit(url)
+            permitted = (parts.scheme == "https" and parts.hostname in ALLOWED_HOSTS
+                         and parts.port in (None, 443) and not parts.username and not parts.password)
+        except ValueError:
+            permitted = False
+        if not permitted:
             raise IntelligenceError("EDGAR adapter refuses a destination outside the SEC allowlist")
         now = time.monotonic()
         if self._last is not None and now - self._last < self._spacing:
@@ -191,7 +231,9 @@ class EdgarHttpSource:
         try:
             status, content_type, body = self._get(url, dict(self._headers), self._timeout)
             error = None if status == 200 else f"HTTP {status}"
-        except OSError as exc:  # URLError, timeouts and connection errors
+            if status == 200 and (type(body) is not bytes or len(body) > MAX_RESPONSE_BYTES):
+                status, body, error = None, b"", "RESPONSE_TOO_LARGE_OR_INVALID"
+        except (OSError, http.client.HTTPException) as exc:  # includes incomplete/chunked responses
             status, content_type, body, error = None, None, b"", f"{type(exc).__name__}"
         self._last = time.monotonic()
         return status, content_type, body, error, self._clock()
@@ -209,6 +251,8 @@ class EdgarHttpSource:
             return Listing("INVALID", at, None, sha256_hex(body), "Submissions response is not JSON")
         if window is None or type(listing.submissions) is not dict:
             return listing
+        if type(listing.submissions.get("filings")) is not dict:
+            return replace(listing, status="INVALID", error="SUBMISSIONS_FILINGS_MALFORMED")
         names, malformed = history_files(listing.submissions, window)
         blocks, files = [], [{"name": m, "status": "MALFORMED_ENTRY", "response_sha256": None, "error": None}
                              for m in malformed]
@@ -238,11 +282,13 @@ class EdgarHttpSource:
         base = ARCHIVES.format(cik=cik, acc=row["accession"].replace("-", ""))
         _, _, index, error, _ = self._fetch(f"{base}{row['accession']}-index.htm")
         index_rows = () if error else parse_filing_index(index)
-        chosen = select_documents(index_rows, row["primary_document"], row["form"], max_documents)
+        all_documents = select_documents(index_rows, row["primary_document"], row["form"], len(index_rows) + 1)
+        chosen = all_documents[:max_documents]
         documents = []
         for doc in chosen:
             status, content_type, body, err, at = self._fetch(base + doc["name"])
             documents.append(FetchedDocument(doc["name"], doc["doc_type"], doc["role"], base + doc["name"],
                                              "FAILED" if err else "OK", at, None if err else body,
                                              content_type, err))
-        return FetchedFiling(row["accession"], "FAILED" if error else "OK", tuple(documents))
+        return FetchedFiling(row["accession"], "FAILED" if error else "OK", tuple(documents),
+                             truncated=len(all_documents) > len(chosen))

@@ -21,7 +21,11 @@ class Client:
     def get_secret_value(self, SecretId):
         self.calls.append(SecretId)
         if self.fail:
-            raise RuntimeError('denied while reading s3cret-value')
+            # A definite refusal whose text carries a value. Unclassified and transient failures are retried by the
+            # supervisor instead of refused (IDEA-049 D-FND-003, tests/runtime/test_final_review_d.py).
+            from botocore.exceptions import ClientError
+            raise ClientError({'Error': {'Code': 'AccessDeniedException',
+                                         'Message': 'denied while reading s3cret-value'}}, 'GetSecretValue')
         return {'SecretString': self.secret}
 
 
@@ -50,7 +54,7 @@ class Loader(unittest.TestCase):
         self.refused('not a JSON object', Client('s3cret-value'))
         self.refused('non-empty strings', Client(json.dumps(dict(VALUES, BINANCE_API_KEY=''))))
         self.refused('non-empty strings', Client(json.dumps(['s3cret-value'])))
-        self.refused('unavailable: RuntimeError', Client(fail=True))
+        self.refused('unavailable: AccessDeniedException', Client(fail=True))
         self.refused('No runtime secret source', Client(json.dumps(VALUES)), secret_id='')
 
 

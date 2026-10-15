@@ -8,22 +8,15 @@ import requests
 from datetime import datetime, timezone
 from urllib.parse import quote
 from dotenv import load_dotenv
+from tools.probe_http import envelope
 
 
 # --------------------------------------------------
 # Load API credentials
 # --------------------------------------------------
 
-load_dotenv()
-
-api_key = os.getenv("BINANCE_API_KEY")
-secret_key = os.getenv("BINANCE_SECRET_KEY")
-
-if not api_key:
-    raise ValueError("BINANCE_API_KEY not found in .env")
-
-if not secret_key:
-    raise ValueError("BINANCE_SECRET_KEY not found in .env")
+api_key = None
+secret_key = None
 
 
 # --------------------------------------------------
@@ -35,7 +28,7 @@ BUILD_PREFIX = "/build"
 
 # Optional X-OC-RECV-WINDOW (allowed clock skew in ms; server default 5000, max 60000).
 # Set e.g. BINANCE_RECV_WINDOW=15000 (the kit's Python demo value); unset = header not sent.
-RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
+RECV_WINDOW = None
 
 
 # --------------------------------------------------
@@ -130,9 +123,10 @@ def binance_get(path, params=None):
         url,
         headers=headers,
         timeout=10,
+        allow_redirects=False,
     )
 
-    return response
+    return response.status_code, envelope(response, (api_key, secret_key, signature))
 
 
 # --------------------------------------------------
@@ -143,26 +137,29 @@ def binance_get(path, params=None):
 # --------------------------------------------------
 
 def main():
-    response = binance_get(
-        "/api/v1/dex/aggregator/supported/chain",
-        {
-            "binanceChainId": "56"
-        },
-    )
-
-    print("\nStatus code:", response.status_code)
-
-    try:
-        body = response.json()
-    except ValueError:
-        print("Response (not JSON):", response.text)
+    global api_key, secret_key, RECV_WINDOW
+    load_dotenv()
+    api_key, secret_key = os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_SECRET_KEY")
+    RECV_WINDOW = os.getenv("BINANCE_RECV_WINDOW")
+    if not api_key or not secret_key:
+        print("BINANCE_API_KEY / BINANCE_SECRET_KEY not found in .env")
         return 1
+    try:
+        status, body = binance_get(
+            "/api/v1/dex/aggregator/supported/chain",
+            {"binanceChainId": "56"},
+        )
+    except requests.RequestException:
+        print("Request failed: network error")
+        return 1
+
+    print("\nStatus code:", status)
 
     print("Response:", body)
 
     # Only code == 0 means success; HTTP 200 can still carry an error code
     # (SKILL.md F-94, F-108; participant-kit.md K7).
-    if not isinstance(body, dict) or body.get("code") != 0:
+    if status != 200 or type(body.get("code")) is not int or body["code"] != 0:
         code = body.get("code") if isinstance(body, dict) else None
         print("FAILED: code =", code)
         return 1

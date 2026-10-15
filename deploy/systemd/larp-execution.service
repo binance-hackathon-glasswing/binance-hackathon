@@ -1,0 +1,48 @@
+[Unit]
+Description=LARP execution service (W04 executor; asks the signer host through the database, IDEA-047)
+Wants=network-online.target
+After=network-online.target time-sync.target
+StartLimitIntervalSec=0
+# Installed on primary only (deploy/host/provision.sh writes the role marker).
+ConditionPathExists=/etc/larp/role-primary
+ConditionPathExists=/etc/larp/execution.json
+
+[Service]
+Type=simple
+User=larp-execution
+Group=larp-execution
+WorkingDirectory=/opt/larp/current
+# The only writable path: /var/lib/larp-execution, for market and chain evidence artifacts (IDEA-050).
+StateDirectory=larp-execution
+StateDirectoryMode=0700
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+# Run preflight in the main process so a refusal exits 4 and prevents automatic restarts.
+ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.launch --manifest /etc/larp/release.json --root /opt/larp/current --profile host --service-config execution=/etc/larp/execution.json -- -m larp.execution_live.main run --config /etc/larp/execution.json --manifest /etc/larp/release.json --root /opt/larp/current
+Restart=always
+RestartSec=10
+# 2 = not integrated, 3 = run quarantined, 4 = start refused: restarting cures none.
+RestartPreventExitStatus=2 3 4
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=60
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=512M
+TasksMax=32
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

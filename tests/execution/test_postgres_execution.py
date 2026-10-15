@@ -211,6 +211,38 @@ class PostgresExecutionTests(DatabaseCase):
         self.assertEqual(facts[0],facts[1])
         self.assertEqual(facts[0]['kind'],'NOT_SUBMITTED')
 
+    def test_expired_prepared_command_releases_barrier_and_publishes_stable_abort(self):
+        i = intent()
+        self.executor.create(i, 10)
+        self.executor.prepare(i.key, 11)
+        self.restart()
+        facts = []
+        service = self.service(facts.append)
+        state = service.advance(i.key, i.valid_until)
+        self.assertEqual(state.status, 'ABORTED')
+        self.assertEqual(state.attempts[-1].state, 'ABORTED')
+        self.assertEqual(state.last_observed_at, i.valid_until)
+        self.assertIsNone(state.attempts[-1].tx_hash)
+        self.assertFalse(self.venue.broadcasts)
+        service.advance(i.key, i.valid_until + 1)
+        service.advance(i.key, i.valid_until + 2)
+        self.assertEqual(facts[0], facts[1])
+        self.assertEqual(facts[0]['kind'], 'NOT_SUBMITTED')
+        self.assertEqual(facts[0]['observed_at'], '1970-01-01T00:16:40+00:00')
+        second = intent(intent_id='second', valid_until=2000)
+        self.assertEqual(self.executor.create(second, 1003).status, 'ACTIVE')
+
+    def test_expired_possible_send_keeps_wallet_barrier(self):
+        key = self.prepared()
+        self.executor.sign(key, 13)
+        self.executor.broadcast(key, 14)
+        state = self.service().advance(key, 1001)
+        self.assertEqual(state.status, 'ACTIVE')
+        self.assertIsNotNone(state.attempts[-1].broadcast_at)
+        with self.assertRaises(Conflict):
+            self.executor.create(intent(intent_id='other', valid_until=2000), 1002)
+        self.assertEqual(len(self.venue.broadcasts), 1)
+
     @unittest.skipUnless(importlib.util.find_spec('eth_account'),'signer dependency supplied by integration CI lock')
     def test_real_ephemeral_signer_uses_postgres_registry(self):
         from eth_account import Account

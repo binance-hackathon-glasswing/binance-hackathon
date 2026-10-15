@@ -24,10 +24,10 @@ resource "aws_s3_bucket_object_lock_configuration" "archive" {
   }
   depends_on = [aws_s3_bucket_versioning.archive]
 }
+# Release artifacts are reproducible from Git; they may be removed at teardown (IDEA-046 L05).
 resource "aws_s3_bucket" "artifacts" {
   bucket        = var.artifact_bucket_name
-  force_destroy = false
-  lifecycle { prevent_destroy = true }
+  force_destroy = var.allow_teardown
 }
 resource "aws_s3_bucket_versioning" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
@@ -97,15 +97,16 @@ resource "aws_db_instance" "larp" {
   publicly_accessible                 = false
   multi_az                            = var.multi_az
   backup_retention_period             = var.backup_retention_days
-  deletion_protection                 = true
+  deletion_protection                 = !var.allow_teardown
   skip_final_snapshot                 = false
   final_snapshot_identifier           = "${var.name}-final"
   auto_minor_version_upgrade          = false
   apply_immediately                   = false
-  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
+  enabled_cloudwatch_logs_exports     = var.db_log_exports
   copy_tags_to_snapshot               = true
+  # Deletion protection (above) guards the data; a teardown flips it through allow_teardown, which a lifecycle
+  # prevent_destroy could not. A final snapshot is always kept.
   lifecycle {
-    prevent_destroy = true
     precondition {
       condition     = var.db_max_storage_gib >= var.db_storage_gib
       error_message = "Maximum storage must cover allocated storage."

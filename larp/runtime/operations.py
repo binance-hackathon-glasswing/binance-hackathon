@@ -1,13 +1,12 @@
 """Explicit maintenance CLI. It has no signer, trading loop or promotion command."""
 
 import argparse
-from contextlib import contextmanager
-import hashlib
 import json
 from pathlib import Path
 import time
 
 from larp.contracts import ContractError, Document
+from larp.runtime.database import IamPostgresStore, check_iam_settings
 from larp.runtime.maintenance import Maintenance, HOUR_MS
 from larp.storage.archive import S3Archive
 from larp.storage.backup import restore
@@ -15,6 +14,8 @@ from larp.storage.postgres import PostgresStore, Unavailable, doc
 
 
 def validate_config(value):
+    if not isinstance(value, dict):
+        raise ContractError('Invalid operations configuration object')
     required = ('deployment', 'region', 'account_id', 'run_id', 'archive_bucket',
                 'archive_prefix', 'kms_key', 'retention_days', 'backup_interval_hours',
                 'database_host', 'database_user', 'database_name', 'database_ca_file', 'database_ca_sha256',
@@ -27,32 +28,16 @@ def validate_config(value):
     for key in ('retention_days', 'backup_interval_hours', 'max_attempts', 'retry_seconds', 'max_archive_bytes'):
         if type(value[key]) is not int or value[key] < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    # Explicit per-object Object Lock expiry overrides the bucket default.
+    # Match deploy/aws/variables.tf, including the full archive retention window.
+    if value['retention_days'] < 82:
+        raise ContractError('Archive retention must be at least 82 days')
     if value['archive_prefix'].split('/')[0] != 'archive':
         raise ContractError('Archive namespace must begin with archive/')
     if value['database_user'] != 'larp_archive':
         raise ContractError('Maintenance requires the dedicated larp_archive database role')
-    if not Path(value['database_ca_file']).is_file():
-        raise ContractError('Pinned RDS certificate bundle is missing')
-    if hashlib.sha256(Path(value['database_ca_file']).read_bytes()).hexdigest() != value['database_ca_sha256']:
-        raise ContractError('RDS certificate bundle hash differs from configuration')
+    check_iam_settings(value, 'larp_archive')
     return value
-
-
-class IamPostgresStore(PostgresStore):
-    def __init__(self, config, rds):
-        self.config, self.rds = config, rds
-
-    @contextmanager
-    def transaction(self):
-        from psycopg.conninfo import make_conninfo
-        c = self.config
-        # Generate a fresh short-lived IAM token for every database connection.
-        token = self.rds.generate_db_auth_token(DBHostname=c['database_host'], Port=5432,
-                                                DBUsername=c['database_user'], Region=c['region'])
-        dsn = make_conninfo(host=c['database_host'], port=5432, user=c['database_user'], password=token,
-                            dbname=c['database_name'], sslmode='verify-full', sslrootcert=c['database_ca_file'])
-        with PostgresStore(dsn).transaction() as db:
-            yield db
 
 
 def cloud_clients(c):
@@ -64,11 +49,25 @@ def cloud_clients(c):
     return {name: session.client(name, config=settings) for name in ('s3', 'rds', 'cloudwatch')}
 
 
-def publish_health(client, deployment, healthy):
-    dimensions = [dict(Name='Deployment', Value=deployment), dict(Name='Service', Value='archive')]
-    client.put_metric_data(Namespace='LARP/Runtime', MetricData=[
-        dict(MetricName='Heartbeat', Value=1, Unit='Count', Dimensions=dimensions),
-        dict(MetricName='Healthy', Value=int(healthy), Unit='Count', Dimensions=dimensions)])
+def _metric(deployment, service, name, value):
+    return dict(MetricName=name, Value=value, Unit='Count',
+                Dimensions=[dict(Name='Deployment', Value=deployment), dict(Name='Service', Value=service)])
+
+
+def publish_health(client, deployment, healthy, services=None):
+    """Archive heartbeat and health, plus the service-level signals (IDEA-047 R5). `services` is a ServiceHealth.v1
+    dict, or None when the database could not be read: then only the runtime heartbeat is sent, as 0, and the other
+    service alarms see missing data, which they treat as breaching."""
+    data = [_metric(deployment, 'archive', 'Heartbeat', 1), _metric(deployment, 'archive', 'Healthy', int(healthy))]
+    if services is None:
+        data.append(_metric(deployment, 'runtime', 'Heartbeat', 0))
+    else:
+        data += [_metric(deployment, 'runtime', 'Heartbeat', int(services['runtime_alive'])),
+                 _metric(deployment, 'runtime', 'Halted', len(services['halt_reasons'])),
+                 _metric(deployment, 'runtime', 'Quarantined', int(services['quarantined'])),
+                 _metric(deployment, 'uploader', 'OverdueLogs', services['audit_overdue']),
+                 _metric(deployment, 'signer', 'UnansweredRequests', services['signing_unanswered'])]
+    client.put_metric_data(Namespace='LARP/Runtime', MetricData=data)
 
 
 def main(argv=None):
@@ -118,7 +117,8 @@ def main(argv=None):
             health['healthy']=False
             health['reasons']=sorted(set(health['reasons']+['ARCHIVE_PREPARATION_FAILED']))
             health['preparation_error']=preparation_error
-        publish_health(clients['cloudwatch'], c['deployment'], health['healthy'])
+        health['services'] = worker.service_health(c['run_id'], int(time.time() * 1000)).read()
+        publish_health(clients['cloudwatch'], c['deployment'], health['healthy'], health['services'])
         print(json.dumps(health, sort_keys=True))
         return 0 if health['healthy'] else 1
     except Exception:

@@ -25,7 +25,8 @@ import re
 from larp.intelligence.common import frac
 from larp.intelligence.facts import (
     ANALYST_FRAME, DROPPED_ASSERTIONS, KEYWORD_EVENTS, METRIC_NAMES, METRIC_ONE, MONEY, NUM_TOKEN, PERCENT,
-    PER_SHARE_EXCEPTION, PER_SHARE_METRICS, PERCENT_METRICS, SCALES, SENTENCE_END, STATEMENT_PREFIX, event_semantics,
+    PER_SHARE_EXCEPTION, PER_SHARE_METRICS, PERCENT_METRICS, SCALES, SENTENCE_END, STATEMENT_PREFIX, TOLERANCE,
+    event_semantics,
     finish_fact, half_unit, is_change_amount, is_statement, kind_of, money_parts, normalized, parse_number,
     parse_period, range_partner, row_metric, signed_value, stated_numbers, statement_event, table_cell, table_scale,
     table_unit, token_decimals, values_agree,
@@ -290,6 +291,8 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issue
         return None, "VALUE_MALFORMED"
     if value is None and len(bounds) != 2:
         return None, "VALUE_MISSING"
+    if value is not None and bounds:
+        return None, "POINT_AND_RANGE"
     stated = stated_numbers(span_text)
     table = " | " in span_text
     for number in [v for v in [value, tolerance, *bounds] if v is not None]:
@@ -305,6 +308,18 @@ def verify_claim(claim: dict, texts: dict, records: dict | None = None, *, issue
         reason = _prose_reading(text, span, metric, kind, value, bounds)
         if reason:
             return None, reason
+    stated_tolerance = None
+    if not table and value is not None:
+        token_end = _token_end(text, span["start"], span["end"], value)
+        amount, _ = _amount_at(text, span["start"], token_end, metric)
+        if amount is not None:
+            clause = TOLERANCE.match(text[amount.end():])
+            if clause is not None:
+                if amount.end() + clause.end() > span["end"]:
+                    return None, "TOLERANCE_OUTSIDE_SPAN"
+                stated_tolerance = parse_number(clause.group("num"))
+    if tolerance != stated_tolerance:
+        return None, "TOLERANCE_NOT_STATED"
     unit, scale = claim.get("unit"), claim.get("scale_exp10")
     if type(scale) is not int:
         return None, "SCALE_MALFORMED"
@@ -416,7 +431,7 @@ def compare(new: dict, prior: dict) -> dict:
     if new["kind"] == "REPORTED" and prior["kind"] == "GUIDANCE":
         low, high = (b, b) if type(b) is not tuple else b
         if type(b) is not tuple and prior.get("tolerance_pct") is not None:
-            band = b * Fraction(*prior["tolerance_pct"]) / 100
+            band = abs(b) * Fraction(*prior["tolerance_pct"]) / 100
             low, high = b - band, b + band
         point = a if type(a) is not tuple else None
         if point is None:
