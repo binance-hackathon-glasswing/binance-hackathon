@@ -727,11 +727,12 @@ class SourceProbes(SourceHarness):
             load_register(Path(path))
 
     def test_d11_control_crash_between_pages_resumes_without_duplicates_and_versions_not_backdated(self):
-        """CONTROL. Crash after page 1 commit: resume from page 2 through the empty terminal page; preserve bytes;
-        a changed item later is version 1 with available_ms = its own retrieval."""
+        """CONTROL. Crash after page 1 commit: resume re-checks the listing head (IDEA-049-A), then continues from
+        page 2 through the empty terminal page; preserve bytes; a changed item later is version 1 with
+        available_ms = its own retrieval."""
         source = replace(self.register["doj-press"],
                          listing_url="https://www.justice.gov/api/v1/press_releases.json?pagesize=1",
-                         limits=dict(self.register["doj-press"].limits, max_pages=2))
+                         limits=dict(self.register["doj-press"].limits, max_pages=3))
         register = dict(self.register, **{"doj-press": source})
         page = lambda n: source.listing_url + ("" if n == 0 else f"&page={n}")
         a = ("a", "A", "<p>alpha</p>", 1791500000, 1791500000)
@@ -742,9 +743,9 @@ class SourceProbes(SourceHarness):
         first = self.store.records("doj-press")
         restarted = SQLiteSourceStore(self.db_path)
         self.addCleanup(restarted.close)
-        net = FakeNet({page(1): [(200, {}, doj([b]))], page(2): [(200, {}, doj([]))]})
+        net = FakeNet({page(0): [(200, {}, doj([a]))], page(1): [(200, {}, doj([b]))], page(2): [(200, {}, doj([]))]})
         self.ingestor(net, register, store=restarted).poll("doj-press")
-        self.assertEqual([u for u, _ in net.requests], [page(1), page(2)])
+        self.assertEqual([u for u, _ in net.requests], [page(0), page(1), page(2)])
         self.assertEqual([r["item_id"] for r in restarted.records("doj-press")], ["a", "b"])
         self.assertEqual(restarted.records("doj-press")[0], first[0])
         self.clock.now += 1000

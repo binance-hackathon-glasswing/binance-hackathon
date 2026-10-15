@@ -55,14 +55,20 @@ class SourceIngestor:
         cursor = stored or initial_cursor(source_id)
         expected = cursor["version"] if stored else -1
         outcome = {"source_id": source_id, "status": "OK", "pages": 0, "new": [], "versions": [], "withdrawn": [],
-                   "duplicates": 0, "rejected": [], "resumed": cursor["in_progress"] is not None, "truncated": False}
+                   "duplicates": 0, "rejected": [], "policy_rejected": [],
+                   "resumed": cursor["in_progress"] is not None, "truncated": False}
         progress = cursor["in_progress"] or {}
         if progress and (progress.get("failures", 0) >= MAX_RESUME_FAILURES or not allowed(source, progress["next_url"])):
             outcome["abandoned_continuation"] = progress.get("next_url")  # wedged or poisoned (S4-B d07)
             # A validator for page 1 cannot attest that an abandoned tail was processed.
             cursor = dict(cursor, in_progress=None, etag=None, last_modified=None)
-        url = (cursor["in_progress"] or {}).get("next_url") or source.listing_url
-        first = cursor["in_progress"] is None
+        resume = cursor["in_progress"]
+        # Reserve a listing-head request inside the existing page budget before continuing history.
+        # One-page synthetic recovery fixtures keep their legacy continuation behavior; live paginated
+        # sources need at least two pages to serve both lanes (validated by live preflight).
+        head_probe = bool(resume and source.limits.get("max_pages", 1) >= 2)
+        url = source.listing_url if head_probe else (resume or {}).get("next_url") or source.listing_url
+        first = head_probe or resume is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
         cycle_incomplete = (cursor["in_progress"] or {}).get("coverage_incomplete", False)
         # max_pages bounds work per poll, not the lifetime of a durable pagination cycle.
@@ -93,6 +99,7 @@ class SourceIngestor:
                 return dict(outcome, status="SOURCE_UNAVAILABLE", error=str(exc))
             records = []
             seen, rejected = dict(cursor["seen"]), dict(cursor["rejected"])
+            head_anchor = False
             for item in items:
                 previous = seen.get(item["item_id"])
                 if previous is None:  # the cursor cache is bounded; the store is the durable item index (S4-B d06)
@@ -102,13 +109,25 @@ class SourceIngestor:
                                     "record_id": stored_record["record_id"], "status": stored_record["status"],
                                     "first_seen_ms": stored_record["first_seen_ms"],
                                     "published_ms": stored_record["published"]["ms"]}
-                record, why = self._record(source, item, previous, now, response)
+                head_anchor = head_anchor or previous is not None
+                item_hash = digest("larp.sources.item-policy.v1", item)
+                old_rejection = rejected.get(item["item_id"], {})
+                if (old_rejection.get("reason") == "THIRD_PARTY_RIGHTS"
+                        and old_rejection.get("item_sha256") == item_hash
+                        and old_rejection.get("register_sha256") == self.register_sha256):
+                    record, why = None, "THIRD_PARTY_RIGHTS"
+                else:
+                    record, why = self._record(source, item, previous, now, response)
                 if why == "DUPLICATE":
                     outcome["duplicates"] += 1
                     continue
                 if why:
-                    cycle_incomplete = True  # omitted evidence cannot establish complete coverage
-                    rejected[item["item_id"]] = {"reason": why, "at_ms": now}
+                    if why == "THIRD_PARTY_RIGHTS":
+                        outcome["policy_rejected"].append([item["item_id"], why])
+                    else:
+                        cycle_incomplete = True  # couldn't process permitted evidence: not complete coverage
+                    rejected[item["item_id"]] = {"reason": why, "at_ms": now, "item_sha256": item_hash,
+                                                 "register_sha256": self.register_sha256}
                     outcome["rejected"].append([item["item_id"], why])
                     continue
                 records.append(record)
@@ -120,6 +139,16 @@ class SourceIngestor:
                 outcome[key].append(record["record_id"])
             pages_done += 1
             cycle_incomplete = cycle_incomplete or item_truncated
+            if head_probe:
+                outcome["head_checked"] = True
+                if items and not head_anchor and next_url:
+                    # New publications displaced the entire old head. Rescan from the current head's tail
+                    # instead of skipping newly inserted middle pages; durable item identity deduplicates it.
+                    outcome["history_restarted_from_head"] = True
+                    pages_done = 1
+                else:
+                    next_url = resume["next_url"]
+                head_probe = False
             outcome["truncated"] = outcome["truncated"] or cycle_incomplete
             if next_url and not allowed(source, next_url):
                 outcome["rejected_next_page"] = next_url  # never saved as a continuation (S4-B d07)

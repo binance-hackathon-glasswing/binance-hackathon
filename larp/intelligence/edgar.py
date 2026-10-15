@@ -15,6 +15,7 @@ from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 import json
+import http.client
 import re
 import time
 import urllib.error
@@ -232,7 +233,7 @@ class EdgarHttpSource:
             error = None if status == 200 else f"HTTP {status}"
             if status == 200 and (type(body) is not bytes or len(body) > MAX_RESPONSE_BYTES):
                 status, body, error = None, b"", "RESPONSE_TOO_LARGE_OR_INVALID"
-        except OSError as exc:  # URLError, timeouts and connection errors
+        except (OSError, http.client.HTTPException) as exc:  # includes incomplete/chunked responses
             status, content_type, body, error = None, None, b"", f"{type(exc).__name__}"
         self._last = time.monotonic()
         return status, content_type, body, error, self._clock()
