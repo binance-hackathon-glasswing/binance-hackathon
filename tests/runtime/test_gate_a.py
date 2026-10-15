@@ -315,3 +315,53 @@ class GateAComposition(PipelineHarness):
                     initial_policy_state=initial_policy_state(config['run_id'], json.loads(files['strategy-profile.json'])))
             self.assertEqual(replayed, head)
             self.assertEqual(self.store.load(config['run_id']).read()['mode'], 'offline')
+
+
+class PortedFromPr89(unittest.TestCase):
+    """IDEA-058 GA07-GA09: checks ported from the closed PR #89."""
+
+    def test_ga07_each_pair_must_pass_the_evidence_contracts_issuer_rule(self):
+        from unittest.mock import patch
+        from larp.integration import contract
+        real = contract._issuer_matches
+        seen = []
+
+        def rule(record, underlying, *, source_id=None):
+            seen.append((record['issuer_id'], underlying, source_id))
+            return False if record['token'] == 'TSLAB' else real(record, underlying, source_id=source_id)
+        with patch.object(contract, '_issuer_matches', side_effect=rule):
+            with self.assertRaisesRegex(ContractError, 'TSLAB'):
+                gate_a.issuer_map(captured())
+        self.assertTrue(seen and all(s == 'BINANCE_WEB3' for _, _, s in seen))
+        self.assertEqual(len(gate_a.issuer_map(captured())), 5)  # the real rule accepts every registry pair
+
+    def test_ga08_the_initial_state_is_self_checked_before_it_is_pinned(self):
+        from unittest.mock import patch
+        capture = captured()
+        state = gate_a.initial_state(capture, profile(), 'gate-a-test')
+        gate_a.check_initial_state(state, capture)  # the real state passes
+        bad = {
+            'wei': dict(bnb_decimals=6),
+            'mode': dict(mode='LIVE'),
+            'wallet': dict(wallet_id='0x' + '2' * 40),
+            'negative': dict(cash_units=-1),
+            'schema': dict(schema='PortfolioState.v0'),
+        }
+        for name, change in bad.items():
+            with self.subTest(name), self.assertRaises(ContractError):
+                gate_a.check_initial_state(dict(state, **change), capture)
+        with patch('larp.integration.runtime.ledger_from', side_effect=ValueError('disagrees')), \
+                self.assertRaisesRegex(ContractError, 'ledger'):
+            gate_a.check_initial_state(state, capture)
+        with patch.object(gate_a, 'check_initial_state', side_effect=ContractError('self-check called')), \
+                self.assertRaisesRegex(ContractError, 'self-check called'):
+            gate_a.initial_state(capture, profile(), 'gate-a-test')
+
+    def test_ga09_no_bnb_is_reported_for_gate_b_not_refused_for_shadow(self):
+        funded = json.loads(assembled()['preparation-report.json'])
+        self.assertNotIn('FIRST_BNB (Q-03)', funded['missing_inputs'])
+        capture = captured()
+        capture['balances']['response']['data'][0]['tokenAssets'] = [
+            dict(tokenContractAddress=USDT, rawBalance=str(100 * 10**18))]
+        unfunded = json.loads(assembled(capture_raw=encoded(rehash(capture)))['preparation-report.json'])
+        self.assertIn('FIRST_BNB (Q-03)', unfunded['missing_inputs'])
