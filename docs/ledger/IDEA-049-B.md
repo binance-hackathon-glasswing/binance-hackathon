@@ -249,6 +249,7 @@ Keith+D input, not evidence silently substituted by hosting IDEA-046.
 | B-DEC-05 | Event classes: preregister source/calendar and hold/reduce/flatten actions, or adopt reasoned DEV20 omission. Recommend explicit class rules if reliable inputs exist; no ad-hoc operator decisions during run. | Team+B/A/D, Oct 22; YES |
 | B-DEC-06 | Exit costs/slippage: add measured/stressed exit-spread allowance and explicitly approve exit slippage, or adopt a sourced fallback deviation. Recommend pessimistic measured round-trip allowance including approve+swap on both legs; no fabricated bp value. | Team+B/C, Oct 22; YES |
 | B-DEC-07 | Class 1 priority: confirm mandatory bypass of minimum/profit/cadence or retain DEC35's discretionary qualifier. Recommend an explicit mandatory risk-exit decision if intended, with market/integrity/slippage/expiry/gas/cap gates intact. Existing code is not the adoption record. | Team+A/B, Oct 22; YES |
+| B-DEC-08 | Gas reservation margin (#46). (a) Keep reserving the quote's `gas_bnb_units` and rely on the WR-B accounting (overage charged against the real balance and recorded in `gas_over_reserve_bnb_units`). (b) Reserve approve + swap gas from the profile's QuoteCostSummary (`approve_gas_bnb_units + swap_gas_bnb_units`) times a margin factor recorded in the profile and manifest. Recommend (b), with the factor derived from C's measured receipt-vs-quote gas on both legs; no value is chosen here. Until decided, (a) holds: receipts are no longer rejected for overage, and `exit_gas_reserve_units` plus the planner's `INSUFFICIENT_GAS` check are the only protection against BNB running short between rounds. | Team+B/C, Oct 22 profile freeze; not blocking correctness (overage is now accounted), blocking the LIVE profile freeze |
 
 Profile windows in LIVE.md (Oct 29 start; Nov 9 new-risk cut; Nov 10 flatten; Nov 11
 14:45 signing stop) are candidates, not all adopted: the decided requirement is
@@ -452,3 +453,151 @@ no requirement should be labelled tested/settled merely from this partial review
 > integrity checks. Synthetic downstream replay and green CI do not authorize
 > signing, AWS deployment or a profitability claim. Owners and deadlines are
 > listed in docs/ledger/IDEA-049-B.md B-RISK01–07.
+
+## WR-B — review fixes #45 #46 #57 #64.3 (2026-10-15)
+
+Owner: Claude Code session for Yao Zhu (section D integrator), on branch
+`claude/wr-b-risk-fixes-0f380b` from base `7b7acd2` on
+`codex/system-testing-20261012`. Scope is B's code only (`larp/strategy`,
+`larp/risk`, the runtime market-view call site for #45) and B's tests. Team
+decisions #34, #36, #37, #38, #55 and #56 are out of scope and not decided here.
+No LIVE profile value changes. Synthetic tests only: no keys, signing, chain,
+ai-seeds or AWS calls.
+
+### Pass criteria (registered before any test or code change)
+
+All four issues still reproduce on `7b7acd2` (triage by the starting session).
+Each fix lands as failing tests pushed first, then the fix. The suite must pass
+with no existing test weakened, skipped or removed; any existing test whose
+expectation encodes the reported defect is named here with the reason before it
+is changed.
+
+**WRB-45 (#45, WR03, P1): one bad market row must not block other names.**
+- WRB-45-1. `market_view` is per row. A row with a row-level defect (wrong
+  schema; missing `token_id` or `underlying_id`; currency other than USDT;
+  `money_scale` other than 1,000,000; `decimals` missing, not an int or above 30;
+  `price_units` missing or below 1; malformed `measured_roundtrip_bps`) maps its
+  symbol to `None` and records the reason in a caller-supplied dict. It does not
+  raise.
+- WRB-45-2. Set-level problems still raise `ContractError`: the collection is not
+  a list, a row is not an object, a symbol is missing, unknown or outside the
+  universe, a symbol appears twice, or (LIVE) a row has a fake or unidentified
+  origin. The B-REG-04 tests (`test_b_req_022_*`) still pass unchanged.
+- WRB-45-3. Flatten window (LIVE FINAL profile, `2026-11-10T14:00Z`), NVDAB and
+  GOOGLB held and quoted, one bad row for unheld TSLAB (each defect in
+  WRB-45-1): the plan has no `INVALID_REQUIRED_INPUT`, has `TERMINAL_FLATTEN`
+  requirements for both held names, plans one mandatory SELL of a held name, and
+  records `{"reason": "INVALID_MARKET_ROW", "symbol": "TSLAB"}`.
+- WRB-45-4. Same, but the bad row is held NVDAB: NVDAB's requirement keeps its
+  full `remaining_sell_units` with status `BLOCKED_INPUT`; GOOGLB's mandatory
+  SELL is planned; the `INVALID_MARKET_ROW` rejection names NVDAB; new risk stays
+  blocked (`unvalued_symbols` includes NVDAB).
+- WRB-45-5. Non-terminal POSITION_CAP trim of a held name still plans its
+  mandatory SELL with a bad unheld row; `decide()` still returns a proposal with
+  a bad unheld row.
+- WRB-45-6. Runtime evidence path: `ContextBuilder._reductions` with a bad
+  unheld row still returns the `CLASS_1_EXIT` reduction for held NVDAB (real
+  RF1 producer fixture), instead of `[]`.
+
+**WRB-46 (#46, WR04, P1): gas above the reservation is charged, not rejected.**
+- WRB-46-1. A final reconciler FILL whose `gas_bnb_units` exceeds the
+  reservation's `bnb_units` but not the wallet's BNB balance is applied: BNB
+  falls by the actual gas, `gas_value_units` rises by the actual gas value, the
+  terminal fill deletes the reservation, and the overage is recorded in
+  `accounting.gas_over_reserve_bnb_units`.
+- WRB-46-2. Approve plus swap above the quote: reservation 10,000; approve
+  receipt 8,000 gas (non-terminal, reservation left at 2,000); swap receipt
+  15,000 gas is applied; total charged 23,000; no reservation remains. The same
+  sequence through `integration.settlement.settle` leaves no BNB reservation row
+  for the intent.
+- WRB-46-3. Gas above the actual BNB balance still raises `ContractError` and
+  changes nothing.
+- WRB-46-4. No LIVE profile value or validator changes (`larp/strategy/profiles.py`
+  untouched). The reservation margin over the quoted gas is a team/B decision,
+  recorded as B-DEC-08 below, not adopted.
+
+**WRB-57 (#57, WR15, P2): a Class 1 latch reaches the planner on its own.**
+- WRB-57-1. The planner reads `CLASS_1_EXIT` latches from the persisted policy
+  state (`snapshot.policy_state`, the state committed by the last round). With
+  an NVDAB latch, NVDAB partly sold and still held, GOOGLB held with a stale
+  mark, no proposal and no reduction constraints, the planner emits an NVDAB
+  requirement with `max_units` 0 and reason `CLASS_1_EXIT`, and plans a mandatory
+  NVDAB SELL when a quote exists. The scenario check: `decide()` raises on that
+  snapshot (so the old path had no target).
+- WRB-57-2. A latch on a name with zero units adds no requirement.
+- WRB-57-3. The latch clears only by the IDEA-035 rule: a later round with no
+  evidence keeps it (requirement still emitted from the next persisted state);
+  after `decide()` resolves it on a complete review with no Class 1 finding (A8),
+  the planner emits no `CLASS_1_EXIT` requirement from that persisted state. The
+  planner never clears or writes the latch itself. A resolution decided in the
+  current round takes effect from the next round (one-round lag, conservative).
+- WRB-57-4. A malformed `blocked` map in the persisted state fails closed as
+  `INVALID_REQUIRED_INPUT` with the held names kept.
+
+**WRB-64.3 (#64 item 3, P3): mandatory sells ordered by reason class, then value.**
+- WRB-64-1. Mandatory requirements are ordered by class first: any requirement
+  with `CLASS_1_EXIT` or `TERMINAL_FLATTEN` before all others; then by
+  descending notional value of `remaining_sell_units` at the current mark; then
+  by symbol. A requirement without a usable mark sorts after valued ones in its
+  class.
+- WRB-64-2. Two non-terminal requirements where the name with more token units
+  has the smaller notional: the larger-notional name gets the one intent.
+- WRB-64-3. A small Class 1 requirement is planned before a larger POSITION_CAP
+  trim.
+
+**Full suite.** Python 3.12 from `deploy/requirements-test.lock`, pinned
+`postgres:14.24-bookworm@sha256:5a05f61a…` with `LARP_TEST_DATABASE_URL`. Pass =
+the base's counts plus the new tests, with failures only in the same
+environment-only tests as the base run on this machine.
+
+### Results (2026-10-15)
+
+Criteria pushed at `69caadd` before any test or code. Failing tests pushed at
+`179d156` (55 tests in `tests/risk/test_wr_b_review_fixes.py`, code still at
+`7b7acd2`): **53 failed, 2 passed**. The two passes are the registered controls
+WRB-46-3 (gas above balance already raised) and WRB-57-2 (no latch requirement
+on a flat name). Each failure was for the reported reason: whole-plan
+`INVALID_REQUIRED_INPUT` / `decide()` raising on one bad row (#45),
+`Gas exceeds committed reserve/actual balance` (#46), no NVDAB requirement or
+no fail-closed on malformed latches (#57), and the token-unit order (#64.3).
+`ContextBuilder._reductions` returned `[]` with one bad unheld row.
+
+| Issue | Fix commit | What changed |
+|---|---|---|
+| #45 WR03 | `d9b87d4` | `market_view` per row (`_row_defect`); reason in an optional `invalid` dict; planner records `INVALID_MARKET_ROW` and a held bad-row name stays `BLOCKED_INPUT`. Set-level checks unchanged. No runtime code change: `_reductions` now returns `[]` only for set-level problems. |
+| #46 WR04 | `1a339a0` | `advance_accounting` rejects only gas above the actual BNB balance; overage charged and recorded in `accounting.gas_over_reserve_bnb_units`; terminal receipt releases the reservation. No profile change. |
+| #57 WR15 | `2de511c` | Planner reads `CLASS_1_EXIT` latches from `snapshot.policy_state`; cap 0 until the position is zero; malformed latch map fails closed. The planner never writes latches. |
+| #64.3 | `ba81aa2` | Mandatory requirements sorted by (Class 1 / terminal first, unmarked last, descending notional, symbol). |
+
+After each fix the focused B/strategy/integration/research/redteam(/runtime)
+suites were green except the not-yet-fixed WR-B tests. No existing test was
+changed, skipped or removed; no existing expectation encoded the defects.
+
+Side effects checked and accepted:
+- `larp/runtime/driver.py` (D, unchanged code) also calls `market_view` for the
+  daily anchor. A bad row for an unheld name no longer blocks the anchor; a bad
+  row for a held name still gives `MARK_UNAVAILABLE` (equity has no mark).
+- Under a global execution block every requirement still becomes `BLOCKED`, as
+  `BLOCKED_MARK` did before; `BLOCKED_INPUT` is shown only on unblocked rounds.
+- A latch resolved by this round's proposal still forces the exit for that one
+  round (WRB-57-3, registered as conservative).
+
+Full suite at fix head `ba81aa2` (clean pushed tree; macOS, Python 3.12.14 from
+`deploy/requirements-test.lock`, pinned `postgres:14.24-bookworm@sha256:5a05f61a…`
+container on loopback): **1474 passed, 7 skipped, 1 xfailed (#23), 2059 subtests,
+0 failed**, 204.87s. Base `7b7acd2` on the same machine and setup: 1419 passed,
+7 skipped, 1 xfailed, 2059 subtests, 0 failed. The difference is exactly the 55
+new tests. Synthetic checks only: no live data, signing or chain.
+
+Linux mirror CI on PR #77 head `a853528` (pushed to the mirror and started by
+Yao Zhu): [run 38750352994](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38750352994),
+all four jobs SUCCESS. Runtime full suite **1477 passed, 4 skipped, 1 xfailed,
+2059 subtests**, 306.37s: the mirror base on `e5db681` (1422 passed, 4 skipped,
+1 xfailed, 2059 subtests) plus the 55 new tests. Opt-in systemd 3 passed,
+5 subtests; offline demo and Docker build/smoke passed (job success).
+Terraform mock tests: deploy/aws 15 passed, 0 failed; deploy/bootstrap 1 passed,
+0 failed. Host-bundle build/provision succeeded. These do not establish
+deployment readiness.
+
+B-DEC-08 (gas reservation margin) is added to the DECISION-NEEDED table above.
+WR-B does not change the PARTIAL REVIEW / DEPLOYMENT BLOCKED status.

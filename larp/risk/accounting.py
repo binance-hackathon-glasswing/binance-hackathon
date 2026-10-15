@@ -74,10 +74,15 @@ def advance_accounting(portfolio: Document, observation: Document):
         if e["tx_hash"] in receipts:
             raise ContractError("Receipt already accounted under another event identity")
     gas = integer(e["gas_bnb_units"])
-    if gas > reservation["bnb_units"] or gas > d["bnb_units"]:
-        raise ContractError("Gas exceeds committed reserve/actual balance")
+    # Final gas is a chain fact: charge it even above the quote-sized reservation (#46, WR04). Only gas
+    # above the actual balance is impossible on chain, so only that is an integrity failure.
+    if gas > d["bnb_units"]:
+        raise ContractError("Gas exceeds actual BNB balance")
     d["bnb_units"] -= gas
-    reservation["bnb_units"] -= gas
+    over = max(0, gas - integer(reservation["bnb_units"]))
+    if over:
+        d["accounting"]["gas_over_reserve_bnb_units"] = d["accounting"].get("gas_over_reserve_bnb_units", 0) + over
+    reservation["bnb_units"] -= gas - over
     gas_value = integer(e["gas_value_units"])
     d["accounting"]["gas_value_units"] += gas_value
     # Gas expense uses observed USDT valuation, not inferred token quote amounts.

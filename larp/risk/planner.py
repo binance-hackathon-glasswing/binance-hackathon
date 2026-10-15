@@ -70,6 +70,18 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
     raise ContractError("Nondecreasing re-quote chain")
 
 
+def _class_1_latches(state):
+    """Names with a CLASS_1_EXIT latch in the persisted policy state (#57, WR15).
+
+    The policy alone sets and clears latches (IDEA-035, A8); the planner only reads the committed state, so
+    the exit holds without a proposal or fresh evidence. A resolution decided this round applies next round."""
+    blocked = state.data.read().get("blocked", {})
+    if type(blocked) is not dict or any(type(b) is not dict or type(b.get("reason")) is not str
+                                        for b in blocked.values()):
+        raise ContractError("Persisted policy latches must be objects")
+    return {symbol for symbol, b in blocked.items() if b["reason"] == "CLASS_1_EXIT"}
+
+
 def plan(snapshot, proposal_or_none):
     c, now = snapshot.context.read(), snapshot.observed_at
     result = {"schema": "PlanResult.v1", "snapshot_id": snapshot.snapshot_id,
@@ -85,7 +97,9 @@ def plan(snapshot, proposal_or_none):
                 or any(type(pos) is not dict for pos in ledger["positions"].values())
                 or any(type(res) is not dict for res in ledger["reservations"].values())):
             raise ContractError("Portfolio positions and reservations must be objects")
-        market = markets(snapshot, p)
+        latched = _class_1_latches(snapshot.policy_state)
+        invalid = {}
+        market = markets(snapshot, p, invalid)
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
                           | {v["symbol"] for v in ledger["reservations"].values()
@@ -100,6 +114,9 @@ def plan(snapshot, proposal_or_none):
         result["risk_state"] = r
         result.update(valuation_status="LOWER_BOUND" if unvalued else "COMPLETE",
                       risk_equity_lower_bound_units=E, unvalued_symbols=unvalued)
+        # One bad row makes only its own symbol unusable; it is recorded, never silently dropped (#45).
+        result["rejections"].extend({"reason": "INVALID_MARKET_ROW", "symbol": s, "detail": invalid[s]}
+                                    for s in sorted(invalid))
         if unvalued:
             result["rejections"].append({"reason": "PARTIAL_VALUATION_NEW_RISK_BLOCKED", "symbols": unvalued})
     except (KeyError, TypeError, ContractError, ValueError) as exc:
@@ -167,8 +184,9 @@ def plan(snapshot, proposal_or_none):
         m, qty = market.get(symbol), held[symbol]
         if m is None:
             result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
-                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"],
-                "status": "BLOCKED_MARK"})
+                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"]
+                + (["CLASS_1_EXIT"] if symbol in latched else []),
+                "status": "BLOCKED_INPUT" if symbol in invalid else "BLOCKED_MARK"})
             continue
         cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
@@ -197,7 +215,7 @@ def plan(snapshot, proposal_or_none):
         if index >= 4:
             cap = 0
             reason.append("POSITION_COUNT_CAP")
-        if targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT":
+        if symbol in latched or (targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT"):
             cap = 0
             reason.append("CLASS_1_EXIT")
         if terminal:
@@ -243,8 +261,15 @@ def plan(snapshot, proposal_or_none):
         if result["intents"] or result["quote_requests"]:
             return Document.from_dict(result)
 
+    def urgency(req):
+        # Class 1 / terminal first, then by notional at the current mark; token units say nothing
+        # about value across decimals and prices (#64 item 3). Unmarked names go last in their class.
+        m = market.get(req["symbol"])
+        return (not {"CLASS_1_EXIT", "TERMINAL_FLATTEN"} & set(req["reasons"]), m is None,
+                -value(req["remaining_sell_units"], m) if m is not None else 0, req["symbol"])
+
     actions = []
-    for req in sorted(result["requirements"], key=lambda x: (-x["remaining_sell_units"], x["symbol"])):
+    for req in sorted(result["requirements"], key=urgency):
         actions.append((req["symbol"], "SELL", req["remaining_sell_units"], True, req["reasons"]))
     # No discretionary action while any mandatory obligation is outstanding.
     if not actions:
@@ -371,7 +396,7 @@ def plan(snapshot, proposal_or_none):
             # Tighten bounds only after this child passes every execution gate.
             adjusted_equity = max(0, E - ceil(cost))
             for requirement in result["requirements"]:
-                if requirement["status"] == "BLOCKED_MARK":
+                if requirement["status"] in ("BLOCKED_MARK", "BLOCKED_INPUT"):
                     continue
                 old_bound = requirement["max_units"]
                 requirement["max_units"] = min(old_bound, floor(Fraction(old_bound * adjusted_equity, max(1, safe_equity))))
