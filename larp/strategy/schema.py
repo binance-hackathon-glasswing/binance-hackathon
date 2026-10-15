@@ -122,6 +122,8 @@ def markets(snapshot, p):
 def market_view(observations, universe, cutoff, p):
     """symbol -> usable MarketObservation or None, as the strategy reads them (also used by the runtime so evidence
     the strategy cannot use never becomes a planner constraint, IDEA-033 R17)."""
+    if type(observations) is not list or any(type(m) is not dict for m in observations):
+        raise ContractError("Market observations must be a list of objects")
     result = {}
     for m in observations:
         symbol = m.get("symbol")

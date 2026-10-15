@@ -72,7 +72,7 @@ def _pinned_json(path, sha256, what):
     return json.loads(raw)
 
 
-def build_execution(config, store, secrets, *, clock_s=None):
+def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=None):
     """The execution loop over live ports (IDEA-050). Raises NotIntegrated at the Executor's capability gate.
 
     Mapping limits come from the pinned strategy profile (per-trade cap, slippage: #40, C-OPEN-001) and the configured
@@ -116,7 +116,8 @@ def build_execution(config, store, secrets, *, clock_s=None):
                               source_id=config['rpc_source_id']))
     market = MarketPort(client, wallet, quote_limits=profile)
     guards = LiveGuards(store=registry, market=market, chain=chain,
-                        authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id']))
+                        authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
+                                                       manifest_sha256=manifest_sha256))
     venue = LiveVenue(client, chain, decoder=UnverifiedRouter(),
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,
@@ -153,7 +154,8 @@ def main(argv=None):
         try:
             raw = Path(args.config).read_bytes()
             config = validate_config(json.loads(raw))
-            manifest = verify_release(Document(Path(args.manifest).read_bytes()), args.root)
+            manifest_document = Document(Path(args.manifest).read_bytes())
+            manifest = verify_release(manifest_document, args.root)
             verify_service_config(manifest, SERVICE, raw)
             if manifest['build_id'] != config['build_id']:
                 raise ContractError('Configured build differs from the verified release')
@@ -172,10 +174,15 @@ def main(argv=None):
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED
+        registered = Document(bytes(run['projection'])).read().get('registered_version')
+        manifest_sha256 = hashlib.sha256(manifest_document.payload).hexdigest()
+        if (type(registered) is not dict or registered.get('build_id') != config['build_id']
+                or registered.get('manifest_sha256') != manifest_sha256):
+            raise StartRefused('execution release differs from the registered manifest')
         from larp.runtime.credentials import runtime_secrets
         secrets = runtime_secrets(config)
         try:
-            loop = build_execution(config, store, secrets)
+            loop = build_execution(config, store, secrets, manifest_sha256=manifest_sha256)
         except NotIntegrated as gate:
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', detail=str(gate), signing_enabled=False)))
             return EXIT_NOT_INTEGRATED

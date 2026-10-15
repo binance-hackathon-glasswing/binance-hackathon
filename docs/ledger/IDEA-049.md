@@ -298,3 +298,11 @@ Results (2026-10-15), local, each failing test pushed before its fix:
   ([run 38700735681](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38700735681))
   did **not start**: GitHub refused every job for account billing, so no
   Linux result exists for the merged head.
+- Second base update (2026-10-15): merged `codex/system-testing-20261012`
+  at `21ee21c` (PRs #65 B, #69 D, #70 C, #73). One conflict, in
+  `larp/marketdata/web3.py`'s response block: kept C's
+  `private_parameter_reflection` outcome and this change's
+  `http.client.HTTPException` in the transport `except`. Local full suite on
+  the merge (same venv, fresh disposable database): **1390 passed, 7
+  skipped, 1 xfailed, 2030 subtests**. `deploy/aws` is unchanged by the base,
+  so the Terraform result above stands.
