@@ -548,7 +548,8 @@ class LegacySignedState(execution_state_tests.SignedState):
 
     def rows(self, store, table):
         with store.transaction() as db:
-            return [[base64.b64encode(bytes(v)).decode() if isinstance(v, (bytes, memoryview)) else v for v in row]
+            return [[{'bytes': base64.b64encode(bytes(v)).decode()} if isinstance(v, (bytes, memoryview)) else v
+                     for v in row]
                     for row in db.execute(f'SELECT * FROM {table} ORDER BY 1,2')]
 
     def target(self):
