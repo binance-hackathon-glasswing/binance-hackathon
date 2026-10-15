@@ -110,6 +110,13 @@ class RoutedAssessor:
                                  digest('larp.routing.models.v1', binding), 'HOSTED')
         self.model = SimpleNamespace(identity=identity)
 
+    def _budget_state(self):
+        # Missing/locked/corrupt storage blocks OpenAI (admission raises too), never the external path.
+        try:
+            return self.budget.snapshot()
+        except IntelligenceError:
+            return dict(account=self.budget.account, external_only=True, reason='MODEL_BUDGET_UNAVAILABLE')
+
     def assess(self, request):
         r = request.read()
         # Let the normal validator reject malformed requests without any inference or billing.
@@ -156,7 +163,7 @@ class RoutedAssessor:
         reasons = _review_reasons(chosen, r, self.policy['audit_sample_bps'], self.policy['audit_seed'])
         if reasons:
             reviewed = None
-            if self.openai is not None and not self.budget.snapshot()['external_only']:
+            if self.openai is not None and not self._budget_state()['external_only']:
                 reviewed = run(self.openai, 'openai-review')
             # Missing key, exhausted/limited credits, error, invalid claims or a timeout all have
             # a bounded external review path. Generic rate limits do not latch credit exhaustion.
@@ -208,7 +215,7 @@ class RoutedAssessor:
             result['model_io']['no_model_call_reason'] = selected['model_io'].get('no_model_call_reason')
         result['started_ms'], result['completed_ms'] = start, self.clock()
         result['budget_used'] = dict(tool_calls=len(calls), model_steps=len(steps), elapsed_ms=self.clock()-start)
-        result['routing'] = dict(reasons=reasons, budget=self.budget.snapshot(),
+        result['routing'] = dict(reasons=reasons, budget=self._budget_state(),
                                  stages=[dict(stage=s['stage'], model=s['model'], result_id=s['result']['result_id'],
                                               status=s['result']['status'], result_artifact=s['artifact']) for s in stages])
         costs = [s['result']['cost'] for s in stages]

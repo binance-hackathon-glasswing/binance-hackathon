@@ -231,6 +231,15 @@ class Routing(unittest.TestCase):
         self.calls.clear(); self.run_assessment(self.build())
         self.assertFalse(any(c[0]=='openai' for c in self.calls))
 
+    def test_ar4_unavailable_budget_storage_blocks_openai_but_not_external_review(self):
+        router=self.build()
+        (self.root/'openai-budget.sqlite').unlink()
+        _,value=self.run_assessment(router)
+        self.assertFalse(any(c[0]=='openai' for c in self.calls))
+        self.assertTrue(any(c[0]=='aiand' and c[2]=='high' for c in self.calls))
+        self.assertEqual(value['routing']['budget']['reason'],'MODEL_BUDGET_UNAVAILABLE')
+        self.assertFalse((self.root/'openai-budget.sqlite').exists())
+
     def test_ar4_credit_refusal_falls_back_but_rate_limit_does_not_latch(self):
         self.openai_error='rate_limit_exceeded'; _,value=self.run_assessment(self.build())
         self.assertTrue(any(c[0]=='openai' for c in self.calls))

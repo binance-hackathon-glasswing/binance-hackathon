@@ -74,3 +74,7 @@ Artifacts are outside the repo at `/private/tmp/larp-aiand-validation/results/`:
 - `offline-demo.json`: `a9fee7ddbb681c0fbb649a6de628ce6d35b955508db8f77f9f45b89925909510`
 
 AR1–AR8 pass only for the stated synthetic/local scope. Real AIand/OpenAI inference, account entitlements, independent labels/omission rates, actual latency/usage, model/source rights, hosted secret/ledger recovery and live/scored adoption remain NOT RUN and retain the owners above. No whole GAP closes.
+
+### PR #86 review fix — 2026-10-15
+
+Review found that a missing, locked or corrupt budget ledger raised out of the routed assessment after the routine AIand stage had run, because the `external_only` check and the trace snapshot read the ledger without a guard. The coordinator then recorded `ASSESSMENT_UNAVAILABLE` and no external review ran. This contradicted the runbook, which says storage failure blocks only OpenAI dispatch. `RoutedAssessor` now treats an unreadable ledger as external-only (`MODEL_BUDGET_UNAVAILABLE`) for that assessment, and still never recreates the file. New AR4 regression: `test_ar4_unavailable_budget_storage_blocks_openai_but_not_external_review`. The local re-validation is recorded in the PR #86 review.
