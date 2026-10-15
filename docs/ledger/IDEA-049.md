@@ -306,3 +306,18 @@ Results (2026-10-15), local, each failing test pushed before its fix:
   the merge (same venv, fresh disposable database): **1390 passed, 7
   skipped, 1 xfailed, 2030 subtests**. `deploy/aws` is unchanged by the base,
   so the Terraform result above stands.
+- Merged (2026-10-15): PR #71 was merged into `codex/system-testing-20261012`
+  as `b4ce730`, followed by #72 (`2f155fb`) and #74 (`e5db681`). Before the
+  merges, the integrated tree (base `21ee21c` + #71 + #72 + #74, local commit
+  `c4c2bcd`, the same tree as `e5db681`) ran in a Linux container: Python
+  3.12.15, `deploy/requirements-test.lock`, pinned `postgres:14.24-bookworm`.
+  Result: **1417 passed, 5 skipped, 1 xfailed, 2059 subtests**, plus 4
+  environmental failures: 2 git-dependent tests (the source copy had no
+  `.git`) and 2 bubblewrap sandbox tests (no namespaces in the container).
+  Base `21ee21c` fails 3 of them the same way; the fourth is #72's new test.
+  The 2 git-dependent tests pass in a real clone (29 passed, 1 xfailed). The 2
+  sandbox tests and the offline demo pass in a `--privileged` container. #74 and this change both added an import to
+  `larp/execution_live/chain.py`; both are kept (`hashlib`, `http.client`).
+  WR-L5 on the merged base: CI on mirror, commit `e5db681`, [run 38745005867](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38745005867): all four jobs PASS (runtime: 1422 passed, 4 skipped, 1 xfailed, 2059 subtests, plus real-systemd 3 passed/5 subtests, demo and Docker smoke test; host bundle; Terraform `deploy/aws` and `deploy/bootstrap`).
+  Still open, unchanged: #64 items 3–4, #59 acceptance 1, and the core-stack
+  apply that schedules `larp-dev/evidence` for deletion.
