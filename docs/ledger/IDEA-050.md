@@ -158,3 +158,19 @@ Synthetic ports, disposable PostgreSQL, no credentials, network, signing or uplo
 | D31-4 | Latches: with `peak_units` raised and `run_halt`, `deep_cut` and `daily_halt` set in the persisted risk state, a roll keeps `peak_units`, `run_halt` and `deep_cut`, clears `daily_halt` and sets the new day and anchor. |
 | D31-5 | Rounds read the rolled state: a round planned after the roll carries `risk.day` = today in its policy input; a round planned on a day whose boundary was missed carries the stale day. |
 | D31-6 | Planner gate (acceptance 3). On a stale day (`risk.day` = yesterday): an entry the planner would otherwise make is refused with `NEW_RISK_HALTED` and no BUY intent; a gas top-up below the floor is refused with `GAS_TOP_UP_SPENDING_BLOCKED` and no top-up intent or quote request. After the risk state is rolled exactly as `DayRoll` commits it (`roll_day` at today's midnight), the BUY intent and the top-up intent appear. With `run_halt` or `deep_cut` latched before the roll, both stay refused after it. |
+
+Results (2026-10-15). Synthetic only; no credentials, network, signing or upload. Tests pushed at `e99279a` after the criteria (`b4a964f`).
+- No defect found: every check passes on the unchanged code, so there is no fix commit. Two test-setup corrections were made before the counted run: D31-5 enables cadence rounds (the fixture filing is no longer due a day later), and D31-6 latches `run_halt` alone or with `deep_cut`, since `update_risk` sets `run_halt` at 92% of the peak before `deep_cut` at 88%. With `run_halt` latched, the gas top-up is refused before `plan_top_up` runs, so the test checks only that no top-up intent appears (as `test_top_up_respects_all_spending_and_wallet_barriers` does).
+- Mutations, each reverted, each caught: window check removed (2 failures); `roll_day` clears `run_halt`/`deep_cut` (3); planner ignores the stale day (1); gas ignores the stale day (1); anchor valued at the cycle-start clock with wrong marks (2).
+- Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 16.15 on loopback, Linux container. Base `a0580b0`: 1418 passed, 8 skipped, 1 xfailed, 2059 subtests. This branch at `e99279a`: **1428 passed, 8 skipped, 1 xfailed, 2061 subtests** (+10 tests, +2 subtests: this change only). Skips are the same eight as the base (bubblewrap ×3, opt-in systemd ×3, recorded market, root directory mode). Linux CI not run (org Actions quota; the mirror is run by the team).
+
+| ID | Result | Evidence |
+|---|---|---|
+| D31-1 | PASS | `ConsecutiveDays.test_d31_1_one_roll_per_day_over_three_days_in_one_process` (three days at three marks, one event each, replay equal) |
+| D31-2 | PASS | `RestartAcrossMidnight.test_d31_2_a_restarted_service_rolls_once_after_midnight`; `…_a_crash_after_the_roll_commits_does_not_roll_again` |
+| D31-3 | PASS | `MissedBoundary.test_d31_3_a_missed_window_blocks_the_day_and_the_next_midnight_rolls` (post-loss mark never anchors; no `day:` event for the missed day) |
+| D31-4 | PASS | `Latches.test_d31_4_the_roll_keeps_the_run_latches_and_clears_only_the_daily_halt` |
+| D31-5 | PASS | `RoundsReadTheRoll.test_d31_5_*` |
+| D31-6 | PASS | `PlannerGate.test_d31_6_*` (entries: `NEW_RISK_HALTED` until the roll; gas: `GAS_TOP_UP_SPENDING_BLOCKED` until the roll; latches survive it) |
+
+Still open for #31: the team's `day_roll_window_ms` value (null in `config/runtime/runtime.example.json`, so a start refuses until it is set).
