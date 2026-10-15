@@ -283,6 +283,10 @@ class Startup(ReconcileHarness):
         self.tick(driver)
         self.assertNotIn('balance_check', self.tick(driver, MINUTE))
         self.assertEqual(self.tick(driver, INTERVAL)['balance_check'], 'MATCH')
+        self.assertTrue(self.health(driver)['balances_ok'])
+        # Unchanged within the hour: checked, but not journaled again (each commit copies the projection).
+        self.assertEqual(len(self.events('BALANCE_CHECKED')), 1)
+        self.tick(driver, 60 * MINUTE)
         self.assertEqual(len(self.events('BALANCE_CHECKED')), 2)
 
 
@@ -308,7 +312,7 @@ class Deficit(ReconcileHarness):
         self.assertEqual(summary['balance_check'], 'DEFICIT')
         self.assertEqual(len(self.incidents('BALANCE_DEFICIT')), 1)
         self.assertEqual(self.incidents('BALANCE_DEFICIT')[0]['incident']['deficits'], {'NVDAB': 500})
-        record = self.store.load(RUN).read()['projection']['round_records'][summary['round_id']]
+        record = self.store.event(RUN, 'plan:' + summary['round_id'])['record']  # closed rounds leave round_records
         context = record['policy_input']['context']
         self.assertEqual(context['portfolio']['positions']['NVDAB']['units'], 1500)
         self.assertEqual((context['health']['balances_ok'], context['health']['new_spending_ok']), (False, False))
