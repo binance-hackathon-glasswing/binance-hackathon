@@ -486,3 +486,21 @@ Final raw evidence under `/private/tmp/larp-final-a-artifacts/`:
 | `requested-test-exception-final.patch` | `6580e8eafc1c09ad894767ecf4adfcee70fbe813050aa125af4778ad107ef4dc` |
 
 All A-authorized changes are committed/pushed before execution. No unpushed application commit. Documentation-only evidence commits after d263154 do not change its tested application/test tree. Primary checkout at0820b0d remains clean. PR#68 remains draft. Strict handoff remains NOT READY for the explicit shared publication/integration, approval, decision and verification items above. Disposable PostgreSQL remains available for the pending authorized retest; its loopback-only fixture credentials are not production credentials.
+
+
+### Amendment 31: merge review, fixes and scope exception (2026-10-15)
+
+The user asked for a review of PR #68 with fixes, then a merge. That request is the user scope exception amendment 30 was waiting for, so the two outside-A test fixtures are now changed. The PR leaves draft and merges into `codex/system-testing-20261012`.
+
+Review of the application diff (contract issuer binding, publication cutoff, pending red flags, tool audit retention, credential refusal, partial HTTP, head probe, policy-rejection cache, terms-capture preflight) found one more defect:
+
+- **A-FND-019 P2.** `_call_tool` (`larp/intelligence/agent.py`) writes each tool result to the artifact store. An `OSError`, `ValueError` or `RuntimeError` from that write escaped the tool's `ToolError` handler. The worker re-raised it and the whole assessment crashed. Fixed: the write failure becomes `ToolError("ARTIFACT_WRITE_ERROR")`, which is recorded as a tool error with missingness. A failed call's audit row now also sets `result_artifact: None`, matching the shape of the dispatch row. Red-then-green proof: `test_a_req_061_tool_result_store_failure_is_a_tool_error_not_a_crash` fails with `OSError: disk full` without the fix and passes with it.
+
+Outside-A fixture updates (test-only; no assertion removed or weakened):
+
+- `tests/strategy/fixtures/assessment-producer.json`: request/result copied exactly from `tests/intelligence/golden/trace-tool-selection-thesis-revision.json`, producer `d263154`. This fixes both C2 consumer tests.
+- `tests/redteam/test_integration_redteam.py` d11: resume now expects the listing-head request first, as the A-T head probe requires. `max_pages` goes from 2 to 3, so the head, page 2 and the empty terminal page all fit in one resume poll. All crash, record, version and backdating assertions stay unchanged.
+
+Validation on the merged tree (PR head plus base `0820b0d`) on macOS with Python 3.12 and `requirements.lock`: **1026 passed, 0 failed, 263 skipped, 1466 subtests**. The skips are Linux isolation, PostgreSQL and opt-in system tests. This run is not a Linux or system pass. Linux CI on the pushed merge commit is recorded in the PR.
+
+Unchanged by this amendment: the open P1 items (A-FND-012 D scheduler issuer, A-FND-015 calendar), the P2 #39 decision, A-REQ-079 (LLM-powered starting system) and every DECISION-NEEDED, rights and host gate in amendments 22–30. Deployment stays blocked. The shared INCOMPLETE_WORK, runbook and README text from amendments 23, 29 and 30 is still D's to apply.
