@@ -33,7 +33,7 @@
     "strategy_profile_file": "/etc/larp/strategy-profile.json",
     "strategy_profile_sha256": null,
     "session_calendar_file": "/etc/larp/session-calendar.json",
-    "session_calendar_sha256": null,
+    "session_calendar_sha256": "bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c",
     "issuers": {}
   }
 }
