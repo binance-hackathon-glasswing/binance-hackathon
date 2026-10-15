@@ -281,3 +281,30 @@ class Routing(unittest.TestCase):
         value=self.build(key=False).assess(Document.from_dict(raw)).read()
         self.assertEqual(value['review_scope'],raw['review'])
         self.assertEqual(value['job_id'],'review-job')
+
+    def test_ar6_adapter_exception_keeps_actual_stage_model_in_round_trace(self):
+        router=self.build(key=False)
+        def broken(*args): raise RuntimeError('synthetic adapter defect')
+        router.routine.step=broken
+        _,value=self.run_assessment(router)
+        call=model_trace(value)['calls'][0]
+        self.assertEqual(call['status'],'ADAPTER_ERROR')
+        self.assertEqual(call['routing_stage'],'routine')
+        self.assertEqual(call['model']['model_id'],'zai-org/glm-5.3')
+
+    def test_ar5_real_wall_clock_abandonment_preserves_in_flight_models(self):
+        router=self.build(key=False)
+        original=self.aiand
+        def slow(*args):
+            time.sleep(.15)
+            return original(*args)
+        for model in (router.routine,*router.external): model._transport=slow
+        started=time.monotonic()
+        _,value=self.run_assessment(router,deadline_ms=80)
+        self.assertLess(time.monotonic()-started,.14)
+        self.assertNotEqual(value['status'],'ASSESSED')
+        trace=model_trace(value)
+        self.assertTrue(trace['in_flight_calls'])
+        self.assertTrue(all(c['model']['provider']=='aiand' for c in trace['in_flight_calls']))
+        time.sleep(.2)  # late workers may finish only the already-started call
+        self.assertLessEqual(len(self.calls),2)

@@ -29,10 +29,13 @@ def _hash(value) -> str:
 
 def _call(step: dict, index: int) -> dict:
     if "response" not in step:  # the adapter raised: no reply exists
-        return {"index": index, "request_id": step.get("request_id"), "status": "ADAPTER_ERROR",
+        value = {"index": index, "request_id": step.get("request_id"), "status": "ADAPTER_ERROR",
                 "error": step.get("error"), "latency_ms": None, "usage": None, "cost": None, "served_model": None,
                 "request_sha256": None, "request_artifact": None, "response_sha256": None, "response_artifact": None,
                 "reasoning_summary": None}
+        if step.get('routing_stage'):
+            value.update(routing_stage=step['routing_stage'], model=step['model'])
+        return value
     request, reply = step["request"], step["response"]
     value = {"index": index, "request_id": reply["request_id"], "status": reply["status"], "error": reply["error"],
             "latency_ms": reply["latency_ms"], "usage": reply["usage"], "cost": reply["cost"],
@@ -82,12 +85,16 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
     cot = "\n".join(lines)
     if max_cot_chars is not None and len(cot) > max_cot_chars:
         cot = cot[: max(0, max_cot_chars - len(TRUNCATED))] + TRUNCATED
-    return {"schema": SCHEMA, "result_id": result.get("result_id"), "job_id": result.get("job_id"),
+    trace = {"schema": SCHEMA, "result_id": result.get("result_id"), "job_id": result.get("job_id"),
             "issuer_id": result.get("issuer_id"), "status": result.get("status"), "reasons": result.get("reasons"),
             "model": model, "model_hash": result.get("model_hash"), "prompt_hash": result.get("prompt_hash"),
             "model_called": called, "no_model_call_reason": None if called else reason,
             "requests_started": io.get("requests_started", len(calls)), "calls": calls, "tool_calls": tools,
             "cost": result.get("cost"), "cot": cot}
+    if result.get('routing'):
+        trace['routing'] = result['routing']
+        trace['in_flight_calls'] = io.get('in_flight_calls', [])
+    return trace
 
 
 __all__ = ["model_trace", "SCHEMA"]

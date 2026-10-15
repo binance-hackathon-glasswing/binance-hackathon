@@ -190,7 +190,7 @@ class RoutedAssessor:
         steps, calls, in_flight, summaries = [], [], [], []
         for s in stages:
             io = s['result']['model_io']
-            steps.extend(dict(x, routing_stage=s['stage']) for x in io.get('steps', []))
+            steps.extend(dict(x, routing_stage=s['stage'], model=s['model']) for x in io.get('steps', []))
             for t in io.get('tool_calls', []):
                 calls.append(dict(t, index=len(calls), routing_stage=s['stage']))
             if io.get('in_flight'):
