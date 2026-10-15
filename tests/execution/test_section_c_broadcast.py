@@ -160,6 +160,30 @@ class BroadcastRequirements(unittest.TestCase):
                     self.assertEqual(record['raw_body_omitted'], 'private_parameter_reflection')
                     self.assertEqual(record['response_sha256'], hashlib.sha256(response).hexdigest())
 
+    def test_c_req_012_attached_alphabet_text_does_not_hide_encoded_reflections(self):
+        # C-FND-012: Base64-alphabet text glued to an echo shifts token alignment.
+        for variant, echo in self.encoded_echoes().items():
+            for prefix, suffix in (('signed_', ''), ('tx-', '_end'), ('ab', 'Z'), ('', '-trace'), ('abc', 'xyz')):
+                for code in (0, 50000):
+                    with self.subTest(variant=variant, prefix=prefix, suffix=suffix, code=code), \
+                            tempfile.TemporaryDirectory() as root:
+                        response = json.dumps(dict(code=code, data=[dict(txHash=self.tx_hash)],
+                                                   msg=prefix + echo + suffix)).encode()
+                        opener = Opener(response)
+                        client = self.client(root, opener)
+                        if code == 0:
+                            self.assertEqual(client.send(self.raw), self.tx_hash)
+                        else:
+                            with self.assertRaises(DependencyUnavailable):
+                                client.send(self.raw)
+                        self.assertEqual(len(opener.calls), 1)
+                        [path] = list(Path(root).glob('*.json'))
+                        record = json.loads(path.read_bytes())
+                        self.assertNotIn(echo.rstrip('='), path.read_text())
+                        self.assertNotIn('response_body_base64', record)
+                        self.assertEqual(record['raw_body_omitted'], 'private_parameter_reflection')
+                        self.assertEqual(record['response_sha256'], hashlib.sha256(response).hexdigest())
+
     def test_c_req_007_broadcast_hmac_binds_exact_body_and_retains_public_evidence(self):
         response = b'{ "code":0,"data":[{"txHash":"' + self.tx_hash.encode() + b'","orderId":"o-1"}] }'
         stamp = '2026-10-15T00:00:00.123Z'

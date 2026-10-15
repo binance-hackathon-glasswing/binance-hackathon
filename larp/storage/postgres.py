@@ -153,7 +153,7 @@ class PostgresStore:
             if not run['quarantined']:
                 raise Conflict('Run is already active')
             self._verify(db,run_id,run)
-            if db.execute("SELECT 1 FROM rounds WHERE run_id=%s AND status='OPEN' LIMIT 1",(run_id,)).fetchone():
+            if self._open_rounds(db,run_id,run):
                 raise Conflict('A round is still open')
             if db.execute('SELECT 1 FROM execution_records WHERE run_id=%s AND NOT terminal LIMIT 1',
                           (run_id,)).fetchone():
@@ -306,10 +306,19 @@ class PostgresStore:
             if not row:
                 db.execute('INSERT INTO rounds(run_id,round_id,request) VALUES(%s,%s,%s)',(run_id,round_id,request.payload))
 
+    @staticmethod
+    def _open_rounds(db,run_id,run):
+        # Early ai-seeds logging closes the SQL row before settlement (IDEA-049 D-RV-01). Its projection record
+        # stays until Coordinator.close: log delivery alone must not permit activation or a wallet switch.
+        records=Document(bytes(run['projection'])).read().get('round_records',{})
+        return db.execute("SELECT round_id,request FROM rounds WHERE run_id=%s "
+                          "AND (status='OPEN' OR round_id=ANY(%s)) ORDER BY round_id",
+                          (run_id,list(records))).fetchall()
+
     def open_rounds(self,run_id):
         with self.transaction() as db:
-            return [(r[0],Document(bytes(r[1]))) for r in db.execute(
-                "SELECT round_id,request FROM rounds WHERE run_id=%s AND status='OPEN' ORDER BY round_id",(run_id,))]
+            run=self._run(db,run_id,lock=False)
+            return [(r[0],Document(bytes(r[1]))) for r in self._open_rounds(db,run_id,run)]
 
     def receipt(self,run_id,event_id):
         with self.transaction() as db:
@@ -483,5 +492,5 @@ class PostgresStore:
             run = self._run(db,run_id,lock=False)
             return doc(dict(version=run['version'],owner_epoch=run['epoch'],quarantined=run['quarantined'],
                 audit_pending=db.execute("SELECT count(*) FROM audit_chunks WHERE run_id=%s AND status<>'ACK'",(run_id,)).fetchone()[0],
-                open_rounds=db.execute("SELECT count(*) FROM rounds WHERE run_id=%s AND status='OPEN'",(run_id,)).fetchone()[0],
+                open_rounds=len(self._open_rounds(db,run_id,run)),
                 jobs_pending=db.execute("SELECT count(*) FROM jobs WHERE run_id=%s AND status IN ('PENDING','RUNNING')",(run_id,)).fetchone()[0]))

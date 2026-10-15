@@ -76,6 +76,9 @@ class PendingBroadcast(service_tests.ServiceHarness):
         self.assertEqual(len(events), 1, 'a broadcast swap must reach a round log before its receipt is final')
         orders = json.loads(events[0]['log'])['data']['orders']
         self.assertEqual([o.get('tx_hash') for o in orders], [swap])
+        # D-RV-01: a log closes the SQL row, but settlement still owns a logically open round.
+        self.assertIn(round_id, dict(self.store.open_rounds(RUN)))
+        self.assertEqual(self.store.metrics(RUN).read()['open_rounds'], 1)
         facts = [b.read()['event']['observation']['kind'] for b in self.store.journal(RUN)
                  if b.read()['event']['kind'] == 'OBSERVATION']
         self.assertIn('BROADCAST_ATTEMPTED', facts)
@@ -84,6 +87,8 @@ class PendingBroadcast(service_tests.ServiceHarness):
         venue.swap_final = True
         self.assertTrue(self.run_both(driver, execution, until=lambda: self.closed(round_id)))
         self.assertEqual(len(self.audit_events(round_id)), 1)
+        self.assertNotIn(round_id, dict(self.store.open_rounds(RUN)))
+        self.assertEqual(self.store.metrics(RUN).read()['open_rounds'], 0)
         self.assertEqual(self.store.load(RUN).read()['projection']['portfolio']['positions']['NVDAB']['units'], 0)
         head, expected = self.replay_head(driver)
         self.assertEqual(head, expected)
