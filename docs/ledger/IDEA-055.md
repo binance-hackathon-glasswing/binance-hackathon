@@ -94,3 +94,46 @@ Q-20 (dividend multiplier, splits, unsolicited tokens) is open and the kit is si
 - Automatic adoption of dividend-multiplier or split adjustments (D4, Q-20).
 - Non-universe tokens: never touched, only logged if the cross-check endpoint reports them.
 - Any transfer, sweep or withdrawal (never-do #3).
+
+## Build (2026-10-15, Claude Code session at the user's request: "build the entire minimal design; make the best decision for each area")
+
+The user asked for the design to be built now instead of waiting for the owners' agreement. The decisions below are made here, with reasons. They stay open to the owners' review: Isaac, Keegan and Yao Zhu can overrule any of them in review before merge. Facts checked in the code before deciding:
+- `larp/execution_live/settlement.py` books token units as raw chain units (no scaling), floors USDT credits from 18 to 6 decimals (`cash_raw // 10**12`, dust stays on chain), and refuses any BNB or USDT debit that is not exact in the ledger scale. So the ledger never exceeds the chain without a defect, and USDT rounding dust shows up as a surplus.
+- The runtime has no RPC client; `larp-execution` has one (`execution_live/main.py`). The planner's global gates are a fixed list (`larp/risk/planner.py`); `new_spending_ok` is `all(gates)` (`RuntimeHealth`). Replay feeds the recorded health back (`larp/integration/replay.py`), and it rebuilds the projection from journaled events.
+- Live gas policy (`larp/strategy/profiles.py`): floor = 6 × the largest approve+swap gas; a top-up receives 2 × the floor. So BNB held is at most about 3 × the floor.
+
+### Decisions
+
+| ID | Decision | Reason |
+|---|---|---|
+| D1 | Cap. While a deficit is recorded, the planner sees `max(0, ledger − deficit)` for every asset (stocks, USDT, BNB). This is a view in `ContextBuilder`; the journaled ledger is never changed. | Subtracting the recorded deficit, instead of capping at the chain units of the last read, stays correct after a capped sale settles: the ledger then falls by the fill while the deficit stays, so the leftover phantom units are always 0 in the view and produce no order. Equity in the view is lower (conservative). |
+| D2 | Surplus is recorded only, with one `BALANCE_SURPLUS` incident per newly surplus asset. It does not block. | USDT dust from floored credits is a normal surplus; equity is understated (conservative); Q-20 says never touch unsolicited tokens. |
+| D3 | Deficit tolerance is zero after flooring chain units to the ledger scale. | Settlement books exact or floored units (above), so any shortfall is real. |
+| D4 | A persistent deficit keeps new spending blocked for the rest of the run. It clears only when a later comparable check finds no deficit. | No one can fix the ledger during the run (F-114); adopting chain values automatically waits for Q-20. |
+| D5 | `balance_check_interval_ms` = 600 000 (10 min), `balance_check_max_age_ms` = 1 800 000 (30 min), retry after 60 s when a check was skipped or failed. Required in `dev`/`live` together with `balance_rpc_url` and `balance_rpc_source_id`; a start without them is refused (exit 4). | About 16 RPC calls per check (finalized block, re-check, native balance, `decimals` and `balanceOf` for six contracts, two nonces). The max age allows two missed checks before new spending stops. |
+| D6 | **Changed from the design's recommendation.** Keep the profile's BNB price (its provenance is the pinned `QuoteCostSummary` capture hash and time inside the manifested profile), do not value BNB at zero, and pin the error bound with a test. | Valuing BNB at zero turns every gas top-up into a loss of its USDT cost, about 1–2 % of equity, which feeds the 3 % daily and 8 % run loss latches. With BNB held ≤ floor + one top-up, a 20 % BNB move changes equity by a fraction of a percent. A test fails if a profile ever makes BNB material (> 5 % of expected equity). |
+
+### Components
+
+1. **C, `larp/execution_live/balances.py` `read_balances(rpc, wallet, observed_at)` → `ChainBalances.v1`.** It checks the chain ID, reads the finalized block, then the native balance, `decimals()` and `balanceOf(wallet)` for USDT and the five bStocks at that numeric block, then re-checks the block hash and reads the latest and pending nonce. `Rpc.call` (`chain.py`) allows `eth_call` only as `[{to, data}, <hex block>]` with `to` in the pinned set and `data` exactly `decimals()` or `balanceOf(<address>)`. ABI words are parsed as 32-byte values.
+2. **B, `larp/risk/reconcile.py`.** `compare_balances(ledger, observation, settled_block)` → `BalanceCheck.v1` (`MATCH`, `SURPLUS_ONLY`, `DEFICIT` or `SKIPPED` with `PENDING_NONCE` / `BLOCK_BEHIND_LEDGER`). An unknown or mis-scaled asset raises `ContractError`. `spendable_view(ledger, deficits)` gives the planner's view.
+3. **B/D, `larp/integration/settlement.py`.** `settle` records `projection.settled_block`, the highest receipt block it has applied.
+4. **D, `larp/runtime/driver.py` `BalanceCheck`.** It runs in `RoundDriver.once` after the hand-off wait and before the day roll and round. With reservations, an open round or an execution pending, it reads nothing and writes nothing (in-flight skip, retry in 60 s). Otherwise it reads, compares and journals `BALANCE_CHECKED` (also when the read fails: `SKIPPED: RPC_UNAVAILABLE` or `OBSERVATION_INVALID`), plus an `INCIDENT` for a deficit or a newly surplus asset. `projection.balance_check` keeps the status, the last deficits (a skip keeps them), the surplus assets, `checked_ms` and `ok_ms`. `ok(projection)` is true only for a `MATCH`/`SURPLUS_ONLY` check made by this process and younger than the max age. `BALANCE_CHECKED` is added to `RECORDED_FACTS`.
+5. **D, `RuntimeHealth(…, balances=BalanceCheck)`** adds `balances_ok`. Without one (offline fixtures) the gates are unchanged. **`ContextBuilder`** applies `spendable_view` from `projection.balance_check`. **`build_driver`** wires an `Rpc` from the new settings (artifacts under `<market_artifact_root>/chain`), and refuses a `dev`/`live` start without them. **`runtime.example.json`** gets the four keys (URL and source ID null, D5 values).
+
+### Pass criteria (recorded before any test is written)
+
+Synthetic RPC and market, disposable PostgreSQL; no credentials, network, signing or upload. The tests are pushed first and must fail on the unchanged code (missing modules or behaviour); then the build is pushed and they must pass.
+
+| ID | Check |
+|---|---|
+| B1 | `read_balances`: every read uses the same numeric finalized block; the result names it, its hash, each asset's raw units and decimals, and both nonces. A hash change before the re-check, or a chain ID other than 56, refuses (`Blocked`). `Rpc.call` refuses an `eth_call` with another selector, another contract, a `latest` tag, extra fields or a malformed address, and accepts the two allowed forms. |
+| B2 | `compare_balances`: equal → `MATCH`; USDT dust above → `SURPLUS_ONLY`; a stock or BNB below → `DEFICIT` with the exact difference; pending ≠ latest nonce → `SKIPPED: PENDING_NONCE`; block < `settled_block` → `SKIPPED: BLOCK_BEHIND_LEDGER`; a held symbol missing from the observation, or ledger decimals above chain decimals → `ContractError`. `spendable_view` subtracts deficits, never below zero, and leaves the input unchanged. |
+| B3 | Driver, startup: before this process's first check, `new_spending_ok` is false; after a `MATCH` it is true; a `MATCH` journaled by an earlier process (restore or restart) does not count. |
+| B4 | Surplus: an unsolicited stock surplus is journaled with one `BALANCE_SURPLUS` incident (not repeated on the next check); `balances_ok` stays true; the journaled ledger is unchanged. |
+| B5 | Deficit (restore divergence): `DEFICIT` with one `BALANCE_DEFICIT` incident; `new_spending_ok` false; the round's policy input shows the reduced units; a mandatory sale of the deficit symbol is planned for at most the chain units (never the ledger units), while the global gates stay open. After a sale of the chain units, the view of the leftover is 0. |
+| B6 | Stale or unavailable: an RPC failure journals `SKIPPED: RPC_UNAVAILABLE`; `balances_ok` stays true until the max age passes, then turns false; a later `MATCH` restores it. With reservations or an open round, nothing is read or journaled. |
+| B7 | BNB bound: for the live profile builder, (gas floor + top-up receive) valued at the summary's BNB price is ≤ 5 % of `expected_equity_units`. |
+| B8 | Replay of a run with checks, incidents and a deficit reproduces the head; `settled_block` follows applied receipts; no check ever changes the journaled ledger or balances. |
+| B9 | Configuration: a `dev` driver without the four settings is refused; with them it builds a `BalanceCheck` wired into `RuntimeHealth`; `runtime.example.json` names all four; `offline` drivers build as before. |
+| B10 | Full suite: the base count plus only these tests, no new failure or skip. Mutations, each reverted, must each be caught: drop the in-flight skip; compare without flooring; count an earlier process's check; let `spendable_view` go negative; apply the deficit to the journaled ledger; drop `balances_ok` from `RuntimeHealth`. |
