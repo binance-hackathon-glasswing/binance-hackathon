@@ -20,7 +20,7 @@ swap, and the signer host still checks every request itself.
 import json
 
 from larp.contracts import Document
-from larp.execution import Blocked, Conflict, TERMINAL, digest
+from larp.execution import Blocked, Conflict, Rejected, TERMINAL, digest, possibly_submitted
 from larp.storage.postgres import IntegrityError
 from larp.contracts import ContractError
 
@@ -170,12 +170,47 @@ class FencedRelease:
         return signed.tx_hash
 
 
+# A node's own refusal of a transaction (WR12, #54), matched in the API error message. A message that also says the
+# transaction is already known is ambiguous and never a rejection.
+REJECTIONS = (('insufficient funds', 'INSUFFICIENT_FUNDS'), ('nonce too low', 'NONCE_TOO_LOW'),
+              ('intrinsic gas too low', 'INTRINSIC_GAS_TOO_LOW'), ('exceeds block gas limit', 'GAS_LIMIT_EXCEEDED'),
+              ('invalid sender', 'INVALID_SENDER'))
+AMBIGUOUS = ('already known', 'known transaction', 'replacement')
+
+
+def rejection_reason(record):
+    """The fixed reason for a definite rejection in a stored (already redacted) broadcast record, else None."""
+    body = record.get('response') if type(record) is dict else None
+    if record is None or record.get('outcome') != 'api_or_http_error' or type(body) is not dict:
+        return None
+    code = body.get('code')
+    if type(code) is not int or code == 0:
+        return None
+    message = ' '.join(v for v in (body.get('msg'), body.get('error'), body.get('message')) if type(v) is str).lower()
+    if any(marker in message for marker in AMBIGUOUS):
+        return None
+    return next((reason for marker, reason in REJECTIONS if marker in message), None)
+
+
+class _Recorded:
+    """The broadcaster's artifact store, keeping the last stored record in memory so a rejection can be classified.
+    The record is the client's redacted artifact (hashes of the signed bytes only); nothing new is persisted."""
+
+    def __init__(self, artifacts):
+        self.artifacts, self.last = artifacts, None
+
+    def put(self, record):
+        self.last = record
+        return self.artifacts.put(record)
+
+
 class Web3Broadcaster:
     """The submitter for `FencedRelease`: the Web3 Open API's `broadcast-transaction` endpoint, the only order channel
     the kit allows (F-104, never-do #3; guide p.8). A separate authenticated client allows that one endpoint and
     nothing else, so the read/build client still cannot send. The artifact record keeps a hash of the signed bytes,
     never the bytes. Any failure is "possibly sent": the attempt stays a possible send and reconciles from the chain;
-    it is never re-signed with another nonce."""
+    it is never re-signed with another nonce. The one exception is a definite node rejection (`Rejected`, a fixed
+    reason code), which reconciliation can end as NOT_SUBMITTED once the chain nonce proves it (WR12, #54)."""
 
     ENDPOINT = ('POST', 'pre-transaction/broadcast-transaction')
 
@@ -189,18 +224,25 @@ class Web3Broadcaster:
         if type(wallet) is not str or not wallet.startswith('0x') or len(wallet) != 42:
             raise Blocked('broadcast wallet address required')
         self.wallet = wallet.lower()
-        self.client = Client(key, secret, artifacts=Artifacts(artifacts), opener=opener)
+        self.records = _Recorded(Artifacts(artifacts))
+        self.client = Client(key, secret, artifacts=self.records, opener=opener)
 
     def send(self, raw_hex):
         from larp.execution import DependencyUnavailable
         from larp.marketdata.web3 import Unavailable, single
         if type(raw_hex) is not str or not raw_hex.startswith('0x') or len(raw_hex) < 4:
             raise Blocked('signed transaction bytes required')
+        self.records.last = None
         try:
             record = self.client.request(*self.ENDPOINT, dict(binanceChainId='56', signedTransaction=raw_hex,
                                                               address=self.wallet))
             tx_hash = single(record)['txHash']
-        except (Unavailable, KeyError, TypeError):
+        except Unavailable:
+            reason = rejection_reason(self.records.last)
+            if reason is not None:
+                raise Rejected(reason) from None
+            raise DependencyUnavailable('broadcast outcome unknown') from None
+        except (KeyError, TypeError):
             raise DependencyUnavailable('broadcast outcome unknown') from None
         if type(tx_hash) is not str:
             raise DependencyUnavailable('broadcast outcome unknown')
@@ -247,7 +289,7 @@ class ExecutionLoop:
         missing = []
         for key in keys:
             state = self.registry.load(key)
-            if state.status == 'ABORTED' and not any(a.step == 'SWAP' and a.broadcast_at is not None
+            if state.status == 'ABORTED' and not any(a.step == 'SWAP' and possibly_submitted(a)
                                                      for a in state.attempts):
                 expected = [state.intent.key + ':not-submitted']
             else:

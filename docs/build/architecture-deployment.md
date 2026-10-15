@@ -141,9 +141,12 @@ rehearsal, or at teardown, collect it from an EBS snapshot of the signer's volum
 never by opening an internet route to the signer.
 
 **Signer trust boundary.** On two hosts `larp_execution` (on `primary`) can write `execution_records`, so the signer's
-"registered, AUTHORIZED attempt" check is not independent of a compromised `primary`. What the signer enforces on
-its own is the payload: the G-01 allow-list (approve token, spender and exact amount), the gas budget and the swap
-block until a verified decoder exists (GAP-29). That is IDEA-046 B1's accepted trade-off. It sits next to the open
+"registered, AUTHORIZED attempt" check is not independent of a compromised `primary`, and neither are the G-01 checks
+against the intent (spender = intent router, amount = intent amount). What the signer enforces on its own comes from
+its pinned config (`signing_policy` in `/etc/larp/signer.json`, larp/signer/policy.py; WR02, #44): allowed spenders
+and tokens, a per-token input cap, a per-transaction fee cap, no unlimited approve, and the swap block until a
+verified decoder exists (GAP-29). The cap values are a team decision (IDEA-049-C WR-C). That is IDEA-046 B1's
+accepted trade-off. It sits next to the open
 **signer version binding** item: the signer verifies its own release but not the run's registered version, because
 `larp_signer` cannot read `events`.
 

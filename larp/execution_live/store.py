@@ -153,6 +153,15 @@ class ExecutionStore:
                     raise Conflict('stale execution CAS')
                 if stored is not None and stored.intent != current.intent:
                     raise Conflict('immutable economic intent changed')
+                ended = [a for a in current.attempts if a.state == 'NOT_SUBMITTED']
+                if ended and (stored is None or [a for a in stored.attempts if a.state == 'NOT_SUBMITTED'] != ended):
+                    # WR12 (#54): only the last attempt, rejected by the node and possibly sent, may become
+                    # NOT_SUBMITTED, and doing so ends the execution.
+                    last = stored.attempts[-1] if stored is not None and stored.attempts else None
+                    if (len(ended) != 1 or last is None or last.state != 'REJECTED' or last.broadcast_at is None
+                            or current.attempts[-1] != replace(last, state='NOT_SUBMITTED')
+                            or current.status != 'ABORTED' or stored.status != 'ACTIVE'):
+                        raise Conflict('not-submitted needs a rejected possible send')
                 if event.get('type') == 'ABORTED_UNBROADCAST':
                     if (stored is None or stored.status != 'ACTIVE' or not stored.attempts
                             or stored.attempts[-1].broadcast_at is not None

@@ -30,7 +30,7 @@ class RegisteredStartup(fixtures.SigningCase):
         dsn.write_text(self.store._dsn)
         config = dict(schema='SignerService.v1', run_id='c-startup', build_id=BUILD, mode='dev',
                       wallet_address=self.wallet, key_file=str(key), interval_seconds=1,
-                      database_dsn_file=str(dsn))
+                      database_dsn_file=str(dsn), signing_policy=fixtures.policy_config())
         raw = json.dumps(config).encode()
         path = directory / 'signer.json'
         path.write_bytes(raw)
