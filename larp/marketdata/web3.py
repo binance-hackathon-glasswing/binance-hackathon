@@ -45,17 +45,22 @@ def redact(value, secrets, *, ignore_case=False, binary_secrets=()):
         if binary_secrets:
             # Decode equivalent Base64 alphabets/padding before comparison. Hex
             # text is checked case-insensitively; binary transactions stay exact.
+            # Alphabet text attached before an echo shifts its alignment, so try
+            # every start offset; attached text after it only adds trailing bytes.
             def screen(match):
                 token = match.group()
-                try:
-                    decoded = base64.b64decode(token + '=' * (-len(token) % 4),
-                                               altchars=b'-_', validate=True)
-                except ValueError:
-                    return token
-                plain = decoded.decode('utf-8', errors='replace')
-                if (any(secret in decoded for secret in binary_secrets)
-                        or redact(plain, secrets, ignore_case=ignore_case) != plain):
-                    return '[REDACTED]'
+                for start in range(4):
+                    part = token[start:].rstrip('=')
+                    part = part[:-1] if len(part) % 4 == 1 else part
+                    try:
+                        decoded = base64.b64decode(part + '=' * (-len(part) % 4),
+                                                   altchars=b'-_', validate=True)
+                    except ValueError:
+                        continue
+                    plain = decoded.decode('utf-8', errors='replace')
+                    if (any(secret in decoded for secret in binary_secrets)
+                            or redact(plain, secrets, ignore_case=ignore_case) != plain):
+                        return '[REDACTED]'
                 return token
             value = BASE64_TOKEN.sub(screen, value)
         for secret in secrets:
