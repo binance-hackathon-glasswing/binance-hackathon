@@ -387,3 +387,8 @@ the wallet state paths and every sandbox directive remain the production ones.
 Only the three pre-registered external boundaries are replaced in the subprocess.
 The orphan `claude/issue31-day-roll-tests` branch was inspected but is not merged:
 its direct planner checks do not establish the registered driver-to-planner path.
+
+First execution at `ea25577` stopped in test setup: `build_world([])` rejects an
+empty filing list (six test failures plus four subtest failures). This is a fixture
+defect, not a runtime finding. The fixture now ingests the neutral Q2 filing into
+a distinct evidence store for each scenario; acceptance assertions are unchanged.

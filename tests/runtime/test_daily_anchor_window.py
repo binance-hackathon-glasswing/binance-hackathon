@@ -68,7 +68,8 @@ class DailyAnchorWindow(ServiceHarness):
         projection['registered_version'] = dict(build_id=VERSION, manifest_sha256='0' * 64)
         self.store.commit(batch_for(current, 'version:fixture', dict(kind='VERSION_REGISTERED',
                                     version=projection['registered_version']), projection=projection))
-        self.world([])  # no adverse filing; cadence supplies actual policy rounds
+        self.world(['EXSEMI_Q2_8K'], now_ms=getattr(self, 'world_number', 0) + 1)
+        self.world_number = getattr(self, 'world_number', 0) + 1  # distinct neutral evidence stores
         self.feed = EntryMarket()
         self.feed.clock = self.w.clock
         self.gas = gas
