@@ -261,8 +261,15 @@ def plan(snapshot, proposal_or_none):
         if result["intents"] or result["quote_requests"]:
             return Document.from_dict(result)
 
+    def urgency(req):
+        # Class 1 / terminal first, then by notional at the current mark; token units say nothing
+        # about value across decimals and prices (#64 item 3). Unmarked names go last in their class.
+        m = market.get(req["symbol"])
+        return (not {"CLASS_1_EXIT", "TERMINAL_FLATTEN"} & set(req["reasons"]), m is None,
+                -value(req["remaining_sell_units"], m) if m is not None else 0, req["symbol"])
+
     actions = []
-    for req in sorted(result["requirements"], key=lambda x: (-x["remaining_sell_units"], x["symbol"])):
+    for req in sorted(result["requirements"], key=urgency):
         actions.append((req["symbol"], "SELL", req["remaining_sell_units"], True, req["reasons"]))
     # No discretionary action while any mandatory obligation is outstanding.
     if not actions:
