@@ -32,6 +32,10 @@ This is a live checklist. Remove an entire item once its work is fully completed
 - [ ] GAP-20 — Align evaluation dates with the five-session label horizon and Oct 22/activation deadlines: set last admissible observation dates and identify decisions that must rely on historical evidence.
 - [ ] GAP-21 — Establish the post-cutoff evaluation dataset: verify relevant model cutoffs, event counts and data access; define a fallback for unknown cutoffs or insufficient samples. Sources: I-37/I-38. Kit 2026-10-05: with five eligible names (F-91) the post-cutoff sample is far smaller; see GAP-43. Checked 2026-10-08: test design decided (D-10 (a): post-cutoff → Sep 2026 on all Tier B names, five-name slice with a CI). Remaining: the evidence model and its cutoff (D-03, not chosen), event counts, and data access (external sources on hold, GAP-56).
 - [ ] GAP-22 — Define the token-versus-share validation gate: divergence metrics, acceptable tolerances and behavior when underlying-share labels do not transfer. Source: proposal leakage and basis-risk section. Kit 2026-10-05: bStock token history is available from the Web3 `candles` endpoint (F-95); SKHY needs its own share history (D-10). 2026-10-07: kit sources give no independent share price; Ondo and xStocks tokens (kit-named Skill) and Binance spot give cross-venue and cross-issuer checks only (participant-kit.md K6b).
+- [ ] GAP-69 — TimesFM research track ([IDEA-052](ledger/IDEA-052.md)), after Gate A passes:
+  - The team decides IDEA-052 §8 T1–T3.
+  - If the track runs: pre-register the volatility comparison (G3) and the exposure-effect replay (G4) with an experiment ID from Keegan; read and hash the TimesFM 2.5 LICENSE at a pinned revision; run offline on recorded captures only.
+  - v1.0 adopts it only if IDEA-052 G0–G5 all pass by Oct 20. Otherwise v1.0 ships without it.
 
 ## Data and evidence
 
