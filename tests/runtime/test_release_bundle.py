@@ -124,6 +124,41 @@ class ReleaseBundle(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, 'hash mismatch'):
             verify_release(manifest, root)
 
+    def test_wr_d3_the_bundle_carries_the_ci_release_manifest(self):
+        """IDEA-049-D WR-D3a (#62 item 3): the release manifest is built with the bundle, never on a host."""
+        import json
+        result = self.build()
+        commit = result['build_id']
+        beside = self.out / f'larp-{commit[:12]}-x86_64.release.json'
+        self.assertEqual(result['manifest'], str(beside))
+        self.assertEqual(result['manifest_sha256'], hashlib.sha256(beside.read_bytes()).hexdigest())
+        extracted = Path(self.tmp.name) / 'extracted'
+        with tarfile.open(result['bundle']) as tar:
+            tar.extractall(extracted, filter='data')
+        top = next(extracted.glob('larp-*'))
+        inside = top / 'release-manifest.json'
+        self.assertEqual(inside.read_bytes(), beside.read_bytes())
+        self.assertIn('  release-manifest.json', (top / 'SHA256SUMS').read_text())
+        root = top / 'release'
+        m = Document(inside.read_bytes()).read()
+        remote = subprocess.run(['git', 'config', '--get', 'remote.origin.url'], cwd=self.repo, capture_output=True,
+                                text=True).stdout.strip()
+        self.assertEqual((m['schema'], m['build_id'], m['repository'], m['remote_verified']),
+                         ('ReleaseManifest.v1', commit, remote, True))
+        self.assertEqual(m['services'], json.loads((ROOT / 'config/release/services.v1.json').read_text()))
+        self.assertEqual(m['files'], {name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+                                      for name in release_files(root)})
+        self.assertEqual(m['release_register'], load_register(root))
+        self.assertIsNone(m.get('registration_evidence'))
+        for binding in ('operations_config_sha256', 'runtime_config_sha256', 'service_configs_sha256'):
+            self.assertIsNone(m.get(binding), binding)
+        # A remote URL carrying credentials is never recorded (git still reaches the same bare repository).
+        secret = 'https://x-access-token:synthetic@github.com/example/larp.git'
+        run('git', 'remote', 'set-url', 'origin', secret, cwd=self.repo)
+        run('git', 'config', f'url.{self.repo.parent / "remote.git"}.insteadOf', secret, cwd=self.repo)
+        with self.assertRaisesRegex(bundle.BundleError, 'credential'):
+            self.build()
+
     def test_h01_committed_bytes_not_the_working_tree(self):
         (self.repo / 'scratch.txt').write_text('untracked files are not released')
         result = self.build()

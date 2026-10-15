@@ -390,6 +390,114 @@ class ContinuousIntegration(unittest.TestCase):
         self.assertIn('larp-bundle', upload.group(2))
 
 
+class CiManifestBinding(bundle_tests.ReleaseBundle):
+    """IDEA-049-D WR-D3b (#62 item 3): a host verifies the CI manifest and adds only what CI cannot know."""
+
+    def setUp(self):
+        super().setUp()
+        import tarfile
+        result = self.build()
+        extracted = Path(self.tmp.name) / 'extracted'
+        with tarfile.open(result['bundle']) as tar:
+            tar.extractall(extracted, filter='data')
+        top = next(extracted.glob('larp-*'))
+        self.root, self.ci = top / 'release', top / 'release-manifest.json'
+        self.ci_value = Document(self.ci.read_bytes()).read()
+        self.etc = Path(self.tmp.name) / 'etc'
+        self.etc.mkdir()
+        self.write('runtime.json', b'{"runtime": true}')
+        self.write('signer.json', b'{"signer": true}')
+        self.write('registration.json', json.dumps(dict(
+            schema='RegistrationEvidence.v1', evidence_ref='synthetic-only', build_id=self.ci_value['build_id'],
+            repository=self.ci_value['repository'])).encode())
+
+    def write(self, name, raw, directory=None):
+        path = (directory or self.etc) / name
+        path.write_bytes(raw)
+        return path
+
+    def bind(self, ci=None, evidence='registration.json', out='release.json'):
+        from larp.runtime.preflight import main
+        argv = ['--bind', str(ci or self.ci), '--root', str(self.root), '--build-output', str(self.etc / out),
+                '--runtime-config', str(self.etc / 'runtime.json'),
+                '--service-config', 'signer=' + str(self.etc / 'signer.json')]
+        if evidence:
+            argv += ['--registration-evidence', str(self.etc / evidence)]
+        with patch('builtins.print'):
+            return main(argv)
+
+    def test_wr_d3_hosts_only_verify_and_bind_the_ci_manifest(self):
+        from larp.runtime.preflight import verify_release, verify_runtime_config, verify_service_config
+        self.assertFalse((self.root / '.git').exists())  # a host has no checkout: binding needs no git
+        self.assertEqual(self.bind(), 0)
+        bound = Document((self.etc / 'release.json').read_bytes())
+        value = bound.read()
+        for key, ci_value in self.ci_value.items():
+            if key != 'registration_evidence':
+                self.assertEqual(value[key], ci_value, key)
+        self.assertEqual(value['ci_manifest_sha256'], hashlib.sha256(self.ci.read_bytes()).hexdigest())
+        self.assertEqual(value['registration_evidence']['build_id'], self.ci_value['build_id'])
+        self.assertEqual(verify_release(bound, self.root)['build_id'], self.ci_value['build_id'])
+        verify_runtime_config(value, (self.etc / 'runtime.json').read_bytes())
+        verify_service_config(value, 'signer', (self.etc / 'signer.json').read_bytes())
+        self.assertEqual(self.bind(out='release.json'), 1)  # exclusive creation: never replaces a bound manifest
+
+    def test_wr_d3_binding_refuses_anything_ci_did_not_check(self):
+        def refused(name, **kwargs):
+            out = name + '.json'
+            with self.subTest(name):
+                self.assertEqual(self.bind(out=out, **kwargs), 1)
+                self.assertFalse((self.etc / out).exists())
+        for field, bound in (('registration_evidence', dict(schema='RegistrationEvidence.v1')),
+                             ('runtime_config_sha256', 'a' * 64), ('operations_config_sha256', 'a' * 64),
+                             ('service_configs_sha256', dict(signer='a' * 64))):
+            refused('host-binding-' + field, ci=self.write(field + '.ci.json', Document.from_dict(
+                dict(self.ci_value, **{field: bound})).payload))
+        register = dict(self.ci_value['release_register'], draft_deviations=['DEV-00'])
+        refused('changed-register', ci=self.write('register.ci.json', Document.from_dict(
+            dict(self.ci_value, release_register=register)).payload))
+        for name, change in (('other-build', dict(build_id='f' * 40)), ('other-repository', dict(repository='x'))):
+            evidence = json.loads((self.etc / 'registration.json').read_text())
+            self.write(name + '.evidence.json', json.dumps(dict(evidence, **change)).encode())
+            refused(name, evidence=name + '.evidence.json')
+        extra = self.root / 'larp/unmanifested.py'
+        extra.write_text('# not checked by CI\n')
+        refused('unmanifested-file')
+        extra.unlink()
+        operations = self.root / 'larp/runtime/operations.py'
+        operations.write_text(operations.read_text() + '# changed on the host\n')
+        refused('changed-file')
+
+
+for _name in [n for n in dir(bundle_tests.ReleaseBundle) if n.startswith('test_')]:
+    setattr(CiManifestBinding, _name, None)  # only this module's tests run here; the originals run in their module
+
+
+class ReleaseProcedure(unittest.TestCase):
+    """WR-D3d/e (#62 item 3): CI keeps the manifest with the bundle; the runbooks never build one on a host."""
+
+    def test_wr_d3_ci_uploads_the_manifest_with_the_bundle(self):
+        workflow = (ROOT / '.github/workflows/runtime.yml').read_text(encoding='utf-8')
+        for action in re.findall(r'uses:\s*(\S+)', workflow):
+            self.assertRegex(action, r'^[\w.-]+/[\w.-]+@[0-9a-f]{40}$', action)
+        upload = re.search(r'uses:\s*actions/upload-artifact@[0-9a-f]{40}\b(.*?)(?:\n\s*- |\Z)', workflow, re.S)
+        self.assertIsNotNone(upload)
+        self.assertIn('larp-bundle-x86_64', upload.group(1))
+        self.assertIn('.release.json', upload.group(1))
+        self.assertIn('.tar.gz.sha256', upload.group(1))
+        summary = re.search(r'GITHUB_STEP_SUMMARY', workflow)
+        self.assertIsNotNone(summary)
+        self.assertRegex(workflow, r'sha256sum[^\n]*release\.json|release\.json[^\n]*sha256sum')
+
+    def test_wr_d3_runbooks_never_build_the_manifest_on_a_host(self):
+        for name in ('AWS_RUNBOOK.md', 'runbook.md', 'DEPLOYMENT_DAY.md'):
+            text = (ROOT / 'docs/build' / name).read_text(encoding='utf-8')
+            with self.subTest(name):
+                self.assertNotIn('--build-output', text)
+                self.assertIn('--bind', text)
+                self.assertIn('release-manifest.json', text)
+
+
 # --- D-REQ-062: no credential is tracked in the repository (G-41 "CI scan on every push") ------------------------
 
 PUBLIC_TEST_VECTORS = {'5f3a0123456789abcdef0123456789abcdef0123456789abcdef9b2c7e1d4a6f'}  # PROTOCOL.md §2
