@@ -163,8 +163,8 @@ class ApproveSwapBudget(BudgetCase):
                 break
             if state.status != 'ACTIVE':
                 break
-            if state.attempts and state.attempts[-1].state == 'PENDING':
-                self.clock.t += confirmation_s  # waiting for the chain, not request spacing
+            if state.attempts and (state.attempts[-1].step, state.attempts[-1].state) == ('APPROVE', 'PENDING'):
+                self.clock.t += confirmation_s  # waiting for the approve on chain, not request spacing
         return state
 
     def test_wr11_approve_swap_fits_inside_the_intent_expiry(self):
@@ -180,6 +180,8 @@ class ApproveSwapBudget(BudgetCase):
 
     def test_wr11_a_slow_approve_confirmation_refreshes_market_facts_and_still_fits(self):
         state = self.run_approve_swap(confirmation_s=10)  # the facts are then older than the 10 s window
+        print(f'\nWR11 approve->swap, 10 s approve confirmation: {len(self.web3.calls)} Web3 requests, '
+              f'{self.clock.spacing:.2f} s spacing')
         self.assertEqual(state.status, 'COMPLETED', state.blocked_reason)
         self.assertEqual(self.web3.calls.count('market/rwa/tokens'), 2)
         self.assertLessEqual(len(self.web3.calls), 12)
