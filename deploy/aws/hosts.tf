@@ -15,8 +15,9 @@ resource "aws_iam_instance_profile" "host" {
 # secret: it is a root-only file on the signer's encrypted disk (IDEA-046 B2), so the signer reads no secret.
 locals {
   # Which hosts may read which secret: each secret has its own readers, nothing else. One IAM role on `primary`
-  # can read all three (IDEA-046 B1 trade-off); each service still loads only its own secret ID.
-  secret_readers = { uploader = ["primary"], evidence = ["primary"], runtime = ["primary"] }
+  # can read both (IDEA-046 B1 trade-off); each service still loads only its own secret ID. The evidence poller
+  # needs no key and cannot reach instance metadata, so it has no secret (#61).
+  secret_readers = { uploader = ["primary"], runtime = ["primary"] }
   # Provisioned SQL roles are service identities, not EC2 host names. SQL grants, not IAM, separate the roles
   # that share `primary` (IDEA-045, IDEA-046).
   db_users = {

@@ -313,6 +313,28 @@ class Composition(unittest.TestCase):
                     patch('larp.runtime.service.build_driver', side_effect=error), patch('builtins.print'):
                 self.assertEqual(main(options), code)
 
+    def test_d7_an_unbindable_record_directory_refuses_the_start_with_exit_4(self):
+        # #59 (WR17): an OSError while binding ai_seeds_dir must not crash into Restart=always.
+        blocker = self.root / 'blocker'
+        blocker.write_text('not a directory')
+        raw = json.dumps(dict(self.config(), mode='dev', database_dsn_file='/synthetic', max_failures=3,
+                              clear_after=2, interval_seconds=5, cycle_timeout_seconds=30,
+                              ai_seeds_dir=str(blocker / '.ai-seeds'), nonce_dir=str(self.root / 'nonce'))).encode()
+        (self.root / 'runtime.json').write_bytes(raw)
+        (self.root / 'manifest.json').write_bytes(b'{}')
+        options = ['run', '--config', str(self.root / 'runtime.json'), '--manifest', str(self.root / 'manifest.json'),
+                   '--root', str(self.root)]
+        manifest = dict(build_id='a' * 40, runtime_config_sha256=hashlib.sha256(raw).hexdigest())
+        with patch('larp.runtime.preflight.verify_release', return_value=manifest), \
+                patch('larp.runtime.service.open_store', return_value=Store()), \
+                patch('larp.runtime.service.verify_registered_manifest'), \
+                patch('larp.runtime.credentials.runtime_secrets', return_value=self.secrets), \
+                patch('larp.runtime.service.build_driver', return_value=type('Driver', (), dict(ports={}))()), \
+                patch('larp.runtime.service.signal.signal'), patch('builtins.print') as printed:
+            self.assertEqual(main(options), EXIT_REFUSED)
+        self.assertEqual(json.loads(printed.call_args.args[0])['reason'], 'LIVE_START_REFUSED')
+        self.assertFalse((self.root / 'nonce').exists())  # refused before any directory was bound
+
 
 if __name__ == '__main__':
     unittest.main()
