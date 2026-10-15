@@ -4,6 +4,21 @@ Initial inventory: 2026-10-04, based on a review of all 17 repository Markdown f
 
 This is a live checklist. Remove an entire item once its work is fully completed and verified. Keep partial or blocked items, narrowing them to the remaining work. Preserve supporting decisions, test evidence, and experimental results in their authoritative documents before removal. IDs are stable; do not renumber surviving items. This checklist does not override the rules in `skill/SKILL.md` or the append-only experiment ledger.
 
+Gate A current work (2026-10-16, [IDEA-057](ledger/IDEA-057.md)): latest fetched
+main is PR81 `e410e49`, which already includes driver/init/activate, calendar and
+#25 issuer separation. IDEA-057's branch supplies explicit unsigned `shadow`
+evidence settings (user-approved existing bounded values, 15-minute cadence,
+5-minute day-roll window), pinned metadata/balance/profile/config assembly and a
+dev-shadow exact-replay repair; it does not enable signing. Remaining: user owns
+the measured QuoteCostSummary/profile tool; Yao Zhu owns local public wallet/SEC
+contact setup, missing SEC terms capture and installation of all retained terms
+bytes, fresh read-only wallet capture, reviewed AWS apply/provision/migration,
+receiver ACK/24h-ingest/restart/anchor/IAM/TLS/routes/time/alarm evidence; Keegan
+owns PR review/integration and Gate A evidence review. Gate B's decoder, capability
+proof, signer provisioning/version binding, first BNB, real trades and hosted
+recovery/restore/replay drills remain with Isaac/Keegan/Keith. Procedure:
+[GATE_A.md](build/GATE_A.md). No whole deployment GAP is closed by offline work.
+
 ## Commitments and scope
 
 - [ ] GAP-02 — Reconcile active decisions with the proposal: five-session horizon, trailing 60-session volatility and sizing formula, UTC loss boundary, 12% drawdown reduction to 40% gross, and primary plus fenced cold standby. Update D-05/D-06, G-22/G-29 and status tables; retain only genuinely unresolved choices. Sources: `skill/larp/plan.md`, `proposal/proposal_answers.md`. Checked 2026-10-08: done in part — plan.md "Declared values" (2026-10-03) records the horizon, sizing, UTC boundary and 12% → 40% step, and D-06 cites them. Remaining: G-22 and G-29 still show bracket slots and an "optional" deeper step instead of the declared values; D-05 still says "not decided" although the proposal declares "one primary runtime plus a fenced cold standby" (binding under G-11 until changed by a version event). 2026-10-11 ([IDEA-035](ledger/IDEA-035.md) §4): the team decides D-05 after exploring AWS; remind the team then.
