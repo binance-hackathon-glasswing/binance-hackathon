@@ -338,3 +338,13 @@ Full suite (macOS, Python 3.12.14 from the CI test lock, PostgreSQL 14.24 on loo
 - #25: A's contract side (A-T01/A-T16) and this scheduler fix together cover the issue's three criteria; A (Keith) to confirm A-T15 on the merged tree before closing.
 - #62.3: mirror CI must show the `host-bundle` job uploading the `.release.json`. The manifest records the CI checkout's origin URL, so the activation bundle must come from the registered repository's CI run, not the mirror's (the registration evidence must name the same repository). Host configs stay out of Git (IDEA-051), so a host still adds their hashes; it never recomputes code identity.
 - #64.4: nothing for D; the first-host legacy-sidecar step in INCOMPLETE_WORK (IDEA-047 item 3) applies only if a host ever ran the WAL build, and none has.
+
+### Added criterion WR-D3f (2026-10-15, after the integrator's review of PR #78; written and pushed before its test)
+
+Finding (integrator review): the CI manifest's `repository` was the checkout's `remote.origin.url`. With org Actions out of quota, CI bundles are built on the private mirror, so the manifest would name `Cookiemunchrr/larp-ci-mirror` instead of the registered repository (F-61, F-47), and `--bind` would refuse registration evidence for the real repository. The `'@'` check also refused an SSH origin (`git@github.com:…`).
+
+| ID | Test | Pass criterion |
+|---|---|---|
+| WR-D3f | `tests/runtime/test_release_bundle.py::…test_wr_d3f_the_manifest_names_the_registered_repository_from_any_origin` | The manifest's `repository` comes from a committed file in `config/release/` (covered by the manifest's `files`), equal to `https://github.com/binance-hackathon-glasswing/binance-hackathon`, whatever the origin: with origin set to the mirror URL and with an SSH-form origin, the bundle builds and `repository` is the registered URL; the origin is kept separately as provenance (`build_origin`). An origin URL carrying credentials (`https://user:token@…`) still refuses, and a registered-repository file that is missing, has another schema or is not a credential-free `https://github.com/<owner>/<repo>` URL refuses. |
+
+Note (integrator, no change): the #23 redaction catches the known signed-bytes keys and whole hex-encoded signed transactions, not a base64-encoded transaction under an unknown key (already listed under "Still open"); C's PR70 handles base64 reflections on the response side.
