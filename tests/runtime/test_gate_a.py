@@ -278,9 +278,12 @@ class GateAComposition(PipelineHarness):
             self.assertEqual(current['projection']['portfolio'], original)
             self.assertFalse(current['reservations'])
             self.assertFalse(self.store.open_rounds(config['run_id']))
-            records = current['projection']['round_records']
+            # Closed rounds are intentionally pruned from the projection; their
+            # immutable planned records remain in the journal.
+            records = [b.read()['event']['record'] for b in self.store.journal(config['run_id'])
+                       if b.read()['event']['kind'] == 'ROUND_PLANNED']
             self.assertTrue(records)
-            for record in records.values():
+            for record in records:
                 self.assertFalse([e for e in record['errors'] if e.startswith(('CONTEXT_UNAVAILABLE', 'PLANNER_UNAVAILABLE'))])
                 self.assertEqual(record['policy_input']['context']['portfolio']['mode'], 'DEV')
             with self.store.transaction() as db:
