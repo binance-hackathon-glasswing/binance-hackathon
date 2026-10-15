@@ -10,11 +10,13 @@
 # bundle, so the signer host, which has no internet route (IDEA-046 B2), installs it from the artifact bucket via the
 # S3 gateway endpoint. It verifies every checksum, then installs:
 #   /opt/larp/python/<version>+<tag>   CPython, root-owned
-#   /opt/larp/releases/<build>         the release and its .venv, root-owned and read-only to services
+#   /opt/larp/releases/<build>         the release and its .venv, root-owned and read-only to services, with the
+#                                      CI-built release-manifest.json (0444) that hosts verify and bind, never build
 #   /opt/larp/current                  symlink to the installed release
 #   /etc/larp/                         root 0755; role marker; rds-ca.pem; /etc/larp/signer 0700 on the signer
 #   one system user per service and only this role's systemd units (enabled, not started)
-# It never writes a configuration, a release manifest, a secret or the wallet key, and never starts a service.
+# It never writes a configuration, a bound release manifest (/etc/larp/release.json), a secret or the wallet key,
+# and never starts a service.
 # Those are separate, reviewed steps (docs/build/architecture-deployment.md).
 set -euo pipefail
 umask 022
@@ -78,6 +80,9 @@ done
 build=${meta[build_id]}
 [[ $build =~ ^[0-9a-f]{40}$ ]] || die "invalid build id"
 [[ $(uname -m) == "${meta[arch]}" ]] || die "bundle is for ${meta[arch]}, host is $(uname -m)"
+# The release manifest CI built with this bundle (#62 item 3); it is covered by SHA256SUMS and the bundle hash.
+[[ -f $src/release-manifest.json ]] || die "bundle has no CI release manifest"
+grep -q "\"build_id\":\"$build\"" "$src/release-manifest.json" || die "release manifest is for another build"
 [[ $(sha256sum "$src/python/${meta[python_file]}" | cut -d' ' -f1) == "${meta[python_sha256]}" ]] \
   || die "python archive differs from its pin"
 pinned=$(grep "^${meta[arch]}=" "$src/release/deploy/host/python.lock" | cut -d= -f2)
@@ -115,6 +120,7 @@ else
   "$release/.venv/bin/python" -m pip check >/dev/null || die "installed packages are inconsistent"
   chown -R root:root "$release"
   chmod -R u=rwX,go=rX "$release"
+  install -m 0444 "$src/release-manifest.json" "$release/release-manifest.json"
   install -m 0444 "$src/SHA256SUMS" "$release/.installed"
 fi
 ln -sfn "$release" /opt/larp/current.new
@@ -149,5 +155,6 @@ if [[ $systemctl_enabled -eq 1 ]]; then
 fi
 
 echo "provision: installed build $build for $role (python ${meta[python_version]}, units: ${units[*]})"
-echo "provision: next, as root: write /etc/larp/<service>.json and /etc/larp/release.json$(
+echo "provision: next, as root: write /etc/larp/<service>.json, then bind /etc/larp/release.json from" \
+     "$release/release-manifest.json with larp.runtime.preflight --bind$(
   [[ $role == signer ]] && echo ', and the wallet key as /etc/larp/signer/wallet.key (root, 0600)'); nothing was started"

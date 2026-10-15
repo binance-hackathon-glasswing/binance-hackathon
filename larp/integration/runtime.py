@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 
 from larp.contracts import ContractError, Document, PolicyState
 from larp.intelligence.common import digest
+from larp.intelligence.config import load_registry
 from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
 from larp.ports import decimal_string as decimal_amount  # exact decimal of base units (one implementation)
@@ -214,10 +215,21 @@ class ContextBuilder:
 
 
 class RuntimePlanner:
-    """The independent risk planner, adapted to the runtime command/reservation/job vocabulary."""
+    """The independent risk planner, adapted to the runtime command/reservation/job vocabulary.
 
-    def __init__(self, *, job_validity_ms: int, job_max_attempts: int, plan_fn=risk_plan):
+    `issuers` is the ContextBuilder's `{issuer_id: {"token": symbol, ...}}`; without it the canonical issuer registry
+    names each token's issuer. A review job names that issuer, never the market's ticker (`underlying_id`): the evidence
+    side accepts only canonical issuer IDs (#25, IDEA-049-D WR-D1)."""
+
+    def __init__(self, *, job_validity_ms: int, job_max_attempts: int, plan_fn=risk_plan, issuers: dict | None = None):
         self.plan_fn, self.validity, self.attempts = plan_fn, job_validity_ms, job_max_attempts
+        pairs = ([(i, m.get("token") if type(m) is dict else None) for i, m in issuers.items()] if issuers is not None
+                 else [(e.issuer_id, e.token) for e in load_registry().entries])  # an unreadable registry refuses
+        self.issuer_by_token = {}
+        for issuer_id, token in pairs:
+            if type(issuer_id) is not str or not issuer_id or type(token) is not str or token in self.issuer_by_token:
+                raise ContractError("Each token needs exactly one issuer for review jobs")
+            self.issuer_by_token[token] = issuer_id
 
     def plan(self, snapshot, proposal_or_none) -> Document:
         raw = self.plan_fn(snapshot, proposal_or_none).read()
@@ -271,11 +283,13 @@ class RuntimePlanner:
                                        "statement_ids": sorted(record["due_reviews"])},
                                       due if type(due) is int else now_ms, 40))  # records predating review_due_ms
         if proposal is not None:
-            underlying = {m["symbol"]: m["underlying_id"] for m in context.get("markets", [])}
+            quoted = {m["symbol"] for m in context.get("markets", [])}
             started = context.get("session_started_ms")
             for review in proposal.next_policy_state.data.read().get("reviews", []):
-                if review["symbol"] in underlying:
-                    jobs.append(self._job({"kind": "REASSESS_ISSUER", "issuer_id": underlying[review["symbol"]],
+                issuer = self.issuer_by_token.get(review["symbol"])
+                # A token without a registered issuer gets no review job: its ticker is not an issuer ID (fail closed).
+                if review["symbol"] in quoted and issuer is not None:
+                    jobs.append(self._job({"kind": "REASSESS_ISSUER", "issuer_id": issuer,
                                            "reason": review["reason"], "session": context["session_index"]},
                                           started if type(started) is int else now_ms, 50))
         unique = {j["job_id"]: j for j in jobs}

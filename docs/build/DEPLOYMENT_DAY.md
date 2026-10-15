@@ -81,7 +81,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 3. **Terraform (spend OK first).** Use the refreshing-credentials setup in AWS_RUNBOOK "Log in and run Terraform".
    - **Done 2026-10-14:** the credit budget is applied (IDEA-051).
    - **Then:** in `development.tfvars` set `ami_id`, `enable_hosts = true`, `enable_external_https = true` and `enable_development_ssm = true`. Plan, review, apply. That's about $23/month more, and it starts both hosts.
-4. **Bundle.** Download the CI artifact `larp-bundle-x86_64` from the final head's `host-bundle` job. Check that `sha256sum` matches the job summary, record the run ID and hash, and upload both files to `s3://<artifact bucket>/releases/`.
+4. **Bundle.** Download the CI artifact `larp-bundle-x86_64` from the final head's `host-bundle` job. Check that `sha256sum` of the bundle and of its `.release.json` manifest match the job summary, record the run ID and both hashes, and upload the bundle and its `.sha256` to `s3://<artifact bucket>/releases/`. The bundle carries the same manifest as `release-manifest.json`.
 5. **Provision `primary`** through SSM:
    ```bash
    bash provision.sh primary /root/<bundle> --expect-sha256 <CI hash>
@@ -97,7 +97,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
    ```
    - The renderer lists what is still unset per file. Fill those from the inputs above.
    - Set `driver.execution` to **`"shadow"`** (the example says `"service"`).
-   - Copy the files to `/etc/larp` as root-owned files, then build `/etc/larp/release.json` with `preflight --build-output` (#62 item 3: still built on the host).
+   - Copy the files to `/etc/larp` as root-owned files, then bind CI's manifest (#62 item 3): `python -m larp.runtime.preflight --bind /opt/larp/current/release-manifest.json --root /opt/larp/current --output /etc/larp/release.json --registration-evidence <file> --runtime-config /etc/larp/runtime.json --service-config NAME=/etc/larp/NAME.json`. It only verifies the installed release against CI's manifest and adds the registration evidence and config hashes; nothing is rebuilt on the host.
 8. **Run.**
    - Start with `service init` (quarantined), then `service activate --reviewer … --review-ref …`. That's the team's reviewed step.
    - Then start `larp-evidence`, `larp-runtime` and `larp-uploader`, and enable `larp-archive.timer`.

@@ -6,6 +6,9 @@ The bundle carries everything a host installs, so the signer (no internet route,
 
     larp-<build12>-<arch>/
       BUNDLE.env      build, architecture, pinned Python and RDS CA identity (key=value)
+      release-manifest.json  the ReleaseManifest.v1 of release/ (code identity only); hosts verify and bind it. Its
+                      `repository` is the registered one from config/release/repository.v1.json; the checkout's
+                      origin (a CI mirror, an SSH remote) is only `build_origin`
       SHA256SUMS      every other file in the bundle
       provision.sh    deploy/host/provision.sh at the same commit
       python/         CPython 3.12.15 from python-build-standalone, checksum-pinned in deploy/host/python.lock
@@ -16,6 +19,10 @@ The bundle carries everything a host installs, so the signer (no internet route,
 
 It refuses a tracked file with uncommitted changes, a commit that is not the pushed branch head, an architecture
 without a pinned Python checksum, a Python download whose checksum differs, and any pinned package without a wheel.
+Beside the archive it writes `<name>.tar.gz.sha256` and `<name>.release.json` (the same bytes as the bundle's
+release-manifest.json). The manifest is built here, in CI, from the committed bytes and never on a host: a host only
+verifies it against the installed release and binds its own configurations and the registration evidence
+(`python -m larp.runtime.preflight --bind`; IDEA-049-D WR-D3, #62 item 3).
 Upload the `.tar.gz` and its `.sha256` to the artifact bucket under `releases/` (deploy/aws/hosts.tf grants hosts
 read access there through the S3 gateway endpoint). Nothing here contacts AWS.
 """
@@ -34,6 +41,7 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHES = ('x86_64', 'aarch64')
@@ -45,6 +53,9 @@ PYTHON_LOCK = 'deploy/host/python.lock'
 PBS_URL = ('https://github.com/astral-sh/python-build-standalone/releases/download/{tag}/'
            'cpython-{version}+{tag}-{arch}-unknown-linux-gnu-install_only.tar.gz')
 RDS_CA_URL = 'https://truststore.pki.rds.amazonaws.com/{region}/{region}-bundle.pem'
+# The registered repository (F-61) comes from the commit, never from the checkout's origin: CI may run on a mirror.
+REGISTERED = 'config/release/repository.v1.json'
+GITHUB_REPOSITORY = re.compile(r'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+')
 
 
 class BundleError(Exception):
@@ -74,6 +85,42 @@ def source_commit(root, git=git):
     if not row or row[0] != commit:
         raise BundleError('HEAD is not the pushed branch head')
     return commit
+
+
+def build_origin(root, git=git):
+    """The checkout's origin URL, kept as provenance only (CI may run on a mirror). One carrying credentials
+    (`https://user:token@…`) is refused; an SSH origin (`git@host:owner/repo`) names a login user, not a secret."""
+    url = text(git(root, 'config', '--get', 'remote.origin.url'))
+    if not url or ('://' in url and '@' in urlsplit(url).netloc):
+        raise BundleError('Origin URL is missing or carries credentials')
+    return url
+
+
+def registered_repository(raw):
+    """The registered repository URL from the committed REGISTERED file (IDEA-049-D WR-D3f)."""
+    try:
+        value = json.loads(raw) if raw is not None else None
+    except ValueError:
+        value = None
+    url = value.get('repository') if type(value) is dict and value.get('schema') == 'RegisteredRepository.v1' else None
+    if type(url) is not str or not GITHUB_REPOSITORY.fullmatch(url):
+        raise BundleError('Registered repository must be a credential-free https://github.com/<owner>/<repo> in '
+                          + REGISTERED)
+    return url
+
+
+def release_manifest(release, names, commit, url, origin):
+    """ReleaseManifest.v1 of the bundle's release tree: code identity only. Registration evidence and host
+    configuration hashes are bound on the host (larp.runtime.preflight.bind_manifest)."""
+    from larp.contracts import Document
+    from larp.runtime.register import load_register
+    files = {name: sha256_file(release / name) for name in sorted(names)}
+    services = json.loads((release / 'config/release/services.v1.json').read_text(encoding='utf-8'))
+    return Document.from_dict(dict(schema='ReleaseManifest.v1', build_id=commit, repository=url, build_origin=origin,
+                                   remote_verified=True,
+                                   services=services, registration_evidence=None, files=files,
+                                   release_register=load_register(release), operations_config_sha256=None,
+                                   runtime_config_sha256=None)).payload
 
 
 def python_pin(source, arch):
@@ -170,9 +217,11 @@ def build(root, arch, out, *, region='ap-southeast-2', git=git, fetch=fetch, whe
     if arch not in ARCHES:
         raise BundleError('Unsupported architecture')
     commit = source_commit(root, git)
+    origin = build_origin(root, git)
     names = release_names(root, git)
     files = committed_files(root, commit, names | {PROVISION, PYTHON_LOCK}, git)
     pin = python_pin(files[PYTHON_LOCK][0].decode('utf-8'), arch)
+    url = registered_repository(files[REGISTERED][0] if REGISTERED in files else None)
     name = f'larp-{commit[:12]}-{arch}'
     with tempfile.TemporaryDirectory() as temporary:
         bundle = Path(temporary) / name
@@ -196,6 +245,8 @@ def build(root, arch, out, *, region='ap-southeast-2', git=git, fetch=fetch, whe
                         python_file=pin['file'], python_sha256=pin['sha256'], rds_region=region,
                         rds_ca_sha256=sha256_file(bundle / 'rds-ca.pem'))
         (bundle / 'BUNDLE.env').write_text(''.join(f'{k}={v}\n' for k, v in identity.items()), encoding='utf-8')
+        manifest = release_manifest(bundle / 'release', names, commit, url, origin)
+        (bundle / 'release-manifest.json').write_bytes(manifest)
         write_checksums(bundle)
         out.mkdir(parents=True, exist_ok=True)
         archive = out / (name + '.tar.gz')
@@ -213,7 +264,10 @@ def build(root, arch, out, *, region='ap-southeast-2', git=git, fetch=fetch, whe
                     tar.addfile(info)
     digest = sha256_file(archive)
     (out / (name + '.tar.gz.sha256')).write_text(f'{digest}  {archive.name}\n', encoding='utf-8')
-    return dict(bundle=str(archive), sha256=digest, **identity)
+    beside = out / (name + '.release.json')
+    beside.write_bytes(manifest)
+    return dict(bundle=str(archive), sha256=digest, manifest=str(beside),
+                manifest_sha256=hashlib.sha256(manifest).hexdigest(), **identity)
 
 
 def main(argv=None):

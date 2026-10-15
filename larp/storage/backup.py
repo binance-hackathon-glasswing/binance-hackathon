@@ -7,6 +7,8 @@ live authority can be considered.
 
 import base64
 from decimal import Decimal
+import json
+import re
 
 from larp.contracts import Document
 from larp.storage.postgres import IntegrityError,doc,digest
@@ -25,6 +27,85 @@ MAINTENANCE_TABLES=('archive_clock','archive_outbox')
 # a swap the runtime had abandoned. The archive role cannot read the column; the export writes this marker instead,
 # so a restored registry lookup fails its digest check (closed) rather than returning usable bytes.
 REDACTED={'execution_signatures':{'signed':b'{"redacted":"signed bytes are never backed up (IDEA-042 V8)"}'}}
+# Signed bytes inside any other exported value (#23, IDEA-049-D WR-D2). New execution state holds none (C-FND-010), but
+# a legacy or forged row may: a signed-bytes field, or a signed transaction under any key. Such a value is replaced by
+# this marker and every stored hash is kept, so the restored record fails its state/journal check (closed), as the
+# signature marker does. Whole values that cannot be parsed are replaced where execution state is kept.
+SIGNED_MARKER='[redacted: signed bytes are never backed up (#23)]'
+SIGNED_KEYS=frozenset({'raw_hex','signedTransaction','signed_transaction','rawTransaction','raw_transaction'})
+OPAQUE={'execution_records':'state','execution_journal':'event'}
+HEX=re.compile(r'(?:0[xX])?((?:[0-9a-fA-F]{2}){80,})')  # at least 80 bytes: shorter than any signed transaction
+
+
+def _rlp(data,i):
+    """(item, end) of the RLP item at `i`: bytes, or a list of items. ValueError if it runs past `data`."""
+    if i>=len(data):
+        raise ValueError('rlp')
+    b=data[i]
+    if b<0x80:
+        return data[i:i+1],i+1
+    if b<0xc0:
+        start,n=(i+1,b-0x80) if b<0xb8 else (i+1+b-0xb7,int.from_bytes(data[i+1:i+1+b-0xb7],'big'))
+        if start+n>len(data):
+            raise ValueError('rlp')
+        return data[start:start+n],start+n
+    start,n=(i+1,b-0xc0) if b<0xf8 else (i+1+b-0xf7,int.from_bytes(data[i+1:i+1+b-0xf7],'big'))
+    end,items,j=start+n,[],start
+    if end>len(data):
+        raise ValueError('rlp')
+    while j<end:
+        item,j=_rlp(data,j)
+        items.append(item)
+    if j!=end:
+        raise ValueError('rlp')
+    return items,end
+
+
+def signed_transaction(data):
+    """True if `data` is a whole RLP-encoded signed transaction (legacy, or typed 1-4) with a nonzero r and s."""
+    typed=bool(data) and data[0] in (1,2,3,4)
+    body=data[1:] if typed else data
+    try:
+        items,end=_rlp(body,0)
+    except ValueError:
+        return False
+    if end!=len(body) or type(items) is not list or len(items)<(11 if typed else 9) or (not typed and len(items)!=9):
+        return False
+    return all(type(x) is bytes and 0<len(x)<=32 for x in items[-2:])
+
+
+def _strip(value):
+    """(value without signed bytes, changed)."""
+    if isinstance(value,dict):
+        out,changed={},False
+        for key,item in value.items():
+            if key in SIGNED_KEYS and item is not None and item!=SIGNED_MARKER:
+                out[key],changed=SIGNED_MARKER,True
+            else:
+                out[key],c=_strip(item)
+                changed=changed or c
+        return out,changed
+    if isinstance(value,list):
+        pairs=[_strip(item) for item in value]
+        return [v for v,_ in pairs],any(c for _,c in pairs)
+    if isinstance(value,str):
+        match=HEX.fullmatch(value)
+        if match and signed_transaction(bytes.fromhex(match.group(1))):
+            return SIGNED_MARKER,True
+    return value,False
+
+
+def without_signed_bytes(table,column,raw):
+    """`raw` unchanged when it holds no signed bytes; otherwise the same document with them replaced by the marker."""
+    try:
+        value=json.loads(bytes(raw))
+    except (ValueError,UnicodeDecodeError):
+        if OPAQUE.get(table)==column:
+            return json.dumps({'redacted':SIGNED_MARKER,'reason':'unparseable execution value'},
+                              sort_keys=True,separators=(',',':')).encode()
+        return raw
+    value,changed=_strip(value)
+    return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode() if changed else raw
 
 
 def select_sql(db,table):
@@ -49,8 +130,9 @@ def export(store):
             columns=[d.name for d in cursor.description]
             rows=[]
             for row in cursor:
-                rows.append([{'bytes':base64.b64encode(bytes(v)).decode('ascii')} if isinstance(v,(bytes,memoryview))
-                             else int(v) if isinstance(v,Decimal) else v for v in row])
+                rows.append([{'bytes':base64.b64encode(without_signed_bytes(table,c,bytes(v))).decode('ascii')}
+                             if isinstance(v,(bytes,memoryview)) else int(v) if isinstance(v,Decimal) else v
+                             for c,v in zip(columns,row)])
             data[table]=dict(columns=columns,rows=rows)
     payload=doc(data)
     return doc(dict(schema='Backup.v1',sha256=digest(payload.payload),tables=data))
@@ -74,7 +156,9 @@ def restore(store,backup):
             if columns!=item['columns']:
                 raise IntegrityError('Backup schema mismatch')
             for row in item['rows']:
-                values=[base64.b64decode(v['bytes'],validate=True) if isinstance(v,dict) else v for v in row]
+                # A backup written before #23's fix may still hold signed bytes: they never reach the target database.
+                values=[without_signed_bytes(table,c,base64.b64decode(v['bytes'],validate=True))
+                        if isinstance(v,dict) else v for c,v in zip(columns,row)]
                 db.execute(f'INSERT INTO {table}({",".join(columns)}) VALUES({",".join(["%s"]*len(values))})',values)
         for run_id, in db.execute('SELECT run_id FROM runs').fetchall():
             store._verify(db,run_id,store._run(db,run_id))
