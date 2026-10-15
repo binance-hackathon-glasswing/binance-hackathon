@@ -1,6 +1,7 @@
 """Canonical receipt facts for I4. Quotes and broadcasts never imply a fill."""
 from datetime import datetime, timezone
 from fractions import Fraction
+import re
 
 from larp.execution import Blocked, USDT, NATIVE_BNB, integer
 from .chain import hash_value, quantity
@@ -26,7 +27,7 @@ def _net_transfers(receipt, wallet, token):
     return total
 
 
-def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, observed_at):
+def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, observed_at, bnb_decimals=18):
     intent = state.intent
     if not proof or proof.get('finality_verified') is not True:
         raise Blocked('canonical finalized receipt required')
@@ -47,6 +48,11 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
     if not 0 < gas_used <= payload.gas or not 0 < gas_price <= payload.gas_price:
         raise Blocked('receipt gas exceeds signed authorization')
     gas = gas_used * gas_price
+    if type(bnb_decimals) is not int or not 0 <= bnb_decimals <= 18:
+        raise Blocked('explicit BNB accounting scale required')
+    factor = 10**(18 - bnb_decimals)
+    if gas % factor:
+        raise Blocked('actual gas cannot be represented exactly in accounting scale')
     price = integer(bnb_price_units, positive=True)
     gas_value = Fraction(gas * price, 10**18)
     status = quantity(receipt['status'])
@@ -60,7 +66,7 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                   round_id=intent.round_id, intent_id=intent.intent_id, attempt_id=attempt.attempt_id,
                   event_id=attempt.attempt_id + ':final', tx_hash=attempt.tx_hash,
                   decision_id=intent.decision_id, version_id=intent.version_id, observed_at=observed_at,
-                  gas_bnb_units=gas, gas_value_units=-(-gas_value.numerator // gas_value.denominator),
+                  gas_bnb_units=gas // factor, gas_value_units=-(-gas_value.numerator // gas_value.denominator),
                   intent_terminal=kind in ('FILL', 'REVERT'), round_terminal=False,
                   step=attempt.step.lower(), block_hash=proof['block_hash'], canonical=True,
                   receipt=dict(tx_hash=attempt.tx_hash, block_hash=proof['block_hash'],
@@ -68,10 +74,32 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                                finality='FINAL', chain_id=56, status=status),
                   receipt_evidence=dict(block_hash=proof['block_hash'], block_number=proof['block_number'],
                                         finalized_height=proof['finalized_height'], canonical=True,
-                                        gas_used=gas_used, effective_gas_price=gas_price))
+                                        gas_used=gas_used, effective_gas_price=gas_price,
+                                        gas_chain_units=gas, bnb_decimals=bnb_decimals))
     if kind == 'FILL':
         if intent.receive_token == NATIVE_BNB:
-            raise Blocked('native top-up accounting needs Keith native-balance proof contract')
+            native = proof.get('native_balance')
+            if (intent.kind != 'GAS_TOP_UP' or intent.pay_token != USDT or type(native) is not dict
+                    or native.get('schema') != 'TransactionNativeBalance.v1'
+                    or native.get('method') != 'GETH_PRESTATE_DIFF' or not native.get('source_id')
+                    or native.get('tx_hash') != attempt.tx_hash or native.get('block_hash') != proof['block_hash']
+                    or native.get('wallet') != intent.wallet or type(native.get('nonce')) is not int
+                    or native['nonce'] != payload.nonce or type(native.get('before_wei')) is not int
+                    or type(native.get('after_wei')) is not int
+                    or not 0 <= native['before_wei'] < 2**256 or not 0 <= native['after_wei'] < 2**256
+                    or type(native.get('trace_sha256')) is not str
+                    or not re.fullmatch(r'[0-9a-f]{64}', native['trace_sha256'])):
+                raise Blocked('transaction-bound native balance proof required')
+            received = native['after_wei'] - native['before_wei'] + gas
+            cash_raw = -_net_transfers(receipt, intent.wallet, USDT)
+            if (cash_raw != intent.amount or cash_raw <= 0 or cash_raw % 10**12
+                    or not intent.minimum_output <= received < 2**256 or received % factor):
+                raise Blocked('native fill violates exact input, minimum output or accounting scale')
+            result.update(symbol='BNB', side='BUY', token_units=received // factor, cash_units=cash_raw // 10**12,
+                          fee_units=0, fee_convention='ALL_USDT_TRANSFERS_INCLUDED_IN_NET_CASH',
+                          actual_cash_chain_units=cash_raw, actual_native_chain_units=received,
+                          native_receipt_evidence=native)
+            return result
         side = 'BUY' if intent.pay_token == USDT else 'SELL'
         token = intent.receive_token if side == 'BUY' else intent.pay_token
         from larp.marketdata.port import TOKENS
@@ -101,11 +129,13 @@ class ReceiptFacts:
     The valuation callback must return the same persisted price for an attempt,
     not the current BNB price. Publishing belongs to the atomic runtime outbox.
     """
-    def __init__(self, chain, *, wallet_id, valuation, registry, epoch, authority_version, round_terminal=None):
+    def __init__(self, chain, *, wallet_id, valuation, registry, epoch, authority_version, round_terminal=None,
+                 bnb_decimals=None):
         self.chain, self.wallet_id, self.valuation = chain, wallet_id, valuation
         self.registry = registry
         self.round_terminal = round_terminal or (lambda state: False)
         self.epoch, self.authority_version = epoch, authority_version
+        self.bnb_decimals = bnb_decimals or (lambda _: 18)  # historical offline callers
         if not all(callable(getattr(registry, name, None)) for name in
                    ('lookup_observation', 'put_observation', 'check_authority')):
             raise Blocked('durable immutable receipt-fact registry required')
@@ -120,9 +150,12 @@ class ReceiptFacts:
                 raise Blocked('stored receipt fact conflicts with attempt')
             self.registry.check_authority(self.epoch, self.authority_version)
             return existing
-        proof = self.chain.receipt(attempt.tx_hash)
+        native_fill = (state.intent.receive_token == NATIVE_BNB and attempt.step == 'SWAP'
+                       and attempt.state == 'FINAL_SUCCESS')
+        proof = (self.chain.native_receipt(attempt.tx_hash) if native_fill else self.chain.receipt(attempt.tx_hash))
         stamp = datetime.fromtimestamp(attempt.finalized_at, timezone.utc).isoformat()
         fact = final_observation(state, attempt, proof, wallet_id=self.wallet_id,
-                                 bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp)
+                                 bnb_price_units=self.valuation(attempt.attempt_id), observed_at=stamp,
+                                 bnb_decimals=self.bnb_decimals(attempt.attempt_id))
         fact["round_terminal"] = fact["intent_terminal"] and self.round_terminal(state)
         return self.registry.put_observation(fact, self.epoch, self.authority_version)
