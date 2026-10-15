@@ -489,7 +489,6 @@ def synthetic_signed_transaction():
 
 
 class SignedBytesInBackups(DatabaseCase):
-    @unittest.expectedFailure  # D-FND-005: open until C keeps raw_hex only in execution_signatures (IDEA-049-D §7)
     def test_d_req_023_backups_carry_no_usable_signed_bytes(self):
         raw_hex = '0x' + 'f8' * 120  # synthetic, never a real transaction
         state = json.dumps(dict(status='ACTIVE', attempts=[dict(state='SIGNED_DURABLE', raw_hex=raw_hex,
