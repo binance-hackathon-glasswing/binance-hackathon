@@ -91,6 +91,8 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                     or type(native.get('trace_sha256')) is not str
                     or not re.fullmatch(r'[0-9a-f]{64}', native['trace_sha256'])):
                 raise Blocked('transaction-bound native balance proof required')
+            if payload.value != 0:
+                raise Blocked('native fill output formula assumes no BNB sent')  # Δbalance = received − gas − value
             received = native['after_wei'] - native['before_wei'] + gas
             cash_raw = -_net_transfers(receipt, intent.wallet, USDT)
             if (cash_raw != intent.amount or cash_raw <= 0 or cash_raw % 10**12

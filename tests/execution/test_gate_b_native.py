@@ -80,6 +80,12 @@ class NativeSettlement(unittest.TestCase):
         with self.assertRaises(Blocked):
             self.observed()
 
+    def test_gb_native_fill_refuses_bnb_sent_with_swap(self):
+        self.attempt = replace(self.attempt, payload=replace(self.attempt.payload, value=1))
+        self.proof['tx']['value'] = hex(1)
+        with self.assertRaisesRegex(Blocked, 'no BNB sent'):
+            self.observed()
+
     def test_gb_native_approval_and_revert_only_charge_gas(self):
         for step, status in (('APPROVE', '0x1'), ('SWAP', '0x0')):
             self.attempt = replace(self.attempt, step=step)
