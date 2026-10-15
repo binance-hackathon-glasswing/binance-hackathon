@@ -316,7 +316,10 @@ class HostedModel:
 
     def request_payload(self, request) -> bytes:
         """The exact request bytes sent for a ModelRequest.v1 (deterministic; no credential)."""
-        return json.dumps(self._body(request.read()["input"]), sort_keys=True, separators=(",", ":")).encode("utf-8")
+        body = json.dumps(self._body(request.read()["input"]), sort_keys=True, separators=(",", ":")).encode("utf-8")
+        if reflects_secret(body, (self._key,)):
+            raise IntelligenceError("Credential-bearing model request refused before capture or transport")
+        return body
 
     def has_artifact(self, digest: str) -> bool:
         return self._artifacts.get(digest) is not None
@@ -344,7 +347,7 @@ class HostedModel:
                             error="DEADLINE_EXCEEDED", **record)
         except OSError as exc:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
-                            error=getattr(exc, "code", None) or type(exc).__name__, **record)
+                            error="TRANSPORT_ERROR", **record)
         if type(raw) is not bytes:
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error="TRANSPORT_REPLY_NOT_BYTES", **record)

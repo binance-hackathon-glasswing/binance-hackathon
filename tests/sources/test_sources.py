@@ -314,7 +314,8 @@ class FailureTests(Harness):
         self.assertEqual(self.store.cursor("doj-press")["in_progress"]["next_url"], page(1))
         restarted = SQLiteSourceStore(self.db_path)  # new process, same database
         self.addCleanup(restarted.close)
-        net = FakeNet({page(1): [(200, {}, doj(items[2:4]))], page(2): [(200, {}, doj(items[4:5]))]})
+        net = FakeNet({page(0): [(200, {"ETag": "e0"}, doj(items[0:2]))],
+                       page(1): [(200, {}, doj(items[2:4]))], page(2): [(200, {}, doj(items[4:5]))]})
         out = self.ingestor(net, register, store=restarted).poll("doj-press")
         self.assertTrue(out["resumed"])
         self.assertEqual(sorted(r["item_id"] for r in restarted.records("doj-press")), [f"u{i}" for i in range(5)])
