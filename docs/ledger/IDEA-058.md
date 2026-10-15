@@ -43,3 +43,33 @@ Synthetic RPC and Web3 responses; no credentials or network.
 | G4 | Issuers map: for synthetic metadata whose tickers are the registry's (`NVDA`, `GOOGL`, `TSLA`, `MSFT`, `SKHY`), the five entries come out keyed by canonical issuer ID with token and ticker, and each passes `_issuer_matches(…, source_id='BINANCE_WEB3')`. |
 | G5 | Issuers-map refusals: a ticker the registry does not list for that token (e.g. `GOOGLB` → `AAPL`), a missing ticker, a duplicate or missing token row (from `MarketPort.metadata`), an existing output file. `build_driver`'s issuer check accepts the written map. |
 | G6 | Full suite: the base count plus only these tests, no new failure or skip. |
+
+## Results (2026-10-15)
+
+Synthetic chain and Web3 data only; no credentials or network.
+
+**Order of commits:** criteria `611f6cc`; red tests `e85a0e9` (failing: no modules); build `162cc8e`; test strengthening `f7605c4`.
+
+**Mutations.** Each was reverted.
+- Caught from the start: USDT not floored; BNB not in wei; no issuer rule; overwrite allowed.
+- Survived the first pass: allowing held tokens, a pending nonce, or an empty ticker. Each input was still refused by a second guard (the self-check against the chain read, or the issuer rule), so the behaviour was right, but the tests could not tell which guard fired.
+- The refusal tests now assert each refusal's own reason (the operator's message), in `f7605c4`. All three are now caught.
+
+**Full suite.** Same setup as IDEA-057 (PostgreSQL 14.24, bubblewrap).
+- Base `608b85b` (#84): 1546 passed, 7 skipped.
+- This branch at `f7605c4`: **1552 passed, 7 skipped, 2158 subtests** (+6 tests: this change only).
+- Mirror CI: not yet run on this head.
+
+| ID | Result | Evidence |
+|---|---|---|
+| G1 | PASS | `InitialState.test_g1_*` (dust not booked, exact wei, profile price, MATCH, DR-06) |
+| G2 | PASS | `InitialState.test_g2_*` |
+| G3 | PASS | `InitialStateCli.test_g3_*` (SHA-256 of the exact bytes; `init_run` accepts the pinned file) |
+| G4 | PASS | `IssuersMap.test_g4_*` (each pair accepted by `_issuer_matches` with `BINANCE_WEB3`) |
+| G5 | PASS | `IssuersMap.test_g5_*` |
+| G6 | PASS | full suite above |
+
+**Still open**
+- Real runs: the team, with the dev wallet's address, the manifested RPC and the Web3 key pair.
+- The dev wallet needs BNB before the builder accepts it (Q-03, DR-06).
+- The builder needs a pinned LIVE profile, which needs IDEA-057's summary first.
