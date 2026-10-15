@@ -17,7 +17,7 @@ from larp.intelligence.aiand import AIandChatModel, ENDPOINT
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.model_budget import ModelBudget
 from larp.intelligence.models import RuleBaselineModel
-from larp.intelligence.routing import build_routed_assessor, _review_reasons
+from larp.intelligence.routing import build_routed_assessor, _review_reasons, _signature
 from larp.intelligence.roundlog import model_trace
 from larp.intelligence.scenarios import build_world, EXSEMI
 from larp.intelligence.gate import initial_state, accept
@@ -255,6 +255,31 @@ class Routing(unittest.TestCase):
         self.assertFalse(value['claims'] or value['findings'] or value['event_findings'])
         self.assertIsNone(value['proposed_thesis'])
         self.assertLessEqual(len(self.calls),3)
+
+    def test_ar5_configuration_cannot_add_unbounded_fallback_stages(self):
+        self.s['external_reviewers'] *= 2
+        with self.assertRaises(IntelligenceError): self.build()
+        self.assertFalse(self.calls)
+
+    def test_ar5_disagreement_in_consequence_event_or_falsifier_is_not_collapsed(self):
+        original=dict(findings=[dict(type='GUIDANCE_LOWERED',metric='revenue',period='Q4',
+                                     delta=[-10,1],severity=1,impact='ADVERSE')],
+                      event_findings=[dict(type='EVENT:RESTATEMENT',impact='ADVERSE')],
+                      falsifiers=[dict(falsifier_id='F-RESTATEMENT',state='FIRED')])
+        for field,key,value in [('findings','delta',[-50,1]),('findings','severity',2),
+                                ('event_findings','impact','UNKNOWN'),('falsifiers','state','NOT_FIRED')]:
+            changed=deepcopy(original); changed[field][0][key]=value
+            with self.subTest(field=field,key=key): self.assertNotEqual(_signature(original),_signature(changed))
+
+    def test_ar4_failed_external_primary_uses_declared_secondary(self):
+        router=self.build(key=False)
+        def fail(*args): return 402,b'{"error":{"code":"insufficient_credits"}}',{}
+        router.external[0]._transport=fail
+        _,value=self.run_assessment(router)
+        self.assertEqual([s['model']['model_id'] for s in value['routing']['stages']],
+                         ['zai-org/glm-5.3','moonshotai/kimi-k3','zai-org/glm-5.3'])
+        self.assertEqual(value['routing']['stages'][1]['status'],'UNAVAILABLE')
+        self.assertEqual(value['status'],'ASSESSED')
 
     def test_ar5_shared_deadline_no_fresh_minute_for_review(self):
         self.delay=400

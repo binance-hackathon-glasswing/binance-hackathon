@@ -84,15 +84,18 @@ def _review_reasons(result, request, sample_bps, seed):
 
 
 def _signature(result):
-    return sorted((f.get('type', ''), f.get('metric', ''), f.get('period', '') or '')
-                  for f in result.get('findings', []))
+    # Compare the actual verified consequences and evidence, not just finding labels: two
+    # guidance cuts with different amounts/severity or event assertions can share a label.
+    return (sorted(Document.from_dict(f).payload for f in result.get('findings', [])),
+            sorted(Document.from_dict(f).payload for f in result.get('event_findings', [])),
+            sorted(Document.from_dict(f).payload for f in result.get('falsifiers', [])))
 
 
 class RoutedAssessor:
     def __init__(self, *, routine, external_reviewers, openai, budget, make_assessor, clock_ms,
                  policy, artifacts, monotonic=time.monotonic):
-        if not external_reviewers:
-            raise IntelligenceError('At least one external difficult-case reviewer is required')
+        if not 1 <= len(external_reviewers) <= 2:
+            raise IntelligenceError('One or two external difficult-case reviewers are required')
         if type(policy.get('audit_sample_bps')) is not int or not 0 <= policy['audit_sample_bps'] <= 10000 or \
                 type(policy.get('audit_seed')) is not str or not policy['audit_seed']:
             raise IntelligenceError('Routing needs a frozen audit fraction/seed')
