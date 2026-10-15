@@ -309,6 +309,28 @@ class AuditRecovery(RealEvidence):
         self.assertEqual(digest('larp.intel.tool.v1', {'r': retained}), call['result_sha256'])
         self.assertEqual(model_trace(result)['tool_calls'][0]['result_artifact'], call['result_artifact'])
 
+    def test_a_req_061_tool_result_store_failure_is_a_tool_error_not_a_crash(self):
+        original = self.add(754, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
+        def send(url, headers, body, timeout):
+            sent = json.loads(body)
+            state = json.loads(sent['messages'][0]['content'])
+            output = ({'action': 'CALL_TOOL', 'tool': state['gaps'][0]['tool'], 'args': state['gaps'][0]['args']}
+                      if state['gaps'] and state['remaining_tool_calls'] == 6 else FINISH)
+            return 200, json.dumps(anthropic_reply(output)(sent)).encode()
+        model = AnthropicMessagesModel(model_id='example-model-id', api_key=SECRET, prompt_text=self.config.prompt_text,
+                    prompt_sha256=self.config.prompt_sha256, clock_ms=self.clock, artifacts=self.artifacts, transport=send)
+        reader_artifacts = FileArtifacts(str(self.artifacts.root))  # the evidence reader's own store handle
+        def failing_put(content):
+            raise OSError('disk full')
+        reader_artifacts.put = failing_put
+        self.w.artifacts = reader_artifacts
+        result = self.assess(original, model)
+        call = result['model_io']['tool_calls'][0]
+        self.assertEqual(call['status'], 'TOOL_ERROR')
+        self.assertEqual(call['error'], 'ARTIFACT_WRITE_ERROR')
+        self.assertIsNone(call['result_artifact'])
+        self.assertTrue(any(m.startswith('TOOL_ERROR:') for m in result['missingness']))
+
     def test_a_req_052_complete_multistep_original_io_and_tool_results_after_reopen(self):
         original = self.add(751, 'For the fourth quarter of fiscal 2026, we expect revenue of $5 billion.', '2.02')
         bodies, replies = [], []

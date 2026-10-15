@@ -354,7 +354,10 @@ class EvidenceAssessor:
             result = run_tool(state, tool, args)
             # Original results are audit artifacts, never executable destinations in the call summary.
             raw_result = Document.from_dict(result).payload
-            address = state.index.reader.artifacts.put(raw_result)
+            try:
+                address = state.index.reader.artifacts.put(raw_result)
+            except (OSError, ValueError, RuntimeError) as exc:  # a store failure is a tool error, not a crash
+                raise ToolError("ARTIFACT_WRITE_ERROR") from exc
             if address != sha256_hex(raw_result):
                 raise ToolError("ARTIFACT_INTEGRITY_ERROR")
             record.update(status=result.get("status", "OK"), error=None,
@@ -363,7 +366,7 @@ class EvidenceAssessor:
             summary = {k: v for k, v in result.items() if k != "excerpt"}
             state.tool_results.append(dict(summary, tool=tool, excerpt=result.get("excerpt")))
         except ToolError as exc:
-            record.update(status="TOOL_ERROR", error=str(exc), result_sha256=None)
+            record.update(status="TOOL_ERROR", error=str(exc), result_sha256=None, result_artifact=None)
             state.tool_results.append({"tool": tool, "status": "TOOL_ERROR", "error": str(exc)})
             state.missing.append(f"TOOL_ERROR:{tool}:{exc}")
         record["latency_ms"] = self.clock() - started
