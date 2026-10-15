@@ -7,10 +7,16 @@ from larp.contracts import Document
 from larp.execution import Blocked, NATIVE_BNB, Execution
 from larp.execution_live.chain import ChainEvidence
 from larp.execution_live.settlement import final_observation
+from larp.execution_live.settlement import ReceiptFacts
+from larp.execution_live.loop import PlanValuation
+from larp.execution_live.store import ExecutionStore
 from larp.ports import validate_execution_observation
 from larp.risk.accounting import advance_accounting
 from tests.execution import test_settlement as fixtures
 from tests.execution_fixtures import WALLET, ROUTER
+from tests.support import DatabaseCase
+from larp.runtime.coordinator import batch_for
+from larp.storage.postgres import doc
 
 
 class NativeSettlement(unittest.TestCase):
@@ -135,3 +141,42 @@ class NativeRPC(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(Blocked):
                 rpc, _ = self.rpc(bad=bad)
                 ChainEvidence(rpc).native_receipt(fixtures.HASH)
+
+
+class NativeDurability(DatabaseCase):
+    def test_gb_native_real_pg_reuses_persisted_valuation_scale_and_observation(self):
+        case = NativeSettlement()
+        case.setUp()
+        p = case.portfolio.read()
+        p.update(run_id='native-run', wallet_id=WALLET)
+        record = dict(policy_input=dict(context=dict(portfolio=p)), plan=dict(intents=[]))
+        projection = dict(balances=dict(USDT=p['cash_units'], BNB=p['bnb_units']),
+                          round_records={case.intent.round_id: record})
+        self.store.initialize('native-run', WALLET, 56, doc(projection))
+        epoch = self.store.takeover('native-run', 1, offline=True)
+        self.store.commit(batch_for(self.store.load('native-run'), 'plan:' + case.intent.round_id,
+            dict(kind='ROUND_PLANNED', record=record), projection=projection))
+        registry = ExecutionStore(self.store, run_id='native-run', wallet=WALLET)
+        economic = replace(case.intent, run_id='native-run')
+        attempt = replace(case.attempt, finalized_at=1791734400)
+        state = registry.commit(None, Execution(economic, attempts=(attempt,), status='COMPLETED'),
+            dict(type='SYNTHETIC_NATIVE_FINAL'), epoch, self.store.load('native-run').read()['version'])
+        valuation = PlanValuation(self.store, registry, run_id='native-run')
+        class Chain:
+            calls = 0
+            def native_receipt(chain, tx_hash):
+                chain.calls += 1
+                return case.proof
+            def receipt(chain, tx_hash):
+                raise AssertionError('native output needs transaction trace')
+        chain = Chain()
+        callback = ReceiptFacts(chain, wallet_id=WALLET, valuation=valuation, bnb_decimals=valuation.bnb_decimals,
+            registry=registry, epoch=epoch, authority_version=epoch, round_terminal=lambda _: True)
+        first = callback(state, attempt)
+        self.assertEqual(callback(state, attempt), first)
+        self.assertEqual(chain.calls, 1)
+        before = Document.from_dict(p)
+        after = advance_accounting(before, Document.from_dict(first))
+        self.assertEqual(after.read()['bnb_units'], 3 * 10**15 - 500000)
+        self.assertEqual(advance_accounting(after, Document.from_dict(first)), after)
+        self.assertEqual(registry.lookup_observation(attempt.attempt_id + ':final'), first)
