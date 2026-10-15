@@ -453,3 +453,25 @@ Keith asks to run GitHub CI locally after the hosted billing refusal. Reference:
 5. Build the workflow's runtime Dockerfile and run its network-disabled, read-only, capability-dropped smoke command. Build the x86_64 release bundle from the exact pushed commit; verify its hashes and run the existing AL2023 offline primary/signer provisioning script. Keep raw artifacts and hashes for review. No hosted GitHub artifact upload or green hosted check is implied by a local reproduction.
 
 Status: preregistered; execution not yet started. Codex owns local reproduction and evidence; an account administrator still owns the GitHub billing restriction. Any remaining platform gap stays explicit before applying Keith's previously authorized conditional merge.
+
+## C-LOCAL-CI-012 — local workflow reproduction results (2026-10-15)
+
+Exact tested PR source: **`65e768c04f6ce6e7996e8da2c41147a5a4a024ba`**, clean/pushed, containing target `ba4ff90`. Runtime/test/deploy/tool trees match the preceding repaired source; the new source commit only preregistered these checks. All local jobs use the existing workflow/scripts and dependency locks without weakening application guards. Ubuntu **22.04.5**, Python **3.12.15** from the repository's checksum-pinned python-build-standalone 20261001, PostgreSQL **14.24**, and plugin autoload disabled. Runners are disposable Linux containers on an Apple ARM64 Docker Desktop host (LinuxKit 7.0.14), not GitHub's native x86_64 VM. No production credentials, live wallet or AWS apply.
+
+| Workflow step | Local result |
+|---|---|
+| Infrastructure, Linux amd64 | Terraform 1.13.5 ZIP checksum matches the workflow; fmt, backend-disabled/lockfile-readonly init, validate pass for both roots; mocked tests **15+1 passed** |
+| Runtime Docker, amd64 | Exact `deploy/Dockerfile` builds; network-none/read-only/all-capabilities-dropped smoke passes |
+| Host bundle, x86_64 | Exact-source bundle builds; unchanged AL2023 script passes offline primary and signer provisioning/idempotency, hashes, refusal, credential permissions and packaged preflight |
+| Real systemd, amd64 | **3 passed / 5 subtests**, 11.35s; actual disposable units, not unit-file inspection |
+| Full runtime, amd64 under Rosetta | **1376 passed / 2 failed / 4 skipped / 1 xfailed / 1744 passing subtests**, 204.48s; the two failures are `Sandbox.test_no_home_network_or_inherited_credentials` and `Sandbox.test_valid_assessment` |
+| amd64 offline demo | Fails after the guarded worker fails; direct subprocess observation captures exit 133 and `rosetta error: mmap_anonymous_rw mmap failed, size=1000` |
+| Native Linux ARM64 worker/demo | All **5 worker tests pass**, including network/home/credential denial and valid assessment; unchanged offline PostgreSQL/bubblewrap demo passes with simulated=true and verified journal |
+| Native Linux ARM64 full runtime | **1378 passed / 4 skipped / 1 xfailed / 1744 subtests passed**, 140.20s, with the same limits and dependency pins |
+| Native Linux ARM64 real systemd | **3 passed / 5 subtests**, 3.29s |
+
+The native result supports the diagnosis that the positive sandbox failures arise under Rosetta's memory mapping when the worker enforces its existing resource limits. It does **not** establish a passing native x86_64 full run here. Memory/CPU/process limits, sandbox mounts, credential clearing, network denial and tests are unchanged. The separate legacy/forged-row archive/export case remains expected-red. Hosted Actions did not start because of billing; neither hosted green status nor the whole four-section/deployment acceptance is claimed.
+
+Artifacts: `/private/tmp/larp-pr70-local-ci/results/summary.json`, SHA-256 **`c62921bc0536cc3ee309d16e5c643a25cd7740be03c85f484b9305297f395754`**, contains environment, commands/check dispositions and per-file log hashes. Raw logs, exact Dockerfiles/harness, source clone, native/amd64 runner image identities and traces are under `/private/tmp/larp-pr70-local-ci/`. x86_64 host bundle SHA-256 **`571ba36bed2fd9e9a48864bbb4dd245c855a6ffdf7c1d65acf3b06de010025e6`**; additional aarch64 bundle SHA-256 **`6f394f45dd208f634bb4a1ccfa1a359688c68b015bce8769fc74e5e30b6629d1`**. Generated material stays outside Git. Initial local harness issues (GitHub helper PATH and overlaid pip files) were corrected without changing repository code before the reported runs.
+
+During execution the target independently advanced to **`5c1c9c854b66a9d0c6eddba39c2be91cc3742483`** through PR73's calendar/tool/tests. Those new target changes are not in this exact-source run. PR70 itself remained at `65e768c` throughout. **Still not merged:** Codex must refresh/integrate the then-current target and validate that candidate; native x86_64 runtime/hosted acceptance remains outstanding, with an account administrator owning the billing fix. Existing shared/deployment gates retain their owners. Only this task's two systemd containers, two PostgreSQL containers and internal network are cleaned up; other local tasks/services are left alone. Result-record commits after this entry change documentation only.
