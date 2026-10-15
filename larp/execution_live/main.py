@@ -46,6 +46,8 @@ def validate_config(value):
         raise ContractError('Missing execution settings: ' + ','.join(missing))
     if value['mode'] not in ('dev', 'live'):
         raise ContractError('The execution service runs only for dev or live runs')
+    if type(value.get('native_trace', False)) is not bool:
+        raise ContractError('native_trace must explicitly enable a qualified provider')
     if type(value['wallet_address']) is not str or not _ADDRESS.fullmatch(value['wallet_address']):
         raise ContractError('Invalid wallet address')
     for key, default in (('interval_seconds', None), ('signer_timeout_seconds', 20)):
@@ -113,7 +115,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     epoch, _ = registry.execution_authority()
     client = Web3Client(key, secret, artifacts=Artifacts(config['market_artifact_root']))
     chain = ChainEvidence(Rpc(config['rpc_url'], artifacts=Artifacts(config['chain_artifact_root']),
-                              source_id=config['rpc_source_id']))
+                              source_id=config['rpc_source_id'], native_trace=config.get('native_trace', False)))
     market = MarketPort(client, wallet, quote_limits=profile)
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
@@ -130,7 +132,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)
     loop = ExecutionLoop(store=store, registry=registry, service=None, run_id=run_id, wallet=wallet, epoch=epoch)
-    facts = ReceiptFacts(chain, wallet_id=wallet, valuation=PlanValuation(store, registry, run_id=run_id),
+    valuation = PlanValuation(store, registry, run_id=run_id)
+    facts = ReceiptFacts(chain, wallet_id=wallet, valuation=valuation, bnb_decimals=valuation.bnb_decimals,
                          registry=registry, epoch=epoch, authority_version=epoch, round_terminal=terminal)
     mapping = dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
                    limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
