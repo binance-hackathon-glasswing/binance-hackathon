@@ -43,7 +43,14 @@ Gate A (DEPLOYMENT_BUILD.md) needs host work, secrets and team decisions that ca
 
 ## Results
 
-(not run yet)
+- 2026-10-15: criteria committed and pushed at `b4d9ce2`, before any code. Tool, file, tests and the example pin committed and pushed at `a005040`, before the suite ran.
+- **Criterion 1: PASS.** 251 sessions, 2026-01-02 → 2026-12-31, indices 0..250; the session dates equal every 2026 weekday minus the ten listed holidays (`tests/runtime/test_session_calendar.py` C1).
+- **Criterion 2: PASS.** Every open is 09:30 ET; every close is 16:00 ET except Nov 27 and Dec 24 (13:00 ET, the only `early_close` rows). Spot checks pass: Mar 6 14:30Z, Mar 9 13:30Z, Oct 30 13:30Z, Nov 2 14:30Z, Nov 27 close 18:00Z (C2).
+- **Criterion 3: PASS.** `exchange_calendars` 4.13.2 `XNYS` 2026 schedule: 251 sessions, (open, close) pairs **identical** to the file. Run once in a scratch venv with `python -I`; not a repo dependency. The official NYSE pages could not be fetched (hosts refused by this container's network policy), so the holiday list matches the NYSE Group release as reported by search results and this library, not a stored capture (open item below).
+- **Criterion 4: PASS.** `SessionCalendar` accepts the file and answers every 15-minute step from 2026-10-15T00:00Z to 2026-11-11T16:00Z; Friday's index holds through the DST weekend and Nov 2 is the next index at 14:30Z; times before Jan 2's open and at Dec 31's close are refused. `token_sessions` keeps a complete Oct 30 session (close 20:00Z) and lists Nov 27 as missing.
+- **Criterion 5: PASS.** `content_hash` = `7cd4101d…1a9b` equals the rule; `--check` passes on the committed file and fails on a one-minute change; file SHA-256 `bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c` equals `runtime.example.json`'s `driver.session_calendar_sha256`; `_pinned_json` (the pin check `build_driver` uses) accepts a host copy and refuses a changed one.
+- **Criterion 6: PASS locally, CI pending.** Full suite at `a005040` with a disposable PostgreSQL 16: 1259 passed, 7 skipped, 1 xfailed, 1595 subtests (Python 3.13.16; CI uses 3.12.15). Linux CI runs on the PR.
+- Synthetic test inputs only; no market data, credentials or logs were used.
 
 ## Open items
 
