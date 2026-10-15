@@ -77,17 +77,18 @@ class InitialState(unittest.TestCase):
         held = observe(chain(NVDAB=5))
         pending = chain()
         pending.pending = 8
+        # Each refusal names its own reason (the operator's message), not only a later self-check's.
         cases = {
-            'held stock token': dict(o=held),
-            'pending transaction': dict(o=observe(pending)),
+            'holds NVDAB': dict(o=held),
+            'still pending': dict(o=observe(pending)),
             'no BNB': dict(o=observe(chain(BNB=0))),
-            'profile not LIVE': dict(profile=dict(profile(), mode='OFFLINE')),
-            'profile without summary': dict(profile={k: v for k, v in profile().items() if k != 'quote_cost_summary'}),
-            'unknown mode': dict(mode='paper'),
-            'other wallet': dict(wallet='0x' + '5' * 40),
+            'LIVE profile': dict(profile=dict(profile(), mode='OFFLINE')),
+            'quote-cost summary': dict(profile={k: v for k, v in profile().items() if k != 'quote_cost_summary'}),
+            'dev or live': dict(mode='paper'),
+            'another wallet': dict(wallet='0x' + '5' * 40),
         }
-        for name, change in cases.items():
-            with self.subTest(name), self.assertRaises(ContractError):
+        for reason, change in cases.items():
+            with self.subTest(reason), self.assertRaisesRegex(ContractError, reason):
                 build(change.pop('o', None), **change)
 
 
@@ -169,12 +170,15 @@ class IssuersMap(unittest.TestCase):
         rows = TokenMetadata().request('GET', 'market/rwa/tokens', {})['response']['data']
         cases = {
             'unlisted ticker': TokenMetadata(tickers=dict(GOOGLB='AAPL')),
-            'missing ticker': TokenMetadata(tickers=dict(TSLAB='')),
+            'names no underlying ticker': TokenMetadata(tickers=dict(TSLAB='')),
             'duplicate token row': TokenMetadata(rows=rows + rows[:1]),
             'missing token row': TokenMetadata(rows=rows[1:]),
         }
+        reasons = {'unlisted ticker': 'is not a security the registry lists', 'names no underlying ticker':
+                   'names no underlying ticker', 'duplicate token row': 'missing/duplicate',
+                   'missing token row': 'missing/duplicate'}
         for name, client in cases.items():
-            with self.subTest(name), self.assertRaises((ContractError, Unavailable)):
+            with self.subTest(name), self.assertRaisesRegex((ContractError, Unavailable), reasons[name]):
                 issuers(client)
         mapping, _ = issuers(TokenMetadata())
         registry_entries = load_registry().entries
