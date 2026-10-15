@@ -23,6 +23,7 @@ READS = frozenset({('GET', p) for p in (
     ('POST', 'balance/token-balances-by-address'), ('POST', 'pre-transaction/gas-limit')})
 ENV_NAMES = ('BINANCE_API_KEY', 'BINANCE_SECRET_KEY', 'BN_WEB3_API_KEY',
              'BN_WEB3_API_SECRET', 'BN_WEB3_SECRET_KEY', 'AI_SEEDS_ADDRESS')
+BASE64_TOKEN = re.compile(r'[A-Za-z0-9+/_-]+={0,2}')
 
 
 def utc():
@@ -33,13 +34,30 @@ def encoded(v):
     return json.dumps(v, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
 
 
-def redact(value, secrets, *, ignore_case=False):
+def redact(value, secrets, *, ignore_case=False, binary_secrets=()):
     if isinstance(value, dict):
-        return {redact(k, secrets, ignore_case=ignore_case): redact(v, secrets, ignore_case=ignore_case)
+        return {redact(k, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets):
+                redact(v, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets)
                 for k, v in value.items()}
     if isinstance(value, list):
-        return [redact(v, secrets, ignore_case=ignore_case) for v in value]
+        return [redact(v, secrets, ignore_case=ignore_case, binary_secrets=binary_secrets) for v in value]
     if isinstance(value, str):
+        if binary_secrets:
+            # Decode equivalent Base64 alphabets/padding before comparison. Hex
+            # text is checked case-insensitively; binary transactions stay exact.
+            def screen(match):
+                token = match.group()
+                try:
+                    decoded = base64.b64decode(token + '=' * (-len(token) % 4),
+                                               altchars=b'-_', validate=True)
+                except ValueError:
+                    return token
+                plain = decoded.decode('utf-8', errors='replace')
+                if (any(secret in decoded for secret in binary_secrets)
+                        or redact(plain, secrets, ignore_case=ignore_case) != plain):
+                    return '[REDACTED]'
+                return token
+            value = BASE64_TOKEN.sub(screen, value)
         for secret in secrets:
             if secret:
                 value = (re.sub(re.escape(secret), '[REDACTED]', value, flags=re.IGNORECASE)
@@ -140,17 +158,19 @@ class Web3Client:
                       data=payload if method == 'POST' else None,
                       headers={'X-OC-APIKEY': self.key, 'X-OC-TIMESTAMP': stamp, 'X-OC-SIGN': sig,
                                'Content-Type': 'application/json'})
-        private_values = []
+        private_values, private_bytes = [], []
         for name in self.private_params:
             value = params.get(name)
             if isinstance(value, str) and value:
                 private_values.append(value)
-                private_values.append(base64.b64encode(value.encode()).decode())
+                private_bytes.append(value.encode())
                 if value.startswith('0x'):
                     # A prefix or hex case change still leaves usable signed bytes.
                     private_values.append(value[2:])
                     try:
-                        private_values.append(base64.b64encode(bytes.fromhex(value[2:])).decode())
+                        raw_private = bytes.fromhex(value[2:])
+                        if raw_private:
+                            private_bytes.append(raw_private)
                     except ValueError:
                         pass  # non-hex private parameters are still redacted
         secrets = (self.key, self.secret, sig, *private_values)
@@ -198,7 +218,8 @@ class Web3Client:
                 # Preserve all pairs for screening: a parser's last-key-wins rule
                 # must not hide an escaped/mixed-case private value in raw exports.
                 pairs = json.loads(raw, object_pairs_hook=lambda items: [list(item) for item in items])
-                private_reflection = redact(pairs, private_values, ignore_case=True) != pairs
+                private_reflection = redact(pairs, private_values, ignore_case=True,
+                                            binary_secrets=private_bytes) != pairs
             if not private_reflection and not reflects_secret(raw, secrets) and redact(body, secrets) == body:
                 record['response_body_base64'] = base64.b64encode(raw).decode()
             else:
@@ -213,7 +234,7 @@ class Web3Client:
         # Headers and exceptions are never captured. Private parameters must also
         # be removed from parsed response values and keys before artifact storage.
         record = redact(record, secrets)
-        record = redact(record, private_values, ignore_case=True)
+        record = redact(record, private_values, ignore_case=True, binary_secrets=private_bytes)
         record['artifact_sha256'] = self.artifacts.put(record)
         if record['outcome'] != 'ok':
             raise Unavailable(record['outcome'])
