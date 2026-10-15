@@ -286,4 +286,15 @@ Results (2026-10-15), local, each failing test pushed before its fix:
   passed, 7 skipped, 1 xfailed, 1597 subtests** (+5 tests, +4 subtests: this
   change only; same seven environmental skips). Log sha256 `40ca72cc…b623`,
   kept outside Git.
-- WR-L5: see the PR.
+- WR-L5 PASS for the change itself: [CI 38602538545](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38602538545)
+  on PR head `71f1276`: all four jobs green (runtime, both Terraform roots,
+  host bundle).
+- Base update (2026-10-15): merged `codex/system-testing-20261012` at
+  `421205b` (PR #68, section A) as `7459527`. The only conflict was this
+  row's `docs/LEDGER.md` line: kept the WR-L IDEA-049 row and the base's
+  new IDEA-049-A row. A touched none of this change's files. Local full suite
+  on `7459527` (same venv and disposable database): **1286 passed, 7
+  skipped, 1 xfailed, 1610 subtests**. Linux CI for `7459527`
+  ([run 38700735681](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/38700735681))
+  did **not start**: GitHub refused every job for account billing, so no
+  Linux result exists for the merged head.
