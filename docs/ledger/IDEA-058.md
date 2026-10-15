@@ -70,3 +70,15 @@
 5. Isaac/Keegan/Keith: existing Gate B decoder/route/provider proof, signer isolation/version binding and provisioning, first BNB/top-ups, recorded-real candles/cost/profile evidence, logged dev approve/swap and hosted crash/HALT/restore/shadow-day replay remain open. Gate C and signed rehearsal are not claimed.
 
 No whole GAP line is closed by this change. No secret, populated environment file, wallet key, private dataset or raw source artifact was added to Git. No signing, broadcast, official round-log upload, AWS provisioning or organiser contact occurred.
+
+## Checks ported from PR #89 (2026-10-15, Claude Code session at Keegan's request; criteria recorded before the tests)
+
+PR #89 (initial-state builder and issuers map, stacked on #84) is closed in favour of this PR. Of its checks, these were not yet here and are ported:
+
+| ID | Check |
+|---|---|
+| GA07 | Issuers: every pair `issuer_map` returns must also pass the evidence contract's own rule, `larp.integration.contract._issuer_matches(…, source_id='BINANCE_WEB3')`. A pair that the local ticker check accepts but that rule refuses is refused here too, so real filings are never later refused as `WRONG_ISSUER`. |
+| GA08 | Initial state self-checks before it is pinned: `ledger_from(initial_projection(state), [])` passes, and gate_b DR-06's shape holds (`schema`, run and wallet identity, `bnb_decimals` 18, `mode` dev, every unit a non-negative integer). A state that fails either is refused with its reason. |
+| GA09 | No BNB is not a refusal for the shadow run, which needs no gas. But `preparation-report.json` lists `FIRST_BNB (Q-03)` in `missing_inputs` whenever the captured native balance is 0, because Gate B (DR-06) refuses an unfunded wallet. |
+
+Not ported, because they need #84's finalized-block reader (`larp/execution_live/balances.py`), which this branch does not have: the pending-nonce refusal and a block-bound balance read. The kit's balance endpoint has no block identity. Follow-up after #84 merges: capture balances with `read_balances` and refuse while latest ≠ pending.
