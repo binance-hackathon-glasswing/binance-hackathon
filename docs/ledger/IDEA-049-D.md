@@ -469,3 +469,15 @@ strict main-branch handoff: the work intentionally remains in PR #80, not `main`
 Status updates posted with PR and validation links:
 [#31](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/31#issuecomment-6195202713)
 and [#59](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/59#issuecomment-6195203392).
+
+### WR-T acceptance decision (2026-10-15)
+
+**WR-T-D1 — Yao Zhu:** “dont need to run the mirror should be fine just merge”.
+The user accepts the recorded full PostgreSQL14.24 suite and native Linux/systemd
+results and authorizes merging PR #80 into `codex/system-testing-20261012` without
+dispatching mirror CI. This supersedes the WR-T mirror-dispatch and additional
+review handoff above; mirror CI remains **NOT RUN**, not passed. The WR-T-specific
+backlog line is removed with this acceptance/merge change. The production
+day-roll window/cadence remains a team decision under #31 and the existing
+IDEA-048/050 backlog entry; real-host qualification and unrelated CI obligations
+are unchanged. No issue is closed by this decision.
