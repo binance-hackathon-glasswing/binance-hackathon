@@ -66,3 +66,41 @@ Reason: `summarize` refuses without a weekend sample, so captures have to run th
 | Q8 | `capture --until <UTC time> --interval-seconds S` keeps capturing until that time: one round, then a wait, repeated. It writes one capture file per UTC day (`capture-YYYY-MM-DD.jsonl`), appending each round as it finishes, so a stop loses at most the round in progress. |
 | Q9 | An unexpected error in one round is written as a `FAILURE` record with stage `ROUND`, and the loop continues. `--rounds` keeps working; `--until` in the past runs no round; `--until` and `--rounds` together are refused. |
 | Q10 | `tools/run_quote_capture.sh` reads the key pair from the environment or a `.env` file without printing it, refuses to start without it, and runs `capture --until` in the background with a log file, keeping a Mac awake (`caffeinate`) when available. Its usage line names the weekend deadline. |
+
+## Results (2026-10-15)
+
+Synthetic Web3 responses only; no credentials, network or real quotes.
+
+**Order of commits**
+- Criteria: `6fd23a8`.
+- Red tests: `57b7ff0`. 9 test methods, failing for the predicted reason (no module); the broadcast-refusal control passed.
+- Build: `aa429e4`.
+- Runner criteria: `8ddb7c8`; runner red tests: `aae5b2d` (3 failing); runner build: `54e673b`.
+
+**Mutations.** Each was reverted, and each was caught by at least one test: gas median instead of p90; spread ignoring impacts; no weekend check; sell quoted for the pay amount; fallback gas not marked; no consumer check; no 1.2 factor; summary overwrite allowed; a round error ending the loop; a single capture file; `--until` and `--rounds` both allowed.
+- Disclosure: a first mutation pass ran before the module was committed. `git checkout` could not revert an untracked file, so those mutations stacked, and only the first result was valid. The file was restored by hand, checked line by line, committed, and the mutation pass was repeated properly. The results above are from the repeat.
+
+**Full suite.** Python 3.12.3 venv from `deploy/requirements-test.lock`, PostgreSQL 14.24 (the CI image's digest), bubblewrap installed.
+- Base `02e2be9`: 1528 passed, 7 skipped (the same setup; 1525 passed / 10 skipped without bubblewrap).
+- This branch at `54e673b`: **1540 passed, 7 skipped, 2133 subtests** (+12 tests: this change only).
+- The same tree in the pinned `python:3.12.15-slim-bookworm` image: 1520 passed, 7 failed. Every failure is `git` missing from that image, an environmental cause.
+
+**Mirror CI** (`Keegan4/keegan4-larp-ci-mirror`; workflow unchanged; mirror evidence, not org CI):
+- `aa429e4`, the producer before the runner: [run 38772183332](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38772183332). All four jobs passed, every step (Terraform both roots; pytest on Python 3.12.15 / PostgreSQL 14.24; real systemd; demo; Docker; host bundle).
+- `54e673b` (runner): not yet run on the mirror.
+
+| ID | Result | Evidence |
+|---|---|---|
+| Q1 | PASS | `Capture.test_q1_*` |
+| Q2 | PASS | `Capture.test_q2_*` |
+| Q3 | PASS | `Summary.test_q3_*` |
+| Q4 | PASS | `Summary.test_q4_*` |
+| Q5 | PASS | `EndToEnd.test_q5_*`: synthetic captures → summary → both LIVE profiles built with the repo's predicate set |
+| Q6 | PASS | `Cli.test_q6_*` |
+| Q7 | PASS | full suite above |
+| Q8–Q10 | PASS | `Runner.test_q8_*`, `test_q9_*`, `test_q10_*` |
+
+**Still open**
+- Real captures: Isaac or Keith, with the dev wallet's key, starting before Sat Oct 17 00:00 UTC.
+- The owners' review of the size and coverage before a summary is pinned.
+- Whether quoted amounts already net route fees (`fee_bps` 0 assumes so; the report keeps any `tradeFee`).
