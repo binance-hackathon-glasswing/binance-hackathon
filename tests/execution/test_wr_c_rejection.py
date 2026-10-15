@@ -227,8 +227,8 @@ class RejectedBroadcast(DatabaseCase):
                 self.guards.nonce = nonce
                 state = self.executor.reconcile(key, 14 + 120)
                 self.assertEqual((state.attempts[-1].state, state.status), (phase, 'ACTIVE'))
+                self.guards.nonce = 0  # a new intent needs nonce evidence to reach the barrier
                 self.barrier_held()
-                self.guards.nonce = 0
                 self.venue.outcomes[attempt.tx_hash] = finalized(attempt)  # resolve it to free the barrier
                 self.executor.reconcile(key, 14 + 240)
                 self.executor.store.commit(*self.ended(key))
