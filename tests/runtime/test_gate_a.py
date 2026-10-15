@@ -61,7 +61,7 @@ def profile():
     s['bnb_price_units'] = 700_000_000
     for row in s['symbols'].values():
         row.update(approve_gas_bnb_units=10**10, swap_gas_bnb_units=2 * 10**10)
-    published = Document((gate_a.ROOT / 'config/intelligence/red_flags.v1.json').read_bytes())
+    published = Document.from_dict(json.loads((gate_a.ROOT / 'config/intelligence/red_flags.v1.json').read_bytes()))
     return build_live_profiles(Document.from_dict(s), published)['REHEARSAL'].read()
 
 
