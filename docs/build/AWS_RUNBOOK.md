@@ -37,7 +37,7 @@ Database `larp-dev`:
 
 | Hosts and primary egress (`deploy/aws`, Gate A plan, IDEA-066 PC-AWS02): `primary` t3.small (public IPv4, HTTPS-only egress through a new internet gateway on the public route table, development SSM) and `signer` t3.micro (private subnet, no public IP, no SSM), AL2023 x86_64 `ami-0587b5bb1bc9eab99`, encrypted 20 GiB gp3, IMDSv2, termination protection; 6 host and 5 service alarms | 2026-10-16 UTC | ≈ $23/month more |
 
-Instance IDs: `primary` `i-0d565fb57b216a427`, `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. No LARP software is installed yet: the hosts carry only the cloud-init role file, so the five service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
+Instance IDs: `primary` `i-040fc5fea8b700e9a` (rebuilt 2026-10-16 so SSM works; SSM `Online`), `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. No LARP software is installed yet: the hosts carry only the cloud-init role file, so the five service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
 
 **Applied 2026-10-16 UTC with the host plan (IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The plan showed `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change; both were applied.
 
@@ -86,6 +86,8 @@ aws sts get-caller-identity --profile larp --region ap-southeast-2
   terraform -chdir=deploy/aws plan -input=false -var-file=development.tfvars -out=gate-a.tfplan
 )
 ```
+
+**SSM attach order (learned 2026-10-16, IDEA-066 PC-AWS02):** the development SSM policy must be attached before `primary` first boots. If the agent starts without it, it registers the instance for account-wide Default Host Management, saves that on disk and keeps failing after the policy arrives (reboot does not clear it). Without a shell, the fix is to rebuild `primary` (nothing is installed on a fresh host): `aws ec2 modify-instance-attribute --instance-id <primary id> --no-disable-api-termination`, then plan/apply with `-replace='aws_instance.host["primary"]'` (expect 1 add, 3 alarm updates, 1 destroy; the new instance gets termination protection back). Do not enable Default Host Management: it is account-wide and would cover `signer`. When using `aws iam simulate-principal-policy`, pass `--context-entries ContextKeyName=aws:RequestedRegion,ContextKeyValues=ap-southeast-2,ContextKeyType=string`; without it the account's region restriction shows a false `explicitDeny`.
 
 Confirm the account matches the team's existing credit project. This plan uses
 the current flags in `development.tfvars`; if they remain false it does not
