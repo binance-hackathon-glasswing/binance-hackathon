@@ -646,3 +646,31 @@ class ReviewFixes(unittest.TestCase):
             result = json.loads(out.getvalue())
             self.assertEqual((code, result['reason'], result['detail']), (4, 'INPUTS_REFUSED', detail))
             self.assertNotIn('secret', out.getvalue())
+
+    def test_ga14_the_balance_rpc_follows_the_examples_form(self):
+        listed = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
+        for name in ('balance_rpc_url', 'balance_rpc_source_id'):
+            listed['runtime.json']['driver'].pop(name, None)
+        listed['runtime.json']['driver']['balance_rpc_providers'] = [dict(url=None, source_id=None)] * 2
+
+        def driver(**changes):
+            args = dict(profile_raw=encoded(profile()), capture_raw=encoded(with_chain()),
+                        calendar_raw=(gate_a.ROOT / 'config/runtime/session-calendar.2026.json').read_bytes(),
+                        run_id='gate-a-test', build_id='b' * 40, now=NOW,
+                        balance_rpc_url='https://rpc.invalid/', balance_rpc_source_id='synthetic-rpc')
+            args.update(changes)
+            files = gate_a.prepare(listed, **args)
+            return json.loads(files['runtime.json'])['driver'], json.loads(files['preparation-report.json'])
+        d, report = driver()
+        self.assertEqual(d['balance_rpc_providers'], [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')])
+        self.assertFalse({'balance_rpc_url', 'balance_rpc_source_id'} & set(d))
+        self.assertNotIn('BALANCE_RPC', report['missing_inputs'])
+        d, report = driver(balance_rpc_url=None, balance_rpc_source_id=None)
+        self.assertEqual(d['balance_rpc_providers'], [dict(url=None, source_id=None)] * 2)
+        self.assertIn('BALANCE_RPC', report['missing_inputs'])
+        for changes in (dict(balance_rpc_source_id=None), dict(balance_rpc_url='http://rpc.invalid/')):
+            with self.subTest(**changes), self.assertRaisesRegex(ContractError, 'or neither'):
+                driver(**changes)
+        legacy = json.loads(assembled()['runtime.json'])['driver']  # the current example: the legacy pair (GA10)
+        self.assertNotIn('balance_rpc_providers', legacy)
+        self.assertEqual(legacy['balance_rpc_url'], 'https://rpc.invalid/')
