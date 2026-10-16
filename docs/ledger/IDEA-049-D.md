@@ -548,3 +548,8 @@ Local implementation and regression verification are complete at `0a8fbb4`. The 
 branch and opening a follow-up PR on 2026-10-16. Review/integration (Keith) and the first-host migration
 check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the alternate-key/encoding archive-read limitation
 above remains open.
+
+
+### All-open-PR review: prospective remediation (2026-10-16)
+
+ALLPR-R108: additive migration 013 validates every existing execution state/journal byte string with the 012 guard, refuses unsafe upgrades transactionally and leaves source bytes unchanged; safe upgrade/idempotency passes and 011/012 hashes stay unchanged. Add pre-012 seeded-row regression; verification follows approved push.

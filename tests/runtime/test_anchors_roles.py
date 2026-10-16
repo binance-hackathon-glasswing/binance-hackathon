@@ -263,7 +263,8 @@ class Roles(Rounds):
             original = db.execute("SELECT sha256 FROM schema_migrations WHERE name='011_execution_public_bytes.sql'")
             original = original.fetchone()[0]
             db.execute((ROOT / 'migrations/011_execution_public_bytes.sql').read_text())
-            db.execute("DELETE FROM schema_migrations WHERE name='012_execution_public_field_values.sql'")
+            db.execute("DELETE FROM schema_migrations WHERE name IN "
+                       "('012_execution_public_field_values.sql','013_validate_existing_execution_public_bytes.sql')")
         self.store.migrate()
         self.store.migrate()
         with self.store.transaction() as db:
@@ -273,6 +274,33 @@ class Roles(Rounds):
             with self.as_role['larp_execution'].transaction() as db:
                 db.execute("UPDATE execution_records SET state=%s WHERE economic_key='key-1'",
                            (b'{"raw_hex":{"x":"synthetic"}}',))
+
+    def test_allpr_r108_unsafe_existing_rows_refuse_upgrade_without_rewriting_bytes(self):
+        from larp.storage.postgres import PostgresStore
+        for table, column, sql in (
+                ('execution_records', 'state', "UPDATE execution_records SET state=%s WHERE economic_key='key-1'"),
+                ('execution_journal', 'event', "UPDATE execution_journal SET event=%s WHERE revision=1")):
+            with self.subTest(table=table):
+                # This whole isolated transaction is rolled back after each seeded-upgrade attempt.
+                with self.store.transaction() as db:
+                    db.execute('SAVEPOINT legacy')
+                    self.execution_rows_in_db_for_review(db)
+                    db.execute((ROOT / 'migrations/011_execution_public_bytes.sql').read_text())
+                    raw = b'{"raw_hex":{"x":"synthetic signed bytes"}}'
+                    db.execute(sql, (raw,))
+                    db.execute('SAVEPOINT upgrade')
+                    with self.assertRaises(Exception) as refusal:
+                        db.execute((ROOT / 'migrations/012_execution_public_field_values.sql').read_text())
+                        db.execute((ROOT / 'migrations/013_validate_existing_execution_public_bytes.sql').read_text())
+                    self.assertEqual(getattr(refusal.exception, 'sqlstate', None), '23514')
+                    db.execute('ROLLBACK TO SAVEPOINT upgrade')
+                    self.assertEqual(bytes(db.execute(f'SELECT {column} FROM {table}').fetchone()[0]), raw)
+                    db.execute('ROLLBACK TO SAVEPOINT legacy')
+
+    @staticmethod
+    def execution_rows_in_db_for_review(db):
+        db.execute("INSERT INTO execution_records VALUES('key-1','run','0xv',56,false,1,%s,'s')", (b'{}',))
+        db.execute("INSERT INTO execution_journal VALUES('key-1',1,%s,'s','p','h')", (b'{}',))
 
     def test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes(self):
         self.execution_rows()

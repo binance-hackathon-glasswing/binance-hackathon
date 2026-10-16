@@ -192,3 +192,5 @@ IDEA-049-D final review D (2026-10-14; PR #67 merged into `codex/system-testing-
 - **Drills and checks:** R-04 EC2 recover/reboot drill (Gate B); R-05 single-AZ RDS restore drill (Gate B; accepted risk if D-DN-11 = a); R-06 journald collection by EBS snapshot at teardown; R-08 `chronyc tracking` and a drift alarm (Gate A); R-09 database growth measured per round (Gate B); R-10 host disk alarm (Gate B); R-12 dated on-call rota (Oct 26); R-13 restart and coded HALT are team positions, not organiser answers (before Oct 27); R-14 bundle rebuild reproducibility (Gate C).
 
 A/B review PRs #68/#65, calendar PR #73, review leftovers PR #71, deployment pre-setup PR #72 and Gate B tooling PR #74 are now merged (#74 at `e5db681`, 2026-10-15); remaining section-requested shared edits still need D's explicit reconciliation (IDEA-049-D §9). These merges do not establish deployment readiness.
+
+- [ ] ALLPR-R108 — Keith: publish and verify prepared PR #108 review fixes and regressions; see IDEA-049-D ALLPR-R108 (unsafe existing-row upgrade refusal); Keegan owns hosted migration.
