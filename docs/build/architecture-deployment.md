@@ -176,7 +176,7 @@ accepted trade-off. It sits next to the open
 
 ## Approved network destinations (two-host layout; IDEA-062, #32)
 
-**Status: proposed, awaiting approval by Keegan + Isaac** (the owners #32 names). Every destination below is derived
+**Status: approved by Keegan (section B) 2026-10-16; awaiting approval by Isaac (section C)** (the owners #32 names). Every destination below is derived
 by `larp/runtime/routes.py` from the manifested service configs, `config/sources/sources.v1.json` and the clients'
 own endpoint constants; `tests/runtime/test_routes.py` R8 checks this table against that derivation. `<region>` is
 the config's `region` (`ap-southeast-2` now).
