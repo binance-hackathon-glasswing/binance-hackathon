@@ -463,3 +463,43 @@ obtain a fresh pair of reads; retain all intervening journal events.
 ### RR2 observed results and publication status
 
 RR2 current pushed head bc51c4a: focused balance/HALT/driver modules 77 passed / 67 subtests on Linux/Python3.12/PostgreSQL14.24. Reproductions: 2010 mismatch at t0, MATCH at t1s, 2010 at t60s wrongly adopts; reconstructing DayRoll after an in-window deferral returns OUTSIDE_WINDOW after the hold clears. Original ALLPR-R1 elapsed/newer-block checks are fixed. RR2-R1/R2 fixes and new regressions remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
+
+## PR115-C03 — verification and finding disposition (2026-10-16)
+
+This dated result supersedes the earlier RR2 "unexecuted pending approved push"
+status. Both reviewers' records and fixes are retained with merge commits.
+
+| Finding | Outcome |
+|---|---|
+| PR115-C01 / RR2-R1 | Fixed: an early MATCH or contradictory mismatch invalidates that asset's candidate; other unchanged assets retain their first timestamp. Three independent regressions reproduced the original defect before the fix. |
+| PR115-C02 | Fixed: a jump first visible in the midnight fetch defers the anchor before it can use old units and a split-adjusted mark. Both split directions are covered. The combined fix journals the deferral using RR2-R2's restart-safe path. |
+| PR115-C04 | Fixed: ordinary hold-only cadence no longer invalidates every confirmation indefinitely. The bounded journal suffix proves no wallet activity occurred; transient reservations, commands and unknown events still invalidate the candidate. Exact cadence/adoption replay passes. S5 now injects real transient reservations and retains its negative assertion. S9 requires the earlier valid confirmation, preserving its gas-block/resume assertions. |
+| PR115-C05 | Fixed: concurrent commits in the first-read reload cannot be blessed as this check's own commits. A race during confirmation logging aborts adoption, pauses spending and requires a fresh pair. Both gaps were reproduced before their fixes. |
+| RR2-R2 | Preserved: deferred day roll survives restart, including a restart after the hold clears; replay recognises DAY_ROLL_DEFERRED. The imported regression needed its existing replay helpers bound to SecondReview; no assertion was removed. |
+
+**Environment:** macOS ARM64, Python 3.12.14, pytest 9.1.1; disposable Docker
+`postgres:14.24-bookworm` (PostgreSQL 14.24, image digest
+`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+bound only to localhost port 55435. No production credentials, provider calls,
+signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
+
+- At `a2b54c1`, focused reconciliation/day-roll/HALT/storage: **92 passed,
+  50 subtests**, zero failures. After the final concurrency fix `472cede`, the
+  independent regressions: **13 passed, 4 subtests**, zero failures.
+- At combined `fd5dd6b` (includes concurrent `522cd53`, prior to Gate A's merge):
+  full suite **1698 passed, 9 skipped, 2324 subtests**, zero failures,
+  244.77 s. Skips: five opt-in real-systemd tests, three Linux bubblewrap tests,
+  one opt-in external market artifact. Raw log `/private/tmp/larp-pr115-full.log`,
+  SHA-256 `eb89cb27600c18781164b45fade1aff4308d775ce69505112270a18673ac05f0`.
+- One initial confirming-race invocation began before the push confirmation was
+  read; its result is not used as evidence. It was repeated after explicit push
+  confirmation in `/private/tmp/larp-pr115-adoption-race-red-confirmed.log` and
+  reproduced the same predicted failure.
+- Concurrent `959a627` adds the now-merged Gate A input assembly. It is preserved
+  in the review branch; a final full-suite run on that combined tree follows.
+
+**Still open:** the existing mandatory-sale/price-jump-hold policy question
+(Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
+systemd/bubblewrap qualification and actual hosted/signing/provider readiness
+with the existing owners. No policy choice, live authority, whole GAP closure
+or PR merge is implied by this offline review.
