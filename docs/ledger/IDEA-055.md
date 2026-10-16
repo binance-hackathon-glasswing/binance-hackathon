@@ -363,3 +363,45 @@ Criteria at `c78a0b3`; red tests at `dd226c2`; build at `1530625`; three tests a
 - `Settings.BLOCK` (used by B9 and `Composition`) gains `price_jump_check_bps`, now required.
 
 **Still open:** Isaac and Keegan's review. The unconfirmed-deficit pause (Design §3, "Gate") is flagged for Yao Zhu. PR 5 adds the RPC failover.
+
+## Balance RPC failover (PR 5, 2026-10-16)
+
+Builds D5's "made more robust" part. An ordered list of balance RPC providers; a check fails only when every provider fails. Built by a Claude Code session at Yao Zhu's request; Isaac (C, RPC choice #92) and Keegan review. Stacked on PR 4. Pass criteria are committed before any test or code.
+
+### Design
+
+1. **Setting.** `driver.balance_rpc_providers` is an ordered list of `{url, source_id}`: the primary first, then backups, at most four. Each URL must be HTTPS with a host and no credentials in the authority (the `Rpc` rule). Source IDs must be non-empty and unique.
+   - The legacy pair `balance_rpc_url` + `balance_rpc_source_id` is still accepted as a one-provider list. A config naming both forms is refused.
+   - In `dev`/`live`, a missing or empty list, or any provider with a null URL or source ID, refuses the start (exit 4), as before.
+   - `runtime.example.json` names two providers with null URL and source ID. The primary and the backup both come from Isaac's RPC choice (#92); the backup URL stays null until then.
+2. **Failover (`BalanceProviders` in `larp/execution_live/balances.py`).** For each check, the providers are tried in order with a whole `read_balances`. Reads never mix providers within one observation, because the block identity re-check is per provider. A provider that raises `DependencyUnavailable` or `Blocked` is skipped for that check, and the next one is tried. The observation carries the `source_id` of the provider that served it, and so does every RPC artifact.
+   - The check fails only when every provider failed: `RPC_UNAVAILABLE` if every failure was unavailability, otherwise `OBSERVATION_INVALID`. Retry after 60 s and the 30-minute maximum age are unchanged.
+   - Each new check starts again at the primary.
+   - One `DecimalsCache` is shared across providers: a contract's decimals are a constant, so two agreeing reads may come from different providers.
+   - The two reads that confirm an adoption may come from different providers. The PR 4 rules (same chain units, ledger units and `settled_block`, nothing committed between) are unchanged.
+3. **`build_driver`.** One `Rpc` per provider, with artifacts under `<market_artifact_root>/chain` as today. The `BalanceProviders` reader replaces the single `Rpc`, inside the existing balance block only.
+4. **Approved destinations and manifest (G-03, IDEA-062).**
+   - The route checker (`larp/runtime/routes.py`) plans one destination per provider, and the legacy pair still works. Any unset provider URL is an UNSET row, which fails the check. A bad URL in any provider is refused before any probe.
+   - The approved table in `docs/build/architecture-deployment.md` names `driver.balance_rpc_providers`.
+   - `config/release/services.v1.json` (the manifest's third-party services, F-61) declares `bsc-rpc` as `PENDING_DECISION` with candidates and a fallback until #92. The configured URLs are bound to the manifest through `runtime_config_sha256`.
+   - `tools/deploy/render_host_configs.py` lists unset values inside lists too, so a null provider URL is reported.
+
+### Pass criteria (recorded before any test is written)
+
+Synthetic RPC providers, disposable PostgreSQL; no credentials, network, signing or upload. Tests first and red, then the build.
+
+| ID | Check |
+|---|---|
+| F1 | Settings: the list form with one or two providers is accepted in order. The legacy pair is accepted as one provider. Both forms together are refused. In `dev`/`live`, a missing or empty list, a null URL or source ID, a non-HTTPS URL, a duplicate source ID or more than four providers is refused. `offline` with none is `None`. |
+| F2 | Failover: with the primary unavailable (and, separately, returning a rejected answer), the same check reads from the backup. The observation names the backup's `source_id`. The next check tries the primary first again. |
+| F3 | A check fails only when every provider fails. With the primary down and the backup up, checks are comparable and `balances_ok` stays true. With both down, the check is `SKIPPED: RPC_UNAVAILABLE`, retried 60 s later, and new spending stops only after the maximum age. |
+| F4 | An adoption can be confirmed across providers: the first read from the primary, the confirming read from the backup (primary down) → `ADJUSTED`. |
+| F5 | `build_driver` with two providers wires a reader whose providers are in the configured order, with their source IDs. A single legacy provider still builds. A `dev` start with no provider is refused. |
+| F6 | Route checker: both provider hosts are planned. An unset URL in either provider fails the check as UNSET. A bad URL in any provider is refused before any probe. The legacy single form is still planned. The approved table names `driver.balance_rpc_providers`. |
+| F7 | `config/release/services.v1.json` declares `bsc-rpc` and still passes `validate_services`. |
+| F8 | The example names two providers with null URL and source ID. `unset()` reports `driver.balance_rpc_providers[0].url` and `[1].url`. |
+| F9 | Full suite: the PR 4 count plus only these tests and the updated ones, with no new failure or skip. Mutations, each reverted, must each be caught: no failover (primary only); failover on unavailability only (not on a rejected answer); the legacy form refused; both forms accepted; the route checker planning only the first provider; `unset()` not recursing into lists. |
+
+**Existing tests this changes:**
+- `Settings::test_b9_the_example_names_every_balance_setting`: the example now uses the list form instead of the legacy keys.
+- `tests/runtime/test_routes.py`: its `configs()` fixture fills the provider list. R3 (bad URL, unset URL) uses `providers[0]`, R8 checks the new field name, and the account-specific hosts include the backup.
