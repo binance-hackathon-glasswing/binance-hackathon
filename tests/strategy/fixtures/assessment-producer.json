@@ -1,5 +1,5 @@
 {
- "producer_commit": "d2631543e65ff13d7b391dddbf6eaa05d896e216",
+ "producer_commit": "94359bf22efddc17f9b79a1f8cbbfcccb6b3629d",
  "request": {
   "allowed_tools": [
    "fetch_document",
@@ -70,7 +70,7 @@
   }
  },
  "result": {
-  "assessment_key": "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b",
+  "assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -577,13 +577,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+   "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "eaff775b2a02406e7efeadac88b714e744e8c2ea43e591b29934b0a42ebf479f",
+  "model_hash": "13122a97fc376d36a354a8a234adfc4333641926b8554332c9067ef23a610958",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -835,7 +835,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1613,7 +1613,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2521,7 +2521,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3422,7 +3422,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4315,7 +4315,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "d6b1d031dbd48b8b28dea484e4dd183bd2542fa54f0161c600c19c8ba8f505f3",
+       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4774,7 +4774,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:8e14837087ed39308348ca50699c2670b5d994fabb38f9fa3f1bb535039ddd8e",
+  "result_id": "res:d1b98e2bbe60d5c18f590f778069b30549841b75f6d4627f55dafeec5ec38bb9",
   "retained_facts": [],
   "review_requests": [
    {
@@ -4782,12 +4782,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:bbbccc4ff3e0bea8246dcf52fdbed9a998cbe8145f9d312d90611519f0bb81ca",
+     "job_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "db3f9b61ca2677ca71c8164e6acad24f48e9accbe5d0a1d751701c1a211c662b",
+      "after_assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -4798,7 +4798,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:bbbccc4ff3e0bea8246dcf52fdbed9a998cbe8145f9d312d90611519f0bb81ca"
+    "request_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f"
    }
   ],
   "review_scope": null,

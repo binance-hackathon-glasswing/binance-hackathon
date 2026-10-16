@@ -1,0 +1,262 @@
+# IDEA-057 — AIand implementation of external-first evidence routing
+
+- Date / author: 2026-10-15 SGT / Keith, implemented with Codex at the user's request to do both the AIand-specific design and implementation.
+- Status: open for review (shadow implementation; AR1–AR8 synthetic/local acceptance passed 2026-10-16; no real-provider inference or live adoption).
+- From: [IDEA-056](IDEA-056.md), draft PR #85. This branch is stacked on `codex/idea-056-model-routing` at `ab2e155`, not merged into main.
+- Review: [implementation PR #86](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/86), stacked on proposal PR #85. Local acceptance only; merge and live adoption are separate decisions.
+- Scope: AIand adapter; opt-in external-first shadow assessor; durable $40 OpenAI admission plus $10 full-run reserve; complete external review after credit refusal; provenance and runtime secret loading. External funding is supplied by the user; K3/GLM prices are outside this comparison.
+- Out of scope: real-provider inference, private labels, independent real-document evaluation, source/model rights approval, scored/live activation, trading-policy adoption and AWS changes. These retain IDEA-056 MR-01–06 and GAP-23/24/57/62/67 owners.
+
+## AIand-specific evidence, checked before implementation
+
+**[PRIMARY]** Read the documentation at [docs.aiand.com](https://docs.aiand.com/), including [chat](https://docs.aiand.com/api/chat-completions/), [catalog](https://docs.aiand.com/models/catalog/), [reasoning](https://docs.aiand.com/capabilities/reasoning/), [headers](https://docs.aiand.com/reference/response-headers/) and [errors](https://docs.aiand.com/errors/). Also fetched the public, unauthenticated `GET https://api.aiand.com/v1/models` on 2026-10-15 with TLS verification using the system CA store. No credentials or inference request were used.
+
+The public catalog returned `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with `low`, `high`, `max`, a 1,048,576-token context and a 131,072-token output bound. Both are served by AIand, not a direct call to the original lab. Org-scoped account access, deployment revision, paid-request behavior and accuracy are unverified. The example pins the observed capability fields; it does not use AIand's dynamic `auto` selector.
+
+The adapter uses fixed `https://api.aiand.com/v1/chat/completions`, bearer auth, JSON mode, explicit `reasoning_effort` and `max_completion_tokens`. It requires the body model plus `X-Model` to match case-insensitively and `X-Reasoning-Effort` to match exactly. The two reasoning text fields are duplicates; retain one in the trace and the complete original reply artifact. Unknown usage is never treated as a zero OpenAI charge. AIand credit errors are not OpenAI-credit errors.
+
+Also checked current [OpenAI error codes](https://developers.openai.com/api/docs/guides/error-codes): `credit_balance_exhausted` and named organization/project spend/usage limits are distinct from transient rate limiting. The implementation recognizes those codes and legacy insufficient-quota errors without latching on every 429.
+
+## Prospective component pass criteria (before any changed code runs)
+
+| ID | Required evidence |
+|---|---|
+| AR1 | Synthetic AIand transport confirms exact endpoint/auth/model/effort/token cap/JSON body; original nonsecret bytes and response metadata retained; no key in repr, result or artifacts. |
+| AR2 | Wrong/substituted model, missing/rounded effort, refusal, truncation, invalid JSON/usage and conflicting reasoning aliases fail closed. Arbitrary endpoint, `auto`, unsupported effort and malformed capability snapshot refuse construction. |
+| AR3 | Explicit private budget initialization with prior usage; runtime cannot recreate a missing file. Cross-worker reservations are atomic; unknown/crashed usage stays charged; account mismatch refuses; operating-limit/exhaustion state persists across restart and wallet/run changes. |
+| AR4 | Routine GLM-low precedes stronger review. $40 admission or explicit OpenAI insufficient quota dispatches difficult work to external high; a generic 429 does not latch credit exhaustion. Missing OpenAI key supports external-only operation with stable declared identity. |
+| AR5 | All stages share the original deadline and at most six tools / ten model steps (six tools plus at most four stage finishes). Required review failure/disagreement cannot produce an accepted clean thesis; no unbounded retries or new minute for fallback. |
+| AR6 | The real assessor/verifier, runtime result validator, evidence reducer and round trace accept identity-bound composite results. All actual stage models, raw artifacts and rejected/abandoned stages remain traceable; scheduler review-job identity is preserved. |
+| AR7 | Runtime construction is opt-in via a pinned routing file, fixed shared budget directory and optional model secrets from Secrets Manager. Defaults remain deterministic. Experimental routing refuses service execution/scored live mode; it has shadow authority only. |
+| AR8 | Relevant intelligence/runtime regressions pass; run the broader local suite and report platform/environment skips accurately. Static AST/JSON/links/diff checks pass. No inference, wallet signing or AWS calls in validation. |
+
+These are engineering criteria, not IDEA-056's independent-label non-inferiority experiment. T01/real accuracy, omission rates, hosted network/permissions and provider access remain NOT RUN. No component pass can authorize live deployment.
+
+## Design choices
+
+- External routine: GLM-5.3 low; difficult external primary: Kimi K3 high; secondary: GLM-5.3 high. These are explicit **example experiment settings**, not selected production models. Sol medium is optional and receives the same original filing/context through its own verifier.
+- The routine stage receives at most half the time and three tool calls, reserving time/retrieval for review. Later stages receive only remaining time/tools. A seeded clean-case audit supplements independent item/event/coverage/conflict triggers; model confidence alone is not a router.
+- Composite identity binds the routing spec, component identities, account and reserve policy. Job IDs stay unchanged; per-stage model-request namespaces distinguish paid calls. Full intermediate result artifacts preserve verifier outcomes without duplicating their entire text into each final trace.
+- OpenAI reservations happen before POST, using a conservative UTF-8 input bound and configured output cap at standard short-context prices. Inputs beyond the short-context bound go external. Failed/unknown calls retain their maximum reservation. A provider credit refusal latches external-only; rate limits merely try the declared external review path for that assessment.
+- The SQLite budget is explicitly initialized, not auto-created by the runtime, in one shared primary-host directory independent of wallet/run. Do not run duplicate model workers on other hosts with copied ledgers. Unrelated account/console usage is outside this allocated budget and must be deducted at initialization. Backups/host migration must carry and reconcile this ledger; no automatic multi-host budget failover is claimed.
+- Because independent evaluation and declaration are not complete, `aiand_routed` is implemented only for shadow execution and refuses scored `live` mode. Real activation requires a later reviewed change, not a configuration bypass.
+
+## Files and usage
+
+Implementation: `larp/intelligence/aiand.py`, `model_budget.py`, `routing.py`, shared provider metadata/error capture, per-stage trace identity and runtime construction/optional credentials. Example: `config/intelligence/aiand-routing.example.json`. Runbook: [AIAND_MODEL_ROUTING.md](../build/AIAND_MODEL_ROUTING.md).
+
+## Validation record
+
+- Before execution: static AST parsing of changed Python and JSON parsing of the example passed; no project module was imported. Synthetic regression cases prepared in `tests/intelligence/test_aiand_routing.py` plus runtime composition/secret tests. Execution results are recorded below: AR1–AR8 local acceptance (2026-10-16), the PR #86 review fix, PR85-R1/R2 and the #93 cleanups.
+
+## Remaining work and owners
+
+Yao Zhu + independent annotator/Keith: real evidence labels, omission-aware mixed/external-only quality and deadline/cost measurement. Keegan + Yao Zhu: hosted Secrets Manager, private ledger/artifact permissions, single-primary backup/recovery and service/deviation declaration. Team: endpoint rights, org access, exact production revisions, model adoption and freeze. None is established by documentation or synthetic tests.
+
+### AR1–AR8 local acceptance — 2026-10-16 SGT
+
+Tested pushed code: `36a3166dedf8ba693827c316f90e69e3b0e91dba`. Local Docker Desktop runner: native ARM64 Ubuntu 22.04.5, Python 3.12.15, PostgreSQL 14.24, systemd 249 and bubblewrap 0.6.1. The suite ran as the unprivileged `ci` user in a disposable systemd container with a disposable PostgreSQL database. The final documentation-only commit does not change tested code.
+
+- Full suite: **1551 passed, 1 skipped, 2208 subtests passed** in 187.08 seconds, with `LARP_TEST_SYSTEMD=1`, disposable `LARP_TEST_DATABASE_URL`, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and `python -m pytest -q -p no:cacheprovider`. The single skip requires the optional external recorded-market dataset; no test failed or xfailed.
+- AR1–AR7 synthetic engineering checks pass: exact wire/metadata and credential exclusion, strict model/effort refusal, private durable/concurrent admission, credit versus transient-rate errors, external difficult-case primary/secondary, missing-key operation, deadline abandonment, bounded fallback configuration, consequence/event/falsifier disagreement, real consumer/gate/trace and pinned shadow-only runtime construction.
+- `pip check` passes. The real offline runtime demo passes with synthetic ports: audit pending 0, jobs pending 0, open rounds 0 and not quarantined. No live sender, signer or provider is constructed.
+- `deploy/Dockerfile` builds for `linux/amd64`; its default inspection command passes under `--network none --read-only --cap-drop ALL`. This is an image/packaging smoke, not hosted inference.
+- Changed Python AST, JSON, local Markdown links and `git diff --check` pass. The full suite includes tracked-credential scanning. Terraform and host-bundle infrastructure checks were not repeated because those inputs are unchanged.
+- Initial focused failures were code-identity-derived golden hashes. Both golden traces and the dependent strategy producer fixture were re-captured; verified assessment outcomes remained unchanged. Review also fixed missing failed/in-flight model provenance, limited fallback stages to the documented bound, compared full verified consequences and reported unknown hosted failure cost honestly.
+- Initial full-run harness failures used the wrong disposable database name and omitted git metadata. A real disposable checkout and the correct database resolved those setup failures. Initial network-disabled image builds lacked the dependency install cache; the successful build downloaded only pinned public packages. A demo invocation missing its required disposable DSN was corrected. These failed attempts are retained separately from the final passing results.
+- Hosted Actions are deliberately skipped (`[skip ci]`) at the user's request because the quota is exhausted. No workflow is changed. Native ARM64 local evidence is not a hosted x86_64 CI result.
+
+Artifacts are outside the repo at `/private/tmp/larp-aiand-validation/results/`: `summary.json`, `full.log`, `full.xml`, `environment.json`, `docker-build-final.log`, `docker-smoke.log`, `offline-demo.json` and `pip-check.log`. Final report hashes:
+
+- `full.log`: `15140ded5f63d53abd8c099ab6aa6e7ca08a11dbcb50bed7890403834e20715c`
+- `full.xml`: `2cf92e8de428fbf4bcb2b5fea90db8cbf2382f8c4cb8a584dc49801bed261f04`
+- `docker-smoke.log`: `51ca497439d15fde454e755a69b96ee3f4d565da83cdf6d764e4e94b7b7f4365`
+- `offline-demo.json`: `a9fee7ddbb681c0fbb649a6de628ce6d35b955508db8f77f9f45b89925909510`
+
+AR1–AR8 pass only for the stated synthetic/local scope. Real AIand/OpenAI inference, account entitlements, independent labels/omission rates, actual latency/usage, model/source rights, hosted secret/ledger recovery and live/scored adoption remain NOT RUN and retain the owners above. No whole GAP closes.
+
+### PR #86 review fix — 2026-10-15
+
+Review found that a missing, locked or corrupt budget ledger raised out of the routed assessment after the routine AIand stage had run, because the `external_only` check and the trace snapshot read the ledger without a guard. The coordinator then recorded `ASSESSMENT_UNAVAILABLE` and no external review ran. This contradicted the runbook, which says storage failure blocks only OpenAI dispatch. `RoutedAssessor` now treats an unreadable ledger as external-only (`MODEL_BUDGET_UNAVAILABLE`) for that assessment, and still never recreates the file. New AR4 regression: `test_ar4_unavailable_budget_storage_blocks_openai_but_not_external_review`. The local re-validation is recorded in the PR #86 review.
+
+### PR85-R1/R2 — admission deadlines and paid-response retention (2026-10-16 SGT)
+
+Keegan's PR #85 review at `232447c` reproduced two P2 defects: budget admission
+could outlast the original assessment deadline and still dispatch OpenAI; a
+post-response settlement failure discarded paid-response provenance from the trace.
+
+Prospective pass criteria, recorded before running changed code:
+
+- **PR85-R1:** advance wall or monotonic time during admission. Dispatch receives
+  only the remaining allowance; admission at or beyond expiry dispatches no POST.
+  Unused reservations remain conservatively charged. Existing shared-deadline and
+  external-fallback tests continue to pass.
+- **PR85-R2:** inject settlement and credit-switch storage failures after a provider
+  reply. Keep exact request/reply artifact references, usage, cost, reasoning and
+  provider outcome in the composite trace; report accounting unavailable, use the
+  external review route, and block later OpenAI dispatch in the same process even
+  if the ledger is readable again. Failed settlement keeps its full reservation.
+- Run the focused routing/provider/runtime regressions with synthetic transports
+  only after committing and pushing the code. Report runtime/platform limitations
+  and any broader checks separately; no paid model calls or deployment.
+
+Implementation: count serialization/admission time using both the model clock and
+monotonic time before dispatch. Catch post-response accounting errors, preserve
+the provider outcome and artifacts, and latch local budget unavailability until
+process restart/reconciliation. Existing durable reservations protect restart
+accounting. Results pending execution of the pushed change. No adoption or whole
+backlog item is completed by these fixes.
+
+#### PR85-R1/R2 verification — 2026-10-16 SGT
+
+Tested committed/pushed code: `8d12ae0b7f77f169b0de2aaee5e4a9564fdb1af2`.
+Local Ubuntu 22.04 WSL, x86_64, Python 3.12.15. Synthetic transports only;
+no model inference, wallet, AWS service calls or deployment.
+
+- Intelligence discovery: `python3.12 -m unittest discover -s tests/intelligence -t . -q`:
+  **330 passed, 1 skipped** (331 cases, 43.556 seconds), including all 28 routing
+  tests and the six wall/monotonic admission-delay subcases in the new deadline test.
+- Runtime credentials/driver: `python3.12 -m unittest tests.runtime.test_credentials tests.runtime.test_driver -q`:
+  **16 passed, 6 skipped** (22 cases, 2.336 seconds); PostgreSQL-dependent driver
+  cases remain unrun without a disposable database.
+- PR85-R1/R2 pass for the stated synthetic scope: expired admissions make no POST,
+  live admissions receive the reduced allowance, settlement failure retains paid
+  artifacts/usage/cost/reasoning, failed credit-switch writes preserve the provider
+  refusal, external reviews run, and later OpenAI calls stay blocked locally.
+- Changed Python AST and `git diff --check` pass. No data-source/config/authority,
+  production profile, dependency lock or workflow change is required.
+
+Initial environment attempts are separate: WSL's system Python 3.10 passed the
+focused 65 tests with 6 skips after adding pinned `botocore==1.43.111` to a
+temporary dependency directory. Broader discovery on 3.10 had three failures and
+two errors caused by unsupported trailing-Z ISO-date parsing and missing dotenv.
+The final passing runs used temporary Python 3.12.15 plus pinned
+`python-dotenv==1.2.4`. Windows Python 3.14 also passed the standalone deadline test.
+Hosted CI remains quota-blocked/skipped; no full repository or hosted/live
+acceptance is claimed. MR-01–06 and the existing adoption backlog retain their
+owners and remain open. The documentation update after this test changes no code.
+
+### Issue #93 cleanups — prospective criteria (2026-10-16 SGT)
+
+Non-blocking findings from the PR #86 review ([#93](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/93)). Written and pushed before the changed code runs. Tests in `tests/intelligence/test_aiand_routing.py` (`BudgetAdmission`); each new test must fail on the unfixed code and pass after the fix.
+
+| ID | Required evidence |
+|---|---|
+| I93-1 | `ModelBudget.initialize` closes its SQLite connection: a test that wraps `sqlite3.connect` sees `close()` called on every connection `initialize` opens, and the file can be renamed/removed and re-initialized afterwards. |
+| I93-2 | One `switches` row per real switch. After an over-bound settle through `BudgetedOpenAI.step` (usage above the reservation), the ledger holds exactly one row, `OPENAI_USAGE_EXCEEDED_BOUND`. Calling `external_only` again, or an `admit` refused at the limit while already external-only, adds no row. A first switch still records its reason. |
+| I93-3 | Directory privacy matches the runbook. `ModelBudget(...)` (and therefore `initialize`, which reopens the file) refuses a ledger whose parent directory has any `0o077` mode bit (group-readable `0o750` is refused) or is not owned by the current user. A `0o700` parent owned by the current user still opens. Ownership is tested by substituting the expected owner id, since tests cannot chown. |
+| I93-4 | The stale "Execution results are pending…" line in the Validation record above is updated to point at the recorded results. |
+
+No AR1–AR8 or PR85-R1/R2 test may regress; the full local suite (Python 3.12, PostgreSQL 14) is run after the fix and reported with exact counts.
+
+#### Issue #93 results — 2026-10-16 SGT
+
+Order: criteria `657fd03` → fix and tests `c075849`. The three new tests were run against the unfixed code first and failed for the expected reasons (I93-1: one of two connections left open; I93-2: two `OPENAI_USAGE_EXCEEDED_BOUND` rows; I93-3: a `0o750` parent was accepted).
+
+| ID | Result | Evidence (`tests/intelligence/test_aiand_routing.py`, `BudgetAdmission`) |
+|---|---|---|
+| I93-1 | PASS | `test_i93_1_initialize_closes_every_connection_it_opens` |
+| I93-2 | PASS | `test_i93_2_one_switch_row_per_real_switch` |
+| I93-3 | PASS | `test_i93_3_parent_directory_must_be_private_and_owned` (also: `initialize` refuses before creating the file) |
+| I93-4 | PASS | Validation record line updated |
+
+Full local suite at `c075849` (Linux x86_64 container, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 14.24 in Docker, `python -m pytest -q -p no:cacheprovider`): **1551 passed, 8 skipped, 2210 subtests passed**. Base `3b4d1e6` in the same environment: 1548 passed, 8 skipped (+3 tests, no new failure). Skips are environmental: 1 opt-in external market artifacts, 1 "root ignores the directory mode" (the container runs as root), 3 disposable-systemd runner not enabled, 3 bubblewrap not installed. Hosted CI not used (org Actions minutes exhausted). The runbook now says to run `init` as the runtime user, since the ledger refuses a parent directory it does not own.
+
+## Deploy-branch integration for the Gate A shadow trial — prospective criteria (2026-10-16 SGT)
+
+Branch `claude/aiand-shadow-gate-a` from `codex/system-testing-20261012`, with the routing branch (plus the #93 fixes) merged in. Written and pushed before the changed code runs. Each new test must fail before its change and pass after it.
+
+| ID | Required evidence |
+|---|---|
+| SG-1 | **Writable model artifacts on a read-only evidence store.** On the host the runtime opens the evidence root read-only (`ProtectSystem=strict`, no writable evidence mount, IDEA-047 R15). Measured 2026-10-16 on a real read-only bind mount at the merge head: the routed assessor raised `OSError: [Errno 30] Read-only file system`, so every round would be `ASSESSMENT_UNAVAILABLE`. Required: for `aiand_routed`, `build_driver` gives the router, its model adapters and the tool-result writes a private store at `<market_artifact_root>/model` (inside the unit's `StateDirectory`), while evidence bytes are still read from the shared evidence store. Test: with the evidence store refusing every write, a routed assessment completes, records no `ARTIFACT_WRITE_ERROR`, and every artifact it names (request/reply, stage result, tool result) is readable from the model store and not written to the evidence store. The deterministic path's wiring is unchanged (its own tool-result writes have the same read-only problem; reported separately, not changed here). |
+| SG-2 | **Route checker.** `routes.plan('primary', …)` with a runtime config whose `driver.assessor` is `aiand_routed` adds `api.aiand.com:443` and `api.openai.com:443` for `larp-runtime`, equal to the hosts of `larp.intelligence.aiand.ENDPOINT` and `larp.intelligence.providers.OPENAI_ENDPOINT`. A `deterministic` runtime adds neither; `api.anthropic.com` never appears; the signer plan is unchanged. R8 covers both hosts in the approved table. |
+| SG-3 | **Example config.** `config/runtime/runtime.aiand-shadow.example.json` differs from `runtime.example.json` only in `driver.execution: shadow`, `driver.assessor: aiand_routed`, `model_routing_file`, `model_routing_sha256`, `model_budget_root` (and drops `expiry_grace_ms`, which only service execution reads). Filled with synthetic values, `build_driver` accepts it in `mode: dev` with shadow execution and builds the routed assessor; it refuses it with `execution: service` and with `mode: live`. `model_budget_root` and `market_artifact_root` lie inside `/var/lib/larp-runtime/`. |
+| SG-4 | **Secrets tooling.** `tools/deploy/put_service_secrets.sh` prompts `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` hidden, after the Binance keys; an empty answer omits that key. Values reach `aws` on stdin only, never in argv or output. The runtime loader accepts both (existing `test_credentials`). |
+| SG-5 | **Documentation.** The approved-destination table lists both hosts as shadow-only approved (with the MR-06 decision); `api.anthropic.com` stays unapproved. `docs/build/AIAND_MODEL_ROUTING.md` gives tonight's host steps in order, with the prior OpenAI spend as a flagged placeholder. |
+| SG-6 | **No regression.** Full local suite (Python 3.12, PostgreSQL 14) on this branch against the deploy-branch base: no new failure; counts and skips reported. Golden fixtures are regenerated only if the merge breaks them. |
+
+### Deploy-branch integration results — 2026-10-16 SGT
+
+Order: merge `bc14e23` → criteria `3539161` → red tests `5b54182` (all 8 new/changed tests failed: missing `OverlayArtifacts`, missing example, route hosts, secrets prompts) → build `548a2c3` → docs `e57fdf5`, merge of the #93 results `07f2917`.
+
+- **Merge.** `larp/runtime/service.py` merged without conflict: `build_driver` keeps the IDEA-055 balance check (`RuntimeHealth`, `balance_settings`, `DecimalsCache`) and adds the shadow-only `aiand_routed` branch. Only `docs/LEDGER.md` conflicted (rows ordered IDEA-055, 056, 057, 061, 062). The merge also brought main's three docs-only commits (`305f3de`, `0a7d87a`, `e410e49`). **No golden fixture was regenerated**: the goldens, strategy fixtures and route tests passed unchanged after the merge.
+
+| ID | Result | Evidence |
+|---|---|---|
+| SG-1 | PASS | `test_aiand_routing.py::Routing::test_sg1_read_only_evidence_store_keeps_model_artifacts_private`, `test_driver.py::Composition::test_sg1_routed_model_artifacts_go_to_a_private_runtime_store`. Also measured on a real read-only bind mount: before, `OSError: [Errno 30]`; after, `ASSESSED`, stages routine + openai-review, no tool errors, 21 private artifacts, evidence store unchanged. |
+| SG-2 | PASS | `test_routes.py::Plans::test_sg2_aiand_shadow_runtime_adds_the_model_hosts`, extended `test_r8_…` |
+| SG-3 | PASS | `test_driver.py::Composition::test_sg3_shadow_example_builds_in_dev_shadow_and_refuses_service_or_live` (placeholders filled: `intelligence_mode` with `development`, since `live` values are still unset and Gate A's mode comes from PR #87) |
+| SG-4 | PASS | `test_deploy_presetup.py::PutServiceSecrets::test_sg4_…` (two tests); the existing secrets tests pass with the two new prompts left empty |
+| SG-5 | PASS | `architecture-deployment.md` table and note; runbook "Host steps for the Gate A shadow trial" |
+| SG-6 | PASS | see below |
+
+**Mutations** (each applied, run, restored; 4/4 caught): model store set back to the evidence store (SG-1 driver test fails); `OverlayArtifacts.put` writes the shared store (SG-1 routing test fails); route checker ignores `aiand_routed` (SG-2 and R8 fail); `LARP_MODEL_API_KEY` never stored (SG-4 fails).
+
+**Full suite** (Linux x86_64 container as root, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 14.24, `python -m pytest -q -p no:cacheprovider`): base `1388f80` **1578 passed, 10 skipped, 2194 subtests**; build `548a2c3` **1617 passed, 10 skipped, 2284 subtests**, no failure. All 10 skips are environmental: 1 opt-in external market artifacts, 1 root ignores directory modes, 5 disposable systemd runner, 3 bubblewrap. Hosted CI not used (org Actions minutes exhausted).
+
+**Finding outside this change (not fixed here).** The deterministic path has the same read-only problem in a milder form: on the real read-only mount, every deterministic tool call was recorded `TOOL_ERROR:…:ARTIFACT_WRITE_ERROR` (fetch_document, prior_context, compare_facts), so Gate A's deterministic runtime would assess without its tools. Owner: section D / Keegan (runtime wiring). `OverlayArtifacts` is the likely fix.
+
+### SG-7: deterministic tool results on the read-only evidence mount (pre-registered 2026-10-16, before the fix)
+
+Claude Code session for Keegan (section B), after the PR #114 review. This fixes the "finding outside this change" above, because it breaks Gate A's deterministic runtime (IDEA-058) on the host.
+
+| ID | Pass criterion |
+|---|---|
+| SG-7a | `build_driver` with `"assessor": "deterministic"` gives its `EvidenceAssessor` a `PortEvidenceReader` over `OverlayArtifacts`: shared = the evidence store (`<evidence_root>/artifacts`, read), private = `<market_artifact_root>/model` (write), the same private store the routed path uses. Nothing else in the deterministic wiring changes (same model, config and registry). |
+| SG-7b | With a shared store whose `put` raises `OSError(30)` (read-only), a deterministic assessment over the synthetic world makes tool calls, none ends `ARTIFACT_WRITE_ERROR`, every tool result artifact is readable from the private store, and the shared store is unchanged. The same assessment over the read-only store alone does end with `ARTIFACT_WRITE_ERROR` (the failure reproduces). |
+| SG-7c | No golden fixture is regenerated. Mutation caught: the deterministic reader set back to the shared store fails SG-7a. Full suite: no new failure against the merged base. |
+
+### SG-7 results (2026-10-16)
+
+Order: base merge `00df1b9` (`codex/system-testing-20261012` at `e84083c`; `docs/LEDGER.md` conflict resolved by keeping the base's IDEA-049-D and IDEA-055 rows and this branch's IDEA-056/057 rows) → criteria `2139445` → fix `8cb340a`.
+
+| ID | Result | Evidence |
+|---|---|---|
+| SG-7a | PASS | `test_driver.py::Composition::test_sg1_routed_model_artifacts_go_to_a_private_runtime_store` (its last block, which asserted the deterministic reader was unchanged, now asserts the overlay) |
+| SG-7b | PASS | `test_aiand_routing.py::…::test_sg7_deterministic_tool_results_on_a_read_only_evidence_store`: over the read-only store alone every tool call ends `ARTIFACT_WRITE_ERROR`; with the overlay none does, every result is in the private store, the shared store is unchanged |
+| SG-7c | PASS | No golden regenerated. Mutation (deterministic reader back on the shared store) caught. Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): base `e84083c` 1590 passed, 10 skipped, 2201 subtests; this branch at `8cb340a` **1630 passed, 10 skipped, 2291 subtests, 0 failed**. The same 10 environmental skips. |
+
+SG-3 compatibility with PR #87 (2026-10-16): #87's GA03 guard lets a hosted `dev` run use only the explicit `shadow` evidence settings, so SG3 fills `intelligence_mode` with `shadow` when #87's `intelligence.shadow.v1.json` is present and `development` otherwise. Checked on a scratch merge of #87, #114, #115 and #116.
+
+The "finding outside this change" above is fixed by SG-7. Not yet measured on a real read-only bind mount (SG-1 was); that is part of the host steps.
+
+## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
+
+**Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
+
+### Preconditions (before the first routed assessment)
+
+- **P0 Provider check (open; Yao Zhu, on the host).** The AIand account's org-scoped catalog lists `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with the pinned efforts (`low` for GLM routine; `high` for the K3 primary and GLM secondary reviewers), and the first real routed assessment's recorded reply headers `x-model` and `x-reasoning-effort` match the requested model and effort for every stage that ran. Record the date, the catalog response hash and the first assessment's ID in this entry. A mismatch is a kill (K4). Not run yet.
+- **P1 Budget ledger** initialized on the host with all prior OpenAI spend (Yao Zhu supplies the number; see the runbook). Record the `status` snapshot (charged, available) at the start.
+- **P2 Pinned routing file** and its SHA-256 recorded here (the reviewed copy of `config/intelligence/aiand-routing.example.json`), plus the build ID.
+
+### Data and method
+
+Data sources, all read-only after the trial: the PostgreSQL journal (round records with their assessment results: `status`, `budget_used.elapsed_ms`, `routing` stages and reasons, `routing.budget`, `cost`, `model_io`), the model artifact store `<market_artifact_root>/model` (exact request/reply bytes and per-stage results), and the budget ledger (`charges`, `switches`). Unit of analysis: an **assessment job** — one assessment the coordinator requested; a round recorded `ASSESSMENT_UNAVAILABLE` counts as a job that did not complete.
+
+| ID | Measure | Definition | Bar / use |
+|---|---|---|---|
+| M1 | Availability | Jobs that return a validated result with status `ASSESSED` or `ABSTAIN` and `elapsed_ms ≤ deadline_ms` (60 000), ÷ all jobs. `UNAVAILABLE`, `ASSESSMENT_UNAVAILABLE` and over-deadline count as failures; `REJECTED_REQUEST` is excluded and counted separately. | ⚠ PROPOSED: ≥ 95 % over the trial. |
+| M2 | Latency | p50 / p95 / max of `budget_used.elapsed_ms` over completed jobs, against the 60 s deadline; per routing path (routine only / OpenAI review / external review). | ⚠ PROPOSED: p95 ≤ 45 s; p50 ≤ 20 s; any job over 60 s is a defect to report. |
+| M3 | OpenAI charge | Ledger `charged_micro_usd` at the end minus at the start (reserved, unknown and settled), in total and per assessment (÷ all jobs, and ÷ jobs with an OpenAI stage), against the $40 admission. Include reservations still `RESERVED`/`UNKNOWN`. | ⚠ PROPOSED: trial total ≤ $8 (20 % of the admission); projected spend (start charge + trial daily rate × days left to Nov 12) ≤ $40. |
+| M4 | AIand cost | Per-stage AIand token usage (input/output) per model and effort, and any provider-reported cost. External prices stay excluded from pass bars (user decision, IDEA-056). | Report only. |
+| M5 | Verifier pass rate per stage | `bakeoff.metrics` claim-verification pass rate and schema-valid rate, computed separately for `routine`, `openai-review`, `external-review-0` and `external-review-1` from the stage result artifacts. | ⚠ PROPOSED: routine ≥ 0.80 and each review stage ≥ 0.90 claim-verification pass rate; schema-valid ≥ 0.95 per stage. |
+| M6 | Escalation rate | Share of jobs with any routing review reason, broken down by reason (`ROUTINE_NOT_ASSESSED`, `INDEPENDENT_ITEM_CANDIDATE`, `EVENT_INTERPRETATION`, `INCOMPLETE_OR_CONFLICTING_EVIDENCE`, `SEEDED_CLEAN_CASE_AUDIT`), and by which reviewer ran. | Report; ⚠ PROPOSED alert (not a kill) if > 60 %, because the IDEA-056 §6 budget table assumes ≤ 50 %. |
+| M7 | External-only switches | Ledger `switches` rows with reasons and times, plus per-assessment `MODEL_BUDGET_UNAVAILABLE` routing states. | Report every one; see K1/K3. |
+| M8 | Disagreement with the deterministic baseline | After the trial, replay each job's identical request and saved evidence offline through `EvidenceAssessor` + `RuleBaselineModel` (no network), then `bakeoff.metrics(routed, baseline)` finding-type agreement plus a per-job diff of findings, event findings and status. | Report; disagreement is not error — M9 decides which side is right. |
+| M9 | Accuracy and omission vs independent labels | Keith labels a stratified sample of the trial's filings **blind** to both outputs: the material findings and adverse events each filing supports. Sample: every filing if ≤ 40, else 40 drawn with a frozen seed recorded here before drawing, stratified by issuer × routing path × status. Measures: finding precision and recall, **omission rate** (labelled adverse events absent from accepted findings; `ABSTAIN` reported separately, not as a hit), for routed and baseline. Labels stay outside the repo (hash recorded here; never-do #7). | ⚠ PROPOSED: routed adverse-event omission rate ≤ baseline's, and zero unsupported Class 1/2 findings. With ≤ 40 filings this is triage only; it cannot establish IDEA-056 §7 non-inferiority. |
+
+### Kill criteria (stop early; the operator acts, no code change)
+
+- **K1 Spend.** OpenAI trial charge reaches $8, any single UTC day exceeds $2.50, or the ledger switches external-only for `OPENAI_OPERATING_LIMIT` before Oct 21: stop OpenAI use (remove `LARP_MODEL_API_KEY` from the runtime secret and restart); the trial may continue external-only and is reported as such.
+- **K2 Availability.** M1 below 80 % over any rolling 24 h with ≥ 20 jobs: revert the runtime to `"assessor": "deterministic"` (re-pin the runtime config) and end the trial.
+- **K3 Accounting.** Any `MODEL_BUDGET_UNAVAILABLE` state, an `OPENAI_USAGE_EXCEEDED_BOUND` switch, or a ledger/provider reconciliation difference: stop OpenAI use as K1 and reconcile before any restart.
+- **K4 Identity or safety.** Provider check P0 fails, any served model/effort mismatch is accepted, any credential appears in a log or artifact, or any routed result reaches signing: revert to deterministic immediately and report as an incident.
+
+### Outcome rules
+
+- **Supports adoption (for the Oct 22 decision):** P0–P2 done, no kill fired, every frozen bar met.
+- **Not supported:** a kill fired, or M1, M3 or M9 misses its bar.
+- **Inconclusive:** fewer than 3 trial days, fewer than 20 completed jobs, or Keith's labels not ready by Oct 21.
+
+Whatever the outcome, live/service use needs a later reviewed code change; this trial cannot enable it. Results and every deviation from this plan are appended below with dates.
