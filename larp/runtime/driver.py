@@ -411,13 +411,12 @@ class DayRoll:
     (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact.
 
     A price-jump hold inside the window defers the roll; the deferred day then rolls on the first cycle after the hold
-    clears or expires, even past the window (IDEA-055 R2). The deferral is kept in memory only."""
+    clears or expires, even past the window (IDEA-055 R2). The deferred day is journaled so a process restart cannot lose it."""
 
     def __init__(self, coordinator, *, window_ms):
         if type(window_ms) is not int or not 0 < window_ms < DAY_MS:
             raise ContractError('Invalid day-roll window')
         self.coordinator, self.window = coordinator, window_ms
-        self.deferred = None  # the midnight (ms) of a day whose roll a price-jump hold deferred inside the window
 
     def due(self, current, now_ms):
         projection = current['projection']
@@ -431,11 +430,12 @@ class DayRoll:
         if not self.due(current, now_ms):
             return None
         midnight = now_ms - now_ms % DAY_MS
-        if now_ms - midnight > self.window and self.deferred != midnight:
+        projection = current['projection']
+        deferred = projection.get('day_roll_deferred_ms')
+        if now_ms - midnight > self.window and deferred != midnight:
             return 'OUTSIDE_WINDOW'
         if active_holds(current['projection'], now_ms):
-            self.deferred = midnight  # not lost when the window closes (R2)
-            return 'PRICE_JUMP_HOLD'  # a mark that jumped is not an anchor until a balance check confirms it
+            return self._defer(current, midnight, now_ms)
         if observations is None:
             return 'MARKET_UNAVAILABLE'
         builder = c.context_builder
@@ -445,8 +445,7 @@ class DayRoll:
         if getattr(builder, 'price_jump', None) is not None:
             _, holds = builder._jumps(projection, observations, now_ms)
             if holds:
-                self.deferred = midnight
-                return 'PRICE_JUMP_HOLD'
+                return self._defer(current, midnight, now_ms)
         ledger = ledger_from(projection, current['reservations'])
         try:
             market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
@@ -461,11 +460,23 @@ class DayRoll:
         rolled = roll_day(Document.from_dict(dict(ledger, reservations={})), boundary=boundary,
                           anchor_units=anchor).read()['risk']
         projection['risk_state'] = rolled
+        projection.pop('day_roll_deferred_ms', None)
         marks = sorted((m['symbol'], m.get('content_hash')) for m in observations if type(m) is dict)
         event = dict(kind='DAY_ROLLED', day=rolled['day'], boundary=boundary, anchor_units=anchor,
                      decided_ms=now_ms, marks=[list(m) for m in marks])
         c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
         return 'ROLLED'
+
+    def _defer(self, current, midnight, now_ms):
+        """Persist both an existing hold and one first discovered by the midnight fetch (RR2-R2, PR115-C02)."""
+        projection = current['projection']
+        if projection.get('day_roll_deferred_ms') != midnight:
+            projection['day_roll_deferred_ms'] = midnight
+            day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
+            event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
+            self.coordinator.store.commit(batch_for(Document.from_dict(current), 'day-deferred:' + day, event,
+                                                     projection=projection))
+        return 'PRICE_JUMP_HOLD'
 
 
 def active_holds(projection, now_ms):
@@ -574,7 +585,7 @@ class BalanceCheck:
         """Prove that intervening commits are wallet-neutral; checking only the final ledger misses transient
         reservations. A bounded journal suffix preserves that evidence without exporting the whole run."""
         allowed = {'ROUND_PLANNED', 'PLAN_REJECTED', 'ROUND_LOGGED', 'ROUND_CLOSED',
-                   'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED'}
+                   'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED', 'DAY_ROLL_DEFERRED'}
         batches = self.coordinator.store.journal(self.coordinator.run_id, after_version=first['version'],
                                                   through_version=current['version'])
         if len(batches) != current['version'] - first['version']:
