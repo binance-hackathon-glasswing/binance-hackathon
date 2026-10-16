@@ -696,3 +696,26 @@ measure and rank all-in cost with gas at actual order sizes (C measurements,
 B-DEC-02/06); four-session staggered evaluation and stressed correlated-loss
 results (Keith+B, B-DEC-03). WR-38 does not change the PARTIAL REVIEW /
 DEPLOYMENT BLOCKED status.
+
+## D-DN-09: HALT split by reason (decision and pre-registered criteria, 2026-10-16)
+
+**Decision (Keegan, section B, 2026-10-16):** a HALT is split by reason. This settles item 006 above, IDEA-049-D D-DN-09, #34 criterion 1 and #52 criterion 1.
+
+- **Block every signature, as today:** `CLOCK`, and any HALT reason that is not listed as pausing (fail closed). The integrity quarantine also stays a separate, total fence.
+- **Pausing (new spending and discretionary trading only):** `DELIVERY_DEADLINE` and `REPEATED_FAILURES`. Under a HALT whose reasons are **all** pausing, agreed mandatory reductions still execute: a planned `mandatory` bStock SELL, which covers Class 1 and falsifier exits, the deep cut, hard-cap trims and the terminal flatten. Every existing check still applies, including fresh executable quotes, fencing and epoch, reservations, the pre-execution audit record, the registered version and expiry. BUYs, gas top-ups and every non-mandatory intent stay blocked.
+
+Branch `claude/d-dn-09-halt-split` from `codex/system-testing-20261012` at `1388f80`. It uses synthetic tests only: no keys, chain, ai-seeds or AWS.
+
+**Pass criteria (registered before any test is written):**
+- **HS1, classification:** one shared helper decides, from the projection, whether a planned intent may proceed under the current HALT. It allows nothing under `CLOCK`, under a mix that includes `CLOCK`, or under an unknown reason. Under pausing-only reasons it allows exactly the planned intents with `mandatory: true`, `side: SELL` and kind `BSTOCK_TRADE`.
+- **HS2, planning:** under a pausing-only HALT, with the version registered, the coordinator runs the risk planner with **no policy proposal**. It keeps only the mandatory bStock SELL intents and their reservation deltas, and records any dropped intent IDs.
+  - The round is still logged, with `HALTED:<reasons>` in its errors, and the policy state does not advance.
+  - Under `CLOCK`, the plan stays empty as today.
+  - The `REPEATED_FAILURES` probe still discards everything else: a halted BUY round places no command.
+- **HS3, claim gate:** under a pausing-only HALT, `PostgresStore.command` returns a command only if the open round's record plans that intent as a mandatory bStock SELL and the command payload agrees; otherwise `Conflict`. The driver's `waiting` and `reauthorize` offer only those intents. Under `CLOCK` or quarantine they offer nothing.
+- **HS4, signing gates:** `RunAuthorization.facts` gives `risk_valid` true under a pausing-only HALT only for a planned mandatory sell. `ExecutionStore.check_signing_run`, which the signer service also calls, refuses everything else under any HALT.
+- **HS5, end to end on PostgreSQL:**
+  - A `DELIVERY_DEADLINE` HALT raised after the approval of a mandatory evidence-falsifier SELL no longer stops it: the swap is signed, broadcast and settled, and the position goes to 0.
+  - The same HALT raised as `CLOCK` still stops the swap: only the approval is signed. This is `test_e5_a`'s proof, moved to `CLOCK` on purpose.
+  - Reconciliation under a HALT continues as before.
+- **HS6:** a mutation of each gate is caught. The full suite shows no new failures against the base `1388f80` (1581 passed, 7 skipped locally). Existing tests change only where they encoded the old "every HALT blocks every signature" rule, and each such change is listed here.
