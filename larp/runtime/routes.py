@@ -161,7 +161,15 @@ def plan(role, configs, sources):
         c, u = configs['runtime'], UNITS['runtime']
         p.add(fixed['web3'], HTTPS, u, 'Binance Web3 Open API')
         driver = c.get('driver') if isinstance(c.get('driver'), dict) else {}
-        _url(p, driver.get('balance_rpc_url'), 'runtime.driver.balance_rpc_url', u, 'BSC RPC (balance check)')
+        listed = driver.get('balance_rpc_providers')
+        if listed is None:  # the legacy single provider
+            _url(p, driver.get('balance_rpc_url'), 'runtime.driver.balance_rpc_url', u, 'BSC RPC (balance check)')
+        elif type(listed) is not list or not listed or any(type(x) is not dict for x in listed):
+            raise ContractError('runtime.driver.balance_rpc_providers must be a non-empty list of providers')
+        else:  # every provider, primary first (IDEA-055 PR 5)
+            for i, provider in enumerate(listed):
+                _url(p, provider.get('url'), f'runtime.driver.balance_rpc_providers[{i}].url', u,
+                     'BSC RPC (balance check, ' + ('primary' if i == 0 else f'backup {i}') + ')')
         _aws(p, c, 'runtime', u, 'secretsmanager', 'Secrets Manager (runtime secret)')
         _database(p, c, 'runtime', u)
     if 'execution' in configs:

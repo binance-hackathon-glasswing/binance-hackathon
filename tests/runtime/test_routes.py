@@ -70,6 +70,7 @@ class Plans(unittest.TestCase):
         expected = {
             (host(BASE), 443): ({'larp-runtime', 'larp-execution'}, 'REACHABLE', True),
             ('balance-rpc.example', 443): ({'larp-runtime'}, 'REACHABLE', True),
+            ('balance-rpc-backup.example', 443): ({'larp-runtime'}, 'REACHABLE', True),  # IDEA-055 PR 5
             ('chain-rpc.example', 443): ({'larp-execution'}, 'REACHABLE', True),
             (host(BASE_URL), 443): ({'larp-uploader'}, 'REACHABLE', True),
             (f'secretsmanager.{REGION}.amazonaws.com', 443):

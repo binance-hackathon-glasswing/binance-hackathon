@@ -14,7 +14,6 @@ refused (live-start checks, configuration, release or session contract). 2, 3 an
 """
 
 import argparse
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
@@ -141,28 +140,51 @@ OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_
                             'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
 # IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
 # `price_jump_check_bps` is the price-jump guard's threshold (IDEA-055 PR 4); its hold lasts the maximum age.
-BALANCE_KEYS = ('balance_rpc_url', 'balance_rpc_source_id', 'balance_check_interval_ms', 'balance_check_max_age_ms',
-                'price_jump_check_bps')
+# The RPC is `balance_rpc_providers`, an ordered list of {url, source_id} tried in turn (PR 5), or the legacy single
+# provider `balance_rpc_url` + `balance_rpc_source_id`.
+BALANCE_KEYS = ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
+LEGACY_RPC_KEYS = ('balance_rpc_url', 'balance_rpc_source_id')
+MAX_BALANCE_PROVIDERS = 4
+
+
+def balance_providers(d):
+    """[{url, source_id}] in order from either form, or None when neither form is named."""
+    listed = d.get('balance_rpc_providers')
+    legacy = [k for k in LEGACY_RPC_KEYS if d.get(k) not in (None, '')]
+    if listed is not None and legacy:
+        raise ContractError('Name balance_rpc_providers or the legacy balance_rpc_url pair, not both')
+    if listed is None:
+        if not legacy:
+            return None
+        listed = [dict(url=d.get('balance_rpc_url'), source_id=d.get('balance_rpc_source_id'))]
+    if type(listed) is not list or not 0 < len(listed) <= MAX_BALANCE_PROVIDERS:
+        raise ContractError(f'balance_rpc_providers must list 1 to {MAX_BALANCE_PROVIDERS} providers')
+    for p in listed:
+        if (type(p) is not dict or set(p) != {'url', 'source_id'} or type(p['url']) is not str
+                or not p['url'].startswith('https://') or type(p['source_id']) is not str or not p['source_id']):
+            raise ContractError('Each balance RPC provider needs an HTTPS url and a source_id')
+    if len({p['source_id'] for p in listed}) != len(listed):
+        raise ContractError('Balance RPC source IDs must be unique')
+    return [dict(url=p['url'], source_id=p['source_id']) for p in listed]
 
 
 def balance_settings(d, mode):
     """The balance-check settings of a driver block, or None for an offline/paper run that names none of them."""
     present = [k for k in BALANCE_KEYS if d.get(k) not in (None, '')]
-    if not present and mode not in ('dev', 'live'):
+    named = d.get('balance_rpc_providers') is not None or any(d.get(k) not in (None, '') for k in LEGACY_RPC_KEYS)
+    if not present and not named and mode not in ('dev', 'live'):
         return None
-    missing = [k for k in BALANCE_KEYS if k not in present]
+    missing = [k for k in BALANCE_KEYS if k not in present] + ([] if named else ['balance_rpc_providers'])
     if missing:
         raise ContractError('Missing balance-check settings: ' + ','.join(missing))
-    url, source = d['balance_rpc_url'], d['balance_rpc_source_id']
+    providers = balance_providers(d)
     interval, max_age = d['balance_check_interval_ms'], d['balance_check_max_age_ms']
-    if type(url) is not str or not url.startswith('https://') or type(source) is not str:
-        raise ContractError('The balance RPC needs an HTTPS URL and a source ID')
     if type(interval) is not int or type(max_age) is not int or not 0 < interval <= max_age:
         raise ContractError('Invalid balance-check interval or maximum age')
     jump = d['price_jump_check_bps']
     if type(jump) is not int or not 0 < jump <= 10_000:
         raise ContractError('Invalid price-jump threshold')
-    return dict(rpc_url=url, source_id=source, interval_ms=interval, max_age_ms=max_age, price_jump_bps=jump)
+    return dict(providers=providers, interval_ms=interval, max_age_ms=max_age, price_jump_bps=jump)
 
 
 def _pinned_json(path, sha256, what):
@@ -275,15 +297,13 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     day_roll = DayRoll(coordinator, window_ms=d['day_roll_window_ms']) if d.get('day_roll_window_ms') else None
     balance_check = None
     if balance is not None:
-        from larp.execution_live.balances import DecimalsCache, read_balances
+        from larp.execution_live.balances import BalanceProviders, DecimalsCache
         from larp.execution_live.chain import Rpc
-        rpc = Rpc(balance['rpc_url'], artifacts=Artifacts(str(Path(d['market_artifact_root']) / 'chain')),
-                  source_id=balance['source_id'])
-        decimals = DecimalsCache()  # reused once two reads agree (#96)
-
-        def read(now_ms):
-            observed = datetime.fromtimestamp(now_ms / 1000, timezone.utc).isoformat()
-            return read_balances(rpc, wallet=wallet, observed_at=observed, decimals=decimals)
+        chain = Artifacts(str(Path(d['market_artifact_root']) / 'chain'))
+        # Primary first, then backups; a check fails only when every provider fails (IDEA-055 PR 5).
+        read = BalanceProviders([Rpc(p['url'], artifacts=chain, source_id=p['source_id'])
+                                 for p in balance['providers']],
+                                wallet=wallet, decimals=DecimalsCache())  # decimals reused once two reads agree (#96)
         balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check
