@@ -11,14 +11,16 @@ from larp.execution import Conflict as SigningConflict, Intent, USDT
 from larp.execution_live.loop import RunAuthorization
 from larp.execution_live.store import ExecutionStore
 from larp.integration.runtime import RuntimePlanner
+from larp.runtime.coordinator import Coordinator
+from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePlanner, FakePolicy
 from larp.runtime.supervision import Guard
 from larp.storage.postgres import Conflict, doc
 from tests.execution_fixtures import ROUTER, TOKEN
 from tests.runtime import test_round_driver_service as svc
-from tests.runtime.test_supervision import NOW, Supervision
-from tests.support import request
+from tests.support import DatabaseCase, request
 
 RUN, VERSION, SECOND = svc.RUN, svc.VERSION, svc.SECOND
+NOW = 1791590400000
 
 
 def intent(intent_id, side='SELL', mandatory=True, kind=None):
@@ -128,18 +130,22 @@ class Split(svc.ServiceHarness):
         self.halt(reason)
         return round_id, i
 
+    # The HALT event is a commit, so a command planned before it must be reauthorized (PR #66 R3) before a claim; the
+    # driver does that every cycle, before it offers commands.
     def test_hs3_claim_gate_and_driver_offer_the_mandatory_sell_under_a_pausing_halt(self):
         round_id, i = self.planned_then_halted('DELIVERY_DEADLINE')
-        self.store.command(RUN, i['intent_id'], self.epoch, self.w.clock())
         driver = self.service_driver()
+        self.assertEqual(driver.execution.reauthorize(self.w.clock()), [i['intent_id']])
         self.assertEqual(driver.execution.waiting(self.w.clock()), [i['intent_id']])
+        self.store.command(RUN, i['intent_id'], self.epoch, self.w.clock())
 
     def test_hs3_claim_gate_and_driver_offer_nothing_under_clock(self):
         round_id, i = self.planned_then_halted('CLOCK')
+        driver = self.service_driver()
+        self.assertEqual(driver.execution.reauthorize(self.w.clock()), [])
+        self.assertEqual(driver.execution.waiting(self.w.clock()), [])
         with self.assertRaises(Conflict):
             self.store.command(RUN, i['intent_id'], self.epoch, self.w.clock())
-        driver = self.service_driver()
-        self.assertEqual(driver.execution.waiting(self.w.clock()), [])
 
     def signing_intent(self, round_id, i):
         return Intent(RUN, round_id, i['decision_id'], i['intent_id'], VERSION, i['intent_id'], self.wallet, TOKEN,
@@ -184,12 +190,14 @@ class Split(svc.ServiceHarness):
         self.assertEqual(self.store.load(RUN).read()['projection']['portfolio']['positions']['NVDAB']['units'], 0)
 
 
-class ClaimGate(Supervision):
+class ClaimGate(DatabaseCase):
     def test_hs3_a_pending_buy_is_refused_under_a_pausing_halt(self):
-        c = self.coordinator()
+        c = Coordinator(self.store, FakeAssessor(), FakePolicy(), FakePlanner(), execution=FakeExecution(),
+                        run_id='run', version_id='synthetic', profile_hash='a' * 64, address='0x' + '1' * 40,
+                        clock_ms=lambda: NOW)
         c.start('r1', request('BUY'), NOW)
-        command_id = self.projection()['round_records']['r1']['plan']['intents'][0]['intent_id']
-        self.guard()._halt('DELIVERY_DEADLINE', NOW, {})
+        command_id = self.store.load('run').read()['projection']['round_records']['r1']['plan']['intents'][0]['intent_id']
+        Guard(self.store, 'run', max_failures=3, clear_after=2)._halt('DELIVERY_DEADLINE', NOW, {})
         with self.assertRaises(Conflict):
             self.store.command('run', command_id, self.epoch, NOW)
 
