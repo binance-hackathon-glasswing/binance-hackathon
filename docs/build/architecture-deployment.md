@@ -184,7 +184,7 @@ the config's `region` (`ap-southeast-2` now).
 | From | Unit | Destination | Port | Purpose |
 |---|---|---|---|---|
 | primary | larp-runtime, larp-execution | `web3.binance.com` | 443 | Binance Web3 Open API: market data, quotes, transaction building, broadcast (F-90..F-106) |
-| primary | larp-runtime | host of `driver.balance_rpc_url` in `runtime.json` | 443 | BSC RPC for the finalized chain-balance check (IDEA-055); account-specific, chosen and manifested by the owners |
+| primary | larp-runtime | host of each `driver.balance_rpc_providers` URL in `runtime.json` (primary first, then backups; or the legacy `driver.balance_rpc_url`) | 443 | BSC RPC for the finalized chain-balance check (IDEA-055) with failover (PR 5); account-specific, chosen by Isaac (#92), declared as `bsc-rpc` in `config/release/services.v1.json` and bound to the manifest through the runtime config hash |
 | primary | larp-execution | host of `rpc_url` in `execution.json` | 443 | BSC RPC for chain reads and receipts; account-specific |
 | primary | larp-uploader | `api.commonservice.io` | 443 | ai-seeds event log (F-99..F-101) |
 | primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | **Shadow only** (IDEA-057; MR-06, 2026-10-16): AIand Chat Completions for the GLM-5.3 routine stage and the K3/GLM external reviews. The runtime refuses this assessor with `execution: service` or `mode: live` |

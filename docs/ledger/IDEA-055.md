@@ -1,7 +1,7 @@
 # IDEA-055 — Minimal chain-balance reconciliation: detect a mismatch and stop new risk (#36)
 
 - Date / owner: 2026-10-15 SGT / design drafted with Claude Code at the user's request. Owners to agree before anything is built: Isaac (C, balance observation), Keegan (B, comparison and planner effect), Yao Zhu (D, scheduling, journal, health gate), as named in the #36 status of 2026-10-15.
-- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover in PR 5
+- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover built in PR 5 (F1–F9 PASS locally, 1612 passed / 10 skipped); provider URLs wait on #92
 - Links: #36 (R14, P1); IDEA-049-B item 007; IDEA-049-C C-OPEN-008; IDEA-049-D D-REQ-039; IDEA-039 / PR #74 (`gate_b probe-chain`); SKILL.md Q-20, F-95, F-114, F-117; inferences.md I-28; plan.md G-43.
 
 ## What and why
@@ -364,6 +364,89 @@ Criteria at `c78a0b3`; red tests at `dd226c2`; build at `1530625`; three tests a
 
 **Still open:** Isaac and Keegan's review. The unconfirmed-deficit pause (Design §3, "Gate") is flagged for Yao Zhu. PR 5 adds the RPC failover.
 
+## Balance RPC failover (PR 5, 2026-10-16)
+
+Builds D5's "made more robust" part. An ordered list of balance RPC providers; a check fails only when every provider fails. Built by a Claude Code session at Yao Zhu's request; Isaac (C, RPC choice #92) and Keegan review. Stacked on PR 4. Pass criteria are committed before any test or code.
+
+### Design
+
+1. **Setting.** `driver.balance_rpc_providers` is an ordered list of `{url, source_id}`: the primary first, then backups, at most four. Each URL must be HTTPS with a host and no credentials in the authority (the `Rpc` rule). Source IDs must be non-empty and unique.
+   - The legacy pair `balance_rpc_url` + `balance_rpc_source_id` is still accepted as a one-provider list. A config naming both forms is refused.
+   - In `dev`/`live`, a missing or empty list, or any provider with a null URL or source ID, refuses the start (exit 4), as before.
+   - `runtime.example.json` names two providers with null URL and source ID. The primary and the backup both come from Isaac's RPC choice (#92); the backup URL stays null until then.
+2. **Failover (`BalanceProviders` in `larp/execution_live/balances.py`).** For each check, the providers are tried in order with a whole `read_balances`. Reads never mix providers within one observation, because the block identity re-check is per provider. A provider that raises `DependencyUnavailable` or `Blocked` is skipped for that check, and the next one is tried. The observation carries the `source_id` of the provider that served it, and so does every RPC artifact.
+   - The check fails only when every provider failed: `RPC_UNAVAILABLE` if every failure was unavailability, otherwise `OBSERVATION_INVALID`. Retry after 60 s and the 30-minute maximum age are unchanged.
+   - Each new check starts again at the primary.
+   - One `DecimalsCache` is shared across providers: a contract's decimals are a constant, so two agreeing reads may come from different providers.
+   - The two reads that confirm an adoption may come from different providers. The PR 4 rules (same chain units, ledger units and `settled_block`, nothing committed between) are unchanged.
+3. **`build_driver`.** One `Rpc` per provider, with artifacts under `<market_artifact_root>/chain` as today. The `BalanceProviders` reader replaces the single `Rpc`, inside the existing balance block only.
+4. **Approved destinations and manifest (G-03, IDEA-062).**
+   - The route checker (`larp/runtime/routes.py`) plans one destination per provider, and the legacy pair still works. Any unset provider URL is an UNSET row, which fails the check. A bad URL in any provider is refused before any probe.
+   - The approved table in `docs/build/architecture-deployment.md` names `driver.balance_rpc_providers`.
+   - `config/release/services.v1.json` (the manifest's third-party services, F-61) declares `bsc-rpc` as `PENDING_DECISION` with candidates and a fallback until #92. The configured URLs are bound to the manifest through `runtime_config_sha256`.
+   - `tools/deploy/render_host_configs.py` lists unset values inside lists too, so a null provider URL is reported.
+
+### Pass criteria (recorded before any test is written)
+
+Synthetic RPC providers, disposable PostgreSQL; no credentials, network, signing or upload. Tests first and red, then the build.
+
+| ID | Check |
+|---|---|
+| F1 | Settings: the list form with one or two providers is accepted in order. The legacy pair is accepted as one provider. Both forms together are refused. In `dev`/`live`, a missing or empty list, a null URL or source ID, a non-HTTPS URL, a duplicate source ID or more than four providers is refused. `offline` with none is `None`. |
+| F2 | Failover: with the primary unavailable (and, separately, returning a rejected answer), the same check reads from the backup. The observation names the backup's `source_id`. The next check tries the primary first again. |
+| F3 | A check fails only when every provider fails. With the primary down and the backup up, checks are comparable and `balances_ok` stays true. With both down, the check is `SKIPPED: RPC_UNAVAILABLE`, retried 60 s later, and new spending stops only after the maximum age. |
+| F4 | An adoption can be confirmed across providers: the first read from the primary, the confirming read from the backup (primary down) → `ADJUSTED`. |
+| F5 | `build_driver` with two providers wires a reader whose providers are in the configured order, with their source IDs. A single legacy provider still builds. A `dev` start with no provider is refused. |
+| F6 | Route checker: both provider hosts are planned. An unset URL in either provider fails the check as UNSET. A bad URL in any provider is refused before any probe. The legacy single form is still planned. The approved table names `driver.balance_rpc_providers`. |
+| F7 | `config/release/services.v1.json` declares `bsc-rpc` and still passes `validate_services`. |
+| F8 | The example names two providers with null URL and source ID. `unset()` reports `driver.balance_rpc_providers[0].url` and `[1].url`. |
+| F9 | Full suite: the PR 4 count plus only these tests and the updated ones, with no new failure or skip. Mutations, each reverted, must each be caught: no failover (primary only); failover on unavailability only (not on a rejected answer); the legacy form refused; both forms accepted; the route checker planning only the first provider; `unset()` not recursing into lists. |
+
+**Existing tests this changes:**
+- `Settings::test_b9_the_example_names_every_balance_setting`: the example now uses the list form instead of the legacy keys.
+- `tests/runtime/test_routes.py`: its `configs()` fixture fills the provider list. R3 (bad URL, unset URL) uses `providers[0]`, R8 checks the new field name, and the account-specific hosts include the backup.
+
+### Results (2026-10-16, PR 5)
+
+Criteria at `2d08f45`; red tests at `0e1fe07`; build at `8ed2f08`; register test update at the next commit. Same environment as PR 4: PostgreSQL 16.15, not 14 (see PR 4). Python 3.12.3 from `deploy/requirements-test.lock`. No credentials, network, signing or upload. Org CI was not used.
+
+- **Red first:** at `0e1fe07`, the new and updated tests failed for the predicted reasons. There is no `BalanceProviders`. Settings know only the legacy pair (both forms are accepted, a list-only config is "missing"). The route checker plans only `balance_rpc_url`. `bsc-rpc` is not declared, and the example has no list.
+- **Updates found by the build run:**
+  - `test_routes` R1's expected destinations add the fixture's backup host.
+  - `test_release_register::test_r1_services_list` pins the pending services and now lists `bsc-rpc` next to `assessor-model`. This may conflict with the model-routing session if it edits the same list.
+  - No assertion was weakened.
+- **Mutations**, each reverted, all caught (failing tests and subtests in the four affected files):
+
+  | Mutation | Failures |
+  |---|---|
+  | No failover (primary only) | 4 |
+  | Failover on unavailability only (not on a rejected answer) | 1 |
+  | The legacy form refused | 4 |
+  | Both forms accepted | 2 |
+  | The route checker planning only the first provider | 3 |
+  | `unset()` not recursing into lists | 1 |
+
+- **Full suite** at the register update: **1612 passed, 10 skipped, 2231 subtests**. The PR 4 head had 1600 / 10 / 2209, so this is +12 tests and +22 subtests (F1's refusal cases and F2's two failure kinds). There is no new failure or skip; the 10 skips are the same environmental ones.
+
+| ID | Result | Evidence |
+|---|---|---|
+| F1 | PASS | `Settings::test_f1_*` (10 refusals × 2 modes) |
+| F2 | PASS | `Failover::test_f2_*` (unavailable and rejected primary) |
+| F3 | PASS | `Failover::test_f3_*`, `FailoverDriver::test_f3_*` |
+| F4 | PASS | `FailoverDriver::test_f4_*` (first read from the primary, confirmation from the backup; the two observation hashes differ) |
+| F5 | PASS | `Composition::test_f5_*`, plus the unchanged B9 refusals |
+| F6 | PASS | `Routes::test_f6_*`, updated `test_routes` R1/R3/R4/R8 |
+| F7 | PASS | `Declared::test_f7_*`, `test_release_register` R1 |
+| F8 | PASS | `Declared::test_f8_*` |
+| F9 | PASS | full suite and mutations above |
+
+**Existing tests changed:**
+- B9's example check uses the list form.
+- In `test_routes`, `configs()` fills two providers. R1 expects the backup host, R3 uses `providers[0]`, R4 also checks that the backup URL's secret path is never reported, and R8 checks the new field name.
+- `test_release_register` R1 lists `bsc-rpc` as pending.
+
+**Still open:** Isaac's RPC choice for both providers (#92), which then sets `bsc-rpc` to ACTIVE; the first hosted check from `primary`; review by Isaac and Keegan.
+
 ## PR 4 review fixes (2026-10-16, Claude Code session for Keegan, section B)
 
 From the section B review of PR #115 and wtvlol's ALLPR-R1. Criteria recorded before any change is tested.
@@ -393,6 +476,22 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 | R5 | PASS | S1–S16 and B1–B10 pass. Test changes: both synthetic-chain harnesses advance one block per read; S6 asserts `confirm_block == first_block + 1` (it asserted equal blocks); no other assertion changed. Mutations, each reverted, all caught: no elapsed-time check (2 failures), same block allowed (1), early check replaces the candidate (2), no day-roll deferral (1), MATCH clears a hold at once (1), hold not rescheduled at `retry_ms` (1). Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): the branch before these fixes, `1b21416`, 1612 passed, 10 skipped, 2216 subtests; this branch at `6b25525` (with #114) **1657 passed, 10 skipped, 2306 subtests, 0 failed**. The same 10 environmental skips. |
 
 **Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
+
+### PR 5 with #114 and the PR 4 review fixes (2026-10-16)
+
+This branch merges PR 4 (#115) at `bc51c4a`, which now carries #114. Combined, three of #114's tests and F4 needed updating: `5b4adf9` (merge `b3f9ea1`).
+- #114's AIand shadow example lists `balance_rpc_providers` like `runtime.example.json`, so SG3 passes.
+- #114's SG2/R8 route tests and SG3 fill the providers list instead of the legacy pair. The list wins in the route checker, so the legacy fill had left a null host.
+- F4's backup serves a newer finalized block, because R1 needs a strictly newer block to confirm.
+
+Gate A (#87) side: `prepare()` now writes the balance RPC in whichever form the rendered example uses (IDEA-058 GA14). A scratch merge of #87 into this branch passes `test_gate_a.py`, GA06 included.
+
+Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24), 10 environmental skips each:
+- this branch at `21ba652`: **1669 passed, 10 skipped, 2328 subtests, 0 failed** (PR 4 at `6b25525`: 1657 passed);
+- scratch merge of this branch with #87 at `c9b7613` (all four of #114, #115, #116, #87): **1701 passed, 10 skipped, 2381 subtests, 0 failed**.
+
+Org GitHub Actions jobs on these heads stop after about 3 s with no step output, consistent with the billing block (#98). A PostgreSQL 14.24 mirror run is still owed.
+
 
 ## PR115-C — independent execution/accounting review (2026-10-16, Isaac / Codex)
 
@@ -458,11 +557,19 @@ obtain a fresh pair of reads; retain all intervening journal events.
 
 - RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
 - RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
+- RR2-R3: a primary below the already-settled block cannot suppress a healthy backup. Use the current ledger floor on each whole-provider read; all-behind stays refused. Bind the floor in build_driver and test fresh/lagging/all-behind providers. No new freshness policy or provider choice.
 
 
 ### RR2 observed results and publication status
 
+RR2 current pushed head 5c1407d: focused balance/failover/routes/register/HALT/driver modules 111 passed / 107 subtests on Linux/Python3.12/PostgreSQL14.24. Inherits RR2-R1/R2 above. Lagging-primary reproduction returns BLOCK_BEHIND_LEDGER with zero backup calls despite a healthy backup. RR2-R3 uses only the existing settled-block floor; provider choice and hosted checks retain their owners. All RR2 fixes remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
+
 RR2 current pushed head bc51c4a: focused balance/HALT/driver modules 77 passed / 67 subtests on Linux/Python3.12/PostgreSQL14.24. Reproductions: 2010 mismatch at t0, MATCH at t1s, 2010 at t60s wrongly adopts; reconstructing DayRoll after an in-window deferral returns OUTSIDE_WINDOW after the hold clears. Original ALLPR-R1 elapsed/newer-block checks are fixed. RR2-R1/R2 fixes and new regressions remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
+
+
+### RR2 integrated acceptance criteria (before full execution)
+
+The combined PR116 head includes merged Gate A PR87, PR108 migrations012/013, PR115 RR2-R1/R2 and PR116 RR2-R3. Require the full synthetic/offline suite to have no failures or unexpected xfails on Python3.12.15/PostgreSQL14.24 with real systemd and bubblewrap enabled. Account for every skip. Run a disposable local namespace/systemd container without external networking or production credentials. The opt-in external recorded-market dataset may remain skipped; no hosted, provider-quality, AWS, wallet or live acceptance follows. Confirm clean source and published commit before running.
 
 ## PR115-C03 — verification and finding disposition (2026-10-16)
 
@@ -522,6 +629,10 @@ systemd/bubblewrap qualification and actual hosted/signing/provider readiness
 with the existing owners. No policy choice, live authority, whole GAP closure
 or PR merge is implied by this offline review.
 
+### RR2 concurrent-review integration acceptance (before execution)
+
+Preserve PR115-C01/C02/C04 concurrency fences and first-observed midnight jump protection alongside RR2-R1/R2/R3, migrations012/013 and merged Gate A. Require independent PR115 adversarial cases plus balance adoption/failover/day-roll, storage, HALT and driver regressions to pass, followed by the full previously specified Linux systemd/bubblewrap/PostgreSQL14 suite. Earlier integrated result at527376c (1744 passed, 1 opt-in external-data skip, 2557 subtests) predates the concurrent fixes and does not validate this updated source. No hosted/live claims follow.
+
 ### RR2-R4 — midnight hold must not depend on a later assessment round (prospective)
 
 The midnight jump check currently journals only the deferred-day flag. Without a subsequent assessment round, its new hold/mark is never persisted; repeated DayRoll calls rediscover the same jump and cannot age out or observe BalanceCheck clearing it. Require the first midnight-discovered hold and marks to be journaled with the deferral, survive restart/replay, clear through comparable balances without an intervening assessment, and expire at the original hold deadline without being renewed by repeated day-roll calls. Also persist a later newly discovered hold on an already-deferred day with a unique event ID. Synthetic PostgreSQL regressions must fail before the repair and pass after. No owner policy change.
@@ -534,3 +645,14 @@ RR2-R4 first focused repair run: 90 passed /2 failures /253 subtests. All three 
 ### RR2-R4 final regression acceptance (2026-10-16)
 
 Published combined source af9ffbf (PR115 fixes at9f561f9/481ae58 plus PR116 failover and merged PR87/108) passes92 focused tests /253 subtests, then the full ARM64 Linux/Python3.12.15/PostgreSQL14.24 suite: **1760 passed, 1 skipped, 2561 subtests** in221.45s. Real systemd and bubblewrap enabled; sole skip is opt-in external recorded market artifacts. Both new no-round regressions were red at9774011, and persisted-hold expiry/reconciliation/second-jump cases now pass with replay. Source clean, pip check passes. Logs/hashes: /private/tmp/larp-rereview-0jHjyg/results-v4/summary.json; full log SHA256 c6451ff3aa2c8fd8b50e286182ee2027e3e19903fbc27bba2f0ef9dd4c539bb7. No remaining implementation finding in this review. Peer merge481ae58 has exactly the same content as9f561f9. Hosted Actions run38908993829 ataf9ffbf never starts because of account billing/spending limits; exact-release bundles and hosted/policy/provider/rehearsal gates remain open. No real credentials, cloud actions, real-wallet signing or network broadcast. PR115/116 merge under the user approval; target is codex/system-testing-20261012, main unchanged. Detailed current index/backlog reconciliation follows with PR116.
+
+
+### RR2 final combined verification and disposition (2026-10-16)
+
+Published source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` includes PR87 Gate A, PR108 archive migrations 012/013, PR115 concurrent-review fences and RR2-R1/R2/R4, and PR116 settled-block failover RR2-R3. Focused adoption/independent/failover/roles/driver suite: **92 passed /253 subtests**. Full offline suite: **1760 passed, 1 external-data skip, 2561 subtests**, no failures or xfails, Python3.12.15 /ARM64 Linux /PostgreSQL14.24; real systemd and bubblewrap enabled. The sole skip is tests/marketdata/test_recorded.py:29, opt-in external recorded artifacts. Dependencies pass pip check. Both no-assessment-round regressions failed on published 9774011 before the repair; all three new persistence/expiry/second-hold tests now pass, including exact replay. No implementation findings remain from this review.
+
+RR2-R1 invalidates contradictory per-asset candidates; R2 persists deferred days across restart/replay; R3 tries a backup when the primary cannot meet the current settled-block floor; R4 journals midnight-discovered marks/holds without requiring a later assessment and permits a distinct later hold on the same deferred day. PR115-C concurrency checks reject intervening wallet activity while allowing journal-proven neutral cadence rounds. All concurrent commits were preserved with ordinary merges; no history was rewritten.
+
+Earlier full source 527376c: 1744 passed /1 skip /2557 subtests. Its first attempt had nine executable-permission failures caused by the runner's /tmp noexec mount; remounting that disposable tmpfs exec made affected modules and the entire unchanged-source rerun pass. Source 990e912 then passed 1757 /1 skip /2561 subtests before RR2-R4 was identified. Final acceptance is the source above. Logs, JUnit and hashes are retained outside Git in `/private/tmp/larp-rereview-0jHjyg/results-v4/`; full log SHA256 `c6451ff3aa2c8fd8b50e286182ee2027e3e19903fbc27bba2f0ef9dd4c539bb7`, JUnit SHA256 `f30deb7509ba17304455bda521d8a7608893de8fc94419466d9d2949324c67ac`.
+
+Hosted Actions run 38908993829 at af9ffbf ran no steps: GitHub reports failed payments/spending limit (#98, account owner). Local tests do not replace exact-release host-bundle/Terraform CI or hosted acceptance. No external network, real credentials/provider calls, cloud provisioning, official uploads, real-wallet signing or network broadcast occurred. Yao Zhu + Keith retain the mandatory-exit/price-jump-hold policy question; Isaac retains provider selection/first hosted read (#92); existing owner gates cover measured inputs, terms, host routes/receiver/recovery, shadow trial/adoption and wallet rehearsal. No whole GAP closes. PRs target codex/system-testing-20261012; main is unchanged.

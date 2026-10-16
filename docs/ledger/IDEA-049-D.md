@@ -615,3 +615,8 @@ ALLPR-R108: additive migration 013 validates every existing execution state/jour
 ### RR2 observed results and publication status
 
 RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on Linux/Python3.12/PostgreSQL14.24. A seeded pre-012 forbidden row remains readable by larp_archive after PostgresStore.migrate, confirming RV-108-01. Additive 013 and regression changes remain unexecuted pending approved push; no unsafe hosted data is inferred. All runs used synthetic inputs, no production credentials and no external network.
+
+
+### ALLPR-R108 /RV-108-01 verified (2026-10-16)
+
+PR108 is merged into codex/system-testing-20261012. Migration013 validates transaction-local copies of all existing execution record/journal bytes using 012's trigger, refusing an unsafe upgrade atomically without modifying source rows or editing 011/012 checksums. Clean upgrade and idempotence pass. Published focused role/archive tests: 14 passed /184 subtests. A direct seeded-row probe through PostgresStore.migrate refuses unsafe data, preserves original bytes and does not mark013 applied. Final combined source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` passes **1760 passed, 1 external-data skip, 2561 subtests** on Linux/Python3.12.15/PostgreSQL14.24 including roles, archive/backup and migration tests. Detailed full-suite evidence is IDEA-055 RR2 final verification. This supersedes earlier prepared/unexecuted status. Keegan still verifies 012/013 on the first hosted database; alternate keys/encodings remain outside this field-name guard and #23's entire read boundary remains open.

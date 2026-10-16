@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REGION = 'ap-southeast-2'
 DB = 'larp-dev.abc123.ap-southeast-2.rds.amazonaws.com'
 BALANCE_RPC = 'https://balance-rpc.example/v1/BALANCESECRET?apikey=QUERYSECRET'
+BACKUP_RPC = 'https://balance-rpc-backup.example/v1/BACKUPSECRET'
 CHAIN_RPC = 'https://chain-rpc.example/v2/CHAINSECRET'
 EXAMPLES = {
     'runtime': 'config/runtime/runtime.example.json',
@@ -38,9 +39,9 @@ def configs(names=PRIMARY):
         c = load(name)
         c['database_host'], c['region'] = DB, REGION
         out[name] = c
-    if 'runtime' in out:
-        out['runtime']['driver']['balance_rpc_url'] = BALANCE_RPC
-        out['runtime']['driver']['balance_rpc_source_id'] = 'balance-rpc'
+    if 'runtime' in out:  # the ordered balance RPC providers (IDEA-055 PR 5)
+        out['runtime']['driver']['balance_rpc_providers'] = [dict(url=BALANCE_RPC, source_id='balance-rpc'),
+                                                             dict(url=BACKUP_RPC, source_id='balance-rpc-backup')]
     if 'execution' in out:
         out['execution']['rpc_url'], out['execution']['rpc_source_id'] = CHAIN_RPC, 'chain-rpc'
     return out
@@ -70,6 +71,7 @@ class Plans(unittest.TestCase):
         expected = {
             (host(BASE), 443): ({'larp-runtime', 'larp-execution'}, 'REACHABLE', True),
             ('balance-rpc.example', 443): ({'larp-runtime'}, 'REACHABLE', True),
+            ('balance-rpc-backup.example', 443): ({'larp-runtime'}, 'REACHABLE', True),  # IDEA-055 PR 5
             ('chain-rpc.example', 443): ({'larp-execution'}, 'REACHABLE', True),
             (host(BASE_URL), 443): ({'larp-uploader'}, 'REACHABLE', True),
             (f'secretsmanager.{REGION}.amazonaws.com', 443):
@@ -99,7 +101,7 @@ class Plans(unittest.TestCase):
         from larp.intelligence.providers import OPENAI_ENDPOINT
         cfgs = configs()
         cfgs['runtime'] = dict(cfgs['runtime'], driver=dict(load('runtime_aiand')['driver'],
-                               balance_rpc_url=BALANCE_RPC, balance_rpc_source_id='balance-rpc'))
+                               balance_rpc_providers=cfgs['runtime']['driver']['balance_rpc_providers']))
         routed = by_endpoint(routes.plan('primary', cfgs, sources()))
         plain = by_endpoint(routes.plan('primary', configs(), sources()))
         self.assertEqual({host(ENDPOINT), host(OPENAI_ENDPOINT)}, {'api.aiand.com', 'api.openai.com'})
@@ -162,7 +164,7 @@ class Cli(unittest.TestCase):
         for url in bad:
             with self.subTest(url=url):
                 cfgs = configs()
-                cfgs['runtime']['driver']['balance_rpc_url'] = url
+                cfgs['runtime']['driver']['balance_rpc_providers'][0]['url'] = url
                 probe = FakeProbe()
                 code, out, err = self.run_cli('primary', cfgs, probe)
                 self.assertEqual(code, 2)
@@ -181,7 +183,7 @@ class Cli(unittest.TestCase):
 
     def test_r3_unset_destination_fails_and_missing_execution_is_listed(self):
         cfgs = configs()
-        cfgs['runtime']['driver']['balance_rpc_url'] = None
+        cfgs['runtime']['driver']['balance_rpc_providers'][0]['url'] = None
         del cfgs['execution']
         report = self.dir / 'report.json'
         code, _, _ = self.run_cli('primary', cfgs, FakeProbe(), ['--output', str(report)])
@@ -200,12 +202,12 @@ class Cli(unittest.TestCase):
         code, out, err = self.run_cli('primary', configs(), FakeProbe(), ['--output', str(report)])
         self.assertEqual(code, 0)
         text = report.read_text(encoding='utf-8') + out + err
-        for secret in ('BALANCESECRET', 'QUERYSECRET', 'CHAINSECRET', 'apikey', '/v1/', '/v2/'):
+        for secret in ('BALANCESECRET', 'BACKUPSECRET', 'QUERYSECRET', 'CHAINSECRET', 'apikey', '/v1/', '/v2/'):
             self.assertNotIn(secret, text)
         self.assertIn('balance-rpc.example', text)
         code, out, err = self.run_cli('primary', configs(), FakeProbe())
         self.assertEqual(code, 0)
-        for secret in ('BALANCESECRET', 'QUERYSECRET', 'CHAINSECRET'):
+        for secret in ('BALANCESECRET', 'BACKUPSECRET', 'QUERYSECRET', 'CHAINSECRET'):
             self.assertNotIn(secret, out + err)
 
     def test_r6_primary_passes_only_when_every_destination_is_ok(self):
@@ -355,11 +357,11 @@ class Shipping(unittest.TestCase):
         doc = (ROOT / 'docs/build/architecture-deployment.md').read_text(encoding='utf-8')
         self.assertIn('## Approved network destinations', doc)
         section = doc.split('## Approved network destinations', 1)[1].split('\n## ', 1)[0]
-        account_specific = {DB, 'balance-rpc.example', 'chain-rpc.example'}
+        account_specific = {DB, 'balance-rpc.example', 'balance-rpc-backup.example', 'chain-rpc.example'}
         hosts = set()
         routed = configs()
         routed['runtime'] = dict(routed['runtime'], driver=dict(load('runtime_aiand')['driver'],
-                                 balance_rpc_url=BALANCE_RPC))
+                                 balance_rpc_providers=routed['runtime']['driver']['balance_rpc_providers']))
         for role, cfgs in (('primary', configs()), ('primary', routed), ('signer', configs(('signer',)))):
             for d in routes.plan(role, cfgs, sources())['destinations']:
                 if d['host'] not in account_specific:
@@ -367,7 +369,7 @@ class Shipping(unittest.TestCase):
         self.assertTrue(hosts)
         for h in sorted(hosts):
             self.assertIn(f'`{h}`', section, h)
-        for field in ('driver.balance_rpc_url', 'rpc_url', 'database_host'):
+        for field in ('driver.balance_rpc_providers', 'rpc_url', 'database_host'):
             self.assertIn(f'`{field}`', section)
         self.assertIn('api.aiand.com', hosts)
         table = [line for line in section.splitlines() if line.startswith('| ')]

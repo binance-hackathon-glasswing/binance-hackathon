@@ -260,3 +260,8 @@ Data sources, all read-only after the trial: the PostgreSQL journal (round recor
 - **Inconclusive:** fewer than 3 trial days, fewer than 20 completed jobs, or Keith's labels not ready by Oct 21.
 
 Whatever the outcome, live/service use needs a later reviewed code change; this trial cannot enable it. Results and every deviation from this plan are appended below with dates.
+
+
+### RR2 index reconciliation (2026-10-16)
+
+PR88 is merged and its QuoteCostSummary record is IDEA-063. IDEA-057 continues to identify AIand routing. Remove the stale open-PR renumbering task from the current index/backlog. PR87 assembly is also merged into the testing branch; actual hosted Gate A and the shadow trial still require their recorded owners and evidence.

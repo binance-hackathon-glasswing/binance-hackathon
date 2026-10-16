@@ -1,6 +1,6 @@
 {
   "schema": "ServicesList.v1",
-  "updated": "2026-10-11",
+  "updated": "2026-10-16",
   "basis": "F-61: third-party services are declared in the version manifest. Draft (IDEA-042 item 8); final at the Oct 26 freeze.",
   "services": [
     {"service_id": "binance-web3-open-api", "provider": "Binance (Web3 Open API, https://web3.binance.com/build)",
@@ -26,6 +26,13 @@
      "status": "PENDING_DECISION",
      "candidates": ["anthropic-claude", "openai-chatgpt"],
      "fallback": "deterministic assessor (no model call), declared as v1.0 if no model is chosen by Oct 22"},
+    {"service_id": "bsc-rpc", "provider": "BNB Smart Chain JSON-RPC providers, an ordered list chosen by Isaac (#92): primary first, then a backup",
+     "purpose": "finalized-block wallet balance reads for the chain-balance check (IDEA-055) and the execution service's chain reads and receipts",
+     "scope": "read-only allowlisted methods (larp/execution_live/chain.py); eth_call only for decimals() and balanceOf(wallet) on the six pinned contracts",
+     "terms_ref": "#92; docs/build/architecture-deployment.md Approved network destinations (IDEA-062); IDEA-055 PR 5",
+     "status": "PENDING_DECISION",
+     "candidates": ["primary provider (#92)", "backup provider (#92)"],
+     "fallback": "with no provider configured, a dev or live start is refused (exit 4)"},
     {"service_id": "aws-hosting", "provider": "Amazon Web Services (account and region pending, B9)",
      "purpose": "runtime hosts, RDS PostgreSQL, S3 Object Lock archive and hourly anchors, KMS, CloudWatch alarms",
      "scope": "deploy/aws Terraform; retention at least to 2026-12-31 (IDEA-036)",
