@@ -668,6 +668,13 @@ class BalanceCheck:
             event = dict(kind='INCIDENT', incident=dict(incident, block_number=check['block_number'], at_ms=now_ms))
             document = self._commit(document, f"incident:{incident['type'].lower()}:{now_ms}", event)
         if adjustments:
+            # The comparison was made against current. Only our BALANCE_CHECKED and INCIDENT writes may
+            # intervene before adoption; a reload containing another writer's commit is not fresh confirmation.
+            if document.read()['version'] != current['version'] + 1 + len(incidents):
+                self.candidate = None
+                self.ok_ms = None
+                self.next_ms = now_ms + self.retry
+                return 'SKIPPED:CONCURRENT_ACTIVITY'
             document = self._adopt(document, adjustments, check, now_ms)
             state = document.read()['projection']['balance_check']
         self._settle_gate(status, state, now_ms)
