@@ -135,3 +135,16 @@ The final passing runs used temporary Python 3.12.15 plus pinned
 Hosted CI remains quota-blocked/skipped; no full repository or hosted/live
 acceptance is claimed. MR-01–06 and the existing adoption backlog retain their
 owners and remain open. The documentation update after this test changes no code.
+
+### Issue #93 cleanups — prospective criteria (2026-10-16 SGT)
+
+Non-blocking findings from the PR #86 review ([#93](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/93)). Written and pushed before the changed code runs. Tests in `tests/intelligence/test_aiand_routing.py` (`BudgetAdmission`); each new test must fail on the unfixed code and pass after the fix.
+
+| ID | Required evidence |
+|---|---|
+| I93-1 | `ModelBudget.initialize` closes its SQLite connection: a test that wraps `sqlite3.connect` sees `close()` called on every connection `initialize` opens, and the file can be renamed/removed and re-initialized afterwards. |
+| I93-2 | One `switches` row per real switch. After an over-bound settle through `BudgetedOpenAI.step` (usage above the reservation), the ledger holds exactly one row, `OPENAI_USAGE_EXCEEDED_BOUND`. Calling `external_only` again, or an `admit` refused at the limit while already external-only, adds no row. A first switch still records its reason. |
+| I93-3 | Directory privacy matches the runbook. `ModelBudget(...)` (and therefore `initialize`, which reopens the file) refuses a ledger whose parent directory has any `0o077` mode bit (group-readable `0o750` is refused) or is not owned by the current user. A `0o700` parent owned by the current user still opens. Ownership is tested by substituting the expected owner id, since tests cannot chown. |
+| I93-4 | The stale "Execution results are pending…" line in the Validation record above is updated to point at the recorded results. |
+
+No AR1–AR8 or PR85-R1/R2 test may regress; the full local suite (Python 3.12, PostgreSQL 14) is run after the fix and reported with exact counts.
