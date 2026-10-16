@@ -55,3 +55,39 @@ All of these run offline on synthetic fixtures. No network, credentials or signi
 - **R9 No regressions.** The full suite stays green against the baseline at integration head `eda2ed2`: Python 3.13.16 with PostgreSQL 16.15 in this session gave 1751 passed, 10 skipped, 0 failed.
 
 ## Results
+- 2026-10-16: criteria committed at `fd3e4cc`, before any code existed. The code and tests were committed at `3df41a8`. Both commits were local until pushed with this record; the tests are offline and synthetic, so nothing ran live.
+- Environment: Python 3.13.16; the locked subset of `requirements.lock` without the ML packages (eth_abi 6.0.0, eth-utils 6.0.0); local PostgreSQL 16.15. CI is Linux with PostgreSQL 14.24 and Python 3.12. This record does not include a CI run of this branch.
+- **R1 PASS:**
+  - `EvidenceValidation.test_each_defect_is_refused` refuses 25 defect cases (subtests);
+  - the file-hash pin and the both-or-neither settings rule are tested.
+- **R2 PASS:** `test_known_selectors` (`transfer` = `0xa9059cbb`, `approve` = `0x095ea7b3`).
+- **R3 PASS:** `ByteBinding` refuses all 8 malformed variants and a wrong `to`:
+  - another selector, a trailing byte, a trailing word, truncated data;
+  - dirty address padding, a non-canonical dynamic offset;
+  - odd-length hex, non-hex.
+  `validate_payload` refuses 7 field changes against the intent: recipient, amount, minimum output, either token, deadline after the intent, and an expired deadline.
+- **R4 PASS:** the native sentinel decodes to `NATIVE_BNB`; an address not listed as a sentinel stays as it is; a sentinel recipient is refused.
+- **R5 PASS:** `ExecutorGate`.
+  - Accepted: all-fake; all-live with `PinnedRouterDecoder`.
+  - Refused: live with `UnverifiedRouter`; an imposter "verified" decoder; a fake decoder with live ports; mixed ports; fake ports with a pinned decoder; an unknown mode.
+- **R6 PASS:** `ExecutionService`.
+  - No evidence: `NotIntegrated`.
+  - Pinned evidence: the gate opens, and the venue and Executor share one decoder.
+  - Refused: hash differs; only one setting; another router configured; invalid evidence.
+- **R7 PASS:**
+  - `Signer`: no evidence means swaps are refused; pinned evidence decodes the swap inside the signer's own policy check, which now catches a wrong recipient; a router outside `allowed_spenders` or changed evidence is refused.
+  - `SignerStartup`, on real PostgreSQL: the start line shows `UNVERIFIED`, then `VERIFIED` with the evidence hash; another router or a changed hash gives exit 4 `START_REFUSED`.
+- **R8 PASS:** `RecordedRouteCheck`.
+  - Both directions give `PASS`; a gas route with a router-side native sentinel gives `PASS` with `BUY`/`GAS`/`SELL`.
+  - One direction gives `FAIL`. So do an amount, minimum-output or recipient mismatch, undecodable calldata, and an approve to another spender. No routes gives `NO_ROUTES`.
+  - CLI exit codes: 0 PASS, 4 evidence refused.
+  - The Gate B report shows DR-02 VALIDATED only with pinned evidence and a `PASS` check (`GateBReport` tests); the run stays BLOCKED and `signing_enabled` stays false.
+- **R9 PASS:** full suite 1789 passed, 10 skipped, 0 failed, 2617 subtests (585.7 s), against the baseline 1751 / 10 / 0 at `eda2ed2` in the same environment. The difference is the 38 new tests.
+- **Finding (#27):** a verified decoder does not by itself make a real swap signable. The planner caps an intent's life at the profile's 15 s, while a quote encodes a deadline of about 30 s, and `validate_payload` refuses a deadline after the intent's expiry. #27 (C-OPEN-003) is therefore a Gate B blocker as well, and `docs/build/GATE_B.md` says so.
+- **Still open, with owners:**
+  - Isaac: the real `RouterEvidence.v1` from the verified source, read together with Keegan; then `router check` = `PASS` on the IDEA-063 captures.
+  - Team: the #27 decision; the #44 caps; a dev profile window before Oct 21 (or Gate B proof from Oct 21).
+  - Isaac: first gas (#106) and the signer key.
+  - Keegan: host configs and manifest rebind; the Gate B review in IDEA-042.
+  - Everyone: DR-02..06 and DR-19 evidence on the dev wallet.
+  The full order is in `docs/build/GATE_B.md`. GAP-29 stays open, narrowed.
