@@ -462,3 +462,17 @@ From the section B review of PR #115 and wtvlol's ALLPR-R1. Criteria recorded be
 | R5 | The existing S1–S16 tests pass. The synthetic chain advances one block per read. S6's `confirm_block` becomes `first_block + 1`, S11/S12 confirm a minute after the immediate check as before, and S14 keeps its in-window case. Mutations caught: no elapsed-time check, same block allowed, early check replaces the candidate, no day-roll deferral, MATCH clears a hold at once, hold not rescheduled at `retry_ms`. Full suite: no new failure against the branch before these fixes. |
 
 Not changed here (not breaking; reply on the thread): the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (a question for the author and Yao Zhu).
+
+### PR 4 review fixes: results (2026-10-16)
+
+Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER.md` conflict resolved by keeping both rows) → criteria `eea637a` → fix `6b25525` → second #114 merge (SG3 / #87 compatibility).
+
+| ID | Result | Evidence |
+|---|---|---|
+| R1 | PASS | `ReviewFixes.test_r1_a_hold_before_the_first_read_cannot_shorten_the_confirmation` (wtvlol's order: the early check returns SURPLUS_ONLY, the adoption comes `retry_ms` after the *first* read, and `first_block` is that read's block), `test_r1_a_first_read_in_the_same_millisecond_as_the_hold`, `test_r1_a_stuck_node_cannot_confirm_its_own_read` |
+| R2 | PASS | `ReviewFixes.test_r2_a_hold_across_the_end_of_the_window_defers_the_roll` (5-minute window: held at +1 and +10 min, a fresh `DayRoll` says OUTSIDE_WINDOW at +10, the deferred one rolls at +12 min once the hold is cleared); S14 unchanged |
+| R3 | PASS | `ReviewFixes.test_r3_a_match_just_after_the_jump_keeps_the_hold_a_later_one_clears_it` (the immediate MATCH keeps the hold, the next check is `retry_ms` later, its MATCH clears the hold, the next round latches the daily stop on the genuine drop) |
+| R4 | PASS | `runtime.aiand-shadow.example.json` has `price_jump_check_bps: 3000`; #114's SG3 passes on this branch |
+| R5 | PASS | S1–S16 and B1–B10 pass. Test changes: both synthetic-chain harnesses advance one block per read; S6 asserts `confirm_block == first_block + 1` (it asserted equal blocks); no other assertion changed. Mutations, each reverted, all caught: no elapsed-time check (2 failures), same block allowed (1), early check replaces the candidate (2), no day-roll deferral (1), MATCH clears a hold at once (1), hold not rescheduled at `retry_ms` (1). Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): the branch before these fixes, `1b21416`, 1612 passed, 10 skipped, 2216 subtests; this branch at `6b25525` (with #114) **1657 passed, 10 skipped, 2306 subtests, 0 failed**. The same 10 environmental skips. |
+
+**Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
