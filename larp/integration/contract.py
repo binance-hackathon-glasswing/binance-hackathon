@@ -234,6 +234,10 @@ def _issuer_matches(record: dict, underlying: str, *, source_id: str | None = No
     return record.get("issuer_id") == entry.issuer_id and underlying in securities | tickers
 
 
+# Public name for callers outside this module, e.g. Gate A preparation (IDEA-058 GA13e).
+issuer_matches = _issuer_matches
+
+
 def problem(record, *, run_id=None, profile_hash=None, markets=None, now_ms=None, max_age_ms=None,
             universe=None) -> str | None:
     """The first reason `record` is unusable, or None. Intrinsic checks (schema, field types, hash, internal
