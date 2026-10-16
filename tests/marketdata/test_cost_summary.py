@@ -417,6 +417,55 @@ class ReviewFixes(unittest.TestCase):
             self.assertIn('authentication_error', result.stderr)
             self.assertNotIn('synthetic', result.stdout + result.stderr)
 
+    def run_wrapper_with_dotenv(self, dotenv_text, **preset):
+        """The wrapper with this .env and a stand-in capture that records the key pair it receives."""
+        import os
+        import subprocess
+        import sys
+        script = Path(__file__).resolve().parents[2] / 'tools' / 'run_quote_capture.sh'
+        with tempfile.TemporaryDirectory() as tmp:
+            seen = Path(tmp) / 'seen.json'
+            fake = Path(tmp) / 'python'
+            # The .env parse runs on the real interpreter; the capture itself (-m ...) only records its environment.
+            fake.write_text('#!/bin/sh\nif [ "$1" = "-m" ]; then\n'
+                            f'  exec {sys.executable} -c "import json, os; json.dump(dict(api=os.environ.get(\'BINANCE_API_KEY\'), '
+                            f'secret=os.environ.get(\'BINANCE_SECRET_KEY\')), open(\'{seen}\', \'w\'))"\n'
+                            f'fi\nexec {sys.executable} "$@"\n')
+            fake.chmod(0o755)
+            (Path(tmp) / '.env').write_text(dotenv_text)
+            env = {k: v for k, v in os.environ.items() if not k.startswith('BINANCE_')}
+            env.update(preset, PYTHON=str(fake), STARTUP_CHECK_SECONDS='1')
+            result = subprocess.run(['bash', str(script), WALLET, '2026-10-19T00:00:00Z', str(Path(tmp) / 'out')],
+                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=30)
+            return result, (json.loads(seen.read_text()) if seen.exists() else None)
+
+    def test_q11a_quoted_and_unquoted_dotenv_values_arrive_without_quotes(self):
+        cases = {
+            'double': ('BINANCE_API_KEY="k-synthetic-123"\nBINANCE_SECRET_KEY="s-synthetic-456"\n', 'k-synthetic-123', 's-synthetic-456'),
+            'single': ("BINANCE_API_KEY='k-synthetic-123'\nBINANCE_SECRET_KEY='s-synthetic-456'\n", 'k-synthetic-123', 's-synthetic-456'),
+            'unquoted': ('BINANCE_API_KEY=k-synthetic-123\nBINANCE_SECRET_KEY=s-synthetic-456\n', 'k-synthetic-123', 's-synthetic-456'),
+            'crlf': ('BINANCE_API_KEY="k-synthetic-123"\r\nBINANCE_SECRET_KEY=s-synthetic-456\r\n', 'k-synthetic-123', 's-synthetic-456'),
+        }
+        for name, (text, api, secret) in cases.items():
+            with self.subTest(name):
+                result, seen = self.run_wrapper_with_dotenv(text)
+                self.assertEqual(seen, dict(api=api, secret=secret), result.stdout + result.stderr)
+                self.assertNotIn('synthetic', result.stdout + result.stderr)  # Q11d
+
+    def test_q11b_dotenv_values_are_literal_and_never_evaluated(self):
+        result, seen = self.run_wrapper_with_dotenv(
+            "BINANCE_API_KEY='k-${HOME}-synthetic'\nBINANCE_SECRET_KEY=s-$(echo synthetic)-${HOME}\n")
+        self.assertEqual(seen, dict(api='k-${HOME}-synthetic', secret='s-$(echo synthetic)-${HOME}'),
+                         result.stdout + result.stderr)
+        self.assertNotIn('synthetic', result.stdout + result.stderr)  # Q11d
+
+    def test_q11c_the_environment_wins_over_dotenv_per_name(self):
+        result, seen = self.run_wrapper_with_dotenv(
+            'BINANCE_API_KEY="k-synthetic-file"\nBINANCE_SECRET_KEY="s-synthetic-file"\n',
+            BINANCE_API_KEY='k-synthetic-env')
+        self.assertEqual(seen, dict(api='k-synthetic-env', secret='s-synthetic-file'), result.stdout + result.stderr)
+        self.assertNotIn('synthetic', result.stdout + result.stderr)  # Q11d
+
 
 
 # ------------------------------------------------------------------------------------------------ 24/7 trading

@@ -18,18 +18,24 @@ if [[ $# -ne 3 ]]; then
 fi
 address=$1 until=$2
 mkdir -p "$3" && dir=$(cd "$3" && pwd)  # absolute: the capture runs from the repo root
+python=${PYTHON:-python3}
 if [[ -z ${BINANCE_API_KEY:-} || -z ${BINANCE_SECRET_KEY:-} ]] && [[ -f .env ]]; then
-  # Read only the two names from .env; never source it and never echo values.
-  while IFS='=' read -r name value; do
-    case $name in BINANCE_API_KEY|BINANCE_SECRET_KEY) export "$name=${value%$'\r'}";; esac
-  done < <(grep -E '^(BINANCE_API_KEY|BINANCE_SECRET_KEY)=' .env)
+  # Parse .env with the pinned python-dotenv (quotes removed, no interpolation); never source it and never echo
+  # values. Only the two names are read, and a name already set in the environment keeps its value.
+  while IFS= read -r -d '' name && IFS= read -r -d '' value; do
+    if [[ -z ${!name:-} ]]; then export "$name=$value"; fi
+  done < <("$python" -I -c 'import sys
+from dotenv import dotenv_values
+values = dotenv_values(".env", interpolate=False)
+for name in ("BINANCE_API_KEY", "BINANCE_SECRET_KEY"):
+    if values.get(name):
+        sys.stdout.write(name + "\0" + values[name] + "\0")')
 fi
 if [[ -z ${BINANCE_API_KEY:-} || -z ${BINANCE_SECRET_KEY:-} ]]; then
   echo "BINANCE_API_KEY / BINANCE_SECRET_KEY are not set (environment or ./.env); nothing started" >&2
   exit 2
 fi
 root=$(cd "$(dirname "$0")/.." && pwd)
-python=${PYTHON:-python3}
 cmd=("$python" -m larp.marketdata.cost_summary capture --address "$address" --out-dir "$dir" --until "$until"
      --interval-seconds "${INTERVAL_SECONDS:-600}")
 if command -v caffeinate >/dev/null 2>&1; then cmd=(caffeinate -i "${cmd[@]}"); fi  # keep a Mac awake
