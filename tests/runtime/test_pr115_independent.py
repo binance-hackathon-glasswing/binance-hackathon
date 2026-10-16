@@ -235,3 +235,16 @@ class MidnightJump(AdoptionHarness):
         self.assertFalse(self.projection()['price_jump'])
         restarted = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
         self.assertEqual(restarted(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
+
+    def test_a_later_midnight_jump_on_the_deferred_day_is_journaled_separately(self):
+        driver, midnight, roll = self.no_round_midnight()
+        self.assertEqual(driver.balance_check(self.w.clock()), 'MATCH')
+        self.w.clock.now += MINUTE
+        self.assertEqual(driver.balance_check(self.w.clock()), 'MATCH')
+        self.assertFalse(self.projection()['price_jump'])
+        self.feed.prices['NVDAB'] = PRICE
+        self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'PRICE_JUMP_HOLD')
+        self.assertEqual(self.projection()['price_jump']['NVDAB']['jump_ms'], self.w.clock())
+        self.assertEqual(len(self.events('DAY_ROLL_DEFERRED')), 2)
+        self.assertEqual(self.projection()['marks']['NVDAB'], PRICE)
+        self.store.verify(RUN)
