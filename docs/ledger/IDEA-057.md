@@ -161,6 +161,7 @@ Order: criteria `657fd03` → fix and tests `c075849`. The three new tests were 
 | I93-4 | PASS | Validation record line updated |
 
 Full local suite at `c075849` (Linux x86_64 container, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 14.24 in Docker, `python -m pytest -q -p no:cacheprovider`): **1551 passed, 8 skipped, 2210 subtests passed**. Base `3b4d1e6` in the same environment: 1548 passed, 8 skipped (+3 tests, no new failure). Skips are environmental: 1 opt-in external market artifacts, 1 "root ignores the directory mode" (the container runs as root), 3 disposable-systemd runner not enabled, 3 bubblewrap not installed. Hosted CI not used (org Actions minutes exhausted). The runbook now says to run `init` as the runtime user, since the ledger refuses a parent directory it does not own.
+
 ## Deploy-branch integration for the Gate A shadow trial — prospective criteria (2026-10-16 SGT)
 
 Branch `claude/aiand-shadow-gate-a` from `codex/system-testing-20261012`, with the routing branch (plus the #93 fixes) merged in. Written and pushed before the changed code runs. Each new test must fail before its change and pass after it.
@@ -173,6 +174,27 @@ Branch `claude/aiand-shadow-gate-a` from `codex/system-testing-20261012`, with t
 | SG-4 | **Secrets tooling.** `tools/deploy/put_service_secrets.sh` prompts `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` hidden, after the Binance keys; an empty answer omits that key. Values reach `aws` on stdin only, never in argv or output. The runtime loader accepts both (existing `test_credentials`). |
 | SG-5 | **Documentation.** The approved-destination table lists both hosts as shadow-only approved (with the MR-06 decision); `api.anthropic.com` stays unapproved. `docs/build/AIAND_MODEL_ROUTING.md` gives tonight's host steps in order, with the prior OpenAI spend as a flagged placeholder. |
 | SG-6 | **No regression.** Full local suite (Python 3.12, PostgreSQL 14) on this branch against the deploy-branch base: no new failure; counts and skips reported. Golden fixtures are regenerated only if the merge breaks them. |
+
+### Deploy-branch integration results — 2026-10-16 SGT
+
+Order: merge `bc14e23` → criteria `3539161` → red tests `5b54182` (all 8 new/changed tests failed: missing `OverlayArtifacts`, missing example, route hosts, secrets prompts) → build `548a2c3` → docs `e57fdf5`, merge of the #93 results `07f2917`.
+
+- **Merge.** `larp/runtime/service.py` merged without conflict: `build_driver` keeps the IDEA-055 balance check (`RuntimeHealth`, `balance_settings`, `DecimalsCache`) and adds the shadow-only `aiand_routed` branch. Only `docs/LEDGER.md` conflicted (rows ordered IDEA-055, 056, 057, 061, 062). The merge also brought main's three docs-only commits (`305f3de`, `0a7d87a`, `e410e49`). **No golden fixture was regenerated**: the goldens, strategy fixtures and route tests passed unchanged after the merge.
+
+| ID | Result | Evidence |
+|---|---|---|
+| SG-1 | PASS | `test_aiand_routing.py::Routing::test_sg1_read_only_evidence_store_keeps_model_artifacts_private`, `test_driver.py::Composition::test_sg1_routed_model_artifacts_go_to_a_private_runtime_store`. Also measured on a real read-only bind mount: before, `OSError: [Errno 30]`; after, `ASSESSED`, stages routine + openai-review, no tool errors, 21 private artifacts, evidence store unchanged. |
+| SG-2 | PASS | `test_routes.py::Plans::test_sg2_aiand_shadow_runtime_adds_the_model_hosts`, extended `test_r8_…` |
+| SG-3 | PASS | `test_driver.py::Composition::test_sg3_shadow_example_builds_in_dev_shadow_and_refuses_service_or_live` (placeholders filled: `intelligence_mode` with `development`, since `live` values are still unset and Gate A's mode comes from PR #87) |
+| SG-4 | PASS | `test_deploy_presetup.py::PutServiceSecrets::test_sg4_…` (two tests); the existing secrets tests pass with the two new prompts left empty |
+| SG-5 | PASS | `architecture-deployment.md` table and note; runbook "Host steps for the Gate A shadow trial" |
+| SG-6 | PASS | see below |
+
+**Mutations** (each applied, run, restored; 4/4 caught): model store set back to the evidence store (SG-1 driver test fails); `OverlayArtifacts.put` writes the shared store (SG-1 routing test fails); route checker ignores `aiand_routed` (SG-2 and R8 fail); `LARP_MODEL_API_KEY` never stored (SG-4 fails).
+
+**Full suite** (Linux x86_64 container as root, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 14.24, `python -m pytest -q -p no:cacheprovider`): base `1388f80` **1578 passed, 10 skipped, 2194 subtests**; build `548a2c3` **1617 passed, 10 skipped, 2284 subtests**, no failure. All 10 skips are environmental: 1 opt-in external market artifacts, 1 root ignores directory modes, 5 disposable systemd runner, 3 bubblewrap. Hosted CI not used (org Actions minutes exhausted).
+
+**Finding outside this change (not fixed here).** The deterministic path has the same read-only problem in a milder form: on the real read-only mount, every deterministic tool call was recorded `TOOL_ERROR:…:ARTIFACT_WRITE_ERROR` (fetch_document, prior_context, compare_facts), so Gate A's deterministic runtime would assess without its tools. Owner: section D / Keegan (runtime wiring). `OverlayArtifacts` is the likely fix.
 
 ## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
 
