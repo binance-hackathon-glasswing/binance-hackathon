@@ -125,6 +125,16 @@ def settle(current, observation):
                 previous_session = projection.get("last_discretionary_session")
                 projection["last_discretionary_session"] = max(session, previous_session) \
                     if type(previous_session) is int else session
+                profile = record.get("policy_input", {}).get("context", {}).get("profile", {})
+                if profile.get("baseline") == "TREND_GUARDED_VOL":
+                    # IDEA-076 Q14: S1 budgets discretionary swaps per name per session.
+                    legs = projection.get("discretionary_legs")
+                    if type(legs) is not dict or type(legs.get("session")) is not int or legs["session"] < session:
+                        legs = {"session": session, "counts": {}}
+                    if legs["session"] == session:
+                        counts = dict(legs["counts"])
+                        counts[intent["symbol"]] = counts.get(intent["symbol"], 0) + 1
+                        projection["discretionary_legs"] = {"session": session, "counts": counts}
                 observed_ms = iso_ms(o["observed_at"])
                 projection["last_discretionary_observed_ms"] = max(
                     observed_ms, projection.get("last_discretionary_observed_ms", observed_ms))
