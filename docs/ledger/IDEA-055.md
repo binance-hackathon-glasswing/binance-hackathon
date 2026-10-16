@@ -399,3 +399,8 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 
 - RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
 - RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head bc51c4a: focused balance/HALT/driver modules 77 passed / 67 subtests on Linux/Python3.12/PostgreSQL14.24. Reproductions: 2010 mismatch at t0, MATCH at t1s, 2010 at t60s wrongly adopts; reconstructing DayRoll after an in-window deferral returns OUTSIDE_WINDOW after the hold clears. Original ALLPR-R1 elapsed/newer-block checks are fixed. RR2-R1/R2 fixes and new regressions remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
