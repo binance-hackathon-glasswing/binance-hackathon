@@ -229,7 +229,8 @@ class ChainGaps(unittest.TestCase):
         capture = self.capture()
         self.assertIn('snapshot checked', self.pinned(chain=capture)['DR-03']['detail'])
         missing = dict(capture); missing.pop('finalized_nonce')
-        for value in (missing, dict(capture, finalized_nonce=2), dict(capture, finalized_nonce='3')):
+        for value in (missing, dict(capture, finalized_nonce=2), dict(capture, finalized_nonce='3'),
+                      dict(capture, finalized_nonce=3.0)):  # equal to 3, but not an integer quantity
             with self.subTest(value=value.get('finalized_nonce')):
                 # DR-03 is always BLOCKED pending owner acceptance; the detail says whether the snapshot passed.
                 self.assertIn('missing, blocked, stale or mismatched', self.pinned(chain=value)['DR-03']['detail'])
