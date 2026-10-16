@@ -1,7 +1,7 @@
 # IDEA-055 — Minimal chain-balance reconciliation: detect a mismatch and stop new risk (#36)
 
 - Date / owner: 2026-10-15 SGT / design drafted with Claude Code at the user's request. Owners to agree before anything is built: Isaac (C, balance observation), Keegan (B, comparison and planner effect), Yao Zhu (D, scheduling, journal, health gate), as named in the #36 status of 2026-10-15.
-- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation to be built in PR 4 and RPC failover in PR 5
+- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover in PR 5
 - Links: #36 (R14, P1); IDEA-049-B item 007; IDEA-049-C C-OPEN-008; IDEA-049-D D-REQ-039; IDEA-039 / PR #74 (`gate_b probe-chain`); SKILL.md Q-20, F-95, F-114, F-117; inferences.md I-28; plan.md G-43.
 
 ## What and why
@@ -242,3 +242,295 @@ Code: PR 4.
 ### #94 / Q-20 (dividends and splits)
 
 Resolved by D2 and D4: a dividend Multiplier or split change on our assets is adopted through the same adjustment, so #94 does not wait for the organisers. The team position on Q-20 is recorded in SKILL.md (adopt balance-only changes on our own assets; never touch unsolicited tokens). How the organisers count them in equity is still open, so Q-20 stays open for that part only. #94 closes when PR 4 merges.
+
+## Self-healing reconciliation (PR 4, 2026-10-16): chain wins, two safety limits, price-jump guard
+
+Builds the owner decisions above (D2 and D4 changed, D5 scheduling; the #84 top-up point). Built by a Claude Code session at Yao Zhu's request; Isaac (C) and Keegan (B) review. PR 5 adds the RPC failover. Pass criteria are committed before any test or code.
+
+### Design
+
+1. **Eligible assets only (B, `larp/risk/reconcile.py`).** `compare_balances` classifies only USDT, BNB and the five eligible bStocks. Any other token in an observation is listed under `unsolicited`, never in `surplus` or `deficits`, and can never be adopted. `read_balances` reads only the pinned contracts anyway, so this is a second guard.
+2. **`adjust_ledger(portfolio, adjustments)` (B), pure.** It sets each adjusted asset's units to the chain units: `cash_units` for USDT, `bnb_units` for BNB, `positions[s].units` for a bStock (a missing eligible position is created with the chain decimals and zero cost). The position's `cost_basis_units` is unchanged, so a dividend or split lowers the average cost and a deficit raises it. It refuses any other asset. The input is not changed.
+3. **Adoption (D, `BalanceCheck` in `larp/runtime/driver.py`).**
+   - **First mismatch.** A comparable check (MATCH, SURPLUS_ONLY or DEFICIT) that shows an eligible asset off the ledger records a candidate in memory. The candidate holds the chain units, ledger units, block number and hash, observation hash, `settled_block`, and the store version after this check's own commits. Detection is journaled as today: `BALANCE_CHECKED`, plus `BALANCE_DEFICIT` / `BALANCE_SURPLUS` incidents. The confirming check is scheduled `retry_ms` (60 s) later, not after the 10-minute interval.
+   - **Confirmation (limit 1).** The next comparable check adopts an asset only when all of these hold:
+     - it shows the same chain units;
+     - the ledger units for that asset are the same;
+     - `settled_block` is the same;
+     - its block is at or after the first block (both are at or after `settled_block`, or `compare_balances` would have skipped);
+     - **nothing else was committed to the run between the two checks** (the store version is unchanged), so no round, reservation, execution observation or receipt came in between (limit 2).
+     Otherwise the newer read replaces the candidate and is confirmed 60 s later. Both checks still read nothing while anything is in flight: reservations, an open round, an execution pending or a pending nonce (existing skip). A candidate is kept in memory only, so a restarted process re-reads twice before it adopts (the same rule as the B3 gate).
+   - **Adoption.** One `BALANCE_ADJUSTED` journal event with the adjustments and the new projection: `portfolio` from `adjust_ledger`, `balances` rewritten to agree, and the `balance_check` state without the adopted deficits and surplus assets. Then one `INCIDENT` per asset, of type `BALANCE_ADJUSTED`, carrying asset, `ledger_before`, `chain_units`, `delta`, both block numbers, both observation hashes and reason `SURPLUS` or `DEFICIT`. It is not a trade or a round: no round, intent, audit (ai-seeds) event or fill is created. `BALANCE_ADJUSTED` is a recorded fact on replay. Replay recomputes `adjust_ledger` from the previous projection and the event's adjustments, and refuses the batch (`IntegrityError`) if the journaled portfolio differs.
+   - **Gate.** `balances_ok` is true when this process's latest comparable check is younger than the maximum age and leaves no unadopted DEFICIT. Between detecting a deficit and adopting it (about 60 s), new spending stays paused as in the minimal build, and that asset's sales are capped (D1). After adoption, new buys and gas top-ups resume. Sales and the flatten are never blocked by the gate. **Interpretation flagged for Yao Zhu:** D5 says buys pause "only when no check succeeded within 30 minutes". This keeps one more, short pause: the unconfirmed-deficit window. It exists so a single bad read cannot size buys from phantom units before the second read confirms or clears it.
+4. **Price-jump guard (D builder and driver, B planner).**
+   - **Detection (`ContextBuilder`).** When `price_jump` is configured (`bps` from the new driver setting `price_jump_check_bps`, `hold_ms` = `balance_check_max_age_ms`), each round compares every usable mark with the last mark journaled in `projection.marks`. A symbol held in the journaled ledger whose mark moved by at least `bps` of the previous mark gets a hold in `projection.price_jump`: reference (previous) price, new price, `jump_ms` and `until_ms` = `jump_ms + hold_ms`. The round's context carries `price_jump_hold` = {symbol: reference price} for every hold still active. Both updates are part of the round batch, so replay recomputes them. Without the setting nothing changes, and existing contexts keep their bytes.
+   - **Planner.** For each held symbol under an active hold:
+     - no order is planned (its sale requirement is `BLOCKED_PRICE_JUMP`, its discretionary target is rejected `PRICE_JUMP_HOLD`), and it does not stop other symbols' discretionary trades;
+     - it is valued at min(reference, current) for sizing and caps, so a reverse split cannot oversize buys and a forward split cannot make the book look over-weight;
+     - `update_risk` is not run: the daily, run and deep-cut latches, and the peak, stay as they were. The plan reports `loss_stops_deferred`.
+   - **Immediate check (driver).** `BalanceCheck.due` is true as soon as a hold exists that is newer than this process's last check attempt.
+   - **Clearing (`BalanceCheck`).** A comparable check made after `jump_ms` clears the hold when that asset is MATCH, or when it is adopted after the two-check confirmation.
+   - **Fallback.** A hold past `until_ms` is dropped from the context, and the loss stops evaluate on the marks as they are.
+   - **Day roll.** `DayRoll` does not roll while a hold is active (`PRICE_JUMP_HOLD`); it rolls on a later cycle within its window.
+5. **Settings.**
+   - `driver.price_jump_check_bps`: an integer from 1 to 10 000. It is required in `dev`/`live` together with the four balance settings (a start without it is refused, exit 4). `runtime.example.json` sets 3000.
+   - `build_driver` passes `price_jump` to the builder in the existing balance block. That is a two-line edit; nothing else in `build_driver` changes.
+
+### Pass criteria (recorded before any test is written)
+
+Synthetic chain and market, disposable PostgreSQL; no credentials, network, signing or upload. The tests are pushed first and must fail on the code without this change; then the build is pushed and they must pass.
+
+| ID | Check |
+|---|---|
+| S1 | Unsolicited token: an observation with a token outside the seven assets lists it under `unsolicited`; it is never in `surplus` or `deficits` and does not change `status`. End to end, it is never adopted or written to the ledger. |
+| S2 | `adjust_ledger`: units set to the chain units for USDT, BNB and a held stock; `cost_basis_units` unchanged; a missing eligible position is created with zero cost; the input is not changed; an asset outside the seven is refused (`ContractError`). |
+| S3 | A single bad RPC read is never adopted: a mismatch seen once and then a MATCH adopts nothing. Two mismatching reads with different chain units adopt nothing; the newer read becomes the candidate and is adopted only after it is read again. |
+| S4 | After a first mismatch the confirming check runs about 60 s later (`retry_ms`), not after the 10-minute interval. |
+| S5 | In flight: a round planned between the first and the confirming check (a commit and a reservation) prevents adoption at that check. Adoption follows only after two agreeing checks with nothing committed between them. While reservations exist, nothing is read. |
+| S6 | Dividend Multiplier +0.5 %: NVDAB 2000 → 2010 on chain is adopted at the confirming check. The ledger and `balances` read 2010, the cost basis is unchanged, there is one `BALANCE_ADJUSTED` event and one incident with every field (reason SURPLUS), no audit event or round is added, and `new_spending_ok` stays true. |
+| S7 | USDT dust: chain cash 3 units above the ledger is adopted (reason SURPLUS). |
+| S8 | Restore from an old backup (deficit): ledger above the chain. The first check pauses new spending and caps the sale (D1). The confirming check adopts the chain units (reason DEFICIT). `new_spending_ok` is true again, and a later round's policy input shows the adopted units and open gates (trading resumes). |
+| S9 | BNB deficit: before adoption, a top-up is refused `GAS_TOP_UP_SPENDING_BLOCKED`. After adoption, `new_spending_ok` is true and the same top-up plan is no longer refused for spending (it requests its quote). |
+| S10 | Backstop: a large adopted deficit (USDT 10 % of equity) makes the next round latch the run loss stop (`run_halt`). |
+| S11 | Forward split 2:1 (driver, PostgreSQL). The NVDAB mark halves in a round: a hold is set; that round plans no NVDAB order; its risk state keeps every latch false and the peak unchanged. The next cycle checks immediately; the confirming check adopts 4000 units and clears the hold. The next round has no loss stop latched. At the flatten, the NVDAB requirement covers all 4000 units and the sale is planned for 4000. |
+| S12 | Reverse split 1:2. Planner: with a hold on NVDAB at its reference price, the MSFTB buy is no larger than with no jump, NVDAB gets no order, and no latch or peak changes. Driver: the adopted 1000 units clear the hold, and the next round latches no run stop (the peak was never raised). |
+| S13 | Fallback: with no comparable check before `until_ms`, the hold leaves the context and the loss stops evaluate on the marks as they are (the forward-split drop latches the daily stop). |
+| S14 | Day roll waits while a hold is active (`PRICE_JUMP_HOLD`) and rolls once it has cleared. |
+| S15 | Replay of a run with checks, an adoption, holds and incidents reproduces the journal head exactly. A tampered `BALANCE_ADJUSTED` (portfolio not equal to `adjust_ledger` of the previous one) is refused (`IntegrityError`). |
+| S16 | Configuration: `dev`/`live` without `price_jump_check_bps`, or with 0 or more than 10 000, is refused. The example sets 3000. `build_driver` gives the builder `price_jump` with `hold_ms` equal to the maximum age. Offline drivers build as before. |
+| S17 | Full suite: the base count plus only these tests and the updated IDEA-055 tests, with no new failure or skip. Each mutation below, reverted after, must be caught: adopt after one read; ignore a commit between the checks; adopt an unsolicited token; change the cost basis on adjustment; plan orders for a held symbol under a hold; run `update_risk` under a hold; value a held jumped symbol at the current mark; never expire a hold; keep `balances_ok` false after an adopted deficit; skip the replay check of `BALANCE_ADJUSTED`. |
+
+**Existing tests this changes (old D2/D4 behaviour):**
+- B4 (`Surplus.test_b4_*`) asserted that a surplus is never adopted and the ledger is unchanged after two checks. It becomes "recorded once, adopted at the confirming check": the incident is still not repeated, and `new_spending_ok` stays true.
+- B5 (`Deficit.test_b5_*`) keeps its first-check assertions (that is the D1 window), and its name and docstring say so.
+- The design's prospective R4/R5 (no adoption; no new risk for the rest of the run) and B10's mutation "deficit written to the journaled ledger" are superseded by S6–S8 and S17.
+
+### Results (2026-10-16, PR 4)
+
+Criteria at `c78a0b3`; red tests at `dd226c2`; build at `1530625`; three tests added after the mutation run at `09dc882`. Synthetic chain and marks, disposable PostgreSQL **16.15** (PostgreSQL 14 could not be installed: Ubuntu 24.04 ships only 16, and the PGDG repository is blocked by this session's network proxy), Python 3.12.3 venv from `deploy/requirements-test.lock`, Linux container. No credentials, network, signing or upload. Org CI was not used (Actions minutes exhausted).
+
+- **Red first:** at `dd226c2`, 22 test functions failed for the predicted reasons. The confirming check is not run a minute later, so `balance_check` is missing from the summary. There is no `adjust_ledger`. An unsolicited token is counted as a surplus. The reverse split raised the peak to 220 USDT, and the forward split latched the daily stop. The day roll did not wait. The setting is missing, and the old B4 still saw no adoption.
+- **Test corrections before the counted run:**
+  1. S12's planner test compares the latches and the peak only, because the planner adds `cap_trims` to every risk state.
+  2. The mutation run (below) showed three mutations were not caught, so three tests were added at `09dc882`:
+     - a one-name book for S12, where the min-mark valuation visibly changes the buy size;
+     - a flatten under a hold for S11, where the held symbol's sale waits while another name sells;
+     - S15 cut at the tampered event, because later batches carry full projections and failed replay for another reason.
+  No assertion was weakened.
+- **Mutations**, each reverted, all caught (failures in the two IDEA-055 test files):
+
+  | Mutation | Failures |
+  |---|---|
+  | Adopt after one read | 13 |
+  | Ignore a commit between the checks | 2 |
+  | Adopt an unsolicited token | 2 |
+  | Change the cost basis on adjustment | 3 |
+  | Plan orders for a held symbol under a hold | 1 |
+  | Run `update_risk` under a hold | 2 |
+  | Value a held jumped symbol at the current mark | 1 |
+  | Never expire a hold | 1 |
+  | Keep `balances_ok` false after an adopted deficit | 2 |
+  | Skip the replay check of `BALANCE_ADJUSTED` | 1 |
+
+- **Full suite** (`python -m pytest -q -p no:cacheprovider`):
+  - base `1388f80` (with the PR 3 docs): 1578 passed, 10 skipped, 2194 subtests;
+  - this branch at `09dc882`: **1600 passed, 10 skipped, 2209 subtests**. That is +22 tests (the new file) and +15 subtests (S2, S16 and B9's extra key); no new failure or skip.
+  - The 10 skips are environmental and the same on both: opt-in recorded artifacts (1), root ignores directory mode (1), the disposable systemd runner not enabled (5), Linux bubblewrap not available (3).
+
+| ID | Result | Evidence |
+|---|---|---|
+| S1 | PASS | `Pure::test_s1_*`, `Adoption::test_s1_*` |
+| S2 | PASS | `Pure::test_s2_*` |
+| S3 | PASS | `Adoption::test_s3_*` |
+| S4 | PASS | `Adoption::test_s4_*` (not due at +59 s, adopted at +60 s) |
+| S5 | PASS | `Adoption::test_s5_*`; the "nothing read while reservations exist" part is the existing `Stale::test_b6_nothing_is_read_or_journaled_while_something_is_in_flight`, unchanged and passing |
+| S6 | PASS | `Adoption::test_s6_*` |
+| S7 | PASS | `Adoption::test_s7_*` |
+| S8 | PASS | `Adoption::test_s8_*` |
+| S9 | PASS | `Adoption::test_s9_*` |
+| S10 | PASS | `Adoption::test_s10_*` |
+| S11 | PASS | `PriceJump::test_s11_*`, `ReverseSplitPlanner::test_s11_the_flatten_waits_for_a_held_symbol_only` |
+| S12 | PASS | `ReverseSplitPlanner::test_s12_*` (two books), `PriceJump::test_s12_*` |
+| S13 | PASS | `PriceJump::test_s13_*` |
+| S14 | PASS | `PriceJump::test_s14_*` |
+| S15 | PASS | `PriceJump::test_s15_*` |
+| S16 | PASS | `Settings::test_s16_*` (three tests) |
+| S17 | PASS | full suite and mutations above |
+
+**Existing tests changed:**
+- `Surplus::test_b4_*` was renamed `..._adopted_at_the_confirming_check`. It now expects adoption, because old D2 asserted the ledger never changes.
+- `Deficit::test_b5_*` gets a comment only; its first-check assertions are the D1 window.
+- `Settings.BLOCK` (used by B9 and `Composition`) gains `price_jump_check_bps`, now required.
+
+**Still open:** Isaac and Keegan's review. The unconfirmed-deficit pause (Design §3, "Gate") is flagged for Yao Zhu. PR 5 adds the RPC failover.
+
+## PR 4 review fixes (2026-10-16, Claude Code session for Keegan, section B)
+
+From the section B review of PR #115 and wtvlol's ALLPR-R1. Criteria recorded before any change is tested.
+
+**Correction to the review.** One suggested option for R2 below, rolling the day at the lower of the two marks, is not adopted. A lower anchor makes the daily stop *looser*, not tighter, because a later loss is measured against a smaller base. The review comment claimed the opposite.
+
+| ID | Pass criterion |
+|---|---|
+| R1 (ALLPR-R1) | A mismatch is adopted only by a read made at least `retry_ms` after the first read and at a **strictly newer** finalized block. A comparable check that comes earlier (for example the immediate check that a price jump triggers) neither adopts nor replaces the first read as the candidate, unless the store version or `settled_block` changed. A read of the same block `retry_ms` later does not adopt (a stuck node cannot confirm itself). Both event orders are covered: a hold journaled before the first read, and a first read in the same millisecond as the hold. |
+| R2 | A day roll that `PRICE_JUMP_HOLD` defers inside its window is not lost when the window closes. `DayRoll` remembers the deferred UTC day in memory and rolls on the first cycle after the hold clears or expires, even past `window_ms`. A day not deferred inside its window still returns `OUTSIDE_WINDOW`. A restart loses the memory, the same as any outage across the window today. |
+| R3 | A hold is cleared by a MATCH only when that check is at least `retry_ms` after `jump_ms`. While any hold is active, the next check is scheduled `retry_ms` later, not after the 10-minute interval. The immediate check after a jump still runs and can start an adoption, but a MATCH there leaves the hold in place. A MATCH `retry_ms` after the jump clears it. |
+| R4 | `config/runtime/runtime.aiand-shadow.example.json` (from #114, merged into this branch) gains `price_jump_check_bps: 3000`, so #114's SG3 passes with PR 4. Merge order: #114, then #115, then #116. |
+| R5 | The existing S1–S16 tests pass. The synthetic chain advances one block per read. S6's `confirm_block` becomes `first_block + 1`, S11/S12 confirm a minute after the immediate check as before, and S14 keeps its in-window case. Mutations caught: no elapsed-time check, same block allowed, early check replaces the candidate, no day-roll deferral, MATCH clears a hold at once, hold not rescheduled at `retry_ms`. Full suite: no new failure against the branch before these fixes. |
+
+Not changed here (not breaking; reply on the thread): the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (a question for the author and Yao Zhu).
+
+### PR 4 review fixes: results (2026-10-16)
+
+Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER.md` conflict resolved by keeping both rows) → criteria `eea637a` → fix `6b25525` → second #114 merge (SG3 / #87 compatibility).
+
+| ID | Result | Evidence |
+|---|---|---|
+| R1 | PASS | `ReviewFixes.test_r1_a_hold_before_the_first_read_cannot_shorten_the_confirmation` (wtvlol's order: the early check returns SURPLUS_ONLY, the adoption comes `retry_ms` after the *first* read, and `first_block` is that read's block), `test_r1_a_first_read_in_the_same_millisecond_as_the_hold`, `test_r1_a_stuck_node_cannot_confirm_its_own_read` |
+| R2 | PASS | `ReviewFixes.test_r2_a_hold_across_the_end_of_the_window_defers_the_roll` (5-minute window: held at +1 and +10 min, a fresh `DayRoll` says OUTSIDE_WINDOW at +10, the deferred one rolls at +12 min once the hold is cleared); S14 unchanged |
+| R3 | PASS | `ReviewFixes.test_r3_a_match_just_after_the_jump_keeps_the_hold_a_later_one_clears_it` (the immediate MATCH keeps the hold, the next check is `retry_ms` later, its MATCH clears the hold, the next round latches the daily stop on the genuine drop) |
+| R4 | PASS | `runtime.aiand-shadow.example.json` has `price_jump_check_bps: 3000`; #114's SG3 passes on this branch |
+| R5 | PASS | S1–S16 and B1–B10 pass. Test changes: both synthetic-chain harnesses advance one block per read; S6 asserts `confirm_block == first_block + 1` (it asserted equal blocks); no other assertion changed. Mutations, each reverted, all caught: no elapsed-time check (2 failures), same block allowed (1), early check replaces the candidate (2), no day-roll deferral (1), MATCH clears a hold at once (1), hold not rescheduled at `retry_ms` (1). Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): the branch before these fixes, `1b21416`, 1612 passed, 10 skipped, 2216 subtests; this branch at `6b25525` (with #114) **1657 passed, 10 skipped, 2306 subtests, 0 failed**. The same 10 environmental skips. |
+
+**Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
+
+## PR115-C — independent execution/accounting review (2026-10-16, Isaac / Codex)
+
+Review starts at `bc51c4a`, including section B's R1–R5 fixes and the inherited
+AIand shadow merge. Review and fixes are isolated from the IDE checkout. No
+wallet credentials, provider calls, signing, uploads or deployment are used.
+
+Prospective criteria, recorded before running review tests:
+
+| ID | Pass criterion |
+|---|---|
+| PR115-C01 | Two agreeing balance reads must be consecutive comparable reads for each asset. An intervening early MATCH or different mismatch invalidates that asset's candidate; a later return to the original units cannot confirm it. An identical early read preserves the original candidate and its elapsed-time bound. Another asset's contradictory read must not invalidate an unchanged asset's candidate. |
+| PR115-C02 | A price jump first visible in the midnight market fetch must defer the daily anchor before it is committed, even when no hold was already in the projection. Forward and reverse splits must not anchor using old units and the new mark; ordinary and guard-disabled day rolls remain unchanged. The subsequent round journals the hold through the existing context path. |
+| PR115-C03 | Baseline and regression tests use disposable local PostgreSQL, with exact version recorded; targeted balance/adoption/day-roll/replay/HALT tests and the full available suite run after their code is committed and pushed. Existing R1–R5 guarantees remain covered. This establishes offline engineering behavior only. |
+
+Review also checks ordinary cadence versus candidate invalidation, observation
+and replay provenance, and the known terminal-sale hold question. New findings
+and results will be appended here; no whole readiness GAP is closed by review.
+
+PR115-C01/C02 red at `324de5f`, PostgreSQL 14.24: 5 new regressions failed
+for the predicted safety defects, 67 focused tests passed. At pushed `e9a337e`,
+all 72 tests and 46 subtests pass. Logs: `/private/tmp/larp-pr115-red.log` and
+`/private/tmp/larp-pr115-green.log` (local, outside Git).
+
+**PR115-C04, additional prospective criterion:** a continuous sequence of
+hold-only rounds must not starve balance confirmation. Preserve the owner's
+two-read/no-wallet-activity contract (D1–D5), but refine the implementation's
+stronger "no commit whatsoever" condition: allow journal-proven rounds with
+no intents, commands or reservations, and unchanged portfolio/execution state.
+Any intervening reservation (even acquired and released between reads), command,
+execution observation, balance adjustment, epoch change or unrecognised event
+invalidates the candidate. Read only the bounded journal suffix since the
+candidate, not the entire historical journal. Retain S5's negative assertion
+using actual transient reservations instead of an unrelated hold-only round.
+Regression: with one hold round per minute, two stable chain reads a minute
+apart adopt the mismatch; real transient resource activity still requires a
+new pair of reads. This is an engineering correction to the design's overly
+broad commit proxy, not a change to the owner safety or trading policy.
+
+PR115-C04 reproduced at `99c2d0b`: the continuous hold-cadence regression failed,
+while the transient-reservation safety control passed. The first focused run
+after `ebd8a97` passed 87 tests / 46 subtests, with one existing fixture failing:
+S9 still waited for an unnecessary third check after a blocked gas round. Its
+assertion is advanced to require adoption at the first eligible confirming
+check, retaining the blocked-before / top-up-enabled-after assertions. S5 now
+uses actual transient reservations; the safety assertion is retained. Additional
+checks require commands and unknown events to invalidate confirmation, validate
+bounded journal reads, and replay the continuous-cadence adoption exactly.
+
+**PR115-C05, prospective concurrency criterion:** if another writer commits
+resource activity after this check's own commit but before its subsequent load,
+that activity must not be treated as this check's own commits. The next read
+must reject the old candidate. Reproduce by injecting a reservation and its
+release in that exact gap; update the candidate's version only when the reload
+contains exactly the one expected commit. Full candidate safety still rests on
+the journal suffix, and ordinary single-writer behavior is unchanged.
+The same barrier must apply when the concurrent activity happens during the
+confirming check's own journal writes: no adjustment may commit using the
+previously computed confirmation. Refuse that adoption, pause new spending and
+obtain a fresh pair of reads; retain all intervening journal events.
+
+## RR2 — second all-open-PR review, prospective criteria (2026-10-16)
+
+- RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
+- RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head bc51c4a: focused balance/HALT/driver modules 77 passed / 67 subtests on Linux/Python3.12/PostgreSQL14.24. Reproductions: 2010 mismatch at t0, MATCH at t1s, 2010 at t60s wrongly adopts; reconstructing DayRoll after an in-window deferral returns OUTSIDE_WINDOW after the hold clears. Original ALLPR-R1 elapsed/newer-block checks are fixed. RR2-R1/R2 fixes and new regressions remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
+
+## PR115-C03 — verification and finding disposition (2026-10-16)
+
+This dated result supersedes the earlier RR2 "unexecuted pending approved push"
+status. Both reviewers' records and fixes are retained with merge commits.
+
+| Finding | Outcome |
+|---|---|
+| PR115-C01 / RR2-R1 | Fixed: an early MATCH or contradictory mismatch invalidates that asset's candidate; other unchanged assets retain their first timestamp. Three independent regressions reproduced the original defect before the fix. |
+| PR115-C02 | Fixed: a jump first visible in the midnight fetch defers the anchor before it can use old units and a split-adjusted mark. Both split directions are covered. The combined fix journals the deferral using RR2-R2's restart-safe path. |
+| PR115-C04 | Fixed: ordinary hold-only cadence no longer invalidates every confirmation indefinitely. The bounded journal suffix proves no wallet activity occurred; transient reservations, commands and unknown events still invalidate the candidate. Exact cadence/adoption replay passes. S5 now injects real transient reservations and retains its negative assertion. S9 requires the earlier valid confirmation, preserving its gas-block/resume assertions. |
+| PR115-C05 | Fixed: concurrent commits in the first-read reload cannot be blessed as this check's own commits. A race during confirmation logging aborts adoption, pauses spending and requires a fresh pair. Both gaps were reproduced before their fixes. |
+| RR2-R2 | Preserved: deferred day roll survives restart, including a restart after the hold clears; replay recognises DAY_ROLL_DEFERRED. The imported regression needed its existing replay helpers bound to SecondReview; no assertion was removed. |
+
+**Environment:** macOS ARM64, Python 3.12.14, pytest 9.1.1; disposable Docker
+`postgres:14.24-bookworm` (PostgreSQL 14.24, image digest
+`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+bound only to localhost port 55435. No production credentials, provider calls,
+signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
+
+- At `a2b54c1`, focused reconciliation/day-roll/HALT/storage: **92 passed,
+  50 subtests**, zero failures. After the final concurrency fix `472cede`, the
+  independent regressions: **13 passed, 4 subtests**, zero failures.
+- At combined `fd5dd6b` (includes concurrent `522cd53`, prior to Gate A's merge):
+  full suite **1698 passed, 9 skipped, 2324 subtests**, zero failures,
+  244.77 s. Skips: five opt-in real-systemd tests, three Linux bubblewrap tests,
+  one opt-in external market artifact. Raw log `/private/tmp/larp-pr115-full.log`,
+  SHA-256 `eb89cb27600c18781164b45fade1aff4308d775ce69505112270a18673ac05f0`.
+- One initial confirming-race invocation began before the push confirmation was
+  read; its result is not used as evidence. It was repeated after explicit push
+  confirmation in `/private/tmp/larp-pr115-adoption-race-red-confirmed.log` and
+  reproduced the same predicted failure.
+- Concurrent `959a627` adds the now-merged Gate A input assembly. It is preserved
+  in the review branch and is included in the final verification below.
+
+**Final combined verification at pushed PR head `7062923`:** full suite
+**1730 passed, 9 skipped, 2377 subtests**, zero failures, 252.69 s. Same macOS /
+Python 3.12.14 / PostgreSQL 14.24 environment and the same nine platform/opt-in
+skips described above. Includes Gate A assembly, both reviewers' RR2 fixes,
+all thirteen independent PR115-C regressions, exact replay and the storage
+journal bounds. Command:
+`LARP_TEST_DATABASE_URL=<disposable localhost database> python -m pytest -q -p no:cacheprovider`.
+Raw log `/private/tmp/larp-pr115-full-with-gate-a.log`, SHA-256
+`dd7a51b1ebd3b0103631eaaf3a3b87adf8bea19b1d2e624b22d6e529100ec739`.
+The subsequent record/index/backlog commit changes documentation only.
+
+**PR115-C06, final shared-base qualification:** after that run, concurrent
+`8956d7d` preserves integration PR #108's archive-security migrations 012/013
+and their regressions. They change no reconciliation code, but affect database
+startup. Preserve them with a merge; run the full available suite on PostgreSQL
+14.24 again before recording the final combined result. The `7062923` result
+above remains evidence for that exact tree only.
+
+**Still open:** the existing mandatory-sale/price-jump-hold policy question
+(Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
+systemd/bubblewrap qualification and actual hosted/signing/provider readiness
+with the existing owners. No policy choice, live authority, whole GAP closure
+or PR merge is implied by this offline review.
+
+### RR2-R4 — midnight hold must not depend on a later assessment round (prospective)
+
+The midnight jump check currently journals only the deferred-day flag. Without a subsequent assessment round, its new hold/mark is never persisted; repeated DayRoll calls rediscover the same jump and cannot age out or observe BalanceCheck clearing it. Require the first midnight-discovered hold and marks to be journaled with the deferral, survive restart/replay, clear through comparable balances without an intervening assessment, and expire at the original hold deadline without being renewed by repeated day-roll calls. Also persist a later newly discovered hold on an already-deferred day with a unique event ID. Synthetic PostgreSQL regressions must fail before the repair and pass after. No owner policy change.
+
+RR2-R4 original published source9774011: both no-round regressions fail on PostgreSQL14.24 (missing persisted NVDAB hold; still PRICE_JUMP_HOLD at +31min). Repair journals detected marks/holds together with the deferred day, uses a version-qualified event ID for a later new hold on the same deferred day, and retains the original expiry. Before this repair, combined990e912 passed1757 tests /1 opt-in external-data skip /2561 subtests with real Linux systemd/bubblewrap; that run does not close RR2-R4. Verification of the repair follows publication.
+
+RR2-R4 first focused repair run: 90 passed /2 failures /253 subtests. All three new no-round regressions passed; the two existing split-anchor tests expected an extra immediate check after the next round. Persisting the hold correctly moves that check before the round. Update the fixture to expose split units before that actual pre-round check, assert its SURPLUS/DEFICIT result, and retain the full retry interval before adoption. No scheduling safeguard is relaxed. Repeat focused/full validation after publishing this fixture correction.
+
+
+### RR2-R4 final regression acceptance (2026-10-16)
+
+Published combined source af9ffbf (PR115 fixes at9f561f9/481ae58 plus PR116 failover and merged PR87/108) passes92 focused tests /253 subtests, then the full ARM64 Linux/Python3.12.15/PostgreSQL14.24 suite: **1760 passed, 1 skipped, 2561 subtests** in221.45s. Real systemd and bubblewrap enabled; sole skip is opt-in external recorded market artifacts. Both new no-round regressions were red at9774011, and persisted-hold expiry/reconciliation/second-jump cases now pass with replay. Source clean, pip check passes. Logs/hashes: /private/tmp/larp-rereview-0jHjyg/results-v4/summary.json; full log SHA256 c6451ff3aa2c8fd8b50e286182ee2027e3e19903fbc27bba2f0ef9dd4c539bb7. No remaining implementation finding in this review. Peer merge481ae58 has exactly the same content as9f561f9. Hosted Actions run38908993829 ataf9ffbf never starts because of account billing/spending limits; exact-release bundles and hosted/policy/provider/rehearsal gates remain open. No real credentials, cloud actions, real-wallet signing or network broadcast. PR115/116 merge under the user approval; target is codex/system-testing-20261012, main unchanged. Detailed current index/backlog reconciliation follows with PR116.

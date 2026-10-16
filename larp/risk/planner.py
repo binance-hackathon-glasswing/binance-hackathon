@@ -100,6 +100,17 @@ def plan(snapshot, proposal_or_none):
         latched = _class_1_latches(snapshot.policy_state)
         invalid = {}
         market = markets(snapshot, p, invalid)
+        # IDEA-055 PR 4: a held symbol whose mark jumped waits for a balance check. Until then it is not traded,
+        # it is valued at the lower of its marks, and the loss stops are not evaluated (a split moves the price
+        # before the balance check sees the new token count).
+        hold = c.get("price_jump_hold") or {}
+        if type(hold) is not dict or any(type(v) is not int or v <= 0 for v in hold.values()):
+            raise ContractError("Price-jump holds must map symbols to positive prices")
+        jumped = sorted(s for s in hold if type(ledger["positions"].get(s)) is dict
+                        and ledger["positions"][s].get("units"))
+        for symbol in jumped:
+            if market.get(symbol) is not None:
+                market[symbol] = dict(market[symbol], price_units=min(market[symbol]["price_units"], hold[symbol]))
         unvalued = sorted({s for s, pos in ledger["positions"].items()
                            if pos["units"] and market.get(s) is None}
                           | {v["symbol"] for v in ledger["reservations"].values()
@@ -108,10 +119,12 @@ def plan(snapshot, proposal_or_none):
         E = equity(ledger, market, allow_missing=True)
         # Incomplete valuation is not a loss observation. Preserve latches/peak;
         # block buys and use only the disclosed lower bound for healthy-name trims.
-        risk_ledger = (ledger if unvalued else
+        risk_ledger = (ledger if unvalued or jumped else
                        update_risk(Document.from_dict(ledger), now=now, equity_units=E).read())
         r = risk_ledger["risk"]
         result["risk_state"] = r
+        if jumped:
+            result["loss_stops_deferred"] = jumped
         result.update(valuation_status="LOWER_BOUND" if unvalued else "COMPLETE",
                       risk_equity_lower_bound_units=E, unvalued_symbols=unvalued)
         # One bad row makes only its own symbol unusable; it is recorded, never silently dropped (#45).
@@ -230,7 +243,8 @@ def plan(snapshot, proposal_or_none):
         if cap < qty:
             result["requirements"].append({"symbol": symbol, "held_units": qty,
                                            "max_units": cap, "remaining_sell_units": qty - cap,
-                                           "reasons": reason, "status": "PENDING"})
+                                           "reasons": reason,
+                                           "status": "BLOCKED_PRICE_JUMP" if symbol in jumped else "PENDING"})
     if durable_trims:
         r["cap_trims"] = {"names": sorted(name_trims), "gross": gross_trim,
                           "gross_shares": gross_shares}
@@ -270,12 +284,17 @@ def plan(snapshot, proposal_or_none):
 
     actions = []
     for req in sorted(result["requirements"], key=urgency):
+        if req["symbol"] in jumped:
+            continue  # waits for the balance check; other symbols' trades go on
         actions.append((req["symbol"], "SELL", req["remaining_sell_units"], True, req["reasons"]))
     # No discretionary action while any mandatory obligation is outstanding.
     if not actions:
         count = len(set(held) | set(pending_buy))
         for symbol, t in sorted(targets.items()):
             if t.kind is TargetKind.KEEP_QUANTITY:
+                continue
+            if symbol in jumped:
+                result["rejections"].append({"symbol": symbol, "reason": "PRICE_JUMP_HOLD"})
                 continue
             m = market.get(symbol)
             if m is None:
