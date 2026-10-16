@@ -14,7 +14,7 @@ Add `LARP_AIAND_API_KEY` to the existing runtime **Secrets Manager JSON**. `LARP
 
 ## Shared OpenAI allocation
 
-Use one primary-host ledger for the entire development, activation and scored window, independent of wallets/run IDs. Before the first experiment, explicitly initialize it with **all prior allocated OpenAI spend** deducted. The parent directory must already be private and writable by the runtime user:
+Use one primary-host ledger for the entire development, activation and scored window, independent of wallets/run IDs. Before the first experiment, explicitly initialize it with **all prior allocated OpenAI spend** deducted. The parent directory must already be private (no group/other mode bits) and owned and writable by the runtime user; the ledger code refuses any other parent directory (#93). Run the command as the runtime user:
 
 ```sh
 python -m larp.intelligence.model_budget init \

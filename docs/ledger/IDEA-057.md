@@ -47,7 +47,7 @@ Implementation: `larp/intelligence/aiand.py`, `model_budget.py`, `routing.py`, s
 
 ## Validation record
 
-- Before execution: static AST parsing of changed Python and JSON parsing of the example passed; no project module was imported. Synthetic regression cases prepared in `tests/intelligence/test_aiand_routing.py` plus runtime composition/secret tests. Execution results are pending the repository's committed-and-pushed requirement.
+- Before execution: static AST parsing of changed Python and JSON parsing of the example passed; no project module was imported. Synthetic regression cases prepared in `tests/intelligence/test_aiand_routing.py` plus runtime composition/secret tests. Execution results are recorded below: AR1–AR8 local acceptance (2026-10-16), the PR #86 review fix, PR85-R1/R2 and the #93 cleanups.
 
 ## Remaining work and owners
 

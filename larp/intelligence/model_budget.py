@@ -5,7 +5,7 @@ reservation is charged before dispatch. Missing/failed/abandoned usage keeps its
 This is an allocated runtime budget, not a claim to know unrelated account/console spending.
 """
 import argparse
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import json
 import os
 from pathlib import Path
@@ -15,6 +15,16 @@ import uuid
 from larp.intelligence.common import IntelligenceError
 
 
+def _private_parent(path):
+    # The runbook requires a private ledger directory: owned by this user, no group/other bits.
+    try:
+        st = path.parent.stat()
+    except OSError:
+        raise IntelligenceError('Model budget directory missing') from None
+    if st.st_uid != os.geteuid() or st.st_mode & 0o077:
+        raise IntelligenceError('Model budget directory must be private and owned by the runtime user')
+
+
 class ModelBudget:
     def __init__(self, path, account, *, total=50_000_000, reserve=10_000_000):
         self.path = Path(path).resolve()
@@ -22,6 +32,7 @@ class ModelBudget:
         if type(account) is not str or not account or len(account) > 100 or \
                 type(total) is not int or type(reserve) is not int or not 0 <= reserve < total:
             raise IntelligenceError('Invalid model budget settings')
+        _private_parent(self.path)
         if not self.path.is_file() or self.path.stat().st_mode & 0o077:
             raise IntelligenceError('Model budget must already exist with private permissions')
         self.snapshot()  # schema/account/limits must match the provisioned ledger
@@ -31,9 +42,10 @@ class ModelBudget:
         if type(initial_spent) is not int or not 0 <= initial_spent <= total:
             raise IntelligenceError('Explicit nonnegative prior OpenAI spend required')
         path = Path(path).absolute()
+        _private_parent(path)
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         os.close(fd)
-        with sqlite3.connect(path) as db:
+        with closing(sqlite3.connect(path)) as db, db:
             db.executescript('''PRAGMA synchronous=FULL;
                 CREATE TABLE account (id INTEGER PRIMARY KEY CHECK(id=1), name TEXT NOT NULL,
                   total INTEGER NOT NULL, reserve INTEGER NOT NULL, external_only INTEGER NOT NULL,
@@ -79,8 +91,10 @@ class ModelBudget:
 
     @staticmethod
     def _switch(db, reason):
-        db.execute('UPDATE account SET external_only=1,reason=? WHERE id=1 AND external_only=0', (reason,))
-        db.execute('INSERT INTO switches(reason) VALUES(?)', (reason,))
+        # One switches row per real switch; repeating it while already external-only is a no-op.
+        if db.execute('UPDATE account SET external_only=1,reason=? WHERE id=1 AND external_only=0',
+                      (reason,)).rowcount:
+            db.execute('INSERT INTO switches(reason) VALUES(?)', (reason,))
 
     def external_only(self, reason):
         with self.transaction() as db:

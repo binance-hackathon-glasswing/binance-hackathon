@@ -7,11 +7,14 @@ deadline/tools and failed review; AR6 trace/consumer identities; AR7 runtime wir
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import json
+import os
 from pathlib import Path
+import sqlite3
 import tempfile
 import time
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 from larp.contracts import Document
 from larp.intelligence.aiand import AIandChatModel, ENDPOINT
@@ -165,6 +168,59 @@ class BudgetAdmission(unittest.TestCase):
         b=self.init(); token=b.admit(1000,'one'); b.settle(token,None)
         self.assertEqual(ModelBudget(self.path,'test-account').snapshot()['charged_micro_usd'],1000)
         with self.assertRaises(IntelligenceError): b.settle(token,0)
+
+    def switches(self):
+        db=sqlite3.connect(self.path)
+        try: return [r[0] for r in db.execute('SELECT reason FROM switches ORDER BY id')]
+        finally: db.close()
+
+    def test_i93_1_initialize_closes_every_connection_it_opens(self):
+        opened, connect = [], sqlite3.connect
+        class Tracked:
+            def __init__(self, *a, **kw): self.db=connect(*a, **kw); self.closed=False; opened.append(self)
+            def __getattr__(self, name): return getattr(self.db, name)
+            def __enter__(self): self.db.__enter__(); return self
+            def __exit__(self, *exc): return self.db.__exit__(*exc)
+            def close(self): self.closed=True; self.db.close()
+        with mock.patch('sqlite3.connect', Tracked):
+            self.init()
+        self.assertTrue(opened)
+        self.assertEqual([t.closed for t in opened], [True]*len(opened))
+        self.path.unlink(); self.init()  # removable and re-initializable afterwards
+
+    def test_i93_2_one_switch_row_per_real_switch(self):
+        b=self.init()
+        def step(req, remaining):
+            return Document.from_dict(dict(status='OK', usage=dict(input_tokens=100, output_tokens=100_000)))
+        model=SimpleNamespace(identity=None, max_output_tokens=10, clock=lambda: 0,
+                              request_payload=lambda req: b'{}', step=step)
+        value=BudgetedOpenAI(model, b).step(request(), 1000).read()
+        self.assertEqual(value['error'], 'OPENAI_USAGE_EXCEEDED_BOUND')
+        self.assertEqual(self.switches(), ['OPENAI_USAGE_EXCEEDED_BOUND'])
+        b.external_only('OPENAI_CREDIT_EXHAUSTED')
+        self.assertIsNone(b.admit(50_000_000, 'already-external'))
+        self.assertEqual(self.switches(), ['OPENAI_USAGE_EXCEEDED_BOUND'])
+        self.assertEqual(b.snapshot()['reason'], 'OPENAI_USAGE_EXCEEDED_BOUND')
+        # A first switch at the operating limit still records its own reason once.
+        self.path.unlink(); b=self.init()
+        self.assertIsNone(b.admit(40_000_001, 'over-limit'))
+        self.assertIsNone(b.admit(40_000_001, 'over-limit-again'))
+        self.assertEqual(self.switches(), ['OPENAI_OPERATING_LIMIT'])
+
+    def test_i93_3_parent_directory_must_be_private_and_owned(self):
+        self.init()
+        parent=self.path.parent
+        self.assertEqual(ModelBudget(self.path,'test-account').snapshot()['charged_micro_usd'],0)
+        parent.chmod(0o750); self.addCleanup(parent.chmod, 0o700)
+        with self.assertRaises(IntelligenceError): ModelBudget(self.path,'test-account')
+        other=parent/'other.sqlite'
+        with self.assertRaises(IntelligenceError): ModelBudget.initialize(other,'test-account',initial_spent=0)
+        self.assertFalse(other.exists())  # refused before any file is created
+        parent.chmod(0o700)
+        uid=os.geteuid()
+        with mock.patch('os.geteuid', return_value=uid+1), self.assertRaises(IntelligenceError):
+            ModelBudget(self.path,'test-account')
+        ModelBudget(self.path,'test-account')
 
 
 class BudgetedOpenAIDeadline(unittest.TestCase):
