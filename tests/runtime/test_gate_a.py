@@ -65,6 +65,14 @@ def profile():
     return build_live_profiles(Document.from_dict(s), published)['REHEARSAL'].read()
 
 
+def rpc_of(driver):
+    """(url, source_id) of the first balance RPC, in either config form (GA14: #116 lists providers)."""
+    if 'balance_rpc_providers' in driver:
+        first = driver['balance_rpc_providers'][0]
+        return first['url'], first['source_id']
+    return driver['balance_rpc_url'], driver['balance_rpc_source_id']
+
+
 def assembled(**changes):
     configs = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
     args = dict(profile_raw=encoded(profile()), capture_raw=encoded(with_chain()),  # GA12: the chain read is required
@@ -392,11 +400,10 @@ class BalanceRpcSettings(unittest.TestCase):
 
     def test_ga10_the_balance_rpc_is_written_or_reported_missing(self):
         driver = json.loads(assembled()['runtime.json'])['driver']
-        self.assertEqual((driver['balance_rpc_url'], driver['balance_rpc_source_id']),
-                         ('https://rpc.invalid/', 'synthetic-rpc'))
+        self.assertEqual(rpc_of(driver), ('https://rpc.invalid/', 'synthetic-rpc'))
         self.assertEqual((driver['balance_check_interval_ms'], driver['balance_check_max_age_ms']), (600000, 1800000))
         files = assembled(balance_rpc_url=None, balance_rpc_source_id=None)
-        self.assertIsNone(json.loads(files['runtime.json'])['driver']['balance_rpc_url'])
+        self.assertIsNone(rpc_of(json.loads(files['runtime.json'])['driver'])[0])
         self.assertIn('BALANCE_RPC', json.loads(files['preparation-report.json'])['missing_inputs'])
         self.assertNotIn('BALANCE_RPC', json.loads(assembled()['preparation-report.json'])['missing_inputs'])
         with self.assertRaises(ContractError):
@@ -671,6 +678,13 @@ class ReviewFixes(unittest.TestCase):
         for changes in (dict(balance_rpc_source_id=None), dict(balance_rpc_url='http://rpc.invalid/')):
             with self.subTest(**changes), self.assertRaisesRegex(ContractError, 'or neither'):
                 driver(**changes)
-        legacy = json.loads(assembled()['runtime.json'])['driver']  # the current example: the legacy pair (GA10)
-        self.assertNotIn('balance_rpc_providers', legacy)
-        self.assertEqual(legacy['balance_rpc_url'], 'https://rpc.invalid/')
+        legacy = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
+        legacy['runtime.json']['driver'].pop('balance_rpc_providers', None)
+        legacy['runtime.json']['driver'].update(balance_rpc_url=None, balance_rpc_source_id=None)
+        files = gate_a.prepare(legacy, profile_raw=encoded(profile()), capture_raw=encoded(with_chain()),
+                               calendar_raw=(gate_a.ROOT / 'config/runtime/session-calendar.2026.json').read_bytes(),
+                               run_id='gate-a-test', build_id='b' * 40, now=NOW,
+                               balance_rpc_url='https://rpc.invalid/', balance_rpc_source_id='synthetic-rpc')
+        d = json.loads(files['runtime.json'])['driver']  # the legacy pair, as in GA10
+        self.assertNotIn('balance_rpc_providers', d)
+        self.assertEqual((d['balance_rpc_url'], d['balance_rpc_source_id']), ('https://rpc.invalid/', 'synthetic-rpc'))
