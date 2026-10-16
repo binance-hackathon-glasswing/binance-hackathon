@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import tempfile
 import time
+from types import SimpleNamespace
 import unittest
 
 from larp.contracts import Document
@@ -17,7 +18,7 @@ from larp.intelligence.aiand import AIandChatModel, ENDPOINT
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.model_budget import ModelBudget
 from larp.intelligence.models import RuleBaselineModel
-from larp.intelligence.routing import build_routed_assessor, _review_reasons, _signature
+from larp.intelligence.routing import BudgetedOpenAI, build_routed_assessor, _review_reasons, _signature
 from larp.intelligence.roundlog import model_trace
 from larp.intelligence.scenarios import build_world, EXSEMI
 from larp.intelligence.gate import initial_state, accept
@@ -166,6 +167,32 @@ class BudgetAdmission(unittest.TestCase):
         with self.assertRaises(IntelligenceError): b.settle(token,0)
 
 
+class BudgetedOpenAIDeadline(unittest.TestCase):
+    def test_admission_time_is_deducted_and_expired_calls_never_dispatch(self):
+        for clock_kind in ('wall', 'monotonic'):
+            for delay in (25, 80, 150):
+                with self.subTest(clock_kind=clock_kind, delay=delay):
+                    clocks = dict(wall=0, monotonic=0)
+                    dispatched, settled = [], []
+                    def admit(*args):
+                        clocks[clock_kind] += delay
+                        return 'reservation'
+                    def step(req, remaining):
+                        dispatched.append(remaining)
+                        return Document.from_dict(dict(status='ERROR', usage={}, error='SYNTHETIC_FAILURE'))
+                    model = SimpleNamespace(identity=None, max_output_tokens=4096,
+                        clock=lambda: clocks['wall'], request_payload=lambda req: b'{}', step=step)
+                    budget = SimpleNamespace(admit=admit, settle=lambda *args: settled.append(args))
+                    wrapper = BudgetedOpenAI(model, budget, monotonic=lambda: clocks['monotonic']/1000)
+                    value = wrapper.step(request(), 80).read()
+                    if delay >= 80:
+                        self.assertEqual(value['status'], 'TIMEOUT')
+                        self.assertFalse(dispatched or settled)
+                    else:
+                        self.assertEqual(dispatched, [55])
+                        self.assertEqual(settled, [('reservation', None)])
+
+
 class Routing(unittest.TestCase):
     def setUp(self):
         self.w=build_world(['EXSEMI_Q2_8K','EXSEMI_Q3_8K'])
@@ -239,6 +266,53 @@ class Routing(unittest.TestCase):
         self.assertTrue(any(c[0]=='aiand' and c[2]=='high' for c in self.calls))
         self.assertEqual(value['routing']['budget']['reason'],'MODEL_BUDGET_UNAVAILABLE')
         self.assertFalse((self.root/'openai-budget.sqlite').exists())
+
+    def test_ar6_settlement_failure_keeps_paid_response_and_blocks_later_openai_calls(self):
+        router = self.build()
+        transport = router.openai.model._transport
+        def with_reasoning(*args):
+            status, raw = transport(*args)
+            payload = json.loads(raw)
+            payload['output'].append(dict(type='reasoning',
+                summary=[dict(type='summary_text', text='Synthetic paid reasoning.')]))
+            return status, json.dumps(payload).encode()
+        router.openai.model._transport = with_reasoning
+        def fail(*args):
+            raise IntelligenceError('Synthetic settlement storage failure')
+        router.budget.settle = fail
+        _, value = self.run_assessment(router)
+        calls = [c for c in model_trace(value)['calls'] if c.get('model', {}).get('provider') == 'openai']
+        self.assertEqual(len(calls), 1)
+        call = calls[0]
+        self.assertEqual((call['status'], call['error']), ('ERROR', 'MODEL_BUDGET_UNAVAILABLE'))
+        self.assertEqual(call['usage'], dict(input_tokens=100, output_tokens=20))
+        self.assertIsNotNone(call['cost']['amount_micro_usd'])
+        self.assertEqual(call['reasoning_summary'], 'Synthetic paid reasoning.')
+        self.assertTrue(self.w.artifacts.get(call['request_artifact']))
+        self.assertTrue(self.w.artifacts.get(call['response_artifact']))
+        step = next(s for s in value['model_io']['steps'] if s['routing_stage'] == 'openai-review')
+        self.assertEqual(step['response']['provider_outcome'], dict(status='OK', error=None))
+        self.assertEqual(value['routing']['budget']['reason'], 'MODEL_BUDGET_UNAVAILABLE')
+        self.assertTrue(any(c[0] == 'aiand' and c[2] == 'high' for c in self.calls))
+        self.assertGreater(router.budget.snapshot()['charged_micro_usd'], 0)
+        self.calls.clear()
+        self.run_assessment(router)
+        self.assertFalse(any(c[0] == 'openai' for c in self.calls))
+
+    def test_ar6_credit_latch_storage_failure_retains_provider_refusal_and_external_route(self):
+        router = self.build()
+        self.openai_error = 'insufficient_quota'
+        def fail(*args):
+            raise IntelligenceError('Synthetic switch storage failure')
+        router.budget.external_only = fail
+        _, value = self.run_assessment(router)
+        step = next(s for s in value['model_io']['steps'] if s['routing_stage'] == 'openai-review')
+        self.assertEqual(step['response']['provider_outcome'],
+                         dict(status='ERROR', error='OPENAI_CREDIT_EXHAUSTED'))
+        call = next(c for c in model_trace(value)['calls'] if c.get('model', {}).get('provider') == 'openai')
+        self.assertTrue(self.w.artifacts.get(call['response_artifact']))
+        self.assertTrue(router.openai.budget_unavailable)
+        self.assertTrue(any(c[0] == 'aiand' and c[2] == 'high' for c in self.calls))
 
     def test_ar4_credit_refusal_falls_back_but_rate_limit_does_not_latch(self):
         self.openai_error='rate_limit_exceeded'; _,value=self.run_assessment(self.build())

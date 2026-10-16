@@ -6,6 +6,7 @@ reviews; an unavailable reviewer never turns a failed assessment into CLEAR evid
 """
 from copy import deepcopy
 import json
+import math
 from pathlib import Path
 import time
 from types import SimpleNamespace
@@ -24,8 +25,10 @@ OPENAI_PRICE = dict(input_micro_usd_per_mtok=2_000_000, output_micro_usd_per_mto
 
 class BudgetedOpenAI:
     """Reserve before every actual POST; a crash/unknown usage retains the full charge."""
-    def __init__(self, model, budget):
+    def __init__(self, model, budget, *, monotonic=time.monotonic):
         self.model, self.budget, self.identity = model, budget, model.identity
+        self.monotonic = monotonic
+        self.budget_unavailable = False
 
     def request_payload(self, request):
         return self.model.request_payload(request)
@@ -34,6 +37,10 @@ class BudgetedOpenAI:
         return self.model.has_artifact(value)
 
     def step(self, request, remaining_ms):
+        started, wall = self.model.clock(), self.monotonic()
+        if self.budget_unavailable:
+            return response(request.read(), status='ERROR', output=None, latency_ms=0,
+                            error='MODEL_BUDGET_UNAVAILABLE')
         # UTF-8 byte bound plus protocol margin; deliberately over-reserve instead of assuming
         # English chars/4. Refuse long-context pricing rather than charging short-context rates.
         input_bound = len(self.request_payload(request)) * 2 + 8192
@@ -45,6 +52,12 @@ class BudgetedOpenAI:
         if token is None:
             return response(request.read(), status='ERROR', output=None, latency_ms=0,
                             error='OPENAI_OPERATING_LIMIT')
+        elapsed = max(self.model.clock() - started, math.ceil((self.monotonic() - wall) * 1000))
+        remaining_ms -= elapsed
+        if remaining_ms <= 0:
+            # Keep the durable reservation conservatively; no POST is allowed after abandonment.
+            return response(request.read(), status='TIMEOUT', output=None, latency_ms=elapsed,
+                            error='DEADLINE_EXCEEDED')
         # The reservation is durable even if step raises, the worker is abandoned, or the process dies.
         reply = self.model.step(request, remaining_ms)
         value = reply.read()
@@ -52,14 +65,22 @@ class BudgetedOpenAI:
         actual = None
         if value['status'] == 'OK':
             actual = (usage['input_tokens'] * 2_000_000 + usage['output_tokens'] * 10_000_000 + 999999) // 1_000_000
-        self.budget.settle(token, actual)
-        if actual is not None and (actual > maximum or usage['input_tokens'] > input_bound or
-                                    usage['output_tokens'] > self.model.max_output_tokens):
-            self.budget.external_only('OPENAI_USAGE_EXCEEDED_BOUND')
-            value.update(status='ERROR', output=None, error='OPENAI_USAGE_EXCEEDED_BOUND')
+        try:
+            self.budget.settle(token, actual)
+            if actual is not None and (actual > maximum or usage['input_tokens'] > input_bound or
+                                        usage['output_tokens'] > self.model.max_output_tokens):
+                self.budget.external_only('OPENAI_USAGE_EXCEEDED_BOUND')
+                value.update(status='ERROR', output=None, error='OPENAI_USAGE_EXCEEDED_BOUND')
+                return Document.from_dict(value)
+            if value.get('error') == 'OPENAI_CREDIT_EXHAUSTED':
+                self.budget.external_only('OPENAI_CREDIT_EXHAUSTED')
+        except IntelligenceError:
+            # The provider already replied: retain its exact artifacts, usage and reasoning even
+            # when accounting fails. Block further dispatch locally without relying on a DB write.
+            self.budget_unavailable = True
+            value['provider_outcome'] = dict(status=value['status'], error=value.get('error'))
+            value.update(status='ERROR', output=None, error='MODEL_BUDGET_UNAVAILABLE')
             return Document.from_dict(value)
-        if value.get('error') == 'OPENAI_CREDIT_EXHAUSTED':
-            self.budget.external_only('OPENAI_CREDIT_EXHAUSTED')
         return reply
 
 
@@ -113,6 +134,8 @@ class RoutedAssessor:
     def _budget_state(self):
         # Missing/locked/corrupt storage blocks OpenAI (admission raises too), never the external path.
         try:
+            if self.openai is not None and self.openai.budget_unavailable:
+                raise IntelligenceError('Model budget reconciliation required')
             return self.budget.snapshot()
         except IntelligenceError:
             return dict(account=self.budget.account, external_only=True, reason='MODEL_BUDGET_UNAVAILABLE')

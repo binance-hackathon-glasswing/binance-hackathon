@@ -78,3 +78,31 @@ AR1–AR8 pass only for the stated synthetic/local scope. Real AIand/OpenAI infe
 ### PR #86 review fix — 2026-10-15
 
 Review found that a missing, locked or corrupt budget ledger raised out of the routed assessment after the routine AIand stage had run, because the `external_only` check and the trace snapshot read the ledger without a guard. The coordinator then recorded `ASSESSMENT_UNAVAILABLE` and no external review ran. This contradicted the runbook, which says storage failure blocks only OpenAI dispatch. `RoutedAssessor` now treats an unreadable ledger as external-only (`MODEL_BUDGET_UNAVAILABLE`) for that assessment, and still never recreates the file. New AR4 regression: `test_ar4_unavailable_budget_storage_blocks_openai_but_not_external_review`. The local re-validation is recorded in the PR #86 review.
+
+### PR85-R1/R2 — admission deadlines and paid-response retention (2026-10-16 SGT)
+
+Keegan's PR #85 review at `232447c` reproduced two P2 defects: budget admission
+could outlast the original assessment deadline and still dispatch OpenAI; a
+post-response settlement failure discarded paid-response provenance from the trace.
+
+Prospective pass criteria, recorded before running changed code:
+
+- **PR85-R1:** advance wall or monotonic time during admission. Dispatch receives
+  only the remaining allowance; admission at or beyond expiry dispatches no POST.
+  Unused reservations remain conservatively charged. Existing shared-deadline and
+  external-fallback tests continue to pass.
+- **PR85-R2:** inject settlement and credit-switch storage failures after a provider
+  reply. Keep exact request/reply artifact references, usage, cost, reasoning and
+  provider outcome in the composite trace; report accounting unavailable, use the
+  external review route, and block later OpenAI dispatch in the same process even
+  if the ledger is readable again. Failed settlement keeps its full reservation.
+- Run the focused routing/provider/runtime regressions with synthetic transports
+  only after committing and pushing the code. Report runtime/platform limitations
+  and any broader checks separately; no paid model calls or deployment.
+
+Implementation: count serialization/admission time using both the model clock and
+monotonic time before dispatch. Catch post-response accounting errors, preserve
+the provider outcome and artifacts, and latch local budget unavailability until
+process restart/reconciliation. Existing durable reservations protect restart
+accounting. Results pending execution of the pushed change. No adoption or whole
+backlog item is completed by these fixes.
