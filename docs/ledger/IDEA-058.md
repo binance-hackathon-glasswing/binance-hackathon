@@ -157,3 +157,12 @@ This is the last follow-up from #89, possible now that #84 is merged. The kit's 
 - **Docs:** `docs/build/GATE_A.md` capture and prepare steps now pass `--balance-rpc-url` / `--balance-rpc-source-id`.
 - **Scope:** an incoming transfer between the finalized block and the kit read also refuses through the balance comparison, and a fresh capture clears it. This makes no claim about the Gate B balance check, which is #84's `BalanceCheck` at runtime.
 - **Mirror CI:** not yet run on this head.
+
+### GA12: the chain read is mandatory when the balance RPC is configured (pre-registered 2026-10-16)
+
+Until now, GA11c only reported a missing chain read. When `prepare()` is given the balance RPC, a capture without the chain read now has no excuse.
+
+- **GA12a:** with `balance_rpc_url` given, `prepare()` refuses a capture that has no chain read ("chain balance capture required").
+- **GA12b:** the chain capture records the RPC's `source_id`. `prepare()` refuses if it differs from `balance_rpc_source_id` ("another RPC source"). This is the same binding Gate B's DR-03 applies to its own probe.
+- **GA12c:** without `balance_rpc_url`, nothing changes. The report lists `BALANCE_RPC` and `CHAIN_BALANCE_CAPTURE`, and #84's runtime refuses to start anyway.
+- **GA12d:** each new check's mutation is caught. The full suite passes with no new failures against `b2496d4` (1569 passed, 7 skipped).
