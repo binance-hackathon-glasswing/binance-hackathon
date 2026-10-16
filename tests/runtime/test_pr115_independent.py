@@ -3,10 +3,39 @@
 from datetime import datetime, timezone
 
 from larp.runtime.driver import DayRoll
+from larp.runtime.coordinator import batch_for
 from tests.runtime.test_balance_adoption import AdoptionHarness, MINUTE, PRICE, RUN, SECOND
 
 
 class Confirmation(AdoptionHarness):
+    def test_hold_only_cadence_cannot_starve_balance_confirmation(self):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        self.rounds_on = True
+        first = self.tick(driver)
+        self.assertEqual(first['balance_check'], 'SURPLUS_ONLY')
+        self.assertIsNotNone(first['round_id'])
+        record = self.store.event(RUN, 'plan:' + first['round_id'])['record']
+        self.assertEqual(record['plan']['intents'], [])
+        self.assertEqual(record['plan']['reservation_deltas'], [])
+        second = self.tick(driver, MINUTE)
+        self.assertEqual(second['balance_check'], 'ADJUSTED')
+        self.assertEqual(self.book()['positions']['NVDAB']['units'], 2010)
+        self.assertIsNotNone(second['round_id'])
+
+    def test_transient_reservation_between_reads_still_invalidates_confirmation(self):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        self.assertEqual(check(t), 'SURPLUS_ONLY')
+        for event_id, units in [('reserve', 1), ('release', -1)]:
+            current = self.store.load(RUN)
+            self.store.commit(batch_for(current, 'fixture:' + event_id,
+                dict(kind='INCIDENT', incident=dict(type='FIXTURE_RESOURCE')),
+                reservation_deltas=[dict(intent_id='fixture', asset='USDT', units=units)]))
+        self.assertFalse(self.store.load(RUN).read()['reservations'])
+        self.assertNotEqual(check(t + MINUTE), 'ADJUSTED')
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertEqual(check(t + 2 * MINUTE), 'ADJUSTED')
+
     def interrupted_confirmation(self, early_units):
         driver = self.prepare(raw=dict(NVDAB=2010))
         check, t = driver.balance_check, self.w.clock() + SECOND

@@ -411,3 +411,23 @@ Prospective criteria, recorded before running review tests:
 Review also checks ordinary cadence versus candidate invalidation, observation
 and replay provenance, and the known terminal-sale hold question. New findings
 and results will be appended here; no whole readiness GAP is closed by review.
+
+PR115-C01/C02 red at `324de5f`, PostgreSQL 14.24: 5 new regressions failed
+for the predicted safety defects, 67 focused tests passed. At pushed `e9a337e`,
+all 72 tests and 46 subtests pass. Logs: `/private/tmp/larp-pr115-red.log` and
+`/private/tmp/larp-pr115-green.log` (local, outside Git).
+
+**PR115-C04, additional prospective criterion:** a continuous sequence of
+hold-only rounds must not starve balance confirmation. Preserve the owner's
+two-read/no-wallet-activity contract (D1–D5), but refine the implementation's
+stronger "no commit whatsoever" condition: allow journal-proven rounds with
+no intents, commands or reservations, and unchanged portfolio/execution state.
+Any intervening reservation (even acquired and released between reads), command,
+execution observation, balance adjustment, epoch change or unrecognised event
+invalidates the candidate. Read only the bounded journal suffix since the
+candidate, not the entire historical journal. Retain S5's negative assertion
+using actual transient reservations instead of an unrelated hold-only round.
+Regression: with one hold round per minute, two stable chain reads a minute
+apart adopt the mismatch; real transient resource activity still requires a
+new pair of reads. This is an engineering correction to the design's overly
+broad commit proxy, not a change to the owner safety or trading policy.
