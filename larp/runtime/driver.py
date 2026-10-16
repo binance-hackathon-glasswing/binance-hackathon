@@ -34,6 +34,7 @@ from larp.intelligence.agent import build_request
 from larp.intelligence.common import digest
 from larp.intelligence.gate import initial_state
 from larp.integration.runtime import ledger_from
+from larp.runtime import halts
 from larp.integration.settlement import settle
 from larp.risk.accounting import roll_day
 from larp.risk.reconcile import compare_balances
@@ -203,9 +204,11 @@ class ServiceExecution:
     def waiting(self, now_ms):
         c = self.coordinator
         current = c.store.load(c.run_id).read()
-        if halt_reasons(current['projection']) or current['quarantined']:
+        if current['quarantined']:
             return []  # no command can be claimed; they end at expiry
-        pending = [(r, i) for r, _, i in self._pending(current) if now_ms < i['expires_ms']]
+        # Under a HALT only a pausing HALT's planned mandatory sells can be claimed (D-DN-09); the rest end at expiry.
+        pending = [(r, i) for r, _, i in self._pending(current) if now_ms < i['expires_ms']
+                   and halts.permits(current['projection'], r, i['intent_id'])]
         if not pending:
             return []
         claimed = self._records([self.key(i['intent_id']) for _, i in pending])
@@ -225,14 +228,15 @@ class ServiceExecution:
         moves the commands' authority (epoch, state version) to that event; their bytes never change."""
         c = self.coordinator
         current = c.store.load(c.run_id).read()
-        if halt_reasons(current['projection']) or current['quarantined']:
+        if current['quarantined']:
             return []
         if (current['projection'].get('registered_version') or {}).get('build_id') != c.version_id:
             return []
         held = {}
         for r in current['reservations']:
             held[r['intent_id']] = held.get(r['intent_id'], 0) + r['units']
-        pending = [i for _, _, i in self._pending(current) if now_ms < i['expires_ms'] and held.get(i['intent_id'], 0) > 0]
+        pending = [i for r, _, i in self._pending(current) if now_ms < i['expires_ms'] and held.get(i['intent_id'], 0) > 0
+                   and halts.permits(current['projection'], r, i['intent_id'])]
         if not pending:
             return []
         claimed = self._records([self.key(i['intent_id']) for i in pending])
