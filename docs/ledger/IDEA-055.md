@@ -484,4 +484,10 @@ This branch merges PR 4 (#115) at `bc51c4a`, which now carries #114. Combined, t
 - #114's SG2/R8 route tests and SG3 fill the providers list instead of the legacy pair. The list wins in the route checker, so the legacy fill had left a null host.
 - F4's backup serves a newer finalized block, because R1 needs a strictly newer block to confirm.
 
-Gate A (#87) side: `prepare()` now writes the balance RPC in whichever form the rendered example uses (IDEA-058 GA14). A scratch merge of #87 into this branch passes `test_gate_a.py`, GA06 included. Full-suite result below.
+Gate A (#87) side: `prepare()` now writes the balance RPC in whichever form the rendered example uses (IDEA-058 GA14). A scratch merge of #87 into this branch passes `test_gate_a.py`, GA06 included.
+
+Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24), 10 environmental skips each:
+- this branch at `21ba652`: **1669 passed, 10 skipped, 2328 subtests, 0 failed** (PR 4 at `6b25525`: 1657 passed);
+- scratch merge of this branch with #87 at `c9b7613` (all four of #114, #115, #116, #87): **1701 passed, 10 skipped, 2381 subtests, 0 failed**.
+
+Org GitHub Actions jobs on these heads stop after about 3 s with no step output, consistent with the billing block (#98). A PostgreSQL 14.24 mirror run is still owed.
