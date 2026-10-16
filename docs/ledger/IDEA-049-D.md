@@ -641,3 +641,18 @@ This builds decision D-DN-10, option (b), agreed by section B via #113. A `CLOCK
   - a `CLOCK` clear leaves any other active reason in place.
 - **CK5, wiring:** `larp.runtime.service` builds its `Guard` with `kernel_clock_synchronized` and 30 minutes.
 - **CK6:** a mutation of each check is caught. The full suite shows no new failures against the base `eda2ed2`.
+
+### D-DN-10 build results (2026-10-16)
+
+- **Order of commits:** criteria in `dc1aa30`, red tests in `ecde05d` (8 failing; the passing test was CK4's "no signal stays latched", today's behaviour), implementation in `8158a82`.
+- **One test correction, `e5e8356`:** CK2's "trading resumes" step checked for a new command. The round after the clear was not halted, but the fake assessor answered `ASSESSMENT_UNAVAILABLE` for a request 30 minutes later, which is unrelated to the HALT. The test now checks that the round has no `HALTED` error and that the planner ran.
+- **CK1–CK5: PASS.** `tests/runtime/test_clock_clear.py` has 9 tests.
+  - The kernel signal is fail closed: `TIME_ERROR`, `STA_UNSYNC`, a negative state or a failed call all mean not synchronised. In this container the real `adjtimex` reads *not* synchronised, so a CLOCK HALT would not clear here, which is correct.
+  - The CLOCK HALT clears at exactly 30 minutes and not 1 ms earlier, journaled as `HALT_CLEARED` with `synchronized_since_ms`.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, and on a time behind the last decision.
+  - With no signal it stays latched.
+  - Other reasons stay in place.
+  - The service passes `kernel_clock_synchronized` and 30 minutes.
+- **CK6 mutations:** 9, each caught: `STA_UNSYNC` ignored; `TIME_ERROR` or negative state ignored; failed call not fail closed; window ignored; unsynchronised reading does not reset; step back between evaluations ignored; step behind the last decision ignored; no signal clears; service wiring dropped.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3, run as root): **1763 passed, 7 skipped, 2562 subtests, 0 failed**. Base `eda2ed2` gives 1754 passed and 7 skipped locally (CI at `e4f3d59`, run non-root: 1755 passed and 6 skipped), so this is +9.
+- **Still open:** confirming on the real `primary` host (AL2023 with chrony) that `kernel_clock_synchronized()` reads True once chrony has synchronised. That is a Gate A host check.
