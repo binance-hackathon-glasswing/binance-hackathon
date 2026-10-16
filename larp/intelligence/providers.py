@@ -168,7 +168,7 @@ def anthropic_schema_problems(schema: dict) -> list:
 
 
 def post_with_deadline(connection, path: str, headers: dict, body: bytes, timeout_s: float, *,
-                       tls_context=None) -> tuple:
+                       tls_context=None, capture_headers=False) -> tuple:
     """(status, reply bytes) over an http.client connection, with the exchange ending by `timeout_s`.
 
     A per-socket-operation timeout alone lets a slow reply run far past the budget (each read is quick). Here the
@@ -227,6 +227,9 @@ def post_with_deadline(connection, path: str, headers: dict, body: bytes, timeou
             if delimited_by_close and expired.is_set():
                 raise TimeoutError("DEADLINE_EXCEEDED")  # the cut, not the server, may have ended it
             raise LateReply(reply.status, data)
+        if capture_headers:
+            allowed = {'x-model', 'x-reasoning-effort', 'x-request-id'}
+            return reply.status, data, {k.lower(): v for k, v in reply.getheaders() if k.lower() in allowed}
         return reply.status, data
     except (TimeoutError, TransportError):
         raise
@@ -256,6 +259,16 @@ def https_post(url: str, headers: dict, body: bytes, timeout_s: float) -> tuple:
     connection = http.client.HTTPSConnection(parts.hostname, parts.port or 443, timeout=max(timeout_s, 0.001))
     return post_with_deadline(connection, parts.path + (f"?{parts.query}" if parts.query else ""), headers, body,
                               timeout_s, tls_context=ssl.create_default_context())
+
+
+def https_post_metadata(url, headers, body, timeout_s):
+    """AIand identity/effort metadata; never capture auth/cookie/arbitrary headers."""
+    parts = urlsplit(url)
+    if parts.scheme != 'https' or parts.hostname != 'api.aiand.com' or parts.path != '/v1/chat/completions':
+        raise TransportError('AIAND_ENDPOINT_REFUSED')
+    connection = http.client.HTTPSConnection(parts.hostname, 443, timeout=max(timeout_s, .001))
+    return post_with_deadline(connection, parts.path, headers, body, timeout_s,
+                              tls_context=ssl.create_default_context(), capture_headers=True)
 
 
 class _ProviderReply(Exception):
@@ -314,6 +327,12 @@ class HostedModel:
         """(served model, output object, {"input_tokens", "output_tokens"}, reasoning summary or None)."""
         raise NotImplementedError
 
+    def _parse_reply(self, payload, metadata):
+        return self._parse(payload)
+
+    def _served_matches(self, served):
+        return served == self.identity.model_id
+
     def request_payload(self, request) -> bytes:
         """The exact request bytes sent for a ModelRequest.v1 (deterministic; no credential)."""
         body = json.dumps(self._body(request.read()["input"]), sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -331,11 +350,14 @@ class HostedModel:
     def step(self, request, remaining_ms: int):
         r = request.read()
         body = self.request_payload(request)
-        record = dict(artifacts=self._artifacts, request_payload=body)
+        record = dict(artifacts=self._artifacts, request_payload=body,
+                      cost=dict(amount_micro_usd=None, basis='UNKNOWN_PROVIDER_USAGE'))
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
         try:
-            status, raw = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
+            result = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
+            status, raw = result[:2]
+            metadata = result[2] if len(result) == 3 else {}
         except LateReply as exc:  # paid for and complete, but late: a timeout whose bytes are kept
             if type(exc.raw) is bytes and not reflects_secret(exc.raw, (self._key,)):
                 self._keep(exc.raw)
@@ -354,18 +376,37 @@ class HostedModel:
         if reflects_secret(raw, (self._key,)):  # an echoed credential never reaches the artifact store
             return response(r, status="ERROR", output=None, latency_ms=self.clock() - started,
                             error="CREDENTIAL_REFLECTION", **record)
+        if metadata:
+            allowed = {'x-model', 'x-reasoning-effort', 'x-request-id'}
+            metadata = {k.lower(): v for k, v in metadata.items() if k.lower() in allowed}
+            if not all(type(v) is str for v in metadata.values()) or reflects_secret(
+                    json.dumps(metadata).encode(), (self._key,)):
+                return response(r, status='ERROR', output=None, latency_ms=self.clock() - started,
+                                error='CREDENTIAL_REFLECTION', **record)
+            record['provider_metadata'] = metadata
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started
         if latency > remaining_ms:
             return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
         if status != 200:
+            if self.provider == 'openai':
+                try:
+                    error = json.loads(raw).get('error') or {}
+                    if error.get('code') in ('insufficient_quota', 'billing_hard_limit_reached',
+                            'credit_balance_exhausted', 'organization_spend_limit_exceeded',
+                            'project_spend_limit_exceeded', 'organization_usage_limit_exceeded') or \
+                            error.get('type') == 'insufficient_quota':
+                        return response(r, status='ERROR', output=None, latency_ms=latency,
+                                        error='OPENAI_CREDIT_EXHAUSTED', **record)
+                except (ValueError, AttributeError, RecursionError):
+                    pass
             return response(r, status="ERROR", output=None, latency_ms=latency, error=f"HTTP {status}", **record)
         try:
             payload = json.loads(raw.decode("utf-8"))
             if type(payload) is not dict:
                 raise _ProviderReply("RESPONSE_UNPARSEABLE")
-            served, output, usage, reasoning = self._parse(payload)
+            served, output, usage, reasoning = self._parse_reply(payload, metadata)
             if not all(type(usage.get(k)) is int and 0 <= usage[k] <= MAX_USAGE_TOKENS
                        for k in ("input_tokens", "output_tokens")):
                 raise _ProviderReply("USAGE_MALFORMED", served)
@@ -375,7 +416,7 @@ class HostedModel:
         except (AttributeError, KeyError, IndexError, TypeError, ValueError, UnicodeDecodeError, OverflowError,
                 RecursionError, MemoryError):
             return response(r, status="ERROR", output=None, latency_ms=latency, error="RESPONSE_UNPARSEABLE", **record)
-        if served != self.identity.model_id:
+        if not self._served_matches(served):
             return response(r, status="ERROR", output=None, latency_ms=latency, error="SERVED_MODEL_MISMATCH",
                             served_model=str(served), **record)
         cost = {"amount_micro_usd": None, "basis": "UNKNOWN_NO_PRICE_SOURCE"}
@@ -383,7 +424,8 @@ class HostedModel:
             cost = {"amount_micro_usd": (usage["input_tokens"] * self.price["input_micro_usd_per_mtok"]
                                          + usage["output_tokens"] * self.price["output_micro_usd_per_mtok"]) // 1_000_000,
                     "basis": "TOKENS_X_PUBLISHED_PRICE:" + self.price["source"]}
-        return response(r, status="OK", output=output, latency_ms=latency, usage=usage, cost=cost,
+        record['cost'] = cost
+        return response(r, status="OK", output=output, latency_ms=latency, usage=usage,
                         reasoning=reasoning, served_model=served, **record)
 
 
