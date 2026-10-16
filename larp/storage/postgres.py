@@ -488,11 +488,17 @@ class PostgresStore:
             raise IntegrityError('Restore behind external authority/anchor')
         return run['head']
 
-    def journal(self,run_id):
+    def journal(self,run_id,*,after_version=0,through_version=None):
+        if (type(after_version) is not int or after_version<0 or
+                (through_version is not None and
+                 (type(through_version) is not int or through_version<after_version))):
+            raise ContractError('Invalid journal sequence bounds')
         self.verify(run_id)
         with self.transaction() as db:
             return [Document(bytes(r[0])) for r in db.execute(
-                'SELECT batch FROM events WHERE run_id=%s ORDER BY sequence',(run_id,))]
+                'SELECT batch FROM events WHERE run_id=%s AND sequence>%s '
+                'AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
+                (run_id,after_version,through_version,through_version))]
 
     def metrics(self,run_id):
         with self.transaction() as db:
