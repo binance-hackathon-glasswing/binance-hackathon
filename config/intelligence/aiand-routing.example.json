@@ -1,0 +1,72 @@
+{
+  "schema": "AIandRouting.v1",
+  "provenance": {
+    "source": "https://api.aiand.com/v1/models",
+    "checked": "2026-10-15",
+    "scope": "public unauthenticated catalog; account access/inference unverified"
+  },
+  "routine": {
+    "model_id": "zai-org/glm-5.3",
+    "effort": "low",
+    "catalog": {
+      "id": "zai-org/glm-5.3",
+      "context_window": 1048576,
+      "max_output_tokens": 131072,
+      "capabilities": [
+        "reasoning",
+        "tool_calling"
+      ],
+      "reasoning_efforts": [
+        "low",
+        "high",
+        "max"
+      ]
+    }
+  },
+  "external_reviewers": [
+    {
+      "model_id": "moonshotai/kimi-k3",
+      "effort": "high",
+      "catalog": {
+        "id": "moonshotai/kimi-k3",
+        "context_window": 1048576,
+        "max_output_tokens": 131072,
+        "capabilities": [
+          "reasoning",
+          "tool_calling",
+          "vision",
+          "document"
+        ],
+        "reasoning_efforts": [
+          "low",
+          "high",
+          "max"
+        ]
+      }
+    },
+    {
+      "model_id": "zai-org/glm-5.3",
+      "effort": "high",
+      "catalog": {
+        "id": "zai-org/glm-5.3",
+        "context_window": 1048576,
+        "max_output_tokens": 131072,
+        "capabilities": [
+          "reasoning",
+          "tool_calling"
+        ],
+        "reasoning_efforts": [
+          "low",
+          "high",
+          "max"
+        ]
+      }
+    }
+  ],
+  "openai_model": "gpt-6.1-sol",
+  "openai_effort": "medium",
+  "max_output_tokens": 4096,
+  "budget_account": "larp-openai-2026",
+  "audit_sample_bps": 1000,
+  "audit_seed": "idea-057-initial-design-v1"
+}

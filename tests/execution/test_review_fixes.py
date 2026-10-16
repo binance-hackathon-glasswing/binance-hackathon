@@ -26,7 +26,14 @@ class MappingReviewTests(LiveBoundaries):
         c = self.command()
         c['payload'].update(kind='GAS_TOP_UP', symbol='BNB', decimals=6, receive_decimals=6,
                             min_receive_units=1000)
-        self.assertEqual(self.mapped(c).minimum_output, 1000 * 10**12)
+        with self.assertRaises(Blocked):  # no top-up without native settlement (IDEA-061)
+            self.mapped(c)
+        from larp.execution_live.service import map_command
+        from tests.execution_fixtures import WALLET, ROUTER
+        mapped = map_command(c, run_id='run', wallet=WALLET, version_id='v', router=ROUTER, token_decimals={'NVDAB': 18},
+                             limits=dict(max_gas=1000000, max_gas_price=10, gas_budget=20000000,
+                                         per_trade_cap_units=50000000), now_ms=100, native_settlement=True)
+        self.assertEqual(mapped.minimum_output, 1000 * 10**12)
 
 
 class DependencyReviewTests(unittest.TestCase):

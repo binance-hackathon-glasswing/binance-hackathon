@@ -7,11 +7,14 @@
 #
 # What it writes, and nothing else:
 #   <name>/runtime   {AI_SEEDS_ADDRESS, BINANCE_API_KEY, BINANCE_SECRET_KEY}  (larp/runtime/live.py RUNTIME_SECRETS)
+#                    + optional LARP_AIAND_API_KEY, LARP_MODEL_API_KEY       (larp/runtime/credentials.py
+#                      OPTIONAL_MODEL_SECRETS; only the shadow `aiand_routed` assessor reads them, IDEA-057)
 #   <name>/uploader  {AI_SEEDS_ADDRESS, AI_SEEDS_SECRET}                      (larp/audit/service.py ALLOWED_SECRETS)
 # The wallet key is NOT a Secrets Manager entry: it is the root-only file /etc/larp/signer/wallet.key on the signer.
 #
 # Values are read with hidden prompts and reach `aws` only on stdin: never on a command line, in a file or in the
-# output. Only key names, secret IDs and the new version ID are printed.
+# output. Only key names, secret IDs and the new version ID are printed. Each run replaces the whole secret value, so
+# re-enter every key you want to keep. Press Enter at an optional prompt to leave that key out.
 set -euo pipefail
 
 name='' region='ap-southeast-2' only=''
@@ -31,6 +34,12 @@ hidden() {  # hidden prompt; the value never appears on screen
   local value
   IFS= read -r -s -p "$1: " value; echo >&2
   [[ -n $value ]] || { echo "refused: $1 is empty" >&2; exit 2; }
+  printf '%s' "$value"
+}
+
+optional() {  # hidden prompt; an empty answer leaves the key out
+  local value
+  IFS= read -r -s -p "$1 (optional; Enter to omit): " value; echo >&2
   printf '%s' "$value"
 }
 
@@ -58,8 +67,15 @@ if [[ -z $only || $only == runtime ]]; then
   AI_SEEDS_ADDRESS=$address
   BINANCE_API_KEY=$(hidden 'BINANCE_API_KEY (Web3 Open API key)')
   BINANCE_SECRET_KEY=$(hidden 'BINANCE_SECRET_KEY')
-  store "$name/runtime" AI_SEEDS_ADDRESS BINANCE_API_KEY BINANCE_SECRET_KEY
-  unset BINANCE_API_KEY BINANCE_SECRET_KEY
+  keys=(AI_SEEDS_ADDRESS BINANCE_API_KEY BINANCE_SECRET_KEY)
+  # Model keys for the shadow-only AIand routing (IDEA-057). The routed assessor refuses to start without the AIand
+  # key; without the OpenAI key every model call stays on AIand.
+  LARP_AIAND_API_KEY=$(optional 'LARP_AIAND_API_KEY (AIand; needed for "assessor": "aiand_routed")')
+  [[ -z $LARP_AIAND_API_KEY ]] || keys+=(LARP_AIAND_API_KEY)
+  LARP_MODEL_API_KEY=$(optional 'LARP_MODEL_API_KEY (OpenAI)')
+  [[ -z $LARP_MODEL_API_KEY ]] || keys+=(LARP_MODEL_API_KEY)
+  store "$name/runtime" "${keys[@]}"
+  unset BINANCE_API_KEY BINANCE_SECRET_KEY LARP_AIAND_API_KEY LARP_MODEL_API_KEY
 fi
 if [[ -z $only || $only == uploader ]]; then
   AI_SEEDS_ADDRESS=$address

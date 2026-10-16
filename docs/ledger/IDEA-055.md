@@ -1,7 +1,7 @@
 # IDEA-055 — Minimal chain-balance reconciliation: detect a mismatch and stop new risk (#36)
 
 - Date / owner: 2026-10-15 SGT / design drafted with Claude Code at the user's request. Owners to agree before anything is built: Isaac (C, balance observation), Keegan (B, comparison and planner effect), Yao Zhu (D, scheduling, journal, health gate), as named in the #36 status of 2026-10-15.
-- Status: open (design only; nothing built; decisions D1–D6 below are open)
+- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation to be built in PR 4 and RPC failover in PR 5
 - Links: #36 (R14, P1); IDEA-049-B item 007; IDEA-049-C C-OPEN-008; IDEA-049-D D-REQ-039; IDEA-039 / PR #74 (`gate_b probe-chain`); SKILL.md Q-20, F-95, F-114, F-117; inferences.md I-28; plan.md G-43.
 
 ## What and why
@@ -197,3 +197,48 @@ Org Actions is out of funds, so CI ran in the private mirror `Keegan4/keegan4-la
 - Disk budget for the chain observations is in `docs/build/architecture-deployment.md` (estimate: 10–15 MiB a day normally, about 2 GiB over the run in the worst case; budget 3 GiB). Measure it at Gate A together with #60.
 - 2026-10-16 correction (Claude Code): D5's "about 16 RPC calls per check" was 18 before this change and is 12 after it.
 - 2026-10-16 correction (Claude Code, PR #99 review): a decimals value is now reused only after two consecutive reads agree (`DecimalsCache`). One bad but plausible RPC answer could otherwise have been kept for the life of the process, giving a false DEFICIT on every check, and restarts are automatic only (F-124). Checks make 18 calls until two reads agree, then 12. Tests: `Observation::test_decimals_are_reused_once_two_reads_agree` and `test_one_bad_decimals_answer_is_never_kept` (these replace `test_decimals_are_read_once_per_cache`).
+
+## Owner decisions (2026-10-16, Yao Zhu leading the #90 review)
+
+Made by Yao Zhu (section D owner in tracking PR #109, leading the #90 review) on 2026-10-16 and recorded here as given. Isaac (C: balances, `chain.py`) and Keegan (B: `reconcile.py`, settlement) are the named owners of the code these decisions change; they can still comment in the review of PR 4 and PR 5.
+
+**Guiding principle.** The contest goal is maximum profit (F-43). Data and ledger errors should correct themselves so the agent keeps trading. The stops that protect money stay: the 3 % daily and 8 % run loss stops, the end-of-run flatten window and the new-risk end time.
+
+### D1–D6
+
+| ID | Outcome | Decision | Reason | Code |
+|---|---|---|---|---|
+| D1 | **Confirmed** | Sales of a symbol in deficit are capped (`spendable_view`). This still applies in the short window between detecting a mismatch and adopting it. | Phantom ledger units must never become an order that reverts. | PR 4 (kept for the window) |
+| D2 | **Changed: adopt surplus** | A surplus on our own assets (the five eligible bStocks NVDAB, GOOGLB, SKHYB, TSLAB, MSFTB, plus USDT and BNB) is adopted into the ledger. Unsolicited tokens outside that set are never adopted, sold or touched (never-do #4, G-13); they are logged only, as today. | A surplus on our own assets is real value we sell at the end: a dividend Multiplier top-up, a forward split, USDT dust. Leaving it out of the ledger leaves it unsold at the flatten. | PR 4 |
+| D3 | **Confirmed** | Zero tolerance after flooring chain units to the ledger scale. | Settlement books exact or floored units, so any difference is real. | — (unchanged) |
+| D4 | **Changed: "chain wins", keep trading** | A deficit no longer means "no new risk for the rest of the run". The ledger is re-synced to the chain through an appended, journaled balance-adjustment event, and trading continues. History is never rewritten: the audit needs it (F-47, F-48), and "reverting to a previous state" is not possible because the chain is the truth. An adopted deficit is a real loss and flows into equity, so the existing loss stops are the backstop against a wallet that keeps draining (key compromise, systematic bug). There is no separate deficit stop. | Blocking new risk for the rest of the run on a ledger error forfeits the run's profit (F-43); the loss stops already bound a real drain. | PR 4 |
+| D5 | **Confirmed, made more robust** | 10-minute interval, 30-minute maximum age, and a 60 s retry after a failed or skipped check. Add an ordered list of balance RPC providers with failover; a check counts as failed only when every provider fails. New buys pause only when no check succeeded within 30 minutes, and resume automatically on the next good check. Sales and the flatten are never blocked by this. | One RPC outage should not pause buying. | PR 4 (scheduling), PR 5 (failover) |
+| D6 | **Confirmed** | BNB is valued at the profile price; the ≤ 5 % of expected equity test stays. | As in the build record: valuing BNB at zero books every top-up as a loss. | — (unchanged) |
+
+**#84 review point (gas top-ups gated by `new_spending_ok`): resolved.** An adopted BNB deficit no longer blocks top-ups after adoption, and the first-gas swap is sized to cover the whole run (SKILL.md F-120 reading), so agent top-ups are a backup only. Code: PR 4.
+
+### Safety limits on adoption (both required)
+
+1. **Two consecutive comparable checks agree.** Both on finalized blocks at or after `settled_block`, both showing the same chain units for that asset, and the ledger for that asset unchanged between them. One bad RPC answer must never become the ledger (the same idea as `DecimalsCache`). After a first mismatch, the confirming check is scheduled after about 60 s, not the full 10 minutes. Code: PR 4.
+2. **Nothing in flight for that asset.** No reservation, pending execution or unsettled receipt touching it, during or between the two checks. Code: PR 4.
+
+### Price-jump guard (new)
+
+Splits change the price and the token count at the same moment, but the balance check lags by up to 10–20 minutes. Example: we hold 0.25 TSLAB at $400 and a 2-for-1 split makes it 0.5 at $200. The agent values 0.25 × $200 = $50, thinks it lost 25 % of 200 USDT equity, and the latched loss stops fire. So, when a held symbol's mark moves ≥ 30 % between consecutive rounds (a driver setting, `price_jump_check_bps` = 3000, not a profile field):
+- run an immediate balance check;
+- send no new orders for that symbol (buys or sales) until a comparable check after the jump completes (MATCH, or an adopted adjustment after the two-check confirmation);
+- do not evaluate or latch the daily or run loss stops while any held symbol is in that state.
+
+If the check cannot complete within the 30-minute maximum age, behaviour falls back to normal: the loss stops evaluate on the marks as they are. Reverse splits (the price doubles, so the agent briefly looks richer and could oversize buys) are covered by the same guard. Code: PR 4.
+
+### Accounting for an adjustment
+
+- Units are set to the chain value; the position's total cost is unchanged. A dividend or split lowers the average cost; a deficit raises it. Equity is marked to market as usual.
+- An adjustment is not a trade and not a round, so it gets no ai-seeds round log (G-19 covers rounds).
+- It is recorded in the journal plus an incident `BALANCE_ADJUSTED` with asset, `ledger_before`, `chain_units`, `delta`, both block numbers and observation hashes, and reason `SURPLUS` or `DEFICIT`. Replay must reproduce it exactly.
+
+Code: PR 4.
+
+### #94 / Q-20 (dividends and splits)
+
+Resolved by D2 and D4: a dividend Multiplier or split change on our assets is adopted through the same adjustment, so #94 does not wait for the organisers. The team position on Q-20 is recorded in SKILL.md (adopt balance-only changes on our own assets; never touch unsolicited tokens). How the organisers count them in equity is still open, so Q-20 stays open for that part only. #94 closes when PR 4 merges.

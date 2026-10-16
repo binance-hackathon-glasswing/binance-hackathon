@@ -174,12 +174,61 @@ accepted trade-off. It sits next to the open
 4. Delete the RDS final snapshot once the export is verified (it bills per GB-month).
 5. Next day, check Billing → Bills and Cost Explorer. What remains is the KMS key (≈ $1/month) and the archive (cents) until the retention date; then delete them and close the account.
 
+## Approved network destinations (two-host layout; IDEA-062, #32)
+
+**Status: approved by Keegan (section B) 2026-10-16; awaiting approval by Isaac (section C)** (the owners #32 names). Every destination below is derived
+by `larp/runtime/routes.py` from the manifested service configs, `config/sources/sources.v1.json` and the clients'
+own endpoint constants; `tests/runtime/test_routes.py` R8 checks this table against that derivation. `<region>` is
+the config's `region` (`ap-southeast-2` now).
+
+| From | Unit | Destination | Port | Purpose |
+|---|---|---|---|---|
+| primary | larp-runtime, larp-execution | `web3.binance.com` | 443 | Binance Web3 Open API: market data, quotes, transaction building, broadcast (F-90..F-106) |
+| primary | larp-runtime | host of `driver.balance_rpc_url` in `runtime.json` | 443 | BSC RPC for the finalized chain-balance check (IDEA-055); account-specific, chosen and manifested by the owners |
+| primary | larp-execution | host of `rpc_url` in `execution.json` | 443 | BSC RPC for chain reads and receipts; account-specific |
+| primary | larp-uploader | `api.commonservice.io` | 443 | ai-seeds event log (F-99..F-101) |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | **Shadow only** (IDEA-057; MR-06, 2026-10-16): AIand Chat Completions for the GLM-5.3 routine stage and the K3/GLM external reviews. The runtime refuses this assessor with `execution: service` or `mode: live` |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | **Shadow only** (IDEA-057; MR-06): OpenAI Responses for the optional GPT-6.1 Sol review, used only when `LARP_MODEL_API_KEY` is in the runtime secret, within the $40 admission ledger |
+| primary | larp-runtime, larp-execution, larp-uploader | `secretsmanager.<region>.amazonaws.com` | 443 | service secrets (public endpoint; no interface endpoint, IDEA-046) |
+| primary | larp-archive | `s3.<region>.amazonaws.com` | 443 | archive and hourly anchors through the S3 gateway endpoint |
+| primary | larp-archive | `monitoring.<region>.amazonaws.com` | 443 | CloudWatch metrics |
+| primary | larp-runtime, larp-execution, larp-uploader, larp-archive | `database_host` (RDS) | 5432 | PostgreSQL with RDS IAM tokens over verified TLS |
+| primary | larp-evidence | `data.sec.gov`, `www.sec.gov` | 443 | EDGAR submissions and filing archives, SEC press |
+| primary | larp-evidence | `www.federalregister.gov`, `www.justice.gov`, `ec.europa.eu` | 443 | the enabled official sources; a disabled source's host is not approved |
+| signer | larp-signer | `database_host` (RDS) | 5432 | signing requests and results (migration `009`); the only transport between the execution service and the signer |
+| signer | provision.sh | `s3.<region>.amazonaws.com` | 443 | release bundle through the S3 gateway endpoint |
+| signer | none | `web3.binance.com`, `api.commonservice.io`, `data.sec.gov`, `secretsmanager.<region>.amazonaws.com` | 443 | **must be refused**: the signer has no internet route (IDEA-046 B2) |
+
+- **Internal transports.** All `primary` services share one host, so none of them talks to another over the network:
+  the runtime reads the evidence store from local disk (IDEA-047 R3) and hands work to the execution service through
+  the database. The signer is reached only through the database, under its own role `larp_signer`. Every database
+  login is a per-role RDS IAM token over certificate-verified TLS (`deploy/postgres/roles.sql`).
+- **Model endpoints: shadow-only approval (2026-10-16, Yao Zhu; IDEA-056 MR-06).** `api.aiand.com` and
+  `api.openai.com` are approved from `primary` for `larp-runtime` only, and only while the runtime runs the
+  experimental `aiand_routed` assessor in shadow (`execution: shadow`, not `mode: live`): the 3–5-day shadow trial on
+  the Gate A deploy, pre-registered in IDEA-057, with the team's adoption decision due Oct 22. `build_driver` refuses
+  this assessor for service execution and live mode, so this approval cannot carry a signed order; live or service use
+  needs a later reviewed code change and a new approval here. The route check lists both hosts only when the runtime
+  config names `aiand_routed`. **Not approved:** `api.anthropic.com` (no assessor uses it; DR-11 / services B8).
+  SSM endpoints are used only by the development SSM agent on `primary`.
+- **Enforcement.** The security group allows HTTPS to any address from `primary` (AWS security groups cannot filter by
+  host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
+  manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no
+  public address; Terraform `internet_reaches_primary_only`).
+- **Route check (Gate A, R-07).** On each host, from the installed release, without credentials:
+  `python -m larp.runtime.routes --role primary --config runtime=/etc/larp/runtime.json --config execution=/etc/larp/execution.json --config uploader=/etc/larp/uploader.json --config operations=/etc/larp/operations.json --root /opt/larp/current --output <new file>`
+  and `python -m larp.runtime.routes --role signer --config signer=/etc/larp/signer.json --root /opt/larp/current --output <new file>`.
+  Each destination gets DNS, a TCP connect and a verified TLS handshake; no HTTP request, credential or round log is
+  sent. Exit 0 means every `primary` destination answered, or every signer internet destination was refused while
+  the database and S3 answered. An unset RPC URL or database host fails the check. The report (`RouteCheck.v1`)
+  names host and port only. It shows the host's routes, not each unit's systemd sandbox (for example `larp-evidence`'s `IPAddressDeny`).
+
 ## What is now implemented
 
 | Layer | Implemented artifact | Current boundary |
 |---|---|---|
 | Terraform state | `deploy/bootstrap/`: private, encrypted, versioned S3 state bucket; deletion protection | Bootstrap apply and secured state migration require an account; state is never committed |
-| Network | `deploy/aws/network.tf`: two private subnets/AZs, separate service security groups, S3 gateway and private AWS service endpoints | No public host addresses or inbound service ports; optional NAT/HTTPS only for evidence/uploader; application RPC and destination allowlists await owner adapters |
+| Network | `deploy/aws/network.tf`: two private subnets/AZs, separate service security groups, S3 gateway and private AWS service endpoints | No public host addresses or inbound service ports; optional NAT/HTTPS only for evidence/uploader (six-host template, superseded: the two-host destinations and route check are in "Approved network destinations" above, IDEA-062) |
 | Database | Encrypted private RDS PostgreSQL, managed admin secret, IAM authentication, TLS enforcement, backups, Multi-AZ default, deletion protection | User chooses version/class/storage/retention; migration and IAM role binding need a deployed database |
 | Archive | S3 versioning/Object Lock COMPLIANCE, KMS, public-access denial, conditional creation and deletion denial; separate release bucket | Explicit retention/account/bucket/namespace required; hosted lock verification still unrun |
 | Identity | Separate primary/standby/archive/uploader/evidence/signer IAM roles; service secret metadata without secret values in Terraform | Primary/standby/signer database grants and authenticated service communication need reviewed adapters; signer has no public internet access |
