@@ -1,7 +1,7 @@
 # IDEA-055 — Minimal chain-balance reconciliation: detect a mismatch and stop new risk (#36)
 
 - Date / owner: 2026-10-15 SGT / design drafted with Claude Code at the user's request. Owners to agree before anything is built: Isaac (C, balance observation), Keegan (B, comparison and planner effect), Yao Zhu (D, scheduling, journal, health gate), as named in the #36 status of 2026-10-15.
-- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover in PR 5
+- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover built in PR 5 (F1–F9 PASS locally, 1612 passed / 10 skipped); provider URLs wait on #92
 - Links: #36 (R14, P1); IDEA-049-B item 007; IDEA-049-C C-OPEN-008; IDEA-049-D D-REQ-039; IDEA-039 / PR #74 (`gate_b probe-chain`); SKILL.md Q-20, F-95, F-114, F-117; inferences.md I-28; plan.md G-43.
 
 ## What and why
@@ -405,3 +405,44 @@ Synthetic RPC providers, disposable PostgreSQL; no credentials, network, signing
 **Existing tests this changes:**
 - `Settings::test_b9_the_example_names_every_balance_setting`: the example now uses the list form instead of the legacy keys.
 - `tests/runtime/test_routes.py`: its `configs()` fixture fills the provider list. R3 (bad URL, unset URL) uses `providers[0]`, R8 checks the new field name, and the account-specific hosts include the backup.
+
+### Results (2026-10-16, PR 5)
+
+Criteria at `2d08f45`; red tests at `0e1fe07`; build at `8ed2f08`; register test update at the next commit. Same environment as PR 4: PostgreSQL 16.15, not 14 (see PR 4). Python 3.12.3 from `deploy/requirements-test.lock`. No credentials, network, signing or upload. Org CI was not used.
+
+- **Red first:** at `0e1fe07`, the new and updated tests failed for the predicted reasons. There is no `BalanceProviders`. Settings know only the legacy pair (both forms are accepted, a list-only config is "missing"). The route checker plans only `balance_rpc_url`. `bsc-rpc` is not declared, and the example has no list.
+- **Updates found by the build run:**
+  - `test_routes` R1's expected destinations add the fixture's backup host.
+  - `test_release_register::test_r1_services_list` pins the pending services and now lists `bsc-rpc` next to `assessor-model`. This may conflict with the model-routing session if it edits the same list.
+  - No assertion was weakened.
+- **Mutations**, each reverted, all caught (failing tests and subtests in the four affected files):
+
+  | Mutation | Failures |
+  |---|---|
+  | No failover (primary only) | 4 |
+  | Failover on unavailability only (not on a rejected answer) | 1 |
+  | The legacy form refused | 4 |
+  | Both forms accepted | 2 |
+  | The route checker planning only the first provider | 3 |
+  | `unset()` not recursing into lists | 1 |
+
+- **Full suite** at the register update: **1612 passed, 10 skipped, 2231 subtests**. The PR 4 head had 1600 / 10 / 2209, so this is +12 tests and +22 subtests (F1's refusal cases and F2's two failure kinds). There is no new failure or skip; the 10 skips are the same environmental ones.
+
+| ID | Result | Evidence |
+|---|---|---|
+| F1 | PASS | `Settings::test_f1_*` (10 refusals × 2 modes) |
+| F2 | PASS | `Failover::test_f2_*` (unavailable and rejected primary) |
+| F3 | PASS | `Failover::test_f3_*`, `FailoverDriver::test_f3_*` |
+| F4 | PASS | `FailoverDriver::test_f4_*` (first read from the primary, confirmation from the backup; the two observation hashes differ) |
+| F5 | PASS | `Composition::test_f5_*`, plus the unchanged B9 refusals |
+| F6 | PASS | `Routes::test_f6_*`, updated `test_routes` R1/R3/R4/R8 |
+| F7 | PASS | `Declared::test_f7_*`, `test_release_register` R1 |
+| F8 | PASS | `Declared::test_f8_*` |
+| F9 | PASS | full suite and mutations above |
+
+**Existing tests changed:**
+- B9's example check uses the list form.
+- In `test_routes`, `configs()` fills two providers. R1 expects the backup host, R3 uses `providers[0]`, R4 also checks that the backup URL's secret path is never reported, and R8 checks the new field name.
+- `test_release_register` R1 lists `bsc-rpc` as pending.
+
+**Still open:** Isaac's RPC choice for both providers (#92), which then sets `bsc-rpc` to ACTIVE; the first hosted check from `primary`; review by Isaac and Keegan.
