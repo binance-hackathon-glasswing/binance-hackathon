@@ -280,8 +280,10 @@ class ReconcileHarness(ServiceHarness):
             driver.work.next = lambda now_ms, epoch: None
         self.chain = chain_for(self.book(), **raw)
         c = driver.coordinator
-        check = BalanceCheck(c, lambda now_ms: read_balances(self.chain, wallet=WALLET, observed_at='x'),
-                             interval_ms=INTERVAL, max_age_ms=MAX_AGE)
+        def read(now_ms):
+            self.chain.height += 1  # finalized blocks advance between reads (IDEA-055 R1)
+            return read_balances(self.chain, wallet=WALLET, observed_at='x')
+        check = BalanceCheck(c, read, interval_ms=INTERVAL, max_age_ms=MAX_AGE)
         driver.balance_check = check
         c.context_builder.health = RuntimeHealth(self.store, RUN, self.epoch, balances=check)
         return driver

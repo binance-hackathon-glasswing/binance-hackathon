@@ -408,12 +408,16 @@ class DayRoll:
 
     The anchor is the equity at the marks fetched for that cycle. Without a usable mark for every held position, or
     outside the window, nothing is committed: the planner keeps refusing new risk for a day whose anchor is missing
-    (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact."""
+    (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact.
+
+    A price-jump hold inside the window defers the roll; the deferred day then rolls on the first cycle after the hold
+    clears or expires, even past the window (IDEA-055 R2). The deferral is kept in memory only."""
 
     def __init__(self, coordinator, *, window_ms):
         if type(window_ms) is not int or not 0 < window_ms < DAY_MS:
             raise ContractError('Invalid day-roll window')
         self.coordinator, self.window = coordinator, window_ms
+        self.deferred = None  # the midnight (ms) of a day whose roll a price-jump hold deferred inside the window
 
     def due(self, current, now_ms):
         projection = current['projection']
@@ -427,9 +431,10 @@ class DayRoll:
         if not self.due(current, now_ms):
             return None
         midnight = now_ms - now_ms % DAY_MS
-        if now_ms - midnight > self.window:
+        if now_ms - midnight > self.window and self.deferred != midnight:
             return 'OUTSIDE_WINDOW'
         if active_holds(current['projection'], now_ms):
+            self.deferred = midnight  # not lost when the window closes (R2)
             return 'PRICE_JUMP_HOLD'  # a mark that jumped is not an anchor until a balance check confirms it
         if observations is None:
             return 'MARKET_UNAVAILABLE'
@@ -512,13 +517,18 @@ class BalanceCheck:
         return bool(current['reservations'] or c.store.open_rounds(c.run_id)
                     or any(r.get('execution_pending') for r in rounds))
 
-    def _confirm(self, current, check, observation, observation_hash):
-        """Adjustments this check confirms; the rest of its mismatches become the next candidate."""
+    def _confirm(self, current, check, observation, observation_hash, now_ms):
+        """Adjustments this check confirms; the rest of its mismatches become the next candidate.
+
+        Confirmation needs `retry_ms` since the first read and a strictly newer block (R1, ALLPR-R1): an earlier
+        check, such as the one a price jump triggers, keeps the first read as the candidate."""
         mismatched = {a: r for a, r in check['assets'].items() if r['class'] != 'MATCH'}
         first, confirmed = self.candidate, []
-        if (first is not None and first['version'] == current['version']
-                and first['settled_block'] == check['settled_block']
-                and check['block_number'] >= first['block_number']):
+        comparable = (first is not None and first['version'] == current['version']
+                      and first['settled_block'] == check['settled_block'])
+        if comparable and now_ms - first['checked_ms'] < self.retry:
+            return confirmed
+        if comparable and check['block_number'] > first['block_number']:
             positions = current['projection']['portfolio']['positions']
             for asset, row in sorted(mismatched.items()):
                 seen = first['assets'].get(asset)
@@ -537,7 +547,8 @@ class BalanceCheck:
         adopted = {a['asset'] for a in confirmed}
         rest = {a: r for a, r in mismatched.items() if a not in adopted}
         self.candidate = (dict(assets=rest, block_number=check['block_number'], settled_block=check['settled_block'],
-                               observation_sha256=observation_hash, version=current['version']) if rest else None)
+                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms)
+                          if rest else None)
         return confirmed
 
     def _commit(self, current, event_id, event, projection=None):
@@ -582,12 +593,15 @@ class BalanceCheck:
                                       differences={a: check['assets'][a]['difference'] for a in new_surplus}))
             state.update(comparable_status=status, deficits=check['deficits'], surplus_assets=check['surplus'],
                          block_number=check['block_number'])
-            adjustments = self._confirm(current, check, observation, observation_hash)
+            adjustments = self._confirm(current, check, observation, observation_hash, now_ms)
             for symbol, hold in list(holds.items()):
                 row = check['assets'].get(symbol)
-                if now_ms > hold['jump_ms'] and row is not None and row['class'] == 'MATCH':
+                # R3: the finalized block read just after a jump may predate the split; wait retry_ms before a MATCH
+                # counts as the chain agreeing.
+                if now_ms - hold['jump_ms'] >= self.retry and row is not None and row['class'] == 'MATCH':
                     del holds[symbol]  # the chain agrees after the jump: the mark is real
-            self.next_ms = now_ms + (self.retry if self.candidate is not None else self.interval)
+            pending = self.candidate is not None or bool(active_holds(dict(price_jump=holds), now_ms))
+            self.next_ms = now_ms + (self.retry if pending else self.interval)
         else:
             self.next_ms = now_ms + self.retry  # a skip keeps the last deficits, the last good time and the candidate
         outcome = ('status', 'reason', 'comparable_status', 'deficits', 'surplus_assets')

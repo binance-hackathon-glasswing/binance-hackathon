@@ -163,11 +163,13 @@ class AdoptionHarness(ServiceHarness):
         driver.work.next = lambda now_ms, epoch: cadence(now_ms) if self.rounds_on else None
         book = self.store.load(RUN).read()['projection']['portfolio']
         self.chain = chain_for(book, **(raw or {}))
-        self.extra = extra
+        self.extra, self.stuck = extra, False
 
         def read(now_ms):
             if rpc_fail:
                 raise DependencyUnavailable('RPC unavailable')
+            if not self.stuck:
+                self.chain.height += 1  # finalized blocks advance between reads (IDEA-055 R1)
             o = read_balances(self.chain, wallet=WALLET, observed_at='x')
             if self.extra:
                 o['tokens'].update(self.extra)
@@ -263,7 +265,7 @@ class Adoption(AdoptionHarness):
         for row in (adjustment, incident):
             self.assertEqual((row['asset'], row['ledger_before'], row['chain_units'], row['delta'], row['reason']),
                              ('NVDAB', 2000, 2010, 10, 'SURPLUS'))
-            self.assertEqual((row['first_block'], row['confirm_block']), (HEIGHT, HEIGHT))
+            self.assertEqual(row['confirm_block'], row['first_block'] + 1)  # R1: a strictly newer block
             self.assertEqual(len(row['first_observation_sha256']), 64)
             self.assertEqual(len(row['confirm_observation_sha256']), 64)
         self.assertEqual(self.audits(), audits)  # not a round: no ai-seeds log
@@ -444,6 +446,85 @@ class PriceJump(AdoptionHarness):
         with self.store.transaction() as db:
             db.execute('TRUNCATE runs CASCADE')
         return self.replay(driver, journal), expected
+
+
+# ---------------------------------------------------------------------------------------------- PR 4 review fixes
+class ReviewFixes(AdoptionHarness):
+    """IDEA-055 R1-R3 (section B review of PR #115, wtvlol's ALLPR-R1)."""
+
+    def hold(self, jump_ms):
+        current = self.store.load(RUN)
+        projection = current.read()['projection']
+        projection['price_jump'] = {'NVDAB': dict(reference_price_units=PRICE, price_units=PRICE // 2,
+                                                  jump_ms=jump_ms, until_ms=jump_ms + MAX_AGE)}
+        self.store.commit(batch_for(current, f'fixture:hold:{jump_ms}', dict(kind='INCIDENT',
+                                    incident=dict(type='FIXTURE')), projection=projection))
+
+    def test_r1_a_hold_before_the_first_read_cannot_shorten_the_confirmation(self):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        self.hold(t)
+        self.assertEqual(check(t), 'SURPLUS_ONLY')
+        first_block = self.chain.height
+        self.assertTrue(check.due(t + SECOND, self.projection()))  # the jump trigger still fires
+        self.assertEqual(check(t + SECOND), 'SURPLUS_ONLY')  # too early: no adoption
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertEqual(check(t + MINUTE), 'ADJUSTED')  # retry_ms after the *first* read
+        [adjustment] = self.events('BALANCE_ADJUSTED')[0]['adjustments']
+        self.assertEqual(adjustment['first_block'], first_block)  # the early check did not replace the candidate
+
+    def test_r1_a_first_read_in_the_same_millisecond_as_the_hold(self):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        self.assertEqual(check(t), 'SURPLUS_ONLY')
+        self.hold(t)
+        self.assertTrue(check.due(t + SECOND, self.projection()))
+        self.assertNotEqual(check(t + SECOND), 'ADJUSTED')
+        self.assertNotEqual(check(t + SECOND + SECOND), 'ADJUSTED')
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertEqual(check(t + SECOND + MINUTE), 'ADJUSTED')
+
+    def test_r1_a_stuck_node_cannot_confirm_its_own_read(self):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        self.assertEqual(self.tick(driver)['balance_check'], 'SURPLUS_ONLY')
+        self.stuck = True  # the same finalized block a minute later
+        self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'SURPLUS_ONLY')
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.stuck = False
+        self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')
+
+    def test_r2_a_hold_across_the_end_of_the_window_defers_the_roll(self):
+        driver = self.prepare()
+        roll = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        midnight = int(datetime(2026, 10, 11, tzinfo=timezone.utc).timestamp() * 1000)
+        self.hold(midnight - MINUTE)
+        at = lambda ms: roll(midnight + ms, self.feed(midnight + ms))
+        self.assertEqual(at(MINUTE), 'PRICE_JUMP_HOLD')
+        self.assertEqual(at(10 * MINUTE), 'PRICE_JUMP_HOLD')  # past the window, still held
+        fresh = DayRoll(driver.coordinator, window_ms=5 * MINUTE)  # a day not deferred inside the window
+        self.assertEqual(fresh(midnight + 10 * MINUTE, self.feed(midnight + 10 * MINUTE)), 'OUTSIDE_WINDOW')
+        current = self.store.load(RUN)
+        projection = current.read()['projection']
+        projection['price_jump'] = {}  # a balance check cleared the hold
+        self.store.commit(batch_for(current, 'fixture:cleared', dict(kind='INCIDENT', incident=dict(type='FIXTURE')),
+                                    projection=projection))
+        self.assertEqual(at(12 * MINUTE), 'ROLLED')
+        self.assertEqual(self.events('DAY_ROLLED')[0]['day'], '2026-10-11')
+
+    def test_r3_a_match_just_after_the_jump_keeps_the_hold_a_later_one_clears_it(self):
+        driver = self.prepare()
+        self.assertEqual(self.tick(driver)['balance_check'], 'MATCH')
+        self.round(driver)
+        self.feed.prices['NVDAB'] = PRICE // 2  # the mark halves; the chain is unchanged (yet)
+        _, record = self.round(driver)
+        self.assertEqual(record['plan']['loss_stops_deferred'], ['NVDAB'])
+        self.assertEqual(self.tick(driver)['balance_check'], 'MATCH')  # the immediate check
+        self.assertIn('NVDAB', self.projection()['price_jump'])  # a block read seconds after the jump: kept
+        self.assertNotIn('balance_check', self.tick(driver, MINUTE - 3 * SECOND))
+        self.assertEqual(self.tick(driver, 3 * SECOND)['balance_check'], 'MATCH')  # retry_ms later, not 10 min
+        self.assertEqual(self.projection()['price_jump'], {})
+        _, record = self.round(driver)
+        self.assertTrue(record['plan']['risk_state']['daily_halt'])  # a genuine drop: the stops evaluate
 
 
 # ---------------------------------------------------------------------------------------------- S16 configuration
