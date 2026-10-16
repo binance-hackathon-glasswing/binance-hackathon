@@ -449,3 +449,7 @@ must reject the old candidate. Reproduce by injecting a reservation and its
 release in that exact gap; update the candidate's version only when the reload
 contains exactly the one expected commit. Full candidate safety still rests on
 the journal suffix, and ordinary single-writer behavior is unchanged.
+The same barrier must apply when the concurrent activity happens during the
+confirming check's own journal writes: no adjustment may commit using the
+previously computed confirmation. Refuse that adoption, pause new spending and
+obtain a fresh pair of reads; retain all intervening journal events.

@@ -9,6 +9,33 @@ from tests.runtime.test_balance_adoption import AdoptionHarness, MINUTE, PRICE, 
 
 
 class Confirmation(AdoptionHarness):
+    def test_resource_activity_during_confirmation_logging_prevents_the_adjustment(self):
+        from unittest.mock import patch
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        self.assertEqual(check(t), 'SURPLUS_ONLY')
+        commit = self.store.commit
+        injected = False
+
+        def racing_commit(batch):
+            nonlocal injected
+            receipt = commit(batch)
+            if batch.read()['event']['kind'] == 'BALANCE_CHECKED' and not injected:
+                injected = True
+                for suffix, units in [('reserve', 1), ('release', -1)]:
+                    commit(batch_for(self.store.load(RUN), 'fixture:confirmation-race:' + suffix,
+                        dict(kind='INCIDENT', incident=dict(type='FIXTURE_RESOURCE')),
+                        reservation_deltas=[dict(intent_id='race', asset='USDT', units=units)]))
+            return receipt
+
+        with patch.object(self.store, 'commit', side_effect=racing_commit):
+            self.assertNotEqual(check(t + MINUTE), 'ADJUSTED')
+        self.assertTrue(injected)
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertFalse(self.health(driver)['new_spending_ok'])
+        self.assertNotEqual(check(t + 2 * MINUTE), 'ADJUSTED')
+        self.assertEqual(check(t + 3 * MINUTE), 'ADJUSTED')
+
     def test_resource_activity_racing_the_post_commit_reload_is_not_blessed(self):
         from unittest.mock import patch
         driver = self.prepare(raw=dict(NVDAB=2010))
