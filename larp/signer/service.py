@@ -12,7 +12,9 @@ offline (wallet nonce, market open, risk, health) come from the request, as the 
 Because primary writes the intent, the signer also checks every request against its own pinned signing policy
 (larp/signer/policy.py; `signing_policy` in its config): allowed spenders and tokens, per-token input caps and a fee
 cap, so a compromised primary cannot get an approve to another spender or an unlimited approve signed (WR02, #44).
-A swap needs a verified router decoder; none exists yet (GAP-29), so swap requests are refused.
+A swap needs a decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29),
+loaded from the signer's own pinned copy and for a router in its own `allowed_spenders`. Without it, every swap
+request is refused.
 
 It signs through `LocalSigner`, whose fenced registry keeps at most one signature per attempt. A failed check becomes
 a refusal row for that request; a database outage is not a refusal and stops the cycle.
@@ -158,9 +160,24 @@ def validate_config(value):
     policy = SigningPolicy.from_config(value.get('signing_policy'))
     if value['mode'] == 'live' and policy.cap_basis == EXAMPLE_CAP_BASIS:
         raise ContractError('A live signer needs decided signing caps, not the example values')
+    from larp.execution_live.router import evidence_settings
+    evidence_settings(value)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
+
+
+def router_decoder(config, policy):
+    """The signer's own swap decoder (IDEA-070): pinned to router evidence for a router in its `allowed_spenders`,
+    or `UnverifiedRouter`, which refuses every swap."""
+    from larp.execution_live.router import evidence_settings, load_evidence
+    settings = evidence_settings(config)
+    if settings is None:
+        return UnverifiedRouter()
+    decoder = load_evidence(*settings)
+    if decoder.router not in policy.allowed_spenders:
+        raise ContractError('Router evidence is for a router outside signing_policy.allowed_spenders')
+    return decoder
 
 
 def key_path(config, environ=os.environ):
@@ -219,11 +236,15 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         if (type(registered) is not dict or registered.get('build_id') != config['build_id']
                 or registered.get('manifest_sha256') != manifest_sha256):
             raise StartRefused('signer release differs from the registered manifest')
+        policy = SigningPolicy.from_config(config['signing_policy'])
+        try:
+            decoder = router_decoder(config, policy)
+        except (ContractError, OSError):
+            raise StartRefused('router evidence refused') from None
         try:
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],
-                                    credentials=credentials, clock_s=clock_s,
-                                    policy=SigningPolicy.from_config(config['signing_policy']),
+                                    credentials=credentials, clock_s=clock_s, policy=policy, decoder=decoder,
                                     max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'],
                                     manifest_sha256=manifest_sha256)
         except Blocked as refused:
@@ -232,7 +253,10 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             return EXIT_REFUSED
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
-        print(json.dumps(dict(started=True, signing_enabled=True, swap_decoder='UNVERIFIED',
+        verified = getattr(decoder, 'mode', None) == 'verified'
+        print(json.dumps(dict(started=True, signing_enabled=True,
+                              swap_decoder='VERIFIED' if verified else 'UNVERIFIED',
+                              router_evidence_sha256=decoder.evidence_sha256 if verified else None,
                               cap_basis=service.policy.cap_basis)))
         cycles = 0
         while not stopping and (max_cycles is None or cycles < max_cycles):

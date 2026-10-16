@@ -190,7 +190,8 @@ def readiness_report(inputs, *, now, base_dir):
     if type(age) is not int or age <= 0:
         raise Blocked('explicit positive chain evidence freshness budget required')
     files = inputs['files']
-    if type(files) is not dict or set(files) - {'execution_config', 'chain', 'initial_state', 'quote_costs'}:
+    if type(files) is not dict or set(files) - {'execution_config', 'chain', 'initial_state', 'quote_costs',
+                                                'router_check'}:
         raise Blocked('unsupported public evidence input')
     result.update(build_id=inputs['build_id'], run_id=inputs['run_id'], wallet=wallet)
     errors = (Blocked, ContractError, OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError)
@@ -212,6 +213,26 @@ def readiness_report(inputs, *, now, base_dir):
         checks['DR-04'].update(status='VALIDATED', detail='Configuration only; crash/fencing CI and review still required')
     except errors:
         checks['DR-04']['detail'] = 'Execution configuration absent, invalid, mismatched or hash changed'
+    try:
+        from .router import PinnedRouterDecoder, evidence_settings
+        settings = None if config is None else evidence_settings(config)
+        if settings is None:
+            raise Blocked('router evidence not configured')
+        decoder = PinnedRouterDecoder(pinned(dict(path=settings[0], sha256=settings[1]), base_dir),
+                                      evidence_sha256=settings[1])
+        if decoder.router != address(config['router']):
+            raise Blocked('router evidence is for another router')
+        value = load('router_check')
+        if (value['schema'] != 'RouterRouteCheck.v1' or value['status'] != 'PASS'
+                or value['evidence_sha256'] != settings[1] or value['router'] != decoder.router
+                or value['selector'] != decoder.selector):
+            raise Blocked('recorded-route check absent, failing or for other evidence')
+        result['evidence_hashes']['router_evidence'] = settings[1]
+        checks['DR-02'].update(status='VALIDATED', detail='Pinned router evidence and a passing recorded-route check '
+                               'only; owner review of the verified source and a logged dev approve + swap still required')
+    except errors:
+        checks['DR-02']['detail'] = ('Pinned router evidence or a passing recorded-route check absent or mismatched; '
+                                     'the swap decoder stays unverified')
     try:
         if config is None:
             raise Blocked('valid execution config required')
