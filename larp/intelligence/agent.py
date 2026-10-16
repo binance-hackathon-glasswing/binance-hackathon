@@ -145,6 +145,7 @@ class EvidenceAssessor:
     """Implements the shared Assessor port: assess(request: Document) -> Document."""
 
     def __init__(self, *, registry, reader, model, config, clock_ms, red_flags: tuple | None = None):
+        self.request_namespace = ''  # composite assessors namespace calls without changing scheduler job identity
         self.registry, self.reader, self.model, self.config, self.clock = registry, reader, model, config, clock_ms
         # RedFlagPredicateSet.v1 (IDEA-041): an item code becomes a finding only when its own section verifies.
         predicates, self.red_flag_set_sha256 = red_flags or load_predicates()
@@ -254,7 +255,7 @@ class EvidenceAssessor:
                 state.missing.append("EVIDENCE_MODEL_INPUT_OVER_CAP")
                 claims_out = None  # harness facts only; the model did not see or confirm them
                 break
-            m_request = {"schema": "ModelRequest.v1", "request_id": f"{r['job_id']}:step:{step}",
+            m_request = {"schema": "ModelRequest.v1", "request_id": f"{self.request_namespace}{r['job_id']}:step:{step}",
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
                          "input": model_input}
             step += 1

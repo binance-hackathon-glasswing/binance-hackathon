@@ -203,8 +203,13 @@ def build_driver(config, store, secrets, *, clock_ms=None):
             raise ContractError('Invalid driver setting: ' + key)
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
-    if d['assessor'] != 'deterministic':
+    if d['assessor'] not in ('deterministic', 'aiand_routed'):
         raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
+    if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
+        raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
+    if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
+            'model_routing_file', 'model_routing_sha256', 'model_budget_root')):
+        raise ContractError('AIand routing needs a pinned file and shared model budget root')
     mode = config.get('mode', 'offline')
     profile = _pinned_json(d['strategy_profile_file'], d['strategy_profile_sha256'], 'Strategy profile')
     if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1':
@@ -253,8 +258,15 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                              market=feed, health=health,
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
-    assessor = EvidenceAssessor(registry=registry, reader=PortEvidenceReader(evidence, artifacts),
-                                model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
+    reader = PortEvidenceReader(evidence, artifacts)
+    if d['assessor'] == 'aiand_routed':
+        from larp.intelligence.routing import build_routed_assessor
+        spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
+        assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
+            clock_ms=clock_ms, artifacts=artifacts, secrets=secrets, budget_root=d['model_budget_root'])
+    else:
+        assessor = EvidenceAssessor(registry=registry, reader=reader,
+                                    model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
     coordinator = Coordinator(store, assessor, StrategyPolicy(),
                               RuntimePlanner(job_validity_ms=intelligence.p('job_validity_ms'),
                                              job_max_attempts=intelligence.p('job_max_attempts'), issuers=issuer_map),

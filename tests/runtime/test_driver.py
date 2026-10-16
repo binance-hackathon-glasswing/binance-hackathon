@@ -247,6 +247,26 @@ class Composition(unittest.TestCase):
         with self.assertRaises(NotIntegrated):
             build_driver(self.config(assessor='anthropic:model:high'), Store(), self.secrets)
 
+    def test_ar7_aiand_routing_is_pinned_opt_in_and_shadow_only(self):
+        from larp.intelligence.model_budget import ModelBudget
+        from larp.intelligence.routing import RoutedAssessor
+        raw = (Path(__file__).resolve().parents[2] / 'config/intelligence/aiand-routing.example.json').read_bytes()
+        spec = json.loads(raw)
+        path = self.root / 'routing.json'
+        path.write_bytes(raw)
+        ModelBudget.initialize(self.root / 'openai-budget.sqlite', spec['budget_account'], initial_spent=0)
+        settings = dict(assessor='aiand_routed', model_routing_file=str(path),
+                        model_routing_sha256=hashlib.sha256(raw).hexdigest(), model_budget_root=str(self.root))
+        secrets = dict(self.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+        driver = build_driver(self.config(**settings), Store(), secrets)
+        self.assertIsInstance(driver.coordinator.assessor, RoutedAssessor)
+        self.assertFalse(driver.signing)
+        for change in (dict(execution='service', expiry_grace_ms=5000), dict(model_routing_sha256='0'*64)):
+            with self.subTest(change=change), self.assertRaises(ContractError):
+                build_driver(self.config(**dict(settings, **change)), Store(), secrets)
+        with self.assertRaises(ValueError):
+            build_driver(self.config(**settings), Store(), self.secrets)
+
     def test_e9_service_execution_builds_and_binds_the_profile_to_quotes(self):
         from larp.runtime.driver import ServiceExecution, ShadowExecution
         driver = build_driver(self.config(execution='service', expiry_grace_ms=5000, day_roll_window_ms=900_000,
