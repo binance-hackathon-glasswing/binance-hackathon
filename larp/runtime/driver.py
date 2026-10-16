@@ -443,9 +443,9 @@ class DayRoll:
         # The midnight fetch can be the first observation of a split. The round that journals its hold runs
         # after DayRoll, so checking only persisted holds would anchor old units at the newly changed price.
         if getattr(builder, 'price_jump', None) is not None:
-            _, holds = builder._jumps(projection, observations, now_ms)
+            marks, holds = builder._jumps(projection, observations, now_ms)
             if holds:
-                return self._defer(current, midnight, now_ms)
+                return self._defer(current, midnight, now_ms, jumps=dict(marks=marks, price_jump=holds))
         ledger = ledger_from(projection, current['reservations'])
         try:
             market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
@@ -467,14 +467,17 @@ class DayRoll:
         c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
         return 'ROLLED'
 
-    def _defer(self, current, midnight, now_ms):
+    def _defer(self, current, midnight, now_ms, *, jumps=None):
         """Persist both an existing hold and one first discovered by the midnight fetch (RR2-R2, PR115-C02)."""
         projection = current['projection']
-        if projection.get('day_roll_deferred_ms') != midnight:
+        if (projection.get('day_roll_deferred_ms') != midnight
+                or any(projection.get(k) != value for k, value in (jumps or {}).items())):
+            projection.update(jumps or {})
             projection['day_roll_deferred_ms'] = midnight
             day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
             event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
-            self.coordinator.store.commit(batch_for(Document.from_dict(current), 'day-deferred:' + day, event,
+            event_id = f"day-deferred:{day}:{current['version'] + 1}"
+            self.coordinator.store.commit(batch_for(Document.from_dict(current), event_id, event,
                                                      projection=projection))
         return 'PRICE_JUMP_HOLD'
 

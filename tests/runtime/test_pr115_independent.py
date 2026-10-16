@@ -173,10 +173,11 @@ class MidnightJump(AdoptionHarness):
         self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'PRICE_JUMP_HOLD')
         self.assertEqual(self.events('DAY_ROLLED'), [])
         self.assertEqual(self.projection().get('risk_state') or self.book()['risk'], before)
-        self.round(driver, at=midnight + 2 * SECOND)
-        self.assertIn('NVDAB', self.projection()['price_jump'])
         self.chain.tokens['NVDAB'] = units
-        self.assertEqual(self.tick(driver)['balance_check'], 'SURPLUS_ONLY' if units > 2000 else 'DEFICIT')
+        # The midnight hold is now visible before the next round, so its pre-round balance check runs immediately.
+        summary, _ = self.round(driver, at=midnight + 2 * SECOND)
+        self.assertIn('NVDAB', self.projection()['price_jump'])
+        self.assertEqual(summary['balance_check'], 'SURPLUS_ONLY' if units > 2000 else 'DEFICIT')
         self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')
         self.assertFalse(self.projection()['price_jump'])
         self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
@@ -235,3 +236,16 @@ class MidnightJump(AdoptionHarness):
         self.assertFalse(self.projection()['price_jump'])
         restarted = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
         self.assertEqual(restarted(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
+
+    def test_a_later_midnight_jump_on_the_deferred_day_is_journaled_separately(self):
+        driver, midnight, roll = self.no_round_midnight()
+        self.assertEqual(driver.balance_check(self.w.clock()), 'MATCH')
+        self.w.clock.now += MINUTE
+        self.assertEqual(driver.balance_check(self.w.clock()), 'MATCH')
+        self.assertFalse(self.projection()['price_jump'])
+        self.feed.prices['NVDAB'] = PRICE
+        self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'PRICE_JUMP_HOLD')
+        self.assertEqual(self.projection()['price_jump']['NVDAB']['jump_ms'], self.w.clock())
+        self.assertEqual(len(self.events('DAY_ROLL_DEFERRED')), 2)
+        self.assertEqual(self.projection()['marks']['NVDAB'], PRICE)
+        self.store.verify(RUN)
