@@ -544,6 +544,7 @@ Verification:
   This includes existing backup/restore, NUL-character and execution integrity/recovery regressions.
   No hosted migration or Linux/systemd acceptance is claimed.
 
-Local implementation and regression verification are complete. Publication/integration (Keith, after user
-approval) and the first-host migration check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the
-alternate-key/encoding archive-read limitation above remains open.
+Local implementation and regression verification are complete at `0a8fbb4`. The user approved pushing the
+branch and opening a follow-up PR on 2026-10-16. Review/integration (Keith) and the first-host migration
+check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the alternate-key/encoding archive-read limitation
+above remains open.
