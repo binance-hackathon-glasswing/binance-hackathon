@@ -496,7 +496,18 @@ signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
   confirmation in `/private/tmp/larp-pr115-adoption-race-red-confirmed.log` and
   reproduced the same predicted failure.
 - Concurrent `959a627` adds the now-merged Gate A input assembly. It is preserved
-  in the review branch; a final full-suite run on that combined tree follows.
+  in the review branch and is included in the final verification below.
+
+**Final combined verification at pushed PR head `7062923`:** full suite
+**1730 passed, 9 skipped, 2377 subtests**, zero failures, 252.69 s. Same macOS /
+Python 3.12.14 / PostgreSQL 14.24 environment and the same nine platform/opt-in
+skips described above. Includes Gate A assembly, both reviewers' RR2 fixes,
+all thirteen independent PR115-C regressions, exact replay and the storage
+journal bounds. Command:
+`LARP_TEST_DATABASE_URL=<disposable localhost database> python -m pytest -q -p no:cacheprovider`.
+Raw log `/private/tmp/larp-pr115-full-with-gate-a.log`, SHA-256
+`dd7a51b1ebd3b0103631eaaf3a3b87adf8bea19b1d2e624b22d6e529100ec739`.
+The subsequent record/index/backlog commit changes documentation only.
 
 **Still open:** the existing mandatory-sale/price-jump-hold policy question
 (Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
