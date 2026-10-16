@@ -187,6 +187,8 @@ the config's `region` (`ap-southeast-2` now).
 | primary | larp-runtime | host of `driver.balance_rpc_url` in `runtime.json` | 443 | BSC RPC for the finalized chain-balance check (IDEA-055); account-specific, chosen and manifested by the owners |
 | primary | larp-execution | host of `rpc_url` in `execution.json` | 443 | BSC RPC for chain reads and receipts; account-specific |
 | primary | larp-uploader | `api.commonservice.io` | 443 | ai-seeds event log (F-99..F-101) |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | **Shadow only** (IDEA-057; MR-06, 2026-10-16): AIand Chat Completions for the GLM-5.3 routine stage and the K3/GLM external reviews. The runtime refuses this assessor with `execution: service` or `mode: live` |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | **Shadow only** (IDEA-057; MR-06): OpenAI Responses for the optional GPT-6.1 Sol review, used only when `LARP_MODEL_API_KEY` is in the runtime secret, within the $40 admission ledger |
 | primary | larp-runtime, larp-execution, larp-uploader | `secretsmanager.<region>.amazonaws.com` | 443 | service secrets (public endpoint; no interface endpoint, IDEA-046) |
 | primary | larp-archive | `s3.<region>.amazonaws.com` | 443 | archive and hourly anchors through the S3 gateway endpoint |
 | primary | larp-archive | `monitoring.<region>.amazonaws.com` | 443 | CloudWatch metrics |
@@ -201,9 +203,14 @@ the config's `region` (`ap-southeast-2` now).
   the runtime reads the evidence store from local disk (IDEA-047 R3) and hands work to the execution service through
   the database. The signer is reached only through the database, under its own role `larp_signer`. Every database
   login is a per-role RDS IAM token over certificate-verified TLS (`deploy/postgres/roles.sql`).
-- **Not approved yet.** Hosted model endpoints (`api.anthropic.com`, `api.openai.com`) stay off this list until the
-  assessor decision (DR-11 / services B8): the runtime refuses any assessor but the deterministic one. SSM endpoints
-  are used only by the development SSM agent on `primary`.
+- **Model endpoints: shadow-only approval (2026-10-16, Yao Zhu; IDEA-056 MR-06).** `api.aiand.com` and
+  `api.openai.com` are approved from `primary` for `larp-runtime` only, and only while the runtime runs the
+  experimental `aiand_routed` assessor in shadow (`execution: shadow`, not `mode: live`): the 3–5-day shadow trial on
+  the Gate A deploy, pre-registered in IDEA-057, with the team's adoption decision due Oct 22. `build_driver` refuses
+  this assessor for service execution and live mode, so this approval cannot carry a signed order; live or service use
+  needs a later reviewed code change and a new approval here. The route check lists both hosts only when the runtime
+  config names `aiand_routed`. **Not approved:** `api.anthropic.com` (no assessor uses it; DR-11 / services B8).
+  SSM endpoints are used only by the development SSM agent on `primary`.
 - **Enforcement.** The security group allows HTTPS to any address from `primary` (AWS security groups cannot filter by
   host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
   manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no

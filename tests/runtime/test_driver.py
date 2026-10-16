@@ -312,10 +312,11 @@ class Composition(unittest.TestCase):
         live_profile = json.dumps(synthetic_profile(mode='LIVE')).encode()
         (self.root / 'live-profile.json').write_bytes(live_profile)
         filled = dict(self.driver_block, **self.routed_settings(), balance_rpc_url='https://rpc.invalid/',
-                      balance_rpc_source_id='synthetic-rpc', intelligence_mode='development',
+                      balance_rpc_source_id='synthetic-rpc', intelligence_mode='development', day_roll_window_ms=900_000,
                       strategy_profile_file=str(self.root / 'live-profile.json'),
                       strategy_profile_sha256=hashlib.sha256(live_profile).hexdigest())
         driver_block = dict(d, **{k: v for k, v in filled.items() if k not in ('assessor', 'execution')})
+        self.assertFalse([k for k, v in driver_block.items() if v is None])  # every placeholder filled
         config = dict(example, run_id='run', build_id='a' * 40, wallet_address=self.wallet, driver=driver_block)
         self.assertEqual(config['mode'], 'dev')
         secrets = dict(self.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')

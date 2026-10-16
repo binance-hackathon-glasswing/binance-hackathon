@@ -261,9 +261,14 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     reader = PortEvidenceReader(evidence, artifacts)
     if d['assessor'] == 'aiand_routed':
         from larp.intelligence.routing import build_routed_assessor
+        from larp.sources.store import OverlayArtifacts
         spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
-        assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
-            clock_ms=clock_ms, artifacts=artifacts, secrets=secrets, budget_root=d['model_budget_root'])
+        # The runtime has no writable evidence mount on the host (IDEA-047 R15): model request/reply bytes, stage
+        # results and tool results go to a private store in the unit's state directory; evidence is read as before.
+        model_artifacts = FileArtifacts(str(Path(d['market_artifact_root']) / 'model'))
+        assessor = build_routed_assessor(spec, registry=registry,
+            reader=PortEvidenceReader(evidence, OverlayArtifacts(artifacts, model_artifacts)), config=intelligence,
+            clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
     else:
         assessor = EvidenceAssessor(registry=registry, reader=reader,
                                     model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
