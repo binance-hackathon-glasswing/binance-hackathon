@@ -3,7 +3,6 @@
 Fixture: five names at 100 USDT per token (1 unit = 0.01 USDT), 200 USDT equity, equal frozen weights 1/5, so the
 95% target per name is 19% (about 3798 units after the cost reserve) and the 60% target is 12%.
 """
-from dataclasses import replace
 from datetime import timedelta
 from fractions import Fraction
 import unittest
@@ -248,3 +247,43 @@ class Settlement(unittest.TestCase):  # Q14: the per-name count comes from the s
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LiveProfiles(unittest.TestCase):  # S05
+    def build(self, **s1_changes):
+        from larp.strategy.profiles import build_live_profiles
+        from tests.strategy.live_fixtures import registry, summary
+        return build_live_profiles(summary(), registry(), s1=block(**s1_changes))
+
+    def test_s1_profiles_validate_and_size_for_a_full_top_position(self):
+        from larp.strategy.profiles import validate_live
+        from larp.strategy.schema import ceil
+        for env, document in self.build().items():
+            p = document.read()
+            validate_live(p)
+            self.assertEqual((p["baseline"], p["policy_id"]), ("TREND_GUARDED_VOL", "larp-s1-" + env.lower() + "-v1"))
+            self.assertNotIn("operating_gross_weight", p)
+            top = ceil(p["expected_equity_units"] * Fraction(19, 20) * Fraction(1, 5))
+            self.assertEqual(p["per_trade_cap_units"], top + p["cost_reserve_units"])
+            pair = max(r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"]
+                       for r in p["quote_cost_summary"]["symbols"].values())
+            self.assertEqual(p["exit_gas_reserve_units"], 5 * pair)
+            self.assertIn("proposed", p["provenance"]["s1"]["decision_id"])
+
+    def test_validator_refuses_s1_defects(self):
+        from larp.contracts import ContractError
+        from larp.strategy.profiles import validate_live
+        p = self.build()["FINAL"].read()
+        for change in (dict(per_trade_cap_units=p["per_trade_cap_units"] - 1),
+                       dict(exit_gas_reserve_units=p["exit_gas_reserve_units"] - 1),
+                       dict(s1=dict(p["s1"], weight_cap=[2, 5]))):
+            with self.subTest(change), self.assertRaises(ContractError):
+                validate_live(dict(p, **change))
+        with self.assertRaises(ContractError):
+            validate_live({k: v for k, v in p.items() if k != "s1"})
+
+    def test_equal_weight_profiles_are_unchanged(self):
+        from larp.strategy.profiles import build_live_profiles
+        from tests.strategy.live_fixtures import registry, summary
+        p = build_live_profiles(summary(), registry())["FINAL"].read()
+        self.assertEqual((p["baseline"], p["operating_gross_weight"]), ("EQUAL_WEIGHT", [4, 5]))
