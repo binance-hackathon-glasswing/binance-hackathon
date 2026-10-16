@@ -51,6 +51,51 @@ The alarm email subscription must be confirmed from the email AWS sent to the ac
 
 Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 is on the PATH.
 
+**2026-10-17 check from Isaac's checkout (IDEA-066 PC-AWS01):** those are
+Yao Zhu's local files/tool paths. This Mac has no AWS CLI/Terraform/Session
+Manager plugin on PATH or at the documented/common install locations, no
+`~/.aws/config` or credentials file, no project-local `.aws` directory, no AWS
+environment-variable names in the process or `.env`, and neither private
+Terraform input file. The prepared Gate A directory and reviewed rehearsal
+profile are also absent. No AWS connection or live stack observation was made.
+Resume on the already-configured Mac, or restore access to the same account and
+its existing private backend/input files locally before proceeding. Do not
+initialize a replacement stack to work around missing local files. The last
+recorded applied AWS state above is not a fresh observation.
+
+From the repository root on the configured Mac, this connects and makes a saved
+plan only (no infrastructure apply):
+
+```bash
+aws login --profile larp --region ap-southeast-2
+aws sts get-caller-identity --profile larp --region ap-southeast-2
+
+(
+  set -e
+  test -f deploy/aws/backend.local.hcl
+  test -f deploy/aws/development.tfvars
+  larp_tf_config=$(mktemp)
+  chmod 600 "$larp_tf_config"
+  trap 'rm -f "$larp_tf_config"' EXIT
+  printf '[profile larp-tf]\nregion = ap-southeast-2\ncredential_process = /usr/bin/env AWS_CONFIG_FILE=%s/.aws/config aws configure export-credentials --profile larp --format process\n' "$HOME" > "$larp_tf_config"
+  export AWS_CONFIG_FILE="$larp_tf_config" AWS_PROFILE=larp-tf AWS_REGION=ap-southeast-2
+  export PATH="$HOME/.local/opt/terraform-1.13.5:$PATH"
+  terraform -chdir=deploy/aws init -input=false -reconfigure -backend-config=backend.local.hcl
+  terraform -chdir=deploy/aws plan -input=false -var-file=development.tfvars -out=gate-a.tfplan
+)
+```
+
+Confirm the account matches the team's existing credit project. This plan uses
+the current flags in `development.tfvars`; if they remain false it does not
+start hosts. For a host-start plan, use the reviewed AMI and three flags in
+"Next steps" step 4, then re-plan using the same refreshing-credential setup.
+Only apply a reviewed saved plan with the spend approval required above, in
+that same authenticated setup: `terraform -chdir=deploy/aws apply gate-a.tfplan`.
+Starting hosts is only infrastructure provisioning: it still needs the exact CI
+bundle, input preparation, migrations, manifest binding and unsigned activation
+below. As checked on 2026-10-17, #98/#49 (CI/bundle), #118–120 (measured profile)
+and #92 (hosted RPC) remain open; #127 tracks the hosted evidence.
+
 ## Log in and run Terraform
 
 1. **Log in.** Yao Zhu runs `aws login --profile larp --region ap-southeast-2` and finishes the browser sign-in. If the CLI asks to overwrite the profile with a *different* account, stop and check which account holds the credits.
