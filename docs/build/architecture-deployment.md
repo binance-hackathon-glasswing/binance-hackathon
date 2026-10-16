@@ -75,6 +75,18 @@ bind `/etc/larp/release.json` from the CI-built `release-manifest.json` that pro
 never writes configs or keys and never starts a service. Still to check on the first real hosts: `LoadCredential`
 ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under systemd (`docs/INCOMPLETE_WORK.md`).
 
+**Disk budget for balance-check observations (#96, IDEA-055; estimate, not yet measured on a host).** Every RPC
+call of the balance check writes one `ChainObservation.v1` file under `<market_artifact_root>/chain` on `primary`'s
+20 GiB root disk, and these files are audit evidence: never delete them during the run. A check makes 12 calls once
+`decimals()` is cached (18 until two reads of it agree, normally the first two checks of each process): chain ID, the finalized block and its re-check, the
+native balance, six `balanceOf()` and two nonces. The two block files carry the block's transaction-hash list (about
+16 KB at 200 transactions); every other file is under 400 bytes but takes a whole 4 KiB filesystem block. That is
+about 70–100 KiB per check. At the normal 10-minute interval: about 144 checks and 10–15 MiB a day. Worst case, every
+check skipped and retried every 60 s (pending nonce, ledger ahead of the finalized block, RPC down): about 1,440
+checks, 100–140 MiB and 17,000 files a day, so about 2 GiB over the 14-day run. Budget 3 GiB for these files from
+first hosted start to the winner audit. Measure the real rate with `du -s` and `df -i` in the Gate A hosted shadow
+run, and size the memory and disk decision for `primary` together (#60, D-DN-08).
+
 **Evidence store sharing (IDEA-047 R3, decided 2026-10-14).** The poller's SQLite store and artifacts under
 `/var/lib/larp-evidence` are group `larp-evidence` (`StateDirectoryMode=0770`, `UMask=0007`); others get nothing. The
 coordinator (`larp-runtime`) joins that group (`SupplementaryGroups=`) and opens the store with

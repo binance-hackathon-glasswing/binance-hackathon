@@ -598,12 +598,16 @@ def synthetic_signed_transaction():
     return '0x' + bytes(signed.raw_transaction).hex()
 
 
+LEGACY = 'SET LOCAL session_replication_role = replica'  # a row written before migration 011's guard (#23)
+
+
 class SignedBytesInBackups(DatabaseCase):
     def test_d_req_023_backups_carry_no_usable_signed_bytes(self):
         raw_hex = '0x' + 'f8' * 120  # synthetic, never a real transaction
         state = json.dumps(dict(status='ACTIVE', attempts=[dict(state='SIGNED_DURABLE', raw_hex=raw_hex,
                                                                 tx_hash='0x' + 'a' * 64)])).encode()
         with self.store.transaction() as db:
+            db.execute(LEGACY)
             db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
                        ('key-1', 'run', '0x' + '1' * 40, 56, False, 1, state, 's' * 64))
         backup = export(self.store)
@@ -616,6 +620,7 @@ class SignedBytesInBackups(DatabaseCase):
 
     def forged(self, key, state):
         with self.store.transaction() as db:
+            db.execute(LEGACY)
             db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
                        (key, 'run', '0x' + key[-1] * 40, 56, True, 1, state, 's' * 64))
 
@@ -630,6 +635,7 @@ class SignedBytesInBackups(DatabaseCase):
         self.forged('key-5', json.dumps(dict(attempts=[attempt])).encode())
         event = json.dumps(dict(type='SIGNED', raw_hex=raw_hex)).encode()
         with self.store.transaction() as db:
+            db.execute(LEGACY)
             db.execute('INSERT INTO execution_journal VALUES(%s,%s,%s,%s,%s,%s)',
                        ('key-5', 1, event, 's' * 64, '0' * 64, 'h' * 64))
         self.assertEqual(signed_bytes_found(export(self.store), raw_hex), [])
@@ -642,6 +648,7 @@ class LegacySignedState(execution_state_tests.SignedState):
         super().setUp()
         self.raw_hex = self.signature.raw_hex
         with self.store.transaction() as db:
+            db.execute(LEGACY)
             state, = db.execute('SELECT state FROM execution_records WHERE economic_key=%s', (self.key,)).fetchone()
             value = json.loads(bytes(state))
             value['attempts'][-1]['raw_hex'] = self.raw_hex
@@ -727,6 +734,73 @@ class LegacySignedState(execution_state_tests.SignedState):
 
 for _name in [n for n in dir(execution_state_tests.SignedState) if n.startswith('test_')]:
     setattr(LegacySignedState, _name, None)  # only this module's tests run here; the originals run in their module
+
+
+class ArchiveReadableTables(execution_state_tests.SignedState):
+    """#23 acceptance 2: no writer can put signed bytes where the archive role reads (migration 011, commit guard)."""
+
+    def state_row(self):
+        with self.store.transaction() as db:
+            return db.execute('SELECT state,state_hash FROM execution_records WHERE economic_key=%s',
+                              (self.key,)).fetchone()
+
+    def test_d_req_023_database_refuses_signed_bytes_in_archive_readable_tables(self):
+        from larp.storage.backup import SIGNED_MARKER
+        from larp.storage.postgres import IntegrityError
+        before = self.state_row()
+        value = json.loads(bytes(before[0]))
+        attempt = value['attempts'][-1]
+        self.assertIsNone(attempt['raw_hex'])  # the legitimate null field is accepted
+        refused = [dict(value, attempts=[dict(attempt, raw_hex=self.raw_hex)]),
+                   dict(value, extra=[dict(deep=dict(signedTransaction=self.raw_hex))]),
+                   dict(value, extra=dict(rawTransaction=self.raw_hex[2:]))]
+        for forged in refused:
+            with self.subTest(forged=sorted(forged)), self.assertRaises(IntegrityError):
+                with self.store.transaction() as db:
+                    db.execute('UPDATE execution_records SET state=%s WHERE economic_key=%s',
+                               (execution_canonical(forged).encode(), self.key))
+        for raw in (b'not json', bytes.fromhex(self.raw_hex[2:])):
+            with self.subTest(raw=raw[:8]), self.assertRaises(IntegrityError):
+                with self.store.transaction() as db:
+                    db.execute('UPDATE execution_records SET state=%s WHERE economic_key=%s', (raw, self.key))
+        with self.assertRaises(IntegrityError):
+            with self.store.transaction() as db:
+                db.execute('INSERT INTO execution_journal VALUES(%s,%s,%s,%s,%s,%s)',
+                           (self.key, 99, json.dumps(dict(type='X', raw_hex=self.raw_hex)).encode(),
+                            's' * 64, '0' * 64, 'h' * 64))
+        self.assertEqual(self.state_row(), before)
+        # The marker a restore writes in place of legacy bytes is the one value accepted in a signed-bytes field.
+        with self.store.transaction() as db:
+            db.execute('UPDATE execution_records SET state=%s WHERE economic_key=%s',
+                       (execution_canonical(dict(value, attempts=[dict(attempt, raw_hex=SIGNED_MARKER)])).encode(),
+                        self.key))
+
+    def test_d_req_023_commit_refuses_a_signed_transaction_under_any_key(self):
+        from dataclasses import replace
+        from larp.execution import Conflict
+        previous = self.registry.load(self.key)
+        a = previous.attempts[-1]
+        renamed = replace(previous, attempts=previous.attempts[:-1] + (replace(a, tx_hash=self.raw_hex),))
+        for current, event in ((previous, dict(type='NOTE', detail=self.raw_hex[2:].upper())),
+                               (renamed, dict(type='NOTE'))):
+            with self.subTest(event=event), self.assertRaises(Conflict):
+                self.registry.commit(previous, current, event, *self.registry.authority())
+        self.assertEqual(self.registry.load(self.key), previous)
+
+    def test_d_req_023_a_nul_character_in_state_still_commits(self):
+        # PostgreSQL's jsonb refuses "\u0000"; the guard must not refuse a legitimate state that contains one.
+        from dataclasses import replace
+        previous = self.registry.load(self.key)
+        current = replace(previous, blocked_reason='reason with a \x00 NUL')
+        saved = self.registry.commit(previous, current, dict(type='NOTE'), *self.registry.authority())
+        self.assertEqual(self.registry.load(self.key).blocked_reason, 'reason with a \x00 NUL')
+        self.assertEqual(saved.revision, previous.revision + 1)
+
+    raw_hex = synthetic_signed_transaction()  # the fixture signer's bytes are not a real transaction
+
+
+for _name in [n for n in dir(execution_state_tests.SignedState) if n.startswith('test_')]:
+    setattr(ArchiveReadableTables, _name, None)  # only this module's tests run here; the originals run in their module
 
 
 # --- D-REQ-030 / 032: a rejected plan keeps the round's accepted evidence (#51) -----------------------------------

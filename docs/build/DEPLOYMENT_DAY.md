@@ -62,7 +62,12 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 ### 5. Initial state file (team, from a balance read)
 - **What it is:** a `PortfolioState.v1` with the dev wallet's actual starting balances (USDT, BNB, any tokens) and run ID, pinned by SHA-256 in `runtime.json`. `service init` builds the run from it and refuses an unpinned file.
-- **Open:** whether the dev wallet holds any BNB for its first gas payment (Q-03). It matters at Gate B, not for shadow.
+- **First gas (answered 2026-10-16, SKILL.md F-120).** The organisers send USDT only, and say to buy the first BNB in MetaMask, paying that swap's gas in USDT. Gate B reports `FIRST_BNB_REQUIRED` until the wallet holds BNB. Steps, done by a team member:
+  1. Before the wallet's first agent trade (dev wallet: before Gate B; final wallet: after funding and before the scored run starts on Oct 29 00:00 UTC, never during it, F-114), open the wallet in MetaMask on BNB Smart Chain.
+  2. Swap a small amount of USDT for BNB, choosing USDT as the network-fee token. The size is a team decision (G-28). For scale: one approve + swap cost about 0.000022–0.000046 BNB in the organisers' tests (F-93).
+  3. Write the tx hash, USDT paid, BNB received and UTC time into the deployment record as a funding note. It is not a trade and not an agent round, so it gets no ai-seeds log. [Inference: the daily fill check (F-100) covers bStock fills, not this swap.]
+  4. Take the initial balance read after this swap, so the `PortfolioState.v1` above includes the BNB.
+  Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)
 `driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.

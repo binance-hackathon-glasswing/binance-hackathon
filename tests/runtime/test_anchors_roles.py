@@ -113,9 +113,9 @@ class Roles(Rounds):
     def execution_rows(self):
         """One row in each execution table, written as the execution service and the signer would."""
         with self.as_role['larp_execution'].transaction() as db:
-            db.execute("INSERT INTO execution_records VALUES('key-1','run','0xw',56,false,1,'\\x00','s')")
+            db.execute("INSERT INTO execution_records VALUES('key-1','run','0xw',56,false,1,'{}','s')")
             db.execute("UPDATE execution_records SET revision=2 WHERE economic_key='key-1'")
-            db.execute("INSERT INTO execution_journal VALUES('key-1',1,'\\x00','s','p','h')")
+            db.execute("INSERT INTO execution_journal VALUES('key-1',1,'{}','s','p','h')")
             db.execute("INSERT INTO execution_observations VALUES('key-1:final','run','\\x00','o')")
         with self.as_role['larp_signer'].transaction() as db:
             db.execute("SELECT epoch FROM runs WHERE run_id='run' FOR UPDATE")  # the registry write is fenced
@@ -194,6 +194,16 @@ class Roles(Rounds):
         with self.assertRaises(Conflict):
             registry.put_if_absent(attempt.attempt_id, attempt.payload.hash, signed,
                                    attempt.epoch, attempt.guard_version)
+
+    def test_g2_23_execution_role_cannot_store_signed_bytes_where_archive_reads(self):
+        self.execution_rows()
+        signed = '{"attempts":[{"raw_hex":"0x' + 'f8' * 120 + '"}]}'
+        for sql in (f"INSERT INTO execution_records VALUES('key-2','run','0xv',56,true,1,'{signed}','s')",
+                    f"UPDATE execution_records SET state='{signed}' WHERE economic_key='key-1'",
+                    f"INSERT INTO execution_journal VALUES('key-1',2,'{signed}','s','p','h')"):
+            with self.subTest(sql=sql[:40]), self.assertRaises(IntegrityError):
+                with self.as_role['larp_execution'].transaction() as db:
+                    db.execute(sql)
 
     def test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes(self):
         self.execution_rows()
