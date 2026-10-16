@@ -603,7 +603,25 @@ signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
   confirmation in `/private/tmp/larp-pr115-adoption-race-red-confirmed.log` and
   reproduced the same predicted failure.
 - Concurrent `959a627` adds the now-merged Gate A input assembly. It is preserved
-  in the review branch; a final full-suite run on that combined tree follows.
+  in the review branch and is included in the final verification below.
+
+**Final combined verification at pushed PR head `7062923`:** full suite
+**1730 passed, 9 skipped, 2377 subtests**, zero failures, 252.69 s. Same macOS /
+Python 3.12.14 / PostgreSQL 14.24 environment and the same nine platform/opt-in
+skips described above. Includes Gate A assembly, both reviewers' RR2 fixes,
+all thirteen independent PR115-C regressions, exact replay and the storage
+journal bounds. Command:
+`LARP_TEST_DATABASE_URL=<disposable localhost database> python -m pytest -q -p no:cacheprovider`.
+Raw log `/private/tmp/larp-pr115-full-with-gate-a.log`, SHA-256
+`dd7a51b1ebd3b0103631eaaf3a3b87adf8bea19b1d2e624b22d6e529100ec739`.
+The subsequent record/index/backlog commit changes documentation only.
+
+**PR115-C06, final shared-base qualification:** after that run, concurrent
+`8956d7d` preserves integration PR #108's archive-security migrations 012/013
+and their regressions. They change no reconciliation code, but affect database
+startup. Preserve them with a merge; run the full available suite on PostgreSQL
+14.24 again before recording the final combined result. The `7062923` result
+above remains evidence for that exact tree only.
 
 **Still open:** the existing mandatory-sale/price-jump-hold policy question
 (Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
@@ -614,3 +632,9 @@ or PR merge is implied by this offline review.
 ### RR2 concurrent-review integration acceptance (before execution)
 
 Preserve PR115-C01/C02/C04 concurrency fences and first-observed midnight jump protection alongside RR2-R1/R2/R3, migrations012/013 and merged Gate A. Require independent PR115 adversarial cases plus balance adoption/failover/day-roll, storage, HALT and driver regressions to pass, followed by the full previously specified Linux systemd/bubblewrap/PostgreSQL14 suite. Earlier integrated result at527376c (1744 passed, 1 opt-in external-data skip, 2557 subtests) predates the concurrent fixes and does not validate this updated source. No hosted/live claims follow.
+
+### RR2-R4 — midnight hold must not depend on a later assessment round (prospective)
+
+The midnight jump check currently journals only the deferred-day flag. Without a subsequent assessment round, its new hold/mark is never persisted; repeated DayRoll calls rediscover the same jump and cannot age out or observe BalanceCheck clearing it. Require the first midnight-discovered hold and marks to be journaled with the deferral, survive restart/replay, clear through comparable balances without an intervening assessment, and expire at the original hold deadline without being renewed by repeated day-roll calls. Also persist a later newly discovered hold on an already-deferred day with a unique event ID. Synthetic PostgreSQL regressions must fail before the repair and pass after. No owner policy change.
+
+RR2-R4 original published source9774011: both no-round regressions fail on PostgreSQL14.24 (missing persisted NVDAB hold; still PRICE_JUMP_HOLD at +31min). Repair journals detected marks/holds together with the deferred day, uses a version-qualified event ID for a later new hold on the same deferred day, and retains the original expiry. Before this repair, combined990e912 passed1757 tests /1 opt-in external-data skip /2561 subtests with real Linux systemd/bubblewrap; that run does not close RR2-R4. Verification of the repair follows publication.
