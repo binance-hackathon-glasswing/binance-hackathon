@@ -114,6 +114,26 @@ class Observation(unittest.TestCase):
         with self.assertRaises(Blocked):
             observe(chain)
 
+    def test_decimals_are_read_once_per_cache(self):
+        # #96: decimals() is a contract constant; with the caller's cache only the first read asks for it.
+        from larp.execution_live.balances import read_balances
+        chain, cache = chain_for(ledger()), {}
+        first = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        asked = [p for m, p in chain.calls if m == 'eth_call' and p[0]['data'] == '0x313ce567']
+        self.assertEqual(len(asked), len(contracts()))
+        self.assertEqual(cache, {'USDT': 18, **{s: 4 for s in TOKENS}})
+        chain.calls.clear()
+        second = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertEqual([p for m, p in chain.calls if m == 'eth_call' and p[0]['data'] == '0x313ce567'], [])
+        self.assertEqual(len(chain.calls), 6 + len(contracts()))
+        self.assertEqual(second, first)
+        # An implausible value is refused and never cached.
+        chain, cache = chain_for(ledger()), {}
+        chain.decimals['USDT'] = 78
+        with self.assertRaises(Blocked):
+            read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertNotIn('USDT', cache)
+
 
 class Memory:
     def __init__(self):

@@ -189,3 +189,10 @@ Org Actions is out of funds, so CI ran in the private mirror `Keegan4/keegan4-la
   - host bundle: build plus the provisioning test;
   - Terraform: `deploy/aws` and `deploy/bootstrap` fmt, init, validate and test.
 - **Base `02e2be9`**: [run 38772174598](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38772174598), all four jobs passed.
+
+### #96 follow-up (2026-10-16, Claude Code session at the user's request)
+
+- `read_balances` takes an optional `decimals` cache. `build_driver` passes one per process, so each token's `decimals()` is read and checked once, and later checks make 12 RPC calls instead of 18. An implausible value (> 77) is still refused and never cached. Test: `tests/runtime/test_balance_reconciliation.py::Observation::test_decimals_are_read_once_per_cache`.
+- The `build_driver` comment now says the settings are refused "before any port makes a request" (the ports are already constructed by then).
+- Disk budget for the chain observations is in `docs/build/architecture-deployment.md` (estimate: 10–15 MiB a day normally, about 2 GiB over the run in the worst case; budget 3 GiB). Measure it at Gate A together with #60.
+- 2026-10-16 correction (Claude Code): D5's "about 16 RPC calls per check" was 18 before this change and is 12 after it.

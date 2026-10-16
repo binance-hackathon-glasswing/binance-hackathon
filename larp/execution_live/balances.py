@@ -27,8 +27,13 @@ def word(value):
     return int(value, 16)
 
 
-def read_balances(rpc, *, wallet, observed_at):
-    """ChainBalances.v1 for `wallet`; raises Blocked (or the RPC's DependencyUnavailable) instead of guessing."""
+def read_balances(rpc, *, wallet, observed_at, decimals=None):
+    """ChainBalances.v1 for `wallet`; raises Blocked (or the RPC's DependencyUnavailable) instead of guessing.
+
+    `decimals`, if given, is the caller's per-process cache of each pinned token's `decimals()` (#96). The value is a
+    constant of the contract, so it is read and checked once, then reused: each later read makes six fewer RPC calls,
+    and archives six fewer observations.
+    """
     wallet = str(wallet).lower()
     if not ADDRESS.fullmatch(wallet):
         raise Blocked('public wallet address required')
@@ -40,11 +45,15 @@ def read_balances(rpc, *, wallet, observed_at):
     native = quantity(rpc.call('eth_getBalance', [wallet, tag]))
     tokens = {}
     for name, contract in assets().items():
-        decimals = word(rpc.call('eth_call', [dict(to=contract, data=DECIMALS_CALL), tag]))
+        places = decimals.get(name) if decimals is not None else None
+        if places is None:
+            places = word(rpc.call('eth_call', [dict(to=contract, data=DECIMALS_CALL), tag]))
+            if places > 77:
+                raise Blocked('implausible token decimals')
+            if decimals is not None:
+                decimals[name] = places
         units = word(rpc.call('eth_call', [dict(to=contract, data=BALANCE_OF_CALL + '0' * 24 + wallet[2:]), tag]))
-        if decimals > 77:
-            raise Blocked('implausible token decimals')
-        tokens[name] = dict(contract=contract, decimals=decimals, units=units)
+        tokens[name] = dict(contract=contract, decimals=places, units=units)
     again = rpc.call('eth_getBlockByNumber', [tag, False])
     if quantity(again['number']) != height or hash_value(again['hash']) != block_hash:
         raise Blocked('finalized block identity changed')

@@ -247,7 +247,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     lifecycle = lifecycle_policy_from(intelligence)
     # One registry-validated issuer map for evidence contexts and review jobs (#25).
     issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
-    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port is used
+    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port makes a request
     health = RuntimeHealth(store, config['run_id'], run['epoch'])
     builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
                              market=feed, health=health,
@@ -274,10 +274,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         from larp.execution_live.chain import Rpc
         rpc = Rpc(balance['rpc_url'], artifacts=Artifacts(str(Path(d['market_artifact_root']) / 'chain')),
                   source_id=balance['source_id'])
+        decimals = {}  # read once per process (#96)
 
         def read(now_ms):
             observed = datetime.fromtimestamp(now_ms / 1000, timezone.utc).isoformat()
-            return read_balances(rpc, wallet=wallet, observed_at=observed)
+            return read_balances(rpc, wallet=wallet, observed_at=observed, decimals=decimals)
         balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check
