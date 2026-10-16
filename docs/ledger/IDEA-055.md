@@ -363,3 +363,19 @@ Criteria at `c78a0b3`; red tests at `dd226c2`; build at `1530625`; three tests a
 - `Settings.BLOCK` (used by B9 and `Composition`) gains `price_jump_check_bps`, now required.
 
 **Still open:** Isaac and Keegan's review. The unconfirmed-deficit pause (Design §3, "Gate") is flagged for Yao Zhu. PR 5 adds the RPC failover.
+
+## PR 4 review fixes (2026-10-16, Claude Code session for Keegan, section B)
+
+From the section B review of PR #115 and wtvlol's ALLPR-R1. Criteria recorded before any change is tested.
+
+**Correction to the review.** One suggested option for R2 below, rolling the day at the lower of the two marks, is not adopted. A lower anchor makes the daily stop *looser*, not tighter, because a later loss is measured against a smaller base. The review comment claimed the opposite.
+
+| ID | Pass criterion |
+|---|---|
+| R1 (ALLPR-R1) | A mismatch is adopted only by a read made at least `retry_ms` after the first read and at a **strictly newer** finalized block. A comparable check that comes earlier (for example the immediate check that a price jump triggers) neither adopts nor replaces the first read as the candidate, unless the store version or `settled_block` changed. A read of the same block `retry_ms` later does not adopt (a stuck node cannot confirm itself). Both event orders are covered: a hold journaled before the first read, and a first read in the same millisecond as the hold. |
+| R2 | A day roll that `PRICE_JUMP_HOLD` defers inside its window is not lost when the window closes. `DayRoll` remembers the deferred UTC day in memory and rolls on the first cycle after the hold clears or expires, even past `window_ms`. A day not deferred inside its window still returns `OUTSIDE_WINDOW`. A restart loses the memory, the same as any outage across the window today. |
+| R3 | A hold is cleared by a MATCH only when that check is at least `retry_ms` after `jump_ms`. While any hold is active, the next check is scheduled `retry_ms` later, not after the 10-minute interval. The immediate check after a jump still runs and can start an adoption, but a MATCH there leaves the hold in place. A MATCH `retry_ms` after the jump clears it. |
+| R4 | `config/runtime/runtime.aiand-shadow.example.json` (from #114, merged into this branch) gains `price_jump_check_bps: 3000`, so #114's SG3 passes with PR 4. Merge order: #114, then #115, then #116. |
+| R5 | The existing S1–S16 tests pass. The synthetic chain advances one block per read. S6's `confirm_block` becomes `first_block + 1`, S11/S12 confirm a minute after the immediate check as before, and S14 keeps its in-window case. Mutations caught: no elapsed-time check, same block allowed, early check replaces the candidate, no day-roll deferral, MATCH clears a hold at once, hold not rescheduled at `retry_ms`. Full suite: no new failure against the branch before these fixes. |
+
+Not changed here (not breaking; reply on the thread): the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (a question for the author and Yao Zhu).
