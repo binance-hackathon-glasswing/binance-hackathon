@@ -74,3 +74,7 @@ Order: criteria `dd5eb08` → red tests `f7f418f` (every test red: module missin
 - **Criterion 3:** re-confirmed by the signer report's BLOCKED results on the real host.
 
 #33 has no code change here. It stays blocked on the GAP-29 decoder and the Executor's fake-only gate (Isaac), C-OPEN-005, the measured profile (PR #88 plus captures, Isaac/Keith), live evidence values and terms (Yao Zhu), the DR-11 assessor decision, and the hosted Gate B and rehearsal runs.
+
+### Criterion 1: section B approval (2026-10-16)
+
+Keegan (section B) approves the "Approved network destinations" table in `docs/build/architecture-deployment.md` as proposed, and the table's status line now says so. Isaac's approval for section C is still needed. Criteria 2 and 3, the route checker on the real hosts at Gate A, are unchanged.
