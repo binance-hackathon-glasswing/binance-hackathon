@@ -1,6 +1,6 @@
 # AWS runbook: current state and how to resume
 
-Last updated 2026-10-14 (Claude for Yao Zhu). Read this first when continuing the AWS deployment in a new thread. Background and decisions are in [IDEA-046](../ledger/IDEA-046.md) (layout, cost, apply log) and [IDEA-047](../ledger/IDEA-047.md) (host services, review fixes, offline readiness). The full deployment guide is [architecture-deployment.md](architecture-deployment.md).
+Last updated 2026-10-16 UTC (Claude for Yao Zhu; hosts started, see IDEA-066 PC-AWS02). Read this first when continuing the AWS deployment in a new thread. Background and decisions are in [IDEA-046](../ledger/IDEA-046.md) (layout, cost, apply log) and [IDEA-047](../ledger/IDEA-047.md) (host services, review fixes, offline readiness). The full deployment guide is [architecture-deployment.md](architecture-deployment.md).
 
 **2026-10-16 input-preparation update (IDEA-058):** use [GATE_A.md](GATE_A.md)
 for the reviewed dev-shadow settings, read-only metadata/balance capture and
@@ -16,7 +16,7 @@ below is the last recorded state, not a fresh observation on Oct 16.
 ## Rules that still apply
 
 - **Spend:** every step that costs money needs Yao Zhu's explicit OK in that thread. Never share AWS passwords or keys in chat or in commits.
-- **Hosts:** they stay off until the team has reviewed and fixed PR #20 (Yao Zhu, 2026-10-14). Do not set `enable_hosts` before that.
+- **Hosts:** PR #20 was reviewed and promoted (PR #81). Yao Zhu approved and applied `enable_hosts` on 2026-10-16 UTC; both hosts now bill while running, even before LARP is installed. Stopping them (disks still bill) or re-planning with `enable_hosts = false` needs the same approval.
 - **Region:** Sydney (`ap-southeast-2`). The organisers said it is fine (SKILL.md F-118). The account's AWS-managed policy blocks Singapore.
 - **Never commit** the ignored files listed below, any state or plan file, or the account ID.
 
@@ -28,16 +28,18 @@ The team's credit project: Free plan, $100 credits, expiring 2027-04-12. Run `aw
 |---|---|---|
 | Terraform state bucket (`deploy/bootstrap`) | 2026-10-14 | cents/month |
 | Budget `larp-dev-monthly`: $90/month, emails at 50/75/90 % of actual spend | 2026-10-14 | free |
-| Core stack (`deploy/aws`, hosts and egress off): VPC, private subnets, S3 gateway endpoint, security groups, KMS key, archive bucket (COMPLIANCE, 82 days), artifact bucket, 3 service secrets, host IAM roles, alarms, an SNS alarm topic with one email subscription, and RDS `larp-dev` | 2026-10-14 | ≈ $24/month in total, almost all the database |
+| Core stack (`deploy/aws`, initially hosts and egress off): VPC, private subnets, S3 gateway endpoint, security groups, KMS key, archive bucket (COMPLIANCE, 82 days), artifact bucket, 3 service secrets, host IAM roles, alarms, an SNS alarm topic with one email subscription, and RDS `larp-dev` | 2026-10-14 | ≈ $24/month in total, almost all the database |
 
 Database `larp-dev`:
 - PostgreSQL 14.24 on `db.t4g.micro`, single-AZ, private, encrypted, IAM authentication.
 - **1-day automated backups**, because the Free plan refuses more. The daily logical backup to the locked archive is separate.
 - **Not migrated yet:** no tables, and no service roles (`roles.sql` not run).
 
-No EC2 instance, internet gateway, NAT gateway or public IP exists.
+| Hosts and primary egress (`deploy/aws`, Gate A plan, IDEA-066 PC-AWS02): `primary` t3.small (public IPv4, HTTPS-only egress through a new internet gateway on the public route table, development SSM) and `signer` t3.micro (private subnet, no public IP, no SSM), AL2023 x86_64 `ami-0587b5bb1bc9eab99`, encrypted 20 GiB gp3, IMDSv2, termination protection; 6 host and 5 service alarms | 2026-10-16 UTC | ≈ $23/month more |
 
-**Pending on the next core-stack apply (2026-10-15, IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The next `terraform plan` should show `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change.
+Instance IDs: `primary` `i-0d565fb57b216a427`, `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. No LARP software is installed yet: the hosts carry only the cloud-init role file, so the five service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
+
+**Applied 2026-10-16 UTC with the host plan (IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The plan showed `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change; both were applied.
 
 The alarm email subscription must be confirmed from the email AWS sent to the account owner's address.
 
