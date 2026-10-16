@@ -139,6 +139,9 @@ bracketed by matching canonical/finalized receipt evidence. Provider support and
 semantics must be independently qualified. Execution config `native_trace` is
 boolean and defaults to false. Enabling it permits only a fixed read-only trace
 request; it does not qualify the provider or lift the Executor/router gates.
+With `native_trace` false or absent, the service refuses every `GAS_TOP_UP`
+command before signing (`map_command`, IDEA-061): a top-up fill can settle only
+through the native trace, so it is never started without one.
 The trace is trusted-provider evidence, not a cryptographic state proof. Its
 `trace_sha256` hashes the canonical encoded trace result; the enclosing raw RPC
 observation has its own artifact hash. Whole-block balance differences cannot
