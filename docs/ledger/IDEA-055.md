@@ -398,7 +398,8 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 
 Review starts at `bc51c4a`, including section B's R1–R5 fixes and the inherited
 AIand shadow merge. Review and fixes are isolated from the IDE checkout. No
-wallet credentials, provider calls, signing, uploads or deployment are used.
+registered-wallet credentials/signing, external provider calls, real uploads or
+deployment are used. Signer tests use throwaway keys and synthetic transactions.
 
 Prospective criteria, recorded before running review tests:
 
@@ -480,8 +481,9 @@ status. Both reviewers' records and fixes are retained with merge commits.
 **Environment:** macOS ARM64, Python 3.12.14, pytest 9.1.1; disposable Docker
 `postgres:14.24-bookworm` (PostgreSQL 14.24, image digest
 `sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
-bound only to localhost port 55435. No production credentials, provider calls,
-signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
+bound only to localhost port 55435. No production credentials, external provider
+calls, registered-wallet signing, chain broadcasts, real uploads or AWS operations.
+Signer tests use throwaway keys. `pip check` and `git diff --check` pass.
 
 - At `a2b54c1`, focused reconciliation/day-roll/HALT/storage: **92 passed,
   50 subtests**, zero failures. After the final concurrency fix `472cede`, the
@@ -517,10 +519,10 @@ startup. Preserve them with a merge; run the full available suite on PostgreSQL
 above remains evidence for that exact tree only.
 
 **Still open:** the existing mandatory-sale/price-jump-hold policy question
-(Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
-systemd/bubblewrap qualification and actual hosted/signing/provider readiness
-with the existing owners. No policy choice, live authority, whole GAP closure
-or PR merge is implied by this offline review.
+(Yao Zhu + Keith); PR #116's final disposition (Keith/Keegan); exact-release
+hosted Actions and actual hosted/signing/provider readiness with existing owners.
+Peer Linux systemd/bubblewrap acceptance is recorded in RR2-R4 below. No policy
+choice, live authority, whole GAP closure or PR merge is implied by this review.
 
 ### RR2-R4 — midnight hold must not depend on a later assessment round (prospective)
 
@@ -534,3 +536,25 @@ RR2-R4 first focused repair run: 90 passed /2 failures /253 subtests. All three 
 ### RR2-R4 final regression acceptance (2026-10-16)
 
 Published combined source af9ffbf (PR115 fixes at9f561f9/481ae58 plus PR116 failover and merged PR87/108) passes92 focused tests /253 subtests, then the full ARM64 Linux/Python3.12.15/PostgreSQL14.24 suite: **1760 passed, 1 skipped, 2561 subtests** in221.45s. Real systemd and bubblewrap enabled; sole skip is opt-in external recorded market artifacts. Both new no-round regressions were red at9774011, and persisted-hold expiry/reconciliation/second-jump cases now pass with replay. Source clean, pip check passes. Logs/hashes: /private/tmp/larp-rereview-0jHjyg/results-v4/summary.json; full log SHA256 c6451ff3aa2c8fd8b50e286182ee2027e3e19903fbc27bba2f0ef9dd4c539bb7. No remaining implementation finding in this review. Peer merge481ae58 has exactly the same content as9f561f9. Hosted Actions run38908993829 ataf9ffbf never starts because of account billing/spending limits; exact-release bundles and hosted/policy/provider/rehearsal gates remain open. No real credentials, cloud actions, real-wallet signing or network broadcast. PR115/116 merge under the user approval; target is codex/system-testing-20261012, main unchanged. Detailed current index/backlog reconciliation follows with PR116.
+
+### PR115-C06 — independent final acceptance (Isaac / Codex, 2026-10-16)
+
+- Shared-migration baseline `14daab3`: **1735 passed, 9 skipped, 2531 subtests**,
+  zero failures, 248.72 s on the same disposable PostgreSQL 14.24 environment.
+  Log `/private/tmp/larp-pr115-full-shared-migrations.log`, SHA-256
+  `544828a0451ab5e4edbab84dcfdc2d8f52c6d2e5092553ec63f0486337ca4eb5`.
+- RR2-R4 independently reproduced at published review `06e20ec`: both no-round
+  tests fail for the documented reasons. Preserved peer fixes `4a62e9d` and
+  `9f561f9` with merge `481ae58`; all **16 independent regressions / 4 subtests**
+  pass, including expiry, balance clearing, restart/replay and another jump on
+  an already deferred day. The original hold deadline is never renewed.
+- **Complete suite at pushed `481ae58`: 1738 passed, 9 skipped, 2531 subtests**,
+  zero failures, 254.05 s. Same macOS ARM64 / Python 3.12.14 / PostgreSQL 14.24
+  environment; the same five opt-in systemd, three Linux bubblewrap and one
+  external-artifact skips. Raw log `/private/tmp/larp-pr115-full-complete.log`,
+  SHA-256 `645e3eefde181bebca005a085da0ffb6f49bf5454674b31a088f3f6b862e99fc`.
+- Preserved peer acceptance commit `5d1f408`; it changes documentation only.
+  The final record/index/backlog update also changes documentation only.
+  `pip check` and `git diff --check` pass. The disposable database is removed
+  after verification. No remaining implementation finding from this review;
+  the owner policy, exact-release/host/provider/rehearsal gates above remain.
