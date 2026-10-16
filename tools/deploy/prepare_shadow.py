@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from larp.contracts import ContractError  # noqa: E402
+from larp.execution import Blocked, DependencyUnavailable  # noqa: E402
 from larp.runtime.gate_a import capture_inputs, prepare  # noqa: E402
 from larp.marketdata.web3 import Artifacts, Unavailable, Web3Client, credentials, encoded, utc  # noqa: E402
 from larp.sources.live import Refused, git_state, require_committed  # noqa: E402
@@ -44,6 +45,9 @@ def main(argv=None):
     capture.add_argument('--wallet', help='Public dev wallet address; otherwise AI_SEEDS_ADDRESS from the input environment')
     capture.add_argument('--artifact-root', type=Path, required=True)
     capture.add_argument('--output', type=Path, required=True)
+    capture.add_argument('--balance-rpc-url', help='Manifested BSC RPC (HTTPS): also capture finalized chain balances '
+                         'and refuse while a wallet transaction is in flight (IDEA-058 GA11)')
+    capture.add_argument('--balance-rpc-source-id', help='Source ID recorded with that RPC')
     assembly = sub.add_parser('prepare')
     assembly.add_argument('--terraform-output', type=Path, required=True)
     assembly.add_argument('--profile', type=Path, required=True)
@@ -67,7 +71,11 @@ def main(argv=None):
                 raise ContractError('Capture already exists')
             keys = credentials(args.env_file)
             client = Web3Client(keys['BINANCE_API_KEY'], keys['BINANCE_SECRET_KEY'], artifacts=Artifacts(root))
-            value = capture_inputs(client, args.wallet or keys.get('AI_SEEDS_ADDRESS'))
+            rpc = None
+            if args.balance_rpc_url:
+                from larp.execution_live.chain import Rpc
+                rpc = Rpc(args.balance_rpc_url, artifacts=Artifacts(root / 'chain'), source_id=args.balance_rpc_source_id)
+            value = capture_inputs(client, args.wallet or keys.get('AI_SEEDS_ADDRESS'), rpc=rpc)
             output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             with output.open('xb') as stream:
                 stream.write(encoded(value) + b'\n')
@@ -88,7 +96,7 @@ def main(argv=None):
                               missing_inputs=report['missing_inputs'], host_checks=report['host_checks'])))
         return 0
     except (ContractError, Unavailable, Refused, renderer.Refused, OSError, ValueError, KeyError, TypeError,
-            AttributeError):
+            AttributeError, Blocked, DependencyUnavailable):
         print(json.dumps(dict(prepared=False, reason='INPUTS_REFUSED', signing_enabled=False)))
         return 4
 

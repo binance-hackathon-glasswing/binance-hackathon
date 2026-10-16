@@ -474,3 +474,18 @@ class PendingNonce(unittest.TestCase):
                                                'eth_getTransactionCount'})
         from larp.execution_live.chain import METHODS
         self.assertLessEqual(set(node.calls) - {'eth_call'}, METHODS)
+
+    def test_ga11_cli_capture_passes_the_rpc_and_refuses_without_writing(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                patch.object(prepare_shadow, 'credentials', return_value=dict(BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s')), \
+                patch.object(prepare_shadow, 'Web3Client'), patch.object(prepare_shadow, 'capture_inputs') as capture, \
+                patch('larp.execution_live.chain.Rpc') as rpc:
+            capture.side_effect = ContractError('A wallet transaction is in flight')
+            out = Path(tmp) / 'c.json'
+            code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp, '--output', str(out),
+                                        '--balance-rpc-url', 'https://rpc.invalid/', '--balance-rpc-source-id', 'x'])
+            self.assertEqual(code, 4)
+            self.assertFalse(out.exists())
+            self.assertEqual(capture.call_args.kwargs['rpc'], rpc.return_value)
+            self.assertEqual(rpc.call_args.args[0], 'https://rpc.invalid/')

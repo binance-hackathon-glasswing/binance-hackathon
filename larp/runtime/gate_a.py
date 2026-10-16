@@ -35,8 +35,10 @@ def wallet_address(value):
     return value.lower()
 
 
-def capture_inputs(client, wallet):
-    """Exactly two read-only endpoints, never quote-and-swap, signing or audit delivery."""
+def capture_inputs(client, wallet, rpc=None):
+    """Exactly two read-only endpoints, never quote-and-swap, signing or audit delivery.
+
+    With `rpc` (the manifested balance RPC, `chain.Rpc`), also the finalized chain balances and nonces (GA11)."""
     wallet = wallet_address(wallet)
     port = MarketPort(client, wallet)
     metadata = port.metadata()
@@ -44,10 +46,47 @@ def capture_inputs(client, wallet):
     balances = port.balances()
     value = dict(schema='GateAInputs.v1', wallet=wallet, observed_at=utc(),
                  metadata=meta, balances=balances)
+    if rpc is not None:
+        value['chain'] = chain_capture(rpc, wallet, observed_at=utc())
     # Validate before persisting a purported usable capture.
     issuer_map(value)
     raw_balances(value)
+    if rpc is not None:
+        check_chain(value)
     return value
+
+
+def chain_capture(rpc, wallet, *, observed_at):
+    """IDEA-055's `read_balances` at the finalized block, plus the wallet nonce at that same block (GA11)."""
+    from larp.execution_live.balances import read_balances
+    from larp.execution_live.chain import quantity
+    value = read_balances(rpc, wallet=wallet_address(wallet), observed_at=observed_at)
+    value['finalized_nonce'] = quantity(rpc.call('eth_getTransactionCount',
+                                                 [value['wallet'], hex(value['block_number'])]))
+    return value
+
+
+def check_chain(capture, now=None):
+    """GA11: refuse while a wallet transaction is pending or not yet finalized, or when chain and kit disagree.
+
+    The kit's balances have no block identity. Equal finalized, latest and pending nonces mean nothing the wallet sent
+    can still change them; the finalized balances must then equal the kit's, asset by asset."""
+    chain = capture['chain']
+    if (type(chain) is not dict or chain.get('schema') != 'ChainBalances.v1' or chain.get('chain_id') != 56
+            or chain.get('wallet') != wallet_address(capture['wallet'])):
+        raise ContractError('The chain balance capture belongs to another wallet or chain')
+    if now is not None:
+        age = (instant(now) - instant(chain['observed_at'])).total_seconds()
+        if not 0 <= age <= 300:
+            raise ContractError('The chain balance capture is future-dated or stale')
+    nonces = [chain.get(k) for k in ('finalized_nonce', 'latest_nonce', 'pending_nonce')]
+    if any(type(n) is not int for n in nonces) or len(set(nonces)) != 1:
+        raise ContractError('A wallet transaction is in flight (finalized, latest and pending nonces differ); '
+                            'capture again once it is finalized')
+    kit = raw_balances(capture)
+    observed = {NATIVE: chain['native_wei'], **{row['contract']: row['units'] for row in chain['tokens'].values()}}
+    if set(observed) != set(kit) or any(observed[token] != kit[token] for token in kit):
+        raise ContractError('Finalized chain balances differ from the kit balances; capture again')
 
 
 def observation(capture, name, endpoint, method):
@@ -188,6 +227,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(now).timestamp() * 1000))
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
+    if 'chain' in capture:
+        check_chain(capture, now)
     state = initial_state(capture, profile, run_id)
     state_raw = encoded(state) + b'\n'
     configs = json.loads(json.dumps(configs))
@@ -236,7 +277,9 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA09, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
                   + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
-                  + ([] if balance_rpc_url else ['BALANCE_RPC']),
+                  + ([] if balance_rpc_url else ['BALANCE_RPC'])
+                  # GA11: without a chain read, an in-flight transaction cannot be ruled out; Gate B needs it.
+                  + ([] if 'chain' in capture else ['CHAIN_BALANCE_CAPTURE']),
                   host_checks={name: 'NOT_RUN' for name in HOST_CHECKS},
                   input_hashes={n: digest(raw) for n, raw in files.items()},
                   notes=['No share ratio or basis verification granted',
