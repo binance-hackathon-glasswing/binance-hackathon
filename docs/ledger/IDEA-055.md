@@ -509,6 +509,13 @@ Raw log `/private/tmp/larp-pr115-full-with-gate-a.log`, SHA-256
 `dd7a51b1ebd3b0103631eaaf3a3b87adf8bea19b1d2e624b22d6e529100ec739`.
 The subsequent record/index/backlog commit changes documentation only.
 
+**PR115-C06, final shared-base qualification:** after that run, concurrent
+`8956d7d` preserves integration PR #108's archive-security migrations 012/013
+and their regressions. They change no reconciliation code, but affect database
+startup. Preserve them with a merge; run the full available suite on PostgreSQL
+14.24 again before recording the final combined result. The `7062923` result
+above remains evidence for that exact tree only.
+
 **Still open:** the existing mandatory-sale/price-jump-hold policy question
 (Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
 systemd/bubblewrap qualification and actual hosted/signing/provider readiness
