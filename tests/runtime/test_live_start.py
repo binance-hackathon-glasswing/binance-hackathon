@@ -116,7 +116,7 @@ class Switch(DatabaseCase):
         with self.assertRaises(LiveStartRefused):
             self.switch()
         with self.store.transaction() as db:  # the execution service's record of that intent, not yet terminal
-            db.execute("INSERT INTO execution_records VALUES('key-r','run','0xw',56,false,1,'\\x00','s')")
+            db.execute("INSERT INTO execution_records VALUES('key-r','run','0xw',56,false,1,'{}','s')")
         tx = '0x' + 'b' * 64
         c.observe('b', doc(dict(kind='BROADCAST_ATTEMPTED', observation_id='b', round_id='r', tx_hash=tx,
                                 simulated=True)), settle)

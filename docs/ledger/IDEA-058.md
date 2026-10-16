@@ -193,3 +193,7 @@ DR-06 then requires the pinned initial state's `bnb_units` to equal that finaliz
 - **GB-2, only BNB cross-checked:** DR-06 compares only BNB against the chain. USDT and the five bStocks in the pinned state are not checked at Gate B. They were checked at Gate A capture by GA11, and #84 checks them at runtime.
 
 Both gaps are in section C's execution code (owner Isaac) and are recorded in `docs/INCOMPLETE_WORK.md`.
+
+### GB-1/GB-2 closed (2026-10-16)
+
+PR #100 (IDEA-039 GB-CHAIN-20261016) fixed both Gate B gaps and was merged into `codex/system-testing-20261012` at `ccf1ce9`. The full suite on the merged integration branch `793b382` (#99, #100 and #101) gives 1559 passed, 7 skipped, 2169 subtests, 0 failed. The GB-1/GB-2 line is removed from `docs/INCOMPLETE_WORK.md`. Its remaining real-node check is part of #92, the hosted RPC with `finalized` support.

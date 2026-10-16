@@ -179,3 +179,46 @@ Verification:
 Collector restarted on pushed `980529a`, local PID 1921. First updated cycle `0be55946e0ff7e928fb2ade110c790f53d365d30f7fb57e81d67d7e29466b51a`, 2026-10-12 09:19:25.259–09:19:51.606 UTC, all five pairs collected. Quote latencies 126–173 ms; effective quoted spread bp: NVDAB -1.5004, GOOGLB 5.3674, SKHYB -2.2570, TSLAB -1.5346, MSFTB 12.5828. These are sequential samples with price-movement noise, not profitable arbitrage evidence. Artifacts remain private and ignored.
 
 Remaining integration requests: Keegan wires LiveGuards/epoch-derived execution authority and `check_broadcast` at the actual release boundary, uses pinned ownership in publication, and adopts NOT_SUBMITTED reservation release. HALT/revocation must quarantine or advance execution authority; ordinary journal commits must not. A future dedicated authority column may replace epoch derivation under the same interface. Keith supplies calibrated independent quote limits, actual gas/BNB scales and verified candle semantics. Confirmed first BNB, RPC/provider/router capability proof and live activation/rehearsal remain pending; no registered-wallet signatures, transactions or official logs were run by these fixes. Update the reserved IDEA-039 ledger row/backlog through Keegan; no whole shared backlog item is closed here.
+
+## GB-CHAIN-20261016 — Gate B chain-probe gaps GB-1/GB-2 (pre-registered 2026-10-16)
+
+These gaps came out of reviewing Gate B against Gate A's GA11 check (IDEA-058, PR #87). The user asked for the fix; Gate B is Isaac's code, so this section is for his review. The branch is `claude/gate-b-chain-gaps` from `codex/system-testing-20261012` at `7a8a246`. Nothing is signed or broadcast, and there is no AWS action.
+
+- **GB-1, a transaction mined but not finalized.** `probe_chain` compares only the `latest` and `pending` nonces. If a wallet transaction is mined but not yet finalized, the finalized BNB still equals the old opening balance, so DR-03 and DR-06 pass. Then the transaction finalizes and changes the balances.
+- **GB-2, only BNB cross-checked.** DR-06 compares only the starting BNB against the chain. USDT cash and the five bStock positions in the pinned initial state are not checked.
+
+**Pass criteria.**
+- **GB1a:** `probe_chain` also reads the wallet nonce at the finalized height and records it as `finalized_nonce`. When it differs from `latest_nonce`, the blockers include `UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION`.
+- **GB1b:** the report's DR-03 stays BLOCKED for chain evidence with a missing, non-integer or mismatched `finalized_nonce`.
+- **GB2a:** `probe_chain` reads `decimals()` and `balanceOf(wallet)` for USDT and the five pinned bStocks at the finalized height. These go through `chain.Rpc`'s existing `eth_call` allowlist, between the two block-identity checks, and are recorded as `tokens`.
+- **GB2b:** DR-06 stays BLOCKED unless all of these hold:
+  - `cash_units` equals the chain USDT floored to micro-USDT (`units // 10**(decimals-6)`, decimals ≥ 6). This is Gate A's convention.
+  - Every bStock position equals its chain units. A position must be zero when the chain balance is zero. A non-zero position needs matching decimals and units. A token with no position counts as zero, and a position not in the pinned set refuses.
+- **GB-tests:** the existing Gate B tests keep passing with the fixture extended, and no `send` or `sign` method is called. A mutation of each new check is caught. The full suite shows no new failures against the base (`7a8a246`: 1546 passed, 7 skipped).
+
+### GB-CHAIN-20261016 results (2026-10-16)
+
+- **Order of commits:** criteria in `ade0d8c`, red tests in `a4a3096` (4 failing tests, 4 failing subtests), fix in `d4ab8be`. Two test corrections followed, after mutations survived:
+  - `e7aed94`: DR-03's status is always BLOCKED pending owner acceptance, so GB1b now asserts the refusal detail.
+  - `f1df6d5`: adds a `3.0` finalized-nonce case, so the integer-type check is exercised.
+- **GB1a/b: PASS.**
+  - `finalized_nonce` is recorded.
+  - A finalized nonce behind latest adds `UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION`.
+  - DR-03 refuses a missing, mismatched or non-integer `finalized_nonce`.
+- **GB2a/b: PASS.**
+  - `tokens` holds USDT and all five bStocks at the finalized height, read through the existing `eth_call` allowlist.
+  - DR-06 refuses all of these: a USDT difference of one micro-USDT; a bStock on chain with no ledger position; a ledger position above the chain balance; an unknown position symbol.
+  - DR-06 accepts matching zero and non-zero holdings.
+- **Mutations:** 7, each caught after the corrections above:
+  - blocker;
+  - DR-03 nonce comparison;
+  - DR-06 cross-check;
+  - cash comparison;
+  - position comparison;
+  - unknown-position check;
+  - integer-type check.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3): base `7a8a246` 1546 passed, 7 skipped. This branch: **1550 passed, 7 skipped, 2155 subtests, 0 failed** (+4).
+- **Docs:** `config/execution/README.md` lists the new blocker and the DR-06 cross-check.
+- **Compatibility:** chain evidence captured before this change has no `finalized_nonce` or `tokens`, so it now keeps DR-03 and DR-06 blocked. Re-run `probe-chain` before Gate B review.
+- **Not done:** this is a repository change only. It has not run against a real BSC node, it needs Isaac's review, and mirror CI has not run.
+- When this merges, remove the GB-1/GB-2 line that PR #87 adds to `docs/INCOMPLETE_WORK.md`.
