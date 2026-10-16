@@ -75,7 +75,8 @@ def _store(artifacts, data: bytes | None) -> str | None:
 
 def response(request: dict, *, status: str, output, latency_ms: int, usage=None, cost=None,
              raw: bytes | None = None, reasoning: str | None = None, error: str | None = None,
-             artifacts=None, request_payload: bytes | None = None, served_model: str | None = None) -> Document:
+             artifacts=None, request_payload: bytes | None = None, served_model: str | None = None,
+             provider_metadata=None) -> Document:
     """ModelResponse.v1. `raw` is None when no reply arrived (timeout, connection error); with an
     artifact sink, the request payload and any reply bytes are stored before anything is parsed."""
     request_ref, raw_ref = _store(artifacts, request_payload), _store(artifacts, raw)
@@ -84,14 +85,17 @@ def response(request: dict, *, status: str, output, latency_ms: int, usage=None,
             Document.from_dict({"output": output})
         except (ContractError, RecursionError, MemoryError):
             status, output, error = "INVALID", None, "OUTPUT_NOT_CANONICAL_JSON"
-    return Document.from_dict({
+    value = {
         "schema": "ModelResponse.v1", "request_id": request["request_id"], "status": status, "output": output,
         "latency_ms": latency_ms, "usage": usage or {"input_tokens": 0, "output_tokens": 0},
         "cost": cost or {"amount_micro_usd": 0, "basis": "LOCAL_NO_PROVIDER_CHARGE"},
         "raw_response_sha256": None if raw is None else sha256_hex(raw), "raw_response_artifact": raw_ref,
         "request_payload_sha256": None if request_payload is None else sha256_hex(request_payload),
         "request_payload_artifact": request_ref, "served_model": served_model,
-        "reasoning_summary": reasoning, "error": error})
+        "reasoning_summary": reasoning, "error": error}
+    if provider_metadata is not None:
+        value["provider_metadata"] = provider_metadata
+    return Document.from_dict(value)
 
 
 ACTIONS = {"CALL_TOOL": {"action", "tool", "args"}, "FINISH": {"action", "claims", "notes"}}
