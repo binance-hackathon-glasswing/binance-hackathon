@@ -79,7 +79,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 ### 6. Driver values (team decision)
 `driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.
 
-Also `driver.balance_rpc_url` and `driver.balance_rpc_source_id`: the manifested BSC RPC for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36). They are account-specific, null in the example, and required for a `dev` or `live` start. The interval and maximum age are set in the example (10 and 30 minutes).
+Also `driver.balance_rpc_url` and `driver.balance_rpc_source_id`: the manifested BSC RPC for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36). They are account-specific, null in the example, and required for a `dev` or `live` start. The interval and maximum age are set in the example (10 and 30 minutes). `driver.price_jump_check_bps` (3000 in the example, required with them) is the price-jump guard's threshold: a held symbol whose mark moves at least 30 % between rounds is not traded, and the loss stops wait, until a balance check confirms the chain (IDEA-055 PR 4).
 
 ## Order of work
 

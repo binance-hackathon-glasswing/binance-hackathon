@@ -84,6 +84,33 @@ class ReverseSplitPlanner(unittest.TestCase):
                          {k: c['portfolio']['risk'][k] for k in latches})  # latches and peak as they were
         self.assertEqual(r['loss_stops_deferred'], ['NVDAB'])
 
+    def test_s12_a_one_name_book_is_sized_from_the_lower_mark(self):
+        # Added after the mutation run: in the three-name book the gross cap alone already bounds the buy.
+        s = with_quotes(ew(held={'NVDAB': 4000}))
+        base = plan(s, decide(s, s.policy_state)).read()
+        [(symbol, base_buy)] = [(i['symbol'], i['cash_units'] + i['fee_units']) for i in base['intents']
+                                if i['side'] == 'BUY'] or [(q['symbol'], q['pay_units']) for q in base['quote_requests']
+                                                           if q['side'] == 'BUY'][:1]
+        c = s.context.read()
+        markets = [dict(m, price_units=2 * m['price_units']) if m['symbol'] == 'NVDAB' else m for m in c['markets']]
+        jumped = changed(s, markets=markets, price_jump_hold={'NVDAB': PRICE})
+        r = plan(jumped, decide(jumped, jumped.policy_state)).read()
+        self.assertTrue(self.buys(r, symbol))
+        self.assertLessEqual(sum(self.buys(r, symbol)), base_buy)
+
+    def test_s11_the_flatten_waits_for_a_held_symbol_only(self):
+        # Added after the mutation run: a mandatory sale of a symbol under a hold waits; other names still sell.
+        s = ew(held={'NVDAB': 4000, 'GOOGLB': 4000}, profile_changes={'flatten_start': '2026-10-10T13:00:00Z',
+                                                                     'new_risk_end': '2026-10-10T12:00:00Z'})
+        c = s.context.read()
+        markets = [dict(m, price_units=m['price_units'] // 2) if m['symbol'] == 'NVDAB' else m for m in c['markets']]
+        jumped = changed(s, markets=markets, price_jump_hold={'NVDAB': PRICE})
+        r = plan(jumped, decide(jumped, jumped.policy_state)).read()
+        status = {q['symbol']: q['status'] for q in r['requirements']}
+        self.assertEqual(status['NVDAB'], 'BLOCKED_PRICE_JUMP')
+        self.assertFalse([i for i in r['intents'] + r['quote_requests'] if i['symbol'] == 'NVDAB'])
+        self.assertTrue([i for i in r['intents'] + r['quote_requests'] if i['symbol'] == 'GOOGLB'])
+
 
 # ---------------------------------------------------------------------------------------------- driver harness
 class Marks(EntryMarket):
@@ -386,15 +413,15 @@ class PriceJump(AdoptionHarness):
         journal = list(self.store.journal(RUN))
         head, expected = self.replay_head(driver)
         self.assertEqual(head, expected)
-        tampered = []
-        for batch in journal:
-            b = batch.read()
-            if b['event']['kind'] == 'BALANCE_ADJUSTED':
-                b = json.loads(json.dumps(b))
-                b['projection']['portfolio']['positions']['NVDAB']['units'] += 1
-                b['projection']['balances']['NVDAB'] += 1
-                batch = doc(b)
-            tampered.append(batch)
+        # Cut the journal at the tampered event: later batches carry full projections that would hide it.
+        index = next(i for i, d in enumerate(journal) if d.read()['event']['kind'] == 'BALANCE_ADJUSTED')
+        b = json.loads(json.dumps(journal[index].read()))
+        b['projection']['portfolio']['positions']['NVDAB']['units'] += 1
+        b['projection']['balances']['NVDAB'] += 1
+        tampered = journal[:index] + [doc(b)]
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        self.replay(driver, journal[:index + 1])  # the untampered prefix replays
         with self.store.transaction() as db:
             db.execute('TRUNCATE runs CASCADE')
         with self.assertRaises(IntegrityError):
