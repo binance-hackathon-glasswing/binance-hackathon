@@ -435,17 +435,17 @@ class DayRoll:
         if now_ms - midnight > self.window and deferred != midnight:
             return 'OUTSIDE_WINDOW'
         if active_holds(current['projection'], now_ms):
-            if deferred != midnight:
-                projection['day_roll_deferred_ms'] = midnight
-                day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
-                event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
-                c.store.commit(batch_for(Document.from_dict(current), 'day-deferred:' + day, event,
-                                         projection=projection))
-            return 'PRICE_JUMP_HOLD'  # a mark that jumped is not an anchor until a balance check confirms it
+            return self._defer(current, midnight, now_ms)
         if observations is None:
             return 'MARKET_UNAVAILABLE'
         builder = c.context_builder
         projection = current['projection']
+        # The midnight fetch can be the first observation of a split. The round that journals its hold runs
+        # after DayRoll, so checking only persisted holds would anchor old units at the newly changed price.
+        if getattr(builder, 'price_jump', None) is not None:
+            _, holds = builder._jumps(projection, observations, now_ms)
+            if holds:
+                return self._defer(current, midnight, now_ms)
         ledger = ledger_from(projection, current['reservations'])
         try:
             market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
@@ -467,6 +467,17 @@ class DayRoll:
         c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
         return 'ROLLED'
 
+    def _defer(self, current, midnight, now_ms):
+        """Persist both an existing hold and one first discovered by the midnight fetch (RR2-R2, PR115-C02)."""
+        projection = current['projection']
+        if projection.get('day_roll_deferred_ms') != midnight:
+            projection['day_roll_deferred_ms'] = midnight
+            day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
+            event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
+            self.coordinator.store.commit(batch_for(Document.from_dict(current), 'day-deferred:' + day, event,
+                                                     projection=projection))
+        return 'PRICE_JUMP_HOLD'
+
 
 def active_holds(projection, now_ms):
     """Price-jump holds (IDEA-055 PR 4) that have not expired: {symbol: hold}."""
@@ -484,8 +495,9 @@ class BalanceCheck:
     asset is also an INCIDENT.
 
     A mismatch on an eligible asset is adopted only when the next comparable check, `retry_ms` later, reads the same
-    chain units with the same ledger units and `settled_block`, and nothing else was committed to the run in between
-    (no round, reservation or receipt): one bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
+    chain units with the same ledger units and `settled_block`, and no wallet activity occurred in between
+    (reservations, commands or receipts). Journal-proven hold-only rounds may continue (PR115-C04).
+    One bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
     (`adjust_ledger`: units only, cost unchanged) plus one INCIDENT per asset. The candidate is kept in memory only.
     Until adoption a deficit is subtracted in the planner's view (ContextBuilder, D1) and new spending waits (`ok`);
     sales and the flatten continue. `ok` counts only a check made by this process, so a restored or restarted run
@@ -531,15 +543,18 @@ class BalanceCheck:
         check, such as the one a price jump triggers, keeps the first read as the candidate."""
         mismatched = {a: r for a, r in check['assets'].items() if r['class'] != 'MATCH'}
         first, confirmed = self.candidate, []
-        comparable = (first is not None and first['version'] == current['version']
-                      and first['settled_block'] == check['settled_block'])
+        comparable = (first is not None and first['settled_block'] == check['settled_block']
+                      and first['epoch'] == current['epoch']
+                      and (first['version'] == current['version'] or self._quiet_since(first, current)))
         if comparable and now_ms - first['checked_ms'] < self.retry:
-            # RR2-R1: an early read still counts against consecutive agreement. Preserve only unchanged assets.
-            kept = {a: row for a, row in first['assets'].items() if mismatched.get(a) == row}
-            self.candidate = (dict(first, assets=kept) if kept else
-                              dict(assets=mismatched, block_number=check['block_number'],
-                                   settled_block=check['settled_block'], observation_sha256=observation_hash,
-                                   version=current['version'], checked_ms=now_ms) if mismatched else None)
+            # An identical early read preserves the first candidate's time, but an early contradictory read
+            # breaks the sequence for that asset. Otherwise A -> MATCH/B -> A could confirm the original A.
+            first['assets'] = {asset: seen for asset, seen in first['assets'].items()
+                               if asset in mismatched and
+                               (seen['chain_units'], seen['ledger_units']) ==
+                               (mismatched[asset]['chain_units'], mismatched[asset]['ledger_units'])}
+            if not first['assets']:
+                self.candidate = None
             return confirmed
         if comparable and check['block_number'] > first['block_number']:
             positions = current['projection']['portfolio']['positions']
@@ -560,9 +575,35 @@ class BalanceCheck:
         adopted = {a['asset'] for a in confirmed}
         rest = {a: r for a, r in mismatched.items() if a not in adopted}
         self.candidate = (dict(assets=rest, block_number=check['block_number'], settled_block=check['settled_block'],
-                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms)
+                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms,
+                               epoch=current['epoch'], portfolio=current['projection']['portfolio'],
+                               execution_state=current['execution_state'])
                           if rest else None)
         return confirmed
+
+    def _quiet_since(self, first, current):
+        """Prove that intervening commits are wallet-neutral; checking only the final ledger misses transient
+        reservations. A bounded journal suffix preserves that evidence without exporting the whole run."""
+        allowed = {'ROUND_PLANNED', 'PLAN_REJECTED', 'ROUND_LOGGED', 'ROUND_CLOSED',
+                   'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED', 'DAY_ROLL_DEFERRED'}
+        batches = self.coordinator.store.journal(self.coordinator.run_id, after_version=first['version'],
+                                                  through_version=current['version'])
+        if len(batches) != current['version'] - first['version']:
+            return False
+        for batch in batches:
+            b = batch.read()
+            event, projection = b['event'], b['projection']
+            if (event['kind'] not in allowed or b['owner_epoch'] != first['epoch']
+                    or b['commands'] or b['reservation_deltas']
+                    or b['execution_state'] != first['execution_state']
+                    or projection['portfolio'] != first['portfolio']
+                    or projection.get('settled_block') != first['settled_block']):
+                return False
+            record = event.get('record') or {}
+            plan = record.get('plan') or {}
+            if record.get('execution_pending') or plan.get('intents') or plan.get('reservation_deltas'):
+                return False
+        return True
 
     def _commit(self, current, event_id, event, projection=None):
         """Commit one event; this process's own commits do not count as activity between two checks."""
@@ -570,8 +611,11 @@ class BalanceCheck:
         before = current.read()['version']
         c.store.commit(batch_for(current, event_id, event, projection=projection))
         after = c.store.load(c.run_id)
-        if self.candidate is not None and self.candidate['version'] == before:
-            self.candidate['version'] = after.read()['version']
+        if (self.candidate is not None and self.candidate['version'] == before
+                and after.read()['version'] == before + 1):
+            committed = after.read()
+            self.candidate.update(version=committed['version'], portfolio=committed['projection']['portfolio'],
+                                  execution_state=committed['execution_state'])
         return after
 
     def __call__(self, now_ms):
@@ -635,6 +679,13 @@ class BalanceCheck:
             event = dict(kind='INCIDENT', incident=dict(incident, block_number=check['block_number'], at_ms=now_ms))
             document = self._commit(document, f"incident:{incident['type'].lower()}:{now_ms}", event)
         if adjustments:
+            # The comparison was made against current. Only our BALANCE_CHECKED and INCIDENT writes may
+            # intervene before adoption; a reload containing another writer's commit is not fresh confirmation.
+            if document.read()['version'] != current['version'] + 1 + len(incidents):
+                self.candidate = None
+                self.ok_ms = None
+                self.next_ms = now_ms + self.retry
+                return 'SKIPPED:CONCURRENT_ACTIVITY'
             document = self._adopt(document, adjustments, check, now_ms)
             state = document.read()['projection']['balance_check']
         self._settle_gate(status, state, now_ms)

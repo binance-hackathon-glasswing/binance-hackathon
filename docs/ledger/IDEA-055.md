@@ -394,6 +394,65 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 
 **Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
 
+## PR115-C — independent execution/accounting review (2026-10-16, Isaac / Codex)
+
+Review starts at `bc51c4a`, including section B's R1–R5 fixes and the inherited
+AIand shadow merge. Review and fixes are isolated from the IDE checkout. No
+wallet credentials, provider calls, signing, uploads or deployment are used.
+
+Prospective criteria, recorded before running review tests:
+
+| ID | Pass criterion |
+|---|---|
+| PR115-C01 | Two agreeing balance reads must be consecutive comparable reads for each asset. An intervening early MATCH or different mismatch invalidates that asset's candidate; a later return to the original units cannot confirm it. An identical early read preserves the original candidate and its elapsed-time bound. Another asset's contradictory read must not invalidate an unchanged asset's candidate. |
+| PR115-C02 | A price jump first visible in the midnight market fetch must defer the daily anchor before it is committed, even when no hold was already in the projection. Forward and reverse splits must not anchor using old units and the new mark; ordinary and guard-disabled day rolls remain unchanged. The subsequent round journals the hold through the existing context path. |
+| PR115-C03 | Baseline and regression tests use disposable local PostgreSQL, with exact version recorded; targeted balance/adoption/day-roll/replay/HALT tests and the full available suite run after their code is committed and pushed. Existing R1–R5 guarantees remain covered. This establishes offline engineering behavior only. |
+
+Review also checks ordinary cadence versus candidate invalidation, observation
+and replay provenance, and the known terminal-sale hold question. New findings
+and results will be appended here; no whole readiness GAP is closed by review.
+
+PR115-C01/C02 red at `324de5f`, PostgreSQL 14.24: 5 new regressions failed
+for the predicted safety defects, 67 focused tests passed. At pushed `e9a337e`,
+all 72 tests and 46 subtests pass. Logs: `/private/tmp/larp-pr115-red.log` and
+`/private/tmp/larp-pr115-green.log` (local, outside Git).
+
+**PR115-C04, additional prospective criterion:** a continuous sequence of
+hold-only rounds must not starve balance confirmation. Preserve the owner's
+two-read/no-wallet-activity contract (D1–D5), but refine the implementation's
+stronger "no commit whatsoever" condition: allow journal-proven rounds with
+no intents, commands or reservations, and unchanged portfolio/execution state.
+Any intervening reservation (even acquired and released between reads), command,
+execution observation, balance adjustment, epoch change or unrecognised event
+invalidates the candidate. Read only the bounded journal suffix since the
+candidate, not the entire historical journal. Retain S5's negative assertion
+using actual transient reservations instead of an unrelated hold-only round.
+Regression: with one hold round per minute, two stable chain reads a minute
+apart adopt the mismatch; real transient resource activity still requires a
+new pair of reads. This is an engineering correction to the design's overly
+broad commit proxy, not a change to the owner safety or trading policy.
+
+PR115-C04 reproduced at `99c2d0b`: the continuous hold-cadence regression failed,
+while the transient-reservation safety control passed. The first focused run
+after `ebd8a97` passed 87 tests / 46 subtests, with one existing fixture failing:
+S9 still waited for an unnecessary third check after a blocked gas round. Its
+assertion is advanced to require adoption at the first eligible confirming
+check, retaining the blocked-before / top-up-enabled-after assertions. S5 now
+uses actual transient reservations; the safety assertion is retained. Additional
+checks require commands and unknown events to invalidate confirmation, validate
+bounded journal reads, and replay the continuous-cadence adoption exactly.
+
+**PR115-C05, prospective concurrency criterion:** if another writer commits
+resource activity after this check's own commit but before its subsequent load,
+that activity must not be treated as this check's own commits. The next read
+must reject the old candidate. Reproduce by injecting a reservation and its
+release in that exact gap; update the candidate's version only when the reload
+contains exactly the one expected commit. Full candidate safety still rests on
+the journal suffix, and ordinary single-writer behavior is unchanged.
+The same barrier must apply when the concurrent activity happens during the
+confirming check's own journal writes: no adjustment may commit using the
+previously computed confirmation. Refuse that adoption, pause new spending and
+obtain a fresh pair of reads; retain all intervening journal events.
 
 ## RR2 — second all-open-PR review, prospective criteria (2026-10-16)
 
@@ -404,3 +463,43 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 ### RR2 observed results and publication status
 
 RR2 current pushed head bc51c4a: focused balance/HALT/driver modules 77 passed / 67 subtests on Linux/Python3.12/PostgreSQL14.24. Reproductions: 2010 mismatch at t0, MATCH at t1s, 2010 at t60s wrongly adopts; reconstructing DayRoll after an in-window deferral returns OUTSIDE_WINDOW after the hold clears. Original ALLPR-R1 elapsed/newer-block checks are fixed. RR2-R1/R2 fixes and new regressions remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
+
+## PR115-C03 — verification and finding disposition (2026-10-16)
+
+This dated result supersedes the earlier RR2 "unexecuted pending approved push"
+status. Both reviewers' records and fixes are retained with merge commits.
+
+| Finding | Outcome |
+|---|---|
+| PR115-C01 / RR2-R1 | Fixed: an early MATCH or contradictory mismatch invalidates that asset's candidate; other unchanged assets retain their first timestamp. Three independent regressions reproduced the original defect before the fix. |
+| PR115-C02 | Fixed: a jump first visible in the midnight fetch defers the anchor before it can use old units and a split-adjusted mark. Both split directions are covered. The combined fix journals the deferral using RR2-R2's restart-safe path. |
+| PR115-C04 | Fixed: ordinary hold-only cadence no longer invalidates every confirmation indefinitely. The bounded journal suffix proves no wallet activity occurred; transient reservations, commands and unknown events still invalidate the candidate. Exact cadence/adoption replay passes. S5 now injects real transient reservations and retains its negative assertion. S9 requires the earlier valid confirmation, preserving its gas-block/resume assertions. |
+| PR115-C05 | Fixed: concurrent commits in the first-read reload cannot be blessed as this check's own commits. A race during confirmation logging aborts adoption, pauses spending and requires a fresh pair. Both gaps were reproduced before their fixes. |
+| RR2-R2 | Preserved: deferred day roll survives restart, including a restart after the hold clears; replay recognises DAY_ROLL_DEFERRED. The imported regression needed its existing replay helpers bound to SecondReview; no assertion was removed. |
+
+**Environment:** macOS ARM64, Python 3.12.14, pytest 9.1.1; disposable Docker
+`postgres:14.24-bookworm` (PostgreSQL 14.24, image digest
+`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+bound only to localhost port 55435. No production credentials, provider calls,
+signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
+
+- At `a2b54c1`, focused reconciliation/day-roll/HALT/storage: **92 passed,
+  50 subtests**, zero failures. After the final concurrency fix `472cede`, the
+  independent regressions: **13 passed, 4 subtests**, zero failures.
+- At combined `fd5dd6b` (includes concurrent `522cd53`, prior to Gate A's merge):
+  full suite **1698 passed, 9 skipped, 2324 subtests**, zero failures,
+  244.77 s. Skips: five opt-in real-systemd tests, three Linux bubblewrap tests,
+  one opt-in external market artifact. Raw log `/private/tmp/larp-pr115-full.log`,
+  SHA-256 `eb89cb27600c18781164b45fade1aff4308d775ce69505112270a18673ac05f0`.
+- One initial confirming-race invocation began before the push confirmation was
+  read; its result is not used as evidence. It was repeated after explicit push
+  confirmation in `/private/tmp/larp-pr115-adoption-race-red-confirmed.log` and
+  reproduced the same predicted failure.
+- Concurrent `959a627` adds the now-merged Gate A input assembly. It is preserved
+  in the review branch; a final full-suite run on that combined tree follows.
+
+**Still open:** the existing mandatory-sale/price-jump-hold policy question
+(Yao Zhu + Keith); PR #116's failover composition review (Keith/Keegan); Linux
+systemd/bubblewrap qualification and actual hosted/signing/provider readiness
+with the existing owners. No policy choice, live authority, whole GAP closure
+or PR merge is implied by this offline review.
