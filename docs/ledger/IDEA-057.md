@@ -2,8 +2,8 @@
 
 - Date / author: 2026-10-15 SGT / Keith, implemented with Codex at the user's request to do both the AIand-specific design and implementation.
 - Status: open for review (shadow implementation; AR1–AR8 synthetic/local acceptance passed 2026-10-16; no real-provider inference or live adoption).
-- From: [IDEA-056](IDEA-056.md), draft PR #85. This branch is stacked on `codex/idea-056-model-routing` at `ab2e155`, not merged into main.
-- Review: [implementation PR #86](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/86), stacked on proposal PR #85. Local acceptance only; merge and live adoption are separate decisions.
+- From: [IDEA-056](IDEA-056.md), PR #85 into `main`. Implementation PR #86 was merged into its proposal branch; PR85-M1 below records final promotion review including PR #111.
+- Review: [implementation PR #86](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/86) and [budget cleanups PR #111](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/111), incorporated in PR #85. Local acceptance only; repository promotion and live adoption are separate decisions.
 - Scope: AIand adapter; opt-in external-first shadow assessor; durable $40 OpenAI admission plus $10 full-run reserve; complete external review after credit refusal; provenance and runtime secret loading. External funding is supplied by the user; K3/GLM prices are outside this comparison.
 - Out of scope: real-provider inference, private labels, independent real-document evaluation, source/model rights approval, scored/live activation, trading-policy adoption and AWS changes. These retain IDEA-056 MR-01–06 and GAP-23/24/57/62/67 owners.
 
@@ -135,6 +135,51 @@ The final passing runs used temporary Python 3.12.15 plus pinned
 Hosted CI remains quota-blocked/skipped; no full repository or hosted/live
 acceptance is claimed. MR-01–06 and the existing adoption backlog retain their
 owners and remain open. The documentation update after this test changes no code.
+
+### PR85-M1 — final main-promotion review (2026-10-16 SGT)
+
+User authorized pushing and merging PR #85 if complete and sound. Reviewed current
+PR #85 `3b4d1e6`, its discussion/review, and the already-pushed PR #111
+`71c4994e7b5d56ffcab49ab4616dbdc76f7b308b`; fast-forwarded the isolated review
+branch to include all three PR #111 commits without rewriting history. No new
+blocking routing defect found. I93-1..4 fixes close initialization connections,
+record one durable switch, enforce the private parent directory and correct the
+stale validation line. AR1–AR8 and PR85-R1/R2 remain the acceptance criteria.
+
+- **PASS:** full suite at `71c4994`, native ARM64 Ubuntu 22.04 / Python 3.12.15 /
+  disposable PostgreSQL 14.24, as unprivileged `ci`, real systemd 249 and bubblewrap
+  0.6.1: **1558 passed, 1 skipped, 2215 subtests passed** in 164.80 seconds.
+  Command: `python -m pytest -q -ra -p no:cacheprovider`, with
+  `LARP_TEST_SYSTEMD=1`, a disposable `LARP_TEST_DATABASE_URL` and plugin autoload
+  disabled. Only the opt-in external recorded-market dataset was skipped.
+- `pip check` and `git diff --check` pass. No source, dependency, authority or
+  trading-policy change beyond the already-pushed PR #111 fixes was needed.
+- Initial full run: 1556 passed / 1 skipped / 2 failures, caused by the runner's
+  read-only source mount blocking a synthetic activation directory and its
+  `noexec` `/tmp` blocking a synthetic AWS stub. Corrected only the disposable
+  mounts; all eight affected tests then passed, followed by the full passing run
+  above. No real AWS call or credential was involved.
+- Final log: `/private/tmp/pr85-acceptance/final.log`, SHA-256
+  `f4b2cae7a54bcbc6f1cbe452cd9346c6ea086a16f3a597581f471157091bb85c`.
+  The source mount was read-only except an ephemeral ignored activation directory;
+  containers had no external network or production credentials.
+- Hosted Actions are **not green**: GitHub's annotation on PR #111 confirms jobs
+  never started because recent account payments failed or spending limits must
+  increase. The account owner retains that blocker; local checks do not claim
+  hosted CI, inference or deployment acceptance.
+
+Integration disposition: PR #85's updated description explicitly keeps `main`
+as its target and separates deploy integration into PR #114. PR #114 records
+that AIand retains IDEA-057; Keegan owns renumbering #88's QuoteCostSummary record
+before combining it with the deployment branch. No #88 or #114 merge is authorized
+or performed by this review. PR #114 also carries the hosted writable-model-artifact
+and network wiring fixes; those remain separate from this main promotion.
+
+Remaining owners: Keegan + Yao Zhu for hosted artifacts, secrets, ledger recovery
+and release declarations; Yao Zhu + independent annotator/Keith for real-provider
+and omission/quality evaluation; team for trial thresholds and adoption. Existing
+IDEA-056 MR-01..06 and GAP items remain open. `aiand_routed` continues to refuse
+service execution and scored live mode. This review grants no live authority.
 
 ### Issue #93 cleanups — prospective criteria (2026-10-16 SGT)
 
