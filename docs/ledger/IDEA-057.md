@@ -104,3 +104,19 @@ Synthetic Web3 responses only; no credentials, network or real quotes.
 - Real captures: Isaac or Keith, with the dev wallet's key, starting before Sat Oct 17 00:00 UTC.
 - The owners' review of the size and coverage before a summary is pinned.
 - Whether quoted amounts already net route fees (`fee_bps` 0 assumes so; the report keeps any `tradeFee`).
+
+## Review fixes (PR 88, 2026-10-16)
+
+Found in review; each new test failed against `717b6aa` and passes after the fix (`ReviewFixes` in the test file; R1's transient-error test is a control that passes on both).
+
+| ID | Defect at `717b6aa` | Fix |
+|---|---|---|
+| R1 | A rejected key or region (`authentication_error`, `compliance_restriction`) or invalid parameters made every call fail, and the backgrounded capture recorded failures until `--until`. Nobody would have known until `summarize`, after the weekend had passed. | These outcomes are recorded as a `ROUND` failure, then raised; `capture` exits 2. Transient errors (`rate_limited`, HTTP errors) are still failures and the loop goes on (Q9 unchanged). |
+| R2 | Day and weekend coverage was checked over all tokens together, so a token with weekday-only samples passed on another token's weekend. | Each token needs its own `--min-days` UTC days and its own weekend sample; the report lists each token's days. |
+| R3 | A `--until` without an offset was read as the host's local time (in SGT, 8 h early), and a malformed one raised a traceback. | Both are refused before any round. |
+| R4 | An error while building the sample record was labelled `GAS_ESTIMATE`. | Stage `RECORD`. |
+| R5 | `run_quote_capture.sh` printed "running" even when the capture died at once. | It waits `STARTUP_CHECK_SECONDS` (default 10), and exits 1 with the log tail if the process has gone. |
+
+Also: the test file's `unittest.main()` guard sat above the runner tests and now ends the file. Branch merged with `codex/system-testing-20261012` at `7a8a246` (the conflict was in `docs/LEDGER.md` only; both rows kept). Local: `tests/marketdata` + `tests/strategy` 153 passed, 1 skipped (Python 3.14, no PostgreSQL). The full suite and mirror CI were not rerun.
+
+Not changed, for the owners: a gas estimate for a swap from a wallet with no allowance or balance will likely revert, so expect mostly `FALLBACK` swap gas (1 116 000 × gasPrice). The report counts them. A negative `priceImpactPercent` is refused by `number()`, as in `MarketPort.observe`, so such a quote becomes a failure, not a sample.

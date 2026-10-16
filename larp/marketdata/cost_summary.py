@@ -30,6 +30,12 @@ from .web3 import Unavailable, data, encoded, single
 
 FALLBACK_GAS_LIMIT = 1_116_000  # 1.2 x the kit's largest observed route (930k gas), participant-kit.md K8
 QUOTE_TTL_SECONDS = 30  # "bStock quotes ... expire after about 30 s" (kit, F-96); the API returns no expiry
+# Outcomes no later round can recover from: the capture stops instead of recording failures for days.
+FATAL_OUTCOMES = frozenset({'authentication_error', 'compliance_restriction'})
+
+
+def _fatal(error):
+    return isinstance(error, ContractError) or (isinstance(error, Unavailable) and str(error) in FATAL_OUTCOMES)
 
 
 def _first(record):
@@ -99,6 +105,7 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
             stage = 'GAS_ESTIMATE'
             buy_gas, buy_method, e1 = _swap_gas(market, tx_buy, market.wallet, fallback_gas_limit)
             sell_gas, sell_method, e2 = _swap_gas(market, tx_sell, market.wallet, fallback_gas_limit)
+            stage = 'RECORD'
             records.append(dict(
                 kind='SAMPLE', symbol=symbol, at=buy['available_at'], pay_raw=pay,
                 token_decimals=integer(rr_buy['toToken']['decimal']), buy_received=received,
@@ -110,6 +117,8 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
                 artifacts=[buy['artifact_sha256'], sell['artifact_sha256'], requote['artifact_sha256'], a1, a2,
                            *[e for e in (e1, e2) if e]]))
         except (Unavailable, KeyError, TypeError, ValueError) as error:
+            if _fatal(error):
+                raise
             records.append(dict(kind='FAILURE', symbol=symbol, stage=stage, reason=str(error) or type(error).__name__,
                                 at=_now()))
     try:
@@ -123,7 +132,10 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
         records.append(dict(kind='BNB_PRICE', at=record['available_at'], pay_cash_units=cash_units,
                             received_wei=integer(rr['toTokenAmount']), artifact=record['artifact_sha256']))
     except (Unavailable, KeyError, TypeError, ValueError) as error:
-        records.append(dict(kind='FAILURE', symbol='BNB', stage='BNB_QUOTE', reason=str(error), at=_now()))
+        if _fatal(error):
+            raise
+        records.append(dict(kind='FAILURE', symbol='BNB', stage='BNB_QUOTE', reason=str(error) or type(error).__name__,
+                            at=_now()))
     return records
 
 
@@ -158,7 +170,7 @@ def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quot
         samples = [r for r in records if r['kind'] == 'SAMPLE']
         prices = [r for r in records if r['kind'] == 'BNB_PRICE']
         failures = [r for r in records if r['kind'] == 'FAILURE']
-        rows, detail = {}, {}
+        rows, detail, symbol_days = {}, {}, {}
         with localcontext() as context:
             context.prec = 60
             for symbol in TOKENS:
@@ -179,27 +191,31 @@ def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quot
                         raise ContractError('Each sample needs buy and sell swap gas')
                     swaps += [integer(g) for g in r['swap_gas_wei']]
                     fallbacks += sum(m == 'FALLBACK' for m in r['gas_methods'])
-                    _day(r['at'])
+                symbol_days[symbol] = sorted({_day(r['at']) for r in mine})
                 rows[symbol] = dict(
                     samples=len(mine), median_impact_bps=max(1, _ceil(_median(impacts))),
                     spread_bps=max(0, _ceil(_median(residuals))), fee_bps=0,
                     approve_gas_bnb_units=_p90(approves), swap_gas_bnb_units=_p90(swaps),
                     slippage_bps=min(50, max(1, _ceil(_p90(drifts)))), quote_ttl_seconds=quote_ttl_seconds)
-                detail[symbol] = dict(samples=len(mine), fallback_gas_estimates=fallbacks,
+                detail[symbol] = dict(samples=len(mine), utc_days=[d.isoformat() for d in symbol_days[symbol]],
+                                      fallback_gas_estimates=fallbacks,
                                       failures=sum(f.get('symbol') == symbol for f in failures),
                                       trade_fees=sorted({str(r.get('trade_fee')) for r in mine}))
             price_units = [Decimal(integer(p['pay_cash_units'])) * 10**18 / integer(p['received_wei'])
                            for p in prices]
     except (KeyError, TypeError, ValueError, ZeroDivisionError, ArithmeticError, Unavailable) as error:
         raise ContractError('Malformed capture record: ' + type(error).__name__) from None
-    days = sorted({_day(r['at']) for r in samples})
+    days = sorted(set().union(*symbol_days.values()))
     weekend = [d for d in days if d.weekday() >= 5]
-    problems = [f'{s}: {rows.get(s, {}).get("samples", 0)} samples < {min_samples}' for s in TOKENS
-                if rows.get(s, {}).get('samples', 0) < min_samples]
-    if len(days) < min_days:
-        problems.append(f'{len(days)} UTC days < {min_days}')
-    if require_weekend and not weekend:
-        problems.append('no weekend sample')
+    problems = []
+    for s in TOKENS:  # coverage per token: one token's weekday-only samples must not ride on another's weekend
+        count, mine = rows.get(s, {}).get('samples', 0), symbol_days.get(s, [])
+        if count < min_samples:
+            problems.append(f'{s}: {count} samples < {min_samples}')
+        if len(mine) < min_days:
+            problems.append(f'{s}: {len(mine)} UTC days < {min_days}')
+        if require_weekend and not any(d.weekday() >= 5 for d in mine):
+            problems.append(f'{s}: no weekend sample')
     if not price_units:
         problems.append('no BNB price quote')
     if problems:
@@ -229,21 +245,34 @@ def run_capture(market, out_dir, *, round_fn=capture_round, until=None, rounds=N
     """Capture rounds until `until` (UTC ISO time) or for `rounds` rounds; returns how many ran.
 
     One file per UTC day (`capture-YYYY-MM-DD.jsonl`), appended round by round, so a stop loses at most the round in
-    progress. An unexpected error in a round becomes a FAILURE record (stage ROUND) and the loop goes on (Q8, Q9)."""
+    progress. An unexpected error in a round becomes a FAILURE record (stage ROUND) and the loop goes on (Q8, Q9).
+    Invalid parameters and rejected credentials or region (FATAL_OUTCOMES) are recorded, then raised: no later round
+    can succeed, and a silent multi-day loop would miss the weekend."""
     if (until is None) == (rounds is None):
         raise ContractError('Give exactly one of --until and --rounds')
     if interval_seconds < 0:
         raise ContractError('Invalid interval')
-    end = None if until is None else datetime.fromisoformat(until.replace('Z', '+00:00')).astimezone(timezone.utc)
+    end = None
+    if until is not None:
+        try:
+            end = datetime.fromisoformat(until.replace('Z', '+00:00'))
+        except ValueError:
+            raise ContractError('--until must be an ISO time') from None
+        if end.tzinfo is None:  # a naive time would silently be read as the host's local time
+            raise ContractError('--until needs a UTC offset, e.g. 2026-10-19T00:00:00Z')
+        end = end.astimezone(timezone.utc)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     done = 0
     while (now() < end) if end is not None else done < rounds:
         started = now()
+        fatal = None
         try:
             records = round_fn(market, **round_options)
-        except Exception as error:  # one bad round never ends a multi-day capture
-            records = [dict(kind='FAILURE', symbol=None, stage='ROUND', reason=type(error).__name__,
+        except Exception as error:  # one bad round never ends a multi-day capture, unless no round can succeed
+            fatal = error if _fatal(error) else None
+            records = [dict(kind='FAILURE', symbol=None, stage='ROUND',
+                            reason=str(error) if fatal else type(error).__name__,
                             at=started.isoformat(timespec='milliseconds').replace('+00:00', 'Z'))]
         path = out / f'capture-{started.date().isoformat()}.jsonl'
         with path.open('a', encoding='utf-8') as f:
@@ -253,6 +282,8 @@ def run_capture(market, out_dir, *, round_fn=capture_round, until=None, rounds=N
         log(f'{started.isoformat(timespec="seconds")} round {done}: '
             f'{sum(r.get("kind") == "SAMPLE" for r in records)} samples, '
             f'{sum(r.get("kind") == "FAILURE" for r in records)} failures -> {path.name}')
+        if fatal is not None:
+            raise fatal
         if (end is None and done < rounds) or (end is not None and now() < end):
             sleep(interval_seconds)
     return done
@@ -319,7 +350,7 @@ def main(argv=None):
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         print('QuoteCostSummary.v1', summary['capture_hash'], '->', output)
         return 0
-    except ContractError as refused:
+    except (ContractError, Unavailable) as refused:
         print('refused:', refused, file=sys.stderr)
         return 2
 

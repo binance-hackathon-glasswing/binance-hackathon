@@ -249,10 +249,6 @@ class Cli(unittest.TestCase):
             self.assertEqual(json.loads(out.read_text()), summary)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 # ------------------------------------------------------------------------------------------------ Q8-Q10 runner
 class Clock:
     def __init__(self, start):
@@ -333,3 +329,84 @@ class Runner(unittest.TestCase):
             self.assertIn('--until 2026-10-19T00:00:00Z', result.stdout)
         usage = subprocess.run(['bash', str(script)], capture_output=True, text=True, timeout=30)
         self.assertIn('weekend', usage.stderr.lower())
+
+
+# ------------------------------------------------------------------------------------------------ PR 88 review fixes
+class ReviewFixes(unittest.TestCase):
+    def test_r1_rejected_credentials_stop_the_capture_instead_of_looping(self):
+        from larp.marketdata.cost_summary import capture_round, run_capture
+
+        class Rejected(FakeClient):
+            def request(self, method, endpoint, params):
+                raise Unavailable('authentication_error')
+        with self.assertRaises(Unavailable):
+            capture(Rejected())
+        with tempfile.TemporaryDirectory() as tmp:
+            clock = Clock(epoch('2026-10-17T00:00:00Z'))
+            with self.assertRaises(Unavailable):
+                run_capture(MarketPort(Rejected(), WALLET), Path(tmp), until='2026-10-19T00:00:00Z',
+                            now=clock.now, sleep=clock.sleep, cash_units=CASH)
+            [record] = [json.loads(l) for p in Path(tmp).glob('capture-*.jsonl') for l in p.read_text().splitlines()]
+            self.assertEqual((record['stage'], record['reason']), ('ROUND', 'authentication_error'))
+            with self.assertRaises(ContractError):  # invalid parameters fail every round: stop at the first
+                run_capture(MarketPort(FakeClient(), WALLET), Path(tmp), until='2026-10-19T00:00:00Z',
+                            now=clock.now, sleep=clock.sleep, round_fn=capture_round, cash_units=0)
+
+    def test_r1_transient_errors_still_become_failures(self):
+        class Limited(FakeClient):
+            def request(self, method, endpoint, params):
+                raise Unavailable('rate_limited')
+        _, records = capture(Limited())
+        self.assertEqual({r['kind'] for r in records}, {'FAILURE'})
+        self.assertEqual(len(records), len(TOKENS) + 1)
+
+    def test_r2_each_token_needs_its_own_days_and_weekend(self):
+        from larp.marketdata.cost_summary import summarize
+        weekday_only = [dict(r, at=r['at'].replace('2026-10-17', '2026-10-14').replace('2026-10-18', '2026-10-15'))
+                        if r.get('symbol') == 'TSLAB' else r for r in complete()]
+        with self.assertRaisesRegex(ContractError, 'TSLAB: no weekend sample'):
+            summarize(weekday_only)
+        one_day = [dict(r, at=r['at'][:8] + '17' + r['at'][10:]) if r.get('symbol') == 'SKHYB' else r
+                   for r in complete()]
+        with self.assertRaisesRegex(ContractError, 'SKHYB: 1 UTC days < 3'):
+            summarize(one_day)
+        report = summarize(complete())[1]
+        self.assertEqual(report['symbols']['NVDAB']['utc_days'], list(DAYS))
+
+    def test_r3_until_must_name_its_offset(self):
+        from larp.marketdata.cost_summary import run_capture
+        with tempfile.TemporaryDirectory() as tmp:
+            for until in ('2026-10-19T00:00:00', 'next sunday'):
+                with self.subTest(until), self.assertRaises(ContractError):
+                    run_capture(object(), Path(tmp), round_fn=lambda m: [], until=until,
+                                now=Clock(epoch('2026-10-20T00:00:00Z')).now)  # past: never loops on real time
+
+    def test_r4_a_record_error_names_its_own_stage(self):
+        class NoImpact(FakeClient):
+            def record(self, data):
+                for row in data:
+                    row.get('routerResult', {}).pop('priceImpactPercent', None)
+                return super().record(data)
+        _, records = capture(NoImpact())
+        self.assertEqual({r['stage'] for r in records if r.get('symbol') in TOKENS}, {'RECORD'})
+
+    def test_r5_the_wrapper_reports_a_capture_that_dies_at_startup(self):
+        import os
+        import subprocess
+        script = Path(__file__).resolve().parents[2] / 'tools' / 'run_quote_capture.sh'
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / 'python'
+            fake.write_text('#!/bin/sh\necho "refused: authentication_error" >&2\nexit 2\n')
+            fake.chmod(0o755)
+            env = {k: v for k, v in os.environ.items() if not k.startswith('BINANCE_')}
+            env.update(BINANCE_API_KEY='k-synthetic-123', BINANCE_SECRET_KEY='s-synthetic-456', PYTHON=str(fake),
+                       STARTUP_CHECK_SECONDS='1')
+            result = subprocess.run(['bash', str(script), WALLET, '2026-10-19T00:00:00Z', str(Path(tmp) / 'out')],
+                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('authentication_error', result.stderr)
+            self.assertNotIn('synthetic', result.stdout + result.stderr)
+
+
+if __name__ == '__main__':
+    unittest.main()

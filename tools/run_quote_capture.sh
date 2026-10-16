@@ -36,5 +36,13 @@ if [[ $dry == 1 ]]; then
 fi
 cd "$root"
 nohup "${cmd[@]}" >>"$log" 2>&1 &
-echo "capture running as PID $! until $until; log: $log"
+pid=$!
+# A rejected key, region or argument stops the capture within seconds; say so now, not after the weekend.
+sleep "${STARTUP_CHECK_SECONDS:-10}"
+if ! kill -0 "$pid" 2>/dev/null; then
+  echo "capture exited during startup; last log lines:" >&2
+  tail -n 5 "$log" >&2
+  exit 1
+fi
+echo "capture running as PID $pid until $until; log: $log"
 echo "summarize afterwards: $python -m larp.marketdata.cost_summary summarize --captures $dir --output <summary.json>"
