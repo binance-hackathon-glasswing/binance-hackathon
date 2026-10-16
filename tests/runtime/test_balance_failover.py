@@ -121,6 +121,7 @@ class FailoverDriver(AdoptionHarness):
         driver = self.two(self.prepare(raw=self.raw))
         self.assertEqual(self.tick(driver)['balance_check'], 'SURPLUS_ONLY')  # from the primary
         self.primary.fail = DependencyUnavailable('RPC unavailable')
+        self.backup.height = self.primary.height + 1  # a newer finalized block (IDEA-055 R1)
         self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')  # confirmed by the backup
         self.assertEqual(self.book()['positions']['NVDAB']['units'], 2010)
         [adjustment] = self.events('BALANCE_ADJUSTED')[0]['adjustments']

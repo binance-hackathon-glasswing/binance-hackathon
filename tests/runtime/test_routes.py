@@ -101,7 +101,7 @@ class Plans(unittest.TestCase):
         from larp.intelligence.providers import OPENAI_ENDPOINT
         cfgs = configs()
         cfgs['runtime'] = dict(cfgs['runtime'], driver=dict(load('runtime_aiand')['driver'],
-                               balance_rpc_url=BALANCE_RPC, balance_rpc_source_id='balance-rpc'))
+                               balance_rpc_providers=cfgs['runtime']['driver']['balance_rpc_providers']))
         routed = by_endpoint(routes.plan('primary', cfgs, sources()))
         plain = by_endpoint(routes.plan('primary', configs(), sources()))
         self.assertEqual({host(ENDPOINT), host(OPENAI_ENDPOINT)}, {'api.aiand.com', 'api.openai.com'})
@@ -361,7 +361,7 @@ class Shipping(unittest.TestCase):
         hosts = set()
         routed = configs()
         routed['runtime'] = dict(routed['runtime'], driver=dict(load('runtime_aiand')['driver'],
-                                 balance_rpc_url=BALANCE_RPC))
+                                 balance_rpc_providers=routed['runtime']['driver']['balance_rpc_providers']))
         for role, cfgs in (('primary', configs()), ('primary', routed), ('signer', configs(('signer',)))):
             for d in routes.plan(role, cfgs, sources())['destinations']:
                 if d['host'] not in account_specific:
