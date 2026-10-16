@@ -225,3 +225,11 @@ Criterion IDs: the checks ported from PR #89 were numbered GA07–GA09, and GA07
   - this branch at `fd4e386`: **1621 passed, 10 skipped, 2252 subtests, 0 failed**.
   - The 10 skips are the same on both: one opt-in recorded-market artifact, one root-ignores-directory-mode test, five systemd tests (no disposable runner), three bubblewrap sandbox tests.
 - **Mirror CI:** not run on this head. Hosted Gate A is not claimed.
+
+### GA14: the balance RPC in either config form (pre-registered 2026-10-16, before the fix)
+
+PR #116 (IDEA-055 PR 5) replaces `balance_rpc_url`/`balance_rpc_source_id` in `runtime.example.json` with `balance_rpc_providers: [{url, source_id}, …]`, and the runtime refuses a driver block naming both forms. A scratch merge of #116 into this branch at `1204031` fails GA06 with "Name balance_rpc_providers or the legacy balance_rpc_url pair, not both", because `prepare()` writes the legacy pair next to the example's list.
+
+- **GA14a:** when the rendered driver block has `balance_rpc_providers`, `prepare()` with the RPC writes `balance_rpc_providers: [{url, source_id}]` (one provider, the given one) and adds no legacy key. Without the RPC it leaves the example's list unchanged and reports `BALANCE_RPC`. When the block has no list, behaviour is as in GA10 (legacy pair).
+- **GA14b:** GA13c's both-or-neither and HTTPS checks apply to both forms.
+- **GA14c:** on a scratch merge of #116's head into this branch, `tests/runtime/test_gate_a.py` passes, GA06 included, and the full suite on this branch has no new failure against its base.
