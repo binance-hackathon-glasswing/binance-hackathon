@@ -233,3 +233,10 @@ PR #116 (IDEA-055 PR 5) replaces `balance_rpc_url`/`balance_rpc_source_id` in `r
 - **GA14a:** when the rendered driver block has `balance_rpc_providers`, `prepare()` with the RPC writes `balance_rpc_providers: [{url, source_id}]` (one provider, the given one) and adds no legacy key. Without the RPC it leaves the example's list unchanged and reports `BALANCE_RPC`. When the block has no list, behaviour is as in GA10 (legacy pair).
 - **GA14b:** GA13c's both-or-neither and HTTPS checks apply to both forms.
 - **GA14c:** on a scratch merge of #116's head into this branch, `tests/runtime/test_gate_a.py` passes, GA06 included, and the full suite on this branch has no new failure against its base.
+
+### GA14 results (2026-10-16)
+
+- **Order of commits:** base merge `af0dd01` (`codex/system-testing-20261012` at `e84083c`, #112/#113; no conflicts), criteria `379e9a6`, fix `3a043c3`, form-agnostic GA10/GA14 tests `c9b7613`.
+- **GA14a–b: PASS.** `ReviewFixes.test_ga14_the_balance_rpc_follows_the_examples_form`: the list form is written with one provider and no legacy key; with no RPC, the example's list is left and `BALANCE_RPC` reported; both-or-neither and HTTPS apply; the legacy form is unchanged. Mutation (always write the legacy pair) caught.
+- **GA14c: PASS.** Scratch merge with #116 (`21ba652`, which carries #114 and #115): `test_gate_a.py` passes, GA06 included; full suite on that four-PR merge **1701 passed, 10 skipped, 2381 subtests, 0 failed**. This branch alone at `c9b7613`: **1622 passed, 10 skipped, 2254 subtests, 0 failed** (base `e84083c`: 1590 passed, 10 skipped). Python 3.12.3, local PostgreSQL 16.15, not 14.24.
+- Mirror CI: still not run on this PR (GAP-72).
