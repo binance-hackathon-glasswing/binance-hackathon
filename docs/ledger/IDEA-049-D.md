@@ -505,3 +505,45 @@ restore marker is still accepted, so legacy backups restore closed as before; (5
   `commit` and scrubbed by the export, not by the database. A compromised `larp_execution` role already receives
   signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
 - 2026-10-16 correction (Claude Code, PR #99 review): PostgreSQL's jsonb refuses the escape `\u0000`, so the first version of migration 011 would have refused a legitimate state holding a NUL character, and that execution would have stopped at a `Conflict`. The trigger now replaces `\u0000` with ` ` in its own copy before parsing; stored bytes are unchanged. The test `ArchiveReadableTables::test_d_req_023_a_nul_character_in_state_still_commits` failed before and passes after. Full suite: 1549 passed, 10 skipped, 2157 subtests (PostgreSQL 16.15). Migration 011 is not applied to any hosted database yet, so editing it in place is safe.
+
+### PR99-RV1: reject container-valued signed-byte fields (2026-10-16)
+
+Follow-up to [the P1 review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/99#discussion_r4291176074).
+PR #99 is merged; remediation starts from integration commit `793b382` on
+`codex/pr99-archive-guard-fix`. Migration 011's JSONPath comparisons miss objects and nested arrays:
+`larp_execution` can write `{"raw_hex":{"x":SIGNED_TX}}` or `{"raw_hex":[[SIGNED_TX]]}` and
+`larp_archive` can read the original usable bytes. This invalidates the earlier blanket acceptance-2 claim.
+
+Pass criteria registered before running the regressions:
+1. As `larp_execution`, INSERT/UPDATE of execution state and INSERT of journal events reject every
+   signed-byte field value except JSON null and the exact string `SIGNED_MARKER`, at any depth.
+   Cover all five aliases, object/array containers, empty containers, other scalar types, and duplicate JSON keys.
+2. Rejected writes are atomic; archive reads retain the original clean rows. Null and marker values remain
+   readable byte-for-byte, and the existing NUL-character/backup/restore/execution checks still pass.
+3. An additive migration upgrades an already-migrated 011 database without changing 011's checksum;
+   rerunning migrations is idempotent.
+4. Run the focused PostgreSQL 14.24 suite and the full offline suite. No credentials, live RPC, broadcasts
+   or cloud changes. Alternate-key/other-encoding signed bytes remain outside this field-name guard;
+   do not claim that this closes #23's entire archive-read boundary.
+
+Implementation: migration `012_execution_public_field_values.sql` replaces the trigger function without
+editing 011 or changing role grants. It walks `json` objects and arrays and explicitly permits only JSON null
+or the exact restore-marker string under signed-byte keys. Using `json` preserves duplicate keys that
+`jsonb` would discard; checking the original field types rejects containers, booleans and numbers.
+The existing NUL-escape handling changes only the check's copy, never the stored bytes.
+
+Verification:
+- Finalized container/scalar and duplicate-key regressions against the original 011 function:
+  **122 failing cases, zero errors**, using isolated disposable schemas.
+- After 012: four new role/upgrade tests **PASS**, including 152 subtests, on PostgreSQL 14.24 / Python 3.12.14.
+- The original direct-write probe now refuses ordinary, object and nested-array signed-byte forms.
+  The unrelated-key case is still readable, confirming the documented limitation.
+- Full offline suite on macOS / Python 3.12.14 / PostgreSQL 14.24: **1561 passed, 9 skipped,
+  2321 subtests passed**, in 337.73 seconds. Command: `python -m pytest -q -p no:cacheprovider`,
+  with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, a disposable `LARP_TEST_DATABASE_URL`, and credentials unset.
+  This includes existing backup/restore, NUL-character and execution integrity/recovery regressions.
+  No hosted migration or Linux/systemd acceptance is claimed.
+
+Local implementation and regression verification are complete. Publication/integration (Keith, after user
+approval) and the first-host migration check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the
+alternate-key/encoding archive-read limitation above remains open.
