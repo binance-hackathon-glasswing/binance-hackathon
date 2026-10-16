@@ -481,3 +481,26 @@ backlog line is removed with this acceptance/merge change. The production
 day-roll window/cadence remains a team decision under #31 and the existing
 IDEA-048/050 backlog entry; real-host qualification and unrelated CI obligations
 are unchanged. No issue is closed by this decision.
+
+### #23 acceptance 2: the archive role cannot read signed bytes (2026-10-16)
+
+Claude Code session at the user's request ("complete the issues you can"). Pass criteria, written before the change:
+(1) as `larp_execution`, inserting or updating `execution_records.state` or inserting `execution_journal.event` with a
+non-null `raw_hex` is refused by the database; (2) the same holds for `signedTransaction`/`rawTransaction` at any
+depth and for a non-JSON value; (3) `ExecutionStore.commit` refuses a whole signed transaction under any key; (4) the
+restore marker is still accepted, so legacy backups restore closed as before; (5) the full suite stays green.
+
+- **Migration 011** (`migrations/011_execution_public_bytes.sql`): a `BEFORE INSERT OR UPDATE` trigger on both
+  archive-readable columns requires UTF-8 JSON with no non-null signed-bytes field, except `SIGNED_MARKER`.
+- **`ExecutionStore.commit`** also checks the state and the journal event with `backup.without_signed_bytes`, which
+  finds a whole RLP-encoded signed transaction under any key.
+- **Tests:** `tests/runtime/test_anchors_roles.py::Roles::test_g2_23_execution_role_cannot_store_signed_bytes_where_archive_reads`
+  and `tests/runtime/test_final_review_d.py::ArchiveReadableTables` (2 tests). Red without the change (11 failures
+  and subtest failures), green with it. Fixtures that model rows written before the guard now say so
+  (`SET LOCAL session_replication_role = replica`); role fixtures store `{}` instead of `\x00`.
+- **Result: PASS (1–5).** Full suite on local PostgreSQL 16.15, Python 3.13: 1547 passed, 10 skipped, 2157
+  subtests (base `7a8a246`: 1518 passed, 8 skipped, before the base moved to the integration branch). Mirror CI
+  (PostgreSQL 14.24) not run.
+- **Limit:** the trigger matches field names only; a bare hex signed transaction under another key is refused by
+  `commit` and scrubbed by the export, not by the database. A compromised `larp_execution` role already receives
+  signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
