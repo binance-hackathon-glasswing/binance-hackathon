@@ -1,7 +1,7 @@
 # IDEA-061 — Gas top-up round end to end, and no top-up the service cannot settle (#30 slice)
 
 - Date / owner: 2026-10-16 SGT / built with Claude Code at the team's request. Review: Isaac (C, execution and native settlement), Keith (B, gas accounting), Yao Zhu (D, round logging).
-- Status: open (criteria pre-registered; T7–T8 and the fix not run)
+- Status: built (T1–T8 PASS on disposable PostgreSQL 16; full local suite PASS; owners' review open; #30 stays open)
 - Links: #30 (R08, P1; acceptance 2); IDEA-039 GB-NATIVE (PR #74, native settlement); PR #41 / #66 (`NativeGasQuotePort`, acceptance 1); IDEA-049-D row "#30 R08" (`test_l3_l4_gas_topup_round`); IDEA-049-C C-OPEN-005; GAP-46 (B11 round-log format), GAP-49 (gas operations). Related, not in scope: #56 (no top-up after `new_risk_end`, triaged separately), #46, #54.
 
 ## What and why
@@ -33,6 +33,19 @@ Nothing changes in the planner, the gas policy (`larp/risk/gas.py`), the account
 
 T1–T6 exercise code that already exists. A first draft of them was run once during triage, on the unchanged base, to find out whether the path worked (6 passed, 3 subtests); that run is why they are evidence, not a reproduction. T7–T8 reproduce the defect and have not been run.
 
-## Results
+## Results (2026-10-16, Linux, venv `/opt/larp-venv`, disposable PostgreSQL 16)
 
-NOT RUN (except the triage run of T1–T6 noted above).
+- Branch `claude/issue-30-gas-replenishment` from base `7a8a246` (`codex/system-testing-20261012`). Criteria committed at `d7a7f0a` before the T7–T8 tests and the fix.
+- **Red** at `f68d319` (tests only): `tests/integration/test_gas_top_up_round.py` **9 failed, 1 passed**. T7 failed on both subtests with "Blocked not raised": `map_command` mapped a `GAS_TOP_UP` command with native settlement absent or false. That is the defect. T8 failed on `ImportError` (no `execution_mapping`). T2–T6 failed on `TypeError` (no `native_settlement` argument yet). T1 passed.
+- **Fix** at `7c55448`: `larp/execution_live/service.py` (`map_command` refusal), `larp/execution_live/main.py` (`execution_mapping`, used by `build_execution`), `config/execution/README.md` (one paragraph). Two existing tests that map a top-up now pass `native_settlement=True`: `tests/risk/test_b_regressions.py` (scale check) and `tests/execution/test_review_fixes.py` (which also asserts the refusal without it).
+- **Green:** T1–T8 **8 passed, 10 subtests**; with the two edited test files and `test_live_boundaries.py`: 64 passed, 16 subtests.
+- **Mutation:** disabling the `map_command` refusal makes T7 (both subtests) and `test_gas_accounting_units_convert_to_native_chain_units` fail (3 failed); binding `native_settlement=True` whatever the config makes T8 fail (`native_trace` absent and false). Both files restored from the commit afterwards.
+- **Full suite** `python -m pytest -q -p no:cacheprovider`: branch **1554 passed, 7 skipped, 2157 subtests passed, 0 failed** (315 s). Base `7a8a246`, same environment, run from an exported copy outside any repository: 1544 passed, 2 failed, 7 skipped, 2147 subtests passed (356 s). Both base failures need a repository checkout (`test_deploy_presetup ...ignored_directory`, `test_final_review_d ...no_credentials_are_tracked`) and pass on the branch. 1546 + 8 new tests = 1554; subtests +10.
+- Not covered: `build_execution` is not exercised past the Executor capability gate, so the test checks `execution_mapping`, not that `build_execution` calls it (it does, by reading). No provider, signing, broadcast or real chain data.
+
+## Still open for #30 (not in this entry)
+
+- Dev-wallet first-gas swap by a team member (F-120, `DEPLOYMENT_DAY.md` §5).
+- Native tracing qualified on a real provider (DR02/03, IDEA-039). Until then `native_trace` stays false and every top-up command is refused.
+- Top-up size and BNB floor (G-28); whether BNB counts in equity (Q-39).
+- #56 (no top-up after `new_risk_end`) is handled separately.
