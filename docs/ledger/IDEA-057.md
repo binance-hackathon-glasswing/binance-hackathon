@@ -149,6 +149,18 @@ Non-blocking findings from the PR #86 review ([#93](https://github.com/binance-h
 
 No AR1–AR8 or PR85-R1/R2 test may regress; the full local suite (Python 3.12, PostgreSQL 14) is run after the fix and reported with exact counts.
 
+#### Issue #93 results — 2026-10-16 SGT
+
+Order: criteria `657fd03` → fix and tests `c075849`. The three new tests were run against the unfixed code first and failed for the expected reasons (I93-1: one of two connections left open; I93-2: two `OPENAI_USAGE_EXCEEDED_BOUND` rows; I93-3: a `0o750` parent was accepted).
+
+| ID | Result | Evidence (`tests/intelligence/test_aiand_routing.py`, `BudgetAdmission`) |
+|---|---|---|
+| I93-1 | PASS | `test_i93_1_initialize_closes_every_connection_it_opens` |
+| I93-2 | PASS | `test_i93_2_one_switch_row_per_real_switch` |
+| I93-3 | PASS | `test_i93_3_parent_directory_must_be_private_and_owned` (also: `initialize` refuses before creating the file) |
+| I93-4 | PASS | Validation record line updated |
+
+Full local suite at `c075849` (Linux x86_64 container, Python 3.12.3 venv from `deploy/requirements-test.lock`, disposable PostgreSQL 14.24 in Docker, `python -m pytest -q -p no:cacheprovider`): **1551 passed, 8 skipped, 2210 subtests passed**. Base `3b4d1e6` in the same environment: 1548 passed, 8 skipped (+3 tests, no new failure). Skips are environmental: 1 opt-in external market artifacts, 1 "root ignores the directory mode" (the container runs as root), 3 disposable-systemd runner not enabled, 3 bubblewrap not installed. Hosted CI not used (org Actions minutes exhausted). The runbook now says to run `init` as the runtime user, since the ledger refuses a parent directory it does not own.
 ## Deploy-branch integration for the Gate A shadow trial — prospective criteria (2026-10-16 SGT)
 
 Branch `claude/aiand-shadow-gate-a` from `codex/system-testing-20261012`, with the routing branch (plus the #93 fixes) merged in. Written and pushed before the changed code runs. Each new test must fail before its change and pass after it.
