@@ -600,7 +600,8 @@ class BalanceCheck:
         before = current.read()['version']
         c.store.commit(batch_for(current, event_id, event, projection=projection))
         after = c.store.load(c.run_id)
-        if self.candidate is not None and self.candidate['version'] == before:
+        if (self.candidate is not None and self.candidate['version'] == before
+                and after.read()['version'] == before + 1):
             committed = after.read()
             self.candidate.update(version=committed['version'], portfolio=committed['projection']['portfolio'],
                                   execution_state=committed['execution_state'])
