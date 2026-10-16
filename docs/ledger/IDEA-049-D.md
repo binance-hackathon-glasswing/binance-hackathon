@@ -511,3 +511,15 @@ restore marker is still accepted, so legacy backups restore closed as before; (5
   - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
 
   Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
+
+### PR112-L01 — independent local review (2026-10-16)
+
+Prospective acceptance, recorded before execution: review `a0212bd892ca5336a6478f50e33d882fb105fbaf`
+against integration base `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; require the full existing offline
+suite on Python 3.12.15 / PostgreSQL 14.24 to have no failures or unexpected expected-failures,
+including migration 011, the NUL regression, backup redaction and the least-privilege role checks.
+Run in disposable local Linux containers without production credentials or external networking.
+Account for every skip and report real-systemd/host-bundle/Terraform verification separately.
+Confirm the PR changes documentation only. Mirror run links must be distinguished from independently
+retrieved CI evidence; both the private mirror repository and run API return HTTP 404 to this reviewer.
+No hosted/RDS or live-wallet acceptance follows from local tests.
