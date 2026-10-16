@@ -24,9 +24,13 @@ BLOCK = '0x' + 'b' * 64
 STAMP = '2026-10-15T01:00:00Z'
 
 
+USDT_UNITS = 199 * 10**18  # equals the snapshot ledger's 199000000 micro-USDT (GB-2)
+
+
 class ChainOpener:
-    def __init__(self, *, bad=None):
+    def __init__(self, *, bad=None, usdt=USDT_UNITS, tokens=None):
         self.bad, self.calls, self.blocks = bad, [], 0
+        self.usdt, self.tokens = usdt, tokens or {}
 
     def open(self, request, timeout):
         req = json.loads(request.data)
@@ -37,7 +41,19 @@ class ChainOpener:
             self.blocks += 1
             result = dict(number='0xa', hash=('0x' + 'e' * 64 if self.bad == 'reorg' and self.blocks > 2 else BLOCK))
         elif method == 'eth_getBalance': result = '0x0' if self.bad == 'zero' else hex(10**18)
-        elif method == 'eth_getTransactionCount': result = '0x4' if self.bad == 'pending' and params[-1] == 'pending' else '0x3'
+        elif method == 'eth_getTransactionCount':
+            result = ('0x4' if self.bad == 'pending' and params[-1] == 'pending'
+                      else '0x2' if self.bad == 'unfinalized' and params[-1] == '0xa' else '0x3')
+        elif method == 'eth_call':
+            from larp.execution import USDT
+            target, tag = params
+            assert tag == '0xa', tag
+            if target['data'] == '0x313ce567':
+                result = '0x' + format(18, '064x')
+            else:
+                assert target['data'] == '0x70a08231' + '0' * 24 + WALLET[2:], target['data']
+                units = self.usdt if target['to'] == USDT else self.tokens.get(target['to'], 0)
+                result = '0x' + format(units, '064x')
         elif method == 'eth_getCode': result = '0x60006000'
         else: raise AssertionError('unexpected endpoint: ' + method)
         return Response(json.dumps(dict(jsonrpc='2.0', id=req['id'], result=result)).encode())
@@ -171,3 +187,76 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(reports[0].stem, hashlib.sha256(reports[0].read_bytes()).hexdigest())
             self.assertFalse(result['signing_enabled'])
             self.assertNotIn('DO_NOT_READ', reports[0].read_text() + output.getvalue())
+
+
+class ChainGaps(unittest.TestCase):
+    """IDEA-039 GB-CHAIN-20261016: GB-1 unfinalized transactions, GB-2 full starting-balance cross-check."""
+
+    def setUp(self):
+        self.reports = ReportTests('test_gb_report_untrusted_ready_flag_is_rejected')
+        self.reports.setUp()
+        self.addCleanup(self.reports.doCleanups)
+
+    def capture(self, **kw):
+        with tempfile.TemporaryDirectory() as root:
+            capture = ChainEvidenceTests().probe(root, ChainOpener(**kw))
+        capture['source_id'] = 'fixture-rpc'
+        return capture
+
+    def pinned(self, **values):
+        inputs = deepcopy(self.reports.inputs)
+        for name, value in values.items():
+            raw = json.dumps(value).encode()
+            path = self.reports.root / (name + '.json')
+            path.write_bytes(raw)
+            inputs['files'][name] = dict(path=str(path), sha256=hashlib.sha256(raw).hexdigest())
+        return self.reports.report(inputs)['checks']
+
+    @staticmethod
+    def ledger():
+        ledger = snapshot().context.read()['portfolio']
+        ledger.update(mode='dev', run_id='run', wallet_id=WALLET, bnb_decimals=18, bnb_units=10**18)
+        return ledger
+
+    def test_gb1a_a_mined_but_unfinalized_transaction_is_a_blocker(self):
+        good, bad = self.capture(), self.capture(bad='unfinalized')
+        self.assertEqual((good['finalized_nonce'], good['latest_nonce']), (3, 3))
+        self.assertNotIn('UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION', good['blockers'])
+        self.assertEqual(bad['finalized_nonce'], 2)
+        self.assertIn('UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION', bad['blockers'])
+
+    def test_gb1b_dr03_refuses_missing_or_mismatched_finalized_nonce(self):
+        capture = self.capture()
+        self.assertIn('snapshot checked', self.pinned(chain=capture)['DR-03']['detail'])
+        missing = dict(capture); missing.pop('finalized_nonce')
+        for value in (missing, dict(capture, finalized_nonce=2), dict(capture, finalized_nonce='3')):
+            with self.subTest(value=value.get('finalized_nonce')):
+                self.assertEqual(self.pinned(chain=value)['DR-03']['status'], 'BLOCKED')
+
+    def test_gb2a_usdt_and_every_bstock_are_read_at_the_finalized_block(self):
+        from larp.execution import USDT
+        from larp.marketdata.port import TOKENS
+        capture = self.capture(tokens={TOKENS['NVDAB']: 7})
+        self.assertEqual(set(capture['tokens']), {'USDT', *TOKENS})
+        self.assertEqual(capture['tokens']['USDT'], dict(contract=USDT, decimals=18, units=USDT_UNITS))
+        self.assertEqual(capture['tokens']['NVDAB']['units'], 7)
+
+    def test_gb2b_dr06_cross_checks_cash_and_positions(self):
+        from larp.marketdata.port import TOKENS
+        ok = 'funding/18-decimal ledger checked'
+        self.assertIn(ok, self.pinned(chain=self.capture(), initial_state=self.ledger())['DR-06']['detail'])
+        held = self.ledger()
+        held['positions']['NVDAB'] = dict(units=5 * 10**18, decimals=18, cost_basis_units=1)
+        self.assertIn(ok, self.pinned(chain=self.capture(tokens={TOKENS['NVDAB']: 5 * 10**18}),
+                                      initial_state=held)['DR-06']['detail'])
+        unknown = self.ledger()
+        unknown['positions']['XYZB'] = dict(units=0, decimals=18, cost_basis_units=0)
+        for name, chain, ledger in (
+                ('usdt differs', self.capture(usdt=USDT_UNITS + 10**12), self.ledger()),
+                ('chain holds a bStock the ledger lacks', self.capture(tokens={TOKENS['SKHYB']: 1}), self.ledger()),
+                ('ledger holds more than chain', self.capture(tokens={TOKENS['NVDAB']: 4 * 10**18}), held),
+                ('unknown position', self.capture(), unknown)):
+            with self.subTest(name):
+                checks = self.pinned(chain=chain, initial_state=ledger)
+                self.assertEqual(checks['DR-06']['status'], 'BLOCKED')
+                self.assertIn('absent or mismatched', checks['DR-06']['detail'])
