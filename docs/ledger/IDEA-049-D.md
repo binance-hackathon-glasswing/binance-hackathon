@@ -506,3 +506,57 @@ restore marker is still accepted, so legacy backups restore closed as before; (5
   signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
 - 2026-10-16 correction (Claude Code, PR #99 review): PostgreSQL's jsonb refuses the escape `\u0000`, so the first version of migration 011 would have refused a legitimate state holding a NUL character, and that execution would have stopped at a `Conflict`. The trigger now replaces `\u0000` with ` ` in its own copy before parsing; stored bytes are unchanged. The test `ArchiveReadableTables::test_d_req_023_a_nul_character_in_state_still_commits` failed before and passes after. Full suite: 1549 passed, 10 skipped, 2157 subtests (PostgreSQL 16.15). Migration 011 is not applied to any hosted database yet, so editing it in place is safe.
 - 2026-10-16 decision D-DN-09 (Keegan, section B): split by reason. `CLOCK` and any unlisted reason block every signature; the integrity quarantine stays total. `DELIVERY_DEADLINE` and `REPEATED_FAILURES` pause only new spending and discretionary trades, so planned mandatory bStock sells still execute under every existing check. Criteria HS1–HS6 and results are in IDEA-049-B "D-DN-09: HALT split by reason".
+- 2026-10-16 mirror CI on the merged head (#104): run [38874982203](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874982203) on `codex/system-testing-20261012` at `1388f80` (#99, #100, #101, #102 and #103 merged). All four jobs pass:
+  - runtime: Python 3.12.15, PostgreSQL 14.24 service container; full suite **1582 passed, 6 skipped, 2194 subtests, 0 failed**; real-systemd 5 passed; offline demo and restricted Docker smoke run pass;
+  - host bundle (x86_64 build and Amazon Linux provisioning);
+  - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
+
+  Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
+
+### PR112-L01 — independent local review (2026-10-16)
+
+Prospective acceptance, recorded before execution: review `a0212bd892ca5336a6478f50e33d882fb105fbaf`
+against integration base `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; require the full existing offline
+suite on Python 3.12.15 / PostgreSQL 14.24 to have no failures or unexpected expected-failures,
+including migration 011, the NUL regression, backup redaction and the least-privilege role checks.
+Run in disposable local Linux containers without production credentials or external networking.
+Account for every skip and report real-systemd/host-bundle/Terraform verification separately.
+Confirm the PR changes documentation only. Mirror run links must be distinguished from independently
+retrieved CI evidence; both the private mirror repository and run API return HTTP 404 to this reviewer.
+No hosted/RDS or live-wallet acceptance follows from local tests.
+
+- **PR112-D01 (P2, tracking):** the new mirror record left the live backlog saying the WR-D mirror
+  dispatch was still pending, and the ledger index omitted the new verification. Reconcile those
+  summaries with this record; keep the actual evidence-access, org Actions and deployment gates open.
+- **Evidence qualification:** the preceding mirror-CI paragraph records the PR author's report.
+  This reviewer cannot independently inspect either linked run or its job logs because the private
+  mirror returns HTTP 404. Its all-four-job result and counts remain author-reported. The full
+  reported source revision is `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; PR head
+  `a0212bd892ca5336a6478f50e33d882fb105fbaf` changes only this Markdown file relative to it.
+  Keegan owns accessible all-job evidence/confirmation for #104; the account owner owns the org
+  Actions rerun under #98. This review does not close either issue.
+
+**PR112-L01 result: PASS (local offline scope).** On native ARM64 Linux in a disposable Docker
+systemd runner, Python 3.12.15 and the workflow-pinned PostgreSQL 14.24 image
+(`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+`LARP_TEST_SYSTEMD=1 python -m pytest -q -ra -p no:cacheprovider` gives **1587 passed,
+1 skipped, 0 failed, 0 xfailed, 2199 subtests passed** (194.94 s). The sole skip is the opt-in
+external recorded-market dataset. Migration 011, NUL handling, signed-byte archive/backup checks,
+least-privilege roles, bubblewrap and all five real-systemd checks run. A separate systemd run
+also passes 5 tests / 5 subtests. `pip check` passes. A direct probe after migrations and
+`roles.sql` confirms normal execution inserts and the signer's `UPDATE (revision)` succeed.
+The environment contains only synthetic test settings; external networking is disabled.
+
+Initial harness attempt: 1581 passed / 1 failed / 6 skipped. The failure was the reviewer's
+read-only repository mount refusing synthetic files in `deploy/activation`; the complete rerun
+uses a writable disposable copy and requires no source change. Final full-suite log SHA-256:
+`bf3f93ffadad994734d253dbb0f283a8b45c4fe712f5c0179d030ac3d7b7bf93`.
+Logs and `summary.json` are retained outside Git at `/private/tmp/larp-pr112-artifacts/`.
+
+**Disposition:** PR112-D01 is fixed in the ledger index and live backlog. No runtime defect was
+found in this documentation-only PR, and no executable file is changed by this review.
+Terraform, Amazon Linux host-bundle provisioning, Docker smoke and the offline demo are not
+independently rerun here; the preceding mirror report remains their author-reported evidence.
+Hosted RDS/IAM/TLS and live-wallet behavior are not tested. #104's accessible all-job evidence
+(Keegan), #98's org Actions rerun (account owner), and the existing hosted/deployment gates
+remain open with their recorded owners.
