@@ -441,7 +441,9 @@ class Settings(unittest.TestCase):
     def test_b9_the_example_names_every_balance_setting(self):
         from pathlib import Path
         example = json.loads((Path(__file__).resolve().parents[2] / 'config/runtime/runtime.example.json').read_text())
-        self.assertTrue(set(self.BLOCK) <= set(example['driver']))
+        # PR 5: the example names the ordered provider list instead of the legacy single-provider keys.
+        self.assertTrue({'balance_rpc_providers', 'balance_check_interval_ms', 'balance_check_max_age_ms'}
+                        <= set(example['driver']))
         self.assertEqual((example['driver']['balance_check_interval_ms'], example['driver']['balance_check_max_age_ms']),
                          (INTERVAL, MAX_AGE))
 
