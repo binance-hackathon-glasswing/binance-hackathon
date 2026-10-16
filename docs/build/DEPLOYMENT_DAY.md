@@ -120,7 +120,7 @@ Also `driver.balance_rpc_url` and `driver.balance_rpc_source_id`: the manifested
    - Don't start `larp-execution`: it would only exit 2 at the capability gate.
 9. **Gate A evidence.**
    - One shadow round logged and ACKed by the real receiver (R-01).
-   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07).
+   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07): `python -m larp.runtime.routes --role primary …` on `primary`, and `--role signer` on the signer once its access route exists; commands and the approved list are in [architecture-deployment.md](architecture-deployment.md) "Approved network destinations" (IDEA-062). Keep both `RouteCheck.v1` reports.
    - `chronyc tracking` (R-08).
    - An alarm email received.
    - Record each in IDEA-051 and review Gate A in IDEA-042 before leaving it running.

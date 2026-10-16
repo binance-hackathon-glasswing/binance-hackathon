@@ -9,7 +9,11 @@ from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_
 from larp.marketdata.port import TOKENS
 
 
-def map_command(command, *, run_id, wallet, version_id, router, token_decimals, limits, now_ms):
+def map_command(command, *, run_id, wallet, version_id, router, token_decimals, limits, now_ms,
+                native_settlement=False):
+    """I3 command -> W04 Intent. A GAS_TOP_UP is mapped only when `native_settlement` is True: its fill settles only
+    through the transaction-bound native trace (`ChainEvidence.native_receipt`, config `native_trace`), so without it
+    the swap's USDT would leave the wallet with no I4 fact to release its reservations (#30, IDEA-061)."""
     try:
         if hasattr(command, 'read'):
             command = command.read()
@@ -25,6 +29,8 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
         if kind == 'GAS_TOP_UP':
             if symbol != 'BNB' or side != 'BUY':
                 raise Blocked('gas top-up must buy native BNB')
+            if native_settlement is not True:
+                raise Blocked('gas top-up needs native settlement (native_trace) to settle its fill')
             token = NATIVE_BNB
             receive_scale = integer(p['receive_decimals'])
             if receive_scale > 18 or p.get('decimals', receive_scale) != receive_scale:
