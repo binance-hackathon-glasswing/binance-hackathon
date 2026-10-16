@@ -29,6 +29,14 @@ The $50 allocation leaves $10 reserved and admits at most $40 of cumulative Open
 
 This is a single-primary allocated budget, not a global OpenAI balance API. Deduct unrelated usage before starting; do not spend this allocation using unbudgeted bake-off scripts/other keys. Carry/reconcile the ledger on host migration; do not start a second primary from a stale copy. All budget/storage failure blocks OpenAI dispatch. External funding remains separate.
 
+Admission time counts against the model call's existing deadline. If admission
+finishes after expiry, no POST is sent and its reservation remains conservatively
+charged. A settlement or credit-switch storage failure after a reply preserves the
+paid request/reply artifacts, usage, cost, reasoning and original provider outcome;
+the assessment falls back externally. Further OpenAI dispatch stays blocked in
+that process even if storage becomes readable again. Reconcile ledger reservations
+and provider usage before restarting the model worker.
+
 ## Opt-in runtime configuration
 
 Copy/review `config/intelligence/aiand-routing.example.json`, then pin its file SHA-256 in the runtime's existing `driver` block:

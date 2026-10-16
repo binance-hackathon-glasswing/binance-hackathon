@@ -106,3 +106,32 @@ the provider outcome and artifacts, and latch local budget unavailability until
 process restart/reconciliation. Existing durable reservations protect restart
 accounting. Results pending execution of the pushed change. No adoption or whole
 backlog item is completed by these fixes.
+
+#### PR85-R1/R2 verification — 2026-10-16 SGT
+
+Tested committed/pushed code: `8d12ae0b7f77f169b0de2aaee5e4a9564fdb1af2`.
+Local Ubuntu 22.04 WSL, x86_64, Python 3.12.15. Synthetic transports only;
+no model inference, wallet, AWS service calls or deployment.
+
+- Intelligence discovery: `python3.12 -m unittest discover -s tests/intelligence -t . -q`:
+  **330 passed, 1 skipped** (331 cases, 43.556 seconds), including all 28 routing
+  tests and the six wall/monotonic admission-delay subcases in the new deadline test.
+- Runtime credentials/driver: `python3.12 -m unittest tests.runtime.test_credentials tests.runtime.test_driver -q`:
+  **16 passed, 6 skipped** (22 cases, 2.336 seconds); PostgreSQL-dependent driver
+  cases remain unrun without a disposable database.
+- PR85-R1/R2 pass for the stated synthetic scope: expired admissions make no POST,
+  live admissions receive the reduced allowance, settlement failure retains paid
+  artifacts/usage/cost/reasoning, failed credit-switch writes preserve the provider
+  refusal, external reviews run, and later OpenAI calls stay blocked locally.
+- Changed Python AST and `git diff --check` pass. No data-source/config/authority,
+  production profile, dependency lock or workflow change is required.
+
+Initial environment attempts are separate: WSL's system Python 3.10 passed the
+focused 65 tests with 6 skips after adding pinned `botocore==1.43.111` to a
+temporary dependency directory. Broader discovery on 3.10 had three failures and
+two errors caused by unsupported trailing-Z ISO-date parsing and missing dotenv.
+The final passing runs used temporary Python 3.12.15 plus pinned
+`python-dotenv==1.2.4`. Windows Python 3.14 also passed the standalone deadline test.
+Hosted CI remains quota-blocked/skipped; no full repository or hosted/live
+acceptance is claimed. MR-01–06 and the existing adoption backlog retain their
+owners and remain open. The documentation update after this test changes no code.
