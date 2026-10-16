@@ -498,3 +498,8 @@ Org GitHub Actions jobs on these heads stop after about 3 s with no step output,
 - RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
 - RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
 - RR2-R3: a primary below the already-settled block cannot suppress a healthy backup. Use the current ledger floor on each whole-provider read; all-behind stays refused. Bind the floor in build_driver and test fresh/lagging/all-behind providers. No new freshness policy or provider choice.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head 5c1407d: focused balance/failover/routes/register/HALT/driver modules 111 passed / 107 subtests on Linux/Python3.12/PostgreSQL14.24. Inherits RR2-R1/R2 above. Lagging-primary reproduction returns BLOCK_BEHIND_LEDGER with zero backup calls despite a healthy backup. RR2-R3 uses only the existing settled-block floor; provider choice and hosted checks retain their owners. All RR2 fixes remain unexecuted pending approved push. All runs used synthetic inputs, no production credentials and no external network.
