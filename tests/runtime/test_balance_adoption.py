@@ -308,8 +308,8 @@ class Adoption(AdoptionHarness):
         self.assertEqual(self.tick(driver)['balance_check'], 'DEFICIT')
         _, record = self.round(driver)
         self.assertIn('GAS_TOP_UP_SPENDING_BLOCKED', {r['reason'] for r in record['plan']['rejections']})
-        self.tick(driver, MINUTE)
-        self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')  # a round came between: re-read
+        # A blocked, hold-only round no longer starves confirmation (PR115-C04).
+        self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')
         self.assertEqual(self.book()['bnb_units'], 50_000)
         _, record = self.round(driver)
         self.assertNotIn('GAS_TOP_UP_SPENDING_BLOCKED', {r['reason'] for r in record['plan']['rejections']})

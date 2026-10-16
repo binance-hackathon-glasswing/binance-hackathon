@@ -1,9 +1,10 @@
-"""PR115-C01/C02: independent safety regressions; synthetic ports and disposable PostgreSQL only."""
+"""PR115-C01/C02/C04: independent safety regressions; synthetic ports and disposable PostgreSQL only."""
 
 from datetime import datetime, timezone
 
 from larp.runtime.driver import DayRoll
 from larp.runtime.coordinator import batch_for
+from larp.contracts import ContractError
 from tests.runtime.test_balance_adoption import AdoptionHarness, MINUTE, PRICE, RUN, SECOND
 
 
@@ -21,6 +22,41 @@ class Confirmation(AdoptionHarness):
         self.assertEqual(second['balance_check'], 'ADJUSTED')
         self.assertEqual(self.book()['positions']['NVDAB']['units'], 2010)
         self.assertIsNotNone(second['round_id'])
+        # The adjustment and the surrounding real cadence rounds must replay exactly.
+        from tests.runtime.test_balance_adoption import PriceJump
+        journal, expected = list(self.store.journal(RUN)), self.store.verify(RUN)
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        self.assertEqual(PriceJump.replay(self, driver, journal), expected)
+
+    def invalidating_event(self, event, **batch_fields):
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        self.assertEqual(check(t), 'SURPLUS_ONLY')
+        self.store.commit(batch_for(self.store.load(RUN), 'fixture:activity', event, **batch_fields))
+        self.assertNotEqual(check(t + MINUTE), 'ADJUSTED')
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertEqual(check(t + 2 * MINUTE), 'ADJUSTED')
+
+    def test_an_intervening_command_invalidates_confirmation_without_a_balance_change(self):
+        self.invalidating_event(dict(kind='INCIDENT', incident=dict(type='FIXTURE')),
+                                commands=[dict(command_id='fixture', kind='FAKE', expires_ms=10**15)])
+
+    def test_an_unrecognised_event_invalidates_confirmation(self):
+        self.invalidating_event(dict(kind='UNKNOWN_FUTURE_EVENT'))
+
+    def test_journal_suffix_respects_both_bounds_and_rejects_invalid_bounds(self):
+        driver = self.prepare()
+        self.round(driver)
+        self.round(driver)
+        journal = self.store.journal(RUN)
+        self.assertGreater(len(journal), 3)
+        self.assertEqual(self.store.journal(RUN, after_version=1, through_version=3), journal[1:3])
+        self.assertEqual(self.store.journal(RUN, after_version=1), journal[1:])
+        for bounds in (dict(after_version=-1), dict(after_version=True), dict(through_version=False),
+                       dict(after_version=3, through_version=2)):
+            with self.subTest(bounds=bounds), self.assertRaises(ContractError):
+                self.store.journal(RUN, **bounds)
 
     def test_transient_reservation_between_reads_still_invalidates_confirmation(self):
         driver = self.prepare(raw=dict(NVDAB=2010))

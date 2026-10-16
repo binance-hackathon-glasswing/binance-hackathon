@@ -431,3 +431,13 @@ Regression: with one hold round per minute, two stable chain reads a minute
 apart adopt the mismatch; real transient resource activity still requires a
 new pair of reads. This is an engineering correction to the design's overly
 broad commit proxy, not a change to the owner safety or trading policy.
+
+PR115-C04 reproduced at `99c2d0b`: the continuous hold-cadence regression failed,
+while the transient-reservation safety control passed. The first focused run
+after `ebd8a97` passed 87 tests / 46 subtests, with one existing fixture failing:
+S9 still waited for an unnecessary third check after a blocked gas round. Its
+assertion is advanced to require adoption at the first eligible confirming
+check, retaining the blocked-before / top-up-enabled-after assertions. S5 now
+uses actual transient reservations; the safety assertion is retained. Additional
+checks require commands and unknown events to invalidate confirmation, validate
+bounded journal reads, and replay the continuous-cadence adoption exactly.
