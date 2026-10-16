@@ -106,3 +106,15 @@ Not ported, because they need #84's finalized-block reader (`larp/execution_live
 | ID | Check |
 |---|---|
 | GA10 | `prepare(…, balance_rpc_url=…, balance_rpc_source_id=…)` writes both into `runtime.json` `driver`, keeping the example's interval and max age. Without them, `preparation-report.json` lists `BALANCE_RPC` in `missing_inputs` and the values stay null, so the runtime still refuses a `dev` start (IDEA-055 intent). A non-HTTPS URL is refused. `tools/deploy/prepare_shadow.py` takes `--balance-rpc-url` and `--balance-rpc-source-id`. GA06 passes with fixture values: the real `build_driver` builds the balance check, and the round, restart and replay still hold. |
+
+### GA10 results (2026-10-16)
+
+- **Order of commits:** merge of `codex/system-testing-20261012` at `7a8a246` (with #84) as `7812c5c`; the `LEDGER.md` conflict was resolved by keeping the newer IDEA-049-D row plus the IDEA-055 and IDEA-058 rows. GA10 red tests next (13 failing on `prepare()`'s missing parameters; GA06 had already failed on the merged tree with `Missing balance-check settings`). Fix: `1008037`.
+- **GA06** keeps #84's balance check offline: `Rpc.call` is patched to raise `DependencyUnavailable`, so the check journals `SKIPPED:RPC_UNAVAILABLE` and replay recommits it without network.
+- **Mutations.** Each was reverted, and each was caught: settings not written; `BALANCE_RPC` not reported.
+- **Full suite.** Python 3.12.3 venv from `deploy/requirements-test.lock`, PostgreSQL 16.15 (the 14.24 container was lost when the session container was recycled), bubblewrap installed.
+  - Base `7a8a246`: 1546 passed, 7 skipped, 2147 subtests.
+  - This branch at `1008037`: **1562 passed, 7 skipped, 2176 subtests**, 0 failed.
+  - `tests/runtime/test_gate_a.py`: 16 passed.
+- **PR #87 is retargeted from `main` to `codex/system-testing-20261012`.** `main` added only the PR #81 promotion docs (3 commits), which this branch now carries.
+- Mirror CI: not yet run on this head.
