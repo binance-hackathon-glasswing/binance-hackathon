@@ -196,6 +196,16 @@ Order: merge `bc14e23` → criteria `3539161` → red tests `5b54182` (all 8 new
 
 **Finding outside this change (not fixed here).** The deterministic path has the same read-only problem in a milder form: on the real read-only mount, every deterministic tool call was recorded `TOOL_ERROR:…:ARTIFACT_WRITE_ERROR` (fetch_document, prior_context, compare_facts), so Gate A's deterministic runtime would assess without its tools. Owner: section D / Keegan (runtime wiring). `OverlayArtifacts` is the likely fix.
 
+### SG-7: deterministic tool results on the read-only evidence mount (pre-registered 2026-10-16, before the fix)
+
+Claude Code session for Keegan (section B), after the PR #114 review. This fixes the "finding outside this change" above, because it breaks Gate A's deterministic runtime (IDEA-058) on the host.
+
+| ID | Pass criterion |
+|---|---|
+| SG-7a | `build_driver` with `"assessor": "deterministic"` gives its `EvidenceAssessor` a `PortEvidenceReader` over `OverlayArtifacts`: shared = the evidence store (`<evidence_root>/artifacts`, read), private = `<market_artifact_root>/model` (write), the same private store the routed path uses. Nothing else in the deterministic wiring changes (same model, config and registry). |
+| SG-7b | With a shared store whose `put` raises `OSError(30)` (read-only), a deterministic assessment over the synthetic world makes tool calls, none ends `ARTIFACT_WRITE_ERROR`, every tool result artifact is readable from the private store, and the shared store is unchanged. The same assessment over the read-only store alone does end with `ARTIFACT_WRITE_ERROR` (the failure reproduces). |
+| SG-7c | No golden fixture is regenerated. Mutation caught: the deterministic reader set back to the shared store fails SG-7a. Full suite: no new failure against the merged base. |
+
 ## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
 
 **Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
