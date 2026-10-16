@@ -5,7 +5,7 @@
 
 - Date / owner: 2026-10-16 SGT / Keegan with Codex.
 - Status: repository implementation and local Linux qualification PASS at `5e4e974`; PR review/integration and hosted Gate A remain open.
-- Status update 2026-10-16: PR #87 now targets `codex/system-testing-20261012` (with #84/IDEA-055), not `main`. The latest local results are in "GA13 results" below; the GA10–GA12 full runs and GA13's run used PostgreSQL 16, not the CI image's 14.24. Mirror CI has not run on any head of this PR. The earlier entries below keep their dated context.
+- Status update 2026-10-16: PR #87 now targets `codex/system-testing-20261012` (with #84/IDEA-055), not `main`. The latest local results are "GA13 results" below: head `fd4e386`, 1621 passed / 10 skipped / 0 failed. The GA10–GA12 full runs and GA13's run used PostgreSQL 16 (16.15), not the CI image's 14.24. Mirror CI has not run on any head of this PR. The earlier entries below keep their dated context.
 - Request: work on remaining readiness tasks and remove Gate A functional blockers. The user is concurrently building the quote-cost summary / live strategy profile tool; do not duplicate or modify that work.
 - Base: current main `e410e49` (PR81), fetched 2026-10-16. The earlier assessment used stale local `c829fae`; its missing-driver/activation/calendar findings are superseded by IDEA-050/054 and the review merges. No hosted state is inferred from Git.
 - Scope: assemble and validate a strictly unsigned dev-shadow deployment from measured, pinned inputs, supply missing input producers where possible, and verify the production composition with synthetic external transports and disposable PostgreSQL. Never fabricate measured costs, balances, exchange identities, terms captures or hosted acceptance. Preserve signed/live refusals and all gates.
@@ -214,3 +214,14 @@ Review threads on PR #87 (Cookiemunchrr, 2026-10-16 03:01 UTC) and RV-87-01 (wtv
 - **GA13f:** each new check's mutation is caught, and the full suite passes with no new failures against the merged base.
 
 Criterion IDs: the checks ported from PR #89 were numbered GA07–GA09, and GA07 already named the pre-registered full-suite criterion. They are renamed GA-P1–GA-P3 in this change (see the note at the top).
+
+### GA13 results (2026-10-16)
+
+- **Order of commits:** base merge `de5a167` (`codex/system-testing-20261012` at `8bee81d`, #109/#110/#117; no conflicts), criteria `0451610` (pushed before the fix), fix and tests `fd4e386` (pushed before the full run).
+- **GA13a–e: PASS.** Tests `ReviewFixes.test_ga13a_*` … `test_ga13d_*`, the extended `test_ga03_ingestion_checks_unsigned_scope_and_manifest_runtime_binding` and `PortedFromPr89.test_ga_p1_*` (patches the public `issuer_matches`).
+- **GA13f mutations:** 9, each reverted and each caught: environment mode check; development-on-release check; unreadable-file reason; verified-manifest binding; single release verification; `prepare` RPC pair check; `capture` RPC pair check; class-only detail; public issuer rule.
+- **Full suite**, clean worktrees, Python 3.12.13 venv from `deploy/requirements-test.lock`, PostgreSQL **16.15** (not the CI image's 14.24), no bubblewrap or disposable systemd runner:
+  - base `8bee81d`: 1590 passed, 10 skipped, 2201 subtests, 0 failed;
+  - this branch at `fd4e386`: **1621 passed, 10 skipped, 2252 subtests, 0 failed**.
+  - The 10 skips are the same on both: one opt-in recorded-market artifact, one root-ignores-directory-mode test, five systemd tests (no disposable runner), three bubblewrap sandbox tests.
+- **Mirror CI:** not run on this head. Hosted Gate A is not claimed.
