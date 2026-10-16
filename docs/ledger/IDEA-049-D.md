@@ -561,3 +561,57 @@ independently rerun here; the preceding mirror report remains their author-repor
 Hosted RDS/IAM/TLS and live-wallet behavior are not tested. #104's accessible all-job evidence
 (Keegan), #98's org Actions rerun (account owner), and the existing hosted/deployment gates
 remain open with their recorded owners.
+
+
+### PR99-RV1: reject container-valued signed-byte fields (2026-10-16)
+
+Follow-up to [the P1 review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/99#discussion_r4291176074).
+PR #99 is merged; remediation starts from integration commit `793b382` on
+`codex/pr99-archive-guard-fix`. Migration 011's JSONPath comparisons miss objects and nested arrays:
+`larp_execution` can write `{"raw_hex":{"x":SIGNED_TX}}` or `{"raw_hex":[[SIGNED_TX]]}` and
+`larp_archive` can read the original usable bytes. This invalidates the earlier blanket acceptance-2 claim.
+
+Pass criteria registered before running the regressions:
+1. As `larp_execution`, INSERT/UPDATE of execution state and INSERT of journal events reject every
+   signed-byte field value except JSON null and the exact string `SIGNED_MARKER`, at any depth.
+   Cover all five aliases, object/array containers, empty containers, other scalar types, and duplicate JSON keys.
+2. Rejected writes are atomic; archive reads retain the original clean rows. Null and marker values remain
+   readable byte-for-byte, and the existing NUL-character/backup/restore/execution checks still pass.
+3. An additive migration upgrades an already-migrated 011 database without changing 011's checksum;
+   rerunning migrations is idempotent.
+4. Run the focused PostgreSQL 14.24 suite and the full offline suite. No credentials, live RPC, broadcasts
+   or cloud changes. Alternate-key/other-encoding signed bytes remain outside this field-name guard;
+   do not claim that this closes #23's entire archive-read boundary.
+
+Implementation: migration `012_execution_public_field_values.sql` replaces the trigger function without
+editing 011 or changing role grants. It walks `json` objects and arrays and explicitly permits only JSON null
+or the exact restore-marker string under signed-byte keys. Using `json` preserves duplicate keys that
+`jsonb` would discard; checking the original field types rejects containers, booleans and numbers.
+The existing NUL-escape handling changes only the check's copy, never the stored bytes.
+
+Verification:
+- Finalized container/scalar and duplicate-key regressions against the original 011 function:
+  **122 failing cases, zero errors**, using isolated disposable schemas.
+- After 012: four new role/upgrade tests **PASS**, including 152 subtests, on PostgreSQL 14.24 / Python 3.12.14.
+- The original direct-write probe now refuses ordinary, object and nested-array signed-byte forms.
+  The unrelated-key case is still readable, confirming the documented limitation.
+- Full offline suite on macOS / Python 3.12.14 / PostgreSQL 14.24: **1561 passed, 9 skipped,
+  2321 subtests passed**, in 337.73 seconds. Command: `python -m pytest -q -p no:cacheprovider`,
+  with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, a disposable `LARP_TEST_DATABASE_URL`, and credentials unset.
+  This includes existing backup/restore, NUL-character and execution integrity/recovery regressions.
+  No hosted migration or Linux/systemd acceptance is claimed.
+
+Local implementation and regression verification are complete at `0a8fbb4`. The user approved pushing the
+branch and opening a follow-up PR on 2026-10-16. Review/integration (Keith) and the first-host migration
+check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the alternate-key/encoding archive-read limitation
+above remains open.
+
+
+### All-open-PR review: prospective remediation (2026-10-16)
+
+ALLPR-R108: additive migration 013 validates every existing execution state/journal byte string with the 012 guard, refuses unsafe upgrades transactionally and leaves source bytes unchanged; safe upgrade/idempotency passes and 011/012 hashes stay unchanged. Add pre-012 seeded-row regression; verification follows approved push.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on Linux/Python3.12/PostgreSQL14.24. A seeded pre-012 forbidden row remains readable by larp_archive after PostgresStore.migrate, confirming RV-108-01. Additive 013 and regression changes remain unexecuted pending approved push; no unsafe hosted data is inferred. All runs used synthetic inputs, no production credentials and no external network.
