@@ -1,4 +1,4 @@
-"""IDEA-057: measure quote costs read-only, then summarise them as QuoteCostSummary.v1 (Gate A input 1).
+"""IDEA-063: measure quote costs read-only, then summarise them as QuoteCostSummary.v1 (Gate A input 1).
 
 `capture` (needs the Web3 key pair) records, per round and bStock: a buy quote, a sell quote for exactly the bought
 units, a re-quote of the buy after the proposal lifetime, the approve transactions for both pay tokens and gas

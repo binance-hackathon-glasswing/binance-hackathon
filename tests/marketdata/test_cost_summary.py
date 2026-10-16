@@ -1,4 +1,4 @@
-"""IDEA-057 Q1-Q6: the QuoteCostSummary.v1 producer. Synthetic Web3 responses only; no credentials or network."""
+"""IDEA-063 Q1-Q6: the QuoteCostSummary.v1 producer. Synthetic Web3 responses only; no credentials or network."""
 
 from copy import deepcopy
 from decimal import Decimal

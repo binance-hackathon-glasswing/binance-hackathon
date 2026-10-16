@@ -1,4 +1,6 @@
-# IDEA-057 — QuoteCostSummary.v1 producer: measure quote costs read-only, then summarise (Gate A input 1)
+# IDEA-063 — QuoteCostSummary.v1 producer: measure quote costs read-only, then summarise (Gate A input 1)
+
+- 2026-10-16 renumbered (Claude Code session, at Keegan's request, PR #88 review): this entry was first written as IDEA-057, which #85 (merged to `main`) uses for AIand evidence routing. The quote record and its references are now IDEA-063 so both records survive the merge. Commit messages before the rename still say IDEA-057.
 
 - Date / owner: 2026-10-15 SGT / built with Claude Code at the user's request ("create the summary tool"). Runs with real quotes belong to Isaac or Keith (dev-wallet Web3 API key); the summary and profiles need Isaac's and Keith's review before they are pinned.
 - Status: open (criteria written before any test or code)
@@ -134,3 +136,16 @@ The team position is that the tokens trade 24/7 (SKILL.md Q-32, IDEA-035 C8), so
 Capture timing: Friday Oct 16's session is 13:30–20:00 UTC. If the capture misses it, the next session is Monday Oct 19, 13:30–20:00 UTC. The suggested `--until` is now `2026-10-20T00:00:00Z`; `summarize` can run earlier on the files so far.
 
 Tests: `AroundTheClock.test_t1_*`–`test_t3_*`. The fixtures now place samples inside and outside the session (`complete()` gives 10 per token, day and hour block). Q3's NVDAB samples repeat in both regimes, so its expected values are unchanged. Local: `tests/marketdata` + `tests/strategy` pass (see the commit). The full suite and mirror CI were not rerun.
+
+## Review fix: quoted `.env` values (PR 88 RV-88-01, 2026-10-16; criteria recorded before the tests)
+
+Defect at `f0e5835`: `run_quote_capture.sh` copied each `.env` value literally, so `BINANCE_API_KEY="k"` exported the
+quotes too. The capture would send the wrong key and sign with the wrong secret.
+
+| ID | Check |
+|---|---|
+| Q11a | Double-quoted, single-quoted and unquoted values in `.env` reach the capture without their quote characters. |
+| Q11b | `.env` is parsed by the pinned `python-dotenv` (`requirements.lock`) with interpolation off: a value holding `${OTHER}` or `$(cmd)` arrives literally; the file is never sourced or evaluated. |
+| Q11c | A name already set in the environment keeps its value; `.env` fills only the names that are unset. |
+| Q11d | No key or secret value appears on stdout or stderr in any of these cases. |
+| Q11e | Each new test fails against `f0e5835` (Q11a, Q11c) or is a control that passes on both (Q11b, Q11d); the existing Q10 and R5 tests still pass. |

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# IDEA-057 Q10: start the read-only quote capture and leave it running in the background.
+# IDEA-063 Q10: start the read-only quote capture and leave it running in the background.
 #
 # The tokens trade 24/7, so summarize needs, per token, samples on 3 UTC days including a weekend and at least 10 both
 # inside and outside the US regular session (13:30-20:00 UTC in October). Start before Sat Oct 17 00:00 UTC, or the
