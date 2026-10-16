@@ -1,7 +1,7 @@
 # IDEA-055 — Minimal chain-balance reconciliation: detect a mismatch and stop new risk (#36)
 
 - Date / owner: 2026-10-15 SGT / design drafted with Claude Code at the user's request. Owners to agree before anything is built: Isaac (C, balance observation), Keegan (B, comparison and planner effect), Yao Zhu (D, scheduling, journal, health gate), as named in the #36 status of 2026-10-15.
-- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation to be built in PR 4 and RPC failover in PR 5
+- Status: built (minimal version, B1–B10 PASS); owner decisions recorded 2026-10-16 (D2 and D4 changed to "chain wins", D5 extended; see "Owner decisions"); self-healing reconciliation built in PR 4 (S1–S17 PASS locally, 1600 passed / 10 skipped); RPC failover in PR 5
 - Links: #36 (R14, P1); IDEA-049-B item 007; IDEA-049-C C-OPEN-008; IDEA-049-D D-REQ-039; IDEA-039 / PR #74 (`gate_b probe-chain`); SKILL.md Q-20, F-95, F-114, F-117; inferences.md I-28; plan.md G-43.
 
 ## What and why
@@ -304,3 +304,62 @@ Synthetic chain and market, disposable PostgreSQL; no credentials, network, sign
 - B4 (`Surplus.test_b4_*`) asserted that a surplus is never adopted and the ledger is unchanged after two checks. It becomes "recorded once, adopted at the confirming check": the incident is still not repeated, and `new_spending_ok` stays true.
 - B5 (`Deficit.test_b5_*`) keeps its first-check assertions (that is the D1 window), and its name and docstring say so.
 - The design's prospective R4/R5 (no adoption; no new risk for the rest of the run) and B10's mutation "deficit written to the journaled ledger" are superseded by S6–S8 and S17.
+
+### Results (2026-10-16, PR 4)
+
+Criteria at `c78a0b3`; red tests at `dd226c2`; build at `1530625`; three tests added after the mutation run at `09dc882`. Synthetic chain and marks, disposable PostgreSQL **16.15** (PostgreSQL 14 could not be installed: Ubuntu 24.04 ships only 16, and the PGDG repository is blocked by this session's network proxy), Python 3.12.3 venv from `deploy/requirements-test.lock`, Linux container. No credentials, network, signing or upload. Org CI was not used (Actions minutes exhausted).
+
+- **Red first:** at `dd226c2`, 22 test functions failed for the predicted reasons. The confirming check is not run a minute later, so `balance_check` is missing from the summary. There is no `adjust_ledger`. An unsolicited token is counted as a surplus. The reverse split raised the peak to 220 USDT, and the forward split latched the daily stop. The day roll did not wait. The setting is missing, and the old B4 still saw no adoption.
+- **Test corrections before the counted run:**
+  1. S12's planner test compares the latches and the peak only, because the planner adds `cap_trims` to every risk state.
+  2. The mutation run (below) showed three mutations were not caught, so three tests were added at `09dc882`:
+     - a one-name book for S12, where the min-mark valuation visibly changes the buy size;
+     - a flatten under a hold for S11, where the held symbol's sale waits while another name sells;
+     - S15 cut at the tampered event, because later batches carry full projections and failed replay for another reason.
+  No assertion was weakened.
+- **Mutations**, each reverted, all caught (failures in the two IDEA-055 test files):
+
+  | Mutation | Failures |
+  |---|---|
+  | Adopt after one read | 13 |
+  | Ignore a commit between the checks | 2 |
+  | Adopt an unsolicited token | 2 |
+  | Change the cost basis on adjustment | 3 |
+  | Plan orders for a held symbol under a hold | 1 |
+  | Run `update_risk` under a hold | 2 |
+  | Value a held jumped symbol at the current mark | 1 |
+  | Never expire a hold | 1 |
+  | Keep `balances_ok` false after an adopted deficit | 2 |
+  | Skip the replay check of `BALANCE_ADJUSTED` | 1 |
+
+- **Full suite** (`python -m pytest -q -p no:cacheprovider`):
+  - base `1388f80` (with the PR 3 docs): 1578 passed, 10 skipped, 2194 subtests;
+  - this branch at `09dc882`: **1600 passed, 10 skipped, 2209 subtests**. That is +22 tests (the new file) and +15 subtests (S2, S16 and B9's extra key); no new failure or skip.
+  - The 10 skips are environmental and the same on both: opt-in recorded artifacts (1), root ignores directory mode (1), the disposable systemd runner not enabled (5), Linux bubblewrap not available (3).
+
+| ID | Result | Evidence |
+|---|---|---|
+| S1 | PASS | `Pure::test_s1_*`, `Adoption::test_s1_*` |
+| S2 | PASS | `Pure::test_s2_*` |
+| S3 | PASS | `Adoption::test_s3_*` |
+| S4 | PASS | `Adoption::test_s4_*` (not due at +59 s, adopted at +60 s) |
+| S5 | PASS | `Adoption::test_s5_*`; the "nothing read while reservations exist" part is the existing `Stale::test_b6_nothing_is_read_or_journaled_while_something_is_in_flight`, unchanged and passing |
+| S6 | PASS | `Adoption::test_s6_*` |
+| S7 | PASS | `Adoption::test_s7_*` |
+| S8 | PASS | `Adoption::test_s8_*` |
+| S9 | PASS | `Adoption::test_s9_*` |
+| S10 | PASS | `Adoption::test_s10_*` |
+| S11 | PASS | `PriceJump::test_s11_*`, `ReverseSplitPlanner::test_s11_the_flatten_waits_for_a_held_symbol_only` |
+| S12 | PASS | `ReverseSplitPlanner::test_s12_*` (two books), `PriceJump::test_s12_*` |
+| S13 | PASS | `PriceJump::test_s13_*` |
+| S14 | PASS | `PriceJump::test_s14_*` |
+| S15 | PASS | `PriceJump::test_s15_*` |
+| S16 | PASS | `Settings::test_s16_*` (three tests) |
+| S17 | PASS | full suite and mutations above |
+
+**Existing tests changed:**
+- `Surplus::test_b4_*` was renamed `..._adopted_at_the_confirming_check`. It now expects adoption, because old D2 asserted the ledger never changes.
+- `Deficit::test_b5_*` gets a comment only; its first-check assertions are the D1 window.
+- `Settings.BLOCK` (used by B9 and `Composition`) gains `price_jump_check_bps`, now required.
+
+**Still open:** Isaac and Keegan's review. The unconfirmed-deficit pause (Design §3, "Gate") is flagged for Yao Zhu. PR 5 adds the RPC failover.
