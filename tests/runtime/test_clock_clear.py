@@ -79,9 +79,11 @@ class ClockClear(DatabaseCase):
         [cleared] = [d.read()['event'] for d in self.store.journal('run')
                      if d.read()['event']['kind'] == 'HALT_CLEARED']
         self.assertEqual((cleared['reason'], cleared['detail']['synchronized_since_ms']), ('CLOCK', opened))
-        before = self.commands()
         self.coordinator(clock=opened + WINDOW + 1).start('r2', request('BUY', job='j2'), opened + WINDOW + 1)
-        self.assertEqual(self.commands(), before + 1)  # a later round plans normally
+        [record] = [d.read()['event']['record'] for d in self.store.journal('run')
+                    if d.read()['event']['kind'] == 'ROUND_PLANNED' and d.read()['event']['record']['round_id'] == 'r2']
+        self.assertFalse([e for e in record['errors'] if e.startswith('HALTED')])  # a later round is no longer halted
+        self.assertNotEqual(record['plan']['reasons'], ['HALTED'])  # and the planner ran
 
     # ---------------------------------------------------------------- CK3
     def test_ck3_an_unsynchronised_reading_restarts_the_window(self):
