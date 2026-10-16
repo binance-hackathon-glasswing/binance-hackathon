@@ -79,7 +79,9 @@ class ReverseSplitPlanner(unittest.TestCase):
         self.assertLessEqual(sum(self.buys(r, 'MSFTB')), base_buy)
         self.assertTrue(self.buys(r, 'MSFTB'))
         self.assertFalse([i for i in r['intents'] + r['quote_requests'] if i['symbol'] == 'NVDAB'])
-        self.assertEqual(r['risk_state'], c['portfolio']['risk'])  # latches and peak as they were
+        latches = ('daily_halt', 'run_halt', 'deep_cut', 'peak_units', 'day_anchor_units')
+        self.assertEqual({k: r['risk_state'][k] for k in latches},
+                         {k: c['portfolio']['risk'][k] for k in latches})  # latches and peak as they were
         self.assertEqual(r['loss_stops_deferred'], ['NVDAB'])
 
 

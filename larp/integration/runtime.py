@@ -114,6 +114,8 @@ class ContextBuilder:
         self.lifecycle_policy, self.series = lifecycle_policy, series
         self.gas_quotes = gas_quotes
         self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
+        # {"bps", "hold_ms"} enables the price-jump guard (IDEA-055 PR 4); None keeps contexts as they were.
+        self.price_jump = None
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
         projection = current["projection"]
@@ -137,10 +139,10 @@ class ContextBuilder:
                                   "decision": decision})
         updates = {"evidence": evidence, "evidence_decisions": decisions}
         try:
-            context, anchor = self._context(current, evidence, decisions, now_ms)
+            context, anchor, jumps = self._context(current, evidence, decisions, now_ms)
         except Exception as exc:
             raise ContextUnavailable(updates) from exc
-        updates = dict(updates, session_anchor=anchor)
+        updates = dict(updates, session_anchor=anchor, **jumps)
         if "last_discretionary_observed_ms" in context:
             updates["last_discretionary_session"] = context["last_discretionary_session"]
         return context, updates
@@ -194,7 +196,40 @@ class ContextBuilder:
             context["gas_quotes"] = self.gas_quotes(now_ms)
         if broadcast_ms is not None:
             context["last_discretionary_observed_ms"] = broadcast_ms
-        return context, anchor
+        jumps = {}
+        if self.price_jump is not None:
+            marks, holds = self._jumps(projection, markets, now_ms)
+            jumps = {"marks": marks, "price_jump": holds}
+            context["price_jump_hold"] = {s: h["reference_price_units"] for s, h in sorted(holds.items())}
+        return context, anchor, jumps
+
+    def _jumps(self, projection: dict, markets: list, now_ms: int) -> tuple:
+        """Price-jump guard (IDEA-055 PR 4): the last usable mark per symbol, and the holds still active.
+
+        A held symbol whose mark moved by at least `bps` of its last journaled mark gets a hold until a balance check
+        after the jump confirms the chain (BalanceCheck clears it) or `hold_ms` passes. A split changes the price and
+        the token count together, but the balance check lags: until then the planner neither trades the symbol nor
+        evaluates the loss stops, and values it at the lower of the two marks."""
+        cutoff = datetime.fromtimestamp(now_ms / 1000, timezone.utc)
+        try:
+            parsed = market_view(markets, self.universe, cutoff, self.profile)
+        except ContractError:
+            parsed = {}
+        previous = projection.get("marks") or {}
+        marks = dict(previous)
+        holds = {s: h for s, h in (projection.get("price_jump") or {}).items() if now_ms < h["until_ms"]}
+        held = {s for s, p in projection["portfolio"]["positions"].items() if p.get("units")}
+        bps, hold_ms = self.price_jump["bps"], self.price_jump["hold_ms"]
+        for symbol, m in sorted(parsed.items()):
+            if m is None:
+                continue
+            price, old = m["price_units"], previous.get(symbol)
+            if (symbol in held and symbol not in holds and type(old) is int and old > 0
+                    and abs(price - old) * 10000 >= bps * old):
+                holds[symbol] = {"reference_price_units": old, "price_units": price, "jump_ms": now_ms,
+                                 "until_ms": now_ms + hold_ms}
+            marks[symbol] = price
+        return marks, holds
 
     def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:
         """Reductions only from records the strategy itself would accept: same identity/hash/time checks, its parsed

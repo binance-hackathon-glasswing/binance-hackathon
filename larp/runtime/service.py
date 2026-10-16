@@ -138,9 +138,11 @@ DRIVER_KEYS = ('execution', 'assessor', 'intelligence_mode', 'evidence_root', 'm
                'strategy_profile_file', 'strategy_profile_sha256', 'session_calendar_file', 'session_calendar_sha256',
                'issuers')
 OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests',
-                            'balance_check_interval_ms', 'balance_check_max_age_ms')
+                            'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
 # IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
-BALANCE_KEYS = ('balance_rpc_url', 'balance_rpc_source_id', 'balance_check_interval_ms', 'balance_check_max_age_ms')
+# `price_jump_check_bps` is the price-jump guard's threshold (IDEA-055 PR 4); its hold lasts the maximum age.
+BALANCE_KEYS = ('balance_rpc_url', 'balance_rpc_source_id', 'balance_check_interval_ms', 'balance_check_max_age_ms',
+                'price_jump_check_bps')
 
 
 def balance_settings(d, mode):
@@ -157,7 +159,10 @@ def balance_settings(d, mode):
         raise ContractError('The balance RPC needs an HTTPS URL and a source ID')
     if type(interval) is not int or type(max_age) is not int or not 0 < interval <= max_age:
         raise ContractError('Invalid balance-check interval or maximum age')
-    return dict(rpc_url=url, source_id=source, interval_ms=interval, max_age_ms=max_age)
+    jump = d['price_jump_check_bps']
+    if type(jump) is not int or not 0 < jump <= 10_000:
+        raise ContractError('Invalid price-jump threshold')
+    return dict(rpc_url=url, source_id=source, interval_ms=interval, max_age_ms=max_age, price_jump_bps=jump)
 
 
 def _pinned_json(path, sha256, what):
@@ -282,6 +287,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check
+        builder.price_jump = dict(bps=balance['price_jump_bps'], hold_ms=balance['max_age_ms'])  # IDEA-055 PR 4
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))

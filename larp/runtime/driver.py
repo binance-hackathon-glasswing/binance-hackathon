@@ -34,9 +34,9 @@ from larp.intelligence.agent import build_request
 from larp.intelligence.common import digest
 from larp.intelligence.gate import initial_state
 from larp.integration.runtime import ledger_from
-from larp.integration.settlement import settle
+from larp.integration.settlement import balances_of, settle
 from larp.risk.accounting import roll_day
-from larp.risk.reconcile import compare_balances
+from larp.risk.reconcile import adjust_ledger, compare_balances
 from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.runtime.scheduler import Scheduler
 from larp.storage.postgres import Conflict, IntegrityError
@@ -425,6 +425,8 @@ class DayRoll:
         midnight = now_ms - now_ms % DAY_MS
         if now_ms - midnight > self.window:
             return 'OUTSIDE_WINDOW'
+        if active_holds(current['projection'], now_ms):
+            return 'PRICE_JUMP_HOLD'  # a mark that jumped is not an anchor until a balance check confirms it
         if observations is None:
             return 'MARKET_UNAVAILABLE'
         builder = c.context_builder
@@ -450,18 +452,29 @@ class DayRoll:
         return 'ROLLED'
 
 
+def active_holds(projection, now_ms):
+    """Price-jump holds (IDEA-055 PR 4) that have not expired: {symbol: hold}."""
+    return {s: h for s, h in (projection.get('price_jump') or {}).items() if now_ms < h['until_ms']}
+
+
 class BalanceCheck:
-    """Chain-balance reconciliation (IDEA-055, #36): detect a mismatch, journal it and stop new risk.
+    """Chain-balance reconciliation (IDEA-055, #36; owner decisions 2026-10-16): the chain wins.
 
     `reader(now_ms)` returns a ChainBalances.v1 (larp/execution_live/balances.py). With reservations, an open round or
     an execution pending, nothing is read or journaled: the chain would differ from the ledger by the trade in flight.
     A check is journaled as BALANCE_CHECKED (a recorded fact on replay) when it is this process's first, when its
     outcome differs from the last journaled one, or after `heartbeat_ms` without a journaled check; every commit copies
     the projection, so an unchanged result every interval would only grow the journal. A deficit or a newly surplus
-    asset is also an INCIDENT. The ledger is never written: a deficit is subtracted only in the planner's view
-    (ContextBuilder) and blocks new spending (`ok`), while mandatory sales and the flatten continue. `ok` counts only a
-    check made by this process (its time is kept in memory), so a restored or restarted run reconciles before it takes
-    new risk."""
+    asset is also an INCIDENT.
+
+    A mismatch on an eligible asset is adopted only when the next comparable check, `retry_ms` later, reads the same
+    chain units with the same ledger units and `settled_block`, and nothing else was committed to the run in between
+    (no round, reservation or receipt): one bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
+    (`adjust_ledger`: units only, cost unchanged) plus one INCIDENT per asset. The candidate is kept in memory only.
+    Until adoption a deficit is subtracted in the planner's view (ContextBuilder, D1) and new spending waits (`ok`);
+    sales and the flatten continue. `ok` counts only a check made by this process, so a restored or restarted run
+    reconciles before it takes new risk. A comparable check after a price jump clears that symbol's hold when the
+    asset matches or is adopted."""
 
     COMPARABLE = ('MATCH', 'SURPLUS_ONLY', 'DEFICIT')
 
@@ -472,11 +485,17 @@ class BalanceCheck:
         self.coordinator, self.reader = coordinator, reader
         self.interval, self.max_age, self.retry, self.heartbeat = interval_ms, max_age_ms, retry_ms, heartbeat_ms
         self.next_ms = 0  # the first cycle checks
-        self.ok_ms = None  # the last MATCH/SURPLUS_ONLY check of this process
+        self.ok_ms = None  # the last check of this process that left no unadopted deficit
         self.journaled_ms = None
+        self.candidate = None  # the first read of a mismatch, awaiting its confirming read
+        self.attempt_ms = None  # the last time this process tried a check
 
-    def due(self, now_ms):
-        return now_ms >= self.next_ms
+    def due(self, now_ms, projection=None):
+        if now_ms >= self.next_ms:
+            return True
+        # A price jump newer than the last attempt is checked at once (IDEA-055 PR 4).
+        holds = active_holds(projection or {}, now_ms)
+        return self.attempt_ms is not None and any(h['jump_ms'] >= self.attempt_ms for h in holds.values())
 
     def ok(self, projection):
         state = projection.get('balance_check') or {}
@@ -489,8 +508,47 @@ class BalanceCheck:
         return bool(current['reservations'] or c.store.open_rounds(c.run_id)
                     or any(r.get('execution_pending') for r in rounds))
 
+    def _confirm(self, current, check, observation, observation_hash):
+        """Adjustments this check confirms; the rest of its mismatches become the next candidate."""
+        mismatched = {a: r for a, r in check['assets'].items() if r['class'] != 'MATCH'}
+        first, confirmed = self.candidate, []
+        if (first is not None and first['version'] == current['version']
+                and first['settled_block'] == check['settled_block']
+                and check['block_number'] >= first['block_number']):
+            positions = current['projection']['portfolio']['positions']
+            for asset, row in sorted(mismatched.items()):
+                seen = first['assets'].get(asset)
+                if seen is None or (seen['chain_units'], seen['ledger_units']) != (row['chain_units'],
+                                                                                    row['ledger_units']):
+                    continue
+                adjustment = dict(asset=asset, ledger_before=row['ledger_units'], chain_units=row['chain_units'],
+                                  delta=row['difference'], reason='SURPLUS' if row['difference'] > 0 else 'DEFICIT',
+                                  first_block=first['block_number'], confirm_block=check['block_number'],
+                                  first_observation_sha256=first['observation_sha256'],
+                                  confirm_observation_sha256=observation_hash)
+                if asset not in ('USDT', 'BNB'):
+                    adjustment['decimals'] = (positions[asset]['decimals'] if asset in positions
+                                              else observation['tokens'][asset]['decimals'])
+                confirmed.append(adjustment)
+        adopted = {a['asset'] for a in confirmed}
+        rest = {a: r for a, r in mismatched.items() if a not in adopted}
+        self.candidate = (dict(assets=rest, block_number=check['block_number'], settled_block=check['settled_block'],
+                               observation_sha256=observation_hash, version=current['version']) if rest else None)
+        return confirmed
+
+    def _commit(self, current, event_id, event, projection=None):
+        """Commit one event; this process's own commits do not count as activity between two checks."""
+        c = self.coordinator
+        before = current.read()['version']
+        c.store.commit(batch_for(current, event_id, event, projection=projection))
+        after = c.store.load(c.run_id)
+        if self.candidate is not None and self.candidate['version'] == before:
+            self.candidate['version'] = after.read()['version']
+        return after
+
     def __call__(self, now_ms):
         c = self.coordinator
+        self.attempt_ms = now_ms
         current = c.store.load(c.run_id).read()
         if self.in_flight(current):
             self.next_ms = now_ms + self.retry
@@ -509,7 +567,8 @@ class BalanceCheck:
             check = dict(schema='BalanceCheck.v1', status='SKIPPED', reason='OBSERVATION_INVALID')
         status = check['status']
         state = dict(previous, status=status, reason=check.get('reason'), checked_ms=now_ms)
-        incidents = []
+        incidents, adjustments = [], []
+        holds = dict(projection.get('price_jump') or {})
         if status in self.COMPARABLE:
             new_surplus = sorted(set(check['surplus']) - set(previous.get('surplus_assets', [])))
             if status == 'DEFICIT' and check['deficits'] != previous.get('deficits'):
@@ -519,23 +578,64 @@ class BalanceCheck:
                                       differences={a: check['assets'][a]['difference'] for a in new_surplus}))
             state.update(comparable_status=status, deficits=check['deficits'], surplus_assets=check['surplus'],
                          block_number=check['block_number'])
-            self.ok_ms = now_ms if status != 'DEFICIT' else None
-            self.next_ms = now_ms + self.interval
+            adjustments = self._confirm(current, check, observation, observation_hash)
+            for symbol, hold in list(holds.items()):
+                row = check['assets'].get(symbol)
+                if now_ms > hold['jump_ms'] and row is not None and row['class'] == 'MATCH':
+                    del holds[symbol]  # the chain agrees after the jump: the mark is real
+            self.next_ms = now_ms + (self.retry if self.candidate is not None else self.interval)
         else:
-            self.next_ms = now_ms + self.retry  # a skip keeps the last deficits and the last good time
+            self.next_ms = now_ms + self.retry  # a skip keeps the last deficits, the last good time and the candidate
         outcome = ('status', 'reason', 'comparable_status', 'deficits', 'surplus_assets')
-        changed = any(state.get(k) != previous.get(k) for k in outcome)
-        if not (changed or incidents or self.journaled_ms is None or now_ms - self.journaled_ms >= self.heartbeat):
-            return status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+        changed = any(state.get(k) != previous.get(k) for k in outcome) or holds != (projection.get('price_jump') or {})
+        result = status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+        if adjustments:
+            result = 'ADJUSTED'
+        elif not (changed or incidents or self.journaled_ms is None or now_ms - self.journaled_ms >= self.heartbeat):
+            self._settle_gate(status, state, now_ms)
+            return result
         self.journaled_ms = now_ms
         projection['balance_check'] = state
+        if 'price_jump' in projection or holds:
+            projection['price_jump'] = holds
         event = dict(kind='BALANCE_CHECKED', check=check, checked_ms=now_ms, observation_sha256=observation_hash)
-        c.store.commit(batch_for(Document.from_dict(current), f'balance:{now_ms}', event, projection=projection))
+        document = self._commit(Document.from_dict(current), f'balance:{now_ms}', event, projection=projection)
         for incident in incidents:
-            current = c.store.load(c.run_id)
             event = dict(kind='INCIDENT', incident=dict(incident, block_number=check['block_number'], at_ms=now_ms))
-            c.store.commit(batch_for(current, f"incident:{incident['type'].lower()}:{now_ms}", event))
-        return status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+            document = self._commit(document, f"incident:{incident['type'].lower()}:{now_ms}", event)
+        if adjustments:
+            document = self._adopt(document, adjustments, check, now_ms)
+            state = document.read()['projection']['balance_check']
+        self._settle_gate(status, state, now_ms)
+        return result
+
+    def _adopt(self, document, adjustments, check, now_ms):
+        """The chain wins: one BALANCE_ADJUSTED event, then one incident per asset (IDEA-055 D2/D4)."""
+        projection = document.read()['projection']
+        adopted = {a['asset'] for a in adjustments}
+        portfolio = adjust_ledger(projection['portfolio'], adjustments)
+        deficits = {a: u for a, u in check['deficits'].items() if a not in adopted}
+        surplus = [a for a in check['surplus'] if a not in adopted]
+        remaining = 'DEFICIT' if deficits else ('SURPLUS_ONLY' if surplus else 'MATCH')
+        projection.update(portfolio=portfolio, balances=balances_of(portfolio))
+        projection['balance_check'] = dict(projection['balance_check'], comparable_status=remaining,
+                                           deficits=deficits, surplus_assets=surplus, adjusted_ms=now_ms)
+        holds = projection.get('price_jump') or {}
+        if any(s in adopted for s in holds):
+            projection['price_jump'] = {s: h for s, h in holds.items() if s not in adopted}
+        event = dict(kind='BALANCE_ADJUSTED', adjustments=adjustments, adjusted_ms=now_ms)
+        document = self._commit(document, f'balance-adjusted:{now_ms}', event, projection=projection)
+        for adjustment in adjustments:
+            incident = dict(type='BALANCE_ADJUSTED', **{k: v for k, v in adjustment.items() if k != 'decimals'},
+                            at_ms=now_ms)
+            event = dict(kind='INCIDENT', incident=incident)
+            document = self._commit(document, f"incident:balance_adjusted:{adjustment['asset'].lower()}:{now_ms}",
+                                    event)
+        return document
+
+    def _settle_gate(self, status, state, now_ms):
+        if status in self.COMPARABLE:  # a skip keeps the last good time
+            self.ok_ms = now_ms if state.get('comparable_status') != 'DEFICIT' else None
 
 
 class EvidenceWork:
@@ -765,7 +865,7 @@ class RoundDriver:
             # I3 hand-off: any commit now would make these commands stale before the execution service claims them.
             summary['waiting_for_claim'] = waiting
             return summary
-        if self.balance_check is not None and self.balance_check.due(now_ms):
+        if self.balance_check is not None and self.balance_check.due(now_ms, c.store.load(c.run_id).read()['projection']):
             summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
