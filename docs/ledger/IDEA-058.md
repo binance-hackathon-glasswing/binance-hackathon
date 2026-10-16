@@ -166,3 +166,30 @@ Until now, GA11c only reported a missing chain read. When `prepare()` is given t
 - **GA12b:** the chain capture records the RPC's `source_id`. `prepare()` refuses if it differs from `balance_rpc_source_id` ("another RPC source"). This is the same binding Gate B's DR-03 applies to its own probe.
 - **GA12c:** without `balance_rpc_url`, nothing changes. The report lists `BALANCE_RPC` and `CHAIN_BALANCE_CAPTURE`, and #84's runtime refuses to start anyway.
 - **GA12d:** each new check's mutation is caught. The full suite passes with no new failures against `b2496d4` (1569 passed, 7 skipped).
+
+### GA12 results and the Gate B check (2026-10-16)
+
+- **Order of commits:** criteria in `2688c6d`, red tests in `8686410` (2 failing), fix in `aa89f31`. The fix commit also moves the shared test fixture to a capture with the chain read, because every assembly with an RPC now requires one; the tests of the no-chain path pass one explicitly. Disclosed here because those fixture edits land with the fix, not with the red tests.
+- **GA12a–c: PASS.**
+  - With the RPC configured, a capture without the chain read refuses ("chain balance capture required").
+  - A chain read from another RPC source refuses ("another RPC source").
+  - Without the RPC, both `BALANCE_RPC` and `CHAIN_BALANCE_CAPTURE` are reported.
+- **GA12d mutations:** 3, each caught:
+  - mandatory check;
+  - source binding;
+  - `source_id` not recorded.
+- **Full suite:** **1572 passed, 7 skipped, 2181 subtests, 0 failed**. That is +3 against `b2496d4`. `test_gate_a.py`: 26 passed.
+
+**Gate B (`larp/execution_live/gate_b.py`), read 2026-10-16, no change made.**
+
+Gate B does not read Gate A's capture. `probe_chain` takes its own finalized-block snapshot, and DR-03 refuses it unless the snapshot meets all of these:
+- It is fresh and from the configured `rpc_source_id`.
+- `latest_nonce == pending_nonce` (blocker `PENDING_NONCE_REQUIRES_RECONCILIATION`).
+- BNB is non-zero and router code is present.
+
+DR-06 then requires the pinned initial state's `bnb_units` to equal that finalized native balance. Two gaps against GA11:
+
+- **GB-1, a transaction mined but not finalized:** Gate B does not read the nonce at the finalized block. If a wallet transaction is mined but not yet finalized, `latest == pending`, and the finalized BNB still equals the old opening balance, so DR-03 and DR-06 pass. The transaction then finalizes and changes the balances. Fix: read `eth_getTransactionCount(wallet, <finalized height>)` in `probe_chain` and block unless it equals `latest`. This is the GA11 rule. BSC's fast finality makes the window short, and #84's runtime `BalanceCheck` would detect the change after start.
+- **GB-2, only BNB cross-checked:** DR-06 compares only BNB against the chain. USDT and the five bStocks in the pinned state are not checked at Gate B. They were checked at Gate A capture by GA11, and #84 checks them at runtime.
+
+Both gaps are in section C's execution code (owner Isaac) and are recorded in `docs/INCOMPLETE_WORK.md`.

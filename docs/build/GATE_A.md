@@ -69,7 +69,9 @@ zero basis. The Web3 balance snapshot has no block identity. With
 nonces through the manifested RPC (IDEA-058 GA11). Capture and preparation both
 refuse while a wallet transaction is pending or not finalized, and when the
 finalized balances differ from the Web3 snapshot. If either happens, wait and
-capture again. Without the RPC, the report lists `CHAIN_BALANCE_CAPTURE`.
+capture again. Preparation with `--balance-rpc-url` refuses a capture made without
+it, or with a different `--balance-rpc-source-id` (GA12). Without the RPC, the
+report lists `BALANCE_RPC` and `CHAIN_BALANCE_CAPTURE`.
 
 Outputs are `runtime.json`, `uploader.json`, `operations.json`, the profile,
 calendar, initial state, pinned capture and a preparation report. `evidence.env`
