@@ -47,6 +47,16 @@ class Loader(unittest.TestCase):
         self.assertEqual(repr(secrets), 'Secrets(AI_SEEDS_ADDRESS, BINANCE_API_KEY, BINANCE_SECRET_KEY)')
         self.assertNotIn('s3cret-value', str(secrets))
 
+    def test_ar7_optional_model_keys_are_loaded_without_requiring_openai(self):
+        values = dict(VALUES, LARP_AIAND_API_KEY='synthetic-aiand-private-value')
+        secrets = load_runtime_secrets(Client(json.dumps(values)), 'larp/runtime')
+        self.assertEqual(secrets['LARP_AIAND_API_KEY'], values['LARP_AIAND_API_KEY'])
+        self.assertNotIn('LARP_MODEL_API_KEY', secrets)
+        self.assertNotIn(values['LARP_AIAND_API_KEY'], repr(secrets))
+        values['LARP_MODEL_API_KEY'] = 'synthetic-openai-private-value'
+        secrets = load_runtime_secrets(Client(json.dumps(values)), 'larp/runtime')
+        self.assertEqual(secrets['LARP_MODEL_API_KEY'], values['LARP_MODEL_API_KEY'])
+
     def test_s1_s3_refusals(self):
         self.refused('another host', Client(json.dumps(dict(VALUES, AI_SEEDS_SECRET='audit-secret'))))
         self.refused('another host', Client(json.dumps(dict(VALUES, WALLET_PRIVATE_KEY='key'))))

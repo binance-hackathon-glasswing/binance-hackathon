@@ -203,8 +203,13 @@ def build_driver(config, store, secrets, *, clock_ms=None):
             raise ContractError('Invalid driver setting: ' + key)
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
-    if d['assessor'] != 'deterministic':
+    if d['assessor'] not in ('deterministic', 'aiand_routed'):
         raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
+    if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
+        raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
+    if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
+            'model_routing_file', 'model_routing_sha256', 'model_budget_root')):
+        raise ContractError('AIand routing needs a pinned file and shared model budget root')
     mode = config.get('mode', 'offline')
     if d['intelligence_mode'] == 'shadow' and (mode != 'dev' or d['execution'] != 'shadow'):
         raise ContractError('Shadow evidence settings require an unsigned dev run')
@@ -258,8 +263,20 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                              market=feed, health=health,
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
-    assessor = EvidenceAssessor(registry=registry, reader=PortEvidenceReader(evidence, artifacts),
-                                model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
+    from larp.sources.store import OverlayArtifacts
+    # The runtime has no writable evidence mount on the host (IDEA-047 R15): artifacts it produces itself (tool
+    # results; for the routed path also model request/reply bytes and stage results) go to a private store in the
+    # unit's state directory; evidence is read as before (IDEA-057 SG-1, SG-7).
+    model_artifacts = FileArtifacts(str(Path(d['market_artifact_root']) / 'model'))
+    reader = PortEvidenceReader(evidence, OverlayArtifacts(artifacts, model_artifacts))
+    if d['assessor'] == 'aiand_routed':
+        from larp.intelligence.routing import build_routed_assessor
+        spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
+        assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
+            clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
+    else:
+        assessor = EvidenceAssessor(registry=registry, reader=reader,
+                                    model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
     coordinator = Coordinator(store, assessor, StrategyPolicy(),
                               RuntimePlanner(job_validity_ms=intelligence.p('job_validity_ms'),
                                              job_max_attempts=intelligence.p('job_max_attempts'), issuers=issuer_map),

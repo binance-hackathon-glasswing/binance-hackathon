@@ -240,3 +240,8 @@ PR #116 (IDEA-055 PR 5) replaces `balance_rpc_url`/`balance_rpc_source_id` in `r
 - **GA14a–b: PASS.** `ReviewFixes.test_ga14_the_balance_rpc_follows_the_examples_form`: the list form is written with one provider and no legacy key; with no RPC, the example's list is left and `BALANCE_RPC` reported; both-or-neither and HTTPS apply; the legacy form is unchanged. Mutation (always write the legacy pair) caught.
 - **GA14c: PASS.** Scratch merge with #116 (`21ba652`, which carries #114 and #115): `test_gate_a.py` passes, GA06 included; full suite on that four-PR merge **1701 passed, 10 skipped, 2381 subtests, 0 failed**. This branch alone at `c9b7613`: **1622 passed, 10 skipped, 2254 subtests, 0 failed** (base `e84083c`: 1590 passed, 10 skipped). Python 3.12.3, local PostgreSQL 16.15, not 14.24.
 - Mirror CI: still not run on this PR (GAP-72).
+
+
+### RR2 re-review (2026-10-16)
+
+Current pushed head `10ff5f6`: previous source findings fixed, including GA13/GA14; no new source finding. Independent focused Linux/Python 3.12/PostgreSQL14.24: 36 passed / 64 subtests (Gate A and host units), no external network or production credentials. Resolve the current LEDGER conflict by preserving both IDEA-058 and the merged IDEA-063 record. This local merge resolution remains unpushed and unexecuted pending user confirmation. Exact-release CI and hosted Gate A remain open with GAP-72 and existing owners.
