@@ -63,6 +63,7 @@ def chain_capture(rpc, wallet, *, observed_at):
     value = read_balances(rpc, wallet=wallet_address(wallet), observed_at=observed_at)
     value['finalized_nonce'] = quantity(rpc.call('eth_getTransactionCount',
                                                  [value['wallet'], hex(value['block_number'])]))
+    value['source_id'] = rpc.source_id
     return value
 
 
@@ -227,8 +228,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(now).timestamp() * 1000))
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
+    if balance_rpc_url is not None and 'chain' not in capture:
+        # GA12: with the balance RPC configured, nothing excuses a capture without the chain read.
+        raise ContractError('A chain balance capture required: capture with --balance-rpc-url')
     if 'chain' in capture:
         check_chain(capture, now)
+        if balance_rpc_url is not None and capture['chain'].get('source_id') != balance_rpc_source_id:
+            raise ContractError('The chain balance capture came from another RPC source')
     state = initial_state(capture, profile, run_id)
     state_raw = encoded(state) + b'\n'
     configs = json.loads(json.dumps(configs))

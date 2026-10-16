@@ -67,7 +67,7 @@ def profile():
 
 def assembled(**changes):
     configs = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
-    args = dict(profile_raw=encoded(profile()), capture_raw=encoded(captured()),
+    args = dict(profile_raw=encoded(profile()), capture_raw=encoded(with_chain()),  # GA12: the chain read is required
                 calendar_raw=(gate_a.ROOT / 'config/runtime/session-calendar.2026.json').read_bytes(),
                 run_id='gate-a-test', build_id='b' * 40, now=NOW,
                 balance_rpc_url='https://rpc.invalid/', balance_rpc_source_id='synthetic-rpc')
@@ -369,6 +369,7 @@ class PortedFromPr89(unittest.TestCase):
         capture = captured()
         capture['balances']['response']['data'][0]['tokenAssets'] = [
             dict(tokenContractAddress=USDT, rawBalance=str(100 * 10**18))]
+        capture['chain'] = gate_a.chain_capture(Node(native=0), WALLET, observed_at=NOW)
         unfunded = json.loads(assembled(capture_raw=encoded(rehash(capture)))['preparation-report.json'])
         self.assertIn('FIRST_BNB (Q-03)', unfunded['missing_inputs'])
 
@@ -464,7 +465,8 @@ class PendingNonce(unittest.TestCase):
 
     def test_ga11c_missing_chain_read_is_reported_not_refused(self):
         # GA12c: only without a configured balance RPC; with one, GA12a refuses.
-        report = json.loads(assembled(balance_rpc_url=None, balance_rpc_source_id=None)['preparation-report.json'])
+        report = json.loads(assembled(capture_raw=encoded(captured()), balance_rpc_url=None,
+                                      balance_rpc_source_id=None)['preparation-report.json'])
         self.assertIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
         report = json.loads(assembled(capture_raw=encoded(with_chain()))['preparation-report.json'])
         self.assertNotIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
@@ -498,7 +500,7 @@ class MandatoryChainRead(unittest.TestCase):
 
     def test_ga12a_configured_rpc_requires_the_chain_read(self):
         with self.assertRaises(ContractError) as caught:
-            assembled()
+            assembled(capture_raw=encoded(captured()))
         self.assertIn('chain balance capture required', str(caught.exception))
         assembled(capture_raw=encoded(with_chain()))
 
@@ -509,6 +511,7 @@ class MandatoryChainRead(unittest.TestCase):
         self.assertIn('another RPC source', str(caught.exception))
 
     def test_ga12c_without_rpc_both_are_reported(self):
-        report = json.loads(assembled(balance_rpc_url=None, balance_rpc_source_id=None)['preparation-report.json'])
+        report = json.loads(assembled(capture_raw=encoded(captured()), balance_rpc_url=None,
+                                      balance_rpc_source_id=None)['preparation-report.json'])
         self.assertIn('BALANCE_RPC', report['missing_inputs'])
         self.assertIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
