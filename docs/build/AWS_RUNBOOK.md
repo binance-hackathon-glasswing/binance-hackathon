@@ -89,8 +89,26 @@ Confirm the account matches the team's existing credit project. This plan uses
 the current flags in `development.tfvars`; if they remain false it does not
 start hosts. For a host-start plan, use the reviewed AMI and three flags in
 "Next steps" step 4, then re-plan using the same refreshing-credential setup.
-Only apply a reviewed saved plan with the spend approval required above, in
-that same authenticated setup: `terraform -chdir=deploy/aws apply gate-a.tfplan`.
+Only apply a reviewed saved plan with the spend approval required above. The
+plan block's subshell deletes its temporary AWS config on exit, so a bare
+`terraform apply` afterwards would run without the `larp-tf` profile. Apply in
+a subshell that rebuilds the same refreshing-credential setup (re-run
+`aws login` first if the session has expired; `init` already ran above):
+
+```bash
+(
+  set -e
+  test -f deploy/aws/gate-a.tfplan
+  larp_tf_config=$(mktemp)
+  chmod 600 "$larp_tf_config"
+  trap 'rm -f "$larp_tf_config"' EXIT
+  printf '[profile larp-tf]\nregion = ap-southeast-2\ncredential_process = /usr/bin/env AWS_CONFIG_FILE=%s/.aws/config aws configure export-credentials --profile larp --format process\n' "$HOME" > "$larp_tf_config"
+  export AWS_CONFIG_FILE="$larp_tf_config" AWS_PROFILE=larp-tf AWS_REGION=ap-southeast-2
+  export PATH="$HOME/.local/opt/terraform-1.13.5:$PATH"
+  terraform -chdir=deploy/aws apply gate-a.tfplan
+)
+```
+
 Starting hosts is only infrastructure provisioning: it still needs the exact CI
 bundle, input preparation, migrations, manifest binding and unsigned activation
 below. As checked on 2026-10-17, #98/#49 (CI/bundle), #118–120 (measured profile)
