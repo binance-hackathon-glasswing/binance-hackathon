@@ -440,6 +440,13 @@ class DayRoll:
             return 'MARKET_UNAVAILABLE'
         builder = c.context_builder
         projection = current['projection']
+        # The midnight fetch can be the first observation of a split. The round that journals its hold runs
+        # after DayRoll, so checking only persisted holds would anchor old units at the newly changed price.
+        if getattr(builder, 'price_jump', None) is not None:
+            _, holds = builder._jumps(projection, observations, now_ms)
+            if holds:
+                self.deferred = midnight
+                return 'PRICE_JUMP_HOLD'
         ledger = ledger_from(projection, current['reservations'])
         try:
             market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
@@ -527,6 +534,14 @@ class BalanceCheck:
         comparable = (first is not None and first['version'] == current['version']
                       and first['settled_block'] == check['settled_block'])
         if comparable and now_ms - first['checked_ms'] < self.retry:
+            # An identical early read preserves the first candidate's time, but an early contradictory read
+            # breaks the sequence for that asset. Otherwise A -> MATCH/B -> A could confirm the original A.
+            first['assets'] = {asset: seen for asset, seen in first['assets'].items()
+                               if asset in mismatched and
+                               (seen['chain_units'], seen['ledger_units']) ==
+                               (mismatched[asset]['chain_units'], mismatched[asset]['ledger_units'])}
+            if not first['assets']:
+                self.candidate = None
             return confirmed
         if comparable and check['block_number'] > first['block_number']:
             positions = current['projection']['portfolio']['positions']
