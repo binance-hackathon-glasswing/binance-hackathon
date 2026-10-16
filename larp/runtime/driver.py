@@ -484,8 +484,9 @@ class BalanceCheck:
     asset is also an INCIDENT.
 
     A mismatch on an eligible asset is adopted only when the next comparable check, `retry_ms` later, reads the same
-    chain units with the same ledger units and `settled_block`, and nothing else was committed to the run in between
-    (no round, reservation or receipt): one bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
+    chain units with the same ledger units and `settled_block`, and no wallet activity occurred in between
+    (reservations, commands or receipts). Journal-proven hold-only rounds may continue (PR115-C04).
+    One bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
     (`adjust_ledger`: units only, cost unchanged) plus one INCIDENT per asset. The candidate is kept in memory only.
     Until adoption a deficit is subtracted in the planner's view (ContextBuilder, D1) and new spending waits (`ok`);
     sales and the flatten continue. `ok` counts only a check made by this process, so a restored or restarted run
@@ -531,8 +532,9 @@ class BalanceCheck:
         check, such as the one a price jump triggers, keeps the first read as the candidate."""
         mismatched = {a: r for a, r in check['assets'].items() if r['class'] != 'MATCH'}
         first, confirmed = self.candidate, []
-        comparable = (first is not None and first['version'] == current['version']
-                      and first['settled_block'] == check['settled_block'])
+        comparable = (first is not None and first['settled_block'] == check['settled_block']
+                      and first['epoch'] == current['epoch']
+                      and (first['version'] == current['version'] or self._quiet_since(first, current)))
         if comparable and now_ms - first['checked_ms'] < self.retry:
             # An identical early read preserves the first candidate's time, but an early contradictory read
             # breaks the sequence for that asset. Otherwise A -> MATCH/B -> A could confirm the original A.
@@ -562,9 +564,35 @@ class BalanceCheck:
         adopted = {a['asset'] for a in confirmed}
         rest = {a: r for a, r in mismatched.items() if a not in adopted}
         self.candidate = (dict(assets=rest, block_number=check['block_number'], settled_block=check['settled_block'],
-                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms)
+                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms,
+                               epoch=current['epoch'], portfolio=current['projection']['portfolio'],
+                               execution_state=current['execution_state'])
                           if rest else None)
         return confirmed
+
+    def _quiet_since(self, first, current):
+        """Prove that intervening commits are wallet-neutral; checking only the final ledger misses transient
+        reservations. A bounded journal suffix preserves that evidence without exporting the whole run."""
+        allowed = {'ROUND_PLANNED', 'PLAN_REJECTED', 'ROUND_LOGGED', 'ROUND_CLOSED',
+                   'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED'}
+        batches = self.coordinator.store.journal(self.coordinator.run_id, after_version=first['version'],
+                                                  through_version=current['version'])
+        if len(batches) != current['version'] - first['version']:
+            return False
+        for batch in batches:
+            b = batch.read()
+            event, projection = b['event'], b['projection']
+            if (event['kind'] not in allowed or b['owner_epoch'] != first['epoch']
+                    or b['commands'] or b['reservation_deltas']
+                    or b['execution_state'] != first['execution_state']
+                    or projection['portfolio'] != first['portfolio']
+                    or projection.get('settled_block') != first['settled_block']):
+                return False
+            record = event.get('record') or {}
+            plan = record.get('plan') or {}
+            if record.get('execution_pending') or plan.get('intents') or plan.get('reservation_deltas'):
+                return False
+        return True
 
     def _commit(self, current, event_id, event, projection=None):
         """Commit one event; this process's own commits do not count as activity between two checks."""
@@ -573,7 +601,9 @@ class BalanceCheck:
         c.store.commit(batch_for(current, event_id, event, projection=projection))
         after = c.store.load(c.run_id)
         if self.candidate is not None and self.candidate['version'] == before:
-            self.candidate['version'] = after.read()['version']
+            committed = after.read()
+            self.candidate.update(version=committed['version'], portfolio=committed['projection']['portfolio'],
+                                  execution_state=committed['execution_state'])
         return after
 
     def __call__(self, now_ms):

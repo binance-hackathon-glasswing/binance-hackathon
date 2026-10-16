@@ -238,10 +238,17 @@ class Adoption(AdoptionHarness):
         self.assertNotIn('balance_check', self.tick(driver, MINUTE - SECOND))
         self.assertEqual(self.tick(driver, SECOND)['balance_check'], 'ADJUSTED')
 
-    def test_s5_a_commit_between_the_checks_prevents_adoption(self):
+    def test_s5_resource_activity_between_the_checks_prevents_adoption(self):
         driver = self.prepare(raw=dict(NVDAB=2010))
         self.assertEqual(self.tick(driver)['balance_check'], 'SURPLUS_ONLY')
-        self.round(driver)  # a round commits between the two checks
+        self.round(driver)
+        # PR115-C04: a hold-only round is wallet-neutral. Actual resource activity, even if completed
+        # between reads, still invalidates the candidate and requires a new quiet pair of reads.
+        for suffix, units in [('reserve', 1), ('release', -1)]:
+            current = self.store.load(RUN)
+            self.store.commit(batch_for(current, 'fixture:s5:' + suffix,
+                dict(kind='INCIDENT', incident=dict(type='FIXTURE_RESOURCE')),
+                reservation_deltas=[dict(intent_id='s5', asset='USDT', units=units)]))
         self.assertNotEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')
         self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
         self.assertEqual(self.tick(driver, MINUTE)['balance_check'], 'ADJUSTED')
