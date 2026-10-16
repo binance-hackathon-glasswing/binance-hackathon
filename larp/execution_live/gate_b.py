@@ -45,6 +45,9 @@ def probe_chain(rpc, *, wallet, router, observed_at):
 
     canonical()
     balance = quantity(rpc.call('eth_getBalance', [wallet, hex(height)]))
+    tokens = token_balances(rpc, wallet, height)  # GB-2: USDT and every pinned bStock, same finalized block
+    # GB-1: the nonce at the finalized block; a mined but unfinalized transaction makes it lag `latest`.
+    finalized_nonce = quantity(rpc.call('eth_getTransactionCount', [wallet, hex(height)]))
     latest = quantity(rpc.call('eth_getTransactionCount', [wallet, 'latest']))
     pending = quantity(rpc.call('eth_getTransactionCount', [wallet, 'pending']))
     code = rpc.call('eth_getCode', [router, hex(height)])
@@ -58,13 +61,59 @@ def probe_chain(rpc, *, wallet, router, observed_at):
         blockers.append('FIRST_BNB_REQUIRED')
     if latest != pending:
         blockers.append('PENDING_NONCE_REQUIRES_RECONCILIATION')
+    if finalized_nonce != latest:
+        blockers.append('UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION')
     if not code:
         blockers.append('ROUTER_CODE_MISSING')
     return dict(schema='GateBChainEvidence.v1', observed_at=observed_at, source_id=rpc.source_id,
         chain_id=56, wallet=wallet, router=router, finalized_block_number=height,
         finalized_block_hash=block_hash, native_balance_wei=balance, native_balance_scope='FINALIZED_BLOCK',
+        finalized_nonce=finalized_nonce, tokens=tokens,
         latest_nonce=latest, pending_nonce=pending, router_code_sha256=hashlib.sha256(code).hexdigest(),
         router_code_bytes=len(code), blockers=blockers, signing_enabled=False)
+
+
+def token_balances(rpc, wallet, height):
+    """decimals()/balanceOf(wallet) for USDT and the pinned bStocks at `height`, through Rpc's eth_call allowlist."""
+    from .balances import assets, word
+    from .chain import BALANCE_OF_CALL, DECIMALS_CALL
+    tokens = {}
+    for name, contract in assets().items():
+        decimals = word(rpc.call('eth_call', [dict(to=contract, data=DECIMALS_CALL), hex(height)]))
+        units = word(rpc.call('eth_call', [dict(to=contract, data=BALANCE_OF_CALL + '0' * 24 + wallet[2:]),
+                                           hex(height)]))
+        if decimals > 77:
+            raise Blocked('implausible token decimals')
+        tokens[name] = dict(contract=contract, decimals=decimals, units=units)
+    return tokens
+
+
+def starting_balances_match(state, chain):
+    """GB-2: the pinned starting cash and every bStock position equal the finalized chain balances.
+
+    Cash is micro-USDT floored from the chain's decimals (Gate A's convention). A position equals its chain units at
+    the same decimals; zero equals zero at any scale. A pinned token without a position counts as zero."""
+    from .balances import assets
+    tokens, pinned = chain['tokens'], assets()
+    if type(tokens) is not dict or set(tokens) != set(pinned):
+        return False
+    for name, row in tokens.items():
+        if (type(row) is not dict or row.get('contract') != pinned[name]
+                or any(type(row.get(k)) is not int or row[k] < 0 for k in ('decimals', 'units'))):
+            return False
+    usdt = tokens['USDT']
+    if usdt['decimals'] < 6 or state['cash_units'] != usdt['units'] // 10**(usdt['decimals'] - 6):
+        return False
+    positions = state['positions']
+    if type(positions) is not dict or set(positions) - (set(pinned) - {'USDT'}):
+        return False
+    for name in set(pinned) - {'USDT'}:
+        position, row = positions.get(name, dict(units=0)), tokens[name]
+        if position['units'] == row['units'] == 0:
+            continue
+        if position['units'] != row['units'] or position.get('decimals') != row['decimals']:
+            return False
+    return True
 
 
 REQUIREMENTS = {
@@ -185,10 +234,12 @@ def readiness_report(inputs, *, now, base_dir):
                 or value['native_balance_scope'] != 'FINALIZED_BLOCK'):
             raise Blocked('chain capture identity/freshness differs')
         hash_value(value['finalized_block_hash'])
-        for k in ('finalized_block_number', 'native_balance_wei', 'latest_nonce', 'pending_nonce', 'router_code_bytes'):
+        for k in ('finalized_block_number', 'native_balance_wei', 'finalized_nonce', 'latest_nonce', 'pending_nonce',
+                  'router_code_bytes'):
             if type(value[k]) is not int or not 0 <= value[k] < 2**256:
                 raise Blocked('invalid chain capture quantity')
         if (value['native_balance_wei'] == 0 or value['latest_nonce'] != value['pending_nonce']
+                or value['finalized_nonce'] != value['latest_nonce']
                 or value['router_code_bytes'] == 0 or value['blockers'] != []
                 or not re.fullmatch(r'[0-9a-f]{64}', value['router_code_sha256'])):
             raise Blocked('chain capture has unresolved blockers')
@@ -209,6 +260,8 @@ def readiness_report(inputs, *, now, base_dir):
         ledger_from(initial_projection(value), [])
         if chain is None or value['bnb_units'] != chain['native_balance_wei'] or value['bnb_units'] == 0:
             raise Blocked('initial native funding differs from chain capture')
+        if not starting_balances_match(value, chain):
+            raise Blocked('initial cash or positions differ from chain capture')
         checks['DR-06']['detail'] = 'Initial native funding/18-decimal ledger checked; C1, full balance reconciliation and logged top-up still required'
     except errors:
         checks['DR-06']['detail'] = 'Pinned initial portfolio/funded native chain evidence absent or mismatched; top-up rehearsal still required'
