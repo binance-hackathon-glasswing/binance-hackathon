@@ -1,6 +1,6 @@
 # Remaining work before trading: four AI-agent tasks (IDEA-064)
 
-Prepared 2026-10-16 (Claude Code session). This folder splits everything still left between today and the scored run into four task prompts, one per AI agent session. Each prompt names the human owner it works for. The agent does the repository work; the person does anything that needs credentials, money, a wallet, an AWS spend or a team decision.
+Prepared 2026-10-16 (Claude Code session). This folder splits everything still left between today and the scored run into four task prompts, one per AI agent session. Each prompt names the human owner it works for. **People: read [WHO_DOES_WHAT.md](WHO_DOES_WHAT.md) for your own tasks and dates.** The agent does the repository work; the person does anything that needs credentials, money, a wallet, an AWS spend or a team decision.
 
 | # | Prompt | Works for (reviewer) | Gate it drives | Hard date (UTC, F-121) |
 |---|---|---|---|---|
@@ -18,6 +18,7 @@ The gates and DR items are defined in [DEPLOYMENT_BUILD.md](../DEPLOYMENT_BUILD.
 - **Gate A has not been reviewed.** The integration branch has the Gate A tooling (`larp/runtime/gate_a.py`, [GATE_A.md](../GATE_A.md), IDEA-058), the session calendar (IDEA-054), the quote-cost producer (`tools/run_quote_capture.sh`, IDEA-063), gas top-up rounds (IDEA-061), route checks (IDEA-062) and chain-balance reconciliation (IDEA-055). What is missing is the real data, a reviewed hosted shadow run and the decisions: GAP-69..72 in [INCOMPLETE_WORK.md](../../INCOMPLETE_WORK.md).
 - **Signing is still blocked** by the swap decoder (GAP-29, #33) and the example signer policy values (#44).
 - **The trading plan is decided but not built.** PR #123 records the team's choice of S1 at 95% with a trend guard and an LLM limiter. Its §12 values are only proposals until the Oct 22 freeze. Nothing in it is implemented.
+- **Settled by the team (2026-10-16), outside these briefs:** final-wallet ownership, the on-call rota, the go-ahead to promote to `main`, and GitHub billing. Agents record these and do not chase them.
 - **Branches in flight when this was written:** `claude/d-dn-10-clock-clear` (automatic CLOCK HALT clear, D-DN-10), `claude/sweet-tesla-dx49h0` (PR #123), `claude/record-91` (PR #124), `claude/gate-a-inputs` (an older Gate A input-tools branch; check whether IDEA-058 on integration supersedes it before reusing anything).
 
 ## Rules for all four agents
@@ -35,7 +36,7 @@ The gates and DR items are defined in [DEPLOYMENT_BUILD.md](../DEPLOYMENT_BUILD.
 
 Every open item at writing is assigned to exactly one prompt:
 
-- **Prompt 1:** GAP-69..72, #118–#120, #92 (hosted part), #98, IDEA-049-D PR99-RV1, D-DN-08 measurement (#60), and the IDEA-057 shadow-trial start (#97, hosted part).
+- **Prompt 1:** GAP-69..72, #118–#120, #92 (hosted part), IDEA-049-D PR99-RV1, D-DN-08 measurement (#60), and the IDEA-057 shadow-trial start (#97, hosted part).
 - **Prompt 2:** GAP-29..32, GAP-47, GAP-49, WR-C (#44), #27, #30, #32/#33, #36/#90, and DR-02..06, DR-19 (shadow-day replay).
 - **Prompt 3:**
   - Plan and model: PR #123 / EXP-007, D-DN-09 (#34/#52), the IDEA-055 POLICY-HOLD, #37–#39, #55, #56, #107, the IDEA-057 adoption decision.

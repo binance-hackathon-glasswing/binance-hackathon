@@ -4,16 +4,16 @@ Read `docs/build/remaining-work/README.md` first; its rules apply here. Then rea
 - `docs/build/GATE_A.md`, `docs/build/DEPLOYMENT_DAY.md`, `docs/build/AWS_RUNBOOK.md`, `docs/build/runbook.md`
 - IDEA-051, IDEA-058 (all, including "Remaining work and ownership" and design option 6), IDEA-063, IDEA-062 and IDEA-046/047
 - GAP-69..72 and "IDEA-049-D PR99-RV1" in `docs/INCOMPLETE_WORK.md`
-- issues #92, #97, #98, #118, #119 and #120
+- issues #92, #97, #118, #119 and #120
 
 Put new records in IDEA-065..069; extend IDEA-058/063 where the work already lives there.
 
 ## Deliver, in this order
 
 1. **Quote-cost capture (#118, P0; GAP-69). Do this now.** The capture must start before **Sat Oct 17 00:00 UTC**, so that by Mon Oct 19 it covers 3 UTC days including the weekend. That is what IDEA-063's summary refuses to work without.
-   - Check that the person who will run it has a pushed build of `tools/run_quote_capture.sh` and the IDEA-063 producer.
+   - Isaac runs it (DR-01 owner). Check that Isaac has a pushed build of `tools/run_quote_capture.sh` and the IDEA-063 producer.
    - Prepare the exact command with the IDEA-063 defaults (`--min-samples 10`, `--min-days 3`, `--require-weekend`). Confirm it only calls read-only endpoints: quote, approve-build and gas-estimate, never `quote-and-swap` broadcast, signing or an ai-seeds upload.
-   - The capture uses the Binance Web3 API key, never the wallet key or `AI_SEEDS_SECRET`. The person runs it on their own machine or on `primary`.
+   - The capture uses the Binance Web3 API key, never the wallet key or `AI_SEEDS_SECRET`. Isaac runs it on their own machine or on `primary`.
    - Raw artifacts stay outside Git; record their hashes.
    - If the start slips, record the new coverage date and what it delays.
 
@@ -41,7 +41,7 @@ Put new records in IDEA-065..069; extend IDEA-058/063 where the work already liv
    - **`larp-execution` stays stopped.**
    - If a step turns out to be undone, hand the exact command to Yao Zhu rather than running it yourself.
 
-6. **Exact-release evidence (GAP-72, #98).** Org Actions is billing-blocked. Get the account owner to restore minutes, or agree with Keegan how a mirror-CI bundle is verified and pinned. A local suite is never a substitute for the CI-built bundle and its manifest hashes.
+6. **Exact-release evidence (GAP-72).** GitHub billing and Actions minutes are settled by the team (2026-10-16), so don't chase them. With Keegan, pin the CI-built bundle and its manifest hashes for the build that runs. A local suite is never a substitute for it.
 
 7. **Gate A host evidence**, recorded in IDEA-058 and reviewed by Keegan in IDEA-042:
    - one shadow round with a durable per-event and per-chunk ACK from the real receiver (DR-07);
@@ -56,7 +56,7 @@ Put new records in IDEA-065..069; extend IDEA-058/063 where the work already liv
    - pinning the routing file and runtime config.
    Then record P1/P2 and the trial start. The adoption decision is prompt 3's.
 
-9. **Design option 6 (IDEA-058).** Bring Keegan a recommendation on whether the evidence poller should read only the bound manifest instead of `runtime.json`. Implement it only if he accepts.
+9. **Design option 6 (IDEA-058).** Bring Keegan a recommendation on whether the evidence poller should read only the bound manifest instead of `runtime.json`. Implement it only if Keegan accepts.
 
 ## Acceptance
 
@@ -69,8 +69,7 @@ Write the criteria in your record and push them before running anything.
 
 ## What you need from the team
 
-- Whoever runs the capture: Web3 API credentials on their own machine.
+- Isaac runs the capture (DR-01 owner), with Web3 API credentials on their own machine.
 - Isaac: the RPC choice.
 - Yao Zhu: where the AWS evidence is recorded, the SEC contact and the AIand key.
 - Keegan: Gate A review.
-- The account owner: Actions minutes.

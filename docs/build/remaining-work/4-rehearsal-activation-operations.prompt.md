@@ -12,7 +12,7 @@ Read `docs/build/remaining-work/README.md` first; its rules apply here. Then rea
 - IDEA-042, IDEA-049-D (all, especially §5: D-DN-01..11, and the R-01..R-14 risks), IDEA-036, IDEA-046, IDEA-047 and IDEA-009 §F
 - `config/release/deviations.v1.json` and `config/release/services.v1.json`
 - these GAP items in `docs/INCOMPLETE_WORK.md`: GAP-04, GAP-05, GAP-33..42, GAP-45, GAP-46, GAP-48, GAP-52, GAP-62 and GAP-65
-- issues #49, #60, #98 and #106
+- issues #49, #60 and #106
 - the in-flight branch `claude/d-dn-10-clock-clear`
 
 Put new records in IDEA-080..084; extend IDEA-042 and IDEA-049-D where the work already lives there.
@@ -50,12 +50,12 @@ AWS is reported fully resolved (team, 2026-10-16). Where an item below touches A
    - Make every row FINAL by Oct 26. `activate_run` refuses a `live` run with an OPEN or DRAFT row.
    - Complete the services list (F-61).
    - **#49:** make the release-integrity step (IDEA-047 R6) something an operator can actually follow.
-   - **#98, with prompt 1:** an exact-release CI bundle for the frozen commit.
+   - With prompt 1: an exact-release CI bundle for the frozen commit. GitHub billing is settled by the team.
 
-6. **Final wallet (DR-17, GAP-52, #106 final part).** Track these with dates and owners:
-   - The team generates and registers the fresh final wallet (F-14).
+6. **Final wallet (DR-17, GAP-52, #106 final part).** Who owns the final wallet is settled by the team (2026-10-16); don't chase it. Record each step with its date:
+   - The fresh final wallet is generated and registered (F-14).
    - Find out whether it gets a new `AI_SEEDS_SECRET` (Q-35; F-122 confirms only the final wallet is scored). Get the answer through the team; agents never contact organisers.
-   - The team seeds the final wallet's BNB by MetaMask, about 6 USDT, before **Oct 29 00:00 UTC** and before its first agent trade.
+   - The final wallet's BNB is seeded by MetaMask, about 6 USDT, before **Oct 29 00:00 UTC** and before its first agent trade.
    - The opening balance capture comes after that seeding.
    - Rehearse the switch on the dev host with a throwaway config: a new address and secret, a separate `.ai-seeds/` directory and nonce records, and refusal on any address mismatch.
 
@@ -63,9 +63,9 @@ AWS is reported fully resolved (team, 2026-10-16). Where an item below touches A
    - The frozen commit and its manifest.
    - The final-wallet config with an empty secret slot.
    - The runbook: start, automatic restart, HALT, restore, switch, end of run.
-   - A dated on-call rota with backups.
+   - The on-call rota, which the team has settled: just include it.
    - Each owner signs off their DR items in IDEA-042.
-   - Then the Gate C review, and with the team's explicit authorization, the integration → `main` promotion PR. Keep `main` in step: today it lags the integration branch and has two PR85 record commits integration lacks, so reconcile them as an ordinary merge.
+   - Then the Gate C review, and the integration → `main` promotion PR. The go-ahead process is settled by the team. Keep `main` in step: today it lags the integration branch and has two PR85 record commits integration lacks, so reconcile them as an ordinary merge.
 
 8. **Accountability and audit readiness.**
    - **GAP-46, GAP-48:** verify the round-log contract and test-log hygiene on the real receiver.
@@ -91,10 +91,10 @@ Write the criteria in your record and push them before running anything.
 - The deviations register has no OPEN or DRAFT row.
 - The final-wallet switch has been rehearsed.
 - No secret appears in Git, logs or chat.
-- Nothing is promoted to `main` without the team's authorization.
+- Nothing is promoted to `main` except through the team's settled go-ahead.
 
 ## What you need from the team
 
 - Yao Zhu and Keegan: the D-DN answers, the rehearsal shape and the Gate C sign-off.
-- The team: the final wallet and its seeding, the Q-35 answer, the rota, and authorization for the `main` PR.
+- The team: the Q-35 answer, plus confirmation of the settled final-wallet, rota and `main` go-ahead arrangements so you can record them.
 - Prompts 1–3: their evidence and deviations.
