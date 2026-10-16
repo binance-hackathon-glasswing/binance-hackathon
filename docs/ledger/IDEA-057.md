@@ -216,6 +216,8 @@ Order: base merge `00df1b9` (`codex/system-testing-20261012` at `e84083c`; `docs
 | SG-7b | PASS | `test_aiand_routing.py::…::test_sg7_deterministic_tool_results_on_a_read_only_evidence_store`: over the read-only store alone every tool call ends `ARTIFACT_WRITE_ERROR`; with the overlay none does, every result is in the private store, the shared store is unchanged |
 | SG-7c | PASS | No golden regenerated. Mutation (deterministic reader back on the shared store) caught. Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): base `e84083c` 1590 passed, 10 skipped, 2201 subtests; this branch at `8cb340a` **1630 passed, 10 skipped, 2291 subtests, 0 failed**. The same 10 environmental skips. |
 
+SG-3 compatibility with PR #87 (2026-10-16): #87's GA03 guard lets a hosted `dev` run use only the explicit `shadow` evidence settings, so SG3 fills `intelligence_mode` with `shadow` when #87's `intelligence.shadow.v1.json` is present and `development` otherwise. Checked on a scratch merge of #87, #114, #115 and #116.
+
 The "finding outside this change" above is fixed by SG-7. Not yet measured on a real read-only bind mount (SG-1 was); that is part of the host steps.
 
 ## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
