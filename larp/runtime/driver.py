@@ -476,7 +476,8 @@ class DayRoll:
             projection['day_roll_deferred_ms'] = midnight
             day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
             event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
-            self.coordinator.store.commit(batch_for(Document.from_dict(current), f"day-deferred:{day}:{current['version'] + 1}", event,
+            event_id = f"day-deferred:{day}:{current['version'] + 1}"
+            self.coordinator.store.commit(batch_for(Document.from_dict(current), event_id, event,
                                                      projection=projection))
         return 'PRICE_JUMP_HOLD'
 
