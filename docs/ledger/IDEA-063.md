@@ -3,7 +3,7 @@
 - 2026-10-16 renumbered (Claude Code session, at Keegan's request, PR #88 review): this entry was first written as IDEA-057, which #85 (merged to `main`) uses for AIand evidence routing. The quote record and its references are now IDEA-063 so both records survive the merge. Commit messages before the rename still say IDEA-057.
 
 - Date / owner: 2026-10-15 SGT / built with Claude Code at the user's request ("create the summary tool"). Runs with real quotes belong to Isaac or Keith (dev-wallet Web3 API key); the summary and profiles need Isaac's and Keith's review before they are pinned.
-- Status: open (criteria written before any test or code)
+- Status: open (built; Q1–Q11 PASS locally; real captures, fee-netting check and owner review open)
 - Links: DEPLOYMENT_DAY.md "Inputs the shadow run still needs" item 1; `larp/strategy/profiles.py` (`quote_summary`, `build_live_profiles`); `config/strategy/LIVE.md`; `larp/execution_live/gate_b.py` DR-01 ("raw capture attribution and three-day/weekend coverage still required"); participant-kit.md K4, K8 (quote-and-swap, approve-transaction, gas-limit); ledger rule 4.
 
 ## What and why
@@ -149,3 +149,19 @@ quotes too. The capture would send the wrong key and sign with the wrong secret.
 | Q11c | A name already set in the environment keeps its value; `.env` fills only the names that are unset. |
 | Q11d | No key or secret value appears on stdout or stderr in any of these cases. |
 | Q11e | Each new test fails against `f0e5835` (Q11a, Q11c) or is a control that passes on both (Q11b, Q11d); the existing Q10 and R5 tests still pass. |
+
+**Q11 results (2026-10-16): PASS.**
+- Red first: against the old wrapper, Q11a failed for double-quoted, single-quoted and CRLF values (unquoted passed),
+  and Q11c failed (a `.env` value replaced the environment's key). Deviation from Q11e: Q11b also failed on the
+  old wrapper, not as a control, because its single-quoted value kept the quotes. The old wrapper never evaluated
+  values either; Q11b now pins that the dotenv parse keeps `${...}` and `$(...)` literal.
+- Fix `594ad07`: `.env` is parsed by `python-dotenv` 1.2.4 (`dotenv_values(".env", interpolate=False)`, run as
+  `python -I`) and handed to bash as NUL-separated pairs on a pipe, so values never reach the terminal or a file.
+  The environment keeps any name it already sets.
+- Mutations, each caught by a Q11 test: export without the per-name precedence check; `interpolate=True`.
+- Full suite, Python 3.13.16 venv from `deploy/requirements-test.lock`, local PostgreSQL 16.15 (not the CI image's
+  14.24): head `594ad07` **1614 passed, 10 skipped, 2213 subtests, 0 failed**; base `e84083c` 1590 passed,
+  10 skipped, 2201 subtests. The +24 tests are this PR's test file. The skips are the same in both (no bubblewrap,
+  no disposable systemd runner, root ignores directory modes, opt-in recorded-market data).
+- Not run: mirror CI on this head; real captures (still Isaac or Keith, with the dev wallet's key); the fee-netting
+  check and profile approval stay with the owners.
