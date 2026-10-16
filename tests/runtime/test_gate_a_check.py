@@ -180,7 +180,9 @@ class GateAPackageCheck(unittest.TestCase):
         self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
 
     def test_terms_metadata_does_not_replace_actual_retained_bytes(self):
-        artifact = next(p for p in self.artifacts.rglob('*') if p.is_file())
+        register = json.loads((self.release / 'config/sources/sources.v1.json').read_bytes())
+        digest = register['edgar']['rights']['terms_evidence_sha256']
+        artifact = self.artifacts / 'artifacts' / digest[:2] / digest
         original = artifact.read_bytes()
         for raw in (b'', b'Altered terms'):
             artifact.write_bytes(raw)

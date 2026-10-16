@@ -20,3 +20,7 @@
 ## Outstanding work and handoff
 
 #127 retains the hosted checks with Yao Zhu/Keegan/Isaac/Keith as listed in the issue. GAP-69–72 stay open. Deployment spend follows AWS_RUNBOOK's named approval, and org Actions billing (#98) plus exact downloadable bundle (#49) remain with the account owner/Keegan. The implementation PR closes #128 only. No merge to main, activation, organiser message or infrastructure change is authorized by this record.
+
+## PC-V01 — first local run, 2026-10-16 SGT
+
+At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-artifact test selected the first filesystem artifact, which may belong to a disabled source; preflight correctly does not require disabled-source terms. Correct the fixture to target EDGAR's required terms hash, preserving the production validator. An earlier invocation yielded before completion and its final output was unavailable; the recorded complete run is the one above. No host, provider or economic evidence was produced.
