@@ -3,7 +3,7 @@
 - 2026-10-16 renumbered (Claude Code session, at Keegan's request, PR #88 review): this entry was first written as IDEA-057, which #85 (merged to `main`) uses for AIand evidence routing. The quote record and its references are now IDEA-063 so both records survive the merge. Commit messages before the rename still say IDEA-057.
 
 - Date / owner: 2026-10-15 SGT / built with Claude Code at the user's request ("create the summary tool"). Runs with real quotes belong to Isaac or Keith (dev-wallet Web3 API key); the summary and profiles need Isaac's and Keith's review before they are pinned.
-- Status: open (built; Q1–Q11 PASS locally; real captures, fee-netting check and owner review open)
+- Status: real capture running (started 2026-10-16 18:19:07 UTC on Keith's Linux server; first round: 5 samples, 1 BNB price quote, 0 failures; summary, fee-netting check and owner review open)
 - Links: DEPLOYMENT_DAY.md "Inputs the shadow run still needs" item 1; `larp/strategy/profiles.py` (`quote_summary`, `build_live_profiles`); `config/strategy/LIVE.md`; `larp/execution_live/gate_b.py` DR-01 ("raw capture attribution and three-day/weekend coverage still required"); participant-kit.md K4, K8 (quote-and-swap, approve-transaction, gas-limit); ledger rule 4.
 
 ## What and why
@@ -103,7 +103,7 @@ Synthetic Web3 responses only; no credentials, network or real quotes.
 | Q8–Q10 | PASS | `Runner.test_q8_*`, `test_q9_*`, `test_q10_*` |
 
 **Still open**
-- Real captures: Isaac or Keith, with the dev wallet's key, starting before Sat Oct 17 00:00 UTC.
+- Real capture is running on Keith's Linux server (see the dated run record below); finish coverage and summarize after the capture stops, without weakening coverage refusals.
 - The owners' review of the size and coverage before a summary is pinned.
 - Whether quoted amounts already net route fees (`fee_bps` 0 assumes so; the report keeps any `tradeFee`).
 
@@ -165,3 +165,14 @@ quotes too. The capture would send the wrong key and sign with the wrong secret.
   no disposable systemd runner, root ignores directory modes, opt-in recorded-market data).
 - Not run: mirror CI on this head; real captures (still Isaac or Keith, with the dev wallet's key); the fee-netting
   check and profile approval stay with the owners.
+
+## Real capture run — 2026-10-17 SGT (2026-10-16 UTC)
+
+- Owner: Keith. Machine: Keith's Linux server (`linuxpc`, Ubuntu 24.04.5, Python 3.12.3), launched from tmux session `1`.
+- Source: `codex/system-testing-20261012`, commit `eda2ed2ab1ab4b72f220eb6b92e882737d950825`. `git fetch origin`, branch checkout and `git pull --ff-only` succeeded on the server at this SHA. Working tree clean; no code changes.
+- Start: **2026-10-16T18:19:07Z** (2026-10-17 02:19:07 SGT), before both Friday's 20:00 UTC session close and Saturday's 00:00 UTC weekend deadline. Stop: **2026-10-20T00:00:00Z** (Tue 08:00 SGT).
+- Settings: interval **600 s** (the tool waits between completed rounds); default quote size **40 USDT**; default re-quote delay 15 s. The unchanged `tools/run_quote_capture.sh` dry run passed, then reported capture PID `91310` running until the stop time.
+- Storage: `~/larp-captures`, **outside the repo**. Capture files, response artifacts, logs and credentials are not committed. Credentials are in the server checkout's Git-excluded `.env`, mode 0600; no wallet key or ai-seeds secret is used.
+- First completed round: `capture-2026-10-16.jsonl` contains **5 SAMPLE records** (one each for NVDAB, GOOGLB, SKHYB, TSLAB and MSFTB), **1 BNB_PRICE record**, **0 FAILURE records** (failure counts by stage: none), and **10 FALLBACK swap-gas estimates**. Sample/price timestamps span `2026-10-16T18:19:09.205Z`–`2026-10-16T18:20:55.662Z`. The gas-estimate API errors became the expected fallback estimates, not failed samples. These are quotes, not realised fills.
+- Host continuity: a separate `systemd-inhibit` process blocks idle/sleep through the capture stop time. Keep the Linux server powered, online and awake; tmux/nohup preserve the process when SSH disconnects. A reboot, power loss or forced sleep still interrupts it.
+- Remaining: Keith monitors capture health and records any gaps here. After Oct 20 00:00 UTC, run `cost_summary summarize`, then the LIVE-profile builder; report coverage refusals without loosening flags. Isaac and Keith review the fee-netting assumption, summary and profiles before pinning (#118/#119/#120, GAP-69). This startup record does not close #118 or GAP-69, and no summary/profile is generated or pinned by this change.
