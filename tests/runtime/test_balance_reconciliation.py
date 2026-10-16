@@ -327,21 +327,27 @@ class Startup(ReconcileHarness):
 
 
 class Surplus(ReconcileHarness):
-    def test_b4_a_surplus_is_recorded_once_and_does_not_block(self):
-        before = deepcopy(self.store.load(RUN).read()['projection'])
+    def test_b4_a_surplus_is_recorded_once_and_adopted_at_the_confirming_check(self):
+        # Changed by the owner decisions of 2026-10-16 (D2: a surplus on our own assets is adopted; PR 4 S6). It used
+        # to assert that the ledger never changes.
+        cost = self.book()['positions']['NVDAB']['cost_basis_units']
         driver = self.build(NVDAB=2500)
         self.assertEqual(self.tick(driver)['balance_check'], 'SURPLUS_ONLY')
         self.assertTrue(self.health(driver)['new_spending_ok'])
         self.assertEqual(len(self.incidents('BALANCE_SURPLUS')), 1)
         self.assertEqual(self.incidents('BALANCE_SURPLUS')[0]['incident']['assets'], ['NVDAB'])
-        self.assertEqual(self.tick(driver, INTERVAL)['balance_check'], 'SURPLUS_ONLY')
+        self.assertEqual(self.tick(driver, INTERVAL)['balance_check'], 'ADJUSTED')
         self.assertEqual(len(self.incidents('BALANCE_SURPLUS')), 1)  # not repeated for the same asset
+        self.assertTrue(self.health(driver)['new_spending_ok'])
         after = self.store.load(RUN).read()['projection']
-        self.assertEqual((after['portfolio'], after['balances']), (before['portfolio'], before['balances']))
+        self.assertEqual(after['portfolio']['positions']['NVDAB'], dict(units=2500, decimals=4, cost_basis_units=cost))
+        self.assertEqual(after['balances']['NVDAB'], 2500)
 
 
 class Deficit(ReconcileHarness):
     def test_b5_a_deficit_blocks_new_spending_and_caps_the_mandatory_sale(self):
+        # The D1 window: until the confirming check adopts the chain units (PR 4 S8), new spending waits and the sale
+        # is capped. The first check never rewrites the ledger.
         before = deepcopy(self.store.load(RUN).read()['projection'])
         driver = self.build(rounds=True, NVDAB=1500)
         summary = self.tick(driver)
@@ -416,7 +422,8 @@ class Replay(ReconcileHarness):
 # ---------------------------------------------------------------------------------------------- B9 configuration
 class Settings(unittest.TestCase):
     BLOCK = dict(balance_rpc_url='https://rpc.invalid/', balance_rpc_source_id='synthetic-rpc',
-                 balance_check_interval_ms=INTERVAL, balance_check_max_age_ms=MAX_AGE)
+                 balance_check_interval_ms=INTERVAL, balance_check_max_age_ms=MAX_AGE,
+                 price_jump_check_bps=3000)  # required with the others since PR 4 (S16)
 
     def test_b9_dev_and_live_need_every_balance_setting(self):
         from larp.runtime.service import balance_settings
