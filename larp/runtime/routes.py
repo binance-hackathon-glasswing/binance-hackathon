@@ -58,8 +58,12 @@ def fixed_hosts():
     """The hosts the clients call, from their own constants."""
     from larp.audit.delivery import BASE_URL
     from larp.intelligence.edgar import ARCHIVES, SUBMISSIONS
+    from larp.intelligence.aiand import ENDPOINT
+    from larp.intelligence.providers import OPENAI_ENDPOINT
     from larp.marketdata.web3 import BASE
     return dict(web3=https_host(BASE, 'larp.marketdata.web3.BASE'),
+                models=[https_host(ENDPOINT, 'larp.intelligence.aiand.ENDPOINT'),
+                        https_host(OPENAI_ENDPOINT, 'larp.intelligence.providers.OPENAI_ENDPOINT')],
                 ai_seeds=https_host(BASE_URL, 'larp.audit.delivery.BASE_URL'),
                 edgar=[https_host(SUBMISSIONS.split('{')[0], 'larp.intelligence.edgar.SUBMISSIONS'),
                        https_host(ARCHIVES.split('{')[0], 'larp.intelligence.edgar.ARCHIVES')])
@@ -170,6 +174,10 @@ def plan(role, configs, sources):
             for i, provider in enumerate(listed):
                 _url(p, provider.get('url'), f'runtime.driver.balance_rpc_providers[{i}].url', u,
                      'BSC RPC (balance check, ' + ('primary' if i == 0 else f'backup {i}') + ')')
+        if driver.get('assessor') == 'aiand_routed':
+            # Shadow-only model routing (IDEA-057, MR-06): AIand always, OpenAI when its optional key is set.
+            for h in fixed['models']:
+                p.add(h, HTTPS, u, 'hosted model API (aiand_routed, shadow only)')
         _aws(p, c, 'runtime', u, 'secretsmanager', 'Secrets Manager (runtime secret)')
         _database(p, c, 'runtime', u)
     if 'execution' in configs:

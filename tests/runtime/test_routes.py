@@ -23,6 +23,7 @@ EXAMPLES = {
     'execution': 'config/hosts/execution.example.json',
     'uploader': 'config/hosts/uploader.example.json',
     'operations': 'config/runtime/operations.example.json',
+    'runtime_aiand': 'config/runtime/runtime.aiand-shadow.example.json',
     'signer': 'config/hosts/signer.example.json',
 }
 PRIMARY = ('runtime', 'execution', 'uploader', 'operations')
@@ -93,6 +94,26 @@ class Plans(unittest.TestCase):
             self.assertIn((h, 443), got)
         self.assertNotIn(('www.ftc.gov', 443), got)
         self.assertEqual(plan['not_checked'], [])
+
+    def test_sg2_aiand_shadow_runtime_adds_the_model_hosts(self):
+        from larp.runtime import routes
+        from larp.intelligence.aiand import ENDPOINT
+        from larp.intelligence.providers import OPENAI_ENDPOINT
+        cfgs = configs()
+        cfgs['runtime'] = dict(cfgs['runtime'], driver=dict(load('runtime_aiand')['driver'],
+                               balance_rpc_url=BALANCE_RPC, balance_rpc_source_id='balance-rpc'))
+        routed = by_endpoint(routes.plan('primary', cfgs, sources()))
+        plain = by_endpoint(routes.plan('primary', configs(), sources()))
+        self.assertEqual({host(ENDPOINT), host(OPENAI_ENDPOINT)}, {'api.aiand.com', 'api.openai.com'})
+        for h in ('api.aiand.com', 'api.openai.com'):
+            d = routed[(h, 443)]
+            self.assertEqual((d['units'], d['expect'], d['tls']), (['larp-runtime'], 'REACHABLE', True))
+            self.assertNotIn((h, 443), plain)
+        self.assertEqual(set(routed) - set(plain), {('api.aiand.com', 443), ('api.openai.com', 443)})
+        for plan_ in (routed, plain):
+            self.assertNotIn(('api.anthropic.com', 443), plan_)
+        signer = routes.plan('signer', configs(('signer',)), sources())
+        self.assertNotIn('api.aiand.com', {d['host'] for d in signer['destinations']})
 
     def test_r2_signer_reaches_only_the_database_and_s3(self):
         from larp.runtime import routes
@@ -338,8 +359,11 @@ class Shipping(unittest.TestCase):
         section = doc.split('## Approved network destinations', 1)[1].split('\n## ', 1)[0]
         account_specific = {DB, 'balance-rpc.example', 'balance-rpc-backup.example', 'chain-rpc.example'}
         hosts = set()
-        for role, names in (('primary', PRIMARY), ('signer', ('signer',))):
-            for d in routes.plan(role, configs(names), sources())['destinations']:
+        routed = configs()
+        routed['runtime'] = dict(routed['runtime'], driver=dict(load('runtime_aiand')['driver'],
+                                 balance_rpc_url=BALANCE_RPC))
+        for role, cfgs in (('primary', configs()), ('primary', routed), ('signer', configs(('signer',)))):
+            for d in routes.plan(role, cfgs, sources())['destinations']:
                 if d['host'] not in account_specific:
                     hosts.add(d['host'].replace(REGION, '<region>'))
         self.assertTrue(hosts)
@@ -347,6 +371,9 @@ class Shipping(unittest.TestCase):
             self.assertIn(f'`{h}`', section, h)
         for field in ('driver.balance_rpc_providers', 'rpc_url', 'database_host'):
             self.assertIn(f'`{field}`', section)
+        self.assertIn('api.aiand.com', hosts)
+        table = [line for line in section.splitlines() if line.startswith('| ')]
+        self.assertFalse([line for line in table if 'api.anthropic.com' in line])  # stays unapproved
 
 
 if __name__ == '__main__':
