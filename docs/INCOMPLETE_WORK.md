@@ -4,20 +4,16 @@ Initial inventory: 2026-10-04, based on a review of all 17 repository Markdown f
 
 This is a live checklist. Remove an entire item once its work is fully completed and verified. Keep partial or blocked items, narrowing them to the remaining work. Preserve supporting decisions, test evidence, and experimental results in their authoritative documents before removal. IDs are stable; do not renumber surviving items. This checklist does not override the rules in `skill/SKILL.md` or the append-only experiment ledger.
 
-Gate A current work (2026-10-16, [IDEA-058](ledger/IDEA-058.md)): latest fetched
-main is PR81 `e410e49`, which already includes driver/init/activate, calendar and
-#25 issuer separation. IDEA-058's branch supplies explicit unsigned `shadow`
-evidence settings (user-approved existing bounded values, 15-minute cadence,
-5-minute day-roll window), pinned metadata/balance/profile/config assembly and a
-dev-shadow exact-replay repair; it does not enable signing. Remaining: user owns
-the measured QuoteCostSummary/profile tool; Yao Zhu owns local public wallet/SEC
-contact setup, missing SEC terms capture and installation of all retained terms
-bytes, fresh read-only wallet capture, reviewed AWS apply/provision/migration,
-receiver ACK/24h-ingest/restart/anchor/IAM/TLS/routes/time/alarm evidence; Keegan
-owns PR review/integration and Gate A evidence review. Gate B's decoder, capability
-proof, signer provisioning/version binding, first BNB, real trades and hosted
-recovery/restore/replay drills remain with Isaac/Keegan/Keith. Procedure:
-[GATE_A.md](build/GATE_A.md). No whole deployment GAP is closed by offline work.
+## Gate A (IDEA-058, split by owner 2026-10-16)
+
+Procedure: [GATE_A.md](build/GATE_A.md). IDEA-058 (PR #87, based on `codex/system-testing-20261012` with #84/IDEA-055) supplies explicit unsigned `shadow` evidence settings (user-approved bounded values, 15-minute cadence, 5-minute day-roll window), pinned metadata/balance/profile/config assembly and a dev-shadow exact-replay repair. It enables no signing and closes no whole deployment GAP.
+
+- [ ] GAP-69 — User: finish the measured `QuoteCostSummary.v1` / LIVE rehearsal-profile tool (#88) and review its output. Gate A `prepare` refuses fixture profiles. ([IDEA-058](ledger/IDEA-058.md) remaining work 1)
+- [ ] GAP-70 — Yao Zhu: set the public dev wallet address and SEC contact locally; capture the missing SEC terms and install every retained terms artifact on the host; take a fresh read-only wallet capture with the balance RPC; do the reviewed AWS apply/provision/migration; record the host evidence (real receiver ACK, 24 h ingestion, restart, hourly anchor, IAM/TLS, routes, time sync, alarm delivery). ([IDEA-058](ledger/IDEA-058.md) remaining work 2–3)
+- [ ] GAP-71 — Isaac: choose the BSC balance RPC with `finalized` support and its source ID, open network access to it and run the first hosted read (#92). Gate A `capture` and `prepare` need both values or report `BALANCE_RPC`. ([IDEA-058](ledger/IDEA-058.md) GA10–GA12, GA13c)
+- [ ] GAP-72 — Keegan: review and integrate PR #87, run the exact-release mirror CI (PostgreSQL 14.24) on its head, and review the Gate A evidence. ([IDEA-058](ledger/IDEA-058.md) remaining work 4)
+
+Gate B stays separate: decoder, capability proof, signer provisioning/version binding, first BNB (Q-03; Gate A reports `FIRST_BNB` when the wallet has none), real trades and hosted recovery/restore/replay drills remain with Isaac/Keegan/Keith.
 
 ## Commitments and scope
 

@@ -4,7 +4,10 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 **2026-10-16 update:** [GATE_A.md](GATE_A.md) is the current assembly procedure
 for inputs 2–6 below. IDEA-050's driver/init/activate and #25's issuer fix are
-already on main (PR81); IDEA-054 supplies the calendar. IDEA-058 adds strictly
+already on main (PR81); IDEA-054 supplies the calendar. IDEA-058 builds on
+`codex/system-testing-20261012`, which adds #84's balance check (IDEA-055) and
+is not yet promoted to main, so deploy from that branch plus IDEA-058, or from
+main after the promotion. IDEA-058 adds strictly
 unsigned shadow settings and derives the issuer map/initial state from captured
 real responses. The user owns input 1's summary/profile tool; Yao Zhu sets the
 public wallet address and SEC contact locally. Missing terms bytes/captures and

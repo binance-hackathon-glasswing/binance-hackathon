@@ -5,7 +5,10 @@ Last updated 2026-10-14 (Claude for Yao Zhu). Read this first when continuing th
 **2026-10-16 input-preparation update (IDEA-058):** use [GATE_A.md](GATE_A.md)
 for the reviewed dev-shadow settings, read-only metadata/balance capture and
 pinned host-input assembly. Driver/activation/calendar and the four section
-review fixes are already on main via PR #81 (`e410e49`). Yao Zhu supplies the
+review fixes are on main via PR #81 (`e410e49`), but IDEA-058 also needs #84's
+balance check (IDEA-055), which is on `codex/system-testing-20261012` and not yet on
+main: build from that branch plus IDEA-058, or from main once that integration
+branch is promoted (updated 2026-10-16 after the PR #87 retarget). Yao Zhu supplies the
 public wallet address and SEC contact locally. The user's cost-summary/profile
 tool supplies the separately reviewed measured rehearsal profile. The AWS state
 below is the last recorded state, not a fresh observation on Oct 16.
@@ -66,7 +69,7 @@ Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 
 
 ## Next steps, in order
 
-1. **Reviewed release.** PR #20 and the later integration/review work were promoted to main by PR #81. Review/integrate IDEA-058, then qualify the exact pushed release head and its CI bundle; use the current accepted branch formats in [SYSTEM_TESTING.md](SYSTEM_TESTING.md) for the system runner. Existing main acceptance does not qualify a later runtime change.
+1. **Reviewed release.** PR #20 and the later integration/review work were promoted to main by PR #81. IDEA-058 (PR #87) targets `codex/system-testing-20261012`, which also carries #84 (IDEA-055); review/integrate it there, then qualify the exact pushed release head and its CI bundle; use the current accepted branch formats in [SYSTEM_TESTING.md](SYSTEM_TESTING.md) for the system runner. Existing main acceptance does not qualify a later runtime change.
 2. **Evidence settings and terms** (Yao Zhu): Gate A uses the user-approved unsigned `shadow` settings in `config/intelligence/intelligence.shadow.v1.json`, with the corresponding `dev`/`shadow` runtime configuration and `LARP_EVIDENCE_CONFIG_MODE=shadow`. The poller verifies this config against the bound manifest; signed/final operation cannot use these settings. Capture missing source terms and install all original terms bytes in the host artifact store before startup. For Gate B/final, the pending `parameters.*.live` values in `intelligence.v1.json` still need review and provenance; do not bypass them with development mode.
 3. **Release bundle:** download the CI artifact `larp-bundle-x86_64` (the `.tar.gz`, its `.sha256` and the `.release.json` release manifest, kept 90 days) from the `host-bundle` job of the merged head's CI run. Do not rebuild it locally. Check that `sha256sum` of the bundle and of the `.release.json` match the job summary, and record the CI run ID and both SHA-256 values in the activation pack (#49, #62 item 3, [IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-011 and WR-D3). The bundle carries the same manifest as `release-manifest.json`. Upload the `.tar.gz` and `.sha256` to `s3://<artifact bucket>/releases/`.
 4. **Start `primary`** (≈ $23/month more; needs OK):

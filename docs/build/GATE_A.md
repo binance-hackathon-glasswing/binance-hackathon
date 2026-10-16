@@ -1,7 +1,9 @@
 # Gate A: prepare and qualify the unsigned runtime (IDEA-058)
 
-Use current main plus the reviewed IDEA-058 change. IDEA-050 already supplies the
-round driver and `service init` / `activate`; IDEA-054 supplies the calendar.
+Use `codex/system-testing-20261012` (with #84/IDEA-055) plus the reviewed IDEA-058
+change, or `main` once that integration branch is promoted. IDEA-050 already
+supplies the round driver and `service init` / `activate`; IDEA-054 supplies the
+calendar.
 Gate A is hosted shadow operation, with real data and official test-round logs.
 The preparation tool below never enables execution, signs, activates a run, reads
 AWS secrets, provisions resources or uploads logs.
@@ -16,6 +18,7 @@ AWS secrets, provisions resources or uploads logs.
 | Terraform outputs and bundle CA hash | Yao Zhu's AWS environment; no values in Git |
 | Exact pushed CI bundle commit | Keegan; bundle and CI manifest must refer to that same commit |
 | Terms bytes | Yao Zhu; retained outside Git, copied to the host's content-addressed artifact store |
+| Balance RPC: HTTPS URL with `finalized` support and its source ID (IDEA-055) | Isaac (#92); pass both to `capture` and `prepare`, or neither |
 
 User decision, 2026-10-16: for unsigned development use explicit `shadow`
 evidence parameters equal to the existing bounded defaults, a 900,000 ms cadence
@@ -23,7 +26,9 @@ and a 300,000 ms UTC day-roll window. `live` parameters remain unset. The runtim
 refuses `shadow` parameters in service execution or final/live mode. The evidence
 unit selects shadow through `LARP_EVIDENCE_CONFIG_MODE=shadow` and verifies the
 matching `runtime.json` against the release manifest before starting ingestion.
-The default evidence mode stays `live` unless explicitly selected.
+The default evidence mode stays `live` unless explicitly selected. The environment
+file may select only `live` or `shadow`, and `development` is refused on a release
+host (IDEA-058 GA13a).
 
 ## Assemble inputs before spending
 
@@ -94,7 +99,12 @@ Before copying anything to the host:
    service. A denied/failed terms fetch remains a blocker.
 3. Review the preparation report. Install files into the paths named by the
    runtime config (`/etc/larp/` by default), root-owned; `evidence.env` contains
-   public settings only. Bind those exact bytes to CI's release manifest using
+   public settings only. Preparation writes every file as `0600`, but both
+   `larp-runtime` and `larp-evidence` read `runtime.json`, so set its mode on
+   install, e.g. `install -m 0644 -o root -g root runtime.json /etc/larp/runtime.json`
+   (it holds secret IDs and endpoints, no secret values). Copying with `cp -p`,
+   `scp -p` or `install` without `-m` keeps `0600`, and the evidence unit then
+   exits 4 with "Cannot read the shadow runtime configuration". Bind those exact bytes to CI's release manifest using
    `preflight --bind` (AWS_RUNBOOK step 7); bind `operations.json` with `--config`
    as well as the runtime and service configs.
 

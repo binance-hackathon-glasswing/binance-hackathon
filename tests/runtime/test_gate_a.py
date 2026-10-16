@@ -203,6 +203,19 @@ class GateAInputs(unittest.TestCase):
             with patch('larp.runtime.preflight.verify_release'), self.assertRaises(Refused):
                 check_shadow_scope(p, release_manifest=m, release_root=tmp)
             with self.assertRaises(Refused): check_shadow_scope(None)
+            # GA13b: a manifest bound to these exact bytes is accepted; one bound to other bytes is refused.
+            raw = p.read_bytes()
+            m.write_bytes(Document.from_dict(dict(runtime_config_sha256=hashlib.sha256(raw).hexdigest())).payload)
+            with patch('larp.runtime.preflight.verify_release', side_effect=lambda d, root: d.read()):
+                check_shadow_scope(p, release_manifest=m, release_root=tmp)
+                m.write_bytes(Document.from_dict(dict(runtime_config_sha256='0' * 64)).payload)
+                with self.assertRaises(Refused):
+                    check_shadow_scope(p, release_manifest=m, release_root=tmp)
+            check_shadow_scope(p, verified_manifest=dict(runtime_config_sha256=hashlib.sha256(raw).hexdigest()))
+            with self.assertRaises(Refused):
+                check_shadow_scope(p, verified_manifest=dict(runtime_config_sha256='0' * 64))
+            with self.assertRaisesRegex(Refused, 'read access.*0644'):
+                check_shadow_scope(Path(tmp) / 'missing.json')
 
 
 class GateAComposition(PipelineHarness):
@@ -324,24 +337,24 @@ class GateAComposition(PipelineHarness):
 
 
 class PortedFromPr89(unittest.TestCase):
-    """IDEA-058 GA07-GA09: checks ported from the closed PR #89."""
+    """IDEA-058 GA-P1..GA-P3 (first numbered GA07-GA09): checks ported from the closed PR #89."""
 
-    def test_ga07_each_pair_must_pass_the_evidence_contracts_issuer_rule(self):
+    def test_ga_p1_each_pair_must_pass_the_evidence_contracts_issuer_rule(self):
         from unittest.mock import patch
         from larp.integration import contract
-        real = contract._issuer_matches
+        real = contract.issuer_matches
         seen = []
 
         def rule(record, underlying, *, source_id=None):
             seen.append((record['issuer_id'], underlying, source_id))
             return False if record['token'] == 'TSLAB' else real(record, underlying, source_id=source_id)
-        with patch.object(contract, '_issuer_matches', side_effect=rule):
+        with patch.object(contract, 'issuer_matches', side_effect=rule):
             with self.assertRaisesRegex(ContractError, 'TSLAB'):
                 gate_a.issuer_map(captured())
         self.assertTrue(seen and all(s == 'BINANCE_WEB3' for _, _, s in seen))
         self.assertEqual(len(gate_a.issuer_map(captured())), 5)  # the real rule accepts every registry pair
 
-    def test_ga08_the_initial_state_is_self_checked_before_it_is_pinned(self):
+    def test_ga_p2_the_initial_state_is_self_checked_before_it_is_pinned(self):
         from unittest.mock import patch
         capture = captured()
         state = gate_a.initial_state(capture, profile(), 'gate-a-test')
@@ -363,7 +376,7 @@ class PortedFromPr89(unittest.TestCase):
                 self.assertRaisesRegex(ContractError, 'self-check called'):
             gate_a.initial_state(capture, profile(), 'gate-a-test')
 
-    def test_ga09_no_bnb_is_reported_for_gate_b_not_refused_for_shadow(self):
+    def test_ga_p3_no_bnb_is_reported_for_gate_b_not_refused_for_shadow(self):
         funded = json.loads(assembled()['preparation-report.json'])
         self.assertNotIn('FIRST_BNB (Q-03)', funded['missing_inputs'])
         capture = captured()
@@ -515,3 +528,121 @@ class MandatoryChainRead(unittest.TestCase):
                                       balance_rpc_source_id=None)['preparation-report.json'])
         self.assertIn('BALANCE_RPC', report['missing_inputs'])
         self.assertIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
+
+
+class ReviewFixes(unittest.TestCase):
+    """IDEA-058 GA13: PR #87 review fixes."""
+
+    def release(self, tmp, runtime_raw=None):
+        from tests.host_support import synthetic_release
+        root, manifest = synthetic_release(tmp)
+        if runtime_raw is not None:
+            value = json.loads(Document(manifest.read_bytes()).payload)
+            value['runtime_config_sha256'] = hashlib.sha256(runtime_raw).hexdigest()
+            manifest.write_bytes(Document.from_dict(value).payload)
+        return ['--release-manifest', str(manifest), '--release-root', str(root)]
+
+    def run_live(self, argv, env):
+        from contextlib import redirect_stderr, redirect_stdout
+        import io
+        from larp.sources import live
+        built = []
+
+        class Runner:
+            log = type('Log', (), dict(path='polls.jsonl'))()
+
+            def run(self, until):
+                return 0
+
+        def build_runner(env, *, config_mode, edgar_interval_ms, commit):
+            built.append(config_mode)
+            return Runner()
+        err = io.StringIO()
+        with patch.object(live, 'build_runner', build_runner), \
+                patch.object(live, 'git_state', return_value=dict(commit='c' * 40, dirty=False, pushed=True)), \
+                redirect_stdout(io.StringIO()), redirect_stderr(err):
+            code = live.main(['run', '--hours', '0', *argv], env=env)
+        return code, built, err.getvalue()
+
+    def test_ga13a_environment_selects_only_live_or_shadow(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            release = self.release(tmp)
+            for value in ('development', 'bogus', ''):
+                with self.subTest(value=value):
+                    code, built, err = self.run_live(release, {'LARP_EVIDENCE_CONFIG_MODE': value})
+                    self.assertEqual((code, built), (4, []))
+                    self.assertIn('must be live or shadow', err)
+                    self.assertEqual(self.run_live([], {'LARP_EVIDENCE_CONFIG_MODE': value})[:2], (4, []))
+            self.assertEqual(self.run_live(release, {})[:2], (0, ['live']))
+            self.assertEqual(self.run_live(release, {'LARP_EVIDENCE_CONFIG_MODE': 'live'})[:2], (0, ['live']))
+
+    def test_ga13a_development_flag_is_refused_on_a_release_host_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            release = self.release(tmp)
+            for argv in (release, release[:2], release[2:]):
+                with self.subTest(argv=argv):
+                    code, built, err = self.run_live(['--config-mode', 'development', *argv], {})
+                    self.assertEqual((code, built), (4, []))
+                    self.assertIn('not allowed on a release host', err)
+        self.assertEqual(self.run_live(['--config-mode', 'development'], {})[:2], (0, ['development']))
+
+    def test_ga13b_release_shadow_run_verifies_the_release_once_and_binds_runtime(self):
+        from larp.runtime import preflight
+        raw = assembled()['runtime.json']
+        calls = []
+        real = preflight.verify_release
+
+        def counted(manifest, root):
+            calls.append(root)
+            return real(manifest, root)
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp) / 'runtime.json'
+            runtime.write_bytes(raw)
+            env = {'LARP_EVIDENCE_CONFIG_MODE': 'shadow'}
+            with patch.object(preflight, 'verify_release', counted):
+                code, built, _ = self.run_live([*self.release(tmp + '/a', raw), '--shadow-runtime-config',
+                                                str(runtime)], env)
+            self.assertEqual((code, built, len(calls)), (0, ['shadow'], 1))
+            code, built, _ = self.run_live([*self.release(tmp + '/b', b'other'), '--shadow-runtime-config',
+                                            str(runtime)], env)
+            self.assertEqual((code, built), (4, []))
+
+    def test_ga13c_balance_rpc_needs_both_or_neither(self):
+        for changes in (dict(balance_rpc_source_id=None), dict(balance_rpc_url=None), dict(balance_rpc_url=''),
+                        dict(balance_rpc_source_id=''), dict(balance_rpc_url='http://rpc.invalid/')):
+            with self.subTest(**changes), self.assertRaisesRegex(ContractError, 'or neither'):
+                assembled(**changes)
+        assembled(balance_rpc_url=None, balance_rpc_source_id=None)
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                patch.object(prepare_shadow, 'credentials', return_value=dict(BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s')), \
+                patch.object(prepare_shadow, 'Web3Client'), patch.object(prepare_shadow, 'capture_inputs') as capture:
+            out = Path(tmp) / 'c.json'
+            for rpc in (['--balance-rpc-url', ''], ['--balance-rpc-url', '', '--balance-rpc-source-id', 'x'],
+                        ['--balance-rpc-source-id', 'x']):
+                with self.subTest(rpc=rpc):
+                    code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                                '--output', str(out), *rpc])
+                    self.assertEqual(code, 4)
+            capture.assert_not_called()
+            self.assertFalse(out.exists())
+
+    def test_ga13d_refusal_names_contract_reasons_but_only_the_class_otherwise(self):
+        from contextlib import redirect_stdout
+        import io
+        from larp.marketdata.web3 import Unavailable
+        for error, detail in ((ContractError('A wallet transaction is in flight'), 'A wallet transaction is in flight'),
+                              (Unavailable('https://rpc.invalid/?key=secret'), 'Unavailable'),
+                              (OSError('/private/path'), 'OSError')):
+            out = io.StringIO()
+            with self.subTest(detail=detail), tempfile.TemporaryDirectory() as tmp, redirect_stdout(out), \
+                    patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                    patch.object(prepare_shadow, 'credentials',
+                                 return_value=dict(BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s')), \
+                    patch.object(prepare_shadow, 'Web3Client'), \
+                    patch.object(prepare_shadow, 'capture_inputs', side_effect=error):
+                code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                            '--output', str(Path(tmp) / 'c.json')])
+            result = json.loads(out.getvalue())
+            self.assertEqual((code, result['reason'], result['detail']), (4, 'INPUTS_REFUSED', detail))
+            self.assertNotIn('secret', out.getvalue())

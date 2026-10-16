@@ -11,6 +11,7 @@ import re
 
 from larp.contracts import ContractError, Document
 from larp.execution import USDT
+from larp.integration import contract
 from larp.intelligence.config import load_config, load_registry
 from larp.marketdata.port import MarketPort, NATIVE, TOKENS, integer
 from larp.marketdata.web3 import data, encoded, utc
@@ -33,6 +34,13 @@ def wallet_address(value):
     if type(value) is not str or not re.fullmatch(r'0x[0-9a-fA-F]{40}', value):
         raise ContractError('A public wallet address is required')
     return value.lower()
+
+
+def check_balance_rpc(url, source_id):
+    """GA13c: both an HTTPS URL and a source ID, or neither. An empty shell variable arrives as '' and refuses."""
+    if (url is None) != (source_id is None) or url is not None and (
+            type(url) is not str or not url.startswith('https://') or type(source_id) is not str or not source_id):
+        raise ContractError('The balance RPC needs both an HTTPS URL and a source ID, or neither')
 
 
 def capture_inputs(client, wallet, rpc=None):
@@ -118,10 +126,9 @@ def issuer_map(capture):
         if (row.get('tokenSymbol') != entry.token or str(row.get('binanceChainId')) != '56'
                 or ticker not in tickers or integer(row['decimals']) > 30):
             raise ContractError('Metadata identity, ticker or decimals differ from registry')
-        # The evidence contract's own rule decides whether real filings for this token are accepted (GA07, #25).
-        from larp.integration import contract
-        if not contract._issuer_matches(dict(issuer_id=entry.issuer_id, token=entry.token, underlying_id=ticker),
-                                        ticker, source_id='BINANCE_WEB3'):
+        # The evidence contract's own rule decides whether real filings for this token are accepted (GA-P1, #25).
+        if not contract.issuer_matches(dict(issuer_id=entry.issuer_id, token=entry.token, underlying_id=ticker),
+                                       ticker, source_id='BINANCE_WEB3'):
             raise ContractError(f'{entry.token}: the evidence contract refuses issuer {entry.issuer_id} '
                                 f'with ticker {ticker!r}')
         result[entry.issuer_id] = dict(token=entry.token, underlying_id=ticker)
@@ -192,7 +199,7 @@ def initial_state(capture, profile, run_id):
 
 
 def check_initial_state(state, capture):
-    """GA08: the runtime can build its ledger from the state, and it has gate_b DR-06's shape (ported from PR #89)."""
+    """GA-P2: the runtime can build its ledger from the state, and it has gate_b DR-06's shape (ported from PR #89)."""
     from larp.integration.runtime import initial_projection, ledger_from
     units = [state.get('cash_units'), state.get('bnb_units'),
              *[p.get('units') for p in (state.get('positions') or {}).values()]]
@@ -228,6 +235,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(now).timestamp() * 1000))
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
+    check_balance_rpc(balance_rpc_url, balance_rpc_source_id)
     if balance_rpc_url is not None and 'chain' not in capture:
         # GA12: with the balance RPC configured, nothing excuses a capture without the chain read.
         raise ContractError('A chain balance capture required: capture with --balance-rpc-url')
@@ -245,9 +253,6 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     runtime.update(run_id=run_id, build_id=build_id, mode='dev', initial_state_sha256=digest(state_raw))
     # IDEA-055 (#84): a dev start needs the manifested BSC RPC for the chain-balance check (GA10). Without it the
     # values stay null, the report names BALANCE_RPC, and the runtime refuses to start.
-    if balance_rpc_url is not None and (type(balance_rpc_url) is not str or not balance_rpc_url.startswith('https://')
-                                        or type(balance_rpc_source_id) is not str or not balance_rpc_source_id):
-        raise ContractError('The balance RPC needs an HTTPS URL and a source ID')
     runtime['driver'].update(balance_rpc_url=balance_rpc_url, balance_rpc_source_id=balance_rpc_source_id)
     runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
@@ -280,7 +285,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     load_config('shadow')
     report = dict(schema='GateAPreparation.v1', build_id=build_id, run_id=run_id, signing_enabled=False,
                   runtime_mode='dev', execution='shadow', prepared=True, gate_a_passed=False,
-                  # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA09, Q-03).
+                  # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA-P3, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
                   + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
                   + ([] if balance_rpc_url else ['BALANCE_RPC'])

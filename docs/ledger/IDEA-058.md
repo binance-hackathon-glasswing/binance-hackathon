@@ -1,9 +1,11 @@
 # IDEA-058 — Gate A configuration assembly and startup qualification
 
 - 2026-10-15 renumbered (Claude Code session, at Keegan's request): this entry was first written as IDEA-057, which PR #88 (QuoteCostSummary producer) had already claimed five minutes earlier. It is now IDEA-058 (freed by closing PR #89). Commit messages before the rename still say IDEA-057.
+- 2026-10-16 criterion IDs (Claude Code session, PR #87 review): the three checks ported from PR #89 were numbered GA07–GA09, but GA07 already named the pre-registered full-suite criterion. They are renamed **GA-P1** (issuer rule), **GA-P2** (initial-state self-check) and **GA-P3** (`FIRST_BNB` report), here and in the tests (`test_ga_p1_*` … `test_ga_p3_*`). The pre-registered GA07 row is unchanged. Commit messages before the rename still say GA07–GA09.
 
 - Date / owner: 2026-10-16 SGT / Keegan with Codex.
 - Status: repository implementation and local Linux qualification PASS at `5e4e974`; PR review/integration and hosted Gate A remain open.
+- Status update 2026-10-16: PR #87 now targets `codex/system-testing-20261012` (with #84/IDEA-055), not `main`. The latest local results are in "GA13 results" below; the GA10–GA12 full runs and GA13's run used PostgreSQL 16, not the CI image's 14.24. Mirror CI has not run on any head of this PR. The earlier entries below keep their dated context.
 - Request: work on remaining readiness tasks and remove Gate A functional blockers. The user is concurrently building the quote-cost summary / live strategy profile tool; do not duplicate or modify that work.
 - Base: current main `e410e49` (PR81), fetched 2026-10-16. The earlier assessment used stale local `c829fae`; its missing-driver/activation/calendar findings are superseded by IDEA-050/054 and the review merges. No hosted state is inferred from Git.
 - Scope: assemble and validate a strictly unsigned dev-shadow deployment from measured, pinned inputs, supply missing input producers where possible, and verify the production composition with synthetic external transports and disposable PostgreSQL. Never fabricate measured costs, balances, exchange identities, terms captures or hosted acceptance. Preserve signed/live refusals and all gates.
@@ -69,6 +71,8 @@
 4. Keegan + reviewer: review/integrate this branch; obtain exact-release CI/bundle evidence. Repository Actions were already unable to start on main (PR81 run 38757589514); do not substitute this local suite for a built/verified deployment bundle.
 5. Isaac/Keegan/Keith: existing Gate B decoder/route/provider proof, signer isolation/version binding and provisioning, first BNB/top-ups, recorded-real candles/cost/profile evidence, logged dev approve/swap and hosted crash/HALT/restore/shadow-day replay remain open. Gate C and signed rehearsal are not claimed.
 
+6. Design option (PR #87 review, not adopted yet): the evidence poller parses untrusted internet content and now reads `runtime.json`, which names the RDS endpoint, Secrets Manager IDs and the wallet address (no secret values). A narrower design has `preflight --bind` record the run's `mode`/`execution`/`intelligence_mode` in the bound manifest so the poller checks only the manifest. Owner: Keegan, with Yao Zhu for the host layout.
+
 No whole GAP line is closed by this change. No secret, populated environment file, wallet key, private dataset or raw source artifact was added to Git. No signing, broadcast, official round-log upload, AWS provisioning or organiser contact occurred.
 
 ## Checks ported from PR #89 (2026-10-15, Claude Code session at Keegan's request; criteria recorded before the tests)
@@ -77,13 +81,13 @@ PR #89 (initial-state builder and issuers map, stacked on #84) is closed in favo
 
 | ID | Check |
 |---|---|
-| GA07 | Issuers: every pair `issuer_map` returns must also pass the evidence contract's own rule, `larp.integration.contract._issuer_matches(…, source_id='BINANCE_WEB3')`. A pair that the local ticker check accepts but that rule refuses is refused here too, so real filings are never later refused as `WRONG_ISSUER`. |
-| GA08 | Initial state self-checks before it is pinned: `ledger_from(initial_projection(state), [])` passes, and gate_b DR-06's shape holds (`schema`, run and wallet identity, `bnb_decimals` 18, `mode` dev, every unit a non-negative integer). A state that fails either is refused with its reason. |
-| GA09 | No BNB is not a refusal for the shadow run, which needs no gas. But `preparation-report.json` lists `FIRST_BNB (Q-03)` in `missing_inputs` whenever the captured native balance is 0, because Gate B (DR-06) refuses an unfunded wallet. |
+| GA-P1 | Issuers: every pair `issuer_map` returns must also pass the evidence contract's own rule, `larp.integration.contract._issuer_matches(…, source_id='BINANCE_WEB3')`. A pair that the local ticker check accepts but that rule refuses is refused here too, so real filings are never later refused as `WRONG_ISSUER`. |
+| GA-P2 | Initial state self-checks before it is pinned: `ledger_from(initial_projection(state), [])` passes, and gate_b DR-06's shape holds (`schema`, run and wallet identity, `bnb_decimals` 18, `mode` dev, every unit a non-negative integer). A state that fails either is refused with its reason. |
+| GA-P3 | No BNB is not a refusal for the shadow run, which needs no gas. But `preparation-report.json` lists `FIRST_BNB (Q-03)` in `missing_inputs` whenever the captured native balance is 0, because Gate B (DR-06) refuses an unfunded wallet. |
 
 Not ported, because they need #84's finalized-block reader (`larp/execution_live/balances.py`), which this branch does not have: the pending-nonce refusal and a block-bound balance read. The kit's balance endpoint has no block identity. Follow-up after #84 merges: capture balances with `read_balances` and refuse while latest ≠ pending.
 
-### GA07–GA09 results (2026-10-15)
+### GA-P1–GA-P3 results (2026-10-15; first numbered GA07–GA09)
 
 - **Order of commits:** renumbering `d123272`; criteria `5a3bc9f`; red tests (3 failing for the predicted reasons: issuer rule not consulted, no self-check function, no `FIRST_BNB` entry); port `1c3edca`.
 - **Mutations.** Each was reverted, and each was caught: issuer rule not consulted; self-check not called; no `ledger_from` check; wei not required; no `FIRST_BNB` flag.
@@ -95,9 +99,9 @@ Not ported, because they need #84's finalized-block reader (`larp/execution_live
 
 | ID | Result | Evidence |
 |---|---|---|
-| GA07 | PASS | `PortedFromPr89.test_ga07_*` |
-| GA08 | PASS | `PortedFromPr89.test_ga08_*` |
-| GA09 | PASS | `PortedFromPr89.test_ga09_*` |
+| GA-P1 | PASS | `PortedFromPr89.test_ga_p1_*` (then `test_ga07_*`) |
+| GA-P2 | PASS | `PortedFromPr89.test_ga_p2_*` (then `test_ga08_*`) |
+| GA-P3 | PASS | `PortedFromPr89.test_ga_p3_*` (then `test_ga09_*`) |
 
 ### GA10: integration-branch base and #84's balance settings (2026-10-15, criteria recorded before the fix)
 
@@ -131,7 +135,7 @@ This is the last follow-up from #89, possible now that #84 is merged. The kit's 
 **Pass criteria.**
 - **GA11a:** `prepare()` refuses if the finalized nonce, the `latest` nonce and the `pending` nonce are not all equal. This covers a transaction pending or not yet finalized. `capture_inputs` refuses the same before writing anything.
 - **GA11b:** `prepare()` refuses if the chain capture's finalized balances differ from the kit's balances for native BNB, USDT or any of the five bStocks. It also refuses a chain capture for another wallet or chain, or one older than five minutes (or future-dated) at `now`.
-- **GA11c:** a capture without a chain read is not refused for the shadow run, but `preparation-report.json` lists `CHAIN_BALANCE_CAPTURE`. This matches GA09's FIRST_BNB pattern; Gate B would need it.
+- **GA11c:** a capture without a chain read is not refused for the shadow run, but `preparation-report.json` lists `CHAIN_BALANCE_CAPTURE`. This matches GA-P3's FIRST_BNB pattern; Gate B would need it.
 - **GA11d:** the RPC calls are only #84's allowlisted read methods. There is no `eth_sendRawTransaction` and no signing.
 - **GA11e:** each refusal names its cause, and a mutation of each check is caught. The full suite passes with no new failures against `1008037` (1562 passed, 7 skipped).
 
