@@ -290,9 +290,11 @@ class Composition(unittest.TestCase):
         self.assertIsInstance(reader.artifacts, OverlayArtifacts)
         self.assertIs(reader.artifacts.private, router.artifacts)
         self.assertEqual(reader.artifacts.shared.root, (self.root / 'evidence' / 'artifacts').resolve())
-        # The deterministic path is unchanged by this change.
+        # SG-7a: the deterministic path writes its tool results to the same private store.
         plain = build_driver(self.config(), Store(), self.secrets).coordinator.assessor
-        self.assertIsInstance(plain.reader.artifacts, FileArtifacts)
+        self.assertIsInstance(plain.reader.artifacts, OverlayArtifacts)
+        self.assertEqual(plain.reader.artifacts.private.root, model_root)
+        self.assertEqual(plain.reader.artifacts.shared.root, (self.root / 'evidence' / 'artifacts').resolve())
 
     def test_sg3_shadow_example_builds_in_dev_shadow_and_refuses_service_or_live(self):
         from larp.intelligence.routing import RoutedAssessor

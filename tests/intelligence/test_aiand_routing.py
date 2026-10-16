@@ -316,6 +316,33 @@ class Routing(unittest.TestCase):
             self.assertIsNotNone(private.get(ref), ref)
         self.assertEqual(shared.blobs, before)  # nothing written to the shared evidence store
 
+    def test_sg7_deterministic_tool_results_on_a_read_only_evidence_store(self):
+        # IDEA-057 SG-7b: the deterministic assessor's tool results go to the private store, as the routed path's.
+        from larp.intelligence.agent import EvidenceAssessor
+        from larp.intelligence.fakes import MemoryArtifacts
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.intelligence.tools import PortEvidenceReader
+        from larp.sources.store import OverlayArtifacts
+        shared = self.w.artifacts
+        class ReadOnly:
+            def get(self, digest): return shared.get(digest)
+            def put(self, content): raise OSError(30, 'Read-only file system')
+        before = dict(shared.blobs)
+        def assess(artifacts):
+            assessor = EvidenceAssessor(registry=self.w.registry, reader=PortEvidenceReader(self.w.store, artifacts),
+                                        model=RuleBaselineModel(self.w.clock), config=self.w.config,
+                                        clock_ms=self.w.clock)
+            return self.run_assessment(assessor)[1]['model_io']['tool_calls']
+        failing = assess(ReadOnly())  # the host failure reproduces without the overlay
+        self.assertTrue(failing and all(c['error'] == 'ARTIFACT_WRITE_ERROR' for c in failing))
+        private = MemoryArtifacts()
+        calls = assess(OverlayArtifacts(ReadOnly(), private))
+        self.assertTrue(calls)
+        self.assertFalse([c for c in calls if c['error']])
+        for call in calls:
+            self.assertIsNotNone(private.get(call['result_artifact']))
+        self.assertEqual(shared.blobs, before)
+
     def test_ar4_external_first_then_sol_and_full_consumer_trace(self):
         router=self.build(); r,value=self.run_assessment(router)
         self.assertEqual(self.calls[0][:3],('aiand','zai-org/glm-5.3','low'))

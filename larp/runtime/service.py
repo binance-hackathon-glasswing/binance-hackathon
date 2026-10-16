@@ -258,16 +258,16 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                              market=feed, health=health,
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
-    reader = PortEvidenceReader(evidence, artifacts)
+    from larp.sources.store import OverlayArtifacts
+    # The runtime has no writable evidence mount on the host (IDEA-047 R15): artifacts it produces itself (tool
+    # results; for the routed path also model request/reply bytes and stage results) go to a private store in the
+    # unit's state directory; evidence is read as before (IDEA-057 SG-1, SG-7).
+    model_artifacts = FileArtifacts(str(Path(d['market_artifact_root']) / 'model'))
+    reader = PortEvidenceReader(evidence, OverlayArtifacts(artifacts, model_artifacts))
     if d['assessor'] == 'aiand_routed':
         from larp.intelligence.routing import build_routed_assessor
-        from larp.sources.store import OverlayArtifacts
         spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
-        # The runtime has no writable evidence mount on the host (IDEA-047 R15): model request/reply bytes, stage
-        # results and tool results go to a private store in the unit's state directory; evidence is read as before.
-        model_artifacts = FileArtifacts(str(Path(d['market_artifact_root']) / 'model'))
-        assessor = build_routed_assessor(spec, registry=registry,
-            reader=PortEvidenceReader(evidence, OverlayArtifacts(artifacts, model_artifacts)), config=intelligence,
+        assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
             clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
     else:
         assessor = EvidenceAssessor(registry=registry, reader=reader,
