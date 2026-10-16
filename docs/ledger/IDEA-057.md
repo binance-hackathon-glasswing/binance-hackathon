@@ -206,6 +206,18 @@ Claude Code session for Keegan (section B), after the PR #114 review. This fixes
 | SG-7b | With a shared store whose `put` raises `OSError(30)` (read-only), a deterministic assessment over the synthetic world makes tool calls, none ends `ARTIFACT_WRITE_ERROR`, every tool result artifact is readable from the private store, and the shared store is unchanged. The same assessment over the read-only store alone does end with `ARTIFACT_WRITE_ERROR` (the failure reproduces). |
 | SG-7c | No golden fixture is regenerated. Mutation caught: the deterministic reader set back to the shared store fails SG-7a. Full suite: no new failure against the merged base. |
 
+### SG-7 results (2026-10-16)
+
+Order: base merge `00df1b9` (`codex/system-testing-20261012` at `e84083c`; `docs/LEDGER.md` conflict resolved by keeping the base's IDEA-049-D and IDEA-055 rows and this branch's IDEA-056/057 rows) → criteria `2139445` → fix `8cb340a`.
+
+| ID | Result | Evidence |
+|---|---|---|
+| SG-7a | PASS | `test_driver.py::Composition::test_sg1_routed_model_artifacts_go_to_a_private_runtime_store` (its last block, which asserted the deterministic reader was unchanged, now asserts the overlay) |
+| SG-7b | PASS | `test_aiand_routing.py::…::test_sg7_deterministic_tool_results_on_a_read_only_evidence_store`: over the read-only store alone every tool call ends `ARTIFACT_WRITE_ERROR`; with the overlay none does, every result is in the private store, the shared store is unchanged |
+| SG-7c | PASS | No golden regenerated. Mutation (deterministic reader back on the shared store) caught. Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): base `e84083c` 1590 passed, 10 skipped, 2201 subtests; this branch at `8cb340a` **1630 passed, 10 skipped, 2291 subtests, 0 failed**. The same 10 environmental skips. |
+
+The "finding outside this change" above is fixed by SG-7. Not yet measured on a real read-only bind mount (SG-1 was); that is part of the host steps.
+
 ## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
 
 **Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
