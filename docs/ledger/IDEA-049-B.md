@@ -601,3 +601,65 @@ deployment readiness.
 
 B-DEC-08 (gas reservation margin) is added to the DECISION-NEEDED table above.
 WR-B does not change the PARTIAL REVIEW / DEPLOYMENT BLOCKED status.
+
+## WR-38 — #38 current-convention characterization tests (2026-10-16)
+
+Owner: Claude Code session, branch `claude/issue-38-convention-tests` from base
+`7a8a246` on `codex/system-testing-20261012`. Part of #38 only. #38's four
+acceptance criteria are team decisions or measurements (B-DEC-02 risk mark,
+B-DEC-03 concentration/staggered build, B-DEC-06 exit costs; C's quote, fill
+and gas measurements) and stay open; nothing here decides, adopts or accepts
+them. Scope: tests in `tests/strategy/` that pin three conventions the issue
+says are untested, so a later decision that changes one must change its test
+on purpose. No production code or profile change is planned. Synthetic only:
+no keys, signing, chain, ai-seeds or AWS.
+
+Already covered at base (not repeated): the 25%/90% hard triggers are strict
+at exact fractions (`test_b_req_015_016_*`), drift between 20%/80% and
+25%/90% is held (`test_p06`, `test_p07`, `test_no_trim_for_drift_without_a_prior_trigger`),
+and a triggered trim goes back to 20%/80% even after crossing below the trigger
+(`test_trim_replanning.py`).
+
+### Pass criteria (registered before any test is written)
+
+All on the IDEA-037 equal-weight fixture (`tests/strategy/test_equal_weight.py`
+`ew`/`five_names`: 200 USDT book, 100 USDT token mark, 20%/80% operating,
+25%/90% hard lines).
+
+- **WR38-1 (REQ005/ASM004, B-DEC-02 open): risk equity is the token mark, not
+  executable liquidation proceeds.** Four names held at 4,500 units each
+  (22.5% each, gross 90%, no trim). Adding an exact-size SELL quote for every
+  held name whose `cash_units` is 10% below the mark leaves `plan()`'s
+  `risk_equity_lower_bound_units`, `valuation_status` and `risk_state`
+  (`peak_units`, `run_halt`, `deep_cut`, `daily_halt`) identical to the run
+  without quotes, with no halt set, and leaves the policy's targets unchanged.
+  The test also computes the quote-implied liquidation equity (cash + BNB +
+  quoted proceeds) and asserts it is at or below the 92% run-halt line, so the
+  test records a case where the two conventions disagree on the halt.
+- **WR38-2 (REQ011/ASM013, B-DEC-02/06 open): entry ranking uses the static
+  `measured_roundtrip_bps`, not the exact-size quote's all-in cost.** Five-name
+  fixture (measured NVDAB 20 < GOOGLB 30 < TSLAB 40 < MSFTB 50 < SKHYB 60).
+  Exact-size BUY quotes give NVDAB a 15 bp spread and 20,000 gas units and
+  GOOGLB zero spread and zero gas, both inside the cost reserve and the 50 bp
+  entry cap. The test asserts the all-in cost (spread + fee + gas value, as the
+  planner computes it) of NVDAB is strictly higher than GOOGLB's, yet the single
+  planned intent is a non-mandatory NVDAB BUY, and the policy still proposes
+  entries for exactly the four lowest measured costs whatever the quotes.
+- **WR38-3 (REQ024/REQ042, B-DEC-03 open): a fresh four-name book takes four
+  distinct sessions.** From all cash, each session runs policy → exact-size
+  quotes → plan → reservation → final fill and sets `last_discretionary_session`.
+  Each of sessions 80–83 yields exactly one non-mandatory BUY intent, for a name
+  not held before; a second plan in the same session yields no intent and a
+  `DISCRETIONARY_CADENCE` rejection; the policy proposes entries for every unheld
+  name in session 80 at once (the planner, not the policy, staggers the build);
+  three names are held after session 82 and four only after session 83; session
+  84 plans nothing.
+- **WR38-4 mutation checks** (each mutation of committed code is restored with
+  `git checkout` of the file): M1 remove the planner's one-child `break` → WR38-3
+  fails; M2 remove the `DISCRETIONARY_CADENCE` check → WR38-3 fails; M3 make the
+  planner's equal-weight action sort ignore `measured_roundtrip_bps` → WR38-2
+  fails; M4 feed `update_risk` a 10% lower equity in the planner → WR38-1 fails.
+- **WR38-5:** no production code changes; the full suite passes with no existing
+  test changed, skipped or removed; counts recorded below against base `7a8a246`
+  on the same machine. A test that contradicts a documented convention is
+  recorded as a finding, not fixed by changing policy.
