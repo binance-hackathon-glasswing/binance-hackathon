@@ -610,3 +610,8 @@ above remains open.
 ### All-open-PR review: prospective remediation (2026-10-16)
 
 ALLPR-R108: additive migration 013 validates every existing execution state/journal byte string with the 012 guard, refuses unsafe upgrades transactionally and leaves source bytes unchanged; safe upgrade/idempotency passes and 011/012 hashes stay unchanged. Add pre-012 seeded-row regression; verification follows approved push.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on Linux/Python3.12/PostgreSQL14.24. A seeded pre-012 forbidden row remains readable by larp_archive after PostgresStore.migrate, confirming RV-108-01. Additive 013 and regression changes remain unexecuted pending approved push; no unsafe hosted data is inferred. All runs used synthetic inputs, no production credentials and no external network.
