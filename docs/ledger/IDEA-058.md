@@ -197,3 +197,16 @@ Both gaps are in section C's execution code (owner Isaac) and are recorded in `d
 ### GB-1/GB-2 closed (2026-10-16)
 
 PR #100 (IDEA-039 GB-CHAIN-20261016) fixed both Gate B gaps and was merged into `codex/system-testing-20261012` at `ccf1ce9`. The full suite on the merged integration branch `793b382` (#99, #100 and #101) gives 1559 passed, 7 skipped, 2169 subtests, 0 failed. The GB-1/GB-2 line is removed from `docs/INCOMPLETE_WORK.md`. Its remaining real-node check is part of #92, the hosted RPC with `finalized` support.
+
+### GA13: PR #87 review fixes (pre-registered 2026-10-16, before the fix)
+
+Review threads on PR #87 (Cookiemunchrr, 2026-10-16 03:01 UTC) and RV-87-01 (wtvlol). Criteria recorded before any change is tested.
+
+- **GA13a:** `python -m larp.sources.live run` takes its mode from `LARP_EVIDENCE_CONFIG_MODE` only when the value is `live` or `shadow`. Any other value from the environment, `development` and unknown values included, exits 4 before a runner is built. `--config-mode development` with `--release-manifest` or `--release-root` also exits 4 ("not allowed on a release host"). `--config-mode development` without release arguments is unchanged (workstation use).
+- **GA13b:** `check_shadow_scope` accepts a manifest bound to the exact `runtime.json` bytes and refuses one bound to other bytes. An unreadable `runtime.json` (for example the evidence user lacks read permission) is refused with its own reason, which names readability and the exception class. On a release run, the release is verified once: `run` passes the manifest that `release_state` verified to the scope check.
+- **GA13c:** `prepare()` and `prepare_shadow.py capture` refuse a balance RPC URL without a source ID, a source ID without a URL, and an empty or non-HTTPS URL ("both an HTTPS URL and a source ID, or neither"). An empty `--balance-rpc-url ""` no longer skips the chain read silently at capture.
+- **GA13d:** a refused `prepare_shadow.py` command prints `detail`: the message of a `ContractError`, `Refused` or renderer `Refused` (these carry no secret values), and only the exception class name for anything else (Web3, RPC, OS and parsing errors may echo a URL or header).
+- **GA13e:** `gate_a.issuer_map` calls the evidence contract's rule through a public name, `larp.integration.contract.issuer_matches`, imported at module level.
+- **GA13f:** each new check's mutation is caught, and the full suite passes with no new failures against the merged base.
+
+Criterion IDs: the checks ported from PR #89 were numbered GA07–GA09, and GA07 already named the pre-registered full-suite criterion. They are renamed GA-P1–GA-P3 in this change (see the note at the top).
