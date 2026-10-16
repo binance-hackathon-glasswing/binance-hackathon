@@ -148,3 +148,57 @@ Non-blocking findings from the PR #86 review ([#93](https://github.com/binance-h
 | I93-4 | The stale "Execution results are pending…" line in the Validation record above is updated to point at the recorded results. |
 
 No AR1–AR8 or PR85-R1/R2 test may regress; the full local suite (Python 3.12, PostgreSQL 14) is run after the fix and reported with exact counts.
+
+## Deploy-branch integration for the Gate A shadow trial — prospective criteria (2026-10-16 SGT)
+
+Branch `claude/aiand-shadow-gate-a` from `codex/system-testing-20261012`, with the routing branch (plus the #93 fixes) merged in. Written and pushed before the changed code runs. Each new test must fail before its change and pass after it.
+
+| ID | Required evidence |
+|---|---|
+| SG-1 | **Writable model artifacts on a read-only evidence store.** On the host the runtime opens the evidence root read-only (`ProtectSystem=strict`, no writable evidence mount, IDEA-047 R15). Measured 2026-10-16 on a real read-only bind mount at the merge head: the routed assessor raised `OSError: [Errno 30] Read-only file system`, so every round would be `ASSESSMENT_UNAVAILABLE`. Required: for `aiand_routed`, `build_driver` gives the router, its model adapters and the tool-result writes a private store at `<market_artifact_root>/model` (inside the unit's `StateDirectory`), while evidence bytes are still read from the shared evidence store. Test: with the evidence store refusing every write, a routed assessment completes, records no `ARTIFACT_WRITE_ERROR`, and every artifact it names (request/reply, stage result, tool result) is readable from the model store and not written to the evidence store. The deterministic path's wiring is unchanged (its own tool-result writes have the same read-only problem; reported separately, not changed here). |
+| SG-2 | **Route checker.** `routes.plan('primary', …)` with a runtime config whose `driver.assessor` is `aiand_routed` adds `api.aiand.com:443` and `api.openai.com:443` for `larp-runtime`, equal to the hosts of `larp.intelligence.aiand.ENDPOINT` and `larp.intelligence.providers.OPENAI_ENDPOINT`. A `deterministic` runtime adds neither; `api.anthropic.com` never appears; the signer plan is unchanged. R8 covers both hosts in the approved table. |
+| SG-3 | **Example config.** `config/runtime/runtime.aiand-shadow.example.json` differs from `runtime.example.json` only in `driver.execution: shadow`, `driver.assessor: aiand_routed`, `model_routing_file`, `model_routing_sha256`, `model_budget_root` (and drops `expiry_grace_ms`, which only service execution reads). Filled with synthetic values, `build_driver` accepts it in `mode: dev` with shadow execution and builds the routed assessor; it refuses it with `execution: service` and with `mode: live`. `model_budget_root` and `market_artifact_root` lie inside `/var/lib/larp-runtime/`. |
+| SG-4 | **Secrets tooling.** `tools/deploy/put_service_secrets.sh` prompts `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` hidden, after the Binance keys; an empty answer omits that key. Values reach `aws` on stdin only, never in argv or output. The runtime loader accepts both (existing `test_credentials`). |
+| SG-5 | **Documentation.** The approved-destination table lists both hosts as shadow-only approved (with the MR-06 decision); `api.anthropic.com` stays unapproved. `docs/build/AIAND_MODEL_ROUTING.md` gives tonight's host steps in order, with the prior OpenAI spend as a flagged placeholder. |
+| SG-6 | **No regression.** Full local suite (Python 3.12, PostgreSQL 14) on this branch against the deploy-branch base: no new failure; counts and skips reported. Golden fixtures are regenerated only if the merge breaks them. |
+
+## Shadow trial on the Gate A deploy (2026-10-16 → ≤ 2026-10-21) — pre-registered
+
+**Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
+
+### Preconditions (before the first routed assessment)
+
+- **P0 Provider check (open; Yao Zhu, on the host).** The AIand account's org-scoped catalog lists `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with the pinned efforts (`low` for GLM routine; `high` for the K3 primary and GLM secondary reviewers), and the first real routed assessment's recorded reply headers `x-model` and `x-reasoning-effort` match the requested model and effort for every stage that ran. Record the date, the catalog response hash and the first assessment's ID in this entry. A mismatch is a kill (K4). Not run yet.
+- **P1 Budget ledger** initialized on the host with all prior OpenAI spend (Yao Zhu supplies the number; see the runbook). Record the `status` snapshot (charged, available) at the start.
+- **P2 Pinned routing file** and its SHA-256 recorded here (the reviewed copy of `config/intelligence/aiand-routing.example.json`), plus the build ID.
+
+### Data and method
+
+Data sources, all read-only after the trial: the PostgreSQL journal (round records with their assessment results: `status`, `budget_used.elapsed_ms`, `routing` stages and reasons, `routing.budget`, `cost`, `model_io`), the model artifact store `<market_artifact_root>/model` (exact request/reply bytes and per-stage results), and the budget ledger (`charges`, `switches`). Unit of analysis: an **assessment job** — one assessment the coordinator requested; a round recorded `ASSESSMENT_UNAVAILABLE` counts as a job that did not complete.
+
+| ID | Measure | Definition | Bar / use |
+|---|---|---|---|
+| M1 | Availability | Jobs that return a validated result with status `ASSESSED` or `ABSTAIN` and `elapsed_ms ≤ deadline_ms` (60 000), ÷ all jobs. `UNAVAILABLE`, `ASSESSMENT_UNAVAILABLE` and over-deadline count as failures; `REJECTED_REQUEST` is excluded and counted separately. | ⚠ PROPOSED: ≥ 95 % over the trial. |
+| M2 | Latency | p50 / p95 / max of `budget_used.elapsed_ms` over completed jobs, against the 60 s deadline; per routing path (routine only / OpenAI review / external review). | ⚠ PROPOSED: p95 ≤ 45 s; p50 ≤ 20 s; any job over 60 s is a defect to report. |
+| M3 | OpenAI charge | Ledger `charged_micro_usd` at the end minus at the start (reserved, unknown and settled), in total and per assessment (÷ all jobs, and ÷ jobs with an OpenAI stage), against the $40 admission. Include reservations still `RESERVED`/`UNKNOWN`. | ⚠ PROPOSED: trial total ≤ $8 (20 % of the admission); projected spend (start charge + trial daily rate × days left to Nov 12) ≤ $40. |
+| M4 | AIand cost | Per-stage AIand token usage (input/output) per model and effort, and any provider-reported cost. External prices stay excluded from pass bars (user decision, IDEA-056). | Report only. |
+| M5 | Verifier pass rate per stage | `bakeoff.metrics` claim-verification pass rate and schema-valid rate, computed separately for `routine`, `openai-review`, `external-review-0` and `external-review-1` from the stage result artifacts. | ⚠ PROPOSED: routine ≥ 0.80 and each review stage ≥ 0.90 claim-verification pass rate; schema-valid ≥ 0.95 per stage. |
+| M6 | Escalation rate | Share of jobs with any routing review reason, broken down by reason (`ROUTINE_NOT_ASSESSED`, `INDEPENDENT_ITEM_CANDIDATE`, `EVENT_INTERPRETATION`, `INCOMPLETE_OR_CONFLICTING_EVIDENCE`, `SEEDED_CLEAN_CASE_AUDIT`), and by which reviewer ran. | Report; ⚠ PROPOSED alert (not a kill) if > 60 %, because the IDEA-056 §6 budget table assumes ≤ 50 %. |
+| M7 | External-only switches | Ledger `switches` rows with reasons and times, plus per-assessment `MODEL_BUDGET_UNAVAILABLE` routing states. | Report every one; see K1/K3. |
+| M8 | Disagreement with the deterministic baseline | After the trial, replay each job's identical request and saved evidence offline through `EvidenceAssessor` + `RuleBaselineModel` (no network), then `bakeoff.metrics(routed, baseline)` finding-type agreement plus a per-job diff of findings, event findings and status. | Report; disagreement is not error — M9 decides which side is right. |
+| M9 | Accuracy and omission vs independent labels | Keith labels a stratified sample of the trial's filings **blind** to both outputs: the material findings and adverse events each filing supports. Sample: every filing if ≤ 40, else 40 drawn with a frozen seed recorded here before drawing, stratified by issuer × routing path × status. Measures: finding precision and recall, **omission rate** (labelled adverse events absent from accepted findings; `ABSTAIN` reported separately, not as a hit), for routed and baseline. Labels stay outside the repo (hash recorded here; never-do #7). | ⚠ PROPOSED: routed adverse-event omission rate ≤ baseline's, and zero unsupported Class 1/2 findings. With ≤ 40 filings this is triage only; it cannot establish IDEA-056 §7 non-inferiority. |
+
+### Kill criteria (stop early; the operator acts, no code change)
+
+- **K1 Spend.** OpenAI trial charge reaches $8, any single UTC day exceeds $2.50, or the ledger switches external-only for `OPENAI_OPERATING_LIMIT` before Oct 21: stop OpenAI use (remove `LARP_MODEL_API_KEY` from the runtime secret and restart); the trial may continue external-only and is reported as such.
+- **K2 Availability.** M1 below 80 % over any rolling 24 h with ≥ 20 jobs: revert the runtime to `"assessor": "deterministic"` (re-pin the runtime config) and end the trial.
+- **K3 Accounting.** Any `MODEL_BUDGET_UNAVAILABLE` state, an `OPENAI_USAGE_EXCEEDED_BOUND` switch, or a ledger/provider reconciliation difference: stop OpenAI use as K1 and reconcile before any restart.
+- **K4 Identity or safety.** Provider check P0 fails, any served model/effort mismatch is accepted, any credential appears in a log or artifact, or any routed result reaches signing: revert to deterministic immediately and report as an incident.
+
+### Outcome rules
+
+- **Supports adoption (for the Oct 22 decision):** P0–P2 done, no kill fired, every frozen bar met.
+- **Not supported:** a kill fired, or M1, M3 or M9 misses its bar.
+- **Inconclusive:** fewer than 3 trial days, fewer than 20 completed jobs, or Keith's labels not ready by Oct 21.
+
+Whatever the outcome, live/service use needs a later reviewed code change; this trial cannot enable it. Results and every deviation from this plan are appended below with dates.
