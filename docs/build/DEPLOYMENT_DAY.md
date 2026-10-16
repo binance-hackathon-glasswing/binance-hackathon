@@ -73,9 +73,16 @@ context; no hosted run or Gate A pass is established by this update.
 - **What it is:** a `PortfolioState.v1` with the dev wallet's actual starting balances (USDT, BNB, any tokens) and run ID, pinned by SHA-256 in `runtime.json`. `service init` builds the run from it and refuses an unpinned file.
 - **First gas (answered 2026-10-16, SKILL.md F-120).** The organisers send USDT only, and say to buy the first BNB in MetaMask, paying that swap's gas in USDT. Gate B reports `FIRST_BNB_REQUIRED` until the wallet holds BNB. Steps, done by a team member:
   1. Before the wallet's first agent trade (dev wallet: before Gate B; final wallet: after funding and before the scored run starts on Oct 29 00:00 UTC, never during it, F-114), open the wallet in MetaMask on BNB Smart Chain.
-  2. Swap a small amount of USDT for BNB, choosing USDT as the network-fee token. The size is a team decision (G-28). For scale: one approve + swap cost about 0.000022–0.000046 BNB in the organisers' tests (F-93).
-  3. Write the tx hash, USDT paid, BNB received and UTC time into the deployment record as a funding note. It is not a trade and not an agent round, so it gets no ai-seeds log. [Inference: the daily fill check (F-100) covers bStock fills, not this swap.]
-  4. Take the initial balance read after this swap, so the `PortfolioState.v1` above includes the BNB.
+  2. Swap USDT for BNB, choosing USDT as the network-fee token. **Size (decided by Yao Zhu, 2026-10-16): enough for the whole run's gas, so the agent's top-ups are a backup only: about 4 USDT in total for the dev wallet, about 6 USDT for the final wallet.** Basis: one approve + swap cost about 0.000022–0.000046 BNB in the organisers' tests (F-93), about $0.02–0.035, so about 150 trades cost about $3–5; these sizes give 170–300 trades of headroom, inside IDEA-055 D6's 5 % bound. One or more swaps are allowed per wallet, all before its first agent trade (SKILL.md F-120). No BNB is swapped back to USDT at the end (G-13); leftover BNB is accepted.
+  3. Write each swap's tx hash, USDT paid, BNB received and UTC time into the funding notes below. It is not a trade and not an agent round, so it gets no ai-seeds log (confirmed by Yao Zhu, 2026-10-16). [Inference: the daily fill check (F-100) covers bStock fills, not this swap.]
+  4. Take the initial balance read after the last manual swap, so the `PortfolioState.v1` above includes the BNB.
+
+  **Funding notes (deployment record).**
+
+  | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
+  |---|---|---|---|---|---|
+  | dev | 2026-10-16, `[TO FILL: Yao Zhu]` time | `[TO FILL: Yao Zhu]` | 2 | `[TO FILL: Yao Zhu]` | Trial swap in MetaMask (reported by Yao Zhu, 2026-10-16). More to follow before Gate B, to about 4 USDT in total. |
+  | final | — | — | — | — | After funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
   Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)

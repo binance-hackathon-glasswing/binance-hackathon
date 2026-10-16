@@ -413,7 +413,9 @@ class Halt(ServiceHarness):
             return any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS'
                        for k in self.keys() for a in execution.registry.load(k).attempts)
         self.assertTrue(self.run_both(driver, execution, until=approved))
-        Guard(self.store, RUN, max_failures=3, clear_after=2)._halt('DELIVERY_DEADLINE', self.w.clock(), {})
+        # D-DN-09: CLOCK blocks every signature. A pausing HALT (DELIVERY_DEADLINE) would let this mandatory sell
+        # finish; that case is tests/runtime/test_halt_split.py HS5.
+        Guard(self.store, RUN, max_failures=3, clear_after=2)._halt('CLOCK', self.w.clock(), {})
         self.run_both(driver, execution, ticks=60, until=lambda: self.closed(round_id))
         [key] = self.keys()
         state = execution.registry.load(key)
