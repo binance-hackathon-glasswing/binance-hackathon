@@ -11,6 +11,7 @@ import time
 from larp.audit.protocol import build_event,check_orders,event_id_for
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
 from larp.storage.postgres import Conflict,IntegrityError,doc
+from larp.runtime.halts import mandatory_reduction,pausing_only
 from larp.runtime.schema import assessment_request,assessment_result
 
 
@@ -187,6 +188,9 @@ class Coordinator:
         if unregistered:
             errors.append('VERSION_NOT_REGISTERED')
         blocked=bool(halted) or unregistered
+        # D-DN-09: a HALT made only of pausing reasons (larp/runtime/halts.py) still plans mandatory risk, with no
+        # policy proposal, and keeps only mandatory bStock sells. CLOCK or any other reason plans nothing.
+        paused=bool(halted) and not unregistered and pausing_only(current.read()['projection'])
         # A HALT for repeated failures alone probes policy and planner, so only a round that really works can clear
         # it (IDEA-042 V1). The probe's plan is discarded below: nothing is placed, reserved or advanced.
         probe=halted==['REPEATED_FAILURES'] and not unregistered
@@ -198,9 +202,9 @@ class Coordinator:
                 errors.append('POLICY_REJECTED'); proposal=None
         # Mandatory risk is called even when there is no policy output (unless blocked: nothing may be signed).
         try:
-            if blocked and not probe:
+            if blocked and not probe and not paused:
                 raise _Halted()
-            plan=self.planner.plan(snapshot,proposal).read()
+            plan=self.planner.plan(snapshot,None if paused else proposal).read()
             if plan['schema']!='PlanResult.v1' or plan['snapshot_id']!=snapshot.snapshot_id:
                 raise ContractError('Mismatched planner result')
         except _Halted:
@@ -221,8 +225,8 @@ class Coordinator:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
             else:
-                if probe:
-                    plan=self.empty_plan(snapshot,'HALTED')
+                if paused:
+                    plan=self.mandatory_only(plan)
         projection=current.read()['projection']
         projection.update(updates)
         if plan.get('risk_state') is not None:
@@ -276,6 +280,19 @@ class Coordinator:
         if not commands and not defer_close:
             return self.close(round_id,now_ms,'COMPLETE')
         return receipt
+
+    @staticmethod
+    def mandatory_only(plan):
+        """The plan under a pausing HALT: its mandatory bStock sells and their reservations. Everything else, such as a
+        BUY or a gas top-up, is dropped and its intent ID recorded in `halt_dropped`."""
+        kept=[i for i in plan['intents'] if mandatory_reduction(i)]
+        ids={i['intent_id'] for i in kept}
+        dropped=[i.get('intent_id') for i in plan['intents'] if not mandatory_reduction(i)]
+        plan=dict(plan,intents=kept,reasons=list(plan.get('reasons') or [])+['HALT_MANDATORY_ONLY'],
+                  reservation_deltas=[d for d in plan['reservation_deltas'] if d.get('intent_id') in ids])
+        if dropped:
+            plan['halt_dropped']=dropped
+        return plan
 
     @staticmethod
     def empty_plan(snapshot,reason):
