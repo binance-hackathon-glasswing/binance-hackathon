@@ -503,3 +503,7 @@ signing, uploads or AWS operations. `pip check` and `git diff --check` pass.
 systemd/bubblewrap qualification and actual hosted/signing/provider readiness
 with the existing owners. No policy choice, live authority, whole GAP closure
 or PR merge is implied by this offline review.
+
+### RR2-R4 — midnight hold must not depend on a later assessment round (prospective)
+
+The midnight jump check currently journals only the deferred-day flag. Without a subsequent assessment round, its new hold/mark is never persisted; repeated DayRoll calls rediscover the same jump and cannot age out or observe BalanceCheck clearing it. Require the first midnight-discovered hold and marks to be journaled with the deferral, survive restart/replay, clear through comparable balances without an intervening assessment, and expire at the original hold deadline without being renewed by repeated day-roll calls. Also persist a later newly discovered hold on an already-deferred day with a unique event ID. Synthetic PostgreSQL regressions must fail before the repair and pass after. No owner policy change.

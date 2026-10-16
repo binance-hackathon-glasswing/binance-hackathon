@@ -196,3 +196,42 @@ class MidnightJump(AdoptionHarness):
         self.w.clock.now = midnight + SECOND
         roll = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
         self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
+
+    def no_round_midnight(self):
+        driver = self.prepare()
+        self.round(driver)
+        midnight = int(datetime(2026, 10, 11, tzinfo=timezone.utc).timestamp() * 1000)
+        self.w.clock.now = midnight + SECOND
+        self.feed.prices['NVDAB'] = PRICE // 2
+        roll = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'PRICE_JUMP_HOLD')
+        return driver, midnight, roll
+
+    def test_midnight_discovered_hold_expires_without_an_assessment_round(self):
+        driver, midnight, roll = self.no_round_midnight()
+        # No assessment round runs after the first midnight fetch.
+        for elapsed in (10 * MINUTE, 20 * MINUTE):
+            self.w.clock.now = midnight + elapsed
+            self.assertEqual(roll(self.w.clock(), self.feed(self.w.clock())), 'PRICE_JUMP_HOLD')
+        self.w.clock.now = midnight + 31 * MINUTE
+        restarted = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(restarted(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
+        self.assertEqual(len(self.events('DAY_ROLL_DEFERRED')), 1)
+        self.assertNotIn('day_roll_deferred_ms', self.projection())
+        from tests.runtime.test_balance_adoption import PriceJump
+        journal, expected = list(self.store.journal(RUN)), self.store.verify(RUN)
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        self.assertEqual(PriceJump.replay(self, driver, journal), expected)
+
+    def test_midnight_discovered_hold_can_clear_from_balances_without_an_assessment_round(self):
+        driver, midnight, roll = self.no_round_midnight()
+        self.assertIn('NVDAB', self.projection()['price_jump'])
+        self.assertEqual(self.projection()['marks']['NVDAB'], PRICE // 2)
+        self.chain.tokens['NVDAB'] = 4000
+        self.assertEqual(driver.balance_check(self.w.clock()), 'SURPLUS_ONLY')
+        self.w.clock.now += MINUTE
+        self.assertEqual(driver.balance_check(self.w.clock()), 'ADJUSTED')
+        self.assertFalse(self.projection()['price_jump'])
+        restarted = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(restarted(self.w.clock(), self.feed(self.w.clock())), 'ROLLED')
