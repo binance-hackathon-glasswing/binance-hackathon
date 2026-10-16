@@ -231,7 +231,8 @@ class ChainGaps(unittest.TestCase):
         missing = dict(capture); missing.pop('finalized_nonce')
         for value in (missing, dict(capture, finalized_nonce=2), dict(capture, finalized_nonce='3')):
             with self.subTest(value=value.get('finalized_nonce')):
-                self.assertEqual(self.pinned(chain=value)['DR-03']['status'], 'BLOCKED')
+                # DR-03 is always BLOCKED pending owner acceptance; the detail says whether the snapshot passed.
+                self.assertIn('missing, blocked, stale or mismatched', self.pinned(chain=value)['DR-03']['detail'])
 
     def test_gb2a_usdt_and_every_bstock_are_read_at_the_finalized_block(self):
         from larp.execution import USDT
