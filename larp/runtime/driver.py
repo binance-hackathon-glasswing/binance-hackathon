@@ -28,6 +28,7 @@ from fractions import Fraction
 import json
 
 from larp.contracts import ContractError, Document
+from larp.execution import Blocked, DependencyUnavailable
 from larp.execution import digest as execution_digest
 from larp.intelligence.agent import build_request
 from larp.intelligence.common import digest
@@ -35,6 +36,7 @@ from larp.intelligence.gate import initial_state
 from larp.integration.runtime import ledger_from
 from larp.integration.settlement import settle
 from larp.risk.accounting import roll_day
+from larp.risk.reconcile import compare_balances
 from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.runtime.scheduler import Scheduler
 from larp.storage.postgres import Conflict, IntegrityError
@@ -90,8 +92,9 @@ class SessionCalendar:
 class RuntimeHealth:
     """Planner gates from the store (larp/risk/planner.py; config/strategy/LIVE.md `new_spending_ok`)."""
 
-    def __init__(self, store, run_id, epoch):
+    def __init__(self, store, run_id, epoch, *, balances=None):
         self.store, self.run_id, self.epoch = store, run_id, epoch
+        self.balances = balances  # a BalanceCheck adds `balances_ok` (IDEA-055); offline fixtures have none
 
     def __call__(self, current):
         try:
@@ -104,6 +107,9 @@ class RuntimeHealth:
         gates = dict(integrity_ok=not current['quarantined'], journal_ok=journal,
                      ownership_ok=current['epoch'] == self.epoch,
                      clock_ok='CLOCK' not in halt_reasons(projection))
+        if self.balances is not None:
+            # Feeds only new_spending_ok, never the planner's global gates: sales and the flatten continue (#36).
+            gates['balances_ok'] = self.balances.ok(projection)
         pending = any(r.get('execution_pending') for r in projection.get('round_records', {}).values())
         gates['new_spending_ok'] = all(gates.values()) and not pending and not current['reservations']
         return gates
@@ -444,6 +450,94 @@ class DayRoll:
         return 'ROLLED'
 
 
+class BalanceCheck:
+    """Chain-balance reconciliation (IDEA-055, #36): detect a mismatch, journal it and stop new risk.
+
+    `reader(now_ms)` returns a ChainBalances.v1 (larp/execution_live/balances.py). With reservations, an open round or
+    an execution pending, nothing is read or journaled: the chain would differ from the ledger by the trade in flight.
+    A check is journaled as BALANCE_CHECKED (a recorded fact on replay) when it is this process's first, when its
+    outcome differs from the last journaled one, or after `heartbeat_ms` without a journaled check; every commit copies
+    the projection, so an unchanged result every interval would only grow the journal. A deficit or a newly surplus
+    asset is also an INCIDENT. The ledger is never written: a deficit is subtracted only in the planner's view
+    (ContextBuilder) and blocks new spending (`ok`), while mandatory sales and the flatten continue. `ok` counts only a
+    check made by this process (its time is kept in memory), so a restored or restarted run reconciles before it takes
+    new risk."""
+
+    COMPARABLE = ('MATCH', 'SURPLUS_ONLY', 'DEFICIT')
+
+    def __init__(self, coordinator, reader, *, interval_ms, max_age_ms, retry_ms=60_000, heartbeat_ms=3_600_000):
+        if (not all(type(v) is int and v > 0 for v in (interval_ms, max_age_ms, retry_ms, heartbeat_ms))
+                or max_age_ms < interval_ms):
+            raise ContractError('Invalid balance-check interval, maximum age, retry or heartbeat')
+        self.coordinator, self.reader = coordinator, reader
+        self.interval, self.max_age, self.retry, self.heartbeat = interval_ms, max_age_ms, retry_ms, heartbeat_ms
+        self.next_ms = 0  # the first cycle checks
+        self.ok_ms = None  # the last MATCH/SURPLUS_ONLY check of this process
+        self.journaled_ms = None
+
+    def due(self, now_ms):
+        return now_ms >= self.next_ms
+
+    def ok(self, projection):
+        state = projection.get('balance_check') or {}
+        return (self.ok_ms is not None and state.get('comparable_status') in ('MATCH', 'SURPLUS_ONLY')
+                and self.coordinator.clock() - self.ok_ms < self.max_age)
+
+    def in_flight(self, current):
+        c = self.coordinator
+        rounds = current['projection'].get('round_records', {}).values()
+        return bool(current['reservations'] or c.store.open_rounds(c.run_id)
+                    or any(r.get('execution_pending') for r in rounds))
+
+    def __call__(self, now_ms):
+        c = self.coordinator
+        current = c.store.load(c.run_id).read()
+        if self.in_flight(current):
+            self.next_ms = now_ms + self.retry
+            return 'IN_FLIGHT'
+        projection = current['projection']
+        previous = projection.get('balance_check') or {}
+        observation_hash = None
+        try:
+            observation = self.reader(now_ms)
+            check = compare_balances(projection['portfolio'], observation,
+                                     settled_block=projection.get('settled_block'))
+            observation_hash = Document.from_dict(observation).digest('ChainBalances.v1')
+        except DependencyUnavailable:
+            check = dict(schema='BalanceCheck.v1', status='SKIPPED', reason='RPC_UNAVAILABLE')
+        except (Blocked, ContractError, KeyError, TypeError, ValueError):
+            check = dict(schema='BalanceCheck.v1', status='SKIPPED', reason='OBSERVATION_INVALID')
+        status = check['status']
+        state = dict(previous, status=status, reason=check.get('reason'), checked_ms=now_ms)
+        incidents = []
+        if status in self.COMPARABLE:
+            new_surplus = sorted(set(check['surplus']) - set(previous.get('surplus_assets', [])))
+            if status == 'DEFICIT' and check['deficits'] != previous.get('deficits'):
+                incidents.append(dict(type='BALANCE_DEFICIT', deficits=check['deficits']))
+            if new_surplus:
+                incidents.append(dict(type='BALANCE_SURPLUS', assets=new_surplus,
+                                      differences={a: check['assets'][a]['difference'] for a in new_surplus}))
+            state.update(comparable_status=status, deficits=check['deficits'], surplus_assets=check['surplus'],
+                         block_number=check['block_number'])
+            self.ok_ms = now_ms if status != 'DEFICIT' else None
+            self.next_ms = now_ms + self.interval
+        else:
+            self.next_ms = now_ms + self.retry  # a skip keeps the last deficits and the last good time
+        outcome = ('status', 'reason', 'comparable_status', 'deficits', 'surplus_assets')
+        changed = any(state.get(k) != previous.get(k) for k in outcome)
+        if not (changed or incidents or self.journaled_ms is None or now_ms - self.journaled_ms >= self.heartbeat):
+            return status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+        self.journaled_ms = now_ms
+        projection['balance_check'] = state
+        event = dict(kind='BALANCE_CHECKED', check=check, checked_ms=now_ms, observation_sha256=observation_hash)
+        c.store.commit(batch_for(Document.from_dict(current), f'balance:{now_ms}', event, projection=projection))
+        for incident in incidents:
+            current = c.store.load(c.run_id)
+            event = dict(kind='INCIDENT', incident=dict(incident, block_number=check['block_number'], at_ms=now_ms))
+            c.store.commit(batch_for(current, f"incident:{incident['type'].lower()}:{now_ms}", event))
+        return status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+
+
 class EvidenceWork:
     """The next unit of evidence work for a round, or None.
 
@@ -597,8 +691,9 @@ class RoundDriver:
     signing = False
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
-                 max_quote_rounds=0, max_quote_requests=2):
+                 max_quote_rounds=0, max_quote_requests=2, balance_check=None):
         self.coordinator, self.work = coordinator, work
+        self.balance_check = balance_check
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
         self.market, self.day_roll = market, day_roll
@@ -670,6 +765,8 @@ class RoundDriver:
             # I3 hand-off: any commit now would make these commands stale before the execution service claims them.
             summary['waiting_for_claim'] = waiting
             return summary
+        if self.balance_check is not None and self.balance_check.due(now_ms):
+            summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):
