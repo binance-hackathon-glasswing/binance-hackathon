@@ -656,3 +656,34 @@ RR2-R1 invalidates contradictory per-asset candidates; R2 persists deferred days
 Earlier full source 527376c: 1744 passed /1 skip /2557 subtests. Its first attempt had nine executable-permission failures caused by the runner's /tmp noexec mount; remounting that disposable tmpfs exec made affected modules and the entire unchanged-source rerun pass. Source 990e912 then passed 1757 /1 skip /2561 subtests before RR2-R4 was identified. Final acceptance is the source above. Logs, JUnit and hashes are retained outside Git in `/private/tmp/larp-rereview-0jHjyg/results-v4/`; full log SHA256 `c6451ff3aa2c8fd8b50e286182ee2027e3e19903fbc27bba2f0ef9dd4c539bb7`, JUnit SHA256 `f30deb7509ba17304455bda521d8a7608893de8fc94419466d9d2949324c67ac`.
 
 Hosted Actions run 38908993829 at af9ffbf ran no steps: GitHub reports failed payments/spending limit (#98, account owner). Local tests do not replace exact-release host-bundle/Terraform CI or hosted acceptance. No external network, real credentials/provider calls, cloud provisioning, official uploads, real-wallet signing or network broadcast occurred. Yao Zhu + Keith retain the mandatory-exit/price-jump-hold policy question; Isaac retains provider selection/first hosted read (#92); existing owner gates cover measured inputs, terms, host routes/receiver/recovery, shadow trial/adoption and wallet rehearsal. No whole GAP closes. PRs target codex/system-testing-20261012; main is unchanged.
+
+
+### PR115-C06 — independent final acceptance (Isaac / Codex, 2026-10-16)
+
+- Shared-migration baseline `14daab3`: **1735 passed, 9 skipped, 2531 subtests**,
+  zero failures, 248.72 s on the same disposable PostgreSQL 14.24 environment.
+  Log `/private/tmp/larp-pr115-full-shared-migrations.log`, SHA-256
+  `544828a0451ab5e4edbab84dcfdc2d8f52c6d2e5092553ec63f0486337ca4eb5`.
+- RR2-R4 independently reproduced at published review `06e20ec`: both no-round
+  tests fail for the documented reasons. Preserved peer fixes `4a62e9d` and
+  `9f561f9` with merge `481ae58`; all **16 independent regressions / 4 subtests**
+  pass, including expiry, balance clearing, restart/replay and another jump on
+  an already deferred day. The original hold deadline is never renewed.
+- **Complete suite at pushed `481ae58`: 1738 passed, 9 skipped, 2531 subtests**,
+  zero failures, 254.05 s. Same macOS ARM64 / Python 3.12.14 / PostgreSQL 14.24
+  environment; the same five opt-in systemd, three Linux bubblewrap and one
+  external-artifact skips. Raw log `/private/tmp/larp-pr115-full-complete.log`,
+  SHA-256 `645e3eefde181bebca005a085da0ffb6f49bf5454674b31a088f3f6b862e99fc`.
+- Preserved peer acceptance commit `5d1f408`; it changes documentation only.
+  The final record/index/backlog update also changes documentation only.
+  `pip check` and `git diff --check` pass. The disposable database is removed
+  after verification. No remaining implementation finding from this review;
+  the owner policy, exact-release/host/provider/rehearsal gates above remain.
+
+### PR122-R1 — reconcile the documentation follow-up with completed integration (2026-10-16)
+
+Review began at27f1913 against testing-branch e4f3d59. Pass criteria: preserve both reviewers' dated evidence, leave executable/test/configuration files unchanged, retain the current owner/hosted backlog and do not restore completed integration tasks.
+
+The proposed index/backlog still named PR115/116 merge disposition as pending, although both are merged (19da67f/e4f3d59). Resolve the conflicts using the current index/backlog; retain PR115-C06 as additional evidence and preserve the existing combined Linux acceptance. The only remaining reconciliation owner question is IDEA-055 POLICY-HOLD; all existing provider, hosted, exact-release CI/bundle and rehearsal gates remain explicit.
+
+PR115-C06's independent macOS counts/hashes are author-reported: its raw logs are not available on this review machine, so they are not re-certified here. The prior combined Linux full log/JUnit and summary remain locally available, match their recorded SHA256 values, and cover the unchanged executable tree. No application tests need rerunning for this documentation-only merge. Earlier descriptions of no signing/uploads refer to real-wallet signing and real external uploads; synthetic signer tests use throwaway keys/transactions. Earlier pending integration statements are dated history superseded by the final combined disposition and this note. No hosted acceptance follows.
