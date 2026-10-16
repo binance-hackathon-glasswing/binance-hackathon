@@ -2,6 +2,18 @@
 
 Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)). This is the order of work once the open reviews and final tests pass. The detail behind each step is in [AWS_RUNBOOK.md](AWS_RUNBOOK.md) and [runbook.md](runbook.md); this page says what is ready, what each person brings, and what still blocks.
 
+**2026-10-16 update:** [GATE_A.md](GATE_A.md) is the current assembly procedure
+for inputs 2–6 below. IDEA-050's driver/init/activate and #25's issuer fix are
+already on main (PR81); IDEA-054 supplies the calendar. IDEA-058 builds on
+`codex/system-testing-20261012`, which adds #84's balance check (IDEA-055) and
+is not yet promoted to main, so deploy from that branch plus IDEA-058, or from
+main after the promotion. IDEA-058 adds strictly
+unsigned shadow settings and derives the issuer map/initial state from captured
+real responses. The user owns input 1's summary/profile tool; Yao Zhu sets the
+public wallet address and SEC contact locally. Missing terms bytes/captures and
+host checks remain required. The original descriptions below retain their dated
+context; no hosted run or Gate A pass is established by this update.
+
 ## What this deployment can and cannot do
 
 - **It can run in shadow** (`execution: "shadow"`): real market data, real decisions, and real round logs uploaded to ai-seeds from the dev wallet. Every planned order ends `NOT_SUBMITTED`. This is **Gate A** in [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md), which was planned for Oct 14.

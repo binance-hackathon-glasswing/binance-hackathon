@@ -81,6 +81,11 @@ class Refused(SystemExit):
 
 def release_state(manifest: str | None, root: str | None) -> dict:
     """The build a verified release manifest names, in git_state's shape; refuses an unverified release."""
+    return _verified_release(manifest, root)[0]
+
+
+def _verified_release(manifest, root):
+    """(release_state, the verified manifest dict), so a caller needing the manifest does not verify it twice."""
     from larp.contracts import ContractError
     from larp.runtime.preflight import verify_release
     if not manifest or not root:
@@ -89,7 +94,7 @@ def release_state(manifest: str | None, root: str | None) -> dict:
         verified = verify_release(Document(Path(manifest).read_bytes()), root)
     except (ContractError, ValueError, OSError):
         raise Refused("Refusing live execution: the release does not verify against its manifest") from None
-    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}
+    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}, verified
 
 
 def require_committed(state: dict, allow_dirty: bool) -> None:
@@ -367,6 +372,37 @@ def preflight(env, config_mode: str = "live") -> list:
     return reasons
 
 
+def check_shadow_scope(runtime_path, *, release_manifest=None, release_root=None, verified_manifest=None):
+    """Shadow settings never authorize signed/final operation (IDEA-058). Read-only; no secrets or DB calls.
+
+    `verified_manifest` is a manifest dict `release_state` already verified; the release is then not hashed again."""
+    from larp.contracts import ContractError
+    from larp.runtime.preflight import verify_release, verify_runtime_config
+    try:
+        raw = Path(runtime_path).read_bytes()
+    except OSError as error:
+        # Both the runtime and evidence users read this file (GA13b): name the cause, not just the scope refusal.
+        raise Refused(f'Cannot read the shadow runtime configuration ({type(error).__name__}); the evidence user '
+                      'needs read access, e.g. mode 0644') from None
+    except TypeError:
+        raise Refused('Shadow ingestion needs the matching unsigned dev runtime configuration') from None
+    try:
+        config = json.loads(raw)
+        if (config.get('mode') != 'dev' or config.get('driver', {}).get('execution') != 'shadow'
+                or config['driver'].get('intelligence_mode') != 'shadow'):
+            raise ValueError('Only unsigned dev-shadow operation is allowed')
+        if verified_manifest is not None:
+            verify_runtime_config(verified_manifest, raw)
+        elif release_manifest or release_root:
+            if not release_manifest or not release_root:
+                raise ValueError('Both release arguments required')
+            manifest = Document(Path(release_manifest).read_bytes())
+            verify_release(manifest, release_root)
+            verify_runtime_config(manifest.read(), raw)
+    except (ContractError, ValueError, OSError, TypeError, AttributeError, KeyError):
+        raise Refused('Shadow ingestion needs the matching unsigned dev runtime configuration') from None
+
+
 def _env_root(env, config_mode: str = "live") -> Path:
     reasons = preflight(env, config_mode)
     if reasons:
@@ -485,12 +521,15 @@ def main(argv=None, env=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     pre = sub.add_parser("preflight")
-    pre.add_argument("--config-mode", default="live", choices=("live", "development"))
+    pre.add_argument("--config-mode", default="live", choices=("live", "development", "shadow"))
     terms = sub.add_parser("terms")
     terms.add_argument("--write-register", action="store_true", help="record captured hashes in the register file")
     run = sub.add_parser("run")
     run.add_argument("--hours", type=float, default=24.0)
-    run.add_argument("--config-mode", default="live", choices=("live", "development"))
+    # No default here: argparse never checks a default against `choices`, so the environment value is checked below.
+    run.add_argument("--config-mode", choices=("live", "development", "shadow"))
+    run.add_argument("--shadow-runtime-config", type=Path,
+                     help="Manifest-bound dev/shadow runtime configuration; required for shadow settings")
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
     run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
     # Hosts run a verified release bundle, not a git checkout (IDEA-047 V01): the manifest replaces the git check.
@@ -557,10 +596,23 @@ def main(argv=None, env=None) -> int:
         return 0 if report["verdict"] == "PASS" else 1
     if args.command == "run":
         try:
-            state = (release_state(args.release_manifest, args.release_root)
-                     if args.release_manifest or args.release_root else git_state())
+            config_mode = args.config_mode
+            if config_mode is None:
+                # The environment file is not manifest-bound, so it may select only live or shadow (GA13a, GA03).
+                config_mode = env.get("LARP_EVIDENCE_CONFIG_MODE", "live")
+                if config_mode not in ("live", "shadow"):
+                    raise Refused("LARP_EVIDENCE_CONFIG_MODE must be live or shadow")
+            if config_mode == "development" and (args.release_manifest or args.release_root):
+                raise Refused("Development evidence settings are not allowed on a release host")
+            manifest = None
+            if args.release_manifest or args.release_root:
+                state, manifest = _verified_release(args.release_manifest, args.release_root)
+            else:
+                state = git_state()
             require_committed(state, args.allow_dirty)
-            runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
+            if config_mode == 'shadow':
+                check_shadow_scope(args.shadow_runtime_config, verified_manifest=manifest)
+            runner = build_runner(env, config_mode=config_mode, edgar_interval_ms=args.edgar_interval_ms,
                                   commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
         except Refused as refusal:
             print(refusal, file=sys.stderr)

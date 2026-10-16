@@ -4,6 +4,17 @@ Initial inventory: 2026-10-04, based on a review of all 17 repository Markdown f
 
 This is a live checklist. Remove an entire item once its work is fully completed and verified. Keep partial or blocked items, narrowing them to the remaining work. Preserve supporting decisions, test evidence, and experimental results in their authoritative documents before removal. IDs are stable; do not renumber surviving items. This checklist does not override the rules in `skill/SKILL.md` or the append-only experiment ledger.
 
+## Gate A (IDEA-058, split by owner 2026-10-16)
+
+Procedure: [GATE_A.md](build/GATE_A.md). IDEA-058 (PR #87, based on `codex/system-testing-20261012` with #84/IDEA-055) supplies explicit unsigned `shadow` evidence settings (user-approved bounded values, 15-minute cadence, 5-minute day-roll window), pinned metadata/balance/profile/config assembly and a dev-shadow exact-replay repair. It enables no signing and closes no whole deployment GAP.
+
+- [ ] GAP-69 — User: finish the measured `QuoteCostSummary.v1` / LIVE rehearsal-profile tool (#88) and review its output. Gate A `prepare` refuses fixture profiles. ([IDEA-058](ledger/IDEA-058.md) remaining work 1)
+- [ ] GAP-70 — Yao Zhu: set the public dev wallet address and SEC contact locally; capture the missing SEC terms and install every retained terms artifact on the host; take a fresh read-only wallet capture with the balance RPC; do the reviewed AWS apply/provision/migration; record the host evidence (real receiver ACK, 24 h ingestion, restart, hourly anchor, IAM/TLS, routes, time sync, alarm delivery). ([IDEA-058](ledger/IDEA-058.md) remaining work 2–3)
+- [ ] GAP-71 — Isaac: choose the BSC balance RPC with `finalized` support and its source ID, open network access to it and run the first hosted read (#92). Gate A `capture` and `prepare` need both values or report `BALANCE_RPC`. ([IDEA-058](ledger/IDEA-058.md) GA10–GA12, GA13c)
+- [ ] GAP-72 — Keegan: review and integrate PR #87, run the exact-release mirror CI (PostgreSQL 14.24) on its head, and review the Gate A evidence. ([IDEA-058](ledger/IDEA-058.md) remaining work 4)
+
+Gate B stays separate: decoder, capability proof, signer provisioning/version binding, first BNB (Q-03; Gate A reports `FIRST_BNB` when the wallet has none), real trades and hosted recovery/restore/replay drills remain with Isaac/Keegan/Keith.
+
 ## Commitments and scope
 
 - [ ] GAP-02 — Reconcile active decisions with the proposal: five-session horizon, trailing 60-session volatility and sizing formula, UTC loss boundary, 12% drawdown reduction to 40% gross, and primary plus fenced cold standby. Update D-05/D-06, G-22/G-29 and status tables; retain only genuinely unresolved choices. Sources: `skill/larp/plan.md`, `proposal/proposal_answers.md`. Checked 2026-10-08: done in part — plan.md "Declared values" (2026-10-03) records the horizon, sizing, UTC boundary and 12% → 40% step, and D-06 cites them. Remaining: G-22 and G-29 still show bracket slots and an "optional" deeper step instead of the declared values; D-05 still says "not decided" although the proposal declares "one primary runtime plus a fenced cold standby" (binding under G-11 until changed by a version event). 2026-10-11 ([IDEA-035](ledger/IDEA-035.md) §4): the team decides D-05 after exploring AWS; remind the team then.
