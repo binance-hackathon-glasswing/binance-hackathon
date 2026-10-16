@@ -441,3 +441,11 @@ check, retaining the blocked-before / top-up-enabled-after assertions. S5 now
 uses actual transient reservations; the safety assertion is retained. Additional
 checks require commands and unknown events to invalidate confirmation, validate
 bounded journal reads, and replay the continuous-cadence adoption exactly.
+
+**PR115-C05, prospective concurrency criterion:** if another writer commits
+resource activity after this check's own commit but before its subsequent load,
+that activity must not be treated as this check's own commits. The next read
+must reject the old candidate. Reproduce by injecting a reservation and its
+release in that exact gap; update the candidate's version only when the reload
+contains exactly the one expected commit. Full candidate safety still rests on
+the journal suffix, and ordinary single-writer behavior is unchanged.

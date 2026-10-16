@@ -9,6 +9,32 @@ from tests.runtime.test_balance_adoption import AdoptionHarness, MINUTE, PRICE, 
 
 
 class Confirmation(AdoptionHarness):
+    def test_resource_activity_racing_the_post_commit_reload_is_not_blessed(self):
+        from unittest.mock import patch
+        driver = self.prepare(raw=dict(NVDAB=2010))
+        check, t = driver.balance_check, self.w.clock() + SECOND
+        commit = self.store.commit
+        injected = False
+
+        def racing_commit(batch):
+            nonlocal injected
+            receipt = commit(batch)
+            if batch.read()['event']['kind'] == 'BALANCE_CHECKED' and not injected:
+                injected = True
+                for suffix, units in [('reserve', 1), ('release', -1)]:
+                    commit(batch_for(self.store.load(RUN), 'fixture:race:' + suffix,
+                        dict(kind='INCIDENT', incident=dict(type='FIXTURE_RESOURCE')),
+                        reservation_deltas=[dict(intent_id='race', asset='USDT', units=units)]))
+            return receipt
+
+        with patch.object(self.store, 'commit', side_effect=racing_commit):
+            self.assertEqual(check(t), 'SURPLUS_ONLY')
+        self.assertTrue(injected)
+        self.assertFalse(self.store.load(RUN).read()['reservations'])
+        self.assertNotEqual(check(t + MINUTE), 'ADJUSTED')
+        self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+        self.assertEqual(check(t + 2 * MINUTE), 'ADJUSTED')
+
     def test_hold_only_cadence_cannot_starve_balance_confirmation(self):
         driver = self.prepare(raw=dict(NVDAB=2010))
         self.rounds_on = True
