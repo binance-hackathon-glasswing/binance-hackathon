@@ -203,5 +203,38 @@ class Declared(unittest.TestCase):
         self.assertIn('driver.balance_rpc_providers[1].url', missing)
 
 
+class ProviderFloor(unittest.TestCase):
+    def test_rr2_r3_a_lagging_primary_uses_the_backup_and_all_lagging_still_refuses(self):
+        from larp.execution_live.balances import BalanceProviders, DecimalsCache
+        from tests.runtime.test_balance_reconciliation import HEIGHT
+        book = ledger()
+        primary, backup = named(chain_for(book), 'primary-rpc'), named(chain_for(book), 'backup-rpc')
+        primary.height, backup.height = HEIGHT - 1, HEIGHT + 1
+        floor = HEIGHT
+        read = BalanceProviders([primary, backup], wallet=WALLET, decimals=DecimalsCache(), min_block=lambda: floor)
+        self.assertEqual(read(1_000)['source_id'], 'backup-rpc')
+        self.assertTrue(backup.calls)
+        floor += 2
+        with self.assertRaises(Blocked):
+            read(2_000)
+        primary.height = floor + 1
+        self.assertEqual(read(3_000)['source_id'], 'primary-rpc')
+
+    def test_rr2_r3_build_driver_reads_the_floor_from_the_current_run(self):
+        from unittest.mock import patch
+        from larp.contracts import Document
+        from larp.runtime.service import build_driver
+        from tests.runtime import test_driver as driver_tests
+        case = driver_tests.Composition('test_d7_valid_configuration_builds_real_ports_that_pass_the_live_start_check')
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        store = driver_tests.Store()
+        driver = build_driver(case.config(**COMMON, balance_rpc_providers=[PRIMARY, BACKUP]), store, case.secrets)
+        for floor in (None, 123, 456):
+            with self.subTest(floor=floor), patch.object(store, 'load', return_value=Document.from_dict(
+                    dict(projection=dict(settled_block=floor)))):
+                self.assertEqual(driver.balance_check.reader.min_block(), floor)
+
+
 if __name__ == '__main__':
     unittest.main()

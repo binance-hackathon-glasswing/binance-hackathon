@@ -491,3 +491,10 @@ Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local Postg
 - scratch merge of this branch with #87 at `c9b7613` (all four of #114, #115, #116, #87): **1701 passed, 10 skipped, 2381 subtests, 0 failed**.
 
 Org GitHub Actions jobs on these heads stop after about 3 s with no step output, consistent with the billing block (#98). A PostgreSQL 14.24 mirror run is still owed.
+
+
+## RR2 — second all-open-PR review, prospective criteria (2026-10-16)
+
+- RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
+- RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
+- RR2-R3: a primary below the already-settled block cannot suppress a healthy backup. Use the current ledger floor on each whole-provider read; all-behind stays refused. Bind the floor in build_driver and test fresh/lagging/all-behind providers. No new freshness policy or provider choice.

@@ -85,20 +85,28 @@ class BalanceProviders:
     Each call tries the providers in order with a whole `read_balances`, so one observation never mixes providers (its
     block identity is re-checked per provider). A provider that is unavailable or gives a rejected or malformed answer is skipped
     for this call. The observation names the `source_id` that served it. The call fails only when every provider
-    failed: DependencyUnavailable if every failure was unavailability, Blocked otherwise. The next call starts again
+    failed: DependencyUnavailable if every failure was unavailability, Blocked otherwise.
+    `min_block`, when supplied, is a callback returning the current settled-block floor; a provider below it is
+    skipped before its observation can be returned, so a stuck primary cannot suppress a healthy backup. The next call starts again
     at the primary. One DecimalsCache serves all providers: decimals are a constant of each contract."""
 
-    def __init__(self, providers, *, wallet, decimals=None):
+    def __init__(self, providers, *, wallet, decimals=None, min_block=None):
         if not providers or any(not getattr(p, 'source_id', None) for p in providers):
             raise Blocked('at least one named balance RPC provider required')
         self.providers, self.wallet, self.decimals = list(providers), wallet, decimals
+        self.min_block = min_block or (lambda: None)
 
     def __call__(self, now_ms):
         observed = datetime.fromtimestamp(now_ms / 1000, timezone.utc).isoformat()
+        floor = self.min_block()
+        if floor is not None and (type(floor) is not int or floor < 0):
+            raise Blocked('invalid settled-block floor')
         failures = []
         for rpc in self.providers:
             try:
                 o = read_balances(rpc, wallet=self.wallet, observed_at=observed, decimals=self.decimals)
+                if floor is not None and o['block_number'] < floor:
+                    raise Blocked('balance RPC is behind the settled ledger block')
             except DependencyUnavailable as error:
                 failures.append(error)
                 continue

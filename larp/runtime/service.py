@@ -320,7 +320,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         # Primary first, then backups; a check fails only when every provider fails (IDEA-055 PR 5).
         read = BalanceProviders([Rpc(p['url'], artifacts=chain, source_id=p['source_id'])
                                  for p in balance['providers']],
-                                wallet=wallet, decimals=DecimalsCache())  # decimals reused once two reads agree (#96)
+                                wallet=wallet, decimals=DecimalsCache(),
+                                min_block=lambda: store.load(config['run_id']).read()['projection'].get('settled_block'))
         balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check

@@ -501,14 +501,14 @@ class ReviewFixes(AdoptionHarness):
         at = lambda ms: roll(midnight + ms, self.feed(midnight + ms))
         self.assertEqual(at(MINUTE), 'PRICE_JUMP_HOLD')
         self.assertEqual(at(10 * MINUTE), 'PRICE_JUMP_HOLD')  # past the window, still held
-        fresh = DayRoll(driver.coordinator, window_ms=5 * MINUTE)  # a day not deferred inside the window
-        self.assertEqual(fresh(midnight + 10 * MINUTE, self.feed(midnight + 10 * MINUTE)), 'OUTSIDE_WINDOW')
+        fresh = DayRoll(driver.coordinator, window_ms=5 * MINUTE)  # reconstruct from the same persisted run
+        self.assertEqual(fresh(midnight + 10 * MINUTE, self.feed(midnight + 10 * MINUTE)), 'PRICE_JUMP_HOLD')
         current = self.store.load(RUN)
         projection = current.read()['projection']
         projection['price_jump'] = {}  # a balance check cleared the hold
         self.store.commit(batch_for(current, 'fixture:cleared', dict(kind='INCIDENT', incident=dict(type='FIXTURE')),
                                     projection=projection))
-        self.assertEqual(at(12 * MINUTE), 'ROLLED')
+        self.assertEqual(fresh(midnight + 12 * MINUTE, self.feed(midnight + 12 * MINUTE)), 'ROLLED')
         self.assertEqual(self.events('DAY_ROLLED')[0]['day'], '2026-10-11')
 
     def test_r3_a_match_just_after_the_jump_keeps_the_hold_a_later_one_clears_it(self):
@@ -525,6 +525,52 @@ class ReviewFixes(AdoptionHarness):
         self.assertEqual(self.projection()['price_jump'], {})
         _, record = self.round(driver)
         self.assertTrue(record['plan']['risk_state']['daily_halt'])  # a genuine drop: the stops evaluate
+
+
+class SecondReview(AdoptionHarness):
+    hold = ReviewFixes.hold
+
+    def test_rr2_r1_an_early_contradiction_requires_a_new_confirming_pair(self):
+        for middle in (2000, 2020):
+            with self.subTest(intervening_units=middle):
+                driver = self.prepare(raw=dict(NVDAB=2010))
+                check, t = driver.balance_check, self.w.clock()
+                self.assertEqual(check(t), 'SURPLUS_ONLY')
+                self.chain.tokens['NVDAB'] = middle
+                self.w.clock.now = t + SECOND
+                self.assertNotEqual(check(self.w.clock()), 'ADJUSTED')
+                self.chain.tokens['NVDAB'] = 2010
+                self.w.clock.now = t + MINUTE
+                self.assertEqual(check(self.w.clock()), 'SURPLUS_ONLY')
+                self.assertEqual(self.events('BALANCE_ADJUSTED'), [])
+                self.w.clock.now = t + 2 * MINUTE
+                self.assertEqual(check(self.w.clock()), 'ADJUSTED')
+
+    def test_rr2_r2_restart_after_clear_still_rolls_and_replays_the_deferred_day(self):
+        driver = self.prepare()
+        midnight = int(datetime(2026, 10, 11, tzinfo=timezone.utc).timestamp() * 1000)
+        self.hold(midnight - MINUTE)
+        roll = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(roll(midnight + MINUTE, self.feed(midnight + MINUTE)), 'PRICE_JUMP_HOLD')
+        self.assertEqual(self.projection()['day_roll_deferred_ms'], midnight)
+        current = self.store.load(RUN)
+        projection = current.read()['projection']
+        projection['price_jump'] = {}
+        self.store.commit(batch_for(current, 'rr2:hold-cleared', dict(kind='INCIDENT', incident=dict(type='FIXTURE')),
+                                    projection=projection))
+        # The process dies after the balance check clears the hold, before the roll executes.
+        restarted = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(restarted(midnight + 12 * MINUTE, self.feed(midnight + 12 * MINUTE)), 'ROLLED')
+        self.assertNotIn('day_roll_deferred_ms', self.projection())
+        actual, expected = self.replay_head(driver)
+        self.assertEqual(actual, expected)
+
+    def test_rr2_r2_a_day_never_deferred_in_its_window_stays_outside(self):
+        driver = self.prepare()
+        midnight = int(datetime(2026, 10, 11, tzinfo=timezone.utc).timestamp() * 1000)
+        roll = DayRoll(driver.coordinator, window_ms=5 * MINUTE)
+        self.assertEqual(roll(midnight + 10 * MINUTE, self.feed(midnight + 10 * MINUTE)), 'OUTSIDE_WINDOW')
+        self.assertEqual(self.events('DAY_ROLL_DEFERRED'), [])
 
 
 # ---------------------------------------------------------------------------------------------- S16 configuration
