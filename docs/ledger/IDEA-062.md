@@ -1,7 +1,7 @@
 # IDEA-062 — Approved network destinations and a read-only route check per host role (#32 slice)
 
 - Date / owner: 2026-10-16 SGT / Claude Code at the user's request. Reviewers to approve the destination list: Keegan + Isaac (the owners #32 names).
-- Status: open (criteria pre-registered; nothing built yet)
+- Status: open (criteria pre-registered; nothing built yet). 2026-10-16 update: built and supported offline, see Results; hosted checks open
 - Links: #32 (R10, P1), #33 (R11, P1); IDEA-046 (two-host layout, L03 `internet_reaches_primary_only`); IDEA-049-D R-07 and D-DN-05; IDEA-051 (Gate A); IDEA-055 (balance RPC); `docs/build/DEPLOYMENT_DAY.md` step 9; GAP-65.
 
 ## Triage of #32 and #33 at `7a8a246` (`codex/system-testing-20261012`)
@@ -43,3 +43,34 @@ Tests in `tests/runtime/test_routes.py`. Each must fail before the build and pas
 | R8 | **Shipped and documented.** `larp/runtime/routes.py` is in `larp.runtime.preflight.release_files` (so it is in the bundle and can run on a host). Every host `plan` derives from the example configs for both roles, other than the account-specific RPC, database and synthetic hosts, appears in the "Approved network destinations" section of `docs/build/architecture-deployment.md`. |
 
 **Overall:** supported if R1–R8 pass, each test was red before the build, a mutation of the key lines is caught, and the full suite shows no new failure against the base. This closes no acceptance criterion of #32 by itself: criterion 1 needs Keegan + Isaac to approve the table, criterion 2 needs the hosted run of this check from both roles.
+
+## Results (2026-10-16, branch `claude/issue-32-33-deploy-routes`)
+
+Order: criteria `dd5eb08` → red tests `f7f418f` (every test red: module missing, R8 doc section missing) → build `ce75e54`.
+
+| ID | Result | Evidence (`tests/runtime/test_routes.py`) |
+|---|---|---|
+| R1 | PASS | `test_r1_primary_destinations_come_from_configs_sources_and_client_constants` |
+| R2 | PASS | `test_r2_signer_reaches_only_the_database_and_s3` |
+| R3 | PASS | `test_r3_bad_urls_are_refused_before_any_probe` (6 URLs), `test_r3_missing_required_config_is_refused` (4 cases), `test_r3_unset_destination_fails_and_missing_execution_is_listed` |
+| R4 | PASS | `test_r4_report_and_output_name_hosts_only` |
+| R5 | PASS | `test_r5_dns_connect_and_non_tls_failures`, `test_r5_tcp_probe_sends_nothing`, `test_r5_tls_handshake_verifies_the_certificate` (ran; `openssl` present) |
+| R6 | PASS | `test_r6_primary_passes_only_when_every_destination_is_ok`, `test_r6_signer_fails_on_any_unexpected_route` |
+| R7 | PASS | `test_r7_report_shape_and_exclusive_output` |
+| R8 | PASS | `test_r8_module_ships_in_the_release`, `test_r8_every_fixed_destination_is_in_the_approved_table` |
+
+**Mutations** (each applied to the committed `larp/runtime/routes.py`, run, then restored with `git checkout`): all 5 caught.
+1. A signer destination that completes TCP but fails TLS no longer counts as a route (`CONNECTED = {'OK'}`): R6 fails.
+2. The RPC URL is copied into the purpose text: R4 fails.
+3. Disabled sources are no longer skipped: R1, R3, R4, R6, R7 and R8 fail.
+4. TLS without certificate verification (`ssl._create_unverified_context()`): R5 fails.
+5. Ports other than 443 accepted: R3 fails (the `:8545` subtest).
+
+**Full suite** (Python 3.12, PostgreSQL 16.15, database `larp_c`): base `7a8a246` **1546 passed, 7 skipped, 2147 subtests passed**; this branch at `ce75e54` **1560 passed, 7 skipped, 2162 subtests passed** (+14 tests, +15 subtests, no new failure). `git diff --check` clean.
+
+**Verdict: supported (offline).** No AWS action, no network call to any real destination, no credential read. The checks of #32 that remain:
+- **Criterion 1:** Keegan + Isaac approve or amend the destination table (decision). The account-specific `balance_rpc_url` and `rpc_url` providers are chosen and manifested by Isaac + Keith (IDEA-055).
+- **Criterion 2:** run `--role primary` on the provisioned `primary` during Gate A and keep the report (Keegan + Isaac; needs Yao Zhu's spend OK for `enable_hosts`/`enable_external_https`). Run `--role signer` once the signer access route is chosen (D-DN-05, AWS_RUNBOOK step 5, team decision).
+- **Criterion 3:** re-confirmed by the signer report's BLOCKED results on the real host.
+
+#33 has no code change here. It stays blocked on the GAP-29 decoder and the Executor's fake-only gate (Isaac), C-OPEN-005, the measured profile (PR #88 plus captures, Isaac/Keith), live evidence values and terms (Yao Zhu), the DR-11 assessor decision, and the hosted Gate B and rehearsal runs.
