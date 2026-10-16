@@ -242,3 +242,65 @@ Code: PR 4.
 ### #94 / Q-20 (dividends and splits)
 
 Resolved by D2 and D4: a dividend Multiplier or split change on our assets is adopted through the same adjustment, so #94 does not wait for the organisers. The team position on Q-20 is recorded in SKILL.md (adopt balance-only changes on our own assets; never touch unsolicited tokens). How the organisers count them in equity is still open, so Q-20 stays open for that part only. #94 closes when PR 4 merges.
+
+## Self-healing reconciliation (PR 4, 2026-10-16): chain wins, two safety limits, price-jump guard
+
+Builds the owner decisions above (D2 and D4 changed, D5 scheduling; the #84 top-up point). Built by a Claude Code session at Yao Zhu's request; Isaac (C) and Keegan (B) review. PR 5 adds the RPC failover. Pass criteria are committed before any test or code.
+
+### Design
+
+1. **Eligible assets only (B, `larp/risk/reconcile.py`).** `compare_balances` classifies only USDT, BNB and the five eligible bStocks. Any other token in an observation is listed under `unsolicited`, never in `surplus` or `deficits`, and can never be adopted. `read_balances` reads only the pinned contracts anyway, so this is a second guard.
+2. **`adjust_ledger(portfolio, adjustments)` (B), pure.** It sets each adjusted asset's units to the chain units: `cash_units` for USDT, `bnb_units` for BNB, `positions[s].units` for a bStock (a missing eligible position is created with the chain decimals and zero cost). The position's `cost_basis_units` is unchanged, so a dividend or split lowers the average cost and a deficit raises it. It refuses any other asset. The input is not changed.
+3. **Adoption (D, `BalanceCheck` in `larp/runtime/driver.py`).**
+   - **First mismatch.** A comparable check (MATCH, SURPLUS_ONLY or DEFICIT) that shows an eligible asset off the ledger records a candidate in memory. The candidate holds the chain units, ledger units, block number and hash, observation hash, `settled_block`, and the store version after this check's own commits. Detection is journaled as today: `BALANCE_CHECKED`, plus `BALANCE_DEFICIT` / `BALANCE_SURPLUS` incidents. The confirming check is scheduled `retry_ms` (60 s) later, not after the 10-minute interval.
+   - **Confirmation (limit 1).** The next comparable check adopts an asset only when all of these hold:
+     - it shows the same chain units;
+     - the ledger units for that asset are the same;
+     - `settled_block` is the same;
+     - its block is at or after the first block (both are at or after `settled_block`, or `compare_balances` would have skipped);
+     - **nothing else was committed to the run between the two checks** (the store version is unchanged), so no round, reservation, execution observation or receipt came in between (limit 2).
+     Otherwise the newer read replaces the candidate and is confirmed 60 s later. Both checks still read nothing while anything is in flight: reservations, an open round, an execution pending or a pending nonce (existing skip). A candidate is kept in memory only, so a restarted process re-reads twice before it adopts (the same rule as the B3 gate).
+   - **Adoption.** One `BALANCE_ADJUSTED` journal event with the adjustments and the new projection: `portfolio` from `adjust_ledger`, `balances` rewritten to agree, and the `balance_check` state without the adopted deficits and surplus assets. Then one `INCIDENT` per asset, of type `BALANCE_ADJUSTED`, carrying asset, `ledger_before`, `chain_units`, `delta`, both block numbers, both observation hashes and reason `SURPLUS` or `DEFICIT`. It is not a trade or a round: no round, intent, audit (ai-seeds) event or fill is created. `BALANCE_ADJUSTED` is a recorded fact on replay. Replay recomputes `adjust_ledger` from the previous projection and the event's adjustments, and refuses the batch (`IntegrityError`) if the journaled portfolio differs.
+   - **Gate.** `balances_ok` is true when this process's latest comparable check is younger than the maximum age and leaves no unadopted DEFICIT. Between detecting a deficit and adopting it (about 60 s), new spending stays paused as in the minimal build, and that asset's sales are capped (D1). After adoption, new buys and gas top-ups resume. Sales and the flatten are never blocked by the gate. **Interpretation flagged for Yao Zhu:** D5 says buys pause "only when no check succeeded within 30 minutes". This keeps one more, short pause: the unconfirmed-deficit window. It exists so a single bad read cannot size buys from phantom units before the second read confirms or clears it.
+4. **Price-jump guard (D builder and driver, B planner).**
+   - **Detection (`ContextBuilder`).** When `price_jump` is configured (`bps` from the new driver setting `price_jump_check_bps`, `hold_ms` = `balance_check_max_age_ms`), each round compares every usable mark with the last mark journaled in `projection.marks`. A symbol held in the journaled ledger whose mark moved by at least `bps` of the previous mark gets a hold in `projection.price_jump`: reference (previous) price, new price, `jump_ms` and `until_ms` = `jump_ms + hold_ms`. The round's context carries `price_jump_hold` = {symbol: reference price} for every hold still active. Both updates are part of the round batch, so replay recomputes them. Without the setting nothing changes, and existing contexts keep their bytes.
+   - **Planner.** For each held symbol under an active hold:
+     - no order is planned (its sale requirement is `BLOCKED_PRICE_JUMP`, its discretionary target is rejected `PRICE_JUMP_HOLD`), and it does not stop other symbols' discretionary trades;
+     - it is valued at min(reference, current) for sizing and caps, so a reverse split cannot oversize buys and a forward split cannot make the book look over-weight;
+     - `update_risk` is not run: the daily, run and deep-cut latches, and the peak, stay as they were. The plan reports `loss_stops_deferred`.
+   - **Immediate check (driver).** `BalanceCheck.due` is true as soon as a hold exists that is newer than this process's last check attempt.
+   - **Clearing (`BalanceCheck`).** A comparable check made after `jump_ms` clears the hold when that asset is MATCH, or when it is adopted after the two-check confirmation.
+   - **Fallback.** A hold past `until_ms` is dropped from the context, and the loss stops evaluate on the marks as they are.
+   - **Day roll.** `DayRoll` does not roll while a hold is active (`PRICE_JUMP_HOLD`); it rolls on a later cycle within its window.
+5. **Settings.**
+   - `driver.price_jump_check_bps`: an integer from 1 to 10 000. It is required in `dev`/`live` together with the four balance settings (a start without it is refused, exit 4). `runtime.example.json` sets 3000.
+   - `build_driver` passes `price_jump` to the builder in the existing balance block. That is a two-line edit; nothing else in `build_driver` changes.
+
+### Pass criteria (recorded before any test is written)
+
+Synthetic chain and market, disposable PostgreSQL; no credentials, network, signing or upload. The tests are pushed first and must fail on the code without this change; then the build is pushed and they must pass.
+
+| ID | Check |
+|---|---|
+| S1 | Unsolicited token: an observation with a token outside the seven assets lists it under `unsolicited`; it is never in `surplus` or `deficits` and does not change `status`. End to end, it is never adopted or written to the ledger. |
+| S2 | `adjust_ledger`: units set to the chain units for USDT, BNB and a held stock; `cost_basis_units` unchanged; a missing eligible position is created with zero cost; the input is not changed; an asset outside the seven is refused (`ContractError`). |
+| S3 | A single bad RPC read is never adopted: a mismatch seen once and then a MATCH adopts nothing. Two mismatching reads with different chain units adopt nothing; the newer read becomes the candidate and is adopted only after it is read again. |
+| S4 | After a first mismatch the confirming check runs about 60 s later (`retry_ms`), not after the 10-minute interval. |
+| S5 | In flight: a round planned between the first and the confirming check (a commit and a reservation) prevents adoption at that check. Adoption follows only after two agreeing checks with nothing committed between them. While reservations exist, nothing is read. |
+| S6 | Dividend Multiplier +0.5 %: NVDAB 2000 → 2010 on chain is adopted at the confirming check. The ledger and `balances` read 2010, the cost basis is unchanged, there is one `BALANCE_ADJUSTED` event and one incident with every field (reason SURPLUS), no audit event or round is added, and `new_spending_ok` stays true. |
+| S7 | USDT dust: chain cash 3 units above the ledger is adopted (reason SURPLUS). |
+| S8 | Restore from an old backup (deficit): ledger above the chain. The first check pauses new spending and caps the sale (D1). The confirming check adopts the chain units (reason DEFICIT). `new_spending_ok` is true again, and a later round's policy input shows the adopted units and open gates (trading resumes). |
+| S9 | BNB deficit: before adoption, a top-up is refused `GAS_TOP_UP_SPENDING_BLOCKED`. After adoption, `new_spending_ok` is true and the same top-up plan is no longer refused for spending (it requests its quote). |
+| S10 | Backstop: a large adopted deficit (USDT 10 % of equity) makes the next round latch the run loss stop (`run_halt`). |
+| S11 | Forward split 2:1 (driver, PostgreSQL). The NVDAB mark halves in a round: a hold is set; that round plans no NVDAB order; its risk state keeps every latch false and the peak unchanged. The next cycle checks immediately; the confirming check adopts 4000 units and clears the hold. The next round has no loss stop latched. At the flatten, the NVDAB requirement covers all 4000 units and the sale is planned for 4000. |
+| S12 | Reverse split 1:2. Planner: with a hold on NVDAB at its reference price, the MSFTB buy is no larger than with no jump, NVDAB gets no order, and no latch or peak changes. Driver: the adopted 1000 units clear the hold, and the next round latches no run stop (the peak was never raised). |
+| S13 | Fallback: with no comparable check before `until_ms`, the hold leaves the context and the loss stops evaluate on the marks as they are (the forward-split drop latches the daily stop). |
+| S14 | Day roll waits while a hold is active (`PRICE_JUMP_HOLD`) and rolls once it has cleared. |
+| S15 | Replay of a run with checks, an adoption, holds and incidents reproduces the journal head exactly. A tampered `BALANCE_ADJUSTED` (portfolio not equal to `adjust_ledger` of the previous one) is refused (`IntegrityError`). |
+| S16 | Configuration: `dev`/`live` without `price_jump_check_bps`, or with 0 or more than 10 000, is refused. The example sets 3000. `build_driver` gives the builder `price_jump` with `hold_ms` equal to the maximum age. Offline drivers build as before. |
+| S17 | Full suite: the base count plus only these tests and the updated IDEA-055 tests, with no new failure or skip. Each mutation below, reverted after, must be caught: adopt after one read; ignore a commit between the checks; adopt an unsolicited token; change the cost basis on adjustment; plan orders for a held symbol under a hold; run `update_risk` under a hold; value a held jumped symbol at the current mark; never expire a hold; keep `balances_ok` false after an adopted deficit; skip the replay check of `BALANCE_ADJUSTED`. |
+
+**Existing tests this changes (old D2/D4 behaviour):**
+- B4 (`Surplus.test_b4_*`) asserted that a surplus is never adopted and the ledger is unchanged after two checks. It becomes "recorded once, adopted at the confirming check": the incident is still not repeated, and `new_spending_ok` stays true.
+- B5 (`Deficit.test_b5_*`) keeps its first-check assertions (that is the D1 window), and its name and docstring say so.
+- The design's prospective R4/R5 (no adoption; no new risk for the rest of the run) and B10's mutation "deficit written to the journaled ledger" are superseded by S6–S8 and S17.
