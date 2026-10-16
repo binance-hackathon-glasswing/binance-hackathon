@@ -505,3 +505,9 @@ restore marker is still accepted, so legacy backups restore closed as before; (5
   `commit` and scrubbed by the export, not by the database. A compromised `larp_execution` role already receives
   signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
 - 2026-10-16 correction (Claude Code, PR #99 review): PostgreSQL's jsonb refuses the escape `\u0000`, so the first version of migration 011 would have refused a legitimate state holding a NUL character, and that execution would have stopped at a `Conflict`. The trigger now replaces `\u0000` with ` ` in its own copy before parsing; stored bytes are unchanged. The test `ArchiveReadableTables::test_d_req_023_a_nul_character_in_state_still_commits` failed before and passes after. Full suite: 1549 passed, 10 skipped, 2157 subtests (PostgreSQL 16.15). Migration 011 is not applied to any hosted database yet, so editing it in place is safe.
+- 2026-10-16 mirror CI on the merged head (#104): run [38874982203](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874982203) on `codex/system-testing-20261012` at `1388f80` (#99, #100, #101, #102 and #103 merged). All four jobs pass:
+  - runtime: Python 3.12.15, PostgreSQL 14.24 service container; full suite **1582 passed, 6 skipped, 2194 subtests, 0 failed**; real-systemd 5 passed; offline demo and restricted Docker smoke run pass;
+  - host bundle (x86_64 build and Amazon Linux provisioning);
+  - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
+
+  Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
