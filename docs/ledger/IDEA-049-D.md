@@ -512,6 +512,7 @@ restore marker is still accepted, so legacy backups restore closed as before; (5
   - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
 
   Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
+- 2026-10-16 decision D-DN-10 (Keegan, section B): option (b) is agreed. A `CLOCK` HALT clears autonomously once the clock has been monotonic and NTP-synchronised for 30 minutes. An integrity quarantine stays latched. F-114 forbids a person clearing a HALT, so the clear must be automatic. **Not built yet:** `larp/runtime/supervision.py` still lists `CLOCK` in `LATCHED`. The guard change and its tests follow, with criteria written first; it needs a host signal for NTP synchronisation. D-DN-09 (#34, #52) is decided separately (entry above).
 
 ### PR112-L01 — independent local review (2026-10-16)
 
