@@ -6,7 +6,8 @@ estimates for both swaps; plus one USDT -> BNB quote for the BNB price. Each sam
 that `Web3Client` stored. It never signs, approves or broadcasts, and reads no wallet key or ai-seeds secret.
 
 `summarize` (offline) turns every capture into the summary `larp.strategy.profiles.build_live_profiles` consumes,
-plus a report of coverage, failures, fallbacks and parameters. Quoted costs are not realised fills (ledger rule 4).
+plus a report of coverage, failures, fallbacks and parameters. The tokens trade 24/7, so costs are split into US-session
+and off-session regimes and each field takes the worse. Quoted costs are not realised fills (ledger rule 4).
 
     python -m larp.marketdata.cost_summary capture --address 0x<public> --out-dir DIR [--rounds N] [--interval-seconds S]
     python -m larp.marketdata.cost_summary summarize --captures DIR --output summary.json
@@ -30,6 +31,10 @@ from .web3 import Unavailable, data, encoded, single
 
 FALLBACK_GAS_LIMIT = 1_116_000  # 1.2 x the kit's largest observed route (930k gas), participant-kit.md K8
 QUOTE_TTL_SECONDS = 30  # "bStock quotes ... expire after about 30 s" (kit, F-96); the API returns no expiry
+# The tokens trade 24/7 (SKILL.md Q-32): costs are measured inside and outside the US regular session (IDEA-054).
+SESSION_CALENDAR = Path(__file__).resolve().parents[2] / 'config' / 'runtime' / 'session-calendar.2026.json'
+REGIMES = ('US_SESSION', 'OFF_SESSION')
+WORSE_OF_REGIMES = ('median_impact_bps', 'spread_bps', 'approve_gas_bnb_units', 'swap_gas_bnb_units', 'slippage_bps')
 # Outcomes no later round can recover from: the capture stops instead of recording failures for days.
 FATAL_OUTCOMES = frozenset({'authentication_error', 'compliance_restriction'})
 
@@ -87,7 +92,17 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
     if type(cash_units) is not int or cash_units <= 0 or requote_seconds < 0 or fallback_gas_limit <= 0:
         raise ContractError('Invalid capture parameters')
     pay = cash_units * 10**12  # chain USDT has 18 decimals; money units have 6
-    records = []
+    records, open_state, meta_artifacts = [], {}, []
+    try:  # openState per token (GAP-44): the tokens trade 24/7, but no order is placed while it is false (F-95)
+        for symbol, (row, record) in market.metadata().items():
+            status = row.get('statusInfo')
+            state = status.get('openState') if isinstance(status, dict) else None
+            open_state[symbol] = state if type(state) is bool else None
+            meta_artifacts = [record['artifact_sha256']]
+    except Unavailable as error:
+        if _fatal(error):
+            raise
+        records.append(dict(kind='FAILURE', symbol=None, stage='TOKEN_STATUS', reason=str(error), at=_now()))
     for symbol, token in TOKENS.items():
         stage = 'BUY_QUOTE'
         try:
@@ -114,8 +129,9 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
                 sell_impact_bps=str(number(rr_sell['priceImpactPercent']) * 100),
                 approve_gas_wei=max(approve_cash, approve_token), swap_gas_wei=[buy_gas, sell_gas],
                 gas_methods=[buy_method, sell_method], trade_fee=rr_buy.get('tradeFee'),
+                token_open=open_state.get(symbol),
                 artifacts=[buy['artifact_sha256'], sell['artifact_sha256'], requote['artifact_sha256'], a1, a2,
-                           *[e for e in (e1, e2) if e]]))
+                           *[e for e in (e1, e2) if e], *meta_artifacts]))
         except (Unavailable, KeyError, TypeError, ValueError) as error:
             if _fatal(error):
                 raise
@@ -163,55 +179,97 @@ def _day(at):
     return datetime.fromisoformat(at.replace('Z', '+00:00')).astimezone(timezone.utc).date()
 
 
-def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quote_ttl_seconds=QUOTE_TTL_SECONDS):
-    """(QuoteCostSummary.v1, report). Raises ContractError naming every unmet coverage or consumer requirement."""
+def _instant_ms(at):
+    moment = datetime.fromisoformat(at.replace('Z', '+00:00'))
+    if moment.tzinfo is None:
+        raise ValueError('naive time')
+    return int(moment.timestamp() * 1000)
+
+
+def _regime(at, sessions):
+    """US_SESSION while the underlying's regular session is open, else OFF_SESSION (nights, weekends, holidays)."""
+    ms = _instant_ms(at)
+    if ms < sessions[0][1] or ms >= sessions[-1][2]:
+        raise ContractError('Sample outside the session calendar: ' + at)
+    return 'US_SESSION' if any(opened <= ms < closed for _, opened, closed in sessions) else 'OFF_SESSION'
+
+
+def _costs(mine, quote_ttl_seconds):
+    """One regime's cost row for one token, plus its fallback-gas count."""
+    impacts, residuals, drifts, approves, swaps, fallbacks = [], [], [], [], [], 0
+    for r in mine:
+        pay, buy_impact, sell_impact = integer(r['pay_raw']), Decimal(r['buy_impact_bps']), \
+            Decimal(r['sell_impact_bps'])
+        roundtrip = Decimal(pay - integer(r['sell_proceeds'])) * 10000 / pay
+        impacts += [buy_impact, sell_impact]
+        residuals.append(roundtrip - buy_impact - sell_impact)
+        buy = integer(r['buy_received'])
+        drifts.append(abs(Decimal(buy - integer(r['requote_received']))) * 10000 / buy)
+        approves.append(integer(r['approve_gas_wei']))
+        if len(r['swap_gas_wei']) != 2 or len(r['gas_methods']) != 2:
+            raise ContractError('Each sample needs buy and sell swap gas')
+        swaps += [integer(g) for g in r['swap_gas_wei']]
+        fallbacks += sum(m == 'FALLBACK' for m in r['gas_methods'])
+    return dict(samples=len(mine), median_impact_bps=max(1, _ceil(_median(impacts))),
+                spread_bps=max(0, _ceil(_median(residuals))), fee_bps=0,
+                approve_gas_bnb_units=_p90(approves), swap_gas_bnb_units=_p90(swaps),
+                slippage_bps=min(50, max(1, _ceil(_p90(drifts)))), quote_ttl_seconds=quote_ttl_seconds), fallbacks
+
+
+def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quote_ttl_seconds=QUOTE_TTL_SECONDS,
+              calendar=SESSION_CALENDAR):
+    """(QuoteCostSummary.v1, report). Raises ContractError naming every unmet coverage or consumer requirement.
+
+    The tokens trade 24/7 (SKILL.md Q-32), so each token needs `min_samples` both inside and outside the US regular
+    session (`calendar`, a frozen USRegularSessions.v1), and each cost field is the worse of the two regimes: the
+    profile must hold whenever the agent trades, whatever share of the capture fell in either regime."""
+    from larp.runtime.driver import SessionCalendar
     from larp.strategy.profiles import quote_summary
+    raw = Path(calendar).read_bytes()
+    try:
+        sessions = SessionCalendar(json.loads(raw)).sessions
+    except (KeyError, TypeError, ValueError) as error:
+        raise ContractError('Invalid session calendar: ' + str(error)) from None
     try:
         samples = [r for r in records if r['kind'] == 'SAMPLE']
         prices = [r for r in records if r['kind'] == 'BNB_PRICE']
         failures = [r for r in records if r['kind'] == 'FAILURE']
-        rows, detail, symbol_days = {}, {}, {}
+        rows, detail, symbol_days, regime_counts = {}, {}, {}, {}
         with localcontext() as context:
             context.prec = 60
             for symbol in TOKENS:
                 mine = [r for r in samples if r['symbol'] == symbol]
-                if not mine:
-                    continue
-                impacts, residuals, drifts, approves, swaps, fallbacks = [], [], [], [], [], 0
-                for r in mine:
-                    pay, buy_impact, sell_impact = integer(r['pay_raw']), Decimal(r['buy_impact_bps']), \
-                        Decimal(r['sell_impact_bps'])
-                    roundtrip = Decimal(pay - integer(r['sell_proceeds'])) * 10000 / pay
-                    impacts += [buy_impact, sell_impact]
-                    residuals.append(roundtrip - buy_impact - sell_impact)
-                    buy = integer(r['buy_received'])
-                    drifts.append(abs(Decimal(buy - integer(r['requote_received']))) * 10000 / buy)
-                    approves.append(integer(r['approve_gas_wei']))
-                    if len(r['swap_gas_wei']) != 2 or len(r['gas_methods']) != 2:
-                        raise ContractError('Each sample needs buy and sell swap gas')
-                    swaps += [integer(g) for g in r['swap_gas_wei']]
-                    fallbacks += sum(m == 'FALLBACK' for m in r['gas_methods'])
                 symbol_days[symbol] = sorted({_day(r['at']) for r in mine})
-                rows[symbol] = dict(
-                    samples=len(mine), median_impact_bps=max(1, _ceil(_median(impacts))),
-                    spread_bps=max(0, _ceil(_median(residuals))), fee_bps=0,
-                    approve_gas_bnb_units=_p90(approves), swap_gas_bnb_units=_p90(swaps),
-                    slippage_bps=min(50, max(1, _ceil(_p90(drifts)))), quote_ttl_seconds=quote_ttl_seconds)
-                detail[symbol] = dict(samples=len(mine), utc_days=[d.isoformat() for d in symbol_days[symbol]],
-                                      fallback_gas_estimates=fallbacks,
-                                      failures=sum(f.get('symbol') == symbol for f in failures),
-                                      trade_fees=sorted({str(r.get('trade_fee')) for r in mine}))
+                by_regime = {regime: [r for r in mine if _regime(r['at'], sessions) == regime] for regime in REGIMES}
+                regime_counts[symbol] = {regime: len(rs) for regime, rs in by_regime.items()}
+                measured = {regime: _costs(rs, quote_ttl_seconds) for regime, rs in by_regime.items() if rs}
+                if not measured:
+                    continue
+                rows[symbol] = dict(next(iter(measured.values()))[0], samples=len(mine))
+                for field in WORSE_OF_REGIMES:
+                    rows[symbol][field] = max(row[field] for row, _ in measured.values())
+                detail[symbol] = dict(
+                    samples=len(mine), utc_days=[d.isoformat() for d in symbol_days[symbol]],
+                    fallback_gas_estimates=sum(f for _, f in measured.values()),
+                    failures=sum(f.get('symbol') == symbol for f in failures),
+                    trade_fees=sorted({str(r.get('trade_fee')) for r in mine}),
+                    regimes={regime: dict(row, fallback_gas_estimates=f, token_open={
+                        str(state).lower(): sum(r.get('token_open') is state for r in by_regime[regime])
+                        for state in (True, False, None)}) for regime, (row, f) in measured.items()})
             price_units = [Decimal(integer(p['pay_cash_units'])) * 10**18 / integer(p['received_wei'])
                            for p in prices]
     except (KeyError, TypeError, ValueError, ZeroDivisionError, ArithmeticError, Unavailable) as error:
+        if type(error) is ContractError:
+            raise
         raise ContractError('Malformed capture record: ' + type(error).__name__) from None
     days = sorted(set().union(*symbol_days.values()))
     weekend = [d for d in days if d.weekday() >= 5]
     problems = []
     for s in TOKENS:  # coverage per token: one token's weekday-only samples must not ride on another's weekend
-        count, mine = rows.get(s, {}).get('samples', 0), symbol_days.get(s, [])
-        if count < min_samples:
-            problems.append(f'{s}: {count} samples < {min_samples}')
+        mine = symbol_days[s]
+        for regime, count in regime_counts[s].items():
+            if count < min_samples:
+                problems.append(f'{s}: {count} {regime} samples < {min_samples}')
         if len(mine) < min_days:
             problems.append(f'{s}: {len(mine)} UTC days < {min_days}')
         if require_weekend and not any(d.weekday() >= 5 for d in mine):
@@ -230,13 +288,18 @@ def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quot
                   coverage=dict(utc_days=[d.isoformat() for d in days], weekend_days=[d.isoformat() for d in weekend],
                                 samples=len(samples), bnb_quotes=len(prices), failures=len(failures)),
                   symbols=detail,
-                  parameters=dict(min_samples=min_samples, min_days=min_days, require_weekend=require_weekend,
+                  parameters=dict(min_samples=min_samples, min_samples_scope='per token and regime',
+                                  min_days=min_days, require_weekend=require_weekend,
+                                  session_calendar_sha256=hashlib.sha256(raw).hexdigest(),
+                                  regimes='US_SESSION inside a calendar session, else OFF_SESSION; trading is 24/7',
+                                  combine='per field, the worse of US_SESSION and OFF_SESSION',
                                   quote_ttl_seconds=quote_ttl_seconds, quote_ttl_seconds_source='KIT_STATED',
                                   fee_bps='0: fees are netted in quoted amounts',
                                   gas='p90 nearest rank, wei; swap = max(tx.gas, ceil(1.2 x estimate)) x gasPrice',
                                   impact='median of buy and sell priceImpactPercent x 100, ceiled, >= 1',
                                   spread='median(round trip - buy impact - sell impact), ceiled, >= 0',
-                                  slippage='p90 of re-quote drift, ceiled, 1..50'))
+                                  slippage='p90 of re-quote drift, ceiled, 1..50',
+                                  token_open='openState per sample; counted, not filtered (F-95 guard is in code)'))
     return summary, report
 
 
@@ -321,6 +384,7 @@ def main(argv=None):
     s.add_argument('--min-days', type=int, default=3)
     s.add_argument('--no-weekend-required', action='store_true')
     s.add_argument('--quote-ttl-seconds', type=int, default=QUOTE_TTL_SECONDS)
+    s.add_argument('--session-calendar', default=str(SESSION_CALENDAR), help='frozen USRegularSessions.v1 file')
     args = parser.parse_args(argv)
     try:
         if args.command == 'capture':
@@ -345,7 +409,7 @@ def main(argv=None):
             return 2
         summary, report = summarize(read_captures(args.captures), min_samples=args.min_samples,
                                     min_days=args.min_days, require_weekend=not args.no_weekend_required,
-                                    quote_ttl_seconds=args.quote_ttl_seconds)
+                                    quote_ttl_seconds=args.quote_ttl_seconds, calendar=args.session_calendar)
         output.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         print('QuoteCostSummary.v1', summary['capture_hash'], '->', output)

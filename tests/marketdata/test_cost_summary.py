@@ -23,7 +23,8 @@ class FakeClient:
     """Answers the read endpoints like the Web3 Open API, records every call, and stores no credential."""
 
     def __init__(self, *, cost=Decimal('0.0008'), impact='0.05', drift=Decimal('0.0004'), fail=(), estimate=True,
-                 at='2026-10-17T14:00:00.000Z'):
+                 at='2026-10-17T14:00:00.000Z', open_state=True):
+        self.open_state = open_state
         self.calls, self.cost, self.impact, self.drift = [], cost, impact, drift
         self.fail, self.estimate, self.at, self.n = set(fail), estimate, at, 0
         self.quotes = {}
@@ -35,6 +36,9 @@ class FakeClient:
     def request(self, method, endpoint, params):
         assert (method, endpoint) in READS, (method, endpoint)
         self.calls.append((method, endpoint, deepcopy(params)))
+        if endpoint == 'market/rwa/tokens':
+            return self.record([dict(tokenContractAddress=t, tokenSymbol=s, binanceChainId='56', decimals='18',
+                                     statusInfo=dict(openState=self.open_state)) for s, t in TOKENS.items()])
         if endpoint == 'aggregator/quote-and-swap':
             src, dst, amount = params['fromTokenAddress'].lower(), params['toTokenAddress'].lower(), int(params['amount'])
             if dst == NATIVE:
@@ -93,7 +97,8 @@ class Capture(unittest.TestCase):
         self.assertEqual(nvdab['approve_gas_wei'], 60_000 * GAS_PRICE)
         self.assertEqual(nvdab['swap_gas_wei'], [840_000 * GAS_PRICE] * 2)  # max(450k, ceil(1.2 x 700k))
         self.assertEqual(nvdab['gas_methods'], ['ESTIMATED', 'ESTIMATED'])
-        self.assertEqual(len(nvdab['artifacts']), 7)  # buy, sell, re-quote, two approves, two estimates
+        self.assertEqual(len(nvdab['artifacts']), 8)  # buy, sell, re-quote, two approves, two estimates, token status
+        self.assertIs(nvdab['token_open'], True)
         approvals = [c[2] for c in client.calls if c[1] == 'aggregator/approve-transaction']
         self.assertEqual({a['tokenContractAddress'].lower() for a in approvals}, {USDT.lower(), *TOKENS.values()})
         self.assertNotIn('secret', json.dumps(records).lower())
@@ -117,11 +122,11 @@ class Capture(unittest.TestCase):
 
 # ------------------------------------------------------------------------------------------------ Q3, Q4 summary
 def sample(symbol, day, *, roundtrip_bps=20, buy_impact='3', sell_impact='4', drift_bps=2, approve=3_000_000_000_000,
-           swap=(35_000_000_000_000, 40_000_000_000_000), methods=('ESTIMATED', 'ESTIMATED'), n=0):
+           swap=(35_000_000_000_000, 40_000_000_000_000), methods=('ESTIMATED', 'ESTIMATED'), n=0, hour=14):
     buy = 10**18
     requote = buy - buy * drift_bps // 10000
     proceeds = PAY_RAW - PAY_RAW * roundtrip_bps // 10000
-    return dict(kind='SAMPLE', symbol=symbol, at=f'{day}T14:{n:02d}:00.000Z', pay_raw=PAY_RAW, token_decimals=18,
+    return dict(kind='SAMPLE', symbol=symbol, at=f'{day}T{hour:02d}:{n:02d}:00.000Z', pay_raw=PAY_RAW, token_decimals=18,
                 buy_received=buy, sell_proceeds=proceeds, requote_received=requote, buy_impact_bps=buy_impact,
                 sell_impact_bps=sell_impact, approve_gas_wei=approve, swap_gas_wei=list(swap),
                 gas_methods=list(methods), trade_fee='0', artifacts=[format(n + 1, '064x')])
@@ -133,14 +138,16 @@ def bnb(day, price=600, n=0):
 
 
 DAYS = ('2026-10-16', '2026-10-17', '2026-10-18')  # Friday, Saturday, Sunday (UTC)
+# Friday 14:xx UTC is inside the US regular session (13:30-20:00 UTC); 02:xx and the weekend are outside it.
 
 
-def complete(per_day=4, **changes):
+def complete(per_day=10, **changes):
     records = []
     for d, day in enumerate(DAYS):
-        for n in range(per_day):
-            records += [sample(s, day, n=n, **changes) for s in TOKENS]
-            records.append(bnb(day, n=n))
+        for hour in (2, 14):
+            for n in range(per_day):
+                records += [sample(s, day, n=n, hour=hour, **changes) for s in TOKENS]
+                records.append(bnb(day, n=n))
     return records
 
 
@@ -154,16 +161,18 @@ class Summary(unittest.TestCase):
         # NVDAB: impacts 3..6 bp, round trips with a known residual, drifts and gas spread out for the p90.
         records = [r for r in records if r.get('symbol') != 'NVDAB']
         for i in range(10):
-            day = DAYS[i % 3]
-            records.append(sample('NVDAB', day, n=20 + i, roundtrip_bps=20 + i, buy_impact=str(3 + i % 2),
-                                  sell_impact='4.2', drift_bps=i + 1, approve=(i + 1) * 10**12,
-                                  swap=((i + 1) * 10**13, (i + 2) * 10**13)))
+            for day in (DAYS[0], DAYS[1 + i % 2]):  # Friday in session; Saturday or Sunday outside it
+                records.append(sample('NVDAB', day, n=20 + i, roundtrip_bps=20 + i, buy_impact=str(3 + i % 2),
+                                      sell_impact='4.2', drift_bps=i + 1, approve=(i + 1) * 10**12,
+                                      swap=((i + 1) * 10**13, (i + 2) * 10**13)))
         summary, report = self.summarize(records)
         self.assertEqual((summary['schema'], summary['origin'], summary['bnb_decimals']),
                          ('QuoteCostSummary.v1', 'RECORDED_WEB3', 18))
         self.assertEqual(summary['bnb_price_units'], 600 * 10**6)
         n = summary['symbols']['NVDAB']
-        self.assertEqual(n['samples'], 10)
+        self.assertEqual(n['samples'], 20)
+        self.assertEqual({r: v['samples'] for r, v in report['symbols']['NVDAB']['regimes'].items()},
+                         dict(US_SESSION=10, OFF_SESSION=10))
         self.assertEqual(n['median_impact_bps'], 5)  # median of {3,4}x5 and 4.2x10 = 4.2 -> ceil 5
         self.assertEqual(n['spread_bps'], 17)  # median(20..29 - impact) = 24.5 - 7.7 = 16.8 -> 17
         self.assertEqual(n['fee_bps'], 0)
@@ -185,8 +194,8 @@ class Summary(unittest.TestCase):
 
     def test_q4_refusals(self):
         cases = {
-            'too few samples': (complete(per_day=3), {}),
-            'too few days': ([r for r in complete(per_day=6) if not r['at'].startswith(DAYS[0])], {}),
+            'too few samples': (complete(per_day=9), {}),
+            'too few days': ([r for r in complete() if not r['at'].startswith(DAYS[2])], {}),
             'no weekend': ([dict(r, at=r['at'].replace('2026-10-17', '2026-10-14').replace('2026-10-18', '2026-10-15'))
                             for r in complete()], {}),
             'costs fail the consumer': (complete(roundtrip_bps=60), {}),
@@ -196,13 +205,13 @@ class Summary(unittest.TestCase):
         for name, (records, options) in cases.items():
             with self.subTest(name), self.assertRaises(ContractError):
                 self.summarize(records, **options)
-        relaxed = [r for r in complete(per_day=6) if not r['at'].startswith(DAYS[0])]
+        relaxed = [r for r in complete() if not r['at'].startswith(DAYS[2])]
         self.summarize(relaxed, min_days=2)  # the coverage bounds are parameters, recorded in the report
 
     def test_q4_fallback_gas_is_reported(self):
         records = complete(methods=('ESTIMATED', 'FALLBACK'))
         report = self.summarize(records)[1]
-        self.assertEqual(report['symbols']['NVDAB']['fallback_gas_estimates'], 12)
+        self.assertEqual(report['symbols']['NVDAB']['fallback_gas_estimates'], 60)
         self.assertEqual(report['parameters']['quote_ttl_seconds_source'], 'KIT_STATED')
 
 
@@ -213,9 +222,10 @@ class EndToEnd(unittest.TestCase):
         from larp.strategy.profiles import build_live_profiles, quote_summary
         from larp.intelligence.redflags import CONFIG
         records = []
-        for d, day in enumerate(DAYS):
-            for n in range(4):
-                records += capture(FakeClient(at=f'{day}T1{n}:00:00.000Z'))[1]
+        times = [f'{DAYS[0]}T{14 + n // 2}:{n % 2 * 30:02d}:00.000Z' for n in range(10)]  # US session
+        times += [f'{day}T0{n}:00:00.000Z' for day in DAYS[1:] for n in range(5)]  # weekend, off-session
+        for at in times:
+            records += capture(FakeClient(at=at))[1]
         summary, report = summarize(records)
         quote_summary(summary)
         profiles = build_live_profiles(Document.from_dict(summary),
@@ -358,7 +368,7 @@ class ReviewFixes(unittest.TestCase):
                 raise Unavailable('rate_limited')
         _, records = capture(Limited())
         self.assertEqual({r['kind'] for r in records}, {'FAILURE'})
-        self.assertEqual(len(records), len(TOKENS) + 1)
+        self.assertEqual(len(records), len(TOKENS) + 2)  # token status, each token, BNB
 
     def test_r2_each_token_needs_its_own_days_and_weekend(self):
         from larp.marketdata.cost_summary import summarize
@@ -406,6 +416,67 @@ class ReviewFixes(unittest.TestCase):
             self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
             self.assertIn('authentication_error', result.stderr)
             self.assertNotIn('synthetic', result.stdout + result.stderr)
+
+
+
+# ------------------------------------------------------------------------------------------------ 24/7 trading
+class AroundTheClock(unittest.TestCase):
+    """The tokens trade 24/7 (SKILL.md Q-32): costs outside the US regular session count as much as inside it."""
+
+    def test_t1_each_field_is_the_worse_of_session_and_off_session(self):
+        from larp.marketdata.cost_summary import summarize
+        records = [r for r in complete() if r.get('symbol') != 'NVDAB']
+        for day in DAYS:
+            for hour in (2, 14):
+                session = day == DAYS[0] and hour == 14
+                for n in range(10):  # in session: higher impact; off-session: wider spread, more drift and gas
+                    records.append(sample('NVDAB', day, n=n, hour=hour, roundtrip_bps=20 if session else 30,
+                                          buy_impact='6' if session else '3', sell_impact='6' if session else '4',
+                                          drift_bps=2 if session else 7,
+                                          swap=(4 * 10**13, 4 * 10**13) if session else (5 * 10**13, 5 * 10**13)))
+        summary, report = summarize(records)
+        n, regimes = summary['symbols']['NVDAB'], report['symbols']['NVDAB']['regimes']
+        self.assertEqual((regimes['US_SESSION']['median_impact_bps'], regimes['OFF_SESSION']['median_impact_bps']),
+                         (6, 4))
+        self.assertEqual((regimes['US_SESSION']['spread_bps'], regimes['OFF_SESSION']['spread_bps']), (8, 23))
+        self.assertEqual((n['median_impact_bps'], n['spread_bps'], n['slippage_bps'], n['swap_gas_bnb_units']),
+                         (6, 23, 7, 5 * 10**13))
+        self.assertEqual(n['samples'], 60)
+        self.assertIn('worse', report['parameters']['combine'])
+
+    def test_t2_each_token_needs_both_regimes(self):
+        from larp.marketdata.cost_summary import summarize
+        session_only = [r for r in complete() if r['kind'] != 'SAMPLE' or r['symbol'] != 'MSFTB'
+                        or r['at'].startswith(DAYS[0] + 'T14')]
+        with self.assertRaisesRegex(ContractError, 'MSFTB: 0 OFF_SESSION samples < 10'):
+            summarize(session_only)
+        no_session = [r for r in complete() if r['kind'] != 'SAMPLE' or r['symbol'] != 'GOOGLB'
+                      or not r['at'].startswith(DAYS[0] + 'T14')]
+        with self.assertRaisesRegex(ContractError, 'GOOGLB: 0 US_SESSION samples < 10'):
+            summarize(no_session)
+        with self.assertRaisesRegex(ContractError, 'outside the session calendar'):
+            summarize([dict(r, at=r['at'].replace('2026-', '2027-')) for r in complete()])
+
+    def test_t3_open_state_is_recorded_and_counted_not_filtered(self):
+        from larp.marketdata.cost_summary import summarize
+        _, records = capture(FakeClient(open_state=False))
+        self.assertEqual({r['token_open'] for r in records if r['kind'] == 'SAMPLE'}, {False})
+
+        class NoStatus(FakeClient):
+            def request(self, method, endpoint, params):
+                if endpoint == 'market/rwa/tokens':
+                    raise Unavailable('api_or_http_error')
+                return super().request(method, endpoint, params)
+        _, records = capture(NoStatus())
+        self.assertEqual([(r['stage'], r['reason']) for r in records if r['kind'] == 'FAILURE'],
+                         [('TOKEN_STATUS', 'api_or_http_error')])
+        self.assertEqual({r['token_open'] for r in records if r['kind'] == 'SAMPLE'}, {None})
+        mixed = [dict(r, token_open=r['at'].endswith(':00:00.000Z')) if r['kind'] == 'SAMPLE' else r
+                 for r in complete()]
+        summary, report = summarize(mixed)
+        self.assertEqual(summary['symbols']['TSLAB']['samples'], 60)  # closed samples still count
+        self.assertEqual(report['symbols']['TSLAB']['regimes']['US_SESSION']['token_open'],
+                         {'true': 1, 'false': 9, 'none': 0})
 
 
 if __name__ == '__main__':

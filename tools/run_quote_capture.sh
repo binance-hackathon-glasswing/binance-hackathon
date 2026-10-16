@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 # IDEA-057 Q10: start the read-only quote capture and leave it running in the background.
 #
-# summarize needs samples on 3 UTC days including a weekend. Start before Sat Oct 17 00:00 UTC, or the next weekend
-# (Oct 24-25) is after the rehearsal window opens (Oct 21). Quotes only: nothing is signed, approved or broadcast, and
-# no wallet key or AI_SEEDS_SECRET is read. The Web3 key pair comes from the environment or ./.env and is never printed.
+# The tokens trade 24/7, so summarize needs, per token, samples on 3 UTC days including a weekend and at least 10 both
+# inside and outside the US regular session (13:30-20:00 UTC in October). Start before Sat Oct 17 00:00 UTC, or the
+# next weekend (Oct 24-25) is after the rehearsal window opens (Oct 21). Run until 2026-10-20T00:00:00Z so Monday's
+# session is covered if Friday's was missed; summarize can run earlier on the files so far. Quotes only: nothing is
+# signed, approved or broadcast, and no wallet key or AI_SEEDS_SECRET is read. The Web3 key pair comes from the
+# environment or ./.env and is never printed.
 set -euo pipefail
 dry=0
 if [[ ${1:-} == --dry-run ]]; then dry=1; shift; fi
 if [[ $# -ne 3 ]]; then
-  echo "usage: $0 [--dry-run] <public wallet address> <until, UTC e.g. 2026-10-19T00:00:00Z> <capture dir>" >&2
-  echo "Start it before the weekend: summarize refuses captures without a weekend (UTC) sample." >&2
+  echo "usage: $0 [--dry-run] <public wallet address> <until, UTC e.g. 2026-10-20T00:00:00Z> <capture dir>" >&2
+  echo "Start it before the weekend: summarize refuses captures without a weekend (UTC) sample, or without" >&2
+  echo "samples both inside and outside the US regular session (trading is 24/7)." >&2
   exit 2
 fi
 address=$1 until=$2

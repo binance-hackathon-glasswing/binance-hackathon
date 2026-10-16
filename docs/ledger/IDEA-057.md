@@ -120,3 +120,17 @@ Found in review; each new test failed against `717b6aa` and passes after the fix
 Also: the test file's `unittest.main()` guard sat above the runner tests and now ends the file. Branch merged with `codex/system-testing-20261012` at `7a8a246` (the conflict was in `docs/LEDGER.md` only; both rows kept). Local: `tests/marketdata` + `tests/strategy` 153 passed, 1 skipped (Python 3.14, no PostgreSQL). The full suite and mirror CI were not rerun.
 
 Not changed, for the owners: a gas estimate for a swap from a wallet with no allowance or balance will likely revert, so expect mostly `FALLBACK` swap gas (1 116 000 × gasPrice). The report counts them. A negative `priceImpactPercent` is refused by `number()`, as in `MarketPort.observe`, so such a quote becomes a failure, not a sample.
+
+## 24/7 trading (2026-10-16)
+
+The team position is that the tokens trade 24/7 (SKILL.md Q-32, IDEA-035 C8), so the agent can trade when the underlying US market is closed. A single median over all samples would let the capture schedule decide how much off-hours costs count. Changes:
+
+| ID | Change |
+|---|---|
+| T1 | Each sample falls in a regime: `US_SESSION` inside a session of the frozen calendar (`config/runtime/session-calendar.2026.json`, IDEA-054; SHA-256 recorded in the report), otherwise `OFF_SESSION` (nights, weekends, holidays). Each cost field (impact, spread, both gases, slippage) is computed per regime and the summary takes the worse. The report keeps both regimes' values. |
+| T2 | Each token needs `--min-samples` (default 10) in **each** regime, as well as its 3 UTC days and weekend sample. A sample outside the calendar's range is refused. `--session-calendar` selects another frozen calendar. |
+| T3 | Each round reads the tokens' `openState` once (`market/rwa/tokens`) and records it per sample (`token_open`). The report counts open / closed / unknown per token and regime; nothing is filtered. This also measures how often the F-95 guard would fire (GAP-44). A failed status read is a `TOKEN_STATUS` failure and the samples carry `null`. |
+
+Capture timing: Friday Oct 16's session is 13:30–20:00 UTC. If the capture misses it, the next session is Monday Oct 19, 13:30–20:00 UTC. The suggested `--until` is now `2026-10-20T00:00:00Z`; `summarize` can run earlier on the files so far.
+
+Tests: `AroundTheClock.test_t1_*`–`test_t3_*`. The fixtures now place samples inside and outside the session (`complete()` gives 10 per token, day and hour block). Q3's NVDAB samples repeat in both regimes, so its expected values are unchanged. Local: `tests/marketdata` + `tests/strategy` pass (see the commit). The full suite and mirror CI were not rerun.
