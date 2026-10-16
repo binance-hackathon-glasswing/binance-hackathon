@@ -245,3 +245,8 @@ PR #116 (IDEA-055 PR 5) replaces `balance_rpc_url`/`balance_rpc_source_id` in `r
 ### RR2 re-review (2026-10-16)
 
 Current pushed head `10ff5f6`: previous source findings fixed, including GA13/GA14; no new source finding. Independent focused Linux/Python 3.12/PostgreSQL14.24: 36 passed / 64 subtests (Gate A and host units), no external network or production credentials. Resolve the current LEDGER conflict by preserving both IDEA-058 and the merged IDEA-063 record. This local merge resolution remains unpushed and unexecuted pending user confirmation. Exact-release CI and hosted Gate A remain open with GAP-72 and existing owners.
+
+
+### RR2 integration verification (2026-10-16)
+
+PR87 merged into codex/system-testing-20261012 (ece3c2e), after published focused qualification: 36 passed /64 subtests at d1bc59e. Gate A composition remains included in the final combined full suite at `af9ffbfccf1f682669ada56fa5fb90db2896a6c1`: **1760 passed, 1 external-data skip, 2561 subtests**, real Linux systemd/bubblewrap and PostgreSQL14.24. GA14 handles both provider-list and legacy configurations. This closes repository review/integration, not hosted Gate A or exact-release CI/bundle verification. Actions remains billing-blocked. Keegan owns exact-release bundle/CI evidence; Yao Zhu/Keegan retain host inputs, provisioning and actual qualification; existing Gate B/C and measured-input gates remain open. Earlier dated results remain historical.

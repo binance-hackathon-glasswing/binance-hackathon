@@ -29,8 +29,10 @@
     "day_roll_window_ms": null,
     "max_quote_rounds": 1,
     "max_quote_requests": 2,
-    "balance_rpc_url": null,
-    "balance_rpc_source_id": null,
+    "balance_rpc_providers": [
+      {"url": null, "source_id": null},
+      {"url": null, "source_id": null}
+    ],
     "balance_check_interval_ms": 600000,
     "balance_check_max_age_ms": 1800000,
     "price_jump_check_bps": 3000,

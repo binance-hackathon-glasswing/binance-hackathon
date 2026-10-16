@@ -316,9 +316,9 @@ class Composition(unittest.TestCase):
         # With PR #87 (IDEA-058) a hosted dev run takes only the explicit `shadow` evidence settings (GA03); before
         # it, `development` stands in, since the `live` values are unset.
         shadow = (root.parents[1] / 'config/intelligence/intelligence.shadow.v1.json').exists()
-        filled = dict(self.driver_block, **self.routed_settings(), balance_rpc_url='https://rpc.invalid/',
-                      balance_rpc_source_id='synthetic-rpc', intelligence_mode='shadow' if shadow else 'development',
-                      day_roll_window_ms=900_000,
+        filled = dict(self.driver_block, **self.routed_settings(),
+                      balance_rpc_providers=[dict(url='https://rpc.invalid/', source_id='synthetic-rpc')],
+                      intelligence_mode='shadow' if shadow else 'development', day_roll_window_ms=900_000,
                       strategy_profile_file=str(self.root / 'live-profile.json'),
                       strategy_profile_sha256=hashlib.sha256(live_profile).hexdigest())
         driver_block = dict(d, **{k: v for k, v in filled.items() if k not in ('assessor', 'execution')})
