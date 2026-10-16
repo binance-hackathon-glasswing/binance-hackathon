@@ -118,3 +118,19 @@ Not ported, because they need #84's finalized-block reader (`larp/execution_live
   - `tests/runtime/test_gate_a.py`: 16 passed.
 - **PR #87 is retargeted from `main` to `codex/system-testing-20261012`.** `main` added only the PR #81 promotion docs (3 commits), which this branch now carries.
 - Mirror CI: not yet run on this head.
+
+### GA11: no starting state while a wallet transaction is in flight (pre-registered 2026-10-16)
+
+This is the last follow-up from #89, possible now that #84 is merged. The kit's balance endpoint has no block identity. If a transaction from the wallet is still pending, or is mined but not finalized, the captured balances can change after the starting state is pinned. That would give the ledger a wrong opening position.
+
+**Design.**
+- `capture_inputs(client, wallet, rpc=None)`: when the manifested balance RPC is given, it also captures `ChainBalances.v1` with #84's `read_balances` (finalized block), plus the wallet nonce at that finalized block.
+- The CLI `capture` takes `--balance-rpc-url` and `--balance-rpc-source-id`.
+- The capture is checked before it is written, and checked again by `prepare()`.
+
+**Pass criteria.**
+- **GA11a:** `prepare()` refuses if the finalized nonce, the `latest` nonce and the `pending` nonce are not all equal. This covers a transaction pending or not yet finalized. `capture_inputs` refuses the same before writing anything.
+- **GA11b:** `prepare()` refuses if the chain capture's finalized balances differ from the kit's balances for native BNB, USDT or any of the five bStocks. It also refuses a chain capture for another wallet or chain, or one older than five minutes (or future-dated) at `now`.
+- **GA11c:** a capture without a chain read is not refused for the shadow run, but `preparation-report.json` lists `CHAIN_BALANCE_CAPTURE`. This matches GA09's FIRST_BNB pattern; Gate B would need it.
+- **GA11d:** the RPC calls are only #84's allowlisted read methods. There is no `eth_sendRawTransaction` and no signing.
+- **GA11e:** each refusal names its cause, and a mutation of each check is caught. The full suite passes with no new failures against `1008037` (1562 passed, 7 skipped).
