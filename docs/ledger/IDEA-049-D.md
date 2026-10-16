@@ -620,3 +620,24 @@ RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on
 ### ALLPR-R108 /RV-108-01 verified (2026-10-16)
 
 PR108 is merged into codex/system-testing-20261012. Migration013 validates transaction-local copies of all existing execution record/journal bytes using 012's trigger, refusing an unsafe upgrade atomically without modifying source rows or editing 011/012 checksums. Clean upgrade and idempotence pass. Published focused role/archive tests: 14 passed /184 subtests. A direct seeded-row probe through PostgresStore.migrate refuses unsafe data, preserves original bytes and does not mark013 applied. Final combined source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` passes **1760 passed, 1 external-data skip, 2561 subtests** on Linux/Python3.12.15/PostgreSQL14.24 including roles, archive/backup and migration tests. Detailed full-suite evidence is IDEA-055 RR2 final verification. This supersedes earlier prepared/unexecuted status. Keegan still verifies 012/013 on the first hosted database; alternate keys/encodings remain outside this field-name guard and #23's entire read boundary remains open.
+
+### D-DN-10 build: automatic CLOCK HALT clear (criteria pre-registered 2026-10-16)
+
+This builds decision D-DN-10, option (b), agreed by section B via #113. A `CLOCK` HALT clears automatically once the clock has been monotonic and NTP-synchronised for 30 minutes. The integrity quarantine stays latched. No person clears anything (F-114). Branch `claude/d-dn-10-clock-clear` from `eda2ed2`.
+
+**Design choices:**
+- **Sync signal:** the kernel's own clock status (`adjtimex(2)`): synchronised means the call returns a non-error state and `STA_UNSYNC` is clear. This works with chrony on AL2023 or any other daemon, and needs no subprocess. A failed call counts as *not* synchronised (fail closed).
+- **The window:** in-process, so a restart starts it again (conservative). It holds only across consecutive guard evaluations that each read synchronised, with time never stepping back between evaluations or behind the last decision.
+- **Wiring:** `Guard` takes `clock_sync` (a callable) and `clock_clear_after_ms`. Without `clock_sync`, a `CLOCK` HALT never clears (the old latch, unchanged for every other caller). The production service passes the kernel signal and 30 minutes.
+
+**Pass criteria:**
+- **CK1, signal:** `kernel_clock_synchronized()` returns a bool. It is False when `adjtimex` reports `TIME_ERROR`, has `STA_UNSYNC` set, or the call fails or is unavailable; True only for a clean synchronised state. Tested with an injected syscall.
+- **CK2, clear:** with a signal reading synchronised and no backward step, a `CLOCK` HALT is cleared by the first evaluation at least 30 minutes after the window opened, and not earlier. The clear is one journaled `HALT_CLEARED` event with the window in its detail. A later round then plans normally.
+- **CK3, resets:** an unsynchronised reading, or a time earlier than the previous evaluation, restarts the window. A time behind the last decision raises the HALT again (as today) and also restarts the window.
+- **CK4, unchanged elsewhere:**
+  - with no signal, `CLOCK` stays latched, so the existing H3/H4 test is unchanged;
+  - the integrity quarantine is untouched;
+  - `DELIVERY_DEADLINE` and `REPEATED_FAILURES` keep their own rules;
+  - a `CLOCK` clear leaves any other active reason in place.
+- **CK5, wiring:** `larp.runtime.service` builds its `Guard` with `kernel_clock_synchronized` and 30 minutes.
+- **CK6:** a mutation of each check is caught. The full suite shows no new failures against the base `eda2ed2`.
