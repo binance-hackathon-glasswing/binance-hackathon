@@ -663,3 +663,36 @@ All on the IDEA-037 equal-weight fixture (`tests/strategy/test_equal_weight.py`
   test changed, skipped or removed; counts recorded below against base `7a8a246`
   on the same machine. A test that contradicts a documented convention is
   recorded as a finding, not fixed by changing policy.
+
+### WR-38 results (2026-10-16)
+
+Tests: `tests/strategy/test_wr38_conventions.py` (commit `5368b27`), three tests
+plus four subtests. All pass on unchanged production code; no production code,
+profile or existing test was changed, skipped or removed.
+
+| Criterion | Result |
+|---|---|
+| WR38-1 | PASS. With 10%-below-mark sell quotes, risk equity stays 200,000,000 (COMPLETE), peak 200,000,000, no halt, same targets; quote-implied liquidation equity is 182,000,000 = 91% of peak, below the 92% run-halt line. |
+| WR38-2 | PASS. NVDAB (measured 20 bp) all-in quote cost 80,000 units (about 20 bp of a 39.98 USDT order, inside the 100,000-unit reserve) > GOOGLB (measured 30 bp) 0 units; the one planned intent is a NVDAB BUY; policy entries are the four lowest measured costs, SKHYB `NO_PORTFOLIO_CAPACITY`. |
+| WR38-3 | PASS. Session 80 policy proposes all four entries at once; sessions 80–83 each plan one non-mandatory BUY for a new name (fixture tie on measured cost, so GOOGLB, MSFTB, NVDAB, TSLAB); a same-session replan gives no intent and `DISCRETIONARY_CADENCE`; session 84 plans nothing with four names held. |
+| WR38-4 | PASS. M1 (one-child `break` → `pass`): WR38-2 and WR38-3 fail. M2 (cadence check → `if False:`): WR38-3 fails in all four session subtests. M3 (measured cost removed from the equal-weight action sort): WR38-2 fails. M4 (`update_risk` fed `E * 9 // 10`): WR38-1 fails (WR38-2/3 also fail on `NEW_RISK_HALTED`). Each mutation was restored from the committed `larp/risk/planner.py`; tree clean afterwards. |
+| WR38-5 | PASS. Full suite (Linux container, Python 3.12.3, PostgreSQL 16 on loopback, database `larp_d`): base `7a8a246` **1546 passed, 7 skipped, 2147 subtests, 0 failed** (298 s); head `5368b27` **1549 passed, 7 skipped, 2151 subtests, 0 failed** (321 s). The difference is exactly the three new tests and four subtests. |
+
+Findings (recorded, not acted on; no policy changed):
+- WR38-1 confirms the issue: at the token mark a 90%-gross book reads 100% of
+  peak while the same book's quoted liquidation value would already trip the 92%
+  run halt. Whether risk should use executable liquidation marks is B-DEC-02.
+- WR38-2 confirms entry ranking ignores the exact-size quote's spread and gas.
+  Whether ranking should use actual-size all-in cost is B-DEC-02/B-DEC-06 and
+  needs C's measurements.
+- WR38-3 confirms the planner staggers a fresh build over at least four distinct
+  sessions, unlike the simultaneous initial build in `tools/idea018/mc_run.py`.
+  Re-running that evaluation with production cadence is B-DEC-03 / Keith work.
+- No test contradicted a documented convention.
+
+Still open for #38 (owners per the B-DEC table): freeze marked vs liquidation
+equity and covariance/common-factor risk acceptance (team+B, B-DEC-02/03);
+measure and rank all-in cost with gas at actual order sizes (C measurements,
+B-DEC-02/06); four-session staggered evaluation and stressed correlated-loss
+results (Keith+B, B-DEC-03). WR-38 does not change the PARTIAL REVIEW /
+DEPLOYMENT BLOCKED status.
