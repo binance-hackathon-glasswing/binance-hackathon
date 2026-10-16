@@ -393,3 +393,9 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 | R5 | PASS | S1–S16 and B1–B10 pass. Test changes: both synthetic-chain harnesses advance one block per read; S6 asserts `confirm_block == first_block + 1` (it asserted equal blocks); no other assertion changed. Mutations, each reverted, all caught: no elapsed-time check (2 failures), same block allowed (1), early check replaces the candidate (2), no day-roll deferral (1), MATCH clears a hold at once (1), hold not rescheduled at `retry_ms` (1). Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): the branch before these fixes, `1b21416`, 1612 passed, 10 skipped, 2216 subtests; this branch at `6b25525` (with #114) **1657 passed, 10 skipped, 2306 subtests, 0 failed**. The same 10 environmental skips. |
 
 **Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
+
+
+## RR2 — second all-open-PR review, prospective criteria (2026-10-16)
+
+- RR2-R1: a contradictory comparable read, including an early MATCH, invalidates that asset's first mismatch. Only unchanged candidate assets retain their first timestamp. Test MATCH/reverted mismatch and changed mismatch, while retaining the elapsed-time and newer-block checks.
+- RR2-R2: a day roll deferred inside its window survives process restart both while the hold remains and after it clears. Persist a journaled deferred-day fact, replay it exactly, clear it only on successful roll, and retain OUTSIDE_WINDOW when no deferral exists. Add restart/replay regressions.
