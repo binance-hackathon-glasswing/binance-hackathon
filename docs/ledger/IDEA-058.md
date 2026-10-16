@@ -134,3 +134,26 @@ This is the last follow-up from #89, possible now that #84 is merged. The kit's 
 - **GA11c:** a capture without a chain read is not refused for the shadow run, but `preparation-report.json` lists `CHAIN_BALANCE_CAPTURE`. This matches GA09's FIRST_BNB pattern; Gate B would need it.
 - **GA11d:** the RPC calls are only #84's allowlisted read methods. There is no `eth_sendRawTransaction` and no signing.
 - **GA11e:** each refusal names its cause, and a mutation of each check is caught. The full suite passes with no new failures against `1008037` (1562 passed, 7 skipped).
+
+### GA11 results (2026-10-16)
+
+- **Order of commits:** criteria in `86a46a3`, red tests in `d584a72` (9 failing: `chain_capture` missing), fix in `b2496d4`.
+- **GA11a–d: PASS.**
+  - A pending nonce, or one not yet finalized, refuses at capture and at `prepare()`, with "in flight".
+  - BNB, USDT or bStock balances that differ from the kit refuse with "differ".
+  - A capture for another wallet or chain refuses, as does one that is stale or future-dated.
+  - A capture without a chain read is reported as `CHAIN_BALANCE_CAPTURE`.
+  - The RPC calls are #84's allowlisted read methods only.
+  - The capture CLI passes the RPC through, and on refusal it writes nothing and exits 4.
+- **GA11e mutations:** 7, each reverted and each caught:
+  - nonce check;
+  - balance comparison;
+  - wallet check;
+  - age check;
+  - report entry;
+  - capture-time check;
+  - prepare-time check.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3): **1569 passed, 7 skipped, 2181 subtests, 0 failed**. That is +7 against `1008037`'s 1562. `tests/runtime/test_gate_a.py`: 23 passed.
+- **Docs:** `docs/build/GATE_A.md` capture and prepare steps now pass `--balance-rpc-url` / `--balance-rpc-source-id`.
+- **Scope:** an incoming transfer between the finalized block and the kit read also refuses through the balance comparison, and a fresh capture clears it. This makes no claim about the Gate B balance check, which is #84's `BalanceCheck` at runtime.
+- **Mirror CI:** not yet run on this head.

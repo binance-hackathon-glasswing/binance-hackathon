@@ -37,6 +37,7 @@ captures outside the repo. Use a new output directory for each frozen build.
 python tools/deploy/prepare_shadow.py capture \
   --env-file .env --wallet "$AI_SEEDS_ADDRESS" \
   --artifact-root "$LARP_CAPTURE_ROOT/web3" \
+  --balance-rpc-url "$LARP_BALANCE_RPC_URL" --balance-rpc-source-id "$LARP_BALANCE_RPC_SOURCE_ID" \
   --output "$LARP_CAPTURE_ROOT/gate-a-inputs.json"
 
 terraform -chdir=deploy/aws output -json > deploy/activation/tf-output.json
@@ -49,6 +50,7 @@ python tools/deploy/prepare_shadow.py prepare \
   --run-id larp-dev-shadow-20261016 --build-id "$LARP_BUILD_ID" \
   --rds-ca-sha256 "$LARP_RDS_CA_SHA256" \
   --sec-contact "$LARP_SEC_USER_AGENT" \
+  --balance-rpc-url "$LARP_BALANCE_RPC_URL" --balance-rpc-source-id "$LARP_BALANCE_RPC_SOURCE_ID" \
   --out deploy/activation/gate-a-prepared
 ```
 
@@ -62,8 +64,12 @@ observed market tickers to the SEC issuer IDs. It grants no share-class, ratio o
 basis verification. It preserves exact BNB wei and floors USDT to ledger
 micro-units, retaining raw balances in the capture. A stock holding is refused:
 initializing existing positions needs reviewed cost-basis/history, not a guessed
-zero basis. Balance captures are Web3 snapshots without finalized-block proof;
-they qualify unsigned Gate A inputs only. Gate B still needs chain reconciliation.
+zero basis. The Web3 balance snapshot has no block identity. With
+`--balance-rpc-url`, the capture also reads the finalized chain balances and
+nonces through the manifested RPC (IDEA-058 GA11). Capture and preparation both
+refuse while a wallet transaction is pending or not finalized, and when the
+finalized balances differ from the Web3 snapshot. If either happens, wait and
+capture again. Without the RPC, the report lists `CHAIN_BALANCE_CAPTURE`.
 
 Outputs are `runtime.json`, `uploader.json`, `operations.json`, the profile,
 calendar, initial state, pinned capture and a preparation report. `evidence.env`
