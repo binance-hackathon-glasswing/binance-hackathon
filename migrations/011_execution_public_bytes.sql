@@ -12,7 +12,11 @@ DECLARE
     value jsonb;
 BEGIN
     BEGIN
-        value := convert_from(decode(substr(to_jsonb(NEW) ->> TG_ARGV[0], 3), 'hex'), 'UTF8')::jsonb;
+        -- jsonb refuses the escape \u0000, which a legitimate state may hold (canonical JSON escapes NUL). Only this
+        -- check's copy is changed, never the stored bytes; the result is still valid JSON whether the sequence is an
+        -- escape or follows an escaped backslash.
+        value := replace(convert_from(decode(substr(to_jsonb(NEW) ->> TG_ARGV[0], 3), 'hex'), 'UTF8'),
+                         '\u0000', '\u0020')::jsonb;
     EXCEPTION WHEN OTHERS THEN
         RAISE EXCEPTION '%.% must be JSON without signed transaction bytes (#23)', TG_TABLE_NAME, TG_ARGV[0]
             USING ERRCODE = 'check_violation';

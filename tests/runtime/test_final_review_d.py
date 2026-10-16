@@ -787,6 +787,15 @@ class ArchiveReadableTables(execution_state_tests.SignedState):
                 self.registry.commit(previous, current, event, *self.registry.authority())
         self.assertEqual(self.registry.load(self.key), previous)
 
+    def test_d_req_023_a_nul_character_in_state_still_commits(self):
+        # PostgreSQL's jsonb refuses "\u0000"; the guard must not refuse a legitimate state that contains one.
+        from dataclasses import replace
+        previous = self.registry.load(self.key)
+        current = replace(previous, blocked_reason='reason with a \x00 NUL')
+        saved = self.registry.commit(previous, current, dict(type='NOTE'), *self.registry.authority())
+        self.assertEqual(self.registry.load(self.key).blocked_reason, 'reason with a \x00 NUL')
+        self.assertEqual(saved.revision, previous.revision + 1)
+
     raw_hex = synthetic_signed_transaction()  # the fixture signer's bytes are not a real transaction
 
 

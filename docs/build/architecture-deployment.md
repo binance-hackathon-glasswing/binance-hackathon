@@ -78,7 +78,7 @@ ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under sy
 **Disk budget for balance-check observations (#96, IDEA-055; estimate, not yet measured on a host).** Every RPC
 call of the balance check writes one `ChainObservation.v1` file under `<market_artifact_root>/chain` on `primary`'s
 20 GiB root disk, and these files are audit evidence: never delete them during the run. A check makes 12 calls once
-`decimals()` is cached (18 on the first check of each process): chain ID, the finalized block and its re-check, the
+`decimals()` is cached (18 until two reads of it agree, normally the first two checks of each process): chain ID, the finalized block and its re-check, the
 native balance, six `balanceOf()` and two nonces. The two block files carry the block's transaction-hash list (about
 16 KB at 200 transactions); every other file is under 400 bytes but takes a whole 4 KiB filesystem block. That is
 about 70–100 KiB per check. At the normal 10-minute interval: about 144 checks and 10–15 MiB a day. Worst case, every

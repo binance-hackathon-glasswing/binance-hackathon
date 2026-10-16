@@ -20,6 +20,22 @@ def assets():
     return {'USDT': USDT, **TOKENS}
 
 
+class DecimalsCache:
+    """Per-process cache of each pinned token's `decimals()` (#96). A value is reused only after two consecutive reads
+    agree, so one bad RPC answer is never kept for the life of the process (restarts are automatic only, F-124)."""
+
+    def __init__(self):
+        self.confirmed, self.last = {}, {}
+
+    def get(self, name):
+        return self.confirmed.get(name)
+
+    def seen(self, name, value):
+        if self.last.get(name) == value:
+            self.confirmed[name] = value
+        self.last[name] = value
+
+
 def word(value):
     """One ABI-encoded uint256 return value."""
     if type(value) is not str or not re.fullmatch(r'0x[0-9a-fA-F]{64}', value):
@@ -30,9 +46,8 @@ def word(value):
 def read_balances(rpc, *, wallet, observed_at, decimals=None):
     """ChainBalances.v1 for `wallet`; raises Blocked (or the RPC's DependencyUnavailable) instead of guessing.
 
-    `decimals`, if given, is the caller's per-process cache of each pinned token's `decimals()` (#96). The value is a
-    constant of the contract, so it is read and checked once, then reused: each later read makes six fewer RPC calls,
-    and archives six fewer observations.
+    `decimals`, if given, is the caller's `DecimalsCache` (#96). The value is a constant of the contract, so once two
+    reads agree it is reused: each later read makes six fewer RPC calls, and archives six fewer observations.
     """
     wallet = str(wallet).lower()
     if not ADDRESS.fullmatch(wallet):
@@ -51,7 +66,7 @@ def read_balances(rpc, *, wallet, observed_at, decimals=None):
             if places > 77:
                 raise Blocked('implausible token decimals')
             if decimals is not None:
-                decimals[name] = places
+                decimals.seen(name, places)
         units = word(rpc.call('eth_call', [dict(to=contract, data=BALANCE_OF_CALL + '0' * 24 + wallet[2:]), tag]))
         tokens[name] = dict(contract=contract, decimals=places, units=units)
     again = rpc.call('eth_getBlockByNumber', [tag, False])

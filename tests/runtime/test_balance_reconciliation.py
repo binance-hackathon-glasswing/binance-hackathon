@@ -114,25 +114,41 @@ class Observation(unittest.TestCase):
         with self.assertRaises(Blocked):
             observe(chain)
 
-    def test_decimals_are_read_once_per_cache(self):
-        # #96: decimals() is a contract constant; with the caller's cache only the first read asks for it.
-        from larp.execution_live.balances import read_balances
-        chain, cache = chain_for(ledger()), {}
+    def test_decimals_are_reused_once_two_reads_agree(self):
+        # #96: decimals() is a contract constant. It is asked for until two reads agree, then never again.
+        from larp.execution_live.balances import DecimalsCache, read_balances
+        chain, cache = chain_for(ledger()), DecimalsCache()
+
+        def asked():
+            found = [p for m, p in chain.calls if m == 'eth_call' and p[0]['data'] == '0x313ce567']
+            chain.calls.clear()
+            return len(found)
         first = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
-        asked = [p for m, p in chain.calls if m == 'eth_call' and p[0]['data'] == '0x313ce567']
-        self.assertEqual(len(asked), len(contracts()))
-        self.assertEqual(cache, {'USDT': 18, **{s: 4 for s in TOKENS}})
-        chain.calls.clear()
-        second = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
-        self.assertEqual([p for m, p in chain.calls if m == 'eth_call' and p[0]['data'] == '0x313ce567'], [])
-        self.assertEqual(len(chain.calls), 6 + len(contracts()))
-        self.assertEqual(second, first)
+        self.assertEqual(asked(), len(contracts()))
+        read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertEqual(asked(), len(contracts()))
+        self.assertEqual(cache.confirmed, {'USDT': 18, **{s: 4 for s in TOKENS}})
+        third = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertEqual(len(chain.calls), 6 + len(contracts()))  # 12 RPC calls once confirmed
+        self.assertEqual(asked(), 0)
+        self.assertEqual(third, first)
+
+    def test_one_bad_decimals_answer_is_never_kept(self):
+        from larp.execution_live.balances import DecimalsCache, read_balances
+        chain, cache = chain_for(ledger()), DecimalsCache()
+        chain.decimals['USDT'] = 9  # a plausible but wrong answer, once
+        read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        chain.decimals['USDT'] = 18
+        read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertNotIn('USDT', cache.confirmed)
+        o = read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
+        self.assertEqual((cache.confirmed['USDT'], o['tokens']['USDT']['decimals']), (18, 18))
         # An implausible value is refused and never cached.
-        chain, cache = chain_for(ledger()), {}
+        chain, cache = chain_for(ledger()), DecimalsCache()
         chain.decimals['USDT'] = 78
         with self.assertRaises(Blocked):
             read_balances(chain, wallet=WALLET, observed_at='a', decimals=cache)
-        self.assertNotIn('USDT', cache)
+        self.assertEqual((cache.confirmed, cache.last), ({}, {}))
 
 
 class Memory:

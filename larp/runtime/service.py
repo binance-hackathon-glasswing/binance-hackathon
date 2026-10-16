@@ -270,11 +270,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     day_roll = DayRoll(coordinator, window_ms=d['day_roll_window_ms']) if d.get('day_roll_window_ms') else None
     balance_check = None
     if balance is not None:
-        from larp.execution_live.balances import read_balances
+        from larp.execution_live.balances import DecimalsCache, read_balances
         from larp.execution_live.chain import Rpc
         rpc = Rpc(balance['rpc_url'], artifacts=Artifacts(str(Path(d['market_artifact_root']) / 'chain')),
                   source_id=balance['source_id'])
-        decimals = {}  # read once per process (#96)
+        decimals = DecimalsCache()  # reused once two reads agree (#96)
 
         def read(now_ms):
             observed = datetime.fromtimestamp(now_ms / 1000, timezone.utc).isoformat()
