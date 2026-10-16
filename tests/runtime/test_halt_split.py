@@ -144,7 +144,7 @@ class Split(svc.ServiceHarness):
         driver = self.service_driver()
         self.assertEqual(driver.execution.reauthorize(self.w.clock()), [])
         self.assertEqual(driver.execution.waiting(self.w.clock()), [])
-        with self.assertRaises(Conflict):
+        with self.assertRaisesRegex(Conflict, 'halted'):  # the HALT gate itself, checked before the version
             self.store.command(RUN, i['intent_id'], self.epoch, self.w.clock())
 
     def signing_intent(self, round_id, i):
@@ -198,7 +198,7 @@ class ClaimGate(DatabaseCase):
         c.start('r1', request('BUY'), NOW)
         command_id = self.store.load('run').read()['projection']['round_records']['r1']['plan']['intents'][0]['intent_id']
         Guard(self.store, 'run', max_failures=3, clear_after=2)._halt('DELIVERY_DEADLINE', NOW, {})
-        with self.assertRaises(Conflict):
+        with self.assertRaisesRegex(Conflict, 'halted'):  # the HALT gate itself, checked before the version
             self.store.command('run', command_id, self.epoch, NOW)
 
 
