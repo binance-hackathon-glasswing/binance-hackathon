@@ -220,7 +220,7 @@ Criterion IDs: the checks ported from PR #89 were numbered GA07–GA09, and GA07
 - **Order of commits:** base merge `de5a167` (`codex/system-testing-20261012` at `8bee81d`, #109/#110/#117; no conflicts), criteria `0451610` (pushed before the fix), fix and tests `fd4e386` (pushed before the full run).
 - **GA13a–e: PASS.** Tests `ReviewFixes.test_ga13a_*` … `test_ga13d_*`, the extended `test_ga03_ingestion_checks_unsigned_scope_and_manifest_runtime_binding` and `PortedFromPr89.test_ga_p1_*` (patches the public `issuer_matches`).
 - **GA13f mutations:** 9, each reverted and each caught: environment mode check; development-on-release check; unreadable-file reason; verified-manifest binding; single release verification; `prepare` RPC pair check; `capture` RPC pair check; class-only detail; public issuer rule.
-- **Full suite**, clean worktrees, Python 3.12.13 venv from `deploy/requirements-test.lock`, PostgreSQL **16.15** (not the CI image's 14.24), no bubblewrap or disposable systemd runner:
+- **Full suite**, clean worktrees, Python 3.12.3 venv from `deploy/requirements-test.lock`, PostgreSQL **16.15** (not the CI image's 14.24), no bubblewrap or disposable systemd runner:
   - base `8bee81d`: 1590 passed, 10 skipped, 2201 subtests, 0 failed;
   - this branch at `fd4e386`: **1621 passed, 10 skipped, 2252 subtests, 0 failed**.
   - The 10 skips are the same on both: one opt-in recorded-market artifact, one root-ignores-directory-mode test, five systemd tests (no disposable runner), three bubblewrap sandbox tests.
