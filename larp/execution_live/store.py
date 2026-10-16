@@ -13,6 +13,7 @@ from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signe
 from larp.storage.backup import without_signed_bytes
 from larp.storage.postgres import IntegrityError
 from larp.contracts import Document
+from larp.runtime import halts
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS execution_records (
@@ -249,7 +250,9 @@ class ExecutionStore:
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
-        if (projection.get('halt') or {}).get('reasons'):
+        # D-DN-09 (larp/runtime/halts.py): CLOCK or any unlisted reason blocks every signature; a pausing HALT signs
+        # only a mandatory bStock SELL that the open round planned.
+        if not halts.permits(projection, intent.round_id, intent.intent_id):
             raise Conflict('run is halted; signing blocked')
         registered = projection.get('registered_version')
         if registered is not None and type(registered) is not dict:
