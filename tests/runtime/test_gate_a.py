@@ -387,3 +387,90 @@ class BalanceRpcSettings(unittest.TestCase):
         self.assertNotIn('BALANCE_RPC', json.loads(assembled()['preparation-report.json'])['missing_inputs'])
         with self.assertRaises(ContractError):
             assembled(balance_rpc_url='http://rpc.invalid/')
+
+
+class Node:
+    """A synthetic BSC node for GA11: one finalized block, balances matching `captured()`, nonces per tag."""
+
+    def __init__(self, *, finalized=4, latest=4, pending=4, native=10**15, usdt=100 * 10**18, tokens=None):
+        self.nonce = dict(finalized=finalized, latest=latest, pending=pending)
+        self.native, self.usdt, self.tokens, self.calls, self.chain_id = native, usdt, tokens or {}, [], 56
+
+    def call(self, method, params):
+        self.calls.append(method)
+        if method == 'eth_chainId':
+            return hex(self.chain_id)
+        if method == 'eth_getBlockByNumber':
+            return dict(number=hex(500), hash='0x' + 'd' * 64)
+        if method == 'eth_getBalance':
+            return hex(self.native)
+        if method == 'eth_call':
+            target = params[0]
+            if target['data'] == '0x313ce567':
+                return '0x' + format(18, '064x')
+            units = self.usdt if target['to'] == USDT else self.tokens.get(target['to'], 0)
+            return '0x' + format(units, '064x')
+        if method == 'eth_getTransactionCount':
+            return hex(self.nonce['finalized' if params[1] == hex(500) else params[1]])
+        raise AssertionError(method)
+
+
+def with_chain(node=None, **changes):
+    capture = captured()
+    capture['chain'] = gate_a.chain_capture(node or Node(), WALLET, observed_at=NOW)
+    capture['chain'].update(changes)
+    return capture
+
+
+class PendingNonce(unittest.TestCase):
+    """IDEA-058 GA11: no starting state while a wallet transaction is in flight; chain and kit balances agree."""
+
+    def refused(self, capture, cause):
+        with self.assertRaises(ContractError) as caught:
+            assembled(capture_raw=encoded(capture))
+        self.assertIn(cause, str(caught.exception))
+
+    def test_ga11a_pending_or_unfinalized_transaction_refuses(self):
+        for nonces in (dict(pending=5), dict(latest=5, pending=5)):
+            with self.subTest(**nonces):
+                self.refused(with_chain(Node(**nonces)), 'in flight')
+
+    def test_ga11a_capture_refuses_before_writing(self):
+        class Client:
+            def request(self, method, endpoint, params):
+                c = captured()
+                name = 'metadata' if endpoint == 'market/rwa/tokens' else 'balances'
+                return c[name]
+        with patch.object(gate_a, 'MarketPort') as port:
+            port.return_value.metadata.return_value = {next(iter(TOKENS)): (None, captured()['metadata'])}
+            port.return_value.balances.return_value = captured()['balances']
+            with self.assertRaises(ContractError) as caught:
+                gate_a.capture_inputs(Client(), WALLET, rpc=Node(pending=5))
+            self.assertIn('in flight', str(caught.exception))
+            value = gate_a.capture_inputs(Client(), WALLET, rpc=Node())
+            self.assertEqual(value['chain']['pending_nonce'], 4)
+
+    def test_ga11b_chain_and_kit_balances_must_agree(self):
+        for node in (Node(native=10**15 + 1), Node(usdt=1), Node(tokens={TOKENS['NVDAB']: 1})):
+            with self.subTest(node=vars(node)):
+                self.refused(with_chain(node), 'differ')
+
+    def test_ga11b_other_wallet_chain_or_stale_capture_refuses(self):
+        self.refused(with_chain(wallet='0x' + '2' * 40), 'another wallet')
+        self.refused(with_chain(chain_id=1), 'another wallet')
+        self.refused(with_chain(observed_at='2026-10-19T11:54:00Z'), 'stale')
+        self.refused(with_chain(observed_at='2026-10-19T12:01:00Z'), 'stale')
+
+    def test_ga11c_missing_chain_read_is_reported_not_refused(self):
+        report = json.loads(assembled()['preparation-report.json'])
+        self.assertIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
+        report = json.loads(assembled(capture_raw=encoded(with_chain()))['preparation-report.json'])
+        self.assertNotIn('CHAIN_BALANCE_CAPTURE', report['missing_inputs'])
+
+    def test_ga11d_only_read_methods_are_called(self):
+        node = Node()
+        gate_a.chain_capture(node, WALLET, observed_at=NOW)
+        self.assertLessEqual(set(node.calls), {'eth_chainId', 'eth_getBlockByNumber', 'eth_getBalance', 'eth_call',
+                                               'eth_getTransactionCount'})
+        from larp.execution_live.chain import METHODS
+        self.assertLessEqual(set(node.calls) - {'eth_call'}, METHODS)
