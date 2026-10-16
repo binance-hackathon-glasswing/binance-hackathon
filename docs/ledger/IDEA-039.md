@@ -195,3 +195,30 @@ These gaps came out of reviewing Gate B against Gate A's GA11 check (IDEA-058, P
   - `cash_units` equals the chain USDT floored to micro-USDT (`units // 10**(decimals-6)`, decimals ≥ 6). This is Gate A's convention.
   - Every bStock position equals its chain units. A position must be zero when the chain balance is zero. A non-zero position needs matching decimals and units. A token with no position counts as zero, and a position not in the pinned set refuses.
 - **GB-tests:** the existing Gate B tests keep passing with the fixture extended, and no `send` or `sign` method is called. A mutation of each new check is caught. The full suite shows no new failures against the base (`7a8a246`: 1546 passed, 7 skipped).
+
+### GB-CHAIN-20261016 results (2026-10-16)
+
+- **Order of commits:** criteria in `ade0d8c`, red tests in `a4a3096` (4 failing tests, 4 failing subtests), fix in `d4ab8be`. Two test corrections followed, after mutations survived:
+  - `e7aed94`: DR-03's status is always BLOCKED pending owner acceptance, so GB1b now asserts the refusal detail.
+  - `f1df6d5`: adds a `3.0` finalized-nonce case, so the integer-type check is exercised.
+- **GB1a/b: PASS.**
+  - `finalized_nonce` is recorded.
+  - A finalized nonce behind latest adds `UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION`.
+  - DR-03 refuses a missing, mismatched or non-integer `finalized_nonce`.
+- **GB2a/b: PASS.**
+  - `tokens` holds USDT and all five bStocks at the finalized height, read through the existing `eth_call` allowlist.
+  - DR-06 refuses all of these: a USDT difference of one micro-USDT; a bStock on chain with no ledger position; a ledger position above the chain balance; an unknown position symbol.
+  - DR-06 accepts matching zero and non-zero holdings.
+- **Mutations:** 7, each caught after the corrections above:
+  - blocker;
+  - DR-03 nonce comparison;
+  - DR-06 cross-check;
+  - cash comparison;
+  - position comparison;
+  - unknown-position check;
+  - integer-type check.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3): base `7a8a246` 1546 passed, 7 skipped. This branch: **1550 passed, 7 skipped, 2155 subtests, 0 failed** (+4).
+- **Docs:** `config/execution/README.md` lists the new blocker and the DR-06 cross-check.
+- **Compatibility:** chain evidence captured before this change has no `finalized_nonce` or `tokens`, so it now keeps DR-03 and DR-06 blocked. Re-run `probe-chain` before Gate B review.
+- **Not done:** this is a repository change only. It has not run against a real BSC node, it needs Isaac's review, and mirror CI has not run.
+- When this merges, remove the GB-1/GB-2 line that PR #87 adds to `docs/INCOMPLETE_WORK.md`.
