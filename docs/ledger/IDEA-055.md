@@ -476,3 +476,12 @@ Order: merge of #114 `a6fba10` (stack order #114 → #115 → #116; `docs/LEDGER
 | R5 | PASS | S1–S16 and B1–B10 pass. Test changes: both synthetic-chain harnesses advance one block per read; S6 asserts `confirm_block == first_block + 1` (it asserted equal blocks); no other assertion changed. Mutations, each reverted, all caught: no elapsed-time check (2 failures), same block allowed (1), early check replaces the candidate (2), no day-roll deferral (1), MATCH clears a hold at once (1), hold not rescheduled at `retry_ms` (1). Full suite, Python 3.12.3 venv from `deploy/requirements-test.lock`, local PostgreSQL **16.15** (not 14.24): the branch before these fixes, `1b21416`, 1612 passed, 10 skipped, 2216 subtests; this branch at `6b25525` (with #114) **1657 passed, 10 skipped, 2306 subtests, 0 failed**. The same 10 environmental skips. |
 
 **Still open:** the hold also defers `TERMINAL_FLATTEN` and Class 1 exits (question to the author and Yao Zhu, not changed). A PostgreSQL 14.24 run. Isaac's section C review.
+
+### PR 5 with #114 and the PR 4 review fixes (2026-10-16)
+
+This branch merges PR 4 (#115) at `bc51c4a`, which now carries #114. Combined, three of #114's tests and F4 needed updating: `5b4adf9` (merge `b3f9ea1`).
+- #114's AIand shadow example lists `balance_rpc_providers` like `runtime.example.json`, so SG3 passes.
+- #114's SG2/R8 route tests and SG3 fill the providers list instead of the legacy pair. The list wins in the route checker, so the legacy fill had left a null host.
+- F4's backup serves a newer finalized block, because R1 needs a strictly newer block to confirm.
+
+Gate A (#87) side: `prepare()` now writes the balance RPC in whichever form the rendered example uses (IDEA-058 GA14). A scratch merge of #87 into this branch passes `test_gate_a.py`, GA06 included. Full-suite result below.
