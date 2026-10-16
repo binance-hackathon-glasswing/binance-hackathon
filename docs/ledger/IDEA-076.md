@@ -77,3 +77,38 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
 - **R:** full suite green against the baseline at `eda2ed2`: 1751 passed, 10 skipped (Python 3.13.16, PostgreSQL 16.15, this session).
 
 ## Results
+- 2026-10-16: criteria pushed at `504c266` before any code. Code at `c430b6e` (core), `d34f003` (policy, planner, cadence) and `b5c8683` (LIVE profiles).
+- Environment: Python 3.13.16, the locked subset without ML packages, PostgreSQL 16.15. CI (Python 3.12, PostgreSQL 14.24) has not run on this branch.
+- **S01 PASS:** a valid block is accepted, and 18 defect cases are refused (`tests/strategy/test_s1_core.py` ProfileBlock). The other baselines still pass the proposal's declared caps (the existing tests are unchanged and green).
+- **S02 PASS:** inverse volatility; the calmest name is capped at 30% and the excess spread over the rest; the sum is exactly 1; reproducible; median sigma substituted for short history; refused with no history.
+- **S03 PASS:** rising gives UP; falling gives DOWN; the exact signal on a known path; the dead band holds; the first evaluation starts UP (or the configured start); each session is evaluated once; a bar counts only after the delay; a missing session, a stale input, a missing name or a bad bar each hold the state.
+- **S04 PASS:** without series the state starts UP and the round reports `TREND_INPUT_UNAVAILABLE` (Q01 also checks this through the policy).
+- **L01–L08 PASS** (`Limiter`), plus a malformed assessment being rejected. The renewal rule only accepts new evidence of a class that can give the cut, so a new calendar entry cannot renew one (L07).
+- **Q01–Q12 PASS** (`tests/strategy/test_s1_plan.py`).
+  - Q01: build at 19% per name.
+  - Q02: UP → DOWN sells to 12%.
+  - Q03: dead band.
+  - Q04: no sale on drift; Q05: top-up below 90% only, largest gap first.
+  - Q06: the 35% line trims to 19% and holds the latch at 30%.
+  - Q07: deep cut to 40%; no gross trim at 97%.
+  - Q08: the stop blocks a rebuy.
+  - Q09: after `new_risk_end`, no buys but cuts still sell.
+  - Q10: terminal exit.
+  - Q11: a Class 1 name's weight stays in cash.
+  - Q12: fifth position allowed with a 5% floor.
+  - Also: a limiter CAUTION lowers every target, and a rebalance ends once every name is at target.
+- **Q13 PASS:** existing tests unchanged; EQUAL_WEIGHT keeps one discretionary swap per session.
+- **Q14 PASS:** the per-name leg budget ignores the old session rule and refuses the fourth leg; settlement counts legs per name and resets them each session, for S1 only; the runtime context reads only the current session.
+- **S05 PASS:** REHEARSAL and FINAL S1 profiles pass `validate_live`, with a per-trade cap of one full top position plus reserve and an exit reserve for five positions; provenance says "proposed"; S1 defects are refused; EQUAL_WEIGHT profiles are unchanged.
+- **R PASS:** full suite 1797 passed, 10 skipped, 0 failed, 2577 subtests (532.9 s), against 1751 / 10 at `eda2ed2`. The difference is the 46 new tests.
+- **Differences from the plan:**
+  - The rebalance completes per name once within one minimum trade of target, so legs smaller than the minimum are skipped, as §5.2 says.
+  - Hard-line trims go to min(top level × w, the current target).
+  - The S1 LIVE profiles keep the builder's existing windows (FINAL: new risk ends Nov 9 00:00, flatten Nov 10 00:00, signing ends Nov 11 14:45 UTC) rather than §8's proposed Nov 9 21:00 / Nov 10 19:00. That is §16 O4, for the team.
+- **Still open, with owners:**
+  - Keith + Yao Zhu: freeze the §12 values and §16 O1–O6 by Oct 22; run `python -m larp.strategy.s1 freeze-weights` on token session bars to Oct 21; build the profiles with `s1=` and the decision ID.
+  - Keith: EXP-007 (NOT RUN here; no price data reachable).
+  - DR-08: wire live session bars into the runtime driver; until then the live trend guard stays UP.
+  - Yao Zhu: produce `exposure_evidence` and `exposure_assessment` from the evidence pipeline (B4's model half); until then the limiter sees no evidence and stays NORMAL.
+  - Isaac: execution window and attempt limit (B6).
+  - Keegan: round-log fields (B5) and the deviations-register rows (B7).
