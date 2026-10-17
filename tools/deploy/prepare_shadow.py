@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from larp.contracts import ContractError  # noqa: E402
 from larp.execution import Blocked, DependencyUnavailable  # noqa: E402
-from larp.runtime.gate_a import capture_inputs, check_balance_rpc, prepare  # noqa: E402
+from larp.runtime.gate_a import capture_inputs, prepare, rpc_provider_list  # noqa: E402
 from larp.marketdata.web3 import Artifacts, Unavailable, Web3Client, credentials, encoded, utc  # noqa: E402
 from larp.sources.live import Refused, git_state, require_committed  # noqa: E402
 import render_host_configs as renderer  # noqa: E402
@@ -37,6 +38,25 @@ def write_new(directory, files):
             os.fsync(stream.fileno())
 
 
+def rpc_providers(path):
+    """GA15: the private ordered provider file ({"balance_rpc_providers": [{url, source_id}, ...]}, the format of
+    tools/deploy/qualify_balance_rpc.py). Its URLs can carry API keys, so it must be git-ignored when inside the
+    repository, and no message ever repeats a URL."""
+    if path is None:
+        return None
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
+        raise ContractError('The balance RPC config must be a regular file')
+    resolved = path.resolve()
+    if resolved.is_relative_to(ROOT):
+        run = subprocess.run(['git', '-C', str(ROOT), 'check-ignore', '-q', str(resolved)], capture_output=True)
+        if run.returncode != 0:
+            raise ContractError('A balance RPC config inside the repository must be git-ignored')
+    value = json.loads(resolved.read_bytes())
+    if type(value) is not dict or set(value) != {'balance_rpc_providers'}:
+        raise ContractError('The balance RPC config must hold exactly balance_rpc_providers')
+    return value['balance_rpc_providers']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -48,6 +68,8 @@ def main(argv=None):
     capture.add_argument('--balance-rpc-url', help='Manifested BSC RPC (HTTPS): also capture finalized chain balances '
                          'and refuse while a wallet transaction is in flight (IDEA-058 GA11)')
     capture.add_argument('--balance-rpc-source-id', help='Source ID recorded with that RPC')
+    capture.add_argument('--balance-rpc-config', type=Path, help='Private ordered provider file (git-ignored); the '
+                         'chain read uses its first provider. Not with --balance-rpc-url (GA15)')
     assembly = sub.add_parser('prepare')
     assembly.add_argument('--terraform-output', type=Path, required=True)
     assembly.add_argument('--profile', type=Path, required=True)
@@ -59,6 +81,8 @@ def main(argv=None):
     assembly.add_argument('--sec-contact', help='Public SEC User-Agent identity; never a credential')
     assembly.add_argument('--balance-rpc-url', help='Manifested BSC RPC (HTTPS) for the chain-balance check (IDEA-055)')
     assembly.add_argument('--balance-rpc-source-id', help='Source ID recorded with that RPC')
+    assembly.add_argument('--balance-rpc-config', type=Path, help='Private ordered provider file (git-ignored), '
+                          'written in order to driver.balance_rpc_providers. Not with --balance-rpc-url (GA15)')
     assembly.add_argument('--out', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
@@ -69,13 +93,15 @@ def main(argv=None):
                 raise ContractError('Read-only captures must remain outside the repository')
             if output.exists():
                 raise ContractError('Capture already exists')
-            check_balance_rpc(args.balance_rpc_url, args.balance_rpc_source_id)
+            providers = rpc_provider_list(args.balance_rpc_url, args.balance_rpc_source_id,
+                                          rpc_providers(args.balance_rpc_config))
             keys = credentials(args.env_file)
             client = Web3Client(keys['BINANCE_API_KEY'], keys['BINANCE_SECRET_KEY'], artifacts=Artifacts(root))
             rpc = None
-            if args.balance_rpc_url is not None:
+            if providers is not None:
                 from larp.execution_live.chain import Rpc
-                rpc = Rpc(args.balance_rpc_url, artifacts=Artifacts(root / 'chain'), source_id=args.balance_rpc_source_id)
+                first = providers[0]  # primary first; prepare accepts a capture from any listed provider
+                rpc = Rpc(first['url'], artifacts=Artifacts(root / 'chain'), source_id=first['source_id'])
             value = capture_inputs(client, args.wallet or keys.get('AI_SEEDS_ADDRESS'), rpc=rpc)
             output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             with output.open('xb') as stream:
@@ -89,7 +115,8 @@ def main(argv=None):
         files = prepare(configs, profile_raw=args.profile.read_bytes(), capture_raw=capture_raw,
                         calendar_raw=args.calendar.read_bytes(), run_id=args.run_id, build_id=args.build_id,
                         now=utc(), sec_contact=args.sec_contact,
-                        balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id)
+                        balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id,
+                        balance_rpc_providers=rpc_providers(args.balance_rpc_config))
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.

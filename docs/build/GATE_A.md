@@ -42,7 +42,7 @@ captures outside the repo. Use a new output directory for each frozen build.
 python tools/deploy/prepare_shadow.py capture \
   --env-file .env --wallet "$AI_SEEDS_ADDRESS" \
   --artifact-root "$LARP_CAPTURE_ROOT/web3" \
-  --balance-rpc-url "$LARP_BALANCE_RPC_URL" --balance-rpc-source-id "$LARP_BALANCE_RPC_SOURCE_ID" \
+  --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json \
   --output "$LARP_CAPTURE_ROOT/gate-a-inputs.json"
 
 terraform -chdir=deploy/aws output -json > deploy/activation/tf-output.json
@@ -55,7 +55,7 @@ python tools/deploy/prepare_shadow.py prepare \
   --run-id larp-dev-shadow-20261016 --build-id "$LARP_BUILD_ID" \
   --rds-ca-sha256 "$LARP_RDS_CA_SHA256" \
   --sec-contact "$LARP_SEC_USER_AGENT" \
-  --balance-rpc-url "$LARP_BALANCE_RPC_URL" --balance-rpc-source-id "$LARP_BALANCE_RPC_SOURCE_ID" \
+  --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json \
   --out deploy/activation/gate-a-prepared
 ```
 
@@ -77,6 +77,16 @@ finalized balances differ from the Web3 snapshot. If either happens, wait and
 capture again. Preparation with `--balance-rpc-url` refuses a capture made without
 it, or with a different `--balance-rpc-source-id` (GA12). Without the RPC, the
 report lists `BALANCE_RPC` and `CHAIN_BALANCE_CAPTURE`.
+
+`--balance-rpc-config` names the private, git-ignored provider file
+(`{"balance_rpc_providers": [{"url": …, "source_id": …}, …]}`, primary first,
+up to four; the format `tools/deploy/qualify_balance_rpc.py` reads). `capture`
+reads the chain through the first provider; `prepare` writes the whole list, in
+order, to `driver.balance_rpc_providers`, so the runtime fails over to the backup
+(IDEA-055 PR 5). The single `--balance-rpc-url` + `--balance-rpc-source-id` pair
+still works for one provider; naming both forms is refused. A capture made
+through any listed provider is accepted (IDEA-066 PC-RPC01, GA15). The URLs can
+carry API keys: keep the file outside Git and never paste it into a chat or issue.
 
 Outputs are `runtime.json`, `uploader.json`, `operations.json`, the profile,
 calendar, initial state, pinned capture and a preparation report. `evidence.env`
