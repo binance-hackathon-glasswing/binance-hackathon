@@ -72,6 +72,15 @@ class DurableBudget(DatabaseCase):
         record = self.store.load('run').read()['projection']['round_records']['parent/quote1']
         intent = record['plan']['intents'][0]
         self.assertEqual(intent['execution_bounds']['ordinal'], 1)
+        from larp.execution_live.service import map_command
+        from larp.strategy.execution_bounds import permitted
+        mapped = map_command(dict(kind='EXECUTION_REQUEST', command_id=intent['intent_id'], payload=intent,
+            round_id='parent/quote1', decision_id=intent['decision_id'], expires_ms=intent['expires_ms']),
+            run_id='run', wallet='0x'+'1'*40, version_id='fixture-build', router='0x'+'2'*40,
+            token_decimals={m['symbol']: m['decimals'] for m in self.context['markets']}, now_ms=self.now,
+            limits=dict(per_trade_cap_units=self.profile['per_trade_cap_units'], max_gas=100000,
+                        max_gas_price=1, gas_budget=100000))
+        self.assertTrue(permitted(self.store.load('run').read()['projection'], mapped, self.now))
         self.assertEqual(self.store.load('run').read()['projection']['execution_attempt_budget']['counts'],
                          original['counts'])
         self.assertEqual(self.store.load('run').read()['projection']['execution_attempt_budget']['closed'],
