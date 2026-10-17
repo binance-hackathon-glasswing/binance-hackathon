@@ -1,6 +1,6 @@
 # Pre-trading checklist (2026-10-17)
 
-This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), by gate and date. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), the open PRs and the open issues on 2026-10-17. Times are UTC. The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md); per-person dates are in #126's `WHO_DOES_WHAT.md`. Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
+This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), the open PRs and the open issues on 2026-10-17. Times are UTC. The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md); per-person dates are in #126's `WHO_DOES_WHAT.md`. Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 ## Done
 
@@ -8,48 +8,58 @@ This is a snapshot of what stands between today and the scored run (Oct 29 – N
 - [x] Terms captured for all six enabled sources and EDGAR; shadow source preflight passes; stricter SEC contact check (IDEA-066 PC-TERMS01/02, #129).
 - [x] Real quote-cost capture running on Keith's server since 2026-10-16 18:19 UTC, set to run until 2026-10-20 00:00 UTC (#132, IDEA-063).
 
-## Interim profile so Gate A doesn't wait: Keith + Isaac (team decision 2026-10-17)
+## Plan (team decision 2026-10-17)
 
-The profile design and its formulas already exist (`config/strategy/LIVE.md`, `build_live_profiles`). Only the cost numbers it is computed from are still being measured. Gate A `prepare` refuses a profile without a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't use a made-up one. Instead, summarise the capture as it stands and build an interim profile. Gate A is unsigned, so these values decide only shadow HOLD/BUY decisions.
+Finish every Gate A and Gate B step that doesn't need the strategy profile this weekend, then on **Oct 20** build the profile from the finished quote capture and run everything that needs it, in order. Three things need the profile: `prepare` builds the runtime config from it, the evidence service refuses to start without that runtime config, and the planner takes its minimum trade size and slippage limits from it. Gate A `prepare` accepts only a profile built from a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't be faked to start early.
 
-- [ ] Keith, on the capture server: summarise the files so far into a new directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. As of 2026-10-17 04:00 UTC the capture covers Fri Oct 16 (about 10 US-session rounds) and Sat Oct 17 (weekend). If a token has fewer than 10 US-session samples, the tool names it. Then use `--min-samples` at the lowest count it reports, never below 5.
-- [ ] Keith: build the profiles from it: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`. Use `rehearsal-live.json` for Gate A `prepare`.
-- [ ] Isaac + Keith: a quick look at the interim summary and profile (spread, impact, gas, minimum trade size). Record in IDEA-063 that it is interim: coverage parameters, capture hash, profile hash.
+**Risk:** every service runs for the first time on Oct 20, and the 24 h ingestion run means Gate A can't pass before Oct 21, the day the signed rehearsal is meant to start. **Fallback**, if the weekend goes well and the team wants a dry run: Keith can build a throwaway interim profile from the capture so far (`summarize --min-days 2`, then `python -m larp.strategy.profiles`) and start the services early; on Oct 20 it is replaced by the final one.
 
-## After the capture ends (Oct 20 00:00 UTC): Isaac + Keith (GAP-69)
+## This weekend (Oct 17–19): no profile needed
 
-- [ ] Full summary with the default coverage (3 UTC days including a weekend, 10 samples per token per regime); confirm quoted amounts net route fees (#119).
-- [ ] Owners' review and the final LIVE rehearsal profile (#120). The profile hash is pinned in the runtime config, so swapping it means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`. Do it before Gate B's first signed trade.
-
-## Gate A: can start now
+### Gate A setup
 
 - [ ] Merge #132 (capture record) and #124 (CI record, closes #91). Both are docs only.
 - [ ] Isaac: choose the BSC balance RPC with `finalized` support, give its source ID, open network access to it (#92, GAP-71).
 - [ ] Isaac + Keegan: approve the network destination list (#32).
 - [ ] Keegan, with whoever pays for GitHub: a host bundle built from the commit with the terms register (`1ab47ae` or later). Org Actions is billing-blocked (#98); a mirror run is engineering evidence only (#127).
-- [ ] Yao Zhu: confirm the alarm email subscriptions (AWS SNS). No alarm email has arrived yet.
+- [ ] Yao Zhu: confirm the alarm email subscriptions (AWS SNS), then send a test alarm and confirm it reaches a person. No alarm email has arrived yet.
 - [ ] Yao Zhu + Keegan: provision `primary` with the bundle; migrations 012/013 and roles; per-role IAM/TLS checks (AWS_RUNBOOK steps 5–6).
 - [ ] Yao Zhu: copy the six retained terms files from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register.
-- [ ] Fresh wallet capture with the balance RPC, after Isaac's dev-wallet first-gas swap so the balances include the BNB.
-- [ ] Gate A `prepare` with the interim rehearsal profile; install configs; bind the manifest; `service init` and reviewed `activate`; start the evidence, runtime and uploader services.
-- [ ] Host evidence: real receiver ACK, 24 h ingestion, restart drill, hourly anchor, route checks, time sync, an alarm reaching a person. Keegan then reviews Gate A in IDEA-042.
+- [ ] Keegan + Isaac: on `primary`, run the route check (`python -m larp.runtime.routes --role primary`) and record `chronyc tracking`; keep both reports.
 
-## Gate B: target Oct 20
+### Gate B setup
 
-- [ ] Isaac: review and merge #130 (swap decoder); capture unsigned route bytes for all five tokens and USDT → BNB; `router check` PASS (#33, GAP-29).
+- [ ] Isaac: review and merge #130 (swap decoder); capture unsigned route bytes for all five tokens and USDT → BNB; `router check` PASS against the quote files already recorded (#33, GAP-29).
 - [ ] Isaac + Keegan + Keith: decide how long a signing request stays valid (#27; #130 records a new finding on it).
 - [ ] Isaac + Keith: per-token signer caps, fee cap and allowed spenders (#44). Keegan installs `/etc/larp/signer.json`.
 - [ ] Keegan + Isaac: decide how the signer host is reached; place the key file there (DR-03).
 - [ ] Isaac: record the 2 USDT dev-wallet trial swap in DEPLOYMENT_DAY.md §5 and swap about 2 USDT more (#106).
 - [ ] Isaac + Keith: BNB floor and top-up size, BNB tracking on a real provider (#30); balance-reconciliation decisions D1–D6 (#90, #36).
-- [ ] Isaac + Keegan: one approve plus one swap on the dev wallet from committed code, and crash tests at each step (DR-02..05); then the Gate B review.
 
-## Decisions due Oct 19
+### Decisions due Oct 19
 
-- [ ] Yao Zhu + Keegan: rehearsal shape (D-DN-02). If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04).
+- [ ] Yao Zhu + Keegan: rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04).
 - [ ] Yao Zhu + Keith: HALT behaviour for mandatory sells and exits during a price-jump hold (IDEA-055 POLICY-HOLD).
 - [ ] Keith: keep or move the Nov 11 15:00 UTC flatten (#107).
 - [ ] Settle open choice O2 so EXP-007's pass criteria are final (#123).
+
+## Oct 20: profile day, in this order
+
+The capture ends at Oct 20 00:00 UTC (08:00 SGT).
+
+1. [ ] Keith: full summary with the default coverage (3 UTC days including a weekend, 10 samples per token per regime): `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <dir>/summary.json`. Isaac: confirm quoted amounts net route fees (#119).
+2. [ ] Keith: build the profiles: `python -m larp.strategy.profiles --summary <dir>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <dir>/profiles`. Isaac + Keith: owners' review of the summary and `rehearsal-live.json` (#120); record both hashes in IDEA-063.
+3. [ ] Fresh read-only wallet capture with the balance RPC (`prepare_shadow.py capture`), within five minutes of step 4.
+4. [ ] Gate A `prepare` with `rehearsal-live.json`; install the configs (`runtime.json` mode 0644); bind them to CI's manifest (`preflight --bind`).
+5. [ ] `service init`, then the reviewed `service activate`; start the evidence, runtime and uploader services; enable the archive timer.
+6. [ ] First shadow round ACKed by the real ai-seeds receiver (R-01). This starts the 24 h ingestion clock.
+7. [ ] Restart drill and first hourly anchor.
+8. [ ] Gate B proof: one approve plus one swap on the dev wallet from committed code with a logged round, and crash tests at each step (DR-02..05). Then the Gate B review.
+
+## Oct 21
+
+- [ ] After 24 h of ingestion with a clean gap report: Keegan reviews Gate A item by item in IDEA-042.
+- [ ] Signed rehearsal starts (5+ days including the Oct 24–25 weekend); any late start is recorded as a deviation (GAP-04).
 
 ## Oct 22 cut line
 
