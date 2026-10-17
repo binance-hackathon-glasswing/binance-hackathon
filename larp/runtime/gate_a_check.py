@@ -16,7 +16,7 @@ from larp.runtime import gate_a
 REQUIRED = frozenset(('runtime.json', 'uploader.json', 'operations.json', 'strategy-profile.json',
                       'session-calendar.json', 'initial-state.json', 'input-capture.json',
                       'preparation-report.json'))
-OPTIONAL = frozenset(('evidence.env',))
+OPTIONAL = frozenset(('evidence.env', 'model-routing.json'))
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
 
@@ -55,11 +55,17 @@ def check_scope(values, report):
                                             ('runtime.json', 'uploader.json', 'operations.json', 'initial-state.json'))
     driver = runtime['driver']
     if (runtime.get('mode') != 'dev' or uploader.get('mode') != 'dev' or state.get('mode') != 'dev'
-            or driver.get('execution') != 'shadow' or driver.get('assessor') != 'deterministic'
+            or driver.get('execution') != 'shadow' or driver.get('assessor') not in ('deterministic', 'aiand_routed')
             or driver.get('intelligence_mode') != 'shadow' or 'signing' in driver
             or driver.get('cadence_ms') != gate_a.CADENCE_MS or driver.get('day_roll_window_ms') != gate_a.DAY_ROLL_MS
             or report.get('execution') != 'shadow' or report.get('runtime_mode') != 'dev'):
         raise ContractError('Unsigned preparation scope required')
+    routed = driver['assessor'] == 'aiand_routed'
+    if routed != ('model-routing.json' in values) or routed != ('model_routing' in report):
+        raise ContractError('Model routing file and preparation scope differ')
+    if routed and report['model_routing'] != gate_a.model_routing_report(
+            values['model-routing.json'], driver.get('model_routing_sha256')):
+        raise ContractError('Model preparation report differs')
     run_id, build_id = report['run_id'], report['build_id']
     if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id)
             or not re.fullmatch(r'[0-9a-f]{40}', build_id)
@@ -80,6 +86,14 @@ def check_scope(values, report):
 def check_inputs(files, values):
     runtime, profile, capture = (values[n] for n in ('runtime.json', 'strategy-profile.json', 'input-capture.json'))
     driver = runtime['driver']
+    model_keys = ('model_routing_file', 'model_routing_sha256', 'model_budget_root')
+    if driver.get('assessor') == 'aiand_routed':
+        gate_a.model_routing(files['model-routing.json'], driver.get('model_routing_sha256'))
+        if (driver.get('model_routing_file') != gate_a.MODEL_ROUTING_FILE
+                or driver.get('model_budget_root') != gate_a.MODEL_BUDGET_ROOT):
+            raise ContractError('Prepared model paths differ from the shared host paths')
+    elif 'model-routing.json' in files or any(k in driver for k in model_keys):
+        raise ContractError('Unexpected model configuration in deterministic preparation')
     pins = ((runtime, 'initial_state_sha256', 'initial_state_file', 'initial-state.json'),
             (driver, 'strategy_profile_sha256', 'strategy_profile_file', 'strategy-profile.json'),
             (driver, 'session_calendar_sha256', 'session_calendar_file', 'session-calendar.json'))

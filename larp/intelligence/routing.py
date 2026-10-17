@@ -12,9 +12,9 @@ from pathlib import Path
 import time
 from types import SimpleNamespace
 
-from larp.contracts import Document
+from larp.contracts import ContractError, Document
 from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
-from larp.intelligence.aiand import AIandChatModel
+from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
 from larp.intelligence.config import CONFIG_DIR
 from larp.intelligence.model_budget import ModelBudget
@@ -25,6 +25,46 @@ from larp.intelligence.providers import OpenAIResponsesModel
 STAGE_PROMPT_DIR = CONFIG_DIR / 'prompts' / 'routing'
 OPENAI_PRICE = dict(input_micro_usd_per_mtok=2_000_000, output_micro_usd_per_mtok=10_000_000,
                     source='https://developers.openai.com/api/docs/models/gpt-6.1-sol;2026-10-15;standard')
+
+
+def validate_routing_spec(spec, prompt_dir=None):
+    """Validate public configuration without credentials, storage, models or network I/O.
+
+    AIandRouting.v2 adds one pinned stage prompt per model (IDEA-081); each is read from the
+    release's routing prompt directory and checked against its hash here, so preparation
+    refuses what startup would refuse."""
+    fields = {'schema', 'provenance', 'routine', 'external_reviewers', 'openai_model', 'openai_effort',
+              'max_output_tokens', 'budget_account', 'audit_sample_bps', 'audit_seed'}
+    staged = type(spec) is dict and spec.get('schema') == 'AIandRouting.v2'
+    entry_fields = {'model_id', 'effort', 'catalog'} | ({'prompt'} if staged else set())
+    if staged:
+        fields = fields | {'openai_prompt'}
+    if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2')
+            or spec['openai_model'] != 'gpt-6.1-sol'
+            or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
+            or type(spec['max_output_tokens']) is not int or not 0 < spec['max_output_tokens'] <= 16000
+            or type(spec['budget_account']) is not str or not spec['budget_account'].strip()
+            or len(spec['budget_account']) > 100
+            or type(spec['audit_sample_bps']) is not int or not 0 <= spec['audit_sample_bps'] <= 10000
+            or type(spec['audit_seed']) is not str or not spec['audit_seed'].strip()
+            or type(spec['provenance']) is not dict
+            or set(spec['provenance']) != {'source', 'checked', 'scope'}
+            or any(type(v) is not str or not v.strip() for v in spec['provenance'].values())
+            or type(spec['external_reviewers']) is not list or not 1 <= len(spec['external_reviewers']) <= 2):
+        raise IntelligenceError('Invalid AIand routing specification')
+    for entry in [spec['routine'], *spec['external_reviewers']]:
+        if type(entry) is not dict or set(entry) != entry_fields:
+            raise IntelligenceError('Invalid AIand routing model entry')
+        validate_settings(entry['model_id'], entry['effort'], entry['catalog'], spec['max_output_tokens'])
+    if staged:
+        for prompt in [spec['routine']['prompt'], *(e['prompt'] for e in spec['external_reviewers']),
+                       spec['openai_prompt']]:
+            stage_prompt_bytes(prompt, STAGE_PROMPT_DIR if prompt_dir is None else prompt_dir)
+    # The runtime hashes the spec as a Document (no floats); refuse here so preparation cannot pass what startup refuses.
+    try:
+        Document.from_dict(spec)
+    except ContractError:
+        raise IntelligenceError('AIand routing specification is not a canonical document') from None
 
 
 class BudgetedOpenAI:
@@ -267,11 +307,8 @@ class RoutedAssessor:
         return Document.from_dict(result)
 
 
-def stage_config(config, prompt, prompt_dir=STAGE_PROMPT_DIR):
-    """The core config with the stage's pinned addendum appended to its prompt (IDEA-081).
-
-    The composed text and its hash replace the core prompt for that stage only, so the adapter's
-    hash check, the recorded prompt hash and the assessment key all name what the model was sent."""
+def stage_prompt_bytes(prompt, prompt_dir=STAGE_PROMPT_DIR):
+    """The exact bytes of a pinned stage prompt (IDEA-081), refused unless name and hash match."""
     if type(prompt) is not dict or set(prompt) != {'name', 'sha256'} or type(prompt['name']) is not str:
         raise IntelligenceError('Stage prompt needs exactly a name and a sha256')
     name = prompt['name']
@@ -281,9 +318,18 @@ def stage_config(config, prompt, prompt_dir=STAGE_PROMPT_DIR):
     try:
         raw = (prompt_dir / name).read_bytes()
     except OSError:
-        raise IntelligenceError('Stage prompt file is missing: ' + name) from None
+        raise IntelligenceError('Stage prompt file is missing') from None
     if sha256_hex(raw) != pinned:
-        raise IntelligenceError('Stage prompt does not match its pinned hash: ' + name)
+        raise IntelligenceError('Stage prompt does not match its pinned hash')
+    return raw
+
+
+def stage_config(config, prompt, prompt_dir=STAGE_PROMPT_DIR):
+    """The core config with the stage's pinned addendum appended to its prompt (IDEA-081).
+
+    The composed text and its hash replace the core prompt for that stage only, so the adapter's
+    hash check, the recorded prompt hash and the assessment key all name what the model was sent."""
+    raw = stage_prompt_bytes(prompt, prompt_dir)
     text = config.prompt_text.rstrip('\n') + '\n\n' + raw.decode('utf-8')
     return replace(config, prompt_text=text, prompt_sha256=sha256_hex(text.encode('utf-8')))
 
@@ -294,22 +340,12 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
 
     AIandRouting.v2 pins one stage prompt per model (`prompt` on each entry, `openai_prompt`);
     v1 sends every stage the core prompt, as before."""
-    if spec.get('schema') not in ('AIandRouting.v1', 'AIandRouting.v2') or spec.get('openai_model') != 'gpt-6.1-sol':
-        raise IntelligenceError('Unsupported routing schema or OpenAI model')
+    validate_routing_spec(spec, prompt_dir=prompt_dir)
     staged = spec['schema'] == 'AIandRouting.v2'
-    entries = [spec.get('routine'), *(spec.get('external_reviewers') or [])]
-    if any(type(e) is not dict for e in entries):
-        raise IntelligenceError('Routing model entries must be objects')
-    if not staged and ('openai_prompt' in spec or any('prompt' in e for e in entries)):
-        raise IntelligenceError('Stage prompts need schema AIandRouting.v2')
-    if staged and ('openai_prompt' not in spec or any('prompt' not in e for e in entries)):
-        raise IntelligenceError('AIandRouting.v2 needs a stage prompt for every model')
     configs = {}
 
     def config_for(prompt):
         return stage_config(config, prompt, prompt_dir) if staged else config
-    if type(spec.get('max_output_tokens')) is not int or not 0 < spec['max_output_tokens'] <= 16000:
-        raise IntelligenceError('Routing output limit must be 1..16000')
     if not secrets.get('LARP_AIAND_API_KEY'):
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}

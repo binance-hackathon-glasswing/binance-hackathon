@@ -13,7 +13,7 @@ import tempfile
 import unittest
 
 from larp.intelligence.common import IntelligenceError
-from larp.intelligence.routing import STAGE_PROMPT_DIR, build_routed_assessor
+from larp.intelligence.routing import STAGE_PROMPT_DIR, build_routed_assessor, validate_routing_spec
 from larp.runtime.preflight import release_files
 from tests.intelligence import test_aiand_routing as base  # module import: pytest must not collect Routing twice
 
@@ -176,6 +176,21 @@ class StagePrompts(unittest.TestCase):
                     spec['external_reviewers'][0]['prompt'] = alt
                 with self.subTest(where):
                     self.assertNotEqual(base, self.router(spec, prompts).model.identity.model_hash)
+
+    def test_sp8_shared_validator_accepts_v2_and_refuses_bad_prompt_pins(self):
+        validate_routing_spec(self.s)
+        validate_routing_spec(v1(self.s))
+        bad = {}
+        bad['v2 without openai prompt'] = deepcopy(self.s); bad['v2 without openai prompt'].pop('openai_prompt')
+        bad['v2 reviewer without prompt'] = deepcopy(self.s); bad['v2 reviewer without prompt']['external_reviewers'][1].pop('prompt')
+        bad['v1 with prompt'] = v1(self.s); bad['v1 with prompt']['routine']['prompt'] = deepcopy(self.s['routine']['prompt'])
+        bad['v1 with openai prompt'] = v1(self.s); bad['v1 with openai prompt']['openai_prompt'] = deepcopy(self.s['openai_prompt'])
+        bad['hash mismatch'] = deepcopy(self.s); bad['hash mismatch']['openai_prompt']['sha256'] = '1' * 64
+        bad['missing file'] = deepcopy(self.s); bad['missing file']['routine']['prompt']['name'] = 'secret-name-xyz.md'
+        for name, spec in bad.items():
+            with self.subTest(name), self.assertRaises(IntelligenceError) as caught:
+                validate_routing_spec(spec)
+            self.assertNotIn('secret-name-xyz', str(caught.exception))
 
     def test_sp7_addenda_are_release_files_and_no_other_config_markdown_is(self):
         files = release_files(ROOT)

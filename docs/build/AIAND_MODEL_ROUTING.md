@@ -6,6 +6,17 @@ This is an opt-in **shadow-only** implementation of [IDEA-056](../ledger/IDEA-05
 
 The example uses `zai-org/glm-5.3` at low effort, then optional direct OpenAI `gpt-6.1-sol` at medium for review. If OpenAI is absent, limited or unavailable, the difficult route is `moonshotai/kimi-k3` high followed by GLM-5.3 high. All external calls use `https://api.aiand.com/v1/chat/completions`.
 
+This implements the requested ChatGPT/Chinese-model split through API calls:
+
+| Work | Model |
+|---|---|
+| Routine extraction and straightforward evidence questions | GLM-5.3, low effort, through AIand |
+| Main/difficult judgments: material events, conflicting or incomplete evidence, failed verification, and sampled clean-case audits | OpenAI `gpt-6.1-sol`, medium effort, through the direct OpenAI API |
+| Difficult review when OpenAI is absent, unavailable or over its shared operating limit | Kimi K3 high, then GLM-5.3 high, through AIand |
+
+The stronger reviewer receives original evidence and uses the same verifier.
+Unresolved disagreement abstains. Arithmetic, sizing and execution remain code.
+
 AIand's [catalog](https://docs.aiand.com/models/catalog/) lists models per organization. The public catalog was checked 2026-10-15; authenticated account entitlement and inference are not verified. The example embeds selected public capability metadata. Review/freeze that metadata and the exact settings before an authorized experiment. Body/header model mismatch or an applied effort different from the requested one is an error, not an accepted substitution. See [response headers](https://docs.aiand.com/reference/response-headers/).
 
 ## Stage prompts (IDEA-081)
@@ -73,6 +84,45 @@ Every stage uses original saved filing evidence and the real verifier. The routi
 If a required reviewer fails, or accepted findings disagree, the result abstains/is unavailable; it cannot inherit a clean thesis from the routine stage. If AIand's difficult primary fails, only the declared secondary is attempted within the same limits. Full request/reply bytes, whitelisted model/effort headers, actual component identity and intermediate result artifact references survive in the aggregate trace. No credential header is recorded.
 
 The primary capability this PR validates is synthetic component behavior. Provider access, real extraction quality, omission rates, latency, hosted permissions, rights/audit retention terms and production service declaration still need independent evidence before adoption. See [IDEA-057 AR1–AR8](../ledger/IDEA-057.md).
+
+## Prepare the routed configuration without manual runtime edits (SG-8)
+
+The [Gate A preparation command](GATE_A.md#assemble-inputs-before-spending) now
+accepts `--model-routing` together with `--model-routing-sha256`. Review the public
+example's exact model IDs, efforts, catalog snapshot, audit seed and account before
+using it. Set `LARP_MODEL_ROUTING_SHA256` to that reviewed file's SHA256 in the local
+terminal. Other variables and inputs below have the same meanings as in Gate A:
+
+```sh
+python tools/deploy/prepare_shadow.py prepare \
+  --terraform-output deploy/activation/tf-output.json \
+  --profile deploy/activation/profile/rehearsal-live.json \
+  --capture "$LARP_CAPTURE_ROOT/gate-a-inputs.json" \
+  --run-id larp-dev-model-shadow-20261017 --build-id "$LARP_BUILD_ID" \
+  --rds-ca-sha256 "$LARP_RDS_CA_SHA256" \
+  --sec-contact "$LARP_SEC_USER_AGENT" \
+  --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json \
+  --model-routing config/intelligence/aiand-routing.example.json \
+  --model-routing-sha256 "$LARP_MODEL_ROUTING_SHA256" \
+  --out deploy/activation/gate-a-model-prepared
+```
+
+Use a fresh capture and new output directory. The command copies exact reviewed
+bytes to `model-routing.json`, pins them in `runtime.json` and the preparation
+report, selects `aiand_routed`, and keeps dev-shadow settings. A missing or wrong
+hash, unsupported model/effort or invalid catalog refuses before any package is
+written. Omitting both flags retains deterministic preparation.
+
+The report's `model_routing.checks` remain `NOT_RUN`: preparation cannot prove
+credentials, provider identity, budget initialization or trial evaluation.
+`gate_a_check` verifies the routed package and pins offline; `local_ready` does
+not establish those host/trial requirements. It never opens a budget ledger or
+constructs a provider. Install `model-routing.json` root-owned `0644` at
+`/etc/larp/model-routing.json` with the other prepared files, before binding the
+release manifest. Continue the host steps below for actual credentials, prior
+spend, ledger initialization, provider checks and trial evidence. When using
+this preparation path, host steps 4–5 are already assembled: install and verify
+those exact files rather than editing the prepared runtime afterward.
 
 ## Host steps for the Gate A shadow trial (2026-10-16)
 

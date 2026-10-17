@@ -39,3 +39,13 @@ Out of scope and NOT RUN here: real AIand/OpenAI inference, prompt quality (that
 
 - **The live Gate A run cannot carry the trial as prepared.** `larp/runtime/gate_a.py` writes `assessor: deterministic` and `gate_a_check.check_scope` requires it, so the running `larp-dev-shadow-20261017` makes no model calls and needs no LLM keys. Running the IDEA-057 trial means editing `driver` in `/etc/larp/runtime.json` after `prepare` (runbook steps 4–6), re-binding and re-activating: a version event that `gate_a_check` would then refuse. **Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02, on PR #133):** switch the live shadow run after the Oct 18 gap report, on a new bundle that includes this change; the trial ends when the runtime moves to signed rehearsal (Oct 21), because `aiand_routed` is shadow-only. Keith settles the OpenAI budget (about $49 left).
 - The v2 routing file needs a release built after this change; the host's `bb46234` only accepts the v1 file.
+
+## Merge with PR #159 (IDEA-057 SG-8), 2026-10-17 — prospective
+
+PR #159 added `validate_routing_spec`, shared by Gate A `prepare`, `gate_a_check` and runtime startup, and it accepted only `AIandRouting.v1` with exact field sets, so the v2 file from this change would have been refused by `prepare`. The integration branch was merged into this branch (no rebase) and the validator extended. Criterion written before the new tests ran (the existing routing, stage-prompt and SG-8 preparation suites were run once after the merge, 49 passed, to check the merge itself):
+
+| ID | Criterion |
+|---|---|
+| SP8 | `validate_routing_spec` accepts the v2 example and the v1 example; it refuses, before any model, budget or network construction: a v2 file missing `openai_prompt` or any entry's `prompt`, a v1 file carrying `prompt`/`openai_prompt`, and a v2 prompt whose file or hash does not match. Its failure text never echoes the supplied name (SG8b). The SG-8 preparation tests pass with the v2 example. |
+
+**Result (local, macOS, Anaconda Python 3.14): SP8 PASS.** `test_stage_prompts.py` now 10 tests (19 subtests incl. 6 SP8 cases); with `test_aiand_routing.py` and SG-8's `test_model_routing_preparation.py` (which prepares a package from the v2 example): 50 passed, 74 subtests. Full suite vs a clean worktree of the new base `a428bab`: 1446 vs 1436 passed, the same 10 failures and 4 collection errors on both (environment, as before), so no new failure. Linux/3.12 mirror CI still to run.
