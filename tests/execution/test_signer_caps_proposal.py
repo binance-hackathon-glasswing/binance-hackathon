@@ -74,6 +74,8 @@ class CapsProposal(unittest.TestCase):
                     self.check(policy, USDT, 1, step, **change)
             with self.assertRaises(Blocked):
                 self.check(policy, NATIVE_BNB, 1, step)
+            with self.assertRaises(Blocked):
+                self.check(policy, '0x' + '34' * 20, 1, step)
 
     def test_malformed_or_private_reference_fields_are_refused(self):
         cases = []
