@@ -8,6 +8,17 @@ The example uses `zai-org/glm-5.3` at low effort, then optional direct OpenAI `g
 
 AIand's [catalog](https://docs.aiand.com/models/catalog/) lists models per organization. The public catalog was checked 2026-10-15; authenticated account entitlement and inference are not verified. The example embeds selected public capability metadata. Review/freeze that metadata and the exact settings before an authorized experiment. Body/header model mismatch or an applied effort different from the requested one is an error, not an accepted substitution. See [response headers](https://docs.aiand.com/reference/response-headers/).
 
+## Stage prompts (IDEA-081)
+
+The routing file is `AIandRouting.v2`. Each model gets the core assessor prompt (`config/intelligence/prompts/assessor.v2.txt`) followed by a blank line and its stage's Markdown addendum from `config/intelligence/prompts/routing/`:
+
+| Stage | Model(s) | Addendum |
+|---|---|---|
+| Routine first pass | GLM-5.3 low | `routine.md`: scan every excerpt for adverse events, prefer `STATEMENT:` when unsure, at most three tools, short JSON reply |
+| Review (OpenAI, then external) | GPT-6.1 Sol medium; Kimi K3 high; GLM-5.3 high | `review.md`: independent re-read of the original evidence (it never sees the first pass), settle actor, timing, negation and attribution, tools only for listed gaps |
+
+The routing file pins each addendum by name and SHA-256 (`prompt` on each model entry, `openai_prompt` for Sol). The runtime refuses to start on a missing file, a hash mismatch or a name with a path. Each stage records the composed prompt's hash, so the trace says exactly what each model was sent. The addenda add guidance only; the core prompt comes first and wins any conflict. To change a prompt: edit the `.md`, update its hash in the routing file, and ship it in a new release (the files are release files). A `v1` routing file still works and sends every stage the core prompt only.
+
 ## Credentials
 
 Add `LARP_AIAND_API_KEY` to the existing runtime **Secrets Manager JSON**. `LARP_MODEL_API_KEY` is optional for Sol: without it, all model work is external. The service loads these explicitly; it does not inherit keys from an `.env` file. Never put actual keys in this repo, command arguments, routing JSON or logs. Existing signer/audit secrets still refuse loading on the coordinator.
@@ -85,7 +96,7 @@ Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill cr
      --initial-spent-micro-usd <PRIOR_OPENAI_SPEND_MICRO_USD>
    ```
    ⚠ **PLACEHOLDER: `<PRIOR_OPENAI_SPEND_MICRO_USD>` must be the actual prior spend against the $50 OpenAI allocation, which Yao Zhu supplies (US$1 = 1 000 000). Never guess it and never use 0 unless the spend really is zero.** The directory must be owned by `larp-runtime` with mode `0700`, and the ledger refuses anything else. Run `init` as `larp-runtime`: run as root, it refuses because the directory is not root's. The printed snapshot is the trial's starting `charged_micro_usd`; record it in IDEA-057 P1.
-4. **Pinned routing file.** Install the reviewed routing file root-owned and read-only: `sudo install -m 0644 -o root -g root config/intelligence/aiand-routing.example.json /etc/larp/model-routing.json`. Then run `sha256sum /etc/larp/model-routing.json`; at the commit of this runbook the unchanged example is `7d80ae163e4e3b24f974148e060f3461c3ead89ca5f1263ebc7f55f492b1ec23`. Record the hash in IDEA-057 P2.
+4. **Pinned routing file.** Install the reviewed routing file root-owned and read-only: `sudo install -m 0644 -o root -g root config/intelligence/aiand-routing.example.json /etc/larp/model-routing.json`. Then run `sha256sum /etc/larp/model-routing.json`; the unchanged v2 example (IDEA-081) is `d6847c2bf96d0085b7e6176fdcff5480c1bc290c691b998bbb651cb9ef501fa7`; it needs a release that contains IDEA-081 (the stage prompt files). On an older release such as `bb46234`, use the v1 example from that release instead (`7d80ae163e4e…`). Record the hash in IDEA-057 P2.
 5. **Runtime config.** In the `driver` block of `/etc/larp/runtime.json` (as assembled for Gate A), set exactly:
    `"assessor": "aiand_routed"`, `"execution": "shadow"`, `"model_routing_file": "/etc/larp/model-routing.json"`, `"model_routing_sha256": "<hash from step 4>"`, `"model_budget_root": "/var/lib/larp-runtime/model-budget"`. Keep `"mode": "dev"`. `config/runtime/runtime.aiand-shadow.example.json` shows the shape. Any other combination is refused at start: `execution: service` or `mode: live` with `aiand_routed` gives exit 4.
 6. **Bind and check routes.** Bind `/etc/larp/release.json` as in DEPLOYMENT_DAY step 7. Then run the route check (architecture-deployment.md "Approved network destinations"). With `aiand_routed` it also expects `api.aiand.com:443` and `api.openai.com:443` from `larp-runtime`. Keep the `RouteCheck.v1` report.

@@ -5,6 +5,7 @@ budget is durable and independent of wallet/run IDs. All-external operation incl
 reviews; an unavailable reviewer never turns a failed assessment into CLEAR evidence.
 """
 from copy import deepcopy
+from dataclasses import replace
 import json
 import math
 from pathlib import Path
@@ -14,11 +15,14 @@ from types import SimpleNamespace
 from larp.contracts import Document
 from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel
-from larp.intelligence.common import IntelligenceError, digest, sha256_hex
+from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
+from larp.intelligence.config import CONFIG_DIR
 from larp.intelligence.model_budget import ModelBudget
 from larp.intelligence.models import ModelIdentity, response
 from larp.intelligence.providers import OpenAIResponsesModel
 
+# Stage prompts (IDEA-081): Markdown addenda appended to the core assessor prompt, read only from the release.
+STAGE_PROMPT_DIR = CONFIG_DIR / 'prompts' / 'routing'
 OPENAI_PRICE = dict(input_micro_usd_per_mtok=2_000_000, output_micro_usd_per_mtok=10_000_000,
                     source='https://developers.openai.com/api/docs/models/gpt-6.1-sol;2026-10-15;standard')
 
@@ -263,33 +267,76 @@ class RoutedAssessor:
         return Document.from_dict(result)
 
 
+def stage_config(config, prompt, prompt_dir=STAGE_PROMPT_DIR):
+    """The core config with the stage's pinned addendum appended to its prompt (IDEA-081).
+
+    The composed text and its hash replace the core prompt for that stage only, so the adapter's
+    hash check, the recorded prompt hash and the assessment key all name what the model was sent."""
+    if type(prompt) is not dict or set(prompt) != {'name', 'sha256'} or type(prompt['name']) is not str:
+        raise IntelligenceError('Stage prompt needs exactly a name and a sha256')
+    name = prompt['name']
+    if not name.endswith('.md') or name != Path(name).name or name.startswith('.'):
+        raise IntelligenceError('Stage prompt must be a Markdown file name in the routing prompt directory')
+    pinned = require_hash(prompt['sha256'], 'stage prompt sha256')
+    try:
+        raw = (prompt_dir / name).read_bytes()
+    except OSError:
+        raise IntelligenceError('Stage prompt file is missing: ' + name) from None
+    if sha256_hex(raw) != pinned:
+        raise IntelligenceError('Stage prompt does not match its pinned hash: ' + name)
+    text = config.prompt_text.rstrip('\n') + '\n\n' + raw.decode('utf-8')
+    return replace(config, prompt_text=text, prompt_sha256=sha256_hex(text.encode('utf-8')))
+
+
 def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts, secrets, budget_root,
-                          transports=None):
-    """Construct without network I/O. Spec bytes are pinned by the runtime config before this call."""
-    if spec.get('schema') != 'AIandRouting.v1' or spec.get('openai_model') != 'gpt-6.1-sol':
+                          transports=None, prompt_dir=STAGE_PROMPT_DIR):
+    """Construct without network I/O. Spec bytes are pinned by the runtime config before this call.
+
+    AIandRouting.v2 pins one stage prompt per model (`prompt` on each entry, `openai_prompt`);
+    v1 sends every stage the core prompt, as before."""
+    if spec.get('schema') not in ('AIandRouting.v1', 'AIandRouting.v2') or spec.get('openai_model') != 'gpt-6.1-sol':
         raise IntelligenceError('Unsupported routing schema or OpenAI model')
+    staged = spec['schema'] == 'AIandRouting.v2'
+    entries = [spec.get('routine'), *(spec.get('external_reviewers') or [])]
+    if any(type(e) is not dict for e in entries):
+        raise IntelligenceError('Routing model entries must be objects')
+    if not staged and ('openai_prompt' in spec or any('prompt' in e for e in entries)):
+        raise IntelligenceError('Stage prompts need schema AIandRouting.v2')
+    if staged and ('openai_prompt' not in spec or any('prompt' not in e for e in entries)):
+        raise IntelligenceError('AIandRouting.v2 needs a stage prompt for every model')
+    configs = {}
+
+    def config_for(prompt):
+        return stage_config(config, prompt, prompt_dir) if staged else config
     if type(spec.get('max_output_tokens')) is not int or not 0 < spec['max_output_tokens'] <= 16000:
         raise IntelligenceError('Routing output limit must be 1..16000')
     if not secrets.get('LARP_AIAND_API_KEY'):
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}
-    common = dict(prompt_text=config.prompt_text, prompt_sha256=config.prompt_sha256, clock_ms=clock_ms,
-                  artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
+    common = dict(clock_ms=clock_ms, artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
 
     def external(entry):
-        return AIandChatModel(model_id=entry['model_id'], effort=entry['effort'],
-                              catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
-                              transport=transports.get('aiand'), **common)
+        c = config_for(entry.get('prompt'))
+        model = AIandChatModel(model_id=entry['model_id'], effort=entry['effort'],
+                               catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
+                               transport=transports.get('aiand'), prompt_text=c.prompt_text,
+                               prompt_sha256=c.prompt_sha256, **common)
+        configs[model] = c
+        return model
 
     budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'])
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]
     openai = None
+    openai_config = config_for(spec.get('openai_prompt'))  # checked even without a key: the spec is all-or-nothing
     if secrets.get('LARP_MODEL_API_KEY'):
         openai = BudgetedOpenAI(OpenAIResponsesModel(model_id=spec['openai_model'],
             effort=spec['openai_effort'], api_key=secrets['LARP_MODEL_API_KEY'], price=OPENAI_PRICE,
-            transport=transports.get('openai'), **common), budget)
-    make = lambda model: EvidenceAssessor(registry=registry, reader=reader, model=model, config=config, clock_ms=clock_ms)
+            transport=transports.get('openai'), prompt_text=openai_config.prompt_text,
+            prompt_sha256=openai_config.prompt_sha256, **common), budget)
+        configs[openai] = openai_config
+    make = lambda model: EvidenceAssessor(registry=registry, reader=reader, model=model,
+                                          config=configs.get(model, config), clock_ms=clock_ms)
     return RoutedAssessor(routine=routine, external_reviewers=reviewers, openai=openai, budget=budget,
                           make_assessor=make, clock_ms=clock_ms, artifacts=artifacts,
                           policy=dict(audit_sample_bps=spec['audit_sample_bps'], audit_seed=spec['audit_seed'],
