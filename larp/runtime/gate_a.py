@@ -43,6 +43,19 @@ def check_balance_rpc(url, source_id):
         raise ContractError('The balance RPC needs both an HTTPS URL and a source ID, or neither')
 
 
+def rpc_provider_list(url, source_id, providers):
+    """GA15 (IDEA-066 PC-RPC01): the ordered balance providers from either the single URL pair or a list, or None.
+
+    The list is checked with the runtime's own `balance_providers`, so prepare never writes a list the runtime refuses."""
+    check_balance_rpc(url, source_id)
+    if providers is None:
+        return None if url is None else [dict(url=url, source_id=source_id)]
+    if url is not None:
+        raise ContractError('Name the balance RPC list or the single URL pair, not both')
+    from larp.runtime.service import balance_providers
+    return balance_providers(dict(balance_rpc_providers=providers))
+
+
 def capture_inputs(client, wallet, rpc=None):
     """Exactly two read-only endpoints, never quote-and-swap, signing or audit delivery.
 
@@ -214,8 +227,11 @@ def check_initial_state(state, capture):
 
 
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
-            balance_rpc_url=None, balance_rpc_source_id=None):
-    """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage."""
+            balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None):
+    """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
+
+    The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
+    list (GA15), never both."""
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('A separately reviewed LIVE profile is required')
@@ -235,13 +251,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(now).timestamp() * 1000))
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
-    check_balance_rpc(balance_rpc_url, balance_rpc_source_id)
-    if balance_rpc_url is not None and 'chain' not in capture:
+    providers = rpc_provider_list(balance_rpc_url, balance_rpc_source_id, balance_rpc_providers)
+    if providers is not None and 'chain' not in capture:
         # GA12: with the balance RPC configured, nothing excuses a capture without the chain read.
-        raise ContractError('A chain balance capture required: capture with --balance-rpc-url')
+        raise ContractError('A chain balance capture required: capture with --balance-rpc-url or --balance-rpc-config')
     if 'chain' in capture:
         check_chain(capture, now)
-        if balance_rpc_url is not None and capture['chain'].get('source_id') != balance_rpc_source_id:
+        if providers is not None and capture['chain'].get('source_id') not in {p['source_id'] for p in providers}:
             raise ContractError('The chain balance capture came from another RPC source')
     state = initial_state(capture, profile, run_id)
     state_raw = encoded(state) + b'\n'
@@ -255,10 +271,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     # values stay null, the report names BALANCE_RPC, and the runtime refuses to start.
     if 'balance_rpc_providers' in runtime['driver']:
         # IDEA-055 PR 5 (#116): the example lists providers; the runtime refuses a block naming both forms (GA14).
-        if balance_rpc_url is not None:
-            runtime['driver']['balance_rpc_providers'] = [dict(url=balance_rpc_url, source_id=balance_rpc_source_id)]
+        if providers is not None:
+            runtime['driver']['balance_rpc_providers'] = providers
     else:
-        runtime['driver'].update(balance_rpc_url=balance_rpc_url, balance_rpc_source_id=balance_rpc_source_id)
+        if providers is not None and len(providers) > 1:
+            raise ContractError('This rendered config uses the single balance_rpc_url form; it cannot hold a backup')
+        first = providers[0] if providers else dict(url=None, source_id=None)
+        runtime['driver'].update(balance_rpc_url=first['url'], balance_rpc_source_id=first['source_id'])
     runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
                              strategy_profile_sha256=digest(profile_raw),
@@ -293,7 +312,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA-P3, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
                   + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
-                  + ([] if balance_rpc_url else ['BALANCE_RPC'])
+                  + ([] if providers else ['BALANCE_RPC'])
                   # GA11: without a chain read, an in-flight transaction cannot be ruled out; Gate B needs it.
                   + ([] if 'chain' in capture else ['CHAIN_BALANCE_CAPTURE']),
                   host_checks={name: 'NOT_RUN' for name in HOST_CHECKS},

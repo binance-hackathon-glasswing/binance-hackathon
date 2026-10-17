@@ -429,6 +429,13 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
     return dict(activated=True, run_id=run_id, epoch=epoch, signing_enabled=False)
 
 
+def runtime_guard(store, c):
+    """The supervised runtime's HALT guard, with the kernel clock signal for the D-DN-10 automatic CLOCK clear."""
+    from larp.runtime.supervision import CLOCK_CLEAR_AFTER_MS, kernel_clock_synchronized
+    return Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after'],
+                 clock_sync=kernel_clock_synchronized, clock_clear_after_ms=CLOCK_CLEAR_AFTER_MS)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('check', 'run', 'init', 'activate'))
@@ -477,7 +484,7 @@ def main(argv=None):
                              wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
                              ai_seeds_dir=c.get('ai_seeds_dir'), nonce_dir=c.get('nonce_dir'))
         service = Service(store, c['run_id'], c['build_id'], driver=driver,
-                          guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
+                          guard=runtime_guard(store, c),
                           clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'],
                           start_check=start_check, cycle_timeout_s=c.get('cycle_timeout_seconds'))
         signal.signal(signal.SIGTERM, service.stop)

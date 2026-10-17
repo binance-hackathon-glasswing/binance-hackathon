@@ -54,3 +54,19 @@ Checked against `deploy/aws/network.tf` before any change is built. SA1–SA7 st
 ## Results
 
 Not started.
+
+### MR-143–153 — integration merge criteria (2026-10-17)
+
+Keegan requests conflict resolution and integration merges for the reviewed
+PRs #143/#144/#148/#149/#151/#153. Preserve history with merge commits;
+merge #143 before #149, retaining the corrected SA3 and SA8/SA9 amendment,
+Terraform implementation/results and all unrelated ledger rows. Preserve both
+the signing-lifetime SL-01 and cap-proposal CP-01 records when they overlap.
+Neither proposal becomes an adopted numeric policy through this merge.
+
+Prospective verification: no conflict markers or duplicate ledger IDs in
+resolved files; existing Terraform mock tests for signer provisioning pass;
+combined Gate A/package/RPC and cap-proposal regression checks pass on exact
+Git bytes. Run changed decision/trading/logging code only after it is pushed.
+Record test limits and merge SHAs; do not infer hosted acceptance or apply
+Terraform. Actions billing (#98) and existing hosted/owner gates remain open.

@@ -96,7 +96,8 @@ does not send a message or activate it. Preserve the report/capture hashes and
 record the choice in IDEA-055 RPC-Q01 before updating the release services list.
 
 Yao Zhu then opens only the chosen RPC destinations, fills the existing
-`driver.balance_rpc_providers` on the host, binds those config bytes into the
+`driver.balance_rpc_providers` (Gate A `prepare --balance-rpc-config <this file>` writes the
+ordered list; IDEA-066 PC-RPC01), binds those config bytes into the
 release manifest and runs the host's first balance read. Verify chain/finality
 and all pinned assets from `primary`; then record the runtime's first
 `BALANCE_CHECKED` verdict against the actual wallet/ledger and the balance-health
