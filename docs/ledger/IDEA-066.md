@@ -214,6 +214,35 @@ Read-only, over SSM on `primary`, plus S3 metadata from Yao Zhu's Mac.
 - **Data collected by 15:37 UTC (read-only, journal as `larp-archive`, evidence store opened read-only):** 33 journal events, including 12 rounds (12 `plan` + 12 `close`), 6 balance checks, 1 incident (the drill), 1 activation and 1 version event; 17 audit chunks, all `ACK` by the ai-seeds receiver; evidence store 280 poll batches and 4 filing records for 2 issuers, last written 15:36. Rounds use the deterministic assessor, so no model calls.
 - **Fix:** PR #163 rounds the requested retain-until up to a whole second (IDEA-082; red proof reproduces the host error, then passes). It reaches the host with the next bundle; until then each restart repeats this.
 
+## PC-RV133 — checklist PR review corrections (2026-10-17 SGT)
+
+The user requests all-PR review/fixes. Read the original submitted review and its
+ordering follow-up. O2-before-EXP007, clock synchronization and the Gate A provider
+owner were already corrected; no duplicate work was introduced. Corrected the
+remaining migration-review owner (Yao ran the host step, Keegan reviews), stated
+Isaac's key-placement exception explicitly, and counted five enabled non-EDGAR
+sources plus EDGAR = six retained files from the current register.
+
+The checklist now distinguishes merged #130/#131/#143/#144/#148/#149/#151 from
+uncompleted source, numeric and actual-plan review; preserves conditional final
+wallet credential issuance under Q-35; conditions Oct20 Gate B review on its dev
+trade; and names Keegan to identify the anonymous branch's responsible team member
+before disposition. Corrected the obsolete first-service-on-Oct20/prepare-always-
+deterministic claims and clarified billing remains broken despite accepted mirrors.
+No personal review sign-off, new policy decision, host check or branch deletion
+was inferred. The running shadow state remains owner-reported only.
+
+Validation: static checklist/register/source comparison and `git diff --check`.
+Documentation-only correction; no application test is required. GitHub authentication
+failed mid-review (HTTP401), so this correction is committed locally pending push.
+PR158's branch now includes v2 validation; a release still needs its reviewed merge.
+
+PC-RV133 follow-up: authentication recovered. Preserved the concurrent PC-AWS09
+host report and signer-assembly instructions through an ordinary merge. Corrected
+one new instruction: the bundle CA hash is in verified `BUNDLE.env`, not the
+code-only `.release.json`. The archive delivery incident is explicitly retained;
+no healthy-host claim or remediation of its permanent historical row is inferred.
+
 ## PC-AWS10 — gap report rehearsal on the shadow run, 2026-10-17 15:41 UTC
 
 Yao Zhu's Oct 18 gap-report item, rehearsed early and read-only on `primary`: `larp.sources.live report --from 2026-10-17T11:00:00Z --to <now>` as `larp-evidence` with `LARP_ARTIFACT_ROOT=/var/lib/larp-evidence`, output to a temp file and deleted. Window 4.69 h, so the verdict is `INCONCLUSIVE` by design (24 h needed); 0 corrupt log lines; one commit (`bb46234`).

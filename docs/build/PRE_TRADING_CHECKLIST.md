@@ -2,27 +2,32 @@
 
 This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Audited 2026-10-17 for the LLM path and against every open issue (IDEA-066 PC-AUD01). Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
+Review refresh: integration `a428bab` includes #130/#131/#143/#144/#148/#149/#151
+and #159. Open review scope is #126/#133/#139/#155/#157/#158/#161, plus #163 opened during review. Completed
+repository deliveries below are distinct from pending evidence, decisions and
+host checks. Host results are prior owner reports, not fresh checks by this review.
+
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
-**Who does what (2026-10-17):** Yao Zhu owns the AWS account and the hosts, so every step that touches AWS, the hosts or their Terraform is Yao Zhu's, and nothing else is: no other team member has AWS access (IDEA-066 PC-AWS01). Decisions, reviews, merges, code and write-ups sit with Isaac, Keith and Keegan.
+**Who does what (2026-10-17):** Yao Zhu owns AWS access, host operations and Terraform (IDEA-066 PC-AWS01). The one explicit exception is Isaac placing the wallet key in the separately approved signer-host session supplied by Yao Zhu; Yao still owns session access, provisioning and teardown. Decisions, reviews, merges, code and write-ups sit with Isaac, Keith and Keegan.
 
 ## Done
 
 - [x] AWS hosts applied; `primary` online over SSM and smoke-checked (2026-10-16, IDEA-066 PC-AWS02).
-- [x] Terms captured for all six enabled sources and EDGAR; shadow source preflight passes; stricter SEC contact check (IDEA-066 PC-TERMS01/02, #129).
+- [x] Terms captured for five enabled non-EDGAR sources plus EDGAR (six retained files total); shadow source preflight passes; stricter SEC contact check (IDEA-066 PC-TERMS01/02, #129).
 - [x] Real quote-cost capture running on Keith's server since 2026-10-16 18:19 UTC, set to run until 2026-10-20 00:00 UTC (#132, IDEA-063).
 - [x] Route checker built (#102); network destination table approved by Keegan for section B (#113).
 - [x] Balance RPC failover: up to four providers in order (#116). Chain-balance decisions D1–D6 decided by Yao Zhu (#110) and built (#115, #116).
 - [x] HALT split by reason, so mandatory sells continue under pausing HALTs (D-DN-09, #117).
 - [x] Gas top-up round end to end (#103); first-gas MetaMask exception confirmed by the team (#105 closed).
 - [x] Every CloudWatch alarm email now says what fired and what to do (#141, IDEA-066 PC-AWS04).
-- [x] Swap decoder code and the router-evidence check written (#130, open for review). S1 strategy code written (#131, open for review).
+- [x] Swap decoder/router-check code (#130) and S1 strategy code (#131) are merged. Actual source/route qualification and S1 parameter/input adoption remain below.
 
 ## Plan (team decision 2026-10-17)
 
 Finish every Gate A and Gate B step that doesn't need the strategy profile this weekend, then on **Oct 20** build the profile from the finished quote capture and run everything that needs it, in order. Three things need the profile: `prepare` builds the runtime config from it, the evidence service refuses to start without that runtime config, and the planner takes its minimum trade size and slippage limits from it. Gate A `prepare` accepts only a profile built from a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't be faked to start early.
 
-**Risk:** every service runs for the first time on Oct 20, and the 24 h ingestion run means Gate A can't pass before Oct 21, the day the signed rehearsal is meant to start. The side note below lowers that risk.
+**Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A still needs its actual 24 h gap report and review; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. This review does not mark the run healthy.
 
 ## This weekend (Oct 17–19): no profile needed
 
@@ -32,11 +37,12 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [x] **Isaac:** choose the balance RPC provider(s) with `finalized` support and a source ID for each. Since #116 up to four can be listed in failover order (`driver.balance_rpc_providers`). Send the URLs and IDs to Yao Zhu privately, not in an issue (#92, GAP-71). Done 2026-10-17: BNB Chain public primary, NodeReal public backup, for development balance reads (#135, IDEA-055 RPC-Q01 D1).
 - [x] **Isaac:** approve the network destination table for section C; Keegan already approved section B (#113). The table is in `architecture-deployment.md` "Approved network destinations" (#32). Done 2026-10-17 (#137, IDEA-062 NC-01).
 - [x] **Keegan:** ask the GitHub org owner to restore Actions minutes (#98). No longer needed: mirror-CI builds are the accepted release builds (Yao Zhu, 2026-10-17; IDEA-066 PC-DEC01).
-- [x] **Keegan:** after that, build the host bundle from the commit with the terms register (`1ab47ae` or later); record the run ID and the bundle and manifest hashes, and send them to Yao Zhu (#49). A mirror run is engineering evidence only (#127). Progress 2026-10-17: Keegan's mirror-CI bundle `bb46234` received and used for `primary`; the org-CI build is still blocked (#98), and the signer will need a newer bundle that includes #130. Done for Gate A with mirror bundle `bb46234` (accepted, PC-DEC01). A newer mirror bundle for Gate B is listed below.
+- [x] **Keegan:** after that, build the host bundle from the commit with the terms register (`1ab47ae` or later); record the run ID and the bundle and manifest hashes, and send them to Yao Zhu (#49). Mirror builds are accepted release builds under PC-DEC01; hosted Gate A acceptance (#127) is separate. Progress 2026-10-17: Keegan's mirror-CI bundle `bb46234` received and used for `primary`; the org-CI build is still blocked (#98), and the signer will need a newer bundle that includes #130. Done for Gate A with mirror bundle `bb46234` (accepted, PC-DEC01). A newer mirror bundle for Gate B is listed below.
 - [x] **Yao Zhu:** confirm the alarm email subscriptions (AWS SNS), send a test alarm and confirm it arrives. Done 2026-10-17: the topic had no subscription; a one-resource Terraform apply added it, Yao Zhu confirmed it, and a test ALARM on `larp-dev-database-storage` reached Yao Zhu by email (IDEA-066 PC-AWS03).
 - [x] **Yao Zhu:** after Isaac's RPC choice, open network access from `primary` to those RPC hosts (Terraform, reviewed plan). Done 2026-10-17: no change needed, since `primary` already allows outbound HTTPS; both provider hosts answered from `primary` (IDEA-066 PC-AWS05). The private URLs still come from Isaac for the Oct 20 `prepare`.
 - [x] **Yao Zhu:** after the bundle exists, upload it and provision `primary` over SSM (`provision.sh primary <bundle> --expect-sha256 <CI hash>`; AWS_RUNBOOK step 5). Done 2026-10-17 with the mirror-CI bundle `bb46234` (IDEA-066 PC-AWS06).
 - [x] **Yao Zhu:** after provisioning, run migrations 012/013 and `roles.sql` through an SSM port-forward, then check IAM token login and TLS for each database role (AWS_RUNBOOK step 6, PR99-RV1, IDEA-044 V10/V11). Done 2026-10-17: migrations 001–013 and roles applied; all four `primary` roles pass (IDEA-066 PC-AWS06).
+- [ ] **Keegan:** review Yao Zhu's PC-AWS06 migration/role output for PR99-RV1; host execution is already reported complete, independent review is not implied.
 - [x] **Yao Zhu:** copy the six retained terms files from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register. Done 2026-10-17: installed, host preflight `ok` (IDEA-066 PC-AWS06).
 - [x] **Yao Zhu:** on `primary`, run the route check (`python -m larp.runtime.routes --role primary`) and record `chronyc tracking`. Also confirm that `/etc/chrony.conf` has `rtcsync` and that `kernel_clock_synchronized()` prints `True` there (command in DEPLOYMENT_DAY step 9); without that signal a `CLOCK` HALT never clears (D-DN-10, #125). Send the reports to Keegan (R-07, R-08). Done 2026-10-17: 13/13 PASS, chrony normal (IDEA-066 PC-AWS06).
 
@@ -44,37 +50,37 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 - [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete.
 - [ ] **Keegan:** build a new mirror bundle from the current integration head (it must include #130, #144, #148, #153 and, after they merge, #158 and #163) and send its hashes to Yao Zhu, for reprovisioning `primary` (the model trial below needs it first) and provisioning the signer at Gate B.
-- [ ] **Keegan:** review Isaac's router evidence, then review and merge #130. If #131 merged first, keep both `docs/LEDGER.md` rows.
+- [ ] **Keegan:** independently review Isaac's complete verified router evidence (#138/#139) when supplied. Decoder PR #130 is already merged and its repository review is recorded in IDEA-070; that does not approve missing real source evidence.
 - [ ] **Keith:** give Isaac the quote files the capture has recorded so far (no credentials or `.env`), for the router check.
-- [ ] **Isaac:** after #130 merges, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed.
-- [x] **Isaac:** write the two options for how long a signing request stays valid, with a recommendation: (a) a bounded signing lifetime, or (b) a router deadline no later than the proposal's expiry. #130 found this blocks every real swap: intents live 15 s, a quote's encoded deadline is about 30 s (#27). Done 2026-10-17 in #144 (open for review): `SIGNING_LIFETIME_PROPOSAL.md` and IDEA-049-C SL-01 recommend option A conditionally (60 s only an illustrative value) and note that the 30 s is the kit's stated quote lifetime, not a measured deadline.
+- [ ] **Isaac:** using merged #130, after the source-evidence review, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed.
+- [x] **Isaac:** write the two options for how long a signing request stays valid, with a recommendation: (a) a bounded signing lifetime, or (b) a router deadline no later than the proposal's expiry. The encoded-deadline versus 15 s admission contract is unresolved (#27); about 30 s is the kit-stated quote lifetime, not a measured encoded deadline. Done 2026-10-17 in merged #144: `SIGNING_LIFETIME_PROPOSAL.md` and IDEA-049-C SL-01 recommend option A conditionally (60 s only an illustrative value) and note that the 30 s is the kit's stated quote lifetime, not a measured deadline.
 - [ ] **Keith:** check what each #27 option in #144 does to the profile's quote age and proposal lifetime, and comment on #27.
 - [ ] **Keegan:** decide #27 from Isaac's options and Keith's comment, record it as C-OPEN-003 in IDEA-049-C, and open the code change.
-- [x] **Isaac:** propose the per-token input caps, the fee cap and `allowed_spenders` (the router's `tx.to` from the router evidence) for `signer.json` (#44). Done 2026-10-17 in #148 (open for review): USDT input 35 (development) / 70 (final), fee cap 0.0002 BNB per transaction, token caps at 50% of the Oct 10 reference marks, spender the router `0xb444…fdda5`. Not installable until approved (`ready_to_install: false`).
+- [x] **Isaac:** propose the per-token input caps, the fee cap and `allowed_spenders` (the router's `tx.to` from the router evidence) for `signer.json` (#44). Done 2026-10-17 in merged #148: USDT input 35 (development) / 70 (final), fee cap 0.0002 BNB per transaction, token caps at 50% of the Oct 10 reference marks, spender the router `0xb444…fdda5`. Not installable until approved (`ready_to_install: false`).
 - [x] **Isaac:** hand over a development `signer.json` draft and a technical cap review (#160, PR #161; received by Yao Zhu 2026-10-17, IDEA-066 PC-SIG01). Draft SHA-256 `339c4202…1442`; its `signing_policy` is byte-identical to the merged CP-01 development candidate (policy SHA-256 `254f5c31…2033`). Nominal check passed: the largest input is 20.10 USDT (EQUAL_WEIGHT) or 28.60 USDT (proposed S1) against the 35 USDT cap, at 100 USDT capital. The review was done by Isaac's delegated assistant, not by Keith. `ready_to_install: false`.
 - [ ] **Keegan:** review and merge #161 (the handoff record).
 - [ ] **Keith:** after the Oct 20 profile, finish the cap checks the handoff could not run, and record the file hashes on #44: the profile's `per_trade_cap_units` and `gas_top_up_cash_units` are each ≤ 35 000 000 micro-USDT; every full stock holding in the fresh wallet capture fits its token cap; measured approve and swap fees each fit 0.0002 BNB. PR #155's numeric-review tool can do this. Do not count the 40 USDT quote-capture size as a trade size: it is above the 35 USDT cap.
 - [ ] **Isaac:** set the execution gas limits so `max_gas × max_gas_price ≤ 200 000 000 000 000` wei (0.0002 BNB); otherwise the signer refuses the transaction. Example: at 1 116 000 gas the price must stay ≤ 0.179 gwei.
 - [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. A `dev` signer would start with the example label, so this decision is the real lock, not the code.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
-- [ ] **Keegan:** review #143 (SA3 corrected: the endpoints must admit both host groups because private DNS is VPC-wide; new SA8 signer egress and SA9 `primary` SSM check), then review #149 and its Terraform plan.
+- [ ] **Keegan:** review Yao Zhu's actual IDEA-080 Terraform plan before apply. #143 and implementation #149 are already merged/reviewed in the repository; the host apply is still pending. Preserve SA3 (both host groups), SA8 signer egress and SA9 primary SSM checks.
 - [ ] **Yao Zhu:** on Gate B day, finish `signer.json` from Isaac's draft (copy kept outside Git in `deploy/activation/signer-dev-20261017/`). Order: Keegan's Gate B bundle exists, Isaac's router evidence is merged and his #44 policy decision is in, then the IDEA-080 apply below. The six fields the draft leaves null, and where each comes from:
   - `database_host`: `terraform -chdir=deploy/aws output -raw database_host` (the same RDS `primary` uses). Keep it out of Git and chat.
-  - `database_ca_sha256`: `rds_ca_sha256` in the Gate B bundle's `.release.json` (`d73890748b5a…` for `bb46234`, PC-AWS06); check it on the signer with `sha256sum /etc/larp/rds-ca.pem`.
+  - `database_ca_sha256`: `rds_ca_sha256` in the verified Gate B bundle's `BUNDLE.env` (the `.release.json` has code identity, not CA metadata) (`d73890748b5a…` for `bb46234`, PC-AWS06); check it on the signer with `sha256sum /etc/larp/rds-ca.pem`.
   - `build_id`: the full 40-character commit in the Gate B bundle's `.release.json`; the same in `execution.json`, the runtime config and the release manifest.
   - `run_id`: the ID chosen for the signed rehearsal run, the same one passed to `prepare` and `service init` for it and used in `execution.json` and the initial state (e.g. `larp-dev-rehearsal-20261021`). Never `larp-dev-shadow-20261017`.
   - `router_evidence_file`: `/etc/larp/router-evidence.json` on the signer, a copy of Isaac's merged `config/execution/router-evidence.v1.json` (GATE_B.md steps 4 and 8). **Blocked on #139.**
   - `router_evidence_sha256`: `sha256sum /etc/larp/router-evidence.json`; must equal Isaac's recorded hash. `execution.json` gets the same pair.
-  Shortcut for the database fields: `python tools/deploy/render_host_configs.py --terraform-output /tmp/tf.json --wallet 0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479 --out deploy/activation/development --rds-ca-sha256 <bundle rds_ca_sha256>` (DEPLOYMENT_DAY step 7) fills them and lists what is still unset; replace its example `signing_policy` with Isaac's decided one. Then record the final file's SHA-256 (not the draft's `339c4202…`), install it as `/etc/larp/signer.json` and re-bind with `--service-config signer=/etc/larp/signer.json`.
+  Shortcut for the database fields: `python tools/deploy/render_host_configs.py --terraform-output /tmp/tf.json --wallet 0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479 --out deploy/activation/development --rds-ca-sha256 <verified BUNDLE.env rds_ca_sha256>` (DEPLOYMENT_DAY step 7) fills them and lists what is still unset; replace its example `signing_policy` with Isaac's decided one. Then record the final file's SHA-256 (not the draft's `339c4202…`), install it as `/etc/larp/signer.json` and re-bind with `--service-config signer=/etc/larp/signer.json`.
 - [ ] **Yao Zhu:** after #44's approval and Keegan's review of #143 and #149, apply the IDEA-080 Terraform change (built 2026-10-17 in #149: temporary SSM endpoints, off by default, `terraform test` 19 passed; planned, not applied), provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
 - [ ] **Isaac:** after that, place the key file on the signer host only (`/etc/larp/signer/wallet.key`, root, `0600`) (DR-03).
-- [ ] **Isaac:** swap about 2 USDT more in MetaMask and record the fresh opening balance afterwards (#106). The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is written in #151 (open for review; closes #150).
+- [ ] **Isaac:** swap about 2 USDT more in MetaMask and record the fresh opening balance afterwards (#106). The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is recorded in merged #151; parent #106 retains the remaining funding/capture.
 - [ ] **Keith:** propose the BNB floor and top-up size (G-28) from the measured gas (#30).
 - [ ] **Isaac:** show BNB tracking (`native_trace`) works on a real provider, and accept or change Keith's floor and top-up size (#30).
 
 ### Model trial: before Gate B goes live
 
-Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run to the LLM assessor (`aiand_routed`) right after the 24 h gap report (Oct 18, after 11:00 UTC), on a new bundle that includes #158's stage prompts. About $49 of OpenAI credit is left; Keith holds those credits and settles the budget numbers. The running shadow run makes no model calls today: Gate A `prepare` pins the assessor to `deterministic` (IDEA-081).
+Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run to the LLM assessor (`aiand_routed`) right after the 24 h gap report (Oct 18, after 11:00 UTC), on a new bundle that includes #158's stage prompts. About $49 of OpenAI credit is left; Keith holds those credits and settles the budget numbers. The deployed run was reported deterministic; it was not inspected in this review. Merged #159 now opts into routing with explicit file/hash inputs; existing deployments do not switch automatically.
 
 **The LLM stays in for the signed rehearsal (decided by Yao Zhu, 2026-10-17, IDEA-066 PC-DEC03).** The proposal declares a hosted reasoning LLM for the evidence step, and the team keeps it. Today the code allows the LLM assessor only in unsigned shadow execution (`larp/runtime/service.py`), so the Oct 21–26 rehearsal needs a reviewed code change and an early model decision on Oct 20, both below. If either is missing on Oct 21, the rehearsal starts on `deterministic` and switches once both are in (a version event, recorded as a deviation). The full decision on Oct 22 confirms it with at least 3 trial days.
 
@@ -122,7 +128,7 @@ These were missing from every list; each one is needed for the LLM to be in the 
 - [x] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04). Done 2026-10-17 (IDEA-049-D D-DN-02, #140).
 - [ ] **Keith:** write up the two options for the first signed trade. The rehearsal profile's buy window is fixed in code at Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS` in `larp/strategy/profiles.py`), so a round on Oct 20 plans no buys. Option 1: trade on Oct 21 inside that window. Option 2: add a dev window before Oct 20 (code change, recorded as a version event).
 - [ ] **Isaac:** pick one of Keith's two options and tell Yao Zhu.
-- [ ] **Keith:** decide which profile to build on Oct 20: `EQUAL_WEIGHT` (in the code today) or S1 `TREND_GUARDED_VOL` (needs #131 merged; its values stay proposals until Oct 22).
+- [ ] **Keith:** decide which profile to build on Oct 20: `EQUAL_WEIGHT` (in the code today) or S1 `TREND_GUARDED_VOL` (code #131 is merged; its values stay proposals until the recorded freeze).
 - [ ] **Keith:** propose what mandatory exits do during a price-jump hold (IDEA-055 POLICY-HOLD). HALT for mandatory sells is already built (#117).
 - [ ] **Isaac:** decide POLICY-HOLD from Keith's proposal.
 - [ ] **Keegan:** confirm the trial bars after Keith's review (moved before the switch on Oct 18; see "Model trial" above).
@@ -132,7 +138,7 @@ These were missing from every list; each one is needed for the LLM to be in the 
 
 ## Side note: interim profile for an early dry run (optional)
 
-Keith is trying this. If it works, the services can start over the weekend, so first-run problems (configs, receiver ACKs, ingestion) show up before Oct 20. It is thrown away on Oct 20 and replaced by the final profile. Gate A is unsigned, so the interim values only change shadow HOLD/BUY decisions.
+The interim profile is already running in the owner-reported Oct 17 shadow run (PC-AWS07). It is replaced on Oct 20 by the final profile; its mandatory coverage/hash record remains below. Gate A is unsigned, so the interim values only change shadow HOLD/BUY decisions.
 
 - [x] **Keith:** on the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5. Done 2026-10-17 (`--min-days 2 --min-samples 9`).
 - [x] **Keith:** build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`, and send `rehearsal-live.json` to Yao Zhu. Done 2026-10-17 by Yao Zhu from Keith's summary (`d951207f…`).
@@ -153,7 +159,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 7. [ ] **Yao Zhu:** confirm the first shadow round is ACKed by the real ai-seeds receiver (R-01), which starts the 24 h ingestion clock, and send the round ID to Keegan.
 8. [x] **Yao Zhu:** restart drill (kill a service, check it returns on the same build with an incident logged) and check the first hourly anchor (DR-13, DR-15). Done early 2026-10-17 on the shadow run: back in 10.3 s with one RESTART incident; the 11:00 anchor verifies against the journal, COMPLIANCE-locked (IDEA-066 PC-AWS08). Repeat after the Oct 20 re-activation only if Keegan asks.
 9. [ ] **Isaac:** only if a dev window was chosen: watch the runtime's first approve plus swap on the dev wallet and check it on chain against the logged round (DR-02, DR-03).
-10. [ ] **Keegan:** after step 9, Gate B review in IDEA-042. The host-side crash tests (DR-04, DR-05) are step 3 of the Oct 21 list.
+10. [ ] **Keegan:** only if the dev-window trade in step 9 occurred, perform the Gate B review in IDEA-042; otherwise use the Oct 21 Gate B review after its first signed trade. The host-side crash tests (DR-04, DR-05) are step 3 of the Oct 21 list.
 
 ## Oct 21
 
@@ -177,7 +183,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 - [x] **Keegan:** renumber #123's ledger entry (IDEA-058 is already the Gate A entry) and retarget #123 to the integration branch. Done: #123 is now IDEA-075 and targets the integration branch.
 - [x] **Isaac:** after that, review and merge the S1 plan (#123). Done 2026-10-17: reviewed (TRV-01 to TRV-05 addressed) and merged as IDEA-075 and EXP-007.
-- [ ] **Keith:** review and merge the S1 code (#131). If #130 merged first, keep both `docs/LEDGER.md` rows.
+- [x] **Keith:** S1 code #131 is merged; repository review RV-131 is recorded in IDEA-076. Weights, live inputs and parameter decisions remain separate tasks below.
 - [ ] **Keith:** freeze the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`).
 - [ ] **Keith:** propose final values for every S1 parameter (§12) and open choices O1 and O3–O6.
 - [ ] **Keegan:** confirm Keith's S1 values and choices.
@@ -210,7 +216,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Isaac:** sign off DR-01 to DR-06 in IDEA-042.
 - [ ] **Yao Zhu:** sign off DR-12 and DR-16 (live sources, hosting) in IDEA-042.
 - [ ] **Keegan:** sign off the remaining DR items (DR-07, DR-13, DR-15, DR-17 to DR-22) in IDEA-042.
-- [ ] **Isaac:** get the final wallet's new `AI_SEEDS_SECRET` by Oct 26 and hand it to Yao Zhu for the host secret, never in chat or an issue (GAP-52).
+- [ ] **Isaac:** confirm the final-wallet credential issuance under Q-35 and obtain the applicable `AI_SEEDS_SECRET` by Oct 26. If a new secret is issued, deliver it to Yao Zhu securely, never in chat or an issue (GAP-52); do not assume the development secret applies.
 - [ ] **Yao Zhu:** put the final wallet's secret into AWS Secrets Manager (`put_service_secrets.sh`). The script replaces the whole runtime secret, so re-enter `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` too; without the AIand key the runtime refuses to start. Never re-`init` the model budget ledger for the new wallet: it covers the whole run.
 - [ ] **Isaac:** first-gas swap on the final wallet (about 6 USDT) before Oct 29 00:00 UTC (#106).
 - [ ] **Keegan:** send the organiser questions Q-39 (scoring, BNB in equity), Q-04, Q-06, Q-08, Q-14, Q-33 and Q-35 (GAP-42).
@@ -218,11 +224,11 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 ## Housekeeping
 
 - [ ] **Keith:** confirm A-T15 on #25 (issuer IDs fixed in #78; the proof passes) so it can be closed.
-- [ ] **Keegan:** close #98 (org Actions no longer needed, PC-DEC01) and update the trackers #22 and #42 with what has closed.
+- [ ] **Keegan:** reconcile #98 with accepted mirror builds (PC-DEC01): organization Actions still fails on billing, so do not call billing fixed. Record whether #98 is retained or retired as not planned, and update trackers #22/#42 with actually completed work.
 - [x] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`. Done: closed 2026-10-17.
 - [x] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92. Done: closed 2026-10-17.
 - [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.
-- [ ] Branch cleanup (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them:
+- [ ] **Keegan:** coordinate branch disposition (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them:
 
   | Branch | Last commit by | Earlier PR | Decides |
   |---|---|---|---|
@@ -231,5 +237,5 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
   | `claude/issue59-systemd-runtime-dirs` | Claude session | #83 (closed) | Keegan |
   | `claude/local-ci-20261015` | Cookiemunchrr | none | Keegan |
   | `docs/idea-052-timesfm-20261015` | Cookiemunchrr | none | Keegan |
-  | `codex/pr-review-system-20261012` | wtvlol | none | wtvlol |
+  | `codex/pr-review-system-20261012` | wtvlol | none | Keegan identifies the responsible team member before disposition |
   | `codex/thin-path` | Keegan | #10 (closed) | Keegan |
