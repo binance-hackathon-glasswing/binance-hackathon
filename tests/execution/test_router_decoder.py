@@ -190,13 +190,14 @@ def artifact(directory, endpoint, params, data):
     (Path(directory) / (hashlib.sha256(raw).hexdigest() + '.json')).write_bytes(raw)
 
 
-def quote(directory, pay, receive, amount, minimum, data=None):
+def quote(directory, pay, receive, amount, minimum, data=None, *, wallet=WALLET, router=ROUTER):
     artifact(directory, 'aggregator/quote-and-swap',
-             dict(fromTokenAddress=pay, toTokenAddress=receive, amount=str(amount), userWalletAddress=WALLET,
+             dict(fromTokenAddress=pay, toTokenAddress=receive, amount=str(amount), userWalletAddress=wallet,
                   binanceChainId='56'),
-             dict(executionMode='SWAP', tx=dict(to=ROUTER, value='0', gas='250000', gasPrice='100000000',
+             dict(executionMode='SWAP', tx=dict(to=router, value='0', gas='250000', gasPrice='100000000',
                                                 minReceiveAmount=str(minimum),
-                                                data=data or calldata(pay, receive, amount, minimum))))
+                                                data=data or calldata(pay, receive, amount, minimum,
+                                                                      recipient=wallet))))
 
 
 class RecordedRouteCheck(unittest.TestCase):  # R8
