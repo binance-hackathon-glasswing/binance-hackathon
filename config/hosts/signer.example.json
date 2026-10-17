@@ -13,6 +13,8 @@
   "database_ca_file": "/etc/larp/rds-ca.pem",
   "database_ca_sha256": null,
   "region": "ap-southeast-2",
+  "router_evidence_file": null,
+  "router_evidence_sha256": null,
   "signing_policy": {
     "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
     "allowed_spenders": null,

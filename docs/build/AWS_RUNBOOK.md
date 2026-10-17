@@ -33,11 +33,11 @@ The team's credit project: Free plan, $100 credits, expiring 2027-04-12. Run `aw
 Database `larp-dev`:
 - PostgreSQL 14.24 on `db.t4g.micro`, single-AZ, private, encrypted, IAM authentication.
 - **1-day automated backups**, because the Free plan refuses more. The daily logical backup to the locked archive is separate.
-- **Not migrated yet:** no tables, and no service roles (`roles.sql` not run).
+- **Migrated 2026-10-17** (IDEA-066 PC-AWS06): migrations 001–013 and `roles.sql` applied through an SSM port-forward from Yao Zhu's Mac; 21 tables and the five IAM-only service roles exist.
 
 | Hosts and primary egress (`deploy/aws`, Gate A plan, IDEA-066 PC-AWS02): `primary` t3.small (public IPv4, HTTPS-only egress through a new internet gateway on the public route table, development SSM) and `signer` t3.micro (private subnet, no public IP, no SSM), AL2023 x86_64 `ami-0587b5bb1bc9eab99`, encrypted 20 GiB gp3, IMDSv2, termination protection; 6 host and 5 service alarms | 2026-10-16 UTC | ≈ $23/month more |
 
-Instance IDs: `primary` `i-040fc5fea8b700e9a` (rebuilt 2026-10-16 so SSM works; SSM `Online`; read-only host smoke check passed, IDEA-066 PC-AWS02), `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. No LARP software is installed yet: the hosts carry only the cloud-init role file, so the five service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
+Instance IDs: `primary` `i-040fc5fea8b700e9a` (rebuilt 2026-10-16 so SSM works; SSM `Online`; read-only host smoke check passed, IDEA-066 PC-AWS02), `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. `primary` is provisioned with build `bb46234` from the mirror-CI bundle (IDEA-066 PC-AWS06; units enabled, none started); `signer` carries only the cloud-init role file. The service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
 
 **Applied 2026-10-16 UTC with the host plan (IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The plan showed `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change; both were applied.
 

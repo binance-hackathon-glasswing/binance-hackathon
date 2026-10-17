@@ -273,3 +273,110 @@ The post-merge review of #145 found that `prepare_shadow.rpc_providers` copies `
 - **GA15b-3: PASS.** Mutation (`rpc_providers` reads the file with plain `json.loads`): 5 failures (3 GA15b subtests and the tracked-file test). Restored.
 - **GA15b-4: PASS.** `rpc_provider_list` returns `balance_providers(...)` directly; for a non-None list that function returns a list or raises, so the removed `None` check could not run. The PC-RPC01 tests pass; the only edits are `FILE_PRIMARY`/`FILE_BACKUP` (public source IDs) in the file tests and the message pattern `must be ignored`.
 - **GA15b-5: PASS.** Gate A, `gate_a_check` and balance RPC qualification tests: 56 passed, 1 skipped. Full local suite (Anaconda Python 3.14): 1354 passed, 400 skipped (base: 1353 plus the one new test). The failures are the same three as at the base (`psycopg`/`boto3` distributions missing locally) and the same `test_final_review_d.py` collection error (`eth_account`). Org CI remains billing-blocked (#98).
+
+### GA15c — PR143–151 review: provider-reader failures (2026-10-17)
+
+Scope: PRs #143, #144, #145, #147, #148, #149 and #151; #146 and #150
+are issues, not pull requests. Reviewed the fetched heads, source changes,
+prospective criteria and normalized evidence against integration `bb46234`.
+PRs #145/#147 are already merged. No new live or hosted action is authorized.
+
+**Finding GA15c-R1 (P2, #147):** reusing `private_config` introduces a
+`subprocess.TimeoutExpired` path from the ten-second `git check-ignore`
+timeout. `prepare_shadow.main` does not catch it, so capture/prepare can
+escape with a traceback instead of the documented sanitized exit 4.
+
+Prospective acceptance, before executing the regression:
+
+- **GA15c-1:** inject a timeout at the shared reader's Git subprocess with
+  a credential sentinel in its command/output. Both CLI commands return 4
+  and JSON `INPUTS_REFUSED`; no sentinel, provider URL or traceback escapes.
+- **GA15c-2:** capture refuses before reading credentials or making external
+  calls; prepare writes no output. Preserve the shared reader and timeout.
+- **GA15c-3:** demonstrate the regression fails on the reviewed code, then
+  passes after the fix; run Gate A, package-check and RPC qualification tests.
+
+Other review dispositions: #143's endpoint ingress/egress amendment matches
+the network source; #144 accurately keeps its finite lifetime proposal
+unadopted; #149 implements the corrected SA3/SA8 with development-only,
+off-by-default resources. No additional source defect found in those changes.
+Their owner approvals and hosted SA4/SA5/SA9 checks remain open as recorded
+in IDEA-080 and IDEA-049-C. #151 distinguishes the relayed explorer credit
+from unavailable RPC tracing and current balances; only normalized arithmetic
+and internal references are reviewed here, not its unavailable private raw
+artifacts. #148's cross-platform output reproducibility is being checked
+separately under IDEA-049-C CP-01. No whole backlog item is completed by
+this review; existing GAP-69–GAP-72 and Gate B owners remain unchanged.
+
+#### GA15c results (2026-10-17)
+
+- Criteria `f943f21`, regression `0fbb780`, fix `6aba711`; all pushed before
+  their respective checks. The regression fails on both commands at
+  `0fbb780` with uncaught `TimeoutExpired`, then passes at `6aba711`.
+- GA15c-1/2 PASS: both commands return sanitized JSON/exit 4, with no
+  credential read, client construction, output write or sentinel disclosure.
+  The shared reader's ten-second Git timeout remains intact.
+- GA15c-3 PASS: Linux/Python 3.10.12, exact Git blobs in an isolated temporary
+  checkout with Git metadata for ignore checks: 58 tests run, 57 passed,
+  1 PostgreSQL-dependent skip across Gate A, `gate_a_check` and RPC
+  qualification. The dedicated regression also passes on Windows/Python 3.14.
+  The broad Windows run is not acceptance evidence: CRLF-converted fixture
+  bytes fail published hashes, and Linux-only file semantics differ. The
+  initial archive-only Linux run lacked Git metadata and failed the existing
+  ignored-file check; adding temporary Git metadata resolves it.
+- `git diff --check` PASS. No org CI, full-suite, Terraform, AWS, provider,
+  wallet, signing, receiver or hosted-readiness acceptance is claimed.
+
+Final review disposition: GA15c-R1 is in [PR153](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/153).
+The separate #148 byte-portability finding is fixed at `2ca915a`, with eight
+proposal/policy tests passing on both Windows and Linux (zero skips), red/green
+evidence in IDEA-049-C CP-01 R1. Both fix PRs are open and mergeable; no merge
+or owner approval is implied. PR151's committed normalized evidence SHA256,
+block hex/decimal identity, UTC timestamp, exact USDT/BNB unit conversions,
+receipt gas product and recipient identity also pass local consistency checks.
+Its private raw RPC/explorer artifacts remain independently unchecked here.
+No further actionable source defect was found in #143/#144/#145/#149/#151.
+Existing #98 CI billing, GAP-69–GAP-72, signer-cap/lifetime decisions and
+IDEA-080 hosted checks retain their recorded owners. Fixes are committed and
+pushed; PR merges and `main` synchronization remain pending, so whole-session
+handoff readiness is not declared.
+
+### GA15c MR — authorized integration merges (2026-10-17)
+
+Keegan subsequently authorizes resolving conflicts and merging the reviewed
+PRs. Merge commits preserve history. The dependency and overlapping ledger
+resolutions retain both SL-01 and CP-01, corrected SA3/SA8/SA9, infrastructure
+evidence and unrelated index rows. No proposal or candidate cap is adopted.
+
+Confirmed integration merge records:
+
+| PR | Merge commit | Scope |
+|---|---|---|
+| #143 | `6648934` | Corrected signer endpoint criteria; resolved index conflict. |
+| #144 | `362e44d` | Signing-lifetime proposal only; parent #27 stays open. |
+| #148 | `f9a3ac8` | Cap candidates, canonical byte fix, both section C records retained. |
+| #149 | `7b61b32` | Off-by-default development SSM provisioning, corrected criteria retained. |
+| #151 | `f6ee63d` | Historical funding note with attributed explorer credit. |
+
+PR153 carries the timeout fix plus the combined tree at pushed `21070be`:
+**66 tests run, 65 passed, 1 PostgreSQL-dependent skip** on Linux/Python
+3.12.15 using exact Git blobs and temporary Git metadata for ignore checks.
+Modules: Gate A, package checks, balance-RPC qualification and signer caps.
+The earlier eight-test check at the resolved PR148 head `902a5a6` also passes.
+The initial PR148 staging attempt was denied by the filesystem sandbox, so
+its first archive check still tested the pre-merge head; only the subsequent
+successful commit/push and rerun count as conflict-resolution evidence.
+
+Terraform validation and 19 mock tests PASS at PR149 resolution `82610c7`
+(IDEA-080 MR-143–153); no real backend or AWS apply. Conflict-marker,
+duplicate-ledger-ID and both-proposal retention checks PASS. `git diff
+--check` PASS. The later edits record results and narrow only the live backlog.
+
+Child issues #142/#146/#150 were closed as completed after their integration
+merges because non-default-branch merges did not close them automatically.
+Parents #27/#44/#106 remain open. Yao Zhu owns approved config/SSM apply,
+SA4/SA9 and teardown; Isaac owns subsequent key/funding tasks; Keith and Isaac
+retain current-profile/cap review; Keegan retains lifetime decision/code.
+Existing #98 CI billing, GAP-69–GAP-72 and all hosted/live gates remain open.
+This work targets `codex/system-testing-20261012`; no promotion to `main`,
+infrastructure deployment, wallet action or policy activation is performed.

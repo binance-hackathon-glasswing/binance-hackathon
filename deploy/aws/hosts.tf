@@ -50,7 +50,8 @@ resource "aws_iam_role_policy" "host" {
   ] : statement if each.key == "primary"]) })
 }
 resource "aws_iam_role_policy_attachment" "development_ssm" {
-  # Only primary can reach Systems Manager. The isolated signer needs a separate provisioning decision.
+  # Only primary can reach Systems Manager over the internet. The signer gets temporary access only through
+  # enable_signer_provisioning (signer_access.tf, IDEA-080).
   for_each   = var.enable_development_ssm ? toset(["primary"]) : toset([])
   role       = aws_iam_role.host[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
