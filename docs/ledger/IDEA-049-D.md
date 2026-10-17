@@ -350,3 +350,273 @@ Finding (integrator review): the CI manifest's `repository` was the checkout's `
 Note (integrator, no change): the #23 redaction catches the known signed-bytes keys and whole hex-encoded signed transactions, not a base64-encoded transaction under an unknown key (already listed under "Still open"); C's PR70 handles base64 reflections on the response side.
 
 WR-D3f result: criterion pushed at `06b29b8`; failing test `de5d443` (2 failed: no `build_origin`, no registered-repository file); fix `3a1d3d8`: `config/release/repository.v1.json` (`RegisteredRepository.v1`, manifested under `files`) gives the manifest's `repository`; the checkout's origin is `build_origin`; a mirror or SSH origin builds, a credentialed origin or a missing/invalid registered file refuses. Test change disclosed: the bundle fixture commits that file and WR-D3a now expects the registered URL as `repository` and the origin as `build_origin`. Retest: bundle/bind/procedure tests 13 passed, 21 subtests; full suite at `3a1d3d8` (macOS, PostgreSQL 14.24): **1434 passed, 7 skipped, 0 xfailed, 2077 subtests** (log SHA-256 `b29c67ad…b34a`). This replaces the #62.3 "activation bundle must come from the registered repository's CI" item: a mirror-built bundle now names the registered repository. The local aarch64 host-bundle run predates `3a1d3d8`; the mirror `host-bundle` job covers it.
+
+## WR-T — test gaps on #31 (daily anchor) and #59 (runtime unit) (2026-10-15)
+
+Yao Zhu with Claude Code, branch `claude/wr-tests-31-59` from `codex/system-testing-20261012` at `b6ab0a9` (after WR-B #77, WR-C #79 and WR-D #78 merged). Scope: the missing tests for #31 acceptance 2–3 and #59 acceptance 1. Code changes only if a test exposes a defect. `day_roll_window_ms` stays a team value (still `null` in `config/runtime/runtime.example.json`): every test uses an explicit test value (15 min) and none of them chooses or proposes the production value.
+
+### Pre-registered pass criteria (written and pushed before any new test is written or run)
+
+Environment: Python 3.12 from `deploy/requirements-test.lock`, PostgreSQL 14.24 (`postgres:14.24-bookworm@sha256:5a05f61a…1ac2`, trust auth, `larp_test`), `LARP_TEST_DATABASE_URL` set. The #31 tests run on real PostgreSQL through `RoundDriver` with `DayRoll`, the real coordinator, strategy and planner; only market, evidence source and venue are synthetic. A test that fails on this base is pushed failing before any fix and is the finding's evidence.
+
+| ID | Issue | Test | Pass criterion |
+|---|---|---|---|
+| WR-T1 | #31 acc. 2 (consecutive days) | `tests/runtime/test_round_driver_service.py::DayRolls::test_wr_t1_consecutive_days_in_one_run` | One driver object, ticked inside the window after three consecutive UTC midnights (D+1, D+2, D+3) with marks that differ by day, plus later ticks on each day. Exactly one `DAY_ROLLED` per day (`day:D+1`, `day:D+2`, `day:D+3`), each with `boundary` = that midnight and `anchor_units` = equity at that cycle's prefetched marks; `risk.day` equals that day after each roll; later ticks the same day report no `day_roll`. `peak_units`, `run_halt` and `deep_cut` seeded before the first roll are unchanged by every roll; `daily_halt` is cleared by each roll. Replay reproduces the journal head. |
+| WR-T2 | #31 acc. 2 (missing boundary) | `…::test_wr_t2_a_missed_boundary_blocks_that_day_and_the_next_one_rolls` | First tick of D+1 is outside the window, at lower (post-loss) marks: `OUTSIDE_WINDOW`, no event, and `risk.day` and `day_anchor_units` unchanged through further ticks up to 23:59 of D+1. The first tick of D+2 inside the window rolls straight to D+2: one event `day:D+2` at D+2's marks, none for D+1. |
+| WR-T3 | #31 acc. 2 (restart across midnight) | `…::test_wr_t3_a_restart_across_midnight_rolls_exactly_once` | Real `Service` processes on one store (as `Restart` in the same file): process A runs a cycle at D 23:59:30 and dies with its session open; process B (new driver, new objects) starts at D+1 00:01, records a `RESTART` incident and rolls; process C restarts at D+1 00:05 and does not roll. The journal holds exactly one `DAY_ROLLED` for D+1. |
+| WR-T3b | #31 acc. 2 (no reset from a post-loss mark) | `…::test_wr_t3_a_restart_after_the_window_never_resets_from_a_post_loss_mark` | The process is down across midnight and restarts at D+1 00:30 (outside the window) with marks below the D anchor: no roll; `risk.day` and `day_anchor_units` are unchanged; another restart later on D+1 still does not roll. |
+| WR-T4 | #31 acc. 3 (entries) | `…::test_wr_t4_stock_entries_resume_only_after_a_valid_new_day_anchor` | Driver rounds on PostgreSQL with a market where the strategy wants a new BUY. On D+1 without a valid anchor (first tick outside the window) the round's plan has no BUY intent and its rejections include `NEW_RISK_HALTED`. After a valid roll on D+2, a round with the same inputs plans a BUY intent. `peak_units`, `run_halt` and `deep_cut` are unchanged by the roll. |
+| WR-T5 | #31 acc. 3 (gas) | `…::test_wr_t5_gas_top_ups_resume_only_after_a_valid_new_day_anchor` | Profile with a gas floor (test values) and BNB below it. Before a valid anchor: `GAS_TOP_UP_SPENDING_BLOCKED`, and no BNB intent or BNB quote request. After a valid roll: the plan asks for the BNB top-up (intent, or BNB quote request where no gas quote is supplied) and that rejection is gone. |
+| WR-T6 | #31 acc. 3 (latches) | `…::test_wr_t6_a_valid_anchor_does_not_clear_run_halt_or_deep_cut` | With `run_halt` (and separately `deep_cut`) latched before the roll, a valid roll commits its `DAY_ROLLED` and clears only `daily_halt`; afterwards entries are still `NEW_RISK_HALTED` and the gas top-up is still `GAS_TOP_UP_SPENDING_BLOCKED`; `peak_units` unchanged. |
+| WR-T7 | #59 acc. 1 | `tests/runtime/test_systemd_conditions.py::RuntimeUnit::test_wr_t7_the_runtime_unit_gets_past_directory_binding` | Gated on `LARP_TEST_SYSTEMD=1` (and `LARP_TEST_DATABASE_URL`); skipped, never passed, when `/var/lib/larp-runtime` already exists (not a disposable host). A disposable unit with every directive of `deploy/systemd/larp-runtime.service`, changing only the host paths (`/etc/larp/*.json`, `/opt/larp/current`, the interpreter) and the service body after `--`: the real `larp.runtime.service.main(['run', …])`, with three external boundaries replaced — `open_store` (the CI PostgreSQL instead of RDS IAM), `runtime_secrets` (test values instead of Secrets Manager) and `build_driver` (a driver with no ports that records its cycles). User `larp-runtime` and group `larp-evidence` are created if absent and removed afterwards. Config: `config/runtime/runtime.example.json` with test values for its required nulls only, paths unchanged; the manifest pins its SHA-256 and the real launch preflight verifies the release and the config. The run is created and activated in PostgreSQL beforehand. Pass: `/var/lib/larp-runtime/ai-seeds/.larp-wallet` and `/var/lib/larp-runtime/nonce/.larp-wallet` hold the test wallet and are owned by `larp-runtime`; a session for this build is open and the fixture driver ran at least one cycle; the unit is active with `NRestarts=0`; after `systemctl stop` the main process exits 0 and the session is ended. |
+| WR-T8 | #59 control | `…::test_wr_t7_without_its_state_directory_the_start_is_refused` | The same unit without `StateDirectory=`/`StateDirectoryMode=`: main process exits 4 (`LIVE_START_REFUSED`), `NRestarts=0`, no marker file and no session. This shows WR-T7 would catch the original EROFS defect. |
+
+Overall: the full suite on PostgreSQL 14.24 shows no new failures against this base. WR-T7/WR-T8 need real systemd and run only in CI's runtime job (`LARP_TEST_SYSTEMD=1 … tests/runtime/test_systemd_conditions.py`); org Actions is out of quota, so they are checked on mirror CI (`Cookiemunchrr/larp-ci-mirror`), which Yao Zhu dispatches. A local Linux-container run with systemd, if done, is recorded as supporting evidence only.
+
+### WR-T continuation (2026-10-15, before execution)
+
+The handover is continued by Codex on the same branch. WR-T1..6 live in
+`tests/runtime/test_daily_anchor_window.py::DailyAnchorWindow` to keep the existing
+service harness small; WR-T3b and WR-T8 have their own unambiguous method names.
+Criteria are unchanged. The restart fixtures use real `Service` objects and an
+unclosed process session, following the existing `Restart` harness; they do not
+claim OS process-kill coverage. WR-T7/8 copy the full manifested release into a
+readable `/var/lib/larp-wrt-*` fixture (outside `PrivateTmp` and `ProtectHome`).
+The CA and initial-state paths are also substituted with synthetic host files;
+the wallet state paths and every sandbox directive remain the production ones.
+Only the three pre-registered external boundaries are replaced in the subprocess.
+The orphan `claude/issue31-day-roll-tests` branch was inspected but is not merged:
+its direct planner checks do not establish the registered driver-to-planner path.
+
+First execution at `ea25577` stopped in test setup: `build_world([])` rejects an
+empty filing list (six test failures plus four subtest failures). This is a fixture
+defect, not a runtime finding. The fixture now ingests the neutral Q2 filing into
+a distinct evidence store for each scenario; acceptance assertions are unchanged.
+
+WR-T fixture corrections after the second execution (`2a43dce`): seven test
+methods passed, three latch subtests passed, and the deep-cut-only stock subtest
+failed its expected rejection reason. The planner was servicing a mandatory sale
+and therefore never entered its discretionary-entry rejection branch. WR-T6 now
+uses a flat portfolio (same equity) and reachable latches: `run_halt`, then
+`run_halt + deep_cut` (the 8% run halt precedes the 12% deep cut). This retains the
+registered `NEW_RISK_HALTED` and gas refusal assertions after the real roll and
+round; no production code or threshold changes. The earlier isolated deep-cut
+state was not a reachable drawdown state. The systemd first run at `ea25577`
+passed the three existing R13 tests; both new tests failed because the fixture
+script's import path omitted the verified release. Cleanup also attempted to
+remove a group already removed by `userdel`. Both are test harness corrections;
+preflight, service main and sandbox directives remain real and unchanged.
+
+Focused verification at pushed `8c6e0f9`: WR-T1..6 **7 passed + 4 subtests**
+(macOS, PostgreSQL 14.24); real systemd **5 passed + 5 subtests**, including
+WR-T7/8, in the existing native ARM64 Debian container. Before the full suite,
+WR-T4/5 are strengthened to start with `daily_halt=False`, so their stale-day
+refusals cannot be masked by a separate daily-loss latch. Production remains
+unchanged. Real host/RDS/Secrets Manager qualification and mirror CI remain
+separate from this disposable-container evidence.
+
+### WR-T publication and mirror CI handoff
+
+PR [#80](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/80)
+targets `codex/system-testing-20261012`; it is not merged and neither issue is
+closed. No production file changed. The example's `day_roll_window_ms` is still
+`null`; the 900,000 ms window exists only in synthetic tests.
+
+**Yao Zhu — mirror CI** (run from this repository; these push normally, never
+rewrite history). The mirror was not dispatched by this continuation:
+
+```sh
+git push mirror claude/wr-tests-31-59:refs/heads/claude/wr-tests-31-59
+gh workflow run runtime.yml --repo Cookiemunchrr/larp-ci-mirror --ref claude/wr-tests-31-59
+gh run list --repo Cookiemunchrr/larp-ci-mirror --workflow runtime.yml --branch claude/wr-tests-31-59 --limit 1 --json databaseId,headSha,status,conclusion,url
+```
+
+Verify `headSha` equals PR #80's head and retain the URL/results before claiming
+mirror acceptance. The runtime job runs the full suite followed by the opt-in
+systemd file; require **5 passed** in that separate systemd step. Infrastructure,
+Docker, demo and host-bundle jobs remain part of the existing workflow.
+
+Remaining owners: Yao Zhu dispatches mirror CI; D/Keegan reviews and integrates
+PR #80; the team chooses the production window/cadence under #31. Existing
+first-host/RDS/IAM/Secrets Manager and live qualification work is unchanged.
+No whole item from `INCOMPLETE_WORK.md` is completed by these synthetic tests.
+
+### WR-T final verification (2026-10-15)
+
+Test code revision: `9c8f9c3e5a0adcb30c6bae0a576d85484dff2fbe`, pushed before
+execution. Target remained `b6ab0a9`. All subsequent changes are documentation.
+
+| Check | Result |
+|---|---|
+| Full suite, macOS Python 3.12.14, pinned test lock, PostgreSQL 14.24 | **1526 passed, 9 skipped, 0 failed, 0 xfailed; 2127 subtests**, 195.39 s. The skips are the opt-in external dataset, three Linux isolation checks and five opt-in systemd checks. |
+| Focused native ARM64 Linux container, pinned test lock, PostgreSQL 14.24, `LARP_TEST_SYSTEMD=1` | **12 passed, 9 subtests**, 18.69 s: all seven daily-anchor methods and all five systemd methods (including existing R13 tests). No skips. |
+| Dependencies and diff | `pip check` passes in both environments; `git diff --check` passes. |
+| Production changes | None. No signing, broadcast, AWS changes or real service credentials. No policy/window selected. |
+| Cleanup | Removed `larp-wr-tests-pg`, `larp-wrt-sysd`, and the task's scratchpad `venv` after testing. Other containers/worktrees and user files were retained. |
+
+PostgreSQL reports `14.24 (Debian 14.24-1.pgdg12+2)`; container image ID matches
+the workflow pin `sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`.
+Raw logs retained outside Git:
+- `/private/tmp/larp-wrt-full-macos.log`, SHA-256 `886ca9942bde7cd4a3b480dcbc9487364599e188e26c269b86b947dd5a439d25`.
+- `/private/tmp/larp-wrt-linux-focused.log`, SHA-256 `6a54c9682998045947bc869293359d4c6f7529faed38323ef362843e41fb9bee`.
+
+All WR-T behavior passes with the documented fixture corrections; no runtime
+regression was exposed and no production fix was necessary. Container systemd
+results are supporting evidence only. Mirror CI and review/merge remain owned
+as above; #31 and #59 stay open. The feature branch is pushed, but this is not a
+strict main-branch handoff: the work intentionally remains in PR #80, not `main`.
+
+Status updates posted with PR and validation links:
+[#31](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/31#issuecomment-6195202713)
+and [#59](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/59#issuecomment-6195203392).
+
+### WR-T acceptance decision (2026-10-15)
+
+**WR-T-D1 — Yao Zhu:** “dont need to run the mirror should be fine just merge”.
+The user accepts the recorded full PostgreSQL14.24 suite and native Linux/systemd
+results and authorizes merging PR #80 into `codex/system-testing-20261012` without
+dispatching mirror CI. This supersedes the WR-T mirror-dispatch and additional
+review handoff above; mirror CI remains **NOT RUN**, not passed. The WR-T-specific
+backlog line is removed with this acceptance/merge change. The production
+day-roll window/cadence remains a team decision under #31 and the existing
+IDEA-048/050 backlog entry; real-host qualification and unrelated CI obligations
+are unchanged. No issue is closed by this decision.
+
+### #23 acceptance 2: the archive role cannot read signed bytes (2026-10-16)
+
+Claude Code session at the user's request ("complete the issues you can"). Pass criteria, written before the change:
+(1) as `larp_execution`, inserting or updating `execution_records.state` or inserting `execution_journal.event` with a
+non-null `raw_hex` is refused by the database; (2) the same holds for `signedTransaction`/`rawTransaction` at any
+depth and for a non-JSON value; (3) `ExecutionStore.commit` refuses a whole signed transaction under any key; (4) the
+restore marker is still accepted, so legacy backups restore closed as before; (5) the full suite stays green.
+
+- **Migration 011** (`migrations/011_execution_public_bytes.sql`): a `BEFORE INSERT OR UPDATE` trigger on both
+  archive-readable columns requires UTF-8 JSON with no non-null signed-bytes field, except `SIGNED_MARKER`.
+- **`ExecutionStore.commit`** also checks the state and the journal event with `backup.without_signed_bytes`, which
+  finds a whole RLP-encoded signed transaction under any key.
+- **Tests:** `tests/runtime/test_anchors_roles.py::Roles::test_g2_23_execution_role_cannot_store_signed_bytes_where_archive_reads`
+  and `tests/runtime/test_final_review_d.py::ArchiveReadableTables` (2 tests). Red without the change (11 failures
+  and subtest failures), green with it. Fixtures that model rows written before the guard now say so
+  (`SET LOCAL session_replication_role = replica`); role fixtures store `{}` instead of `\x00`.
+- **Result: PASS (1–5).** Full suite on local PostgreSQL 16.15, Python 3.13: 1547 passed, 10 skipped, 2157
+  subtests (base `7a8a246`: 1518 passed, 8 skipped, before the base moved to the integration branch). Mirror CI
+  (PostgreSQL 14.24) not run.
+- **Limit:** the trigger matches field names only; a bare hex signed transaction under another key is refused by
+  `commit` and scrubbed by the export, not by the database. A compromised `larp_execution` role already receives
+  signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
+- 2026-10-16 correction (Claude Code, PR #99 review): PostgreSQL's jsonb refuses the escape `\u0000`, so the first version of migration 011 would have refused a legitimate state holding a NUL character, and that execution would have stopped at a `Conflict`. The trigger now replaces `\u0000` with ` ` in its own copy before parsing; stored bytes are unchanged. The test `ArchiveReadableTables::test_d_req_023_a_nul_character_in_state_still_commits` failed before and passes after. Full suite: 1549 passed, 10 skipped, 2157 subtests (PostgreSQL 16.15). Migration 011 is not applied to any hosted database yet, so editing it in place is safe.
+- 2026-10-16 decision D-DN-09 (Keegan, section B): split by reason. `CLOCK` and any unlisted reason block every signature; the integrity quarantine stays total. `DELIVERY_DEADLINE` and `REPEATED_FAILURES` pause only new spending and discretionary trades, so planned mandatory bStock sells still execute under every existing check. Criteria HS1–HS6 and results are in IDEA-049-B "D-DN-09: HALT split by reason".
+- 2026-10-16 mirror CI on the merged head (#104): run [38874982203](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874982203) on `codex/system-testing-20261012` at `1388f80` (#99, #100, #101, #102 and #103 merged). All four jobs pass:
+  - runtime: Python 3.12.15, PostgreSQL 14.24 service container; full suite **1582 passed, 6 skipped, 2194 subtests, 0 failed**; real-systemd 5 passed; offline demo and restricted Docker smoke run pass;
+  - host bundle (x86_64 build and Amazon Linux provisioning);
+  - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
+
+  Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
+- 2026-10-16 decision D-DN-10 (Keegan, section B): option (b) is agreed. A `CLOCK` HALT clears autonomously once the clock has been monotonic and NTP-synchronised for 30 minutes. An integrity quarantine stays latched. F-114 forbids a person clearing a HALT, so the clear must be automatic. **Not built yet:** `larp/runtime/supervision.py` still lists `CLOCK` in `LATCHED`. The guard change and its tests follow, with criteria written first; it needs a host signal for NTP synchronisation. D-DN-09 (#34, #52) is decided separately (entry above).
+
+### PR112-L01 — independent local review (2026-10-16)
+
+Prospective acceptance, recorded before execution: review `a0212bd892ca5336a6478f50e33d882fb105fbaf`
+against integration base `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; require the full existing offline
+suite on Python 3.12.15 / PostgreSQL 14.24 to have no failures or unexpected expected-failures,
+including migration 011, the NUL regression, backup redaction and the least-privilege role checks.
+Run in disposable local Linux containers without production credentials or external networking.
+Account for every skip and report real-systemd/host-bundle/Terraform verification separately.
+Confirm the PR changes documentation only. Mirror run links must be distinguished from independently
+retrieved CI evidence; both the private mirror repository and run API return HTTP 404 to this reviewer.
+No hosted/RDS or live-wallet acceptance follows from local tests.
+
+- **PR112-D01 (P2, tracking):** the new mirror record left the live backlog saying the WR-D mirror
+  dispatch was still pending, and the ledger index omitted the new verification. Reconcile those
+  summaries with this record; keep the actual evidence-access, org Actions and deployment gates open.
+- **Evidence qualification:** the preceding mirror-CI paragraph records the PR author's report.
+  This reviewer cannot independently inspect either linked run or its job logs because the private
+  mirror returns HTTP 404. Its all-four-job result and counts remain author-reported. The full
+  reported source revision is `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; PR head
+  `a0212bd892ca5336a6478f50e33d882fb105fbaf` changes only this Markdown file relative to it.
+  Keegan owns accessible all-job evidence/confirmation for #104; the account owner owns the org
+  Actions rerun under #98. This review does not close either issue.
+
+**PR112-L01 result: PASS (local offline scope).** On native ARM64 Linux in a disposable Docker
+systemd runner, Python 3.12.15 and the workflow-pinned PostgreSQL 14.24 image
+(`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+`LARP_TEST_SYSTEMD=1 python -m pytest -q -ra -p no:cacheprovider` gives **1587 passed,
+1 skipped, 0 failed, 0 xfailed, 2199 subtests passed** (194.94 s). The sole skip is the opt-in
+external recorded-market dataset. Migration 011, NUL handling, signed-byte archive/backup checks,
+least-privilege roles, bubblewrap and all five real-systemd checks run. A separate systemd run
+also passes 5 tests / 5 subtests. `pip check` passes. A direct probe after migrations and
+`roles.sql` confirms normal execution inserts and the signer's `UPDATE (revision)` succeed.
+The environment contains only synthetic test settings; external networking is disabled.
+
+Initial harness attempt: 1581 passed / 1 failed / 6 skipped. The failure was the reviewer's
+read-only repository mount refusing synthetic files in `deploy/activation`; the complete rerun
+uses a writable disposable copy and requires no source change. Final full-suite log SHA-256:
+`bf3f93ffadad994734d253dbb0f283a8b45c4fe712f5c0179d030ac3d7b7bf93`.
+Logs and `summary.json` are retained outside Git at `/private/tmp/larp-pr112-artifacts/`.
+
+**Disposition:** PR112-D01 is fixed in the ledger index and live backlog. No runtime defect was
+found in this documentation-only PR, and no executable file is changed by this review.
+Terraform, Amazon Linux host-bundle provisioning, Docker smoke and the offline demo are not
+independently rerun here; the preceding mirror report remains their author-reported evidence.
+Hosted RDS/IAM/TLS and live-wallet behavior are not tested. #104's accessible all-job evidence
+(Keegan), #98's org Actions rerun (account owner), and the existing hosted/deployment gates
+remain open with their recorded owners.
+
+
+### PR99-RV1: reject container-valued signed-byte fields (2026-10-16)
+
+Follow-up to [the P1 review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/99#discussion_r4291176074).
+PR #99 is merged; remediation starts from integration commit `793b382` on
+`codex/pr99-archive-guard-fix`. Migration 011's JSONPath comparisons miss objects and nested arrays:
+`larp_execution` can write `{"raw_hex":{"x":SIGNED_TX}}` or `{"raw_hex":[[SIGNED_TX]]}` and
+`larp_archive` can read the original usable bytes. This invalidates the earlier blanket acceptance-2 claim.
+
+Pass criteria registered before running the regressions:
+1. As `larp_execution`, INSERT/UPDATE of execution state and INSERT of journal events reject every
+   signed-byte field value except JSON null and the exact string `SIGNED_MARKER`, at any depth.
+   Cover all five aliases, object/array containers, empty containers, other scalar types, and duplicate JSON keys.
+2. Rejected writes are atomic; archive reads retain the original clean rows. Null and marker values remain
+   readable byte-for-byte, and the existing NUL-character/backup/restore/execution checks still pass.
+3. An additive migration upgrades an already-migrated 011 database without changing 011's checksum;
+   rerunning migrations is idempotent.
+4. Run the focused PostgreSQL 14.24 suite and the full offline suite. No credentials, live RPC, broadcasts
+   or cloud changes. Alternate-key/other-encoding signed bytes remain outside this field-name guard;
+   do not claim that this closes #23's entire archive-read boundary.
+
+Implementation: migration `012_execution_public_field_values.sql` replaces the trigger function without
+editing 011 or changing role grants. It walks `json` objects and arrays and explicitly permits only JSON null
+or the exact restore-marker string under signed-byte keys. Using `json` preserves duplicate keys that
+`jsonb` would discard; checking the original field types rejects containers, booleans and numbers.
+The existing NUL-escape handling changes only the check's copy, never the stored bytes.
+
+Verification:
+- Finalized container/scalar and duplicate-key regressions against the original 011 function:
+  **122 failing cases, zero errors**, using isolated disposable schemas.
+- After 012: four new role/upgrade tests **PASS**, including 152 subtests, on PostgreSQL 14.24 / Python 3.12.14.
+- The original direct-write probe now refuses ordinary, object and nested-array signed-byte forms.
+  The unrelated-key case is still readable, confirming the documented limitation.
+- Full offline suite on macOS / Python 3.12.14 / PostgreSQL 14.24: **1561 passed, 9 skipped,
+  2321 subtests passed**, in 337.73 seconds. Command: `python -m pytest -q -p no:cacheprovider`,
+  with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, a disposable `LARP_TEST_DATABASE_URL`, and credentials unset.
+  This includes existing backup/restore, NUL-character and execution integrity/recovery regressions.
+  No hosted migration or Linux/systemd acceptance is claimed.
+
+Local implementation and regression verification are complete at `0a8fbb4`. The user approved pushing the
+branch and opening a follow-up PR on 2026-10-16. Review/integration (Keith) and the first-host migration
+check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the alternate-key/encoding archive-read limitation
+above remains open.
+
+
+### All-open-PR review: prospective remediation (2026-10-16)
+
+ALLPR-R108: additive migration 013 validates every existing execution state/journal byte string with the 012 guard, refuses unsafe upgrades transactionally and leaves source bytes unchanged; safe upgrade/idempotency passes and 011/012 hashes stay unchanged. Add pre-012 seeded-row regression; verification follows approved push.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on Linux/Python3.12/PostgreSQL14.24. A seeded pre-012 forbidden row remains readable by larp_archive after PostgresStore.migrate, confirming RV-108-01. Additive 013 and regression changes remain unexecuted pending approved push; no unsafe hosted data is inferred. All runs used synthetic inputs, no production credentials and no external network.
+
+
+### ALLPR-R108 /RV-108-01 verified (2026-10-16)
+
+PR108 is merged into codex/system-testing-20261012. Migration013 validates transaction-local copies of all existing execution record/journal bytes using 012's trigger, refusing an unsafe upgrade atomically without modifying source rows or editing 011/012 checksums. Clean upgrade and idempotence pass. Published focused role/archive tests: 14 passed /184 subtests. A direct seeded-row probe through PostgresStore.migrate refuses unsafe data, preserves original bytes and does not mark013 applied. Final combined source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` passes **1760 passed, 1 external-data skip, 2561 subtests** on Linux/Python3.12.15/PostgreSQL14.24 including roles, archive/backup and migration tests. Detailed full-suite evidence is IDEA-055 RR2 final verification. This supersedes earlier prepared/unexecuted status. Keegan still verifies 012/013 on the first hosted database; alternate keys/encodings remain outside this field-name guard and #23's entire read boundary remains open.

@@ -74,6 +74,16 @@ def _pinned_json(path, sha256, what):
     return json.loads(raw)
 
 
+def execution_mapping(config, profile, decimals, *, wallet):
+    """`map_command` settings: profile limits, configured gas limits, and native settlement only when the RPC traces
+    native transfers (`native_trace`), the one path that can settle a gas top-up's fill (#30, IDEA-061)."""
+    return dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
+                limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
+                            max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
+                            gas_budget=config['gas_budget']),
+                native_settlement=config.get('native_trace', False) is True)
+
+
 def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=None):
     """The execution loop over live ports (IDEA-050). Raises NotIntegrated at the Executor's capability gate.
 
@@ -135,10 +145,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     valuation = PlanValuation(store, registry, run_id=run_id)
     facts = ReceiptFacts(chain, wallet_id=wallet, valuation=valuation, bnb_decimals=valuation.bnb_decimals,
                          registry=registry, epoch=epoch, authority_version=epoch, round_terminal=terminal)
-    mapping = dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
-                   limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
-                               max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
-                               gas_budget=config['gas_budget']))
+    mapping = execution_mapping(config, profile, decimals, wallet=wallet)
     loop.service = ExecutionService(store=store, executor=executor, mapping=mapping, observe=loop.publish,
                                     wallet_id=wallet, epoch=epoch, authority_version=epoch, settlement=facts,
                                     round_terminal=terminal)

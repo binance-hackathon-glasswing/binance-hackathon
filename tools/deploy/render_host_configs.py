@@ -98,6 +98,8 @@ def unset(value, path=''):
     """Dotted paths of every null or empty value."""
     if isinstance(value, dict):
         return [p for k, v in value.items() for p in unset(v, f'{path}.{k}' if path else k)]
+    if isinstance(value, list) and value:
+        return [p for i, v in enumerate(value) for p in unset(v, f'{path}[{i}]')]
     return [path] if value is None or value == '' else []
 
 

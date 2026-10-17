@@ -156,3 +156,13 @@ External prices deliberately excluded following the user's funding clarification
 ## 2026-10-15 amendment — AIand implementation requested
 
 Keith specified [AIand](https://docs.aiand.com/) as the provider for the funded Kimi/GLM calls, then explicitly requested both design and implementation. [IDEA-057](IDEA-057.md) records the separate shadow-only implementation branch, exact catalog IDs, persistent OpenAI budget and all-external fallback, prospective component tests and remaining evaluation/adoption gates. It does not change this idea's prior results or grant live authority. External prices remain excluded at the user's request.
+
+## 2026-10-16 decision — MR-06: keep as research AND try to adopt (Yao Zhu)
+
+Recorded at Yao Zhu's direction on 2026-10-16 SGT. This settles how MR-06 proceeds; it does not adopt the routing for live or service use.
+
+- **Both tracks.** IDEA-056/057 stays a research item *and* the team tries to adopt it.
+- **Shadow trial.** The IDEA-057 `aiand_routed` assessor runs in **shadow** on the Gate A deploy from 2026-10-16 for 3–5 days (ending no later than 2026-10-21), with the real AIand and OpenAI APIs. Measures, pass bars and kill criteria are pre-registered in [IDEA-057](IDEA-057.md) "Shadow trial on the Gate A deploy" before the trial starts.
+- **Adoption decision.** The team decides adoption **by Oct 22** from those pre-registered criteria (consistent with the Oct 22 parameter cut line, SKILL.md §0.4).
+- **Live/service adoption** still needs a later reviewed code change. The shadow-only guard in `larp/runtime/service.py` (`aiand_routed` refuses `execution: service` and `mode: live`) stays as it is; no configuration can bypass it.
+- MR-01–MR-05 and the §7 independent-label experiment remain open with their owners; the trial's small labelled sample (IDEA-057) can triage but cannot establish the §7 non-inferiority margins.

@@ -28,13 +28,16 @@ from fractions import Fraction
 import json
 
 from larp.contracts import ContractError, Document
+from larp.execution import Blocked, DependencyUnavailable
 from larp.execution import digest as execution_digest
 from larp.intelligence.agent import build_request
 from larp.intelligence.common import digest
 from larp.intelligence.gate import initial_state
 from larp.integration.runtime import ledger_from
-from larp.integration.settlement import settle
+from larp.runtime import halts
+from larp.integration.settlement import balances_of, settle
 from larp.risk.accounting import roll_day
+from larp.risk.reconcile import adjust_ledger, compare_balances
 from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.runtime.scheduler import Scheduler
 from larp.storage.postgres import Conflict, IntegrityError
@@ -90,8 +93,9 @@ class SessionCalendar:
 class RuntimeHealth:
     """Planner gates from the store (larp/risk/planner.py; config/strategy/LIVE.md `new_spending_ok`)."""
 
-    def __init__(self, store, run_id, epoch):
+    def __init__(self, store, run_id, epoch, *, balances=None):
         self.store, self.run_id, self.epoch = store, run_id, epoch
+        self.balances = balances  # a BalanceCheck adds `balances_ok` (IDEA-055); offline fixtures have none
 
     def __call__(self, current):
         try:
@@ -104,6 +108,9 @@ class RuntimeHealth:
         gates = dict(integrity_ok=not current['quarantined'], journal_ok=journal,
                      ownership_ok=current['epoch'] == self.epoch,
                      clock_ok='CLOCK' not in halt_reasons(projection))
+        if self.balances is not None:
+            # Feeds only new_spending_ok, never the planner's global gates: sales and the flatten continue (#36).
+            gates['balances_ok'] = self.balances.ok(projection)
         pending = any(r.get('execution_pending') for r in projection.get('round_records', {}).values())
         gates['new_spending_ok'] = all(gates.values()) and not pending and not current['reservations']
         return gates
@@ -197,9 +204,11 @@ class ServiceExecution:
     def waiting(self, now_ms):
         c = self.coordinator
         current = c.store.load(c.run_id).read()
-        if halt_reasons(current['projection']) or current['quarantined']:
+        if current['quarantined']:
             return []  # no command can be claimed; they end at expiry
-        pending = [(r, i) for r, _, i in self._pending(current) if now_ms < i['expires_ms']]
+        # Under a HALT only a pausing HALT's planned mandatory sells can be claimed (D-DN-09); the rest end at expiry.
+        pending = [(r, i) for r, _, i in self._pending(current) if now_ms < i['expires_ms']
+                   and halts.permits(current['projection'], r, i['intent_id'])]
         if not pending:
             return []
         claimed = self._records([self.key(i['intent_id']) for _, i in pending])
@@ -219,14 +228,15 @@ class ServiceExecution:
         moves the commands' authority (epoch, state version) to that event; their bytes never change."""
         c = self.coordinator
         current = c.store.load(c.run_id).read()
-        if halt_reasons(current['projection']) or current['quarantined']:
+        if current['quarantined']:
             return []
         if (current['projection'].get('registered_version') or {}).get('build_id') != c.version_id:
             return []
         held = {}
         for r in current['reservations']:
             held[r['intent_id']] = held.get(r['intent_id'], 0) + r['units']
-        pending = [i for _, _, i in self._pending(current) if now_ms < i['expires_ms'] and held.get(i['intent_id'], 0) > 0]
+        pending = [i for r, _, i in self._pending(current) if now_ms < i['expires_ms'] and held.get(i['intent_id'], 0) > 0
+                   and halts.permits(current['projection'], r, i['intent_id'])]
         if not pending:
             return []
         claimed = self._records([self.key(i['intent_id']) for i in pending])
@@ -398,7 +408,10 @@ class DayRoll:
 
     The anchor is the equity at the marks fetched for that cycle. Without a usable mark for every held position, or
     outside the window, nothing is committed: the planner keeps refusing new risk for a day whose anchor is missing
-    (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact."""
+    (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact.
+
+    A price-jump hold inside the window defers the roll; the deferred day then rolls on the first cycle after the hold
+    clears or expires, even past the window (IDEA-055 R2). The deferred day is journaled so a process restart cannot lose it."""
 
     def __init__(self, coordinator, *, window_ms):
         if type(window_ms) is not int or not 0 < window_ms < DAY_MS:
@@ -417,12 +430,22 @@ class DayRoll:
         if not self.due(current, now_ms):
             return None
         midnight = now_ms - now_ms % DAY_MS
-        if now_ms - midnight > self.window:
+        projection = current['projection']
+        deferred = projection.get('day_roll_deferred_ms')
+        if now_ms - midnight > self.window and deferred != midnight:
             return 'OUTSIDE_WINDOW'
+        if active_holds(current['projection'], now_ms):
+            return self._defer(current, midnight, now_ms)
         if observations is None:
             return 'MARKET_UNAVAILABLE'
         builder = c.context_builder
         projection = current['projection']
+        # The midnight fetch can be the first observation of a split. The round that journals its hold runs
+        # after DayRoll, so checking only persisted holds would anchor old units at the newly changed price.
+        if getattr(builder, 'price_jump', None) is not None:
+            marks, holds = builder._jumps(projection, observations, now_ms)
+            if holds:
+                return self._defer(current, midnight, now_ms, jumps=dict(marks=marks, price_jump=holds))
         ledger = ledger_from(projection, current['reservations'])
         try:
             market = market_view(observations, builder.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc),
@@ -437,11 +460,267 @@ class DayRoll:
         rolled = roll_day(Document.from_dict(dict(ledger, reservations={})), boundary=boundary,
                           anchor_units=anchor).read()['risk']
         projection['risk_state'] = rolled
+        projection.pop('day_roll_deferred_ms', None)
         marks = sorted((m['symbol'], m.get('content_hash')) for m in observations if type(m) is dict)
         event = dict(kind='DAY_ROLLED', day=rolled['day'], boundary=boundary, anchor_units=anchor,
                      decided_ms=now_ms, marks=[list(m) for m in marks])
         c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
         return 'ROLLED'
+
+    def _defer(self, current, midnight, now_ms, *, jumps=None):
+        """Persist both an existing hold and one first discovered by the midnight fetch (RR2-R2, PR115-C02)."""
+        projection = current['projection']
+        if (projection.get('day_roll_deferred_ms') != midnight
+                or any(projection.get(k) != value for k, value in (jumps or {}).items())):
+            projection.update(jumps or {})
+            projection['day_roll_deferred_ms'] = midnight
+            day = datetime.fromtimestamp(midnight / 1000, timezone.utc).date().isoformat()
+            event = dict(kind='DAY_ROLL_DEFERRED', day=day, midnight_ms=midnight, deferred_ms=now_ms)
+            event_id = f"day-deferred:{day}:{current['version'] + 1}"
+            self.coordinator.store.commit(batch_for(Document.from_dict(current), event_id, event,
+                                                     projection=projection))
+        return 'PRICE_JUMP_HOLD'
+
+
+def active_holds(projection, now_ms):
+    """Price-jump holds (IDEA-055 PR 4) that have not expired: {symbol: hold}."""
+    return {s: h for s, h in (projection.get('price_jump') or {}).items() if now_ms < h['until_ms']}
+
+
+class BalanceCheck:
+    """Chain-balance reconciliation (IDEA-055, #36; owner decisions 2026-10-16): the chain wins.
+
+    `reader(now_ms)` returns a ChainBalances.v1 (larp/execution_live/balances.py). With reservations, an open round or
+    an execution pending, nothing is read or journaled: the chain would differ from the ledger by the trade in flight.
+    A check is journaled as BALANCE_CHECKED (a recorded fact on replay) when it is this process's first, when its
+    outcome differs from the last journaled one, or after `heartbeat_ms` without a journaled check; every commit copies
+    the projection, so an unchanged result every interval would only grow the journal. A deficit or a newly surplus
+    asset is also an INCIDENT.
+
+    A mismatch on an eligible asset is adopted only when the next comparable check, `retry_ms` later, reads the same
+    chain units with the same ledger units and `settled_block`, and no wallet activity occurred in between
+    (reservations, commands or receipts). Journal-proven hold-only rounds may continue (PR115-C04).
+    One bad read never becomes the ledger. Adoption is one BALANCE_ADJUSTED event
+    (`adjust_ledger`: units only, cost unchanged) plus one INCIDENT per asset. The candidate is kept in memory only.
+    Until adoption a deficit is subtracted in the planner's view (ContextBuilder, D1) and new spending waits (`ok`);
+    sales and the flatten continue. `ok` counts only a check made by this process, so a restored or restarted run
+    reconciles before it takes new risk. A comparable check after a price jump clears that symbol's hold when the
+    asset matches or is adopted."""
+
+    COMPARABLE = ('MATCH', 'SURPLUS_ONLY', 'DEFICIT')
+
+    def __init__(self, coordinator, reader, *, interval_ms, max_age_ms, retry_ms=60_000, heartbeat_ms=3_600_000):
+        if (not all(type(v) is int and v > 0 for v in (interval_ms, max_age_ms, retry_ms, heartbeat_ms))
+                or max_age_ms < interval_ms):
+            raise ContractError('Invalid balance-check interval, maximum age, retry or heartbeat')
+        self.coordinator, self.reader = coordinator, reader
+        self.interval, self.max_age, self.retry, self.heartbeat = interval_ms, max_age_ms, retry_ms, heartbeat_ms
+        self.next_ms = 0  # the first cycle checks
+        self.ok_ms = None  # the last check of this process that left no unadopted deficit
+        self.journaled_ms = None
+        self.candidate = None  # the first read of a mismatch, awaiting its confirming read
+        self.attempt_ms = None  # the last time this process tried a check
+
+    def due(self, now_ms, projection=None):
+        if now_ms >= self.next_ms:
+            return True
+        # A price jump newer than the last attempt is checked at once (IDEA-055 PR 4).
+        holds = active_holds(projection or {}, now_ms)
+        return self.attempt_ms is not None and any(h['jump_ms'] >= self.attempt_ms for h in holds.values())
+
+    def ok(self, projection):
+        state = projection.get('balance_check') or {}
+        return (self.ok_ms is not None and state.get('comparable_status') in ('MATCH', 'SURPLUS_ONLY')
+                and self.coordinator.clock() - self.ok_ms < self.max_age)
+
+    def in_flight(self, current):
+        c = self.coordinator
+        rounds = current['projection'].get('round_records', {}).values()
+        return bool(current['reservations'] or c.store.open_rounds(c.run_id)
+                    or any(r.get('execution_pending') for r in rounds))
+
+    def _confirm(self, current, check, observation, observation_hash, now_ms):
+        """Adjustments this check confirms; the rest of its mismatches become the next candidate.
+
+        Confirmation needs `retry_ms` since the first read and a strictly newer block (R1, ALLPR-R1): an earlier
+        check, such as the one a price jump triggers, keeps the first read as the candidate."""
+        mismatched = {a: r for a, r in check['assets'].items() if r['class'] != 'MATCH'}
+        first, confirmed = self.candidate, []
+        comparable = (first is not None and first['settled_block'] == check['settled_block']
+                      and first['epoch'] == current['epoch']
+                      and (first['version'] == current['version'] or self._quiet_since(first, current)))
+        if comparable and now_ms - first['checked_ms'] < self.retry:
+            # An identical early read preserves the first candidate's time, but an early contradictory read
+            # breaks the sequence for that asset. Otherwise A -> MATCH/B -> A could confirm the original A.
+            first['assets'] = {asset: seen for asset, seen in first['assets'].items()
+                               if asset in mismatched and
+                               (seen['chain_units'], seen['ledger_units']) ==
+                               (mismatched[asset]['chain_units'], mismatched[asset]['ledger_units'])}
+            if not first['assets']:
+                self.candidate = None
+            return confirmed
+        if comparable and check['block_number'] > first['block_number']:
+            positions = current['projection']['portfolio']['positions']
+            for asset, row in sorted(mismatched.items()):
+                seen = first['assets'].get(asset)
+                if seen is None or (seen['chain_units'], seen['ledger_units']) != (row['chain_units'],
+                                                                                    row['ledger_units']):
+                    continue
+                adjustment = dict(asset=asset, ledger_before=row['ledger_units'], chain_units=row['chain_units'],
+                                  delta=row['difference'], reason='SURPLUS' if row['difference'] > 0 else 'DEFICIT',
+                                  first_block=first['block_number'], confirm_block=check['block_number'],
+                                  first_observation_sha256=first['observation_sha256'],
+                                  confirm_observation_sha256=observation_hash)
+                if asset not in ('USDT', 'BNB'):
+                    adjustment['decimals'] = (positions[asset]['decimals'] if asset in positions
+                                              else observation['tokens'][asset]['decimals'])
+                confirmed.append(adjustment)
+        adopted = {a['asset'] for a in confirmed}
+        rest = {a: r for a, r in mismatched.items() if a not in adopted}
+        self.candidate = (dict(assets=rest, block_number=check['block_number'], settled_block=check['settled_block'],
+                               observation_sha256=observation_hash, version=current['version'], checked_ms=now_ms,
+                               epoch=current['epoch'], portfolio=current['projection']['portfolio'],
+                               execution_state=current['execution_state'])
+                          if rest else None)
+        return confirmed
+
+    def _quiet_since(self, first, current):
+        """Prove that intervening commits are wallet-neutral; checking only the final ledger misses transient
+        reservations. A bounded journal suffix preserves that evidence without exporting the whole run."""
+        allowed = {'ROUND_PLANNED', 'PLAN_REJECTED', 'ROUND_LOGGED', 'ROUND_CLOSED',
+                   'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED', 'DAY_ROLL_DEFERRED'}
+        batches = self.coordinator.store.journal(self.coordinator.run_id, after_version=first['version'],
+                                                  through_version=current['version'])
+        if len(batches) != current['version'] - first['version']:
+            return False
+        for batch in batches:
+            b = batch.read()
+            event, projection = b['event'], b['projection']
+            if (event['kind'] not in allowed or b['owner_epoch'] != first['epoch']
+                    or b['commands'] or b['reservation_deltas']
+                    or b['execution_state'] != first['execution_state']
+                    or projection['portfolio'] != first['portfolio']
+                    or projection.get('settled_block') != first['settled_block']):
+                return False
+            record = event.get('record') or {}
+            plan = record.get('plan') or {}
+            if record.get('execution_pending') or plan.get('intents') or plan.get('reservation_deltas'):
+                return False
+        return True
+
+    def _commit(self, current, event_id, event, projection=None):
+        """Commit one event; this process's own commits do not count as activity between two checks."""
+        c = self.coordinator
+        before = current.read()['version']
+        c.store.commit(batch_for(current, event_id, event, projection=projection))
+        after = c.store.load(c.run_id)
+        if (self.candidate is not None and self.candidate['version'] == before
+                and after.read()['version'] == before + 1):
+            committed = after.read()
+            self.candidate.update(version=committed['version'], portfolio=committed['projection']['portfolio'],
+                                  execution_state=committed['execution_state'])
+        return after
+
+    def __call__(self, now_ms):
+        c = self.coordinator
+        self.attempt_ms = now_ms
+        current = c.store.load(c.run_id).read()
+        if self.in_flight(current):
+            self.next_ms = now_ms + self.retry
+            return 'IN_FLIGHT'
+        projection = current['projection']
+        previous = projection.get('balance_check') or {}
+        observation_hash = None
+        try:
+            observation = self.reader(now_ms)
+            check = compare_balances(projection['portfolio'], observation,
+                                     settled_block=projection.get('settled_block'))
+            observation_hash = Document.from_dict(observation).digest('ChainBalances.v1')
+        except DependencyUnavailable:
+            check = dict(schema='BalanceCheck.v1', status='SKIPPED', reason='RPC_UNAVAILABLE')
+        except (Blocked, ContractError, KeyError, TypeError, ValueError):
+            check = dict(schema='BalanceCheck.v1', status='SKIPPED', reason='OBSERVATION_INVALID')
+        status = check['status']
+        state = dict(previous, status=status, reason=check.get('reason'), checked_ms=now_ms)
+        incidents, adjustments = [], []
+        holds = dict(projection.get('price_jump') or {})
+        if status in self.COMPARABLE:
+            new_surplus = sorted(set(check['surplus']) - set(previous.get('surplus_assets', [])))
+            if status == 'DEFICIT' and check['deficits'] != previous.get('deficits'):
+                incidents.append(dict(type='BALANCE_DEFICIT', deficits=check['deficits']))
+            if new_surplus:
+                incidents.append(dict(type='BALANCE_SURPLUS', assets=new_surplus,
+                                      differences={a: check['assets'][a]['difference'] for a in new_surplus}))
+            state.update(comparable_status=status, deficits=check['deficits'], surplus_assets=check['surplus'],
+                         block_number=check['block_number'])
+            adjustments = self._confirm(current, check, observation, observation_hash, now_ms)
+            for symbol, hold in list(holds.items()):
+                row = check['assets'].get(symbol)
+                # R3: the finalized block read just after a jump may predate the split; wait retry_ms before a MATCH
+                # counts as the chain agreeing.
+                if now_ms - hold['jump_ms'] >= self.retry and row is not None and row['class'] == 'MATCH':
+                    del holds[symbol]  # the chain agrees after the jump: the mark is real
+            pending = self.candidate is not None or bool(active_holds(dict(price_jump=holds), now_ms))
+            self.next_ms = now_ms + (self.retry if pending else self.interval)
+        else:
+            self.next_ms = now_ms + self.retry  # a skip keeps the last deficits, the last good time and the candidate
+        outcome = ('status', 'reason', 'comparable_status', 'deficits', 'surplus_assets')
+        changed = any(state.get(k) != previous.get(k) for k in outcome) or holds != (projection.get('price_jump') or {})
+        result = status if status in self.COMPARABLE else 'SKIPPED:' + check['reason']
+        if adjustments:
+            result = 'ADJUSTED'
+        elif not (changed or incidents or self.journaled_ms is None or now_ms - self.journaled_ms >= self.heartbeat):
+            self._settle_gate(status, state, now_ms)
+            return result
+        self.journaled_ms = now_ms
+        projection['balance_check'] = state
+        if 'price_jump' in projection or holds:
+            projection['price_jump'] = holds
+        event = dict(kind='BALANCE_CHECKED', check=check, checked_ms=now_ms, observation_sha256=observation_hash)
+        document = self._commit(Document.from_dict(current), f'balance:{now_ms}', event, projection=projection)
+        for incident in incidents:
+            event = dict(kind='INCIDENT', incident=dict(incident, block_number=check['block_number'], at_ms=now_ms))
+            document = self._commit(document, f"incident:{incident['type'].lower()}:{now_ms}", event)
+        if adjustments:
+            # The comparison was made against current. Only our BALANCE_CHECKED and INCIDENT writes may
+            # intervene before adoption; a reload containing another writer's commit is not fresh confirmation.
+            if document.read()['version'] != current['version'] + 1 + len(incidents):
+                self.candidate = None
+                self.ok_ms = None
+                self.next_ms = now_ms + self.retry
+                return 'SKIPPED:CONCURRENT_ACTIVITY'
+            document = self._adopt(document, adjustments, check, now_ms)
+            state = document.read()['projection']['balance_check']
+        self._settle_gate(status, state, now_ms)
+        return result
+
+    def _adopt(self, document, adjustments, check, now_ms):
+        """The chain wins: one BALANCE_ADJUSTED event, then one incident per asset (IDEA-055 D2/D4)."""
+        projection = document.read()['projection']
+        adopted = {a['asset'] for a in adjustments}
+        portfolio = adjust_ledger(projection['portfolio'], adjustments)
+        deficits = {a: u for a, u in check['deficits'].items() if a not in adopted}
+        surplus = [a for a in check['surplus'] if a not in adopted]
+        remaining = 'DEFICIT' if deficits else ('SURPLUS_ONLY' if surplus else 'MATCH')
+        projection.update(portfolio=portfolio, balances=balances_of(portfolio))
+        projection['balance_check'] = dict(projection['balance_check'], comparable_status=remaining,
+                                           deficits=deficits, surplus_assets=surplus, adjusted_ms=now_ms)
+        holds = projection.get('price_jump') or {}
+        if any(s in adopted for s in holds):
+            projection['price_jump'] = {s: h for s, h in holds.items() if s not in adopted}
+        event = dict(kind='BALANCE_ADJUSTED', adjustments=adjustments, adjusted_ms=now_ms)
+        document = self._commit(document, f'balance-adjusted:{now_ms}', event, projection=projection)
+        for adjustment in adjustments:
+            incident = dict(type='BALANCE_ADJUSTED', **{k: v for k, v in adjustment.items() if k != 'decimals'},
+                            at_ms=now_ms)
+            event = dict(kind='INCIDENT', incident=incident)
+            document = self._commit(document, f"incident:balance_adjusted:{adjustment['asset'].lower()}:{now_ms}",
+                                    event)
+        return document
+
+    def _settle_gate(self, status, state, now_ms):
+        if status in self.COMPARABLE:  # a skip keeps the last good time
+            self.ok_ms = now_ms if state.get('comparable_status') != 'DEFICIT' else None
 
 
 class EvidenceWork:
@@ -597,8 +876,9 @@ class RoundDriver:
     signing = False
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
-                 max_quote_rounds=0, max_quote_requests=2):
+                 max_quote_rounds=0, max_quote_requests=2, balance_check=None):
         self.coordinator, self.work = coordinator, work
+        self.balance_check = balance_check
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
         self.market, self.day_roll = market, day_roll
@@ -670,6 +950,8 @@ class RoundDriver:
             # I3 hand-off: any commit now would make these commands stale before the execution service claims them.
             summary['waiting_for_claim'] = waiting
             return summary
+        if self.balance_check is not None and self.balance_check.due(now_ms, c.store.load(c.run_id).read()['projection']):
+            summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):

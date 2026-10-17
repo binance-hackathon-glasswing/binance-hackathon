@@ -23,6 +23,7 @@ from larp.contracts import Document
 from larp.execution import Blocked, Conflict, Rejected, TERMINAL, digest, possibly_submitted
 from larp.storage.postgres import IntegrityError
 from larp.contracts import ContractError
+from larp.runtime import halts
 
 
 def intent_key(run_id, wallet, intent_id):
@@ -54,7 +55,8 @@ class RunAuthorization:
             and ((self.manifest_sha256 is not None
                   and registered.get('manifest_sha256') == self.manifest_sha256)
                  or (run['mode'] == 'offline' and self.manifest_sha256 is None)))
-        facts['risk_valid'] = not halted and not run['quarantined']
+        # D-DN-09: under a pausing HALT, only a planned mandatory bStock sell keeps valid risk authority.
+        facts['risk_valid'] = not run['quarantined'] and halts.permits(projection, intent.round_id, intent.intent_id)
         last = projection.get('last_decision_ms')
         facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
         record = projection.get('round_records', {}).get(intent.round_id)

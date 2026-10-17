@@ -2,6 +2,18 @@
 
 Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)). This is the order of work once the open reviews and final tests pass. The detail behind each step is in [AWS_RUNBOOK.md](AWS_RUNBOOK.md) and [runbook.md](runbook.md); this page says what is ready, what each person brings, and what still blocks.
 
+**2026-10-16 update:** [GATE_A.md](GATE_A.md) is the current assembly procedure
+for inputs 2–6 below. IDEA-050's driver/init/activate and #25's issuer fix are
+already on main (PR81); IDEA-054 supplies the calendar. IDEA-058 builds on
+`codex/system-testing-20261012`, which adds #84's balance check (IDEA-055) and
+is not yet promoted to main, so deploy from that branch plus IDEA-058, or from
+main after the promotion. IDEA-058 adds strictly
+unsigned shadow settings and derives the issuer map/initial state from captured
+real responses. The user owns input 1's summary/profile tool; Yao Zhu sets the
+public wallet address and SEC contact locally. Missing terms bytes/captures and
+host checks remain required. The original descriptions below retain their dated
+context; no hosted run or Gate A pass is established by this update.
+
 ## What this deployment can and cannot do
 
 - **It can run in shadow** (`execution: "shadow"`): real market data, real decisions, and real round logs uploaded to ai-seeds from the dev wallet. Every planned order ends `NOT_SUBMITTED`. This is **Gate A** in [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md), which was planned for Oct 14.
@@ -62,10 +74,24 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 ### 5. Initial state file (team, from a balance read)
 - **What it is:** a `PortfolioState.v1` with the dev wallet's actual starting balances (USDT, BNB, any tokens) and run ID, pinned by SHA-256 in `runtime.json`. `service init` builds the run from it and refuses an unpinned file.
-- **Open:** whether the dev wallet holds any BNB for its first gas payment (Q-03). It matters at Gate B, not for shadow.
+- **First gas (answered 2026-10-16, SKILL.md F-120).** The organisers send USDT only, and say to buy the first BNB in MetaMask, paying that swap's gas in USDT. Gate B reports `FIRST_BNB_REQUIRED` until the wallet holds BNB. Steps, done by the wallet holder in MetaMask: **Isaac** for both wallets (assigned by Yao Zhu, 2026-10-16; Yao Zhu has no MetaMask access):
+  1. Before the wallet's first agent trade (dev wallet: before Gate B; final wallet: after funding and before the scored run starts on Oct 29 00:00 UTC, never during it, F-114), open the wallet in MetaMask on BNB Smart Chain.
+  2. Swap USDT for BNB, choosing USDT as the network-fee token. **Size (decided by Yao Zhu, 2026-10-16): enough for the whole run's gas, so the agent's top-ups are a backup only: about 4 USDT in total for the dev wallet, about 6 USDT for the final wallet.** Basis: one approve + swap cost about 0.000022–0.000046 BNB in the organisers' tests (F-93), about $0.02–0.035, so about 150 trades cost about $3–5; these sizes give 170–300 trades of headroom, inside IDEA-055 D6's 5 % bound. One or more swaps are allowed per wallet, all before its first agent trade (SKILL.md F-120). No BNB is swapped back to USDT at the end (G-13); leftover BNB is accepted.
+  3. Write each swap's tx hash, USDT paid, BNB received and UTC time into the funding notes below. It is not a trade and not an agent round, so it gets no ai-seeds log (confirmed by Yao Zhu, 2026-10-16). [Inference: the daily fill check (F-100) covers bStock fills, not this swap.]
+  4. Take the initial balance read after the last manual swap, so the `PortfolioState.v1` above includes the BNB.
+
+  **Funding notes (deployment record).**
+
+  | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
+  |---|---|---|---|---|---|
+  | dev | 2026-10-16, `[TO FILL: Isaac]` time | `[TO FILL: Isaac]` | 2 | `[TO FILL: Isaac]` | Trial swap in MetaMask (reported 2026-10-16). Isaac fills in the details and swaps about 2 USDT more before Gate B, to about 4 USDT in total. |
+  | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
+  Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)
 `driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.
+
+Also `driver.balance_rpc_providers`: the ordered list of manifested BSC RPC providers (`url`, `source_id`; primary first, then a backup) for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36). A check fails over to the next provider and fails only when every provider fails (PR 5). They are account-specific: Isaac chooses both (#92), and both are null in the example. At least one is required for a `dev` or `live` start, and a provider left null refuses the start. The legacy single pair `driver.balance_rpc_url` + `driver.balance_rpc_source_id` is still accepted. The interval and maximum age are set in the example (10 and 30 minutes). `driver.price_jump_check_bps` (3000 in the example, required with them) is the price-jump guard's threshold: a held symbol whose mark moves at least 30 % between rounds is not traded, and the loss stops wait, until a balance check confirms the chain (IDEA-055 PR 4).
 
 ## Order of work
 
@@ -104,7 +130,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
    - Don't start `larp-execution`: it would only exit 2 at the capability gate.
 9. **Gate A evidence.**
    - One shadow round logged and ACKed by the real receiver (R-01).
-   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07).
+   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07): `python -m larp.runtime.routes --role primary …` on `primary`, and `--role signer` on the signer once its access route exists; commands and the approved list are in [architecture-deployment.md](architecture-deployment.md) "Approved network destinations" (IDEA-062). Keep both `RouteCheck.v1` reports.
    - `chronyc tracking` (R-08).
    - An alarm email received.
    - Record each in IDEA-051 and review Gate A in IDEA-042 before leaving it running.
