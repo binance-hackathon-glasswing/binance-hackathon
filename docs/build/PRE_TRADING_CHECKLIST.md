@@ -90,7 +90,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 2. [ ] **Isaac:** confirm the quoted amounts already net out route fees, so `fee_bps = 0` holds (#119).
 3. [ ] **Keith:** build the decided profile: `python -m larp.strategy.profiles --summary <dir>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <dir>/profiles`.
 4. [ ] **Isaac:** owners' review of the summary and `rehearsal-live.json` (#120); record both hashes in IDEA-063 and send the profile to Yao Zhu.
-5. [ ] **Yao Zhu:** fresh read-only wallet capture with the balance RPC (`prepare_shadow.py capture`), then Gate A `prepare` within five minutes; install the configs (`runtime.json` mode 0644); bind them to CI's manifest (`preflight --bind`).
+5. [ ] **Yao Zhu:** fresh read-only wallet capture with the balance RPC (`prepare_shadow.py capture --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json`), then Gate A `prepare` within five minutes with the same `--balance-rpc-config`, so both RPCs go into `runtime.json` (#145); install the configs (`runtime.json` mode 0644); bind them to CI's manifest (`preflight --bind`).
 6. [ ] **Yao Zhu:** `service init`, then `service activate` with Keegan named as reviewer; start the evidence, runtime and uploader services; enable the archive timer.
 7. [ ] **Yao Zhu:** confirm the first shadow round is ACKed by the real ai-seeds receiver (R-01), which starts the 24 h ingestion clock, and send the round ID to Keegan.
 8. [ ] **Yao Zhu:** restart drill (kill a service, check it returns on the same build with an incident logged) and check the first hourly anchor (DR-13, DR-15).
