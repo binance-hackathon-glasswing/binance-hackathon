@@ -8,7 +8,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +19,7 @@ from larp.runtime.gate_a import capture_inputs, prepare, rpc_provider_list  # no
 from larp.marketdata.web3 import Artifacts, Unavailable, Web3Client, credentials, encoded, utc  # noqa: E402
 from larp.sources.live import Refused, git_state, require_committed  # noqa: E402
 import render_host_configs as renderer  # noqa: E402
+from qualify_balance_rpc import private_config  # noqa: E402
 
 
 def write_new(directory, files):
@@ -39,22 +39,9 @@ def write_new(directory, files):
 
 
 def rpc_providers(path):
-    """GA15: the private ordered provider file ({"balance_rpc_providers": [{url, source_id}, ...]}, the format of
-    tools/deploy/qualify_balance_rpc.py). Its URLs can carry API keys, so it must be git-ignored when inside the
-    repository, and no message ever repeats a URL."""
-    if path is None:
-        return None
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
-        raise ContractError('The balance RPC config must be a regular file')
-    resolved = path.resolve()
-    if resolved.is_relative_to(ROOT):
-        run = subprocess.run(['git', '-C', str(ROOT), 'check-ignore', '-q', str(resolved)], capture_output=True)
-        if run.returncode != 0:
-            raise ContractError('A balance RPC config inside the repository must be git-ignored')
-    value = json.loads(resolved.read_bytes())
-    if type(value) is not dict or set(value) != {'balance_rpc_providers'}:
-        raise ContractError('The balance RPC config must hold exactly balance_rpc_providers')
-    return value['balance_rpc_providers']
+    """GA15: the private ordered provider file, read and checked by qualify_balance_rpc's own reader (GA15b), so
+    prepare accepts exactly the files qualification accepts. No message ever repeats a URL."""
+    return None if path is None else private_config(path)
 
 
 def main(argv=None):

@@ -1,7 +1,7 @@
 # IDEA-080 — How the signer host is reached for provisioning and key placement
 
 - Date / owner: 2026-10-17 SGT / decided by Keegan (pre-trading checklist, Gate B setup, PR #133); recorded with Claude Code at Keegan's request. Builder of the Terraform change and every AWS step: Yao Zhu (the only team member with AWS access, IDEA-066 PC-AWS01). Key placement: Isaac (DR-03).
-- Status: decided (option b); Terraform change and tests built 2026-10-17 (not applied), awaiting Keegan's review.
+- Status: decided (option b); Terraform change and tests built 2026-10-17 (not applied); repository review complete, merge verification in progress.
 - Links: `docs/build/AWS_RUNBOOK.md` step 5 (the three options); IDEA-049-D D-DN-05 (routes for migrations and signer provisioning); IDEA-046 B2 (no SSM endpoints, for cost); `deploy/aws/hosts.tf` (development SSM attaches to `primary` only); `deploy/aws/network.tf` (S3 gateway endpoint); #44 (signer policy values); DR-03.
 - ID: from the IDEA-080..084 block that PR #126 reserves for the rehearsal and operations work.
 
@@ -33,10 +33,23 @@ The bundle can reach `signer` from the artifact bucket through the existing S3 g
 
 ## Order of work
 
-1. Yao Zhu: Terraform change with SA1–SA3 tests, after #44's caps are approved. Keegan reviews the plan.
-2. Yao Zhu: apply, provision `signer` with the pinned CI bundle hash, install the decided `/etc/larp/signer.json`, and run SA4.
+1. Yao Zhu: Terraform change with SA1–SA3 and SA8 tests (SA3 as corrected below), after #44's caps are approved. Keegan reviews the plan.
+2. Yao Zhu: apply, provision `signer` with the pinned CI bundle hash, install the decided `/etc/larp/signer.json`, and run SA4 and SA9.
 3. Isaac: place the key file over an SSM session (SA6).
 4. Yao Zhu: tear down and record SA5 here.
+
+## Amendment 2026-10-17: review of SA3 (Yao Zhu, with Claude Code; for Keegan's review)
+
+Checked against `deploy/aws/network.tf` before any change is built. SA1–SA7 stay as written; SA3 is corrected and two criteria are added, because the change could pass SA3 and still not work:
+
+- **The signer could never reach the endpoints.** The signer's security group allows egress only to the database and the S3 prefix list (`aws_vpc_security_group_egress_rule.database`, `.s3`; `external_https` is `primary` only). Without an egress rule to the endpoints, the SSM agent on `signer` cannot register.
+- **Private DNS is VPC-wide.** The VPC has `enable_dns_support` and `enable_dns_hostnames` on, so an interface endpoint with private DNS makes `ssm.<region>.amazonaws.com` (and `ssmmessages`, `ec2messages`) resolve to the endpoint for **every** host. `primary` reaches SSM over the public endpoint today; while the endpoints exist it would hit them instead, and an endpoint security group that admits only the signer would cut Yao Zhu's SSM sessions and run-command on `primary`.
+
+| ID | Criterion |
+|---|---|
+| SA3 (corrected) | The endpoints sit only in the signer's private subnet, with private DNS on. Their security group admits HTTPS (443) from the signer's **and** `primary`'s security groups, and from nothing else. |
+| SA8 | While enabled, the signer's security group gets one egress rule: TCP 443 to the endpoint security group only. It is removed with the endpoints (SA5). A Terraform test asserts the rule exists only when enabled and targets only the endpoint security group. |
+| SA9 | With the endpoints up, an SSM session to `primary` still starts. Yao Zhu checks this in the same window as SA4 and records the time here. |
 
 ## Results
 
@@ -50,3 +63,19 @@ Built ahead of #44 so Keegan can review it while the caps are settled; only the 
 - Mutations, each restored: endpoints admitting the signer only (the uncorrected SA3) fails `signer_access_is_narrow`; removing the signer egress rule fails it; defaulting the variable to `true` fails the suite.
 - Real plans against the account (no apply): with the normal private tfvars, "No changes"; with `-var enable_signer_provisioning=true`, "Plan: 8 to add, 0 to change, 0 to destroy" (the three endpoints, their group, two ingress rules, the signer egress rule, the SSM attachment).
 - Not yet done: Keegan's review of this change and of #143; the apply, provisioning, `signer.json`, SA4/SA9 checks, key placement and teardown (SA5), which follow #44's approval.
+
+### MR-143–153 — integration merge criteria (2026-10-17)
+
+Keegan requests conflict resolution and integration merges for the reviewed
+PRs #143/#144/#148/#149/#151/#153. Preserve history with merge commits;
+merge #143 before #149, retaining the corrected SA3 and SA8/SA9 amendment,
+Terraform implementation/results and all unrelated ledger rows. Preserve both
+the signing-lifetime SL-01 and cap-proposal CP-01 records when they overlap.
+Neither proposal becomes an adopted numeric policy through this merge.
+
+Prospective verification: no conflict markers or duplicate ledger IDs in
+resolved files; existing Terraform mock tests for signer provisioning pass;
+combined Gate A/package/RPC and cap-proposal regression checks pass on exact
+Git bytes. Run changed decision/trading/logging code only after it is pushed.
+Record test limits and merge SHAs; do not infer hosted acceptance or apply
+Terraform. Actions billing (#98) and existing hosted/owner gates remain open.
