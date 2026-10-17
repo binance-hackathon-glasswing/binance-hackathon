@@ -77,11 +77,11 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 Keith is trying this. If it works, the services can start over the weekend, so first-run problems (configs, receiver ACKs, ingestion) show up before Oct 20. It is thrown away on Oct 20 and replaced by the final profile. Gate A is unsigned, so the interim values only change shadow HOLD/BUY decisions.
 
-- [ ] **Keith:** on the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5.
-- [ ] **Keith:** build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`, and send `rehearsal-live.json` to Yao Zhu.
-- [ ] **Isaac:** a quick look at spread, impact, gas and minimum trade size in Keith's interim summary and profile.
+- [x] **Keith:** on the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5. Done 2026-10-17 (`--min-days 2 --min-samples 9`).
+- [x] **Keith:** build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`, and send `rehearsal-live.json` to Yao Zhu. Done 2026-10-17 by Yao Zhu from Keith's summary (`d951207f…`).
+- [x] **Isaac:** a quick look at spread, impact, gas and minimum trade size in Keith's interim summary and profile. Done: Keith and Isaac approved it for the shadow run (2026-10-17).
 - [ ] **Keith:** record in IDEA-063 that it is interim, with the coverage parameters, capture hash and profile hash.
-- [ ] **Yao Zhu:** if the weekend Gate A setup is done, run the Oct 20 steps 5–8 early with this profile. On Oct 20 the final profile means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`, because the profile hash is pinned in the runtime config.
+- [x] **Yao Zhu:** if the weekend Gate A setup is done, run the Oct 20 steps 5–8 early with this profile. On Oct 20 the final profile means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`, because the profile hash is pinned in the runtime config. Done 2026-10-17: shadow run live, first round ACKed by the receiver (IDEA-066 PC-AWS07).
 
 ## Oct 20: profile day, in this order
 
