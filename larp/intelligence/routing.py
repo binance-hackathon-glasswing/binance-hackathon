@@ -11,7 +11,7 @@ from pathlib import Path
 import time
 from types import SimpleNamespace
 
-from larp.contracts import Document
+from larp.contracts import ContractError, Document
 from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, sha256_hex
@@ -44,6 +44,11 @@ def validate_routing_spec(spec):
         if type(entry) is not dict or set(entry) != {'model_id', 'effort', 'catalog'}:
             raise IntelligenceError('Invalid AIand routing model entry')
         validate_settings(entry['model_id'], entry['effort'], entry['catalog'], spec['max_output_tokens'])
+    # The runtime hashes the spec as a Document (no floats); refuse here so preparation cannot pass what startup refuses.
+    try:
+        Document.from_dict(spec)
+    except ContractError:
+        raise IntelligenceError('AIand routing specification is not a canonical document') from None
 
 
 class BudgetedOpenAI:

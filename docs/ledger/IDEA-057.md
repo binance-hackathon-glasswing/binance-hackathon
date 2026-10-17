@@ -412,3 +412,22 @@ Pass criteria before implementation or changed-code execution:
   service/live refusal remains. No paid call, AWS/host mutation, activation,
   receiver upload, wallet signing or trading occurred. #97 and the parent GAPs
   stay open; synthetic calls do not establish real-provider access or quality.
+
+### SG-8 review fix (2026-10-17, PR159 review)
+
+- **Finding:** a routing file with a decimal value anywhere (e.g. a catalog
+  `price_per_mtok: 0.5`) passed `prepare_shadow` and `gate_a_check`, but the
+  runtime refuses it at startup: `build_routed_assessor` hashes the spec with
+  `Document.from_dict`, which allows no floats. Preparation could report a package
+  the service will not start.
+- **Pass criterion:** `validate_routing_spec` refuses
+  any spec `Document.from_dict` refuses, so preparation, local qualification and
+  runtime construction all refuse it; the existing SG-8 tests still pass.
+- **Fix:** `validate_routing_spec` now also builds the Document and maps its
+  refusal to `IntelligenceError`. New mutation case in
+  `test_shared_spec_validation_refuses_invalid_models_before_any_budget_or_model`.
+- **Result: PASS.** New case fails without the fix (1 subtest failed) and passes
+  with it. macOS arm64, Python 3.12.14 (no PostgreSQL/systemd): focused routing,
+  Gate A and intelligence tests 394 passed, 2 skipped, 1178 subtests; full suite
+  1514 passed, 421 skipped (database/systemd/optional cases), 2530 subtests.
+  Linux/PostgreSQL for this commit: mirror CI result is recorded on PR159.

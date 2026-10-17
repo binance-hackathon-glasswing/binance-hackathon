@@ -78,6 +78,7 @@ class ModelPreparation(unittest.TestCase):
                      lambda s: s['routine'].update(api_key='PRIVATE_INPUT_SENTINEL'),
                      lambda s: s['routine']['catalog'].update(context_window=1),
                      lambda s: s['routine']['catalog'].update(capabilities='reasoning'),
+                     lambda s: s['routine']['catalog'].update(price_per_mtok=0.5),  # runtime Document refuses floats
                      lambda s: s['external_reviewers'][0]['catalog'].update(id='other/model')]
         with ExitStack() as stack:
             for name in ('ModelBudget', 'AIandChatModel', 'OpenAIResponsesModel'):
