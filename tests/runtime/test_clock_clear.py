@@ -5,9 +5,11 @@ separate and never clears here.
 """
 import unittest
 
+from larp.runtime import halts
 from larp.runtime.coordinator import Coordinator, halt_reasons
 from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePlanner, FakePolicy
 from larp.runtime.supervision import Guard
+from larp.storage.postgres import Conflict
 from tests.support import DatabaseCase, request
 
 NOW = 1791590400000
@@ -133,7 +135,18 @@ class ClockClear(DatabaseCase):
         guard.evaluate(NOW + 2)
         actions = guard.evaluate(NOW + 2 + WINDOW)
         self.assertIn('CLEAR:CLOCK', actions)
-        self.assertNotIn('CLOCK', self.reasons())
+        self.assertEqual(self.reasons(), ['REPEATED_FAILURES'])  # CKR-1: only CLOCK went
+        self.assertTrue(halts.pausing_only(self.store.load('run').read()['projection']))  # D-DN-09 applies to the rest
+
+    def test_ckr2_the_clock_window_never_lifts_a_quarantine(self):
+        guard = self.guard(Clock())
+        self.halted(guard)
+        guard.evaluate(NOW + 1)
+        self.store.quarantine('run')
+        with self.assertRaises(Conflict):  # the clear is a write, and a quarantine fences every write
+            guard.evaluate(NOW + 1 + WINDOW)
+        self.assertTrue(self.store.metrics('run').read()['quarantined'])
+        self.assertEqual(self.reasons(), ['CLOCK'])
 
 
 class Wiring(unittest.TestCase):

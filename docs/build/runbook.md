@@ -57,7 +57,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 
 | Trigger | Effect | Clears |
 |---|---|---|
-| Decision clock behind the last committed decision | HALT `CLOCK` | Never during the run (latched) |
+| Decision clock behind the last committed decision | HALT `CLOCK` | Automatically, after 30 minutes in which the kernel reports the clock NTP-synchronised and time never steps back (D-DN-10). A restart starts the 30 minutes again. Without that signal (e.g. chrony without `rtcsync`) it never clears |
 | A round log past its upload deadline (next UTC midnight + 2 h) | HALT `DELIVERY_DEADLINE` | Automatically, once nothing is overdue |
 | N consecutive failed rounds (planner, plan, commit, policy, context, audit content) | HALT `REPEATED_FAILURES` | Automatically, after the configured number of successful **probe** rounds (below) |
 | Journal fails verification | Run **quarantined** (every write and signature fenced) | Not during the run |
@@ -68,7 +68,7 @@ While halted:
 - no command is committed;
 - `store.command()` refuses every signature, mandatory exits included.
 
-Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.py` (H3–H6).
+Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.py` (H3–H6), `tests/runtime/test_clock_clear.py` (D-DN-10).
 
 **Host drill:** set the guard's clock input behind the last decision on the rehearsal build. Expect `HALT:CLOCK`, rounds still logged, and the signer receiving nothing.
 

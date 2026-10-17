@@ -131,7 +131,7 @@ Also `driver.balance_rpc_providers`: the ordered list of manifested BSC RPC prov
 9. **Gate A evidence.**
    - One shadow round logged and ACKed by the real receiver (R-01).
    - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07): `python -m larp.runtime.routes --role primary …` on `primary`, and `--role signer` on the signer once its access route exists; commands and the approved list are in [architecture-deployment.md](architecture-deployment.md) "Approved network destinations" (IDEA-062). Keep both `RouteCheck.v1` reports.
-   - `chronyc tracking` (R-08).
+   - `chronyc tracking` (R-08). Also check that `/etc/chrony.conf` has `rtcsync` and that `cd /opt/larp/current && .venv/bin/python -c 'from larp.runtime.supervision import kernel_clock_synchronized as k; print(k())'` prints `True` on `primary` (D-DN-10). Without `rtcsync`, chrony leaves the kernel's `STA_UNSYNC` flag set, so a `CLOCK` HALT would never clear.
    - An alarm email received.
    - Record each in IDEA-051 and review Gate A in IDEA-042 before leaving it running.
 
