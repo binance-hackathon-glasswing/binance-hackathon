@@ -267,6 +267,10 @@ class Planner(unittest.TestCase):
         s = five_names(held=held, now=instant("2026-10-29T14:00:00Z"))
         c = s.context.read()
         c.update(profile=p, red_flag_predicates=registry().read())
+        opened = s.observed_at.replace(hour=13, minute=30, second=0, microsecond=0)
+        c['execution_session'] = dict(index=c['session_index'], open_ms=int(opened.timestamp()*1000),
+            close_ms=int((opened + timedelta(hours=6, minutes=30)).timestamp()*1000),
+            next_open_ms=int((opened + timedelta(days=1)).timestamp()*1000))
         c["health"]["new_spending_ok"] = True
         for m in c["markets"]:
             m.update(origin="WEB3_OPEN_API", source_id="WEB3")
