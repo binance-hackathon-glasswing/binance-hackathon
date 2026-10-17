@@ -72,3 +72,10 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - `larp/intelligence/config.py` `sec_user_agent` now requires one whitespace-delimited address whose domain ends in a dot plus two or more letters, at least one other word (the name), and none of the extended placeholder list. It is used by live preflight, the terms capture, the EDGAR poller, the bake-off and Gate A `prepare --sec-contact`. `EdgarHttpSource`'s own minimal `@` check is unchanged; live paths pass it the value `sec_user_agent` returned.
 - Result: PASS. `tests/intelligence/test_edgar.py` gains template-refusal and acceptance tests (3 passed, 20 subtests). Full local suite (Anaconda Python 3.14): 1339 passed, 400 skipped, 3 failed, 1 collection error. The 3 failures (`test_service_configs` ×2, `test_archive` ×1) and the `test_final_review_d.py` collection error fail identically without this change and come from packages missing locally (`psycopg`, `boto3`, `eth_account`). Org CI remains billing-blocked (#98).
 
+## PC-AWS04 — alarm descriptions, 2026-10-17 UTC
+
+- Yao Zhu asked for it after the PC-AWS03 test email showed an empty Description: an alarm firing during the run gave no hint of what it means or what to do.
+- Change: `deploy/aws/monitoring.tf` gives all 14 alarms an `alarm_description`: what fired, what the system does on its own, where to look (runbook section), and that nobody acts on the agent during the scored run (F-114). New Terraform test `every_alarm_explains_itself` requires a non-empty description of at most 1024 characters naming F-114 on every alarm.
+- Pass criteria, written before the apply: (1) `terraform validate` and `terraform test` pass, and the new test fails when one description is removed; (2) the saved plan changes only `alarm_description` on existing alarms, in place: 0 to add, 0 to destroy, no other attribute; (3) after the apply, `describe-alarms` shows a non-empty description on all 14 alarms.
+- Local result for (1): validate OK; `terraform test` 16 passed, 0 failed; with the database-storage description removed, 15 passed, 1 failed (`every_alarm_explains_itself`); restored.
+
