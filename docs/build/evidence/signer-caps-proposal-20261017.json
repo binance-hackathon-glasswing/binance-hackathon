@@ -1,0 +1,204 @@
+{
+  "candidates": {
+    "development": {
+      "calculation": {
+        "GOOGLB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "3524684201779872761253",
+            "20000000000000000000"
+          ],
+          "max_input_units": "198599352431777696",
+          "reference_price_usdt": "352.4684201779872761253"
+        },
+        "MSFTB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "2677313279171456270161",
+            "10000000000000000000"
+          ],
+          "max_input_units": "130728070832380858",
+          "reference_price_usdt": "535.4626558342912540322"
+        },
+        "NVDAB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "4612186521987190326639",
+            "40000000000000000000"
+          ],
+          "max_input_units": "303543664881272184",
+          "reference_price_usdt": "230.60932609935951633195"
+        },
+        "SKHYB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "1707",
+            "20"
+          ],
+          "max_input_units": "410076157000585824",
+          "reference_price_usdt": "170.7"
+        },
+        "TSLAB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "4787",
+            "25"
+          ],
+          "max_input_units": "182786714017129727",
+          "reference_price_usdt": "382.96"
+        }
+      },
+      "signing_policy": {
+        "allowed_spenders": [
+          "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5"
+        ],
+        "allowed_tokens": [
+          "0x55d398326f99059ff775485246999027b3197955",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        ],
+        "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
+        "max_fee_wei": "200000000000000",
+        "max_input_units": {
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436": "303543664881272184",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238": "198599352431777696",
+          "0x55d398326f99059ff775485246999027b3197955": "35000000000000000000",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f": "182786714017129727",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0": "130728070832380858",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61": "410076157000585824"
+        }
+      },
+      "usdt_input_cap": "35"
+    },
+    "final": {
+      "calculation": {
+        "GOOGLB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "3524684201779872761253",
+            "20000000000000000000"
+          ],
+          "max_input_units": "397198704863555392",
+          "reference_price_usdt": "352.4684201779872761253"
+        },
+        "MSFTB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "2677313279171456270161",
+            "10000000000000000000"
+          ],
+          "max_input_units": "261456141664761715",
+          "reference_price_usdt": "535.4626558342912540322"
+        },
+        "NVDAB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "4612186521987190326639",
+            "40000000000000000000"
+          ],
+          "max_input_units": "607087329762544368",
+          "reference_price_usdt": "230.60932609935951633195"
+        },
+        "SKHYB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "1707",
+            "20"
+          ],
+          "max_input_units": "820152314001171647",
+          "reference_price_usdt": "170.7"
+        },
+        "TSLAB": {
+          "decimals": 18,
+          "floor_price_ratio": [
+            "4787",
+            "25"
+          ],
+          "max_input_units": "365573428034259453",
+          "reference_price_usdt": "382.96"
+        }
+      },
+      "signing_policy": {
+        "allowed_spenders": [
+          "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5"
+        ],
+        "allowed_tokens": [
+          "0x55d398326f99059ff775485246999027b3197955",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        ],
+        "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
+        "max_fee_wei": "200000000000000",
+        "max_input_units": {
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436": "607087329762544368",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238": "397198704863555392",
+          "0x55d398326f99059ff775485246999027b3197955": "70000000000000000000",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f": "365573428034259453",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0": "261456141664761715",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61": "820152314001171647"
+        }
+      },
+      "usdt_input_cap": "70"
+    }
+  },
+  "decision_ref": "IDEA-049-C CP-01 / #44",
+  "floor_fraction": [
+    1,
+    2
+  ],
+  "limitations": [
+    "CURRENT_PROFILE_AND_HOLDINGS_REVIEW_REQUIRED",
+    "PRICE_FLOOR_NOT_GUARANTEED",
+    "SPLIT_AND_ADJUSTMENT_REVIEW_REQUIRED",
+    "PER_TRANSACTION_NOT_CUMULATIVE_CAP",
+    "ROUTER_SOURCE_AND_OWNER_APPROVAL_REQUIRED"
+  ],
+  "max_fee_bnb": "0.0002",
+  "ready_to_install": false,
+  "schema": "SignerCapsProposal.v1",
+  "source_reference": {
+    "artifact_sha256": "c55871f9379ea589b2f1a7dffb5422953941e7772201c8274cfd78b858f78669",
+    "chain_id": 56,
+    "observed_at": "2026-10-10T11:38:00.565Z",
+    "price_unit": "USDT_PER_WHOLE_TOKEN",
+    "reference_scope": "HISTORICAL_REFERENCE_ONLY",
+    "response_sha256": "754d3733058edb2b99a15676308e838b17f3d50080b9ffc001d747ea81297a7e",
+    "schema": "SignerCapsReference.v1",
+    "tokens": {
+      "GOOGLB": {
+        "address": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+        "decimals": 18,
+        "price_usdt": "352.4684201779872761253"
+      },
+      "MSFTB": {
+        "address": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+        "decimals": 18,
+        "price_usdt": "535.4626558342912540322"
+      },
+      "NVDAB": {
+        "address": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+        "decimals": 18,
+        "price_usdt": "230.60932609935951633195"
+      },
+      "SKHYB": {
+        "address": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+        "decimals": 18,
+        "price_usdt": "170.7"
+      },
+      "TSLAB": {
+        "address": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+        "decimals": 18,
+        "price_usdt": "382.96"
+      }
+    }
+  },
+  "status": "UNAPPROVED_HISTORICAL_CANDIDATES"
+}
