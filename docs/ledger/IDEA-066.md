@@ -81,3 +81,16 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - Result for (2): saved plan from pushed `1b2feb8` (PR #141): "0 to add, 14 to change, 0 to destroy"; a JSON check of the plan found no changed attribute other than `alarm_description`. Applied: "Apply complete! Resources: 0 added, 14 changed, 0 destroyed."
 - Result for (3): `describe-alarms` shows descriptions of 249–367 characters on all 14 alarms. **PASS.** The next alarm email carries its description.
 
+## PC-RPC01 — Gate A prepare takes the ordered provider file, 2026-10-17 UTC (prospective)
+
+- Problem: Isaac selected two development balance providers (#135, BNB Chain primary, NodeReal backup), and the runtime accepts up to four in order (#116), but `tools/deploy/prepare_shadow.py` takes one `--balance-rpc-url`, so `prepare` writes only the primary into `runtime.json`. Yao Zhu asked for `prepare` to read the private provider file (`deploy/activation/balance-rpc/selected-providers.json`, the format `qualify_balance_rpc.py` uses).
+- Change: `prepare_shadow.py capture|prepare --balance-rpc-config FILE`; `gate_a.prepare(..., balance_rpc_providers=[...])`. The single-URL flags keep working.
+- Pass criteria, written before any code:
+  - P1: with a provider list, `prepare` writes exactly that list, in order, to `driver.balance_rpc_providers` in `runtime.json`, and the report does not name `BALANCE_RPC`.
+  - P2: naming the list together with `--balance-rpc-url`/`--balance-rpc-source-id` is refused; a list that the runtime's own `balance_providers` would refuse (empty, more than four, non-HTTPS, duplicate or empty source ID, extra keys) is refused by `prepare`.
+  - P3: the chain capture must come from one of the listed providers' source IDs; another source is refused.
+  - P4: a rendered config that still uses the legacy single-URL form refuses more than one provider, and keeps writing one provider as the legacy pair.
+  - P5: the CLI reads the file for `capture` (the chain read uses the first provider's URL and source ID) and for `prepare`; it refuses the file combined with the single-URL flags, a symlink, or a file inside the repository that Git does not ignore; no refusal prints a URL.
+  - P6: every existing Gate A test (GA01–GA14, `gate_a_check`) and the runtime service tests still pass unchanged.
+- Results (2026-10-17): P1–P6 **PASS**. New `ProviderFile` tests in `tests/runtime/test_gate_a.py` (6 tests, 10 subtests) cover P1–P5; a mutation that writes only the first provider fails P1. Existing Gate A tests (GA01–GA14) and `test_gate_a_check.py`: 42 passed, 1 skipped, unchanged. Full local suite (Anaconda Python 3.14): 1353 passed, 400 skipped; the only failures are the three already present without this change (`psycopg`/`boto3` missing locally) and the `test_final_review_d.py` collection error (`eth_account`). `prepare` imports `larp.runtime.service.balance_providers`, which needs neither package. Org CI remains billing-blocked (#98). GATE_A.md and RPC_QUALIFICATION.md now show `--balance-rpc-config`.
+
