@@ -183,7 +183,14 @@ class RoutedAssessor:
         except IntelligenceError:
             return dict(account=self.budget.account, external_only=True, reason='MODEL_BUDGET_UNAVAILABLE')
 
+    def assess_deferred(self, request, *, audit_hook):
+        """Keep timed-out stage workers owned until their actual calls and audit writes end."""
+        return self._assess(request, audit_hook=audit_hook, wait_for_workers=True)
+
     def assess(self, request):
+        return self._assess(request, audit_hook=getattr(self, 'audit_hook', None))
+
+    def _assess(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
@@ -212,10 +219,11 @@ class RoutedAssessor:
                 tool_allowance = min(tool_allowance, 3)  # leave independent review a retrieval budget
             stage['budget'] = dict(tool_calls=tool_allowance,
                                    deadline_ms=min(remaining, allowance or remaining))
-            hook = getattr(self, 'audit_hook', None)
+            hook = audit_hook
             assessor = self.make_assessor(AuditedModel(model, hook, label) if hook is not None else model)
             assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage)).read()
+            result = assessor.assess(Document.from_dict(stage), wait_for_worker=True).read() if wait_for_workers else \
+                assessor.assess(Document.from_dict(stage)).read()
             tools += result.get('budget_used', {}).get('tool_calls') or 0
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)

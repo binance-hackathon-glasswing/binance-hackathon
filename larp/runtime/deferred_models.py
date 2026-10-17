@@ -108,8 +108,15 @@ class DeferredAssessments:
 
         def run():
             try:
-                self.assessor.audit_hook = lambda event: self._append(path, event)
-                result = self.assessor.assess(request)
+                hook = lambda event: self._append(path, event)
+                deferred = getattr(self.assessor, 'assess_deferred', None)
+                if deferred is not None:
+                    # The real router must drain inner hard-timeout workers before RESULT/ACK.
+                    # A returned UNAVAILABLE result alone does not prove that a provider has exited.
+                    result = deferred(request, audit_hook=hook)
+                else:
+                    self.assessor.audit_hook = hook
+                    result = self.assessor.assess(request)
                 self._append(path, dict(kind='RESULT', result=result.read()))
             except Exception as error:
                 # Never persist exception text: provider/OS exceptions can include credentials.
