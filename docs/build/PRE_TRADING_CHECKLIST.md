@@ -86,24 +86,24 @@ Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run t
 
 **LLM: everything else between now and the scored run (audit 2026-10-17, IDEA-066 PC-AUD01)**
 
-These were missing from every list; each one is needed for the LLM to be in the activated build and working (A-REQ-079).
+These were missing from every list; each one is needed for the LLM to be in the activated build and working (A-REQ-079). Owners rebalanced 2026-10-17 (Yao Zhu): model and routing work to Keith, who proposed the routing; tooling, network, operations and review to Isaac; Keegan keeps the strategy wiring, release declaration and model decision.
 
 *How the LLM's findings reach trading.* Two paths: accepted assessment findings feed the evidence gate (Class 1 exits and entry blocks), and, with the S1 profile only, the exposure limiter. The limiter's input is not produced anywhere today. In `MODEL` mode it also needs an LLM call that returns `{level, evidence_ids, reason, falsifier}`, and that call does not exist; with no assessment, every session is rejected as `NO_ASSESSMENT`, so the limiter never cuts and a cut never expires.
 
 - [ ] **Keith:** propose the S1 `limiter_mode` for the rehearsal and final profiles: `DETERMINISTIC` (code maps the LLM-verified evidence classes to levels; no extra LLM call) or `MODEL` (needs the exposure call below). Recommended: `DETERMINISTIC` unless the call is built and tested by Oct 21. Only matters if the Oct 20 profile is S1.
-- [ ] **Keegan:** decide `limiter_mode` from Keith's proposal by Oct 20 (IDEA-075 O6, DEV-19).
+- [ ] **Isaac:** decide `limiter_mode` from Keith's proposal by Oct 20 (IDEA-075 O6, DEV-19).
 - [ ] **Keegan:** B4 producer: build `exposure_evidence` (verified items with `class`, `symbols`, `session_index`) from the evidence store into the runtime context, for both modes (IDEA-075 B4 lists Yao Zhu; this checklist puts code with Keegan). Bring it forward from Oct 24 if possible; see the B4 line under Oct 24.
-- [ ] **Keegan:** only if `MODEL` is chosen: the exposure-level LLM call (once per session and on each new verified filing), with its own pinned Markdown prompt like #158's, through the same routing and OpenAI budget, its I/O in the round log. Criteria in a ledger entry first.
-- [ ] **Keegan:** activation tooling: Gate A `prepare` and `gate_a_check` hard-code `assessor: deterministic`. Add an explicit, reviewed option to prepare the LLM assessor with its routing file, hash and budget root for the rehearsal and the live config, so Yao Zhu stops hand-editing `runtime.json`.
-- [ ] **Keegan:** re-approve the network table rows for `api.aiand.com` and `api.openai.com` for signed and live use (today "Shadow only", `architecture-deployment.md` "Approved network destinations"); Isaac confirms for section C.
+- [ ] **Keith:** only if `MODEL` is chosen: the exposure-level LLM call (once per session and on each new verified filing), with its own pinned Markdown prompt like #158's, through the same routing and OpenAI budget, its I/O in the round log. Criteria in a ledger entry first.
+- [ ] **Isaac:** activation tooling: Gate A `prepare` and `gate_a_check` hard-code `assessor: deterministic`. Add an explicit, reviewed option to prepare the LLM assessor with its routing file, hash and budget root for the rehearsal and the live config, so Yao Zhu stops hand-editing `runtime.json`.
+- [ ] **Isaac:** re-approve the network table rows for `api.aiand.com` and `api.openai.com` for signed and live use (today "Shadow only", `architecture-deployment.md` "Approved network destinations").
 - [ ] **Keith:** capture the AIand and OpenAI terms (date and SHA-256) and record in the licence register what they allow for sending public filings, retention and audit sharing (GAP-23, IDEA-056 §8, IDEA-049-A rights row). Keegan reviews.
 - [ ] **Keith:** check the AIand balance covers the run: AIand token usage from the trial (IDEA-057 M4) projected to Nov 12, with a margin. An empty AIand account leaves every assessment UNAVAILABLE.
-- [ ] **Keegan:** record the scored-run model behaviour: after activation only automatic switches act (budget latch to external-only, provider fallback, UNAVAILABLE keeps the last level). The trial's operator kill actions K1–K4 (remove a key, restart, revert) are not allowed during the scored run (F-114, F-124). Write it into IDEA-057.
+- [ ] **Keith:** record the scored-run model behaviour: after activation only automatic switches act (budget latch to external-only, provider fallback, UNAVAILABLE keeps the last level). The trial's operator kill actions K1–K4 (remove a key, restart, revert) are not allowed during the scored run (F-114, F-124). Write it into IDEA-057.
 - [ ] **Keith:** freeze the routing file and both stage prompts with the Oct 22 parameters; any later prompt edit is a new release before activation, never after.
-- [ ] **Keegan:** with the Oct 22 decision, record the disposition of the real-evaluation blocker (T01 / independent labels / post-cutoff check, IDEA-049-A): what ran (the trial's M9 sample) and what is declared as not run.
+- [ ] **Keith:** in the Oct 22 trial summary, record the disposition of the real-evaluation blocker (T01 / independent labels / post-cutoff check, IDEA-049-A): what ran (the trial's M9 sample) and what is declared as not run.
 - [ ] **Yao Zhu:** during the trial, record memory use on `primary` (`systemctl show -p MemoryCurrent` for each unit, `free -m`) once a day. Units may use up to 3 GiB on a 2 GiB `t3.small` (#60).
-- [ ] **Keegan:** decide #60 from Yao Zhu's numbers: keep `t3.small`, lower the unit limits, or resize (a resize costs money and needs Yao Zhu's OK and a Terraform apply).
-- [ ] **Keegan:** on the first signed rehearsal rounds, check the ai-seeds round logs carry every routed stage's model I/O and reasoning, and record cost and latency per round (DR-11).
+- [ ] **Isaac:** decide #60 from Yao Zhu's numbers: keep `t3.small`, lower the unit limits, or resize (a resize costs money and needs Yao Zhu's OK and a Terraform apply).
+- [ ] **Isaac:** on the first signed rehearsal rounds, with the on-chain check, confirm the ai-seeds round logs carry every routed stage's model I/O and reasoning, and record cost and latency per round (DR-11).
 
 ### Decisions due Oct 19
 
