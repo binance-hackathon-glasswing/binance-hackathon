@@ -64,6 +64,15 @@ preparing on another date. Create `deploy/activation/` before redirecting the
 Terraform output if it does not exist. Set all shell variables explicitly in the
 local terminal; none is a request to put a secret in chat.
 
+For the documented GLM routine / ChatGPT difficult-review shadow trial, preparation
+also accepts `--model-routing <reviewed public JSON>` and
+`--model-routing-sha256 <reviewed SHA256>` together. These are flagged input
+placeholders; use actual reviewed values. The complete command, model roles,
+credential names and shared-budget steps are in
+[AIAND_MODEL_ROUTING.md](AIAND_MODEL_ROUTING.md#prepare-the-routed-configuration-without-manual-runtime-edits-sg-8).
+The generated package includes pinned `model-routing.json`; install it with the
+other files before manifest binding. Model/provider/ledger checks stay `NOT_RUN`.
+
 The tool validates all five contract/chain/token identities and binds their
 observed market tickers to the SEC issuer IDs. It grants no share-class, ratio or
 basis verification. It preserves exact BNB wei and floors USDT to ledger

@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from larp.contracts import ContractError  # noqa: E402
 from larp.execution import Blocked, DependencyUnavailable  # noqa: E402
-from larp.runtime.gate_a import capture_inputs, prepare, rpc_provider_list  # noqa: E402
+from larp.runtime.gate_a import MAX_ROUTING_BYTES, capture_inputs, prepare, rpc_provider_list  # noqa: E402
 from larp.marketdata.web3 import Artifacts, Unavailable, Web3Client, credentials, encoded, utc  # noqa: E402
 from larp.sources.live import Refused, git_state, require_committed  # noqa: E402
 import render_host_configs as renderer  # noqa: E402
@@ -72,6 +72,10 @@ def main(argv=None):
     assembly.add_argument('--balance-rpc-config', type=Path, help='Private ordered provider file (git-ignored), '
                           'written in order to driver.balance_rpc_providers. Not with --balance-rpc-url (GA15)')
     assembly.add_argument('--out', type=Path, required=True)
+    assembly.add_argument('--model-routing', type=Path, help='Reviewed public AIand routing JSON; opt into the '
+                          'documented GLM/OpenAI/Kimi shadow trial (no credentials)')
+    assembly.add_argument('--model-routing-sha256', help='Expected SHA256 of the reviewed routing file; '
+                          'required together with --model-routing')
     args = parser.parse_args(argv)
     try:
         if args.command == 'capture':
@@ -96,6 +100,12 @@ def main(argv=None):
                 stream.write(encoded(value) + b'\n')
             print(json.dumps(dict(captured=True, signing_enabled=False, round_logs_uploaded=False)))
             return 0
+        routing_raw = None
+        if (args.model_routing is None) != (args.model_routing_sha256 is None):
+            raise ContractError('Model routing file and reviewed SHA256 are required together')
+        if args.model_routing is not None:
+            with args.model_routing.open('rb') as stream:
+                routing_raw = stream.read(MAX_ROUTING_BYTES + 1)
         capture_raw = args.capture.read_bytes()
         wallet = json.loads(capture_raw)['wallet']
         configs = renderer.render(renderer.outputs(json.loads(args.terraform_output.read_bytes())),
@@ -104,12 +114,16 @@ def main(argv=None):
                         calendar_raw=args.calendar.read_bytes(), run_id=args.run_id, build_id=args.build_id,
                         now=utc(), sec_contact=args.sec_contact,
                         balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id,
-                        balance_rpc_providers=rpc_providers(args.balance_rpc_config))
+                        balance_rpc_providers=rpc_providers(args.balance_rpc_config),
+                        model_routing_raw=routing_raw, model_routing_sha256=args.model_routing_sha256)
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.
-        print(json.dumps(dict(prepared=True, gate_a_passed=False, signing_enabled=False,
-                              missing_inputs=report['missing_inputs'], host_checks=report['host_checks'])))
+        summary = dict(prepared=True, gate_a_passed=False, signing_enabled=False,
+                       missing_inputs=report['missing_inputs'], host_checks=report['host_checks'])
+        if 'model_routing' in report:
+            summary.update(assessor='aiand_routed', model_checks=report['model_routing']['checks'])
+        print(json.dumps(summary))
         return 0
     except (ContractError, Unavailable, Refused, renderer.Refused, OSError, ValueError, KeyError, TypeError,
             AttributeError, Blocked, DependencyUnavailable, subprocess.SubprocessError) as error:

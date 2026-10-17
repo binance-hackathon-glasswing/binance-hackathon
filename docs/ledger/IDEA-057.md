@@ -326,3 +326,108 @@ All six items in #91 are green on mirror CI (`Keegan4/keegan4-larp-ci-mirror`, t
 - **The integration head, which also carries #111's code (c075849, reached via #114):** run [38910102399](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38910102399) on `codex/system-testing-20261012` at `e4f3d59`. All four jobs pass: full suite **1755 passed, 6 skipped, 2556 subtests, 0 failed**, plus real systemd 5 passed, on Python 3.12.15 and PostgreSQL 14.24.
 
 The 1552-passed run predates #111. The second run covers that code on the integration branch. Org-repo Actions remain blocked (#98).
+
+## SG-8 — prepare the documented LLM split (2026-10-17, prospective)
+
+The user requests ChatGPT for main/difficult questions and the Chinese models for
+lighter questions, following the docs. Base integration `0672fb8` already implements
+GLM-5.3 low → conditional OpenAI `gpt-6.1-sol` medium review, with Kimi K3 high
+then GLM high fallback. The missing integration is Gate A preparation: it always
+emits deterministic configuration, and local package qualification rejects routing.
+Branch `codex/llm-routing-preparation-20261017` adds explicit opt-in assembly rather
+than asking the host owner to edit already prepared runtime bytes manually.
+
+Pass criteria before implementation or changed-code execution:
+
+- **SG8a:** prepare accepts a separately reviewed routing file and its expected
+  SHA256 together; bounds and validates the public spec without secrets, budget
+  access or inference. Copy exact bytes as `model-routing.json`; runtime and report
+  pin those bytes, select `aiand_routed`, and use the documented single shared
+  budget directory. Default preparation remains deterministic.
+- **SG8b:** preparation and runtime share pure routing validation: exact supported
+  model IDs, supported catalog/effort/context/output, one/two fallback reviewers,
+  OpenAI effort, frozen audit settings and budget account. Reject malformed or
+  altered specs before model, budget, network or output construction; fixed
+  failure text never echoes supplied content. No arbitrary provider endpoint.
+- **SG8c:** local qualification accepts routed dev-shadow packages only with the
+  routing bytes and matching pins, refuses missing/extra/tampered files and
+  service/live scope, and performs no credential, budget or provider lookup. It
+  continues to distinguish local file validation from host/trial acceptance.
+- **SG8d:** exercise the prepared runtime through real composition and the existing
+  routed assessor using synthetic provider boundaries: routine GLM, required
+  OpenAI review, budget/credit-driven Kimi/GLM fallback, common deadline/tool
+  ceiling and full provenance. Retain existing service/live refusals and budget
+  reserve. Run focused deployment/intelligence tests and full Linux/PostgreSQL14
+  regressions after commit/push; record exact results and skips.
+- **SG8e:** update the host runbook with opt-in preparation, original-evidence
+  reviewer roles, secret names, actual prior spend and outstanding P0/P1/P2/trial
+  requirements. No AWS/host activation, paid calls, labels or policy adoption is
+  claimed. No parent model-selection or Gate A/B GAP closes.
+
+### SG-8 results (2026-10-17)
+
+- Criteria committed/pushed at `411dd52`; implementation/tests at `e652603` before
+  execution. The first focused run was **127 passed, 1 failed, 7 skipped,
+  198 subtests**, 5.74s. The new test incorrectly omitted the retained OpenAI
+  budget-refusal stage from its expected trace; no POST occurred. Corrected and
+  pushed at `08f2a0a` before rerun. The initial command omitted the disposable DSN,
+  so the seven PostgreSQL tests were skipped, not passed.
+- **SG8a–e PASS for offline engineering scope**, at pushed
+  `08f2a0a1391dc6356859639e0097b636260d959f`: focused routing/preparation/qualification/
+  driver/routes/secrets suite **135 passed, 198 subtests**, 14.71s, no skips, with
+  disposable PostgreSQL14.24. Seven new tests cover exact-byte copy/pins, unchanged
+  deterministic defaults, 16 invalid-spec mutations before construction, missing/
+  altered/oversized inputs, actual CLI package production, complete local CI/terms
+  package qualification and resealed inner-pin/path/scope mutations. Actual
+  prepared runtime composition reads an ingested NVIDIA filing through the
+  read-only evidence reader; synthetic transports demonstrate GLM-low → Sol
+  review, original filing text at each tier, durable $40 budget refusal with no
+  OpenAI POST, Kimi-high fallback and then GLM-high fallback. Original six-tool/
+  ten-step/deadline limits and $10 reserve remain enforced by existing regressions.
+- **Full suite PASS** at the same code: Linux x86_64, Python3.12.14,
+  PostgreSQL14.24, bubblewrap through the supported namespace execution route:
+  **1929 passed, 6 skipped, 2858 subtests**, 385.38s, exit0. Command:
+  `env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PIP_CACHE_DIR=/workspace/.cache/pip LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test .venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider`.
+  Skips: one optional external recorded-market dataset and five opt-in systemd
+  cases; this host has no systemd PID1. No xfails. The AWS_PROFILE override is
+  scoped to offline tests; no deployment authentication is changed. No golden
+  trace was regenerated. Static Python AST and `git diff --check` pass.
+- Logs outside Git at `/workspace/larp-cloud`: initial
+  `llm-routing-focused.log` SHA256
+  `dbc465ffe91d75d4785c0f2ee1d9b3c26b8fd456c2a04f9a2b6c3a0dc01b8970`;
+  corrected `llm-routing-focused-corrected.log`
+  `9b894daae0ae150fb43a8df5b1cf86fe1deeb24bcbfb47f0971fca6ecbb46966`;
+  `llm-routing-full.log`
+  `9ed94b5f53b6d120477c04f90d6564c2834612f85f9590f24bb9f7e1e229ed41`.
+- [PR159](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/159)
+  targets integration. Org Actions [39037596385](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39037596385)
+  ran no runtime steps; its annotation reports the existing account-payment/
+  spending-limit refusal. No hosted CI pass is claimed for this change.
+- Remaining: Yao Zhu installs reviewed prepared files before manifest binding,
+  supplies runtime `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` for the requested
+  OpenAI review tier (omit the latter only for an intentional external-only
+  trial), initializes the single private ledger from actual prior spend, and
+  records P0/P1/P2 and trial results. Keith supplies independent labels; team
+  owns rights, production declaration/adoption and cut-line decisions. Runtime
+  service/live refusal remains. No paid call, AWS/host mutation, activation,
+  receiver upload, wallet signing or trading occurred. #97 and the parent GAPs
+  stay open; synthetic calls do not establish real-provider access or quality.
+
+### SG-8 review fix (2026-10-17, PR159 review)
+
+- **Finding:** a routing file with a decimal value anywhere (e.g. a catalog
+  `price_per_mtok: 0.5`) passed `prepare_shadow` and `gate_a_check`, but the
+  runtime refuses it at startup: `build_routed_assessor` hashes the spec with
+  `Document.from_dict`, which allows no floats. Preparation could report a package
+  the service will not start.
+- **Pass criterion:** `validate_routing_spec` refuses
+  any spec `Document.from_dict` refuses, so preparation, local qualification and
+  runtime construction all refuse it; the existing SG-8 tests still pass.
+- **Fix:** `validate_routing_spec` now also builds the Document and maps its
+  refusal to `IntelligenceError`. New mutation case in
+  `test_shared_spec_validation_refuses_invalid_models_before_any_budget_or_model`.
+- **Result: PASS.** New case fails without the fix (1 subtest failed) and passes
+  with it. macOS arm64, Python 3.12.14 (no PostgreSQL/systemd): focused routing,
+  Gate A and intelligence tests 394 passed, 2 skipped, 1178 subtests; full suite
+  1514 passed, 421 skipped (database/systemd/optional cases), 2530 subtests.
+  Linux/PostgreSQL for this commit: mirror CI result is recorded on PR159.
