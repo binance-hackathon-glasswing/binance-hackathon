@@ -135,3 +135,12 @@ Yao Zhu, with Keith and Isaac's approval of the interim profile for an unsigned 
 - **First ACK (R-01).** At 11:01 UTC: 1 round (triggered by a filing, `CLOSED`), 1 audit event, 1 chunk `ACK` on the first attempt; the receiver's acknowledgement for `evt-1792234896829-5b4a34ad0514` is `{"code":200,"message":"stored","status":"STORED"}`. The 24 h ingestion clock starts here (about 2026-10-17 11:00 UTC).
 - **Still open for Gate A:** 24 h ingestion and the gap report (Oct 18 ≥ 11:00 UTC); restart drill; first hourly anchor check; Keegan's Gate A review in IDEA-042; org-CI provenance (GAP-72) or a recorded team acceptance of the mirror build; the Oct 20 swap to the final profile (re-run `prepare`, re-bind, re-init/activate).
 
+## PC-AWS08 — restart drill and hourly-anchor check on the shadow run, 2026-10-17 UTC
+
+Yao Zhu's Oct 20 step 8, run early on the live shadow run `larp-dev-shadow-20261017` (PC-AWS07), over SSM.
+
+- **State before.** `operations health` (as `larp-archive`): `healthy: true`, no missed anchor or backup slots, runtime alive (heartbeat 2.6 s), 0 audit failures; 5 rounds and 7 audit chunks, all `ACK`. `larp-archive.service` runs every minute (`OnUnitInactiveSec=60s`) and last finished successfully.
+- **Restart drill (DR-13, runbook §2).** `systemctl kill -s SIGKILL larp-runtime` at 11:05:35 UTC (PID 34916). The unit was active again with PID 35359 after 10.3 s (`RestartSec=10`), `NRestarts=1`. Journal: 13 → 15 events, exactly one `INCIDENT` of type `RESTART` (sequence 14); `process_sessions` shows the crashed session closed and one new open session, both on build `bb46234`; the restarted process logged `release_verified: true`. **PASS.**
+- **Hourly anchor (DR-15).** The archive bucket holds the anchor for slot `1792234800000` (2026-10-17 11:00 UTC) and the daily backup (listed from the Mac; the host role has object read/write but no `s3:ListBucket`, by design). Read back on `primary` as `larp-archive` and checked with the production `verify_anchors`: the anchored head at sequence 2 matches the journal and the full journal verifies (`anchors: 1`, `latest_sequence: 2`). Object Lock retention **COMPLIANCE until 2027-01-07 11:00 UTC** (82 days). **PASS** for the first anchor.
+- **Still open for Gate A:** the 24 h ingestion run and gap report (Oct 18 ≥ 11:00 UTC), including an unbroken hourly anchor series over that period (IDEA-036 criteria 1–6 at the rehearsal drills); Keegan's Gate A review in IDEA-042; org-CI provenance (GAP-72).
+

@@ -94,7 +94,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 5. [ ] **Yao Zhu:** fresh read-only wallet capture with the balance RPC (`prepare_shadow.py capture --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json`), then Gate A `prepare` within five minutes with the same `--balance-rpc-config`, so both RPCs go into `runtime.json` (#145); install the configs (`runtime.json` mode 0644); bind them to CI's manifest (`preflight --bind`).
 6. [ ] **Yao Zhu:** `service init`, then `service activate` with Keegan named as reviewer; start the evidence, runtime and uploader services; enable the archive timer.
 7. [ ] **Yao Zhu:** confirm the first shadow round is ACKed by the real ai-seeds receiver (R-01), which starts the 24 h ingestion clock, and send the round ID to Keegan.
-8. [ ] **Yao Zhu:** restart drill (kill a service, check it returns on the same build with an incident logged) and check the first hourly anchor (DR-13, DR-15).
+8. [x] **Yao Zhu:** restart drill (kill a service, check it returns on the same build with an incident logged) and check the first hourly anchor (DR-13, DR-15). Done early 2026-10-17 on the shadow run: back in 10.3 s with one RESTART incident; the 11:00 anchor verifies against the journal, COMPLIANCE-locked (IDEA-066 PC-AWS08). Repeat after the Oct 20 re-activation only if Keegan asks.
 9. [ ] **Isaac:** only if a dev window was chosen: watch the runtime's first approve plus swap on the dev wallet and check it on chain against the logged round (DR-02, DR-03).
 10. [ ] **Keegan:** after step 9, Gate B review in IDEA-042. The host-side crash tests (DR-04, DR-05) are step 3 of the Oct 21 list.
 
