@@ -1,7 +1,9 @@
 # Signer caps: Isaac's proposal for #44
 
 **CP-01, 2026-10-17. Unapproved candidates.** Checklist task6 / #146.
-This completes the proposal/tool slice, not approval or signer readiness.
+**Isaac confirmed these candidates for Keith's review on 2026-10-17 (CP-01 D1).**
+This completes the proposal/tool slice; installation approval and signer readiness
+remain outstanding.
 Keith reviews the actual profile, current quoted input quantities and holdings;
 Isaac confirms the resulting policy. Yao installs/binds only an approved policy.
 No host config, runtime limit, default signing policy or key is changed here.
