@@ -237,3 +237,27 @@ class SignedIntegration(ServiceHarness):
                          ['original provider summary'])
         self.assertEqual(log['cot'],['original provider summary'])
         self.assertEqual(log['orders'],[])
+
+    def test_slm5_real_routed_stages_reach_the_production_round_log(self):
+        from tests.intelligence.test_aiand_routing import Routing, AIAND_KEY, OPENAI_KEY
+        fixture=Routing();fixture.setUp();self.addCleanup(fixture.doCleanups)
+        fixture.w=self.w
+        fixture.s['audit_sample_bps']=10000
+        driver=self.service_driver()
+        q,item,req=self.seed_pending(driver,fixture.build())
+        self.assertTrue(q.finished.wait(3))
+        driver.once(self.w.clock())
+        record=self.store.event(driver.coordinator.run_id,'plan:'+item['round_id'])['record']
+        stages=[e for e in record['assessment_audit']['events'] if e['kind']=='STAGE']
+        self.assertGreaterEqual(len(stages),2)
+        self.assertEqual(stages[0]['stage'],'routine')
+        self.assertIn('openai-review',[s['stage'] for s in stages])
+        current=self.store.load(driver.coordinator.run_id).read()
+        event=driver.coordinator.audit_record(record,item['round_id'],self.w.clock(),'PREFLIGHT',current['head']).read()
+        log=json.loads(event['log'])['data']
+        self.assertEqual(log['input']['assessment_audit']['events'],record['assessment_audit']['events'])
+        self.assertNotIn(AIAND_KEY,event['log']);self.assertNotIn(OPENAI_KEY,event['log'])
+        for stage in stages:
+            self.assertTrue(stage['result']['model_io']['steps'])
+        self.assertTrue(any(e['kind']=='MODEL_RESPONSE' and e['stage']=='openai-review'
+                            for e in record['assessment_audit']['events']))
