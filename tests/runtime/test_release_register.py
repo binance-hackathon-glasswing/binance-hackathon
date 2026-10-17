@@ -33,8 +33,12 @@ class Register(unittest.TestCase):
     def test_r1_services_list(self):
         services = validate_services(load(SERVICES))
         pending = [s for s in services['services'] if s['status'] == 'PENDING_DECISION']
-        # B8 open, with its fallback; bsc-rpc until Isaac's RPC choice (#92, IDEA-055 PR 5)
-        self.assertEqual([s['service_id'] for s in pending], ['assessor-model', 'bsc-rpc'])
+        # B8 remains open. Isaac selected the dev balance RPCs; deployment/host checks remain provisioning.
+        self.assertEqual([s['service_id'] for s in pending], ['assessor-model'])
+        rpc = next(s for s in services['services'] if s['service_id'] == 'bsc-rpc')
+        self.assertEqual(rpc['status'], 'PROVISIONING')
+        self.assertEqual(rpc['selection_scope'], 'DEVELOPMENT_BALANCE_READS_ONLY')
+        self.assertEqual(rpc['development_balance_source_ids'], ['BSC_BNBCHAIN_PUBLIC', 'BSC_NODEREAL_PUBLIC'])
         broken = copy.deepcopy(services)
         del broken['services'][0]['terms_ref']
         with self.assertRaises(ContractError):
