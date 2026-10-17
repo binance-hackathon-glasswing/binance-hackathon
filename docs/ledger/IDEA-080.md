@@ -1,7 +1,7 @@
 # IDEA-080 — How the signer host is reached for provisioning and key placement
 
 - Date / owner: 2026-10-17 SGT / decided by Keegan (pre-trading checklist, Gate B setup, PR #133); recorded with Claude Code at Keegan's request. Builder of the Terraform change and every AWS step: Yao Zhu (the only team member with AWS access, IDEA-066 PC-AWS01). Key placement: Isaac (DR-03).
-- Status: decided (option b); Terraform change, tests and review not started.
+- Status: decided (option b); Terraform change and tests built 2026-10-17 (not applied); repository review and local merge verification PASS.
 - Links: `docs/build/AWS_RUNBOOK.md` step 5 (the three options); IDEA-049-D D-DN-05 (routes for migrations and signer provisioning); IDEA-046 B2 (no SSM endpoints, for cost); `deploy/aws/hosts.tf` (development SSM attaches to `primary` only); `deploy/aws/network.tf` (S3 gateway endpoint); #44 (signer policy values); DR-03.
 - ID: from the IDEA-080..084 block that PR #126 reserves for the rehearsal and operations work.
 
@@ -53,7 +53,16 @@ Checked against `deploy/aws/network.tf` before any change is built. SA1–SA7 st
 
 ## Results
 
-Not started.
+### Terraform change built, 2026-10-17 (Yao Zhu, with Claude Code; not applied)
+
+Built ahead of #44 so Keegan can review it while the caps are settled; only the apply waits for #44. It follows SA3 **as corrected** in PR #143 and adds SA8 from there.
+
+- `deploy/aws/signer_access.tf` (new): variable `enable_signer_provisioning` (default `false`, in `variables.tf`) creates, only while true, an endpoint security group, interface endpoints `ssm`, `ssmmessages` and `ec2messages` in `aws_subnet.private[0]` (the signer's subnet) with private DNS, HTTPS ingress from the `primary` and `signer` host groups only, one signer egress rule (TCP 443 to the endpoint group only) and `AmazonSSMManagedInstanceCore` on the signer role. The endpoint group and the SSM attachment refuse any environment but `development`.
+- The signer role already reads `releases/*` in the artifact bucket (with `kms:Decrypt` via S3), so the bundle download needs no new permission. This answers the question left open above.
+- Tests: `safety.tftest.hcl` `signer_access_off_by_default` (SA1) and `signer_access_development_only` (SA2); `signer_access.tftest.hcl` `signer_access_is_narrow` (SA3 corrected, SA8, plus no internet egress or public address for the signer), a plan-only file whose mock fills IDs at plan time. `terraform validate` OK; `terraform test` 19 passed, 0 failed.
+- Mutations, each restored: endpoints admitting the signer only (the uncorrected SA3) fails `signer_access_is_narrow`; removing the signer egress rule fails it; defaulting the variable to `true` fails the suite.
+- Real plans against the account (no apply): with the normal private tfvars, "No changes"; with `-var enable_signer_provisioning=true`, "Plan: 8 to add, 0 to change, 0 to destroy" (the three endpoints, their group, two ingress rules, the signer egress rule, the SSM attachment).
+- Not yet done: Keegan's review of this change and of #143; the apply, provisioning, `signer.json`, SA4/SA9 checks, key placement and teardown (SA5), which follow #44's approval.
 
 ### MR-143–153 — integration merge criteria (2026-10-17)
 
@@ -70,3 +79,28 @@ combined Gate A/package/RPC and cap-proposal regression checks pass on exact
 Git bytes. Run changed decision/trading/logging code only after it is pushed.
 Record test limits and merge SHAs; do not infer hosted acceptance or apply
 Terraform. Actions billing (#98) and existing hosted/owner gates remain open.
+
+### MR-143–153 verification (2026-10-17)
+
+PR143 resolves the index conflict while preserving the router, S1 strategy and
+experiment rows; merged at `6648934`. PR144 merged at `362e44d`. PR148's
+resolution `902a5a6` preserves both CP-01 and SL-01 and a combined section C
+index row; eight proposal/policy tests pass on its exact Git tree with the
+existing Linux test environment. PR148 merged at `f9a3ac8`.
+
+PR149 resolution `82610c7` preserves the corrected SA3/SA8/SA9 amendment,
+implementation evidence and these prospective merge criteria. Static checks
+find no conflict markers or duplicate ledger IDs and exactly one copy of each
+proposal. Terraform 1.13.5 / AWS provider 6.61.0 validation PASS; **19 mock
+tests pass, zero failures**, on exact Git blobs in a temporary Linux checkout
+with `init -backend=false` and the existing local provider. No real backend,
+AWS plan/apply, key placement or host action is performed by this verification.
+The preceding author's real-plan evidence remains a separate dated result.
+
+This completes repository review and conflict-resolution verification;
+the earlier pending code-review bullet is superseded. Yao Zhu still owns
+approved configuration installation, apply, SA4/SA9 host checks and SA5
+teardown; Isaac owns key placement after the existing numeric-policy approval.
+The cap/lifetime proposals remain unadopted. Combined final-branch Python
+verification and the remaining PR merge SHAs will be recorded in IDEA-058
+GA15c. Full CI and all hosted/live gates remain open.

@@ -271,3 +271,32 @@ run "every_alarm_explains_itself" {
     error_message = "Every alarm email must say what fired and that nobody acts on the agent during the run (AWS limit 1024 characters)."
   }
 }
+# IDEA-080 signer provisioning access (SA1-SA3 as corrected in PR #143, SA8).
+run "signer_access_off_by_default" {
+  command = plan
+  variables {
+    enable_hosts           = true
+    enable_external_https  = true
+    enable_development_ssm = true
+    ami_id                 = "ami-0123456789abcdef0"
+  }
+  assert {
+    condition = (length(aws_vpc_endpoint.signer_ssm) == 0 && length(aws_security_group.signer_endpoints) == 0
+      && length(aws_vpc_security_group_ingress_rule.signer_endpoints) == 0
+      && length(aws_vpc_security_group_egress_rule.signer_endpoints) == 0
+    && length(aws_iam_role_policy_attachment.signer_ssm) == 0)
+    error_message = "IDEA-080 SA1: no signer endpoint, rule or SSM permission unless enable_signer_provisioning is set."
+  }
+  assert {
+    condition     = keys(aws_iam_role_policy_attachment.development_ssm) == ["primary"]
+    error_message = "Development SSM still reaches primary only."
+  }
+}
+run "signer_access_development_only" {
+  command = plan
+  variables {
+    environment                = "final"
+    enable_signer_provisioning = true
+  }
+  expect_failures = [aws_security_group.signer_endpoints, aws_iam_role_policy_attachment.signer_ssm]
+}
