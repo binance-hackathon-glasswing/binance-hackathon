@@ -15,6 +15,7 @@ This is a snapshot of what stands between today and the scored run (Oct 29 – N
 - [x] Balance RPC failover: up to four providers in order (#116). Chain-balance decisions D1–D6 decided by Yao Zhu (#110) and built (#115, #116).
 - [x] HALT split by reason, so mandatory sells continue under pausing HALTs (D-DN-09, #117).
 - [x] Gas top-up round end to end (#103); first-gas MetaMask exception confirmed by the team (#105 closed).
+- [x] Every CloudWatch alarm email now says what fired and what to do (#141, IDEA-066 PC-AWS04).
 - [x] Swap decoder code and the router-evidence check written (#130, open for review). S1 strategy code written (#131, open for review).
 
 ## Plan (team decision 2026-10-17)
@@ -27,7 +28,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 ### Gate A setup
 
-- [ ] **Keegan:** merge #132 (capture record) and #124 (CI record, closes #91). Both are docs only.
+- [x] **Keegan:** merge #132 (capture record) and #124 (CI record, closes #91). Both are docs only. Done: both merged 2026-10-17.
 - [ ] **Isaac:** choose the balance RPC provider(s) with `finalized` support and a source ID for each. Since #116 up to four can be listed in failover order (`driver.balance_rpc_providers`). Send the URLs and IDs to Yao Zhu privately, not in an issue (#92, GAP-71).
 - [ ] **Isaac:** approve the network destination table for section C; Keegan already approved section B (#113). The table is in `architecture-deployment.md` "Approved network destinations" (#32).
 - [ ] **Keegan:** ask the GitHub org owner to restore Actions minutes (#98).
@@ -50,8 +51,8 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Keegan:** decide #27 from Isaac's options and Keith's comment, record it as C-OPEN-003 in IDEA-049-C, and open the code change.
 - [ ] **Isaac:** propose the per-token input caps, the fee cap and `allowed_spenders` (the router's `tx.to` from the router evidence) for `signer.json` (#44).
 - [ ] **Keith:** check Isaac's caps against the profile's per-trade cap (it must allow one full position) and approve or comment on #44.
-- [ ] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry.
-- [ ] **Yao Zhu:** after Keegan's choice and #44's approval, apply the signer-access Terraform change, install the decided `/etc/larp/signer.json` on the signer host, and give Isaac a session for the key.
+- [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
+- [ ] **Yao Zhu:** after #44's approval, build the IDEA-080 Terraform change (temporary SSM endpoints, off by default, with SA1–SA3 tests; Keegan reviews the plan), apply it, provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
 - [ ] **Isaac:** after that, place the key file on the signer host only (`/etc/larp/signer/wallet.key`, root, `0600`) (DR-03).
 - [ ] **Isaac:** record the 2 USDT dev-wallet trial swap in DEPLOYMENT_DAY.md §5 and swap about 2 USDT more in MetaMask (#106).
 - [ ] **Keith:** propose the BNB floor and top-up size (G-28) from the measured gas (#30).
@@ -59,7 +60,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 ### Decisions due Oct 19
 
-- [ ] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04).
+- [x] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04). Done 2026-10-17 (IDEA-049-D D-DN-02, #140).
 - [ ] **Keith:** write up the two options for the first signed trade. The rehearsal profile's buy window is fixed in code at Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS` in `larp/strategy/profiles.py`), so a round on Oct 20 plans no buys. Option 1: trade on Oct 21 inside that window. Option 2: add a dev window before Oct 20 (code change, recorded as a version event).
 - [ ] **Isaac:** pick one of Keith's two options and tell Yao Zhu.
 - [ ] **Keith:** decide which profile to build on Oct 20: `EQUAL_WEIGHT` (in the code today) or S1 `TREND_GUARDED_VOL` (needs #131 merged; its values stay proposals until Oct 22).
@@ -114,7 +115,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 ## Oct 22 cut line
 
-- [ ] **Keegan:** renumber #123's ledger entry (IDEA-058 is already the Gate A entry) and retarget #123 to the integration branch.
+- [x] **Keegan:** renumber #123's ledger entry (IDEA-058 is already the Gate A entry) and retarget #123 to the integration branch. Done: #123 is now IDEA-075 and targets the integration branch.
 - [ ] **Isaac:** after that, review and merge the S1 plan (#123).
 - [ ] **Keith:** review and merge the S1 code (#131). If #130 merged first, keep both `docs/LEDGER.md` rows.
 - [ ] **Keith:** freeze the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`).
@@ -157,7 +158,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 - [ ] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`.
 - [ ] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92.
-- [ ] **Keegan:** retarget #126 to the integration branch before it merges.
+- [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.
 - [ ] Branch cleanup (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them:
 
   | Branch | Last commit by | Earlier PR | Decides |
