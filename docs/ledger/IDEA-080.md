@@ -1,7 +1,7 @@
 # IDEA-080 — How the signer host is reached for provisioning and key placement
 
 - Date / owner: 2026-10-17 SGT / decided by Keegan (pre-trading checklist, Gate B setup, PR #133); recorded with Claude Code at Keegan's request. Builder of the Terraform change and every AWS step: Yao Zhu (the only team member with AWS access, IDEA-066 PC-AWS01). Key placement: Isaac (DR-03).
-- Status: decided (option b); Terraform change and tests built 2026-10-17 (not applied); repository review complete, merge verification in progress.
+- Status: decided (option b); Terraform change and tests built 2026-10-17 (not applied); repository review and local merge verification PASS.
 - Links: `docs/build/AWS_RUNBOOK.md` step 5 (the three options); IDEA-049-D D-DN-05 (routes for migrations and signer provisioning); IDEA-046 B2 (no SSM endpoints, for cost); `deploy/aws/hosts.tf` (development SSM attaches to `primary` only); `deploy/aws/network.tf` (S3 gateway endpoint); #44 (signer policy values); DR-03.
 - ID: from the IDEA-080..084 block that PR #126 reserves for the rehearsal and operations work.
 
@@ -79,3 +79,28 @@ combined Gate A/package/RPC and cap-proposal regression checks pass on exact
 Git bytes. Run changed decision/trading/logging code only after it is pushed.
 Record test limits and merge SHAs; do not infer hosted acceptance or apply
 Terraform. Actions billing (#98) and existing hosted/owner gates remain open.
+
+### MR-143–153 verification (2026-10-17)
+
+PR143 resolves the index conflict while preserving the router, S1 strategy and
+experiment rows; merged at `6648934`. PR144 merged at `362e44d`. PR148's
+resolution `902a5a6` preserves both CP-01 and SL-01 and a combined section C
+index row; eight proposal/policy tests pass on its exact Git tree with the
+existing Linux test environment. PR148 merged at `f9a3ac8`.
+
+PR149 resolution `82610c7` preserves the corrected SA3/SA8/SA9 amendment,
+implementation evidence and these prospective merge criteria. Static checks
+find no conflict markers or duplicate ledger IDs and exactly one copy of each
+proposal. Terraform 1.13.5 / AWS provider 6.61.0 validation PASS; **19 mock
+tests pass, zero failures**, on exact Git blobs in a temporary Linux checkout
+with `init -backend=false` and the existing local provider. No real backend,
+AWS plan/apply, key placement or host action is performed by this verification.
+The preceding author's real-plan evidence remains a separate dated result.
+
+This completes repository review and conflict-resolution verification;
+the earlier pending code-review bullet is superseded. Yao Zhu still owns
+approved configuration installation, apply, SA4/SA9 host checks and SA5
+teardown; Isaac owns key placement after the existing numeric-policy approval.
+The cap/lifetime proposals remain unadopted. Combined final-branch Python
+verification and the remaining PR merge SHAs will be recorded in IDEA-058
+GA15c. Full CI and all hosted/live gates remain open.
