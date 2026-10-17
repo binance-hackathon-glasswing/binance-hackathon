@@ -34,8 +34,9 @@ class PolicyReview(unittest.TestCase):
         state = settled([3, 5], trend='DOWN')
         state['blocked'] = {'NVDAB': {'reason': 'CLASS_2_ENTRY_BLOCK', 'expires_session': 90}}
         snapshot = snap({n: AT_60 for n in NAMES}, state=state, path=RISING)
-        self.assertEqual(by_symbol(decide(snapshot, snapshot.policy_state))['NVDAB'].kind,
-                         TargetKind.KEEP_QUANTITY)
+        proposal = decide(snapshot, snapshot.policy_state)
+        self.assertEqual(by_symbol(proposal)['NVDAB'].kind, TargetKind.KEEP_QUANTITY)
+        self.assertIn('NVDAB', proposal.next_policy_state.data.read()['s1']['rebalance'])
 
     def test_planner_bounds_a_proposal_by_its_own_frozen_weight(self):
         weights = {s: [9, 40] for s in NAMES}

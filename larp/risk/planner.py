@@ -316,7 +316,7 @@ def plan(snapshot, proposal_or_none):
                 result["rejections"].append({"symbol": symbol, "reason": "MISSING_MARKET"})
                 continue
             current = held.get(symbol, 0)
-            name_cap = s1["high"] * s1["cap"] if s1 else fraction(p["operating_name_weight"])
+            name_cap = s1["high"] * s1["weights"][symbol] if s1 else fraction(p["operating_name_weight"])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
                 min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
             if desired == current:

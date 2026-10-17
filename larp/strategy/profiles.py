@@ -5,6 +5,7 @@ measurement. Publication of profile files awaits actual captures and owner revie
 """
 
 from fractions import Fraction
+import hashlib
 import json
 from larp.intelligence.redflags import CONFIG as PREDICATE_CONFIG
 
@@ -246,7 +247,7 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
     return profiles
 
 
-def main():
+def main(argv=None):
     """Offline profile construction from caller-owned recorded inputs (no ports)."""
     import argparse
     import json
@@ -255,9 +256,24 @@ def main():
     parser.add_argument("--summary", required=True)
     parser.add_argument("--predicates", required=True)
     parser.add_argument("--output-dir", required=True)
-    args = parser.parse_args()
+    parser.add_argument("--s1-config", help="JSON s1 block with reviewed/frozen weights; default is EQUAL_WEIGHT")
+    parser.add_argument("--s1-decision", help="decision ID for the supplied S1 block; required with --s1-config")
+    args = parser.parse_args(argv)
+    if bool(args.s1_config) != bool(args.s1_decision):
+        parser.error("--s1-config and --s1-decision must be supplied together")
+    if args.s1_decision is not None and not args.s1_decision.strip():
+        parser.error("--s1-decision must name a decision")
+    raw_s1 = Path(args.s1_config).read_bytes() if args.s1_config else None
+    s1_block = json.loads(raw_s1) if raw_s1 is not None else None
+    if raw_s1 is not None and type(s1_block) is not dict:
+        raise ContractError("S1 configuration must be a JSON object")
     profiles = build_live_profiles(Document.from_dict(json.loads(Path(args.summary).read_text())),
-                                   Document.from_dict(json.loads(Path(args.predicates).read_text())))
+                                   Document.from_dict(json.loads(Path(args.predicates).read_text())),
+                                   **(dict(s1=s1_block, s1_decision=args.s1_decision) if raw_s1 is not None else {}))
+    if raw_s1 is not None:
+        profiles = {env: Document.from_dict({**document.read(), "provenance": {**document.read()["provenance"],
+                    "s1": {**document.read()["provenance"]["s1"], "data_hash": hashlib.sha256(raw_s1).hexdigest()}}})
+                    for env, document in profiles.items()}
     out = Path(args.output_dir)
     paths = {env: out / (env.lower() + "-live.json") for env in profiles}
     if any(path.exists() for path in paths.values()):

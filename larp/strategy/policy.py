@@ -136,7 +136,9 @@ def decide(snapshot, state):
         if terminal:
             targets.append(Target(symbol, TargetKind.EXIT, "TERMINAL_REQUIREMENT"))
             status = "FLAT_TERMINAL" if not units else "EXIT_REQUIRED"
-        elif symbol in blocked:
+        elif symbol in blocked and not (s1 is not None
+                and blocked[symbol]["reason"] == "CLASS_2_ENTRY_BLOCK"
+                and m is not None and m.get("basis_verified")):
             mandatory = blocked[symbol]["reason"] == "MANDATORY_FALSIFIER_REDUCTION"
             entry_only = blocked[symbol]["reason"] == "CLASS_2_ENTRY_BLOCK"
             targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory and not entry_only
@@ -186,7 +188,7 @@ def decide(snapshot, state):
                 last_review = session
             want = s1["level"] * s1["cfg"]["weights"][symbol]
             gap = want * (E - p["cost_reserve_units"]) - value(units, m)
-            gates = (window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
+            gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
                      and (not p["assessment_required"] or fresh_review)
                      and not (rights["statement"] == "ENTRY_BLOCK" and pending)
                      and (units or not old.get("ever_held", False) or fresh_review))
@@ -201,7 +203,11 @@ def decide(snapshot, state):
             else:
                 targets.append(Target(symbol, TargetKind.KEEP_QUANTITY,
                                       "REVIEW_PENDING" if due else "LOW_TURNOVER_HOLD"))
-            if not units and old.get("ever_held", False):
+            if symbol in s1["rebalance"] and gap >= step and not gates:
+                s1["pending"].add(symbol)  # keep an unfilled buy pending while entry is blocked
+            if symbol in blocked:
+                status = "HELD_ENTRY_BLOCKED" if units else "BLOCKED"
+            elif not units and old.get("ever_held", False):
                 status = "CASH_REVIEW"
         else:
             series = c.get("series", {}).get(symbol)

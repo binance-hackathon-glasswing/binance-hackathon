@@ -168,7 +168,7 @@ def _verified(evidence, session):
                     or type(item.get("symbols")) is not list or not set(item["symbols"]) <= SYMBOLS):
                 continue
             sid = integer(item["session_index"])
-        except (ContractError, KeyError):
+        except (ContractError, KeyError, TypeError):
             continue
         if session - EVIDENCE_WINDOW_SESSIONS < sid <= session and item["evidence_id"] not in result:
             result[item["evidence_id"]] = item
@@ -239,7 +239,10 @@ def limiter_step(previous, *, session, cfg, evidence, assessment):
             proposed = min(SEVERITY[assessment["level"]], allowed_severity(verified[i] for i in cited))
             if proposed < SEVERITY[assessment["level"]]:
                 record["capped_by_evidence_class"] = True
-    healthy = evidence is not None if cfg["limiter_mode"] == "DETERMINISTIC" else record["rejected"] is None
+    healthy = (type(evidence) is list and len(verified) == len(evidence)
+               if cfg["limiter_mode"] == "DETERMINISTIC" else record["rejected"] is None)
+    if cfg["limiter_mode"] == "DETERMINISTIC" and evidence is not None and not healthy:
+        record["rejected"] = "MALFORMED_OR_UNVERIFIED_EVIDENCE_INPUT"
     record["healthy"] = healthy
     if level != "NORMAL" and healthy and (counted is None or session > counted):
         healthy_sessions, counted = healthy_sessions + 1, session
@@ -263,7 +266,8 @@ def _sigma(series, cutoff, window, minimum):
     closes = _closes(series, cutoff=cutoff, delay_seconds=0)
     if not closes:
         return None
-    sids = sorted(closes)
+    latest = max(closes)
+    sids = sorted(sid for sid in closes if latest - window <= sid <= latest)
     pairs = [(a, b) for a, b in zip(sids, sids[1:]) if b == a + 1][-window:]
     if len(pairs) < minimum:
         return None
@@ -279,7 +283,13 @@ def freeze_weights(series, *, cutoff, cap, window=60, minimum=20, scale=1_000_00
     """symbol -> Fraction weights, inverse-volatility, capped, summing exactly to 1 (IDEA-076 S02).
 
     A name with fewer than `minimum` consecutive-session returns takes the median sigma of the others."""
-    cap = Fraction(cap)
+    if (type(series) is not dict or type(window) is not int or type(minimum) is not int
+            or not 2 <= minimum <= window or type(scale) is not int or scale <= 0):
+        raise ContractError("Weight freeze needs a series mapping, 2 <= minimum <= window and positive integer scale")
+    try:
+        cap = Fraction(cap)
+    except (TypeError, ValueError, ZeroDivisionError):
+        raise ContractError("Weight cap must be a finite fraction") from None
     if not 0 < cap <= MAX_WEIGHT_CAP or cap * len(SYMBOLS) < 1:
         raise ContractError("Weight cap must allow the five weights to sum to 1")
     sigmas = {s: _sigma((series or {}).get(s), cutoff, window, minimum) for s in sorted(SYMBOLS)}
@@ -309,7 +319,7 @@ def freeze_weights(series, *, cutoff, cap, window=60, minimum=20, scale=1_000_00
                 break
             if units[s] + 1 <= limit:
                 units[s] += 1
-    if sum(units.values()) != scale:
+    if sum(units.values()) != scale or any(u <= 0 for u in units.values()):
         raise ContractError("Weights could not be rounded within the cap")
     result = {s: Fraction(u, scale) for s, u in units.items()}
     return result, dict(sigmas={s: (str(v) if v is not None else None) for s, v in sigmas.items()},
