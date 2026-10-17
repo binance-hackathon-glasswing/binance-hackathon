@@ -219,7 +219,7 @@ class Cli(unittest.TestCase):
 
     def test_r6_signer_fails_on_any_unexpected_route(self):
         blocked = {('web3.binance.com', 443): 'CONNECT_FAILED', ('api.commonservice.io', 443): 'CONNECT_FAILED',
-                   ('data.sec.gov', 443): 'DNS_FAILED',
+                   ('data.sec.gov', 443): 'CONNECT_FAILED',
                    (f'secretsmanager.{REGION}.amazonaws.com', 443): 'CONNECT_FAILED'}
         report = self.dir / 'ok.json'
         code, _, _ = self.run_cli('signer', configs(('signer',)), FakeProbe(blocked), ['--output', str(report)])

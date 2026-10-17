@@ -190,13 +190,13 @@ the config's `region` (`ap-southeast-2` now).
 | primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | **Shadow only** (IDEA-057; MR-06, 2026-10-16): AIand Chat Completions for the GLM-5.3 routine stage and the K3/GLM external reviews. The runtime refuses this assessor with `execution: service` or `mode: live` |
 | primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | **Shadow only** (IDEA-057; MR-06): OpenAI Responses for the optional GPT-6.1 Sol review, used only when `LARP_MODEL_API_KEY` is in the runtime secret, within the $40 admission ledger |
 | primary | larp-runtime, larp-execution, larp-uploader | `secretsmanager.<region>.amazonaws.com` | 443 | service secrets (public endpoint; no interface endpoint, IDEA-046) |
-| primary | larp-archive | `s3.<region>.amazonaws.com` | 443 | archive and hourly anchors through the S3 gateway endpoint |
+| primary | larp-archive | `s3.<region>.amazonaws.com` and the configured archive bucket's virtual-hosted S3 hostname | 443 | archive and hourly anchors through the S3 gateway endpoint; bucket-scoped IAM still applies |
 | primary | larp-archive | `monitoring.<region>.amazonaws.com` | 443 | CloudWatch metrics |
 | primary | larp-runtime, larp-execution, larp-uploader, larp-archive | `database_host` (RDS) | 5432 | PostgreSQL with RDS IAM tokens over verified TLS |
 | primary | larp-evidence | `data.sec.gov`, `www.sec.gov` | 443 | EDGAR submissions and filing archives, SEC press |
 | primary | larp-evidence | `www.federalregister.gov`, `www.justice.gov`, `ec.europa.eu` | 443 | the enabled official sources; a disabled source's host is not approved |
 | signer | larp-signer | `database_host` (RDS) | 5432 | signing requests and results (migration `009`); the only transport between the execution service and the signer |
-| signer | provision.sh | `s3.<region>.amazonaws.com` | 443 | release bundle through the S3 gateway endpoint |
+| signer | provision.sh | `s3.<region>.amazonaws.com` and the configured artifact bucket's virtual-hosted S3 hostname | 443 | release bundle through the S3 gateway endpoint; release-object IAM still applies |
 | signer | none | `web3.binance.com`, `api.commonservice.io`, `data.sec.gov`, `secretsmanager.<region>.amazonaws.com` | 443 | **must be refused**: the signer has no internet route (IDEA-046 B2) |
 
 - **Internal transports.** All `primary` services share one host, so none of them talks to another over the network:
@@ -215,6 +215,15 @@ the config's `region` (`ap-southeast-2` now).
   host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
   manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no
   public address; Terraform `internet_reaches_primary_only`).
+- **Section C review scope (2026-10-17, IDEA-062 NC-01).** The policy is awaiting Isaac's explicit approval; see
+  [NETWORK_SECTION_C_REVIEW.md](NETWORK_SECTION_C_REVIEW.md) for the reviewed boundaries and owner decision.
+  This table names application destinations; it is not a per-unit network firewall or proof of hosted permissions.
+  S3's configured-bucket form is `<bucket>.s3.<region>.amazonaws.com` ([AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html));
+  it is the same S3 gateway/prefix-list service and bucket-scoped IAM, not permission for arbitrary buckets.
+  The route checker currently tests the regional S3 endpoint only; actual release download and archive/anchor ACK
+  evidence must also demonstrate the configured bucket's route and permissions. Database probes open TCP only,
+  so per-role IAM login and pinned-CA PostgreSQL TLS must be checked separately. Yao Zhu owns these host checks
+  and the applied signer route/SG evidence; source constants and mock plans do not prove them.
 - **Route check (Gate A, R-07).** On each host, from the installed release, without credentials:
   `python -m larp.runtime.routes --role primary --config runtime=/etc/larp/runtime.json --config execution=/etc/larp/execution.json --config uploader=/etc/larp/uploader.json --config operations=/etc/larp/operations.json --root /opt/larp/current --output <new file>`
   and `python -m larp.runtime.routes --role signer --config signer=/etc/larp/signer.json --root /opt/larp/current --output <new file>`.
@@ -222,6 +231,11 @@ the config's `region` (`ap-southeast-2` now).
   sent. Exit 0 means every `primary` destination answered, or every signer internet destination was refused while
   the database and S3 answered. An unset RPC URL or database host fails the check. The report (`RouteCheck.v1`)
   names host and port only. It shows the host's routes, not each unit's systemd sandbox (for example `larp-evidence`'s `IPAddressDeny`).
+  For an expected-blocked signer target, `DNS_FAILED` now yields `INCONCLUSIVE`, `passed=false`, exit 1. Fix the DNS
+  prerequisite and rerun; do not treat inability to resolve as isolation evidence. Unknown statuses fail. A TCP/TLS
+  connection remains `UNEXPECTED_ROUTE`; a resolved connection failure is a sampled non-connectivity check, not
+  proof that every possible internet destination is blocked. At unsigned Gate A, omit `--config execution=...`
+  if the execution config has not been installed: the report explicitly leaves `larp-execution` untested until Gate B.
 
 ## What is now implemented
 

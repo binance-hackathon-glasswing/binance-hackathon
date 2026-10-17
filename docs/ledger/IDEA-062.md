@@ -96,3 +96,7 @@ Prospective criteria, before covered-code/test execution:
 - **NC2:** repair only the verdict mapping and the old positive fixture. Preserve host derivation, protocol behavior, no-credential/no-HTTP probes, schema and output privacy. Unknown/DNS states cannot create a PASS.
 - **NC3:** document the corrected non-pass result, configured-bucket S3 naming and regional-canary limit, Gate A's optional absent execution config, and the distinct host/app/IAM/TLS enforcement checks. Do not label Isaac approved before their decision; no whole #32/GAP closes.
 - **NC4:** after pushing criteria/test source, run the new regression RED before repair; after a separate pushed repair, run route tests and related host/security/config tests feasible here. Account for skipped host/DB tests. Record exact SHAs, result counts and the concrete recommended approval scope. No real destination, AWS, credential, wallet or official receiver is contacted.
+
+### NC-01 RED (2026-10-17)
+
+At pushed `62ef585`, `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.runtime.test_routes.Cli.test_nc1_dns_failure_never_proves_signer_isolation -v` fails as expected: actual PASS versus required INCONCLUSIVE for `DNS_FAILED`. This reproduces NC-F1 on unchanged production code. The regression also checks unknown states and the complete CLI/report boundary after repair; its first assertion currently stops it. No network or credentials used.
