@@ -250,3 +250,26 @@ Current pushed head `10ff5f6`: previous source findings fixed, including GA13/GA
 ### RR2 integration verification (2026-10-16)
 
 PR87 merged into codex/system-testing-20261012 (ece3c2e), after published focused qualification: 36 passed /64 subtests at d1bc59e. Gate A composition remains included in the final combined full suite at `af9ffbfccf1f682669ada56fa5fb90db2896a6c1`: **1760 passed, 1 external-data skip, 2561 subtests**, real Linux systemd/bubblewrap and PostgreSQL14.24. GA14 handles both provider-list and legacy configurations. This closes repository review/integration, not hosted Gate A or exact-release CI/bundle verification. Actions remains billing-blocked. Keegan owns exact-release bundle/CI evidence; Yao Zhu/Keegan retain host inputs, provisioning and actual qualification; existing Gate B/C and measured-input gates remain open. Earlier dated results remain historical.
+
+### GA15: the ordered balance RPC provider file (2026-10-17)
+
+GA15 is the label that PR #145 put in `gate_a.py`, `prepare_shadow.py` and `GATE_A.md` for `prepare_shadow.py capture|prepare --balance-rpc-config`. Its criteria and results are IDEA-066 PC-RPC01 (P1–P6 PASS, #145): `prepare` writes the whole ordered list to `driver.balance_rpc_providers`, `capture` reads the chain through the first provider, and a capture from any listed provider is accepted.
+
+#### GA15b: one reader for the provider file (pre-registered 2026-10-17, before the change)
+
+The post-merge review of #145 found that `prepare_shadow.rpc_providers` copies `qualify_balance_rpc.private_config` but checks less: no public source-ID pattern, no `https_host` check (user, password, fragment or a port other than 443 pass), and no timeout on `git check-ignore`. So a file that qualification refuses could still reach `runtime.json`. It also found an unreachable branch in `gate_a.rpc_provider_list`.
+
+- **GA15b-1:** `prepare_shadow.py capture` and `prepare` read `--balance-rpc-config` only through `qualify_balance_rpc.private_config`; `prepare_shadow.py` has no reader of its own.
+- **GA15b-2:** a file that qualification refuses (a lowercase source ID, a URL with a user and password, a fragment, port 8443, a symlink, a tracked file inside the repository) is refused by `capture` with exit 4 before credentials are read, and its stdout contains no URL. A git-ignored file inside the repository is accepted.
+- **GA15b-3:** a mutation that makes `prepare_shadow` read the file with plain `json.loads` (skipping `private_config`) fails a test.
+- **GA15b-4:** `rpc_provider_list` loses only its unreachable `None` branch. The PC-RPC01 tests still pass; their only edits are the file fixtures' source IDs (now the public `[A-Z][A-Z0-9_]{2,63}` form) and the refusal-message pattern.
+- **GA15b-5:** `tests/runtime/test_gate_a.py`, `test_gate_a_check.py` and `tests/execution/test_balance_rpc_qualification.py` pass; the full local suite has no failure that its base (`2306583`) does not have.
+
+#### GA15b results (2026-10-17)
+
+- **Order of commits:** criteria `fb6bdcf`, then the change in the next commit (branch `claude/rpc-config-reader-reuse-20261017` from `2306583`).
+- **GA15b-1: PASS.** `prepare_shadow.rpc_providers` is now `private_config(path)` imported from `qualify_balance_rpc`; its own copy and the `subprocess` import are gone.
+- **GA15b-2: PASS.** `ProviderFile.test_ga15b_prepare_accepts_exactly_what_qualification_accepts`: a lowercase source ID, a URL with user and password, a fragment and port 8443 are each refused by `capture` with exit 4, credentials are never read, and no URL is in stdout. A git-ignored file under `deploy/activation/` is accepted. The symlink and tracked-file refusals stay covered by the PC-RPC01 tests.
+- **GA15b-3: PASS.** Mutation (`rpc_providers` reads the file with plain `json.loads`): 5 failures (3 GA15b subtests and the tracked-file test). Restored.
+- **GA15b-4: PASS.** `rpc_provider_list` returns `balance_providers(...)` directly; for a non-None list that function returns a list or raises, so the removed `None` check could not run. The PC-RPC01 tests pass; the only edits are `FILE_PRIMARY`/`FILE_BACKUP` (public source IDs) in the file tests and the message pattern `must be ignored`.
+- **GA15b-5: PASS.** Gate A, `gate_a_check` and balance RPC qualification tests: 56 passed, 1 skipped. Full local suite (Anaconda Python 3.14): 1354 passed, 400 skipped (base: 1353 plus the one new test). The failures are the same three as at the base (`psycopg`/`boto3` distributions missing locally) and the same `test_final_review_d.py` collection error (`eth_account`). Org CI remains billing-blocked (#98).
