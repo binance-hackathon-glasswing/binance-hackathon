@@ -26,3 +26,21 @@ Out of scope: the existing `PERMANENT` row on the live run (it stays recorded; t
 - **After the fix: AR1, AR2, AR3 PASS.** `tests/storage/test_archive.py`: 5 passed; the sixth (`test_real_sdk_request_shape_is_supported`) fails only because `boto3` is not installed in this environment, as on the base.
 - **AR4 PASS (local):** full suite 1438 passed vs 1436 on the base `a428bab`, with the same 10 failures and 4 collection errors on both (environment). The PostgreSQL-backed maintenance tests are skipped here (no `LARP_TEST_DATABASE_URL`); mirror CI on Linux/3.12 with PostgreSQL still to run.
 - NOT RUN: a hosted incident backup with the fixed code (needs a bundle with this change; the next restart or HALT on a host running it is the check).
+
+## Independent all-PR review — 2026-10-17 SGT
+
+Reviewed published `d703ae3`; no additional defect found. AR4 was exercised in
+Linux/Python3.12.14 with disposable PostgreSQL14.24 and the pinned boto3/test
+stack: archive plus runtime maintenance **10 passed, 4 subtests, no skips**.
+The combined branch `codex/all-pr-review-validation-20261017` at pushed
+`7328e0a` contains unchanged archive code from this PR and all seven other open
+PRs: **1957 passed, 6 expected skips, 2931 subtests**, 326.89s. The six skips are
+one external recorded corpus and five opt-in systemd checks; PostgreSQL-backed
+maintenance and the real SDK request-shape check ran and passed. Full scope and
+heads: IDEA-049 ALLPR-20261017 on PR158. This follow-up changes docs only.
+
+The owner also reports all four mirror CI jobs green for `d703ae3`,
+run39045756102 (PR163 comment); this session's private-mirror API read returned
+404, so that is owner-reported evidence. The hosted incident check still needs
+a bundle containing this fix and a newly acknowledged backup; historical
+PERMANENT rows stay recorded. No host or AWS changes were made by this review.
