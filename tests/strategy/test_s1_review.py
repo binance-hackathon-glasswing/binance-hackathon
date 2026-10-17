@@ -70,6 +70,9 @@ class PolicyReview(unittest.TestCase):
                                *(equity(snapshot.context.read()['portfolio'], market)-p['cost_reserve_units'])
                                *10**m['decimals']/m['price_units'])
                 self.assertEqual(requirement['max_units'], expected)
+                no_proposal = plan(snapshot, None).read()
+                restored = next(r for r in no_proposal['requirements'] if r['symbol'] == 'NVDAB')
+                self.assertEqual(restored['max_units'], expected)
 
 
 class LimiterReview(unittest.TestCase):

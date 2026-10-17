@@ -159,6 +159,14 @@ def plan(snapshot, proposal_or_none):
     # IDEA-076 (S1): its top level, five names, its hard name line and no gross trim line except the 12% deep cut
     # replace the proposal's 80% / four-name / 20% limits, which bind every other baseline unchanged.
     s1 = s1_plan.config(p) if p["baseline"] == s1_plan.BASELINE else None
+    s1_level = None
+    if s1:
+        # A hard-line HOLD-round trim still goes to the accepted reduced level, not always the high level.
+        accepted_state = result["next_policy_state"] or snapshot.policy_state.record()
+        applied = accepted_state["data"].get("s1", {}).get("applied_target")
+        s1_level = min(s1["high"], fraction(applied)) if applied is not None else s1["high"]
+        if s1_level <= 0:
+            raise ContractError("S1 applied target must be positive")
     max_positions = len(snapshot.universe) if s1 else 4
     gross_limit = s1["high"] if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
@@ -214,7 +222,7 @@ def plan(snapshot, proposal_or_none):
         if s1:
             # A name over the hard line is sold back to its target: level x w, at most the top level x w.
             t = targets.get(symbol)
-            name_target = s1["high"] * s1["weights"][symbol]
+            name_target = s1_level * s1["weights"][symbol]
             if t is not None and t.kind is TargetKind.TARGET_WEIGHT:
                 name_target = min(name_target, t.weight)
         else:
