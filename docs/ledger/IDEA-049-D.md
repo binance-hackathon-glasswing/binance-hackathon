@@ -672,3 +672,23 @@ Adversarial review of `claude/d-dn-10-clock-clear` after merging `codex/system-t
 - **CKR-2:** on a quarantined run with a `CLOCK` HALT and a full synchronised window, `evaluate` commits nothing: the store refuses the clear (`Conflict`), the run stays quarantined and `CLOCK` stays active.
 - **CKR-3 (docs, no test):** the runbook §3 row states the D-DN-10 rule. The Gate A evidence list in `docs/build/DEPLOYMENT_DAY.md` checks `rtcsync` in `/etc/chrony.conf` on `primary` and that `kernel_clock_synchronized()` reads True there.
 - The full suite has no new failures against the merged head before these changes.
+
+### D-DN-10 review of PR #125: results (2026-10-17)
+
+- **Merge:** `codex/system-testing-20261012` merged into the branch with a merge commit, no conflicts. #117's HALT-by-reason split (`halts.py`, D-DN-09) was already in the branch; the merge adds nothing that touches the guard.
+- **CKR-1: PASS.** After the `CLOCK` clear the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True. The mutation (a `_clear` that drops every reason) fails the strengthened test; the old assertion let it pass.
+- **CKR-2: PASS.** On a quarantined run the clear is refused with `Conflict`. The run stays quarantined and `CLOCK` stays active. In the service, the exception ends the process, and the next start exits 3 (quarantined), so nothing restarts it. That is the same path as any other guard write under quarantine. An integrity failure itself returns `QUARANTINED:INTEGRITY` before the clock check runs.
+- **CKR-3: done.** `docs/build/runbook.md` §3 states the D-DN-10 rule. `docs/build/DEPLOYMENT_DAY.md` step 9 checks `rtcsync` and `kernel_clock_synchronized()` on `primary`.
+- **Checked, no change needed:**
+  - `struct timex` is 208 bytes, with `status` at offset 40. That matches glibc on LP64, so x86_64 and aarch64 (t4g) have the same layout. `modes=0` makes the call read-only, and it needs no `CAP_SYS_TIME`. `larp-runtime.service` has no `SystemCallFilter` or `ProtectClock`, so the call is not blocked by seccomp.
+  - The return handling is right. States 0–4 count as synchronised; `TIME_ERROR` (5), -1 or `STA_UNSYNC` do not, and any exception means not synchronised.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, on a time behind the last decision, and on a process restart (the state is in-process).
+  - `runtime_guard()` is the only production `Guard` and is used by `service run`. A second CLOCK HALT after a clear, and its later clear, use distinct event IDs.
+- **Not changed (judged not worth fixing now):**
+  - The 30 minutes are measured with the wall clock. A forward step inside the window shortens it in real time. That needs a second clock error after the window opens.
+  - "Synchronised" does not mean "correct". If chrony slews a large offset rather than stepping it, the kernel reports synchronised while the clock is still minutes off. The absolute-drift check stays R-08/G-05.
+  - If chronyd stops, the kernel keeps `STA_UNSYNC` clear until `maxerror` passes 16 s, which takes about 9 h.
+  - `find_library('c')` runs `ldconfig -p` on each evaluation, but only while a CLOCK HALT is active.
+  - The CLOCK HALT event and its projection still carry `latched: true`. Nothing reads that field.
+- **Full suite** (merged head `bb9dc7a`, PostgreSQL 16.15, Python 3.12.3, root): **1774 passed, 10 skipped, 2607 subtests, 0 failed**. Against the PR body's 1763/7, that is +13 tests from the merged base and +1 from CKR-2. The 3 extra skips are the bubblewrap cases, because `bwrap` is not installed in this container. `git diff --check` is clean.
+- **Still open:** the Gate A host check on `primary` (CKR-3).
