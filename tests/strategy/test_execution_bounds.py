@@ -203,6 +203,7 @@ def round_record(*, mandatory=False, ordinal=1):
     authority, refused = bounds.reserve(context, cfg, state, 'NVDAB', 'SELL' if mandatory else 'BUY',
                                         mandatory, milliseconds('2026-10-10T14:00:00Z'))
     assert refused is None
+    bounds.close(state, authority)
     return dict(policy_input=dict(context=context), plan=dict(execution_attempt_budget=state,
         intents=[dict(intent_id='economic-1', symbol='NVDAB', side='SELL' if mandatory else 'BUY',
                       mandatory=mandatory, execution_bounds=authority)]))

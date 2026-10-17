@@ -160,11 +160,12 @@ def permitted(projection, intent, now_ms):
         authority = planned['execution_bounds']
         start, end = interval(context, cfg, planned['mandatory'])
         key = leg_key(planned['symbol'], planned['side'], planned['mandatory'])
-        count = budget(record['plan']['execution_attempt_budget'], context['session_index'])['counts'][key]
+        slots = budget(record['plan']['execution_attempt_budget'], context['session_index'])
+        count = slots['counts'][key]
         ordinal = integer(authority['ordinal'], 1)
         return (authority == dict(schema=SCHEMA, session_index=context['session_index'], leg=key,
                                   ordinal=ordinal, valid_from_ms=start, valid_until_ms=end)
-                and ordinal == count <= cfg['execution']['max_attempts_per_leg_session']
+                and ordinal == count == slots['closed'].get(key) <= cfg['execution']['max_attempts_per_leg_session']
                 and start <= now_ms < end)
     except (ContractError, KeyError, TypeError, ValueError, StopIteration):
         return False
