@@ -72,6 +72,14 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - `larp/intelligence/config.py` `sec_user_agent` now requires one whitespace-delimited address whose domain ends in a dot plus two or more letters, at least one other word (the name), and none of the extended placeholder list. It is used by live preflight, the terms capture, the EDGAR poller, the bake-off and Gate A `prepare --sec-contact`. `EdgarHttpSource`'s own minimal `@` check is unchanged; live paths pass it the value `sec_user_agent` returned.
 - Result: PASS. `tests/intelligence/test_edgar.py` gains template-refusal and acceptance tests (3 passed, 20 subtests). Full local suite (Anaconda Python 3.14): 1339 passed, 400 skipped, 3 failed, 1 collection error. The 3 failures (`test_service_configs` ×2, `test_archive` ×1) and the `test_final_review_d.py` collection error fail identically without this change and come from packages missing locally (`psycopg`, `boto3`, `eth_account`). Org CI remains billing-blocked (#98).
 
+## PC-AWS03 — alarm email delivery, 2026-10-17 UTC
+
+- Yao Zhu's checklist item (PRE_TRADING_CHECKLIST.md): confirm the alarm subscriptions and that an alarm reaches a person (DR-16, IDEA-049-D R-05/R-10 alert path).
+- Finding: topic `larp-dev-alarms` existed with **no subscription** (0 confirmed, 0 pending, 0 deleted), although the private `development.tfvars` lists one `alarm_notification_emails` address. The earlier applies (PC-AWS02) ran before that address was set, so no alarm could ever reach anyone.
+- Fix: saved plan with the refreshing-credential setup (AWS_RUNBOOK) showed exactly `aws_sns_topic_subscription.alarm_email[0]` to add (1 add, 0 change, 0 destroy); applied ("Apply complete! Resources: 1 added"). No cost. Yao Zhu confirmed the subscription from the AWS email.
+- Test: `aws cloudwatch set-alarm-state --alarm-name larp-dev-database-storage --state-value ALARM` at 2026-10-17T07:08:50Z (chosen because its only action is the SNS topic; the auto-reboot/recover alarms also act on the hosts and were not touched). Alarm history: "Successfully executed action …:larp-dev-alarms" at 07:08:51Z. Yao Zhu confirmed the "ALARM: larp-dev-database-storage" email arrived. It returned to OK at 07:10:20Z; it has no OK action, so no second email.
+- Not covered: the seven service alarms stay in ALARM (`treat_missing_data = breaching`) until the services publish metrics after Oct 20 activation; each new transition will now email.
+
 ## PC-AWS04 — alarm descriptions, 2026-10-17 UTC
 
 - Yao Zhu asked for it after the PC-AWS03 test email showed an empty Description: an alarm firing during the run gave no hint of what it means or what to do.
@@ -80,6 +88,14 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - Local result for (1): validate OK; `terraform test` 16 passed, 0 failed; with the database-storage description removed, 15 passed, 1 failed (`every_alarm_explains_itself`); restored.
 - Result for (2): saved plan from pushed `1b2feb8` (PR #141): "0 to add, 14 to change, 0 to destroy"; a JSON check of the plan found no changed attribute other than `alarm_description`. Applied: "Apply complete! Resources: 0 added, 14 changed, 0 destroyed."
 - Result for (3): `describe-alarms` shows descriptions of 249–367 characters on all 14 alarms. **PASS.** The next alarm email carries its description.
+
+## PC-AWS05 — balance RPC reachability from primary, 2026-10-17 UTC
+
+- Yao Zhu's checklist item: after Isaac's RPC choice (#135: BNB Chain public primary `BSC_BNBCHAIN_PUBLIC`, NodeReal public backup `BSC_NODEREAL_PUBLIC`), open network access from `primary`.
+- Finding: no Terraform change is needed. `primary`'s security group already has `external_https` (TCP 443 to 0.0.0.0/0, `deploy/aws/network.tf`); the destination list is enforced by the application from the runtime config (IDEA-062).
+- Check (read-only, SSM `AWS-RunShellScript` on `i-040fc5fea8b700e9a`): `eth_chainId` to `https://bsc-dataseed.bnbchain.org/` → HTTP 200, result `0x38` (chain 56); `https://bsc-mainnet.nodereal.io/` → TLS connected, HTTP 404 at the bare path (NodeReal serves RPC under `/v1/<key>`, which is in Isaac's private URL). No wallet address, key or private URL was used.
+- Private URLs received (2026-10-17): Isaac sent both to Yao Zhu privately; they are in the git-ignored `deploy/activation/balance-rpc/selected-providers.json` (mode 0600) on Yao Zhu's Mac, never in chat or Git. `tools/deploy/qualify_balance_rpc.py` from a clean worktree of pushed `352446b`: exit 0, `all_passed: true`; `BSC_BNBCHAIN_PUBLIC` PASS 19 reads (capture `b5e2318ecc77…`), `BSC_NODEREAL_PUBLIC` PASS 19 reads (capture `185f09dcbcdf…`). Report retained outside Git at `~/larp-artifacts/rpc/rpc-check-20261017T073859Z/`. NodeReal's URL host is `bsc.nodereal.io`; from `primary` over SSM it answers TLS (HTTP 404 at the bare path, no key sent).
+- Remaining (GAP-71): the two private URLs go into `driver.balance_rpc_providers` at the Oct 20 `prepare` through `--balance-rpc-config` (PC-RPC01, #145), which writes both in order, and the first `BALANCE_CHECKED` verdict on the real wallet is recorded then.
 
 ## PC-RPC01 — Gate A prepare takes the ordered provider file, 2026-10-17 UTC (prospective)
 
@@ -94,3 +110,150 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
   - P6: every existing Gate A test (GA01–GA14, `gate_a_check`) and the runtime service tests still pass unchanged.
 - Results (2026-10-17): P1–P6 **PASS**. New `ProviderFile` tests in `tests/runtime/test_gate_a.py` (6 tests, 10 subtests) cover P1–P5; a mutation that writes only the first provider fails P1. Existing Gate A tests (GA01–GA14) and `test_gate_a_check.py`: 42 passed, 1 skipped, unchanged. Full local suite (Anaconda Python 3.14): 1353 passed, 400 skipped; the only failures are the three already present without this change (`psycopg`/`boto3` missing locally) and the `test_final_review_d.py` collection error (`eth_account`). `prepare` imports `larp.runtime.service.balance_providers`, which needs neither package. Org CI remains billing-blocked (#98). GATE_A.md and RPC_QUALIFICATION.md now show `--balance-rpc-config`.
 
+## PC-AWS06 — primary provisioned, database migrated, terms installed, routes checked, 2026-10-17 UTC
+
+Yao Zhu's checklist items after a bundle arrived; every step from Yao Zhu's Mac and over SSM, nothing started on the host.
+
+- **Bundle (mirror build, recorded as such).** `larp-bb46234f1b99-x86_64.tar.gz`, SHA-256 `dd2d1945748876cd74ab2a4c8adf08db1429af2933d2822ce35e82eead627379` (matches its `.sha256`), manifest `ee77d97a2acbdf80dba7d99b0dd1f229806d751fd04dbc61323755d48e95e2f4`, `build_id` `bb46234f1b997dae968e2c3f3668d73627857376` (the #125 merge on the integration branch), `build_origin` `https://github.com/Keegan4/Keegan4-larp-ci-mirror`. It is **not** an org-CI build: org Actions are billing-blocked (#98), so under #127 this is engineering evidence for the shadow run, not the formal Gate A provenance (GAP-72). It contains the terms register (#129), the RPC services entry (#135) and the provider-file `prepare` (#145); it predates the decoder (#130) and the signer changes (#144, #148, #153), so the signer needs a newer bundle. The bundled `provision.sh` is byte-identical to the repo's at `bb46234`; the bundle's `rds-ca.pem` matches `rds_ca_sha256` `d73890748b5a…`. Uploaded with its `.sha256` and `.release.json` to `s3://larp-430398381846-dev-artifacts/releases/` (SSE-KMS).
+- **Provisioning.** On `primary` (`i-040fc5fea8b700e9a`): download, `sha256sum -c` against the expected hash, then the bundle's `provision.sh primary … --expect-sha256 dd2d…`. Result: release `/opt/larp/releases/bb46234…` (current), CPython 3.12.15, users `larp-runtime`, `larp-execution`, `larp-uploader`, `larp-evidence`, `larp-archive`; units installed and enabled, all inactive; `/etc/larp` holds only `rds-ca.pem` and `role-primary`. Enabled units would start at boot but refuse without configs and a bound manifest (exit 4, not restarted).
+- **Migrations and roles.** SSM port-forward from the Mac through `primary` to RDS; Python 3.12 venv with the pinned `psycopg==3.3.6`; code and `deploy/postgres/roles.sql` from a worktree at `bb46234` (roles.sql identical to the bundle's); admin credentials read from Secrets Manager into memory only, TLS `verify-ca` with the bundle's pinned CA (TLS 1.2). Before: 0 tables. After `PostgresStore.migrate()`: 21 tables, migrations 001–013 (last `013_validate_existing_execution_public_bytes.sql`). After `roles.sql`: roles `larp_archive`, `larp_execution`, `larp_runtime`, `larp_signer`, `larp_uploader`, each a member of `rds_iam`. Tunnel closed afterwards. This is the first hosted run of migrations 012/013 (IDEA-049-D PR99-RV1), on an empty database.
+- **Per-role checks from `primary`'s own instance role** (bundle venv, `generate_db_auth_token`, `sslmode=verify-full`, `/etc/larp/rds-ca.pem`): `larp_runtime`, `larp_execution`, `larp_archive`, `larp_uploader` log in over TLS 1.2 and each has one expected and lacks one forbidden table privilege (e.g. runtime may INSERT `events` but not `execution_records`; archive may SELECT but not INSERT `events`). `larp_signer` is refused from `primary`, as it should be. **Note:** the first run's `larp_runtime` attempt hit a `ConnectionTimeout` (first connection of the session); the rerun a minute later passed all four. `larp_signer`'s own login is checked from the signer during IDEA-080 provisioning.
+- **Terms artifacts.** The four distinct terms files of the six enabled-source/EDGAR captures (PC-TERMS01; the two FR sources and the two SEC entries share files) uploaded to `releases/terms-20261017/<sha256>` (the only prefix `primary` may read), then on the host each checked against its own hash and installed at `/var/lib/larp-evidence/artifacts/<xx>/<sha256>`, `larp-evidence:larp-evidence` 0640, directories 0770. `larp-runtime` with its `larp-evidence` supplementary group reads all four. Host source preflight as `larp-evidence`, `--config-mode shadow`, real SEC contact: `{"ok": true, "refusals": []}`.
+- **Route check (R-07).** Temporary configs rendered from Terraform outputs into a temp directory on `primary` (not `/etc/larp`), with the two RPC providers given as host-only URLs (TLS to host:443, no key path): `python -m larp.runtime.routes --role primary` from the installed release: `passed: true`, 13/13 PASS (`api.commonservice.io`, `web3.binance.com`, both RPC hosts, RDS 5432, S3, CloudWatch, Secrets Manager, `data.sec.gov`, `www.sec.gov`, Federal Register, DOJ, EC); `larp-execution` not checked (Gate B). Report `sha256 8400441b…` kept on the host at `/root/gate-a-evidence/` and outside Git at `~/larp-artifacts/gate-a/`; temp configs removed.
+- **Time (R-08).** `chronyc tracking` at 2026-10-17T10:45:36Z: reference 169.254.169.123 (Amazon Time Sync), stratum 4, 0.0000019 s fast, leap status Normal (report `ec25b4ba…`, same locations).
+- **Still open for Gate A:** org-CI provenance (GAP-72); the Oct 20 capture/`prepare` with the measured profile, config install and manifest bind; activation; receiver ACK, 24 h ingestion, restart drill and hourly anchor.
+
+## PC-AWS07 — Gate A shadow run live on the interim profile, 2026-10-17 UTC
+
+Yao Zhu, with Keith and Isaac's approval of the interim profile for an unsigned shadow run (relayed by Yao Zhu in chat, 2026-10-17). This is the checklist side note's early dry run; Oct 20 replaces the profile with the final one.
+
+- **Profile.** Keith's interim `QuoteCostSummary.v1` (IDEA-063; `--min-days 2 --min-samples 9`, 430 samples on Oct 16–17 incl. Saturday, 0 failures; summary `41e17b4d…`), built with the repo's predicate set into git-ignored `deploy/activation/interim-20261017/`: `rehearsal-live.json` file SHA-256 `d951207f432879eda6b349ae334104e47803f809eb5e94aef422c2e31cab4542` (Document digest `f708a1b0…`), EQUAL_WEIGHT, window Oct 21–22, `validate_live` OK. Spreads 3–19 bp, median impact 1 bp, `fee_bps = 0` pending Isaac's #119 confirmation.
+- **Capture and prepare.** From a clean worktree of the pushed integration head `0672fb8` (config-building code identical to the bundle's `bb46234` apart from error handling, and #131's profile changes, which leave EQUAL_WEIGHT unchanged): `prepare_shadow.py capture` for wallet `0x62b8…d479` with `--balance-rpc-config` (finalized chain read through the BNB Chain primary), then `prepare` with run ID `larp-dev-shadow-20261017`, build `bb46234…`, the interim profile, the real SEC contact and both RPC providers: `prepared: true`, `missing_inputs: []` (the wallet already holds BNB from the dev trial swap, so no `FIRST_BNB`). Package in git-ignored `deploy/activation/gate-a-prepared-20261017/` (report `2c637630…`, initial state `c7467230…`).
+- **Package check.** `larp.runtime.gate_a_check`: PACKAGE_INTEGRITY, PACKAGE_JSON, PINNED_INPUTS, SERVICE_CONFIGS, SOURCE_TERMS, UNSIGNED_IDENTITIES **PASS**; CI_RELEASE_BYTES **FAIL by design** because `build_origin` is the mirror, not the registered repository (`local_ready: false`). The production `bind_manifest` run on the extracted bundle passes: release bytes, register and paths match the CI manifest.
+- **Install and bind.** Configs moved through `releases/gate-a-20261017/` (deleted afterwards; `runtime.json` holds the private RPC URLs), each hash-checked on the host, installed in `/etc/larp`: `runtime.json` root:larp-evidence 0640, `uploader.json` root:larp-uploader 0640, `operations.json` root:larp-archive 0640, profile/calendar/initial state/`evidence.env`/registration evidence root 0644. Registration evidence (`RegistrationEvidence.v1`) references GAP-41/F-113 (Google Form registration and issued secret) and notes the mirror build. `preflight --bind`: `manifest_bound: true`, `ci_manifest_sha256 ee77d97a…` (the bundle's manifest). `service check` as `larp-runtime`: `configuration_valid: true`.
+- **Activation.** `service init` → run created, quarantined; `service activate --reviewer "Yao Zhu" --review-ref "IDEA-066 PC-AWS07 …"` → `activated: true`, epoch 2, `signing_enabled: false`. Keegan has not reviewed this activation; the Gate A review stays with him. `larp-execution` disabled and stopped; `larp-evidence`, `larp-runtime`, `larp-uploader` started and active, each logging `release_verified: true`; `larp-archive.timer` active.
+- **First ACK (R-01).** At 11:01 UTC: 1 round (triggered by a filing, `CLOSED`), 1 audit event, 1 chunk `ACK` on the first attempt; the receiver's acknowledgement for `evt-1792234896829-5b4a34ad0514` is `{"code":200,"message":"stored","status":"STORED"}`. The 24 h ingestion clock starts here (about 2026-10-17 11:00 UTC).
+- **Still open for Gate A:** 24 h ingestion and the gap report (Oct 18 ≥ 11:00 UTC); restart drill; first hourly anchor check; Keegan's Gate A review in IDEA-042; org-CI provenance (GAP-72) or a recorded team acceptance of the mirror build; the Oct 20 swap to the final profile (re-run `prepare`, re-bind, re-init/activate).
+
+## PC-AWS08 — restart drill and hourly-anchor check on the shadow run, 2026-10-17 UTC
+
+Yao Zhu's Oct 20 step 8, run early on the live shadow run `larp-dev-shadow-20261017` (PC-AWS07), over SSM.
+
+- **State before.** `operations health` (as `larp-archive`): `healthy: true`, no missed anchor or backup slots, runtime alive (heartbeat 2.6 s), 0 audit failures; 5 rounds and 7 audit chunks, all `ACK`. `larp-archive.service` runs every minute (`OnUnitInactiveSec=60s`) and last finished successfully.
+- **Restart drill (DR-13, runbook §2).** `systemctl kill -s SIGKILL larp-runtime` at 11:05:35 UTC (PID 34916). The unit was active again with PID 35359 after 10.3 s (`RestartSec=10`), `NRestarts=1`. Journal: 13 → 15 events, exactly one `INCIDENT` of type `RESTART` (sequence 14); `process_sessions` shows the crashed session closed and one new open session, both on build `bb46234`; the restarted process logged `release_verified: true`. **PASS.**
+- **Hourly anchor (DR-15).** The archive bucket holds the anchor for slot `1792234800000` (2026-10-17 11:00 UTC) and the daily backup (listed from the Mac; the host role has object read/write but no `s3:ListBucket`, by design). Read back on `primary` as `larp-archive` and checked with the production `verify_anchors`: the anchored head at sequence 2 matches the journal and the full journal verifies (`anchors: 1`, `latest_sequence: 2`). Object Lock retention **COMPLIANCE until 2027-01-07 11:00 UTC** (82 days). **PASS** for the first anchor.
+- **Still open for Gate A:** the 24 h ingestion run and gap report (Oct 18 ≥ 11:00 UTC), including an unbroken hourly anchor series over that period (IDEA-036 criteria 1–6 at the rehearsal drills); Keegan's Gate A review in IDEA-042; org-CI provenance (GAP-72).
+
+## PC-DEC01 — decision: mirror-CI builds are the release builds, 2026-10-17
+
+- **Decided by Yao Zhu, 2026-10-17:** the team has no usable GitHub Actions on the organisation repository (billing/spending block, #98), so release bundles built by the CI mirror (`https://github.com/Keegan4/Keegan4-larp-ci-mirror`, running the repository's own `runtime.yml` on the pushed commit) are **accepted as the release builds for Gate A and for later gates**. Unless the team states otherwise, every future build is a mirror build.
+- What still applies: the bundle comes from a pushed commit of this repository; its `.tar.gz` and `.release.json` hashes are recorded and checked (`provision.sh --expect-sha256`, `preflight --bind`); the manifest's `repository` stays the registered repository; the mirror run ID is recorded where available.
+- Effect on the tooling: `larp.runtime.gate_a_check` still reports `CI_RELEASE_BYTES: FAIL` for a mirror bundle, because it requires `build_origin` to equal the registered repository. Under this decision that single result is accepted and recorded, not a blocker; the production `bind_manifest` byte check must still pass (it did for `bb46234`, PC-AWS07). Changing the checker to accept the declared mirror origin would need a reviewed code change.
+- Applied to: bundle `bb46234` (PC-AWS06/07). Supersedes the "mirror run is engineering evidence only" wording in #127, GAP-72 and GATE_A.md.
+
+
+## PC-DEC02 — decision: LLM model trial on the shadow run before Gate B, 2026-10-17
+
+- **Found 2026-10-17:** the live shadow run `larp-dev-shadow-20261017` makes no model calls and needs no LLM keys. Gate A `prepare` writes `driver.assessor: deterministic` (`larp/runtime/gate_a.py`) and `gate_a_check.check_scope` requires it. The IDEA-057 trial was meant to run on this deploy, so it needs an explicit switch.
+- **Decided by Yao Zhu, 2026-10-17:**
+  1. Switch the shadow run to `aiand_routed` right after the 24 h gap report (Oct 18, ≥ 11:00 UTC).
+  2. Use a new mirror bundle that includes #158 (IDEA-081 stage prompts, routing file v2), not `bb46234`.
+  3. OpenAI: about **$49** of credit is left (Yao Zhu's figure). Keith holds the credits and settles the budget: he reads the exact balance, gives Yao Zhu the prior spend for budget `init` and the keys privately. The ledger keeps its $50 total / $10 reserve, so about $39 more is admissible.
+  4. These steps are done before Gate B goes live. They are listed in PRE_TRADING_CHECKLIST "Model trial: before Gate B goes live".
+- **Constraint:** `build_driver` refuses `aiand_routed` unless execution is `shadow`, so the runtime returns to `deterministic` at the switch to signed rehearsal (Oct 21). The trial window is therefore about Oct 18 → Oct 21, the 3-day minimum in IDEA-057's outcome rules. The Oct 20 `prepare` also resets the assessor, so the switch is re-applied before that day's re-bind.
+- **Effect on Gate A:** after the switch, `gate_a_check` no longer passes on the installed `runtime.json` (`check_scope` wants `deterministic`). The 24 h ingestion evidence and gap report are taken before the switch; the switch, re-bind and re-activation are a version event recorded here when done.
+
+## PC-DEC03 — decision: keep the LLM for the signed rehearsal and the scored run, 2026-10-17
+
+- **Decided by Yao Zhu, 2026-10-17:** keep the hosted LLM in the evidence step, as the submitted proposal declares ("Hosted reasoning LLM for the evidence step"; the LLM never signs, sizes or sets limits). The Oct 21–26 signed rehearsal runs with the LLM assessor (`aiand_routed`), so the LLM path is tested with signing before final activation. Supersedes PC-DEC02's "return to `deterministic` at signed rehearsal", which assumed the current code.
+- **Why:** the shadow-only guard in `larp/runtime/service.py` was a temporary gate until adoption (IDEA-056 MR-06: "live/service needs a later reviewed code change"), and no one had scheduled that change. Without it, adopting the LLMs on Oct 22 would have put them into the scored run untested under signing; staying rule-based would drop a declared part of the proposal (DEV-19).
+- **Steps (owners in PRE_TRADING_CHECKLIST "LLM in the signed rehearsal"):** Keith writes the code change, with criteria written first (model calls never delay a mandatory sell, execution step or HALT; failures never raise exposure; results reach the limiter only through verification; full model I/O reaches the round log); Isaac reviews and merges by Oct 20; Keegan builds the Gate B bundle with it. Keith gives an interim trial summary on Oct 20 and Keegan decides then (early DR-11); Oct 22 confirms with at least 3 trial days.
+- **Deviation to record:** a decision on about 2 trial days breaks IDEA-057's pre-registered "fewer than 3 days is inconclusive" rule. It is recorded in IDEA-057 when made. If the code change or the decision is not ready on Oct 21, the rehearsal starts on `deterministic` and switches later as a version event.
+- **Limit:** until Keegan's B4 limiter wiring lands (planned Oct 24), the rehearsal tests the LLM running under signing, not its effect on exposure.
+- **Rule basis (added 2026-10-17):** the official page asks for "an LLM-powered Agentic AI system" (`docs/official/source_page.md` line 24) and judges "Agentic depth … not a thin LLM wrapper" (line 95). IDEA-049-A Amendment 29 (A-REQ-079) already made this a blocking release check, but the backlog line it asked for was never added; it is now in INCOMPLETE_WORK. A rule-only scored run would therefore be a rules risk, not only a design change.
+
+## PC-AUD01 — audit of what the LLM path still needs, and other missing checklist items, 2026-10-17
+
+Yao Zhu asked for everything still to do to be on PR #133 after PC-DEC03. Checked: the routing, limiter, policy, round-log and Gate A code at `0672fb8`; IDEA-056 §8, IDEA-057 remaining work, IDEA-075 §4.2/§15/§16, IDEA-049-A Amendment 22 blocker table, DEPLOYMENT_BUILD DR-11, `architecture-deployment.md` network rows, and every open GitHub issue against the checklist.
+
+**LLM path, found missing:**
+- **The limiter has no input producer.** `policy.py` reads `exposure_evidence` and `exposure_assessment` from the context; nothing writes either (B4). In `MODEL` mode the limiter also needs an LLM call returning `{level, evidence_ids, reason, falsifier}`, which does not exist; without it every session is `NO_ASSESSMENT`, so nothing is cut. `limiter_mode` was never decided (IDEA-075 O6).
+- **Live config tooling** hard-codes `assessor: deterministic` (`gate_a.py`, `gate_a_check.py`); there is no reviewed way to prepare the LLM assessor for the rehearsal or live config.
+- **Network approval** for `api.aiand.com` / `api.openai.com` is "Shadow only".
+- **Provider terms** (AIand, OpenAI) are not in the licence register (GAP-23; IDEA-049-A rights row).
+- **AIand balance** for the whole run is unchecked (external prices were excluded from the budget design, IDEA-056).
+- **Scored-run behaviour:** the trial's kill criteria K1–K4 are operator actions, which F-114/F-124 rule out after activation.
+- **Final-wallet secret:** `put_service_secrets.sh` replaces the whole runtime secret, so the LLM keys must be re-entered; the budget ledger must not be re-initialised.
+- **Freeze** of the routing file and stage prompts with the Oct 22 parameters; **real-evaluation disposition** (IDEA-049-A); **agentic-sufficiency acceptance** (A-DEC-004); **round-log check** of routed model I/O and per-round cost (DR-11); **memory** on the 2 GiB `primary` with the LLM path (#60).
+
+**Other open issues with no checklist line:** #156/#157 (fee semantics; Keith reviews before the Oct 20 fee confirmation), #25 (fixed; needs Keith's A-T15 confirmation to close), #60 (memory), #98 (no longer needed), trackers #22/#42.
+
+**Owner note:** IDEA-075 §15 lists Yao Zhu for B4; the checklist keeps code with Keegan (its 2026-10-17 ownership rule).
+
+All items are in PRE_TRADING_CHECKLIST ("LLM: everything else between now and the scored run", the Oct 26–29 list, the Oct 20 list and Housekeeping), one owner each. Not re-audited here: the 60+ older research GAPs in INCOMPLETE_WORK from the decision-model era (GAP-06..22 and similar), many of which no longer apply to S1.
+- **Owners rebalanced (Yao Zhu, 2026-10-17):** model and routing items go to Keith, who proposed the dual-model routing (IDEA-056): the exposure LLM call if `MODEL`, the scored-run model behaviour record and the evaluation disposition. Tooling, network and operations go to Isaac: the `limiter_mode` decision, the LLM option in Gate A `prepare`/`gate_a_check`, the network re-approval, the #60 decision and the round-log check. Keegan keeps the B4 evidence producer, the services list and DEV-19, the activation pack and the model decision.
+- **Moved 2026-10-17 (Yao Zhu):** the code change that lets `aiand_routed` run with signing (PC-DEC03) now belongs to Isaac, and Keith reviews and merges it, to spread Keith's Oct 19–20 load.
+
+## PC-SIG01 — Isaac's development signer handoff received, 2026-10-17
+
+- **Received by Yao Zhu** (files from Isaac, #160 / PR #161 on `codex/isaac-10-signer-handoff-20261017`, handoff commit `7f5e5ac`): `README.md`, `review.json` (`SignerHandoffReview.v1`), `signer.json` (`SignerService.v1`, `mode: dev`). Kept outside Git in `deploy/activation/signer-dev-20261017/`. No key, credential or RPC URL in them.
+- **Checked here:** `signer.json` SHA-256 `339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442` and canonical policy SHA-256 `254f5c31b2b1bb22f706acfb95343f9e885097786d22918747eb6951c5a42033` both match the handoff. The `signing_policy` equals the merged CP-01 development candidate (`docs/build/evidence/signer-caps-proposal-20261017.json`, USDT 35, fee 0.0002 BNB, router spender `0xb444…fdda5`). The other fields equal `config/hosts/signer.example.json` except `wallet_address` (dev wallet `0x62b8…d479`). `larp/signer/service.py validate_config` refuses a `live` signer with the example `cap_basis` but not a `dev` one, as the handoff warns.
+- **Handoff's own results (not re-run here):** 8 proposal tests pass; 14 boundary cases accepted and 34 refused by `SigningPolicy.check`; nominal largest input 20.10 USDT (EQUAL_WEIGHT) and 28.60 USDT (S1) within 35; the unfinished config is refused for missing `run_id`/`build_id`. Profile, full-holding, top-up and fee-envelope checks NOT RUN (inputs missing). Reviewer: Isaac's delegated assistant, not Keith. `ready_to_install: false`.
+- **Remaining** (PRE_TRADING_CHECKLIST "Gate B setup", one owner each): Keegan merges #161; Keith finishes the cap checks against the Oct 20 profile and fresh holdings; Isaac sets execution gas limits within 0.0002 BNB and decides the exact policy (replacing `cap_basis`); Yao Zhu fills `run_id`, `build_id`, `database_host`, `database_ca_sha256` and the router-evidence pair (blocked on #139), records the final hash and binds it.
+- **Update after merging the integration branch (2026-10-17):** PR #159 (IDEA-057 SG-8) had already added an opt-in `--model-routing` option to Gate A `prepare` and `gate_a_check` for dev-shadow, so the trial needs no hand edits of `runtime.json`; the checklist now uses it, and the PC-AUD01 tooling item is narrowed to signed and live scope. #159's `validate_routing_spec` accepts only `AIandRouting.v1`, so PR #158's v2 file needs that validator extended before `prepare` accepts it.
+
+## PC-AWS09 — shadow run health check, 2026-10-17 15:27 UTC
+
+Read-only, over SSM on `primary`, plus S3 metadata from Yao Zhu's Mac.
+
+- **Running:** `larp-evidence`, `larp-runtime` (one restart, the PC-AWS08 drill), `larp-uploader` active; `larp-execution` inactive as intended; `larp-archive.timer` active. Runtime heartbeat 1.5 s, no HALT, not quarantined, 0 audit failures, 0 audit deadline breaches. Hourly anchors 11:00–15:00 all `ACK`, none missed. No error-level journal lines from runtime, evidence or uploader in the last 4 h.
+- **Memory (#60 baseline):** 1909 MiB total, 1401 MiB available; `larp-runtime` 65 MiB, `larp-evidence` 57 MiB, `larp-uploader` 53 MiB. Disk `/` 2.2 of 20 GiB.
+- **Not healthy: `ARCHIVE_DELIVERY_BLOCKED`.** The restart drill's incident backup (slot `1792235176666`, 2026-10-17 11:06:16.666 UTC) is `PERMANENT` in `archive_outbox`, and `larp-archive.service` has exited 1 on every run since 11:06:18 (256 runs by 15:27). It keeps delivering anchors; only its health report fails.
+- **Cause (confirmed):** the object *was* written: `head-object` shows 3 050 652 bytes, KMS, `COMPLIANCE` until `2027-01-07T11:06:16Z`. `S3Archive.put` (`larp/storage/archive.py`) asked for `11:06:16.666`; S3 stores the date to whole seconds, so the read-back check `ObjectLockRetainUntilDate < retain_until` raises `IntegrityError` (a `ContractError`), recorded as `PERMANENT`. Scheduled backups and anchors use whole-hour slots and pass; **every incident backup (restart or HALT) fails this way**, including automatic restarts in the scored run.
+- **Effect:** health stays blocked until a newer backup is acknowledged; the next scheduled daily backup (expected Oct 18 00:00 UTC) should clear it. The audit log, anchors and ingestion are unaffected. The Gate A 24 h window (from 11:00 UTC) contains this blocked period; the gap report and Keegan's Gate A review should say so.
+- **Data collected by 15:37 UTC (read-only, journal as `larp-archive`, evidence store opened read-only):** 33 journal events, including 12 rounds (12 `plan` + 12 `close`), 6 balance checks, 1 incident (the drill), 1 activation and 1 version event; 17 audit chunks, all `ACK` by the ai-seeds receiver; evidence store 280 poll batches and 4 filing records for 2 issuers, last written 15:36. Rounds use the deterministic assessor, so no model calls.
+- **Fix:** PR #163 rounds the requested retain-until up to a whole second (IDEA-082; red proof reproduces the host error, then passes). It reaches the host with the next bundle; until then each restart repeats this.
+
+## PC-RV133 — checklist PR review corrections (2026-10-17 SGT)
+
+The user requests all-PR review/fixes. Read the original submitted review and its
+ordering follow-up. O2-before-EXP007, clock synchronization and the Gate A provider
+owner were already corrected; no duplicate work was introduced. Corrected the
+remaining migration-review owner (Yao ran the host step, Keegan reviews), stated
+Isaac's key-placement exception explicitly, and counted five enabled non-EDGAR
+sources plus EDGAR = six retained files from the current register.
+
+The checklist now distinguishes merged #130/#131/#143/#144/#148/#149/#151 from
+uncompleted source, numeric and actual-plan review; preserves conditional final
+wallet credential issuance under Q-35; conditions Oct20 Gate B review on its dev
+trade; and names Keegan to identify the anonymous branch's responsible team member
+before disposition. Corrected the obsolete first-service-on-Oct20/prepare-always-
+deterministic claims and clarified billing remains broken despite accepted mirrors.
+No personal review sign-off, new policy decision, host check or branch deletion
+was inferred. The running shadow state remains owner-reported only.
+
+Validation: static checklist/register/source comparison and `git diff --check`.
+Documentation-only correction; no application test is required. GitHub authentication
+failed mid-review (HTTP401), so this correction is committed locally pending push.
+PR158's branch now includes v2 validation; a release still needs its reviewed merge.
+
+PC-RV133 follow-up: authentication recovered. Preserved the concurrent PC-AWS09
+host report and signer-assembly instructions through an ordinary merge. Corrected
+one new instruction: the bundle CA hash is in verified `BUNDLE.env`, not the
+code-only `.release.json`. The archive delivery incident is explicitly retained;
+no healthy-host claim or remediation of its permanent historical row is inferred.
+
+## PC-AWS10 — gap report rehearsal on the shadow run, 2026-10-17 15:41 UTC
+
+Yao Zhu's Oct 18 gap-report item, rehearsed early and read-only on `primary`: `larp.sources.live report --from 2026-10-17T11:00:00Z --to <now>` as `larp-evidence` with `LARP_ARTIFACT_ROOT=/var/lib/larp-evidence`, output to a temp file and deleted. Window 4.69 h, so the verdict is `INCONCLUSIVE` by design (24 h needed); 0 corrupt log lines; one commit (`bb46234`).
+
+- **Fine:** all five EDGAR issuers (largest gap 5.1–5.2 min), `ec-press` (19 of 19 polls OK), `sec-press` and `fr-public-inspection` (largest gaps ≤ 15.2 min).
+- **Would fail: `doj-press` (29 polls) and `fr-bis` (19 polls) have 0 complete polls,** so each shows one unexplained gap the length of the window. Every poll returns `status: OK` and new records, but ends `truncated: true`: it used its 3-page budget and more pages remain.
+- **Cause:** the listing URLs (`config/sources/sources.v1.json`) have no date bound, and `SourceIngestor.poll` (`larp/sources/ingest.py`) follows the listing's history to its end, 3 pages per poll, while checking the newest page first each time (so new releases are still seen). The report counts a truncated poll as incomplete coverage. Public totals checked 2026-10-17: DOJ press releases 274 267; Federal Register BIS documents 2 988. At the observed rate DOJ's history walk would take weeks, so **`doj-press` cannot pass any 24 h window** as configured; `fr-bis` may finish its walk within about a day.
+- **Needs a decision before Gate A's review:** bound the history walk (e.g. stop following older pages past a declared horizon, so a cycle completes), or record these as explained in the report with Keegan's agreement. Not changed here.
+
+## PC-PREP01 — preparation for Oct 18 and Gate B, 2026-10-17 ~16:00 UTC
+
+- **Signer:** `deploy/activation/signer-dev-20261017/signer.prefilled.json` (git-ignored, mode 0600) now has `database_host` (from `aws rds describe-db-instances`, the same address Terraform outputs; Terraform is not installed on this Mac) and `database_ca_sha256` `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` (`/etc/larp/rds-ca.pem` on `primary`; re-check against the Gate B bundle's `BUNDLE.env`). Still null: `run_id`, `build_id`, the router-evidence pair; `signing_policy` stays Isaac's draft until #44.
+- **Run sheet:** `deploy/activation/oct18-run-sheet.md` (git-ignored) lists the 00:00 health recheck, the exact 24 h gap report command and where its output goes, and the trial switch in order with its prerequisites (#158 merged, Keegan's bundle, Keith's keys and prior spend, bars), using #159's `--model-routing` preparation and a new run ID.
+- **Mirror CI** (both green on all four jobs): #158 at `6a65b39` (incl. Keegan's SP9 commits), [run 39045682226](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39045682226), runtime 1940 passed / 6 skipped / 2887 subtests; #163 at `d703ae3`, [run 39045756102](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39045756102), runtime 1931 passed / 6 skipped / 2859 subtests. Posted on both PRs.
