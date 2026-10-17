@@ -32,7 +32,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Isaac:** approve the network destination table for section C; Keegan already approved section B (#113). The table is in `architecture-deployment.md` "Approved network destinations" (#32).
 - [ ] **Keegan:** ask the GitHub org owner to restore Actions minutes (#98).
 - [ ] **Keegan:** after that, build the host bundle from the commit with the terms register (`1ab47ae` or later); record the run ID and the bundle and manifest hashes, and send them to Yao Zhu (#49). A mirror run is engineering evidence only (#127).
-- [ ] **Yao Zhu:** confirm the alarm email subscriptions (AWS SNS), send a test alarm and confirm it arrives. No alarm email has arrived yet.
+- [x] **Yao Zhu:** confirm the alarm email subscriptions (AWS SNS), send a test alarm and confirm it arrives. Done 2026-10-17: the topic had no subscription; a one-resource Terraform apply added it, Yao Zhu confirmed it, and a test ALARM on `larp-dev-database-storage` reached Yao Zhu by email (IDEA-066 PC-AWS03).
 - [ ] **Yao Zhu:** after Isaac's RPC choice, open network access from `primary` to those RPC hosts (Terraform, reviewed plan).
 - [ ] **Yao Zhu:** after the bundle exists, upload it and provision `primary` over SSM (`provision.sh primary <bundle> --expect-sha256 <CI hash>`; AWS_RUNBOOK step 5).
 - [ ] **Yao Zhu:** after provisioning, run migrations 012/013 and `roles.sql` through an SSM port-forward, then check IAM token login and TLS for each database role (AWS_RUNBOOK step 6, PR99-RV1, IDEA-044 V10/V11).
