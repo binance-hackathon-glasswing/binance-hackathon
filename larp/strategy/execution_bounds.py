@@ -157,6 +157,16 @@ def permitted(projection, intent, now_ms):
         from .s1 import config
         cfg = config(p)
         planned = next(i for i in record['plan']['intents'] if i['intent_id'] == intent.intent_id)
+        from larp.execution import USDT
+        from larp.marketdata.port import TOKENS
+        token = TOKENS[planned['symbol']]
+        buy = planned['side'] == 'BUY'
+        if (intent.kind != 'BSTOCK_TRADE'
+                or intent.pay_token != (USDT if buy else token)
+                or intent.receive_token != (token if buy else USDT)
+                or intent.amount != planned['pay_units'] * (10**12 if buy else 1)
+                or intent.min_receive != planned['min_receive_units'] * (1 if buy else 10**12)):
+            return False  # a BUY cannot borrow a mandatory SELL's after-hours authority
         authority = planned['execution_bounds']
         start, end = interval(context, cfg, planned['mandatory'])
         key = leg_key(planned['symbol'], planned['side'], planned['mandatory'])

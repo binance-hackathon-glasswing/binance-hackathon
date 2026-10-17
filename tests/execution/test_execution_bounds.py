@@ -33,7 +33,7 @@ def record_in(store, record):
 
 class SignerWindow(_SigningCase):
     def test_expired_window_refuses_even_when_primary_supplies_true_gates(self):
-        state, attempt = self.authorized()
+        state, attempt = self.authorized(amount=100*10**12)
         record_in(self.store, short_record())
         request_id, request = self.request(state, attempt)
         self.assertTrue(request['gates']['risk_valid'])
@@ -46,7 +46,7 @@ class SignerWindow(_SigningCase):
         self.assertIn('S1 execution window/attempt authority expired', self.refusals()[request_id])
 
     def test_window_check_accepts_in_window_request_without_changing_policy(self):
-        state, attempt = self.authorized()
+        state, attempt = self.authorized(amount=100*10**12)
         record_in(self.store, short_record())
         self.request(state, attempt)
         self.service.once()
@@ -60,7 +60,7 @@ class ExecutionWindow(DatabaseCase):
         self.guards = ExecutionGuards(self.registry)
         self.venue = FakeVenue(self.registry)
         self.executor = Executor(self.registry, self.guards, self.venue, RegistrySigner(self.registry), FakeDecoder())
-        self.i = intent()
+        self.i = intent(amount=100*10**12)
         self.executor.create(self.i, 10)
         record_in(self.store, short_record())
         self.seen = []

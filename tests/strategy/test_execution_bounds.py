@@ -206,28 +206,38 @@ def round_record(*, mandatory=False, ordinal=1):
     bounds.close(state, authority)
     return dict(policy_input=dict(context=context), plan=dict(execution_attempt_budget=state,
         intents=[dict(intent_id='economic-1', symbol='NVDAB', side='SELL' if mandatory else 'BUY',
-                      mandatory=mandatory, execution_bounds=authority)]))
+                      pay_units=100, min_receive_units=90, mandatory=mandatory, execution_bounds=authority)]))
 
 
 class DurableAuthority(unittest.TestCase):
     def test_reconstructs_from_durable_plan_and_refuses_mutated_authority(self):
         from tests.execution_fixtures import intent
+        economic = intent(amount=100*10**12)
         record = round_record()
         projection = dict(round_records={'round': record})
-        self.assertTrue(bounds.permitted(projection, intent(), milliseconds('2026-10-10T14:00:00Z')))
+        self.assertTrue(bounds.permitted(projection, economic, milliseconds('2026-10-10T14:00:00Z')))
         for stamp in ('2026-10-10T13:59:59Z', '2026-10-10T19:45:00Z', '2026-10-11T14:00:00Z'):
-            self.assertFalse(bounds.permitted(projection, intent(), milliseconds(stamp)))
+            self.assertFalse(bounds.permitted(projection, economic, milliseconds(stamp)))
         for changes in ({'ordinal': 2}, {'valid_until_ms': milliseconds('2026-10-11T20:00:00Z')},
                         {'leg': 'SAFETY:SELL:NVDAB'}, {'session_index': 81}):
             mutated = deepcopy(record)
             mutated['plan']['intents'][0]['execution_bounds'].update(changes)
-            self.assertFalse(bounds.permitted(dict(round_records={'round': mutated}), intent(),
+            self.assertFalse(bounds.permitted(dict(round_records={'round': mutated}), economic,
                                              milliseconds('2026-10-10T14:00:00Z')))
         del record['plan']['intents'][0]['execution_bounds']
-        self.assertFalse(bounds.permitted(projection, intent(), milliseconds('2026-10-10T14:00:00Z')))
+        self.assertFalse(bounds.permitted(projection, economic, milliseconds('2026-10-10T14:00:00Z')))
 
     def test_safety_authority_is_valid_after_hours_but_not_next_session(self):
         from tests.execution_fixtures import intent
+        from larp.execution import USDT
+        from larp.marketdata.port import TOKENS
         projection = dict(round_records={'round': round_record(mandatory=True)})
-        self.assertTrue(bounds.permitted(projection, intent(), milliseconds('2026-10-10T23:00:00Z')))
-        self.assertFalse(bounds.permitted(projection, intent(), milliseconds('2026-10-11T13:30:00Z')))
+        economic = intent(pay_token=TOKENS['NVDAB'], receive_token=USDT, min_receive=90*10**12)
+        self.assertTrue(bounds.permitted(projection, economic, milliseconds('2026-10-10T23:00:00Z')))
+        self.assertFalse(bounds.permitted(projection, economic, milliseconds('2026-10-11T13:30:00Z')))
+        self.assertFalse(bounds.permitted(projection, intent(amount=100*10**12),
+                                          milliseconds('2026-10-10T23:00:00Z')))
+        self.assertFalse(bounds.permitted(projection, replace(economic, amount=101),
+                                          milliseconds('2026-10-10T23:00:00Z')))
+        self.assertFalse(bounds.permitted(projection, replace(economic, min_receive=89*10**12),
+                                          milliseconds('2026-10-10T23:00:00Z')))
