@@ -65,3 +65,11 @@ existing exact-byte hash and composition for valid v1/v2 files. Add regression
 cases, push before execution, run the routing/preparation suite, and run the full
 Linux/PostgreSQL14 suite. Correct stale v1-only preparation claims and the example
 hash in the runbook; leave actual host state, adoption and model quality unclaimed.
+
+SP9 result: regression-only `c5e56bc` reproduced all seven bad-input cases
+(7 subtest failures; one test body passed). Fix pushed at `60ca47f` before rerun:
+stage-prompt/routing/preparation/local-qualification suite **62 passed,
+109 subtests**, 4.77s, no skips, Linux/Python3.12.14. The runbook's existing v2
+example hash was already correct and is retained; stale manual-edit-only claims
+were corrected. Combined full-suite evidence follows in IDEA-049 ALLPR-20261017;
+no provider, host or prompt-quality acceptance is inferred.
