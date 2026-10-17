@@ -271,9 +271,10 @@ def main(argv=None):
                                    Document.from_dict(json.loads(Path(args.predicates).read_text())),
                                    **(dict(s1=s1_block, s1_decision=args.s1_decision) if raw_s1 is not None else {}))
     if raw_s1 is not None:
-        profiles = {env: Document.from_dict({**document.read(), "provenance": {**document.read()["provenance"],
-                    "s1": {**document.read()["provenance"]["s1"], "data_hash": hashlib.sha256(raw_s1).hexdigest()}}})
-                    for env, document in profiles.items()}
+        for env, document in profiles.items():
+            profile_data = document.read()
+            profile_data["provenance"]["s1"]["data_hash"] = hashlib.sha256(raw_s1).hexdigest()
+            profiles[env] = Document.from_dict(profile_data)
     out = Path(args.output_dir)
     paths = {env: out / (env.lower() + "-live.json") for env in profiles}
     if any(path.exists() for path in paths.values()):
