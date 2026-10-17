@@ -43,7 +43,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 ### Gate B setup
 
 - [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete.
-- [ ] **Keegan:** build a new mirror bundle from the current integration head (it must include #130, #144, #148 and #153) and send its hashes to Yao Zhu, for reprovisioning `primary` and provisioning the signer at Gate B.
+- [ ] **Keegan:** build a new mirror bundle from the current integration head (it must include #130, #144, #148, #153 and, after it merges, #158) and send its hashes to Yao Zhu, for reprovisioning `primary` (the model trial below needs it first) and provisioning the signer at Gate B.
 - [ ] **Keegan:** review Isaac's router evidence, then review and merge #130. If #131 merged first, keep both `docs/LEDGER.md` rows.
 - [ ] **Keith:** give Isaac the quote files the capture has recorded so far (no credentials or `.env`), for the router check.
 - [ ] **Isaac:** after #130 merges, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed.
@@ -60,6 +60,21 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Keith:** propose the BNB floor and top-up size (G-28) from the measured gas (#30).
 - [ ] **Isaac:** show BNB tracking (`native_trace`) works on a real provider, and accept or change Keith's floor and top-up size (#30).
 
+### Model trial: before Gate B goes live
+
+Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run to the LLM assessor (`aiand_routed`) right after the 24 h gap report (Oct 18, after 11:00 UTC), on a new bundle that includes #158's stage prompts. About $49 of OpenAI credit is left; Keith holds those credits and settles the budget numbers. The running shadow run makes no model calls today: Gate A `prepare` pins the assessor to `deterministic` (IDEA-081).
+
+**Window:** the code only allows the LLM assessor in unsigned shadow execution, so the runtime goes back to `deterministic` when it switches to signed rehearsal for Gate B (Oct 21). That leaves about Oct 18 → Oct 21, the 3-day minimum before the trial counts as inconclusive (IDEA-057 outcome rules). A late start shortens it.
+
+- [ ] **Keegan:** review and merge #158 (IDEA-081, per-stage prompts for GLM-5.3, Kimi K3 and Sol), then include it in the new mirror bundle above.
+- [ ] **Keith:** read the exact remaining OpenAI balance on the billing page and send Yao Zhu the prior spend in micro-USD for budget `init` (US$1 = 1 000 000; about $1 spent if $49 is left of $50). The ledger keeps its $40 operating limit and $10 reserve, so OpenAI may use about $39 more (IDEA-056 MR-04, IDEA-057 P1).
+- [ ] **Keith:** send Yao Zhu the OpenAI API key for that account and the funded AIand API key, privately: never in chat, an issue or Git.
+- [ ] **Keith:** confirm or change the trial's ⚠ PROPOSED bars (IDEA-057 "Shadow trial") before the switch; after the switch they apply as written. Comment on #97.
+- [ ] **Yao Zhu:** after the gap report, the new bundle and Keith's keys and number: runtime secret with `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` (`put_service_secrets.sh --only runtime`), provider check P0, budget `init`, reprovision `primary`, install the v2 routing file and pin its hash, set `driver.assessor` to `aiand_routed`, re-bind, fresh `service init`/`activate` (a version event), route check, check the first routed assessment (`docs/build/AIAND_MODEL_ROUTING.md` "Host steps"). Record P0–P2 and the start time in IDEA-057.
+- [ ] **Yao Zhu:** daily until the switch to signed rehearsal: budget `status` snapshot and ledger backup, kill criteria K1–K4 (runbook step 8).
+- [ ] **Yao Zhu:** Oct 20 `prepare` resets the assessor to `deterministic`: set `aiand_routed` again before that day's re-bind and activation.
+- [ ] **Yao Zhu:** at the switch to signed rehearsal (Oct 21), set the assessor back to `deterministic` (the code refuses `aiand_routed` with signing), and note the trial's end time in IDEA-057.
+
 ### Decisions due Oct 19
 
 - [x] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04). Done 2026-10-17 (IDEA-049-D D-DN-02, #140).
@@ -68,8 +83,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Keith:** decide which profile to build on Oct 20: `EQUAL_WEIGHT` (in the code today) or S1 `TREND_GUARDED_VOL` (needs #131 merged; its values stay proposals until Oct 22).
 - [ ] **Keith:** propose what mandatory exits do during a price-jump hold (IDEA-055 POLICY-HOLD). HALT for mandatory sells is already built (#117).
 - [ ] **Isaac:** decide POLICY-HOLD from Keith's proposal.
-- [ ] **Keith:** review the model shadow trial's proposed bars and comment on #97 (IDEA-057).
-- [ ] **Keegan:** confirm the trial bars after Keith's review.
+- [ ] **Keegan:** confirm the trial bars after Keith's review (moved before the switch on Oct 18; see "Model trial" above).
 - [ ] **Keith:** keep or move the Nov 11 15:00 UTC flatten, and record it in IDEA-035 C4 (#107).
 - [ ] **Keegan:** settle open choice O2 (what ships if EXP-007 is inconclusive) **before** EXP-007 runs, since it is part of the pre-registered decision rule (IDEA-075 §16, EXP-007 status).
 - [ ] **Keith:** after O2, run EXP-007 on token session bars up to the Oct 16 close (IDEA-075 B1) and record the result by Oct 19.
@@ -107,7 +121,6 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Isaac:** if not done on Oct 20: check the runtime's first approve plus swap on chain inside the rehearsal buy window (Oct 21 00:00 – Oct 22 00:00 UTC).
 - [ ] **Keegan:** after Isaac's check, the Gate B review in IDEA-042 (if not done on Oct 20).
 - [ ] **Keegan:** keep the daily rehearsal log (5+ days including the Oct 24–25 weekend, DR-21) from the round logs and alarms. A late start is recorded as a deviation (GAP-04).
-- [ ] **Yao Zhu:** model trial host steps: AIand secret, budget `init` with the actual prior OpenAI spend, provider check P0, then start the shadow trial (#97, IDEA-057).
 - [ ] **Keith:** blind independent labels for the trial sample (M9, IDEA-057).
 
 ## Oct 21–26: rehearsal drills

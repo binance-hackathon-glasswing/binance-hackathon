@@ -151,3 +151,14 @@ Yao Zhu's Oct 20 step 8, run early on the live shadow run `larp-dev-shadow-20261
 - Effect on the tooling: `larp.runtime.gate_a_check` still reports `CI_RELEASE_BYTES: FAIL` for a mirror bundle, because it requires `build_origin` to equal the registered repository. Under this decision that single result is accepted and recorded, not a blocker; the production `bind_manifest` byte check must still pass (it did for `bb46234`, PC-AWS07). Changing the checker to accept the declared mirror origin would need a reviewed code change.
 - Applied to: bundle `bb46234` (PC-AWS06/07). Supersedes the "mirror run is engineering evidence only" wording in #127, GAP-72 and GATE_A.md.
 
+
+## PC-DEC02 — decision: LLM model trial on the shadow run before Gate B, 2026-10-17
+
+- **Found 2026-10-17:** the live shadow run `larp-dev-shadow-20261017` makes no model calls and needs no LLM keys. Gate A `prepare` writes `driver.assessor: deterministic` (`larp/runtime/gate_a.py`) and `gate_a_check.check_scope` requires it. The IDEA-057 trial was meant to run on this deploy, so it needs an explicit switch.
+- **Decided by Yao Zhu, 2026-10-17:**
+  1. Switch the shadow run to `aiand_routed` right after the 24 h gap report (Oct 18, ≥ 11:00 UTC).
+  2. Use a new mirror bundle that includes #158 (IDEA-081 stage prompts, routing file v2), not `bb46234`.
+  3. OpenAI: about **$49** of credit is left (Yao Zhu's figure). Keith holds the credits and settles the budget: he reads the exact balance, gives Yao Zhu the prior spend for budget `init` and the keys privately. The ledger keeps its $50 total / $10 reserve, so about $39 more is admissible.
+  4. These steps are done before Gate B goes live. They are listed in PRE_TRADING_CHECKLIST "Model trial: before Gate B goes live".
+- **Constraint:** `build_driver` refuses `aiand_routed` unless execution is `shadow`, so the runtime returns to `deterministic` at the switch to signed rehearsal (Oct 21). The trial window is therefore about Oct 18 → Oct 21, the 3-day minimum in IDEA-057's outcome rules. The Oct 20 `prepare` also resets the assessor, so the switch is re-applied before that day's re-bind.
+- **Effect on Gate A:** after the switch, `gate_a_check` no longer passes on the installed `runtime.json` (`check_scope` wants `deterministic`). The 24 h ingestion evidence and gap report are taken before the switch; the switch, re-bind and re-activation are a version event recorded here when done.
