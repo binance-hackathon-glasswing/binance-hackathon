@@ -64,7 +64,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run to the LLM assessor (`aiand_routed`) right after the 24 h gap report (Oct 18, after 11:00 UTC), on a new bundle that includes #158's stage prompts. About $49 of OpenAI credit is left; Keith holds those credits and settles the budget numbers. The running shadow run makes no model calls today: Gate A `prepare` pins the assessor to `deterministic` (IDEA-081).
 
-**Window:** the code only allows the LLM assessor in unsigned shadow execution, so the runtime goes back to `deterministic` when it switches to signed rehearsal for Gate B (Oct 21). That leaves about Oct 18 → Oct 21, the 3-day minimum before the trial counts as inconclusive (IDEA-057 outcome rules). A late start shortens it.
+**The LLM stays in for the signed rehearsal (decided by Yao Zhu, 2026-10-17, IDEA-066 PC-DEC03).** The proposal declares a hosted reasoning LLM for the evidence step, and the team keeps it. Today the code allows the LLM assessor only in unsigned shadow execution (`larp/runtime/service.py`), so the Oct 21–26 rehearsal needs a reviewed code change and an early model decision on Oct 20, both below. If either is missing on Oct 21, the rehearsal starts on `deterministic` and switches once both are in (a version event, recorded as a deviation). The full decision on Oct 22 confirms it with at least 3 trial days.
 
 - [ ] **Keegan:** review and merge #158 (IDEA-081, per-stage prompts for GLM-5.3, Kimi K3 and Sol), then include it in the new mirror bundle above.
 - [ ] **Keith:** read the exact remaining OpenAI balance on the billing page and send Yao Zhu the prior spend in micro-USD for budget `init` (US$1 = 1 000 000; about $1 spent if $49 is left of $50). The ledger keeps its $40 operating limit and $10 reserve, so OpenAI may use about $39 more (IDEA-056 MR-04, IDEA-057 P1).
@@ -73,7 +73,16 @@ Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run t
 - [ ] **Yao Zhu:** after the gap report, the new bundle and Keith's keys and number: runtime secret with `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` (`put_service_secrets.sh --only runtime`), provider check P0, budget `init`, reprovision `primary`, install the v2 routing file and pin its hash, set `driver.assessor` to `aiand_routed`, re-bind, fresh `service init`/`activate` (a version event), route check, check the first routed assessment (`docs/build/AIAND_MODEL_ROUTING.md` "Host steps"). Record P0–P2 and the start time in IDEA-057.
 - [ ] **Yao Zhu:** daily until the switch to signed rehearsal: budget `status` snapshot and ledger backup, kill criteria K1–K4 (runbook step 8).
 - [ ] **Yao Zhu:** Oct 20 `prepare` resets the assessor to `deterministic`: set `aiand_routed` again before that day's re-bind and activation.
-- [ ] **Yao Zhu:** at the switch to signed rehearsal (Oct 21), set the assessor back to `deterministic` (the code refuses `aiand_routed` with signing), and note the trial's end time in IDEA-057.
+- [ ] **Yao Zhu:** at the switch to signed rehearsal (Oct 21): keep `aiand_routed` if Keegan's Oct 20 decision is yes and the bundle with the code change below is installed; otherwise set `deterministic` (the current code refuses `aiand_routed` with signing). Note in IDEA-057 when the unsigned trial ended and which assessor the rehearsal started on.
+
+**LLM in the signed rehearsal: early decision and code change**
+
+- [ ] **Keith:** write the code change that lets `aiand_routed` run with signing (`execution: service`, and `mode: live` for the scored run). Write its pass criteria in a ledger entry first. Minimum criteria: (1) a model call can never delay or block a mandatory sell, an execution step or a HALT; (2) a model failure, timeout or budget switch leaves the last accepted limiter level in place and never raises exposure (IDEA-075 §4.2); (3) the routed result reaches the limiter only through the existing verification and acceptance path; (4) every stage's model I/O and reasoning reaches the ai-seeds round log (F-102). Open the PR by Oct 19.
+- [ ] **Isaac:** review that PR (execution and signing side) and merge it by Oct 20.
+- [ ] **Keegan:** after it merges, build the mirror bundle for Gate B with it (the bundle line under "Gate B setup") and send the hashes to Yao Zhu.
+- [ ] **Keith:** on Oct 20 (morning UTC), an interim trial summary from about 2 days of data: availability (M1), latency (M2), OpenAI spend and projection to Nov 12 (M3), verifier pass rate per stage (M5), escalation rate (M6), and any kill criterion that fired. Deciding on fewer than 3 trial days breaks IDEA-057's "inconclusive" rule: record that as a deviation in IDEA-057.
+- [ ] **Keegan:** on Oct 20, decide from Keith's summary whether the rehearsal runs with the LLM assessor (early DR-11), and tell Yao Zhu before the Oct 20 re-activation. A no means `deterministic` for the rehearsal and a DEV-19 row (hosted LLM not shipped).
+- [ ] **Keegan:** add the AIand and OpenAI endpoints to the services list (`config/release/services.v1.json`) and update DEV-19's row to "AIand routing (GLM-5.3, Kimi K3) with optional GPT-6.1 Sol review" (GAP-62), in the same bundle if possible.
 
 ### Decisions due Oct 19
 
@@ -136,8 +145,8 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Keith:** freeze the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`).
 - [ ] **Keith:** propose final values for every S1 parameter (§12) and open choices O1 and O3–O6.
 - [ ] **Keegan:** confirm Keith's S1 values and choices.
-- [ ] **Keith:** summarise the model trial results so far for the model decision (DR-11).
-- [ ] **Keegan:** decide the model from Keith's summary: AIand routing, the current provider, or deterministic (DR-11, #97).
+- [ ] **Keith:** summarise the full trial results (at least 3 days, including the first rehearsal days) for the final model decision (DR-11).
+- [ ] **Keegan:** confirm or reverse the Oct 20 model decision from Keith's summary: AIand routing or deterministic (DR-11, #97). A reversal is a version event before final activation.
 - [ ] **Keith:** set the 11 live evidence settings in `intelligence.v1.json`, each with a reason.
 - [ ] **Keith:** SKHYB red flags: build it or record a deviation (#39).
 - [ ] **Keith:** decide #55 (stale marks) and #56 (flatten on the BNB held at the cut-off).
@@ -148,7 +157,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 ## Oct 24: S1 build (IDEA-075 §15)
 
-- [ ] **Keegan:** LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131).
+- [ ] **Keegan:** LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131). With the LLM in the rehearsal (PC-DEC03), land it as early as possible: until then the rehearsal tests the LLM running under signing, but not its effect on exposure.
 - [ ] **Keith:** trend-guard input from token session bars (DR-08). Until it's wired, the trend guard stays UP (#131).
 - [ ] **Keegan:** session-close job and round-log fields (B5).
 - [ ] **Isaac:** per-leg attempt limit and execution-window checks (B6).
