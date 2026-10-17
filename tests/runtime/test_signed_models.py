@@ -261,3 +261,24 @@ class SignedIntegration(ServiceHarness):
             self.assertTrue(stage['result']['model_io']['steps'])
         self.assertTrue(any(e['kind']=='MODEL_RESPONSE' and e['stage']=='openai-review'
                             for e in record['assessment_audit']['events']))
+
+    def test_slm5_restart_logs_interrupted_calls_before_new_work(self):
+        import shutil
+        from larp.runtime.deferred_models import DeferredAssessments
+        driver=self.service_driver()
+        model=Blocking();self.addCleanup(model.release.set)
+        q,item,req=self.seed_pending(driver,model)
+        self.assertTrue(model.entered.wait(1))
+        recovered_root=Path(self.tmp.name)/'recovered-journal'
+        shutil.copytree(q.root,recovered_root/q.root.name)  # exact persisted bytes at the crash boundary
+        model.release.set();self.assertTrue(q.finished.wait(1))
+        recovered=DeferredAssessments(model,root=recovered_root,run_id=driver.coordinator.run_id,
+            build_id=driver.coordinator.version_id,profile_hash=driver.coordinator.profile_hash)
+        driver.assessments=recovered
+        driver.once(self.w.clock())
+        log=self.logs()[item['round_id']]
+        self.assertEqual(log['input']['assessment_audit']['state'],'INTERRUPTED')
+        self.assertIsNone(log['input']['assessment'])
+        self.assertIn('Model request started',log['cot'])
+        self.assertEqual(log['input']['assessment_audit']['events'][0]['request'],req.read())
+        self.assertEqual(model.calls,1)
