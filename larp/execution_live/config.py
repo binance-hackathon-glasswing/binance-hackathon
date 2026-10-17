@@ -44,4 +44,3 @@ def evidence_settings(config):
     if path in (None, '') or sha256 in (None, ''):
         raise ContractError('Set both router_evidence_file and router_evidence_sha256, or neither')
     return path, sha256
-
