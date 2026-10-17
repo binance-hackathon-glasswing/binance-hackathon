@@ -11,7 +11,7 @@ import unittest
 
 from larp.contracts import ContractError
 from larp.execution import USDT, Blocked, Executor
-from larp.execution_live.main import NotIntegrated, build_execution, router_decoder
+from larp.execution_live.main import NotIntegrated, build_execution, router_decoder, validate_config
 from larp.execution_live.router import PinnedRouterDecoder
 from larp.execution_live.venue import UnverifiedRouter
 from larp.signer import service as signer_service
@@ -92,6 +92,14 @@ class ExecutionService(unittest.TestCase):  # R6
 
     def test_router_decoder_helper(self):
         self.assertIsInstance(router_decoder(dict(router=ROUTER)), UnverifiedRouter)
+
+    def test_check_refuses_half_set_evidence(self):  # R10: `larp-execution check`, as the signer's check does
+        good = self.pin()
+        validate_config(dict(good))
+        validate_config(dict(self.config))
+        for missing in ('router_evidence_file', 'router_evidence_sha256'):
+            with self.subTest(missing), self.assertRaises(ContractError):
+                validate_config({k: v for k, v in good.items() if k != missing})
 
 
 def policy(spenders=(ROUTER,)):

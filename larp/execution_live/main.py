@@ -59,6 +59,8 @@ def validate_config(value):
     keyed = [k for k in value if 'private_key' in k or 'mnemonic' in k or k in ('key_file', 'key_credential')]
     if keyed:
         raise ContractError('Execution configuration names a wallet key: ' + ','.join(sorted(keyed)))
+    from larp.execution_live.router import evidence_settings
+    evidence_settings(value)  # both or neither, as the signer's check (IDEA-070 R10)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
