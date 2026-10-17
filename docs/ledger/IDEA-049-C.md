@@ -631,3 +631,27 @@ unapproved labels remain covered. The committed candidate bytes and their
 SHA256 `2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a`
 are unchanged. `git diff --check` passes. No full-suite, org CI or hosted/live
 acceptance is inferred. PR148 contains the fix; PR153 carries GA15c-R1.
+
+## SL-01 — Isaac checklist task 5: signing-lifetime proposal (2026-10-17, prospective)
+
+Issue142, separate branch `codex/isaac-05-signing-lifetime-20261017` from integration352446b. Isaac confirms the private RPC handoff to Yao is sent; record RPC-Q01 H1 in IDEA-055 and parent92. PR135 and PR137 are now merged into integration. Router source task3/#138 and recorded-route task4 remain blocked and separate; this is the next independent checklist deliverable.
+
+This is **a proposal, not adoption or a runtime change**. Keith reviews the quote-age/proposal implications; Keegan decides C-OPEN-003/#27 and owns the code change. Existing profile/expiry/deadline/signer gates stay in place. No API, AWS, wallet/key, signing, capture or runtime action is required.
+
+Acceptance criteria before any experiment or covered-code execution:
+- **SL1:** trace current proposal/profile, risk/RuntimePlanner expiry, exact-byte executor/signer checks, post-approve re-quote and recovery; cite source paths and exact reviewed heads. Distinguish kit-stated ~30s quote TTL, unverified real encoded deadline, and #53's fake-transport/virtual-clock spacing evidence.
+- **SL2:** specify both options: a finite immutable authorization admitted while the proposal is fresh, or a source-qualified router deadline no later than the existing proposal/intent expiry. Show illustrative timeline arithmetic and the exact constraints each preserves/changes; do not suggest editing arbitrary returned calldata.
+- **SL3:** recommend an option with bounded conditions, required real latency/deadline evidence and implementation acceptance cases. Keep quote/data freshness, economic limits, fencing/HALT/window checks, parent expiry, uncertain-send reconciliation and no-replacement/no-restart-extension invariants explicit. Any numerical lifetime is only a candidate for owner decision, not a measured safe value.
+- **SL4:** supply a reviewable proposal document and separate PR closing only issue142's writing slice, leave parent27 open for Keith's review, Keegan's decision/code and real qualification; narrow live backlog without removing whole incomplete items. Static references/arithmetic/diff checks suffice for this docs-only change; do not claim new application, host or on-chain tests.
+
+### SL-01 written proposal / static validation (2026-10-17)
+
+Prospective criteria were pushed at9eb9934. `docs/build/SIGNING_LIFETIME_PROPOSAL.md` supplies both requested options, a conditional recommendation for separate finite authority (A), worked15/30/60s illustrations, the deliberate policy change and its cross-component scope, required source/timing evidence, expiry/restart/uncertain-send invariants, and ten prospective implementation acceptance cases. **No option or60s lifetime is adopted.** Keith reviews; Keegan decides C-OPEN-003/#27 and owns the code change. Source qualification/task3 and recorded-route task4 are still separate blockers.
+
+SL1 static trace at integration352446b: profiles/policy/proposal validation → risk quote expiry → RuntimePlanner discretionary clamp → persisted command expiry → executor before approval/requote → signer and reconciliation. The kit's Trading flow step3 says approximate30s quote lifetime; cost_summary labels the default KIT_STATED, not measured encoded expiry. EXP-005 confirms encoded expiry remains unverified. #53 is CLOSED after merged PR79; its9requests/2.10s (11/2.45s with simulated10s approval wait) are fake-HTTP/virtual-clock spacing, not real latency or #27 proof. SL2/SL3 specify both alternatives, A's immutable t0/A and bounded candidate/margins, B's currently unqualified shorter-deadline mechanism, conservative window/expiry semantics for all action kinds, and the difference between approval/chain reconciliation and permission to sign anew. SL4 publishes the writing slice with no runtime/config/default/validation change; parent27 remains open for review, decision, implementation and qualification.
+
+Validation for this docs-only change: checked referenced repository files and existing source/fixture descriptions, illustrative arithmetic (10<40<=60;40>15;65>60), unresolved statuses and owner split; `git diff --check` passes. No application tests/runtime/probes, API, wallet/key, signing, broadcast, AWS or receiver action was run. The old application behavior remains unchanged; no Linux/CI/host/live acceptance is claimed. RPC-Q01 H1 records the user's confirmed private handoff without endpoint values.
+
+### SL-01 PR handoff (2026-10-17)
+
+[PR144](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/144) contains the separate task5 writing deliverable and `Closes #142`, targeting the integration branch. Proposal source atb484d95, criteria9eb9934, docs/diff/source/arithmetic checks only. Parent27 links the proposal and retains Keith's review / Keegan's decision, implementation and qualification; no runtime setting is approved or changed. RPC private handoff is recorded in IDEA-055 H1 and parent92. All task5 changes are committed/pushed; no unpushed commit or dirty working tree. PR review/merge and owner decisions remain outstanding; this is not whole-project handoff readiness.

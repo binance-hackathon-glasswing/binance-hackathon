@@ -1,7 +1,8 @@
-"""W04 execution machine and integration ports. Fake capability bundles only.
+"""W04 execution machine and integration ports.
 
 No network, credential lookup, wallet signing, scheduler or portfolio ledger.
-Production adapters require W01/W02/W06 integration and W08 capability proof.
+The Executor accepts an all-fake bundle, or live ports only with a swap decoder pinned to router evidence
+(larp/execution_live/router.py; IDEA-070, GAP-29).
 """
 from __future__ import annotations
 
@@ -343,8 +344,16 @@ def validate_sequence(state, step, payload, gates):
 
 class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
-        if any(getattr(port, "mode", None) != "fake" for port in (guards, venue, signer, decoder)):
-            raise Blocked("only fake capability bundles are implemented")
+        # A bundle is all fake (offline fixtures), or all live with a swap decoder built from pinned router
+        # evidence (IDEA-070; GAP-29). Never a mix, and never live with UnverifiedRouter.
+        ports = tuple(getattr(port, "mode", None) for port in (guards, venue, signer))
+        fake = ports == ("fake",) * 3 and getattr(decoder, "mode", None) == "fake"
+        live = False
+        if ports == ("live",) * 3:
+            from larp.execution_live.router import PinnedRouterDecoder
+            live = type(decoder) is PinnedRouterDecoder
+        if not (fake or live):
+            raise Blocked("live execution needs live ports and a decoder pinned to router evidence")
         self.store, self.guards, self.venue, self.signer, self.decoder = store, guards, venue, signer, decoder
 
     def create(self, intent: Intent, now: int):
