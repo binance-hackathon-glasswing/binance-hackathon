@@ -1,6 +1,6 @@
 # Pre-trading checklist (2026-10-17)
 
-This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
+This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Audited 2026-10-17 for the LLM path and against every open issue (IDEA-066 PC-AUD01). Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -84,6 +84,27 @@ Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run t
 - [ ] **Keegan:** on Oct 20, decide from Keith's summary whether the rehearsal runs with the LLM assessor (early DR-11), and tell Yao Zhu before the Oct 20 re-activation. A no means `deterministic` for the rehearsal and a DEV-19 row (hosted LLM not shipped).
 - [ ] **Keegan:** add the AIand and OpenAI endpoints to the services list (`config/release/services.v1.json`) and update DEV-19's row to "AIand routing (GLM-5.3, Kimi K3) with optional GPT-6.1 Sol review" (GAP-62), in the same bundle if possible.
 
+**LLM: everything else between now and the scored run (audit 2026-10-17, IDEA-066 PC-AUD01)**
+
+These were missing from every list; each one is needed for the LLM to be in the activated build and working (A-REQ-079).
+
+*How the LLM's findings reach trading.* Two paths: accepted assessment findings feed the evidence gate (Class 1 exits and entry blocks), and, with the S1 profile only, the exposure limiter. The limiter's input is not produced anywhere today. In `MODEL` mode it also needs an LLM call that returns `{level, evidence_ids, reason, falsifier}`, and that call does not exist; with no assessment, every session is rejected as `NO_ASSESSMENT`, so the limiter never cuts and a cut never expires.
+
+- [ ] **Keith:** propose the S1 `limiter_mode` for the rehearsal and final profiles: `DETERMINISTIC` (code maps the LLM-verified evidence classes to levels; no extra LLM call) or `MODEL` (needs the exposure call below). Recommended: `DETERMINISTIC` unless the call is built and tested by Oct 21. Only matters if the Oct 20 profile is S1.
+- [ ] **Keegan:** decide `limiter_mode` from Keith's proposal by Oct 20 (IDEA-075 O6, DEV-19).
+- [ ] **Keegan:** B4 producer: build `exposure_evidence` (verified items with `class`, `symbols`, `session_index`) from the evidence store into the runtime context, for both modes (IDEA-075 B4 lists Yao Zhu; this checklist puts code with Keegan). Bring it forward from Oct 24 if possible; see the B4 line under Oct 24.
+- [ ] **Keegan:** only if `MODEL` is chosen: the exposure-level LLM call (once per session and on each new verified filing), with its own pinned Markdown prompt like #158's, through the same routing and OpenAI budget, its I/O in the round log. Criteria in a ledger entry first.
+- [ ] **Keegan:** activation tooling: Gate A `prepare` and `gate_a_check` hard-code `assessor: deterministic`. Add an explicit, reviewed option to prepare the LLM assessor with its routing file, hash and budget root for the rehearsal and the live config, so Yao Zhu stops hand-editing `runtime.json`.
+- [ ] **Keegan:** re-approve the network table rows for `api.aiand.com` and `api.openai.com` for signed and live use (today "Shadow only", `architecture-deployment.md` "Approved network destinations"); Isaac confirms for section C.
+- [ ] **Keith:** capture the AIand and OpenAI terms (date and SHA-256) and record in the licence register what they allow for sending public filings, retention and audit sharing (GAP-23, IDEA-056 §8, IDEA-049-A rights row). Keegan reviews.
+- [ ] **Keith:** check the AIand balance covers the run: AIand token usage from the trial (IDEA-057 M4) projected to Nov 12, with a margin. An empty AIand account leaves every assessment UNAVAILABLE.
+- [ ] **Keegan:** record the scored-run model behaviour: after activation only automatic switches act (budget latch to external-only, provider fallback, UNAVAILABLE keeps the last level). The trial's operator kill actions K1–K4 (remove a key, restart, revert) are not allowed during the scored run (F-114, F-124). Write it into IDEA-057.
+- [ ] **Keith:** freeze the routing file and both stage prompts with the Oct 22 parameters; any later prompt edit is a new release before activation, never after.
+- [ ] **Keegan:** with the Oct 22 decision, record the disposition of the real-evaluation blocker (T01 / independent labels / post-cutoff check, IDEA-049-A): what ran (the trial's M9 sample) and what is declared as not run.
+- [ ] **Yao Zhu:** during the trial, record memory use on `primary` (`systemctl show -p MemoryCurrent` for each unit, `free -m`) once a day. Units may use up to 3 GiB on a 2 GiB `t3.small` (#60).
+- [ ] **Keegan:** decide #60 from Yao Zhu's numbers: keep `t3.small`, lower the unit limits, or resize (a resize costs money and needs Yao Zhu's OK and a Terraform apply).
+- [ ] **Keegan:** on the first signed rehearsal rounds, check the ai-seeds round logs carry every routed stage's model I/O and reasoning, and record cost and latency per round (DR-11).
+
 ### Decisions due Oct 19
 
 - [x] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04). Done 2026-10-17 (IDEA-049-D D-DN-02, #140).
@@ -112,7 +133,7 @@ Keith is trying this. If it works, the services can start over the weekend, so f
 The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 1. [ ] **Keith:** full summary with the default coverage (3 UTC days including a weekend, 10 samples per token per regime): `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <dir>/summary.json`.
-2. [ ] **Isaac:** confirm the quoted amounts already net out route fees, so `fee_bps = 0` holds (#119).
+2. [ ] **Isaac:** confirm the quoted amounts already net out route fees, so `fee_bps = 0` holds (#119). Isaac's #157 (fee estimate semantics, #156) is open: **Keith** reviews it before this step.
 3. [ ] **Keith:** build the decided profile: `python -m larp.strategy.profiles --summary <dir>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <dir>/profiles`.
 4. [ ] **Isaac:** owners' review of the summary and `rehearsal-live.json` (#120); record both hashes in IDEA-063 and send the profile to Yao Zhu.
 5. [ ] **Yao Zhu:** fresh read-only wallet capture with the balance RPC (`prepare_shadow.py capture --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json`), then Gate A `prepare` within five minutes with the same `--balance-rpc-config`, so both RPCs go into `runtime.json` (#145); install the configs (`runtime.json` mode 0644); bind them to CI's manifest (`preflight --bind`).
@@ -129,7 +150,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Yao Zhu:** crash tests at each execution step on the host (DR-04, DR-05), then switch the runtime to signed rehearsal mode.
 - [ ] **Isaac:** if not done on Oct 20: check the runtime's first approve plus swap on chain inside the rehearsal buy window (Oct 21 00:00 – Oct 22 00:00 UTC).
 - [ ] **Keegan:** after Isaac's check, the Gate B review in IDEA-042 (if not done on Oct 20).
-- [ ] **Keegan:** keep the daily rehearsal log (5+ days including the Oct 24–25 weekend, DR-21) from the round logs and alarms. A late start is recorded as a deviation (GAP-04).
+- [ ] **Keegan:** keep the daily rehearsal log (5+ days including the Oct 24–25 weekend, DR-21) from the round logs and alarms, including model availability, latency, OpenAI spend and AIand usage per day. A late start is recorded as a deviation (GAP-04).
 - [ ] **Keith:** blind independent labels for the trial sample (M9, IDEA-057).
 
 ## Oct 21–26: rehearsal drills
@@ -168,18 +189,21 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 - [ ] **Keegan:** deviations-register rows for exceeding the proposal's 80% / 20% / four-name limits (B7).
 - [ ] **Keegan:** every deviations-register row FINAL, including DEV-18 (standby), and the services list (DR-18, GAP-62).
-- [ ] **Keegan:** activation pack and the Gate C review (DR-22).
-- [ ] **Keith:** sign off DR-08, DR-09, DR-10, DR-11 and DR-14 in IDEA-042.
+- [ ] **Keegan:** activation pack and the Gate C review (DR-22). The pack's runtime config names `aiand_routed` with the frozen routing file, unless the Oct 22 decision was deterministic.
+- [ ] **Keegan:** team acceptance that the final assessor and harness are the declared agentic system, with the model and source deviations listed (IDEA-049-A A-DEC-004, A-REQ-079), before Oct 26.
+- [ ] **Keith:** sign off DR-08, DR-09, DR-10, DR-11 and DR-14 in IDEA-042. DR-11 needs the LLM assessor running with signing in the rehearsal, with complete model I/O in the round logs.
 - [ ] **Isaac:** sign off DR-01 to DR-06 in IDEA-042.
 - [ ] **Yao Zhu:** sign off DR-12 and DR-16 (live sources, hosting) in IDEA-042.
 - [ ] **Keegan:** sign off the remaining DR items (DR-07, DR-13, DR-15, DR-17 to DR-22) in IDEA-042.
 - [ ] **Isaac:** get the final wallet's new `AI_SEEDS_SECRET` by Oct 26 and hand it to Yao Zhu for the host secret, never in chat or an issue (GAP-52).
-- [ ] **Yao Zhu:** put the final wallet's secret into AWS Secrets Manager (`put_service_secrets.sh`).
+- [ ] **Yao Zhu:** put the final wallet's secret into AWS Secrets Manager (`put_service_secrets.sh`). The script replaces the whole runtime secret, so re-enter `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` too; without the AIand key the runtime refuses to start. Never re-`init` the model budget ledger for the new wallet: it covers the whole run.
 - [ ] **Isaac:** first-gas swap on the final wallet (about 6 USDT) before Oct 29 00:00 UTC (#106).
 - [ ] **Keegan:** send the organiser questions Q-39 (scoring, BNB in equity), Q-04, Q-06, Q-08, Q-14, Q-33 and Q-35 (GAP-42).
 
 ## Housekeeping
 
+- [ ] **Keith:** confirm A-T15 on #25 (issuer IDs fixed in #78; the proof passes) so it can be closed.
+- [ ] **Keegan:** close #98 (org Actions no longer needed, PC-DEC01) and update the trackers #22 and #42 with what has closed.
 - [x] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`. Done: closed 2026-10-17.
 - [x] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92. Done: closed 2026-10-17.
 - [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.

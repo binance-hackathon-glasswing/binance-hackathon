@@ -171,3 +171,23 @@ Yao Zhu's Oct 20 step 8, run early on the live shadow run `larp-dev-shadow-20261
 - **Deviation to record:** a decision on about 2 trial days breaks IDEA-057's pre-registered "fewer than 3 days is inconclusive" rule. It is recorded in IDEA-057 when made. If the code change or the decision is not ready on Oct 21, the rehearsal starts on `deterministic` and switches later as a version event.
 - **Limit:** until Keegan's B4 limiter wiring lands (planned Oct 24), the rehearsal tests the LLM running under signing, not its effect on exposure.
 - **Rule basis (added 2026-10-17):** the official page asks for "an LLM-powered Agentic AI system" (`docs/official/source_page.md` line 24) and judges "Agentic depth … not a thin LLM wrapper" (line 95). IDEA-049-A Amendment 29 (A-REQ-079) already made this a blocking release check, but the backlog line it asked for was never added; it is now in INCOMPLETE_WORK. A rule-only scored run would therefore be a rules risk, not only a design change.
+
+## PC-AUD01 — audit of what the LLM path still needs, and other missing checklist items, 2026-10-17
+
+Yao Zhu asked for everything still to do to be on PR #133 after PC-DEC03. Checked: the routing, limiter, policy, round-log and Gate A code at `0672fb8`; IDEA-056 §8, IDEA-057 remaining work, IDEA-075 §4.2/§15/§16, IDEA-049-A Amendment 22 blocker table, DEPLOYMENT_BUILD DR-11, `architecture-deployment.md` network rows, and every open GitHub issue against the checklist.
+
+**LLM path, found missing:**
+- **The limiter has no input producer.** `policy.py` reads `exposure_evidence` and `exposure_assessment` from the context; nothing writes either (B4). In `MODEL` mode the limiter also needs an LLM call returning `{level, evidence_ids, reason, falsifier}`, which does not exist; without it every session is `NO_ASSESSMENT`, so nothing is cut. `limiter_mode` was never decided (IDEA-075 O6).
+- **Live config tooling** hard-codes `assessor: deterministic` (`gate_a.py`, `gate_a_check.py`); there is no reviewed way to prepare the LLM assessor for the rehearsal or live config.
+- **Network approval** for `api.aiand.com` / `api.openai.com` is "Shadow only".
+- **Provider terms** (AIand, OpenAI) are not in the licence register (GAP-23; IDEA-049-A rights row).
+- **AIand balance** for the whole run is unchecked (external prices were excluded from the budget design, IDEA-056).
+- **Scored-run behaviour:** the trial's kill criteria K1–K4 are operator actions, which F-114/F-124 rule out after activation.
+- **Final-wallet secret:** `put_service_secrets.sh` replaces the whole runtime secret, so the LLM keys must be re-entered; the budget ledger must not be re-initialised.
+- **Freeze** of the routing file and stage prompts with the Oct 22 parameters; **real-evaluation disposition** (IDEA-049-A); **agentic-sufficiency acceptance** (A-DEC-004); **round-log check** of routed model I/O and per-round cost (DR-11); **memory** on the 2 GiB `primary` with the LLM path (#60).
+
+**Other open issues with no checklist line:** #156/#157 (fee semantics; Keith reviews before the Oct 20 fee confirmation), #25 (fixed; needs Keith's A-T15 confirmation to close), #60 (memory), #98 (no longer needed), trackers #22/#42.
+
+**Owner note:** IDEA-075 §15 lists Yao Zhu for B4; the checklist keeps code with Keegan (its 2026-10-17 ownership rule).
+
+All items are in PRE_TRADING_CHECKLIST ("LLM: everything else between now and the scored run", the Oct 26–29 list, the Oct 20 list and Housekeeping), one owner each. Not re-audited here: the 60+ older research GAPs in INCOMPLETE_WORK from the decision-model era (GAP-06..22 and similar), many of which no longer apply to S1.
