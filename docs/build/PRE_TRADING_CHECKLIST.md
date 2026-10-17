@@ -159,6 +159,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 - [ ] **Keegan:** review and merge the incident-backup fix #163 (IDEA-082: S3 keeps Object Lock dates to whole seconds, so every incident backup is marked PERMANENT and blocks archive health; IDEA-066 PC-AWS09), and include it in the Gate B bundle.
 - [ ] **Yao Zhu:** after Oct 18 00:00 UTC, check `operations health` is healthy again (the daily backup should supersede the failed incident backup); if not, record it in IDEA-066.
+- [ ] **Keegan:** decide how `doj-press` and `fr-bis` pass the gap report (IDEA-066 PC-AWS10): their unbounded history walk marks every poll truncated, so DOJ can never show a complete 24 h. Either bound the history in code (owner to name) or accept them as explained gaps in the report.
 - [ ] **Yao Zhu:** after 24 h of ingestion, produce the gap report on `primary` (`python -m larp.sources.live report --from … --to …`) and send it to Keegan.
 - [ ] **Keegan:** review Gate A item by item in IDEA-042, using the gap report and Yao Zhu's host reports.
 - [ ] **Yao Zhu:** crash tests at each execution step on the host (DR-04, DR-05), then switch the runtime to signed rehearsal mode.
