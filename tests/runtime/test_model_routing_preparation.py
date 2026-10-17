@@ -261,8 +261,12 @@ class ModelPreparation(unittest.TestCase):
                 value = router.assess(request).read()
                 self.assertNotIn('gpt-6.1-sol', calls)
                 self.assertIn('moonshotai/kimi-k3', calls)
-                expected = ['routine', 'external-review-0'] + (['external-review-1'] if secondary else [])
+                # The first refused admission is retained as an OpenAI stage without a POST;
+                # subsequent assessments use the persisted external-only latch directly.
+                expected = ['routine'] + ([] if secondary else ['openai-review']) + ['external-review-0']
+                expected += ['external-review-1'] if secondary else []
                 self.assertEqual([s['stage'] for s in value['routing']['stages']], expected)
+                self.assertTrue(budget.snapshot()['external_only'])
                 self.assertLessEqual(value['budget_used']['tool_calls'], 6)
                 self.assertLessEqual(value['budget_used']['model_steps'], 10)
                 self.assertLessEqual(value['budget_used']['elapsed_ms'], 60000)
