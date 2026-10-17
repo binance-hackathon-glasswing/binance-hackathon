@@ -17,7 +17,7 @@ The repository side of the swap decoder is built (IDEA-070). Everything below ne
 
 ## Two blockers besides the evidence
 
-1. **#27 (team decision, C-OPEN-003). Every real swap is refused until this is decided.** The planner caps an intent's life at the profile's 15 s; the kit states an approximate 30 s quote lifetime, but the real router's encoded deadline is not yet independently verified. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). With a verified decoder, this becomes the next refusal. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
+1. **#27 (team decision, C-OPEN-003). Resolve the signing-authority/deadline relationship and qualify real timing.** The planner caps an intent's life at the profile's 15 s; the kit states an approximate 30 s quote lifetime, but the real router's encoded deadline is not yet independently verified. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). With a verified decoder, this becomes the next refusal. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
 2. **A profile window that allows a buy before Oct 21.** The rehearsal profile opens new risk on Oct 21 00:00 UTC, so a Gate B trade on Oct 19–20 needs a team-approved dev window, registered as a version event. Otherwise Gate B proof moves to Oct 21. The trade must still be the agent's own decision: people never choose trades (never-do #1).
 
 ## Order of work

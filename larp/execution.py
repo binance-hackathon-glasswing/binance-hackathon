@@ -346,10 +346,12 @@ class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
         # A bundle is all fake (offline fixtures), or all live with a swap decoder built from pinned router
         # evidence (IDEA-070; GAP-29). Never a mix, and never live with UnverifiedRouter.
-        from larp.execution_live.router import PinnedRouterDecoder
         ports = tuple(getattr(port, "mode", None) for port in (guards, venue, signer))
         fake = ports == ("fake",) * 3 and getattr(decoder, "mode", None) == "fake"
-        live = ports == ("live",) * 3 and type(decoder) is PinnedRouterDecoder
+        live = False
+        if ports == ("live",) * 3:
+            from larp.execution_live.router import PinnedRouterDecoder
+            live = type(decoder) is PinnedRouterDecoder
         if not (fake or live):
             raise Blocked("live execution needs live ports and a decoder pinned to router evidence")
         self.store, self.guards, self.venue, self.signer, self.decoder = store, guards, venue, signer, decoder

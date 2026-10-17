@@ -40,6 +40,7 @@ from eth_abi.grammar import BasicType, TupleType, normalize, parse
 from eth_utils import keccak
 
 from larp.contracts import ContractError
+from .config import evidence_settings
 from larp.execution import BSTOCKS, NATIVE_BNB, USDT, Blocked, Payload, SwapEconomics
 
 SCHEMA = 'RouterEvidence.v1'
@@ -191,14 +192,6 @@ def load_evidence(path, sha256):
     return PinnedRouterDecoder(value, evidence_sha256=sha256)
 
 
-def evidence_settings(config):
-    """`(path, sha256)` from a service config, or None when neither is set; both or neither (IDEA-070 R6)."""
-    path, sha256 = config.get('router_evidence_file'), config.get('router_evidence_sha256')
-    if path in (None, '') and sha256 in (None, ''):
-        return None
-    if path in (None, '') or sha256 in (None, ''):
-        raise ContractError('Set both router_evidence_file and router_evidence_sha256, or neither')
-    return path, sha256
 
 
 class PinnedRouterDecoder:
