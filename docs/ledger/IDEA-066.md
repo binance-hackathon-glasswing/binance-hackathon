@@ -89,3 +89,10 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - Result for (2): saved plan from pushed `1b2feb8` (PR #141): "0 to add, 14 to change, 0 to destroy"; a JSON check of the plan found no changed attribute other than `alarm_description`. Applied: "Apply complete! Resources: 0 added, 14 changed, 0 destroyed."
 - Result for (3): `describe-alarms` shows descriptions of 249–367 characters on all 14 alarms. **PASS.** The next alarm email carries its description.
 
+## PC-AWS05 — balance RPC reachability from primary, 2026-10-17 UTC
+
+- Yao Zhu's checklist item: after Isaac's RPC choice (#135: BNB Chain public primary `BSC_BNBCHAIN_PUBLIC`, NodeReal public backup `BSC_NODEREAL_PUBLIC`), open network access from `primary`.
+- Finding: no Terraform change is needed. `primary`'s security group already has `external_https` (TCP 443 to 0.0.0.0/0, `deploy/aws/network.tf`); the destination list is enforced by the application from the runtime config (IDEA-062).
+- Check (read-only, SSM `AWS-RunShellScript` on `i-040fc5fea8b700e9a`): `eth_chainId` to `https://bsc-dataseed.bnbchain.org/` → HTTP 200, result `0x38` (chain 56); `https://bsc-mainnet.nodereal.io/` → TLS connected, HTTP 404 at the bare path (NodeReal serves RPC under `/v1/<key>`, which is in Isaac's private URL). No wallet address, key or private URL was used.
+- Remaining (GAP-71): Isaac sends the two private URLs to Yao Zhu; they go into `driver.balance_rpc_providers` at the Oct 20 `prepare`, and the first `BALANCE_CHECKED` verdict on the real wallet is recorded then.
+
