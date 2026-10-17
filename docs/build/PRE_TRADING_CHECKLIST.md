@@ -43,7 +43,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 ### Gate B setup
 
 - [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete.
-- [ ] **Keegan:** build a new mirror bundle from the current integration head (it must include #130, #144, #148, #153 and, after it merges, #158) and send its hashes to Yao Zhu, for reprovisioning `primary` (the model trial below needs it first) and provisioning the signer at Gate B.
+- [ ] **Keegan:** build a new mirror bundle from the current integration head (it must include #130, #144, #148, #153 and, after they merge, #158 and #163) and send its hashes to Yao Zhu, for reprovisioning `primary` (the model trial below needs it first) and provisioning the signer at Gate B.
 - [ ] **Keegan:** review Isaac's router evidence, then review and merge #130. If #131 merged first, keep both `docs/LEDGER.md` rows.
 - [ ] **Keith:** give Isaac the quote files the capture has recorded so far (no credentials or `.env`), for the router check.
 - [ ] **Isaac:** after #130 merges, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed.
@@ -157,7 +157,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 ## Oct 21
 
-- [ ] **Keegan:** review and merge the incident-backup fix (IDEA-082: S3 keeps Object Lock dates to whole seconds, so every incident backup is marked PERMANENT and blocks archive health; IDEA-066 PC-AWS09), and include it in the Gate B bundle.
+- [ ] **Keegan:** review and merge the incident-backup fix #163 (IDEA-082: S3 keeps Object Lock dates to whole seconds, so every incident backup is marked PERMANENT and blocks archive health; IDEA-066 PC-AWS09), and include it in the Gate B bundle.
 - [ ] **Yao Zhu:** after Oct 18 00:00 UTC, check `operations health` is healthy again (the daily backup should supersede the failed incident backup); if not, record it in IDEA-066.
 - [ ] **Yao Zhu:** after 24 h of ingestion, produce the gap report on `primary` (`python -m larp.sources.live report --from … --to …`) and send it to Keegan.
 - [ ] **Keegan:** review Gate A item by item in IDEA-042, using the gap report and Yao Zhu's host reports.
