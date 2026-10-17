@@ -8,10 +8,18 @@ This is a snapshot of what stands between today and the scored run (Oct 29 – N
 - [x] Terms captured for all six enabled sources and EDGAR; shadow source preflight passes; stricter SEC contact check (IDEA-066 PC-TERMS01/02, #129).
 - [x] Real quote-cost capture running on Keith's server since 2026-10-16 18:19 UTC, set to run until 2026-10-20 00:00 UTC (#132, IDEA-063).
 
-## Waiting on the quote capture: Isaac + Keith (GAP-69)
+## Interim profile so Gate A doesn't wait: Keith + Isaac (team decision 2026-10-17)
 
-- [ ] Generate the cost summary once the weekend is covered; confirm quoted amounts net route fees (#119).
-- [ ] Review the summary and pin the LIVE rehearsal profile (#120). Gate A `prepare` refuses to run without it.
+The profile design and its formulas already exist (`config/strategy/LIVE.md`, `build_live_profiles`). Only the cost numbers it is computed from are still being measured. Gate A `prepare` refuses a profile without a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't use a made-up one. Instead, summarise the capture as it stands and build an interim profile. Gate A is unsigned, so these values decide only shadow HOLD/BUY decisions.
+
+- [ ] Keith, on the capture server: summarise the files so far into a new directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. As of 2026-10-17 04:00 UTC the capture covers Fri Oct 16 (about 10 US-session rounds) and Sat Oct 17 (weekend). If a token has fewer than 10 US-session samples, the tool names it. Then use `--min-samples` at the lowest count it reports, never below 5.
+- [ ] Keith: build the profiles from it: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`. Use `rehearsal-live.json` for Gate A `prepare`.
+- [ ] Isaac + Keith: a quick look at the interim summary and profile (spread, impact, gas, minimum trade size). Record in IDEA-063 that it is interim: coverage parameters, capture hash, profile hash.
+
+## After the capture ends (Oct 20 00:00 UTC): Isaac + Keith (GAP-69)
+
+- [ ] Full summary with the default coverage (3 UTC days including a weekend, 10 samples per token per regime); confirm quoted amounts net route fees (#119).
+- [ ] Owners' review and the final LIVE rehearsal profile (#120). The profile hash is pinned in the runtime config, so swapping it means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`. Do it before Gate B's first signed trade.
 
 ## Gate A: can start now
 
@@ -23,7 +31,7 @@ This is a snapshot of what stands between today and the scored run (Oct 29 – N
 - [ ] Yao Zhu + Keegan: provision `primary` with the bundle; migrations 012/013 and roles; per-role IAM/TLS checks (AWS_RUNBOOK steps 5–6).
 - [ ] Yao Zhu: copy the six retained terms files from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register.
 - [ ] Fresh wallet capture with the balance RPC, after Isaac's dev-wallet first-gas swap so the balances include the BNB.
-- [ ] Gate A `prepare` (needs the #120 profile); install configs; bind the manifest; `service init` and reviewed `activate`; start the evidence, runtime and uploader services.
+- [ ] Gate A `prepare` with the interim rehearsal profile; install configs; bind the manifest; `service init` and reviewed `activate`; start the evidence, runtime and uploader services.
 - [ ] Host evidence: real receiver ACK, 24 h ingestion, restart drill, hourly anchor, route checks, time sync, an alarm reaching a person. Keegan then reviews Gate A in IDEA-042.
 
 ## Gate B: target Oct 20
