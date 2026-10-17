@@ -44,7 +44,7 @@ class PolicyReview(unittest.TestCase):
         snapshot = snap(profile_changes={'s1': block(weights=weights)})
         proposal = decide(snapshot, snapshot.policy_state)
         proposal = replace(proposal, targets=tuple(
-            replace(t, weight=Fraction(57, 200)) if t.symbol == 'NVDAB' else t for t in proposal.targets))
+            replace(t, weight=Fraction(57, 200)) for t in proposal.targets if t.symbol == 'NVDAB'))
         result = plan(snapshot, proposal).read()
         p = snapshot.context.read()['profile']
         budget = int(Fraction(19, 200) * (equity(snapshot.context.read()['portfolio'], markets(snapshot, p))
