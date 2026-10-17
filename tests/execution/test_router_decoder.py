@@ -37,7 +37,7 @@ def evidence(**changes):
         source=dict(verified_on='SYNTHETIC', url='synthetic://not-a-real-router', contract_name='Synthetic',
                     compiler='none', source_sha256='0' * 64, abi_sha256='1' * 64, retrieved_at='2026-10-16'),
         guarantees=dict(minimum_output_checked_on_recipient_balance=True, deadline_enforced=True,
-                        input_pulled_only_from_sender=True),
+                        input_pulled_only_from_sender=True, wallet_debits_limited_to_pay_token_and_amount=True),
         review=dict(reviewed_by='synthetic-test', review_ref='IDEA-070 R1'))
     value.update(changes)
     return value
@@ -208,7 +208,7 @@ class RecordedRouteCheck(unittest.TestCase):  # R8
         with tempfile.TemporaryDirectory() as directory:
             quote(directory, USDT, TOKEN, 100, 90)
             quote(directory, TOKEN, USDT, 50, 40)
-            artifact(directory, 'aggregator/approve-transaction', dict(tokenContractAddress=USDT),
+            artifact(directory, 'aggregator/approve-transaction', dict(tokenContractAddress=USDT, binanceChainId='56'),
                      dict(dexContractAddress=ROUTER.upper().replace('0X', '0x'), data='0x', gasLimit='1'))
             report = check_routes(self.decoder, directory)
         self.assertEqual(report['status'], 'PASS', report)
@@ -251,7 +251,7 @@ class RecordedRouteCheck(unittest.TestCase):  # R8
         with tempfile.TemporaryDirectory() as directory:
             quote(directory, USDT, TOKEN, 100, 90)
             quote(directory, TOKEN, USDT, 50, 40)
-            artifact(directory, 'aggregator/approve-transaction', dict(tokenContractAddress=USDT),
+            artifact(directory, 'aggregator/approve-transaction', dict(tokenContractAddress=USDT, binanceChainId='56'),
                      dict(dexContractAddress='0x' + '99' * 20, data='0x', gasLimit='1'))
             self.assertEqual(check_routes(self.decoder, directory)['status'], 'FAIL')
 

@@ -214,7 +214,7 @@ def readiness_report(inputs, *, now, base_dir):
     except errors:
         checks['DR-04']['detail'] = 'Execution configuration absent, invalid, mismatched or hash changed'
     try:
-        from .router import PinnedRouterDecoder, evidence_settings
+        from .router import PinnedRouterDecoder, evidence_settings, validate_route_report
         settings = None if config is None else evidence_settings(config)
         if settings is None:
             raise Blocked('router evidence not configured')
@@ -223,10 +223,7 @@ def readiness_report(inputs, *, now, base_dir):
         if decoder.router != address(config['router']):
             raise Blocked('router evidence is for another router')
         value = load('router_check')
-        if (value['schema'] != 'RouterRouteCheck.v1' or value['status'] != 'PASS'
-                or value['evidence_sha256'] != settings[1] or value['router'] != decoder.router
-                or value['selector'] != decoder.selector):
-            raise Blocked('recorded-route check absent, failing or for other evidence')
+        validate_route_report(value, decoder, wallet=wallet)
         result['evidence_hashes']['router_evidence'] = settings[1]
         checks['DR-02'].update(status='VALIDATED', detail='Pinned router evidence and a passing recorded-route check '
                                'only; owner review of the verified source and a logged dev approve + swap still required')
