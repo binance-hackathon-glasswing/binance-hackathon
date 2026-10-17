@@ -66,11 +66,15 @@ class CapsReview(unittest.TestCase):
 
     def add_quote(self, name, pay, receive, amount):
         record = dict(schema='Web3Observation.v1', source_id='BINANCE_WEB3',
-                      requested_at=NOW, endpoint='aggregator/quote-and-swap', outcome='ok', http_status=200,
+                      requested_at=NOW, method='GET', endpoint='aggregator/quote-and-swap', outcome='ok', http_status=200,
                       params=dict(binanceChainId='56', userWalletAddress=WALLET,
                                   fromTokenAddress=pay, toTokenAddress=receive, amount=str(amount)),
-                      response=dict(code=0, data=dict(executionMode='SWAP', tx=dict(
-                          to=ROUTER, value='0', gas='40000', gasPrice='2000000000', minReceiveAmount='1'))))
+                      response=dict(code=0, data=dict(executionMode='SWAP', routerResult=dict(
+                          fromToken=dict(tokenContractAddress=pay, decimal='18'),
+                          toToken=dict(tokenContractAddress=receive, decimal='18'),
+                          fromTokenAmount=str(amount), toTokenAmount='2'), tx=dict(
+                          to=ROUTER, value='0', gas='40000', gasPrice='2000000000', minReceiveAmount='1',
+                          **{'from': WALLET, 'chainId': '0x38'}))))
         self.inputs['quote_artifacts'].append(self.pin(name + '.json', record))
 
     def report(self):
@@ -112,12 +116,17 @@ class CapsReview(unittest.TestCase):
         self.config['token_decimals']['NVDAB'] = 8
         self.ledger['positions']['NVDAB'].update(decimals=8, units=10**8)
         self.policy['max_input_units'][TOKENS['NVDAB']] = str(10**8)
-        # Replace that recorded sell with the same raw eight-decimal amount.
+        # Every returned token scale agrees; the sell binds the same raw eight-decimal amount.
         for i, ref in enumerate(self.inputs['quote_artifacts']):
+            record = json.loads((self.root / ref['path']).read_bytes())
+            rr = record['response']['data']['routerResult']
+            for field in ('fromToken', 'toToken'):
+                if rr[field]['tokenContractAddress'] == TOKENS['NVDAB']:
+                    rr[field]['decimal'] = '8'
             if ref['path'] == 'NVDABSELL.json':
-                record = json.loads((self.root / ref['path']).read_bytes())
                 record['params']['amount'] = str(10**8)
-                self.inputs['quote_artifacts'][i] = self.pin(ref['path'], record)
+                rr['fromTokenAmount'] = str(10**8)
+            self.inputs['quote_artifacts'][i] = self.pin(ref['path'], record)
         self.save_inputs()
         self.assertEqual(self.report()['numeric_status'], 'COVERED')
         self.ledger['positions']['NVDAB']['units'] += 1
@@ -239,6 +248,36 @@ class CapsReview(unittest.TestCase):
         with redirect_stdout(StringIO()):
             self.assertEqual(main(['--inputs', str(src), '--output', str(checkout_output)]), 4)
         self.assertFalse(checkout_output.exists())
+
+    def test_returned_quote_tokens_scales_amount_sender_and_chain_must_bind(self):
+        ref = self.inputs['quote_artifacts'][0]
+        original = json.loads((self.root / ref['path']).read_bytes())
+        mutations = [lambda r: r['response']['data'].pop('routerResult'),
+                     lambda r: r['response']['data']['routerResult']['fromToken'].update(tokenContractAddress=WALLET),
+                     lambda r: r['response']['data']['routerResult']['toToken'].update(tokenContractAddress=USDT),
+                     lambda r: r['response']['data']['routerResult']['fromToken'].update(decimal='8'),
+                     lambda r: r['response']['data']['routerResult']['toToken'].update(decimal=True),
+                     lambda r: r['response']['data']['routerResult'].update(fromTokenAmount='1'),
+                     lambda r: r['response']['data']['routerResult'].update(toTokenAmount='0'),
+                     lambda r: r['response']['data']['tx'].update(minReceiveAmount='3'),
+                     lambda r: r['response']['data']['tx'].update(**{'from': WALLET.replace('12', '34')}),
+                     lambda r: r['response']['data']['tx'].update(chainId=True),
+                     lambda r: r['response']['data']['tx'].update(chainId='0x1'),
+                     lambda r: r.update(method='POST')]
+        for mutate in mutations:
+            record = deepcopy(original)
+            mutate(record)
+            self.inputs['quote_artifacts'][0] = self.pin(ref['path'], record)
+            with self.subTest(mutation=mutate):
+                result = self.report()
+                self.assertEqual(result['numeric_status'], 'BLOCKED')
+                self.assertIn('QUOTE_ARTIFACT_REFUSED', result['blockers'])
+                self.assertTrue(result['missing_quote_coverage'])
+        # Some real responses omit these optional transaction fields.
+        for field in ('from', 'chainId'):
+            original['response']['data']['tx'].pop(field)
+        self.inputs['quote_artifacts'][0] = self.pin(ref['path'], original)
+        self.assertEqual(self.report()['numeric_status'], 'COVERED')
 
 
 if __name__ == '__main__':
