@@ -201,3 +201,26 @@ All items are in PRE_TRADING_CHECKLIST ("LLM: everything else between now and th
 - **Handoff's own results (not re-run here):** 8 proposal tests pass; 14 boundary cases accepted and 34 refused by `SigningPolicy.check`; nominal largest input 20.10 USDT (EQUAL_WEIGHT) and 28.60 USDT (S1) within 35; the unfinished config is refused for missing `run_id`/`build_id`. Profile, full-holding, top-up and fee-envelope checks NOT RUN (inputs missing). Reviewer: Isaac's delegated assistant, not Keith. `ready_to_install: false`.
 - **Remaining** (PRE_TRADING_CHECKLIST "Gate B setup", one owner each): Keegan merges #161; Keith finishes the cap checks against the Oct 20 profile and fresh holdings; Isaac sets execution gas limits within 0.0002 BNB and decides the exact policy (replacing `cap_basis`); Yao Zhu fills `run_id`, `build_id`, `database_host`, `database_ca_sha256` and the router-evidence pair (blocked on #139), records the final hash and binds it.
 - **Update after merging the integration branch (2026-10-17):** PR #159 (IDEA-057 SG-8) had already added an opt-in `--model-routing` option to Gate A `prepare` and `gate_a_check` for dev-shadow, so the trial needs no hand edits of `runtime.json`; the checklist now uses it, and the PC-AUD01 tooling item is narrowed to signed and live scope. #159's `validate_routing_spec` accepts only `AIandRouting.v1`, so PR #158's v2 file needs that validator extended before `prepare` accepts it.
+
+## PC-RV133 — checklist PR review corrections (2026-10-17 SGT)
+
+The user requests all-PR review/fixes. Read the original submitted review and its
+ordering follow-up. O2-before-EXP007, clock synchronization and the Gate A provider
+owner were already corrected; no duplicate work was introduced. Corrected the
+remaining migration-review owner (Yao ran the host step, Keegan reviews), stated
+Isaac's key-placement exception explicitly, and counted five enabled non-EDGAR
+sources plus EDGAR = six retained files from the current register.
+
+The checklist now distinguishes merged #130/#131/#143/#144/#148/#149/#151 from
+uncompleted source, numeric and actual-plan review; preserves conditional final
+wallet credential issuance under Q-35; conditions Oct20 Gate B review on its dev
+trade; and names Keegan to identify the anonymous branch's responsible team member
+before disposition. Corrected the obsolete first-service-on-Oct20/prepare-always-
+deterministic claims and clarified billing remains broken despite accepted mirrors.
+No personal review sign-off, new policy decision, host check or branch deletion
+was inferred. The running shadow state remains owner-reported only.
+
+Validation: static checklist/register/source comparison and `git diff --check`.
+Documentation-only correction; no application test is required. GitHub authentication
+failed mid-review (HTTP401), so this correction is committed locally pending push.
+PR158's branch now includes v2 validation; a release still needs its reviewed merge.
