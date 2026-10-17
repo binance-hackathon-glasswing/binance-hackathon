@@ -61,6 +61,11 @@ do not lose their allowance. Existing driver quote-round limits still bound
 refinement. A quote child can share its parent's slot only through a committed
 parent-round reference, matching profile/session/leg/interval/ordinal and an
 exact-input quote the parent requested. Ordinary fresh rounds cannot reuse it.
+An issued intent or terminal quote refusal closes that slot. Even if execution
+later ends NOT_SUBMITTED, an old parent cannot reopen it; a new retry consumes a
+new ordinal. The signer also binds window authority to the actual planned
+tokens, exact input and minimum output, so a BUY cannot borrow a safety SELL's
+after-hours exception.
 
 `execution_attempt_budget` is committed in the same PostgreSQL transaction as the
 round plan. It survives closure, failed execution, restarts and settlement, and
