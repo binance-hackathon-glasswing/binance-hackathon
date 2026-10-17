@@ -10,8 +10,10 @@ import json
 
 from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signed,
                             TERMINAL, canonical, digest)
+from larp.storage.backup import without_signed_bytes
 from larp.storage.postgres import IntegrityError
 from larp.contracts import Document
+from larp.runtime import halts
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS execution_records (
@@ -172,6 +174,8 @@ class ExecutionStore:
                 new = replace(current, revision=1 if previous is None else previous.revision + 1,
                               attempts=tuple(replace(a, raw_hex=None) for a in current.attempts))
                 raw, checksum = canonical(asdict(new)).encode(), digest(asdict(new))
+                if without_signed_bytes('execution_records', 'state', raw) != raw:  # any key, any depth (#23)
+                    raise Conflict('signed bytes cannot enter archive-readable execution state')
                 if stored is None:
                     db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
                                (new.intent.key, self.run_id, self.wallet, 56, new.status in TERMINAL,
@@ -184,11 +188,13 @@ class ExecutionStore:
                     prior = db.execute('SELECT head FROM execution_journal WHERE economic_key=%s '
                                        'AND revision=%s', (new.intent.key, stored.revision)).fetchone()[0]
                 public = {**event, 'revision': new.revision}
-                if 'raw_hex' in canonical(public) or 'signedTransaction' in canonical(public):
+                encoded_event = canonical(public).encode()
+                if ('raw_hex' in canonical(public) or 'signedTransaction' in canonical(public)
+                        or without_signed_bytes('execution_journal', 'event', encoded_event) != encoded_event):
                     raise Conflict('signed bytes cannot enter public execution journal')
                 head = digest([prior, public, checksum])
                 db.execute('INSERT INTO execution_journal VALUES(%s,%s,%s,%s,%s,%s)',
-                           (new.intent.key, new.revision, canonical(public).encode(), checksum, prior, head))
+                           (new.intent.key, new.revision, encoded_event, checksum, prior, head))
                 return new
         except IntegrityError:
             raise Conflict('wallet barrier or execution uniqueness conflict') from None
@@ -244,7 +250,9 @@ class ExecutionStore:
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
-        if (projection.get('halt') or {}).get('reasons'):
+        # D-DN-09 (larp/runtime/halts.py): CLOCK or any unlisted reason blocks every signature; a pausing HALT signs
+        # only a mandatory bStock SELL that the open round planned.
+        if not halts.permits(projection, intent.round_id, intent.intent_id):
             raise Conflict('run is halted; signing blocked')
         registered = projection.get('registered_version')
         if registered is not None and type(registered) is not dict:

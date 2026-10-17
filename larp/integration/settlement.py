@@ -144,6 +144,9 @@ def settle(current, observation):
         after["reservations"] = {}
         projection["portfolio"] = after
         projection["balances"] = balances_of(after)
+        block = (o.get("receipt") or {}).get("block_number")
+        if type(block) is int:  # balance checks compare only at or after the newest applied receipt (IDEA-055)
+            projection["settled_block"] = max(block, projection.get("settled_block") or 0)
     elif record["orders"][index].get("tx_hash") is not None:
         raise ContractError("A broadcast swap cannot end as NOT_SUBMITTED")
     else:

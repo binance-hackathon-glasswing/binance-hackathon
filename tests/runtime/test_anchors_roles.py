@@ -1,6 +1,7 @@
 """Anchor verification (IDEA-042 A1-A3; IDEA-036 #3, #5, #6) and least-privilege database roles (G1-G2, §4 X2)."""
 
 from contextlib import contextmanager
+import json
 from pathlib import Path
 
 from larp.contracts import Document
@@ -113,9 +114,9 @@ class Roles(Rounds):
     def execution_rows(self):
         """One row in each execution table, written as the execution service and the signer would."""
         with self.as_role['larp_execution'].transaction() as db:
-            db.execute("INSERT INTO execution_records VALUES('key-1','run','0xw',56,false,1,'\\x00','s')")
+            db.execute("INSERT INTO execution_records VALUES('key-1','run','0xw',56,false,1,'{}','s')")
             db.execute("UPDATE execution_records SET revision=2 WHERE economic_key='key-1'")
-            db.execute("INSERT INTO execution_journal VALUES('key-1',1,'\\x00','s','p','h')")
+            db.execute("INSERT INTO execution_journal VALUES('key-1',1,'{}','s','p','h')")
             db.execute("INSERT INTO execution_observations VALUES('key-1:final','run','\\x00','o')")
         with self.as_role['larp_signer'].transaction() as db:
             db.execute("SELECT epoch FROM runs WHERE run_id='run' FOR UPDATE")  # the registry write is fenced
@@ -194,6 +195,112 @@ class Roles(Rounds):
         with self.assertRaises(Conflict):
             registry.put_if_absent(attempt.attempt_id, attempt.payload.hash, signed,
                                    attempt.epoch, attempt.guard_version)
+
+    def test_g2_23_execution_role_cannot_store_signed_bytes_where_archive_reads(self):
+        self.execution_rows()
+        signed = '{"attempts":[{"raw_hex":"0x' + 'f8' * 120 + '"}]}'
+        for sql in (f"INSERT INTO execution_records VALUES('key-2','run','0xv',56,true,1,'{signed}','s')",
+                    f"UPDATE execution_records SET state='{signed}' WHERE economic_key='key-1'",
+                    f"INSERT INTO execution_journal VALUES('key-1',2,'{signed}','s','p','h')"):
+            with self.subTest(sql=sql[:40]), self.assertRaises(IntegrityError):
+                with self.as_role['larp_execution'].transaction() as db:
+                    db.execute(sql)
+
+    def test_g2_23_signed_fields_reject_containers_and_other_scalar_types(self):
+        from larp.storage.backup import SIGNED_KEYS, SIGNED_MARKER
+        from tests.runtime.test_final_review_d import synthetic_signed_transaction
+        self.execution_rows()
+        signed = synthetic_signed_transaction()
+        forbidden = [signed, {'x': signed}, [[signed]], {}, [], [None], [SIGNED_MARKER],
+                     '', 0, True]
+        writes = (
+            "INSERT INTO execution_records VALUES('key-2','run','0xv',56,true,1,%s,'s')",
+            "UPDATE execution_records SET state=%s WHERE economic_key='key-1'",
+            "INSERT INTO execution_journal VALUES('key-1',2,%s,'s','p','h')",
+        )
+        for key in sorted(SIGNED_KEYS):
+            for item in forbidden:
+                # The field sits below both an array and an object, not just at the document root.
+                raw = json.dumps([{'nested': {key: item}}]).encode()
+                for operation, sql in enumerate(writes):
+                    with self.subTest(key=key, shape=type(item).__name__, operation=operation):
+                        with self.assertRaises(IntegrityError):
+                            with self.as_role['larp_execution'].transaction() as db:
+                                db.execute(sql, (raw,))
+                                self.fail('signed-byte field accepted; roll back before the next case')
+        with self.as_role['larp_archive'].transaction() as db:
+            self.assertEqual([bytes(row[0]) for row in db.execute('SELECT state FROM execution_records')], [b'{}'])
+            self.assertEqual([bytes(row[0]) for row in db.execute('SELECT event FROM execution_journal')], [b'{}'])
+
+    def test_g2_23_null_and_exact_restore_marker_remain_archive_readable(self):
+        from larp.storage.backup import SIGNED_KEYS, SIGNED_MARKER
+        self.execution_rows()
+        raw = json.dumps([{'nested': {key: value for key in sorted(SIGNED_KEYS)}}
+                          for value in (None, SIGNED_MARKER)]).encode()
+        with self.as_role['larp_execution'].transaction() as db:
+            db.execute("UPDATE execution_records SET state=%s WHERE economic_key='key-1'", (raw,))
+            db.execute("INSERT INTO execution_journal VALUES('key-1',2,%s,'s','p','h')", (raw,))
+        with self.as_role['larp_archive'].transaction() as db:
+            self.assertEqual(bytes(db.execute("SELECT state FROM execution_records WHERE economic_key='key-1'")
+                                   .fetchone()[0]), raw)
+            self.assertEqual(bytes(db.execute("SELECT event FROM execution_journal WHERE revision=2")
+                                   .fetchone()[0]), raw)
+
+    def test_g2_23_duplicate_keys_cannot_hide_signed_fields(self):
+        self.execution_rows()
+        # jsonb discards the first duplicate; the bytea value an archive reader sees retains it.
+        for raw in (b'{"raw_hex":{"x":"synthetic"},"raw_hex":null}',
+                    b'{"nested":{"raw_hex":[["synthetic"]]},"nested":{}}'):
+            with self.subTest(raw=raw), self.assertRaises(IntegrityError):
+                with self.as_role['larp_execution'].transaction() as db:
+                    db.execute("UPDATE execution_records SET state=%s WHERE economic_key='key-1'", (raw,))
+                    self.fail('duplicate key hid a forbidden field; roll back')
+
+    def test_g2_23_migration_upgrades_the_existing_011_guard(self):
+        # Restore 011's actual function/triggers and migration history, then apply the additive repair.
+        self.execution_rows()
+        with self.store.transaction() as db:
+            original = db.execute("SELECT sha256 FROM schema_migrations WHERE name='011_execution_public_bytes.sql'")
+            original = original.fetchone()[0]
+            db.execute((ROOT / 'migrations/011_execution_public_bytes.sql').read_text())
+            db.execute("DELETE FROM schema_migrations WHERE name IN "
+                       "('012_execution_public_field_values.sql','013_validate_existing_execution_public_bytes.sql')")
+        self.store.migrate()
+        self.store.migrate()
+        with self.store.transaction() as db:
+            self.assertEqual(db.execute("SELECT sha256 FROM schema_migrations WHERE name='011_execution_public_bytes.sql'")
+                               .fetchone()[0], original)
+        with self.assertRaises(IntegrityError):
+            with self.as_role['larp_execution'].transaction() as db:
+                db.execute("UPDATE execution_records SET state=%s WHERE economic_key='key-1'",
+                           (b'{"raw_hex":{"x":"synthetic"}}',))
+
+    def test_allpr_r108_unsafe_existing_rows_refuse_upgrade_without_rewriting_bytes(self):
+        from larp.storage.postgres import PostgresStore
+        for table, column, sql in (
+                ('execution_records', 'state', "UPDATE execution_records SET state=%s WHERE economic_key='key-1'"),
+                ('execution_journal', 'event', "UPDATE execution_journal SET event=%s WHERE revision=1")):
+            with self.subTest(table=table):
+                # This whole isolated transaction is rolled back after each seeded-upgrade attempt.
+                with self.store.transaction() as db:
+                    db.execute('SAVEPOINT legacy')
+                    self.execution_rows_in_db_for_review(db)
+                    db.execute((ROOT / 'migrations/011_execution_public_bytes.sql').read_text())
+                    raw = b'{"raw_hex":{"x":"synthetic signed bytes"}}'
+                    db.execute(sql, (raw,))
+                    db.execute('SAVEPOINT upgrade')
+                    with self.assertRaises(Exception) as refusal:
+                        db.execute((ROOT / 'migrations/012_execution_public_field_values.sql').read_text())
+                        db.execute((ROOT / 'migrations/013_validate_existing_execution_public_bytes.sql').read_text())
+                    self.assertEqual(getattr(refusal.exception, 'sqlstate', None), '23514')
+                    db.execute('ROLLBACK TO SAVEPOINT upgrade')
+                    self.assertEqual(bytes(db.execute(f'SELECT {column} FROM {table}').fetchone()[0]), raw)
+                    db.execute('ROLLBACK TO SAVEPOINT legacy')
+
+    @staticmethod
+    def execution_rows_in_db_for_review(db):
+        db.execute("INSERT INTO execution_records VALUES('key-1','run','0xv',56,false,1,%s,'s')", (b'{}',))
+        db.execute("INSERT INTO execution_journal VALUES('key-1',1,%s,'s','p','h')", (b'{}',))
 
     def test_g2_v8_archive_backs_up_execution_tables_without_signed_bytes(self):
         self.execution_rows()
