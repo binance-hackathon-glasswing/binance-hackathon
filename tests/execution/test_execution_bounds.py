@@ -93,14 +93,14 @@ class ExecutionWindow(DatabaseCase):
             self.registry.lookup(signed.attempts[-1].attempt_id, signed.attempts[-1].payload.hash)
 
     def test_release_rechecks_current_time_after_broadcast_intent_is_durable(self):
-        signed = self.sign()
-        self.executor.broadcast(self.i.key, 14)
-        attempt = signed.attempts[-1]
-        bytes_to_send = self.registry.lookup(attempt.attempt_id, attempt.payload.hash)
+        self.sign()
         submitter = Mock()
         release = FencedRelease(self.registry, submitter, clock_s=lambda: 100)
-        with self.assertRaisesRegex(Conflict, 'S1 execution window/attempt authority expired'):
-            release(bytes_to_send, self.epoch, self.epoch)
+        # Run the real boundary while the executor's possible-send record is
+        # current, before the venue's return changes it to PENDING/UNKNOWN.
+        self.venue.broadcast = release
+        sent = self.executor.broadcast(self.i.key, 14)
+        self.assertEqual(sent.attempts[-1].state, 'UNKNOWN')
         submitter.send.assert_not_called()
 
     def test_pending_submission_reconciles_after_the_window_and_never_resends(self):

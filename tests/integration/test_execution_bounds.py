@@ -30,7 +30,9 @@ class DurableBudget(DatabaseCase):
         self.store.takeover('run', 1, offline=True)
         self.calendar = SessionCalendar(dict(schema='USRegularSessions.v1', calendar_id='SYNTHETIC_B6',
             sessions=[dict(session_index=79+k, open_at=day+'T13:30:00Z', close_at=day+'T20:00:00Z')
-                      for k, day in enumerate(('2026-10-09', '2026-10-12', '2026-10-13', '2026-10-14'))]))
+                      for k, day in enumerate(('2026-10-09', '2026-10-12', '2026-10-13', '2026-10-14',
+                                               '2026-10-15', '2026-10-16', '2026-10-19', '2026-10-20',
+                                               '2026-10-21', '2026-10-22'))]))
 
     def market(self, now_ms):
         at = datetime.fromtimestamp(now_ms/1000, timezone.utc).isoformat()
