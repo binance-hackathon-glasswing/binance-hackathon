@@ -358,3 +358,65 @@ reviewed code, retaining exact heads/outcomes and environmental skips. No PR is
 merged into its target or self-approved; #139's missing verified source stays
 draft and no source/cap/lifetime/host acceptance is invented. Keep each remaining
 external dependency explicit. Results and per-PR dispositions follow below.
+
+### ALLPR-20261017 results (2026-10-17 SGT)
+
+Scope expanded to eight open PRs when #163 appeared. All eight descriptions,
+diffs, submitted reviews and issue/review comments were inspected; #159's merged
+float-refusal repair is included in integration `a428bab`. The table freezes the
+heads included in the combined run; later changes require their own review.
+
+| PR | Reviewed head | Disposition and focused evidence |
+|---|---|---|
+| #126 | `e33df6dc691a46e3f2793dbbea94cc141a167c60` | Fixed integration conflicts, stale completed work, missing checklist links, conditional credentials and O2-before-EXP ordering. JSON/ledger/link/conflict/whitespace checks pass; docs only. RV126 in IDEA-064. |
+| #133 | `43784c25ac7c7a02bc00e331cac146add6de1f3a` | Fixed owner/status/count/deadline and CA metadata instructions at `c9b215b`; retained concurrent owner reports through this head. The CA pin comes from BUNDLE.env. Host migration output review, archive delivery, truncated source history and hosted/model qualification remain pending. PC-RV133 in IDEA-066. |
+| #139 | `bd8a34b72652f7384e0b9010efc755f902c02af8` | Resolved conflicts, retargeted to integration after decoder merge, added source-reviewed wallet debit bounds across nested/delegated calls. Static JSON/ledger/conflict checks pass. Still draft: missing verified source/ABI and complete RouterEvidence; #138/#33 stay open. RV139 in IDEA-070. |
+| #155 | `4c19ee871a9116b05a31e4de899b17cd16812177` | Fixed returned quote economics not being bound to request/metadata. Twelve mutated cases reproduced before repair. Caps/proposal/Gate B reporting: 33 passed, 105 subtests, no skips. GB-RW3 in IDEA-039. |
+| #157 | `9d8f16888d2529ffa4c83cb67c55863c17d4ca11` | No additional defect found. Cost/profile checks: 39 passed, 17 subtests, no skips. Raw optional fee fields retained, numerical cost arithmetic unchanged; fee inclusion explicitly UNVERIFIED. The author's 391-quote raw corpus was unavailable for independent reanalysis. |
+| #158 | `6a65b3959adc73e1f8127c9017017367b3887820` | Fixed hash-valid invalid UTF-8, empty/oversized prompt files, symlinks/nonregular files and unsafe filenames before budget/provider construction. Seven bad-input cases reproduced before repair. Routing/prompts/preparation/qualification: 62 passed, 109 subtests, no skips. SP9 in IDEA-081. |
+| #161 | `fa5c40fd8031187a4c9e9c72c1332e9876d2fcb4` | No additional defect found. Proposal suite: 8 passed, 51 subtests, no skips. Independently matched draft/policy hashes and CP-01 identity, all six null inputs and actual validator refusal for missing run/build. No policy acceptance or install approval; actual profile/holdings/gas inputs are unavailable. |
+| #163 | `d703ae3ac7506e3ad53344a6842f1e6e240936c6` | No additional defect found. Archive plus real-PostgreSQL maintenance tests: 10 passed, 4 subtests, no skips. Rounding is upward; whole-second requests and read-back enforcement remain intact. Hosted repair and next acknowledged backup remain unverified here; historical PERMANENT rows are preserved. |
+
+The five repaired PR descriptions were rewritten around their final changes.
+GitHub reported all eight PRs conflict-free against their targets at inspection.
+No PR was merged into its target, self-approved, force-pushed or rebased.
+A temporary GitHub HTTP401 interrupted a push; authentication recovered and all
+repairs were subsequently pushed. No user credential was requested or exposed.
+
+Combined validation: ordinary merges of all eight heads on the separate published
+branch `codex/all-pr-review-validation-20261017`, frozen at
+`7328e0a4c0c6f2a9837ce236158f1754edae8983`. Shared ledger/backlog conflicts retain
+both feature records and the latest owner/host facts. The combined application
+files, regression tests and signer draft exactly match the reviewed PR versions.
+This branch is test evidence, not a promotion or release approval.
+
+Linux/Python 3.12.14 with pinned dependencies, disposable PostgreSQL 14.24 and
+unchanged bubblewrap isolation: **1957 passed, 6 skipped, 2931 subtests**, no
+failures or xfails, 326.89s. Skips: one opt-in external recorded-market corpus,
+five opt-in real-systemd conditions/restart tests (no disposable systemd runner).
+The actual PostgreSQL maintenance checks ran and passed. This is local Linux
+regression evidence, not a hosted deployment or real-systemd acceptance claim.
+
+Command: `env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+PIP_CACHE_DIR=/workspace/.cache/pip LARP_TEST_DATABASE_URL=<disposable-local-dsn>
+.venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider`, using the supported
+Linux sandbox execution route. Removing the injected nonexistent AWS_PROFILE is
+limited to this offline process; deployment authentication is unchanged.
+Full log SHA-256: `7ca6ea483a19c140979fbe1e29693021917f0f1a7939e6cdb8ae8384429be993`.
+
+Static checks also pass: changed JSON parses, ledger IDs are unique, conflict
+markers/whitespace errors are absent, and protected kit/vendor files are unchanged.
+Raw logs remain outside Git at `/workspace/larp-cloud/pr-review-20261017/`.
+The owner reports mirror CI green for #158/#163 (runs39045682226/39045756102);
+this session's mirror API reads returned404, so those are owner-reported results,
+separate from the independent local Linux evidence above. Organisation Actions
+billing remains unresolved and no hosted CI success is inferred for the combined
+branch.
+
+Remaining dependencies retain their owners in INCOMPLETE_WORK and the checklist:
+Isaac + Keegan: complete verified router source/evidence and route review; Isaac,
+Keith and Keegan: current cap/profile/holdings/gas and lifetime decisions; Yao Zhu:
+archive fix deployment/health, source gap-report preparation, provider/model secret
+and budget checks, signer provisioning and hosted signed acceptance. PC-AWS10's
+DOJ/BIS history-walk decision remains with Keegan. No cloud, signing, wallet,
+provider inference, receiver upload or deployment was performed by this review.
