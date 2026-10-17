@@ -264,3 +264,12 @@ The post-merge review of #145 found that `prepare_shadow.rpc_providers` copies `
 - **GA15b-3:** a mutation that makes `prepare_shadow` read the file with plain `json.loads` (skipping `private_config`) fails a test.
 - **GA15b-4:** `rpc_provider_list` loses only its unreachable `None` branch. The PC-RPC01 tests still pass; their only edits are the file fixtures' source IDs (now the public `[A-Z][A-Z0-9_]{2,63}` form) and the refusal-message pattern.
 - **GA15b-5:** `tests/runtime/test_gate_a.py`, `test_gate_a_check.py` and `tests/execution/test_balance_rpc_qualification.py` pass; the full local suite has no failure that its base (`2306583`) does not have.
+
+#### GA15b results (2026-10-17)
+
+- **Order of commits:** criteria `fb6bdcf`, then the change in the next commit (branch `claude/rpc-config-reader-reuse-20261017` from `2306583`).
+- **GA15b-1: PASS.** `prepare_shadow.rpc_providers` is now `private_config(path)` imported from `qualify_balance_rpc`; its own copy and the `subprocess` import are gone.
+- **GA15b-2: PASS.** `ProviderFile.test_ga15b_prepare_accepts_exactly_what_qualification_accepts`: a lowercase source ID, a URL with user and password, a fragment and port 8443 are each refused by `capture` with exit 4, credentials are never read, and no URL is in stdout. A git-ignored file under `deploy/activation/` is accepted. The symlink and tracked-file refusals stay covered by the PC-RPC01 tests.
+- **GA15b-3: PASS.** Mutation (`rpc_providers` reads the file with plain `json.loads`): 5 failures (3 GA15b subtests and the tracked-file test). Restored.
+- **GA15b-4: PASS.** `rpc_provider_list` returns `balance_providers(...)` directly; for a non-None list that function returns a list or raises, so the removed `None` check could not run. The PC-RPC01 tests pass; the only edits are `FILE_PRIMARY`/`FILE_BACKUP` (public source IDs) in the file tests and the message pattern `must be ignored`.
+- **GA15b-5: PASS.** Gate A, `gate_a_check` and balance RPC qualification tests: 56 passed, 1 skipped. Full local suite (Anaconda Python 3.14): 1354 passed, 400 skipped (base: 1353 plus the one new test). The failures are the same three as at the base (`psycopg`/`boto3` distributions missing locally) and the same `test_final_review_d.py` collection error (`eth_account`). Org CI remains billing-blocked (#98).

@@ -691,6 +691,9 @@ class ReviewFixes(unittest.TestCase):
 
 PRIMARY = dict(url='https://rpc.invalid/', source_id='synthetic-rpc')
 BACKUP = dict(url='https://backup-rpc.invalid/v1/key', source_id='synthetic-backup')
+# The provider file is read by qualify_balance_rpc.private_config (GA15b), which takes public source IDs only.
+FILE_PRIMARY = dict(PRIMARY, source_id='SYNTHETIC_RPC')
+FILE_BACKUP = dict(BACKUP, source_id='SYNTHETIC_BACKUP')
 
 
 class ProviderFile(unittest.TestCase):
@@ -742,7 +745,7 @@ class ProviderFile(unittest.TestCase):
         import os
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / 'providers.json'
-            config.write_text(json.dumps(dict(balance_rpc_providers=[PRIMARY, BACKUP])))
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
             # capture: the chain read uses the first provider
             with patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
                     patch.object(prepare_shadow, 'credentials', return_value=dict(BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s')), \
@@ -752,8 +755,8 @@ class ProviderFile(unittest.TestCase):
                 code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
                                             '--output', str(Path(tmp) / 'c.json'), '--balance-rpc-config', str(config)])
                 self.assertEqual(code, 4)
-                self.assertEqual(rpc.call_args.args[0], PRIMARY['url'])
-                self.assertEqual(rpc.call_args.kwargs['source_id'], PRIMARY['source_id'])
+                self.assertEqual(rpc.call_args.args[0], FILE_PRIMARY['url'])
+                self.assertEqual(rpc.call_args.kwargs['source_id'], FILE_PRIMARY['source_id'])
             # prepare: the file reaches gate_a.prepare as the ordered list
             with patch.object(prepare_shadow, 'prepare', side_effect=ContractError('stop')) as assemble, \
                     patch.object(prepare_shadow.renderer, 'render', return_value={}), \
@@ -765,12 +768,12 @@ class ProviderFile(unittest.TestCase):
                 common = ['prepare', '--terraform-output', str(tf), '--profile', str(tf), '--capture', str(capture_file),
                           '--run-id', 'r', '--build-id', 'b' * 40, '--rds-ca-sha256', 'c' * 64, '--out', str(Path(tmp) / 'o')]
                 self.assertEqual(prepare_shadow.main(common + ['--balance-rpc-config', str(config)]), 4)
-                self.assertEqual(assemble.call_args.kwargs['balance_rpc_providers'], [PRIMARY, BACKUP])
+                self.assertEqual(assemble.call_args.kwargs['balance_rpc_providers'], [FILE_PRIMARY, FILE_BACKUP])
             # refusals: both forms, a symlink, a malformed file; none prints a URL
             link = Path(tmp) / 'link.json'
             os.symlink(config, link)
             malformed = Path(tmp) / 'malformed.json'
-            malformed.write_text(json.dumps(dict(balance_rpc_providers=[PRIMARY], url=BACKUP['url'])))
+            malformed.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY], url=BACKUP['url'])))
             for extra in (['--balance-rpc-config', str(config), '--balance-rpc-url', PRIMARY['url'],
                            '--balance-rpc-source-id', 'x'],
                           ['--balance-rpc-config', str(link)], ['--balance-rpc-config', str(malformed)]):
@@ -785,5 +788,32 @@ class ProviderFile(unittest.TestCase):
 
     def test_p5_a_provider_file_inside_the_repository_must_be_ignored(self):
         tracked = gate_a.ROOT / 'config' / 'runtime' / 'runtime.example.json'  # tracked, not ignored
-        with self.assertRaisesRegex(ContractError, 'git-ignored'):
+        with self.assertRaisesRegex(ContractError, 'must be ignored'):
             prepare_shadow.rpc_providers(tracked)
+
+    def test_ga15b_prepare_accepts_exactly_what_qualification_accepts(self):
+        import contextlib
+        import io
+        refused = {'lowercase_id': [PRIMARY], 'userinfo': [dict(FILE_PRIMARY, url='https://u:p@rpc.invalid/')],
+                   'fragment': [dict(FILE_PRIMARY, url='https://rpc.invalid/#f')],
+                   'port': [dict(FILE_PRIMARY, url='https://rpc.invalid:8443/')]}
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, providers in refused.items():
+                config = Path(tmp) / f'{name}.json'
+                config.write_text(json.dumps(dict(balance_rpc_providers=providers)))
+                out = io.StringIO()
+                with self.subTest(name), contextlib.redirect_stdout(out), \
+                        patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                        patch.object(prepare_shadow, 'credentials') as keys:
+                    code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                                '--output', str(Path(tmp) / 'c.json'), '--balance-rpc-config', str(config)])
+                    self.assertEqual(code, 4)
+                    keys.assert_not_called()  # refused before credentials are read
+                    self.assertNotIn('rpc.invalid', out.getvalue())
+        # a git-ignored file inside the repository is accepted
+        ignored_root = gate_a.ROOT / 'deploy' / 'activation'
+        ignored_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ignored_root) as tmp:
+            config = Path(tmp) / 'providers.json'
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
+            self.assertEqual(prepare_shadow.rpc_providers(config), [FILE_PRIMARY, FILE_BACKUP])
