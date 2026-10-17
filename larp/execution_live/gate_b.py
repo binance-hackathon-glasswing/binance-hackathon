@@ -316,8 +316,13 @@ def main(argv=None):
             inputs = read_json(path)[1] if path else None
             result = readiness_report(inputs, now=utc(), base_dir=path.parent if path else root)
         sha = artifacts.put(result)
-        print(json.dumps(dict(schema=result['schema'], artifact_sha256=sha, signing_enabled=False,
-                              status=result.get('status', 'OBSERVED'), blockers=result.get('blockers', []))))
+        summary = dict(schema=result['schema'], artifact_sha256=sha, signing_enabled=False,
+                       status=result.get('status', 'OBSERVED'), blockers=result.get('blockers', []))
+        if args.command == 'report':
+            summary['blocked_checks'] = sorted(name for name, check in result['checks'].items()
+                                               if check['status'] == 'BLOCKED')
+            summary['acceptance'] = result['acceptance']
+        print(json.dumps(summary))
         return 2 if result.get('status') == 'BLOCKED' or result.get('blockers') else 0
     except (Blocked, DependencyUnavailable, ContractError, OSError, ValueError, TypeError, KeyError):
         print(json.dumps(dict(status='REFUSED', signing_enabled=False, reason='PUBLIC_EVIDENCE_UNAVAILABLE_OR_INVALID')))

@@ -15,6 +15,8 @@ Pass criteria, before implementation or test execution:
 
 Results and exact tested commits will follow. This record authorizes only offline repository qualification; the named human/account/wallet steps remain with the pre-trading checklist.
 
+GB-RW1 report finding (prospective): the no-input `gate_b report` correctly exits 2 with overall BLOCKED, but prints `blockers: []` while all 19 DR checks are blocked in the retained artifact. **GB-REPORT4:** expose the sorted blocked-check IDs and OWNER_REVIEW_REQUIRED acceptance in the CLI summary, preserving probe behavior and exit codes. The cap checker must also refuse an output inside the checkout and profile/ledger native-scale disagreement. Push these changes before execution.
+
 ## GB-20261015 — Gate B implementation (prospective)
 
 User requests a new Gate B PR into `codex/system-testing-20261012`, and confirms using the existing build documents. Base target `0820b0dd87219cb6b96f2ede34051129fab9f49c`; carry unmerged PR70 prerequisite tree `9a14d6e4fc30387feb82be7923d479f71deb1f46` without merging either PR into the target. Branch `codex/gate-b-20261015`, worktree `/private/tmp/larp-gate-b-20261015`. Existing C baseline: 1303 passed, 7 skipped, 1 known D legacy-export expected failure, 1615 subtests (IDEA-049-C C-RESULT-007); this is recorded prior evidence, not a new run.

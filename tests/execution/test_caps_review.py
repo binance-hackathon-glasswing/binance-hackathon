@@ -124,7 +124,7 @@ class CapsReview(unittest.TestCase):
         self.save_inputs()
         self.assertIn('FULL_HOLDING_NVDAB', self.report()['blockers'])
 
-    def test_s1_full_position_cap_and_measured_fee_rounding(self):
+    def test_s1_full_position_cap_includes_largest_frozen_weight_and_reserve(self):
         from tests.strategy.test_s1_core import block
         costs = self.profile['quote_cost_summary']
         weights = {s: [7, 40] for s in TOKENS}
@@ -227,6 +227,18 @@ class CapsReview(unittest.TestCase):
             self.assertEqual(main(['--inputs', str(src), '--output', str(self.root / 'unused')]), 4)
         self.assertNotIn('DO_NOT_ECHO', output.getvalue())
         self.assertFalse((self.root / 'unused').exists())
+
+    def test_native_scale_and_checkout_output_are_refused(self):
+        self.profile = build_live_profiles(summary(), registry())['REHEARSAL'].read()
+        self.save_inputs()
+        with self.assertRaises(ContractError):
+            self.report()
+        src = self.root / 'inputs.json'
+        src.write_text(json.dumps(self.inputs))
+        checkout_output = Path(__file__).resolve().parents[2] / 'data' / 'must-not-be-created.json'
+        with redirect_stdout(StringIO()):
+            self.assertEqual(main(['--inputs', str(src), '--output', str(checkout_output)]), 4)
+        self.assertFalse(checkout_output.exists())
 
 
 if __name__ == '__main__':

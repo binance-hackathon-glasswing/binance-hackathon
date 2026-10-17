@@ -24,6 +24,7 @@ KEYS = {'schema', 'wallet', 'run_id', 'build_id', 'environment', 'max_age_second
 ERRORS = (ContractError, Blocked, OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError)
 UINT = re.compile(r'0|[1-9][0-9]{0,77}')
 MAX_ARTIFACTS = 256
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def quantity(value, minimum=0):
@@ -101,6 +102,8 @@ def review(inputs, *, now, base_dir):
     integer(config['gas_budget'], 1)
     # The profile validator proves that per_trade_cap includes a full target position plus reserve.
     summary = p['quote_cost_summary']
+    if summary['bnb_decimals'] != ledger['bnb_decimals']:
+        raise ContractError('Profile and ledger native accounting scales differ')
     scale = 10**integer(summary['bnb_decimals'], 1)
     for symbol, row in sorted(summary['symbols'].items()):
         for step in ('approve', 'swap'):
@@ -179,6 +182,8 @@ def main(argv=None):
     parser.add_argument('--now', default=None)
     args = parser.parse_args(argv)
     try:
+        if args.output.resolve() == ROOT or ROOT in args.output.resolve().parents:
+            raise ContractError('Cap review output must be outside the checkout')
         _, inputs = read_json(args.inputs)
         result = review(inputs, now=args.now or utc(), base_dir=args.inputs.resolve().parent)
         raw = (json.dumps(result, sort_keys=True, indent=2, allow_nan=False) + '\n').encode('utf-8')
