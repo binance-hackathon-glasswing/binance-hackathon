@@ -656,3 +656,19 @@ This builds decision D-DN-10, option (b), agreed by section B via #113. A `CLOCK
 - **CK6 mutations:** 9, each caught: `STA_UNSYNC` ignored; `TIME_ERROR` or negative state ignored; failed call not fail closed; window ignored; unsynchronised reading does not reset; step back between evaluations ignored; step behind the last decision ignored; no signal clears; service wiring dropped.
 - **Full suite** (PostgreSQL 16.15, Python 3.12.3, run as root): **1763 passed, 7 skipped, 2562 subtests, 0 failed**. Base `eda2ed2` gives 1754 passed and 7 skipped locally (CI at `e4f3d59`, run non-root: 1755 passed and 6 skipped), so this is +9.
 - **Still open:** confirming on the real `primary` host (AL2023 with chrony) that `kernel_clock_synchronized()` reads True once chrony has synchronised. That is a Gate A host check.
+
+### D-DN-10 review of PR #125 (criteria pre-registered 2026-10-17)
+
+Adversarial review of `claude/d-dn-10-clock-clear` after merging `codex/system-testing-20261012` (14 commits, no conflicts; nothing merged touches `supervision.py`, `service.py` or `halts.py`).
+
+**Findings before any change:**
+- **No code bug confirmed** in the signal, the window or the wiring (details in the results below).
+- **Gap in CK4's tests:** `test_ck4_clearing_the_clock_leaves_other_reasons_in_place` asserts only that `CLOCK` is gone, not that the other reason is still there. The "integrity quarantine is untouched" bullet has no test.
+- **Host dependency:** chrony on Linux clears the kernel's `STA_UNSYNC` flag only when `rtcsync` is configured (chrony `sys_timex.c`: "On Linux clear the UNSYNC flag only if rtcsync is enabled"). Without `rtcsync`, `kernel_clock_synchronized()` reads False for ever, so a `CLOCK` HALT never clears. This fails closed, but it loses the run, which is the problem D-DN-10 solves.
+- **Stale operator text:** `docs/build/runbook.md` §3 says a `CLOCK` HALT clears "Never during the run (latched)".
+
+**Pass criteria:**
+- **CKR-1:** after the `CLOCK` clear in CK4's test, the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True, so D-DN-09's mandatory-sell rule applies to what remains. Mutation check: a `_clear` that drops every reason fails the test.
+- **CKR-2:** on a quarantined run with a `CLOCK` HALT and a full synchronised window, `evaluate` commits nothing: the store refuses the clear (`Conflict`), the run stays quarantined and `CLOCK` stays active.
+- **CKR-3 (docs, no test):** the runbook §3 row states the D-DN-10 rule. The Gate A evidence list in `docs/build/DEPLOYMENT_DAY.md` checks `rtcsync` in `/etc/chrony.conf` on `primary` and that `kernel_clock_synchronized()` reads True there.
+- The full suite has no new failures against the merged head before these changes.
