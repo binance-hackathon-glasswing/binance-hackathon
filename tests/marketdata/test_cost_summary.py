@@ -528,5 +528,77 @@ class AroundTheClock(unittest.TestCase):
                          {'true': 1, 'false': 9, 'none': 0})
 
 
+class FeeEvidence(unittest.TestCase):
+    """FN5/FN6: raw fee evidence is distinct from the cost model's route-fee assumption."""
+
+    def test_fn5_preserves_all_legs_and_missing_null_zero_without_converting(self):
+        class Fees(FakeClient):
+            def __init__(self):
+                super().__init__()
+                self.buys = {}
+
+            def request(self, method, endpoint, params):
+                record = super().request(method, endpoint, params)
+                if endpoint != 'aggregator/quote-and-swap' or params['toTokenAddress'] == NATIVE:
+                    return record
+                rr = record['response']['data'][0]['routerResult']
+                if params['fromTokenAddress'].lower() == USDT.lower():
+                    token = params['toTokenAddress']
+                    self.buys[token] = self.buys.get(token, 0) + 1
+                    if self.buys[token] == 1:
+                        rr.update(tradeFee='0.01291463', feeAmount=None, feeToken=None, actualSwapAmount=None)
+                    else:
+                        rr.update(tradeFee=None)  # other fee fields absent, rather than null
+                else:
+                    rr.update(tradeFee='0.01095592', feeAmount='0', feeToken=USDT,
+                              actualSwapAmount=rr['fromTokenAmount'])
+                rr['unrelatedField'] = 'must-not-copy'
+                return record
+
+        _, records = capture(Fees())
+        samples = [r for r in records if r['kind'] == 'SAMPLE']
+        self.assertEqual(len(samples), 5)
+        for row in samples:
+            with self.subTest(symbol=row['symbol']):
+                self.assertEqual(row['fee_observations'], {
+                    'BUY': dict(tradeFee='0.01291463', feeAmount=None, feeToken=None, actualSwapAmount=None),
+                    'SELL': dict(tradeFee='0.01095592', feeAmount='0', feeToken=USDT,
+                                 actualSwapAmount=str(row['buy_received'])),
+                    'REQUOTE': dict(tradeFee=None)})
+                self.assertEqual(row['trade_fee'], '0.01291463')  # compatibility: buy only
+
+    def test_fn5_absent_fields_are_not_invented_as_zero_or_null(self):
+        class Missing(FakeClient):
+            def request(self, method, endpoint, params):
+                record = super().request(method, endpoint, params)
+                if endpoint == 'aggregator/quote-and-swap':
+                    record['response']['data'][0]['routerResult'].pop('tradeFee', None)
+                return record
+        _, records = capture(Missing())
+        for row in records:
+            if row['kind'] == 'SAMPLE':
+                self.assertEqual(row['fee_observations'], dict(BUY={}, SELL={}, REQUOTE={}))
+
+    def test_fn6_legacy_capture_with_nonzero_network_fee_does_not_change_numeric_costs(self):
+        from larp.marketdata.cost_summary import summarize
+        original, _ = summarize(complete())  # old records have no fee_observations
+        records = complete()
+        for row in records:
+            if row['kind'] == 'SAMPLE':
+                row['trade_fee'] = '0.01291463'
+        summary, report = summarize(records)
+        self.assertEqual(summary['symbols'], original['symbols'])  # existing gas is not charged a second time
+        self.assertEqual(report['symbols']['NVDAB']['trade_fees'], ['0.01291463'])
+        params = report['parameters']
+        self.assertEqual(params['fee_netting_status'], 'UNVERIFIED')
+        self.assertIn('assum', params['fee_bps'].lower())
+        self.assertIn('#119', params['fee_bps'])
+        self.assertEqual(params['trade_fee_semantics'], 'ESTIMATED_NETWORK_FEE_USD')
+        self.assertIn('BUY', params['trade_fees_scope'])
+        self.assertEqual(params['trade_fee_source_checked_at'], '2026-10-17')
+        self.assertEqual(params['trade_fee_source'],
+                         'https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api')
+
+
 if __name__ == '__main__':
     unittest.main()
