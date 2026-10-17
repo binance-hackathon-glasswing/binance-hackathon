@@ -53,10 +53,7 @@ def rpc_provider_list(url, source_id, providers):
     if url is not None:
         raise ContractError('Name the balance RPC list or the single URL pair, not both')
     from larp.runtime.service import balance_providers
-    listed = balance_providers(dict(balance_rpc_providers=providers))
-    if listed is None:
-        raise ContractError('balance_rpc_providers must list 1 to 4 providers')
-    return listed
+    return balance_providers(dict(balance_rpc_providers=providers))
 
 
 def capture_inputs(client, wallet, rpc=None):
