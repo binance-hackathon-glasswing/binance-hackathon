@@ -595,3 +595,26 @@ Isaac explicitly selected **“Confirm proposed candidates for review (Recommend
 The candidate JSON SHA256 remains2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a; ready_to_install=false and EXAMPLE_PENDING_TEAM_DECISION labels remain appropriate and unchanged. Keith must check current holdings/raw trade and gas-top-up quantities, selected profile, metadata/adjustments and fee coverage. Isaac then confirms the exact approved policy hashes per environment; Yao installs/binds only after that approval and IDEA080 checks. Parent44 stays open. PR148 retains Closes146 for the proposal/tool slice.
 
 Documentation/status changes only: focused tool/consumer source remains the tested317d22e (7passed,0skipped); no application rerun, signing, key/config/host change or activation. Next independent record task is #106's prior2USDT dev first-gas swap: DEPLOYMENT_DAY§5 has flagged hash/time/BNB placeholders. Isaac was asked for its public tx hash/link; no transaction details or completion are invented while that input is pending.
+
+### CP-01 R1 — PR148 output-byte portability review (2026-10-17)
+
+**Finding (P2):** the builder writes through a text stream with the platform's
+default newline conversion and encoding. On Windows, each LF becomes CRLF,
+so the same public reference cannot reproduce the committed proposal hash.
+This contradicts CP3's deterministic output and the reproduction procedure.
+The existing mode-0600 assertion also assumes POSIX permissions on Windows.
+
+Prospective acceptance, before running the new regression:
+
+- **CP-R1-1:** generate from the committed public reference into a temporary
+  file on Windows. Exact output bytes equal the committed proposal's UTF-8/LF
+  representation; reproduce the regression before changing the writer.
+- **CP-R1-2:** after the fix, the same check passes on Windows and Linux;
+  run all signer-cap proposal/policy boundary tests on both platforms.
+- **CP-R1-3:** preserve exclusive creation/non-overwrite and POSIX mode 0600;
+  enforce that mode assertion only on POSIX. Candidate values, canonical
+  artifact/hash, unapproved status and all installation gates stay unchanged.
+
+This is part of the requested PR143–151 review. Other dispositions and the
+separate merged-PR147 timeout fix are recorded in IDEA-058 GA15c / PR153.
+No whole backlog item closes, and no host, wallet or live action is authorized.

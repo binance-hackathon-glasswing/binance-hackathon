@@ -3,6 +3,7 @@ from contextlib import redirect_stdout
 from copy import deepcopy
 from io import StringIO
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -102,10 +103,22 @@ class CapsProposal(unittest.TestCase):
             args = ['--reference', str(src), '--output', str(dst)]
             self.assertEqual(main(args), 0)
             before = dst.read_bytes()
-            self.assertEqual(dst.stat().st_mode & 0o777, 0o600)
+            if os.name == 'posix':
+                self.assertEqual(dst.stat().st_mode & 0o777, 0o600)
             self.assertEqual(json.loads(before)['schema'], 'SignerCapsProposal.v1')
             self.assertEqual(main(args), 4)
             self.assertEqual(before, dst.read_bytes())
+
+    def test_cli_reproduces_committed_utf8_lf_proposal_bytes(self):
+        root = Path(__file__).resolve().parents[2]
+        evidence = root / 'docs' / 'build' / 'evidence'
+        reference = evidence / 'signer-caps-reference-20261010.json'
+        # Universal-newline reading recovers the committed LF bytes even from a CRLF checkout.
+        expected = (evidence / 'signer-caps-proposal-20261017.json').read_text(encoding='utf-8').encode('utf-8')
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(StringIO()):
+            output = Path(directory) / 'proposal.json'
+            self.assertEqual(main(['--reference', str(reference), '--output', str(output)]), 0)
+            self.assertEqual(output.read_bytes(), expected)
 
     def test_invalid_reference_cannot_create_output_or_echo_unknown_fields(self):
         with tempfile.TemporaryDirectory() as directory:
