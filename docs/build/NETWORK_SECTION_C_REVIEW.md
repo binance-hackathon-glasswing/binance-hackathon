@@ -2,8 +2,8 @@
 
 Reviewed integration `47c8e6c`; implementation record IDEA-062 NC-01; issue #136.
 The authoritative table is [architecture-deployment.md](architecture-deployment.md#approved-network-destinations-two-host-layout-idea-062-32).
-Keegan's section B approval is recorded there; **Isaac's section C approval is
-pending**. This review prepares that decision and corrects the route checker;
+Keegan approved section B on 2026-10-16; **Isaac approved the reviewed section C
+application destination scope on 2026-10-17** (IDEA-062 NC-01 D1). This review also corrects the route checker;
 it grants no AWS, signing or hosted readiness authority.
 
 | Boundary reviewed | Intended scope | Evidence checked |
@@ -40,12 +40,13 @@ connection result. Applied route tables, public-address absence and security
 groups must establish the wider isolation boundary; a remote service being
 down is not proof of an absent internet route.
 
-**Decision for Isaac:** approve the application destination policy with these
-boundaries and required host evidence, or identify a destination/scope to
-restrict. Recommended: approve this scope, retain all host/IAM/TLS/S3/sandbox
-checks and leave #32 open. Approval will be recorded as a dated IDEA-062 entry
-and in the table status only after Isaac responds. No whole backlog item is
-completed by this recommendation.
+**Decision recorded — NC-01 D1 (2026-10-17):** Isaac selected “Approve reviewed
+destination scope (Recommended)”. Approval covers the application destination
+table, retaining primary's general HTTPS egress and signer access limited to
+RDS and the S3 gateway. DNS failures do not prove isolation. Yao Zhu retains
+real-host route/SG, sandbox, IAM/TLS and configured-bucket S3 evidence. No AWS
+permission change, deployment or whole readiness item is approved/completed;
+#32 remains open for hosted acceptance.
 
 Verification: the DNS regression was RED at pushed `62ef585`; the repaired
 route/security suite at pushed `b720b2a` has **27 passed / 5 opt-in systemd

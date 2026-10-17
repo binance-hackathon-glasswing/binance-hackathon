@@ -176,7 +176,7 @@ accepted trade-off. It sits next to the open
 
 ## Approved network destinations (two-host layout; IDEA-062, #32)
 
-**Status: approved by Keegan (section B) 2026-10-16; awaiting approval by Isaac (section C)** (the owners #32 names). Every destination below is derived
+**Status: approved by Keegan (section B) 2026-10-16 and Isaac (section C) 2026-10-17** (the owners #32 names). Every destination below is derived
 by `larp/runtime/routes.py` from the manifested service configs, `config/sources/sources.v1.json` and the clients'
 own endpoint constants; `tests/runtime/test_routes.py` R8 checks this table against that derivation. `<region>` is
 the config's `region` (`ap-southeast-2` now).
@@ -215,7 +215,7 @@ the config's `region` (`ap-southeast-2` now).
   host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
   manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no
   public address; Terraform `internet_reaches_primary_only`).
-- **Section C review scope (2026-10-17, IDEA-062 NC-01).** The policy is awaiting Isaac's explicit approval; see
+- **Section C review scope (2026-10-17, IDEA-062 NC-01).** Isaac explicitly approved this application destination scope (NC-01 D1); see
   [NETWORK_SECTION_C_REVIEW.md](NETWORK_SECTION_C_REVIEW.md) for the reviewed boundaries and owner decision.
   This table names application destinations; it is not a per-unit network firewall or proof of hosted permissions.
   S3's configured-bucket form is `<bucket>.s3.<region>.amazonaws.com` ([AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html));
