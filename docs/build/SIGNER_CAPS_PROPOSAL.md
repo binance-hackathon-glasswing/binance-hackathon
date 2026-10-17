@@ -101,7 +101,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 tools/deploy/propose_signer_caps.py \
 The builder has no network/key/service API. It strictly validates public
 reference fields, chain/token identities, decimals and provenance, calculates
 with exact rationals and rounds upward. The real `SigningPolicy` parser checks
-each candidate. Output creation is exclusive, mode0600, and refuses overwrite;
+each candidate. Output uses explicit UTF-8/LF bytes on every platform, so
+Windows newline conversion cannot change the artifact hash. Output creation
+is exclusive, mode0600 on POSIX, and refuses overwrite;
 failures print a fixed status rather than arbitrary input values. Generated
 public artifacts may be committed through review; private raw inputs may not.
 

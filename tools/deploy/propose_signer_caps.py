@@ -98,9 +98,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         report = build(json.loads(args.reference.read_bytes()))
-        raw = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
+        raw = (json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n').encode('utf-8')
         fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, 'w') as stream:
+        with os.fdopen(fd, 'wb') as stream:
             stream.write(raw)
     except (ContractError, OSError, ValueError):
         print(json.dumps(dict(status='CAPS_PROPOSAL_REFUSED')))
