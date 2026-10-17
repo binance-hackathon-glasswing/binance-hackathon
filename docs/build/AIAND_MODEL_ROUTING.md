@@ -1,6 +1,6 @@
 # Experimental AIand model routing (IDEA-057)
 
-This is an opt-in **shadow-only** implementation of [IDEA-056](../ledger/IDEA-056.md). It has no live/scored activation approval. The default runtime remains deterministic. Kimi K3 and GLM-5.3 are funded through AIand; do not point these routes at the original labs or AIand's `auto` selector.
+This is an opt-in implementation of [IDEA-056](../ledger/IDEA-056.md): unsigned shadow by default, with explicitly reviewed signed/service capability (SLM-01). Code capability does not grant live/scored activation approval. The default runtime remains deterministic. Kimi K3 and GLM-5.3 are funded through AIand; do not point these routes at the original labs or AIand's `auto` selector.
 
 ## Endpoint and identities
 
@@ -157,3 +157,32 @@ Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill cr
      ```
      Copy the backup off the host to private storage. Never restore a backup over a ledger that has newer charges: the runtime would re-admit spend already used. On a host migration, stop `larp-runtime` first, then carry the live file.
    - Check the kill criteria K1–K4 in IDEA-057. Stopping OpenAI use means re-running step 1 without `LARP_MODEL_API_KEY`, then restarting `larp-runtime`. Reverting means setting `"assessor": "deterministic"`, re-pinning the config and re-binding `release.json` (a version event).
+
+
+## Signed rehearsal and live preparation — SLM-01 (#162)
+
+The signed path is opt-in. `aiand_routed` with `execution: service` requires a nonblank `driver.model_adoption_ref`, hash-pinned routing, a validated LIVE profile matching REHEARSAL/dev or FINAL/live, live intelligence settings and all existing release/balance/signer/registration gates. The reference names a real reviewed decision; the code does not make that decision. Network scope, source/model rights, the trial and host acceptance remain the owners' tasks under #97.
+
+`tools/deploy/prepare_shadow.py prepare` accepts these additional options, on top of its existing actual Terraform/profile/fresh-capture/CI/CA/RPC/contact inputs:
+
+```text
+--execution service
+--runtime-mode dev
+--model-routing /absolute/path/to/reviewed-routing.json
+--model-routing-sha256 <actual reviewed SHA256>
+--model-adoption-ref <actual recorded rehearsal model decision>
+```
+
+Angle-bracket text is a required input, not a value to copy. For the final wallet use `--runtime-mode live` and the separately reviewed FINAL profile/fresh final-wallet capture. No old-wallet balance or existing stock position is initialized without accounting history. Omit the new flags to keep unsigned deterministic dev-shadow preparation. Signed preparation sets live evidence settings; it does not silently reuse shadow evidence values. The report still says `signing_enabled: false`, preserves NOT_RUN host checks and names signed/live intelligence and Gate B acceptance as outstanding. It does not create signer/execution configs, initialize a budget, call providers, start services or activate a run. Local package qualification checks `SIGNED_IDENTITIES` and live evidence prerequisites; the default path retains `UNSIGNED_IDENTITIES`.
+
+### Runtime and audit behavior
+
+Signed model work runs in one daemon worker, away from the main runtime thread. A hung provider retains that one slot: no concurrent replacement calls or unbounded queue are launched. The main thread keeps settlement, supervision, mandatory risk checks and execution handoff running, subject to their existing data/health/authority checks. Completed results return to the main thread with the original request and pass the unchanged result identity/expiry checks and evidence acceptance gate before affecting policy. A failed, missing, duplicate or invalid assessment cannot advance the S1 limiter's healthy-session expiry clock. Existing accepted evidence remains usable by the deterministic policy and risk planner.
+
+The safety cycle runs at the runtime service tick, even while a model is pending or no filing is due. These are actual planning rounds and are logged, including HOLDs. Include their log/DB volume in the hosted rehearsal capacity check (#60); no real capacity/load qualification is claimed by the synthetic tests.
+
+Append-only, hash-chained private model journals live under `<market_artifact_root>/model/assessments/<run-build-profile hash>/`. Each request is recorded before dispatch, each model reply before verification, each completed routed stage with its full model/tool records, and the final result before consumption. An ACK follows the committed round, not the other way round. The worker has read-only evidence access and the existing private model artifacts and shared budget ledger; it never writes trading state or signs.
+
+A restart retains the original request and completed I/O. Complete, unconsumed results are rechecked at the new decision time; incomplete chains are logged as interrupted with any completed calls/stages, granting no new assessment authority. Expired/rejected results retain their original audit-only I/O and provider summaries in the round log. Tampered or incomplete journal records refuse startup/processing rather than being silently ignored. Never delete/reinitialize the shared OpenAI budget to recover a model worker; its unknown-spend reservations remain intact.
+
+This does **not** implement B4's exposure-evidence producer or the optional MODEL-mode exposure call. The limiter can only use those inputs once their separate reviewed wiring exists; this change cannot be presented as a complete exposure-limiter deployment. Signed/live model adoption still needs the recorded team decision, reviewed endpoint scope/terms, frozen live settings/prompts, hosted budget/provider checks and a signed rehearsal with complete logs.
