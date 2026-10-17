@@ -31,6 +31,8 @@ class NodeTransport:
             raise URLError('PRIVATE_KEY')
         if self.defect == 'redirect':
             raise HTTPError(request.full_url, 302, 'PRIVATE_KEY', {}, None)
+        if self.defect and self.defect.startswith('http_'):
+            raise HTTPError(request.full_url, int(self.defect[5:]), 'PRIVATE_KEY', {}, None)
         result = self.node.call(method, params)
         if self.defect == 'chain' and method == 'eth_chainId':
             result = '0x1'
@@ -125,6 +127,18 @@ class BalanceRpcQualification(unittest.TestCase):
                 self.assertEqual(code, 4)
                 self.assertEqual(report['reason'], 'PROBE_INPUTS_REFUSED')
                 self.assertFalse(self.out.exists())
+
+    def test_http_refusals_have_safe_diagnostics_and_are_never_retried(self):
+        for status in (302, 401, 403, 429):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as root:
+                self.out = Path(root) / 'probe'
+                code, report, transports = self.run_cli({PROVIDERS[0]['source_id']: 'http_' + str(status)})
+                self.assertEqual(code, 1)
+                first = report['results'][0]
+                self.assertEqual(first['status'], 'UNAVAILABLE')
+                self.assertEqual(first['http_status'], status)
+                self.assertEqual(first['reason'], 'HTTP_REDIRECT' if status == 302 else 'HTTP_REFUSED')
+                self.assertEqual(len(transports[PROVIDERS[0]['source_id']].calls), 1)
 
     def test_dirty_unpushed_or_existing_output_refuses_before_network(self):
         for state in (dict(self.state, dirty=True), dict(self.state, pushed=False)):

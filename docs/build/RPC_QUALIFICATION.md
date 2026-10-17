@@ -70,6 +70,13 @@ redirect failures); its failure remains visible even if a backup passed. Exit
 4 means the local inputs or committed-code gate refused the run. Do not bypass
 a refusal or infer permission from a different provider's success.
 
+Transport diagnostics expose only a numeric HTTP status and fixed reason code
+(for example `HTTP_REDIRECT`, `HTTP_REFUSED` or `TLS_VERIFICATION_FAILED`). No
+exception/response text is printed, no redirect is followed and no refusal is
+retried. NodeReal's public mainnet service, also listed by BNB Chain's official
+RPC documentation, may be tested as an additional candidate under source ID
+`BSC_NODEREAL_PUBLIC`; each run has its own private config and fresh output.
+
 ## Decision and handoff
 
 After the technical comparison, Isaac chooses the ordered providers or supplies

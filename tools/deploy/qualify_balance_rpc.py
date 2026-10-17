@@ -5,13 +5,16 @@ address. Never reads .env, a wallet key or ai-seeds credentials. No signing,
 broadcast, upload, runtime-config change or AWS call. See RPC_QUALIFICATION.md.
 """
 import argparse
+import http.client
 import json
 import os
 from pathlib import Path
 import re
+import ssl
 import subprocess
 import sys
 import time
+from urllib.error import HTTPError, URLError
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -27,6 +30,27 @@ from larp.sources.live import Refused, git_state, require_committed  # noqa: E40
 
 PROBE_WALLET = '0x' + '0' * 40
 SOURCE_ID = re.compile(r'[A-Z][A-Z0-9_]{2,63}')
+
+
+class TransportDiagnostics:
+    """Observe a fixed error category before Rpc sanitizes it; never keep exception text or retry."""
+    def __init__(self, opener):
+        self.opener, self.reason, self.http_status = opener, None, None
+
+    def open(self, request, timeout):
+        try:
+            return self.opener.open(request, timeout=timeout)
+        except HTTPError as error:
+            self.http_status = error.code
+            self.reason = 'HTTP_REDIRECT' if 300 <= error.code < 400 else 'HTTP_REFUSED'
+            raise
+        except URLError as error:
+            self.reason = ('TLS_VERIFICATION_FAILED' if isinstance(error.reason, ssl.SSLCertVerificationError)
+                           else 'TRANSPORT_UNAVAILABLE')
+            raise
+        except (OSError, http.client.HTTPException):
+            self.reason = 'TRANSPORT_UNAVAILABLE'
+            raise
 
 
 def providers_from(value):
@@ -82,8 +106,11 @@ def probe(providers, output, *, build_id, rpc_factory=Rpc):
         artifacts = Artifacts(directory)
         start = time.monotonic()
         status, capture_hash = 'REFUSED', None
+        diagnostics = None
         try:
             rpc = rpc_factory(provider['url'], artifacts=artifacts, source_id=source_id)
+            diagnostics = TransportDiagnostics(rpc.opener)
+            rpc.opener = diagnostics
             capture = chain_capture(rpc, PROBE_WALLET, observed_at=utc())
             raw = encoded(capture) + b'\n'
             write_new(directory / 'chain-capture.json', raw)
@@ -96,6 +123,10 @@ def probe(providers, output, *, build_id, rpc_factory=Rpc):
         # Never reflect endpoint strings, arbitrary response fields or exception messages into the public report.
         hashes = sorted(p.stem for p in directory.glob('*.json') if re.fullmatch('[0-9a-f]{64}', p.stem))
         report['results'].append(dict(source_id=source_id, status=status,
+                                      reason=(None if status == 'PASS' else
+                                              (diagnostics.reason if diagnostics and diagnostics.reason else
+                                               'RPC_OR_EVIDENCE_REFUSED')),
+                                      http_status=diagnostics.http_status if diagnostics else None,
                                       elapsed_ms=int((time.monotonic() - start) * 1000),
                                       observation_count=len(hashes), observation_hashes=hashes,
                                       capture_sha256=capture_hash))
