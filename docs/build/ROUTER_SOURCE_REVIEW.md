@@ -11,12 +11,22 @@ bytecode rather than published source/ABI. The hexadecimal is compiled code;
 it is not the source or ABI requested below. Do not add a custom ABI or attempt
 to verify/publish this third-party contract.
 
-The screenshot also shows **Read Facets**, beside Code. Inspect that read-only
-tab next for facet addresses and any mapping for selector `0xad43f73d`; the
-relevant facet may have separately verified source. Its identity, verification
-and safety properties are still unknown. No signing/wallet connection is needed
-for the requested page inspection. The original conditional source-export steps
-follow for any verified implementation/facet found.
+The **Read Facets** tab also failed: Isaac reports “unable to retrieve a valid
+contract ABI” (RE-01 B2). There is no ABI to copy from that failed view.
+
+A bounded public read-only lookup found a candidate for the swap selector:
+**[0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603 on BscScan](https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code)**.
+The standard `facetAddress(bytes4)` lookup for `0xad43f73d` returned this address
+at finalized block `0x7a2eb81`; it has8622 deployed code bytes there. The block
+hash was rechecked; the evidence report is `evidence/router-facet-lookup-20261017.json`.
+This is an identity lead from one provider, not source/safety or upgrade proof.
+Sourcify returned404 for this candidate too.
+
+**Next browser step:** open that distinct candidate page and report whether its
+Code tab displays verified source or only Verify and Publish/bytecode. If source
+exists, the conditional export steps below apply to that candidate, while the
+router's dispatch/mapping and any additional helpers still require review.
+Do not try to publish a custom ABI to repair the failed explorer view.
 
 ## Evidence needed from Isaac's browser
 
@@ -76,3 +86,22 @@ Task4 is the separate recorded-route replay over Keith's existing IDEA-063
 quote artifacts after Keegan's evidence review and PR130 merge. No new capture
 is needed here. Signing lifetime #27, caps #44, gas, signer access, deployment
 and the first agent trades remain later tasks.
+
+## If the candidate's source is also unavailable
+
+Keep the task and live signing blocked. Isaac can forward this draft request to
+the team supporting the router returned by the Web3 API; it has **not** been sent:
+
+> Our BSC quote-and-swap responses target router
+> `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, selector `0xad43f73d`.
+> Its explorer Code page is unverified and Read Facets cannot retrieve an ABI.
+> A public `facetAddress(bytes4)` lookup at finalized block `0x7a2eb81` returned
+> `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`. Could you provide the
+> complete verified source/ABI and compiler settings for this selector's code,
+> router dispatch, and relevant helpers, plus how to verify their chain56 code
+> identities and detect implementation upgrades? We need to establish recipient
+> minimum-output, deadline and sender-only input enforcement before signing.
+
+Do not mark these guarantees true on the strength of an unsupported statement
+or decompiled bytecode. Source provenance, source-to-code binding and independent
+review remain required.
