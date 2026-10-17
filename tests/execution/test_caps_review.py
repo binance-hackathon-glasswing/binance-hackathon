@@ -124,6 +124,36 @@ class CapsReview(unittest.TestCase):
         self.save_inputs()
         self.assertIn('FULL_HOLDING_NVDAB', self.report()['blockers'])
 
+    def test_s1_full_position_cap_and_measured_fee_rounding(self):
+        from tests.strategy.test_s1_core import block
+        costs = self.profile['quote_cost_summary']
+        weights = {s: [7, 40] for s in TOKENS}
+        weights['NVDAB'] = [3, 10]
+        self.profile = build_live_profiles(Document.from_dict(costs), registry(),
+            s1=block(weights=weights), s1_decision='synthetic-unapproved-values')['REHEARSAL'].read()
+        self.save_inputs()
+        self.assertEqual(self.report()['numeric_status'], 'COVERED')
+        cash_check = next(c for c in self.report()['checks'] if c['check'] == 'FULL_POSITION_AND_TOPUP_USDT')
+        self.assertEqual(cash_check['required'], str(28_600_000 * 10**12))
+        # A cap that covered EQUAL_WEIGHT can block S1's largest frozen position.
+        self.policy['max_input_units'][USDT] = str(25 * 10**18)
+        self.save_inputs()
+        self.assertIn('FULL_POSITION_AND_TOPUP_USDT', self.report()['blockers'])
+
+    def test_scope_missing_metadata_and_duplicate_captures_cannot_pass(self):
+        self.policy['allowed_spenders'].append(WALLET)
+        self.save_inputs()
+        self.assertIn('TOKEN_OR_SPENDER_SCOPE', self.report()['blockers'])
+        self.inputs['quote_artifacts'].append(self.inputs['quote_artifacts'][0])
+        self.assertIn('QUOTE_ARTIFACT_REFUSED', self.report()['blockers'])
+        self.ledger['reservations'] = {'existing': {}}
+        self.save_inputs()
+        self.assertIn('IN_FLIGHT_PORTFOLIO_REVIEW', self.report()['blockers'])
+        self.config['token_decimals']['NVDAB'] = 8
+        self.save_inputs()
+        with self.assertRaises(ContractError):
+            self.report()
+
     def test_mismatched_identity_units_and_boolean_quantities_refuse(self):
         for target, changes in [
                 ('config', dict(build_id='b' * 40)), ('config', dict(wallet_address=ROUTER)),
