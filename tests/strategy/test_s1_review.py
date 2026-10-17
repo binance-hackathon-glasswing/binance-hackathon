@@ -91,6 +91,12 @@ class FreezeReview(unittest.TestCase):
         with self.assertRaises(ContractError):
             s1.freeze_weights([{}], cutoff=after(80), cap=Fraction(3, 10))
 
+    def test_old_pre_gap_returns_are_not_borrowed_into_the_recent_window(self):
+        data = {s: series(_WeightFreeze().make(0.02), s) for s in NAMES}
+        data[NAMES[0]] = series({k: 1000000 + (k % 2)*1000 for k in [*range(26), *range(100, 106)]}, NAMES[0])
+        _, basis = s1.freeze_weights(data, cutoff=after(110), cap=Fraction(3, 10))
+        self.assertIn(NAMES[0], basis['substituted_median'])
+
 
 class ProfileCliReview(unittest.TestCase):
     def run_cli(self, root, *extra):
