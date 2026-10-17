@@ -618,3 +618,16 @@ Prospective acceptance, before running the new regression:
 This is part of the requested PR143–151 review. Other dispositions and the
 separate merged-PR147 timeout fix are recorded in IDEA-058 GA15c / PR153.
 No whole backlog item closes, and no host, wallet or live action is authorized.
+
+#### CP-01 R1 results (2026-10-17)
+
+Criteria/regression `49aa6a5` and fix `4e4e74a` were pushed before execution.
+The new exact-byte regression fails on Windows before the fix (CRLF differs
+from the committed LF artifact) and passes after the binary UTF-8 writer fix.
+All eight proposal/policy tests pass on Windows/Python 3.14 and on Linux/Python
+3.10.12 with exact Git blobs; zero skips on either platform. Linux still
+verifies mode 0600. Exclusive creation, non-overwrite, cap/fee boundaries and
+unapproved labels remain covered. The committed candidate bytes and their
+SHA256 `2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a`
+are unchanged. `git diff --check` passes. No full-suite, org CI or hosted/live
+acceptance is inferred. PR148 contains the fix; PR153 carries GA15c-R1.
