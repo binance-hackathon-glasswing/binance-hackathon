@@ -262,6 +262,23 @@ class Cli(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertEqual(report.read_bytes(), before)
 
+    def test_nc1_dns_failure_never_proves_signer_isolation(self):
+        from larp.runtime.routes import verdict
+        self.assertEqual(verdict('BLOCKED', 'DNS_FAILED'), 'INCONCLUSIVE')
+        self.assertEqual(verdict('BLOCKED', 'UNKNOWN_STATUS'), 'FAIL')
+        blocked = {('web3.binance.com', 443): 'CONNECT_FAILED',
+                   ('api.commonservice.io', 443): 'CONNECT_FAILED',
+                   ('data.sec.gov', 443): 'DNS_FAILED',
+                   (f'secretsmanager.{REGION}.amazonaws.com', 443): 'CONNECT_FAILED'}
+        report = self.dir / 'dns-inconclusive.json'
+        code, _, _ = self.run_cli('signer', configs(('signer',)), FakeProbe(blocked),
+                                  ['--output', str(report)])
+        self.assertEqual(code, 1)
+        result = json.loads(report.read_bytes())
+        self.assertFalse(result['passed'])
+        dns = next(row for row in result['results'] if row['host'] == 'data.sec.gov')
+        self.assertEqual(dns['verdict'], 'INCONCLUSIVE')
+
 
 class Listener:
     """A local TCP listener that records every byte it receives; `reply` is sent once on accept."""
