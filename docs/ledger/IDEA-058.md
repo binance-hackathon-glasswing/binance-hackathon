@@ -307,3 +307,22 @@ and internal references are reviewed here, not its unavailable private raw
 artifacts. #148's cross-platform output reproducibility is being checked
 separately under IDEA-049-C CP-01. No whole backlog item is completed by
 this review; existing GAP-69–GAP-72 and Gate B owners remain unchanged.
+
+#### GA15c results (2026-10-17)
+
+- Criteria `f943f21`, regression `0fbb780`, fix `6aba711`; all pushed before
+  their respective checks. The regression fails on both commands at
+  `0fbb780` with uncaught `TimeoutExpired`, then passes at `6aba711`.
+- GA15c-1/2 PASS: both commands return sanitized JSON/exit 4, with no
+  credential read, client construction, output write or sentinel disclosure.
+  The shared reader's ten-second Git timeout remains intact.
+- GA15c-3 PASS: Linux/Python 3.10.12, exact Git blobs in an isolated temporary
+  checkout with Git metadata for ignore checks: 58 tests run, 57 passed,
+  1 PostgreSQL-dependent skip across Gate A, `gate_a_check` and RPC
+  qualification. The dedicated regression also passes on Windows/Python 3.14.
+  The broad Windows run is not acceptance evidence: CRLF-converted fixture
+  bytes fail published hashes, and Linux-only file semantics differ. The
+  initial archive-only Linux run lacked Git metadata and failed the existing
+  ignored-file check; adding temporary Git metadata resolves it.
+- `git diff --check` PASS. No org CI, full-suite, Terraform, AWS, provider,
+  wallet, signing, receiver or hosted-readiness acceptance is claimed.
