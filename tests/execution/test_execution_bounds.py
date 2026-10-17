@@ -99,8 +99,9 @@ class ExecutionWindow(DatabaseCase):
         # Run the real boundary while the executor's possible-send record is
         # current, before the venue's return changes it to PENDING/UNKNOWN.
         self.venue.broadcast = release
-        sent = self.executor.broadcast(self.i.key, 14)
-        self.assertEqual(sent.attempts[-1].state, 'UNKNOWN')
+        with self.assertRaisesRegex(Conflict, 'S1 execution window/attempt authority expired'):
+            self.executor.broadcast(self.i.key, 14)
+        self.assertEqual(self.registry.load(self.i.key).attempts[-1].state, 'BROADCAST_ATTEMPTED')
         submitter.send.assert_not_called()
 
     def test_pending_submission_reconciles_after_the_window_and_never_resends(self):

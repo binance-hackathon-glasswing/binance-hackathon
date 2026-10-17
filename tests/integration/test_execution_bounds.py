@@ -6,7 +6,7 @@ from larp.integration.replay import replay_live
 from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state, initial_projection
 from larp.integration.settlement import ExecutionBridge, settle
 from larp.runtime.coordinator import Coordinator
-from larp.runtime.driver import SessionCalendar
+from larp.runtime.driver import DayRoll, SessionCalendar
 from larp.runtime.fixtures import FakeAssessor
 from larp.storage.postgres import doc
 from tests.strategy.test_execution_bounds import milliseconds
@@ -49,6 +49,8 @@ class DurableBudget(DatabaseCase):
             clock_ms=lambda: self.now)
 
     def start(self, coordinator, round_id):
+        midnight = self.now - self.now % 86400000
+        DayRoll(coordinator, window_ms=60000)(midnight, self.market(midnight))
         req = request(job=round_id, cutoff=self.now).read()
         req['policy_profile_hash'] = self.h
         return coordinator.start(round_id, doc(req), self.now)
