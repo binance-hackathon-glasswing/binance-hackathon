@@ -202,6 +202,18 @@ All items are in PRE_TRADING_CHECKLIST ("LLM: everything else between now and th
 - **Remaining** (PRE_TRADING_CHECKLIST "Gate B setup", one owner each): Keegan merges #161; Keith finishes the cap checks against the Oct 20 profile and fresh holdings; Isaac sets execution gas limits within 0.0002 BNB and decides the exact policy (replacing `cap_basis`); Yao Zhu fills `run_id`, `build_id`, `database_host`, `database_ca_sha256` and the router-evidence pair (blocked on #139), records the final hash and binds it.
 - **Update after merging the integration branch (2026-10-17):** PR #159 (IDEA-057 SG-8) had already added an opt-in `--model-routing` option to Gate A `prepare` and `gate_a_check` for dev-shadow, so the trial needs no hand edits of `runtime.json`; the checklist now uses it, and the PC-AUD01 tooling item is narrowed to signed and live scope. #159's `validate_routing_spec` accepts only `AIandRouting.v1`, so PR #158's v2 file needs that validator extended before `prepare` accepts it.
 
+## PC-AWS09 — shadow run health check, 2026-10-17 15:27 UTC
+
+Read-only, over SSM on `primary`, plus S3 metadata from Yao Zhu's Mac.
+
+- **Running:** `larp-evidence`, `larp-runtime` (one restart, the PC-AWS08 drill), `larp-uploader` active; `larp-execution` inactive as intended; `larp-archive.timer` active. Runtime heartbeat 1.5 s, no HALT, not quarantined, 0 audit failures, 0 audit deadline breaches. Hourly anchors 11:00–15:00 all `ACK`, none missed. No error-level journal lines from runtime, evidence or uploader in the last 4 h.
+- **Memory (#60 baseline):** 1909 MiB total, 1401 MiB available; `larp-runtime` 65 MiB, `larp-evidence` 57 MiB, `larp-uploader` 53 MiB. Disk `/` 2.2 of 20 GiB.
+- **Not healthy: `ARCHIVE_DELIVERY_BLOCKED`.** The restart drill's incident backup (slot `1792235176666`, 2026-10-17 11:06:16.666 UTC) is `PERMANENT` in `archive_outbox`, and `larp-archive.service` has exited 1 on every run since 11:06:18 (256 runs by 15:27). It keeps delivering anchors; only its health report fails.
+- **Cause (confirmed):** the object *was* written: `head-object` shows 3 050 652 bytes, KMS, `COMPLIANCE` until `2027-01-07T11:06:16Z`. `S3Archive.put` (`larp/storage/archive.py`) asked for `11:06:16.666`; S3 stores the date to whole seconds, so the read-back check `ObjectLockRetainUntilDate < retain_until` raises `IntegrityError` (a `ContractError`), recorded as `PERMANENT`. Scheduled backups and anchors use whole-hour slots and pass; **every incident backup (restart or HALT) fails this way**, including automatic restarts in the scored run.
+- **Effect:** health stays blocked until a newer backup is acknowledged; the next scheduled daily backup (expected Oct 18 00:00 UTC) should clear it. The audit log, anchors and ingestion are unaffected. The Gate A 24 h window (from 11:00 UTC) contains this blocked period; the gap report and Keegan's Gate A review should say so.
+- **Data collected by 15:37 UTC (read-only, journal as `larp-archive`, evidence store opened read-only):** 33 journal events, including 12 rounds (12 `plan` + 12 `close`), 6 balance checks, 1 incident (the drill), 1 activation and 1 version event; 17 audit chunks, all `ACK` by the ai-seeds receiver; evidence store 280 poll batches and 4 filing records for 2 issuers, last written 15:36. Rounds use the deterministic assessor, so no model calls.
+- **Fix:** PR #163 rounds the requested retain-until up to a whole second (IDEA-082; red proof reproduces the host error, then passes). It reaches the host with the next bundle; until then each restart repeats this.
+
 ## PC-RV133 — checklist PR review corrections (2026-10-17 SGT)
 
 The user requests all-PR review/fixes. Read the original submitted review and its
@@ -224,3 +236,9 @@ Validation: static checklist/register/source comparison and `git diff --check`.
 Documentation-only correction; no application test is required. GitHub authentication
 failed mid-review (HTTP401), so this correction is committed locally pending push.
 PR158's branch now includes v2 validation; a release still needs its reviewed merge.
+
+PC-RV133 follow-up: authentication recovered. Preserved the concurrent PC-AWS09
+host report and signer-assembly instructions through an ordinary merge. Corrected
+one new instruction: the bundle CA hash is in verified `BUNDLE.env`, not the
+code-only `.release.json`. The archive delivery incident is explicitly retained;
+no healthy-host claim or remediation of its permanent historical row is inferred.
