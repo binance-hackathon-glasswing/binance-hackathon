@@ -80,3 +80,12 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
 - Test: `aws cloudwatch set-alarm-state --alarm-name larp-dev-database-storage --state-value ALARM` at 2026-10-17T07:08:50Z (chosen because its only action is the SNS topic; the auto-reboot/recover alarms also act on the hosts and were not touched). Alarm history: "Successfully executed action …:larp-dev-alarms" at 07:08:51Z. Yao Zhu confirmed the "ALARM: larp-dev-database-storage" email arrived. It returned to OK at 07:10:20Z; it has no OK action, so no second email.
 - Not covered: the seven service alarms stay in ALARM (`treat_missing_data = breaching`) until the services publish metrics after Oct 20 activation; each new transition will now email.
 
+## PC-AWS04 — alarm descriptions, 2026-10-17 UTC
+
+- Yao Zhu asked for it after the PC-AWS03 test email showed an empty Description: an alarm firing during the run gave no hint of what it means or what to do.
+- Change: `deploy/aws/monitoring.tf` gives all 14 alarms an `alarm_description`: what fired, what the system does on its own, where to look (runbook section), and that nobody acts on the agent during the scored run (F-114). New Terraform test `every_alarm_explains_itself` requires a non-empty description of at most 1024 characters naming F-114 on every alarm.
+- Pass criteria, written before the apply: (1) `terraform validate` and `terraform test` pass, and the new test fails when one description is removed; (2) the saved plan changes only `alarm_description` on existing alarms, in place: 0 to add, 0 to destroy, no other attribute; (3) after the apply, `describe-alarms` shows a non-empty description on all 14 alarms.
+- Local result for (1): validate OK; `terraform test` 16 passed, 0 failed; with the database-storage description removed, 15 passed, 1 failed (`every_alarm_explains_itself`); restored.
+- Result for (2): saved plan from pushed `1b2feb8` (PR #141): "0 to add, 14 to change, 0 to destroy"; a JSON check of the plan found no changed attribute other than `alarm_description`. Applied: "Apply complete! Resources: 0 added, 14 changed, 0 destroyed."
+- Result for (3): `describe-alarms` shows descriptions of 249–367 characters on all 14 alarms. **PASS.** The next alarm email carries its description.
+
