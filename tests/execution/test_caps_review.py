@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from larp.contracts import ContractError, Document
-from larp.execution import NATIVE_BNB, USDT
+from larp.execution import Blocked, NATIVE_BNB, USDT
 from larp.execution_live.caps_review import main, review
 from larp.marketdata.port import TOKENS
 from larp.research.fixtures import snapshot
