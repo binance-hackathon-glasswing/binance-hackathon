@@ -933,6 +933,7 @@ class RoundDriver:
             if not executable:
                 self.market.clear_quotes()
                 return
+            source_round = round_id
             round_id = child if (n == first and child is not None) else self.work.child_round(parent, n)
             if round_id is None:
                 self.market.clear_quotes()
@@ -943,6 +944,8 @@ class RoundDriver:
                 current = c.store.load(c.run_id).read()
                 # The quoted observations stand in for this round's fetch; the decision clock follows them.
                 c.start(round_id, self.work.request(item, current, now_ms), now_ms,
+                        **(dict(execution_parent_round=source_round)
+                           if getattr(c.context_builder, 'profile', {}).get('baseline') == 'TREND_GUARDED_VOL' else {}),
                         **(dict(assessment_override=None, use_accepted_evidence=True) if self.assessments else {}))
             finally:
                 self.market.clear_quotes()

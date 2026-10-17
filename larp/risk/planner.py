@@ -400,7 +400,7 @@ def plan(snapshot, proposal_or_none):
         bounds = None
         if s1:
             bounds, refused = execution_bounds.reserve(c, s1, attempt_budget, symbol, side, mandatory,
-                                                       int(now.timestamp() * 1000))
+                                                       int(now.timestamp() * 1000), quotes=m.get('quotes', []))
             if refused:
                 result['rejections'].append({'symbol': symbol, 'reason': refused})
                 if req is not None:
@@ -416,6 +416,10 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = quote_status
             if request_units is not None:
                 result["quote_requests"].append(_request(symbol, side, request_units, m, mandatory))
+                if s1:
+                    # One wallet leg's bounded quote chain at a time. Do not
+                    # spend attempts for quotes the driver never requests.
+                    break
             continue
         cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
         if q <= p["dust_units"] or (not mandatory and value(q, m) < p["minimum_trade_units"]):

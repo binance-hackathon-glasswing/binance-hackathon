@@ -126,7 +126,7 @@ class Coordinator:
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
 
     def start(self,round_id,request,now_ms,*,defer_close=False,assessment_override=Ellipsis,
-              assessment_audit=None,use_accepted_evidence=False):
+              assessment_audit=None,use_accepted_evidence=False,execution_parent_round=None):
         if type(round_id) is not str or not round_id:
             raise ContractError('Round ID must be a non-empty string')
         current=self.store.load(self.run_id)
@@ -179,6 +179,12 @@ class Coordinator:
                 # cannot drop an adverse finding (IDEA-033 R16). No policy runs without its context.
                 updates=getattr(exc,'updates',None) or {}
                 context_ok=False
+        if execution_parent_round is not None and context_ok and \
+                context.get('profile', {}).get('baseline') == 'TREND_GUARDED_VOL':
+            from larp.strategy.execution_bounds import parent_authority
+            parent = self.store.event(self.run_id, 'plan:' + execution_parent_round)
+            if parent is not None and execution_parent_round != round_id:
+                context['execution_parent'] = parent_authority(parent['record'])
         if use_accepted_evidence and context_ok:
             # A cached/failed/invalid model result cannot count as a healthy S1 session.
             # Only this round's verified, accepted fresh assessment may advance its expiry clock.
@@ -253,6 +259,8 @@ class Coordinator:
                         for i in plan['intents']],swap_mappings=[])
         if assessment_audit is not None:
             record['assessment_audit']=assessment_audit
+        if execution_parent_round is not None:
+            record['execution_parent_round'] = execution_parent_round
         if now_ms!=started_ms:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):

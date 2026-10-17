@@ -98,6 +98,8 @@ class Planning(unittest.TestCase):
         for bad_cost in (False, True):
             with self.subTest(bad_cost=bad_cost):
                 snapshot = at('2026-10-10T14:00:00Z')
+                snapshot = changed(snapshot, markets=[m for m in snapshot.context.read()['markets']
+                                                      if m['symbol'] == 'NVDAB'])
                 if bad_cost:
                     snapshot = with_quotes(snapshot, spread_bps=100)
                 for ordinal in range(1, 4):
@@ -111,6 +113,25 @@ class Planning(unittest.TestCase):
                 self.assertFalse(refused['quote_requests'])
                 self.assertFalse(refused['execution_attempts'])
                 self.assertIn('LEG_ATTEMPT_LIMIT', {r['reason'] for r in refused['rejections']})
+
+    def test_quote_child_reuses_only_its_committed_parent_attempt(self):
+        snapshot = at('2026-10-10T14:00:00Z')
+        first = run(snapshot)
+        self.assertEqual(len(first['quote_requests']), 1)
+        parent = bounds.parent_authority(dict(round_id='parent', policy_input=dict(context=snapshot.context.read()),
+                                               plan=first))
+        snapshot = changed(with_quotes(snapshot), execution_attempt_budget=first['execution_attempt_budget'],
+                           execution_parent=parent)
+        result = run(snapshot)
+        self.assertTrue(result['intents'], result)
+        self.assertEqual(result['intents'][0]['execution_bounds']['ordinal'], 1)
+        ordinary = run(changed(snapshot, execution_parent=None))
+        self.assertEqual(ordinary['intents'][0]['execution_bounds']['ordinal'], 2)
+        # Wrong profile/session or quote request cannot provide free retries.
+        for changes in ({'profile_hash': '0'*64}, {'session_index': 81}, {'quote_requests': []}):
+            with self.subTest(changes=changes):
+                result = run(changed(snapshot, execution_parent=dict(parent, **changes)))
+                self.assertEqual(result['intents'][0]['execution_bounds']['ordinal'], 2)
 
     def test_mandatory_exit_bypasses_window_and_has_its_own_bounded_lane(self):
         snapshot = at('2026-10-10T23:00:00Z', held={'NVDAB': 8000},

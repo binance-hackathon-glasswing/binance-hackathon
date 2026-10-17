@@ -4,7 +4,7 @@ The runtime journals the budget with the round, not with a successful fill. Fres
 round/intent IDs and an execution-service restart cannot restore spent attempts.
 Mandatory sales use a separate lane and bypass the discretionary time window.
 """
-from larp.contracts import ContractError
+from larp.contracts import ContractError, Document
 from .schema import SYMBOLS, integer
 
 BASELINE = 'TREND_GUARDED_VOL'
@@ -69,12 +69,52 @@ def interval(context, cfg, mandatory):
             s['close_ms'] - limits['close_buffer_seconds'] * 1000)
 
 
-def reserve(context, cfg, state, symbol, side, mandatory, now_ms):
+def parent_authority(record):
+    """Only the bounded driver's previous committed quote round may supply this.
+
+    Preserve a small nonrecursive record for audit; the coordinator reconstructs
+    it from the journal again during replay, rather than trusting a model field.
+    """
+    context = record.get('policy_input', {}).get('context', {})
+    return dict(round_id=record['round_id'], profile_hash=Document.from_dict(context['profile']).digest('StrategyProfile.v1'),
+                session_index=context['session_index'], attempts=record['plan'].get('execution_attempts', []),
+                quote_requests=record['plan'].get('quote_requests', []))
+
+
+def _reuse(context, state, key, start, end, symbol, side, quotes):
+    if type(quotes) not in (list, tuple) or any(type(q) is not dict for q in quotes):
+        return None
+    parent = context.get('execution_parent')
+    if type(parent) is not dict or parent.get('session_index') != state['session']:
+        return None
+    if parent.get('profile_hash') != Document.from_dict(context['profile']).digest('StrategyProfile.v1'):
+        return None
+    # A child may reuse only a requested exact-input quote that is actually in
+    # its market input. An unrelated/ordinary new round cannot recycle a slot.
+    matching = any(r.get('symbol') == symbol and r.get('side') == side
+                   and any(q.get('side') == side and q.get('pay_asset') == r.get('pay_asset')
+                           and q.get('pay_units') == r.get('pay_units') for q in quotes)
+                   for r in parent.get('quote_requests', []))
+    if not matching:
+        return None
+    for item in parent.get('attempts', []):
+        a = item.get('authority', {})
+        if (a.get('schema') == SCHEMA and a.get('session_index') == state['session'] and a.get('leg') == key
+                and a.get('ordinal') == state['counts'].get(key) and a.get('valid_from_ms') == start
+                and a.get('valid_until_ms') == end):
+            return dict(a)
+    return None
+
+
+def reserve(context, cfg, state, symbol, side, mandatory, now_ms, *, quotes=()):
     """Consume one quote-evaluation round; return (authority, refusal)."""
     start, end = interval(context, cfg, mandatory)
     if not start <= now_ms < end:
         return None, 'EXECUTION_WINDOW_CLOSED'
     key = leg_key(symbol, side, mandatory)
+    reused = _reuse(context, state, key, start, end, symbol, side, quotes)
+    if reused is not None and reused['ordinal'] <= cfg['execution']['max_attempts_per_leg_session']:
+        return reused, None
     ordinal = state['counts'].get(key, 0) + 1
     if ordinal > cfg['execution']['max_attempts_per_leg_session']:
         return None, 'LEG_ATTEMPT_LIMIT'
