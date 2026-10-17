@@ -19,6 +19,13 @@ refusals. Push regression and fix before execution; run focused caps/proposal/
 Gate B checks and the combined review regression. No source or quote-execution
 qualification is inferred from these numeric comparisons.
 
+GB-RW3 review status: regression commit `2c594db` was pushed before execution;
+all 12 response/method mutations reproduced false numeric coverage. Fix `617abb0`
+is committed locally, but GitHub authentication subsequently returned HTTP401
+and Git push lost authentication. Changed-code tests have not run because the
+push-before-execution rule applies. Push the repair, then run the caps/proposal/
+Gate B regressions and combined review suite; do not call this repair verified yet.
+
 ## GB-RW1 — remaining Gate B reconciliation (2026-10-17, prospective)
 
 User requests all remaining Gate B work after inspecting all PRs and the remaining-work briefs. Base: integration `0672fb8`, rather than lagging main `fb95114`. All 85 advertised PR heads were fetched through native Git and compared with both branches. Seven heads are outside integration: historical closed #10/#82/#83/#89, remaining-work brief #126, checklist #133 and incomplete source acquisition #139. Their documents were read as references; no PR is merged or represented as independently approved here. Initial GitHub API/discussion requests were blocked by cloud egress; `api.github.com` was added to the environment draft, preserving the package-manager preset. API access later recovered and was verified directly; publication of that draft is not claimed.
