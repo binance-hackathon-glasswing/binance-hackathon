@@ -26,6 +26,13 @@ and Git push lost authentication. Changed-code tests have not run because the
 push-before-execution rule applies. Push the repair, then run the caps/proposal/
 Gate B regressions and combined review suite; do not call this repair verified yet.
 
+GB-RW3 update: authentication recovered and `a8101a9` (including fix `617abb0`)
+was pushed before changed-code execution. Focused cap/proposal/Gate B regression
+**33 passed, 105 subtests**, 0.88s, no skips (Linux/Python3.12.14). All 12 returned
+response/method mutations now block numeric coverage; non18 metadata and omitted
+optional transaction fields remain supported. The earlier blocked status above
+is historical. Combined review verification follows in IDEA-049 ALLPR-20261017.
+
 ## GB-RW1 — remaining Gate B reconciliation (2026-10-17, prospective)
 
 User requests all remaining Gate B work after inspecting all PRs and the remaining-work briefs. Base: integration `0672fb8`, rather than lagging main `fb95114`. All 85 advertised PR heads were fetched through native Git and compared with both branches. Seven heads are outside integration: historical closed #10/#82/#83/#89, remaining-work brief #126, checklist #133 and incomplete source acquisition #139. Their documents were read as references; no PR is merged or represented as independently approved here. Initial GitHub API/discussion requests were blocked by cloud egress; `api.github.com` was added to the environment draft, preserving the package-manager preset. API access later recovered and was verified directly; publication of that draft is not claimed.
