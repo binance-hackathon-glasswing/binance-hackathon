@@ -54,15 +54,20 @@ class Preflight(unittest.TestCase):
                                         edgar=edgar_ready(self.artifacts)), [])
 
     def test_committed_register_is_refused_until_terms_are_captured(self):
+        from larp.sources.register import load_edgar_terms
         reasons = live_preflight(self.sources, self.env)
         enabled = sorted(s.source_id for s in self.sources.values() if s.enabled)
-        missing = [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled
-                   if not self.sources[s].rights.get("terms_evidence_sha256")]
-        unavailable = [f"TERMS_ARTIFACT_UNAVAILABLE:{s}" for s in enabled
-                       if self.sources[s].rights.get("terms_evidence_sha256")]
-        self.assertEqual(reasons, missing + ["TERMS_EVIDENCE_MISSING:sec-edgar"] + unavailable)
+        # Either state of the committed register: a missing hash is refused, and a recorded hash still needs its
+        # retained bytes (none exist in this empty artifact root).
+        edgar = load_edgar_terms()
+        hashes = {s: self.sources[s].rights.get("terms_evidence_sha256") for s in enabled}
+        hashes["sec-edgar"] = edgar["terms_evidence_sha256"]
+        missing = [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled if not hashes[s]]
+        missing += [] if hashes["sec-edgar"] else ["TERMS_EVIDENCE_MISSING:sec-edgar"]
+        unavailable = [f"TERMS_ARTIFACT_UNAVAILABLE:{s}" for s in sorted(hashes) if hashes[s]]
+        self.assertEqual(reasons, missing + unavailable)
         absent = {k: replace(s, rights=dict(s.rights, terms_evidence_sha256=None)) for k, s in self.sources.items()}
-        self.assertEqual(live_preflight(absent, self.env),
+        self.assertEqual(live_preflight(absent, self.env, edgar=dict(edgar, terms_evidence_sha256=None)),
                          [f"TERMS_EVIDENCE_MISSING:{s}" for s in enabled] + ["TERMS_EVIDENCE_MISSING:sec-edgar"])
         self.assertNotIn("ftc-press", enabled)  # stays disabled until its connectivity is resolved
 
@@ -432,9 +437,9 @@ class TermsUserAgentAndEdgar(unittest.TestCase):
     def test_preflight_requires_edgar_terms(self):
         from larp.sources.register import load_edgar_terms
         env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": self.tmp.name}
-        edgar = load_edgar_terms()
-        self.assertIsNone(edgar["terms_evidence_sha256"])
-        self.assertIn("TERMS_EVIDENCE_MISSING:sec-edgar", live_preflight(with_terms(self.sources, self.artifacts), env))
+        edgar = dict(load_edgar_terms(), terms_evidence_sha256=None)
+        self.assertIn("TERMS_EVIDENCE_MISSING:sec-edgar",
+                      live_preflight(with_terms(self.sources, self.artifacts), env, edgar=edgar))
         self.assertEqual(live_preflight(with_terms(self.sources, self.artifacts), env, edgar=edgar_ready(self.artifacts)), [])
 
     def test_register_update_covers_edgar(self):

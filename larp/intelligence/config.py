@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import json
 import os
+import re
 
 from larp.intelligence.common import IntelligenceError, require_hash, sha256_hex
 from larp.intelligence.issuers import IssuerRegistry
@@ -104,16 +105,34 @@ def live_model_settings(env=None) -> LiveModelSettings:
     return LiveModelSettings(provider, model_id, key or None, path or None)
 
 
-_PLACEHOLDERS = ("<", ">", "example.com", "contact email", "you@")
+# Template text copied from instructions, and the RFC 2606 example domains. sec.gov answers such agents with 403
+# (IDEA-066 PC-TERMS01: "LARP Team Your Name your.real@email" passed the earlier check).
+_PLACEHOLDERS = ("<", ">", "example.com", "example.net", "example.org", "contact email", "you@",
+                 "your name", "yourname", "your.name", "your_name", "your real", "your.real", "your email",
+                 "youremail", "your.email", "your_email", "first last", "firstname", "lastname")
+# One whitespace-delimited address whose domain has a dotted ending of two or more letters.
+_SEC_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+_SEC_AGENT_HELP = ("set LARP_SEC_USER_AGENT to a team or person name followed by a contact email that someone reads, "
+                   "with no brackets or quotes")
 
 
 def sec_user_agent(env=None) -> str:
-    """Declared SEC User-Agent (fair-access rules). LARP_SEC_USER_AGENT; legacy SEC_USER_AGENT."""
+    """Declared SEC User-Agent (fair-access rules: a name and a contact email). LARP_SEC_USER_AGENT; legacy
+    SEC_USER_AGENT. Refusals name the failed rule, never the value."""
     env = os.environ if env is None else env
     new, old = env.get("LARP_SEC_USER_AGENT"), env.get("SEC_USER_AGENT")
     if new and old and new != old:
         raise IntelligenceError("LARP_SEC_USER_AGENT and SEC_USER_AGENT disagree")
     agent = (new or old or "").strip()
-    if not agent or "@" not in agent or any(p in agent.lower() for p in _PLACEHOLDERS):
-        raise IntelligenceError("A real SEC User-Agent with contact details is required (LARP_SEC_USER_AGENT)")
-    return agent
+    words = agent.split()
+    if not agent:
+        reason = "it is not set"
+    elif any(p in agent.lower() for p in _PLACEHOLDERS):
+        reason = "it contains template text, brackets or an example domain"
+    elif not any(_SEC_EMAIL.fullmatch(w) for w in words):
+        reason = "it has no email address with a domain ending such as .com or .edu.sg"
+    elif all(_SEC_EMAIL.fullmatch(w) or "@" in w for w in words):
+        reason = "it has no name before the email"
+    else:
+        return agent
+    raise IntelligenceError(f"A real SEC User-Agent is required: {reason}; {_SEC_AGENT_HELP}")
