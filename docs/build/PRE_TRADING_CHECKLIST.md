@@ -12,7 +12,7 @@ This is a snapshot of what stands between today and the scored run (Oct 29 – N
 
 Finish every Gate A and Gate B step that doesn't need the strategy profile this weekend, then on **Oct 20** build the profile from the finished quote capture and run everything that needs it, in order. Three things need the profile: `prepare` builds the runtime config from it, the evidence service refuses to start without that runtime config, and the planner takes its minimum trade size and slippage limits from it. Gate A `prepare` accepts only a profile built from a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't be faked to start early.
 
-**Risk:** every service runs for the first time on Oct 20, and the 24 h ingestion run means Gate A can't pass before Oct 21, the day the signed rehearsal is meant to start. **Fallback**, if the weekend goes well and the team wants a dry run: Keith can build a throwaway interim profile from the capture so far (`summarize --min-days 2`, then `python -m larp.strategy.profiles`) and start the services early; on Oct 20 it is replaced by the final one.
+**Risk:** every service runs for the first time on Oct 20, and the 24 h ingestion run means Gate A can't pass before Oct 21, the day the signed rehearsal is meant to start. The side note below lowers that risk.
 
 ## This weekend (Oct 17–19): no profile needed
 
@@ -42,6 +42,15 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] Yao Zhu + Keith: HALT behaviour for mandatory sells and exits during a price-jump hold (IDEA-055 POLICY-HOLD).
 - [ ] Keith: keep or move the Nov 11 15:00 UTC flatten (#107).
 - [ ] Settle open choice O2 so EXP-007's pass criteria are final (#123).
+
+## Side note: interim profile for an early dry run (Keith, optional)
+
+Keith is trying this. If it works, the services can start over the weekend, so first-run problems (configs, receiver ACKs, ingestion) show up before Oct 20. It is thrown away on Oct 20 and replaced by the final profile from step 2 below. Gate A is unsigned, so the interim values only change shadow HOLD/BUY decisions.
+
+- [ ] On the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. The capture covers Fri Oct 16 (about 10 US-session rounds) and the weekend. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5.
+- [ ] Build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`. `rehearsal-live.json` is the one for Gate A `prepare`.
+- [ ] Isaac + Keith: a quick look at spread, impact, gas and minimum trade size; record in IDEA-063 that it is interim, with the coverage parameters, capture hash and profile hash.
+- [ ] If the weekend Gate A setup is done, run Oct 20 steps 3–7 early with this profile. On Oct 20, swapping in the final profile means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`, because the profile hash is pinned in the runtime config.
 
 ## Oct 20: profile day, in this order
 
