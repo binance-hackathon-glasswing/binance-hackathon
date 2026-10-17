@@ -38,7 +38,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Yao Zhu:** after the bundle exists, upload it and provision `primary` over SSM (`provision.sh primary <bundle> --expect-sha256 <CI hash>`; AWS_RUNBOOK step 5).
 - [ ] **Yao Zhu:** after provisioning, run migrations 012/013 and `roles.sql` through an SSM port-forward, then check IAM token login and TLS for each database role (AWS_RUNBOOK step 6, PR99-RV1, IDEA-044 V10/V11).
 - [ ] **Yao Zhu:** copy the six retained terms files from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register.
-- [ ] **Yao Zhu:** on `primary`, run the route check (`python -m larp.runtime.routes --role primary`) and record `chronyc tracking`; send both reports to Keegan (R-07, R-08).
+- [ ] **Yao Zhu:** on `primary`, run the route check (`python -m larp.runtime.routes --role primary`) and record `chronyc tracking`. Also confirm that `/etc/chrony.conf` has `rtcsync` and that `kernel_clock_synchronized()` prints `True` there (command in DEPLOYMENT_DAY step 9); without that signal a `CLOCK` HALT never clears (D-DN-10, #125). Send the reports to Keegan (R-07, R-08).
 
 ### Gate B setup
 
@@ -129,7 +129,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Keith:** run the pre-registered after-cost comparison and staggered evaluation (#37, #38).
 - [ ] **Keegan:** propose the operations decisions D-DN-01, 04, 06, 07, 08 and 11 (IDEA-049-D §5).
 - [ ] **Isaac:** decide those operations items from Keegan's proposals.
-- [ ] **Isaac:** review and merge #125 (automatic CLOCK HALT clear, D-DN-10).
+- [x] **Isaac:** review and merge #125 (automatic CLOCK HALT clear, D-DN-10). Done 2026-10-17: reviewed and merged (full suite 1790 passed, 9 skipped, on the merge with the integration branch). The host check is in Yao Zhu's route-check line above.
 
 ## Oct 24: S1 build (plan §15 in #123)
 
