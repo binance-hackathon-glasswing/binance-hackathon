@@ -172,7 +172,7 @@ def decide(snapshot, state):
                 if previously_held:
                     status = "CASH_REVIEW"
         elif s1 is not None:
-            # Plan §5.2: a level change moves every eligible name to level x w; otherwise only a top-up below
+            # IDEA-075 §5.2: a level change moves every eligible name to level x w; otherwise only a top-up below
             # level - band buys, and nothing is sold on drift. Sells toward a lower level need no entry gates.
             fresh_review = bool(a and (a.get("review_complete") is True or
                 (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))

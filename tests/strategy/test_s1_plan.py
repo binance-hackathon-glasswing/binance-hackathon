@@ -1,4 +1,4 @@
-"""IDEA-076 Q01-Q14: the S1 policy and planner (PR #123 plan §4-§6). Synthetic fixtures only.
+"""IDEA-076 Q01-Q14: the S1 policy and planner (IDEA-075 plan §4-§6, PR #123). Synthetic fixtures only.
 
 Fixture: five names at 100 USDT per token (1 unit = 0.01 USDT), 200 USDT equity, equal frozen weights 1/5, so the
 95% target per name is 19% (about 3798 units after the cost reserve) and the 60% target is 12%.

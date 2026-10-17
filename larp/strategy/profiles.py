@@ -143,7 +143,8 @@ def validate_live(p):
         raise ContractError("Malformed or incomplete live profile") from exc
 
 
-def build_live_profiles(summary: Document, registry: Document, *, s1=None, s1_decision="PR #123 S1 plan, proposed"):
+def build_live_profiles(summary: Document, registry: Document, *, s1=None,
+                        s1_decision="IDEA-075 S1 plan (PR #123), proposed"):
     """Return rehearsal/final candidate profiles; caller freezes hashes in manifest.
 
     Conservative budgets are algebraic policy choices requiring Yao/team review.
@@ -222,7 +223,7 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None, s1_de
         if cfg:
             for key in ("baseline", "s1", "policy_id"):
                 p["provenance"][key] = {"decision_id": s1_decision,
-                                        "formula": "PR #123 §4-§5, §12 values; weights from s1 freeze-weights"}
+                                        "formula": "IDEA-075 §4-§5, §12 values; weights from s1 freeze-weights"}
         formulas = {"minimum_trade_units": "max_symbol ceil(10000*pair_gas_value/(50-spread-min(50,2*median_impact)-fee_bp))",
             "cost_reserve_units": "ceil(expected_equity_units/1000): 50 bp of 20% position",
             "per_trade_cap_units": ("ceil(expected_equity_units*s1.high*max(s1.weights)) + cost_reserve_units" if cfg

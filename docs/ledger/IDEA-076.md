@@ -2,12 +2,12 @@
 
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
 - Status: open (criteria pre-registered; implementation follows on `claude/s1-trading-plan`).
-- What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`), where it is numbered IDEA-058 and is proposed for renumbering to IDEA-075, because IDEA-058 is already the Gate A record. This record builds:
+- What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:
   - **B2:** a profile baseline, `TREND_GUARDED_VOL`, with its own `s1` block and bounds.
-  - **B3:** the policy and planner: target gross = min(trend level, LLM level), with the planner's risk ladder on top; precedence as in the plan's §6; reuse of the IDEA-037 trim latch.
+  - **B3:** the policy and planner: target gross = min(trend level, LLM level), with the planner's risk ladder on top; precedence as in IDEA-075 §6; reuse of the IDEA-037 trim latch.
   - **B4 core:** the reduce-only exposure limiter. That covers its output schema, the evidence-class map, expiry and rejection, plus the deterministic path for when no model is used.
   It also adds a **per-name, per-session leg cadence** in place of the one-discretionary-swap-per-session rule, for this baseline only. A level change moves every name in one session, so the old rule would spread the five opening buys over five sessions.
-- Values: every §12 value is a **proposal until the Oct 22 freeze** (Keith, Yao Zhu). The code takes them from the profile; nothing here freezes them. The weights are computed by a freeze tool from token session bars at the freeze, never tuned on development P&L (ledger rule 5).
+- Values: every IDEA-075 §12 value is a **proposal until the Oct 22 freeze** (Keith, Yao Zhu). The code takes them from the profile; nothing here freezes them. The weights are computed by a freeze tool from token session bars at the freeze, never tuned on development P&L (ledger rule 5).
 - Not in this record:
   - EXP-007, the trend-guard replay. It is NOT RUN, because this session can't reach any price history (network policy).
   - Wiring live session bars into the runtime driver. Today the driver passes no `series`, and the candle reader needs timestamp-convention evidence (DR-08). Until then the live trend guard keeps its starting state (UP), and every round says so.
@@ -15,7 +15,7 @@
   - The session-close job and the round-log `input`/`cot` fields (B5, Keegan).
   - The deviations-register rows (B7).
   - Any LLM call. The limiter accepts a model's output only through the evidence check; producing that output is B4's model half.
-- Links: PR #123 (plan §4–§8, §12–§14, §16), IDEA-035, IDEA-037, IDEA-016 (cadence), IDEA-054 (calendar), IDEA-057 (routing), GAP-10, GAP-12, GAP-13, GAP-62, D-12, #55, #56.
+- Links: IDEA-075 (PR #123; §4–§8, §12–§14, §16), IDEA-035, IDEA-037, IDEA-016 (cadence), IDEA-054 (calendar), IDEA-057 (routing), GAP-10, GAP-12, GAP-13, GAP-62, D-12, #55, #56.
 
 ## Pass criteria (written before any code exists)
 
@@ -32,7 +32,7 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
   The proposal's declared 80% / 20% caps still bind every other baseline unchanged.
 - **S02 Weight freeze:** wᵢ ∝ 1/σᵢ over the last 60 session log returns (at least 20; with fewer, the median σ of the others); capped at `weight_cap`, with the excess spread in proportion over the uncapped names. The result sums exactly to 1 and is reproducible from the same series.
 
-**Trend (plan §4.1)**
+**Trend (IDEA-075 §4.1)**
 - **S03:** the basket index uses equal-weight average returns; r = I_t ÷ mean(last 5 I) − 1.
   - r > +band gives UP; r < −band gives DOWN; inside the band the state holds.
   - A first evaluation inside the band starts UP.
@@ -40,7 +40,7 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
   - Each completed session is evaluated at most once.
 - **S04:** without series (today's live driver), the state stays at its start (UP) and the round reports `TREND_INPUT_UNAVAILABLE`.
 
-**Limiter (plan §4.2, T2)**
+**Limiter (IDEA-075 §4.2, T2)**
 - **L01** A cited evidence ID that is missing or unverified: the output is rejected and the previous level stands.
 - **L02** An accepted CAUTION: target = min(trend, 60%).
 - **L03** NORMAL never raises the target above the trend level.
@@ -50,7 +50,7 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
 - **L07** A scheduled-event entry alone cannot lower the level.
 - **L08** In deterministic mode, the evidence-class map alone sets the level: Class 2 on two or more names within 5 sessions gives CAUTION; a verified suspension gives SEVERE.
 
-**Policy and planner (plan §5–§6, T3)**
+**Policy and planner (IDEA-075 §5–§6, T3)**
 - **Q01** A flat book at 95% UP builds the five names to 0.95 × wᵢ, at most one leg per name per round, sells before buys.
 - **Q02** UP → DOWN sells every name toward 0.60 × wᵢ.
 - **Q03** The dead band holds the state.
@@ -58,7 +58,7 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
 - **Q05** A top-up happens only when gross < target − band, buying the largest gaps first.
 - **Q06** The 35% hard name line trims to target and holds the latch across settlement.
 - **Q07** The 12% deep cut sells to ≤ 40% gross ahead of every level.
-- **Q08** The 8% stop blocks a DOWN → UP rebuy (no reset by default, plan §16 O1).
+- **Q08** The 8% stop blocks a DOWN → UP rebuy (no reset by default, IDEA-075 §16 O1).
 - **Q09** No buys or level increases after `new_risk_end`; level decreases still sell.
 - **Q10** Exits only from `flatten_start`.
 - **Q11** A Class 1 name's weight stays in cash (no redistribution).
@@ -102,11 +102,11 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
 - **S05 PASS:** REHEARSAL and FINAL S1 profiles pass `validate_live`, with a per-trade cap of one full top position plus reserve and an exit reserve for five positions; provenance says "proposed"; S1 defects are refused; EQUAL_WEIGHT profiles are unchanged.
 - **R PASS:** full suite 1797 passed, 10 skipped, 0 failed, 2577 subtests (532.9 s), against 1751 / 10 at `eda2ed2`. The difference is the 46 new tests.
 - **Differences from the plan:**
-  - The rebalance completes per name once within one minimum trade of target, so legs smaller than the minimum are skipped, as §5.2 says.
+  - The rebalance completes per name once within one minimum trade of target, so legs smaller than the minimum are skipped, as IDEA-075 §5.2 says.
   - Hard-line trims go to min(top level × w, the current target).
-  - The S1 LIVE profiles keep the builder's existing windows (FINAL: new risk ends Nov 9 00:00, flatten Nov 10 00:00, signing ends Nov 11 14:45 UTC) rather than §8's proposed Nov 9 21:00 / Nov 10 19:00. That is §16 O4, for the team.
+  - The S1 LIVE profiles keep the builder's existing windows (FINAL: new risk ends Nov 9 00:00, flatten Nov 10 00:00, signing ends Nov 11 14:45 UTC) rather than IDEA-075 §8's proposed Nov 9 21:00 / Nov 10 19:00. That is IDEA-075 §16 O4, for the team.
 - **Still open, with owners:**
-  - Keith + Yao Zhu: freeze the §12 values and §16 O1–O6 by Oct 22; run `python -m larp.strategy.s1 freeze-weights` on token session bars to Oct 21; build the profiles with `s1=` and the decision ID.
+  - Keith + Yao Zhu: freeze the IDEA-075 §12 values and §16 O1–O6 by Oct 22; run `python -m larp.strategy.s1 freeze-weights` on token session bars to Oct 21; build the profiles with `s1=` and the decision ID.
   - Keith: EXP-007 (NOT RUN here; no price data reachable).
   - DR-08: wire live session bars into the runtime driver; until then the live trend guard stays UP.
   - Yao Zhu: produce `exposure_evidence` and `exposure_assessment` from the evidence pipeline (B4's model half); until then the limiter sees no evidence and stays NORMAL.

@@ -81,7 +81,7 @@ def profile(snapshot):
         raise ContractError("Per-trade cap required")
     if p["baseline"] == "TREND_GUARDED_VOL":
         # S1 (IDEA-076): its own levels, weights and hard line replace the proposal's 80%/20% caps, which are a
-        # recorded deviation (PR #123 §14, GAP-62). The other baselines keep every declared cap below.
+        # recorded deviation (IDEA-075 §14, GAP-62). The other baselines keep every declared cap below.
         from .s1 import config
         config(p)
         return _terminal_gates(p)

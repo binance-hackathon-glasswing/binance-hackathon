@@ -1,7 +1,7 @@
-"""S1: trend-guarded, volatility-weighted book (IDEA-076; the team's plan of 2026-10-16, PR #123 §4-§6).
+"""S1: trend-guarded, volatility-weighted book (IDEA-076; the team's plan of 2026-10-16, IDEA-075 §4-§6, PR #123).
 
-Pure functions, exact arithmetic, no I/O. Every value is a profile value: the §12 numbers are proposals until the
-Oct 22 freeze, and nothing here chooses them.
+Pure functions, exact arithmetic, no I/O. Every value is a profile value: the IDEA-075 §12 numbers are proposals
+until the Oct 22 freeze, and nothing here chooses them.
 
 - Target gross = min(trend level, limiter level); the planner's declared loss ladder applies on top (3% daily and
   8% drawdown block buys; 12% cuts to 40%).
@@ -174,7 +174,7 @@ def _verified(evidence, session):
 
 
 def allowed_severity(items):
-    """The deepest cut a set of verified evidence allows (plan §4.2 table)."""
+    """The deepest cut a set of verified evidence allows (IDEA-075 §4.2 table)."""
     severity = 0
     class_2 = {s for i in items if i["class"] == "CLASS_2_RED_FLAG" for s in i["symbols"]}
     if len(class_2) >= 2:

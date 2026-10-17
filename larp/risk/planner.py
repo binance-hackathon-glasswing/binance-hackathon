@@ -167,7 +167,7 @@ def plan(snapshot, proposal_or_none):
     # drawdown cut always trims at its own limit. Trims still go back to the operating cap.
     hard_name = s1["hard"] if s1 else fraction(p.get("hard_name_weight", [1, 5]))
     if s1:
-        trim_gross = gross_limit if r["deep_cut"] else Fraction(2)  # S1 has no gross line (plan §5.2)
+        trim_gross = gross_limit if r["deep_cut"] else Fraction(2)  # S1 has no gross line (IDEA-075 §5.2)
     else:
         trim_gross = (gross_limit if r["deep_cut"] or "hard_gross_weight" not in p
                       else max(gross_limit, fraction(p["hard_gross_weight"])))
@@ -350,7 +350,7 @@ def plan(snapshot, proposal_or_none):
                 actions.append((symbol, side, q, False, [t.reason]))
 
     if s1 and actions and not actions[0][3]:
-        # Plan §5.2: sells first, then buys, largest gap first (by notional at the current mark).
+        # IDEA-075 §5.2: sells first, then buys, largest gap first (by notional at the current mark).
         actions.sort(key=lambda a: (a[1] != "SELL", -value(a[2], market[a[0]]), a[0]))
     if p["baseline"] == "EQUAL_WEIGHT" and actions and not actions[0][3]:
         # Candidate selection and actual child execution must use the same cost
