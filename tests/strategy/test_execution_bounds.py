@@ -210,6 +210,16 @@ def round_record(*, mandatory=False, ordinal=1):
 
 
 class DurableAuthority(unittest.TestCase):
+    def test_native_gas_round_keeps_its_separate_controls(self):
+        from tests.execution_fixtures import intent
+        record = round_record()
+        record['plan']['intents'][0]['kind'] = 'GAS_TOP_UP'
+        del record['plan']['intents'][0]['execution_bounds']
+        projection = dict(round_records={'round': record})
+        now = milliseconds('2026-10-10T23:00:00Z')
+        self.assertTrue(bounds.permitted(projection, intent(kind='GAS_TOP_UP'), now))
+        self.assertFalse(bounds.permitted(projection, intent(), now))
+
     def test_reconstructs_from_durable_plan_and_refuses_mutated_authority(self):
         from tests.execution_fixtures import intent
         economic = intent(amount=100*10**12)
