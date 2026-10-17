@@ -231,9 +231,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
-        raise NotIntegrated('Supported assessors are deterministic and shadow-only aiand_routed (DR-11)')
-    if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
-        raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
+        raise NotIntegrated('Supported assessors are deterministic and aiand_routed (DR-11)')
+    signed_model = d['assessor'] == 'aiand_routed' and (d['execution'] == 'service' or config.get('mode') == 'live')
+    if signed_model and (d['execution'] != 'service' or type(d.get('model_adoption_ref')) is not str
+                         or not d['model_adoption_ref'].strip()):
+        raise ContractError('Signed routed assessments need service execution and a reviewed model_adoption_ref')
     if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
             'model_routing_file', 'model_routing_sha256', 'model_budget_root')):
         raise ContractError('AIand routing needs a pinned file and shared model budget root')
@@ -331,8 +333,14 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check
         builder.price_jump = dict(bps=balance['price_jump_bps'], hold_ms=balance['max_age_ms'])  # IDEA-055 PR 4
+    deferred = None
+    if signed_model:
+        from larp.runtime.deferred_models import DeferredAssessments
+        deferred = DeferredAssessments(assessor, root=Path(d['market_artifact_root']) / 'model' / 'assessments',
+                                       run_id=config['run_id'], build_id=config['build_id'], profile_hash=profile_hash)
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
+                       assessments=deferred,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 

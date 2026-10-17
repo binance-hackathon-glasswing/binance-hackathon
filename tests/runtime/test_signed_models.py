@@ -126,8 +126,10 @@ class SignedPreparation(unittest.TestCase):
 
     def test_slm7_final_scope_requires_final_profile_and_preserves_shadow_default(self):
         with self.assertRaises(ContractError):self.prepared(runtime_mode='live')
-        p=profile();p['environment']='FINAL'
-        files=self.prepared(runtime_mode='live',profile=p)
+        from larp.strategy.profiles import build_live_profiles
+        p=build_live_profiles(Document.from_dict(profile()['quote_cost_summary']),
+            Document.from_dict(json.loads((gate_a.ROOT/'config/intelligence/red_flags.v1.json').read_bytes())))['FINAL']
+        files=self.prepared(runtime_mode='live',profile_raw=p.payload)
         values={n:json.loads(raw) for n,raw in files.items() if n.endswith('.json')}
         report=json.loads(files['preparation-report.json'])
         self.assertEqual(values['initial-state.json']['mode'],'live')

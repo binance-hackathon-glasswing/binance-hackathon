@@ -125,7 +125,8 @@ class Coordinator:
             datetime.fromtimestamp(now_ms/1000,timezone.utc),('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'),
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
 
-    def start(self,round_id,request,now_ms,*,defer_close=False):
+    def start(self,round_id,request,now_ms,*,defer_close=False,assessment_override=Ellipsis,
+              assessment_audit=None,use_accepted_evidence=False):
         if type(round_id) is not str or not round_id:
             raise ContractError('Round ID must be a non-empty string')
         current=self.store.load(self.run_id)
@@ -146,7 +147,7 @@ class Coordinator:
         started_ms=now_ms
         try:
             assessment_request(request,self.run_id,self.profile_hash,now_ms)
-            assessment=self.assessor.assess(request)
+            assessment=(self.assessor.assess(request) if assessment_override is Ellipsis else assessment_override)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         now_ms=self.clock()
@@ -194,7 +195,7 @@ class Coordinator:
         # A HALT for repeated failures alone probes policy and planner, so only a round that really works can clear
         # it (IDEA-042 V1). The probe's plan is discarded below: nothing is placed, reserved or advanced.
         probe=halted==['REPEATED_FAILURES'] and not unregistered
-        if assessment is not None and context_ok and (not blocked or probe):
+        if (assessment is not None or use_accepted_evidence) and context_ok and (not blocked or probe):
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
@@ -242,6 +243,8 @@ class Coordinator:
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
                     started_ms=started_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
                         for i in plan['intents']],swap_mappings=[])
+        if assessment_audit is not None:
+            record['assessment_audit']=assessment_audit
         if now_ms!=started_ms:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):
@@ -378,6 +381,17 @@ class Coordinator:
                          {i['decision_id'] for i in record['plan'].get('intents',[])})
         inputs=dict(version_id=self.version_id,round_id=round_id,decision_ids=decisions,request=record['request'],
                     assessment=assessment,policy_input=record.get('policy_input'),policy_state=record.get('policy_state'))
+        if record.get('assessment_audit') is not None:
+            trace=record['assessment_audit']
+            inputs['assessment_audit']=trace
+            if assessment is None:
+                summaries=[e.get('response',{}).get('reasoning_summary') for e in trace.get('events',[])
+                           if e.get('kind')=='MODEL_RESPONSE']
+                summaries=[s for s in summaries if type(s) is str and s.strip()]
+                if summaries:
+                    rationale=summaries
+                elif any(e.get('kind')=='MODEL_REQUEST' for e in trace.get('events',[])):
+                    rationale='Model request started; no accepted assessment. Original I/O and interruption status are in assessment_audit.'
         output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
                     policy_output=record.get('policy_output'))
         if record.get('aborted'):
@@ -452,11 +466,13 @@ class Coordinator:
         return self.store.commit(batch_for(current,'close:'+round_id,close_event,
                                            projection=projection,audit=[audit]))
 
-    def recover(self,now_ms):
+    def recover(self,now_ms,*,skip_rounds=()):
         # No attempts are released or re-signed here. Isaac reconciles commands.
         # One round that cannot close must not stop later rounds from closing.
         receipts=[]; failures=[]
         for round_id,_ in self.store.open_rounds(self.run_id):
+            if round_id in skip_rounds:
+                continue
             try:
                 record=self.store.load(self.run_id).read()['projection'].get('round_records',{}).get(round_id)
                 if record and record.get('execution_pending',bool(record['plan'].get('intents'))):
