@@ -42,6 +42,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 tools/deploy/qualify_balance_rpc.py \
 ```
 
 Set `LARP_CAPTURE_ROOT` explicitly to your external capture directory first.
+On a macOS framework Python with no default CA store, use the existing system
+trust bundle explicitly, e.g. prefix the command with
+`SSL_CERT_FILE=/etc/ssl/cert.pem` if that file exists. This keeps certificate and
+hostname verification enabled; do not disable TLS checks to make a probe pass.
 The command refuses dirty/unpushed code, an existing output directory, tracked
 provider config, symlinks and non-HTTPS/credentialed/redirecting endpoints. It
 accepts the runtime's ordered list of one to four providers, with distinct
