@@ -363,3 +363,52 @@ Pass criteria before implementation or changed-code execution:
   reviewer roles, secret names, actual prior spend and outstanding P0/P1/P2/trial
   requirements. No AWS/host activation, paid calls, labels or policy adoption is
   claimed. No parent model-selection or Gate A/B GAP closes.
+
+### SG-8 results (2026-10-17)
+
+- Criteria committed/pushed at `411dd52`; implementation/tests at `e652603` before
+  execution. The first focused run was **127 passed, 1 failed, 7 skipped,
+  198 subtests**, 5.74s. The new test incorrectly omitted the retained OpenAI
+  budget-refusal stage from its expected trace; no POST occurred. Corrected and
+  pushed at `08f2a0a` before rerun. The initial command omitted the disposable DSN,
+  so the seven PostgreSQL tests were skipped, not passed.
+- **SG8a–e PASS for offline engineering scope**, at pushed
+  `08f2a0a1391dc6356859639e0097b636260d959f`: focused routing/preparation/qualification/
+  driver/routes/secrets suite **135 passed, 198 subtests**, 14.71s, no skips, with
+  disposable PostgreSQL14.24. Seven new tests cover exact-byte copy/pins, unchanged
+  deterministic defaults, 16 invalid-spec mutations before construction, missing/
+  altered/oversized inputs, actual CLI package production, complete local CI/terms
+  package qualification and resealed inner-pin/path/scope mutations. Actual
+  prepared runtime composition reads an ingested NVIDIA filing through the
+  read-only evidence reader; synthetic transports demonstrate GLM-low → Sol
+  review, original filing text at each tier, durable $40 budget refusal with no
+  OpenAI POST, Kimi-high fallback and then GLM-high fallback. Original six-tool/
+  ten-step/deadline limits and $10 reserve remain enforced by existing regressions.
+- **Full suite PASS** at the same code: Linux x86_64, Python3.12.14,
+  PostgreSQL14.24, bubblewrap through the supported namespace execution route:
+  **1929 passed, 6 skipped, 2858 subtests**, 385.38s, exit0. Command:
+  `env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PIP_CACHE_DIR=/workspace/.cache/pip LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test .venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider`.
+  Skips: one optional external recorded-market dataset and five opt-in systemd
+  cases; this host has no systemd PID1. No xfails. The AWS_PROFILE override is
+  scoped to offline tests; no deployment authentication is changed. No golden
+  trace was regenerated. Static Python AST and `git diff --check` pass.
+- Logs outside Git at `/workspace/larp-cloud`: initial
+  `llm-routing-focused.log` SHA256
+  `dbc465ffe91d75d4785c0f2ee1d9b3c26b8fd456c2a04f9a2b6c3a0dc01b8970`;
+  corrected `llm-routing-focused-corrected.log`
+  `9b894daae0ae150fb43a8df5b1cf86fe1deeb24bcbfb47f0971fca6ecbb46966`;
+  `llm-routing-full.log`
+  `9ed94b5f53b6d120477c04f90d6564c2834612f85f9590f24bb9f7e1e229ed41`.
+- [PR159](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/159)
+  targets integration. Org Actions [39037596385](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39037596385)
+  ran no runtime steps; its annotation reports the existing account-payment/
+  spending-limit refusal. No hosted CI pass is claimed for this change.
+- Remaining: Yao Zhu installs reviewed prepared files before manifest binding,
+  supplies runtime `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` for the requested
+  OpenAI review tier (omit the latter only for an intentional external-only
+  trial), initializes the single private ledger from actual prior spend, and
+  records P0/P1/P2 and trial results. Keith supplies independent labels; team
+  owns rights, production declaration/adoption and cut-line decisions. Runtime
+  service/live refusal remains. No paid call, AWS/host mutation, activation,
+  receiver upload, wallet signing or trading occurred. #97 and the parent GAPs
+  stay open; synthetic calls do not establish real-provider access or quality.
