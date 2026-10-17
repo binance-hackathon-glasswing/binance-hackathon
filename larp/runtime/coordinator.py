@@ -179,6 +179,12 @@ class Coordinator:
                 # cannot drop an adverse finding (IDEA-033 R16). No policy runs without its context.
                 updates=getattr(exc,'updates',None) or {}
                 context_ok=False
+        if use_accepted_evidence and context_ok:
+            # A cached/failed/invalid model result cannot count as a healthy S1 session.
+            # Only this round's verified, accepted fresh assessment may advance its expiry clock.
+            context['assessment_available']=(assessment is not None
+                and assessment.read().get('status')=='ASSESSED'
+                and any(d.get('decision')=='ACCEPT' for d in updates.get('evidence_decisions',[])))
         snapshot=self.snapshot(current,now_ms,context)
         halted=halt_reasons(current.read()['projection'])
         if halted:
