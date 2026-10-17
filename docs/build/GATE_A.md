@@ -144,8 +144,13 @@ No secrets, network/DB/AWS calls, writes, activation or uploads occur.
 Exit **0** and `local_ready: true` mean those local checks passed. Exit **4**
 means a failed check or missing prerequisite (`NOT_RUN`). `gate_a_passed` and
 `remote_ci_verified` always remain false, and all host checks remain `NOT_RUN`.
-Obtain the exact artifact and check its hash against the registered-repo CI
-summary separately (#49/#98); local bytes alone cannot establish CI provenance.
+Obtain the exact artifact and check its hash against the CI job summary
+separately (#49); local bytes alone cannot establish CI provenance. Since
+2026-10-17 the team's release builds come from the CI mirror, because org Actions
+are blocked (#98; decision IDEA-066 PC-DEC01). For a mirror bundle this checker
+reports `CI_RELEASE_BYTES: FAIL` (it requires the registered repository as
+`build_origin`); that result is accepted and recorded, and the host's
+`preflight --bind` byte check must still pass.
 Run this command from the checked build's environment; it does not verify the
 installed dependency versions or host file permissions. It neither refreshes
 the captured wallet balances nor qualifies a real RPC provider. First BNB is
