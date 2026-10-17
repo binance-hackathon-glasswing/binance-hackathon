@@ -110,6 +110,43 @@ Before copying anything to the host:
 
 ## Hosted qualification (Yao Zhu + Keegan; not performed by preparation)
 
+Before transfer, inspect the frozen package using the downloaded CI bundle's
+unbound manifest, release directory and CA, plus the retained terms store:
+
+```sh
+python -m larp.runtime.gate_a_check \
+  --prepared deploy/activation/gate-a-prepared \
+  --ci-manifest "$LARP_BUNDLE_ROOT/release-manifest.json" \
+  --release-root "$LARP_BUNDLE_ROOT/release" \
+  --rds-ca "$LARP_BUNDLE_ROOT/rds-ca.pem" \
+  --artifact-root "$LARP_CAPTURE_ROOT/terms"
+```
+
+This read-only command checks the exact package hashes, run/build/wallet
+agreement, unsigned settings, profile/calendar/state pins, real service
+configuration validators, CI release bytes and retained terms artifacts. It
+parses the generated public `evidence.env` without running it. The supplied
+artifact root must contain `artifacts/<hash-prefix>/<hash>` as produced by the
+terms capture; the host still needs its own installed copy and source preflight.
+Only the CA path is mapped to its local bundle copy for configuration validation.
+No secrets, network/DB/AWS calls, writes, activation or uploads occur.
+
+Exit **0** and `local_ready: true` mean those local checks passed. Exit **4**
+means a failed check or missing prerequisite (`NOT_RUN`). `gate_a_passed` and
+`remote_ci_verified` always remain false, and all host checks remain `NOT_RUN`.
+Obtain the exact artifact and check its hash against the registered-repo CI
+summary separately (#49/#98); local bytes alone cannot establish CI provenance.
+Run this command from the checked build's environment; it does not verify the
+installed dependency versions or host file permissions. It neither refreshes
+the captured wallet balances nor qualifies a real RPC provider. First BNB is
+Gate B work and does not prevent this unsigned check. Keep the frozen directory
+unchanged; save any stdout report outside it.
+
+The remaining Gate A work and owners are tracked in
+[#127](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/127);
+this checker is [IDEA-066](../ledger/IDEA-066.md), issue
+[#128](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/128).
+
 Follow [AWS_RUNBOOK.md](AWS_RUNBOOK.md) for the concrete reviewed spend/apply,
 primary-host provisioning, database migrations and least-privilege IAM/TLS checks.
 Signer access and key provisioning are Gate B work; neither blocks an unsigned

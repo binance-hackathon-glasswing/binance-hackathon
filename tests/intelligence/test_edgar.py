@@ -183,6 +183,34 @@ class ConfigurationTests(unittest.TestCase):
                 sec_user_agent(env)
         self.assertEqual(sec_user_agent({"SEC_USER_AGENT": UA}), UA)
 
+    def test_sec_user_agent_rejects_template_contacts(self):
+        # IDEA-066 PC-TERMS01: a copied template passed the old check and sec.gov answered 403.
+        refusals = {
+            "LARP Team Your Name your.real@email": "template text",
+            "LARP Team YourName ops@larp-team.org": "template text",
+            "LARP Team firstname.lastname@uni.edu": "template text",
+            "LARP Team ops@example.org": "template text",
+            "LARP Team ops@larp-team": "no email address",
+            "LARP Team ops@larp-team.c": "no email address",
+            "LARP Team ops at larp-team.org": "no email address",
+            "LARP Team @larp-team.org": "no email address",
+            "ops@larp-team.org": "no name",
+            "  ops@larp-team.org  ": "no name",
+            "   ": "not set",
+        }
+        for agent, reason in refusals.items():
+            with self.subTest(agent=agent), self.assertRaises(IntelligenceError) as caught:
+                sec_user_agent({"LARP_SEC_USER_AGENT": agent})
+            self.assertIn(reason, str(caught.exception))
+            self.assertNotIn("larp-team", str(caught.exception))  # the value is never echoed
+
+    def test_sec_user_agent_accepts_name_and_real_address(self):
+        for agent in (UA, "LARP Hackathon Team Jane Tan jane.tan+sec@mail.uni-x.edu.sg",
+                      "LARP test runner ops@larp-test.invalid", "LARP Test test-contact@larp.test",
+                      "Glasswing ops@larp-team.org (EDGAR research)"):
+            with self.subTest(agent=agent):
+                self.assertEqual(sec_user_agent({"LARP_SEC_USER_AGENT": f"  {agent} "}), agent)
+
 
 if __name__ == "__main__":
     unittest.main()
