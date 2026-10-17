@@ -1,8 +1,22 @@
 # Isaac task 3: router source review (#138)
 
-Status 2026-10-17: **waiting for public source/ABI input**, not ready for
-deployment. Record: IDEA-070 RE-01. Decoder dependency: PR130 at `e5bd552`.
+Status 2026-10-17: **router Code page is unverified; facet source remains
+unresolved**, not ready for deployment. Record: IDEA-070 RE-01. Decoder dependency: PR130 at `e5bd552`.
 This task has its own branch, `codex/isaac-03-router-evidence-20261017`.
+
+## Current browser finding (RE-01 B1)
+
+Isaac's screenshot shows “Verify and Publish”, “Add Custom ABI”, and hexadecimal
+bytecode rather than published source/ABI. The hexadecimal is compiled code;
+it is not the source or ABI requested below. Do not add a custom ABI or attempt
+to verify/publish this third-party contract.
+
+The screenshot also shows **Read Facets**, beside Code. Inspect that read-only
+tab next for facet addresses and any mapping for selector `0xad43f73d`; the
+relevant facet may have separately verified source. Its identity, verification
+and safety properties are still unknown. No signing/wallet connection is needed
+for the requested page inspection. The original conditional source-export steps
+follow for any verified implementation/facet found.
 
 ## Evidence needed from Isaac's browser
 
