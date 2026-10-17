@@ -1,4 +1,4 @@
-"""IDEA-076 Q01-Q14: the S1 policy and planner (IDEA-075 plan §4-§6, PR #123). Synthetic fixtures only.
+"""IDEA-076 Q01-Q15, L09: the S1 policy and planner (IDEA-075 plan §4-§6, PR #123). Synthetic fixtures only.
 
 Fixture: five names at 100 USDT per token (1 unit = 0.01 USDT), 200 USDT equity, equal frozen weights 1/5, so the
 95% target per name is 19% (about 3798 units after the cost reserve) and the 60% target is 12%.
@@ -166,6 +166,31 @@ class Policy(unittest.TestCase):
         self.assertEqual(t["SKHYB"].reason, "S1_LEVEL_CHANGE")
 
 
+    def test_l09_an_assessor_outage_never_rebuys_above_the_cut(self):
+        # IDEA-076 R2 (review TRV-01): an accepted CAUTION, then three times the expiry of sessions with no usable
+        # model output. The cut stands, so the policy plans no level change back to 95% and the planner no buy.
+        model = {"s1": block(limiter_mode="MODEL")}
+        evidence = [dict(evidence_id=e, verified=True, session_index=80, symbols=[sym], **{"class": "CLASS_2_RED_FLAG"})
+                    for e, sym in (("e1", "NVDAB"), ("e2", "MSFTB"))]
+        held = {n: AT_60 for n in NAMES}
+        s = snap(held, state=settled([19, 20]), profile_changes=model, exposure_evidence=evidence,
+                 exposure_assessment=dict(level="CAUTION", evidence_ids=["e1", "e2"], reason="r", falsifier="f"))
+        state = decide(s, s.policy_state).next_policy_state.data.read()
+        self.assertEqual(state["s1"]["limiter"]["level"], "CAUTION")
+        bad = (None, {"level": "NORMAL"}, dict(level="CAUTION", evidence_ids=["e9"], reason="r", falsifier="f"))
+        for k, session in enumerate(range(81, 90)):
+            s = snap(held, state=state, profile_changes=model, session_index=session, exposure_evidence=evidence,
+                     exposure_assessment=bad[k % 3])
+            proposal = decide(s, s.policy_state)
+            state = proposal.next_policy_state.data.read()
+            self.assertEqual(state["s1"]["limiter"]["level"], "CAUTION")
+            self.assertEqual(state["s1"]["applied_target"], [3, 5])
+            for target in proposal.targets:
+                self.assertTrue(target.kind is not TargetKind.TARGET_WEIGHT or target.weight <= Fraction(3, 25))
+            r, _ = first_intent(s)
+            self.assertFalse([i for i in r["intents"] if i["side"] == "BUY"])
+            self.assertFalse([q for q in r["quote_requests"] if q["side"] == "BUY"])
+
 class Planner(unittest.TestCase):
     def requirements(self, s):
         return {r["symbol"]: r for r in plan(s, decide(s, s.policy_state)).read()["requirements"]}
@@ -227,6 +252,64 @@ class Planner(unittest.TestCase):
         r, intent = first_intent(s)
         self.assertIsNone(intent)
         self.assertIn("DISCRETIONARY_CADENCE", {x["reason"] for x in r["rejections"]})
+
+    def live_s1(self, held, state):
+        """A LIVE (FINAL) S1 snapshot inside the trading window, with Web3-origin markets."""
+        from dataclasses import replace
+        from larp.strategy.profiles import build_live_profiles
+        from larp.strategy.schema import instant
+        from tests.strategy.live_fixtures import registry, summary
+        p = build_live_profiles(summary(), registry(), s1=block())["FINAL"].read()
+        s = five_names(held=held, now=instant("2026-10-29T14:00:00Z"))
+        c = s.context.read()
+        c.update(profile=p, red_flag_predicates=registry().read())
+        c["health"]["new_spending_ok"] = True
+        for m in c["markets"]:
+            m.update(origin="WEB3_OPEN_API", source_id="WEB3")
+        s = replace(s, policy_profile_hash=Document.from_dict(p).digest("StrategyProfile.v1"),
+                    policy_state=replace(s.policy_state, policy_id=p["policy_id"]), context=Document.from_dict(c))
+        return with_state(s, state)
+
+    def test_q15_a_mandatory_safety_sell_ignores_impact_and_cost_limits_but_not_quote_checks(self):
+        # IDEA-076 R3 (review TRV-02): under the S1 profile a mandatory sell (here a Class 1 exit) is exempt from the
+        # impact threshold and the entry-style cost limits (DEV-05), which bind discretionary trades only; the
+        # quote's route, slippage, age, expiry and LIVE-origin checks still apply.
+        s = self.live_s1({"NVDAB": 1000}, {"blocked": {"NVDAB": {"reason": "CLASS_1_EXIT", "run_id": "synthetic-run"}}})
+        s = with_quotes(s)
+        c = s.context.read()
+        p = c["profile"]
+        nvdab = next(m for m in c["markets"] if m["symbol"] == "NVDAB")
+        (q,) = [q for q in nvdab["quotes"] if q["side"] == "SELL"]
+        mark = q["token_units"] * nvdab["price_units"] // 10 ** nvdab["decimals"]
+        cash = mark // 2
+        q.update(origin="WEB3_OPEN_API", impact_bps=10 * p["impact_bps"] + 100, cash_units=cash,
+                 min_receive_units=cash * (10000 - p["slippage_bps"]) // 10000)
+        q.pop("quoted_depth_units", None)
+        self.assertGreater(q["impact_bps"], p["impact_bps"])
+        self.assertGreater((mark - cash) * 10000, mark * 50)  # far over the 50 bp entry cost cap
+        self.assertGreater(mark - cash, p["cost_reserve_units"])
+        good = changed(s, markets=c["markets"])
+        r = plan(good, decide(good, good.policy_state)).read()
+        self.assertEqual([(i["symbol"], i["side"], i["mandatory"]) for i in r["intents"]], [("NVDAB", "SELL", True)])
+        self.assertIn("CLASS_1_EXIT", r["intents"][0]["reasons"])
+        self.assertNotIn("QUOTE_ROUTE_OR_SLIPPAGE", {x["reason"] for x in r["rejections"]})
+        late = (s.observed_at - timedelta(seconds=p["quote_age_seconds"] + 1)).isoformat()
+        for name, change in (("slippage", dict(slippage_bps=p["slippage_bps"] + 1)),
+                             ("expired", dict(expires_at=s.observed_at.isoformat())),
+                             ("stale", dict(observed_at=late, available_at=late)),
+                             ("route", dict(route_valid=False)),
+                             ("origin", dict(origin="SCRIPTED_FAKE")),
+                             ("minimum", dict(min_receive_units=cash * (10000 - p["slippage_bps"]) // 10000 - 1))):
+            with self.subTest(name):
+                c = good.context.read()
+                quotes = next(m for m in c["markets"] if m["symbol"] == "NVDAB")["quotes"]
+                next(x for x in quotes if x["side"] == "SELL").update(change)
+                b = changed(good, markets=c["markets"])
+                r = plan(b, decide(b, b.policy_state)).read()
+                self.assertFalse(r["intents"])
+                self.assertIn("QUOTE_ROUTE_OR_SLIPPAGE", {x["reason"] for x in r["rejections"]})
+                req = {x["symbol"]: x for x in r["requirements"]}["NVDAB"]
+                self.assertEqual((req["status"], req["max_units"]), ("BLOCKED_QUOTE", 0))
 
 
 class Settlement(unittest.TestCase):  # Q14: the per-name count comes from the settlement record

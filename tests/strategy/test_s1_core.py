@@ -1,4 +1,4 @@
-"""IDEA-076 S01-S04, L01-L08: the S1 profile block, weight freeze, trend guard and limiter. Synthetic data only."""
+"""IDEA-076 S01-S04, L01-L09: the S1 profile block, weight freeze, trend guard and limiter. Synthetic data only."""
 from datetime import datetime, timedelta, timezone
 from fractions import Fraction
 import unittest
@@ -189,7 +189,7 @@ def evidence(eid, cls, symbols, session, verified=True):
     return dict(evidence_id=eid, verified=verified, session_index=session, symbols=symbols, **{"class": cls})
 
 
-class Limiter(unittest.TestCase):  # L01-L08
+class Limiter(unittest.TestCase):  # L01-L09
     def step(self, previous=None, *, session=10, items=(), assessment=None, mode="MODEL"):
         return s1.limiter_step(previous, session=session, cfg=cfg(limiter_mode=mode), evidence=list(items),
                                assessment=assessment)
@@ -277,6 +277,92 @@ class Limiter(unittest.TestCase):  # L01-L08
                     {"level": "CAUTION", "evidence_ids": "e1", "reason": "", "falsifier": ""}, "CAUTION"):
             state, record = self.step(items=self.two_class_2(), assessment=bad)
             self.assertEqual((state["level"], record["rejected"]), ("NORMAL", "MALFORMED_ASSESSMENT"))
+
+
+    # --- L09 (IDEA-076 R2, review TRV-01): an assessor outage never raises exposure -------------------------------
+
+    def outage(self, state, sessions):
+        """Unhealthy sessions in turn: no output, a malformed one, and one citing unverified evidence."""
+        bad = (None, {"level": "CAUTION"},
+               self.assess("SEVERE", ["e9"]))
+        for k, session in enumerate(sessions):
+            state, record = self.step(state, session=session, items=self.two_class_2(),
+                                      assessment=bad[k % len(bad)])
+            self.assertFalse(record["accepted"])
+            self.assertIsNotNone(record["rejected"])
+        return state
+
+    def healthy(self, state, sessions, level="NORMAL"):
+        """Well-formed assessments citing only verified in-window evidence, renewing nothing."""
+        for session in sessions:
+            state, record = self.step(state, session=session, items=self.two_class_2(session=session - 1),
+                                      assessment=self.assess(level, []))
+            self.assertIsNone(record["rejected"])
+            self.assertFalse(record["accepted"])
+        return state
+
+    def test_l09_an_outage_never_expires_a_caution(self):
+        caution, _ = self.step(items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
+        kept = self.outage(caution, range(11, 20))  # three times the expiry
+        self.assertEqual(kept["level"], "CAUTION")
+        self.assertEqual(s1.level_fraction(cfg(), "UP", kept["level"]), Fraction(3, 5))
+
+    def test_l09_caution_expires_after_expiry_healthy_sessions(self):
+        caution, _ = self.step(items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
+        kept = self.outage(caution, range(11, 20))
+        two = self.healthy(kept, (20, 21))
+        self.assertEqual(two["level"], "CAUTION")  # two healthy sessions of three
+        gone, record = self.step(two, session=22, items=self.two_class_2(session=21),
+                                 assessment=self.assess("NORMAL", []))
+        self.assertEqual(gone["level"], "NORMAL")
+        self.assertTrue(record["expired"])
+
+    def test_l09_severe_holds_through_an_outage_and_expires_when_healthy(self):
+        items = [evidence("x", "TRADING_SUSPENSION", ["TSLAB"], 10)]
+        severe, _ = self.step(items=items, assessment=self.assess("SEVERE", ["x"]))
+        self.assertEqual(severe["level"], "SEVERE")
+        kept = self.outage(severe, range(11, 20))
+        self.assertEqual(kept["level"], "SEVERE")
+        self.assertEqual(self.healthy(kept, (20, 21))["level"], "SEVERE")
+        self.assertEqual(self.healthy(kept, (20, 21, 22))["level"], "NORMAL")
+
+    def test_l09_deterministic_mode_counts_only_sessions_with_an_evidence_input(self):
+        caution, _ = self.step(items=self.two_class_2(), mode="DETERMINISTIC")
+        state = caution
+        for session in range(11, 20):
+            state, _ = s1.limiter_step(state, session=session, cfg=cfg(limiter_mode="DETERMINISTIC"), evidence=None,
+                                       assessment=None)
+        self.assertEqual(state["level"], "CAUTION")
+        for session in (20, 21, 22):
+            state, _ = self.step(state, session=session, mode="DETERMINISTIC")  # an empty list is an input
+        self.assertEqual(state["level"], "NORMAL")
+
+    def test_l09_model_mode_accepts_suspension_and_restriction_evidence(self):
+        # Found while writing L09: the evidence-class map read its input once, so in MODEL mode a cited suspension
+        # or a two-name restriction was never accepted (only the Class 2 rule saw the evidence).
+        severe, record = self.step(items=[evidence("x", "TRADING_SUSPENSION", ["TSLAB"], 10)],
+                                   assessment=self.assess("SEVERE", ["x"]))
+        self.assertEqual((severe["level"], record["accepted"]), ("SEVERE", True))
+        caution, record = self.step(items=[evidence("r", "TRADE_RESTRICTION", ["NVDAB", "SKHYB"], 10)],
+                                    assessment=self.assess("CAUTION", ["r"]))
+        self.assertEqual((caution["level"], record["accepted"]), ("CAUTION", True))
+
+    def test_l09_a_session_is_counted_once(self):
+        caution, _ = self.step(items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
+        state = self.healthy(caution, (10, 10))  # the acceptance session itself does not count
+        state = self.healthy(state, (11, 11, 11, 12, 12))
+        self.assertEqual(state["level"], "CAUTION")  # sessions 11 and 12: two of three
+        self.assertEqual(self.healthy(state, (13,))["level"], "NORMAL")
+
+    def test_l09_a_state_stored_before_the_rule_still_loads(self):
+        # A state written with only `expires_session` reads as a cut accepted at expires_session - expiry with no
+        # healthy session counted yet: it no longer lapses on the clock alone.
+        old = {"level": "CAUTION", "expires_session": 13, "used_evidence_ids": ["e1", "e2"]}
+        self.assertEqual(self.outage(old, (13, 14, 15))["level"], "CAUTION")
+        self.assertEqual(self.healthy(old, (13, 14))["level"], "CAUTION")
+        self.assertEqual(self.healthy(old, (13, 14, 15))["level"], "NORMAL")
+        self.assertEqual(self.healthy({"level": "NORMAL", "expires_session": None, "used_evidence_ids": []},
+                                      (13,))["level"], "NORMAL")
 
 
 if __name__ == "__main__":
