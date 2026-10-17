@@ -699,6 +699,49 @@ FILE_BACKUP = dict(BACKUP, source_id='SYNTHETIC_BACKUP')
 class ProviderFile(unittest.TestCase):
     """IDEA-066 PC-RPC01 (GA15): prepare writes the ordered provider list from the private provider file."""
 
+    def test_ga15c_reader_timeout_is_a_sanitized_refusal_for_both_commands(self):
+        from contextlib import redirect_stdout, redirect_stderr
+        from io import StringIO
+        import subprocess
+
+        ignored_root = gate_a.ROOT / 'deploy' / 'activation'
+        ignored_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ignored_root) as private, tempfile.TemporaryDirectory() as tmp:
+            config = Path(private) / 'providers.json'
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
+            capture = Path(tmp) / 'capture.json'
+            capture.write_text(json.dumps(dict(wallet=WALLET)))
+            empty = Path(tmp) / 'input.json'
+            empty.write_text('{}')
+            output = Path(tmp) / 'prepared'
+            commands = [
+                ['capture', '--artifact-root', tmp, '--output', str(Path(tmp) / 'new-capture.json')],
+                ['prepare', '--terraform-output', str(empty), '--profile', str(empty), '--capture', str(capture),
+                 '--run-id', 'r', '--build-id', 'b' * 40, '--rds-ca-sha256', 'c' * 64, '--out', str(output)]]
+            for args in commands:
+                out, err = StringIO(), StringIO()
+                timeout = subprocess.TimeoutExpired(['git', 'PRIVATE_CREDENTIAL_SENTINEL'], 10,
+                                                    output=b'PRIVATE_CREDENTIAL_SENTINEL')
+                with self.subTest(command=args[0]), redirect_stdout(out), redirect_stderr(err), \
+                        patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                        patch.object(prepare_shadow.renderer, 'outputs', return_value={}), \
+                        patch.object(prepare_shadow.renderer, 'render', return_value={}), \
+                        patch.object(prepare_shadow, 'credentials') as credentials, \
+                        patch.object(prepare_shadow, 'Web3Client') as client, \
+                        patch('qualify_balance_rpc.subprocess.run', side_effect=timeout) as check_ignore:
+                    code = prepare_shadow.main(args + ['--balance-rpc-config', str(config)])
+                    self.assertEqual(code, 4)
+                    result = json.loads(out.getvalue())
+                    self.assertEqual((result['reason'], result['detail']), ('INPUTS_REFUSED', 'TimeoutExpired'))
+                    self.assertFalse(result['signing_enabled'])
+                    self.assertNotIn('PRIVATE_CREDENTIAL_SENTINEL', out.getvalue() + err.getvalue())
+                    self.assertNotIn(FILE_BACKUP['url'], out.getvalue() + err.getvalue())
+                    credentials.assert_not_called()
+                    client.assert_not_called()
+                    self.assertEqual(check_ignore.call_args.kwargs['timeout'], 10)
+                    self.assertFalse(output.exists())
+                    self.assertFalse((Path(tmp) / 'new-capture.json').exists())
+
     def test_p1_the_ordered_list_is_written_to_runtime(self):
         files = assembled(balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=[PRIMARY, BACKUP])
         driver = json.loads(files['runtime.json'])['driver']
