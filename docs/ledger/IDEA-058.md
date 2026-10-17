@@ -340,3 +340,43 @@ Existing #98 CI billing, GAP-69–GAP-72, signer-cap/lifetime decisions and
 IDEA-080 hosted checks retain their recorded owners. Fixes are committed and
 pushed; PR merges and `main` synchronization remain pending, so whole-session
 handoff readiness is not declared.
+
+### GA15c MR — authorized integration merges (2026-10-17)
+
+Keegan subsequently authorizes resolving conflicts and merging the reviewed
+PRs. Merge commits preserve history. The dependency and overlapping ledger
+resolutions retain both SL-01 and CP-01, corrected SA3/SA8/SA9, infrastructure
+evidence and unrelated index rows. No proposal or candidate cap is adopted.
+
+Confirmed integration merge records:
+
+| PR | Merge commit | Scope |
+|---|---|---|
+| #143 | `6648934` | Corrected signer endpoint criteria; resolved index conflict. |
+| #144 | `362e44d` | Signing-lifetime proposal only; parent #27 stays open. |
+| #148 | `f9a3ac8` | Cap candidates, canonical byte fix, both section C records retained. |
+| #149 | `7b61b32` | Off-by-default development SSM provisioning, corrected criteria retained. |
+| #151 | `f6ee63d` | Historical funding note with attributed explorer credit. |
+
+PR153 carries the timeout fix plus the combined tree at pushed `21070be`:
+**66 tests run, 65 passed, 1 PostgreSQL-dependent skip** on Linux/Python
+3.12.15 using exact Git blobs and temporary Git metadata for ignore checks.
+Modules: Gate A, package checks, balance-RPC qualification and signer caps.
+The earlier eight-test check at the resolved PR148 head `902a5a6` also passes.
+The initial PR148 staging attempt was denied by the filesystem sandbox, so
+its first archive check still tested the pre-merge head; only the subsequent
+successful commit/push and rerun count as conflict-resolution evidence.
+
+Terraform validation and 19 mock tests PASS at PR149 resolution `82610c7`
+(IDEA-080 MR-143–153); no real backend or AWS apply. Conflict-marker,
+duplicate-ledger-ID and both-proposal retention checks PASS. `git diff
+--check` PASS. The later edits record results and narrow only the live backlog.
+
+Child issues #142/#146/#150 were closed as completed after their integration
+merges because non-default-branch merges did not close them automatically.
+Parents #27/#44/#106 remain open. Yao Zhu owns approved config/SSM apply,
+SA4/SA9 and teardown; Isaac owns subsequent key/funding tasks; Keith and Isaac
+retain current-profile/cap review; Keegan retains lifetime decision/code.
+Existing #98 CI billing, GAP-69–GAP-72 and all hosted/live gates remain open.
+This work targets `codex/system-testing-20261012`; no promotion to `main`,
+infrastructure deployment, wallet action or policy activation is performed.
