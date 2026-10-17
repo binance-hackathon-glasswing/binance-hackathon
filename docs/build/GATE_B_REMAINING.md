@@ -11,9 +11,12 @@ Main `fb95114` does not include most of that work.
 All **85 advertised PR heads** were fetched through native Git: 40 are ancestors
 of main, 78 are ancestors of the integration base. The complete public inventory
 is [gate-b-pr-inventory-20261017.tsv](evidence/gate-b-pr-inventory-20261017.tsv).
-The subject column is the head commit's subject, not an API-verified PR title.
-GitHub API requests are blocked by the environment egress policy, so review
-threads and live PR states could not be independently inspected.
+After initially blocked API access recovered, all 85 PR descriptions and
+submitted-review records were fetched and their heads matched against Git,
+with no discrepancies. The inventory distinguishes head subjects from API PR
+titles and includes state, merge time and review-event counts. The live Gate B
+issue discussions were also read: #27 and #44 still record pending decisions.
+At this inspection, only PR126 and PR133 are open and PR139 remains draft.
 
 Seven heads remain outside integration: historical closed PR10/82/83/89, the
 remaining-work brief PR126, the pre-trading checklist PR133, and router-source
@@ -42,7 +45,7 @@ Neither proposal approval nor host acceptance is inferred from merging code.
 | Recorded-real route qualification | After source review, run the existing `larp.execution_live.router check` against Keith's retained quote artifacts. Require both stock directions, exact wallet/economic binding and the mutation checks. No actual capture files are present in this cloud checkout. |
 | Signing lifetime (#27) | PR144's Option A is a conditional recommendation; 60 seconds is illustrative. Keith reviews; Keegan decides the model, finite lifetime and margins, records C-OPEN-003, and implements the adopted contract. Do not extend the 15-second admission window or remove the encoded-deadline comparison. The kit's approximate 30-second quote lifetime is not measured encoded expiry. |
 | Independent signer caps (#44) | PR148 proposes development/final USDT inputs 35/70 and fee 0.0002 BNB. These remain unapproved for installation. Run the current-input review below, review full holdings and adjustment/splitting scenarios, then record the exact policy/profile/metadata evidence and approved hash. Use the router as spender, never the facet. |
-| New release bundle | Produce an accepted mirror release from the final reviewed integration head, with run identity, bundle and manifest hashes, including the decoder/access/timeout and any later adopted lifetime changes. A local test pass is not that release artifact. |
+| New release bundle | GB-RW2 prepares a mirror build of current reviewed integration `0672fb8`, including PR130/144/148/149/153/131, and records actual run/artifact hashes when complete. Any later adopted lifetime or other source change requires a newer reviewed release. A local test pass is not that release artifact. |
 | Signer provisioning | The access choice and Terraform review are complete (IDEA-080 / PR149). After numeric-policy approval, the checklist's AWS owner applies temporary development SSM endpoints, provisions/binds the approved configs, and records SA4/SA9. Isaac places the key on the signer host only; the AWS owner records teardown SA5. This cloud machine has no usable AWS profile or private backend/input files; injected AWS config files contain zero profiles and boto3 resolves ProfileNotFound. |
 | First gas, floor and native tracing (#30/#106, GAP-49) | PR151 completes the historical 2-USDT funding-note slice, including source-attributed BNB credit. The planned remaining dev funding and fresh opening capture are still outstanding. Qualify transaction-bound native tracing on the actual execution provider, then review measured floor/top-up amounts. Balance-provider selection alone does not qualify tracing. |
 | First signed round and host drills (DR-02..06/19) | After Gate A and every prerequisite above, the agent produces the minimum-size dev approve/swap and ACKed round. Record chain reconciliation, success/revert reservation release, host crashes at each durable boundary and a recorded shadow-day replay. Existing synthetic/real-local-PostgreSQL tests are engineering evidence only. |
