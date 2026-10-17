@@ -1,6 +1,6 @@
 # Pre-trading checklist (2026-10-17)
 
-This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
+This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -42,19 +42,20 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 ### Gate B setup
 
-- [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29).
+- [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete.
 - [ ] **Keegan:** review Isaac's router evidence, then review and merge #130. If #131 merged first, keep both `docs/LEDGER.md` rows.
 - [ ] **Keith:** give Isaac the quote files the capture has recorded so far (no credentials or `.env`), for the router check.
 - [ ] **Isaac:** after #130 merges, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed.
-- [ ] **Isaac:** write the two options for how long a signing request stays valid, with a recommendation: (a) a bounded signing lifetime, or (b) a router deadline no later than the proposal's expiry. #130 found this blocks every real swap: intents live 15 s, a quote's encoded deadline is about 30 s (#27).
-- [ ] **Keith:** check what each #27 option does to the profile's quote age and proposal lifetime, and comment on #27.
+- [x] **Isaac:** write the two options for how long a signing request stays valid, with a recommendation: (a) a bounded signing lifetime, or (b) a router deadline no later than the proposal's expiry. #130 found this blocks every real swap: intents live 15 s, a quote's encoded deadline is about 30 s (#27). Done 2026-10-17 in #144 (open for review): `SIGNING_LIFETIME_PROPOSAL.md` and IDEA-049-C SL-01 recommend option A conditionally (60 s only an illustrative value) and note that the 30 s is the kit's stated quote lifetime, not a measured deadline.
+- [ ] **Keith:** check what each #27 option in #144 does to the profile's quote age and proposal lifetime, and comment on #27.
 - [ ] **Keegan:** decide #27 from Isaac's options and Keith's comment, record it as C-OPEN-003 in IDEA-049-C, and open the code change.
-- [ ] **Isaac:** propose the per-token input caps, the fee cap and `allowed_spenders` (the router's `tx.to` from the router evidence) for `signer.json` (#44).
-- [ ] **Keith:** check Isaac's caps against the profile's per-trade cap (it must allow one full position) and approve or comment on #44.
+- [x] **Isaac:** propose the per-token input caps, the fee cap and `allowed_spenders` (the router's `tx.to` from the router evidence) for `signer.json` (#44). Done 2026-10-17 in #148 (open for review): USDT input 35 (development) / 70 (final), fee cap 0.0002 BNB per transaction, token caps at 50% of the Oct 10 reference marks, spender the router `0xb444…fdda5`. Not installable until approved (`ready_to_install: false`).
+- [ ] **Keith:** check Isaac's caps in #148 against the profile's per-trade cap (it must allow one full position) and approve or comment on #44.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
-- [ ] **Yao Zhu:** after #44's approval, build the IDEA-080 Terraform change (temporary SSM endpoints, off by default, with SA1–SA3 tests; Keegan reviews the plan), apply it, provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
+- [ ] **Keegan:** review #143 (SA3 corrected: the endpoints must admit both host groups because private DNS is VPC-wide; new SA8 signer egress and SA9 `primary` SSM check), then review #149 and its Terraform plan.
+- [ ] **Yao Zhu:** after #44's approval and Keegan's review of #143 and #149, apply the IDEA-080 Terraform change (built 2026-10-17 in #149: temporary SSM endpoints, off by default, `terraform test` 19 passed; planned, not applied), provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
 - [ ] **Isaac:** after that, place the key file on the signer host only (`/etc/larp/signer/wallet.key`, root, `0600`) (DR-03).
-- [ ] **Isaac:** record the 2 USDT dev-wallet trial swap in DEPLOYMENT_DAY.md §5 and swap about 2 USDT more in MetaMask (#106).
+- [ ] **Isaac:** swap about 2 USDT more in MetaMask and record the fresh opening balance afterwards (#106). The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is written in #151 (open for review; closes #150).
 - [ ] **Keith:** propose the BNB floor and top-up size (G-28) from the measured gas (#30).
 - [ ] **Isaac:** show BNB tracking (`native_trace`) works on a real provider, and accept or change Keith's floor and top-up size (#30).
 
@@ -69,8 +70,8 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Keith:** review the model shadow trial's proposed bars and comment on #97 (IDEA-057).
 - [ ] **Keegan:** confirm the trial bars after Keith's review.
 - [ ] **Keith:** keep or move the Nov 11 15:00 UTC flatten, and record it in IDEA-035 C4 (#107).
-- [ ] **Keith:** run EXP-007 on token session bars (S1 plan B1, #123) and record the result.
-- [ ] **Keegan:** after EXP-007, settle open choice O2 (what ships if EXP-007 is inconclusive), so its pass criteria are final.
+- [ ] **Keegan:** settle open choice O2 (what ships if EXP-007 is inconclusive) **before** EXP-007 runs, since it is part of the pre-registered decision rule (IDEA-075 §16, EXP-007 status).
+- [ ] **Keith:** after O2, run EXP-007 on token session bars up to the Oct 16 close (IDEA-075 B1) and record the result by Oct 19.
 
 ## Side note: interim profile for an early dry run (optional)
 
@@ -116,7 +117,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 ## Oct 22 cut line
 
 - [x] **Keegan:** renumber #123's ledger entry (IDEA-058 is already the Gate A entry) and retarget #123 to the integration branch. Done: #123 is now IDEA-075 and targets the integration branch.
-- [ ] **Isaac:** after that, review and merge the S1 plan (#123).
+- [x] **Isaac:** after that, review and merge the S1 plan (#123). Done 2026-10-17: reviewed (TRV-01 to TRV-05 addressed) and merged as IDEA-075 and EXP-007.
 - [ ] **Keith:** review and merge the S1 code (#131). If #130 merged first, keep both `docs/LEDGER.md` rows.
 - [ ] **Keith:** freeze the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`).
 - [ ] **Keith:** propose final values for every S1 parameter (§12) and open choices O1 and O3–O6.
@@ -131,7 +132,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Isaac:** decide those operations items from Keegan's proposals.
 - [x] **Isaac:** review and merge #125 (automatic CLOCK HALT clear, D-DN-10). Done 2026-10-17: reviewed and merged (full suite 1790 passed, 9 skipped, on the merge with the integration branch). The host check is in Yao Zhu's route-check line above.
 
-## Oct 24: S1 build (plan §15 in #123)
+## Oct 24: S1 build (IDEA-075 §15)
 
 - [ ] **Keegan:** LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131).
 - [ ] **Keith:** trend-guard input from token session bars (DR-08). Until it's wired, the trend guard stays UP (#131).
@@ -156,8 +157,8 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 ## Housekeeping
 
-- [ ] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`.
-- [ ] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92.
+- [x] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`. Done: closed 2026-10-17.
+- [x] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92. Done: closed 2026-10-17.
 - [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.
 - [ ] Branch cleanup (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them:
 
