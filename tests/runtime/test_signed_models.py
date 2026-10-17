@@ -137,3 +137,103 @@ class SignedPreparation(unittest.TestCase):
         gate_a_check.check_scope(values,report)
         original=assembled();c=json.loads(original['runtime.json'])
         self.assertEqual((c['mode'],c['driver']['execution'],c['driver']['assessor']),('dev','shadow','deterministic'))
+
+
+class OutageLimiter(unittest.TestCase):
+    def test_slm4_pending_or_failed_assessment_cannot_expire_an_accepted_cut(self):
+        from larp.strategy.policy import decide
+        from tests.strategy.test_s1_plan import snap, settled, NAMES, AT_60
+        state=settled([3,5])
+        state['s1']['limiter']=dict(level='CAUTION', expires_session=83, used_evidence_ids=['accepted-cut'],
+                                    healthy_sessions=0, counted_session=80)
+        for session in range(81,90):
+            snapshot=snap({n:AT_60 for n in NAMES},state=state,session_index=session,
+                          exposure_evidence=[],assessment_available=False)
+            state=decide(snapshot,snapshot.policy_state).next_policy_state.data.read()
+            self.assertEqual(state['s1']['limiter']['level'],'CAUTION')
+            self.assertEqual(state['s1']['limiter']['healthy_sessions'],0)
+
+
+from tests.runtime.test_round_driver_service import ServiceHarness
+
+
+class SignedIntegration(ServiceHarness):
+    def queue(self, driver, model):
+        from larp.runtime.deferred_models import DeferredAssessments
+        q=DeferredAssessments(model,root=Path(self.tmp.name)/'deferred',run_id=driver.coordinator.run_id,
+            build_id=driver.coordinator.version_id,profile_hash=driver.coordinator.profile_hash)
+        driver.assessments=q
+        return q
+
+    def seed_pending(self, driver, model):
+        from larp.contracts import Document
+        c=driver.coordinator
+        item=driver.work.next(self.w.clock(),self.epoch)
+        req=driver.work.request(item,self.store.load(c.run_id).read(),self.w.clock())
+        self.store.open_round(c.run_id,item['round_id'],req,self.epoch)
+        q=self.queue(driver,model)
+        q.submit(item['round_id'],req)
+        return q,item,req
+
+    def test_slm2_real_mandatory_planner_and_halt_continue_while_model_is_blocked(self):
+        from tests.integration.test_evidence_pipeline import evidence_state, RUN
+        from larp.runtime.coordinator import batch_for
+        from larp.runtime.supervision import Guard
+        driver=self.service_driver(cadence=True)
+        model=Blocking();self.addCleanup(model.release.set)
+        q,item,req=self.seed_pending(driver,model)
+        self.assertTrue(model.entered.wait(1))
+        _,state,_=evidence_state(['EXSEMI_402_8K'],self.profile,world=self.w)
+        current=self.store.load(RUN);projection=current.read()['projection']
+        projection['evidence']={req.read()['issuer_id']:state}
+        self.store.commit(batch_for(current,'seed-accepted',dict(kind='TEST_ACCEPTED_EVIDENCE'),projection=projection))
+        summary=driver.once(self.w.clock())
+        self.assertTrue(self.commands())
+        planned=self.planned()
+        self.assertTrue(any(i['mandatory'] and i['side']=='SELL' for r in planned.values() for i in r['plan']['intents']))
+        self.assertFalse(q.finished.is_set())
+        Guard(self.store,RUN,max_failures=3,clear_after=2)._halt('CLOCK',self.w.clock(),{})
+        with patch.object(driver.execution,'settle_open',wraps=driver.execution.settle_open) as settle:
+            driver.once(self.w.clock())
+            self.assertTrue(settle.called)
+        self.assertIn('CLOCK',self.store.load(RUN).read()['projection']['halt']['reasons'])
+        model.release.set();self.assertTrue(q.finished.wait(1))
+
+    def test_slm3_valid_result_uses_existing_evidence_acceptance_and_original_context(self):
+        from larp.intelligence.models import RuleBaselineModel
+        driver=self.service_driver()
+        model=self.w.assessor(RuleBaselineModel(self.w.clock))
+        q,item,req=self.seed_pending(driver,model)
+        self.assertTrue(q.finished.wait(2))
+        summary=driver.once(self.w.clock())
+        record=self.store.event(driver.coordinator.run_id,'plan:'+item['round_id'])['record']
+        self.assertEqual(record['request'],req.read())
+        self.assertTrue(any(d['decision']=='ACCEPT' for d in record['evidence_decisions']))
+        self.assertIsNotNone(record['assessment'])
+        self.assertFalse(q.busy)
+        self.assertTrue(self.commands())  # real I3 commands from verified evidence, fake external boundaries
+
+    def test_slm3_expired_result_grants_no_evidence_but_preserves_its_io_in_round_log(self):
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.contracts import Document
+        from larp.runtime.coordinator import batch_for
+        driver=self.service_driver()
+        delegate=self.w.assessor(RuleBaselineModel(self.w.clock))
+        class Expired:
+            def assess(inner,request):
+                result=delegate.assess(request).read()
+                result['expiry_ms']=self.w.clock()
+                result['model_io']['cot']=['original provider summary']
+                if inner.audit_hook:
+                    inner.audit_hook(dict(kind='MODEL_RESPONSE',stage='routine',
+                        response=dict(reasoning_summary='original provider summary')))
+                return Document.from_dict(result)
+        q,item,req=self.seed_pending(driver,Expired())
+        self.assertTrue(q.finished.wait(2))
+        driver.once(self.w.clock())
+        log=self.logs()[item['round_id']]
+        self.assertIsNone(log['input']['assessment'])
+        self.assertEqual(log['input']['assessment_audit']['events'][-1]['result']['model_io']['cot'],
+                         ['original provider summary'])
+        self.assertEqual(log['cot'],['original provider summary'])
+        self.assertEqual(log['orders'],[])
