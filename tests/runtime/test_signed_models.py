@@ -96,6 +96,86 @@ class DeferredModels(unittest.TestCase):
             with self.assertRaises(ContractError):self.queue(model,tmp)
 
 
+class DeferredProviderTimeouts(unittest.TestCase):
+    """Exercise the real router's inner hard-timeout worker, rather than a blocked assessor stub."""
+
+    def start_blocked_provider(self):
+        from larp.runtime.deferred_models import DeferredAssessments
+        from tests.intelligence.test_aiand_routing import Routing, EXSEMI
+        fixture = Routing()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        entered, release, timed_out = threading.Event(), threading.Event(), threading.Event()
+        workers = []
+        send = fixture.aiand
+        join = threading.Thread.join
+
+        def blocked(*args):
+            workers.append(threading.current_thread())
+            entered.set()
+            if not release.wait(10):
+                raise TimeoutError('Synthetic provider was not released')
+            return send(*args)
+
+        def observe_timeout(worker, timeout=None):
+            join(worker, timeout)
+            if timeout is not None and worker.name.startswith('larp-assess:') and worker.is_alive():
+                timed_out.set()
+
+        fixture.aiand = blocked
+        self.enterContext(patch.object(threading.Thread, 'join', observe_timeout))
+        router = fixture.build(key=False)
+        req = fixture.w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='provider-timeout', deadline_ms=200)
+        q = DeferredAssessments(router, root=fixture.root/'assessments', run_id=req.read()['run_id'],
+                                build_id='e'*40, profile_hash=req.read()['policy_profile_hash'])
+
+        def cleanup():
+            release.set()
+            q.finished.wait(5)
+            for worker in workers:
+                join(worker, 5)
+
+        self.addCleanup(cleanup)
+        self.assertTrue(q.submit('provider-timeout', req))
+        self.assertTrue(entered.wait(3))
+        self.assertTrue(timed_out.wait(3))  # the real inner assessment deadline has passed
+        return q, req, release, workers, fixture
+
+    def test_slm2_inner_provider_timeout_keeps_the_lane_until_the_actual_call_exits(self):
+        q, req, release, workers, _ = self.start_blocked_provider()
+        self.assertFalse(q.finished.wait(1), 'An abandoned inner provider still owns the lane')
+        self.assertIsNone(q.ready())
+        self.assertFalse(q.submit('replacement', req))
+        self.assertEqual(len(workers), 1)  # no overlapping review or replacement call
+        release.set()
+        self.assertTrue(q.finished.wait(3))
+        self.assertEqual(q.ready()['result']['status'], 'UNAVAILABLE')
+        self.assertEqual(len(workers), 1)  # the elapsed chain cannot dispatch a late review
+
+    def test_slm5_late_response_precedes_result_and_ack_and_cannot_reopen_on_restart(self):
+        q, _, release, _, fixture = self.start_blocked_provider()
+        q.finished.wait(1)
+        with self.assertRaises(ContractError):
+            q.ack('provider-timeout')
+        release.set()
+        self.assertTrue(q.finished.wait(3))
+        ready = q.ready()
+        events = ready['audit']['events']
+        self.assertEqual(events[-1]['kind'], 'RESULT')
+        self.assertEqual(ready['result']['status'], 'UNAVAILABLE')
+        responses = [e for e in events if e['kind'] == 'MODEL_RESPONSE']
+        self.assertEqual(len(responses), 1)
+        self.assertEqual(responses[0]['response']['reasoning_summary'], 'Synthetic reasoning.')
+        self.assertIn('Synthetic reasoning.', ready['result']['model_io']['cot'])
+        path = q.pending['provider-timeout']
+        q.ack('provider-timeout')
+        self.assertEqual(q._read(path)[-1]['kind'], 'ACK')
+        from larp.runtime.deferred_models import DeferredAssessments
+        restarted = DeferredAssessments(q.assessor, root=fixture.root/'assessments', **q.identity)
+        self.assertFalse(restarted.busy)
+        self.assertIsNone(restarted.ready())
+
+
 class SignedPreparation(unittest.TestCase):
     def prepared(self, **changes):
         return assembled(**dict(model_routing_raw=RAW, model_routing_sha256=PIN,
