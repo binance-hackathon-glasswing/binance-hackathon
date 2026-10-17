@@ -265,3 +265,16 @@ Whatever the outcome, live/service use needs a later reviewed code change; this 
 ### RR2 index reconciliation (2026-10-16)
 
 PR88 is merged and its QuoteCostSummary record is IDEA-063. IDEA-057 continues to identify AIand routing. Remove the stale open-PR renumbering task from the current index/backlog. PR87 assembly is also merged into the testing branch; actual hosted Gate A and the shadow trial still require their recorded owners and evidence.
+
+### #91: CI checks that could not run locally (recorded 2026-10-16)
+
+All six items in #91 are green on mirror CI (`Keegan4/keegan4-larp-ci-mirror`, the repository's own `runtime.yml`).
+
+- **The stack's branch head:** run [38874992380](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874992380) on `codex/idea-056-model-routing` at `3b4d1e6`, before #85 merged into `main`. All four jobs pass:
+  - `infrastructure`: Terraform fmt, init, validate and test for `deploy/aws` and `deploy/bootstrap`;
+  - `host-bundle`: the x86_64 build and `tools/test_host_bundle.sh` provisioning in Amazon Linux 2023;
+  - `runtime`: `LARP_TEST_SYSTEMD=1` systemd conditions (3 passed); the full suite on exactly Python 3.12.15 with PostgreSQL 14.24 (**1552 passed, 4 skipped, 2210 subtests, 0 failed**); and `test_live_start.py:83`, which runs because the runner is non-root.
+  - It was one hosted x86_64 (ubuntu-22.04) run of the whole workflow.
+- **The integration head, which also carries #111's code (c075849, reached via #114):** run [38910102399](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38910102399) on `codex/system-testing-20261012` at `e4f3d59`. All four jobs pass: full suite **1755 passed, 6 skipped, 2556 subtests, 0 failed**, plus real systemd 5 passed, on Python 3.12.15 and PostgreSQL 14.24.
+
+The 1552-passed run predates #111. The second run covers that code on the integration branch. Org-repo Actions remain blocked (#98).
