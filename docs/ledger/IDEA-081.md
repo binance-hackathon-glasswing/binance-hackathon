@@ -49,3 +49,19 @@ PR #159 added `validate_routing_spec`, shared by Gate A `prepare`, `gate_a_check
 | SP8 | `validate_routing_spec` accepts the v2 example and the v1 example; it refuses, before any model, budget or network construction: a v2 file missing `openai_prompt` or any entry's `prompt`, a v1 file carrying `prompt`/`openai_prompt`, and a v2 prompt whose file or hash does not match. Its failure text never echoes the supplied name (SG8b). The SG-8 preparation tests pass with the v2 example. |
 
 **Result (local, macOS, Anaconda Python 3.14): SP8 PASS.** `test_stage_prompts.py` now 10 tests (19 subtests incl. 6 SP8 cases); with `test_aiand_routing.py` and SG-8's `test_model_routing_preparation.py` (which prepares a package from the v2 example): 50 passed, 74 subtests. Full suite vs a clean worktree of the new base `a428bab`: 1446 vs 1436 passed, the same 10 failures and 4 collection errors on both (environment, as before), so no new failure. Linux/3.12 mirror CI still to run.
+
+## SP9 — all-PR review (2026-10-17 SGT, prospective)
+
+User requests review and fixes for every open PR. The shared validator currently
+checks only prompt bytes/hash; a hash-matching invalid UTF-8 file passes it and
+fails later at `stage_config.decode`, contrary to SG8b/SP8. A symlink can also
+resolve outside the release prompt directory, and prompt reads are unbounded.
+
+Pass criteria before changed code executes: shared validation and construction
+must reject invalid UTF-8, empty/oversized addenda, symlinks and non-local names
+(including backslash/`..`/NUL), with fixed non-reflecting errors before budget,
+provider or network construction. Limit each addendum to 16 KiB and preserve the
+existing exact-byte hash and composition for valid v1/v2 files. Add regression
+cases, push before execution, run the routing/preparation suite, and run the full
+Linux/PostgreSQL14 suite. Correct stale v1-only preparation claims and the example
+hash in the runbook; leave actual host state, adoption and model quality unclaimed.
