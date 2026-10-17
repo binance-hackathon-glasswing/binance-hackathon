@@ -132,3 +132,34 @@ class ReportReview(unittest.TestCase):
                 result = self.report(inputs)
                 self.assertEqual(result['checks']['DR-02']['status'], 'BLOCKED')
                 self.assertFalse(result['signing_enabled'])
+
+
+class OfflineDependencyReview(unittest.TestCase):
+    def test_fake_executor_and_config_check_do_not_import_signing_packages(self):
+        import subprocess
+        import sys
+        script = '''
+import importlib.abc
+import sys
+from types import SimpleNamespace
+class RefuseSigningPackages(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {'eth_abi', 'eth_utils', 'eth_account'}:
+            raise ModuleNotFoundError('signing dependency forbidden: ' + fullname)
+sys.meta_path.insert(0, RefuseSigningPackages())
+from larp.execution import Executor, Blocked
+from larp.execution_live.main import validate_config
+fake = SimpleNamespace(mode='fake')
+Executor(None, fake, fake, fake, fake)
+try:
+    Executor(None, SimpleNamespace(mode='live'), fake, fake, fake)
+except Blocked:
+    pass
+else:
+    raise AssertionError('mixed capability bundle accepted')
+validate_config(dict(schema='ExecutionService.v1', run_id='synthetic', build_id='a'*40,
+                     mode='dev', wallet_address='0x'+'1'*40, interval_seconds=1,
+                     database_dsn_file='/synthetic'))
+'''
+        result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
