@@ -33,6 +33,44 @@ GB-RW1 report finding (prospective): the no-input `gate_b report` correctly exit
 
 The pre-trading checklist's Gate B mirror-bundle line is actionable with the existing authenticated Keegan4 mirror (repository permissions verified, no credential values read). Build reviewed integration `0672fb8d51056702c1d9e05450b422072bcb3138` on a new mirror branch `codex/gate-b-release-20261017`; preserve existing branches and use no force push. It contains PR130/144/148/149/153/131, and the registered-source manifest logic is already integrated. Criteria: dispatch the existing Runtime acceptance workflow once, require all runtime/infrastructure/host-bundle jobs to pass on that exact SHA, download the host-bundle artifact, verify the bundle sidecar checksum and the CI-built external/embedded manifest bytes, and retain run ID, artifact identity and both hashes. No AWS/upload/provisioning, settings/permissions edits, source promotion or signing. A later adopted source change requires a new build; this is not Gate B acceptance. Push this record before dispatch. Record blocked/failed CI distinctly rather than treating a queued workflow as success.
 
+### GB-RW2 result — CI passed, artifact verification blocked
+
+Criteria were pushed at `e38afb0` before creating the new mirror branch and
+dispatching workflow385777152 once. [Run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352)
+completed SUCCESS at 2026-10-17T12:05:47Z on the exact reviewed integration
+`0672fb8d51056702c1d9e05450b422072bcb3138`. All four jobs passed: Terraform
+aws/bootstrap, runtime (Python3.12.15/PostgreSQL14.24, systemd, demo, Docker),
+and host-bundle (both Amazon Linux roles). This does not test unmerged PR155.
+
+Artifact12099524179, `larp-bundle-x86_64`, 98,397,459 bytes, is retained until
+2027-01-15; GitHub reports archive digest
+`sha256:0a2b764f848239d529f68fd60f40cf64134ee0a547b8e86909153b12a95fd782`.
+That is not a locally verified bundle or manifest hash. Two authenticated
+downloads were refused by the cloud egress policy at GitHub's artifact-storage
+hostname. The environment draft now preserves existing rules and adds
+`productionresultssa9.blob.core.windows.net`; revision4 saving is confirmed,
+but review/save and publication are required and application is not claimed.
+Sidecar checksum, external/embedded manifest byte comparison, and retaining
+both file hashes remain BLOCKED. The complete GB-RW2 pass criteria are not met.
+Public metadata is retained in
+[gate-b-mirror-build-20261017.json](../build/evidence/gate-b-mirror-build-20261017.json).
+No artifact was uploaded to AWS, no host was provisioned and nobody was messaged.
+
+### GB-RW1 publication / AWS access clarification
+
+[PR155](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/155)
+targets integration with the cap checker, blocked-check CLI summary and remaining-work audit.
+Its organization Actions run [39030940212](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39030940212)
+ran no steps; the runtime annotation retains the account-payment/spending-limit refusal.
+The passing local results above remain the verification of this code; the separate
+GB-RW2 mirror release is reviewed integration, not this unmerged PR.
+
+The user asked whether this session can access their AWS account. A metadata-only
+recheck found zero profiles in both injected AWS config files, no environment,
+web-identity or container credential binding, and boto3 ProfileNotFound. No account
+lookup was attempted from an email address; email alone grants no AWS access.
+AWS/host work remains with the checklist's authenticated AWS owner, Yao Zhu.
+
 ## GB-20261015 — Gate B implementation (prospective)
 
 User requests a new Gate B PR into `codex/system-testing-20261012`, and confirms using the existing build documents. Base target `0820b0dd87219cb6b96f2ede34051129fab9f49c`; carry unmerged PR70 prerequisite tree `9a14d6e4fc30387feb82be7923d479f71deb1f46` without merging either PR into the target. Branch `codex/gate-b-20261015`, worktree `/private/tmp/larp-gate-b-20261015`. Existing C baseline: 1303 passed, 7 skipped, 1 known D legacy-export expected failure, 1615 subtests (IDEA-049-C C-RESULT-007); this is recorded prior evidence, not a new run.

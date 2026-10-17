@@ -45,7 +45,7 @@ Neither proposal approval nor host acceptance is inferred from merging code.
 | Recorded-real route qualification | After source review, run the existing `larp.execution_live.router check` against Keith's retained quote artifacts. Require both stock directions, exact wallet/economic binding and the mutation checks. No actual capture files are present in this cloud checkout. |
 | Signing lifetime (#27) | PR144's Option A is a conditional recommendation; 60 seconds is illustrative. Keith reviews; Keegan decides the model, finite lifetime and margins, records C-OPEN-003, and implements the adopted contract. Do not extend the 15-second admission window or remove the encoded-deadline comparison. The kit's approximate 30-second quote lifetime is not measured encoded expiry. |
 | Independent signer caps (#44) | PR148 proposes development/final USDT inputs 35/70 and fee 0.0002 BNB. These remain unapproved for installation. Run the current-input review below, review full holdings and adjustment/splitting scenarios, then record the exact policy/profile/metadata evidence and approved hash. Use the router as spender, never the facet. |
-| New release bundle | GB-RW2 prepares a mirror build of current reviewed integration `0672fb8`, including PR130/144/148/149/153/131, and records actual run/artifact hashes when complete. Any later adopted lifetime or other source change requires a newer reviewed release. A local test pass is not that release artifact. |
+| New release bundle | GB-RW2 mirror [run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352) passed all four jobs on reviewed integration `0672fb8`, including PR130/144/148/149/153/131. Artifact `12099524179` exists; this session's network policy blocks downloading it. Sidecar/manifest verification and the two file hashes remain required before the AWS-owner handoff; see the [build record](evidence/gate-b-mirror-build-20261017.json). Any later adopted source change requires a newer reviewed release. |
 | Signer provisioning | The access choice and Terraform review are complete (IDEA-080 / PR149). After numeric-policy approval, the checklist's AWS owner applies temporary development SSM endpoints, provisions/binds the approved configs, and records SA4/SA9. Isaac places the key on the signer host only; the AWS owner records teardown SA5. This cloud machine has no usable AWS profile or private backend/input files; injected AWS config files contain zero profiles and boto3 resolves ProfileNotFound. |
 | First gas, floor and native tracing (#30/#106, GAP-49) | PR151 completes the historical 2-USDT funding-note slice, including source-attributed BNB credit. The planned remaining dev funding and fresh opening capture are still outstanding. Qualify transaction-bound native tracing on the actual execution provider, then review measured floor/top-up amounts. Balance-provider selection alone does not qualify tracing. |
 | First signed round and host drills (DR-02..06/19) | After Gate A and every prerequisite above, the agent produces the minimum-size dev approve/swap and ACKed round. Record chain reconciliation, success/revert reservation release, host crashes at each durable boundary and a recorded shadow-day replay. Existing synthetic/real-local-PostgreSQL tests are engineering evidence only. |
@@ -127,3 +127,20 @@ guarantees, quote executability or owner approval.
 
 Exact commands, tested commits and outcome counts are recorded in IDEA-039 GB-RW1.
 No complete Gate B or real trade acceptance is claimed here.
+
+## Mirror artifact handoff still pending
+
+The successful CI release is the reviewed integration baseline, not unmerged
+[PR155](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/155).
+The artifact ZIP's GitHub-reported digest is not a bundle checksum. Download
+`larp-bundle-x86_64` from run39030800352 using authenticated GitHub access, verify
+`larp-0672fb8d5105-x86_64.tar.gz.sha256`, compare the external `.release.json`
+byte-for-byte with the archive's `release-manifest.json`, and retain the bundle
+and manifest SHA256 values. Confirm the full build ID and registered repository
+before giving Yao Zhu the release evidence. No AWS upload is performed here.
+
+The cloud draft now includes `productionresultssa9.blob.core.windows.net`, the
+artifact storage hostname returned by GitHub, while preserving `api.github.com`
+and the package-manager preset. Saving the draft did not apply the rule; the
+user must review/save and publish it in environment settings. The two download
+attempts were refused, so local artifact verification is explicitly incomplete.
