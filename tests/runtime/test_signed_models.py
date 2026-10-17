@@ -282,3 +282,37 @@ class SignedIntegration(ServiceHarness):
         self.assertIn('Model request started',log['cot'])
         self.assertEqual(log['input']['assessment_audit']['events'][0]['request'],req.read())
         self.assertEqual(model.calls,1)
+
+
+class SignedComposition(unittest.TestCase):
+    def test_slm1_reviewed_service_and_live_build_use_the_deferred_lane(self):
+        from tests.runtime.test_driver import Composition, Store
+        from larp.runtime.service import build_driver
+        from larp.runtime.driver import ServiceExecution
+        from larp.runtime.deferred_models import DeferredAssessments
+        from larp.intelligence.config import load_config
+        fixture=Composition();fixture.setUp();self.addCleanup(fixture.doCleanups)
+        settings=fixture.routed_settings()
+        cfg=fixture.config(assessor='aiand_routed',execution='service',expiry_grace_ms=5000,
+                           model_adoption_ref='synthetic recorded adoption',**settings)
+        secrets=dict(fixture.secrets,LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+        base=json.loads((gate_a.ROOT/'config/runtime/runtime.example.json').read_bytes())['driver']
+        for key in ('balance_check_interval_ms','balance_check_max_age_ms','price_jump_check_bps'):
+            cfg['driver'][key]=base[key]
+        cfg['driver']['balance_rpc_providers']=[dict(url='https://rpc.invalid/',source_id='synthetic-rpc')]
+        raw=json.dumps(__import__('larp.research.fixtures',fromlist=['synthetic_profile']).synthetic_profile(mode='LIVE')).encode()
+        (fixture.root/'profile.json').write_bytes(raw)
+        cfg['driver']['strategy_profile_sha256']=gate_a.digest(raw)
+        cfg['driver']['intelligence_mode']='live'
+        intelligence=load_config('development')
+        with patch('larp.intelligence.config.load_config',return_value=intelligence), \
+             patch('socket.create_connection',side_effect=AssertionError('No network during construction')):
+            for mode in ('dev','live'):
+                cfg['mode']=mode
+                runtime=build_driver(cfg,Store(),secrets)
+                self.addCleanup(runtime.ports['evidence'].close)
+                self.assertIsInstance(runtime.assessments,DeferredAssessments)
+                self.assertIsInstance(runtime.execution,ServiceExecution)
+                self.assertFalse(runtime.signing)
+                missing=deepcopy(cfg);missing['driver'].pop('model_adoption_ref')
+                with self.assertRaises(ContractError):build_driver(missing,Store(),secrets)
