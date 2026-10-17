@@ -242,12 +242,12 @@ class DurableAuthority(unittest.TestCase):
         from larp.execution import USDT
         from larp.marketdata.port import TOKENS
         projection = dict(round_records={'round': round_record(mandatory=True)})
-        economic = intent(pay_token=TOKENS['NVDAB'], receive_token=USDT, min_receive=90*10**12)
+        economic = intent(pay_token=TOKENS['NVDAB'], receive_token=USDT, minimum_output=90*10**12)
         self.assertTrue(bounds.permitted(projection, economic, milliseconds('2026-10-10T23:00:00Z')))
         self.assertFalse(bounds.permitted(projection, economic, milliseconds('2026-10-11T13:30:00Z')))
         self.assertFalse(bounds.permitted(projection, intent(amount=100*10**12),
                                           milliseconds('2026-10-10T23:00:00Z')))
         self.assertFalse(bounds.permitted(projection, replace(economic, amount=101),
                                           milliseconds('2026-10-10T23:00:00Z')))
-        self.assertFalse(bounds.permitted(projection, replace(economic, min_receive=89*10**12),
+        self.assertFalse(bounds.permitted(projection, replace(economic, minimum_output=89*10**12),
                                           milliseconds('2026-10-10T23:00:00Z')))

@@ -167,7 +167,7 @@ def permitted(projection, intent, now_ms):
                 or intent.pay_token != (USDT if buy else token)
                 or intent.receive_token != (token if buy else USDT)
                 or intent.amount != planned['pay_units'] * (10**12 if buy else 1)
-                or intent.min_receive != planned['min_receive_units'] * (1 if buy else 10**12)):
+                or intent.minimum_output != planned['min_receive_units'] * (1 if buy else 10**12)):
             return False  # a BUY cannot borrow a mandatory SELL's after-hours authority
         authority = planned['execution_bounds']
         start, end = interval(context, cfg, planned['mandatory'])
@@ -179,5 +179,5 @@ def permitted(projection, intent, now_ms):
                                   ordinal=ordinal, valid_from_ms=start, valid_until_ms=end)
                 and ordinal == count == slots['closed'].get(key) <= cfg['execution']['max_attempts_per_leg_session']
                 and start <= now_ms < end)
-    except (ContractError, KeyError, TypeError, ValueError, StopIteration):
+    except (ContractError, KeyError, TypeError, ValueError, AttributeError, StopIteration):
         return False
