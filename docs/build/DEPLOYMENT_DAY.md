@@ -84,8 +84,21 @@ context; no hosted run or Gate A pass is established by this update.
 
   | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
   |---|---|---|---|---|---|
-  | dev | 2026-10-16, `[TO FILL: Isaac]` time | `[TO FILL: Isaac]` | 2 | `[TO FILL: Isaac]` | Trial swap in MetaMask (reported 2026-10-16). Isaac fills in the details and swaps about 2 USDT more before Gate B, to about 4 USDT in total. |
+  | dev | 2026-10-16 08:27:44 UTC | `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` | 2 (verified wallet net USDT debit) | **PENDING: exact native credit; historical trace unavailable** | Isaac identifies this as the MetaMask trial. Chain56 success, dev-wallet sender, canonical/finalized inclusion and USDT debit verified (IDEA-039 FG-01). Exact BNB amount remains open; additional planned dev funding and fresh opening balance remain #106. |
   | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
+
+  FG-01 evidence: [dev-gas-funding-20261016.json](evidence/dev-gas-funding-20261016.json).
+  The prior dev transaction's block time is also16:27:44 SGT. The receipt's
+  network gas product is0.00001129764BNB (188294gas ×60000000wei/gas); this
+  does not independently establish MetaMask's UI fee-token economics. Receipt
+  Transfer logs show exactly2USDT leaving this wallet and none returning; no
+  separate USDT fee is classified. Both public providers report missing trie
+  state for the historical prestate trace, so BNB received is **not inferred**
+  from a pool event or block balance. Isaac was asked for the transaction's
+  wallet-directed BNB amount from BscScan Internal Transactions or MetaMask,
+  with attribution. Until then the historical record is partially verified.
+  No new swap, hosted capture, agent round or final-wallet action occurred.
+
   Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)
