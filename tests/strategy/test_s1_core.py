@@ -224,22 +224,27 @@ class Limiter(unittest.TestCase):  # L01-L09
         self.assertEqual(still["level"], "CAUTION")  # no early lift
 
     def test_l04_caution_expires_without_renewal(self):
+        # Expiry counts healthy sessions (L09): here sessions 12, 13 and 14 each have a well-formed assessment.
         caution, _ = self.step(items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
         same, _ = self.step(caution, session=12, items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
-        self.assertEqual((same["level"], same["expires_session"]), ("CAUTION", 13))  # old evidence does not renew
-        expired, record = self.step(same, session=13)
+        self.assertEqual((same["level"], same["healthy_sessions"]), ("CAUTION", 1))  # old evidence does not renew
+        still, _ = self.step(same, session=13, items=self.two_class_2(), assessment=self.assess("NORMAL", []))
+        self.assertEqual((still["level"], still["healthy_sessions"]), ("CAUTION", 2))
+        expired, record = self.step(still, session=14, items=self.two_class_2(), assessment=self.assess("NORMAL", []))
         self.assertEqual(expired["level"], "NORMAL")
         self.assertTrue(record["expired"])
-        renewed, _ = self.step(caution, session=12, items=self.two_class_2() + [
-            evidence("e3", "CLASS_2_RED_FLAG", ["TSLAB"], 12)], assessment=self.assess("CAUTION", ["e1", "e3"]))
-        self.assertEqual(renewed["expires_session"], 15)
+        renewed, record = self.step(same, session=13, items=self.two_class_2() + [
+            evidence("e3", "CLASS_2_RED_FLAG", ["TSLAB"], 13)], assessment=self.assess("CAUTION", ["e1", "e3"]))
+        self.assertTrue(record["accepted"])
+        self.assertEqual((renewed["healthy_sessions"], renewed["counted_session"]), (0, 13))
 
-    def test_l05_model_outage_keeps_the_level_until_expiry(self):
+    def test_l05_model_outage_keeps_the_level(self):
+        # Superseded "until expiry" by L09: sessions without a usable output do not count toward expiry.
         caution, _ = self.step(items=self.two_class_2(), assessment=self.assess("CAUTION", ["e1", "e2"]))
         kept, record = self.step(caution, session=11, assessment=None)
-        self.assertEqual((kept["level"], record["rejected"]), ("CAUTION", "NO_ASSESSMENT"))
-        gone, _ = self.step(kept, session=13, assessment=None)
-        self.assertEqual(gone["level"], "NORMAL")
+        self.assertEqual((kept["level"], record["rejected"], record["healthy"]), ("CAUTION", "NO_ASSESSMENT", False))
+        still, _ = self.step(kept, session=13, assessment=None)
+        self.assertEqual((still["level"], still["healthy_sessions"]), ("CAUTION", 0))
 
     def test_l06_severe_on_caution_evidence_is_capped(self):
         state, record = self.step(items=self.two_class_2(), assessment=self.assess("SEVERE", ["e1", "e2"]))
@@ -257,7 +262,7 @@ class Limiter(unittest.TestCase):  # L01-L09
         caution, _ = self.step(items=self.two_class_2(), mode="DETERMINISTIC")
         renewed, _ = self.step(caution, session=12, items=self.two_class_2() + [
             evidence("cal2", "SCHEDULED_EVENT", [], 12)], mode="DETERMINISTIC")
-        self.assertEqual(renewed["expires_session"], 13)  # a new calendar entry does not renew the cut
+        self.assertEqual(renewed["healthy_sessions"], 1)  # counted, not reset: a new calendar entry does not renew
 
     def test_l08_deterministic_map(self):
         caution, _ = self.step(items=self.two_class_2(), mode="DETERMINISTIC")

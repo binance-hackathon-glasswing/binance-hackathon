@@ -68,8 +68,9 @@ def decide(snapshot, state):
         trend = s1_plan.evaluate_trend(series, cutoff=now, cfg=cfg, previous_state=before.get("trend_state"),
                                        last_evaluated=before.get("trend_evaluated_session"),
                                        max_age_seconds=p["feature_age_seconds"])
+        # An absent evidence input stays None: in DETERMINISTIC mode that session is not healthy (IDEA-076 L09).
         limiter, limiter_record = s1_plan.limiter_step(before.get("limiter"), session=session, cfg=cfg,
-                                                       evidence=c.get("exposure_evidence", []),
+                                                       evidence=c.get("exposure_evidence"),
                                                        assessment=c.get("exposure_assessment"))
         level = s1_plan.level_fraction(cfg, trend["state"], limiter["level"])
         applied = before.get("applied_target")

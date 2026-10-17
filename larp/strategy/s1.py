@@ -9,7 +9,9 @@ until the Oct 22 freeze, and nothing here chooses them.
   `trend_window_sessions` mean, with a dead band of `trend_band_bps`. UP -> high level, DOWN -> mid level. A missing,
   stale or already evaluated input leaves the state unchanged and says why.
 - Limiter (§4.2): reduce-only. It moves to CAUTION (mid) or SEVERE (low) only on verified evidence whose class
-  allows that cut, and returns to NORMAL after `llm_expiry_sessions` unless new evidence renews it. A model's output
+  allows that cut, and returns to NORMAL after `llm_expiry_sessions` healthy sessions (an assessment accepted for
+  evaluation; DETERMINISTIC: an evidence input present) unless new evidence renews it, so an assessor outage keeps
+  the last accepted cut (L09). A model's output
   is accepted only if every evidence ID it cites is verified and inside the window; a scheduled event alone never
   lowers the level. In DETERMINISTIC mode the evidence-class map alone sets the level (no model call).
 - Weights (§5.1): w ∝ 1/sigma of session log returns, capped at `weight_cap`, frozen into the profile at the
@@ -175,6 +177,7 @@ def _verified(evidence, session):
 
 def allowed_severity(items):
     """The deepest cut a set of verified evidence allows (IDEA-075 §4.2 table)."""
+    items = list(items)  # read more than once below; a generator would be empty after the first rule (R2)
     severity = 0
     class_2 = {s for i in items if i["class"] == "CLASS_2_RED_FLAG" for s in i["symbols"]}
     if len(class_2) >= 2:
@@ -190,16 +193,30 @@ CUT_CLASSES = {SEVERITY["CAUTION"]: ("CLASS_2_RED_FLAG", "TRADE_RESTRICTION"),
                SEVERITY["SEVERE"]: ("TRADING_SUSPENSION",)}
 
 
+def _cut_clock(prev, cfg):
+    """(healthy sessions counted since the cut was accepted or renewed, last session counted) of a stored state.
+
+    A state stored before IDEA-076 R2 has only `expires_session` E; it reads as a cut accepted at E - expiry with no
+    healthy session counted yet, so it never lapses on the clock alone. Without a usable E, any next healthy
+    session counts."""
+    healthy, counted = prev.get("healthy_sessions"), prev.get("counted_session")
+    if type(healthy) is int and healthy >= 0 and (counted is None or type(counted) is int):
+        return healthy, counted
+    expires = prev.get("expires_session")
+    return 0, expires - cfg["expiry"] if type(expires) is int else None
+
+
 def limiter_step(previous, *, session, cfg, evidence, assessment):
-    """One limiter round (IDEA-076 L01-L08). Returns (new state, record). Never raises exposure early."""
+    """One limiter round (IDEA-076 L01-L09). Returns (new state, record). Never raises exposure early.
+
+    An accepted cut lapses after `expiry` healthy sessions without renewal (L09). A session is healthy when its
+    assessment was accepted for evaluation (well-formed, citing only verified in-window evidence; DETERMINISTIC:
+    the evidence input is present). Each session counts at most once; the acceptance session does not count."""
     prev = previous if type(previous) is dict else {}
     level = prev.get("level", "NORMAL") if prev.get("level") in LEVELS else "NORMAL"
-    expires = prev.get("expires_session")
+    healthy_sessions, counted = _cut_clock(prev, cfg) if level != "NORMAL" else (None, None)
     used = list(prev.get("used_evidence_ids", []))
     record = dict(previous_level=level, accepted=False, rejected=None, cited=[])
-    if level != "NORMAL" and (type(expires) is not int or session >= expires):
-        level, expires = "NORMAL", None
-        record["expired"] = True
     verified = _verified(evidence, session)
     if cfg["limiter_mode"] == "DETERMINISTIC":
         cited = sorted(verified)
@@ -222,15 +239,22 @@ def limiter_step(previous, *, session, cfg, evidence, assessment):
             proposed = min(SEVERITY[assessment["level"]], allowed_severity(verified[i] for i in cited))
             if proposed < SEVERITY[assessment["level"]]:
                 record["capped_by_evidence_class"] = True
+    healthy = evidence is not None if cfg["limiter_mode"] == "DETERMINISTIC" else record["rejected"] is None
+    record["healthy"] = healthy
+    if level != "NORMAL" and healthy and (counted is None or session > counted):
+        healthy_sessions, counted = healthy_sessions + 1, session
+        if healthy_sessions >= cfg["expiry"]:
+            level, healthy_sessions, counted = "NORMAL", None, None
+            record["expired"] = True
     # Only new evidence of a class that can give this cut accepts or renews it; a new calendar entry cannot.
     supporting = [i for i in cited if proposed > 0 and verified[i]["class"] in CUT_CLASSES[proposed]]
     fresh = sorted(set(supporting) - set(used))
     if proposed > 0 and fresh and proposed >= SEVERITY[level]:
-        level, expires = LEVELS[proposed], session + cfg["expiry"]
+        level, healthy_sessions, counted = LEVELS[proposed], 0, session
         used = sorted(set(used) | set(cited))
         record.update(accepted=True, cited=cited)
-    state = dict(level=level, expires_session=expires if level != "NORMAL" else None, used_evidence_ids=used)
-    return state, dict(record, level=level, expires_session=state["expires_session"])
+    state = dict(level=level, healthy_sessions=healthy_sessions, counted_session=counted, used_evidence_ids=used)
+    return state, dict(record, level=level, healthy_sessions=healthy_sessions)
 
 
 # --- weight freeze (§5.1) ---------------------------------------------------------------------------------------------
