@@ -59,4 +59,8 @@ The token quantities are based on half of historical October 10 marks. That is n
 
 ## Verification
 
-Results and exact hashes are recorded below after checking the committed/pushed file. Missing-data checks remain NOT_RUN; the handoff will not be relabelled complete by synthetic tests.
+At pushed handoff commit `7f5e5ac`, Python 3.12.14: the existing proposal/policy suite passed **8 tests, 0 skipped**. A separate check of the exact handed-off policy matched the CP-01 development candidate, accepted 14 valid boundary cases and refused 34 invalid/unlimited/over-cap cases through the actual `SigningPolicy.check`. Nominal coverage and the fee inequality illustration were independently checked with exact rational/integer arithmetic. The actual signer config validator refused the incomplete draft with `Missing signer settings: run_id,build_id`, before touching DB, CA, network or key sources.
+
+- Draft `signer.json` SHA-256: `339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442`.
+- Policy SHA-256: `254f5c31b2b1bb22f706acfb95343f9e885097786d22918747eb6951c5a42033`, encoded as UTF-8 JSON with sorted keys, compact separators and a final LF.
+- Machine-readable outcome: `review.json`. Missing-data checks remain NOT_RUN; neither policy nor configuration is installation-approved. Logs: `/private/tmp/larp-signer-handoff-20261017-tests.log`. No application/enforcement change, new network request, signing, model call, host or AWS action. Full-suite/host/CI acceptance was not run for this static handoff.
