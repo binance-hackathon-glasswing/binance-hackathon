@@ -58,13 +58,14 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. A `dev` signer would start with the example label, so this decision is the real lock, not the code.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
 - [ ] **Keegan:** review #143 (SA3 corrected: the endpoints must admit both host groups because private DNS is VPC-wide; new SA8 signer egress and SA9 `primary` SSM check), then review #149 and its Terraform plan.
-- [ ] **Yao Zhu:** finish `signer.json` from Isaac's draft (copy kept outside Git in `deploy/activation/signer-dev-20261017/`), filling the six fields the draft leaves null:
-  - `run_id`: the signed development run's ID, the same in the execution config and the initial state. Never reuse the shadow run's `larp-dev-shadow-20261017`.
-  - `build_id`: the full commit of Keegan's Gate B mirror bundle, the same as the release manifest.
-  - `database_host`: the RDS endpoint from the Terraform outputs. Keep it out of Git and chat.
-  - `database_ca_sha256`: SHA-256 of the installed `/etc/larp/rds-ca.pem` (`d73890748b5a…` on `primary`, PC-AWS06); check it on the signer.
-  - `router_evidence_file` and `router_evidence_sha256`: the signer's local copy of Isaac's `RouterEvidence.v1` and its hash. Blocked on #139/#138; without them every swap is refused.
-  Then record the final file's SHA-256 (not the draft's) and bind it into the release manifest.
+- [ ] **Yao Zhu:** on Gate B day, finish `signer.json` from Isaac's draft (copy kept outside Git in `deploy/activation/signer-dev-20261017/`). Order: Keegan's Gate B bundle exists, Isaac's router evidence is merged and his #44 policy decision is in, then the IDEA-080 apply below. The six fields the draft leaves null, and where each comes from:
+  - `database_host`: `terraform -chdir=deploy/aws output -raw database_host` (the same RDS `primary` uses). Keep it out of Git and chat.
+  - `database_ca_sha256`: `rds_ca_sha256` in the Gate B bundle's `.release.json` (`d73890748b5a…` for `bb46234`, PC-AWS06); check it on the signer with `sha256sum /etc/larp/rds-ca.pem`.
+  - `build_id`: the full 40-character commit in the Gate B bundle's `.release.json`; the same in `execution.json`, the runtime config and the release manifest.
+  - `run_id`: the ID chosen for the signed rehearsal run, the same one passed to `prepare` and `service init` for it and used in `execution.json` and the initial state (e.g. `larp-dev-rehearsal-20261021`). Never `larp-dev-shadow-20261017`.
+  - `router_evidence_file`: `/etc/larp/router-evidence.json` on the signer, a copy of Isaac's merged `config/execution/router-evidence.v1.json` (GATE_B.md steps 4 and 8). **Blocked on #139.**
+  - `router_evidence_sha256`: `sha256sum /etc/larp/router-evidence.json`; must equal Isaac's recorded hash. `execution.json` gets the same pair.
+  Shortcut for the database fields: `python tools/deploy/render_host_configs.py --terraform-output /tmp/tf.json --wallet 0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479 --out deploy/activation/development --rds-ca-sha256 <bundle rds_ca_sha256>` (DEPLOYMENT_DAY step 7) fills them and lists what is still unset; replace its example `signing_policy` with Isaac's decided one. Then record the final file's SHA-256 (not the draft's `339c4202…`), install it as `/etc/larp/signer.json` and re-bind with `--service-config signer=/etc/larp/signer.json`.
 - [ ] **Yao Zhu:** after #44's approval and Keegan's review of #143 and #149, apply the IDEA-080 Terraform change (built 2026-10-17 in #149: temporary SSM endpoints, off by default, `terraform test` 19 passed; planned, not applied), provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
 - [ ] **Isaac:** after that, place the key file on the signer host only (`/etc/larp/signer/wallet.key`, root, `0600`) (DR-03).
 - [ ] **Isaac:** swap about 2 USDT more in MetaMask and record the fresh opening balance afterwards (#106). The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is written in #151 (open for review; closes #150).
@@ -156,6 +157,8 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 ## Oct 21
 
+- [ ] **Keegan:** review and merge the incident-backup fix (IDEA-082: S3 keeps Object Lock dates to whole seconds, so every incident backup is marked PERMANENT and blocks archive health; IDEA-066 PC-AWS09), and include it in the Gate B bundle.
+- [ ] **Yao Zhu:** after Oct 18 00:00 UTC, check `operations health` is healthy again (the daily backup should supersede the failed incident backup); if not, record it in IDEA-066.
 - [ ] **Yao Zhu:** after 24 h of ingestion, produce the gap report on `primary` (`python -m larp.sources.live report --from … --to …`) and send it to Keegan.
 - [ ] **Keegan:** review Gate A item by item in IDEA-042, using the gap report and Yao Zhu's host reports.
 - [ ] **Yao Zhu:** crash tests at each execution step on the host (DR-04, DR-05), then switch the runtime to signed rehearsal mode.
