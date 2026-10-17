@@ -1,0 +1,16 @@
+{
+  "schema": "SignerCapsReference.v1",
+  "chain_id": 56,
+  "price_unit": "USDT_PER_WHOLE_TOKEN",
+  "reference_scope": "HISTORICAL_REFERENCE_ONLY",
+  "observed_at": "2026-10-10T11:38:00.565Z",
+  "artifact_sha256": "c55871f9379ea589b2f1a7dffb5422953941e7772201c8274cfd78b858f78669",
+  "response_sha256": "754d3733058edb2b99a15676308e838b17f3d50080b9ffc001d747ea81297a7e",
+  "tokens": {
+    "NVDAB": {"address": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436", "decimals": 18, "price_usdt": "230.60932609935951633195"},
+    "GOOGLB": {"address": "0x3f53de71c126bdabae20f9cd64848d317f6c3238", "decimals": 18, "price_usdt": "352.4684201779872761253"},
+    "SKHYB": {"address": "0xca750ef65f295bbecd685abf54e82caf297bdb61", "decimals": 18, "price_usdt": "170.7"},
+    "TSLAB": {"address": "0x5b1910eaad6450e50f816082aa078c41f10c292f", "decimals": 18, "price_usdt": "382.96"},
+    "MSFTB": {"address": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0", "decimals": 18, "price_usdt": "535.4626558342912540322"}
+  }
+}

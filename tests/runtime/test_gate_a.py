@@ -688,3 +688,175 @@ class ReviewFixes(unittest.TestCase):
         d = json.loads(files['runtime.json'])['driver']  # the legacy pair, as in GA10
         self.assertNotIn('balance_rpc_providers', d)
         self.assertEqual((d['balance_rpc_url'], d['balance_rpc_source_id']), ('https://rpc.invalid/', 'synthetic-rpc'))
+
+PRIMARY = dict(url='https://rpc.invalid/', source_id='synthetic-rpc')
+BACKUP = dict(url='https://backup-rpc.invalid/v1/key', source_id='synthetic-backup')
+# The provider file is read by qualify_balance_rpc.private_config (GA15b), which takes public source IDs only.
+FILE_PRIMARY = dict(PRIMARY, source_id='SYNTHETIC_RPC')
+FILE_BACKUP = dict(BACKUP, source_id='SYNTHETIC_BACKUP')
+
+
+class ProviderFile(unittest.TestCase):
+    """IDEA-066 PC-RPC01 (GA15): prepare writes the ordered provider list from the private provider file."""
+
+    def test_ga15c_reader_timeout_is_a_sanitized_refusal_for_both_commands(self):
+        from contextlib import redirect_stdout, redirect_stderr
+        from io import StringIO
+        import subprocess
+
+        ignored_root = gate_a.ROOT / 'deploy' / 'activation'
+        ignored_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ignored_root) as private, tempfile.TemporaryDirectory() as tmp:
+            config = Path(private) / 'providers.json'
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
+            capture = Path(tmp) / 'capture.json'
+            capture.write_text(json.dumps(dict(wallet=WALLET)))
+            empty = Path(tmp) / 'input.json'
+            empty.write_text('{}')
+            output = Path(tmp) / 'prepared'
+            commands = [
+                ['capture', '--artifact-root', tmp, '--output', str(Path(tmp) / 'new-capture.json')],
+                ['prepare', '--terraform-output', str(empty), '--profile', str(empty), '--capture', str(capture),
+                 '--run-id', 'r', '--build-id', 'b' * 40, '--rds-ca-sha256', 'c' * 64, '--out', str(output)]]
+            for args in commands:
+                out, err = StringIO(), StringIO()
+                timeout = subprocess.TimeoutExpired(['git', 'PRIVATE_CREDENTIAL_SENTINEL'], 10,
+                                                    output=b'PRIVATE_CREDENTIAL_SENTINEL')
+                with self.subTest(command=args[0]), redirect_stdout(out), redirect_stderr(err), \
+                        patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                        patch.object(prepare_shadow.renderer, 'outputs', return_value={}), \
+                        patch.object(prepare_shadow.renderer, 'render', return_value={}), \
+                        patch.object(prepare_shadow, 'credentials') as credentials, \
+                        patch.object(prepare_shadow, 'Web3Client') as client, \
+                        patch('qualify_balance_rpc.subprocess.run', side_effect=timeout) as check_ignore:
+                    code = prepare_shadow.main(args + ['--balance-rpc-config', str(config)])
+                    self.assertEqual(code, 4)
+                    result = json.loads(out.getvalue())
+                    self.assertEqual((result['reason'], result['detail']), ('INPUTS_REFUSED', 'TimeoutExpired'))
+                    self.assertFalse(result['signing_enabled'])
+                    self.assertNotIn('PRIVATE_CREDENTIAL_SENTINEL', out.getvalue() + err.getvalue())
+                    self.assertNotIn(FILE_BACKUP['url'], out.getvalue() + err.getvalue())
+                    credentials.assert_not_called()
+                    client.assert_not_called()
+                    self.assertEqual(check_ignore.call_args.kwargs['timeout'], 10)
+                    self.assertFalse(output.exists())
+                    self.assertFalse((Path(tmp) / 'new-capture.json').exists())
+
+    def test_p1_the_ordered_list_is_written_to_runtime(self):
+        files = assembled(balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=[PRIMARY, BACKUP])
+        driver = json.loads(files['runtime.json'])['driver']
+        self.assertEqual(driver['balance_rpc_providers'], [PRIMARY, BACKUP])
+        self.assertFalse({'balance_rpc_url', 'balance_rpc_source_id'} & set(driver))
+        self.assertNotIn('BALANCE_RPC', json.loads(files['preparation-report.json'])['missing_inputs'])
+        from larp.runtime.service import balance_providers
+        self.assertEqual(balance_providers(driver), [PRIMARY, BACKUP])  # what the runtime will read
+
+    def test_p2_both_forms_or_a_list_the_runtime_refuses_is_refused(self):
+        with self.assertRaisesRegex(ContractError, 'not both'):
+            assembled(balance_rpc_providers=[PRIMARY, BACKUP])
+        bad = {'empty': [], 'five': [dict(url=f'https://r{i}.invalid/', source_id=f'r{i}') for i in range(5)],
+               'http': [dict(PRIMARY, url='http://rpc.invalid/')], 'duplicate': [PRIMARY, dict(BACKUP, source_id='synthetic-rpc')],
+               'empty_id': [dict(PRIMARY, source_id='')], 'extra_key': [dict(PRIMARY, note='x')], 'not_list': PRIMARY}
+        for name, providers in bad.items():
+            with self.subTest(name), self.assertRaises(ContractError):
+                assembled(balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=providers)
+
+    def test_p3_the_chain_capture_must_come_from_a_listed_provider(self):
+        assembled(balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=[BACKUP, PRIMARY])
+        with self.assertRaisesRegex(ContractError, 'another RPC source'):
+            assembled(balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=[BACKUP])
+        with self.assertRaisesRegex(ContractError, 'chain balance capture required'):
+            assembled(capture_raw=encoded(captured()), balance_rpc_url=None, balance_rpc_source_id=None,
+                      balance_rpc_providers=[PRIMARY])
+
+    def test_p4_the_legacy_config_form_holds_one_provider_only(self):
+        legacy = render_host_configs.render(render_host_configs.outputs(terraform_output()), WALLET, 'c' * 64)
+        legacy['runtime.json']['driver'].pop('balance_rpc_providers', None)
+        legacy['runtime.json']['driver'].update(balance_rpc_url=None, balance_rpc_source_id=None)
+        args = dict(profile_raw=encoded(profile()), capture_raw=encoded(with_chain()),
+                    calendar_raw=(gate_a.ROOT / 'config/runtime/session-calendar.2026.json').read_bytes(),
+                    run_id='gate-a-test', build_id='b' * 40, now=NOW)
+        with self.assertRaisesRegex(ContractError, 'cannot hold a backup'):
+            gate_a.prepare(copy.deepcopy(legacy), balance_rpc_providers=[PRIMARY, BACKUP], **args)
+        driver = json.loads(gate_a.prepare(legacy, balance_rpc_providers=[PRIMARY], **args)['runtime.json'])['driver']
+        self.assertNotIn('balance_rpc_providers', driver)
+        self.assertEqual((driver['balance_rpc_url'], driver['balance_rpc_source_id']), (PRIMARY['url'], PRIMARY['source_id']))
+
+    def test_p5_the_cli_reads_the_private_file_and_never_echoes_a_url(self):
+        import contextlib
+        import io
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / 'providers.json'
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
+            # capture: the chain read uses the first provider
+            with patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                    patch.object(prepare_shadow, 'credentials', return_value=dict(BINANCE_API_KEY='k', BINANCE_SECRET_KEY='s')), \
+                    patch.object(prepare_shadow, 'Web3Client'), patch.object(prepare_shadow, 'capture_inputs') as capture, \
+                    patch('larp.execution_live.chain.Rpc') as rpc:
+                capture.side_effect = ContractError('stop before writing')
+                code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                            '--output', str(Path(tmp) / 'c.json'), '--balance-rpc-config', str(config)])
+                self.assertEqual(code, 4)
+                self.assertEqual(rpc.call_args.args[0], FILE_PRIMARY['url'])
+                self.assertEqual(rpc.call_args.kwargs['source_id'], FILE_PRIMARY['source_id'])
+            # prepare: the file reaches gate_a.prepare as the ordered list
+            with patch.object(prepare_shadow, 'prepare', side_effect=ContractError('stop')) as assemble, \
+                    patch.object(prepare_shadow.renderer, 'render', return_value={}), \
+                    patch.object(prepare_shadow.renderer, 'outputs', return_value={}):
+                capture_file = Path(tmp) / 'capture.json'
+                capture_file.write_text(json.dumps(dict(wallet=WALLET)))
+                tf = Path(tmp) / 'tf.json'
+                tf.write_text('{}')
+                common = ['prepare', '--terraform-output', str(tf), '--profile', str(tf), '--capture', str(capture_file),
+                          '--run-id', 'r', '--build-id', 'b' * 40, '--rds-ca-sha256', 'c' * 64, '--out', str(Path(tmp) / 'o')]
+                self.assertEqual(prepare_shadow.main(common + ['--balance-rpc-config', str(config)]), 4)
+                self.assertEqual(assemble.call_args.kwargs['balance_rpc_providers'], [FILE_PRIMARY, FILE_BACKUP])
+            # refusals: both forms, a symlink, a malformed file; none prints a URL
+            link = Path(tmp) / 'link.json'
+            os.symlink(config, link)
+            malformed = Path(tmp) / 'malformed.json'
+            malformed.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY], url=BACKUP['url'])))
+            for extra in (['--balance-rpc-config', str(config), '--balance-rpc-url', PRIMARY['url'],
+                           '--balance-rpc-source-id', 'x'],
+                          ['--balance-rpc-config', str(link)], ['--balance-rpc-config', str(malformed)]):
+                out = io.StringIO()
+                with self.subTest(extra=extra[-1]), contextlib.redirect_stdout(out), \
+                        patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'):
+                    code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                                '--output', str(Path(tmp) / 'd.json')] + extra)
+                self.assertEqual(code, 4)
+                self.assertNotIn('invalid/', out.getvalue())
+                self.assertNotIn('/v1/key', out.getvalue())
+
+    def test_p5_a_provider_file_inside_the_repository_must_be_ignored(self):
+        tracked = gate_a.ROOT / 'config' / 'runtime' / 'runtime.example.json'  # tracked, not ignored
+        with self.assertRaisesRegex(ContractError, 'must be ignored'):
+            prepare_shadow.rpc_providers(tracked)
+
+    def test_ga15b_prepare_accepts_exactly_what_qualification_accepts(self):
+        import contextlib
+        import io
+        refused = {'lowercase_id': [PRIMARY], 'userinfo': [dict(FILE_PRIMARY, url='https://u:p@rpc.invalid/')],
+                   'fragment': [dict(FILE_PRIMARY, url='https://rpc.invalid/#f')],
+                   'port': [dict(FILE_PRIMARY, url='https://rpc.invalid:8443/')]}
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, providers in refused.items():
+                config = Path(tmp) / f'{name}.json'
+                config.write_text(json.dumps(dict(balance_rpc_providers=providers)))
+                out = io.StringIO()
+                with self.subTest(name), contextlib.redirect_stdout(out), \
+                        patch.object(prepare_shadow, 'require_committed'), patch.object(prepare_shadow, 'git_state'), \
+                        patch.object(prepare_shadow, 'credentials') as keys:
+                    code = prepare_shadow.main(['capture', '--wallet', WALLET, '--artifact-root', tmp,
+                                                '--output', str(Path(tmp) / 'c.json'), '--balance-rpc-config', str(config)])
+                    self.assertEqual(code, 4)
+                    keys.assert_not_called()  # refused before credentials are read
+                    self.assertNotIn('rpc.invalid', out.getvalue())
+        # a git-ignored file inside the repository is accepted
+        ignored_root = gate_a.ROOT / 'deploy' / 'activation'
+        ignored_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ignored_root) as tmp:
+            config = Path(tmp) / 'providers.json'
+            config.write_text(json.dumps(dict(balance_rpc_providers=[FILE_PRIMARY, FILE_BACKUP])))
+            self.assertEqual(prepare_shadow.rpc_providers(config), [FILE_PRIMARY, FILE_BACKUP])

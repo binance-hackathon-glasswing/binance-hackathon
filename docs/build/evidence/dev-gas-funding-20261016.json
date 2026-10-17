@@ -1,0 +1,171 @@
+{
+  "schema": "ManualGasFundingEvidence.v1",
+  "status": "FUNDING_RECORD_COMPLETE_WITH_ATTRIBUTED_EXPLORER_CREDIT",
+  "record_ref": "IDEA-039 FG-01 / #106",
+  "criteria_commit": "40e0aed",
+  "protocol_clarification_commit": "eaf7282",
+  "transaction_hash": "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+  "chain_id": 56,
+  "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+  "transaction_to": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+  "transaction_nonce": 1,
+  "transaction_value_wei": "0",
+  "receipt_success": true,
+  "canonical_below_finalized_heads": true,
+  "identity_rechecked": true,
+  "block": {
+    "number": 127946341,
+    "number_hex": "0x7a04e65",
+    "hash": "0x1983bbd3490a3bb69f7220d02c7bb218876b73caee5f1ed660d7dbbdad807b01",
+    "timestamp_unix": 1792139264,
+    "utc": "2026-10-16T08:27:44Z"
+  },
+  "usdt": {
+    "token": "0x55d398326f99059ff775485246999027b3197955",
+    "decimals": 18,
+    "gross_outgoing_units": "2000000000000000000",
+    "gross_incoming_units": "0",
+    "net_debit_units": "2000000000000000000",
+    "net_debit_usdt": "2",
+    "fee_classification": "NOT_SEPARATELY_ESTABLISHED"
+  },
+  "native_credit_wei": "2684720969362886",
+  "native_credit_bnb": "0.002684720969362886",
+  "native_credit_status": "EXPLORER_TRANSFER_RELAYED_BY_ISAAC",
+  "receipt_network_fee": {
+    "gas_used": 188294,
+    "effective_gas_price_wei": "60000000",
+    "fee_wei": "11297640000000",
+    "fee_bnb": "0.00001129764",
+    "note": "Receipt gas product; does not establish MetaMask UI fee-token economics."
+  },
+  "providers": [
+    {
+      "source_id": "BSC_BNBCHAIN_PUBLIC",
+      "finalized_number": "0x7a32e7d",
+      "finalized_hash": "0xfb415421b7e7009abc37b6523e960e9886b83c66d0ebe1fd94c7713156512064"
+    },
+    {
+      "source_id": "BSC_NODEREAL_PUBLIC",
+      "finalized_number": "0x7a32f19",
+      "finalized_hash": "0xbd2f417db973a2586cc78a03d8908ae9e3f985b357dedd9827cea5e775f71fcc"
+    }
+  ],
+  "trace_outcomes": [
+    "PRIMARY_MIXED_BATCH_UNSUPPORTED",
+    "BACKUP_MISSING_TRIE_NODE",
+    "PRIMARY_STANDALONE_MISSING_TRIE_NODE"
+  ],
+  "rpc_method_calls": 15,
+  "http_calls": 6,
+  "raw_artifacts": [
+    {
+      "file": "bnb-details-request.json",
+      "sha256": "bbc7640cdddae5aabf6ce4bc4dd7c4a75dd963e7281b9de7c06148f4ffd5b1c6",
+      "saved_at_utc": "2026-10-17T08:01:55.897421+00:00"
+    },
+    {
+      "file": "bnb-details.headers",
+      "sha256": "630ee8833794bf9156cca6e0abc1e13e6bf7988228727f6ed04cdaa615e25506",
+      "saved_at_utc": "2026-10-17T08:01:58.704044+00:00"
+    },
+    {
+      "file": "bnb-details.json",
+      "sha256": "e8f4543fa6c47168947571dd6f671269c59eff0257a1d5a0aabebae1f31a8116",
+      "saved_at_utc": "2026-10-17T08:01:58.704355+00:00"
+    },
+    {
+      "file": "bnb-initial-request.json",
+      "sha256": "7526e75f4dcf67929d81d68de7c7333d4b2db49eb6f5e5c02a989d96054ee061",
+      "saved_at_utc": "2026-10-17T08:01:27.952232+00:00"
+    },
+    {
+      "file": "bnb-initial.headers",
+      "sha256": "971b93014ef86eeb456d6be97e548090946687830e6630afc2f53c53aed190a3",
+      "saved_at_utc": "2026-10-17T08:01:28.395566+00:00"
+    },
+    {
+      "file": "bnb-initial.json",
+      "sha256": "52d9804061aa5e648d442e5fe26663fc5916f0acc47f6d46aa8c99dcab75c3b4",
+      "saved_at_utc": "2026-10-17T08:01:28.396257+00:00"
+    },
+    {
+      "file": "bnb-standalone-trace.headers",
+      "sha256": "3862f6b11a5d3bb795699965f8b4738c468e609f3fdcfbfcf89a7d7f982709da",
+      "saved_at_utc": "2026-10-17T08:03:47.235437+00:00"
+    },
+    {
+      "file": "bnb-standalone-trace.json",
+      "sha256": "916beb1e74d2c92e8763867dbdd3564063ca546096fa4dc058d9538a8feebff9",
+      "saved_at_utc": "2026-10-17T08:03:47.235781+00:00"
+    },
+    {
+      "file": "nodereal-context-request.json",
+      "sha256": "4b5cb9946236e57666a0b90a4d97d73a0215b1f9fac0afd6892fbb880246c515",
+      "saved_at_utc": "2026-10-17T08:02:35.561060+00:00"
+    },
+    {
+      "file": "nodereal-context.headers",
+      "sha256": "5e86e024ec25cc38d9f0fb73cb2b88e094990ed8bda14df68cabf0f0d3129612",
+      "saved_at_utc": "2026-10-17T08:02:38.232445+00:00"
+    },
+    {
+      "file": "nodereal-context.json",
+      "sha256": "49dd051c57055664656ac7de97276e11b5ce3de084859c665697fe759e6298c8",
+      "saved_at_utc": "2026-10-17T08:02:38.233419+00:00"
+    },
+    {
+      "file": "nodereal-recheck-request.json",
+      "sha256": "aa839a8219721f4b4356780bb96e50be945707c014ad4df42bf0a4d0bdfcd64b",
+      "saved_at_utc": "2026-10-17T08:04:58.197742+00:00"
+    },
+    {
+      "file": "nodereal-recheck.headers",
+      "sha256": "bfa0a5a801c3d3bf4de541287ef6ddca0d1474ab36d3de57e864b79054dc93a9",
+      "saved_at_utc": "2026-10-17T08:05:00.525111+00:00"
+    },
+    {
+      "file": "nodereal-recheck.json",
+      "sha256": "68bb128cfa671a1c05e1bcc498a881545df9180c2de9da814e02c89ca23929bf",
+      "saved_at_utc": "2026-10-17T08:05:00.525701+00:00"
+    },
+    {
+      "file": "nodereal-trace-request.json",
+      "sha256": "d9b7ede732cc6654ab5be828ed3af30a58c8a27db4b295e6db6231fd1aa28747",
+      "saved_at_utc": "2026-10-17T08:02:35.561190+00:00"
+    },
+    {
+      "file": "nodereal-trace.headers",
+      "sha256": "1505a590e3581956fa5e144ffd32fd165ae0b120273ac10198cb79905d7ba4fa",
+      "saved_at_utc": "2026-10-17T08:02:50.450001+00:00"
+    },
+    {
+      "file": "nodereal-trace.json",
+      "sha256": "916beb1e74d2c92e8763867dbdd3564063ca546096fa4dc058d9538a8feebff9",
+      "saved_at_utc": "2026-10-17T08:02:50.450527+00:00"
+    },
+    {
+      "file": "isaac-explorer-native-transfer.json",
+      "sha256": "ace277398f4c7b1fa01b41bc4b35aa9a0f5b30a8d63cf5787caf68841676df6a",
+      "saved_at_utc": "2026-10-17T08:08:50.819470+00:00"
+    }
+  ],
+  "not_verified": [
+    "NATIVE_CREDIT_BY_RPC_TRACE",
+    "UI_USDT_FEE_PAYMENT",
+    "FURTHER_DEV_FUNDING",
+    "CURRENT_HOSTED_BALANCE",
+    "FINAL_WALLET_FUNDING"
+  ],
+  "signing_or_runtime_action": false,
+  "native_credit_rpc_verified": false,
+  "native_credit_source": {
+    "kind": "USER_RELAYED_BSCSCAN_INTERNAL_TRANSFER",
+    "reported_by": "Isaac",
+    "reported_date": "2026-10-17",
+    "transaction_url": "https://bscscan.com/tx/0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+    "from_address": "0xc590175e458b83680867afd273527ff58f74c02b",
+    "to_address": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+    "note": "Gross wallet-directed BNB transfer as copied from explorer; not a RPC pre/post-state proof or current wallet balance."
+  }
+}

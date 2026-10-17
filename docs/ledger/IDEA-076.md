@@ -157,3 +157,16 @@ The plan text changes in PR #123 (IDEA-075 §4.2 and §13: L09, Q15). These are 
   - `allowed_severity` now reads its input into a list.
 - **R3 PASS.** No code change was needed: S1 did not change the mandatory bypass. `test_q15_a_mandatory_safety_sell_ignores_impact_and_cost_limits_but_not_quote_checks` passes, with its 6 subtests. It fails when the `mandatory` exemption is removed from the impact check, or from the cost-reserve veto (each change was tried locally and reverted).
 - Full suite at `eadb72b`: **1820 passed, 10 skipped, 0 failed**, 2628 subtests, 259.9 s. The environment was Python 3.13.16 and a throwaway PostgreSQL 16.15 cluster under /tmp. `deploy/requirements-{signer,runtime,aws,test}.lock` were installed and the ML packages left out. Against the previous 1811 passed / 10 skipped, the difference is the 9 new tests (7 in `Limiter`, the L09 policy chain and Q15). `git diff --check` is clean.
+
+
+## RV-131 — Isaac-requested review and merge (2026-10-17, prospective)
+
+Review head `4b87036` against current integration `5f16784` (includes PR130); ordinary merge retains current IDEA080, IDEA070, IDEA075, EXP007 and IDEA076 rows. This reviews S1 B2/B3/B4 core only; all §12 choices remain proposed, EXP007 is not run, live series/model evidence, B5/B6/B7 and host/rehearsal gates remain open. No new market experiment or activation is authorized.
+
+Criteria before running regressions:
+- **R4:** Class2 is an entry-only block. S1 must still emit a SELL toward a reduced target for a held Class2-blocked name; it must never buy that name. Other baselines and Class1/reduction/terminal precedence remain unchanged. Rebalance tracking must retain any unfilled cut.
+- **R5:** the independent planner bounds each symbol by `high * its frozen weight`, not `high * the maximum permitted weight`. A proposal above its own frozen allocation cannot produce an oversized buy even when below the global 30% weight cap.
+- **R6:** malformed deterministic evidence (non-list, malformed/unhashable items, duplicate/conflicting IDs) is not a healthy session and cannot expire a prior cut. A valid empty input can count as healthy; valid new adverse evidence still lowers exposure. MODEL invalid evidence fails closed without crashing.
+- **R7:** the offline profile CLI must support explicitly selecting a supplied S1 block plus a named decision, hash-bind that block in provenance and keep EQUAL_WEIGHT as the default. Invalid/missing paired arguments or bad block fail without generating a profile; no overwrite of existing profiles.
+- **R8:** weight freeze validates `2 <= minimum <= window`, a positive integer scale and a dict series input. Invalid arguments raise ContractError, not decimal division errors or zero weights. Returned weights must be strictly positive, sum to1 and respect the cap. Missing-history substitution is kept and reported; real candle/timestamp/source qualification remains DR08.
+- **R9:** push criteria/tests before RED, fixes before GREEN. Focused S1/strategy/risk/integration and full synthetic disposable-PostgreSQL regression must pass; report skips/environment and current Actions billing limitation honestly. No .env/keys, API/model calls, real prices, transactions, AWS or receiver use.

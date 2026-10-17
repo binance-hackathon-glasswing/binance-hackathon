@@ -13,6 +13,7 @@ only, because a configured RPC URL can carry an API key in its path or query.
 
 `primary` passes when every destination is reachable. `signer` passes when it reaches the database and the S3
 gateway endpoint and every internet destination is refused (IDEA-046 B2); a connection to one is UNEXPECTED_ROUTE.
+An unresolved internet hostname is INCONCLUSIVE, never proof of a blocked route.
 Exit codes: 0 passed, 1 failed, 2 refused (bad or missing configuration, existing output file).
 """
 import argparse
@@ -233,7 +234,11 @@ def probe(host, port, *, tls, timeout, cafile=None):
 
 def verdict(expect, status):
     if expect == 'BLOCKED':
-        return 'UNEXPECTED_ROUTE' if status in CONNECTED else ('FAIL' if status == 'UNSET' else 'PASS')
+        if status in CONNECTED:
+            return 'UNEXPECTED_ROUTE'
+        if status == 'DNS_FAILED':
+            return 'INCONCLUSIVE'
+        return 'PASS' if status == 'CONNECT_FAILED' else 'FAIL'
     return 'PASS' if status == 'OK' else 'FAIL'
 
 
