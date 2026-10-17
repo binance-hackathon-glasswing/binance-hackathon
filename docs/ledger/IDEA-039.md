@@ -1,5 +1,24 @@
 # IDEA-039 — Isaac: live market and execution integration
 
+## GB-RW3 — PR155 review: returned quote binding (2026-10-17 SGT, prospective)
+
+All-PR review found that the offline numeric checker binds request parameters but
+does not compare returned `routerResult` token addresses/decimals or input amount.
+Its synthetic fixtures omitted those real response fields. This can report
+numeric COVERED for a mismatched response, despite GB-CAP2's stated units/binding
+criterion; owner approval still remains blocked.
+
+Before changed code runs: extend fixtures to the actual response shape; compare
+returned pay/receive token addresses and metadata scales against the requested
+pair and configured stock units (USDT/BNB18), and require the exact returned input
+amount, positive received/minimum quantities and minimum <= quoted receipt.
+Check GET method and any supplied transaction sender/chain metadata; missing
+optional transaction sender/chain metadata is not invented. Mutations of each
+binding must yield numeric BLOCKED/missing pair, with unchanged owner/signing
+refusals. Push regression and fix before execution; run focused caps/proposal/
+Gate B checks and the combined review regression. No source or quote-execution
+qualification is inferred from these numeric comparisons.
+
 ## GB-RW1 — remaining Gate B reconciliation (2026-10-17, prospective)
 
 User requests all remaining Gate B work after inspecting all PRs and the remaining-work briefs. Base: integration `0672fb8`, rather than lagging main `fb95114`. All 85 advertised PR heads were fetched through native Git and compared with both branches. Seven heads are outside integration: historical closed #10/#82/#83/#89, remaining-work brief #126, checklist #133 and incomplete source acquisition #139. Their documents were read as references; no PR is merged or represented as independently approved here. Initial GitHub API/discussion requests were blocked by cloud egress; `api.github.com` was added to the environment draft, preserving the package-manager preset. API access later recovered and was verified directly; publication of that draft is not claimed.
