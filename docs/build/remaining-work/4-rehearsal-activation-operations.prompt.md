@@ -1,4 +1,4 @@
-You are the agent for **Gate C: rehearsal, final activation and operations**. You prepare the work behind the checklist's rehearsal-shape decision, "Oct 21–26: rehearsal drills", the operations lines of "Oct 22 cut line", "Oct 26–29" and "Housekeeping" in [`docs/build/PRE_TRADING_CHECKLIST.md`](../PRE_TRADING_CHECKLIST.md). You work for the owner each of those lines names, and each review or decision goes to the person its line names; take both from the checklist, not from this brief. Your job is to make the build that trades from Oct 29:
+You are the agent for **Gate C: rehearsal, final activation and operations**. You prepare the work behind the checklist's rehearsal-shape decision, "Oct 21–26: rehearsal drills", the operations lines of "Oct 22 cut line", "Oct 26–29" and "Housekeeping" in [`docs/build/PRE_TRADING_CHECKLIST.md`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133). You work for the owner each of those lines names, and each review or decision goes to the person its line names; take both from the checklist, not from this brief. Your job is to make the build that trades from Oct 29:
 - rehearsed;
 - able to recover and halt on its own;
 - declared honestly in its manifest and deviations register;
@@ -7,7 +7,7 @@ You are the agent for **Gate C: rehearsal, final activation and operations**. Yo
 
 During the run there are no deploys (F-117) and no manual restarts (F-124); a human HALT is treated as not allowed (F-114). Anything the run might need has to exist as automatic, tested code before the freeze.
 
-Read `docs/build/remaining-work/README.md` first; its rules apply here, especially rule 2 (owners come from the checklist; every AWS or host step goes to the checklist's AWS owner). Then read these, on `origin/codex/system-testing-20261012`:
+Read `docs/build/remaining-work/README.md` first; its rules apply here, especially rule 2 (owners come from the checklist; AWS/host operations go to the checklist's AWS owner, with its explicit Isaac key-placement exception). Then read these, on `origin/codex/system-testing-20261012`:
 - `docs/build/DEPLOYMENT_BUILD.md` (Gate C and DR-13..22), `docs/build/runbook.md` and `docs/build/AWS_RUNBOOK.md`
 - IDEA-042, IDEA-049-D (all, especially §5: D-DN-01..11, and the R-01..R-14 risks), IDEA-036, IDEA-046, IDEA-047 and IDEA-009 §F
 - `config/release/deviations.v1.json` and `config/release/services.v1.json`
@@ -21,8 +21,8 @@ The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that
 
 ## Deliver
 
-1. **Rehearsal shape (D-DN-02, GAP-04). Decide by Oct 19.**
-   - Prepare the choice, including what happens if Gate A only passes on Oct 21:
+1. **Rehearsal shape (D-DN-02, GAP-04). Conditional decision already recorded Oct17.**
+   - Apply the existing conditional choice in IDEA-049-D rather than making a new decision:
      - (a) keep the declared signed rehearsal, Oct 21–26, covering Oct 24–25;
      - (b) shadow rehearsal plus a shorter signed window, recorded as a deviation.
    - Base it on prompt 2's Gate B forecast. If Gate B slips past Oct 20, the shortfall is recorded as a deviation that same day.
@@ -36,7 +36,7 @@ The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that
    - **D-DN-06:** the watchdog timeout.
    - **D-DN-07:** crash loop to HALT after N restarts.
    - **D-DN-08 (#60):** memory limits on a `t3.small` against the RSS prompt 1 records.
-   - **D-DN-10:** automatic CLOCK HALT clear. It is in #125, open for review and merge; finish or review it rather than starting over.
+   - **D-DN-10:** automatic CLOCK HALT clear. It is merged in #125; verify its remaining host configuration/evidence rather than rebuilding it.
    - **D-DN-11:** what a restore during the run means, given that F-114 forbids manual activation.
    - D-DN-09 (HALT semantics) is built (#117).
 
@@ -51,11 +51,11 @@ The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that
    - Make every row FINAL by Oct 26, including DEV-18 (standby). `activate_run` refuses a `live` run with an OPEN or DRAFT row.
    - Complete the services list (F-61).
    - **#49:** make the release-integrity step (IDEA-047 R6) something an operator can actually follow.
-   - With prompt 1: an exact-release CI bundle for the frozen commit. Restoring Actions minutes is a checklist line (#98).
+   - With prompt 1: an exact-release CI bundle for the frozen commit. Mirror builds are accepted releases (PC-DEC01); organization billing is still unresolved separately (#98).
 
 6. **Final wallet (DR-17, GAP-52, #106 final part).** Who owns the final wallet is settled by the team (2026-10-16); don't chase it. Record each step with its date, as the checklist's "Oct 26–29" lines set it out:
    - The fresh final wallet is generated and registered (F-14).
-   - Its new `AI_SEEDS_SECRET` is obtained by Oct 26 and handed over for the host secret, never in chat or an issue; putting it into AWS Secrets Manager (`put_service_secrets.sh`) is a host step. Q-35 is among the organiser questions sent by the checklist's GAP-42 line; agents never contact organisers.
+   - Confirm final-wallet credential issuance under Q-35; obtain its applicable `AI_SEEDS_SECRET` by Oct26 and deliver it securely for the host secret if a new one is issued, never in chat or an issue; putting it into AWS Secrets Manager (`put_service_secrets.sh`) is a host step. Q-35 is among the organiser questions sent by the checklist's GAP-42 line; agents never contact organisers.
    - The final wallet's first-gas swap (about 6 USDT, in MetaMask) happens before **Oct 29 00:00 UTC** and before its first agent trade.
    - The opening balance capture comes after that.
    - The switch is rehearsed on the dev host with a throwaway config: a new address and secret, a separate `.ai-seeds/` directory and nonce records, and refusal on any address mismatch.
@@ -66,7 +66,7 @@ The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that
    - The runbook: start, automatic restart, HALT, restore, switch, end of run.
    - The on-call rota, which the team has settled: just include it.
    - Each owner signs off the DR items the checklist gives them in IDEA-042.
-   - Then the Gate C review, and the integration → `main` promotion PR. The go-ahead process is settled by the team. Keep `main` in step: today it lags the integration branch and has the PR85 record commits integration lacks, so reconcile them as an ordinary merge.
+   - Then the Gate C review, and the integration → `main` promotion PR. The go-ahead process is settled by the team. Keep `main` in step: it lags integration, which already contains the PR85 records; use ordinary merges and inspect current refs rather than assuming a missing historical docs commit.
 
 8. **Accountability and audit readiness.**
    - **GAP-46, GAP-48:** verify the round-log contract and test-log hygiene on the real receiver.

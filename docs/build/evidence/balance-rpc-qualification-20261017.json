@@ -1,0 +1,120 @@
+{
+  "hosted_check": "NOT_RUN",
+  "issue": 134,
+  "native_trace": "NOT_RUN",
+  "parent_issue": 92,
+  "provider_urls_committed": false,
+  "recommended_order": [
+    "BSC_BNBCHAIN_PUBLIC",
+    "BSC_NODEREAL_PUBLIC"
+  ],
+  "runs": [
+    {
+      "report": {
+        "all_passed": false,
+        "build_id": "12c6e3d2c4d0dc84e8da9d04c8c8f9e8d2ba314b",
+        "checked_at": "2026-10-17T05:13:16.501Z",
+        "hosted_check": "NOT_RUN",
+        "native_trace": "NOT_RUN",
+        "providers_adopted": false,
+        "results": [
+          {
+            "capture_sha256": "6cf176ef5fb440fd39a7205fc6961c97abdc2356abdc46d254dad4032d5da406",
+            "elapsed_ms": 5927,
+            "observation_count": 19,
+            "observation_hashes": [
+              "01165464f6cb6edee93bebe6b82e3d02d7753d9298da1b99975afd741cb3406e",
+              "0f9255408de7a8c246e617f56ab4fbe03ef85f972ce06a26315220eaf4cb4ab5",
+              "1164614f837e2e631f48a573e3277873763e29f43ea1b70d109a35c60502acf5",
+              "21c35363d2d0ee9b59ac8beae5acbbe760f05c188e5d93f59429a76c35c36f29",
+              "3d130f1f5f955a1b4c479d00a119819f15b0d6cf629eca74125f4b88895d8244",
+              "4218d0a5b93ba88b9f250a34615442320f9a53450b2840f871f7cfc9aff46dad",
+              "56214e4ec621f6015de3933a16482e4d28a2387d9200081e80bef019e1dd9c22",
+              "60812daf110c32276365f79639f5d5098a7250782c3abea0fd79b62e0b06577e",
+              "676ca16a585a828b010d83cec8835d9235349f45be133083d6f67ce5ec73ed54",
+              "6b05312945ba8700ee6cb652ef41c6735a0fa7517b66b0a50f6270ad947d0f2c",
+              "7016b8972f59af911d3feb9aea25392711437e0c31117c48a1678e948bd32b2d",
+              "759534f8b20fa638fc490843df22d7b5c580e181d4c01e239d4bda5728900830",
+              "7703a831fc0b52b4c124663aa784f45fca3e6f74e55d3125b87fb921c335ec7e",
+              "88765030cc9d1eca9bd04d7b270f2eb68ab2c21a4c4610bccf4e2790db7e24c5",
+              "b301e95ce0cc0dd63f193ab095f276f9e658fea7f45b51e50d7b8427a6d95e0b",
+              "c9ef79e2ac951d3399b78bfabb03126f1bf385448386b224447c2fb19e7e2eeb",
+              "e4c22f4b40084911a314058e2f2e5c49d1f12ad39d5248bf6a446a3bbbbf85f2",
+              "f242348ec570d186756462f0c3b3b820f1c644ef94de4c0d64369b4dc0c8f4a4",
+              "f336254938b6c702aef84211da069c7c9d254c048f1d59d0dac89b9fe1c53c83"
+            ],
+            "source_id": "BSC_BNBCHAIN_PUBLIC",
+            "status": "PASS"
+          },
+          {
+            "capture_sha256": null,
+            "elapsed_ms": 75,
+            "observation_count": 0,
+            "observation_hashes": [],
+            "source_id": "BSC_PUBLICNODE_PUBLIC",
+            "status": "UNAVAILABLE"
+          }
+        ],
+        "round_logs_uploaded": false,
+        "schema": "BalanceRpcQualification.v1",
+        "scope": "PUBLIC_ZERO_ADDRESS_CAPABILITY_ONLY",
+        "signing_enabled": false,
+        "uptime_qualified": false
+      },
+      "report_sha256": "41bb49b084d3f2872751590663a86a24d130ac2c51caf7960836b17946c099f6"
+    },
+    {
+      "report": {
+        "all_passed": true,
+        "build_id": "333bed624e40082f1e04484ac47642e41a6f477b",
+        "checked_at": "2026-10-17T05:14:53.883Z",
+        "hosted_check": "NOT_RUN",
+        "native_trace": "NOT_RUN",
+        "providers_adopted": false,
+        "results": [
+          {
+            "capture_sha256": "017f1578783bd60b83c68c423231e35367ebc19921b412bf421af0bcffd2a045",
+            "elapsed_ms": 6042,
+            "http_status": null,
+            "observation_count": 19,
+            "observation_hashes": [
+              "020fbda74866d6b15f469e3625167aa6ed3681501e48fe4c95dea99a34354270",
+              "12f973509ca92be92b665c466095889b437ece8dd07b21b6148306eaf4ceb3aa",
+              "140b12b54d3f6fbdcf159e109e69a8b82a5a142eda8764f32b9addecb918b654",
+              "17d1b927a1a9020954bb699877c7654e781509d029ef16c57345e55c6506a7f2",
+              "41116a775e278a029eb53b555e88da1c762b0a43d7616ab5d22c86477669c76b",
+              "45640b2844c8cf0eb432dc1d9e3cd375727062e201f00a29cc418eb9715c9d94",
+              "4e35a14da335c597b17cd6dcb654c7360684dba9d8d8c19c36301e528e7be6be",
+              "56c898317e1b245b1793a1adb1cff2eec12f07c4b0d2dfc5ccfd5ceaacbb55d4",
+              "77cdf95378484af366520d9b7611aa03752916186ab03f3a91dd7b474935497f",
+              "7c668ea70368edce364d7041f7d81dea76f00dd62daead7d3ab5a6ab2e3f8279",
+              "93be531c0963d81080fe02266c84b02e5c843fc554567c7eb70cab852b66ed4d",
+              "a81983e49f32513dc518f9ff659f5d759da8f58e52b809c9ee758f0b60fdf987",
+              "c4974aafa2ae0dc328b4bee9a55b7e8edaf1e8b81e464d8f738fc0b2ebe349b2",
+              "df031bcd8f53d613d4c0d3c3a3d7d309842e55c94c41df558341dec1e5a58707",
+              "e44b1ff0bda6348a515e060a894f0f9be2038d98472eefdfb4c5e10be7f0a4cd",
+              "e522f48600895b40abe5e296d43c109e74dcae4ebfbf7dba81ef6b486dd31ef1",
+              "e6b03b2114f056ab33a94330129fdfd8a261c9c3134b5b0fd8c5524b98e71aca",
+              "e875311f424ffa47df67a49aee390b297d3d746c4960873703e25367a92a7747",
+              "eba539d6929396c69dd4bd3ad944108e419cbe97d294ab1186061ab97b966d0d"
+            ],
+            "reason": null,
+            "source_id": "BSC_NODEREAL_PUBLIC",
+            "status": "PASS"
+          }
+        ],
+        "round_logs_uploaded": false,
+        "schema": "BalanceRpcQualification.v1",
+        "scope": "PUBLIC_ZERO_ADDRESS_CAPABILITY_ONLY",
+        "signing_enabled": false,
+        "uptime_qualified": false
+      },
+      "report_sha256": "895bb37232d0a5606d5b23e25fad7d153d8088e3439c31f331ec5ef343e99b4d"
+    }
+  ],
+  "runtime_config_changed": false,
+  "schema": "BalanceRpcSelectionEvidence.v1",
+  "selection_status": "AWAITING_ISAAC_DECISION",
+  "task": "Isaac checklist 1",
+  "uptime_qualified": false
+}

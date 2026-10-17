@@ -4,9 +4,10 @@
 
 The service drives the W04 Executor through `ExecutionService` and `ExecutionLoop` (larp/execution_live/loop.py) with
 the database-backed `RemoteSigner` (larp/execution_live/signing.py): it never holds a wallet key, and a configuration
-that names one is refused. `build_execution` composes the live ports (IDEA-050). The `Executor` itself still accepts
-only fake capability bundles (verified router decoder, GAP-29), so `run` stops there with exit 2 NOT_INTEGRATED and
-reason EXECUTOR_CAPABILITY_GATE, which systemd does not restart. Nothing here lifts that gate.
+that names one is refused. `build_execution` composes the live ports (IDEA-050). The `Executor` accepts them only with
+a swap decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29).
+Without that evidence `run` stops with exit 2 NOT_INTEGRATED and reason EXECUTOR_CAPABILITY_GATE, which systemd does
+not restart.
 
 Exit codes as the runtime service: 0 clean stop; 1 failure; 2 not integrated; 3 run quarantined; 4 start refused.
 """
@@ -58,6 +59,8 @@ def validate_config(value):
     keyed = [k for k in value if 'private_key' in k or 'mnemonic' in k or k in ('key_file', 'key_credential')]
     if keyed:
         raise ContractError('Execution configuration names a wallet key: ' + ','.join(sorted(keyed)))
+    from larp.execution_live.config import evidence_settings
+    evidence_settings(value)  # both or neither, as the signer's check (IDEA-070 R10)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
@@ -84,6 +87,20 @@ def execution_mapping(config, profile, decimals, *, wallet):
                 native_settlement=config.get('native_trace', False) is True)
 
 
+def router_decoder(config):
+    """The swap decoder: pinned to router evidence when configured (IDEA-070), else `UnverifiedRouter`, which keeps
+    the Executor's capability gate closed (exit 2). Evidence for another router than the configured one is refused."""
+    from larp.execution_live.router import evidence_settings, load_evidence
+    from larp.execution_live.venue import UnverifiedRouter
+    settings = evidence_settings(config)
+    if settings is None:
+        return UnverifiedRouter()
+    decoder = load_evidence(*settings)
+    if decoder.router != config['router']:
+        raise ContractError('Router evidence is for another router than the configured one')
+    return decoder
+
+
 def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=None):
     """The execution loop over live ports (IDEA-050). Raises NotIntegrated at the Executor's capability gate.
 
@@ -98,7 +115,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     from larp.execution_live.settlement import ReceiptFacts
     from larp.execution_live.signing import RemoteSigner
     from larp.execution_live.store import ExecutionStore
-    from larp.execution_live.venue import LiveVenue, UnverifiedRouter
+    from larp.execution_live.venue import LiveVenue
     from larp.marketdata.port import MarketPort, TOKENS
     from larp.marketdata.web3 import Artifacts, Web3Client
     clock_s = clock_s or (lambda: int(time.time()))
@@ -130,14 +147,15 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
                                                        manifest_sha256=manifest_sha256))
-    venue = LiveVenue(client, chain, decoder=UnverifiedRouter(),
+    decoder = router_decoder(config)
+    venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,
                           artifacts=str(Path(config['market_artifact_root']) / 'broadcast'))))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
-        executor = Executor(registry, guards, venue, signer, UnverifiedRouter())
+        executor = Executor(registry, guards, venue, signer, decoder)
     except Blocked:
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)

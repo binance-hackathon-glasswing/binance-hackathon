@@ -13,3 +13,27 @@
 - Links: DEPLOYMENT_BUILD.md (gates, DR-01..22), IDEA-038 (the earlier four-person allocation), IDEA-042, IDEA-049-D §5, IDEA-058, IDEA-063, GAP-69..72.
 - 2026-10-16 update (user): final-wallet ownership, the on-call rota, the go-ahead to promote to `main`, and GitHub billing are settled by the team. The briefs now only record them. Added [`WHO_DOES_WHAT.md`](../build/remaining-work/WHO_DOES_WHAT.md), the per-person split with dates. The quote capture (#118), which had no named owner, is given to Isaac as the DR-01 quote-logger owner in DEPLOYMENT_BUILD.md.
 - 2026-10-17 alignment (user decision): the per-person split now lives in [`docs/build/PRE_TRADING_CHECKLIST.md`](../build/PRE_TRADING_CHECKLIST.md) (PR #133, 2026-10-17), so the repository holds one owner list. That checklist gives every line exactly one owner, and every step that touches AWS, the hosts or their Terraform is Yao Zhu's and nothing else is (no one else has AWS access, IDEA-066 PC-AWS01). `WHO_DOES_WHAT.md` is now a short pointer with no owner tables. The README and the four briefs no longer name owners or reviewers; agents take them from the checklist (new README rule 2), and an item on no checklist line goes to the user. Corrections from the 2026-10-16 text: the quote capture runs on Keith's server since 2026-10-16 18:19 UTC until Oct 20 00:00 UTC (#132), not Isaac's machine; no separate route-byte capture is needed (the router check replays the capture files); terms are captured for all sources (#129); D-DN-09 is built (#117) and D1–D6 decided and built (#110, #115, #116); the decoder is written (#130); the trading plan is IDEA-075 (#123, renumbered and retargeted, so brief 3 no longer asks for that); `signer.json`, host drills and the model-trial host steps are host steps, not Keegan's or another person's; Actions-minute restoration is a checklist line (#98) rather than "settled". Reserved IDs already used: IDEA-066 (#129), IDEA-070 (#130), IDEA-075 (#123), IDEA-076 (#131). The coverage map, agent rules and ID blocks are otherwise unchanged. The 2026-10-16 update above, which gave the capture to Isaac, is superseded.
+
+
+## RV126 — current-integration and brief review (2026-10-17 SGT)
+
+User requests review/fixes for all open PRs. Normally merged current integration
+`a428bab` into this branch; resolved the two LEDGER conflicts by retaining the
+newer IDEA-057 row and all added integration rows, with IDEA-064 preserved once.
+Updated the briefs so they no longer ask agents to repeat provisioning, terms
+installation, merged implementations/proposals or historical funding notes.
+Mirror releases are accepted under PC-DEC01; organization billing remains broken.
+
+Corrected EXP-007's O2 ordering (freeze the default before running), its Oct16
+cutoff versus Oct21 weight cutoff, missing local checklist dependency (PR133
+fallback links), final-wallet credential assumption, consumed IDEA-080/081 IDs,
+Isaac's key-session exception and stale deterministic-only preparation. Source,
+policy, actual host/route/trial evidence and future S1 delivery remain open.
+No new team decision, host action or trade is implied. Historical alignment text
+above records what was true then; these corrections supersede its stale tasks.
+
+Validation: stdlib-only local Markdown link checks and unique ledger-ID checks
+passed; conflict markers are absent and `git diff --check` passes. No application
+code was changed beyond the ordinary target merge; changed application code was
+not run while GitHub authentication is unavailable. Merge/fixes are committed
+locally and need an authenticated push before further project execution.

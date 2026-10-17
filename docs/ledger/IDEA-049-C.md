@@ -556,3 +556,102 @@ Test corrections after the red commits (test bugs, not weakened criteria): #44 a
 4. The guard freshness window (10 s) is a default, not a reviewed value (Isaac).
 
 **Mirror CI (2026-10-15):** [larp-ci-mirror run 38752161594](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38752161594) (workflow_dispatch, head `64fd5c6`) is **green on all four jobs**. Runtime on Linux, Python 3.12.15 / PostgreSQL 14.24: **1452 passed, 4 skipped, 1 xfailed (#23), 2105 subtests**. Real systemd: 3 passed / 5 subtests. Terraform aws 15 passed, bootstrap 1 passed. Host bundle passes. The org-repo CI did not start (billing). The PR is not merged.
+
+## CP-01 — Isaac checklist task6: signer-cap candidates (2026-10-17, prospective)
+
+Separate branch `codex/isaac-06-signer-caps-20261017`, base integration2306583; parent44. No signer/runtime/default config change, AWS, keys, signing, API call or new quote capture. Use only retained public unsigned W08 reference data and repository contracts; never commit raw wallet/API evidence. Keith reviews the candidate against the actual measured profile; Isaac confirms the final policy; Yao installs/binds only after approval. This slice is preparing a proposal, not selecting or activating it.
+
+Prospective criteria before extraction/builder/test execution:
+- **CP1:** explicit finite candidate input budgets35USDT development /70USDT final; these exceed current equal-weight20.10/40.20USDT and S1’s proposed largest28.60/57.20USDT at100/200 equity, without changing the strategy’s smaller limits. Propose per-token raw input caps from each reference token price at a50% reference-price floor, rounded upward with exact rational arithmetic; label historical/conditional coverage and require current profile/holdings/adjustment review before approval. A price reference is not a forecast or guaranteed floor.
+- **CP2:** propose max fee0.0002BNB =200000000000000wei per transaction as a separate bounded budget, explicitly not a measured safe fee value; compare actual gas/price maxima during Keith’s review. Allowed spender is only observed router0xb44446b0c8e56988c34f7ff73ae904982b5fdda5, pending verified router evidence. Five pinned bStocks +USDT allowed payable inputs; nativeBNB receive-only, no sell/input cap. Output wrapper is a non-deployable proposal, with signing_policy.cap_basis kept EXAMPLE_PENDING_TEAM_DECISION until real approval.
+- **CP3:** implement an offline deterministic builder using strict public reference schema/provenance, explicit token decimals and source hashes, integer/rational arithmetic, finite caps <2**128 and actual SigningPolicy validation. Never accept floats, wrong token/chain, missing/extra public fields, invalid hashes, nonpositive prices/scales or oversized quantities. No wallet/secret/network/service startup. Exclusive output file, no silent overwrite.
+- **CP4:** meaningful tests against the actual SigningPolicy checker: each proposed token cap passes exactly and refuses +1; fee equality passes and above-cap refuses; only router spender and allowed tokens, native receive-only; unit conversion/rounding at non18 decimals; malformed source/provenance rejected; CLI cannot overwrite. Existing original signer policy stays unchanged. Push code/tests before running; report precise SHA/count/skips and no live qualification.
+- **CP5:** retain private raw reference files outside Git, publish only safe public prices/decimals and exact artifact hashes. The current reference may be stale and cannot be called measured Oct20-profile approval. Document per-request caps do not enforce a cumulative daily/wallet spending limit, reference-price/split/price-jump limitations, USDT raw18 vs money6, one full sell-position coverage check and pending reviewers/install gates. Close only the proposal slice; whole parent44/host readiness remain open.
+
+### CP-01 candidates and local verification (2026-10-17)
+
+Criteria ff1fd6f; tool/tests/public reference ebe8b74 were pushed before execution. `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.execution.test_signer_caps_proposal -v`: **7 passed,0skipped**, Python3.13/macOS. These use actual SigningPolicy consumer checks for six tokens xapprove/swap, equality/+1 at the candidate amount and fee boundaries, wrong spender/native input/native value, rounding at8decimals, bad/private fields, output determinism/0600/exclusive creation and refusal non-echo. No key/DB/network/runtime service. A final extra out-of-universe token assertion is added under CP4 and will be pushed before rerunning this same small suite.
+
+The pushed tool generated `docs/build/evidence/signer-caps-proposal-20261017.json`, SHA256 **2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a**, without networking. Concrete candidate USDT ceilings35/70, fee200000000000000wei, historical50%mark-floor stock caps and router-only spender are shown in `docs/build/SIGNER_CAPS_PROPOSAL.md`; exact integer caps and provenance in the JSON. The public reference extracts only the five pinned tokens' marks/decimals from retained W08 artifactc55871f9379ea589b2f1a7dffb5422953941e7772201c8274cfd78b858f78669, response754d3733058edb2b99a15676308e838b17f3d50080b9ffc001d747ea81297a7e, observed2026-10-10T11:38:00.565Z. Raw wallet/API context stays ignored; prices use the project's USDT mark convention, not executable-quote guarantees.
+
+The candidates cover nominal current equal-weight20.10/40.20 and proposed S1(max95%gross x30%name +reserve)28.60/57.20 budgets. Current quantities/profile, gas price/limit, historical floor and corporate adjustments still need review. At original reference prices, stock caps permit approximately70/140USDT of stock input; the35/70cash cap applies to USDT inputs only. Existing caps are per-request, not cumulative wallet/daily limits. No per-leg split or adjustment solution is assumed. Both generated cap_basis labels stay EXAMPLE_PENDING_TEAM_DECISION and the root wrapper is not SignerService.v1, ready_to_install=false; no approval/activation or real-service/live readiness.
+
+Keith reviews actual profile/raw input/holdings/fees; Isaac confirms chosen policy hash and each environment; Yao owns approvedconfig/manifest binding and IDEA080 provisioning, followed by Isaac key placement. Parent44 stays open. This separate slice closes146 only after proposal/tool PR review/merge. Router source/task3, recorded-route task4, lifetime#27/PR144 and live first gas/host validation remain separate.
+
+### CP-01 final focused verification (2026-10-17)
+
+At pushed317d22e, reran `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.execution.test_signer_caps_proposal -v` after adding the explicit out-of-universe token check: **7passed,0skipped**. The added unknown token is refused for both approve and swap by the actual policy. Candidate bytes/hash unchanged; no production-policy or runtime behavior changed. `git diff --check` passes. No broader repetition is needed for this isolated offline tool; full Linux/CI/host readiness is not inferred. The proposal stays unapproved pending owners and fresh profile/holding/fee checks.
+
+### CP-01 PR / owner-decision handoff (2026-10-17)
+
+[PR148](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/148) is open/mergeable on the separate task6 branch into integration, with `Closes #146`. Parent44 links the concrete proposal and keeps actual numeric approval/config/install/qualification outstanding. Isaac's confirmation-for-review question is pending:35/70USDT-input budgets,0.0002BNB fee ceiling and50%historical-mark stock floor (about70/140USDT stock inputs at reference prices); no silence is treated as approval. Keith still checks current full-position/raw-quantity/top-up/fee/adjustment coverage, Isaac confirms the exact final policy/environment hashes and Yao installs after approval. No service config/default/validator/key/permission change or activation occurs here.
+
+Org CI [39015435747](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39015435747) at6c92638 did not start runtime tests: check annotation confirms failed account payments/spending limit (#98). Local focused source at317d22e remains7passed,0skipped; no new CI/host/live acceptance is claimed. Changes are committed/pushed, with clean tree and no unpushed commits; whole-project handoff readiness, owner approval and PR merge remain pending.
+
+### CP-01 D1 — Isaac confirms candidates for review (2026-10-17)
+
+Isaac explicitly selected **“Confirm proposed candidates for review (Recommended)”**: USDT-input limits35 development /70 final, fee ceiling0.0002BNB per transaction, historical50%mark-floor stock caps (approximately70/140USDT stock input at the reference prices). This supersedes the pending confirmation question in the dated handoff above. It confirms the existing candidates for Keith's review, **not numeric approval for installation**, current-price/profile qualification or final-wallet readiness.
+
+The candidate JSON SHA256 remains2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a; ready_to_install=false and EXAMPLE_PENDING_TEAM_DECISION labels remain appropriate and unchanged. Keith must check current holdings/raw trade and gas-top-up quantities, selected profile, metadata/adjustments and fee coverage. Isaac then confirms the exact approved policy hashes per environment; Yao installs/binds only after that approval and IDEA080 checks. Parent44 stays open. PR148 retains Closes146 for the proposal/tool slice.
+
+Documentation/status changes only: focused tool/consumer source remains the tested317d22e (7passed,0skipped); no application rerun, signing, key/config/host change or activation. Next independent record task is #106's prior2USDT dev first-gas swap: DEPLOYMENT_DAY§5 has flagged hash/time/BNB placeholders. Isaac was asked for its public tx hash/link; no transaction details or completion are invented while that input is pending.
+
+### CP-01 R1 — PR148 output-byte portability review (2026-10-17)
+
+**Finding (P2):** the builder writes through a text stream with the platform's
+default newline conversion and encoding. On Windows, each LF becomes CRLF,
+so the same public reference cannot reproduce the committed proposal hash.
+This contradicts CP3's deterministic output and the reproduction procedure.
+The existing mode-0600 assertion also assumes POSIX permissions on Windows.
+
+Prospective acceptance, before running the new regression:
+
+- **CP-R1-1:** generate from the committed public reference into a temporary
+  file on Windows. Exact output bytes equal the committed proposal's UTF-8/LF
+  representation; reproduce the regression before changing the writer.
+- **CP-R1-2:** after the fix, the same check passes on Windows and Linux;
+  run all signer-cap proposal/policy boundary tests on both platforms.
+- **CP-R1-3:** preserve exclusive creation/non-overwrite and POSIX mode 0600;
+  enforce that mode assertion only on POSIX. Candidate values, canonical
+  artifact/hash, unapproved status and all installation gates stay unchanged.
+
+This is part of the requested PR143–151 review. Other dispositions and the
+separate merged-PR147 timeout fix are recorded in IDEA-058 GA15c / PR153.
+No whole backlog item closes, and no host, wallet or live action is authorized.
+
+#### CP-01 R1 results (2026-10-17)
+
+Criteria/regression `49aa6a5` and fix `4e4e74a` were pushed before execution.
+The new exact-byte regression fails on Windows before the fix (CRLF differs
+from the committed LF artifact) and passes after the binary UTF-8 writer fix.
+All eight proposal/policy tests pass on Windows/Python 3.14 and on Linux/Python
+3.10.12 with exact Git blobs; zero skips on either platform. Linux still
+verifies mode 0600. Exclusive creation, non-overwrite, cap/fee boundaries and
+unapproved labels remain covered. The committed candidate bytes and their
+SHA256 `2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a`
+are unchanged. `git diff --check` passes. No full-suite, org CI or hosted/live
+acceptance is inferred. PR148 contains the fix; PR153 carries GA15c-R1.
+
+## SL-01 — Isaac checklist task 5: signing-lifetime proposal (2026-10-17, prospective)
+
+Issue142, separate branch `codex/isaac-05-signing-lifetime-20261017` from integration352446b. Isaac confirms the private RPC handoff to Yao is sent; record RPC-Q01 H1 in IDEA-055 and parent92. PR135 and PR137 are now merged into integration. Router source task3/#138 and recorded-route task4 remain blocked and separate; this is the next independent checklist deliverable.
+
+This is **a proposal, not adoption or a runtime change**. Keith reviews the quote-age/proposal implications; Keegan decides C-OPEN-003/#27 and owns the code change. Existing profile/expiry/deadline/signer gates stay in place. No API, AWS, wallet/key, signing, capture or runtime action is required.
+
+Acceptance criteria before any experiment or covered-code execution:
+- **SL1:** trace current proposal/profile, risk/RuntimePlanner expiry, exact-byte executor/signer checks, post-approve re-quote and recovery; cite source paths and exact reviewed heads. Distinguish kit-stated ~30s quote TTL, unverified real encoded deadline, and #53's fake-transport/virtual-clock spacing evidence.
+- **SL2:** specify both options: a finite immutable authorization admitted while the proposal is fresh, or a source-qualified router deadline no later than the existing proposal/intent expiry. Show illustrative timeline arithmetic and the exact constraints each preserves/changes; do not suggest editing arbitrary returned calldata.
+- **SL3:** recommend an option with bounded conditions, required real latency/deadline evidence and implementation acceptance cases. Keep quote/data freshness, economic limits, fencing/HALT/window checks, parent expiry, uncertain-send reconciliation and no-replacement/no-restart-extension invariants explicit. Any numerical lifetime is only a candidate for owner decision, not a measured safe value.
+- **SL4:** supply a reviewable proposal document and separate PR closing only issue142's writing slice, leave parent27 open for Keith's review, Keegan's decision/code and real qualification; narrow live backlog without removing whole incomplete items. Static references/arithmetic/diff checks suffice for this docs-only change; do not claim new application, host or on-chain tests.
+
+### SL-01 written proposal / static validation (2026-10-17)
+
+Prospective criteria were pushed at9eb9934. `docs/build/SIGNING_LIFETIME_PROPOSAL.md` supplies both requested options, a conditional recommendation for separate finite authority (A), worked15/30/60s illustrations, the deliberate policy change and its cross-component scope, required source/timing evidence, expiry/restart/uncertain-send invariants, and ten prospective implementation acceptance cases. **No option or60s lifetime is adopted.** Keith reviews; Keegan decides C-OPEN-003/#27 and owns the code change. Source qualification/task3 and recorded-route task4 are still separate blockers.
+
+SL1 static trace at integration352446b: profiles/policy/proposal validation → risk quote expiry → RuntimePlanner discretionary clamp → persisted command expiry → executor before approval/requote → signer and reconciliation. The kit's Trading flow step3 says approximate30s quote lifetime; cost_summary labels the default KIT_STATED, not measured encoded expiry. EXP-005 confirms encoded expiry remains unverified. #53 is CLOSED after merged PR79; its9requests/2.10s (11/2.45s with simulated10s approval wait) are fake-HTTP/virtual-clock spacing, not real latency or #27 proof. SL2/SL3 specify both alternatives, A's immutable t0/A and bounded candidate/margins, B's currently unqualified shorter-deadline mechanism, conservative window/expiry semantics for all action kinds, and the difference between approval/chain reconciliation and permission to sign anew. SL4 publishes the writing slice with no runtime/config/default/validation change; parent27 remains open for review, decision, implementation and qualification.
+
+Validation for this docs-only change: checked referenced repository files and existing source/fixture descriptions, illustrative arithmetic (10<40<=60;40>15;65>60), unresolved statuses and owner split; `git diff --check` passes. No application tests/runtime/probes, API, wallet/key, signing, broadcast, AWS or receiver action was run. The old application behavior remains unchanged; no Linux/CI/host/live acceptance is claimed. RPC-Q01 H1 records the user's confirmed private handoff without endpoint values.
+
+### SL-01 PR handoff (2026-10-17)
+
+[PR144](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/144) contains the separate task5 writing deliverable and `Closes #142`, targeting the integration branch. Proposal source atb484d95, criteria9eb9934, docs/diff/source/arithmetic checks only. Parent27 links the proposal and retains Keith's review / Keegan's decision, implementation and qualification; no runtime setting is approved or changed. RPC private handoff is recorded in IDEA-055 H1 and parent92. All task5 changes are committed/pushed; no unpushed commit or dirty working tree. PR review/merge and owner decisions remain outstanding; this is not whole-project handoff readiness.

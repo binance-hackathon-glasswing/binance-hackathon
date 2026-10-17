@@ -18,6 +18,8 @@
   "rpc_url": null,
   "rpc_source_id": null,
   "router": null,
+  "router_evidence_file": null,
+  "router_evidence_sha256": null,
   "token_decimals": {
     "NVDAB": null,
     "GOOGLB": null,

@@ -24,6 +24,9 @@ CADENCE_MS = 900_000
 DAY_ROLL_MS = 300_000
 HOST_CHECKS = ('REAL_RECEIVER_ACK', '24H_INGESTION', 'HOST_RESTART', 'HOURLY_ANCHOR',
                'IAM_TLS_ROLES', 'NETWORK_ROUTES', 'TIME_SYNC', 'ALARM_RECEIVED')
+MODEL_ROUTING_FILE = '/etc/larp/model-routing.json'
+MODEL_BUDGET_ROOT = '/var/lib/larp-runtime/model-budget'
+MAX_ROUTING_BYTES = 64 * 1024
 
 
 def digest(raw):
@@ -41,6 +44,19 @@ def check_balance_rpc(url, source_id):
     if (url is None) != (source_id is None) or url is not None and (
             type(url) is not str or not url.startswith('https://') or type(source_id) is not str or not source_id):
         raise ContractError('The balance RPC needs both an HTTPS URL and a source ID, or neither')
+
+
+def rpc_provider_list(url, source_id, providers):
+    """GA15 (IDEA-066 PC-RPC01): the ordered balance providers from either the single URL pair or a list, or None.
+
+    The list is checked with the runtime's own `balance_providers`, so prepare never writes a list the runtime refuses."""
+    check_balance_rpc(url, source_id)
+    if providers is None:
+        return None if url is None else [dict(url=url, source_id=source_id)]
+    if url is not None:
+        raise ContractError('Name the balance RPC list or the single URL pair, not both')
+    from larp.runtime.service import balance_providers
+    return balance_providers(dict(balance_rpc_providers=providers))
 
 
 def capture_inputs(client, wallet, rpc=None):
@@ -213,9 +229,40 @@ def check_initial_state(state, capture):
         raise ContractError('The runtime cannot build its ledger from the initial state: ' + str(error)) from None
 
 
+def model_routing(raw, expected_sha256):
+    """SG-8: an explicit, reviewed public file; no model, secret or budget construction."""
+    from larp.intelligence.common import IntelligenceError
+    from larp.intelligence.routing import validate_routing_spec
+    try:
+        if (type(raw) is not bytes or not 0 < len(raw) <= MAX_ROUTING_BYTES
+                or type(expected_sha256) is not str or not re.fullmatch('[0-9a-f]{64}', expected_sha256)
+                or digest(raw) != expected_sha256):
+            raise ValueError
+        spec = json.loads(raw)
+        validate_routing_spec(spec)
+    except (IntelligenceError, ValueError, TypeError, KeyError, RecursionError):
+        raise ContractError('Reviewed model routing bytes or settings refused') from None
+    return spec
+
+
+def model_routing_report(spec, sha256):
+    return dict(sha256=sha256, budget_account=spec['budget_account'],
+                routine=spec['routine']['model_id'], reviewer=spec['openai_model'],
+                external_reviewers=[e['model_id'] for e in spec['external_reviewers']],
+                checks=dict.fromkeys(('AIAND_RUNTIME_SECRET', 'MODEL_BUDGET_INITIALIZATION',
+                                      'PROVIDER_IDENTITY', 'SHADOW_TRIAL_EVALUATION'), 'NOT_RUN'))
+
+
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
-            balance_rpc_url=None, balance_rpc_source_id=None):
-    """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage."""
+            balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
+            model_routing_raw=None, model_routing_sha256=None):
+    """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
+
+    The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
+    list (GA15), never both."""
+    routing = None
+    if model_routing_raw is not None or model_routing_sha256 is not None:
+        routing = model_routing(model_routing_raw, model_routing_sha256)
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('A separately reviewed LIVE profile is required')
@@ -235,13 +282,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(now).timestamp() * 1000))
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
-    check_balance_rpc(balance_rpc_url, balance_rpc_source_id)
-    if balance_rpc_url is not None and 'chain' not in capture:
+    providers = rpc_provider_list(balance_rpc_url, balance_rpc_source_id, balance_rpc_providers)
+    if providers is not None and 'chain' not in capture:
         # GA12: with the balance RPC configured, nothing excuses a capture without the chain read.
-        raise ContractError('A chain balance capture required: capture with --balance-rpc-url')
+        raise ContractError('A chain balance capture required: capture with --balance-rpc-url or --balance-rpc-config')
     if 'chain' in capture:
         check_chain(capture, now)
-        if balance_rpc_url is not None and capture['chain'].get('source_id') != balance_rpc_source_id:
+        if providers is not None and capture['chain'].get('source_id') not in {p['source_id'] for p in providers}:
             raise ContractError('The chain balance capture came from another RPC source')
     state = initial_state(capture, profile, run_id)
     state_raw = encoded(state) + b'\n'
@@ -255,14 +302,22 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     # values stay null, the report names BALANCE_RPC, and the runtime refuses to start.
     if 'balance_rpc_providers' in runtime['driver']:
         # IDEA-055 PR 5 (#116): the example lists providers; the runtime refuses a block naming both forms (GA14).
-        if balance_rpc_url is not None:
-            runtime['driver']['balance_rpc_providers'] = [dict(url=balance_rpc_url, source_id=balance_rpc_source_id)]
+        if providers is not None:
+            runtime['driver']['balance_rpc_providers'] = providers
     else:
-        runtime['driver'].update(balance_rpc_url=balance_rpc_url, balance_rpc_source_id=balance_rpc_source_id)
+        if providers is not None and len(providers) > 1:
+            raise ContractError('This rendered config uses the single balance_rpc_url form; it cannot hold a backup')
+        first = providers[0] if providers else dict(url=None, source_id=None)
+        runtime['driver'].update(balance_rpc_url=first['url'], balance_rpc_source_id=first['source_id'])
     runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
                              strategy_profile_sha256=digest(profile_raw),
                              session_calendar_sha256=digest(calendar_raw), issuers=issuers)
+    for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root'):
+        runtime['driver'].pop(key, None)
+    if routing is not None:
+        runtime['driver'].update(assessor='aiand_routed', model_routing_file=MODEL_ROUTING_FILE,
+                                 model_routing_sha256=model_routing_sha256, model_budget_root=MODEL_BUDGET_ROOT)
     uploader.update(run_id=run_id, build_id=build_id, mode='dev')
     # Explicit bounded dev operations values; no trading-policy parameter changes.
     operations.update(run_id=run_id, archive_prefix='archive/' + run_id, retention_days=82,
@@ -272,6 +327,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
              (('runtime.json', runtime), ('uploader.json', uploader), ('operations.json', operations))}
     files.update({'strategy-profile.json': profile_raw, 'session-calendar.json': calendar_raw,
                   'initial-state.json': state_raw, 'input-capture.json': capture_raw})
+    if routing is not None:
+        files['model-routing.json'] = model_routing_raw
     env = 'LARP_ARTIFACT_ROOT=/var/lib/larp-evidence\nLARP_EVIDENCE_CONFIG_MODE=shadow\n'
     if sec_contact:
         from larp.intelligence.config import sec_user_agent
@@ -293,7 +350,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA-P3, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
                   + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
-                  + ([] if balance_rpc_url else ['BALANCE_RPC'])
+                  + ([] if providers else ['BALANCE_RPC'])
                   # GA11: without a chain read, an in-flight transaction cannot be ruled out; Gate B needs it.
                   + ([] if 'chain' in capture else ['CHAIN_BALANCE_CAPTURE']),
                   host_checks={name: 'NOT_RUN' for name in HOST_CHECKS},
@@ -301,5 +358,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   notes=['No share ratio or basis verification granted',
                          'Rehearsal window unchanged; pre-Oct21 rounds may HOLD',
                          'Copy retained terms artifacts to the evidence store before startup'])
+    if routing is not None:
+        report['model_routing'] = model_routing_report(routing, model_routing_sha256)
+        report['notes'].append('OpenAI runtime secret is optional; absent or exhausted OpenAI uses external review')
     files['preparation-report.json'] = encoded(report) + b'\n'
     return files

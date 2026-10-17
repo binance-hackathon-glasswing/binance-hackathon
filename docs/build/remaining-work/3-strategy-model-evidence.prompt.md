@@ -1,4 +1,4 @@
-You are the agent for **strategy, model and evidence settings**. You prepare the work behind the strategy and model lines of the checklist's "Decisions due Oct 19", "Oct 22 cut line" and "Oct 24: S1 build" sections in [`docs/build/PRE_TRADING_CHECKLIST.md`](../PRE_TRADING_CHECKLIST.md). You work for the owner each of those lines names, and each review or confirmation goes to the person its line names; take both from the checklist, not from this brief. Your job is to turn the team's trading decision into the code and values that will trade:
+You are the agent for **strategy, model and evidence settings**. You prepare the work behind the strategy and model lines of the checklist's "Decisions due Oct 19", "Oct 22 cut line" and "Oct 24: S1 build" sections in [`docs/build/PRE_TRADING_CHECKLIST.md`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133). You work for the owner each of those lines names, and each review or confirmation goes to the person its line names; take both from the checklist, not from this brief. Your job is to turn the team's trading decision into the code and values that will trade:
 - the S1 plan (IDEA-075, PR #123) and its code (IDEA-076, PR #131);
 - the LIVE profiles' strategy values;
 - the red-flag classes;
@@ -21,11 +21,11 @@ Use the integration branch `origin/codex/system-testing-20261012` for code. Put 
 ## Deliver
 
 1. **Finish the trading plan's decision (IDEA-075, PR #123).**
-   - The plan was renumbered from IDEA-058 to IDEA-075 and #123 retargeted to the integration branch on 2026-10-17; it keeps its EXP-007 link. Support its review and merge (checklist "Oct 22 cut line").
+   - The plan was renumbered from IDEA-058 to IDEA-075 and #123 retargeted to the integration branch on 2026-10-17; it keeps its EXP-007 link. The plan is merged; finish its outstanding decisions and EXP-007 evidence (checklist wins).
    - Turn its §12 proposed values and the open choices O1 and O3–O6 into one proposal: each value with a recommendation, a source and how it was chosen, for confirmation by Oct 22 and recording with dates (GAP-13). Note that the team has replaced IDEA-037's 80% equal-weight target with S1 at 95%.
-   - O2 (what ships if EXP-007 is inconclusive) is settled after EXP-007, so its pass criteria are final.
+   - Settle O2 (what ships if EXP-007 is inconclusive) before EXP-007 runs, because it is part of the pre-registered decision rule. Use only token session bars through the Oct16 close for that experiment; the later Oct21 cutoff is for frozen weights.
 
-2. **Build out S1 (IDEA-076, PR #131).** The core is written in #131 (open for review): the `TREND_GUARDED_VOL` profile, the basket trend guard, the reduce-only limiter, planner limits and per-name cadence. Review and extend it; don't rebuild it. Keep the declared safety controls winning:
+2. **Build out S1 (IDEA-076, PR #131).** The core is merged in #131: the `TREND_GUARDED_VOL` profile, the basket trend guard, the reduce-only limiter, planner limits and per-name cadence. Review and extend it; don't rebuild it. Keep the declared safety controls winning:
    - a volatility-weighted long-only book of the five names;
    - a basket trend guard (95% / 60%);
    - an LLM exposure limiter that can only lower exposure (95 / 60 / 30%), acting only on code-verified evidence;
@@ -44,7 +44,7 @@ Use the integration branch `origin/codex/system-testing-20261012` for code. Put 
 
 4. **Profiles and entry inputs (DR-08, DR-09; GAP-50, GAP-51).**
    - Prompt 1 supplies the measured `QuoteCostSummary.v1` and builds the profile from it on Oct 20.
-   - Which profile is built on Oct 20 (`EQUAL_WEIGHT`, in the code today, or S1 `TREND_GUARDED_VOL`, which needs #131 merged) is a checklist decision due Oct 19; prepare it.
+   - Which profile is built on Oct 20 (`EQUAL_WEIGHT`, in the code today, or S1 `TREND_GUARDED_VOL`, whose code #131 is merged but values still need adoption) is a checklist decision due Oct 19; prepare it.
    - You set and source every strategy value in the rehearsal profile and the final profile. Startup must refuse any unset value.
    - Prove the token-candle sessions and the price-impact rule on recorded real candles and quotes, and record the first candle dates for GOOGLB and SKHYB.
    - Rebuild the final profile's dates in UTC (F-121).

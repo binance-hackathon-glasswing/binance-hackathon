@@ -32,7 +32,7 @@ context; no hosted run or Gate A pass is established by this update.
 | Session Manager plugin on the Mac | **Not installed** (needed for SSM shells and the database port-forward) | Yao Zhu |
 | Release bundle | CI builds it on every push; take it from the **final** merged head | step 4 |
 | Candidate AMI | `ami-0c82c1a90be4dccc1` (AL2023 x86_64, released 2026-10-14); pin it after a look at its release notes | Yao Zhu |
-| How to reach `signer` | **Undecided** (AWS_RUNBOOK step 5). Not needed for a shadow run | team |
+| How to reach `signer` | **Decided 2026-10-17:** temporary SSM interface endpoints, torn down afterwards ([IDEA-080](../ledger/IDEA-080.md), AWS_RUNBOOK step 5 option b). Not needed for a shadow run | Yao Zhu builds; Keegan reviews |
 
 ## What each person brings (never into a chat, a commit or a shared doc)
 
@@ -84,8 +84,25 @@ context; no hosted run or Gate A pass is established by this update.
 
   | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
   |---|---|---|---|---|---|
-  | dev | 2026-10-16, `[TO FILL: Isaac]` time | `[TO FILL: Isaac]` | 2 | `[TO FILL: Isaac]` | Trial swap in MetaMask (reported 2026-10-16). Isaac fills in the details and swaps about 2 USDT more before Gate B, to about 4 USDT in total. |
+  | dev | 2026-10-16 08:27:44 UTC | `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` | 2 (verified wallet net USDT debit) | 0.002684720969362886 (BscScan transfer relayed by Isaac) | Isaac identifies this as the MetaMask trial. Chain56 success, dev-wallet sender, canonical/finalized inclusion and USDT debit verified (IDEA-039 FG-01). BNB amount is attributed explorer evidence, not independently RPC-verified; additional planned dev funding and fresh opening balance remain #106. |
   | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
+
+  FG-01 evidence: [dev-gas-funding-20261016.json](evidence/dev-gas-funding-20261016.json).
+  The transaction's block time is also 16:27:44 SGT. The receipt's network gas
+  product is 0.00001129764 BNB (188294 gas × 60000000 wei/gas); this does not
+  independently establish MetaMask's UI fee-token economics. Receipt Transfer
+  logs show exactly 2 USDT leaving this wallet and none returning; no separate
+  USDT fee is classified. On 2026-10-17 Isaac copied the BscScan Internal
+  Transactions transfer of **0.002684720969362886 BNB** from
+  `0xc590175e458b83680867afd273527ff58f74c02b` to the dev wallet
+  `0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`. This is the gross incoming
+  transfer, not a net or current balance. The explorer's USD display is not
+  used. Both public providers lack historical trie state for the prestate
+  trace; native credit remains independently unverified by RPC. The historical
+  funding note is complete with that source attribution (IDEA-039 FG-01 U1);
+  it does not qualify production native tracing or complete #106.
+  No new swap, hosted capture, agent round or final-wallet action occurred.
+
   Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)
@@ -131,11 +148,11 @@ Also `driver.balance_rpc_providers`: the ordered list of manifested BSC RPC prov
 9. **Gate A evidence.**
    - One shadow round logged and ACKed by the real receiver (R-01).
    - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07): `python -m larp.runtime.routes --role primary …` on `primary`, and `--role signer` on the signer once its access route exists; commands and the approved list are in [architecture-deployment.md](architecture-deployment.md) "Approved network destinations" (IDEA-062). Keep both `RouteCheck.v1` reports.
-   - `chronyc tracking` (R-08).
+   - `chronyc tracking` (R-08). Also check that `/etc/chrony.conf` has `rtcsync` and that `cd /opt/larp/current && .venv/bin/python -c 'from larp.runtime.supervision import kernel_clock_synchronized as k; print(k())'` prints `True` on `primary` (D-DN-10). Without `rtcsync`, chrony leaves the kernel's `STA_UNSYNC` flag set, so a `CLOCK` HALT would never clear.
    - An alarm email received.
    - Record each in IDEA-051 and review Gate A in IDEA-042 before leaving it running.
 
 ## After Gate A
 
 - **Gate B:** Isaac lifts the capability gates. Choose the signer access route (Terraform change, IDEA entry, review). Place the key file. Prove signing on the dev wallet with a small trade, then review Gate B.
-- **Decisions due:** D-DN-02 (rehearsal shape, Oct 19); D-DN-01/03 before activation. See IDEA-049-D §5.
+- **Decisions due:** D-DN-01/03 before activation. D-DN-02 (rehearsal shape) was decided 2026-10-17: signed Oct 21–26 if Gate B passes by Oct 21, otherwise a shadow rehearsal with a shorter signed window, recorded as a deviation. See IDEA-049-D §5.
