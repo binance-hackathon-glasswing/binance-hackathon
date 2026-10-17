@@ -1,6 +1,6 @@
 {
   "schema": "ManualGasFundingEvidence.v1",
-  "status": "PARTIALLY_VERIFIED_BNB_CREDIT_UNAVAILABLE",
+  "status": "FUNDING_RECORD_COMPLETE_WITH_ATTRIBUTED_EXPLORER_CREDIT",
   "record_ref": "IDEA-039 FG-01 / #106",
   "criteria_commit": "40e0aed",
   "protocol_clarification_commit": "eaf7282",
@@ -29,9 +29,9 @@
     "net_debit_usdt": "2",
     "fee_classification": "NOT_SEPARATELY_ESTABLISHED"
   },
-  "native_credit_wei": null,
-  "native_credit_bnb": null,
-  "native_credit_status": "HISTORICAL_TRACE_UNAVAILABLE",
+  "native_credit_wei": "2684720969362886",
+  "native_credit_bnb": "0.002684720969362886",
+  "native_credit_status": "EXPLORER_TRANSFER_RELAYED_BY_ISAAC",
   "receipt_network_fee": {
     "gas_used": 188294,
     "effective_gas_price_wei": "60000000",
@@ -143,14 +143,29 @@
       "file": "nodereal-trace.json",
       "sha256": "916beb1e74d2c92e8763867dbdd3564063ca546096fa4dc058d9538a8feebff9",
       "saved_at_utc": "2026-10-17T08:02:50.450527+00:00"
+    },
+    {
+      "file": "isaac-explorer-native-transfer.json",
+      "sha256": "ace277398f4c7b1fa01b41bc4b35aa9a0f5b30a8d63cf5787caf68841676df6a",
+      "saved_at_utc": "2026-10-17T08:08:50.819470+00:00"
     }
   ],
   "not_verified": [
-    "NATIVE_BNB_CREDIT",
+    "NATIVE_CREDIT_BY_RPC_TRACE",
     "UI_USDT_FEE_PAYMENT",
     "FURTHER_DEV_FUNDING",
     "CURRENT_HOSTED_BALANCE",
     "FINAL_WALLET_FUNDING"
   ],
-  "signing_or_runtime_action": false
+  "signing_or_runtime_action": false,
+  "native_credit_rpc_verified": false,
+  "native_credit_source": {
+    "kind": "USER_RELAYED_BSCSCAN_INTERNAL_TRANSFER",
+    "reported_by": "Isaac",
+    "reported_date": "2026-10-17",
+    "transaction_url": "https://bscscan.com/tx/0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+    "from_address": "0xc590175e458b83680867afd273527ff58f74c02b",
+    "to_address": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+    "note": "Gross wallet-directed BNB transfer as copied from explorer; not a RPC pre/post-state proof or current wallet balance."
+  }
 }
