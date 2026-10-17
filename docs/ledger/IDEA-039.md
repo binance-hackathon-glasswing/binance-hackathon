@@ -371,3 +371,12 @@ PR #151 carries `Closes #150` for the historical-record slice only; because its 
 Validation for U1: evidence JSON parses; exact BNB/wei and receipt gas arithmetic, recipient identity and every retained raw artifact SHA256 match; `git diff --check` passes. Documentation/evidence-only change, so no application tests were added or run.
 
 FG-01 U1 publication: pushed `321980a`; [PR #151](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/151) is OPEN and ready for review with `Closes #150`, targeting integration. Child #150 now states the completed attributed-record scope and remains open pending merge; parent #106 now distinguishes the recorded trial from remaining Isaac funding and Yao opening capture. GitHub reports no automatic closing-issue linkage for this non-default target; verify closure at merge. Actions run [39016527481](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39016527481), head `321980a`, runtime annotation: job did not start because recent account payments failed or spending limit needs increasing (existing #98). No CI pass or hosted acceptance claimed. Remaining source/decoder, signing-lifetime, caps approval, signer access/key placement and funding/host gates stay with their previously recorded owners.
+
+GB-RW3 combined regression: published review head `7328e0a` includes this PR's
+repaired code from `4c19ee8` and all seven other open PRs. Linux/Python3.12.14 /
+PostgreSQL14.24: **1957 passed, 6 expected skips, 2931 subtests**, 326.89s, no
+failures or xfails. Skips: one external recorded corpus and five opt-in systemd
+checks. Full per-PR dispositions and exact heads: IDEA-049 ALLPR-20261017 on
+PR158. This confirms offline engineering behavior only; current external input
+files, #27/#44 decisions, source/route proof and hosted signed acceptance remain
+with their existing owners. This result commit changes documentation only.
