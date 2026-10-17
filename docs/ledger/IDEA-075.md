@@ -180,7 +180,7 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
 | Per-name weight cap | 0.30 | Keith | Proposed |
 | Hard name line | 35% of equity | Keith | Proposed |
 | Top-up band | target − 5 pp | Keith | Proposed |
-| LLM expiry | 3 sessions | Yao Zhu | Proposed |
+| LLM expiry | 3 healthy sessions (§4.2) | Yao Zhu | Proposed |
 | Evidence-class map | §4.2 table | Yao Zhu | Versioned predicate records and fixtures |
 | Loss controls | 3% daily / 8% / 12% → 40% | — | Declared (unchanged) |
 | Execution window | Open + 30 min to close − 15 min | Isaac | Proposed; check against logged quote costs |
@@ -195,7 +195,7 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
   - L01 a cited evidence ID that is missing or unverified → output rejected, previous level stands;
   - L02 an accepted CAUTION → target = min(trend, 60%);
   - L03 NORMAL never raises the target above the trend level or the risk cap;
-  - L04 CAUTION expires after 3 sessions without renewal;
+  - L04 CAUTION expires after 3 healthy sessions without renewal (§4.2);
   - L05 model outage → previous level stands, and the outage sessions do not count toward expiry;
   - L09 an accepted CAUTION (and, separately, SEVERE) followed by more than 3 sessions of timeouts or rejected evidence → the level stays, and the policy plans no BUY above the cut's target; after 3 healthy sessions without renewal → NORMAL;
   - L06 SEVERE on evidence that allows only CAUTION → capped at 60%;
@@ -213,7 +213,7 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
   - Q10 flat by `flatten_by`;
   - Q11 a Class 1 name's weight stays in cash;
   - Q12 frozen weights sum to 1 with every wᵢ ≤ 0.30;
-  - Q13 every existing test passes unchanged;
+  - Q13 every existing test passes unchanged (Q14, per-name cadence, is defined in IDEA-076);
   - Q15 a mandatory safety sell whose quote exceeds the DEV-05 impact and entry-cost limits is still planned, while its quote validity, slippage and integrity checks still apply.
 - **T4 Development-wallet run:** at least one full live session on the development wallet with the frozen profile (small real trades, F-13), checked for a complete round log per round and every fill reconciled to its log. Engineering evidence only; never used to tune parameters (ledger rule 5).
 
