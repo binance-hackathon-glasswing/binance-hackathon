@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,7 +112,7 @@ def main(argv=None):
                               missing_inputs=report['missing_inputs'], host_checks=report['host_checks'])))
         return 0
     except (ContractError, Unavailable, Refused, renderer.Refused, OSError, ValueError, KeyError, TypeError,
-            AttributeError, Blocked, DependencyUnavailable) as error:
+            AttributeError, Blocked, DependencyUnavailable, subprocess.SubprocessError) as error:
         # These three carry no secret values (identity, scale, freshness text and public tickers). Web3, RPC, OS and
         # parsing errors may echo a URL or header, so only their class is printed (GA13d).
         detail = str(error) if isinstance(error, (ContractError, Refused, renderer.Refused)) else type(error).__name__
