@@ -46,3 +46,9 @@ restrict. Recommended: approve this scope, retain all host/IAM/TLS/S3/sandbox
 checks and leave #32 open. Approval will be recorded as a dated IDEA-062 entry
 and in the table status only after Isaac responds. No whole backlog item is
 completed by this recommendation.
+
+Verification: the DNS regression was RED at pushed `62ef585`; the repaired
+route/security suite at pushed `b720b2a` has **27 passed / 5 opt-in systemd
+skips**, macOS/Python3.13. The existing mock-credential test needed pinned
+botocore in a disposable test directory; no AWS client or real host was used.
+IDEA-062 NC-01 records the commands, environment correction and limits.

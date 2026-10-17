@@ -15,6 +15,8 @@ Procedure: [GATE_A.md](build/GATE_A.md). IDEA-058 (PR #87, based on `codex/syste
 
 Gate B stays separate: decoder, capability proof, signer provisioning/version binding, first BNB (Q-03; Gate A reports `FIRST_BNB` when the wallet has none), real trades and hosted recovery/restore/replay drills remain with Isaac/Keegan/Keith.
 
+Section C network review (Isaac checklist task 2, IDEA-062 NC-01 / #136): the destination-scope review and DNS false-PASS correction are verified offline; Isaac's explicit table approval is still pending. Yao Zhu retains real-host route/SG, IAM/TLS, bucket/archive and sandbox evidence under #32/GAP-70. See [NETWORK_SECTION_C_REVIEW.md](build/NETWORK_SECTION_C_REVIEW.md). No whole readiness item closes from this local review.
+
 ## Commitments and scope
 
 - [ ] GAP-02 — Reconcile active decisions with the proposal: five-session horizon, trailing 60-session volatility and sizing formula, UTC loss boundary, 12% drawdown reduction to 40% gross, and primary plus fenced cold standby. Update D-05/D-06, G-22/G-29 and status tables; retain only genuinely unresolved choices. Sources: `skill/larp/plan.md`, `proposal/proposal_answers.md`. Checked 2026-10-08: done in part — plan.md "Declared values" (2026-10-03) records the horizon, sizing, UTC boundary and 12% → 40% step, and D-06 cites them. Remaining: G-22 and G-29 still show bracket slots and an "optional" deeper step instead of the declared values; D-05 still says "not decided" although the proposal declares "one primary runtime plus a fenced cold standby" (binding under G-11 until changed by a version event). 2026-10-11 ([IDEA-035](ledger/IDEA-035.md) §4): the team decides D-05 after exploring AWS; remind the team then.
