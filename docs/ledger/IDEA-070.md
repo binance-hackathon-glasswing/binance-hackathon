@@ -99,6 +99,57 @@ All of these run offline on synthetic fixtures. No network, credentials or signi
 - **R10 PASS** (fix `cfe015c`): `ExecutionService.test_check_refuses_half_set_evidence` failed on `42a934c` (both subtests) and passes with the fix; `validate_config` still accepts both and neither. Full suite at `cfe015c`: 1803 passed, 10 skipped, 0 failed, 2664 subtests (Python 3.12 from `deploy/requirements-test.lock`, local PostgreSQL 16.15). The merge `42a934c` alone gave 1802 / 10 / 0; the 13 tests over the PR's 1789 come from the integration branch (IDEA-066), the 1 more is R10's. `git diff --check` and `tools/render_deviations.py --check` clean.
 - Review notes, not changed (judged not worth a fix): `router check` crashes rather than reporting `FAIL` when an ok `approve-transaction` artifact lacks `dexContractAddress`, or when a mutation overflows its uint type (no `PASS` either way); a real router that appends bytes after the ABI-encoded arguments would be refused on every route (by design; `router check` would show it as `FAIL` before any signing).
 
+## RE-01 — Isaac checklist task 3: verified router evidence (2026-10-17, prospective)
+
+Issue #138, separate branch `codex/isaac-03-router-evidence-20261017`, based on decoder PR130 head e5bd552. Task2's section C approval was explicitly given and recorded separately in PR137 / IDEA-062 NC-01 D1. This branch is stacked on PR130 for an evidence-only review diff; Keegan owns independent review and decoder merge. No production activation, AWS, credential/key access, quote capture, signing, broadcast or official-log upload. Existing captures belong to task4 after review/merge.
+
+Criteria recorded before public source acquisition or covered-code execution:
+
+- **RE1 provenance:** retrieve the BscScan verified source and ABI for `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`; determine proxy/implementation status from attributable evidence. Preserve exact downloaded bytes, UTC time and SHA-256 outside Git, under `/private/tmp/larp-isaac-router-20261017`. A block/challenge/unverified contract is INCONCLUSIVE and does not justify guessing an ABI or bypassing access controls. Public canonical explorer/API and attributable vendor sources may be read; do not send credentials to third-party services.
+- **RE2 ABI:** derive the full canonical signature and economic field paths from the actual ABI/source; selector must be 0xad43f73d. Verify address/uint leaf types and source-native BNB sentinel. An unrelated selector registry or decoded quote layout alone cannot pass.
+- **RE3 semantics:** cite concrete source functions/lines establishing recipient-balance minimum output, enforced deadline and sender-only input. Follow the relevant proxy/route/helper code. A false/unsupported guarantee prevents a truthful RouterEvidence.v1; record the finding and ask the team for a design decision rather than setting it true.
+- **RE4 review/validation:** only commit factual public evidence, hashes and source-review notes; never claim Keegan has reviewed before confirmation. After code/evidence is pushed, validate evidence loading and selector with PR130's existing tool/tests if RE1–RE3 pass. Recorded-route checks, host configuration and enabling the signer remain later tasks. No deployable evidence is manufactured if acquisition fails.
+- **RE5 completion:** separate PR references `Closes #138` only when this slice is satisfied; otherwise use `Refs #138` and explicit incomplete criteria. Narrow the live backlog, preserving #33/GAP-29 until source review, recorded-route proof and hosted execution requirements actually pass. No experiment or safety guarantee is declared verified from synthetic fixtures alone.
+
+### RE-01 acquisition results (2026-10-17)
+
+Criteria commit `455cb29` was pushed before acquisition. No covered code/test or runtime was executed. BscScan browsing and certificate-verified direct HTTPS GET returned HTTP403; retained HTML is a Cloudflare JavaScript/cookie challenge, not contract source. No challenge bypass or repeated automated retries were attempted. The documented Sourcify v2 lookup returned HTTP404 with `match`, `creationMatch` and `runtimeMatch` all null for chain56/address. This establishes only that no Sourcify match was returned, not that BscScan source is unverified or that on-chain code is absent. Search results for the address/selector did not supply attributable chain56 verified source; other-chain same-address listings are not source proof.
+
+Raw response bytes/headers retained outside Git in `/private/tmp/larp-isaac-router-20261017`; safe response hashes/times and non-deployable status are in `docs/build/evidence/router-source-acquisition-20261017.json`. BscScan response saved 2026-10-17T05:38:48.829862Z, SHA256 f748132683130c90dd3abf03a9f9bafc360438c0a8eeaaa641d024b7e40d0126; Sourcify response saved 05:39:01.693527Z, SHA256 2f330bdf9094896e44b7944263122c48cc1ef34adfb4f99168a0a5dfce1a7a8b. These are response-body hashes, **not source or ABI hashes**.
+
+Primary docs checked: [Sourcify API](https://docs.sourcify.dev/docs/api/) documents `/v2/contract/{chainId}/{address}?fields=all`; [Etherscan getsourcecode](https://docs.etherscan.io/api-reference/endpoint/getsourcecode) requires an API key and describes source/ABI/compiler/proxy fields. No API key was read, supplied or requested in chat; the authenticated API was not called.
+
+**RE1–RE3 INCONCLUSIVE; RE4 blocked on actual source and Keegan review.** No canonical signature, economic path, sentinel, implementation or guarantee was invented, and no deployable RouterEvidence.v1 was added. Isaac was asked to open the explorer in a normal browser and provide a local folder containing public source + ABI (including any proxy implementation), or report that it is unverified/also inaccessible. `docs/build/ROUTER_SOURCE_REVIEW.md` is the concrete handoff. #138/#33/GAP-29 stay open. Task4 cannot run without truthful reviewed evidence and Keegan's PR130 merge; later checklist tasks are not bundled into this branch.
+
+### RE-01 draft PR / input handoff (2026-10-17)
+
+[Draft PR139](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/139) is separate and based on PR130's branch. It references #138 without closing it because source acquisition/review remains incomplete (RE5). On completion, add the closing reference before making the PR ready; do not merge this partial documentation handoff to close the task. #138 records the same missing input and ownership. Task2's explicit approval is pushed in separate PR137 at bced620. No user response to the source-folder request has arrived; dependent evidence/route work remains pending. All task3 work is committed/pushed; no app code was executed and no source/ABI or Keegan review is claimed.
+
+### RE-01 B1 — Isaac browser screenshot (2026-10-17)
+
+Isaac can open the exact router page in a normal browser and supplied its Contract/Code screenshot. The screenshot displays “Are you the contract creator? Verify and Publish your contract source code today!”, an “Add Custom ABI” button, and raw hexadecimal bytecode, without a published source viewer/ABI. This is direct user-provided visual evidence that **this router Code page is unverified**, superseding the prior unknown browser-page status. It does not establish that all delegated implementation/facet source is unavailable. The creation-code-address and exact-bytecode-match links are not proof of swap semantics.
+
+The same screenshot exposes `Read Facets` / `Write Facets` tabs. Next read-only input: inspect `Read Facets` for actual facet addresses / selector mapping, especially selector 0xad43f73d, then inspect the relevant facet's source verification. A facet-based routing structure is a lead, not established source or guarantee evidence. No runtime code, ABI import, decompiler or transaction was used. Do not ask Isaac to verify/publish a contract they do not own or to add a guessed custom ABI. #138/PR139 remain incomplete/draft; the source/ABI guarantees and independent review remain outstanding.
+
+Primary specification checked for the next investigation: [ERC-2535 inspecting facets/functions](https://eips.ethereum.org/EIPS/eip-2535#inspecting-facets--functions) defines read-only `facets`, `facetAddresses` and `facetAddress(bytes4)` selector lookup. This explains the investigation lead; the screenshot alone does not prove this router conforms or identify any particular facet.
+
+### RE-01 B2 / RQ2 — facet UI failure and read-only fallback criteria (2026-10-17, prospective)
+
+Isaac reports Read Facets says “unable to retrieve a valid contract ABI”. This is an explorer-UI failure, not proof that no facet/implementation exists on-chain. No further browser export is requested from that view.
+
+Before manual public RPC diagnostics: at most ten requests across the already selected BNB Chain / NodeReal public development providers, no credentials/wallet/from field/signing/submission, no redirects, no access-control bypass, bounded HTTPS timeouts. Only `eth_chainId`, `eth_getBlockByNumber`, `eth_getCode` and the standard ERC-2535 read-only `facetAddress(bytes4)` lookup are considered here. Pin the lookup/code reads to the numeric finalized block returned by chain56; a missing/wrong chain/header or provider error cannot qualify a result. Preserve exact requests/responses and UTC times outside Git under the existing acquisition folder. The standard loupe signature is documented by ERC-2535; computing its selector does not guess the swap ABI. Production `Rpc`'s token-only eth_call allowlist is unchanged; these manual HTTP research requests cannot be wired into the agent.
+
+**RQ2 pass:** a standard loupe lookup for selector0xad43f73d returns a nonzero, ABI-canonical address and nonempty code at the same pinned block; this is only a candidate implementation identity to follow for verified source, never a swap-ABI/safety/immutability proof. Any revert, transport/chain/header error, empty/malformed answer is INCONCLUSIVE. Do not infer missing selector support from transport error, and do not brute-force signatures/slots or broaden runtime permissions. If inconclusive, retain the blocker and prepare a vendor/team source request for Isaac to send; do not send messages externally.
+
+Primary specifications checked: ERC-2535 `facetAddress(bytes4)` and Ethereum JSON-RPC `eth_call`/`eth_getCode`/block reads. No code/decompiler can replace the three required source guarantees. Source/evidence review and issue138 remain incomplete regardless of a successful lookup.
+
+### RE-01 RQ2 results — candidate swap facet found (2026-10-17)
+
+At pushed criteria b75f481, manual certificate-verified HTTPS requests to the selected public BNB provider returned chain56 and a finalized header at **0x7a2eb81**, hash **0xed600646f050ef598e02be50d553f6d9a75aae3b92c922fc9f72dd15c17dfbce**. Six JSON-RPC methods in three HTTP batches: chainId + finalized header; router code + standard facetAddress lookup; candidate code + the same numeric header. The final header hash agrees. No retries, wallet/from field, signing, submission, official logs, AWS or runtime adapter/config changes. `facetAddress(bytes4)` selector0xcdffacc6 was derived with Keccak-256 (disposable pycryptodome3.23.0 under `/private/tmp/larp-router-keccak-deps`; no global/project dependency change), with argument0xad43f73d left-aligned as ABI bytes4. This standard introspection signature is not a guessed swap ABI.
+
+The canonical 32-byte lookup result is address **0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603**. The router has180 code bytes; the candidate has8622 code bytes at that same height, code-bytes SHA256 **924e9da536e78a9ce92f633058a62907ee5834738947432d186e02b212a0d574**. **RQ2 identity lookup supported**, not source/swap/safety proof: this is a provider-observed, point-in-time candidate facet; no independent execution/storage proof, source verification or future mapping immutability is established. Code SHA256 is not a source/ABI hash.
+
+The candidate's BscScan page is inaccessible to the browsing tool; its Sourcify v2 lookup returns404/null match, with no source/ABI. No indexed exact-address result was found. Isaac was asked to open the candidate's distinct BscScan Code page and report verified source versus Verify and Publish/bytecode. RE1–RE4 remain incomplete pending actual verified source and review; no deployable RouterEvidence.v1 or live capability change. Safe pinned lookup metadata is committed in `docs/build/evidence/router-facet-lookup-20261017.json`; raw requests/responses/headers are retained outside Git in the acquisition folder. JSON parsing and diff checks pass; no application test/runtime was executed for these documentation/status artifacts.
 
 ## RV-130 — Isaac-requested review and merge (2026-10-17, prospective)
 
@@ -126,3 +177,22 @@ R11–R16 PASS at pushed `91cfc7e` (implementation `2628603`): full offline suit
 GitHub Actions run [39017535732](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39017535732), head `91cfc7e`, runtime job117352623646 annotation confirms the job was not started because recent account payments failed or spending limit needs increasing (#98). No org-CI pass, Linux/systemd acceptance, official host bundle or hosted/live qualification is claimed.
 
 [Issue #152](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/152) tracks these completed repository review fixes and is the closing issue for PR #130. Parent #33 and source task #138 remain open; no entire GAP29 item is removed. Required next work: Isaac obtains real verified router/facet source and ABI, deployed implementation/bytecode attribution and all four source guarantees, with Keegan's independent review; Isaac runs the recorded-real route check. Actual on-chain deadline/authorization timing (#27), caps approval (#44), provider qualification, funding/key/host setup and logged dev approve/swap/rehearsal remain separate and blocked as previously recorded. The new debit guarantee is mandatory for future evidence; existing three-guarantee templates must be updated, never assumed true. This review supersedes the earlier record's inference of an actual approximately30s encoded deadline: only the kit's approximate quote lifetime was known.
+
+
+## RV139 — source-handoff PR conflict review (2026-10-17 SGT)
+
+The user requests all-PR fixes. Decoder PR130 is merged, so this handoff now
+merges current integration `a428bab` normally and targets that integration branch.
+Resolved the backlog/ledger conflicts by retaining the current RV-130 four-source-
+guarantee requirement and all RE-01 acquisition/lookup history; newer integration
+rows are preserved. The old three-guarantee acquisition checklist is superseded
+by RV-130's fourth, nested wallet-debit guarantee. No historical lookup output or
+raw artifact hash was changed.
+
+The PR remains DRAFT. Candidate code/selector attribution is not verified source,
+ABI, spender approval or upgrade/semantic proof. No attributable source files or
+actual capture corpus were supplied in this environment, so task138 and parent33
+remain open. Updated the source-review handoff to use current merged code rather
+than waiting for PR130. Validation: evidence JSON parses, ledger IDs are unique,
+no conflict markers, and `git diff --check` passes. Documentation-only review;
+no application, provider, wallet, host or AWS action is required or performed.

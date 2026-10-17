@@ -1,0 +1,110 @@
+# Isaac task 3: router source review (#138)
+
+Status 2026-10-17: **router Code page is unverified; facet source remains
+unresolved**, not ready for deployment. Record: IDEA-070 RE-01 / RV139. Decoder
+PR130 is merged into integration; this handoff uses its current RV-130 checks.
+This task has its own branch, `codex/isaac-03-router-evidence-20261017`.
+
+## Current browser finding (RE-01 B1)
+
+Isaac's screenshot shows “Verify and Publish”, “Add Custom ABI”, and hexadecimal
+bytecode rather than published source/ABI. The hexadecimal is compiled code;
+it is not the source or ABI requested below. Do not add a custom ABI or attempt
+to verify/publish this third-party contract.
+
+The **Read Facets** tab also failed: Isaac reports “unable to retrieve a valid
+contract ABI” (RE-01 B2). There is no ABI to copy from that failed view.
+
+A bounded public read-only lookup found a candidate for the swap selector:
+**[0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603 on BscScan](https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code)**.
+The standard `facetAddress(bytes4)` lookup for `0xad43f73d` returned this address
+at finalized block `0x7a2eb81`; it has8622 deployed code bytes there. The block
+hash was rechecked; the evidence report is `evidence/router-facet-lookup-20261017.json`.
+This is an identity lead from one provider, not source/safety or upgrade proof.
+Sourcify returned404 for this candidate too.
+
+**Next browser step:** open that distinct candidate page and report whether its
+Code tab displays verified source or only Verify and Publish/bytecode. If source
+exists, the conditional export steps below apply to that candidate, while the
+router's dispatch/mapping and any additional helpers still require review.
+Do not try to publish a custom ABI to repair the failed explorer view.
+
+## Evidence needed from Isaac's browser
+
+1. Open [the router's BscScan Contract tab](https://bscscan.com/address/0xb44446b0c8e56988c34f7ff73ae904982b5fdda5#code).
+   Confirm this is BNB Smart Chain, chain56, and the exact router address above.
+2. If verified source is displayed, save the complete source (all files/imports,
+   or the explorer's source/standard-JSON export) and Contract ABI JSON **outside
+   the repository**. Retain the original files without reformatting. Also save
+   the page or a plain-text note of its URL, verification status, compiler,
+   contract name and UTC retrieval time. These are public artifacts; no wallet
+   connection, signing or secret is needed.
+3. Inspect the proxy information. If it identifies an implementation, include
+   its address, verified source and ABI too. An unknown proxy status is not
+   evidence for `implementation: null`. A proxy shell alone is insufficient;
+   any facets/delegated implementation handling the selector must be reviewed.
+4. Tell Codex the local folder path. Codex can read and hash the files and
+   continue the source review. There is no need to paste source or API keys
+   into chat.
+5. If the source is unverified or your browser is blocked too, report that
+   result. Keep task3 open; the team must resolve source availability before
+   this evidence path can proceed.
+
+The automated attempt returned a Cloudflare challenge (HTTP403). Sourcify's
+documented v2 lookup returned HTTP404 with no match. Neither result determines
+BscScan's verification status. Retained response bytes/headers are outside Git
+at `/private/tmp/larp-isaac-router-20261017`; the committed acquisition report
+contains response-body hashes and outcomes only. **Those hashes must never be
+used as source or ABI hashes.** The authenticated Etherscan source API is an
+alternative if suitable account access already exists; no API key was read or
+used here. Do not create a paid subscription for this handoff.
+
+## Review after the source is available
+
+Isaac's source review must establish each item; all remain unresolved today:
+
+| Requirement | Evidence to record |
+|---|---|
+| Provenance | Exact source/ABI file SHA256, explorer URL, verification/compiler metadata, retrieval time and implementation/facet identity where applicable |
+| Swap signature | Canonical ABI tuple signature whose keccak selector is `0xad43f73d`; derive from source/ABI, not a selector registry |
+| Economic field paths | Zero-based tuple paths and leaf types for pay/receive token, amount, minimum output, recipient and deadline |
+| Native BNB | Source-defined native sentinels and the treatment of `msg.value` |
+| Minimum output | Concrete code proving the minimum is enforced on the recipient's balance, including helper/delegated route behavior |
+| Deadline | Concrete code enforcing the encoded deadline |
+| Input authority | Concrete code proving the input is pulled only from `msg.sender`, including helper/delegated route behavior |
+| Wallet debit bound | Concrete code proving all nested/delegated calls can debit only the decoded pay token and amount, with no access to other wallet assets or approval authority (RV-130 R11) |
+| Independent review | Keegan's actual review reference; never attribute review before it happens |
+
+If any guarantee is false or unsupported, stop the evidence path and record the
+finding for the team. A schema accepting `true` does not establish a guarantee.
+No runtime config or signer policy should reference this acquisition report.
+
+When the facts are established, fill the existing `RouterEvidence.v1` template
+in [GATE_B.md](GATE_B.md), push it before running the evidence/selector checks,
+and obtain Keegan's review. Only then can this task's PR become ready and close
+#138. Keep parent #33/GAP-29 open for the remaining acceptance requirements.
+
+Task4 is the separate recorded-route replay over Keith's existing IDEA-063
+quote artifacts after Keegan's evidence review, using merged PR130. No new capture
+is needed here. Signing lifetime #27, caps #44, gas, signer access, deployment
+and the first agent trades remain later tasks.
+
+## If the candidate's source is also unavailable
+
+Keep the task and live signing blocked. Isaac can forward this draft request to
+the team supporting the router returned by the Web3 API; it has **not** been sent:
+
+> Our BSC quote-and-swap responses target router
+> `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, selector `0xad43f73d`.
+> Its explorer Code page is unverified and Read Facets cannot retrieve an ABI.
+> A public `facetAddress(bytes4)` lookup at finalized block `0x7a2eb81` returned
+> `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`. Could you provide the
+> complete verified source/ABI and compiler settings for this selector's code,
+> router dispatch, and relevant helpers, plus how to verify their chain56 code
+> identities and detect implementation upgrades? We need to establish recipient
+> minimum-output, deadline, sender-only input enforcement, and wallet debits
+> limited to the decoded pay token/amount across every nested call before signing.
+
+Do not mark these guarantees true on the strength of an unsupported statement
+or decompiled bytecode. Source provenance, source-to-code binding and independent
+review remain required.
