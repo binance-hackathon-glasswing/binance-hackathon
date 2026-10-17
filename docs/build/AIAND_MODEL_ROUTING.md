@@ -30,6 +30,10 @@ The routing file is `AIandRouting.v2`. Each model gets the core assessor prompt 
 
 The routing file pins each addendum by name and SHA-256 (`prompt` on each model entry, `openai_prompt` for Sol). The runtime refuses to start on a missing file, a hash mismatch or a name with a path. Each stage records the composed prompt's hash, so the trace says exactly what each model was sent. The addenda add guidance only; the core prompt comes first and wins any conflict. To change a prompt: edit the `.md`, update its hash in the routing file, and ship it in a new release (the files are release files). A `v1` routing file still works and sends every stage the core prompt only.
 
+Addenda must be nonempty UTF-8 text of at most 16 KiB each, regular files in that
+directory. Symlinks, backslash paths and names containing `..` or NUL refuse.
+Preparation applies the same checks before any budget or provider is constructed.
+
 ## Credentials
 
 Add `LARP_AIAND_API_KEY` to the existing runtime **Secrets Manager JSON**. `LARP_MODEL_API_KEY` is optional for Sol: without it, all model work is external. The service loads these explicitly; it does not inherit keys from an `.env` file. Never put actual keys in this repo, command arguments, routing JSON or logs. Existing signer/audit secrets still refuse loading on the coordinator.
