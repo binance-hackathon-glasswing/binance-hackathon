@@ -256,3 +256,18 @@ run "service_alarms_off_without_hosts" {
     error_message = "With hosts off the service alarms would sit in ALARM on missing data."
   }
 }
+run "every_alarm_explains_itself" {
+  command = plan
+  variables {
+    enable_hosts = true
+    ami_id       = "ami-0123456789abcdef0"
+  }
+  assert {
+    condition = alltrue([for a in concat(
+      [aws_cloudwatch_metric_alarm.database_storage], values(aws_cloudwatch_metric_alarm.host),
+      values(aws_cloudwatch_metric_alarm.recover), values(aws_cloudwatch_metric_alarm.reboot),
+      values(aws_cloudwatch_metric_alarm.maintenance), values(aws_cloudwatch_metric_alarm.service)) :
+    length(a.alarm_description) > 0 && length(a.alarm_description) <= 1024 && strcontains(a.alarm_description, "F-114")])
+    error_message = "Every alarm email must say what fired and that nobody acts on the agent during the run (AWS limit 1024 characters)."
+  }
+}
