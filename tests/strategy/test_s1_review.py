@@ -53,6 +53,24 @@ class PolicyReview(unittest.TestCase):
         self.assertTrue(requests, result)
         self.assertTrue(all(q['pay_units'] <= budget for q in requests), requests)
 
+    def test_hard_name_trim_uses_current_reduced_target_on_a_hold_round(self):
+        for gross, trend, limiter in (([3, 5], 'DOWN', 'NORMAL'), ([3, 10], 'UP', 'SEVERE')):
+            with self.subTest(gross=gross):
+                state = settled(gross, trend=trend)
+                state['s1']['limiter']['level'] = limiter
+                snapshot = snap({**{n: 1000 for n in NAMES}, 'NVDAB': 7200}, state=state)
+                proposal = decide(snapshot, snapshot.policy_state)
+                self.assertEqual(by_symbol(proposal)['NVDAB'].kind, TargetKind.KEEP_QUANTITY)
+                result = plan(snapshot, proposal).read()
+                requirement = next(r for r in result['requirements'] if r['symbol'] == 'NVDAB')
+                p = snapshot.context.read()['profile']
+                market = markets(snapshot, p)
+                m = market['NVDAB']
+                expected = int(Fraction(*gross)*Fraction(1, 5)
+                               *(equity(snapshot.context.read()['portfolio'], market)-p['cost_reserve_units'])
+                               *10**m['decimals']/m['price_units'])
+                self.assertEqual(requirement['max_units'], expected)
+
 
 class LimiterReview(unittest.TestCase):
     def cut(self, mode='DETERMINISTIC'):
