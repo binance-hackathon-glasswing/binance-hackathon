@@ -79,6 +79,14 @@ RPC documentation, may be tested as an additional candidate under source ID
 
 ## Decision and handoff
 
+As of 2026-10-17 the local comparison is complete: BNB Chain and NodeReal each
+passed all 19 reads; PublicNode did not qualify. The proposed order is
+`BSC_BNBCHAIN_PUBLIC` then `BSC_NODEREAL_PUBLIC`, pending Isaac's decision. The
+[safe evidence summary](evidence/balance-rpc-qualification-20261017.json) and
+IDEA-055 RPC-Q01 V1–V3 preserve the tested commits, failed results, CA correction,
+hashes and limits. No live config changed. The ignored private handoff proposal
+is `deploy/activation/balance-rpc/proposed-providers.json` on the task machine.
+
 After the technical comparison, Isaac chooses the ordered providers or supplies
 a preferred account-backed alternative. No paid account is created here. Send
 the private config to Yao Zhu through the team's private channel; this tool
