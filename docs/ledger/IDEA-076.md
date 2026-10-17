@@ -1,7 +1,7 @@
 # IDEA-076 — Build the S1 trading plan (trend-guarded volatility-weighted book)
 
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
-- Status: open (criteria pre-registered; implementation follows on `claude/s1-trading-plan`).
+- Status: open (S1 core repository review PASS; Isaac B6 added under EB-01 below, focused offline integration PASS; parameter approval, live inputs, B5/B7 and rehearsal remain).
 - What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:
   - **B2:** a profile baseline, `TREND_GUARDED_VOL`, with its own `s1` block and bounds.
   - **B3:** the policy and planner: target gross = min(trend level, LLM level), with the planner's risk ladder on top; precedence as in IDEA-075 §6; reuse of the IDEA-037 trim latch.
@@ -11,7 +11,7 @@
 - Not in this record:
   - EXP-007, the trend-guard replay. It is NOT RUN, because this session can't reach any price history (network policy).
   - Wiring live session bars into the runtime driver. Today the driver passes no `series`, and the candle reader needs timestamp-convention evidence (DR-08). Until then the live trend guard keeps its starting state (UP), and every round says so.
-  - The execution window and the per-leg attempt limit at execution level (B6, Isaac).
+  - Originally outside the core increment: execution window and per-leg attempt limits (B6, Isaac); now implemented under EB-01 below, with real-cost/parameter and hosted acceptance still open.
   - The session-close job and the round-log `input`/`cot` fields (B5, Keegan).
   - The deviations-register rows (B7).
   - Any LLM call. The limiter accepts a model's output only through the evidence check; producing that output is B4's model half.
@@ -208,3 +208,11 @@ Pass criteria, recorded before implementation/test execution:
 - **EB5 Evidence:** window, attempt ordinal/budget and quote refusal/cost facts remain in the round's plan/input/output audit. Synthetic regressions cover both window edges, actual session rollover, mandatory paths, malformed state, same-round replan, independent signer/release refusal, PostgreSQL restart and exact recorded-port replay. Run focused tests and the full repository suite with disposable PostgreSQL; state environmental/hosted skips explicitly. Push all behavior-affecting code before execution.
 
 The example 30-minute delay, 15-minute close buffer and three attempts in IDEA075 §12 remain proposals. This feature does not resolve #27/#44, obtain router evidence, qualify native tracing, enable signing, approve a model/network destination or change AWS/wallet state. B5 scheduling and real quote-cost/profile review remain with their named owners.
+
+### EB-01 implementation and focused evidence (2026-10-18 SGT)
+
+- Criteria committed/pushed at `b6c324f`, before implementation and execution. Application/tests pushed at `f5e058e`; quote-child integration at `d4b3b28`. S1 now requires explicit `s1.execution` parameters; examples remain proposed. Usage and exact scope: `../build/S1_EXECUTION_BOUNDS.md`.
+- The planner journals session/leg/ordinal/interval and the durable attempt budget atomically with each plan, including refused quotes and costs. The budget survives closed rounds, restart and settlement; it rolls at the next frozen-calendar session open. Safety/discretionary BUY/SELL scopes are separate. Exhausted mandatory requirements remain outstanding. S1 requests one missing wallet-leg quote at a time; bounded quote children reuse a matching committed parent's slot instead of charging each refinement as a new attempt. New ordinary rounds consume a fresh slot.
+- Command expiry is clamped to the logged window/session. Current-time checks run in execution guards, unbroadcast-step admission, the independent signer and the locked broadcast release. Unbroadcast work is aborted/revoked after expiry; possible submissions keep reconciling. Other baselines' behavior is retained. No new migration.
+- **Focused PASS at pushed `d4b3b28`: 78 tests, 47 subtests, 76.51 s**, macOS/Python3.12.14/disposable PostgreSQL14.24, no skips. Includes the three new regression modules, existing signed runtime service, live replay and S1 planning tests. Earlier pure coverage: 93 tests /77 subtests PASS; the first DB attempt failed because sandbox TCP was denied, then reran with approved local access. Initial fixture corrections supplied missing LIVE session bounds, real UTC day rolls and adequate calendar coverage; no assertion was disabled. The first quote-chain design's excessive reservation of unrequested names was corrected before this pass.
+- Verification limits: synthetic market/provider boundaries and throwaway signing keys only; no real provider call, paid model call, production key, wallet transaction, ai-seeds upload, host/AWS action or activation. Full-suite and PR delivery follow below. Isaac/Keith retain real-cost checks and parameter selection, Keegan release/B5 integration, Yao Zhu host setup, and all owners signed rehearsal acceptance. No whole IDEA075 backlog item is complete for removal.
