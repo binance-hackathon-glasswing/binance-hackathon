@@ -32,7 +32,7 @@ EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
-    """A configuration asks for a path that is not built yet: a hosted model assessor (DR-11)."""
+    """A configuration asks for an assessor that is not integrated (DR-11)."""
 
 
 class StartRefused(ContractError):
@@ -198,8 +198,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     """The round driver (IDEA-048, IDEA-050) from the `driver` block of the manifest-bound runtime configuration.
 
     `execution: "shadow"` ends every intent unsigned; `execution: "service"` hands committed commands to the execution
-    service (larp/execution_live/loop.py) and journals its observations. Hosted model assessors (DR-11) are not
-    integrated: asking for one raises NotIntegrated. Any other missing or inconsistent input is a ContractError, which
+    service (larp/execution_live/loop.py) and journals its observations. AIand/OpenAI routing is integrated for
+    dev shadow use only; other hosted assessors raise NotIntegrated. Missing or inconsistent input is a ContractError, which
     `main` turns into a start refusal (exit 4)."""
     from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
     from larp.integration.settlement import ExecutionBridge
@@ -231,7 +231,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
-        raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
+        raise NotIntegrated('Supported assessors are deterministic and shadow-only aiand_routed (DR-11)')
     if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
         raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
     if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
