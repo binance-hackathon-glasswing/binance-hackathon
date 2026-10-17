@@ -410,6 +410,8 @@ def plan(snapshot, proposal_or_none):
                                                       authority=bounds))
         pay_units = floor(value(q, m)) if side == "BUY" else q
         quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity, mandatory)
+        if s1 and (quote is not None or request_units is None):
+            execution_bounds.close(attempt_budget, bounds)
         result["rejections"].extend({"symbol": symbol, "reason": reason} for reason in rejected)
         if quote is None:
             if req is not None:

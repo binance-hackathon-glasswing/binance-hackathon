@@ -45,8 +45,8 @@ def leg_key(symbol, side, mandatory):
 def budget(value, current_session):
     """Malformed/future state cannot masquerade as a fresh allowance."""
     if value is None:
-        return {'session': current_session, 'counts': {}}
-    if type(value) is not dict or set(value) != {'session', 'counts'}:
+        return {'session': current_session, 'counts': {}, 'closed': {}}
+    if type(value) is not dict or not {'session', 'counts'} <= set(value) <= {'session', 'counts', 'closed'}:
         raise ContractError('Malformed S1 execution attempt budget')
     prior = integer(value['session'])
     counts = value['counts']
@@ -55,9 +55,16 @@ def budget(value, current_session):
     if type(counts) is not dict or not set(counts) <= valid_keys:
         raise ContractError('Malformed S1 execution attempt counts')
     counts = {k: integer(v, 1) for k, v in counts.items()}
+    closed = value.get('closed', {})
+    if type(closed) is not dict or not set(closed) <= set(counts):
+        raise ContractError('Malformed S1 closed attempt slots')
+    closed = {k: integer(v, 1) for k, v in closed.items()}
+    if any(v > counts[k] for k, v in closed.items()):
+        raise ContractError('Closed S1 attempt exceeds the reserved count')
     if prior > current_session:
         raise ContractError('S1 execution attempt session moved backwards')
-    return {'session': current_session, 'counts': counts if prior == current_session else {}}
+    return {'session': current_session, 'counts': counts if prior == current_session else {},
+            'closed': closed if prior == current_session else {}}
 
 
 def interval(context, cfg, mandatory):
@@ -101,7 +108,7 @@ def _reuse(context, state, key, start, end, symbol, side, quotes):
         a = item.get('authority', {})
         if (a.get('schema') == SCHEMA and a.get('session_index') == state['session'] and a.get('leg') == key
                 and a.get('ordinal') == state['counts'].get(key) and a.get('valid_from_ms') == start
-                and a.get('valid_until_ms') == end):
+                and a.get('valid_until_ms') == end and state['closed'].get(key, 0) < a['ordinal']):
             return dict(a)
     return None
 
@@ -121,6 +128,15 @@ def reserve(context, cfg, state, symbol, side, mandatory, now_ms, *, quotes=()):
     state['counts'][key] = ordinal
     return dict(schema=SCHEMA, session_index=state['session'], leg=key, ordinal=ordinal,
                 valid_from_ms=start, valid_until_ms=end), None
+
+
+def close(state, authority):
+    """A terminal quote refusal or an issued intent ends quote-slot reuse.
+
+    This is durable even if execution later aborts before submission. A fresh
+    retry needs a fresh slot, never an older ancestor's quote-round reference.
+    """
+    state['closed'][authority['leg']] = authority['ordinal']
 
 
 def permitted(projection, intent, now_ms):

@@ -160,11 +160,30 @@ class Planning(unittest.TestCase):
                 self.assertIn('EXECUTION_BOUNDS_INVALID', {r['reason'] for r in result['rejections']})
 
     def test_budget_resets_only_on_actual_session_rollover(self):
-        state = {'session': 80, 'counts': {'DISCRETIONARY:BUY:NVDAB': 3}}
+        state = {'session': 80, 'counts': {'DISCRETIONARY:BUY:NVDAB': 3}, 'closed': {}}
         self.assertEqual(bounds.budget(state, 80), state)
-        self.assertEqual(bounds.budget(state, 81), {'session': 81, 'counts': {}})
+        self.assertEqual(bounds.budget(state, 81), {'session': 81, 'counts': {}, 'closed': {}})
         with self.assertRaises(ContractError):
             bounds.budget(state, 79)
+
+    def test_consumed_quote_parent_cannot_recycle_an_attempt(self):
+        snapshot = at('2026-10-10T14:00:00Z')
+        initial = run(snapshot)
+        parent = bounds.parent_authority(dict(round_id='parent', policy_input=dict(context=snapshot.context.read()),
+                                               plan=initial))
+        snapshot = changed(with_quotes(snapshot), execution_attempt_budget=initial['execution_attempt_budget'],
+                           execution_parent=parent)
+        for ordinal in range(1, 4):
+            result = run(snapshot)
+            intent = result['intents'][0]
+            self.assertEqual(intent['execution_bounds']['ordinal'], ordinal)
+            self.assertEqual(result['execution_attempt_budget']['closed'][intent['execution_bounds']['leg']], ordinal)
+            snapshot = changed(snapshot, execution_attempt_budget=result['execution_attempt_budget'])
+        refused = run(snapshot)
+        # Another name may be considered, but this name cannot reuse slot 1.
+        self.assertNotIn(initial['quote_requests'][0]['symbol'], [i['symbol'] for i in refused['intents']])
+        self.assertIn({'symbol': initial['quote_requests'][0]['symbol'], 'reason': 'LEG_ATTEMPT_LIMIT'},
+                      refused['rejections'])
 
     def test_command_expiry_cannot_outlive_the_execution_window(self):
         snapshot = with_quotes(at('2026-10-10T19:44:59Z'))

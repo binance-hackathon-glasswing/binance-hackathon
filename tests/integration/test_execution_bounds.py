@@ -72,13 +72,28 @@ class DurableBudget(DatabaseCase):
         record = self.store.load('run').read()['projection']['round_records']['parent/quote1']
         intent = record['plan']['intents'][0]
         self.assertEqual(intent['execution_bounds']['ordinal'], 1)
-        self.assertEqual(self.store.load('run').read()['projection']['execution_attempt_budget'], original)
+        self.assertEqual(self.store.load('run').read()['projection']['execution_attempt_budget']['counts'],
+                         original['counts'])
+        self.assertEqual(self.store.load('run').read()['projection']['execution_attempt_budget']['closed'],
+                         {'DISCRETIONARY:BUY:NVDAB': 1})
         coordinator.observe('child-aborted', doc(dict(schema='ExecutionObservation.v1', run_id='run',
             wallet_id='fake-wallet', round_id='parent/quote1', intent_id=intent['intent_id'], event_id='child-aborted',
             kind='NOT_SUBMITTED', settlement='FINAL', origin='EXECUTION_RECONCILER',
             observed_at=datetime.fromtimestamp(self.now/1000, timezone.utc).isoformat(),
             intent_terminal=True, round_terminal=True)), settle)
         coordinator.close('parent/quote1', self.now, 'COMPLETE')
+        # Even an explicit old-parent reference after an aborted intent must
+        # consume a new attempt; replay cannot silently reopen its first slot.
+        self.start(coordinator, 'new-chain', parent='parent')
+        record = self.store.load('run').read()['projection']['round_records']['new-chain']
+        retry = record['plan']['intents'][0]
+        self.assertEqual(retry['execution_bounds']['ordinal'], 2)
+        coordinator.observe('retry-aborted', doc(dict(schema='ExecutionObservation.v1', run_id='run',
+            wallet_id='fake-wallet', round_id='new-chain', intent_id=retry['intent_id'], event_id='retry-aborted',
+            kind='NOT_SUBMITTED', settlement='FINAL', origin='EXECUTION_RECONCILER',
+            observed_at=datetime.fromtimestamp(self.now/1000, timezone.utc).isoformat(),
+            intent_terminal=True, round_terminal=True)), settle)
+        coordinator.close('new-chain', self.now, 'COMPLETE')
         self.assert_replay(coordinator)
 
     def test_closed_rounds_restart_and_duplicate_round_cannot_restore_attempts(self):
