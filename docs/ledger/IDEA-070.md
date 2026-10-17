@@ -91,3 +91,8 @@ All of these run offline on synthetic fixtures. No network, credentials or signi
   - Keegan: host configs and manifest rebind; the Gate B review in IDEA-042.
   - Everyone: DR-02..06 and DR-19 evidence on the dev wallet.
   The full order is in `docs/build/GATE_B.md`. GAP-29 stays open, narrowed.
+
+## Review fix R10 (PR #130 review, 2026-10-17)
+
+- Found while reviewing PR #130 after merging integration head `1ab47ae` into the branch (merge `42a934c`). The signer's `validate_config` enforces the both-or-neither rule for `router_evidence_file` / `router_evidence_sha256`, but the execution service's does not. So `larp-execution check` reports `configuration_valid` for an `execution.json` that sets only one of the two, and the service then refuses at `run` (exit 4, detail only `ContractError`). GATE_B.md step 8 uses "`check` passes for both services" as its done-criterion, so that check would pass a configuration the service cannot start with. Fail-closed either way: nothing signs.
+- **R10 pass criterion (written before the fix runs):** `larp.execution_live.main.validate_config` raises `ContractError` when only `router_evidence_file` or only `router_evidence_sha256` is set, and still accepts a configuration with both or neither. A new test in `tests/execution/test_router_wiring.py` fails on `42a934c` and passes with the fix. The full suite stays at 0 failed.
