@@ -199,6 +199,43 @@ class StagePrompts(unittest.TestCase):
         markdown = {f for f in files if f.startswith('config/') and f.endswith('.md')}
         self.assertTrue(all(f.startswith('config/intelligence/prompts/') for f in markdown), markdown)
 
+    def test_sp9_invalid_text_or_release_escape_refuses_before_budget_construction(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            prompts = root / 'prompts'
+            prompts.mkdir()
+            for name in ('routine.md', 'review.md'):
+                shutil.copy(STAGE_PROMPT_DIR / name, prompts / name)
+            outside = root / 'outside.md'
+            outside.write_bytes(b'Valid text outside the release prompt directory.\n')
+            for defect in ('utf8', 'empty', 'oversized', 'symlink', 'backslash', 'dotdot', 'nul'):
+                bad = prompts / 'bad.md'
+                if bad.exists() or bad.is_symlink(): bad.unlink()
+                raw = {'utf8': b'\xff', 'empty': b' \n', 'oversized': b'x' * (16 * 1024 + 1)}.get(
+                    defect, b'Valid text.\n')
+                name = 'bad.md'
+                if defect == 'symlink':
+                    bad.symlink_to(outside)
+                    raw = outside.read_bytes()
+                elif defect in ('backslash', 'dotdot'):
+                    name = 'private\\prompt.md' if defect == 'backslash' else 'private..md'
+                    (prompts / name).write_bytes(raw)
+                elif defect == 'nul':
+                    name = 'private\x00.md'
+                else:
+                    bad.write_bytes(raw)
+                spec = deepcopy(self.s)
+                spec['openai_prompt'] = dict(name=name, sha256=sha(raw))
+                with self.subTest(defect=defect), patch('larp.intelligence.routing.ModelBudget',
+                        side_effect=AssertionError('Invalid prompt reached budget construction')):
+                    with self.assertRaises(IntelligenceError):
+                        validate_routing_spec(spec, prompt_dir=prompts)
+                    with self.assertRaises(IntelligenceError) as caught:
+                        self.router(spec, prompt_dir=prompts)
+                    self.assertNotIn('private', str(caught.exception))
+                    self.assertFalse(self.calls)
+
 
 if __name__ == '__main__':
     unittest.main()
