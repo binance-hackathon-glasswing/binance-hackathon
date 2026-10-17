@@ -326,3 +326,40 @@ All six items in #91 are green on mirror CI (`Keegan4/keegan4-larp-ci-mirror`, t
 - **The integration head, which also carries #111's code (c075849, reached via #114):** run [38910102399](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38910102399) on `codex/system-testing-20261012` at `e4f3d59`. All four jobs pass: full suite **1755 passed, 6 skipped, 2556 subtests, 0 failed**, plus real systemd 5 passed, on Python 3.12.15 and PostgreSQL 14.24.
 
 The 1552-passed run predates #111. The second run covers that code on the integration branch. Org-repo Actions remain blocked (#98).
+
+## SG-8 — prepare the documented LLM split (2026-10-17, prospective)
+
+The user requests ChatGPT for main/difficult questions and the Chinese models for
+lighter questions, following the docs. Base integration `0672fb8` already implements
+GLM-5.3 low → conditional OpenAI `gpt-6.1-sol` medium review, with Kimi K3 high
+then GLM high fallback. The missing integration is Gate A preparation: it always
+emits deterministic configuration, and local package qualification rejects routing.
+Branch `codex/llm-routing-preparation-20261017` adds explicit opt-in assembly rather
+than asking the host owner to edit already prepared runtime bytes manually.
+
+Pass criteria before implementation or changed-code execution:
+
+- **SG8a:** prepare accepts a separately reviewed routing file and its expected
+  SHA256 together; bounds and validates the public spec without secrets, budget
+  access or inference. Copy exact bytes as `model-routing.json`; runtime and report
+  pin those bytes, select `aiand_routed`, and use the documented single shared
+  budget directory. Default preparation remains deterministic.
+- **SG8b:** preparation and runtime share pure routing validation: exact supported
+  model IDs, supported catalog/effort/context/output, one/two fallback reviewers,
+  OpenAI effort, frozen audit settings and budget account. Reject malformed or
+  altered specs before model, budget, network or output construction; fixed
+  failure text never echoes supplied content. No arbitrary provider endpoint.
+- **SG8c:** local qualification accepts routed dev-shadow packages only with the
+  routing bytes and matching pins, refuses missing/extra/tampered files and
+  service/live scope, and performs no credential, budget or provider lookup. It
+  continues to distinguish local file validation from host/trial acceptance.
+- **SG8d:** exercise the prepared runtime through real composition and the existing
+  routed assessor using synthetic provider boundaries: routine GLM, required
+  OpenAI review, budget/credit-driven Kimi/GLM fallback, common deadline/tool
+  ceiling and full provenance. Retain existing service/live refusals and budget
+  reserve. Run focused deployment/intelligence tests and full Linux/PostgreSQL14
+  regressions after commit/push; record exact results and skips.
+- **SG8e:** update the host runbook with opt-in preparation, original-evidence
+  reviewer roles, secret names, actual prior spend and outstanding P0/P1/P2/trial
+  requirements. No AWS/host activation, paid calls, labels or policy adoption is
+  claimed. No parent model-selection or Gate A/B GAP closes.
