@@ -340,3 +340,21 @@ MAIN-V01 results (2026-10-15), source `305f3def6e2fc9150295de2215ba042e10f02251`
 - Static integration checks **PASS**: `main` is an ancestor, no conflicts/whitespace errors, protected kit/vendor files unchanged, heuristic added-line credential scan clean. Inspection confirms the production executor still refuses non-fake capability bundles, and CI has no deployment step.
 
 Raw logs and their SHA-256 index are outside Git at `/private/tmp/larp-main-validation/results/summary.json`; bundle/manifest are in the adjacent `bundle/` directory. Promotion is PR #81, an ordinary history-preserving merge. Subsequent publication changes are documentation only. Native ARM64 success plus emulated x86_64 packaging does not establish a native x86_64 full-suite run. Hosted Actions remain blocked before job start by billing/spending limits (account owner). No whole deployment backlog item closes: hosted RDS/receiver/route/recovery checks (Keegan + Isaac), measured profile/router/first-BNB and signer-policy values (Isaac + Keith), live evidence/model/source checks (Yao Zhu + independent reviewer), and team freeze/operating decisions retain their existing owners in `INCOMPLETE_WORK.md` and IDEA-049 A–D. No AWS deployment, wallet activation or live transaction occurs in this promotion.
+
+## ALLPR-20261017 — current PR review (prospective, SGT)
+
+The user requests review/fixes for all PRs. Seven are open at inspection:
+#126, #133, #139 (draft), #155, #157, #158 and #161. All descriptions, submitted
+reviews and review/issue comments were read; #159's newly merged review fix
+`d8cd32a` is included in target integration `a428bab`. Prior historical PR
+inspection remains IDEA-039 GB-RW1; this review covers the current changes.
+
+Criteria: inspect each diff against its actual target, resolve #126/#139's merge
+conflicts without history rewriting, fix reproducible defects in their own PR
+branches, and reconcile #133's outstanding owner/status corrections. Code and
+regressions must be pushed before execution. Run focused real-consumer checks
+on each code change and one combined Linux/PostgreSQL14 full regression of the
+reviewed code, retaining exact heads/outcomes and environmental skips. No PR is
+merged into its target or self-approved; #139's missing verified source stays
+draft and no source/cap/lifetime/host acceptance is invented. Keep each remaining
+external dependency explicit. Results and per-PR dispositions follow below.
