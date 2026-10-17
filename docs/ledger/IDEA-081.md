@@ -73,3 +73,12 @@ stage-prompt/routing/preparation/local-qualification suite **62 passed,
 example hash was already correct and is retained; stale manual-edit-only claims
 were corrected. Combined full-suite evidence follows in IDEA-049 ALLPR-20261017;
 no provider, host or prompt-quality acceptance is inferred.
+
+SP9 full regression: combined published review head `7328e0a` includes the exact
+#158 code from `6a65b39` plus all seven other reviewed PRs. Linux/Python3.12.14 /
+PostgreSQL14.24: **1957 passed, 6 expected skips, 2931 subtests**, 326.89s. The
+skips are one external-recording corpus and five opt-in systemd checks; routing,
+preparation and PostgreSQL checks ran. Full record: IDEA-049 ALLPR-20261017.
+Owner-reported mirror run39045682226 is also green for `6a65b39`; this session
+could not independently read the private mirror API (404). Provider quality,
+actual account/budget initialization, hosted trial and adoption remain open.
