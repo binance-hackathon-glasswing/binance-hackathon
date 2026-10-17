@@ -556,3 +556,15 @@ Test corrections after the red commits (test bugs, not weakened criteria): #44 a
 4. The guard freshness window (10 s) is a default, not a reviewed value (Isaac).
 
 **Mirror CI (2026-10-15):** [larp-ci-mirror run 38752161594](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/38752161594) (workflow_dispatch, head `64fd5c6`) is **green on all four jobs**. Runtime on Linux, Python 3.12.15 / PostgreSQL 14.24: **1452 passed, 4 skipped, 1 xfailed (#23), 2105 subtests**. Real systemd: 3 passed / 5 subtests. Terraform aws 15 passed, bootstrap 1 passed. Host bundle passes. The org-repo CI did not start (billing). The PR is not merged.
+
+## SL-01 — Isaac checklist task 5: signing-lifetime proposal (2026-10-17, prospective)
+
+Issue142, separate branch `codex/isaac-05-signing-lifetime-20261017` from integration352446b. Isaac confirms the private RPC handoff to Yao is sent; record RPC-Q01 H1 in IDEA-055 and parent92. PR135 and PR137 are now merged into integration. Router source task3/#138 and recorded-route task4 remain blocked and separate; this is the next independent checklist deliverable.
+
+This is **a proposal, not adoption or a runtime change**. Keith reviews the quote-age/proposal implications; Keegan decides C-OPEN-003/#27 and owns the code change. Existing profile/expiry/deadline/signer gates stay in place. No API, AWS, wallet/key, signing, capture or runtime action is required.
+
+Acceptance criteria before any experiment or covered-code execution:
+- **SL1:** trace current proposal/profile, risk/RuntimePlanner expiry, exact-byte executor/signer checks, post-approve re-quote and recovery; cite source paths and exact reviewed heads. Distinguish kit-stated ~30s quote TTL, unverified real encoded deadline, and #53's fake-transport/virtual-clock spacing evidence.
+- **SL2:** specify both options: a finite immutable authorization admitted while the proposal is fresh, or a source-qualified router deadline no later than the existing proposal/intent expiry. Show illustrative timeline arithmetic and the exact constraints each preserves/changes; do not suggest editing arbitrary returned calldata.
+- **SL3:** recommend an option with bounded conditions, required real latency/deadline evidence and implementation acceptance cases. Keep quote/data freshness, economic limits, fencing/HALT/window checks, parent expiry, uncertain-send reconciliation and no-replacement/no-restart-extension invariants explicit. Any numerical lifetime is only a candidate for owner decision, not a measured safe value.
+- **SL4:** supply a reviewable proposal document and separate PR closing only issue142's writing slice, leave parent27 open for Keith's review, Keegan's decision/code and real qualification; narrow live backlog without removing whole incomplete items. Static references/arithmetic/diff checks suffice for this docs-only change; do not claim new application, host or on-chain tests.
