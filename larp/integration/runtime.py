@@ -104,6 +104,14 @@ class StrategyPolicy:
         return decide(snapshot, state)
 
 
+def _legs(projection, session_index):
+    """This session's discretionary swap count per name (IDEA-076 Q14); empty from the next session on."""
+    legs = projection.get("discretionary_legs")
+    if type(legs) is not dict or legs.get("session") != session_index:
+        return {}
+    return dict(legs["counts"])
+
+
 class ContextBuilder:
     """Coordinator context builder. `issuers`: {issuer_id: {"token": symbol, "underlying_id": id}}."""
 
@@ -189,6 +197,8 @@ class ContextBuilder:
             "session_index": session["index"], "remaining_sessions": session["remaining"],
             "session_started_ms": anchor["first_ms"],
             "last_discretionary_session": last_discretionary_session,
+            **({"discretionary_legs": _legs(projection, session["index"])}
+               if self.profile.get("baseline") == "TREND_GUARDED_VOL" else {}),
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
