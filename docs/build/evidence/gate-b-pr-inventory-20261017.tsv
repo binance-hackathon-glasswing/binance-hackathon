@@ -1,0 +1,86 @@
+pr	head	in_main_fb95114	in_integration_0672fb8	head_commit_subject
+1	52327916bc5c348728f55cd2c57bb763bc11ffd9	true	true	Idea 19
+2	2d379a091a3917c57c28fb28db31884d25271091	true	true	Idea 19 update
+3	0234a14243057f6d53797dcd585fdcbfbbcedcf1	true	true	docs: record RT17/RT18 verification (IDEA-028 RT19), ledger row and GAP-30 note
+4	544df90460d55c01a443452f2b02997f96e621f7	true	true	docs: record IDEA-025 §9.5 hypothetical-event results (616d43b, db17802)
+5	968971efc44e003723ef02e73429a54d96d2703d	true	true	docs: record PR re-evaluation and economic verdict finding
+6	4d071028e314cc7b68c8a0fe5445e7055b159797	true	true	docs: record follow-up recovery budget regression evidence
+7	10a11dd4d267e35604d5d88bea384d03c9642d3c	true	true	docs: record verified PR7 trim completion fix
+8	e04186719e31fb48ea65a5bcc8cd68bc5bbd282f	true	true	ci: add numpy (requirements.lock pin) to the test lock for strategy research tests
+9	2273657072f301ec48a12ca83e179882812c43f5	true	true	test: retain source trace provenance in refreshed producer fixture
+10	c4a16ec1ce9a7e59609095058f713feac54103f7	false	false	feat: Step 1 integrated offline thin path (adapters G1-G4, G6) with criteria (IDEA-028 RT21)
+11	0535249309db6eeec853905b06365c44b32e17d3	true	true	Merge pull request #13 from binance-hackathon-glasswing/codex/deploy-runtime
+12	e4ebff65e0f249d001d86fb04fb4f2a312a63955	true	true	docs: clarify delivery ACKs, broadcast accounting boundary and readiness gates (IDEA-038)
+13	4d22ba054b7526e95d2382abf14a7a127d6e1f70	true	true	docs: record verified combined review and remaining production owners
+14	173b35cf29c465a1404ba067036c4c97cd3a66a5	true	true	docs: record PR14 review fixes and cross-owner verification
+15	18ef02d7353c751ea634212de27809d588d3a44f	true	true	merge: preserve latest evidence author follow-up
+16	dba139faec0cd96b0415156b6dab1fc76c90445c	true	true	fix: order rehearsal windows and bind mandatory-exit quote regression
+17	e44e5b84ecbcf89108b9187ba1d0bb7f19ad996e	true	true	docs: record system baseline and verified critical-clear regression
+18	a997d5b078b581aa1d78a6ed0c12c119f178a625	true	true	docs: record IDEA-044 V12 result
+19	a1c88d7c6548af32ab4d4b6f31627942f1b30433	true	true	docs: record IDEA-045 hosting step 1 results
+20	9d4f4e5a429d609899c6c5d19cb8fbe5c6919cfb	true	true	docs: record verified relevance and fixes for PR20 R14-R15
+21	5968b19027c502a1d723017726802cdf17f10237	true	true	docs: record PR21 retarget results after PR20 merge (IDEA-049 PR21-V3)
+41	7c09d1f44813f052bbb8f9400189308a5ca50237	true	true	docs: record final C consumer rounding verification
+65	4380216a79d80189c002cf75b09f8df937f2c2e1	true	true	docs: fix B record spacing and update status after driver merge (IDEA-049-B)
+66	6085347368cfb90dec585787014f52bdaeea572c	true	true	docs: record IDEA-050 Y1-Y2 results (Yao Zhu's PR #66 review)
+67	25b911613ec42d347b1feab0ebc778a71628ecb2	true	true	docs: record D final counts, CI and system test results (IDEA-049)
+68	5733a50ec587424d71420eaa59907fb161342581	true	true	docs: record that Linux CI did not start for the A merge head (IDEA-049-A)
+69	b99a876c5b8c2673275ccb9822ae473467266c0e	true	true	docs: record verified PR69 correction and outstanding CI block
+70	0074a972d9ad472e703ffd9b25e784fe4f2cb423	true	true	docs: record C-FND-012 repair and mirror CI acceptance for PR70 (IDEA-049-C)
+71	0392091bb593983e3ed80410fba3274a93b03750	true	true	Merge codex/system-testing-20261012 (21ee21c) into claude/wr-leftovers-20261015
+72	d92ad6e1c8d9629efb2c0ddc7b4b6fb3d9b6a026	true	true	Merge codex/system-testing-20261012 (21ee21c) into deploy/presetup-20261015
+73	1cc14cff02d6f8d202634a732711dcb214b0329a	true	true	docs: record IDEA-054 results and update the backlog
+74	aa16d3febb3a4fd3e647e457d9b7a4b56931ebbc	true	true	Merge codex/system-testing-20261012 (2f155fb) into codex/gate-b-20261015
+75	559c65637fa4da892a8830b1baa0dc6c4069e7e7	true	true	docs: preserve revision-scoped PR 69 Linux validation evidence
+76	5d002ea20c782c8520ebce87ba100eff27c8f3e6	true	true	docs: record PR #71, #72 and #74 merges and mirror CI on e5db681
+77	1820e63d34a6497192014ead1a02491e4b10d92b	true	true	docs: record WR-B mirror CI 38750352994 on a853528 (IDEA-049-B)
+78	ffaf86758231fd688cad32edd7074a9e2e72bc3a	true	true	docs: record WR-D3f result and full-suite counts (IDEA-049-D)
+79	9d87d8aba8903f096e5572580e76e3878590178f	true	true	docs(IDEA-049-C): WR-C mirror CI green on 64fd5c6
+80	97c8e8ffc7e82e3801bd73d10217455e6c6a866b	false	true	docs: record owner acceptance of WR-T without mirror CI
+81	0a7d87a1656aacad25e1725f89580a4ca05263e8	true	true	docs: record verified integrated main promotion acceptance
+82	09c3ed631310cc363cd5580380c111ccefe5bdeb	false	false	docs(IDEA-050): D31 results for #31 day-roll tests
+83	96a474de20a535c5e6d9100b9fe8b1e108a5c62f	false	false	docs(IDEA-049): WR-59 results for #59 systemd test
+84	0bd71d4f15f722d91300d6795dd8efdec6cc2d72	false	true	docs(IDEA-055): mirror CI green on 608b85b
+85	0595074e3e06bfc60e8fd467ca599eba8bc45f93	true	true	docs: record PR85 final promotion acceptance [skip ci]
+86	099f49bc911044f01d03cc044aacaf04a851e3f1	true	true	fix: route externally when the OpenAI budget ledger is unreadable (IDEA-057)
+87	d1bc59e11f7c5474e3f2615618e94217a8fdf72d	false	true	Merge current integration base and preserve both review records
+88	f6bb8bfb0ce7fa69d0bd686d8aae04d692a62edd	false	true	docs(GAP-50): note the IDEA-063 quote-cost producer and what remains
+89	a3f284f139fd6d668b0bcde78014394e1f9db7ac	false	false	docs(IDEA-058): results G1-G6
+99	ecb1c6e19f90717c77ee6ec47b46e1d6a8db1b24	false	true	fix: reuse token decimals only after two reads agree; let the #23 guard accept NUL escapes
+100	8510bf76153286298c0029b20867a8dd88417eac	false	true	docs(IDEA-039): GB-1/GB-2 results; execution README lists the new blocker and DR-06 cross-check
+101	3bb7e17d3abce2daa244c4306ea661f53a6e2f68	false	true	docs(IDEA-049-B): record WR-38 results, mutations and suite counts (part of #38)
+102	426ef41057e3b806b8fe87bf3f3ec02b06423e60	false	true	merge: codex/system-testing-20261012 (#99, #100, #101)
+103	ec2bbb1d223ad283b742539af7810b666bff1529	false	true	Merge integration after PR #102; preserve IDEA-061 and IDEA-062 ledger rows
+108	0fc05f8e897f7cbdcac31932d08a3a1fc36ba849	false	true	Integrate merged Gate A preparation for final combined verification
+109	7daf908555226da0071c0372c93ba19c4186188c	false	true	docs: split the issue closure checklist by owner (Keith, Keegan, Isaac, Yao Zhu)
+110	8112e9b4d42b0b01eb3b2185812897a47681f878	false	true	docs: record Yao Zhu's 2026-10-16 decisions on IDEA-055 D1-D6, Q-20 and first gas
+111	71c4994e7b5d56ffcab49ab4616dbdc76f7b308b	true	true	docs(IDEA-057): record #93 results (I93-1..4 PASS; 1551 passed, 8 skipped)
+112	0d75d9ae2768bea6c5f9aa12082f0b7d455d81f1	false	true	merge: codex/system-testing-20261012 (#109, #110, #117) into claude/ci-record-104
+113	e36d3bef918dc847954271a87808046b1ff659cc	false	true	merge: codex/system-testing-20261012 (#112) into claude/b-decisions-20261016
+114	fd60ec705b808dafa4f55fb1d8032fda32c0015e	false	true	test(IDEA-057): SG3 fills the shadow evidence mode once #87 is present (GA03 guard)
+115	5d1f4089eaa8c400889ceb07bd39f42989a7cd5b	false	true	Record final combined PostgreSQL14 and Linux reconciliation acceptance
+116	f130d9cc85b16e369d233793ee7925d9074d635a	false	true	Record final PR review evidence and retain only outstanding owner and hosted work
+117	7584b802ff40c257a6886b2d2467e8c76473b63e	false	true	docs(IDEA-049-B): D-DN-09 results HS1-HS6; narrow the HALT-semantics backlog item
+122	a53307c7407209529323b08d4e150a0b340cd87e	false	true	Reconcile independent review evidence with completed PR integration
+123	f7260a730d6dd694a203d99774fc25bc016b2ab7	false	true	docs(IDEA-075): expiry counts healthy sessions in §12 and L04; point Q14 to IDEA-076
+124	f22c5b86561143ceb6b9a8a4a38495dac8ccb161	false	true	docs(IDEA-057): record the #91 CI checks green on mirror CI (branch head and integration head)
+125	d42c3ff12fdae09e70c71e143792ede33743bbd9	false	true	docs(IDEA-049-D): PR #125 review results CKR-1..3
+126	e2a6f606f4b16ea41de15b5f7f23fc0122c39b3b	false	false	docs(IDEA-064): take owners from the pre-trading checklist
+129	c8b10637c68c36bf4fd2460149494d855dd89f0c	false	true	fix: refuse template SEC contacts in sec_user_agent
+130	d110ac6d287a2ae13a7281edf6793a8a6be08af1	false	true	docs: record completed PR130 review and full regression acceptance
+131	4d673dfaecfc701f9811508cbc236d25f114aa3a	false	true	docs: record S1 review acceptance and remaining live qualification
+132	3d114afb2de9cfd1a41738a21de2f5fd61d2fcc7	false	true	Merge codex/system-testing-20261012 into codex/quote-capture-linux-20261017
+133	1564a917cf7084705a394fcdb33cdc818deb0aa8	false	false	docs: record the decision that mirror-CI builds are the release builds
+135	97c413d1b5ee752812701a1badfe4c9426fd6876	false	true	test: expect the selected development RPC in the services list (f7)
+137	bced620108a88659aea71040f78651a2579e6e79	false	true	docs: record Isaac section C destination approval
+139	f5d98fda19484d5852239b18de071ef33d59ae43	false	false	docs: pin discovered swap facet and record remaining source review
+140	520742341081e1ee13d6f6f9ac416e4f2a15eee7	false	true	docs: record Keegan's signer-access (IDEA-080) and rehearsal-shape (D-DN-02) decisions
+141	51f6d52876337f82bb82f681db4642b9b0d76caf	false	true	docs(IDEA-066): record PC-AWS04 apply result (all criteria pass)
+143	a707b0770db616745a438382105535e926382732	false	true	Merge integration updates into PR143
+144	272816621c11699556dc1eeae350ccdb1580aa76	false	true	docs: link task 5 proposal PR and remaining decision owners
+145	b8e8f0b9638a3300a5f89f6b8f3a43d2d9ab885e	false	true	feat(gate-a): prepare takes the ordered balance RPC provider file
+147	58e850fa511f10f87ff5ca09a16a3e85fba3dc68	false	true	refactor(gate-a): prepare_shadow reads the provider file with qualify's reader (GA15b)
+148	902a5a69a60689e7c018ada29d89c342297e68c2	false	true	Merge lifetime and cap proposal records
+149	4a7ff99507ce73705cfefa65e855e42b4c7e91d7	false	true	Record signer-access merge verification
+151	c0e3f13332f321f897066075da2b500f97adf66d	false	true	docs: record funding PR readiness and CI billing blocker
+153	e0974cec2541d730f8c42d39aa7287365be5df67	false	true	Record integrated review merges and remaining work
