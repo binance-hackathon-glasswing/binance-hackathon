@@ -1,12 +1,17 @@
 # Pre-trading checklist (2026-10-17)
 
-This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), the open PRs and the open issues on 2026-10-17. Times are UTC. The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md); per-person dates are in #126's `WHO_DOES_WHAT.md`. Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
+This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Times are UTC. The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md); per-person dates are in #126's `WHO_DOES_WHAT.md`. Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 ## Done
 
 - [x] AWS hosts applied; `primary` online over SSM and smoke-checked (2026-10-16, IDEA-066 PC-AWS02).
 - [x] Terms captured for all six enabled sources and EDGAR; shadow source preflight passes; stricter SEC contact check (IDEA-066 PC-TERMS01/02, #129).
 - [x] Real quote-cost capture running on Keith's server since 2026-10-16 18:19 UTC, set to run until 2026-10-20 00:00 UTC (#132, IDEA-063).
+- [x] Route checker built (#102); network destination table approved by Keegan for section B (#113).
+- [x] Balance RPC failover: up to four providers in order (#116). Chain-balance decisions D1–D6 decided by Yao Zhu (#110) and built (#115, #116).
+- [x] HALT split by reason, so mandatory sells continue under pausing HALTs (D-DN-09, #117).
+- [x] Gas top-up round end to end (#103); first-gas MetaMask exception confirmed by the team (#105 closed).
+- [x] Swap decoder code and the router-evidence check written (#130, open for review). S1 strategy code written (#131, open for review).
 
 ## Plan (team decision 2026-10-17)
 
@@ -19,8 +24,8 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 ### Gate A setup
 
 - [ ] Merge #132 (capture record) and #124 (CI record, closes #91). Both are docs only.
-- [ ] Isaac: choose the BSC balance RPC with `finalized` support, give its source ID, open network access to it (#92, GAP-71).
-- [ ] Isaac + Keegan: approve the network destination list (#32).
+- [ ] Isaac: choose the balance RPC provider(s) with `finalized` support, each with a source ID. Since #116 up to four can be listed in failover order (`driver.balance_rpc_providers`). Open network access to them (#92, GAP-71).
+- [ ] Isaac: approve the network destination table for section C. Keegan already approved it for section B (#113); the table is in `architecture-deployment.md` "Approved network destinations" (#32).
 - [ ] Keegan, with whoever pays for GitHub: a host bundle built from the commit with the terms register (`1ab47ae` or later). Org Actions is billing-blocked (#98); a mirror run is engineering evidence only (#127).
 - [ ] Yao Zhu: confirm the alarm email subscriptions (AWS SNS), then send a test alarm and confirm it reaches a person. No alarm email has arrived yet.
 - [ ] Yao Zhu + Keegan: provision `primary` with the bundle; migrations 012/013 and roles; per-role IAM/TLS checks (AWS_RUNBOOK steps 5–6).
@@ -29,19 +34,22 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 
 ### Gate B setup
 
-- [ ] Isaac: review and merge #130 (swap decoder); capture unsigned route bytes for all five tokens and USDT → BNB; `router check` PASS against the quote files already recorded (#33, GAP-29).
-- [ ] Isaac + Keegan + Keith: decide how long a signing request stays valid (#27; #130 records a new finding on it).
+- [ ] Isaac, reviewed with Keegan: fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130; merge #130; run `python -m larp.execution_live.router check` on the quote files Keith's capture has already recorded. No separate route capture is needed (#33, GAP-29).
+- [ ] Isaac + Keegan + Keith: decide how long a signing request stays valid (#27). #130 found this blocks every real swap even with the decoder: intents live 15 s but a quote's encoded deadline is about 30 s.
 - [ ] Isaac + Keith: per-token signer caps, fee cap and allowed spenders (#44). Keegan installs `/etc/larp/signer.json`.
 - [ ] Keegan + Isaac: decide how the signer host is reached; place the key file there (DR-03).
 - [ ] Isaac: record the 2 USDT dev-wallet trial swap in DEPLOYMENT_DAY.md §5 and swap about 2 USDT more (#106).
-- [ ] Isaac + Keith: BNB floor and top-up size, BNB tracking on a real provider (#30); balance-reconciliation decisions D1–D6 (#90, #36).
+- [ ] Isaac + Keith: BNB floor and top-up size, and BNB tracking on a real provider (#30).
 
 ### Decisions due Oct 19
 
 - [ ] Yao Zhu + Keegan: rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04).
-- [ ] Yao Zhu + Keith: HALT behaviour for mandatory sells and exits during a price-jump hold (IDEA-055 POLICY-HOLD).
+- [ ] Yao Zhu + team: when the first signed trade happens. The rehearsal profile's buy window is fixed in code at Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS` in `larp/strategy/profiles.py`), so a round on Oct 20 plans no buys. Either do the Gate B trade on Oct 21 inside that window, or add a dev window before Oct 20 (code change, recorded as a version event).
+- [ ] Keith + Yao Zhu: which profile to build on Oct 20: `EQUAL_WEIGHT` (in the code today) or S1 `TREND_GUARDED_VOL` (needs #131 merged; its values stay proposals until Oct 22).
+- [ ] Yao Zhu + Keith: exits during a price-jump hold (IDEA-055 POLICY-HOLD). HALT for mandatory sells is already decided and built (#117).
+- [ ] Keith + Yao Zhu: confirm the model shadow trial's proposed bars before the trial starts (#97, IDEA-057).
 - [ ] Keith: keep or move the Nov 11 15:00 UTC flatten (#107).
-- [ ] Settle open choice O2 so EXP-007's pass criteria are final (#123).
+- [ ] Keith: run EXP-007 on token session bars (S1 plan B1) and settle open choice O2, so its pass criteria are final (#123).
 
 ## Side note: interim profile for an early dry run (Keith, optional)
 
@@ -63,24 +71,40 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 5. [ ] `service init`, then the reviewed `service activate`; start the evidence, runtime and uploader services; enable the archive timer.
 6. [ ] First shadow round ACKed by the real ai-seeds receiver (R-01). This starts the 24 h ingestion clock.
 7. [ ] Restart drill and first hourly anchor.
-8. [ ] Gate B proof: one approve plus one swap on the dev wallet from committed code with a logged round, and crash tests at each step (DR-02..05). Then the Gate B review.
+8. [ ] Gate B proof, only if a dev window was added (see the Oct 19 decision): one approve plus one swap on the dev wallet from committed code with a logged round, and crash tests at each step (DR-02..05). Then the Gate B review.
 
 ## Oct 21
 
 - [ ] After 24 h of ingestion with a clean gap report: Keegan reviews Gate A item by item in IDEA-042.
-- [ ] Signed rehearsal starts (5+ days including the Oct 24–25 weekend); any late start is recorded as a deviation (GAP-04).
+- [ ] If not done on Oct 20: the Gate B proof inside the rehearsal buy window (Oct 21 00:00 – Oct 22 00:00 UTC), then the Gate B review.
+- [ ] Signed rehearsal starts (5+ days including the Oct 24–25 weekend); any late start is recorded as a deviation (GAP-04). Keegan keeps the daily rehearsal log (DR-21).
+- [ ] Yao Zhu: model trial host steps: AIand secret, budget `init` with the actual prior OpenAI spend, provider check P0, then start the shadow trial (#97, IDEA-057).
+- [ ] Keith: blind independent labels for the trial sample (M9, IDEA-057).
+
+## Oct 21–26: rehearsal drills (Keegan, with Isaac)
+
+- [ ] Automatic HALT drill, hourly anchoring criteria 1–6, restore into an empty database, and replay of a shadow day (DR-13, DR-15, DR-16, DR-19).
+- [ ] Rehearse the final-wallet switch with a throwaway config (DR-17).
 
 ## Oct 22 cut line
 
-- [ ] Review and merge the S1 plan (#123) and its code (#131); freeze the weights; confirm every S1 value.
+- [ ] Review and merge the S1 plan (#123) and its code (#131). #123 must be renumbered first: IDEA-058 is already the Gate A entry. Freeze the weights from token session bars up to the Oct 21 close; confirm every S1 value (§12) and open choices O1–O6.
 - [ ] Model decision: AIand routing, the current provider, or deterministic (DR-11, #97). The shadow trial starts only once Gate A is running.
 - [ ] Yao Zhu: set the 11 live evidence settings in `intelligence.v1.json`, each with a reason.
 - [ ] Keith: #39 (SKHYB red flags), #55, #56, #37, #38.
 - [ ] Yao Zhu + Keegan: operations decisions D-DN-01/04/06/07/08/11; review and merge #125 (automatic CLOCK HALT clear, D-DN-10).
 
+## Oct 24: S1 build (plan §15 in #123)
+
+- [ ] Yao Zhu: LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131).
+- [ ] Keith: trend-guard input from token session bars (DR-08). Until it's wired, the trend guard stays UP (#131).
+- [ ] Keegan: session-close job and round-log fields (B5); deviations-register rows for exceeding the proposal's 80% / 20% / four-name limits (B7, by Oct 26).
+- [ ] Isaac: per-leg attempt limit and execution-window checks (B6).
+- [ ] All: the T4 dev-wallet run (B8, Oct 24–26).
+
 ## Oct 26–29
 
-- [ ] Every deviations-register row FINAL, including DEV-18 (standby); activation pack; Gate C review (DR-18, DR-22, GAP-62).
+- [ ] Every deviations-register row FINAL, including DEV-18 (standby); activation pack; each owner signs off their DR items in IDEA-042; Gate C review (DR-18, DR-22, GAP-62).
 - [ ] Final wallet's new `AI_SEEDS_SECRET` by Oct 26; rehearse the wallet switch (GAP-52, DR-17).
 - [ ] Isaac: first-gas swap on the final wallet (about 6 USDT) before Oct 29 00:00 UTC (#106).
 - [ ] Send the organiser questions Q-39 (scoring, BNB in equity), Q-04, Q-06, Q-08, Q-14, Q-33 and Q-35 (GAP-42).
@@ -89,6 +113,8 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 
 - [ ] #128 did not close automatically, because #129 merged into the integration branch, not `main`. Close it by hand or at promotion.
 - [ ] #123 and #126 target `main`, not the integration branch. Retarget them before merging.
+- [ ] Close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92.
+- [ ] #130 and #131 both add a `docs/LEDGER.md` row; whichever merges second keeps both rows.
 - [ ] Branch cleanup (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; their owners decide whether to keep, reopen or delete them:
 
   | Branch | Last commit by | Earlier PR |
