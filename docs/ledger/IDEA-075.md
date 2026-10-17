@@ -65,7 +65,7 @@ and each name's target is target × wᵢ (§5).
 | SEC or exchange trading suspension of an eligible issuer's shares | SEVERE (30%) |
 | Scheduled event on the calendar, with no new verified evidence | None: may be mentioned in `reason`, cannot lower the level |
 
-- **Expiry:** an accepted CAUTION or SEVERE expires after 3 sessions unless a new accepted assessment renews it with new evidence. Then the level returns to NORMAL (95%).
+- **Expiry:** an accepted CAUTION or SEVERE expires after 3 **healthy** sessions unless a new accepted assessment renews it with new evidence. Then the level returns to NORMAL (95%). A session is healthy when its assessment could be evaluated: well-formed and citing only verified, in-window evidence. An assessment that renews nothing, such as NORMAL, still counts. A session with no assessment (failure, timeout), a malformed one, or one citing unverified evidence does not count. So the last accepted cut stands for as long as the assessor is unhealthy, and an outage can never raise exposure. With the deterministic assessor, a session is healthy when the evidence input was available. (Review TRV-01, 2026-10-17: the earlier wording let three sessions of failures expire a cut and re-risk to 95%.)
 - **Reduce-only:** NORMAL equals the top level, so the limiter can never raise exposure above the trend level or the risk cap.
 - **No model (DEV-19 still open):** if the team declares the deterministic assessor for v1.0, the table above maps evidence to levels directly, with no model call. The schema, logging and expiry are the same.
 - **Routing:** the model calls use the routing and budget of IDEA-057 if it is adopted.
@@ -120,7 +120,7 @@ Safety actions (rows 2–4) skip the minimum trade and the one-change-per-sessio
 
 - **When:** planned trades run in the US regular session, from open + 30 minutes to close − 15 minutes, while `openState` is true (F-95). That is when RFQ spreads are expected to be tightest; it should be checked against logged quote costs (GAP-50). Safety actions (rows 2–4 of §6) run in the next round where `openState` is true, at any hour.
 - **Flow:** the kit flow, unchanged: quote → approve exactly the amount → re-quote → gas estimate → swap (DEV-16).
-- **Price check:** a leg is sent only if it passes the DEV-05 price-impact and entry-cost gates. A rejected leg is retried in a later round, at most 3 attempts per leg per session, never in a loop (F-105).
+- **Price check:** the DEV-05 gates decide *entry* eligibility, so they apply to discretionary legs only, as the planner does today. The entry-cost cap and its impact cap apply to non-mandatory buys. The price-impact threshold applies to every non-mandatory leg: buys, top-ups and level-change sells. Mandatory actions (end-of-run flatten, 12% deep cut, Class 1 sell, and every other recorded sale requirement) bypass both, as `larp/risk/planner.py` does (`_quote_at_cap`, `ENTRY_COST_CAP`/`ENTRY_IMPACT_CAP`), so a safety sell is never stopped by an entry-style cost. Every leg, mandatory or not, still needs a valid, unexpired quote within the slippage limit, and passes the integrity checks (§6 row 1). A rejected leg is retried in a later round, at most 3 attempts per leg per session, never in a loop (F-105). (Review TRV-02, 2026-10-17: the earlier wording applied the entry gates to every leg.)
 - **Order size:** one leg per name per round. The per-trade cap is at least one full position (≈ 57 USDT at 200 USDT equity × 28.5%), so most legs complete in one trade (GAP-13).
 - **Minimum trade:** the gas-based minimum (IDEA-010, GAP-50). Legs below it are skipped, except safety actions.
 - **Gas:** BNB top-up rounds as in DEV-21.
@@ -154,7 +154,7 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
 | Failure | Behaviour |
 |---|---|
 | A name's session bar is missing or stale | Trend state unchanged this session; logged |
-| LLM call fails, times out, or cites unverified evidence | Previous accepted LLM level stands until its expiry, then NORMAL; logged. Never raises exposure |
+| LLM call fails, times out, or cites unverified evidence | Previous accepted LLM level stands, and the session does not count toward its expiry (§4.2), so the level cannot rise during an outage; logged. Never raises exposure |
 | `openState` false for a name | No order for that name; retried in a later round; the level change completes when it opens |
 | Leg fails the price check, or the quote expires | Skipped; at most 3 attempts per leg per session |
 | Swap reverts | Logged with `tx_hash`; no immediate re-send; the next round re-plans from chain state |
@@ -196,7 +196,8 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
   - L02 an accepted CAUTION → target = min(trend, 60%);
   - L03 NORMAL never raises the target above the trend level or the risk cap;
   - L04 CAUTION expires after 3 sessions without renewal;
-  - L05 model outage → previous level stands until expiry;
+  - L05 model outage → previous level stands, and the outage sessions do not count toward expiry;
+  - L09 an accepted CAUTION (and, separately, SEVERE) followed by more than 3 sessions of timeouts or rejected evidence → the level stays, and the policy plans no BUY above the cut's target; after 3 healthy sessions without renewal → NORMAL;
   - L06 SEVERE on evidence that allows only CAUTION → capped at 60%;
   - L07 a scheduled calendar event alone cannot lower the level.
 - **T3 Policy acceptance** (synthetic fixtures; Keith; IDEA-037 style):
@@ -212,7 +213,8 @@ The run window covers 10 US sessions before the flatten: Oct 29, 30, Nov 2, 3, 4
   - Q10 flat by `flatten_by`;
   - Q11 a Class 1 name's weight stays in cash;
   - Q12 frozen weights sum to 1 with every wᵢ ≤ 0.30;
-  - Q13 every existing test passes unchanged.
+  - Q13 every existing test passes unchanged;
+  - Q15 a mandatory safety sell whose quote exceeds the DEV-05 impact and entry-cost limits is still planned, while its quote validity, slippage and integrity checks still apply.
 - **T4 Development-wallet run:** at least one full live session on the development wallet with the frozen profile (small real trades, F-13), checked for a complete round log per round and every fill reconciled to its log. Engineering evidence only; never used to tune parameters (ledger rule 5).
 
 ## 14. Changes to existing decisions (for the deviations register, GAP-62)
@@ -232,7 +234,7 @@ The register source is `config/release/deviations.v1.json`, rendered into plan.m
 
 | # | Work | Owner | By |
 |---|---|---|---|
-| B1 | Run EXP-007 on token session bars; record the result | Keith | Oct 19 |
+| B1 | Run EXP-007 on token bars to the Oct 16 close, after O2 is settled; record the result | Keith | Oct 19 |
 | B2 | Strategy profile `TREND_GUARDED_VOL`: frozen weights, three levels, trend state machine, top-up band, 5 positions, 35% hard name line; schema bounds; T3 | Keith | Oct 24 |
 | B3 | Planner: target = min(trend, LLM, risk cap); precedence as in §6; reuse the IDEA-037 R01 trim latch | Keith | Oct 24 |
 | B4 | LLM limiter: output schema, evidence-class map with versioned predicate records, expiry, rejection logging; T2 | Yao Zhu | Oct 24 |
@@ -244,7 +246,7 @@ The register source is `config/release/deviations.v1.json`, rendered into plan.m
 ## 16. Open decisions for the team (before Oct 22)
 
 - **O1 Reset of the 8% stop.** The declared ladder does not say when the buy block ends (GAP-12). With 95% exposure it fires in about 1 run in 10 (synthetic), and a DOWN → UP rebuy would then be blocked for the rest of the run. **Recommended:** lift the block when drawdown recovers below 5%. **Default if not decided:** no reset.
-- **O2 Default if EXP-007 is inconclusive.** **Recommended:** ship the trend guard as declared, since the team chose S1 for drawdown protection and its cost is bounded by one change per session. Alternative: drop it and run at 95% with the limiter and ladder only.
+- **O2 Default if EXP-007 is inconclusive.** Must be settled **before** EXP-007 runs, because it is part of the pre-registered decision rule. **Recommended:** ship the trend guard as declared, since the team chose S1 for drawdown protection and its cost is bounded by one change per session. Alternative: drop it and run at 95% with the limiter and ladder only.
 - **O3 Five names or four.** SKHYB is the most expensive route (F-93). **Recommended:** five, since the entry-cost gate already skips a name whose buy is too expensive.
 - **O4 `new_risk_end`.** **Recommended:** Nov 9 21:00 UTC, so that a trend recovery after Nov 4 can still be rebought. IDEA-018's Nov 4 candidate would freeze the book for the last four sessions.
 - **O5 Scheduled events.** **Recommended:** no cut on a scheduled event alone (§4.2). Alternative: a declared CAUTION over the Nov 3 elections, at a cost of two level changes.
