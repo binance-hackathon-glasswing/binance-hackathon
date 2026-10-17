@@ -273,3 +273,37 @@ The post-merge review of #145 found that `prepare_shadow.rpc_providers` copies `
 - **GA15b-3: PASS.** Mutation (`rpc_providers` reads the file with plain `json.loads`): 5 failures (3 GA15b subtests and the tracked-file test). Restored.
 - **GA15b-4: PASS.** `rpc_provider_list` returns `balance_providers(...)` directly; for a non-None list that function returns a list or raises, so the removed `None` check could not run. The PC-RPC01 tests pass; the only edits are `FILE_PRIMARY`/`FILE_BACKUP` (public source IDs) in the file tests and the message pattern `must be ignored`.
 - **GA15b-5: PASS.** Gate A, `gate_a_check` and balance RPC qualification tests: 56 passed, 1 skipped. Full local suite (Anaconda Python 3.14): 1354 passed, 400 skipped (base: 1353 plus the one new test). The failures are the same three as at the base (`psycopg`/`boto3` distributions missing locally) and the same `test_final_review_d.py` collection error (`eth_account`). Org CI remains billing-blocked (#98).
+
+### GA15c — PR143–151 review: provider-reader failures (2026-10-17)
+
+Scope: PRs #143, #144, #145, #147, #148, #149 and #151; #146 and #150
+are issues, not pull requests. Reviewed the fetched heads, source changes,
+prospective criteria and normalized evidence against integration `bb46234`.
+PRs #145/#147 are already merged. No new live or hosted action is authorized.
+
+**Finding GA15c-R1 (P2, #147):** reusing `private_config` introduces a
+`subprocess.TimeoutExpired` path from the ten-second `git check-ignore`
+timeout. `prepare_shadow.main` does not catch it, so capture/prepare can
+escape with a traceback instead of the documented sanitized exit 4.
+
+Prospective acceptance, before executing the regression:
+
+- **GA15c-1:** inject a timeout at the shared reader's Git subprocess with
+  a credential sentinel in its command/output. Both CLI commands return 4
+  and JSON `INPUTS_REFUSED`; no sentinel, provider URL or traceback escapes.
+- **GA15c-2:** capture refuses before reading credentials or making external
+  calls; prepare writes no output. Preserve the shared reader and timeout.
+- **GA15c-3:** demonstrate the regression fails on the reviewed code, then
+  passes after the fix; run Gate A, package-check and RPC qualification tests.
+
+Other review dispositions: #143's endpoint ingress/egress amendment matches
+the network source; #144 accurately keeps its finite lifetime proposal
+unadopted; #149 implements the corrected SA3/SA8 with development-only,
+off-by-default resources. No additional source defect found in those changes.
+Their owner approvals and hosted SA4/SA5/SA9 checks remain open as recorded
+in IDEA-080 and IDEA-049-C. #151 distinguishes the relayed explorer credit
+from unavailable RPC tracing and current balances; only normalized arithmetic
+and internal references are reviewed here, not its unavailable private raw
+artifacts. #148's cross-platform output reproducibility is being checked
+separately under IDEA-049-C CP-01. No whole backlog item is completed by
+this review; existing GAP-69–GAP-72 and Gate B owners remain unchanged.
