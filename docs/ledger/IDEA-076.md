@@ -112,3 +112,7 @@ All offline, on synthetic fixtures. A synthetic pass is not market evidence.
   - Yao Zhu: produce `exposure_evidence` and `exposure_assessment` from the evidence pipeline (B4's model half); until then the limiter sees no evidence and stays NORMAL.
   - Isaac: execution window and attempt limit (B6).
   - Keegan: round-log fields (B5) and the deviations-register rows (B7).
+
+## Review fixes (2026-10-17, PR #131 review)
+
+- **R1 (criterion written before the fix):** a level change ends per name. A name leaves the rebalance once a round finds it within one minimum trade of its target (or its buy gates closed), and after that it is only topped up, never sold on drift, even while another name's leg is still open. The failure it prevents: one name whose buy the planner keeps refusing (for example the entry-cost gate on SKHYB, IDEA-075 §16 O3) kept the whole book in rebalance mode, so every other name was sold back whenever it drifted one minimum trade above target. Pass: `test_a_name_whose_rebalance_completed_is_not_sold_on_drift` (NVDAB at 25% is held while SKHYB still rebalances) passes, it fails on the code before the fix, and every other test passes unchanged.

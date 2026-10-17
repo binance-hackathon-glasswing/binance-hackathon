@@ -149,6 +149,22 @@ class Policy(unittest.TestCase):
         self.assertTrue(all(t.kind is TargetKind.KEEP_QUANTITY for t in proposal.targets))
         self.assertFalse(proposal.next_policy_state.data.read()["s1"]["rebalance"])
 
+    def test_a_name_whose_rebalance_completed_is_not_sold_on_drift(self):
+        # IDEA-076 R1: a level change is underway; four names are at the 95% target, SKHYB is still unbought (for
+        # example its buy keeps failing the planner's entry-cost gate, IDEA-075 §16 O3). The four complete now.
+        held = {n: AT_95 for n in NAMES if n != "SKHYB"}
+        s = snap(held, state=settled([19, 20], rebalance=True))
+        proposal = decide(s, s.policy_state)
+        t = by_symbol(proposal)
+        self.assertEqual(t["SKHYB"].reason, "S1_LEVEL_CHANGE")
+        self.assertTrue(all(t[n].kind is TargetKind.KEEP_QUANTITY for n in held))
+        # Next round NVDAB has drifted to 25%, more than one minimum trade above its target; SKHYB is still unbought.
+        # Only SKHYB is still rebalancing, so NVDAB is held (no sale on drift, IDEA-075 §5.2).
+        s = snap(dict(held, NVDAB=5000), state=proposal.next_policy_state.data.read())
+        t = by_symbol(decide(s, s.policy_state))
+        self.assertEqual(t["NVDAB"].kind, TargetKind.KEEP_QUANTITY)
+        self.assertEqual(t["SKHYB"].reason, "S1_LEVEL_CHANGE")
+
 
 class Planner(unittest.TestCase):
     def requirements(self, s):
