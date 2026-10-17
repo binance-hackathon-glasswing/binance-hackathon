@@ -199,7 +199,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
 
     `execution: "shadow"` ends every intent unsigned; `execution: "service"` hands committed commands to the execution
     service (larp/execution_live/loop.py) and journals its observations. AIand/OpenAI routing is integrated for
-    dev shadow use only; other hosted assessors raise NotIntegrated. Missing or inconsistent input is a ContractError, which
+    shadow use or explicitly reviewed service/live use through a bounded background lane. Missing or inconsistent input is a ContractError, which
     `main` turns into a start refusal (exit 4)."""
     from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
     from larp.integration.settlement import ExecutionBridge
@@ -250,6 +250,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         raise ContractError('Expected a StrategyProfile.v1 file')
     if mode in ('dev', 'live') and profile.get('mode') != 'LIVE':
         raise ContractError('A dev or live run needs a LIVE strategy profile')
+    if signed_model and mode in ('dev', 'live'):
+        from larp.strategy.profiles import validate_live
+        validate_live(profile)
+        if profile.get('environment') != ('FINAL' if mode == 'live' else 'REHEARSAL'):
+            raise ContractError('Signed model profile environment differs from the run')
     calendar = SessionCalendar(_pinned_json(d['session_calendar_file'], d['session_calendar_sha256'],
                                             'Session calendar'))
     profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')

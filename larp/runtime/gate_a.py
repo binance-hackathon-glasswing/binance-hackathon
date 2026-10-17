@@ -181,7 +181,7 @@ def raw_balances(capture):
 
 
 def initial_state(capture, profile, run_id, *, mode='dev'):
-    """Only a fresh, stock-flat dev wallet can be initialized without cost-basis history.
+    """Only a fresh, stock-flat wallet can be initialized without cost-basis history.
 
     USDT is floored from chain 18 decimals into ledger micro-USDT. Exact raw
     balances and the discarded sub-micro remainder stay in the pinned capture.
@@ -222,7 +222,7 @@ def check_initial_state(state, capture, *, mode='dev'):
     if (state.get('schema') != 'PortfolioState.v1' or state.get('wallet_id') != wallet_address(capture['wallet'])
             or state.get('bnb_decimals') != 18 or mode not in ('dev', 'live') or state.get('mode') != mode
             or any(type(u) is not int or u < 0 for u in units)):
-        raise ContractError('Initial state lacks the DR-06 shape (identity, wei, dev mode, non-negative units)')
+        raise ContractError('Initial state lacks the DR-06 shape (identity, wei, matching mode, non-negative units)')
     try:
         ledger_from(initial_projection(state), [])
     except (ValueError, KeyError, TypeError) as error:

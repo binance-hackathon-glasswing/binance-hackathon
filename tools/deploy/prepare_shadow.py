@@ -1,7 +1,7 @@
 """Prepare Gate A without signing, activation or cloud provisioning (IDEA-058).
 
 capture: two read-only Web3 endpoints, from committed/pushed code; artifacts outside Git.
-prepare: assemble local ignored host inputs using a separately reviewed LIVE rehearsal profile.
+prepare: assemble ignored host inputs; unsigned dev-shadow by default, explicitly reviewed signed/live scope optional.
 Neither command starts a service or uploads ai-seeds logs. See docs/build/GATE_A.md.
 """
 import argparse

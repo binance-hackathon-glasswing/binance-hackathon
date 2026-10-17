@@ -300,14 +300,17 @@ class SignedComposition(unittest.TestCase):
         for key in ('balance_check_interval_ms','balance_check_max_age_ms','price_jump_check_bps'):
             cfg['driver'][key]=base[key]
         cfg['driver']['balance_rpc_providers']=[dict(url='https://rpc.invalid/',source_id='synthetic-rpc')]
-        raw=json.dumps(__import__('larp.research.fixtures',fromlist=['synthetic_profile']).synthetic_profile(mode='LIVE')).encode()
-        (fixture.root/'profile.json').write_bytes(raw)
-        cfg['driver']['strategy_profile_sha256']=gate_a.digest(raw)
         cfg['driver']['intelligence_mode']='live'
         intelligence=load_config('development')
         with patch('larp.intelligence.config.load_config',return_value=intelligence), \
              patch('socket.create_connection',side_effect=AssertionError('No network during construction')):
             for mode in ('dev','live'):
+                from larp.strategy.profiles import build_live_profiles
+                profiles=build_live_profiles(Document.from_dict(profile()['quote_cost_summary']),
+                    Document.from_dict(json.loads((gate_a.ROOT/'config/intelligence/red_flags.v1.json').read_bytes())))
+                raw=profiles['FINAL' if mode=='live' else 'REHEARSAL'].payload
+                (fixture.root/'profile.json').write_bytes(raw)
+                cfg['driver']['strategy_profile_sha256']=gate_a.digest(raw)
                 cfg['mode']=mode
                 runtime=build_driver(cfg,Store(),secrets)
                 self.addCleanup(runtime.ports['evidence'].close)

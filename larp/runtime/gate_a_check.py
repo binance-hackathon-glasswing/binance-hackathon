@@ -1,4 +1,4 @@
-"""Read-only, local qualification of an IDEA-058 prepared shadow package.
+"""Read-only, local qualification of an IDEA-058 explicitly scoped prepared package.
 
 Exit 0 means the local files pass; it never means Gate A passed. No database,
 AWS client, network transport, service, activation or uploader is constructed.
@@ -204,7 +204,8 @@ def qualify(directory, *, rds_ca=None, ci_manifest=None, release_root=None, arti
     if not run('PACKAGE_JSON', lambda: values.update({n: json.loads(raw) for n, raw in files.items()
                                                      if n.endswith('.json')})):
         return result
-    run('UNSIGNED_IDENTITIES', lambda: check_scope(values, report))
+    run('SIGNED_IDENTITIES' if report.get('execution') == 'service' else 'UNSIGNED_IDENTITIES',
+        lambda: check_scope(values, report))
     run('PINNED_INPUTS', lambda: check_inputs(files, values))
     run('SERVICE_CONFIGS', lambda: check_configs(values, rds_ca), missing=rds_ca is None)
     run('CI_RELEASE_BYTES', lambda: check_release(ci_manifest, release_root, report),
