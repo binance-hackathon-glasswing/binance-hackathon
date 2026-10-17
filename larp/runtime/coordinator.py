@@ -238,6 +238,8 @@ class Coordinator:
         projection.update(updates)
         if plan.get('risk_state') is not None:
             projection['risk_state']=plan['risk_state']  # persisted independent risk state (IDEA-031 AC-I03)
+        if plan.get('execution_attempt_budget') is not None:
+            projection['execution_attempt_budget'] = plan['execution_attempt_budget']
         # The policy saw `context`; its request and assessment are stored once, at the top level.
         policy_input=(dict(projection=context['projection'],reservations=context['reservations'],
                            includes=['request','assessment']) if self.context_builder is None else

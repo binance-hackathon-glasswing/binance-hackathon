@@ -89,6 +89,18 @@ class SessionCalendar:
         index = max(i for i, opened, _ in self.sessions if opened <= now_ms)
         return {'index': index, 'remaining': sum(1 for _, _, closed in self.sessions if closed > now_ms)}
 
+    def window(self, now_ms):
+        """B6 regular-session bounds; off-hours keep the latest opened session.
+
+        Use the frozen calendar, including early closes and the next actual open,
+        rather than midnight/weekday arithmetic. The last close ends coverage.
+        """
+        index = self(now_ms)['index']
+        position = next(n for n, s in enumerate(self.sessions) if s[0] == index)
+        _, opened, closed = self.sessions[position]
+        next_open = self.sessions[position + 1][1] if position + 1 < len(self.sessions) else closed
+        return dict(index=index, open_ms=opened, close_ms=closed, next_open_ms=next_open)
+
 
 class RuntimeHealth:
     """Planner gates from the store (larp/risk/planner.py; config/strategy/LIVE.md `new_spending_ok`)."""

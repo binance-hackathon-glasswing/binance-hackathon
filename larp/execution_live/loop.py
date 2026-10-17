@@ -57,6 +57,8 @@ class RunAuthorization:
                  or (run['mode'] == 'offline' and self.manifest_sha256 is None)))
         # D-DN-09: under a pausing HALT, only a planned mandatory bStock sell keeps valid risk authority.
         facts['risk_valid'] = not run['quarantined'] and halts.permits(projection, intent.round_id, intent.intent_id)
+        from larp.strategy.execution_bounds import permitted
+        facts['risk_valid'] = facts['risk_valid'] and permitted(projection, intent, now_s * 1000)
         last = projection.get('last_decision_ms')
         facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
         record = projection.get('round_records', {}).get(intent.round_id)
@@ -161,11 +163,12 @@ class FencedRelease:
     send of an active attempt under this epoch and authority (`ExecutionStore.check_broadcast`), submits them through
     the Web3 Open API (`Web3Broadcaster`), and accepts only the transaction's own hash back."""
 
-    def __init__(self, registry, submitter):
-        self.registry, self.submitter = registry, submitter
+    def __init__(self, registry, submitter, *, clock_s=None):
+        self.registry, self.submitter, self.clock = registry, submitter, clock_s
 
     def __call__(self, signed, epoch, guard_version):
-        self.registry.check_broadcast(signed, epoch, guard_version)
+        options = {} if self.clock is None else {'now_ms': self.clock() * 1000}
+        self.registry.check_broadcast(signed, epoch, guard_version, **options)
         tx_hash = self.submitter.send(signed.raw_hex)
         if type(tx_hash) is not str or tx_hash.lower() != signed.tx_hash.lower():
             raise Blocked('submission returned another transaction hash')

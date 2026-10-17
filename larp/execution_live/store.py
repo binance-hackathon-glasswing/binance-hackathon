@@ -102,9 +102,9 @@ class ExecutionStore:
         with self.store.transaction() as db:
             return self._attempt(db, attempt_id)
 
-    def check_broadcast(self, signed, epoch, version):
+    def check_broadcast(self, signed, epoch, version, *, now_ms=None):
         with self.store.transaction() as db:
-            self._release_authority(db, epoch, version)
+            run = self._release_authority(db, epoch, version)
             keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
             for key, in keys:
                 state = self._load(db, key)
@@ -114,6 +114,10 @@ class ExecutionStore:
                             and self._signature(db, attempt.attempt_id, attempt.payload.hash) == signed
                             and attempt.epoch == epoch
                             and attempt.guard_version == version):
+                        if now_ms is not None:
+                            from larp.strategy.execution_bounds import permitted
+                            if not permitted(Document(bytes(run['projection'])).read(), state.intent, now_ms):
+                                raise Conflict('S1 execution window/attempt authority expired')
                         return
             raise Conflict('signed bytes have no current possible-send authority')
 
@@ -243,13 +247,17 @@ class ExecutionStore:
             return Signed(**stored)
 
     @staticmethod
-    def check_signing_run(run, intent, build_id=None, manifest_sha256=None):
+    def check_signing_run(run, intent, build_id=None, manifest_sha256=None, *, now_ms=None):
         """Independent signing facts from the locked run, writable only by runtime.
 
         This check is specific to new signatures. Receipt publication and lookup
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
+        if now_ms is not None:
+            from larp.strategy.execution_bounds import permitted
+            if not permitted(projection, intent, now_ms):
+                raise Conflict('S1 execution window/attempt authority expired')
         # D-DN-09 (larp/runtime/halts.py): CLOCK or any unlisted reason blocks every signature; a pausing HALT signs
         # only a mandatory bStock SELL that the open round planned.
         if not halts.permits(projection, intent.round_id, intent.intent_id):

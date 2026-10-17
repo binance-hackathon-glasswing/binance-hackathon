@@ -37,6 +37,10 @@ def token_series(s, path):
 def snap(held=None, *, state=None, path=None, risk=None, profile_changes=None, **context):
     s = five_names(held=held, profile_changes={**S1, **(profile_changes or {})})
     c = s.context.read()
+    opened = s.observed_at.replace(hour=13, minute=30, second=0, microsecond=0)
+    context.setdefault('execution_session', dict(index=context.get('session_index', c['session_index']),
+        open_ms=int(opened.timestamp()*1000), close_ms=int((opened + timedelta(hours=6, minutes=30)).timestamp()*1000),
+        next_open_ms=int((opened + timedelta(days=1)).timestamp()*1000)))
     c["series"] = token_series(s, path) if path else {}
     c["portfolio"]["positions"]["SKHYB"]["units"] = (held or {}).get("SKHYB", 0)  # five_names adds it empty
     c["portfolio"]["positions"]["SKHYB"]["cost_basis_units"] = (held or {}).get("SKHYB", 0) * 10_000

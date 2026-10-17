@@ -116,7 +116,8 @@ class SignerService:
             run = self.registry._release_authority(db, *authority)
             if run['mode'] != 'offline' and (not self.build_id or not self.manifest_sha256):
                 raise Blocked('verified signer build and manifest identity required')
-            self.registry.check_signing_run(run, state.intent, self.build_id, self.manifest_sha256)
+            self.registry.check_signing_run(run, state.intent, self.build_id, self.manifest_sha256,
+                                            now_ms=now * 1000)
         if now + self.max_skew < gates.observed_at:
             raise Blocked('signer clock is behind the request')
         validate_sequence(state, attempt.step, attempt.payload, gates)

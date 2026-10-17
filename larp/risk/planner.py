@@ -13,6 +13,7 @@ from larp.strategy.schema import (ceil, equity, floor, fraction, instant, intege
 from .accounting import update_risk
 from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
+from larp.strategy import execution_bounds
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -366,6 +367,16 @@ def plan(snapshot, proposal_or_none):
         # An explicitly unavailable cost (None outside LIVE) ranks last, like a missing one.
         cost = lambda symbol: market[symbol].get("measured_roundtrip_bps")
         actions.sort(key=lambda a: (a[1] != "SELL", 10**9 if cost(a[0]) is None else cost(a[0]), a[0]))
+    attempt_budget = None
+    if s1:
+        try:
+            execution_bounds.session(c)
+            attempt_budget = execution_bounds.budget(c.get('execution_attempt_budget'), c['session_index'])
+        except (ContractError, KeyError, TypeError):
+            result['rejections'].append({'reason': 'EXECUTION_BOUNDS_INVALID'})
+            return Document.from_dict(result)
+        result['execution_attempt_budget'] = attempt_budget
+        result['execution_attempts'] = []
     for symbol, side, quantity, mandatory, why in actions:
         m = market.get(symbol)
         if m is None:
@@ -386,6 +397,17 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "BLOCKED_MARKET"
             result["rejections"].append({"symbol": symbol, "reason": "MARKET_CLOSED_OR_UNKNOWN"})
             continue
+        bounds = None
+        if s1:
+            bounds, refused = execution_bounds.reserve(c, s1, attempt_budget, symbol, side, mandatory,
+                                                       int(now.timestamp() * 1000))
+            if refused:
+                result['rejections'].append({'symbol': symbol, 'reason': refused})
+                if req is not None:
+                    req['status'] = refused
+                continue
+            result['execution_attempts'].append(dict(symbol=symbol, side=side, mandatory=mandatory,
+                                                      authority=bounds))
         pay_units = floor(value(q, m)) if side == "BUY" else q
         quote, request_units, rejected, quote_status = _quote_at_cap(m, side, pay_units, p, now, quantity, mandatory)
         result["rejections"].extend({"symbol": symbol, "reason": reason} for reason in rejected)
@@ -468,6 +490,8 @@ def plan(snapshot, proposal_or_none):
                   "amount_kind": "EXACT_IN", "pay_asset": quote["pay_asset"], "pay_units": quote["pay_units"],
                   "min_receive_units": quote["min_receive_units"],
                   "receive_decimals": m["decimals"] if side == "BUY" else 6}
+        if bounds is not None:
+            intent['execution_bounds'] = bounds
         intent_id = Document.from_dict({"snapshot_id": snapshot.snapshot_id, **intent}).digest("EconomicIntent.v1")
         intent["intent_id"] = intent_id
         result["intents"].append(intent)
