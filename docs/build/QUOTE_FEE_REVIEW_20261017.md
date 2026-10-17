@@ -65,3 +65,5 @@ If a charge outside the quoted economics is demonstrated, preregister and measur
 ## Verification
 
 Criteria pushed at `f27965d` / `96c4017`; regression tests pushed at `585512c` and reproduced the missing evidence/report metadata. Fix pushed at `61cb527` before execution. Marketdata and strategy checks: **235 passed, 1 skipped, 131 subtests passed** (Python 3.12.14, 18.34 s). The skipped recorded-market test requires an opt-in external artifact root. Tests exercise distinct nonzero fees on all legs, absent/null/zero preservation, backwards compatibility and unchanged numeric costs. These synthetic checks are not a real quote/fill comparison. No full-suite, host or signing qualification is claimed.
+
+Delivery: [PR #157](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/157), open for review, closes the correction issue #156 when completed; #119 remains open. GitHub Actions run `39033396981` could not start because of account billing/spending limits (#98), confirmed from the runtime annotation. Local verification above is the available acceptance evidence.
