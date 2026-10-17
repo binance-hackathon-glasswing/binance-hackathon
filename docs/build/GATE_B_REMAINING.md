@@ -71,6 +71,11 @@ using the real profile, execution-config and signing-policy validators. It check
 - Successful, fresh wallet/chain/router-bound quote artifacts, including all five
   BUY/SELL pairs and native top-up, input quantities and execution gas limits.
 
+Returned `routerResult` token addresses, decimals and input amount must match the
+request and configured units; quoted output must cover its positive minimum.
+Any returned transaction sender/chain metadata must also agree. These metadata
+checks do not decode calldata or establish source/route executability.
+
 Prepare a public-input manifest outside the checkout:
 
 ```json

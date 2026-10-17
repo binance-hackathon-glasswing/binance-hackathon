@@ -122,7 +122,8 @@ def review(inputs, *, now, base_dir):
             response, params = record['response'], record['params']
             elapsed = (now - instant(record['requested_at'])).total_seconds()
             if (record['schema'] != 'Web3Observation.v1' or record['source_id'] != 'BINANCE_WEB3'
-                    or record['endpoint'] != 'aggregator/quote-and-swap' or record['outcome'] != 'ok'
+                    or record['endpoint'] != 'aggregator/quote-and-swap' or record.get('method') != 'GET'
+                    or record['outcome'] != 'ok'
                     or type(record['http_status']) is not int or record['http_status'] != 200
                     or type(response['code']) is not int or response['code'] != 0
                     or type(params['binanceChainId']) not in (int, str) or str(params['binanceChainId']) != '56'
@@ -145,7 +146,19 @@ def review(inputs, *, now, base_dir):
             else:
                 raise ContractError('Unsupported quote pair')
             amount = quantity(params['amount'], 1)
-            quantity(tx['minReceiveAmount'], 1)
+            rr = data['routerResult']
+            scales = {USDT: 18, NATIVE_BNB: 18, **{token: decimals[symbol] for symbol, token in TOKENS.items()}}
+            minimum = quantity(tx['minReceiveAmount'], 1)
+            if (address(rr['fromToken']['tokenContractAddress']) != pay
+                    or address(rr['toToken']['tokenContractAddress']) != receive
+                    or quantity(rr['fromToken']['decimal']) != scales[pay]
+                    or quantity(rr['toToken']['decimal']) != scales[receive]
+                    or quantity(rr['fromTokenAmount'], 1) != amount
+                    or minimum > quantity(rr['toTokenAmount'], 1)
+                    or 'from' in tx and address(tx['from']) != wallet
+                    or 'chainId' in tx and (type(tx['chainId']) not in (int, str)
+                                           or str(tx['chainId']) not in ('56', '0x38'))):
+                raise ContractError('Returned quote economics differ from request or metadata')
             fee = quantity(tx['gas'], 1) * quantity(tx['gasPrice'], 1)
             check('QUOTE_INPUT_' + sha, amount, policy.max_input_units.get(pay, 0))
             check('QUOTE_FEE_' + sha, fee, policy.max_fee_wei)
