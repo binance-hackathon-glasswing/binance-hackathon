@@ -73,9 +73,14 @@ def decide(snapshot, state):
                                                        assessment=c.get("exposure_assessment"))
         level = s1_plan.level_fraction(cfg, trend["state"], limiter["level"])
         applied = before.get("applied_target")
+        # A level change ends per name (IDEA-076 R1): only the names still listed are moved to the new target, so
+        # a name whose buy keeps being refused cannot hold the rest of the book in rebalance (no sale on drift).
+        # `True` is the whole-book flag of a state written before per-name tracking.
+        still = before.get("rebalance")
+        rebalance = (set(snapshot.universe) if applied is None or fraction(applied) != level or still is True
+                     else set(still) & set(snapshot.universe) if type(still) is list else set())
         s1 = dict(cfg=cfg, level=level, trend=trend, limiter=limiter, limiter_record=limiter_record,
-                  rebalance=bool(before.get("rebalance")) or applied is None or fraction(applied) != level,
-                  pending=False)
+                  rebalance=rebalance, pending=set(), seen=set())
     for symbol in snapshot.universe:
         units = ledger["positions"].get(symbol, {}).get("units", 0)
         m = market.get(symbol)
@@ -185,10 +190,12 @@ def decide(snapshot, state):
                      and not (rights["statement"] == "ENTRY_BLOCK" and pending)
                      and (units or not old.get("ever_held", False) or fresh_review))
             step = p["minimum_trade_units"]
-            if s1["rebalance"] and (gap <= -step or (gap >= step and gates)):
+            s1["seen"].add(symbol)
+            if symbol in s1["rebalance"] and (gap <= -step or (gap >= step and gates)):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_LEVEL_CHANGE", want))
-                s1["pending"] = True
-            elif not s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"] and gap >= step:
+                s1["pending"].add(symbol)
+            elif (symbol not in s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"]
+                  and gap >= step):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_TOP_UP", want))
             else:
                 targets.append(Target(symbol, TargetKind.KEEP_QUANTITY,
@@ -250,6 +257,9 @@ def decide(snapshot, state):
             gross += allowed
         else:
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
+    if s1 is not None:
+        # Names this round did not reach (blocked, unmarked) keep their place in the rebalance.
+        s1["pending"] = sorted(s1["pending"] | (s1["rebalance"] - s1["seen"]))
     following = replace(state, version=state.version + 1, data=Document.from_dict({**data,
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
         "shadow_findings": shadow, "evidence_mode": p["evidence_mode"], "evidence_authority": rights,
