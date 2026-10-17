@@ -12,6 +12,7 @@ from larp.strategy.schema import (ceil, equity, floor, fraction, instant, intege
                                   markets, profile, ratio, value)
 from .accounting import update_risk
 from .gas import plan_top_up
+from larp.strategy import s1 as s1_plan
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -155,14 +156,29 @@ def plan(snapshot, proposal_or_none):
     terminal = now >= instant(p["flatten_start"])
     cost_reserve = p["cost_reserve_units"]
     safe_equity = max(0, E - cost_reserve)
-    gross_limit = min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
+    # IDEA-076 (S1): its top level, five names, its hard name line and no gross trim line except the 12% deep cut
+    # replace the proposal's 80% / four-name / 20% limits, which bind every other baseline unchanged.
+    s1 = s1_plan.config(p) if p["baseline"] == s1_plan.BASELINE else None
+    s1_level = None
+    if s1:
+        # A hard-line HOLD-round trim still goes to the accepted reduced level, not always the high level.
+        accepted_state = result["next_policy_state"] or snapshot.policy_state.record()
+        applied = accepted_state["data"].get("s1", {}).get("applied_target")
+        s1_level = min(s1["high"], fraction(applied)) if applied is not None else s1["high"]
+        if s1_level <= 0:
+            raise ContractError("S1 applied target must be positive")
+    max_positions = len(snapshot.universe) if s1 else 4
+    gross_limit = s1["high"] if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
         gross_limit = min(gross_limit, Fraction(2, 5))
     # IDEA-037: optional hard lines; drift between the cap and the line is held, not trimmed. The deep
     # drawdown cut always trims at its own limit. Trims still go back to the operating cap.
-    hard_name = fraction(p.get("hard_name_weight", [1, 5]))
-    trim_gross = (gross_limit if r["deep_cut"] or "hard_gross_weight" not in p
-                  else max(gross_limit, fraction(p["hard_gross_weight"])))
+    hard_name = s1["hard"] if s1 else fraction(p.get("hard_name_weight", [1, 5]))
+    if s1:
+        trim_gross = gross_limit if r["deep_cut"] else Fraction(2)  # S1 has no gross line (IDEA-075 §5.2)
+    else:
+        trim_gross = (gross_limit if r["deep_cut"] or "hard_gross_weight" not in p
+                      else max(gross_limit, fraction(p["hard_gross_weight"])))
     positions = ledger["positions"]
     held = {s: pos["units"] for s, pos in positions.items() if pos["units"]}
     pending_buy = {}
@@ -183,11 +199,11 @@ def plan(snapshot, proposal_or_none):
     # Hard lines start an obligation; crossing back below the trigger does not complete it.
     # This state is committed even on blocked rounds and restored independently of policy output.
     trim_state = r.get("cap_trims", {})
-    durable_trims = "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r
+    durable_trims = s1 is not None or "hard_name_weight" in p or "hard_gross_weight" in p or "cap_trims" in r
     name_trims = set(trim_state.get("names", [])) & set(held)
     gross_trim = bool(trim_state.get("gross", False)) or gross > safe_equity * trim_gross
     gross_shares = dict(trim_state.get("gross_shares", {}))
-    if not unvalued and gross <= safe_equity * gross_limit:
+    if not unvalued and (gross <= safe_equity * gross_limit or (s1 and not r["deep_cut"])):
         gross_trim = False
         gross_shares = {}
     cap_bounds = {}
@@ -203,8 +219,15 @@ def plan(snapshot, proposal_or_none):
             continue
         cap = floor(hard_name * safe_equity * 10**m["decimals"] / m["price_units"])
         reason = []
-        operating_cap = floor(fraction(p["operating_name_weight"]) * safe_equity
-                              * 10**m["decimals"] / m["price_units"])
+        if s1:
+            # A name over the hard line is sold back to its target: level x w, at most the top level x w.
+            t = targets.get(symbol)
+            name_target = s1_level * s1["weights"][symbol]
+            if t is not None and t.kind is TargetKind.TARGET_WEIGHT:
+                name_target = min(name_target, t.weight)
+        else:
+            name_target = fraction(p["operating_name_weight"])
+        operating_cap = floor(name_target * safe_equity * 10**m["decimals"] / m["price_units"])
         if qty + pending_buy.get(symbol, 0) > cap:
             name_trims.add(symbol)
         if qty + pending_buy.get(symbol, 0) <= operating_cap:
@@ -225,7 +248,7 @@ def plan(snapshot, proposal_or_none):
             cap = min(cap, floor(share * safe_equity * gross_limit
                                  * 10**m["decimals"] / m["price_units"]))
             reason.append("DEEP_DRAWDOWN" if r["deep_cut"] else "GROSS_OR_REGIME_CAP")
-        if index >= 4:
+        if index >= max_positions:
             cap = 0
             reason.append("POSITION_COUNT_CAP")
         if symbol in latched or (targets.get(symbol) is not None and targets[symbol].reason == "CLASS_1_EXIT"):
@@ -301,9 +324,9 @@ def plan(snapshot, proposal_or_none):
                 result["rejections"].append({"symbol": symbol, "reason": "MISSING_MARKET"})
                 continue
             current = held.get(symbol, 0)
+            name_cap = s1["high"] * s1["weights"][symbol] if s1 else fraction(p["operating_name_weight"])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
-                min(t.weight, fraction(p["operating_name_weight"])) * safe_equity
-                * 10**m["decimals"] / m["price_units"])
+                min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
             if desired == current:
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
@@ -314,18 +337,29 @@ def plan(snapshot, proposal_or_none):
                         or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
                     continue
-                if not current and count >= 4:
+                if not current and count >= max_positions:
                     result["rejections"].append({"symbol": symbol, "reason": "POSITION_COUNT_CAP"})
                     continue
-                capacity = max(Fraction(0), min(gross_limit, fraction(p["operating_gross_weight"]))
-                               * safe_equity - gross)
+                ceiling = gross_limit if s1 else min(gross_limit, fraction(p["operating_gross_weight"]))
+                capacity = max(Fraction(0), ceiling * safe_equity - gross)
                 q = min(q, floor(capacity * 10**m["decimals"] / m["price_units"]))
-            if c.get("last_discretionary_session") == c["session_index"]:
+            if s1:
+                # IDEA-076 Q14: a per-name leg budget per session replaces the one-swap-per-session rule.
+                legs = c.get("discretionary_legs") or {}
+                if type(legs) is not dict or any(type(v) is not int or v < 0 for v in legs.values()):
+                    raise ContractError("Discretionary leg counts must map symbols to counts")
+                if legs.get(symbol, 0) >= s1["legs"]:
+                    result["rejections"].append({"symbol": symbol, "reason": "DISCRETIONARY_CADENCE"})
+                    continue
+            elif c.get("last_discretionary_session") == c["session_index"]:
                 result["rejections"].append({"symbol": symbol, "reason": "DISCRETIONARY_CADENCE"})
                 continue
             if q > 0:
                 actions.append((symbol, side, q, False, [t.reason]))
 
+    if s1 and actions and not actions[0][3]:
+        # IDEA-075 §5.2: sells first, then buys, largest gap first (by notional at the current mark).
+        actions.sort(key=lambda a: (a[1] != "SELL", -value(a[2], market[a[0]]), a[0]))
     if p["baseline"] == "EQUAL_WEIGHT" and actions and not actions[0][3]:
         # Candidate selection and actual child execution must use the same cost
         # priority; alphabetical planning otherwise spends the daily slot first.
@@ -398,7 +432,8 @@ def plan(snapshot, proposal_or_none):
             free_bnb = max(0, floor(Fraction((ledger["bnb_units"] - reserved_bnb - gas) * ledger["bnb_price_units"],
                                              10**ledger["bnb_decimals"])))
             if (spend > ledger["cash_units"] - reserved_cash
-                    or ledger["cash_units"] + free_bnb - spend < ceil(Fraction(safe_equity, 5))
+                    or ledger["cash_units"] + free_bnb - spend < ceil(
+                        safe_equity * (1 - s1["high"]) if s1 else Fraction(safe_equity, 5))
                     or ledger["bnb_units"] - reserved_bnb - gas < p["exit_gas_reserve_units"]):
                 result["rejections"].append({"symbol": symbol, "reason": "CASH_OR_EXIT_RESERVE"})
                 continue

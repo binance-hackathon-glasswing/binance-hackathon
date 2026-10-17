@@ -68,7 +68,7 @@ def profile(snapshot):
         authority(p)  # falsifier/statement authority (IDEA-031); defaults to SHADOW
     except AuthorityError as exc:
         raise ContractError(str(exc)) from exc
-    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM", "EQUAL_WEIGHT"):
+    if p["baseline"] not in ("DECLARED_EXPOSURE", "PRICE_MOMENTUM", "EQUAL_WEIGHT", "TREND_GUARDED_VOL"):
         raise ContractError("Unknown baseline")
     for name in ("minimum_trade_units", "per_trade_cap_units", "cost_reserve_units",
                  "exit_gas_reserve_units", "dust_units", "quote_age_seconds",
@@ -79,6 +79,12 @@ def profile(snapshot):
         raise ContractError("Invalid expiry or declared review horizon")
     if p["per_trade_cap_units"] == 0:
         raise ContractError("Per-trade cap required")
+    if p["baseline"] == "TREND_GUARDED_VOL":
+        # S1 (IDEA-076): its own levels, weights and hard line replace the proposal's 80%/20% caps, which are a
+        # recorded deviation (IDEA-075 §14, GAP-62). The other baselines keep every declared cap below.
+        from .s1 import config
+        config(p)
+        return _terminal_gates(p)
     for name, maximum in (("operating_name_weight", Fraction(1, 5)),
                           ("operating_gross_weight", Fraction(4, 5)),
                           ("regime_gross_weight", Fraction(4, 5)),
@@ -94,6 +100,10 @@ def profile(snapshot):
     if p["baseline"] == "EQUAL_WEIGHT" and not (
             0 < fraction(p.get("top_up_below_gross_weight")) <= fraction(p["operating_gross_weight"])):
         raise ContractError("Top-up threshold must be positive and within the gross target")
+    return _terminal_gates(p)
+
+
+def _terminal_gates(p):
     start, end, flatten, stop = [instant(p[n]) for n in
                                ("trade_after", "new_risk_end", "flatten_start", "signing_end")]
     if not start < end <= flatten < stop:

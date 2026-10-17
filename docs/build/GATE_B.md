@@ -17,7 +17,7 @@ The repository side of the swap decoder is built (IDEA-070). Everything below ne
 
 ## Two blockers besides the evidence
 
-1. **#27 (team decision, C-OPEN-003). Every real swap is refused until this is decided.** The planner caps an intent's life at the profile's 15 s, while a quote's encoded deadline is about 30 s. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). With a verified decoder, this becomes the next refusal. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
+1. **#27 (team decision, C-OPEN-003). Resolve the signing-authority/deadline relationship and qualify real timing.** The planner caps an intent's life at the profile's 15 s; the kit states an approximate 30 s quote lifetime, but the real router's encoded deadline is not yet independently verified. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). Any encoded deadline beyond the parent expiry remains refused; the actual router timing still needs qualification. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
 2. **A profile window that allows a buy before Oct 21.** The rehearsal profile opens new risk on Oct 21 00:00 UTC, so a Gate B trade on Oct 19–20 needs a team-approved dev window, registered as a version event. Otherwise Gate B proof moves to Oct 21. The trade must still be the agent's own decision: people never choose trades (never-do #1).
 
 ## Order of work
@@ -26,14 +26,14 @@ The repository side of the swap decoder is built (IDEA-070). Everything below ne
 |---|---|---|---|
 | 1 | Isaac (own machine, browser) | Open BscScan for router `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, the quote's `tx.to` (EXP-005). If it is a proxy, follow "Read as Proxy" to the implementation. Save the verified source and ABI **outside Git** and record their SHA-256. **If the source is not verified, stop:** GAP-29 cannot close from evidence; take it to the team. | Source and ABI hashes recorded |
 | 2 | Isaac | Find the swap function whose selector is `0xad43f73d`. Write its canonical signature, with structs as tuples (`(address,uint256,...)`) and canonical types (`uint256`, not `uint`), then check it with `python -m larp.execution_live.router selector --signature '<signature>'`. | Selector matches |
-| 3 | Isaac, Keegan reviews | Read the source and confirm three things: the minimum output is checked on the **recipient's** balance; the deadline is enforced; the input is pulled only from `msg.sender`. Note the address the router uses for native BNB. If any of the three is false, stop and record why. | Both have read it; IDEA-070 records the finding |
+| 3 | Isaac, Keegan reviews | Read the complete router/implementation/nested-call source and confirm four things: the minimum output is checked on the **recipient's** balance; the deadline is enforced; the input is pulled only from `msg.sender`; and **all wallet token debits are limited to the decoded pay token and at most its decoded amount**, including nested calls and any existing approval authority. Sender-only pulling does not prove that amount bound. Note the address the router uses for native BNB. If any of these four is false, stop and record why. | Both have read it; IDEA-070 records the finding |
 | 4 | Isaac | Fill in `config/execution/router-evidence.v1.json` (template below; public data only) and commit it through a reviewed PR. | Merged; file SHA-256 noted |
 | 5 | Isaac | Run the recorded-route check on the IDEA-063 capture artifacts (prompt 1): `python -m larp.execution_live.router check --evidence config/execution/router-evidence.v1.json --sha256 <file sha256> --artifacts <capture>/artifacts --out <outside repo>/router-check.json`. It must report `PASS`, which needs both directions. Add the report's hash to IDEA-070. | `PASS` |
-| 6 | Team | Decide #27 (above), and the signer's per-token caps and fee cap (#44 WR-C). A `dev` signer accepts the example caps, but `allowed_spenders` must name the router. | Decisions recorded with dates |
-| 7 | Isaac | MetaMask USDT → BNB first-gas swap on the **dev** wallet: about 4 USDT, gas paid in USDT, before any agent trade (#106, F-120). Then re-take the opening balance capture (GATE_A.md) and `gate_b probe-chain` with the `finalized` RPC (#92). | Funded native balance in the chain capture |
-| 8 | Keegan | Configs on the hosts: `router`, `router_evidence_file` (`/etc/larp/router-evidence.json`) and `router_evidence_sha256` in both `execution.json` and `signer.json`; `allowed_spenders` and the decided caps in `signer.json`. Rebind the manifest (`preflight --bind ... --service-config`). | `check` passes for both services |
+| 6 | Team | Decide #27 (above), and the signer's per-token caps and fee cap (#44 WR-C). Use the approved policy and exact hash; do not install the unapproved example caps. `allowed_spenders` must name the router. | Decisions recorded with dates |
+| 7 | Isaac | MetaMask USDT → BNB first-gas swap on the **dev** wallet: about 4 USDT **total**, gas paid in USDT, before any agent trade (#106, F-120). Record each funding note. Yao Zhu then re-takes the opening balance capture (GATE_A.md) and `gate_b probe-chain` with the `finalized` RPC (#92) on the host. | Funded native balance in the chain capture |
+| 8 | Yao Zhu | Configs on the hosts: `router`, `router_evidence_file` (`/etc/larp/router-evidence.json`) and `router_evidence_sha256` in both `execution.json` and `signer.json`; `allowed_spenders` and the decided caps in `signer.json`. Rebind the manifest (`preflight --bind ... --service-config`). | `check` passes for both services |
 | 9 | Isaac | Put the key at `/etc/larp/signer/wallet.key` (root, `0600`) on the signer host only. Start the signer. Expect `"swap_decoder": "VERIFIED"` with the evidence hash. | Start line shows VERIFIED |
-| 10 | Keegan | Start `larp-execution`. Expect no exit 2. | Service running |
+| 10 | Yao Zhu | Start `larp-execution`. Expect no exit 2. | Service running |
 | 11 | Agent, watched by all | The first approve and swap come from the agent's own round, at minimum size, each with its decision record and an ACKed round log. Then run the crash tests at each execution step on the host (DR-04), the reservation checks (DR-05), and a shadow-day replay (DR-19). | DR-02..06 and DR-19 evidence in IDEA-039/042 |
 | 12 | Keegan | Run `gate_b report` with inputs including `router_check`. Review Gate B item by item in IDEA-042. **If Oct 20 slips, record the rehearsal shortfall as a deviation that day (GAP-04).** | Gate B reviewed |
 
@@ -72,10 +72,13 @@ The values in angle brackets are placeholders, and the validator refuses them as
   "guarantees": {
     "minimum_output_checked_on_recipient_balance": true,
     "deadline_enforced": true,
-    "input_pulled_only_from_sender": true
+    "input_pulled_only_from_sender": true,
+    "wallet_debits_limited_to_pay_token_and_amount": true
   },
   "review": {"reviewed_by": "<Isaac + Keegan>", "review_ref": "<IDEA-070 entry or PR link>"}
 }
 ```
 
-Field paths count from 0. For example, `[0, 3]` is the 4th field of the tuple that is the 1st argument. A path may pass only through tuples, never into an array. The economic fields must sit in the top-level order struct, not inside the route steps.
+Field paths count from 0. For example, `[0, 3]` is the 4th field of the tuple that is the 1st argument. A path may pass only through tuples, never into an array. Every ABI type, including unreferenced route arguments, must be valid and supported. The economic fields must sit in the top-level order struct, not inside the route steps.
+
+RV-130: `router check` requires recorded chain 56, supported SWAP mode and token pairs, positive economics, every mutation check and both directions. Invalid JSON/approval evidence gives FAIL. DR-02 validates the full pinned report and every route recipient against the configured wallet; a standalone PASS flag is insufficient. These are synthetic-tested framework checks, not real source or host qualification.

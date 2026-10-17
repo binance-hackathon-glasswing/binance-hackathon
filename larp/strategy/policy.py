@@ -12,7 +12,8 @@ from fractions import Fraction
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
 from larp.integration.contract import accept_for_strategy, authority, red_flag_directives
 from .features import declared_weight, features
-from .schema import fraction, instant, integer, markets, profile, value, equity
+from .schema import fraction, instant, integer, markets, profile, ratio, value, equity
+from . import s1 as s1_plan
 from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
@@ -56,6 +57,31 @@ def decide(snapshot, state):
     held = [s for s, pos in ledger["positions"].items() if pos["units"]]
     gross = sum((value(ledger["positions"][s]["units"], market[s]) / E for s in held), Fraction(0))
     candidates = []
+    s1 = None
+    if p["baseline"] == s1_plan.BASELINE:
+        # IDEA-076: target gross = min(trend level, limiter level); the planner applies the loss ladder on top.
+        cfg = s1_plan.config(p)
+        before = dict(data.get("s1", {}))
+        tokens = {sym: m["token_id"] for sym, m in market.items() if m is not None}
+        series = {sym: v for sym, v in (c.get("series") or {}).items()
+                  if type(v) is dict and (sym not in tokens or v.get("token_id") == tokens[sym])}
+        trend = s1_plan.evaluate_trend(series, cutoff=now, cfg=cfg, previous_state=before.get("trend_state"),
+                                       last_evaluated=before.get("trend_evaluated_session"),
+                                       max_age_seconds=p["feature_age_seconds"])
+        # An absent evidence input stays None: in DETERMINISTIC mode that session is not healthy (IDEA-076 L09).
+        limiter, limiter_record = s1_plan.limiter_step(before.get("limiter"), session=session, cfg=cfg,
+                                                       evidence=c.get("exposure_evidence"),
+                                                       assessment=c.get("exposure_assessment"))
+        level = s1_plan.level_fraction(cfg, trend["state"], limiter["level"])
+        applied = before.get("applied_target")
+        # A level change ends per name (IDEA-076 R1): only the names still listed are moved to the new target, so
+        # a name whose buy keeps being refused cannot hold the rest of the book in rebalance (no sale on drift).
+        # `True` is the whole-book flag of a state written before per-name tracking.
+        still = before.get("rebalance")
+        rebalance = (set(snapshot.universe) if applied is None or fraction(applied) != level or still is True
+                     else set(still) & set(snapshot.universe) if type(still) is list else set())
+        s1 = dict(cfg=cfg, level=level, trend=trend, limiter=limiter, limiter_record=limiter_record,
+                  rebalance=rebalance, pending=set(), seen=set())
     for symbol in snapshot.universe:
         units = ledger["positions"].get(symbol, {}).get("units", 0)
         m = market.get(symbol)
@@ -110,7 +136,9 @@ def decide(snapshot, state):
         if terminal:
             targets.append(Target(symbol, TargetKind.EXIT, "TERMINAL_REQUIREMENT"))
             status = "FLAT_TERMINAL" if not units else "EXIT_REQUIRED"
-        elif symbol in blocked:
+        elif symbol in blocked and not (s1 is not None
+                and blocked[symbol]["reason"] == "CLASS_2_ENTRY_BLOCK"
+                and m is not None and m.get("basis_verified")):
             mandatory = blocked[symbol]["reason"] == "MANDATORY_FALSIFIER_REDUCTION"
             entry_only = blocked[symbol]["reason"] == "CLASS_2_ENTRY_BLOCK"
             targets.append(Target(symbol, TargetKind.EXIT if units and not mandatory and not entry_only
@@ -151,6 +179,36 @@ def decide(snapshot, state):
                     candidates.append((_cost_rank(m), symbol, weight))
                 if previously_held:
                     status = "CASH_REVIEW"
+        elif s1 is not None:
+            # IDEA-075 §5.2: a level change moves every eligible name to level x w; otherwise only a top-up below
+            # level - band buys, and nothing is sold on drift. Sells toward a lower level need no entry gates.
+            fresh_review = bool(a and (a.get("review_complete") is True or
+                (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))
+            if due and fresh_review:
+                last_review = session
+            want = s1["level"] * s1["cfg"]["weights"][symbol]
+            gap = want * (E - p["cost_reserve_units"]) - value(units, m)
+            gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
+                     and (not p["assessment_required"] or fresh_review)
+                     and not (rights["statement"] == "ENTRY_BLOCK" and pending)
+                     and (units or not old.get("ever_held", False) or fresh_review))
+            step = p["minimum_trade_units"]
+            s1["seen"].add(symbol)
+            if symbol in s1["rebalance"] and (gap <= -step or (gap >= step and gates)):
+                targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_LEVEL_CHANGE", want))
+                s1["pending"].add(symbol)
+            elif (symbol not in s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"]
+                  and gap >= step):
+                targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_TOP_UP", want))
+            else:
+                targets.append(Target(symbol, TargetKind.KEEP_QUANTITY,
+                                      "REVIEW_PENDING" if due else "LOW_TURNOVER_HOLD"))
+            if symbol in s1["rebalance"] and gap >= step and not gates:
+                s1["pending"].add(symbol)  # keep an unfilled buy pending while entry is blocked
+            if symbol in blocked:
+                status = "HELD_ENTRY_BLOCKED" if units else "BLOCKED"
+            elif not units and old.get("ever_held", False):
+                status = "CASH_REVIEW"
         else:
             series = c.get("series", {}).get(symbol)
             f = (features(Document.from_dict(series), cutoff=now, expected_entity=m["underlying_id"],
@@ -195,7 +253,8 @@ def decide(snapshot, state):
         lifecycle[symbol] = {"status": status, "last_review_session": last_review,
                              "ever_held": bool(units or old.get("ever_held")),
                              "observed_session": session}
-    gross_budget = min(fraction(p["operating_gross_weight"]), fraction(p["regime_gross_weight"]))
+    gross_budget = (min(fraction(p["operating_gross_weight"]), fraction(p["regime_gross_weight"]))
+                    if candidates else Fraction(0))
     slots = max(0, 4 - len(held))
     for _, symbol, weight in sorted(candidates):
         allowed = min(weight, max(Fraction(0), gross_budget - gross)) if slots else Fraction(0)
@@ -205,10 +264,17 @@ def decide(snapshot, state):
             gross += allowed
         else:
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
+    if s1 is not None:
+        # Names this round did not reach (blocked, unmarked) keep their place in the rebalance.
+        s1["pending"] = sorted(s1["pending"] | (s1["rebalance"] - s1["seen"]))
     following = replace(state, version=state.version + 1, data=Document.from_dict({**data,
         "lifecycle": lifecycle, "blocked": blocked, "reviews": reviews,
         "shadow_findings": shadow, "evidence_mode": p["evidence_mode"], "evidence_authority": rights,
         "evidence_versions": versions, "evidence_rejections": rejections,
-        **({"finding_sessions": finding_sessions} if classified else {})}))
+        **({"finding_sessions": finding_sessions} if classified else {}),
+        **({"s1": {"trend_state": s1["trend"]["state"], "trend_evaluated_session": s1["trend"]["evaluated_session"],
+                   "limiter": s1["limiter"], "applied_target": ratio(s1["level"]), "rebalance": s1["pending"]},
+            "s1_round": {"target_gross": ratio(s1["level"]), "trend": s1["trend"], "limiter": s1["limiter_record"],
+                         "rebalance": s1["pending"]}} if s1 is not None else {})}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

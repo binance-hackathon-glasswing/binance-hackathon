@@ -200,8 +200,12 @@ class GateBReport(unittest.TestCase):  # DR-02 in the Gate B report reads the pi
         (self.root / 'execution.json').write_bytes(config_raw)
         routes = self.root / 'routes'
         routes.mkdir(exist_ok=True)
-        check = dict(schema='RouterRouteCheck.v1', status=check_status, router=config['router'],
-                     selector=load_evidence(self.root / 'router-evidence.json', sha).selector, evidence_sha256=sha)
+        from tests.execution.test_router_decoder import quote
+        from larp.execution_live.router import check_routes
+        quote(routes, USDT, TOKEN, 100, 90, wallet=self.inputs['wallet'], router=config['router'])
+        quote(routes, TOKEN, USDT, 50, 40, wallet=self.inputs['wallet'], router=config['router'])
+        check = check_routes(load_evidence(self.root / 'router-evidence.json', sha), routes)
+        check['status'] = check_status
         check_raw = json.dumps(check).encode()
         (self.root / 'router-check.json').write_bytes(check_raw)
         return dict(self.inputs, files=dict(

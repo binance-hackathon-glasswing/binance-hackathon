@@ -150,3 +150,49 @@ At pushed criteria b75f481, manual certificate-verified HTTPS requests to the se
 The canonical 32-byte lookup result is address **0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603**. The router has180 code bytes; the candidate has8622 code bytes at that same height, code-bytes SHA256 **924e9da536e78a9ce92f633058a62907ee5834738947432d186e02b212a0d574**. **RQ2 identity lookup supported**, not source/swap/safety proof: this is a provider-observed, point-in-time candidate facet; no independent execution/storage proof, source verification or future mapping immutability is established. Code SHA256 is not a source/ABI hash.
 
 The candidate's BscScan page is inaccessible to the browsing tool; its Sourcify v2 lookup returns404/null match, with no source/ABI. No indexed exact-address result was found. Isaac was asked to open the candidate's distinct BscScan Code page and report verified source versus Verify and Publish/bytecode. RE1–RE4 remain incomplete pending actual verified source and review; no deployable RouterEvidence.v1 or live capability change. Safe pinned lookup metadata is committed in `docs/build/evidence/router-facet-lookup-20261017.json`; raw requests/responses/headers are retained outside Git in the acquisition folder. JSON parsing and diff checks pass; no application test/runtime was executed for these documentation/status artifacts.
+
+## RV-130 — Isaac-requested review and merge (2026-10-17, prospective)
+
+Review original head `3c4b430` against integration `bb46234`; ordinary merge keeps IDEA-070, IDEA-075 and EXP-007 rows. Scope is repository framework only: real verified router/facet source remains unavailable (Isaac task3/#138/#139), and #33/GAP29, #27, #44, provider qualification, host provisioning and dev-wallet proof remain open. No live evidence is fabricated or installed.
+
+Pass criteria before regression execution:
+- **R11 / wallet debit authority:** the existing three guarantees do not constrain how much `msg.sender` can be charged or whether nested calls can use other token approvals. Require an explicit source-reviewed guarantee that wallet token debits are limited to the decoded pay token and amount across all nested route calls. Missing, false or truthy substitutes must refuse evidence; docs/template must explain the extra obligation. Synthetic fixtures assert only synthetic semantics.
+- **R12 / valid ABI types:** reject signatures with invalid widths, zero-sized arrays or unsupported basic types anywhere in the arguments, including unreferenced route components, as ContractError at evidence load. Preserve supported canonical dynamic tuple/array routes.
+- **R13 / recorded-route integrity:** chain56, SWAP execution mode/no RFQ, valid wallet, allowed USDT↔bStock or USDT→BNB pairs, positive amount/minimum/deadline/gas and matching decode are required for PASS. Malformed ok approval artifacts or invalid artifact JSON produce a non-passing report, not a crash or silent omission. Mutation values must stay encodable at uint boundaries.
+- **R14 / report binding:** Gate B DR02 must require the actual successful report structure, nonempty route/artifact hashes, both BUY and SELL directions, no route problems, supported positive economics and the configured wallet on every route, in addition to the existing evidence/router/selector pins. A header-only PASS, another-wallet report, omitted directions/routes, changed pin or per-route error remains BLOCKED. Gate B overall/signing remain BLOCKED/false.
+- **R15 / regression:** run pushed offline synthetic regressions first against the pre-fix code to reproduce these findings, then push fixes before rerunning. Run the focused decoder/wiring/execution/signer suite and the full suite with disposable PostgreSQL where available. No credentials, .env, provider/API, real key, wallet transaction, AWS or receiver access. Record exact environment/skips/CI limitations; local synthetic acceptance is not router or host qualification.
+
+RV-130 RED at pushed `8381556`: targeted review regressions reported 29 failed / 8 passed / 3 subtests passed, including invalid ABI widths/types, absent debit guarantee, wrong chain/mode, zero/boolean gas, failed API response, malformed approval/JSON, uint overflow and header-only/wrong-wallet reports. Exact output retained outside Git at `/private/tmp/larp-pr130-review-red.log`. The earlier R10 note's tolerated malformed-approval/mutation crashes are addressed by R13. The new debit guarantee is a source-review obligation, not a claim about the unverified real router.
+
+### RV-130 R16 — preserve the dependency-free offline boundary (prospective)
+
+Packaging review finds an unconditional import of the ABI decoder in `Executor.__init__`, including all-fake bundles, and in execution config validation with no evidence. This introduces eth_abi/eth_utils into paths that previously needed no signing packages. R16: in fresh subprocesses whose import finder refuses eth_abi, eth_utils and eth_account, an all-fake Executor and execution config check without evidence still work; mixed/live-unverified bundles still refuse. Keep real ABI imports only on the live decoder path, and share the settings-pair check without importing the decoder. Stop the in-progress full run before changing code; rerun after the fix. The interrupted run is not a full-suite pass.
+
+RV-130 R16 RED at `b6f0eb4`: fresh-process regression fails with `ModuleNotFoundError: signing dependency forbidden: eth_abi`. Fixed at `2628603`: ABI import only for all-live Executor validation; the settings-pair helper now lives in dependency-free execution config and is re-exported by router for compatibility. Pushed code before execution. Decoder/wiring/review group with PostgreSQL: 50 passed, 0 skipped, 93 subtests passed. Earlier full run was deliberately interrupted for this new packaging finding (327 passed so far); it is not reported as a complete pass. Final full run follows.
+
+### RV-130 final review acceptance (2026-10-17)
+
+R11–R16 PASS at pushed `91cfc7e` (implementation `2628603`): full offline suite **1840 passed, 9 skipped, 2736 subtests passed**, 262.94 s. Environment: macOS, Python 3.12.14, eth_abi 6.0.0, disposable PostgreSQL 14.24 (loopback-only Docker; no hosted database). Final focused decoder/wiring/review group: 50 passed, 0 skipped, 93 subtests, including PostgreSQL signer startup and the ABI-free fresh-process regression. Before the packaging fix, the broader execution/signer group passed 316 tests / 753 subtests. Logs retained outside Git as `/private/tmp/larp-pr130-review-{red,dependency-red,final-focused,full-final}.log`; the deliberately interrupted earlier full run is not a pass. `git diff --check` and `tools/render_deviations.py --check` pass. No .env/credentials, real key/signature/transaction, Web3/RPC/API, AWS or ai-seeds receiver action occurred.
+
+GitHub Actions run [39017535732](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39017535732), head `91cfc7e`, runtime job117352623646 annotation confirms the job was not started because recent account payments failed or spending limit needs increasing (#98). No org-CI pass, Linux/systemd acceptance, official host bundle or hosted/live qualification is claimed.
+
+[Issue #152](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/152) tracks these completed repository review fixes and is the closing issue for PR #130. Parent #33 and source task #138 remain open; no entire GAP29 item is removed. Required next work: Isaac obtains real verified router/facet source and ABI, deployed implementation/bytecode attribution and all four source guarantees, with Keegan's independent review; Isaac runs the recorded-real route check. Actual on-chain deadline/authorization timing (#27), caps approval (#44), provider qualification, funding/key/host setup and logged dev approve/swap/rehearsal remain separate and blocked as previously recorded. The new debit guarantee is mandatory for future evidence; existing three-guarantee templates must be updated, never assumed true. This review supersedes the earlier record's inference of an actual approximately30s encoded deadline: only the kit's approximate quote lifetime was known.
+
+
+## RV139 — source-handoff PR conflict review (2026-10-17 SGT)
+
+The user requests all-PR fixes. Decoder PR130 is merged, so this handoff now
+merges current integration `a428bab` normally and targets that integration branch.
+Resolved the backlog/ledger conflicts by retaining the current RV-130 four-source-
+guarantee requirement and all RE-01 acquisition/lookup history; newer integration
+rows are preserved. The old three-guarantee acquisition checklist is superseded
+by RV-130's fourth, nested wallet-debit guarantee. No historical lookup output or
+raw artifact hash was changed.
+
+The PR remains DRAFT. Candidate code/selector attribution is not verified source,
+ABI, spender approval or upgrade/semantic proof. No attributable source files or
+actual capture corpus were supplied in this environment, so task138 and parent33
+remain open. Updated the source-review handoff to use current merged code rather
+than waiting for PR130. Validation: evidence JSON parses, ledger IDs are unique,
+no conflict markers, and `git diff --check` passes. Documentation-only review;
+no application, provider, wallet, host or AWS action is required or performed.

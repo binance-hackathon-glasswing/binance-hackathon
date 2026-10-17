@@ -1,7 +1,8 @@
 # Isaac task 3: router source review (#138)
 
 Status 2026-10-17: **router Code page is unverified; facet source remains
-unresolved**, not ready for deployment. Record: IDEA-070 RE-01. Decoder dependency: PR130 at `e5bd552`.
+unresolved**, not ready for deployment. Record: IDEA-070 RE-01 / RV139. Decoder
+PR130 is merged into integration; this handoff uses its current RV-130 checks.
 This task has its own branch, `codex/isaac-03-router-evidence-20261017`.
 
 ## Current browser finding (RE-01 B1)
@@ -71,6 +72,7 @@ Isaac's source review must establish each item; all remain unresolved today:
 | Minimum output | Concrete code proving the minimum is enforced on the recipient's balance, including helper/delegated route behavior |
 | Deadline | Concrete code enforcing the encoded deadline |
 | Input authority | Concrete code proving the input is pulled only from `msg.sender`, including helper/delegated route behavior |
+| Wallet debit bound | Concrete code proving all nested/delegated calls can debit only the decoded pay token and amount, with no access to other wallet assets or approval authority (RV-130 R11) |
 | Independent review | Keegan's actual review reference; never attribute review before it happens |
 
 If any guarantee is false or unsupported, stop the evidence path and record the
@@ -83,7 +85,7 @@ and obtain Keegan's review. Only then can this task's PR become ready and close
 #138. Keep parent #33/GAP-29 open for the remaining acceptance requirements.
 
 Task4 is the separate recorded-route replay over Keith's existing IDEA-063
-quote artifacts after Keegan's evidence review and PR130 merge. No new capture
+quote artifacts after Keegan's evidence review, using merged PR130. No new capture
 is needed here. Signing lifetime #27, caps #44, gas, signer access, deployment
 and the first agent trades remain later tasks.
 
@@ -100,7 +102,8 @@ the team supporting the router returned by the Web3 API; it has **not** been sen
 > complete verified source/ABI and compiler settings for this selector's code,
 > router dispatch, and relevant helpers, plus how to verify their chain56 code
 > identities and detect implementation upgrades? We need to establish recipient
-> minimum-output, deadline and sender-only input enforcement before signing.
+> minimum-output, deadline, sender-only input enforcement, and wallet debits
+> limited to the decoded pay token/amount across every nested call before signing.
 
 Do not mark these guarantees true on the strength of an unsupported statement
 or decompiled bytecode. Source provenance, source-to-code binding and independent

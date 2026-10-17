@@ -160,7 +160,7 @@ def validate_config(value):
     policy = SigningPolicy.from_config(value.get('signing_policy'))
     if value['mode'] == 'live' and policy.cap_basis == EXAMPLE_CAP_BASIS:
         raise ContractError('A live signer needs decided signing caps, not the example values')
-    from larp.execution_live.router import evidence_settings
+    from larp.execution_live.config import evidence_settings
     evidence_settings(value)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)

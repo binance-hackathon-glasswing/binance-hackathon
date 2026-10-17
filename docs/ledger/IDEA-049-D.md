@@ -165,10 +165,10 @@ Mapped severity per protocol §3. "Resolved here" means verified on `review/fina
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
 | D-DN-01 | Standby (D-CON-03): declared "one primary runtime plus a fenced cold standby"; IDEA-046 B1 built two hosts and no standby; DEV-18 is OPEN. | (a) Decide DEV-18 as a deviation: no standby; recovery = supervisor restart + EC2 recover/reboot + RDS; record reason (budget, B1) and evidence. (b) Build a fenced cold standby (third host, cost). | (a), with the RTO/RPO in §6 stated in the register. Final activation is refused until DEV-18 is decided (D-FND-010). |
-| D-DN-02 | Rehearsal (D-CON-04): declared 5+ days incl. a weekend at minimum size, signer on; signing is still gated (C) and Gate B (Oct 20) is at risk. | (a) Keep: signed rehearsal Oct 21–26 covering Oct 24–25. (b) Shadow rehearsal + shorter signed window, recorded as a deviation. | Decide by Oct 19; if C's gates are not lifted by Oct 20, take (b) and record it the same day (GAP-04). |
+| D-DN-02 | Rehearsal (D-CON-04): declared 5+ days incl. a weekend at minimum size, signer on; signing is still gated (C) and Gate B (Oct 20) is at risk. | (a) Keep: signed rehearsal Oct 21–26 covering Oct 24–25. (b) Shadow rehearsal + shorter signed window, recorded as a deviation. | **Decided 2026-10-17 (Keegan, conditional):** (a) if Gate B passes by Oct 21, so the signed rehearsal runs Oct 21–26 and covers Oct 24–25; otherwise (b) automatically, recorded as a deviation (GAP-04) the day Gate B is missed. Gate A cannot pass before Oct 21 (24 h ingestion from Oct 20), so the signed part cannot start earlier. The rehearsal profile's buy window is Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS`), so a late Gate B also means no signed buy unless a dev window is added (checklist "Decisions due Oct 19"). |
 | D-DN-03 | Every DEV row is DRAFT; DEV-19 (assessor) and DEV-20 (event planner) are OPEN. | Finalize each row by Oct 26. | Required: the live activation now refuses otherwise. |
 | D-DN-04 | Delivery bound before the 02:00 UTC deadline (D-REQ-025): today signing continues while round logs are undelivered until the deadline passes. | (a) Add a guard HALT when the oldest unacknowledged log is older than B (e.g. 2 h). (b) Accept the risk. | (a) with B = 2 h: it limits how many fills can become "fill without log" during a receiver outage. Needs B's view on HALT semantics (#34). |
-| D-DN-05 | Routes for migrations/roles on RDS and for provisioning the signer (D-REQ-108): no host can read the RDS admin secret; the signer has no internet. | (a) One-off development SSM session on `primary` to run migrations with the admin secret, before Gate A; signer bundle from the S3 gateway endpoint (artifact bucket) with the key copied over SSM. (b) Temporary bastion. | (a); never during the scored run; record each step in the AWS runbook. |
+| D-DN-05 | Routes for migrations/roles on RDS and for provisioning the signer (D-REQ-108): no host can read the RDS admin secret; the signer has no internet. | (a) One-off development SSM session on `primary` to run migrations with the admin secret, before Gate A; signer bundle from the S3 gateway endpoint (artifact bucket) with the key copied over SSM. (b) Temporary bastion. | (a); never during the scored run; record each step in the AWS runbook. **Signer part decided 2026-10-17 (Keegan, [IDEA-080](IDEA-080.md)):** temporary SSM interface endpoints for the signer, destroyed after provisioning and key placement (AWS_RUNBOOK step 5 option b). |
 | D-DN-06 | Watchdog timeout (`cycle_timeout_seconds`, example 600 s). | Value per measured cycle length. | Keep 600 s unless rehearsal shows cycles above 300 s (D-ASM-031). |
 | D-DN-07 | Crash loop on a deterministic error (D-FND-014): restarts every 10 s forever, one RESTART incident each. | (a) Accept (the agent fails closed; incidents are rate-limited for backups). (b) Escalate to a HALT after N restarts per hour. | (a) for v1.0 unless rehearsal shows a loop; incident volume is bounded by D-FND-021. |
 | D-DN-08 | Memory (#60): unit `MemoryMax` sum 3 GiB on a 2 GiB `t3.small`. | (a) `t3.medium` (cost vs credit). (b) Tighter limits + `MemoryHigh` + swap. | Measure RSS in the hosted shadow run (Gate A), then choose; instance-status reboot now covers an OOM hang. |
@@ -620,3 +620,75 @@ RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on
 ### ALLPR-R108 /RV-108-01 verified (2026-10-16)
 
 PR108 is merged into codex/system-testing-20261012. Migration013 validates transaction-local copies of all existing execution record/journal bytes using 012's trigger, refusing an unsafe upgrade atomically without modifying source rows or editing 011/012 checksums. Clean upgrade and idempotence pass. Published focused role/archive tests: 14 passed /184 subtests. A direct seeded-row probe through PostgresStore.migrate refuses unsafe data, preserves original bytes and does not mark013 applied. Final combined source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` passes **1760 passed, 1 external-data skip, 2561 subtests** on Linux/Python3.12.15/PostgreSQL14.24 including roles, archive/backup and migration tests. Detailed full-suite evidence is IDEA-055 RR2 final verification. This supersedes earlier prepared/unexecuted status. Keegan still verifies 012/013 on the first hosted database; alternate keys/encodings remain outside this field-name guard and #23's entire read boundary remains open.
+
+### D-DN-10 build: automatic CLOCK HALT clear (criteria pre-registered 2026-10-16)
+
+This builds decision D-DN-10, option (b), agreed by section B via #113. A `CLOCK` HALT clears automatically once the clock has been monotonic and NTP-synchronised for 30 minutes. The integrity quarantine stays latched. No person clears anything (F-114). Branch `claude/d-dn-10-clock-clear` from `eda2ed2`.
+
+**Design choices:**
+- **Sync signal:** the kernel's own clock status (`adjtimex(2)`): synchronised means the call returns a non-error state and `STA_UNSYNC` is clear. This works with chrony on AL2023 or any other daemon, and needs no subprocess. A failed call counts as *not* synchronised (fail closed).
+- **The window:** in-process, so a restart starts it again (conservative). It holds only across consecutive guard evaluations that each read synchronised, with time never stepping back between evaluations or behind the last decision.
+- **Wiring:** `Guard` takes `clock_sync` (a callable) and `clock_clear_after_ms`. Without `clock_sync`, a `CLOCK` HALT never clears (the old latch, unchanged for every other caller). The production service passes the kernel signal and 30 minutes.
+
+**Pass criteria:**
+- **CK1, signal:** `kernel_clock_synchronized()` returns a bool. It is False when `adjtimex` reports `TIME_ERROR`, has `STA_UNSYNC` set, or the call fails or is unavailable; True only for a clean synchronised state. Tested with an injected syscall.
+- **CK2, clear:** with a signal reading synchronised and no backward step, a `CLOCK` HALT is cleared by the first evaluation at least 30 minutes after the window opened, and not earlier. The clear is one journaled `HALT_CLEARED` event with the window in its detail. A later round then plans normally.
+- **CK3, resets:** an unsynchronised reading, or a time earlier than the previous evaluation, restarts the window. A time behind the last decision raises the HALT again (as today) and also restarts the window.
+- **CK4, unchanged elsewhere:**
+  - with no signal, `CLOCK` stays latched, so the existing H3/H4 test is unchanged;
+  - the integrity quarantine is untouched;
+  - `DELIVERY_DEADLINE` and `REPEATED_FAILURES` keep their own rules;
+  - a `CLOCK` clear leaves any other active reason in place.
+- **CK5, wiring:** `larp.runtime.service` builds its `Guard` with `kernel_clock_synchronized` and 30 minutes.
+- **CK6:** a mutation of each check is caught. The full suite shows no new failures against the base `eda2ed2`.
+
+### D-DN-10 build results (2026-10-16)
+
+- **Order of commits:** criteria in `dc1aa30`, red tests in `ecde05d` (8 failing; the passing test was CK4's "no signal stays latched", today's behaviour), implementation in `8158a82`.
+- **One test correction, `e5e8356`:** CK2's "trading resumes" step checked for a new command. The round after the clear was not halted, but the fake assessor answered `ASSESSMENT_UNAVAILABLE` for a request 30 minutes later, which is unrelated to the HALT. The test now checks that the round has no `HALTED` error and that the planner ran.
+- **CK1–CK5: PASS.** `tests/runtime/test_clock_clear.py` has 9 tests.
+  - The kernel signal is fail closed: `TIME_ERROR`, `STA_UNSYNC`, a negative state or a failed call all mean not synchronised. In this container the real `adjtimex` reads *not* synchronised, so a CLOCK HALT would not clear here, which is correct.
+  - The CLOCK HALT clears at exactly 30 minutes and not 1 ms earlier, journaled as `HALT_CLEARED` with `synchronized_since_ms`.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, and on a time behind the last decision.
+  - With no signal it stays latched.
+  - Other reasons stay in place.
+  - The service passes `kernel_clock_synchronized` and 30 minutes.
+- **CK6 mutations:** 9, each caught: `STA_UNSYNC` ignored; `TIME_ERROR` or negative state ignored; failed call not fail closed; window ignored; unsynchronised reading does not reset; step back between evaluations ignored; step behind the last decision ignored; no signal clears; service wiring dropped.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3, run as root): **1763 passed, 7 skipped, 2562 subtests, 0 failed**. Base `eda2ed2` gives 1754 passed and 7 skipped locally (CI at `e4f3d59`, run non-root: 1755 passed and 6 skipped), so this is +9.
+- **Still open:** confirming on the real `primary` host (AL2023 with chrony) that `kernel_clock_synchronized()` reads True once chrony has synchronised. That is a Gate A host check.
+
+### D-DN-10 review of PR #125 (criteria pre-registered 2026-10-17)
+
+Adversarial review of `claude/d-dn-10-clock-clear` after merging `codex/system-testing-20261012` (14 commits, no conflicts; nothing merged touches `supervision.py`, `service.py` or `halts.py`).
+
+**Findings before any change:**
+- **No code bug confirmed** in the signal, the window or the wiring (details in the results below).
+- **Gap in CK4's tests:** `test_ck4_clearing_the_clock_leaves_other_reasons_in_place` asserts only that `CLOCK` is gone, not that the other reason is still there. The "integrity quarantine is untouched" bullet has no test.
+- **Host dependency:** chrony on Linux clears the kernel's `STA_UNSYNC` flag only when `rtcsync` is configured (chrony `sys_timex.c`: "On Linux clear the UNSYNC flag only if rtcsync is enabled"). Without `rtcsync`, `kernel_clock_synchronized()` reads False for ever, so a `CLOCK` HALT never clears. This fails closed, but it loses the run, which is the problem D-DN-10 solves.
+- **Stale operator text:** `docs/build/runbook.md` §3 says a `CLOCK` HALT clears "Never during the run (latched)".
+
+**Pass criteria:**
+- **CKR-1:** after the `CLOCK` clear in CK4's test, the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True, so D-DN-09's mandatory-sell rule applies to what remains. Mutation check: a `_clear` that drops every reason fails the test.
+- **CKR-2:** on a quarantined run with a `CLOCK` HALT and a full synchronised window, `evaluate` commits nothing: the store refuses the clear (`Conflict`), the run stays quarantined and `CLOCK` stays active.
+- **CKR-3 (docs, no test):** the runbook §3 row states the D-DN-10 rule. The Gate A evidence list in `docs/build/DEPLOYMENT_DAY.md` checks `rtcsync` in `/etc/chrony.conf` on `primary` and that `kernel_clock_synchronized()` reads True there.
+- The full suite has no new failures against the merged head before these changes.
+
+### D-DN-10 review of PR #125: results (2026-10-17)
+
+- **Merge:** `codex/system-testing-20261012` merged into the branch with a merge commit, no conflicts. #117's HALT-by-reason split (`halts.py`, D-DN-09) was already in the branch; the merge adds nothing that touches the guard.
+- **CKR-1: PASS.** After the `CLOCK` clear the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True. The mutation (a `_clear` that drops every reason) fails the strengthened test; the old assertion let it pass.
+- **CKR-2: PASS.** On a quarantined run the clear is refused with `Conflict`. The run stays quarantined and `CLOCK` stays active. In the service, the exception ends the process, and the next start exits 3 (quarantined), so nothing restarts it. That is the same path as any other guard write under quarantine. An integrity failure itself returns `QUARANTINED:INTEGRITY` before the clock check runs.
+- **CKR-3: done.** `docs/build/runbook.md` §3 states the D-DN-10 rule. `docs/build/DEPLOYMENT_DAY.md` step 9 checks `rtcsync` and `kernel_clock_synchronized()` on `primary`.
+- **Checked, no change needed:**
+  - `struct timex` is 208 bytes, with `status` at offset 40. That matches glibc on LP64, so x86_64 and aarch64 (t4g) have the same layout. `modes=0` makes the call read-only, and it needs no `CAP_SYS_TIME`. `larp-runtime.service` has no `SystemCallFilter` or `ProtectClock`, so the call is not blocked by seccomp.
+  - The return handling is right. States 0–4 count as synchronised; `TIME_ERROR` (5), -1 or `STA_UNSYNC` do not, and any exception means not synchronised.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, on a time behind the last decision, and on a process restart (the state is in-process).
+  - `runtime_guard()` is the only production `Guard` and is used by `service run`. A second CLOCK HALT after a clear, and its later clear, use distinct event IDs.
+- **Not changed (judged not worth fixing now):**
+  - The 30 minutes are measured with the wall clock. A forward step inside the window shortens it in real time. That needs a second clock error after the window opens.
+  - "Synchronised" does not mean "correct". If chrony slews a large offset rather than stepping it, the kernel reports synchronised while the clock is still minutes off. The absolute-drift check stays R-08/G-05.
+  - If chronyd stops, the kernel keeps `STA_UNSYNC` clear until `maxerror` passes 16 s, which takes about 9 h.
+  - `find_library('c')` runs `ldconfig -p` on each evaluation, but only while a CLOCK HALT is active.
+  - The CLOCK HALT event and its projection still carry `latched: true`. Nothing reads that field.
+- **Full suite** (merged head `bb9dc7a`, PostgreSQL 16.15, Python 3.12.3, root): **1774 passed, 10 skipped, 2607 subtests, 0 failed**. Against the PR body's 1763/7, that is +13 tests from the merged base and +1 from CKR-2. The 3 extra skips are the bubblewrap cases, because `bwrap` is not installed in this container. `git diff --check` is clean.
+- **Still open:** the Gate A host check on `primary` (CKR-3).

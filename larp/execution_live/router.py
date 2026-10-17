@@ -9,9 +9,10 @@ alone, the tokens, input amount, recipient, minimum output and deadline. The rou
 - where each economic field sits in the decoded arguments, as a path of tuple indices;
 - the address(es) the router uses for native BNB;
 - hashes of the verified source and ABI, and who reviewed them;
-- three properties the reviewer read in the source, each exactly `true`: the router checks the minimum output against
+- source properties the reviewer read, each exactly `true`: the router checks the minimum output against
   the recipient's balance, enforces the deadline, and pulls the input only from the sender. The decoder cannot see
-  nested route calls; these properties are why it does not need to.
+  nested route calls; the additional debit guarantee must cover those calls too: wallet token debits are limited
+  to the decoded pay token and amount, with no other wallet asset/approval authority available to the route.
 
 `PinnedRouterDecoder` decodes a swap only from that evidence and binds the result to the bytes: the calldata must
 re-encode to exactly the same bytes, so trailing data, dirty padding and non-canonical offsets are refused rather
@@ -33,18 +34,20 @@ from pathlib import Path
 import re
 import sys
 
-from eth_abi import decode as abi_decode, encode as abi_encode
+from eth_abi import decode as abi_decode, encode as abi_encode, is_encodable_type
 from eth_abi.exceptions import DecodingError, EncodingError, ParseError
 from eth_abi.grammar import BasicType, TupleType, normalize, parse
 from eth_utils import keccak
 
 from larp.contracts import ContractError
+from .config import evidence_settings
 from larp.execution import BSTOCKS, NATIVE_BNB, USDT, Blocked, Payload, SwapEconomics
 
 SCHEMA = 'RouterEvidence.v1'
 FIELDS = ('pay_token', 'receive_token', 'amount', 'minimum_output', 'recipient', 'deadline')
 ADDRESS_FIELDS = frozenset({'pay_token', 'receive_token', 'recipient'})
-GUARANTEES = ('minimum_output_checked_on_recipient_balance', 'deadline_enforced', 'input_pulled_only_from_sender')
+GUARANTEES = ('minimum_output_checked_on_recipient_balance', 'deadline_enforced', 'input_pulled_only_from_sender',
+              'wallet_debits_limited_to_pay_token_and_amount')
 KEYS = frozenset({'schema', 'chain_id', 'router', 'implementation', 'function', 'fields', 'native_sentinels',
                   'source', 'guarantees', 'review'})
 SOURCE_KEYS = frozenset({'verified_on', 'url', 'contract_name', 'compiler', 'source_sha256', 'abi_sha256',
@@ -88,6 +91,9 @@ def _argument_types(signature):
     inner = inner[:-1]
     try:
         parsed = parse('(' + inner + ')')
+        parsed.validate()
+        if not is_encodable_type('(' + inner + ')'):
+            _refuse('function.signature contains unsupported ABI types')
         canonical = normalize('(' + inner + ')')
     except (ParseError, ValueError, TypeError):
         _refuse('function.signature does not parse')
@@ -186,14 +192,6 @@ def load_evidence(path, sha256):
     return PinnedRouterDecoder(value, evidence_sha256=sha256)
 
 
-def evidence_settings(config):
-    """`(path, sha256)` from a service config, or None when neither is set; both or neither (IDEA-070 R6)."""
-    path, sha256 = config.get('router_evidence_file'), config.get('router_evidence_sha256')
-    if path in (None, '') and sha256 in (None, ''):
-        return None
-    if path in (None, '') or sha256 in (None, ''):
-        raise ContractError('Set both router_evidence_file and router_evidence_sha256, or neither')
-    return path, sha256
 
 
 class PinnedRouterDecoder:
@@ -275,39 +273,79 @@ def mutations(decoder, payload):
         'trailing_byte': (data + '00', 'refused'),
         'truncated': (data[:-2], 'refused'),
         'recipient': (_reencoded(decoder, data, 'recipient', lambda _: wrong_address), 'differs'),
-        'amount': (_reencoded(decoder, data, 'amount', lambda v: v + 1), 'differs'),
+        'amount': (_reencoded(decoder, data, 'amount', lambda v: v - 1 if v else 1), 'differs'),
         'minimum_output': (_reencoded(decoder, data, 'minimum_output', lambda v: v - 1 if v else 1), 'differs'),
-        'deadline': (_reencoded(decoder, data, 'deadline', lambda v: v + 1), 'differs'),
+        'deadline': (_reencoded(decoder, data, 'deadline', lambda v: v - 1 if v else 1), 'differs'),
     }
 
 
 def _load_artifacts(directory):
-    rows = []
+    rows, hashes, problems = [], [], []
     for path in sorted(Path(directory).glob('*.json')):
         raw = path.read_bytes()
+        sha = hashlib.sha256(raw).hexdigest()
+        hashes.append(sha)
         try:
             value = json.loads(raw)
-        except ValueError:
+        except (ValueError, UnicodeError):
+            problems.append('invalid artifact JSON: ' + sha)
             continue
         if type(value) is dict and value.get('schema') == 'Web3Observation.v1' and value.get('outcome') == 'ok':
-            rows.append((hashlib.sha256(raw).hexdigest(), value))
-    return rows
+            rows.append((sha, value))
+    return rows, hashes, problems
 
 
 def _data(record):
-    data = record['response']['data']
+    response = record['response']
+    if (record.get('http_status') != 200 or type(response.get('code')) is not int
+            or response['code'] != 0):
+        raise ValueError('artifact is not a successful API response')
+    data = response['data']
     if isinstance(data, list) and len(data) == 1:
         data = data[0]
+    if type(data) is not dict:
+        raise ValueError('artifact data must be an object')
     return data
 
 
+def _quantity(value, *, positive=False):
+    if type(value) not in (str, int) or not re.fullmatch(r'0|[1-9][0-9]{0,77}', str(value)):
+        raise ContractError('canonical uint256 quantity required')
+    value = int(value)
+    if value >= 2**256 or (positive and value == 0):
+        raise ContractError('quantity outside allowed uint256 range')
+    return value
+
+
+def _route_address(value):
+    if type(value) is not str:
+        raise ContractError('route address required')
+    return _address(value.lower(), 'route address')
+
+
+def _direction(pay, receive):
+    if pay == USDT and receive in BSTOCKS:
+        return 'BUY'
+    if receive == USDT and pay in BSTOCKS:
+        return 'SELL'
+    if pay == USDT and receive == NATIVE_BNB:
+        return 'GAS'
+    raise ContractError('unsupported route token pair')
+
+
 def check_routes(decoder, directory):
-    """R8 report over recorded `Web3Observation.v1` artifacts. PASS only if every route passes, both directions."""
-    rows = _load_artifacts(directory)
-    spenders = {}
+    """R8/R13 report: every successful recorded route must match chain56 and supported swap economics."""
+    rows, hashes, input_problems = _load_artifacts(directory)
+    spenders = set()
+    errors = (KeyError, TypeError, ValueError, AttributeError, ContractError, Blocked)
     for sha, record in rows:
         if record.get('endpoint') == 'aggregator/approve-transaction':
-            spenders[sha] = str(_data(record)['dexContractAddress']).lower()
+            try:
+                if str(record['params']['binanceChainId']) != '56':
+                    raise ValueError('wrong approval chain')
+                spenders.add(_route_address(_data(record)['dexContractAddress']))
+            except errors:
+                input_problems.append('invalid approval artifact: ' + sha)
     routes, directions = [], set()
     for sha, record in rows:
         if record.get('endpoint') != 'aggregator/quote-and-swap':
@@ -315,57 +353,83 @@ def check_routes(decoder, directory):
         result = dict(artifact_sha256=sha, problems=[])
         try:
             params, data = record['params'], _data(record)
+            if str(params['binanceChainId']) != '56':
+                raise ValueError('wrong quote chain')
+            if data.get('executionMode') != 'SWAP' or data.get('rfq') is not None:
+                raise ValueError('unsupported quote execution mode')
             tx = data['tx']
-            payload = Payload(56, str(params['userWalletAddress']).lower(), str(tx['to']).lower(),
-                              int(tx['value']), 0, int(tx['gas']), int(tx['gasPrice']), tx['data'])
+            payload = Payload(56, _route_address(params['userWalletAddress']), _route_address(tx['to']),
+                              _quantity(tx['value']), 0, _quantity(tx['gas'], positive=True),
+                              _quantity(tx['gasPrice'], positive=True), tx['data'])
             economics = decoder.decode(payload)
-        except Blocked as refused:
-            result['problems'].append('decode refused: ' + str(refused))
-            routes.append(result)
-            continue
-        except (KeyError, TypeError, ValueError):
-            result['problems'].append('artifact shape not recognised')
-            routes.append(result)
-            continue
-        # The API writes native BNB as 0xeee...e (NATIVE_BNB); the router may use another sentinel internally.
-        expected = dict(pay_token=decoder._token(str(params.get('fromTokenAddress', ''))),
-                        receive_token=decoder._token(str(params.get('toTokenAddress', ''))),
-                        amount=str(params.get('amount')), recipient=payload.sender,
-                        minimum_output=str(tx.get('minReceiveAmount')))
-        decoded = dict(pay_token=economics.pay_token, receive_token=economics.receive_token,
-                       amount=str(economics.amount), recipient=economics.recipient,
-                       minimum_output=str(economics.minimum_output))
-        for key, want in expected.items():
-            if decoded[key] != want:
-                result['problems'].append(key + ' decoded ' + decoded[key] + ' but the request/quote says ' + want)
-        if economics.native_value != 0:
-            result['problems'].append('native value is not zero')
-        if set(spenders.values()) - {decoder.router}:
-            result['problems'].append('an approve names a spender other than the evidenced router')
-        for name, (mutated, expect) in mutations(decoder, payload).items():
-            try:
-                changed = decoder.decode(replaced(payload, data=mutated))
-            except Blocked:
-                continue
-            if expect == 'refused' or changed == economics:
-                result['problems'].append('mutation not caught: ' + name)
-        if expected['pay_token'] == USDT and expected['receive_token'] in BSTOCKS:
-            directions.add('BUY')
-        elif expected['receive_token'] == USDT and expected['pay_token'] in BSTOCKS:
-            directions.add('SELL')
-        elif expected['pay_token'] == USDT and expected['receive_token'] == NATIVE_BNB:
-            directions.add('GAS')
-        result.update(decoded=decoded, deadline=economics.deadline)
+            expected = dict(pay_token=decoder._token(_route_address(params['fromTokenAddress'])),
+                            receive_token=decoder._token(_route_address(params['toTokenAddress'])),
+                            amount=str(_quantity(params['amount'], positive=True)), recipient=payload.sender,
+                            minimum_output=str(_quantity(tx['minReceiveAmount'], positive=True)))
+            decoded = dict(pay_token=economics.pay_token, receive_token=economics.receive_token,
+                           amount=str(_quantity(economics.amount, positive=True)), recipient=economics.recipient,
+                           minimum_output=str(_quantity(economics.minimum_output, positive=True)))
+            _quantity(economics.deadline, positive=True)
+            direction = _direction(economics.pay_token, economics.receive_token)
+            for key, want in expected.items():
+                if decoded[key] != want:
+                    result['problems'].append(key + ' decoded ' + decoded[key] + ' but request/quote says ' + want)
+            if economics.native_value != 0:
+                result['problems'].append('native value is not zero')
+            if spenders - {decoder.router}:
+                result['problems'].append('an approve names a spender other than the evidenced router')
+            for name, (mutated, expect) in mutations(decoder, payload).items():
+                try:
+                    changed = decoder.decode(replaced(payload, data=mutated))
+                except Blocked:
+                    continue
+                if expect == 'refused' or changed == economics:
+                    result['problems'].append('mutation not caught: ' + name)
+            directions.add(direction)
+            result.update(decoded=decoded, deadline=economics.deadline)
+        except errors:
+            result['problems'].append('artifact shape, chain, execution mode or swap economics refused')
         routes.append(result)
-    if not routes:
+    if input_problems:
+        status = 'FAIL'
+    elif not routes:
         status = 'NO_ROUTES'
     elif all(not r['problems'] for r in routes) and {'BUY', 'SELL'} <= directions:
         status = 'PASS'
     else:
         status = 'FAIL'
-    return dict(schema='RouterRouteCheck.v1', status=status, router=decoder.router, selector=decoder.selector,
-                evidence_sha256=decoder.evidence_sha256, directions=sorted(directions), routes=routes,
-                artifacts_read=[sha for sha, _ in rows])
+    return dict(schema='RouterRouteCheck.v1', chain_id=56, status=status, router=decoder.router,
+                selector=decoder.selector, evidence_sha256=decoder.evidence_sha256,
+                directions=sorted(directions), routes=routes, artifacts_read=hashes, input_problems=input_problems)
+
+
+def validate_route_report(value, decoder, *, wallet):
+    """Validate the pinned check report's contents for this wallet, never just its PASS flag (R14).
+
+    The report remains owner-reviewed evidence, not independent execution authority or a real source audit.
+    """
+    if (value['schema'] != 'RouterRouteCheck.v1' or value['status'] != 'PASS'
+            or type(value['chain_id']) is not int or value['chain_id'] != 56
+            or value['evidence_sha256'] != decoder.evidence_sha256 or value['router'] != decoder.router
+            or value['selector'] != decoder.selector or value['input_problems'] != []):
+        raise Blocked('recorded-route check absent, failing or for other evidence')
+    hashes, routes = value['artifacts_read'], value['routes']
+    if (type(hashes) is not list or not hashes or any(type(h) is not str or not _SHA256.fullmatch(h) for h in hashes)
+            or len(set(hashes)) != len(hashes) or type(routes) is not list or not routes):
+        raise Blocked('nonempty route evidence and artifact hashes required')
+    directions, route_hashes = set(), set()
+    for route in routes:
+        sha, decoded = route['artifact_sha256'], route['decoded']
+        if (sha not in hashes or sha in route_hashes or route['problems'] != []
+                or decoded['recipient'] != wallet):
+            raise Blocked('route evidence differs from this wallet or has problems')
+        route_hashes.add(sha)
+        for field in ('amount', 'minimum_output'):
+            _quantity(decoded[field], positive=True)
+        _quantity(route['deadline'], positive=True)
+        directions.add(_direction(decoded['pay_token'], decoded['receive_token']))
+    if value['directions'] != sorted(directions) or not {'BUY', 'SELL'} <= directions:
+        raise Blocked('both recorded route directions required')
 
 
 def main(argv=None):

@@ -32,7 +32,7 @@ EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
-    """A configuration asks for a path that is not built yet: a hosted model assessor (DR-11)."""
+    """A configuration asks for an assessor that is not integrated (DR-11)."""
 
 
 class StartRefused(ContractError):
@@ -198,8 +198,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     """The round driver (IDEA-048, IDEA-050) from the `driver` block of the manifest-bound runtime configuration.
 
     `execution: "shadow"` ends every intent unsigned; `execution: "service"` hands committed commands to the execution
-    service (larp/execution_live/loop.py) and journals its observations. Hosted model assessors (DR-11) are not
-    integrated: asking for one raises NotIntegrated. Any other missing or inconsistent input is a ContractError, which
+    service (larp/execution_live/loop.py) and journals its observations. AIand/OpenAI routing is integrated for
+    dev shadow use only; other hosted assessors raise NotIntegrated. Missing or inconsistent input is a ContractError, which
     `main` turns into a start refusal (exit 4)."""
     from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
     from larp.integration.settlement import ExecutionBridge
@@ -231,7 +231,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
-        raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
+        raise NotIntegrated('Supported assessors are deterministic and shadow-only aiand_routed (DR-11)')
     if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
         raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
     if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
@@ -429,6 +429,13 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
     return dict(activated=True, run_id=run_id, epoch=epoch, signing_enabled=False)
 
 
+def runtime_guard(store, c):
+    """The supervised runtime's HALT guard, with the kernel clock signal for the D-DN-10 automatic CLOCK clear."""
+    from larp.runtime.supervision import CLOCK_CLEAR_AFTER_MS, kernel_clock_synchronized
+    return Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after'],
+                 clock_sync=kernel_clock_synchronized, clock_clear_after_ms=CLOCK_CLEAR_AFTER_MS)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('check', 'run', 'init', 'activate'))
@@ -477,7 +484,7 @@ def main(argv=None):
                              wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
                              ai_seeds_dir=c.get('ai_seeds_dir'), nonce_dir=c.get('nonce_dir'))
         service = Service(store, c['run_id'], c['build_id'], driver=driver,
-                          guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
+                          guard=runtime_guard(store, c),
                           clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'],
                           start_check=start_check, cycle_timeout_s=c.get('cycle_timeout_seconds'))
         signal.signal(signal.SIGTERM, service.stop)
