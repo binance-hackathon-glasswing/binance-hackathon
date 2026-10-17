@@ -148,7 +148,7 @@ and #92 (hosted RPC) remain open; #127 tracks the hosted evidence.
    `enable_development_ssm` attaches only to `primary` and requires development mode and `enable_external_https`;
    unsupported combinations fail the plan. It provides no signer access.
 
-   **Open decision before this step: how to reach `signer`.** It has no internet route and no SSM endpoints (IDEA-046 B2, cost), and there is no SSH access. Options, none chosen yet:
+   **Open decision before this step: how to reach `signer`.** It has no internet route and no SSM endpoints (IDEA-046 B2, cost), and there is no SSH access. Options (**(b) chosen 2026-10-17 by Keegan, [IDEA-080](../ledger/IDEA-080.md)**; Yao Zhu builds it, with pass criteria SA1–SA7):
    - (a) an EC2 Instance Connect Endpoint (no hourly charge), with SSH from that endpoint only, during provisioning;
    - (b) temporary SSM interface endpoints (`ssm`, `ssmmessages`, `ec2messages`, about $0.01/hour each per AZ), destroyed after provisioning;
    - (c) a user-data script that fetches the bundle from the artifact bucket and runs `provision.sh` with the pinned hash at boot. This needs no interactive access, but the key file still has to be placed.

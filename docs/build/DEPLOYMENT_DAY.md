@@ -32,7 +32,7 @@ context; no hosted run or Gate A pass is established by this update.
 | Session Manager plugin on the Mac | **Not installed** (needed for SSM shells and the database port-forward) | Yao Zhu |
 | Release bundle | CI builds it on every push; take it from the **final** merged head | step 4 |
 | Candidate AMI | `ami-0c82c1a90be4dccc1` (AL2023 x86_64, released 2026-10-14); pin it after a look at its release notes | Yao Zhu |
-| How to reach `signer` | **Undecided** (AWS_RUNBOOK step 5). Not needed for a shadow run | team |
+| How to reach `signer` | **Decided 2026-10-17:** temporary SSM interface endpoints, torn down afterwards ([IDEA-080](../ledger/IDEA-080.md), AWS_RUNBOOK step 5 option b). Not needed for a shadow run | Yao Zhu builds; Keegan reviews |
 
 ## What each person brings (never into a chat, a commit or a shared doc)
 
@@ -138,4 +138,4 @@ Also `driver.balance_rpc_providers`: the ordered list of manifested BSC RPC prov
 ## After Gate A
 
 - **Gate B:** Isaac lifts the capability gates. Choose the signer access route (Terraform change, IDEA entry, review). Place the key file. Prove signing on the dev wallet with a small trade, then review Gate B.
-- **Decisions due:** D-DN-02 (rehearsal shape, Oct 19); D-DN-01/03 before activation. See IDEA-049-D §5.
+- **Decisions due:** D-DN-01/03 before activation. D-DN-02 (rehearsal shape) was decided 2026-10-17: signed Oct 21–26 if Gate B passes by Oct 21, otherwise a shadow rehearsal with a shorter signed window, recorded as a deviation. See IDEA-049-D §5.
