@@ -872,3 +872,14 @@ before execution. No real provider request, key read, AWS/host/service change,
 wallet operation, model spend, merge or activation occurred. The current PR is
 implementation for peer review only; Yao will ask a reviewer. #97, the live
 backlog and PR133 remain open. Existing untracked `Claude outputs/` is untouched.
+
+OP-01 delivery: [PR #167](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/167),
+branch `codex/openai-preferred-pacing-20261018`, target
+`codex/system-testing-20261012`, OPEN/mergeable at published head `2a12dd7`.
+Yao will arrange peer review; no reviewer was assigned or messaged. GitHub
+Actions run `39101498071`, runtime check `117598527028`, ran no steps:
+the annotation says recent account payments failed or the spending limit needs
+to be increased. All four jobs have empty step lists (three failed, one
+cancelled). This is the existing account-level CI gate, not a tested product
+failure or CI acceptance; the new head still needs accepted mirror/Linux checks
+before release. PR133 is verified OPEN at `e9e07b1`.
