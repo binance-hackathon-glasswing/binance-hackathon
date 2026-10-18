@@ -1077,3 +1077,12 @@ private evidence sharing/independent Keegan review/source repair. Backlog keeps
 only remaining PC-SRC01 work. PC-CAP01/account/provider/install/start and all
 signed gates remain open. PR133 stays open; Claude outputs/ untouched. No direct
 message to Keegan or new host action was performed.
+
+
+## PC-FIX01 — repair PR delivered for Keegan review, Oct18
+
+[PR174](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/174) targets codex/system-testing-20261012; branch codex/doj-trial-cap-fixes-20261018, delivery 1dee43d, tested application ae7ccaa. It implements DOJ-only bounded embedded-image exclusion with original wire provenance and all ordered records retained, durable current-head coverage proofs/explicit current-listing report with historical failure retained, and immutable unsigned OpenAI trial caps strictly below US$8 total/US$2.50 UTC day. Atomic maximum reservations include retries/concurrency/UNKNOWN and actual UTC dispatch day; migration retains charges/latches and fences pre-cap workers. Trial stop/window also guards AIand transport; signed/live trial preparation refuses.
+
+Final local Python3.12/macOS suite: 1,630 passed, 436 environment-dependent skips, 2,659 subtests passed. Actual retained DOJ page replay preserves20 ordered IDs while reducing20,757,780 wire bytes to91,830 permitted bytes. Full prospective criteria/results, test hashes, opt-in routing hash, preserving setup/export/report commands and remaining owners are in docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md and evidence/doj-trial-cap-fixes-20261018.json on PR174. No host mutation or paid inference occurred.
+
+Keegan owns review, fresh exact-source Linux/PostgreSQL/all-job CI and a new original release; d8aa7d5 lacks these fixes. Yao owns private provider/funding/rights reconciliation, preserving host setup, poll/restart/report qualification, activation and first-assessment/ACK evidence. Keegan independently reviews the prior raw FAIL/current-listing scope before Gate A disposition. Keith owns actual blind labels and measured trial report after immutable exports. Signed adoption and later preserving trial-ledger transition remain separate. PR133 stays open; pre-existing Claude outputs/ untouched.

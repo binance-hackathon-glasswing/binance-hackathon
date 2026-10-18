@@ -15,14 +15,16 @@ healthy with62 audit chunks ACK and no model ledger. **New blocker PC-SRC01:**
 DOJ94 RESPONSE_TOO_LARGE failures since Oct17 19:00Z fall outside PC-GAP01.
 Do not explain these as pagination-only gaps. The later fixed-window result is
 recorded below in PC-GAP02. **PC-CAP01:** $8 trial/$2.50 UTC-day admission enforcement still needs
-an established method before paid work; the binary enforces account pacing.
+reviewed deployment before paid work; PR174 now implements atomic caps (PC-FIX01), while the older binary enforces account pacing only.
 Yao reconfirms OpenAI US$48/AIand140+; AIand units/actual funding still unqualified.
 
 Fixed report now complete (PC-GAP02): located the19:00SGT local collector output,
 verified31 hashes/718,138 raw bytes and independently reproduced **FAIL**.
 DOJ96 RESPONSE_TOO_LARGE errors exclude PC-GAP01; BIS historical-only checks pass.
 No combined explained PASS. Collection/hash verification is done; Keegan review,
-DOJ repair/disposition and PC-CAP01 enforcement remain open.
+PR174 review/new CI/release, DOJ host qualification/disposition and PC-CAP01 ledger setup remain open.
+
+Repair delivery PC-FIX01: [PR174](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/174) targets integration and is ready for Keegan review. Code/test revision ae7ccaa: 1,630 passed / 436 environment-dependent skips / 2,659 subtests. DOJ image recovery preserves all records; durable current-head evidence and explicit report scope retain the failed historical report. Opt-in unsigned trial limits preserve charges/latches and fence older workers. Full evidence and owner runbook are on the PR branch in docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md. No host mutation, paid inference, activation or new release was performed.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -227,8 +229,10 @@ These were missing from every list; each one is needed for the LLM to be in the 
 Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its approved protocol/rubric/register and public manifests are carried on the V3-REL01 release branch; the complete checklist/quote handoff remains here. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
 
 - [x] **Yao Zhu:** verify receipt of the supplied original d8aa7d5 bundle against source/sidecar/manifest/CA (PC-REL08:195 files/234 checksums). Installation is separate.
-- [ ] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures; final report/raw retention is complete in PC-GAP02. Keegan independently reviews the repair/disposition before the switch.
-- [ ] **Yao Zhu:** record actual v3 trial-limit enforcement and host/provider qualification under approved PR168/KMP-BUD01 before paid testing. New unsigned release d8aa7d5, KMP-P2 fix, services/DEV-19 and exact-SHA CI/original-artifact handoff are complete (V3-REL02). Enforce US$8 total/US$2.50 UTC-day caps with maximum in-flight costs; without it paid v3 testing waits. No repeat protocol approval. PR133 stays open.
+- [x] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures and implement bounded repair/current-head evidence (PC-FIX01, PR174; 1,630 local tests passed). Final report/raw retention is complete in PC-GAP02.
+- [ ] **Keegan:** review [PR174](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/174), including current-listing versus historical report scope and preserving ledger migration; run fresh exact-source Linux/PostgreSQL CI and deliver a new original release. d8aa7d5 lacks these repairs.
+- [ ] **Yao Zhu:** after the new accepted release, qualify DOJ polls/restart/report on the host and obtain independent Keegan disposition of the old failed window before the switch.
+- [ ] **Yao Zhu:** record actual v3 trial-limit enforcement and host/provider qualification under approved PR168/KMP-BUD01 before paid testing. New unsigned release d8aa7d5, KMP-P2 fix, services/DEV-19 and exact-SHA CI/original-artifact handoff are complete (V3-REL02). PR174 implements atomic US$8 total/US$2.50 UTC-day caps including maximum in-flight/unknown costs; review/new CI/release and preserving host setup remain. Without verified deployment paid v3 testing waits. No repeat protocol approval. PR133 stays open.
 
 [Model prerequisites](MODEL_PREREQUISITES_20261018.md) and its linked budget,
 blind-label, provider-rights and signing/profile records carry the proposed v3
