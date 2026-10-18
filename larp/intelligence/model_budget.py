@@ -57,7 +57,6 @@ class ModelBudget:
         self.pacing = json.loads(_policy_bytes(pacing)) if pacing is not None else None
         self.clock = clock_ms if clock_ms is not None else lambda: time.time_ns() // 1_000_000
         if self.pacing is not None:
-            validate_pacing(self.pacing)
             if total != self.pacing['total_micro_usd'] or reserve != 0:
                 raise IntelligenceError('Pacing requires matching total and no permanent reserve')
         if type(account) is not str or not account or len(account) > 100 or \
@@ -162,7 +161,7 @@ class ModelBudget:
             if now >= last:
                 db.execute('UPDATE pacing SET last_ms=? WHERE id=1', (now,))
             result['remaining_allocation_micro_usd'] = max(0, self.total-spent)
-            result['pacing'] = dict(policy=p, observed_ms=now, period_count=periods,
+            result['pacing'] = dict(policy=json.loads(_policy_bytes(p)), observed_ms=now, period_count=periods,
                                     released_micro_usd=released, admission_block=blocked)
             result['available_micro_usd'] = 0 if blocked else max(0, min(self.total-spent,
                 p['prior_spent_micro_usd'] + released - spent))

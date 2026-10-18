@@ -166,3 +166,18 @@ Recorded at Yao Zhu's direction on 2026-10-16 SGT. This settles how MR-06 procee
 - **Adoption decision.** The team decides adoption **by Oct 22** from those pre-registered criteria (consistent with the Oct 22 parameter cut line, SKILL.md §0.4).
 - **Live/service adoption** still needs a later reviewed code change. The shadow-only guard in `larp/runtime/service.py` (`aiand_routed` refuses `execution: service` and `mode: live`) stays as it is; no configuration can bypass it.
 - MR-01–MR-05 and the §7 independent-label experiment remain open with their owners; the trial's small labelled sample (IDEA-057) can triage but cannot establish the §7 non-inferiority margins.
+
+
+## 2026-10-18 amendment — OP-01 implementation requested, adoption pending
+
+Yao Zhu requests a separate PR for peer review of OpenAI-preferred assessment
+with time-paced access to the full remaining credit and high-effort AIand
+fallback (PR133 PC-ROUTE01). Prospective engineering criteria and results belong
+to IDEA-057 OP-01. The candidate uses no permanent reserve; temporary pacing
+refusal can recover later, while actual exhaustion/accounting safety latches
+persist. Current v1/v2 defaults and deployment remain unchanged. This is
+implementation authorization only: no automatic merge, provider call, spend or
+activation. The v3 policy needs independent review, its own budget/quality trial
+evidence, an accepted mirror release and explicit adoption. V2 evidence does
+not qualify OpenAI as the primary assessor. Finite credit cannot guarantee
+OpenAI for every job through the full window or exact exhaustion of every cent.

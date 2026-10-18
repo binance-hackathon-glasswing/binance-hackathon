@@ -167,6 +167,22 @@ class Preferred(unittest.TestCase):
         self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
         self.assertEqual(result['status'],'ASSESSED')
 
+    def test_model_identity_is_stable_across_key_and_period_changes(self):
+        f=self.fx; identity=f.build().model.identity
+        self.assertEqual(identity,f.build(key=False).model.identity)
+        f.w.clock.advance(1000)
+        self.assertEqual(identity,f.build().model.identity)
+
+    def test_clean_primary_needs_no_external_review_when_not_sampled(self):
+        f=self.fx; f.s['audit_sample_bps']=0
+        with patch('larp.intelligence.routing._review_reasons',return_value=[]):
+            # Control the review classifier, exercising only the no-review branch here.
+            _,result=f.run_assessment(f.build())
+        self.assertEqual(result['status'],'ASSESSED')
+        self.assertTrue(f.calls)
+        self.assertTrue(all(c[0]=='openai' for c in f.calls))
+        self.assertEqual(len(result['routing']['stages']),1)
+
     def test_temporary_pacing_uses_aiand_then_restores_openai_next_period(self):
         f=self.fx; router=f.build(); b=router.budget
         token=b.admit(b.snapshot()['available_micro_usd'],'synthetic-other-work'); b.settle(token,None)
@@ -301,6 +317,7 @@ class Preparation(unittest.TestCase):
         for mutate in (lambda s:s['openai_pacing'].update(period_ms=True),
                        lambda s:s['openai_pacing'].update(end_ms=0),
                        lambda s:s['external_reviewers'][0].update(effort='low'),
+                       lambda s:s['external_reviewers'].__setitem__(0,None),
                        lambda s:s.update(openai_pacing={}),lambda s:s.pop('openai_pacing')):
             s=json.loads(self.raw); mutate(s)
             with self.subTest(spec=s),self.assertRaises(IntelligenceError): validate_routing_spec(s)

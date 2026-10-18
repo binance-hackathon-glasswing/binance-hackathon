@@ -1,4 +1,4 @@
-"""Opt-in IDEA-057 external-first assessor, sharing one deadline/tool budget.
+"""Opt-in IDEA-057 routing, sharing one deadline/tool budget.
 
 Every stage runs the real EvidenceAssessor/verifier against original evidence. The OpenAI
 budget is durable and independent of wallet/run IDs. All-external operation includes hard
@@ -33,7 +33,7 @@ def validate_routing_spec(spec, prompt_dir=None):
 
     AIandRouting.v2 adds one pinned stage prompt per model (IDEA-081); each is read from the
     release's routing prompt directory and checked against its hash here, so preparation
-    refuses what startup would refuse."""
+    refuses what startup would refuse. V3 additionally freezes OpenAI-primary credit pacing."""
     fields = {'schema', 'provenance', 'routine', 'external_reviewers', 'openai_model', 'openai_effort',
               'max_output_tokens', 'budget_account', 'audit_sample_bps', 'audit_seed'}
     preferred = type(spec) is dict and spec.get('schema') == 'AIandRouting.v3'
@@ -58,12 +58,12 @@ def validate_routing_spec(spec, prompt_dir=None):
         raise IntelligenceError('Invalid AIand routing specification')
     if preferred:
         validate_pacing(spec['openai_pacing'])
-        if any(entry.get('effort') not in ('high', 'max') for entry in spec['external_reviewers']):
-            raise IntelligenceError('OpenAI preferred routing requires high-effort external fallback')
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
         validate_settings(entry['model_id'], entry['effort'], entry['catalog'], spec['max_output_tokens'])
+    if preferred and any(entry['effort'] not in ('high', 'max') for entry in spec['external_reviewers']):
+        raise IntelligenceError('OpenAI preferred routing requires high-effort external fallback')
     if staged:
         for prompt in [spec['routine']['prompt'], *(e['prompt'] for e in spec['external_reviewers']),
                        spec['openai_prompt']]:
@@ -410,7 +410,7 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
     """Construct without network I/O. Spec bytes are pinned by the runtime config before this call.
 
     AIandRouting.v2 pins one stage prompt per model (`prompt` on each entry, `openai_prompt`);
-    v1 sends every stage the core prompt, as before."""
+    v1 sends every stage the core prompt, as before. V3 prefers OpenAI under frozen pacing."""
     validate_routing_spec(spec, prompt_dir=prompt_dir)
     preferred = spec['schema'] == 'AIandRouting.v3'
     staged = spec['schema'] in ('AIandRouting.v2', 'AIandRouting.v3')
