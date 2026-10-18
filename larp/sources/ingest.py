@@ -57,6 +57,9 @@ class SourceIngestor:
         outcome = {"source_id": source_id, "status": "OK", "pages": 0, "new": [], "versions": [], "withdrawn": [],
                    "duplicates": 0, "rejected": [], "policy_rejected": [],
                    "resumed": cursor["in_progress"] is not None, "truncated": False}
+        head = dict(schema='SourceHeadCoverage.v1', complete=False, checked_ms=None,
+                    anchor_item_id=None, basis='UNANCHORED')
+        outcome['head_coverage'] = head
         progress = cursor["in_progress"] or {}
         if progress and (progress.get("failures", 0) >= MAX_RESUME_FAILURES or not allowed(source, progress["next_url"])):
             outcome["abandoned_continuation"] = progress.get("next_url")  # wedged or poisoned (S4-B d07)
@@ -67,6 +70,15 @@ class SourceIngestor:
         # One-page synthetic recovery fixtures keep their legacy continuation behavior; live paginated
         # sources need at least two pages to serve both lanes (validated by live preflight).
         head_probe = bool(resume and source.limits.get("max_pages", 1) >= 2)
+        scanning_head = head_probe or resume is None
+        head_invalid = False
+        new_in_poll = set()
+        # Only a completed scan may advance an established head checkpoint. Rows
+        # from an unfinished scan cannot prove their own missing middle was covered.
+        checkpoint = list(cursor.get('head_checkpoint', cursor.get('seen', {})))
+        checkpoint_ids = set(checkpoint)
+        durable_rejected = set(cursor.get('rejected', {}))
+        first_head_ids = None
         url = source.listing_url if head_probe else (resume or {}).get("next_url") or source.listing_url
         first = head_probe or resume is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
@@ -84,6 +96,8 @@ class SourceIngestor:
                     raise SourceError("RETRIEVAL_CLOCK_INVALID")
                 now = received  # bytes become available only after retrieval, including all retries
                 if response.status == 304:
+                    if not conditional or not (cursor.get('etag') or cursor.get('last_modified')):
+                        raise SourceError('UNEXPECTED_NOT_MODIFIED')
                     items, next_url, item_truncated = [], None, False
                     outcome["status"] = "NOT_MODIFIED"
                 else:
@@ -100,6 +114,7 @@ class SourceIngestor:
             records = []
             seen, rejected = dict(cursor["seen"]), dict(cursor["rejected"])
             head_anchor = False
+            anchor_id = None
             for item in items:
                 previous = seen.get(item["item_id"])
                 if previous is None:  # the cursor cache is bounded; the store is the durable item index (S4-B d06)
@@ -109,7 +124,11 @@ class SourceIngestor:
                                     "record_id": stored_record["record_id"], "status": stored_record["status"],
                                     "first_seen_ms": stored_record["first_seen_ms"],
                                     "published_ms": stored_record["published"]["ms"]}
-                head_anchor = head_anchor or previous is not None
+                prior_anchor = (item['item_id'] in checkpoint_ids and item['item_id'] not in new_in_poll
+                                and (previous is not None or item['item_id'] in durable_rejected))
+                head_anchor = head_anchor or prior_anchor
+                if prior_anchor and anchor_id is None:
+                    anchor_id = item['item_id']
                 item_hash = digest("larp.sources.item-policy.v1", item)
                 old_rejection = rejected.get(item["item_id"], {})
                 if (old_rejection.get("reason") == "THIRD_PARTY_RIGHTS"
@@ -131,12 +150,27 @@ class SourceIngestor:
                     outcome["rejected"].append([item["item_id"], why])
                     continue
                 records.append(record)
+                if previous is None:
+                    new_in_poll.add(item['item_id'])
                 seen[item["item_id"]] = {"version": record["version"], "content_hash": record["content_hash"],
                                          "record_id": record["record_id"], "status": record["status"],
                                          "first_seen_ms": record["first_seen_ms"],
                                          "published_ms": record["published"]["ms"]}
                 key = "withdrawn" if record["status"] == "WITHDRAWN" else "versions" if record["version"] else "new"
                 outcome[key].append(record["record_id"])
+            if scanning_head:
+                if first_head_ids is None:
+                    first_head_ids = [item['item_id'] for item in items]
+                head_invalid = head_invalid or item_truncated or bool(
+                    [r for r in outcome['rejected'] if r not in outcome['policy_rejected']])
+                if not head_invalid and (head_anchor or not next_url):
+                    head.update(complete=True, checked_ms=now, anchor_item_id=anchor_id,
+                                basis='DURABLE_OVERLAP' if head_anchor else 'END_OF_LISTING')
+                    scanning_head = False
+                    checkpoint = first_head_ids or checkpoint
+                elif not checkpoint and not head_invalid:
+                    # Initial observed head is a baseline, not a claim of complete history.
+                    checkpoint = first_head_ids
             pages_done += 1
             cycle_incomplete = cycle_incomplete or item_truncated
             if head_probe:
@@ -158,9 +192,13 @@ class SourceIngestor:
             if next_url and not more:
                 outcome["truncated"] = True  # page limit reached with pages left: coverage is incomplete
             published = [r["published"]["ms"] for r in records if r["published"]["ms"] is not None]
+            continuation = {"next_url": next_url, "pages_done": pages_done,
+                            "coverage_incomplete": cycle_incomplete} if next_url else None
+            # A successful head probe is not a successful retry of a failed history page.
+            if continuation and resume and next_url == resume['next_url']:
+                continuation['failures'] = resume.get('failures', 0)
             cursor = dict(cursor, version=cursor["version"] + 1, seen=self._bounded(seen), rejected=rejected,
-                          in_progress={"next_url": next_url, "pages_done": pages_done,
-                                       "coverage_incomplete": cycle_incomplete} if next_url else None,
+                          in_progress=continuation, head_coverage=dict(head), head_checkpoint=list(checkpoint),
                           watermark_ms=max([cursor["watermark_ms"] or 0] + published) or None,
                           last_truncated=bool(next_url or outcome["truncated"]),
                           health=dict(health, status="OK", last_success_ms=now, consecutive_failures=0,
@@ -187,6 +225,9 @@ class SourceIngestor:
         if rejection:
             return None, rejection
         exclusions = exclusions + [f"FIELD_NOT_RETRIEVED:{f}" for f in item.get("excluded_fields", [])]
+        removed = (response.media_removed or {}).get(item['item_id'], 0)
+        if removed:
+            exclusions.append(f'MEDIA_REMOVED_AT_TRANSPORT:{removed}')
         permitted = {"title": item.get("title"), "body": body, "url": item.get("url"),
                      "published_raw": item.get("published_raw"), "doc_type": item.get("doc_type"),
                      "event_times": item.get("event_times"), "withdrawn": bool(item.get("withdrawn")),
@@ -230,6 +271,9 @@ class SourceIngestor:
                                                    aliases=self.aliases),
             "authority": "SHADOW_ONLY",
         }
+        if response.wire_sha256:
+            record['listing'].update(wire_sha256=response.wire_sha256, wire_bytes=response.wire_bytes,
+                                     normalized_sha256=digest_bytes(response.body))
         record["record_id"] = "src:" + Document.from_dict(record).digest("larp.source.record.v1")
         return record, None
 
