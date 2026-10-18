@@ -1,8 +1,8 @@
 {
  "schema": "DeviationsRegister.v1",
- "updated": "2026-10-12",
+ "updated": "2026-10-18",
  "proposal": "docs/proposal/proposal_answers.md",
- "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 §4.3); details that exist only in owner code not yet integrated are added when it is integrated.",
+ "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 \u00a74.3); details that exist only in owner code not yet integrated are added when it is integrated.",
  "rows": [
   {
    "id": "DEV-01",
@@ -23,7 +23,7 @@
   {
    "id": "DEV-02",
    "area": "Entry rule",
-   "declared": "P(UP) and the margin P(UP) − P(DOWN) clear thresholds fit on validation data.",
+   "declared": "P(UP) and the margin P(UP) \u2212 P(DOWN) clear thresholds fit on validation data.",
    "v1_behaviour": "Entries follow the equal-weight book: the time window, a fresh review, no unresolved red flag, the price-impact and entry-cost gates, and the 75% top-up threshold. There are no probability thresholds.",
    "reason": "No decision model (DEV-01); the team set an 80% invested target (B5) after F-115 made a mostly-cash default unsuitable.",
    "evidence": [
@@ -38,7 +38,7 @@
   {
    "id": "DEV-03",
    "area": "Sizing",
-   "declared": "Position size = 1% of equity ÷ (2 × expected 5-session volatility).",
+   "declared": "Position size = 1% of equity \u00f7 (2 \u00d7 expected 5-session volatility).",
    "v1_behaviour": "Equal weight: four names at 20% of equity each (80% gross); topped up while gross is below 75%; never resized on drift.",
    "reason": "Team decision B5 (Option 1); equal weight needs no estimate and fits the declared caps.",
    "evidence": [
@@ -53,7 +53,7 @@
   {
    "id": "DEV-04",
    "area": "Cash floor",
-   "declared": "≤ 80% gross exposure, so at least 20% stays in cash.",
+   "declared": "\u2264 80% gross exposure, so at least 20% stays in cash.",
    "v1_behaviour": "80% gross is a buy-time ceiling. Price drift may take gross above it; forced trims start only above 25% per name or 90% gross.",
    "reason": "Avoids cap-trim micro-trades that would sell on every small rally (IDEA-017); decided with the B5 rebalance rule.",
    "evidence": [
@@ -67,8 +67,8 @@
   {
    "id": "DEV-05",
    "area": "Liquidity cap",
-   "declared": "The order is ≤ 10% of the quoted depth.",
-   "v1_behaviour": "Price-impact limit: impact ≤ min(50 bp, 2 × logged median) and total entry cost (spread + impact + gas ÷ size) ≤ 50 bp.",
+   "declared": "The order is \u2264 10% of the quoted depth.",
+   "v1_behaviour": "Price-impact limit: impact \u2264 min(50 bp, 2 \u00d7 logged median) and total entry cost (spread + impact + gas \u00f7 size) \u2264 50 bp.",
    "reason": "The Web3 Open API quote has no depth field; the impact fields replace it.",
    "evidence": [
     "GAP-51",
@@ -224,7 +224,7 @@
    "id": "DEV-16",
    "area": "Execution flow",
    "declared": "Web3 API quote/build/simulate",
-   "v1_behaviour": "Kit flow: quote → approve exactly the order amount → re-quote → gas estimate → swap; recovery by nonce and transaction hash.",
+   "v1_behaviour": "Kit flow: quote \u2192 approve exactly the order amount \u2192 re-quote \u2192 gas estimate \u2192 swap; recovery by nonce and transaction hash.",
    "reason": "The Web3 Open API has no build/simulate or order-hash flow for bStocks.",
    "evidence": [
     "I-68",
@@ -265,14 +265,15 @@
    "id": "DEV-19",
    "area": "Assessor model",
    "declared": "**Hosted reasoning LLM for the evidence step:**",
-   "v1_behaviour": "OPEN: Claude or ChatGPT chosen after system testing (B8), or the deterministic assessor (no model call) declared as v1.0.",
-   "reason": "Model choice and budget deferred; paid APIs need a budget.",
+   "v1_behaviour": "Opt-in unsigned AIandRouting.v3 trial: OpenAI gpt-6.1-sol medium primary; independent high-effort AIand Kimi K3 then GLM-5.3 review/fallback. All claims remain deterministically verified; failures/verified disagreement withhold authority. Default remains deterministic shadow until prepared routing is installed. Signed/scored adoption is pending.",
+   "reason": "User selects OpenAI-primary v3 and Yao approved Keith's PR168 trial protocol (PC-REL05). V3 paces the full US$50 allocation including US$2 owner-reported prior spend, with no permanent reserve; legacy v2 limits remain separate. Actual provider/account/rights qualification, stop-cap enforcement, measurements and final adoption remain pending.",
    "evidence": [
     "IDEA-035",
+    "IDEA-057",
     "GAP-57",
     "D-03"
    ],
-   "decided": "OPEN",
+   "decided": "2026-10-18",
    "status": "DRAFT"
   },
   {
@@ -292,7 +293,7 @@
    "id": "DEV-21",
    "area": "Gas reserve",
    "declared": "A gas-reserve floor keeps enough gas for exits.",
-   "v1_behaviour": "The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT → BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. The first BNB must already be in the wallet (Q-03).",
+   "v1_behaviour": "The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT \u2192 BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. The first BNB must already be in the wallet (Q-03).",
    "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled.",
    "evidence": [
     "IDEA-035",
