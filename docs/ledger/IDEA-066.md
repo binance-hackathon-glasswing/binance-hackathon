@@ -296,3 +296,33 @@ and first assessment/receiver ACK. Keith retains actual usage/labels; team
 retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
 raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
 is claimed. These result-only records change no manifested runtime file.
+
+
+## PC-MIRROR01 — explicit approved CI mirror in local package checker
+
+Yao approves the checker correction on Oct18. Existing PC-DEC01 (retained on
+PR133, docs/build/GATE_A.md) already accepts Keegan4 mirror release bytes when
+production bind verification passes. The continuation incorrectly elevated the
+known mirror-only local failure into a new deployment blocker; correct that
+statement without erasing the original observed FAIL. No new mirror approval,
+manifest rewrite, binary rebuild or paid/host operation is needed for the
+existing accepted86b1476 release. A corrected local verifier may inspect that
+unchanged bundle, recording verifier SHA separately from candidate build SHA.
+
+Prospective criteria, before new code/tests execute:
+- M1: registered challenge repository and exact approved Keegan4 mirror origins
+  (canonical HTTPS, optionally .git) qualify; other origins, lookalike URL hosts,
+  credentials/query/fragment/path variants and a mirror attached to another
+  registered repository refuse. No arbitrary origin override or wildcard trust.
+- M2: approved origin cannot bypass exact prepared-build/registered-repository,
+  remote_verified, unbound-manifest, per-file hashes or complete release/register
+  checks. Preserve old rejection tests and verify those defects with mirror too.
+- M3: all successful paths remain read-only; local_ready never implies Gate A,
+  remote CI verification, live signing, network or database authority.
+- M4: commit/push tests before RED; commit/push implementation before GREEN;
+  run focused package/preparation/release tests and record honest environment
+  limits. Recheck the original saved86b1476 package with the pushed verifier;
+  keep its bytes/manifest/checksums unchanged and retain the historical FAIL.
+- M5: keep PR133 OPEN and update its current decision/checklist/backlog wording;
+  record review/merge and future release propagation separately. No host
+  mutation, service activation, ledger command or paid inference in this fix.
