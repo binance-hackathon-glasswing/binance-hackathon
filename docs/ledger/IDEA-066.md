@@ -1161,3 +1161,19 @@ stay outside Git; only the blind ZIP goes to annotators. Yao obtains independent
 readings/adjudication; custodian/Keith scores after gold freeze. Labels
 NOT_STARTED/scoring NOT_RUN; neither T01 nor v3 M9 is qualified. No host changes,
 inference calls, baseline replay or messaging to others occurred.
+
+### PC-LABEL02-R1 — returned AI annotation validation
+
+Yao returned two AI label files. Both originals preserved byte-for-byte outside
+Git; all four case IDs/full-read/no-answer-exposure declarations checked.
+All31 quoted spans (15/16) pass exact source hash and Unicode-offset validation.
+AI provenance and limited/declined implementer independence remain explicit.
+Uncertain/disputed semantic labels still need baseline-blind adjudication under
+the frozen rubric; the output-aware custodian does not serve as blind annotator.
+Private adjudication ZIP59023 bytes/SHA0865de5f…ac14 was source/hash/ZIP verified
+and excludes assessor outputs. Input hashes/provenance/status only are saved in
+../build/evidence/deterministic-label-return-review-20261018.json; private label
+contents stay outside Git. Gold NOT_FROZEN/scoring NOT_RUN, with no baseline
+unblinding for this review. Yao supplies independent adjudication; custodian/Keith
+validates/freezes gold then scores original representatives. No model rerun,
+paid call or host change; T01/v3 M9 are unqualified.

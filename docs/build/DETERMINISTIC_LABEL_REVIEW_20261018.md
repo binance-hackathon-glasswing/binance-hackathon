@@ -81,3 +81,40 @@ both originals and adjudicated gold. Custodian/Keith validates source spans and
 one-to-one matching, then scores the four original representatives and reports
 duplicate outcomes separately. Actual labels NOT_STARTED; scoring NOT_RUN.
 T01/v3 M9 remain unqualified. Empty templates are not gold negatives.
+
+## PC-LABEL02-R1 — two AI readings returned; blind adjudication pending
+
+Yao supplied the Claude and GPT annotation files. Both original byte streams are
+retained privately unchanged, with SHA-256/byte counts recorded in the sanitized
+[evidence review](evidence/deterministic-label-return-review-20261018.json).
+Both parse as IndependentBlindLabels.v1, cover all four cases and declare full
+saved-document reading and no baseline-answer exposure. All31 exact quotation
+records (15 and16) match their source file hashes and zero-based Unicode spans;
+no citation/offset repair was needed.
+
+These are AI-generated readings, not two verified independent human annotations.
+One explicitly declines implementer-independence attestation; the other limits
+its independence statement to its annotation session and discloses repository
+summary exposure. Preserve those provenance limitations rather than upgrading
+independence silently. One reading leaves a case uncertain; semantic statement
+classification/scope/granularity questions remain for a reviewer. Citation
+correctness alone is not gold-label correctness.
+
+The custodian performed mechanical validation only, and did not semantically
+adjudicate gold or access baseline outputs for this returned-label review.
+The frozen rubric requires independent review of uncertainty before unblinding
+and excludes an output-aware custodian from acting as its blind annotator.
+
+A private source/labels/questions/template ZIP was prepared for the baseline-
+blind adjudicator: LARP-blind-adjudication-20261018.zip,59023 bytes, SHA-256
+`0865de5ffec62453ccc0e074feeeb0cac39149c5e3da4eec46ebfa206101ac14`.
+Original source-file hashes and every review-manifest file were reverified;
+ZIP integrity PASS. No assessor outputs, private answer/case maps or population
+exports are included. Private packet is beside the original in Downloads under
+label-review-20261018. Source labels/dispute content remain outside Git.
+
+**Remaining:** Yao supplies a baseline-blind independent adjudication with final
+source-supported labels, question resolutions and exposure/identity provenance.
+Custodian/Keith verifies it, freezes/hashes gold, then scores the already frozen
+first requests with duplicate outcomes separate. Gold NOT_FROZEN; scoring NOT_RUN.
+No paid calls, model reruns or host changes. Formal T01/v3 M9 stay unqualified.
