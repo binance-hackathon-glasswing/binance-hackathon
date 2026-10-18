@@ -126,3 +126,12 @@ R11–R16 PASS at pushed `91cfc7e` (implementation `2628603`): full offline suit
 GitHub Actions run [39017535732](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39017535732), head `91cfc7e`, runtime job117352623646 annotation confirms the job was not started because recent account payments failed or spending limit needs increasing (#98). No org-CI pass, Linux/systemd acceptance, official host bundle or hosted/live qualification is claimed.
 
 [Issue #152](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/152) tracks these completed repository review fixes and is the closing issue for PR #130. Parent #33 and source task #138 remain open; no entire GAP29 item is removed. Required next work: Isaac obtains real verified router/facet source and ABI, deployed implementation/bytecode attribution and all four source guarantees, with Keegan's independent review; Isaac runs the recorded-real route check. Actual on-chain deadline/authorization timing (#27), caps approval (#44), provider qualification, funding/key/host setup and logged dev approve/swap/rehearsal remain separate and blocked as previously recorded. The new debit guarantee is mandatory for future evidence; existing three-guarantee templates must be updated, never assumed true. This review supersedes the earlier record's inference of an actual approximately30s encoded deadline: only the kit's approximate quote lifetime was known.
+
+## SP-01 — signed-prerequisite follow-through (2026-10-18, prospective)
+
+User-authorized scope and pass criteria are recorded in
+[the SP-01 contract](../build/SIGNED_PREREQUISITES_20261018.md). Source acquisition
+gets bounded public rechecks; route replay remains conditional on truthful
+RouterEvidence and independent review. Keith's interim artifacts are now present
+in PR133; their delivery alone does not clear source, fees, current caps or gas.
+No AWS, signer session or key operation is authorized in this workstream.
