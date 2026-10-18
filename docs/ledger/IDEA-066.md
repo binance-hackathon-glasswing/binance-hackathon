@@ -1002,3 +1002,34 @@ Machine-readable receipt/hashes: ../build/evidence/local-v3-receipt-20261018.jso
 Remaining: Yao report/accounts/caps/SSM deployment, Keegan report/release review,
 Keith measured affordability/labels; signed gates remain separate. No whole GAP
 completed; pre-existing untracked Claude outputs/ untouched.
+
+## PC-ISAAC-NOW01 — each immediate point isolated (2026-10-18)
+
+User: "help me do what is needed now, do each point in its own PR". Clarification:
+no router source export, private native RPC config or additional funding hash
+available. This authorizes the earlier exact SP-NET approval proposal; the
+review-only automatic approval blocker is superseded, with no AWS/client config
+change or live traffic.
+
+- Point1: PR171, SP-NET D2; same-host signed/live scope only;40 tests/48 subtests
+  pass with synthetic external ports and disposable PostgreSQL. Open for review.
+- Point2: existing draft PR139 retained, IDEA070 RE-02. Three exact public source
+  alternatives produce403/301/Missing-Invalid-API-Key; no source or ABI available,
+  no guarantees/reviewer invented; route check NOT_RUN. Intake/vendor draft ready;
+  no message sent.
+- Point3: PR173, IDEA039 NT-Q1. Bounded production native-receipt qualification
+  tool/privacy/refusals;42 tests/56 subtests pass with disposable PostgreSQL.
+  PublicNode rejects recent/historical prestateTracer; SubQuery DNS fails. No
+  private trace-capable account available, so actual qualification/host and #30
+  remain open. No signup/payment/runtime enablement.
+- Point4: draft PR172, IDEA039 FG-02. Fourteen public reads bind canonical
+  finalized chain56 snapshot at10:59:12UTC,98USDT,2694498869362886wei BNB,
+  nonces2/2/2, plus the historical funding receipt. No new transaction supplied
+  or performed. Exact MetaMask/reconciliation/record handoff is ready; Isaac
+  wallet action and Yao post-last-seed opening capture remain incomplete/#106 open.
+
+Child evidence JSON/public response hashes and diffs verify. Source/funding
+slices are evidence/docs only, with no unnecessary application tests. No AWS,
+wallet key, signing/transaction, model/official-log action. Parent133 is a
+coordination record; none of the child PRs is silently merged. Open ownership is
+in the checklist's "Isaac immediate points" table and each child ledger entry.
