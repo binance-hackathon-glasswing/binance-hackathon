@@ -126,3 +126,40 @@ R11–R16 PASS at pushed `91cfc7e` (implementation `2628603`): full offline suit
 GitHub Actions run [39017535732](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39017535732), head `91cfc7e`, runtime job117352623646 annotation confirms the job was not started because recent account payments failed or spending limit needs increasing (#98). No org-CI pass, Linux/systemd acceptance, official host bundle or hosted/live qualification is claimed.
 
 [Issue #152](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/152) tracks these completed repository review fixes and is the closing issue for PR #130. Parent #33 and source task #138 remain open; no entire GAP29 item is removed. Required next work: Isaac obtains real verified router/facet source and ABI, deployed implementation/bytecode attribution and all four source guarantees, with Keegan's independent review; Isaac runs the recorded-real route check. Actual on-chain deadline/authorization timing (#27), caps approval (#44), provider qualification, funding/key/host setup and logged dev approve/swap/rehearsal remain separate and blocked as previously recorded. The new debit guarantee is mandatory for future evidence; existing three-guarantee templates must be updated, never assumed true. This review supersedes the earlier record's inference of an actual approximately30s encoded deadline: only the kit's approximate quote lifetime was known.
+
+## SR-01 — signer startup prerequisites (2026-10-18, prospective)
+
+Isaac requested implementation of the remaining signer preparation, preserving
+separate PRs, no AWS changes and key placement only in Yao's approved session.
+Baseline integration1306bbb still lets a dev signer use the explicitly undecided
+example cap label. Its `check` command returns configuration_valid before loading
+router evidence; `run` can start with UnverifiedRouter and sign approvals.
+This is not a reproduced caps bypass: independent per-request policy checks
+remain implemented. It is a premature-start/qualification gap.
+
+Pass criteria written before execution:
+1. Both production CLI modes (`dev`, `live`) refuse the example cap marker,
+   including surrounding whitespace, for check and run before DB or key access.
+   An arbitrary different label is not independent evidence of owner approval;
+   exact numeric approval/profile/holdings and policy hashes remain #44.
+2. Check and run require loadable hash-pinned RouterEvidence.v1 for a spender in
+   the signer's own policy. Missing/changed/malformed evidence, invalid guarantees
+   and another router refuse with exit4 before DB access or key loading.
+3. A positive offline check uses the real decoder/manifest/config validation,
+   reports the exact evidence hash and local scope with signing_enabled=false
+   and gate_b_accepted=false. It does not touch DB/key/network or claim actual
+   source provenance, independent review, registered-run/host/receipt acceptance.
+4. Run retains registration/quarantine/build/wallet/key/authority checks; existing
+   PostgreSQL command tests use explicit synthetic pinned evidence. A source edit
+   between check and run refuses. No fabricated real source or adopted cap/L is
+   introduced. Direct all-fake unit fixtures remain usable.
+5. Push the regression tests/criteria before RED, then implementation before
+   GREEN. Run focused startup/policy/router/authority regressions with a throwaway
+   local PostgreSQL; record exact counts/skips. No wallet credentials, RPC,
+   provider account, AWS, key placement, broadcast or official receiver access.
+
+Remaining prerequisites are unchanged: real source and Keegan review (#139/#138),
+recorded-real router check, Keegan's #27 lifetime decision/implementation and
+real timing, measured #44 acceptance, native/provider/route-fee evidence,
+funding reconciliation, exact signed bundle and Yao's provisioning/approved
+signer session/hosted rehearsal. SR-01 does not claim the signer is ready.
