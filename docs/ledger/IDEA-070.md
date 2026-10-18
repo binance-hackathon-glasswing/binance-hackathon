@@ -170,3 +170,24 @@ Check accepted missing/changed evidence and lacked local-scope/hash reporting;
 run reached DB access first; dev and whitespace-wrapped pending cap labels were
 accepted. Mock DB/key adapters proved ordering without network or real key use.
 Log: `/private/tmp/larp-signer-readiness-red.log`.
+
+SR-01 GREEN at pushed f9d0917: **139 passed,0 skipped,219 subtests passed**,
+24.35s, macOS/Python3.12.14 with disposable PostgreSQL14.24. Command: pytest
+`tests/signer tests/execution/test_router_wiring.py tests/execution/test_router_decoder.py tests/execution/test_router_review.py tests/execution/test_section_c_signed_state.py tests/execution/test_signing_request.py tests/runtime/test_service_configs.py`.
+Log: `/private/tmp/larp-signer-readiness-green.log`. Existing PostgreSQL
+registration/quarantine/key/wallet, immutable authority and malicious-intent
+checks pass with explicit synthetic pinned evidence. Four new readiness tests
+exercise both environments/commands, whitespace markers, absent/missing/changed/
+malformed/other-router evidence and the local-only positive check. Evidence is
+re-read on every invocation, so an edit after check is refused by run.
+
+Implementation refuses the undecided marker rather than proving approval: a
+non-example cap_basis string is still an operator assertion, not independent
+owner approval. No cap number, proposal freshness, signing lifetime, router
+semantics or runtime policy was adopted or weakened. Direct fake-unit signers
+retain their existing UnverifiedRouter swap refusal for isolated tests; the
+production CLI now requires pinned evidence before DB/key access. The shared
+check/run precheck does not inspect registered-run state or host permissions;
+run still applies its existing registration/quarantine/release gates afterward.
+No new Linux/systemd/bundle or hosted acceptance is claimed from this local
+suite. A reviewed signed release including this change is still required.
