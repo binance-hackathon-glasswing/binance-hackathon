@@ -79,9 +79,13 @@ class Caps(unittest.TestCase):
         b=self.init();x=b.admit(2_499_999,'bound');b.before_dispatch(x);b.settle(x,2_500_000)
         self.assertTrue(self.reopen().snapshot()['trial']['stopped'])
         self.now=0
-        with self.assertRaises(IntelligenceError):self.reopen().admit(1,'rollback')
+        self.assertIsNone(self.reopen().admit(1,'rollback'))  # existing account latch already refuses all spend
         self.now=DAY+1
         self.assertTrue(self.reopen().snapshot()['trial']['stopped'])
+
+    def test_clock_rollback_without_prior_latch_refuses_and_persists_watermark(self):
+        b=self.init();self.now=2000;b.snapshot();self.now=1000
+        with self.assertRaisesRegex(AdmissionDeferred,'CLOCK_ROLLBACK'):self.reopen().admit(1,'backward')
 
     def test_window_boundary_refunds_only_unsent(self):
         b=self.init();x=b.admit(100,'unsent');y=b.admit(200,'sent');b.before_dispatch(y);b.settle(y,None)

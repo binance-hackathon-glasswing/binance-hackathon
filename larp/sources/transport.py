@@ -65,6 +65,10 @@ def _doj_without_inline_images(body):
             html = value.get('value') if type(value) is dict else value
             if type(html) is not str:
                 continue
+            from larp.sources.rights import NOT_COVERED
+            if NOT_COVERED.search(html):
+                # Do not remove an image attribute which could carry an item-level rights restriction.
+                raise ValueError()
             cleaned, count = image.subn(' ', html)
             if count:
                 if type(row.get('uuid')) is not str or row['uuid'] in removed:

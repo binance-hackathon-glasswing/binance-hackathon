@@ -147,7 +147,7 @@ class SourceIngestor:
                 outcome[key].append(record["record_id"])
             if scanning_head:
                 head_invalid = head_invalid or item_truncated or bool(
-                    set(outcome['rejected']) - set(outcome['policy_rejected']))
+                    [r for r in outcome['rejected'] if r not in outcome['policy_rejected']])
                 if not head_invalid and (head_anchor or not next_url):
                     head.update(complete=True, checked_ms=now, anchor_item_id=anchor_id,
                                 basis='DURABLE_OVERLAP' if head_anchor else 'END_OF_LISTING')

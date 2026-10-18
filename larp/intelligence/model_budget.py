@@ -71,7 +71,8 @@ class ModelBudget:
         self.pacing = json.loads(_policy_bytes(pacing)) if pacing is not None else None
         if trial is not None:
             validate_trial(trial)
-            if pacing is None or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+            if (pacing is None or trial['total_micro_usd'] > total or trial['utc_day_micro_usd'] > total
+                    or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']):
                 raise IntelligenceError('Trial requires matching paced allocation/window')
         self.trial = json.loads(_policy_bytes(trial)) if trial is not None else None
         self.clock = clock_ms if clock_ms is not None else lambda: time.time_ns() // 1_000_000
@@ -91,7 +92,8 @@ class ModelBudget:
                    pacing=None, trial=None, clock_ms=None):
         if trial is not None:
             validate_trial(trial)
-            if pacing is None or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+            if (pacing is None or trial['total_micro_usd'] > total or trial['utc_day_micro_usd'] > total
+                    or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']):
                 raise IntelligenceError('Trial requires matching paced allocation/window')
         if pacing is not None:
             validate_pacing(pacing)
@@ -131,7 +133,8 @@ class ModelBudget:
     def enable_trial(cls, path, account, *, trial, pacing, total=50_000_000, reserve=0, clock_ms=None):
         """Attach a first trial only to an unused paced ledger; never guess old dispatch days."""
         validate_trial(trial)
-        if not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+        if (trial['total_micro_usd'] > total or trial['utc_day_micro_usd'] > total or
+                not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']):
             raise IntelligenceError('Trial window must fit pacing window')
         old = cls(path, account, pacing=pacing, total=total, reserve=reserve, clock_ms=clock_ms)
         with old.transaction() as db:
@@ -147,19 +150,29 @@ class ModelBudget:
         db.execute('INSERT INTO pacing VALUES(1,?,-1)', (_policy_bytes(policy),))
 
     @classmethod
-    def enable_pacing(cls, path, account, *, pacing, total=50_000_000, reserve=10_000_000, clock_ms=None):
+    def enable_pacing(cls, path, account, *, pacing, total=50_000_000, reserve=10_000_000,
+                      trial=None, clock_ms=None):
         """Explicit development migration. Never clear charges, unknowns or a safety latch."""
         validate_pacing(pacing)
         if total != pacing['total_micro_usd']:
             raise IntelligenceError('Pacing migration total mismatch')
+        if trial is not None:
+            validate_trial(trial)
+            if (trial['total_micro_usd'] > total or trial['utc_day_micro_usd'] > total or
+                    not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']):
+                raise IntelligenceError('Trial window must fit paced allocation')
         old = cls(path, account, total=total, reserve=reserve)
         with old.transaction() as db:
             initial = db.execute("SELECT amount,state FROM charges WHERE id='initial'").fetchone()
             if initial != (pacing['prior_spent_micro_usd'], 'SETTLED'):
                 raise IntelligenceError('Pacing migration prior spend mismatch; reconciliation required')
+            if trial is not None and db.execute("SELECT 1 FROM charges WHERE id!='initial' LIMIT 1").fetchone():
+                raise IntelligenceError('Prior request attribution requires reconciliation before trial migration')
             cls._create_pacing(db, pacing)
             db.execute('UPDATE account SET reserve=0 WHERE id=1')
-        return cls(path, account, total=total, reserve=0, pacing=pacing, clock_ms=clock_ms)
+            if trial is not None:
+                cls._create_trial(db, trial)
+        return cls(path, account, total=total, reserve=0, pacing=pacing, trial=trial, clock_ms=clock_ms)
 
     @contextmanager
     def transaction(self):
@@ -397,9 +410,8 @@ def main(argv=None):
     elif args.command == 'enable-pacing':
         if not options:
             parser.error('enable-pacing requires --routing-file')
-        budget = ModelBudget.enable_pacing(args.path, args.account, pacing=options['pacing'], total=options['total'])
-        if 'trial' in options:
-            budget = ModelBudget.enable_trial(args.path, args.account, **options)
+        budget = ModelBudget.enable_pacing(args.path, args.account, pacing=options['pacing'],
+                                           total=options['total'], trial=options.get('trial'))
     elif args.command == 'init':
         budget = ModelBudget.initialize(args.path, args.account, initial_spent=args.initial_spent_micro_usd, **options)
     else:
