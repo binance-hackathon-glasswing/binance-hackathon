@@ -389,3 +389,27 @@ preparation/binding/activation and the first routed assessment remain open.
 No services restarted, configs installed, inference invoked or wallet action
 performed in this verification. Storing a new secret version alone does not
 switch the currently deployed deterministic shadow run.
+
+
+## PC-BUD01 — reported model balances and remaining allowance (2026-10-18)
+
+Yao Zhu reports **US$48 remaining OpenAI credit** and **100+ on the Chinese-model
+account**, asking whether that is enough. These are user-reported balances, not
+provider/API-verified billing. AIand currency and exact usable balance are not
+confirmed. No pricing assumption, paid request or budget initialization performed.
+
+Under the existing original US$50 allocation, if US$48 is exact and there have
+been no credit additions/adjustments, prior spend is US$2 =2,000,000 micro-USD.
+The unchanged US$40 cumulative operating limit then leaves **US$38 operating
+headroom**, preserving the US$10 reserve. This covers the proposed US$8 OpenAI
+trial ceiling (K1 stops OpenAI at that charge; the proposed daily trigger is
+US$2.50). It does not establish complete-window provider funding or model quality.
+If the displayed48 is rounded or account credit movements differ, use the actual
+billing/prior-usage figure instead of initializing from this conditional inference.
+
+For AIand, retain the existing M4 usage reporting and Keith's funding projection
+through Nov12 with margin; a100+ balance alone cannot establish sufficiency without
+currency, actual token/call usage and effective charges. Trial bars and release
+acceptance remain separate. Do not treat this balance report as adoption or
+permission for unbounded paid calls. Record the final initial charge and P1
+snapshot in IDEA057 when the reviewed host initialization occurs.
