@@ -5,6 +5,7 @@ reservation is charged before dispatch. Missing/failed/abandoned usage keeps its
 This is an allocated runtime budget, not a claim to know unrelated account/console spending.
 """
 import argparse
+import hashlib
 from contextlib import closing, contextmanager
 import json
 import os
@@ -28,6 +29,12 @@ def validate_pacing(policy):
 
 def _policy_bytes(policy):
     return json.dumps(policy, sort_keys=True, separators=(',', ':'))
+
+
+def _bound_pacing(pacing, trial):
+    if trial is None:
+        return _policy_bytes(pacing)
+    return _policy_bytes(dict(pacing, trial_policy_sha256=hashlib.sha256(_policy_bytes(trial).encode()).hexdigest()))
 
 
 DAY_MS = 86_400_000
@@ -123,6 +130,10 @@ class ModelBudget:
 
     @staticmethod
     def _create_trial(db, policy):
+        pacing = json.loads(db.execute('SELECT policy FROM pacing WHERE id=1').fetchone()[0])
+        # The pre-cap release compares this entire string on every transaction.
+        # Bind the trial here so old in-memory workers also fail closed after migration.
+        db.execute('UPDATE pacing SET policy=? WHERE id=1', (_bound_pacing(pacing, policy),))
         db.execute('CREATE TABLE trial (id INTEGER PRIMARY KEY CHECK(id=1), policy TEXT NOT NULL, '
                    'last_ms INTEGER NOT NULL, stopped INTEGER NOT NULL, reason TEXT NOT NULL)')
         db.execute('INSERT INTO trial VALUES(1,?,-1,0,\'\')', (_policy_bytes(policy),))
@@ -188,7 +199,7 @@ class ModelBudget:
                 has_pacing = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='pacing'").fetchone()
                 if bool(has_pacing) != (self.pacing is not None):
                     raise IntelligenceError('Model budget pacing policy mismatch')
-                if has_pacing and db.execute('SELECT policy FROM pacing WHERE id=1').fetchone() != (_policy_bytes(self.pacing),):
+                if has_pacing and db.execute('SELECT policy FROM pacing WHERE id=1').fetchone() != (_bound_pacing(self.pacing, self.trial),):
                     raise IntelligenceError('Model budget pacing policy mismatch')
                 has_trial = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='trial'").fetchone()
                 if bool(has_trial) != (self.trial is not None) or (has_trial and
