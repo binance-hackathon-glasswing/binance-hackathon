@@ -156,3 +156,41 @@ Only documentation differs from accepted7a0ea14; no new runtime/bundle is needed
 Raw verification logs stay outside Git under
 `/workspace/larp-cloud/llm-trial-handoff-20261018/`. These are synthetic/local
 checks, not the future host report or independently downloaded release bytes.
+
+## PC-REL02 — concurrent protocol and budget reconciliation (2026-10-18)
+
+During PC-REL01 publication, PR166 supplied TRB-01A–E review corrections and
+PR133 advanced to2bac3a5 with PC-BUD02/03. Reviewed those published deltas.
+TR-AC2 now confirms TRB-01 at6f377dd, superseding our first unchanged-original
+bar confirmation where inconsistent. The dated handoff/decision JSON identify
+one current protocol, including ordered verdicts,90% recall/positive and route
+minima, end-charge forecast, strict spending stops and72 unsigned hours.
+
+PC-BUD03's owner confirmation supplies prior spend2,000,000 micro-USD from the
+original50/exact48 balance, retaining10 reserve/40 operating and38 headroom;
+the temporary5-reserve proposal was withdrawn. This supersedes our earlier
+"exact input still pending" wording. Actual P1 initialization/snapshot and real
+provider/funding checks are still unverified here. The same7a0ea14 release and
+fixed-window PC-GAP01 explanation remain accepted; these docs require no new
+bundle, host change or paid request. Keith's proposal task is supplied; labels,
+matching rubric, reporting and remaining rights/funding tasks stay open.
+
+PC-REL02 final publication: corrected protocol PR166 merged into its stacked
+checklist target at a3fa18a; PR133 remains OPEN at e9e07b1 and PR126 remains
+OPEN. The checklist's three Keegan decision rows are complete. TRB-01 proposal
+bytes/hash and all decision fields were independently checked; all touched
+relative links, unique ledger IDs and whitespace/conflict checks pass. This
+integration update imports only the corrected runbook wording and completion
+record, not the unmerged checklist/PR133 or any runtime/config/test changes.
+
+New owner updates in PC-BUD03 confirm prior spend2,000,000 with the unchanged
+10,000,000 reserve; actual host P1 snapshot is pending. PC-ROUTE01 on the
+checklist branch is a future proposed OpenAI-preference/time-pacing/full-credit
+design, not an adopted replacement. The accepted7a0ea14 release remains GLM
+routine/OpenAI difficult review with Kimi/GLM fallback under the current40/10
+policy. No paused or permanent fallback behavior was changed by these docs.
+Actual fixed-window report and scoped exception checks, provider/rights/funding,
+installation/bind/activation, first assessment, labels and later adoption remain
+with their existing owners. No service, API inference, wallet, host or AWS action
+was performed. The source-report verification remains24 passed/18 subtests;
+no additional runtime tests for documentation-only protocol reconciliation.
