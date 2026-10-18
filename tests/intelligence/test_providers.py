@@ -208,7 +208,8 @@ class ThroughTheAssessor(unittest.TestCase):
                 time.sleep(real_sleep_s)
             self.w.clock.advance(latency)
             sent = json.loads(body)
-            state = json.loads(sent["messages"][0]["content"] if cls is AnthropicMessagesModel else sent["input"])
+            state = json.loads(sent["messages"][0]["content"] if cls is AnthropicMessagesModel
+                               else sent["input"].split("\n", 1)[1])  # after the JSON label
             make = anthropic_reply if cls is AnthropicMessagesModel else openai_reply
             return 200, json.dumps(make(decide(state))(sent)).encode()
         return cls(model_id="example-model-id", api_key=SECRET, prompt_text=self.w.config.prompt_text,

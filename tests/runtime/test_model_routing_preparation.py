@@ -206,7 +206,7 @@ class ModelPreparation(unittest.TestCase):
         def openai(url, headers, raw, timeout):
             body = json.loads(raw)
             calls.append(body['model'])
-            state = json.loads(body['input'])
+            state = json.loads(body['input'].split('\n', 1)[1])  # after the JSON label
             texts.append(json.dumps(state))
             return 200, encoded(dict(model=body['model'], status='completed', output=[dict(type='message',
                 content=[dict(type='output_text', text=json.dumps(decide(state)))])],
