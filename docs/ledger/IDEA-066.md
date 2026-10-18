@@ -326,3 +326,33 @@ Prospective criteria, before new code/tests execute:
 - M5: keep PR133 OPEN and update its current decision/checklist/backlog wording;
   record review/merge and future release propagation separately. No host
   mutation, service activation, ledger command or paid inference in this fix.
+
+
+PC-MIRROR01 RED at pushed ae6bf7a:14 package-check tests, two failing subcases
+reproduce rejection of canonical/.git approved mirror; unauthorized-origin,
+foreign-registration and integrity controls pass. All six other package checks
+are PASS for those two failures. Implementation pushed4eb33bb adds an exact
+repository-scoped verifier allowlist; all content/identity/bind checks remain.
+No configurable wildcard trust. The existing86b1476 binary and its historical
+FAIL remain unchanged; the separate local verifier corrects reporting without
+creating an installation/rebuild dependency. Results follow after execution.
+
+
+PC-MIRROR01 GREEN: pushed implementation4eb33bb, local macOS/Python3.12.14
+package/preparation/release-bundle/register suite68 run:65 PASS,3 existing
+PostgreSQL-dependent skips,0 failures (4.085s). Initial restricted run had two
+fixture mkdir permission errors; rerun with permitted local paths passes without
+code/test changes. The original-package terms-store check likewise needed local
+path access; same code then passes all7 checks/local_ready=true. Remote-CI and
+GateA remain false, signing false, all host checks NOT_RUN.
+
+The separately identified verifier4eb33bb checked the saved original86b1476
+package, manifest0053cbc9…fff2f, original bundle extraction/CA/terms. Every input
+file hash stayed unchanged. Capture remains the original13:56UTC snapshot and
+must be refreshed at actual preparation; this is local byte qualification only.
+Original FAIL is historical, retained; this corrects reporting under existing
+PC-DEC01 rather than reopening approved provenance or rebuilding a CI asset.
+Evidence and log hashes: ../build/evidence/gate-a-approved-mirror-20261018.json.
+Remaining: review/merge correction and eventual propagation to future releases;
+Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
+all existing source/quality/signed owners. No host/AWS/model/ledger operation.
