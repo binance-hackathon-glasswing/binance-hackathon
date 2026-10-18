@@ -216,3 +216,6 @@ IDEA-057 PR85-M1 (2026-10-16): final main-promotion review includes PR #111 budg
 
 
 - [ ] IDEA-055 POLICY-HOLD — Yao Zhu + Keith: decide mandatory TERMINAL_FLATTEN/Class 1 exits during a price-jump hold; account for chain-safe sizing and signing deadlines. Repository reconciliation/failover review is complete; this owner policy question remains open. Evidence: IDEA-055 RR2 final verification and PR115-C03.
+
+
+- [ ] IDEA-066 PC-FIX01: repository DOJ media/head-checkpoint/report and atomic unsigned-trial cap repairs are implemented and locally verified (1630 passed/436 environment skips/2659 subtests). Remaining: Keegan PR review of explicit current-listing coverage and prior failed window, exact-source Linux/PostgreSQL/all-job mirror CI and new original bundle; Yao P0/account/AIand funding, source disposition, matching preserving ledger setup, host install/bind/activate and first assessment/ACK. No full Gate A or signed adoption implied. Later signed transition of the trial-bound ledger needs a reviewed preserving migration, never removal/reset. Evidence: build/DOJ_TRIAL_CAP_FIXES_20261018.md.

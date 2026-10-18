@@ -198,3 +198,32 @@ installation/bind/activation, first assessment, labels and later adoption remain
 with their existing owners. No service, API inference, wallet, host or AWS action
 was performed. The source-report verification remains24 passed/18 subtests;
 no additional runtime tests for documentation-only protocol reconciliation.
+
+
+## PC-FIX01 — DOJ repair, explicit forward coverage and trial caps, Oct18
+
+Yao requests fixes in a PR for Keegan review/new release. Acceptance was pushed
+atc6097e0 before tests. See ../build/DOJ_TRIAL_CAP_FIXES_20261018.md for criteria,
+actual public DOJ evidence, behavior, hashes, host steps and remaining owners.
+DOJ page97 is20,757,780 bytes because of one inline JPEG; bounded media removal
+preserves all20 ordered article IDs and produces91,830 bytes without changing
+page offsets or skipping records. Global permitted-payload limits stay unchanged;
+DOJ-only wire bound32 MB and excluded-media provenance are explicit.
+
+Durable head checkpoints/proofs and history retries distinguish current-listing
+coverage from archive backlog. Default historical semantics and old logs are
+unchanged. Explicit current scope requires new proof and embeds the unchanged
+historical report; it cannot relabel old24h errors or create observed hours.
+Trial config binds immutable8M total/2.5M UTC-day limits to the same50M allocation,
+reserving atomically and rechecking actual dispatch day. Unknowns/latches/charges
+persist, old binaries are fenced by stored pacing identity, and expiry/stops block
+both provider transports. Trial files cannot enter signed/live preparation or
+runtime. Missing/ambiguous existing dispatch attribution refuses migration rather
+than guessing or resetting. Later signed-ledger transition remains separate.
+
+Pushed final application/tests ae7ccaa:1630 passed/436 environment skips/2659
+subtests,39.32s on local macOS. Exact-source Linux/PG/mirror acceptance is Keegan's
+next release gate. No goldens, paid calls, AWS/host/wallet changes or release.
+Results/hashes in ../build/evidence/doj-trial-cap-fixes-20261018.json. Yao retains
+P0/funding/source disposition/setup/install/start/ACK; Keith real usage/labels;
+Keegan peer review/CI/new binary. PR133 stays open; main checkout untouched.

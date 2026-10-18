@@ -1027,3 +1027,18 @@ paid testing, AWS/host installation/binding/activation. Keith retains actual
 usage forecast and blind labels; team retains adoption. Keegan reviews Yao's
 fixed-window gap report after it is supplied after Oct18 19:00 SGT. No future
 gap report, paid provider calls or AWS/host deployment are claimed here.
+
+
+## PC-FIX01 — opt-in unsigned trial caps (2026-10-18)
+
+Yao requests ledger-enforced trial total/UTC-day stops and DOJ/report readiness
+for Keegan PR review/new release. Code and synthetic verification are in
+IDEA-066 PC-FIX01 and ../build/DOJ_TRIAL_CAP_FIXES_20261018.md. New trial example
+hash a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d
+is separate from legacy/preferred examples. All attempts/reservations/unknowns
+count, dispatch-day attribution survives settlement, existing latches remain,
+and stale binaries/config omissions refuse. Trial expiry/stops block new paid
+provider calls. Signed/live use of this trial config refuses. Local final suite
+1630 passed/436 skips/2659 subtests; peer review/Linux CI/new release, Yao host/
+account qualification, actual evaluation/adoption and later preserving signed
+transition remain open. No ledger reset, deployment, paid inference or adoption.
