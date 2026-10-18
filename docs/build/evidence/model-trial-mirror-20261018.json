@@ -1,0 +1,94 @@
+{
+  "schema": "MirrorReleaseEvidence.v1",
+  "verified_at": "2026-10-18T03:03:30Z",
+  "combined": {
+    "conclusion": "success",
+    "headSha": "7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "host-bundle",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "infrastructure (deploy/aws)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "runtime",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "infrastructure (deploy/bootstrap)",
+        "status": "completed"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091699018"
+  },
+  "archive_fix": {
+    "conclusion": "success",
+    "headSha": "19339bdc7e72b8cf79f8d5c54d069072c49bd585",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "infrastructure (deploy/bootstrap)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "runtime",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "infrastructure (deploy/aws)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "host-bundle",
+        "status": "completed"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091506616"
+  },
+  "bundle": {
+    "schema": "LocalMirrorBundleVerification.v1",
+    "run_id": 39091699018,
+    "build_id": "7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce",
+    "bundle_file": "larp-7a0ea1433b3a-x86_64.tar.gz",
+    "bundle_sha256": "ff951451bc80b518620f895b2b0a871df188ce2cb2d3e36e04a58754c7f5de06",
+    "manifest_sha256": "bb17b7ffc28eeb2e14594a80895827bed5327b8408f519692870dcdeffdca70a",
+    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+    "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+    "manifest_files_verified": 192,
+    "embedded_manifest_matches": true,
+    "host_deployed": false
+  },
+  "artifact": {
+    "id": 12122169313,
+    "name": "larp-bundle-x86_64",
+    "size_in_bytes": 98410942,
+    "github_zip_digest": "sha256:d2c0e494f92fcbbaeaed502d67dc86ffff87e4711514ab4f2df90bd447ddb8d7"
+  },
+  "runtime_tests": {
+    "passed": 1973,
+    "skipped": 6,
+    "subtests_passed": 2934
+  },
+  "systemd_tests": {
+    "passed": 5,
+    "subtests_passed": 5
+  },
+  "evidence_log_sha256": {
+    "39091506616": "76b542e0fd328d98cf0498c8866b3826dbdb3b85eec49ee7d8b9e0fe0a813b3a",
+    "39091699018": "692c4c790e47c53e1c44f26ec81c7ccd833bf1359b4f95c426a09dc5b63aeb4b"
+  },
+  "release_owner_acceptance": "PENDING_KEEGAN",
+  "host_deployed": false
+}

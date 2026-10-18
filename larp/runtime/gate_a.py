@@ -246,11 +246,15 @@ def model_routing(raw, expected_sha256):
 
 
 def model_routing_report(spec, sha256):
-    return dict(sha256=sha256, budget_account=spec['budget_account'],
+    report = dict(sha256=sha256, budget_account=spec['budget_account'],
                 routine=spec['routine']['model_id'], reviewer=spec['openai_model'],
                 external_reviewers=[e['model_id'] for e in spec['external_reviewers']],
                 checks=dict.fromkeys(('AIAND_RUNTIME_SECRET', 'MODEL_BUDGET_INITIALIZATION',
                                       'PROVIDER_IDENTITY', 'SHADOW_TRIAL_EVALUATION'), 'NOT_RUN'))
+    if spec['schema'] == 'AIandRouting.v3':
+        report.update(routine=spec['openai_model'], reviewer=spec['external_reviewers'][0]['model_id'],
+                      openai_pacing=spec['openai_pacing'], reserve_micro_usd=0)
+    return report
 
 
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,

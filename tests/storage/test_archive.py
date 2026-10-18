@@ -14,6 +14,7 @@ class FakeS3:
         self.calls = []
         self.lost_ack = False
         self.tamper = False
+        self.second_precision = False
 
     def put_object(self, **kwargs):
         from botocore.exceptions import ClientError
@@ -21,7 +22,10 @@ class FakeS3:
         key = kwargs['Key']
         if key in self.objects:
             raise ClientError({'Error': {'Code': 'PreconditionFailed'}}, 'PutObject')
-        self.objects[key] = kwargs
+        stored = dict(kwargs)
+        if self.second_precision:  # S3 keeps Object Lock dates to whole seconds (IDEA-082)
+            stored['ObjectLockRetainUntilDate'] = kwargs['ObjectLockRetainUntilDate'].replace(microsecond=0)
+        self.objects[key] = stored
         if self.lost_ack:
             self.lost_ack = False
             from botocore.exceptions import ReadTimeoutError
@@ -71,6 +75,24 @@ class Archives(unittest.TestCase):
             self.archive.put('../escape.json', b'{}', created_ms=0, now_ms=0)
         with self.assertRaises(ContractError):
             self.archive.put('expired.json', b'{}', created_ms=0, now_ms=7*86400000)
+
+    def test_ar1_incident_slot_with_milliseconds_is_stored_on_whole_second_lock_dates(self):
+        # IDEA-082 / IDEA-066 PC-AWS09: the restart drill's incident backup slot on the host.
+        self.client.second_precision = True
+        created = 1792235176666
+        receipt = self.archive.put('run/backup/1792235176666.json', b'{}', created_ms=created, now_ms=created + 2000)
+        stored = self.client.objects['archive/development/run/backup/1792235176666.json']['ObjectLockRetainUntilDate']
+        self.assertEqual('STORED', receipt.read()['status'])
+        self.assertGreaterEqual(int(stored.timestamp() * 1000), created + 7 * 86400000)
+        self.assertEqual(int(stored.timestamp() * 1000), receipt.read()['retain_until_ms'])  # AR3
+
+    def test_ar2_whole_second_times_request_the_exact_retention(self):
+        self.client.second_precision = True
+        receipt = self.archive.put('run/anchor/1792234800000.json', b'{}', created_ms=1792234800000,
+                                   now_ms=1792234800010)
+        requested = self.client.calls[0]['ObjectLockRetainUntilDate']
+        self.assertEqual(datetime.fromtimestamp((1792234800000 + 7 * 86400000) / 1000, timezone.utc), requested)
+        self.assertEqual(1792234800000 + 7 * 86400000, receipt.read()['retain_until_ms'])
 
     def test_real_sdk_request_shape_is_supported(self):
         # botocore validates actual AWS model parameters without network access.

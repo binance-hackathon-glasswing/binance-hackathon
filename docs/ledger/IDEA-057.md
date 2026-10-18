@@ -272,6 +272,13 @@ The "finding outside this change" above is fixed by SG-7. Not yet measured on a 
 
 **Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
 
+**Current owner decision (2026-10-18): TR-AC2 confirms TRB-01A–E from PR166,
+superseding the initial TR-AC1 confirmation where they differ.** The PROPOSED labels below preserve the original
+October16 registration; the current decision, frozen sampling seed/method and
+remaining Keith/Yao prerequisites are in
+[MODEL_TRIAL_HANDOFF_20261018.md](../build/MODEL_TRIAL_HANDOFF_20261018.md).
+No earlier trial start, Keith personal review or collective adoption is inferred.
+
 ### Preconditions (before the first routed assessment)
 
 - **P0 Provider check (open; Yao Zhu, on the host).** The AIand account's org-scoped catalog lists `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with the pinned efforts (`low` for GLM routine; `high` for the K3 primary and GLM secondary reviewers), and the first real routed assessment's recorded reply headers `x-model` and `x-reasoning-effort` match the requested model and effort for every stage that ran. Record the date, the catalog response hash and the first assessment's ID in this entry. A mismatch is a kill (K4). Not run yet.
@@ -480,3 +487,399 @@ PR164-R1 implementation: `6a57d1d` adds an explicit `RoutedAssessor.assess_defer
 - Final corrected full CI runtime run at `6a57d1d`: **1945 passed, 6 skipped, 2862 subtests passed**, 247.09 s, exit 0. The six skips are the five opt-in systemd tests (all five PASS in the explicit job above) and one opt-in external-data case. No xfails or golden regeneration. Raw runtime/demo evidence retained outside Git at `/private/tmp/larp-pr164-results/`; synthetic credentials/throwaway test keys only.
 
 PR164-R1 final review: no remaining implementation blockers found on the tested application head. The user requested fixing the finding, adding PR comments, running CI locally and merging after completion. The verification-only documentation commit changes no executable source or tests. PR #164's target remains `codex/system-testing-20261012`; merge receipt/head are authoritative in its GitHub metadata. Hosted Actions at fixed head `6a57d1d` (run `39051309773`, runtime check `117450296047`) again ran no steps: the annotation confirms the same account-payment/spending-limit refusal (#98). This local acceptance does not approve activation or settle #97's provider/rights/network/trial/adoption/hosted/B4 gates. Keep #97 and the narrowed incomplete-work item open; #162's implementation scope is complete once merged.
+
+## TR-AC1 — release and trial-bar confirmation (2026-10-18)
+
+The user delegates completion of Keegan's LLM application tasks: accept release
+7a0ea14, confirm trial bars and dispose of DOJ/BIS gaps. The assistant records
+Keegan-workstream decisions, without attributing Keith/team personal approval.
+Accepted release, fixed hashes, unchanged M1–M9/K1–K4, frozen blind-label seed
+and deterministic selection method are in the dated handoff and machine-readable
+`ModelTrialOwnerDecision.v1`. Effective at publication before the first routed
+assessment; an earlier start must remain an explicit deviation. An early Oct20
+outcome with fewer than3 trial days is inconclusive under the original rule.
+
+Release acceptance relies on PC-CI02's published artifact verification at PR133
+commit9b363e6 plus independent application-tree/full-suite evidence; this session
+received404 from private-mirror APIs and did not independently download/hash
+bundle bytes. No provider call, budget initialization, host operation, signing
+or model-adoption approval occurred. Keith's independent bar review, exact prior
+OpenAI spend, rights/funding and labels remain his tasks. Yao retains actual
+P0–P2, report, prepare/bind/activation and first-assessment evidence.
+
+PC-GAP01 allows two fixed-window historical-backfill explanations for the
+unsigned trial, preserving raw reports/logs and INCOMPLETE runtime coverage.
+It does not satisfy signed/final source completeness, waive actual poll errors,
+or explain other targets/archives. The prospective11:00UTC report was not read.
+See IDEA-066 PC-GAP01 and the handoff for the exact window and checks.
+
+## TR-AC2 review source — original TRB-01 proposal retained verbatim
+
+Source: PR166 at6f377dde8eeb0e1e58b4b61fc4446abe72504657, published during
+this handoff. The PROPOSED/awaiting-confirmation statements in this retained
+source describe proposal publication. The operative owner confirmation follows
+it in TR-AC2; no earlier results are re-registered.
+
+## TRB-01 — shadow-trial protocol correction (2026-10-18 SGT, proposed)
+
+Keith requested a separate PR for the five review findings on
+[#97](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/97). This dated
+amendment preserves the original October 16 registration above. Once confirmed, it supersedes that
+registration where they conflict; it does not rewrite historical criteria or results. **Status:
+PROPOSED, awaiting Keegan's confirmation in a committed/pushed revision before the first routed
+assessment.** Keith proposes; Keegan confirms; Yao Zhu records host execution and evidence. No trial
+start, labels, provider qualification or adoption is established by this amendment. If any routed
+call predates confirmation, retain it under its original protocol and mark this amendment
+prospective for a new window; never relabel earlier data as pre-registered under TRB-01.
+
+The original operational targets remain proposed: M1 availability >= 95%; M2 p50 <= 20 s and p95 <=
+45 s within the 60 s job deadline; M5 claim-verification >= 80% routine / >= 90% each reviewer and
+schema validity >= 95% per stage. M4, M6, M7 and M8 remain reports/alerts, except a recorded K1–K4
+event still takes precedence. All new sample minima and the recall floor below are **proposed team
+triage policies**, not measured performance, statistical power claims or challenge rules. IDEA-056
+§7 and T01 remain separate requirements.
+
+### TRB-01A — one outcome, evaluated in order
+
+Assign one verdict to each frozen configuration and unsigned evidence window, in this order:
+
+1. **Not supported:** any K1–K4 event, any unsupported accepted Class 1/2 finding, or a known
+   authority/tool/stage-limit violation, including accepting a result after its 60 s deadline or
+   starting another model/tool call after expiry. Merely retaining a late abandoned provider's I/O
+   for audit does not make it accepted evidence. These defects override a short window or missing
+   labels. Preserve the incident and measurements; do not wait for a larger sample to report a
+   demonstrated defect.
+2. **Inconclusive:** otherwise, any precondition P0–P2 or confirmation record is missing; fewer than
+   72 elapsed hours of unsigned observation; fewer than 20 completed unique jobs; missing labels by
+   the Oct 21 cutoff; insufficient M5/route or M9 coverage below; or any required metric is
+   undefined/unreconstructable. Pauses, deterministic operation, signed rehearsal and supplemental
+   probes do not count toward the 72 hours. Missing evidence never becomes zero errors or a pass.
+3. **Not supported:** otherwise, any frozen acceptance bar in **M1, M2, M3, M5 or M9** fails,
+   including each adequately sampled required path/stage. A latency or verifier failure has the same
+   explicit disposition as availability, budget or quality failure.
+4. **Supported for the tested unsigned assessment/routing scope:** otherwise, all required bars pass
+   and there is no kill. This supplies evidence to Keegan's decision; it does not close #97's
+   rights, T01/non-inferiority, hosted recovery, declarations, network or signed-rehearsal gates and
+   does not authorize signing or scored activation.
+
+For an early report with too little evidence, publish observed bar misses alongside the inconclusive
+verdict. A demonstrated kill/safety defect remains not supported by step 1. A different
+configuration or external-only continuation gets its own verdict; it cannot erase a failed
+mixed-route window.
+
+### TRB-01B — adverse-event quality with a real denominator (M9)
+
+Keep the original blind sample of all unique filings if <= 40, otherwise 40 selected with a seed and
+a deterministic stratum-allocation procedure frozen before drawing. Deduplicate related
+amendments/revisions into filing families for coverage reporting; retain each job's point-in-time
+request and evidence. Include routine-only negatives, ABSTAIN, unavailable and late jobs, not just
+accepted findings. Keith labels without either system's predictions; retain private labels, sampling
+manifest and adjudication outside Git and record their hashes, annotator and freeze time here. This
+blind trial annotation is not the independently staffed T01 gate.
+
+**Proposed minimum:** at least **10 distinct labelled adverse events across at least five filing
+families**, including at least one Class 1 event and one Class 2 event. An event must have stable
+issuer/event/source identity; repeated assessments of it do not create extra positives. The
+denominator is all labelled adverse events in the frozen sample; TP is an event matched by an
+accepted, verified, timely finding. FN includes every remaining labelled adverse event, including
+events on ABSTAIN, UNAVAILABLE, rejected or late output. A repeated assessment cannot turn a miss at
+the sampled cutoff into a hit using later evidence. Record the event-matching rubric before scoring
+and apply it equally to routed and baseline outputs.
+
+**Proposed bars:** routed adverse-event recall `TP / (TP + FN) >= 0.90`; routed omission `FN / (TP +
+FN) <= baseline omission`; **zero unsupported accepted Class 1/2 findings**. Report precision,
+recall, omission, raw TP/FP/FN, abstentions and uncertainty overall and by class, issuer and routing
+path; never substitute verifier pass rate for labelled accuracy. Zero positives, missing either
+class or fewer than the minimum events/families means inconclusive, even if routed and baseline both
+return no findings. These point-estimate triage bars cannot establish IDEA-056 §7 non-inferiority.
+
+Do not select extra positives after reading model errors to rescue this window. A separately
+pre-registered, rights-cleared historical positive set may qualify a later experiment; report it
+separately and do not pool it into the prospective M9 sample or observation duration.
+
+### TRB-01C — qualify every declared route (M1/M2/M5)
+
+Count **unique immutable assessment/job IDs**, not rounds: background safety ticks while one job is
+pending do not create new model jobs. Count each unresolved job once as unavailable at its deadline.
+Report excluded REJECTED_REQUEST jobs and reasons separately. Report ASSESSED and ABSTAIN separately
+within M1's existing availability numerator; abstention does not count as an M9 detection. Record
+end-to-end request-to-usable-result time as well as the internal elapsed time, so queueing,
+admission, hand-off and late replies are visible. Late results never become timely merely because a
+later round logs them.
+
+**Proposed route minimum:** at least **10 distinct completed jobs for each declared path**:
+routine-only, OpenAI-reviewed, external-review-0 and external-review-1 (the last only if
+configured). Per required stage, also require at least **10 model replies and 10 proposed claims**
+for M5. Report each numerator/denominator, provider failures, schema failures and accepted/rejected
+claims. Apply M2 to aggregate completed jobs and each qualified path using `bakeoff._quantile`;
+report unavailable/deadline jobs separately and in M1. A stage/path below its minimum or a
+`None`/zero-denominator metric is **unqualified**, never 100% or silently waived. A declared
+fallback that remains unqualified makes overall routing support inconclusive.
+
+If natural traffic does not exercise a path, use a **separate unsigned qualification block** only
+after committing its candidate/config/prompt hashes, rights-cleared immutable requests,
+selection/labels, intended failure/credit condition, job count and spend allocation. Use the same
+assessor/verifier/deadline and real provider path with private original I/O; synthetic transport
+tests cannot qualify real providers. Use an isolated qualification configuration to exercise
+fallback; never corrupt/reset the shared ledger, spend through the reserve or disable
+identity/verification checks to force it. Charge every paid probe to the same cross-phase account
+and the M3 trial envelope.
+
+Report natural and supplemental results separately, including all attempted jobs. Supplemental
+blocks may fill route/stage qualification counts, but cannot hide a natural-path bar failure,
+replace prospective M9 labels or add unsigned observation hours. A path removed from the manifest
+instead requires a separately frozen configuration/window; it cannot be dropped retrospectively to
+pass this trial. Ten jobs/claims are triage coverage, not reliability or accuracy certification.
+
+### TRB-01D — spending already incurred plus spending still to come (M3/K1)
+
+Record UTC start/end snapshots and the exact charge/request IDs at each boundary. Let `C_start` and
+`C_end` be the shared account's charged micro-USD at the two boundaries, including settled charges
+and full RESERVED/UNKNOWN amounts. Reconcile any reservation already open at the start separately:
+later release of an old reservation must not offset new trial spending. Compute trial charge `T`
+from all new trial/qualification charge rows, retaining full unsettled amounts; record the
+corresponding `C_end - C_start` reconciliation rather than treating that difference alone as usage.
+Reconcile unrelated account spending too; do not omit it from the remaining allocation.
+
+Let `r` be conservative daily OpenAI charge: the greater of `T / exact elapsed trial days` and the
+largest observed rolling-24-hour trial charge; include supplemental paid work, failures and unknown
+usage. Let `D_remaining` be exact fractional UTC days from the end snapshot to **2026-11-13 00:00
+UTC**, covering all of Nov 12 as a budgeting horizon only. The forecast is **`C_end + r *
+D_remaining + E_remaining <= $40`**, where `E_remaining` is separately planned paid
+evaluation/activation spend not represented by the daily workload. Record that allocation
+explicitly, including zero if none; never double-count work already included in `r`. This planning
+horizon is not a claim about the official scored-end timestamp. Report cadence/filing-load
+assumptions and known differences between trial and intended operation.
+
+Illustrative arithmetic only: $1 before the trial + $6 in the trial = $7 at trial end. With $36
+forecast future usage and no extra evaluation allocation, the forecast is **$43**, not $37. A
+missing/unreconciled amount makes M3 undefined; an accounting failure also invokes K3.
+
+**Proposed consistent boundary:** M3 requires **trial charge < $8 and each UTC day's trial charge <
+$2.50**, with full-window forecast <= $40. K1 fires at **>= $8 total, >= $2.50 on a UTC day, or any
+`OPENAI_OPERATING_LIMIT` switch during this window**. Thus exactly $8 is a stop/failure, never a
+pass. Count unsettled reservations conservatively; assign each charge to its dispatch UTC day and
+retain that day when settling. K1 stops OpenAI use; any external-only continuation is a separately
+identified observation block, while the original mixed-route window remains not supported.
+
+These trial sub-limits are **operator stop criteria**, not new automatic limits implemented by this
+documentation. Yao Zhu must arrange monitoring/headroom checks before dispatch and include all
+in-flight maximum reservations; do not rely on one daily snapshot to enforce a spend ceiling. If
+safe headroom/monitoring cannot be established, pause OpenAI dispatch and report qualification
+incomplete. Preserve the implemented shared $40 operating limit / $10 reserve unchanged. K3
+reconciliation remains mandatory before resuming OpenAI; no restart may recreate or reset its
+ledger.
+
+### TRB-01E — unsigned qualification and signed rehearsal are separate windows
+
+Yao Zhu records the actual first routed job, confirmation/build/config/routing/prompt hashes, UTC
+start/end, pauses, every kill and the last unsigned job. The unsigned trial needs **72 observed
+hours** before the Oct 21 cutoff to receive support; a late start, earlier signing switch or pause
+can leave it inconclusive. The calendar does not waive the duration. Freeze a UTC cutoff timestamp
+before starting, no later than **2026-10-22 00:00 UTC** (end of Oct 21); it also governs label
+availability. A changed build/config/prompt is a new identified block; do not pool changed
+candidates to reach minima.
+
+K4's prohibition on a routed result reaching signing applies throughout the unsigned trial and any
+unsigned supplemental blocks. End and archive that window **before** a deliberately approved signed
+rehearsal starts. Signed days never count toward its 72 hours or prospective metrics. The signed
+rehearsal is a separate manifested/versioned window with its own adoption/deviation reference, Gate
+B prerequisites, safety/availability/budget/audit checks and opening shared-budget snapshot. An
+intended signed transition after the unsigned window ends is not a shadow K4 incident; an unintended
+signing path while shadow is active is.
+
+The Oct 20 report is **interim/provisional** unless every TRB-01 condition is already met. Keegan
+may record a separate development-only rehearsal decision/deviation from an inconclusive trial, with
+missing evidence, bounded scope, owner and fallback explicit; it must not be labelled SUPPORTED or
+treated as scored-run adoption. On Oct 22, Keith reports the unsigned verdict and the
+signed-rehearsal evidence separately; Keegan records the actual decision and remaining #97 gates.
+This amendment does not grant either decision.
+
+### TRB-01 validation and remaining owners
+
+Prospective documentation checks: preserve the original registration byte-for-byte; map all five
+findings to TRB-01A–E; check outcome precedence and the $8/$2.50 boundaries with desk examples;
+check links and changed-file whitespace; reconcile the runbook, dated checklist, ledger index and
+live backlog. No executable code, runtime config, private labels or provider requests change.
+Validation results are recorded below before the PR opens.
+
+**Documentation validation (2026-10-18 SGT):** original IDEA-057 bytes preserved; changes limited to
+five Markdown files; all 174 local link targets in those files resolve; `git diff --check` passes.
+Desk review below assumes all other requirements are met unless stated. These are applications of
+the proposed written rules, not runtime tests or real trial results.
+
+| Desk case | Expected disposition under TRB-01 |
+|---|---|
+| K3 accounting failure after only two hours | Not supported; kill precedes insufficient duration |
+| 48 unsigned hours, no kill, observed M2 miss | Inconclusive; retain the observed latency miss in the interim report |
+| Adequate evidence, M2 or M5 below its bar | Not supported; both bars have an explicit outcome |
+| Zero labelled adverse events, or both systems miss all events | Inconclusive with no positive denominator; with adequate positives, not supported because absolute recall fails |
+| Eight of ten labelled adverse events detected | Not supported: 80% recall is below the proposed 90% floor even if baseline is worse |
+| A declared external reviewer never ran; M5 is None | Inconclusive; the route is unqualified |
+| Total trial charge exactly $8, or one UTC day's charge exactly $2.50 | K1; original mixed-route window not supported |
+| $1 initial + $6 trial + $36 future usage | $43 forecast; not supported against the $40 bar with otherwise adequate evidence |
+| 48 unsigned hours followed by 24 signed hours | Inconclusive unsigned trial; signed hours are a separate window |
+| Intentional signed switch after unsigned window closure / unintended signing while unsigned | Separate approved rehearsal window / K4 incident and not supported |
+| 72 unsigned hours, adequate jobs/routes/labels, all bars met, P0–P2 and confirmation recorded, no kill | Supported only for the tested unsigned scope; adoption gates stay open |
+
+Remaining: **Keegan** confirms/revises these proposed bars and records the frozen revision before
+the first routed job; **Keith** freezes sample seed/allocation/matching rubric, supplies blind
+labels and the report; **Yao Zhu** supplies P0–P2, actual timestamps, charge reconciliation,
+monitoring and qualification evidence. #97 and the existing incomplete-work item remain open; no
+host, paid inference, wallet or adoption action is authorized by the documentation checks.
+
+## TR-AC2 — confirm corrected trial protocol (2026-10-18)
+
+After reviewing all five PR166 documentation changes, its eleven desk cases and
+submitted discussions (none at inspection), the user-delegated Keegan workstream
+confirms TRB-01A–E as written at6f377dd. This supersedes the initial TR-AC1
+"unchanged original bars" confirmation where it conflicts. Its operational
+M1/M2/M5 thresholds remain95%,20s/45s and80%/90%/95%; the outcome order, real
+positive/route/stage minima,90% adverse-event recall, corrected spend forecast,
+strict $8/$2.50 stop boundaries and72 unsigned observation hours now govern.
+These are experiment policies, not organiser rules or measured performance.
+
+Protocol source SHA256 (the retained TRB-01 section): 03fe7dff31b2c0863395de3189903a39b97ef4d79344915ef26f8755da3ae181.
+The existing TR-AC1 frozen sampling seed/allocation is retained; Keith still
+freezes the event-matching/adjudication rubric before scoring and supplies blind
+labels. Planned maximum unsigned cutoff is2026-10-22T00:00:00Z; an earlier signed
+switch or pauses reduce actual unsigned hours, never supply extra qualification.
+Any earlier routed work keeps its original protocol and cannot be relabelled.
+Actual adoption/rehearsal decisions remain separate. No numeric bar is treated
+as already met, and exactly $8 or $2.50 triggers K1 rather than passing.
+
+Concurrent PC-BUD02/03 owner updates at2bac3a5 confirm exactlyUS$48 remaining
+from the originalUS$50 allocation: initial prior charge2,000,000 micro-USD,
+US$10 reserve, US$40 operating ceiling andUS$38 available headroom. This is
+owner-reported exact input, not an independent billing API check; it replaces
+our earlier pending/approximate-input status. The temporaryUS$5 proposal was
+withdrawn before implementation. Existing AIand fallback continues LLM work
+when OpenAI admission stops; a failed mixed-route trial remains failed, with
+external-only continuation a separate block. P1 initialization remains Yao's
+actual host step; no ledger was created/reset or model request made here.
+
+Release PC-REL01 and source-gap PC-GAP01 decisions stand unchanged. This is
+protocol/decision documentation only, so the accepted7a0ea14 bundle is retained.
+Prospective completion checks: verify the retained proposal bytes/hash and every
+new threshold against6f377dd, correct the handoff/backlog/checklist to one current
+protocol, preserve published budget history and PR133/126 open status, and verify
+all changed files remain documentation. No new application tests are needed for
+this documentation reconciliation; the earlier24/18 source-report checks stand.
+
+
+## OP-01 — OpenAI preferred with paced full credit (2026-10-18, prospective)
+
+Yao Zhu requests a separate PR for human review implementing PC-ROUTE01
+(PR133). This authorizes development, not merge, deployment, model calls or
+spend. Existing v1/v2 configurations and their US$10 reserve stay unchanged.
+The new opt-in v3 policy prefers GPT-6.1 Sol medium, with Kimi K3 high then
+GLM-5.3 high on the qualified AIand endpoint as fallback. Model quality is
+unproved; effort/cost is not evidence of accuracy.
+
+Pass criteria recorded before changed code/tests run:
+
+- **OP1:** strict public v3 configuration pins a UTC start/end, period, total
+  allocation and prior-spend baseline. Example values are review candidates,
+  not adopted dates: US$50 total, US$2 already spent, US$48 remaining, no fixed
+  reserve. Preparation validates/hashes this without credentials or network.
+- **OP2:** cumulative equal-period allowances use integer micro-USD, carry unused
+  allowance forward and release all remaining allocation by the final period.
+  Every POST reserves its bounded cost atomically. Temporary pacing/window/
+  oversized-request refusal grants no OpenAI call and does not latch exhaustion;
+  a later period or smaller request can use remaining credit. Full allocation
+  exhaustion and provider credit exhaustion persist external-only across restarts.
+- **OP3:** durable policy/account/limits binding prevents accidental legacy or
+  mismatched-policy access. Explicit initialization never overwrites a ledger;
+  explicit development migration preserves every charge, unknown/reserved amount
+  and existing safety latch. Unknown usage keeps its bound; underestimation and
+  storage failure block further OpenAI dispatch. Clock rollback fails closed
+  until wall time catches up; no automatic budget or policy reset.
+- **OP4:** real routed assessments try OpenAI first with a shared deadline/tool
+  budget. Missing key, pacing, errors, invalid claims and exhaustion fall back
+  to high-effort AIand using original evidence. Required independent review
+  uses AIand; disagreement abstains, failed required review grants no authority.
+  Provider rate limits do not imply permanent credit exhaustion. Existing
+  verification, evidence acceptance and deferred-worker safety ownership stay.
+- **OP5:** identity and audit expose the frozen policy, current allowance,
+  remaining allocation, stage order, refusals, model I/O and known/unknown cost;
+  keys never enter them. Synthetic tests exercise multi-period/restart/concurrent
+  admission, migration and malformed policy, real verifier/fallback/deferred
+  composition and offline preparation. Existing routing/prompt/runtime suites
+  and full available local suite must pass, with skips and host limits reported.
+
+Finite credit cannot guarantee every assessment stays on OpenAI or consumes the
+last cent: conservative multi-call reservations, unknown usage and external
+account spending reduce availability. No credit-balance query or paid provider
+call is required. New policy adoption needs a fresh trial evaluation and an
+accepted mirror release; existing v2 trial evidence is not v3 qualification.
+
+### OP-01 implementation and verification — 2026-10-18
+
+- Added opt-in `AIandRouting.v3` and a separate example; original v1/v2 example
+  bytes and US$10 reserve defaults are unchanged. GPT-6.1 Sol medium is the
+  preferred primary, with independent high-effort AIand review/fallback and a
+  pinned primary addendum. Invalid/failed required reviews grant no authority;
+  verified disagreement abstains. No low-effort routine POST is made by v3.
+- Durable SQLite pacing binds exact policy/account/limits and clock watermark;
+  integer cumulative allowances carry forward and release the whole allocation
+  by the last period. Temporary refusal is separate from persistent credit/
+  allocation/underestimation latches. Per-POST admission and unknown-usage
+  reservations stay conservative. Explicit development-only `enable-pacing`
+  preserves all charges and switches, refuses mismatched baselines/repeat
+  migration and never clears an existing latch. The runbook requires inference
+  quiescence and a consistent backup before migration; no host migration ran.
+- Fixed an audit-wrapper composition defect exposed while tracing the new
+  primary: `make_assessor` now resolves the wrapped stage's composed config,
+  so ModelRequest/result prompt hashes name the prompt actually sent. Previously
+  the audited/deferred wrapper selected the core config. Provider prompt bytes
+  and legacy routing policy are unchanged; stage provenance is corrected.
+- RED at pushed `b067467`: six new regressions fail because paced budget APIs
+  do not exist; 20 legacy fixture controls / 4 subtests pass (the initial file
+  imported the fixture class directly, later changed to a module import).
+- Initial focused GREEN at `4593117`: 68 passed, 5 PostgreSQL skips,
+  84 subtests. Expanded run at `c22643e`: 86 passed / 5 skipped / 98 subtests,
+  one new timeout assertion failed because it released the primary while half
+  the shared deadline legitimately remained for fallback. The fixture now
+  explicitly advances the synthetic clock through the full request deadline;
+  no product change was needed. At `7ac93c0`: 87 passed, 5 skipped,
+  98 subtests, 4.64 s.
+- Final application/test head `6bcbef0`, then docs-only ordinary merge
+  `75282ec` of integration `9c5c421`: complete available local suite on macOS,
+  Python3.12.14, pinned test venv, no plugin autoload, **1580 passed,
+  426 skipped, 2622 subtests passed**, 38.35 s, exit0. Command:
+  `PYTHON=/private/tmp/larp-pr-review-20261018-venv/bin/python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr-review-20261018-venv/bin/python -m pytest -q -p no:cacheprovider -rs tests`.
+  Raw log `/private/tmp/larp-openai-pacing-full-permitted.log`. The initial
+  sandboxed full attempt had five local socket-binding PermissionErrors;
+  the permitted rerun passed without changing product/test code for those errors.
+- Skips: 417 disposable PostgreSQL cases, 2 combined systemd/PostgreSQL,
+  3 systemd runner, 3 Linux bubblewrap, 1 external real-response opt-in.
+  Docker CLI exists but its daemon/socket is unavailable on this Mac. No
+  PostgreSQL/Linux host acceptance, Docker/bundle build, Terraform or accepted
+  mirror release is claimed for this new head. CI/mirror acceptance remains
+  before deployment. No golden regeneration or xfail substitution.
+- Regressions cover period carry/partial final release, temporary refusal and
+  recovery, clock rollback/restart, atomic workers, full-allocation and provider
+  exhaustion, generic rate limits, unknown/underestimated usage, policy binding,
+  migrations preserving reserved/unknown/settled charges and latches, original
+  evidence verification, disagreement and failed review, actual deferred worker
+  ownership/late audit, prompt hashes, offline preparation/CLI, and the real
+  prepared service builder with synthetic HTTP ports. New v3 trial budget bars,
+  real provider entitlement, identity, latency, quality and funding remain
+  unqualified. TR-AC2/TRB-01 stays operative for the existing v2 trial.
+
+All executable source/tests and prospective criteria were committed and pushed
+before execution. No real provider request, key read, AWS/host/service change,
+wallet operation, model spend, merge or activation occurred. The current PR is
+implementation for peer review only; Yao will ask a reviewer. #97, the live
+backlog and PR133 remain open. Existing untracked `Claude outputs/` is untouched.
+
+OP-01 delivery: [PR #167](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/167),
+branch `codex/openai-preferred-pacing-20261018`, target
+`codex/system-testing-20261012`, OPEN/mergeable at published head `2a12dd7`.
+Yao will arrange peer review; no reviewer was assigned or messaged. GitHub
+Actions run `39101498071`, runtime check `117598527028`, ran no steps:
+the annotation says recent account payments failed or the spending limit needs
+to be increased. All four jobs have empty step lists (three failed, one
+cancelled). This is the existing account-level CI gate, not a tested product
+failure or CI acceptance; the new head still needs accepted mirror/Linux checks
+before release. PR133 is verified OPEN at `e9e07b1`.
