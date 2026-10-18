@@ -3,11 +3,13 @@
 Observed Oct18 2026, 13:50–13:56 UTC (21:50–21:56 SGT). Supplements
 [PC-HO02](AWS_DEPLOYMENT_RESUME_20261018_LATE.md). PR133 remains OPEN on
 `claude/pre-trading-checklist-20261017`, targeting `codex/system-testing-20261012`.
+**PC-MIRROR01 update:** [PR177](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/177) corrects the local checker to accept the exact approved Keegan4 mirror, scoped to the challenge repository. Pushed verifier4eb33bb passes all7 checks on the original unchanged86b1476 saved package.65 focused tests pass/3 existing PostgreSQL skips. [Evidence](evidence/gate-a-approved-mirror-20261018.json). **Earlier blocker wording was incorrect:** PC-DEC01 already accepts the old mirror-only failure when production binding passes. No checker-only rebuild of the verified release is needed. Review/merge of PR177 is separate; actual fresh preparation/provider/account/preserving host gates remain.
+
 **PC-PROV03 update,14:30UTC /22:30SGT:** replacement AIand key is independently
 verified from the host; authenticated catalogue200, both exact models/high effort,
 USD currency, every other secret field preserved. Prior401 is resolved. Balance
 endpoint403 leaves the numeric140+ owner-reported and expiry unverified.
-[Evidence](evidence/aiand-key-verification-20261018.json). PC-PREP02/host gates
+[Evidence](evidence/aiand-key-verification-20261018.json). Actual fresh preparation/host gates
 remain open; no paid call or observer secret/ledger/service mutation.
 
 Host actions remain Yao's. No host configuration/service mutation, paid inference,
@@ -95,7 +97,7 @@ current account usage before budget setup.
 [OpenAI's models API](https://developers.openai.com/api/reference/resources/models/methods/list)
 is a listing check; actual response identity/effort remains a first-job check.
 
-## Fresh local preparation and checker blocker
+## Historical preparation and checker refusal — reconciled by PC-MIRROR01
 
 PC-PREP02 captured the actual wallet read-only at13:56:15.500UTC and prepared
 within5min from exact86b1476. Uses selected private RPCs, real approved interim
@@ -104,19 +106,20 @@ explicit dev/shadow execution and the capped trial hash above. No missing inputs
 Package integrity/JSON, unsigned identities, pinned inputs, service configs and
 retained source terms all PASS. Host/provider/trial checks remain NOT_RUN.
 
-**CI_RELEASE_BYTES FAIL; local_ready=false.** Exact-source
+**Original observation: CI_RELEASE_BYTES FAIL; local_ready=false.** Exact-source
 `larp/runtime/gate_a_check.py:149–159` requires build_origin equal the registered
 repository (or its `.git` URL), rejecting the honestly declared Keegan4 mirror.
 Production `preflight.bind_manifest` verifies the same original bytes successfully
 in memory, without writing a manifest. This isolates the checker predicate;
-it does not turn the failed local qualification into PASS.
+that original failed-verifier report remains historical.
 
-Keegan owns reconciliation of the registered-only checker with the accepted
-mirror provenance, including negative cases for unauthorized/mismatched origins.
-A code repair requires review and a new original exact-source CI release, unless
-an explicit reviewed acceptance disposition establishes the approved verification
-path for these unchanged bytes. Do not edit manifest/build_origin, remove the
-check, relabel the CI asset or claim this package is locally qualified.
+PC-DEC01 already dispositions this exact mirror-only result as accepted with
+production bind PASS. PC-MIRROR01 fixes the reporter in separate PR177 and
+rechecks the same untouched package7/7 PASS. Record verifier4eb33bb separately
+from candidate86b1476; no manifest edit, application substitution or bundle
+rebuild. The previous demand for new checker acceptance/release before using
+this already accepted binary was incorrect and is withdrawn. Preserve the
+historical failed report. PR177 review/merge remains Keegan's future-source task.
 
 The ignored package location is recorded in
 `deploy/activation/pr174-verification-20261018/local-prepared-path.txt` and remains
@@ -129,18 +132,18 @@ The failed attempts and qualification output remain privately retained.
 A current wallet capture is needed again when deployment resumes; do not reuse
 this snapshot as fresh installation evidence.
 
-## Owner sequence after blockers resolve
+## Next owner sequence
 
-These are **future Yao actions**, not executed steps. AIand catalogue/P0 part1 now passes (PC-PROV03); resolve actual
-funding/expiry/usage and PC-PREP02 acceptance first. PR168 protocol is already approved;
+These are **future Yao actions**, not executed steps. AIand catalogue/P0 part1 passes (PC-PROV03); PC-PREP02 is reconciled under
+PC-DEC01/PC-MIRROR01. Resolve remaining actual funding/expiry/usage first. PR168 protocol is already approved;
 no repeat protocol approval or request for keys is needed. Use the
 [frozen86b1476 DOJ/cap runbook](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/86b14761324faeb8f57df5c0d86ff00320b4361c/docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md).
-If a replacement release is needed, verify its original CI assets/source and
-update the build/manifest hashes before preparing;86b1476 remains historical.
+The verified86b1476 release remains available for owner preparation. If a later
+release is selected, verify its own original CI assets/source before use.
 
-1. **Accounts/P0.** Check existing funded organization/key status; authenticated
-   AIand catalogue must expose Kimi K3/GLM5.3 at high effort. No low routine effort
-   is required for v3. Record account settings/rights applicability privately,
+1. **Accounts/P0.** Catalogue/key/high-effort/USD checks already PASS under
+   PC-PROV03; do not repeat key setup. Record remaining account settings/rights
+   applicability privately,
    external consumers, current OpenAI usage and AIand units/expiry/funding.
    Keep unsigned account checks distinct from signed/scored policy compatibility.
 2. **Preserve/quiesce.** Yao stops/drains all provider workers and services affected
@@ -168,9 +171,11 @@ update the build/manifest hashes before preparing;86b1476 remains historical.
 
    The local helper `deploy/activation/pr174-verification-20261018/prepare-local.py`
    contains concrete local paths and sanitized capture/prepare/check commands;
-   review it before use. It targets86b1476 and intentionally preserves failed
-   qualification. A repaired release requires updated verified inputs. Qualify
-   the actual frozen package; do not hand-edit runtime drivers. After Oct20,
+   review it before use. It targets86b1476 and retains the old-verifier result. Use the pushed PR177
+   verifier for the final local byte check, recording tool/source separately;
+   alternatively retain the scoped PC-DEC01 accepted mirror-only result plus
+   production bind PASS. Qualify the actual frozen package; do not hand-edit
+   runtime drivers. After Oct20,
    replace interim profile only with Keith/Isaac's reviewed measured profile.
 5. **Install pinned routing, then preserving setup.** Install prepared configs
    at their pinned paths, runtime.json readable by evidence (0644), routing
@@ -252,7 +257,7 @@ update the build/manifest hashes before preparing;86b1476 remains historical.
 Yao: remaining account-expiry/funding/usage/rights (catalogue auth now PASS),
 preserving setup and installation, first-job/I/O/
 charge/receiver ACK, source/restart/new-window and benign-link trust regression.
-Keegan: checker acceptance/repair, GateA/B and operations/release decisions,
+Keegan: review/merge PR177 for future source, GateA/B and operations/release decisions,
 B4 exposure_evidence producer and DEV20 event-calendar planner disposition.
 Keith: measured final profile/parameters, usage forecasts, immutable actual trial
 population/blind labels/report. Isaac: real router/source/ABI/replay/native

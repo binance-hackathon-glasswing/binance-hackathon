@@ -1,5 +1,7 @@
 # PC-HO02 — late Oct18 deployment continuation for Yao Zhu
 
+**PC-MIRROR01 correction:** PC-DEC01 already accepts the exact approved mirror-only checker failure with production bind PASS. The previous continuation overstated it as a deployment blocker. PR177 supplies a narrow corrected local verifier; pushed4eb33bb passes all7 checks on unchanged original86b1476 bytes. No checker-only bundle rebuild is required. See the continuation/evidence below; host/account/fresh preparation gates remain.
+
 **Oct18 continuation:** [PC-REL09 / PC-HOST02 / PC-PROV02 / PC-PREP02](PR174_DEPLOYMENT_CONTINUATION_20261018.md) now verifies the supplied tar/original CI assets, refreshes host state and records the local mirror-origin checker FAIL. PC-PROV03 now resolves historical AIand401: replacement key/high-effort/USD catalogue200, other secret fields preserved; balance403/expiry still open. Read that supplement before acting on the earlier pending-verification observations below. No host deployment occurred.
 
 This is the latest handoff. It supersedes pending-release/cap-code/report and

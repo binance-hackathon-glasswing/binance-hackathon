@@ -1544,3 +1544,36 @@ No purchase/settings change, inference or service activation. Actual served
 identity/effort, account-expiry/funding/usage/rights and first-job/charge/ACK
 qualification remain; PC-PREP02 mirror-origin checker and host installation
 remain open. Evidence: ../build/evidence/aiand-key-verification-20261018.json.
+
+
+## PC-MIRROR01 — approved correction; prior blocker wording withdrawn
+
+Yao approves the checker correction. During implementation, PC-DEC01's full
+record was checked: it already explicitly accepts the approved mirror-only
+local FAIL when production bind passes. The PC-PREP02 continuation incorrectly
+called that a new deployment blocker and implied a mandatory new binary. That
+interpretation is withdrawn; original observed FAIL/bytes remain retained.
+
+PR177 targets codex/system-testing-20261012, separate branch
+codex/gate-a-approved-mirror-20261018. Tests/criteria ae6bf7a pushed before RED:
+14 tests, two approved-origin subcases fail. Implementation4eb33bb pushed before
+GREEN: exact repository-scoped Keegan4 allowlist (+optional.git); unknown/foreign/
+lookalike origins and every existing identity/hash/bind check still refuse.
+No arbitrary origin override. Local package/preparation/release suite68 run:
+65 PASS/3 existing PostgreSQL-dependent skips,0 failures,4.085s (macOS/Python3.12.14).
+Initial restricted-path test errors/terms-access refusal passed on permitted
+rerun with unchanged code/tests; no check disabled. Results at7787d20.
+
+Separate verifier4eb33bb checks the saved original86b1476 package: all7 checks
+PASS/local_ready=true; GateA/remote-CI/signing authority false, host checks NOT_RUN.
+Every original package/bundle-extraction file hash unchanged, manifest0053cbc9…fff2f.
+No binary rebuild, recompression, source/manifest replacement, host mutation,
+ledger operation or paid inference. Capture remains original13:56UTC; Yao still
+re-captures/prepares within5min for actual installation. Original accepted build
+can use existing PC-DEC01 or the separately identified pushed local verifier.
+Evidence: ../build/evidence/gate-a-approved-mirror-20261018.json.
+
+PC-PREP02 acceptance item removed from the live backlog; review/merge PR177 and
+future release propagation remain Keegan's separate item. Existing GateA/account/
+funding/rights/preserving host/ledger/source/trial/signed acceptance remains open.
+PR133 remains OPEN; no automatic merge/deployment follows this correction.
