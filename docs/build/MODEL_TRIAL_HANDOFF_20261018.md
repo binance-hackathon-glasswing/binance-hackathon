@@ -42,7 +42,7 @@ actual start time and report the sequencing as a deviation.
 
 | Measure | Frozen bar |
 |---|---|
-| M1 availability | At least95% of jobs return validated ASSESSED/ABSTAIN by 60 s; unavailable/late jobs remain failures. |
+| M1 availability | At least 95% of jobs return validated ASSESSED/ABSTAIN by 60 s; unavailable/late jobs remain failures. |
 | M2 latency | p50 at most 20 s; p95 at most 45 s; any job over 60 s is a reported defect. |
 | M3 OpenAI | Trial charge at most US$8; stop OpenAI at US$8 or a UTC day over US$2.50. Forecast cumulative usage through Nov 12 at most US$40, retaining the US$10 reserve. Include RESERVED/UNKNOWN charges. |
 | M4/M6/M7/M8 | Report external usage/cost, escalation, switches and baseline disagreements. Escalation over 60% is an alert, not a kill. |

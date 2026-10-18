@@ -144,3 +144,15 @@ matches its source bytes and all acceptance hashes; the two incident entries
 have exact targets and the24h window; JSON parses; existing report tests retain
 truncation/failure counts, reject corrupt/unrelated-target gaps, and preserve a
 short-window INCONCLUSIVE. No application or runtime/config changes are made.
+
+PC-REL01/PC-GAP01 verification at pushed6493a3c: existing source live/report
+suite **24 passed, 18 subtests, 0 skips**, 0.19s, Python3.12.14. Separate local
+synthetic checks using the exact incident JSON verify rawFAIL/explainedPASS,
+zero complete polls and unchanged failed-poll counts, corrupt/unrelated-target
+failures, future-window refusal and short-window INCONCLUSIVE. Published mirror
+evidence bytes match9b363e6 and the decision hashes exactly; all new JSON parses,
+relative handoff links resolve, ledger IDs are unique and whitespace checks pass.
+Only documentation differs from accepted7a0ea14; no new runtime/bundle is needed.
+Raw verification logs stay outside Git under
+`/workspace/larp-cloud/llm-trial-handoff-20261018/`. These are synthetic/local
+checks, not the future host report or independently downloaded release bytes.
