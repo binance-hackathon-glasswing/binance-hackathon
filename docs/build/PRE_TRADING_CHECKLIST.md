@@ -151,7 +151,7 @@ merges none of them and does not claim source/provider/wallet/host readiness.
 - [x] **Keegan:** review and merge #161 (the handoff record). Merged 2026-10-18 at `7cd7892`; numeric-policy approval and host installation remain separate.
 - [ ] **Keith:** after the Oct 20 profile, finish the cap checks the handoff could not run, and record the file hashes on #44: the profile's `per_trade_cap_units` and `gas_top_up_cash_units` are each ≤ 35 000 000 micro-USDT; every full stock holding in the fresh wallet capture fits its token cap; measured approve and swap fees each fit 0.0002 BNB. PR #155's numeric-review tool can do this. Do not count the 40 USDT quote-capture size as a trade size: it is above the 35 USDT cap.
 - [x] **Isaac:** set conservative draft execution ceilings within the candidate fee cap. SP-CAPS: `max_gas=1200000`, `max_gas_price=160000000`wei; product192000000000000wei (<200000000000000). Example only, uninstalled; actual gas, aggregate budget and final profile/full-holding #44 acceptance remain open.
-- [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. A `dev` signer would start with the example label, so this decision is the real lock, not the code.
+- [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. Current integration accepts the example label for `dev`; PR176 adds startup refusal for both dev/live and is pending review/merge. Replacing a label does not establish numeric approval; the exact #44 decision remains required.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
 - [ ] **Keegan:** review Yao Zhu's actual IDEA-080 Terraform plan before apply. #143 and implementation #149 are already merged/reviewed in the repository; the host apply is still pending. Preserve SA3 (both host groups), SA8 signer egress and SA9 primary SSM checks.
 - [ ] **Yao Zhu:** on Gate B day, finish `signer.json` from Isaac's draft (copy kept outside Git in `deploy/activation/signer-dev-20261017/`). Order: Keegan's Gate B bundle exists, Isaac's router evidence is merged and his #44 policy decision is in, then the IDEA-080 apply below. The six fields the draft leaves null, and where each comes from: **Progress 2026-10-17:** `database_host` and `database_ca_sha256` pre-filled in `signer.prefilled.json` next to the draft (IDEA-066 PC-PREP01); four fields left.
@@ -473,3 +473,20 @@ and first assessment/receiver ACK. Keith retains actual usage/labels; team
 retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
 raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
 is claimed. These result-only records change no manifested runtime file.
+
+
+## Signer startup follow-through — PC-SIGNER-READY01 (Oct18)
+
+- [x] **Isaac:** implement and deliver [PR176](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/176), separately from source/provider/network/funding PRs. Both dev/live refuse explicitly pending cap labels; check/run require loadable hash-pinned router evidence for a policy spender before DB/key access. Check reports the evidence hash, local-only scope, signing disabled and no Gate B acceptance. IDEA-070 SR-01:139 tests/219 subtests PASS,0 skips, with local disposable PostgreSQL14.24 and synthetic evidence/keys. Org run39133862711 executed zero steps due confirmed billing/#98; no new signed bundle/host qualification claimed.
+- [ ] **Keegan:** review PR176 and merge if accepted, then include it with the adopted #27 implementation in the exact Gate B release and verify original CI bundle/manifest/config bindings. PR176 does not choose a lifetime, approve caps or establish real source provenance.
+- [ ] **Isaac:** obtain complete verified source/imports/ABI/compiler/settings and deployed-code binding for #139. RE-03 also tried the public Routescan chain56 source API at13:59:09–10UTC: both router/facet requests returned HTTP200/status0 `chain not supported`. This is an access/coverage blocker, not an explorer-verification verdict. No source export/account supplied; use the retained export/vendor-request packet through an approved team contact. No vendor message sent. Keegan's independent source review and the existing router check still wait for that input.
+
+Remaining owner order: source intake **Isaac**, independent review **Keegan**,
+real-artifact check **Isaac**; finite authority/margins decision and implementation
+#27 **Keegan**, using source TTL plus **Yao** host timing; measured profile/fees/
+full-holding checks **Keith**, exact #44 approval **Isaac**; signed release
+**Keegan**, provisioning/config/isolation/session/drills **Yao**, key placement
+**Isaac only during Yao's approved session**. Native #30/provider and route-fee
+#119 evidence remain separate rehearsal gates. Earlier PR171/172/173 remain
+open and are not silently merged by this work. No AWS, wallet key, transaction,
+paid-provider or official receiver operation occurred; signing remains blocked.
