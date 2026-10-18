@@ -269,6 +269,7 @@ class Preferred(unittest.TestCase):
             self.assertTrue(q.submit('blocked',req)); self.assertTrue(entered.wait(2)); self.assertTrue(timed_out.wait(2))
             self.assertFalse(q.finished.is_set()); self.assertFalse(q.submit('other',req))
             with self.assertRaises(ContractError): q.ack('blocked')
+            f.w.clock.advance(200)  # exhaust the shared request budget before releasing the late primary
             release.set(); self.assertTrue(q.finished.wait(2))
         ready=q.ready(); self.assertEqual(ready['result']['status'],'UNAVAILABLE')
         self.assertEqual(len(workers),1)
