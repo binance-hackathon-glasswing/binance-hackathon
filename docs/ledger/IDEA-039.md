@@ -466,3 +466,8 @@ those cases twice. A misspelled existing test path ran no tests before the
 corrected final invocation. No assertions weakened or full/host/CI pass claimed.
 Procedure: [NT-Q1](../build/NATIVE_RPC_QUALIFICATION_20261018.md). Parent30 stays
 open; provider selection/runtime enablement/native top-up round remain separate.
+
+NT-Q1 delivery: dedicated [PR173](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/173),
+OPEN against PR133's checklist branch. Tool review scope is complete locally;
+actual endpoint/account proof, selection and Yao host acceptance remain open.
+No full-suite/CI pass, provider enablement, account signup or payment is claimed.
