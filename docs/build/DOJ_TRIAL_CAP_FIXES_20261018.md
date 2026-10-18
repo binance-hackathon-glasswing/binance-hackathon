@@ -267,3 +267,49 @@ polls/restart/new observed window with retained raw+historical reports; a short
 post-fix check remains INCONCLUSIVE. SourceCoverage stays conservative and
 signed/final source acceptance remains open. No host action or new coverage
 observation was performed by this review.
+
+
+## PR174-REL01 — new original LLM bundle delivered
+
+PR174-R1 fixes and frozen source `86b14761324faeb8f57df5c0d86ff00320b4361c` passed
+[private mirror39126353379](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379), all4 jobs PASS. Full Linux/
+Python3.12.15/PostgreSQL14.24:2064 passed,6 skipped,2992 subtests,236.95s;
+actual systemd5 tests/5 subtests separately PASS. Terraform, offline demo,
+restricted Docker and both-role bundle provisioning PASS. Local same-source
+Linux2064/6/2992 passed in173.13s. Skips: external corpus1 plus5 systemd cases
+exercised separately. No xfails, golden changes or weakened acceptance checks.
+
+PR174 merged normally at `100d49327f4f50e13ff4c16f297b1acccf187496` after green CI and
+original-artifact verification. No issue/inline comments or submitted reviews
+existed at either inspection; the three direct-review findings and regressions
+were corrected before release. Frozen source/tag stay unchanged.
+
+[Published unsigned LLM prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476)
+has six actual assets: original tarball, original sha256 sidecar, external
+manifest, VERIFICATION.json, BUNDLE.env and README. Dedicated publication-only
+[run39126901213](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126901213)
+reverified/uploaded originals using the mirror's scoped Actions token. It did
+not rebuild the bundle or replace acceptance CI. Tag/source and asset API
+sizes/digests verified. Organization billing is not claimed fixed.
+
+| Verified original | SHA-256 |
+|---|---|
+| `larp-86b14761324f-x86_64.tar.gz` (98,383,598 bytes) | `277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343` |
+| External/embedded manifest | `0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+Original artifact12135774607 ZIP digest verified;196 manifested source files
+and235 full-bundle checksums checked. Registered repository stays the challenge
+repo; build_origin honestly names the Keegan4 mirror. The packaged trial config
+hash is `a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d`.
+Yao must explicitly prepare/pin this capped unsigned trial file; the legacy
+preferred file remains separate. No ledger reset, policy removal or automatic
+signed adoption is authorized. [Machine-readable evidence](evidence/pr174-release-20261018.json).
+
+PR133/126 stay open. Code/review/CI/new-original-bundle work is complete. Yao
+retains private provider/account/funding/rights checks, preserving ledger setup,
+host install/bind/activate, actual post-fix polls/restart/new observed window
+and first assessment/receiver ACK. Keith retains actual usage/labels; team
+retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
+raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
+is claimed. These result-only records change no manifested runtime file.
