@@ -920,3 +920,85 @@ rights checks, in-flight trial-cap enforcement and start remain with Yao.
 Keith supplies actual usage/labels; team decides adoption. Keegan's fixed-window
 gap-report review is pending until Yao supplies it after19:00 SGT. No paid calls,
 AWS changes, host deployment or future coverage pass claimed.
+
+## PC-REL08 — Yao local receipt and deployment continuation (prospective, Oct18)
+
+Yao supplies the original d8aa7d5 bundle in Downloads/stuff and requests continued
+deployment. Before accepting those local bytes: verify bundle/sidecar/external
+and embedded manifest, every release and bundle checksum, BUNDLE.env/CA, exact
+registered source ancestry and declared routing/prompt hashes. Inspect archives
+without executing supplied scripts. Distinguish fresh accessible CI evidence
+from Keegan's retained verification if the private mirror is inaccessible here.
+Refresh PR133 without merging/closing it and keep the release SHA fixed.
+
+Read-only host checks may inspect installed identity, service/budget-file state,
+raw DOJ/BIS polling and archive evidence using base64 SSM scripts, without reading
+secret values or publishing metrics. Retain private raw evidence and hashes;
+generate the fixed Oct17 11Z–Oct18 11Z reports only after the window ends, applying
+PC-GAP01 only after checking cadence/errors/rejections. Update ignored run-sheet C
+to v3 routing-file init/preserving migration and retain every charge/latch.
+Provider calls, paid work, host mutation/activation remain Yao's actions. Actual
+US$8/US$2.50 admission enforcement and current account reconciliation must be
+resolved before paid v3 jobs; packaging/pacing alone cannot establish those caps.
+Results and remaining owners will be appended after verification.
+
+
+### PC-REL08 results — local receipt/read-only host, Oct18 10:36–10:39 UTC
+
+Fetched origin and fast-forwarded the checklist to67c47fc without rewriting
+history. Integratione7479b2 includes merged169/170; PR133/126 remain OPEN and
+139 remains draft. No teammate message sent. Keegan's new source d8aa7d5 is
+ancestor of integration and includes167,165 and KMP-P2 fix6955eaf.
+
+Independently verified the supplied original bundle SHA9930f361…90b89,
+manifest8bed2539…149e0,195 release files byte-for-byte against exact Git source,
+234 bundle checksums, sidecar, BUNDLE.env and packaged CA d7389074…2398b.
+Routing SHA baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e.
+Staged unchanged originals in ignored releases/mirror-39111854179. Fresh private
+mirror API returns404 under this local account; CI2029/6/2981 and4 green jobs
+remain Keegan's retained verification, not a fresh independent CI observation.
+No application tests rerun, binary rebuild or runtime source edits.
+
+Read-only base64 SSM18b9419e-1380-42fe-ad09-0c940ef857d5 SUCCESS at10:36:50Z:
+old bb46234 remains dev/shadow/deterministic, runtime/evidence/uploader active,
+execution inactive; no model-budget ledger. Explicit READ ONLY SQL: healthy,
+latest10:00 anchor ACK,00:00 daily backup ACK,62 audit chunks ACK, zero delivery
+breaches/HALT/quarantine. Historical incident backup1792235176666 remains
+PERMANENT; no new-release incident-backup qualification implied. No secret values,
+private RPC URLs/database hosts, provider calls, metric publishing or host changes.
+
+**PC-SRC01 (blocking):** raw DOJ/BIS snapshot retained privately (237 lines,
+74,467 bytes; SHA436965c62eaf3169cae6ba69c06b30f44759633f94951944fabf8e324ade71b3).
+At10:36Z DOJ142 polls:48 OK/truncated,94 SOURCE_UNAVAILABLE/RESPONSE_TOO_LARGE
+from Oct17 19:00:53.025Z through Oct18 10:30:53.045Z, zero rejections; maximum
+start gap600001ms. BIS95 OK,92 truncated, zero errors/rejections; max913038ms.
+These are pre-end observations, not the final24h report. Read-only cursor
+SSM6b652063-97aa-4eb9-bae7-a9d262421de3 finds DOJ page97 continuation,
+last_success immediately before last_error. Source review indicates head-page
+success followed by oversized continuation; head progress does not turn the
+poll's error into OK. The existing PC-GAP01 expressly excludes these errors.
+Do not generate an explained PASS using its blanket full-window DOJ entry.
+Yao retains report/raw evidence; source owner Yao investigates size/pagination,
+Keegan reviews any repair/disposition. New d8aa7d5 retains the same source
+transport/parser/register, so bundle installation alone does not fix this.
+
+Yao reconfirms OpenAI48 remaining and AIand140+ in this chat. OpenAI2,000,000
+prior is still owner-reported; current usage export/unknown calls need reconciliation.
+AIand units/conversion/funding qualification remain unknown. No keys requested.
+**PC-CAP01 (blocking):** release/approved protocol explicitly leaves $8 trial/
+$2.50 UTC-day maximum-in-flight admission enforcement unresolved. Account pacing
+and daily observation are not sufficient proof; paid work waits for a guaranteed
+method (reviewed implementation/new binary if necessary), owned by Yao with
+Keegan release support. Preserve all charges/latches; no ledger initialized.
+
+Updated ignored run-sheet C to the actual v3 routing hash, matching --routing-file
+init/status or explicit preserving migration, existing-key rule, account/report/cap
+gates and separate signing scope. Prepared ignored collect-gap-report-20261018.py:
+refuses before11Z/19SGT with zero AWS requests, then uses read-only base64 SSM,
+retains raw report, exact hash-verified original poll-log prefix and proposed
+incidents, and withholds explained report if raw historical-only checks fail.
+Syntax/time-guard checks pass; actual post-window report NOT_RUN. No scheduling.
+Machine-readable receipt/hashes: ../build/evidence/local-v3-receipt-20261018.json.
+Remaining: Yao report/accounts/caps/SSM deployment, Keegan report/release review,
+Keith measured affordability/labels; signed gates remain separate. No whole GAP
+completed; pre-existing untracked Claude outputs/ untouched.

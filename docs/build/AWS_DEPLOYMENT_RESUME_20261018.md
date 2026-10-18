@@ -6,6 +6,32 @@ supersedes the older conversational `aws-deployment-resume` handoff and stale
 v2-only instructions for the next trial. Do not repeat completed protocol/key/
 migration work or ask for already granted approval.
 
+## Continuation update — PC-REL08, Oct18 10:36–10:39 UTC
+
+This update supersedes the older pending-release/PC-AWS06-review statements
+below. Keegan delivered d8aa7d5 including167/165/KMP-P2/services/DEV-19;169/170
+merged, integratione7479b2. Original local bundle now independently verified
+(195 exact-source files/234 checksums) in ignored releases/mirror-39111854179;
+receipt/hashes in IDEA066 PC-REL08 and evidence/local-v3-receipt-20261018.json.
+Keegan's existing primary migration/TLS review is complete with recorded limits.
+Local private CI API404; original verification remains Keegan's retained evidence.
+PR133/126 stay OPEN; no installation, provider call or activation performed.
+
+Host read-only check: old bb46234 deterministic dev-shadow, healthy,62 audit
+chunks ACK,10:00 anchor and00:00 daily backup ACK; historical PERMANENT incident
+preserved; no model-budget file. **PC-SRC01 blocker:** DOJ94 RESPONSE_TOO_LARGE
+failures since Oct17 19:00Z, cursor page97; PC-GAP01 cannot explain them. Source
+repair/disposition and final report/review remain required. **PC-CAP01 blocker:**
+account pacing does not implement $8 trial/$2.50 UTC-day admission caps; establish
+guaranteed in-flight enforcement before paid jobs. Yao reconfirms OpenAI US$48,
+AIand140+, with AIand units and actual billing/usage still to reconcile.
+
+Ignored run-sheet C is now v3-specific. Ignored collect-gap-report-20261018.py
+refuses before11Z/19SGT, then retains read-only raw report/exact poll-log prefix
+and hashes; withholds explained report on failed exception checks. Actual report
+NOT_RUN at this update. Yao owns source/accounts/caps/host actions, Keegan review
+and release support, Keith usage/labels. No host mutations/new spend scheduled.
+
 ## Read first and branch distinction
 
 Follow AGENTS.md: docs/skill/SKILL.md, docs/LEDGER.md table, then relevant files.
