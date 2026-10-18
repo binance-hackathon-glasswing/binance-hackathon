@@ -121,6 +121,8 @@ No paid calls, model reruns or host changes. Formal T01/v3 M9 stay unqualified.
 
 ## PC-LABEL02-R2 — adjudication frozen and original assessments scored
 
+**Interpretation corrected in PC-LABEL02-R3 below:** these counts characterize the temporary rule-assessor outputs against the annotation task, not semantic intelligence or a numerical rating of the harness.
+
 Yao returned the adjudicated label bytes and detached checksum. Exact SHA-256
 `f4274c0b1c887f0b4c85d4ebe80d2d0bf2b0408a00b4ac69e6e03822ca3933be`
 (87,177 bytes) matches. All four case reviews/six decisions are complete with
@@ -164,3 +166,13 @@ instruction flag in the exact new routed configuration with Keegan peer review;
 record intended trust/coverage behavior and real-source regression evidence
 before calling that source fully qualified. Preserve actual injection defenses
 and the old outputs; do not erase or relabel the historical incomplete result.
+
+## PC-LABEL02-R3 — harness versus assessor boundary
+
+Yao clarified the intended boundary: the harness supplies point-in-time evidence, bounded tools, claim verification, deterministic policy/risk/execution and audit; the selected LLM performs semantic evidence assessment. The deployed RuleBaselineModel is the temporary deterministic assessment path. Its small retrospective output comparison is not a test of whether the harness can act as the LLM analyst.
+
+The conversational 4/10 judgment was not a predefined or statistically validated metric and is withdrawn. It must not be treated as a harness rating or readiness gate. Likewise, the seven proposition-level annotation details absent from the rule output describe an output/task representation gap; they do not establish that the harness failed its intended semantic-analysis task, because it has no such assigned task. The frozen strict matching counts still describe what the saved baseline outputs contain under the chosen rubric; no labels, outputs, matching rules or counts have been changed after unblinding.
+
+Appropriate interpretation: the collected run supplies evidence about ingestion, scheduling, completion, recovery, verification/control wiring and audit delivery, with the recorded source gaps and benign-link trust/coverage limitation. It does not measure the semantic performance of the selected LLM or the complete LLM-plus-harness system. That needs actual composed-model outputs, supported claims and separate blind evaluation. Verification and policy rules still constrain which supported model claims can be accepted; adding a model does not silently alter those contracts.
+
+Source architecture checked: IDEA-012 role split, IDEA-056 deterministic boundaries and runtime service/RuleBaselineModel versus routed assessor wiring. No runtime, schema, model, prompt, threshold, guardrail or release change follows from this interpretation correction. Original gold, score JSON, pairwise records and report are preserved.

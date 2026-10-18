@@ -1206,3 +1206,23 @@ This completes only PC-LABEL02's small AI-assisted retrospective diagnostic.
 Human-gold independence, T01/v3 M9, larger positive samples, actual hosted
 LLM evaluation and adoption remain unqualified. No model call/replay, host
 change, app code/test or golden change; PR133 remains open.
+
+### PC-LABEL02-R3 — interpretation corrected after Yao role clarification
+
+Yao clarifies that the harness is not assigned semantic evidence assessment;
+it supplies evidence/tools, verifies claims and enforces policy/risk/execution/
+audit. The LLM is the semantic assessor; RuleBaselineModel is the temporary
+deterministic path. Checked IDEA-012/056 and the service/model composition.
+The conversational4/10 was not a frozen/validated metric and is WITHDRAWN;
+no harness intelligence/readiness rating follows from that comparison. The
+0/7 proposition-detail comparison is a task/output representation gap, not
+proof that the harness failed an assigned semantic-analysis role. Existing
+labels, original outputs, frozen strict rules and measured counts are unchanged.
+
+Corrected boundary is in ../build/DETERMINISTIC_LABEL_REVIEW_20261018.md and
+the aggregate score JSON interpretation_correction. The private original
+reports are retained with a separate INTERPRETATION-CORRECTION.md addendum.
+Harness operational evidence/source limitations stand; actual composed LLM
+assessment quality remains unmeasured. PC-LABEL02-INJ01 trust/coverage review
+and broader source/model/qualification gates remain open. No runtime or
+acceptance-rule change, model call, deployment or new rating was made.

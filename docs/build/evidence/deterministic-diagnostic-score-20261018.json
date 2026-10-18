@@ -71,6 +71,16 @@
     "selection_manifest_sha256": "a53f8ff28dc5b3eace8d5c4bd9353014c103699807368d3626cb50475d5e489e",
     "source_index_sha256": "b3caa1a698ed5d9ff40b4f874ade52dd8e7a97038f4f69cdc33d88ba53e6f424"
   },
+  "interpretation_correction": {
+    "frozen_labels_outputs_rules_and_counts_unchanged": true,
+    "measured_component": "TEMPORARY_RULE_ASSESSOR_OUTPUTS_VS_RETROSPECTIVE_ANNOTATION_TASK",
+    "not_a_harness_semantic_intelligence_rating": true,
+    "proper_evaluation_boundary": "Assess operational/control harness evidence separately; measure actual composed LLM-plus-harness semantic outputs when run.",
+    "proposition_detail_gap": "Output/task representation difference; not a failure of the harness to perform an assigned semantic-analysis task.",
+    "record_id": "PC-LABEL02-R3",
+    "source": "Yao clarification, checked against IDEA-012/056 and runtime composition",
+    "unvalidated_conversational_4_of_10_rating": "WITHDRAWN"
+  },
   "issuers": 2,
   "model_replay_performed": false,
   "numeric_facts": {
