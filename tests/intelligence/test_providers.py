@@ -109,6 +109,27 @@ class Adapters(unittest.TestCase):
                          ("OK", FINISH, "Compared the facts with the gaps."))
         self.assertNotIn(SECRET.encode(), self.artifacts.get(reply["request_payload_artifact"]))
 
+    def test_openai_json_mode_input_names_json(self):
+        """PC-DEPLOY01 (2026-10-18): the first hosted gpt-6.1-sol request was refused with HTTP 400 because the
+        Responses API's json_object format requires the word 'json' in the input messages; `instructions` does not
+        count. The fake below applies that documented rule. The model input must survive unchanged after the label."""
+        def openai_json_mode(body):
+            if body["text"]["format"]["type"] == "json_object" and "json" not in body["input"].lower():
+                return {"error": {"message": "Response input messages must contain the word 'json' in some form to "
+                                             "use 'text.format' of type 'json_object'.",
+                                  "type": "invalid_request_error", "param": "input", "code": None}}
+            return openai_reply(FINISH)(body)
+        model_input = {"gaps": [{"id": "g-1", "question": "Does the filing change guidance?"}]}
+        model = self.build(OpenAIResponsesModel, make=openai_json_mode)
+        reply = model.step(request(model_input), 60_000).read()
+        self.assertEqual((reply["status"], reply["output"]), ("OK", FINISH))
+        sent = json.loads(self.sent[0][2])
+        self.assertIn("json", sent["input"].lower())
+        label, _, payload = sent["input"].partition("\n")
+        self.assertIn("JSON", label)
+        self.assertEqual(json.loads(payload), model_input)
+        self.assertIn("input=json-labelled", model.identity.revision)
+
     def test_unusable_replies_are_errors_or_timeouts_never_empty_success(self):
         cases = [
             (AnthropicMessagesModel, anthropic_reply(FINISH, served="other-model"), {}, "ERROR", "SERVED_MODEL_MISMATCH"),
