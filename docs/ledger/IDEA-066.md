@@ -1269,3 +1269,24 @@ the cut/finalization work: implement/verify the adopted event planner or obtain
 and record an approved reasoned final deviation, with decision byOct22 and
 release disposition beforeOct26. Tracking/ownership is not evidence every item
 is already started. No runtime/host action, new approval or gate closure.
+
+## PC-HO02 — late Oct18 handoff for new chat
+
+Yao requests a continuation prompt after receiving Keegan's release. Latest
+tracked handoff: ../build/AWS_DEPLOYMENT_RESUME_20261018_LATE.md; older resume
+now points there first. Covers completed174/175 release delivery, local candidate
+verification, current host/source/cap distinction, exact capped routing,
+preserving budget/provider/prepare/bind/activate/first-job sequence and remaining
+owners. Local supplied file located at Downloads/larp-86b14761324f-x86_64.tar:
+101519360 bytes, uncompressed ustar/no gzip magic. Packaging inspection only;
+its contents/source/full checksum verification remains the next chat's task.
+Do not compare that file's whole hash to the original gzip or repackage and
+claim original CI provenance. Expected release/manifest/CA hashes retained.
+
+Completed clean Codex fix worktree archived with a recoverable snapshot;
+pre-existing worktrees untouched. Main matches origin/main, no session commits
+unpushed; primary status still has only pre-existing untracked Claude outputs/.
+Private source/label reports stay outside Git; local ignored sectionC updated
+to the new capped86b1476 release and the tracked runbook. Historical v2/$10
+tail and old d8aa7d5 snapshot cannot govern the new trial. No host mutation,
+paid inference or deployment happened. PR133 remains OPEN.

@@ -1,5 +1,7 @@
 # AWS deployment resume — PC-HO01 / aws-deployment-resume
 
+**LATEST HANDOFF:** [AWS_DEPLOYMENT_RESUME_20261018_LATE.md](AWS_DEPLOYMENT_RESUME_20261018_LATE.md) supersedes older release/cap/report snapshots below. PR174 repairs and original86b1476 release are delivered; local supplied uncompressed tar still needs verification. Read the late handoff first.
+
 Snapshot: 2026-10-18 ~07:46 UTC (15:46 SGT). Refresh GitHub and host state on
 resume; this is not a new host inspection. User is **Yao Zhu**. This record
 supersedes the older conversational `aws-deployment-resume` handoff and stale
