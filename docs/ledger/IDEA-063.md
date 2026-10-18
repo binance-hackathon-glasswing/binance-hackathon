@@ -178,3 +178,62 @@ quotes too. The capture would send the wrong key and sign with the wrong secret.
 - Server GitHub access: fetch and fast-forward pull succeeded; at 18:31 UTC a `git push --dry-run` for a new branch also succeeded. This verifies push authentication/transport without creating a remote branch; an actual server push and branch-specific protection checks were not performed.
 - Host continuity: a separate `systemd-inhibit` process blocks idle/sleep through the capture stop time. Keep the Linux server powered, online and awake; tmux/nohup preserve the process when SSH disconnects. A reboot, power loss or forced sleep still interrupts it.
 - Remaining: Keith monitors capture health and records any gaps here. After Oct 20 00:00 UTC, run `cost_summary summarize`, then the LIVE-profile builder; report coverage refusals without loosening flags. Isaac and Keith review the fee-netting assumption, summary and profiles before pinning (#118/#119/#120, GAP-69). This startup record does not close #118 or GAP-69, and no summary/profile is generated or pinned by this change.
+
+## FN-01 — Isaac quote fee-netting check (#119, 2026-10-17, prospective)
+
+Task: determine whether the quoted wallet input/output already include route fees, so `fee_bps = 0` is justified as an additional cost component. Existing summary code assumes netting; receipt settlement's net-transfer accounting alone does not prove quote semantics. This task is separate from the manual MetaMask first-gas record, which used a different route, and from #120 profile adoption.
+
+Criteria before evidence analysis:
+- **FN1:** use only existing public quote artifacts under `data/w08`, `data/execution-live` and any existing local quote-capture directory; inspect at most1000 JSON/JSONL files with no credential/env reads. Print/export only allowlisted public economic fields, source/endpoint/time, artifact hashes and counts. Raw responses stay outside Git. No Web3/RPC/API/model requests, new capture, signing, wallet/transaction, AWS or receiver action.
+- **FN2:** bind each successful quote to chain56, the requested pair/amount and returned token addresses/decimals; retain exact fromTokenAmount/toTokenAmount/tradeFee/route and minimum output fields, distinguishing missing fee, numeric zero and nonzero fee. Inspect both directions and all available tokens/amounts/timestamps. Inspect source documentation already in the verbatim kit; optional public issuer documentation may be browsed, with exact provenance and no access bypass.
+- **FN3:** do not infer fee asset, units, deduction side or inclusion from an unlabeled number or a plausible arithmetic match. The presence of tradeFee, a quoted round trip, minimum output or settlement netting alone does not prove net fee semantics. Require attributable vendor/source semantics or transaction-bound quoted-vs-wallet transfers, separately controlling gas/slippage/price movement, for a definitive netting conclusion. An unrelated manual swap is not a Binance quote-route fill check.
+- **FN4:** record verified observations, competing interpretations and missing inputs with hashes in this entry and a reviewable document. If still uncertain, keep #119 and #120 open and label the zero-fee assumption honestly; do not invent a fee rate or claim live-profile acceptance. Any necessary code correction is preregistered here and committed/pushed before it runs, with meaningful offline tests. Independent PR closes only the investigation/tool or correction slice that is genuinely complete.
+
+### FN-02 — bounded reporting correction (#156, prospective)
+
+The FN-01 review found that Binance's dated Trading API describes `tradeFee` as a network-fee estimate in USD; it does not establish route-fee netting. Correct reporting and preserve evidence without changing cost arithmetic:
+
+- **FN5:** future SAMPLE records retain `tradeFee`, `feeAmount`, `feeToken` and `actualSwapAmount` separately for BUY, SELL and REQUOTE, copying only present fields without conversion. Preserve absent vs null vs zero, and keep the legacy buy `trade_fee` unchanged. Verify distinct nonzero values on all legs and missing/null/zero cases with a synthetic client, without network calls.
+- **FN6:** reports explicitly identify fee netting as UNVERIFIED (#119), explain the zero additional-fee assumption and identify legacy `trade_fees` as buy-only network estimates with the dated primary-source URL. Nonzero `tradeFee` must not be interpreted as a route-fee rate or added on top of existing gas estimates. Existing captures without the new fields must still summarize and produce the same numeric costs. Verify with meaningful offline capture/summary regressions and the existing marketdata/strategy tests.
+- **FN7:** record observations and source limits in a review document, including exact examples and hashes; narrow GAP-50 to the remaining #119/#120 owner checks. Open a PR closing #156 only, referring to #119/#120. No host capture restart, new quotes, policy adoption, signing or broadcast is part of this correction.
+
+### FN-01/FN-02 results — 2026-10-17
+
+- **FN1/FN2 completed:** inspected 1,000 existing JSON files within the preregistered limit; 391 successful, request-bound chain-56 LiquidMesh quotes, all five bStocks in both directions, 40-USDT buys, Oct 15–16. Exact amounts/times, sample-selection limits, example hashes and the quote-set hash are in [the dated review](../build/QUOTE_FEE_REVIEW_20261017.md). No credential read, new quote, RPC, host action or trade.
+- **FN3 netting verdict: inconclusive.** The primary Binance Trading API, Flash API response fields (checked 2026-10-17), defines `tradeFee` as estimated network fees in USD. All inspected quotes have nonzero `tradeFee` but null custom-fee fields and no custom-fee request parameters. This does not demonstrate an additional trading fee, nor prove all route fees netted. **Correction to the historical Design table:** its unconditional netting statement was an assumption; settlement's net-transfer accounting is not proof of quote semantics. No fee rate is inferred or added to gas.
+- **FN4/FN7:** #156 contains the independently completable evidence/reporting correction; #119 stays open for Isaac's route-fee inclusion evidence or bound quote/fill comparison. #118 capture completion remains Keith's; #120 summary/profile review remains Isaac's and Keith's. GAP-50 narrowed, not removed. No profile pinned.
+- **FN5/FN6:** regression commit `585512c` failed on the old producer as expected: missing fee-observation records and missing UNVERIFIED report metadata (7 failures including five stock subtests, 1 passed test). Fix `61cb527` retains the four raw fee fields on all three legs and labels the assumption and legacy buy-only network estimates. Missing/null/zero distinctions preserved; original captures still summarize; numeric costs unchanged. This changes evidence recording/reporting, not trading-cost arithmetic or profile validation. Existing server capture need not be restarted.
+- **Verification at pushed application/test head `61cb527`:** Python 3.12.14, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr20-venv/bin/python -m pytest -q -p no:cacheprovider tests/marketdata tests/strategy`: **235 passed, 1 skipped, 131 subtests passed**, 18.34 s. The recorded-market integration test is opt-in (external artifacts), so was skipped. Local log: `/private/tmp/larp-fee-netting-20261017-tests.log`. Full suite, hosted capture, live fill and CI acceptance not run for this change.
+- **Delivery:** [PR #157](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/157), branch `codex/isaac-09-quote-fees-20261017`, targets the integration branch and includes `Closes #156`; #119's body now records the findings and remaining acceptance without closing it. PR is open for review, not merged. GitHub Actions run `39033396981`, runtime check `117398314355`, did not start: annotation says recent account payments failed or the spending limit must be increased (#98). This is not a CI test failure; no hosted acceptance is claimed.
+
+## FN-RV157 — refreshed merge review (2026-10-18, prospective)
+
+Yao Zhu requests review/fix/merge of PR157. Review head 9d8f168 and merge the
+current integration base (including PR155) without rewriting history. Preserve
+FN5/FN6: raw BUY/SELL/REQUOTE fields keep absent/null/zero distinctions, old
+captures remain readable, numeric costs remain unchanged, and fee netting stays
+explicitly UNVERIFIED with #119/#120 owner acceptance outstanding. Require the
+marketdata/strategy subset and the PR155 cap/report subset to pass on the pushed
+combined head; report platform/external-data skips honestly. Re-check the primary
+Binance Flash API field definitions as a dated source check, not a quote/fill
+comparison. No new quotes, wallet/host actions, profile approval or fee-rate
+assumption is authorized by this review.
+
+### FN-RV157 results — 2026-10-18
+
+Pushed combined head `a3918e0` includes integration `2f10b9d` (PR155) by ordinary
+merge. Full changed producer/tests and historical evidence reviewed; no further
+code defect found. Primary Binance Trading API / Flash API response definitions
+rechecked on 2026-10-18: `tradeFee` is still described as an estimated network fee
+in USD. This supports the reporting label, not route-fee inclusion or actual fills.
+
+First focused run: 267 passed, 1 failed, 1 external-corpus skip, 236 subtests.
+The shell-wrapper test selected system `python3` without dotenv, while pytest
+used the pinned temporary venv. Set the wrapper's supported `PYTHON` variable to
+the same venv interpreter (no source/assertion change), then the complete same
+subset passed: **268 passed, 1 skipped, 236 subtests**, 13.96s, macOS arm64 /
+Python3.12. Subset: marketdata, strategy, caps, cap proposal and Gate B evidence.
+Only skip: opt-in external recorded-market corpus. `git diff --check` passes.
+No new Linux/release/host acceptance claimed. #119 fee-netting proof and #120
+Isaac/Keith profile acceptance remain open; merging PR157 completes #156's
+reporting/evidence correction only. The ongoing capture is not interrupted.
