@@ -476,3 +476,43 @@ or modified. The unused local branch is removed without rewriting commits.
 The verified7a0ea14 release retains the desired US$10 policy, so there is no
 new reserve-specific build prerequisite. Report, release acceptance, trial-bar
 confirmation, P0/P1/P2 and actual activation remain open as before.
+
+
+## PC-ROUTE01 — request: sustained OpenAI preference and full-credit fallback (2026-10-18)
+
+Yao asks whether all remaining OpenAI credit can be available over the run, with
+OpenAI kept as the preferred/main assessor where affordable and difficult work
+rerouted to a qualified AIand reviewer on exhaustion. This is a design request,
+not a silently adopted reserve/routing change. PC-BUD03'sUS$10 policy remains
+implemented pending an explicit settled replacement and reviewed release.
+
+Code inspection: current AIandRouting.v2 is GLM-5.3 low for routine work and
+optional GPT-6.1 Sol medium for selected review reasons; external difficult-review
+order is Kimi K3 high then GLM-5.3 high. It is not OpenAI-first. The budget has
+no time pacing: admission beyond total-minus-reserve latches external-only for
+the run. This can preserveUS$10 but cannot ensure OpenAI is used throughNov12.
+No model-quality comparison establishes one provider stronger for this workload.
+
+Recommended design for consideration: make OpenAI's desired role explicit;
+permit the whole remainingUS$48 over the declared end window rather than strand
+a permanentUS$10; reserve future-day runway with deterministic cumulative/time
+allowances and per-request cost bounds. Temporary pacing refusal uses AIand for
+that job without permanently disabling later OpenAI work. Actual credit exhaustion
+or full allocation exhaustion latches external-only; genuine accounting failure
+still blocks OpenAI dispatch. Fallback receives the original evidence/request,
+uses the qualified high-effort external route and the same verification/audit
+boundary. User-defined end time, cadence/workload, multi-call usage and trial
+measurements are needed to size pacing; finite credit cannot guarantee OpenAI
+for every job for the full period. More expensive is not validated better here.
+
+Primary OpenAI documentation checked Oct18: Error codes (credit_balance_exhausted
+is distinct from temporary rate limits), API pricing, and the per-run spending
+controller article (cost bounds, actual-usage reconciliation and final-bill
+limits). Sources:
+https://developers.openai.com/api/docs/guides/error-codes
+https://developers.openai.com/api/docs/pricing
+https://developers.openai.com/cookbook/articles/per_run_spending_controller_responses_api
+No API calls, key reads, runtime/config changes, initialization or deployment.
+If adopted, the new routing/pacing policy needs prospective ledger criteria,
+versioned implementation, explicit tests of temporary versus permanent fallback,
+revised trial evaluation and a matching accepted mirror release before host use.
