@@ -43,7 +43,9 @@ class S3Archive:
             raise ContractError('Archive object exceeds configured limit')
         if created_ms < 0 or now_ms < created_ms:
             raise ContractError('Invalid archive time')
-        retain_ms = created_ms + self.retention_days * 86400000
+        # S3 stores Object Lock dates to whole seconds: request the next whole second, never less than the
+        # retention, so the read-back check compares the date S3 actually keeps (IDEA-082).
+        retain_ms = -(-(created_ms + self.retention_days * 86400000) // 1000) * 1000
         if retain_ms <= now_ms:
             raise ContractError('Archive retention window exhausted; explicit recovery required')
         retain_until = datetime.fromtimestamp(retain_ms / 1000, timezone.utc)

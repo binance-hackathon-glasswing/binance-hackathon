@@ -320,3 +320,51 @@ GB-RV155 and IDEA063 FN-RV157. No force push/rebase or live-code deployment.
   remain pending those runs. Keegan owns the reviewed merged release bundle;
   Keith owns private keys/prior-spend and trial bars. #161 signer handoff remains
   open. No trial switch before the completed gap report and run-sheet C inputs.
+
+
+## PC-CI02 — mirror runs verified and combined trial bundle prepared (2026-10-18)
+
+Yao Zhu ran the supplied non-forcing mirror pushes and workflow dispatches.
+Independently read the run metadata, exact tested heads and completed logs:
+
+| Run | Tested head | Outcome |
+|---|---|---|
+| [39091503450](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091503450) | d7d3e7c (original PR158 head) | SUCCESS; superseded by the refreshed combined head below |
+| [39091506616](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091506616) | 19339bd (PR163) | All4 jobs SUCCESS; runtime1931 passed /6 skipped /2859 subtests; explicit systemd5 passed /5 subtests |
+| [39091699018](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091699018) | 7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce (refreshed PR158) | All4 jobs SUCCESS; runtime1973 passed /6 skipped /2934 subtests; explicit systemd5 passed /5 subtests |
+
+Both exact-head builds pass Terraform AWS19/19, bootstrap1/1, host-bundle,
+offline demo and restricted Docker smoke. The six full-suite skips are the
+opt-in external corpus and separately exercised systemd cases. PR163 merged
+2b4f397; PR161 signer handoff merged7cd7892; PR158 mergedce9115e. Integration
+63ee226 additionally records documentation results. PR133 remains open.
+Results posted to PR163 comment6244968913 and PR158 comment6244995843.
+
+**Release candidate prepared locally (not installed):** downloaded combined
+run39091699018 artifact12122169313 (`larp-bundle-x86_64`, 98,410,942-byte ZIP).
+GitHub ZIP digest is retained as artifact metadata, not substituted for the
+bundle's SHA256. Verified sidecar hash; byte-identical external/embedded manifest;
+all192 manifest file hashes; exact build7a0ea14; registered source repository;
+BUNDLE.env architecture and CA hash against included PEM.
+
+- Bundle `larp-7a0ea1433b3a-x86_64.tar.gz` SHA256:
+  `ff951451bc80b518620f895b2b0a871df188ce2cb2d3e36e04a58754c7f5de06`.
+- External/embedded release manifest SHA256:
+  `bb17b7ffc28eeb2e14594a80895827bed5327b8408f519692870dcdeffdca70a`.
+- BUNDLE.env `rds_ca_sha256`:
+  `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b`;
+  matches PC-PREP01's recorded primary CA.
+- Public machine-readable evidence:
+  `docs/build/evidence/model-trial-mirror-20261018.json`. Actual files, CI logs
+  and local-verification.json are retained under git-ignored
+  `deploy/activation/releases/mirror-39091699018/`.
+
+**Remaining owners:** Keegan accepts this candidate as the trial release and
+confirms the handoff (approval is not inferred from these checks); Yao Zhu
+produces the fixed-window report after11:00 UTC and later uploads/installs the
+accepted release with a version event; Keith delivers both keys and exact prior
+OpenAI spend privately and settles trial bars; Keegan disposes of DOJ/FR gaps.
+The mirror prerequisite is technically verified, with release-owner acceptance
+still open. No upload to AWS, installation, restart, inference, signing or spend.
+The original archive PERMANENT row and hosted fixed-release incident test remain
+as recorded in PC-AWS11/IDEA082. This does not mark Gate A/B or model adoption PASS.
