@@ -1,0 +1,228 @@
+{
+  "notes": [
+    "Public anonymous captures; raw bodies and rendered-source transcripts retained outside Git.",
+    "403 bodies are NOT_QUALIFIED; rendered-source captures are distinguished from raw HTTP and do not establish account-specific contracts.",
+    "Downloaded agreement PDF is supplemental; no byte-equivalence to the current HTML agreement is claimed."
+  ],
+  "rows": [
+    {
+      "artifact": "17f7d89c74a0e708c281f6d77d2bff787cf323d6d563781a6ac137e9b6adf76d.bin",
+      "bytes": 386885,
+      "captured_utc": "2026-10-18T06:57:02.519298+00:00",
+      "final_url": "https://www.aiand.com/legal/inference-terms-of-service",
+      "http_status": 200,
+      "id": "aiand-inference",
+      "sha256": "17f7d89c74a0e708c281f6d77d2bff787cf323d6d563781a6ac137e9b6adf76d",
+      "status": "CAPTURED",
+      "url": "https://www.aiand.com/legal/inference-terms-of-service"
+    },
+    {
+      "artifact": "db93953337fb4521a1525de28786fb7832008516dd36a8de08bb53511de07a44.bin",
+      "bytes": 374171,
+      "captured_utc": "2026-10-18T06:57:02.519828+00:00",
+      "final_url": "https://www.aiand.com/legal/dpa",
+      "http_status": 200,
+      "id": "aiand-dpa",
+      "sha256": "db93953337fb4521a1525de28786fb7832008516dd36a8de08bb53511de07a44",
+      "status": "CAPTURED",
+      "url": "https://www.aiand.com/legal/dpa"
+    },
+    {
+      "artifact": "661ad080295011e3ee6b3fec6ca7cb3cece3b169869e592ceba81e756ad49681.bin",
+      "bytes": 354462,
+      "captured_utc": "2026-10-18T06:57:02.519883+00:00",
+      "final_url": "https://www.aiand.com/legal/usage-policy",
+      "http_status": 200,
+      "id": "aiand-usage",
+      "sha256": "661ad080295011e3ee6b3fec6ca7cb3cece3b169869e592ceba81e756ad49681",
+      "status": "CAPTURED",
+      "url": "https://www.aiand.com/legal/usage-policy"
+    },
+    {
+      "artifact": "882ea05455e771384dc93743c4d5c71679a5778cd3c6b06914888ec6737834e5.bin",
+      "bytes": 327351,
+      "captured_utc": "2026-10-18T06:57:02.519927+00:00",
+      "final_url": "https://www.aiand.com/legal/supported-regions",
+      "http_status": 200,
+      "id": "aiand-regions",
+      "sha256": "882ea05455e771384dc93743c4d5c71679a5778cd3c6b06914888ec6737834e5",
+      "status": "CAPTURED",
+      "url": "https://www.aiand.com/legal/supported-regions"
+    },
+    {
+      "artifact": "59e3451b0a2b25c5b996b3aefc95533612b6e9cce7eb2e950bc761867d6a2d67.bin",
+      "bytes": 86138,
+      "captured_utc": "2026-10-18T06:57:02.520029+00:00",
+      "final_url": "https://docs.aiand.com/models/catalog/",
+      "http_status": 200,
+      "id": "aiand-catalog",
+      "sha256": "59e3451b0a2b25c5b996b3aefc95533612b6e9cce7eb2e950bc761867d6a2d67",
+      "status": "CAPTURED",
+      "url": "https://docs.aiand.com/models/catalog/"
+    },
+    {
+      "artifact": "c3084c2979e6550070118f2e6e4e63b7e3330854e16df4be047a0c6e0ac2cceb.bin",
+      "bytes": 61513,
+      "captured_utc": "2026-10-18T06:57:02.520128+00:00",
+      "final_url": "https://docs.aiand.com/models/pricing/",
+      "http_status": 200,
+      "id": "aiand-pricing",
+      "sha256": "c3084c2979e6550070118f2e6e4e63b7e3330854e16df4be047a0c6e0ac2cceb",
+      "status": "CAPTURED",
+      "url": "https://docs.aiand.com/models/pricing/"
+    },
+    {
+      "artifact": "4647dd417dc7cfac7ad0d8f61ab9286e5541b88c4632a5d72af714110fa84893.bin",
+      "bytes": 6931,
+      "captured_utc": "2026-10-18T06:57:02.860896+00:00",
+      "final_url": "https://api.aiand.com/v1/models",
+      "http_status": 200,
+      "id": "aiand-models",
+      "sha256": "4647dd417dc7cfac7ad0d8f61ab9286e5541b88c4632a5d72af714110fa84893",
+      "status": "CAPTURED",
+      "url": "https://api.aiand.com/v1/models"
+    },
+    {
+      "artifact": "ca14afa77231cff87702ef3e18d8f6440f575b05cb6c8433808ec6e74ea18a75.bin",
+      "bytes": 9774,
+      "captured_utc": "2026-10-18T06:57:03.006901+00:00",
+      "final_url": "https://openai.com/policies/services-agreement/",
+      "http_status": 403,
+      "id": "openai-agreement",
+      "sha256": "ca14afa77231cff87702ef3e18d8f6440f575b05cb6c8433808ec6e74ea18a75",
+      "status": "NOT_QUALIFIED",
+      "url": "https://openai.com/policies/services-agreement/"
+    },
+    {
+      "artifact": "be05112e06e6c8208eeca352ed8cf367a6c6c790698a20f4ede12eee098d602b.bin",
+      "bytes": 9759,
+      "captured_utc": "2026-10-18T06:57:03.118533+00:00",
+      "final_url": "https://openai.com/policies/service-terms/",
+      "http_status": 403,
+      "id": "openai-service-terms",
+      "sha256": "be05112e06e6c8208eeca352ed8cf367a6c6c790698a20f4ede12eee098d602b",
+      "status": "NOT_QUALIFIED",
+      "url": "https://openai.com/policies/service-terms/"
+    },
+    {
+      "artifact": "fe16f348d9a3bfe643e0ffa4fa5e41b80f14acd8c9219a7ece34de00a5604e60.bin",
+      "bytes": 83843,
+      "captured_utc": "2026-10-18T06:57:03.147366+00:00",
+      "final_url": "https://developers.openai.com/api/docs/guides/your-data.md",
+      "http_status": 200,
+      "id": "openai-data",
+      "sha256": "fe16f348d9a3bfe643e0ffa4fa5e41b80f14acd8c9219a7ece34de00a5604e60",
+      "status": "CAPTURED",
+      "url": "https://developers.openai.com/api/docs/guides/your-data.md"
+    },
+    {
+      "artifact": "acfe91d19882aaf7bb52877898684614035a947de02f2955c9de905a7efb1362.bin",
+      "bytes": 4436,
+      "captured_utc": "2026-10-18T06:57:03.194282+00:00",
+      "final_url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol.md",
+      "http_status": 200,
+      "id": "openai-model",
+      "sha256": "acfe91d19882aaf7bb52877898684614035a947de02f2955c9de905a7efb1362",
+      "status": "CAPTURED",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol.md"
+    },
+    {
+      "artifact": "b93f17c5be5a4deadca42026195d361353619f49756ab74a7b356877cf7ab341.pdf",
+      "bytes": 161411,
+      "captured_utc": "2026-10-18T07:01:53.663044+00:00",
+      "final_url": "https://cdn.openai.com/osa/openai-services-agreement.pdf",
+      "http_status": 200,
+      "id": "openai-agreement-pdf",
+      "sha256": "b93f17c5be5a4deadca42026195d361353619f49756ab74a7b356877cf7ab341",
+      "status": "CAPTURED",
+      "url": "https://cdn.openai.com/osa/openai-services-agreement.pdf"
+    },
+    {
+      "artifact": "20c797ce19af0c17de52c6afb144644768a591c521655f5ebf5712c9850f2887.bin",
+      "bytes": 3065,
+      "captured_utc": "2026-10-18T07:03:03.342384+00:00",
+      "final_url": "https://huggingface.co/moonshotai/Kimi-K3/raw/main/LICENSE",
+      "http_status": 200,
+      "id": "kimi-k3-license",
+      "sha256": "20c797ce19af0c17de52c6afb144644768a591c521655f5ebf5712c9850f2887",
+      "status": "CAPTURED",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3/raw/main/LICENSE"
+    },
+    {
+      "artifact": "96e1622099fc9d6b70c9760f007d99e66d7497eec636b63c60fe208401e9170c.bin",
+      "bytes": 4263,
+      "captured_utc": "2026-10-18T07:03:03.342275+00:00",
+      "final_url": "https://huggingface.co/zai-org/GLM-5.3/raw/main/LICENSE",
+      "http_status": 200,
+      "id": "glm-5.3-license",
+      "sha256": "96e1622099fc9d6b70c9760f007d99e66d7497eec636b63c60fe208401e9170c",
+      "status": "CAPTURED",
+      "url": "https://huggingface.co/zai-org/GLM-5.3/raw/main/LICENSE"
+    },
+    {
+      "artifact": "fc27cb45175a36f00e8b254ddf3020c611c0dfd973414fa66979c6581595ae37.bin",
+      "bytes": 9798,
+      "captured_utc": "2026-10-18T07:03:03.125052+00:00",
+      "final_url": "https://openai.com/policies/sharing-publication-policy/",
+      "http_status": 403,
+      "id": "openai-sharing",
+      "sha256": "fc27cb45175a36f00e8b254ddf3020c611c0dfd973414fa66979c6581595ae37",
+      "status": "NOT_QUALIFIED",
+      "url": "https://openai.com/policies/sharing-publication-policy/"
+    },
+    {
+      "artifact": "5211f941e42f0484bd164ecde65dd5d6d0253acdadbd5d11b568e765f3a8cdd1.bin",
+      "bytes": 9741,
+      "captured_utc": "2026-10-18T07:03:03.119764+00:00",
+      "final_url": "https://openai.com/policies/usage-policies/",
+      "http_status": 403,
+      "id": "openai-usage",
+      "sha256": "5211f941e42f0484bd164ecde65dd5d6d0253acdadbd5d11b568e765f3a8cdd1",
+      "status": "NOT_QUALIFIED",
+      "url": "https://openai.com/policies/usage-policies/"
+    },
+    {
+      "artifact": "openai-rendered-agreement.json",
+      "bytes": 36867,
+      "captured_utc": "2026-10-18T07:04:27.992411+00:00",
+      "http_status": null,
+      "id": "openai-rendered-agreement",
+      "method": "web.open rendered source text; not raw HTTP body",
+      "scope": "Retrieved source passages; no guarantee of a complete raw page. Relevant reviewed clauses are retained.",
+      "sha256": "f010e7667fef456ba5a8cbb4bbcdccb8a6da09ae1bbbc6cce87cfdc6c71edc91",
+      "status": "CAPTURED_RENDERED_SOURCE_TEXT",
+      "urls": [
+        "https://openai.com/policies/services-agreement/"
+      ]
+    },
+    {
+      "artifact": "openai-rendered-policies.json",
+      "bytes": 34847,
+      "captured_utc": "2026-10-18T07:04:27.992793+00:00",
+      "http_status": null,
+      "id": "openai-rendered-policies",
+      "method": "web.open rendered source text; not raw HTTP body",
+      "scope": "Retrieved source passages; no guarantee of a complete raw page. Relevant reviewed clauses are retained.",
+      "sha256": "b1a701856f5dc620c29d00e87e410fc2b0d4886760795e59223bcfe6b0e7e8e9",
+      "status": "CAPTURED_RENDERED_SOURCE_TEXT",
+      "urls": [
+        "https://openai.com/policies/service-terms/",
+        "https://openai.com/policies/sharing-publication-policy/",
+        "https://openai.com/policies/usage-policies/"
+      ]
+    },
+    {
+      "artifact": "openai-rendered-usage.json",
+      "bytes": 12770,
+      "captured_utc": "2026-10-18T07:14:02.525274+00:00",
+      "http_status": null,
+      "id": "openai-rendered-usage",
+      "method": "web.open rendered source text; not raw HTTP body",
+      "scope": "Retrieved source passages; no guarantee of a complete raw page. Relevant reviewed clauses are retained.",
+      "sha256": "276516e1a5fb5950a989c16cd27a9e78c85785954665fbea9e1cc08f3f7e5e54",
+      "status": "CAPTURED_RENDERED_SOURCE_TEXT",
+      "url": "https://openai.com/policies/usage-policies/"
+    }
+  ],
+  "schema": "ProviderTermsCaptures.v1"
+}

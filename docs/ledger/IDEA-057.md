@@ -883,3 +883,103 @@ to be increased. All four jobs have empty step lists (three failed, one
 cancelled). This is the existing account-level CI gate, not a tested product
 failure or CI acceptance; the new head still needs accepted mirror/Linux checks
 before release. PR133 is verified OPEN at `e9e07b1`.
+
+
+### V3-REL01 — prospective unsigned release criteria, 2026-10-18 UTC
+
+User authorizes the next unsigned trial, direct mirror push/dispatch and ordinary
+merges; keep PR133 open. Base integration `817eb71` already merges PR165 and
+PR167. Adopt Keith's protocol from merged PR168 / PR133 snapshot
+`8b0b2381d82d0c596b3ccc33b50579dd159fa78b`, approved by Yao in PC-REL05;
+no repeated approval. Old `7a0ea14` and its documentation ZIP are not this binary.
+
+Pass criteria recorded before changed code executes:
+
+1. KMP-P2: check the durable paced budget immediately before the actual OpenAI
+   transport, after payload/artifact/header preparation. Admission at end−1 ms
+   followed by dispatch preparation at end or end+1 must produce zero OpenAI
+   POSTs, a temporary WINDOW_ENDED refusal and a durable zero-charge settlement
+   for that known-unsent reservation; no external-only latch is cleared/created.
+   Recheck clock rollback and concurrent safety latches. Before-end calls still
+   dispatch and settle; transport timeouts/unknown usage retain their reservation.
+   Missing/broken accounting fails closed without inventing a refund. Preserve
+   v1/v2 behavior and assessment deadline controls. Run a pushed red regression,
+   then pushed implementation and focused routing/provider/budget/audit checks.
+2. Declare OpenAI GPT-6.1 Sol medium primary and high-effort AIand Kimi K3 then
+   GLM-5.3 review/fallback in services and DEV-19, as an opt-in unsigned v3 trial.
+   Import approved protocol/rubric/rights with source revision; v3 uses US$50
+   total, US$2 owner-reported prior spend, zero permanent reserve and cumulative
+   pacing. Preserve legacy v2's separate limits and unmeasured trial verdicts.
+3. Review already-merged PR165 against its integration parent; retain it if
+   focused execution-bound tests and combined Linux/PostgreSQL regression pass.
+   Preserve proposed S1 parameters and unsigned scope, without adopting S1.
+4. Full available Linux/PostgreSQL14 suite and release/deviation checks pass;
+   enumerate skips. All changed executable code/config/tests are committed and
+   pushed before execution. No provider spend, secret reads or host changes.
+5. Push the frozen branch directly to Cookiemunchrr/larp-ci-mirror and dispatch
+   runtime.yml ourselves. Freeze only with green all-job CI on the same SHA,
+   then download original host-bundle artifact, verify checksum/manifest/source
+   commit and CA hash, and record run ID. Do not replace the deployment binary
+   with a local rebuild, GitHub source archive or handoff-only ZIP. An actual
+   access refusal is an external blocker, not CI acceptance. Initial read-only
+   Git and API checks both returned repository-not-found; still attempt writes.
+6. Review PC-AWS06 migration/roles/TLS evidence as reported, compare relevant
+   source changes and distinguish empty-DB/primary checks from signer/populated
+   upgrade/new-release qualification. Review Oct17 11Z–Oct18 11Z gap report only
+   when Yao supplies it after Oct18 11:00 UTC; pending report does not block build.
+   Update PR133 checklist without closing/merging it. AWS/host actions stay Yao's.
+
+Results and actual access limitations will be appended after execution.
+
+
+### V3-REL01 results — 2026-10-18 UTC
+
+- KMP-P2 fixed at `6955eaf`: per-POST durable dispatch recheck after preparation;
+  known-unsent refusals refund atomically, uncertain/sent work stays reserved.
+  Corrected red `9b5b7cd`:4 failures/2 controls; focused green85 tests/111 subtests.
+- Combined pushed `61a123a`: **2029 passed,6 skipped,2981 subtests**,174.77 s,
+  Linux/Python3.12.14/PostgreSQL14.24. Skips: external corpus1, actual systemd5;
+  Linux bubblewrap ran. No xfails/golden changes. Deviation rendering, dependency
+  check and offline recovery/audit demo pass. See the release record for commands,
+  log hash and the corrected manual-demo setup refusal.
+- Services/DEV-19 now select opt-in unsigned OpenAI Sol medium primary and
+  high-effort AIand review/fallback. Approved PR168 protocol/rubric/register and
+  public evidence carried from PR1338b0b238 without merging/closing133. No repeat
+  protocol approval. V3 zero permanent reserve is separate from legacy v2.
+- Reviewed already-merged165 and retained it in this latest integration candidate;
+  S1 activation/parameter adoption remains separate. PC-AWS06-RV1 reviews existing
+  empty-DB migration and limited primary IAM/TLS report with explicit limitations;
+  no new host checks or deployment. Gap report remains due after11:00 UTC/19:00 SGT.
+- Actual direct mirror push failed exit128/repository-not-found; actual workflow
+  dispatch failed HTTP404. This is a confirmed repository-access blocker despite
+  successful origin pushes. No new run/artifact/hash/freeze acceptance exists;
+  local results and the old7a0ea14 handoff ZIP do not replace the CI binary.
+
+Current evidence, inclusion decision, protocol provenance and remaining owners:
+[LLM_V3_RELEASE_20261018.md](../build/LLM_V3_RELEASE_20261018.md).
+
+
+V3-REL01 published as [PR169](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/169).
+PR133 checklist updated at eeddbed and verified OPEN/unmerged. PR169 organization
+run39111509565 on0441806 ran zero steps across all four jobs; runtime and
+host-bundle annotations confirm account payments/spending-limit block (#98).
+PR169 remains open pending required CI. User asked whether mirror access is
+still needed; fresh Git/API reads again return repository-not-found/HTTP404.
+It remains required for direct CI dispatch and original artifact delivery,
+not for source/testing work already complete. No AWS access is requested.
+
+
+### V3-REL02 — prospective private-mirror CI and original-artifact delivery
+
+User explicitly redirects CI to their private repo. Verified API/Git access and
+push permission on Keegan4/Keegan4-larp-ci-mirror with active runtime.yml.
+Cookiemunchrr access is no longer needed for the selected route. Before running
+CI, push this record and exact candidate normally to origin and that mirror.
+Pass: all four exact-SHA jobs green including runtime/systemd/Terraform and
+both-role host provisioning smoke; original artifact downloaded; sidecar,
+external/internal manifest, every file hash, source/build/registered repository/
+mirror origin, BUNDLE.env and CA verified. Publish original binary/sidecar/
+manifest plus run ID and hashes to a new unsigned GitHub release. No rebuild
+or old handoff ZIP substitution. Merge169 ordinarily after green; keep133/126
+open and update133 with results. Gap report remains pending after19:00 SGT.
+Detailed prospective criteria: docs/build/LLM_V3_RELEASE_20261018.md V3-REL02.
