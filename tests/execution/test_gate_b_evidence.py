@@ -27,6 +27,18 @@ STAMP = '2026-10-15T01:00:00Z'
 USDT_UNITS = 199 * 10**18  # equals the snapshot ledger's 199000000 micro-USDT (GB-2)
 
 
+class ReportSummary(unittest.TestCase):
+    def test_missing_inputs_list_every_blocked_dr_in_the_cli_summary(self):
+        from larp.execution_live.gate_b import main
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(main(['report', '--artifact-root', directory]), 2)
+        value = json.loads(output.getvalue())
+        self.assertEqual(value['blocked_checks'], [f'DR-{i:02}' for i in [*range(1, 17), 18, 19, 20]])
+        self.assertEqual(value['acceptance'], 'OWNER_REVIEW_REQUIRED')
+        self.assertEqual(value['status'], 'BLOCKED')
+        self.assertFalse(value['signing_enabled'])
+
+
 class ChainOpener:
     def __init__(self, *, bad=None, usdt=USDT_UNITS, tokens=None):
         self.bad, self.calls, self.blocks = bad, [], 0

@@ -876,8 +876,9 @@ class RoundDriver:
     signing = False
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
-                 max_quote_rounds=0, max_quote_requests=2, balance_check=None):
+                 max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None):
         self.coordinator, self.work = coordinator, work
+        self.assessments = assessments
         self.balance_check = balance_check
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
@@ -929,7 +930,8 @@ class RoundDriver:
                 c = self.coordinator
                 current = c.store.load(c.run_id).read()
                 # The quoted observations stand in for this round's fetch; the decision clock follows them.
-                c.start(round_id, self.work.request(item, current, now_ms), now_ms)
+                c.start(round_id, self.work.request(item, current, now_ms), now_ms,
+                        **(dict(assessment_override=None, use_accepted_evidence=True) if self.assessments else {}))
             finally:
                 self.market.clear_quotes()
 
@@ -939,7 +941,7 @@ class RoundDriver:
         for key in ('ingested', 'refused', 'expired', 'sealed', 'logged'):
             if getattr(self.execution, key, None):
                 summary[key] = list(getattr(self.execution, key))
-        c.recover(now_ms)
+        c.recover(now_ms, **(dict(skip_rounds=self.assessments.round_ids()) if self.assessments else {}))
         reauthorize = getattr(self.execution, 'reauthorize', None)
         if reauthorize is not None:
             reauthorized = reauthorize(now_ms)
@@ -961,6 +963,8 @@ class RoundDriver:
                 decided = max(now_ms, c.clock())
                 summary['day_roll'] = self.day_roll(decided, self.market.observations())
         current = c.store.load(c.run_id).read()
+        if self.assessments is not None:
+            return self._signed_cycle(now_ms, summary)
         item = self.work.next(now_ms, current['epoch'])
         if item is not None:
             summary['round_id'] = item['round_id']
@@ -982,4 +986,61 @@ class RoundDriver:
                 self.work.scheduler.finish(c.run_id, item['claim'])
             if not self.execution.waiting(now_ms):  # never ingest over a command that still awaits its claim
                 summary['closed'] += len(self.execution.settle_open(now_ms))
+        return summary
+
+    def _signed_cycle(self, now_ms, summary):
+        """No provider call on this thread: complete old evidence, plan safety, then queue one new job."""
+        c, queue = self.coordinator, self.assessments
+        ready = queue.ready()
+        if ready is not None:
+            if self.market is not None:
+                self.market.refresh(now_ms)
+            decided = max(now_ms, c.clock())
+            result = Document.from_dict(ready['result']) if ready['result'] is not None else None
+            c.start(ready['round_id'], Document.from_dict(ready['request']), decided,
+                    assessment_override=result, assessment_audit=ready['audit'], use_accepted_evidence=True)
+            queue.ack(ready['round_id'])  # only after the result and its original I/O are journaled
+            if ready.get('claim') is not None:
+                try:
+                    self.work.scheduler.finish(c.run_id, Document.from_dict(ready['claim']))
+                except Conflict:
+                    summary['model_claim_expired'] = True  # the committed round still fences duplicate planning
+            summary['assessment_round_id'] = ready['round_id']
+            if self.execution.waiting(decided):
+                return summary
+        # Mandatory risk and existing accepted evidence remain usable even when there is no filing,
+        # or the sole worker is hung. The worker never supplies a proposal or writes the projection.
+        if self.market is not None:
+            self.market.refresh(now_ms)
+        decided = max(now_ms, c.clock())
+        current = c.store.load(c.run_id).read()
+        round_id = f"safety:{decided}:{current['version']}"
+        issuer = self.work.issuers[0]
+        item = dict(issuer_id=issuer, records=self.work._latest(issuer, decided), claim=None,
+                    job=dict(job_id=round_id, lane='evidence', due_ms=decided,
+                             valid_until_ms=decided+self.work.cadence, max_attempts=1, priority=0,
+                             calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
+                             payload=dict(kind='REASSESS_ISSUER', issuer_id=issuer, reason='SAFETY_TICK')))
+        c.start(round_id, self.work.request(item, current, decided), decided,
+                assessment_override=None, use_accepted_evidence=True)
+        summary['round_id'] = round_id
+        if self.market is not None and self.max_quote_rounds and not self.execution.waiting(decided):
+            self._quotes(round_id, item, decided, summary)
+        if self.execution.waiting(decided):
+            return summary
+        summary['closed'] += len(self.execution.settle_open(decided))
+        if not queue.busy:
+            current = c.store.load(c.run_id).read()
+            work = self.work.next(decided, current['epoch'])
+            if work is not None:
+                if work['round_id'] is not None and work['records']:
+                    request = self.work.request(work, current, decided)
+                    from larp.runtime.schema import assessment_request
+                    assessment_request(request, c.run_id, c.profile_hash, decided)
+                    c.store.open_round(c.run_id, work['round_id'], request, current['epoch'])
+                    queue.submit(work['round_id'], request,
+                                 claim=work['claim'].read() if work['claim'] is not None else None)
+                    summary['assessment_queued'] = work['round_id']
+                elif work['claim'] is not None:
+                    self.work.scheduler.finish(c.run_id, work['claim'])
         return summary

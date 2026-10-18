@@ -257,3 +257,66 @@ Yao Zhu's Oct 18 gap-report item, rehearsed early and read-only on `primary`: `l
 - **Signer:** `deploy/activation/signer-dev-20261017/signer.prefilled.json` (git-ignored, mode 0600) now has `database_host` (from `aws rds describe-db-instances`, the same address Terraform outputs; Terraform is not installed on this Mac) and `database_ca_sha256` `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` (`/etc/larp/rds-ca.pem` on `primary`; re-check against the Gate B bundle's `BUNDLE.env`). Still null: `run_id`, `build_id`, the router-evidence pair; `signing_policy` stays Isaac's draft until #44.
 - **Run sheet:** `deploy/activation/oct18-run-sheet.md` (git-ignored) lists the 00:00 health recheck, the exact 24 h gap report command and where its output goes, and the trial switch in order with its prerequisites (#158 merged, Keegan's bundle, Keith's keys and prior spend, bars), using #159's `--model-routing` preparation and a new run ID.
 - **Mirror CI** (both green on all four jobs): #158 at `6a65b39` (incl. Keegan's SP9 commits), [run 39045682226](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39045682226), runtime 1940 passed / 6 skipped / 2887 subtests; #163 at `d703ae3`, [run 39045756102](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39045756102), runtime 1931 passed / 6 skipped / 2859 subtests. Posted on both PRs.
+
+
+## PC-AWS11 — archive health restored after the daily backup (2026-10-18)
+
+Yao Zhu refreshed the `larp` login; read-only SSM check on primary completed at
+**2026-10-18 02:46:16.373 UTC (10:46 SGT)**. Used the installed build's
+`Maintenance.health` and `service_health` with every SQL transaction explicitly
+READ ONLY; did not call the CLI's CloudWatch metric-publishing path, change any
+host configuration, restart services, or run changed runtime code.
+
+- `healthy: true`, `reasons: []`. The **Oct 18 00:00 UTC daily backup is ACK**
+  (slot1792281600000); the latest **02:00 UTC anchor is ACK** (1792288800000).
+  Archive counts:18 ACK,1 PERMANENT. No missed anchors.
+- The original incident-backup slot1792235176666 remains PERMANENT and remains
+  listed as a missed backup. It was superseded for health by the newer daily
+  backup; the failure was not erased or retroactively repaired. PR163 is still
+  required before claiming future incident backups work.
+- All **44 audit chunks ACK**; zero audit failures, deadline breaches or overdue
+  rounds. Runtime alive, heartbeat age6.602s, no HALT/quarantine, no unanswered
+  signing requests. Runtime/evidence/uploader active; execution inactive as
+  intended. Archive timer waiting/active; last archive service result SUCCESS.
+  Runtime restart count1 (the prior drill), evidence/uploader0.
+- MemoryCurrent: runtime80748544 bytes, evidence89067520, uploader56115200.
+  This is the deterministic baseline, not LLM-path memory acceptance (#60).
+
+SSM command2362d191-4d61-4984-a8ca-f793f47a3daa SUCCESS, no stderr.
+Sanitized result and base64 command retained in git-ignored
+`deploy/activation/health-20261018/`; result SHA256
+`8684f1adad7c03efd35065b668d8cc35e54b2127cb9802cf40d570bb100a5e96`.
+Ticked only the completed health-recheck task; GAP70's report/hosted review
+work remains open. The 24-hour report cannot yet run: its fixed window ends
+Oct18 11:00 UTC. Include the PC-AWS09 blocked period and the retained permanent
+backup alongside this recovery; keep doj-press/fr-bis findings unchanged pending
+the actual report and Keegan's disposition.
+
+## PC-RV155157 — requested PR review and integration merges (2026-10-18)
+
+Reviewed current PR155 fbd86ba and PR157 9d8f168, prior corrections, full changed
+producers/validators/tests, backlog edits and GitHub review discussions. No new
+code defect found. Refreshed each against integration using ordinary merges,
+pushed prospective criteria before tests, and recorded the outcomes in IDEA039
+GB-RV155 and IDEA063 FN-RV157. No force push/rebase or live-code deployment.
+
+- PR155 merged **2f10b9d**, Oct18 02:47 UTC. Focused:33 passed/105 subtests/no
+  skips. Execution suite:170 passed/52 PostgreSQL/Linux skips/694 subtests on
+  macOS/Python3.12. Owner approval and all actual Gate B evidence remain blocked.
+- PR157 merged **ad9a8b9**, Oct18 02:48 UTC. Combined marketdata/strategy and
+  cap/proposal/report checks:268 passed/1 external-data skip/236 subtests.
+  Initial wrapper test lacked dotenv in system Python; using its supported
+  PYTHON override fixed the test environment without changing source/assertions.
+  #156's reporting correction is complete and the issue explicitly closed after the non-default-branch merge; #119/#120 are still open.
+- The merged base already includes PR164 **a2af2df** (Oct17 17:05 UTC), signed/live
+  routed inference and preparation. Refreshed checklist/backlog claims that the
+  guard-lifting implementation is still missing, preserving deployment/adoption,
+  B4 producer, model-owner and real-provider/round-log acceptance. Detailed
+  synthetic/Linux evidence remains IDEA057 SLM-01/SLM-RV1, not a hosted result.
+- PR133 remains OPEN. #158 d7d3e7c and #163 19339bd remain OPEN at the heads in
+  Yao's handoff. No mirror workflow runs found for either current head; previous
+  passing runs in PC-PREP01 tested older heads. Supplied Yao exact non-forcing
+  mirror push/workflow-dispatch commands. Results and merge/release acceptance
+  remain pending those runs. Keegan owns the reviewed merged release bundle;
+  Keith owns private keys/prior-spend and trial bars. #161 signer handoff remains
+  open. No trial switch before the completed gap report and run-sheet C inputs.
