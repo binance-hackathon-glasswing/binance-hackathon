@@ -834,3 +834,14 @@ installation/bind/activation, first assessment, labels and later adoption remain
 with their existing owners. No service, API inference, wallet, host or AWS action
 was performed. The source-report verification remains24 passed/18 subtests;
 no additional runtime tests for documentation-only protocol reconciliation.
+
+### SP-01 final delivery
+
+PR165 merged817eb71 after EB-RV2 combined2021/9/2981 acceptance; PR139 remains
+draft with recheckb9fbaaa; PR133 carries SP-01 and named remaining owners.
+Final merged-tree short checks at694d8e8:61 passed/135 subtests, no skips; all29
+artifact hashes and static evidence/config checks pass. No network approval was
+expanded: explicit user approval is required for the exact signed/live proposal.
+All session changes are committed/pushed with clean trees and main=origin/main;
+no session unpushed commits. Local PostgreSQL is disposed. No AWS/key/wallet
+operation; a new session resumes from SP-01's owner table and pending proposal.

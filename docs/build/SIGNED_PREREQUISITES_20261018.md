@@ -254,3 +254,23 @@ envelope and refuses an over-cap price in **8 synthetic approve/swap cases**
 across development/final candidates, without keys or signatures. All29 quote
 handoff hashes/lengths verify. These local checks do not substitute for the
 full current-input caps review, actual gas measurement or source/native gates.
+
+### Final integration verification and handoff
+
+At pushed694d8e8, the short final merged-tree gas/native/route suite again passes:
+**61 tests /135 subtests, no skips**,1.38s. No changed runtime behavior needed a
+second full run after EB-RV2: the only additional operational input is the
+uninstalled example gas ceiling, covered by the current-input/policy checks.
+JSON/report digest/all29 handoff hashes, exact gas arithmetic, diff/conflict and
+private-key/env-path checks pass. The rejected network expansion was removed;
+approved network scope and route/runtime code are unchanged by SP-01.
+
+PR165 is MERGED817eb71; PR139 remains DRAFT atb9fbaaa; PR133 remains OPEN.
+All session changes are committed/pushed, no session unpushed commits remain;
+working trees were clean and local main matched origin/main (0/0) at the final
+check. The original IDE checkout stays on its pre-existing signed-LLM branch
+(behind its remote by3, no local edits); this work uses isolated checkouts.
+Open owners/records are listed above, including explicit user approval for the
+network proposal. No AWS changes or wallet-key placement occurred. The local
+throwaway PostgreSQL is disposed after testing. Ready for a new session with
+these explicit source/provider/data/approval/release gates still open.
