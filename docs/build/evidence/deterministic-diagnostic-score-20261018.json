@@ -1,0 +1,139 @@
+{
+  "availability": {
+    "all_requests_assessed_on_time": 43,
+    "all_requests_total": 43,
+    "assessment_elapsed_ms": {
+      "max": 16,
+      "median": 8,
+      "min": 2
+    },
+    "duplicate_requests_assessed_on_time": 39,
+    "duplicate_requests_total": 39,
+    "max_cutoff_to_completion_ms": 18092,
+    "representatives_assessed_on_time": 4,
+    "representatives_total": 4,
+    "timing_scope": "Existing deterministic local processing; not source-to-event latency or LLM latency."
+  },
+  "class_1_2": {
+    "false_promotions": 0,
+    "gold_actionable_positive_count": 0,
+    "note": "No fired predicate in four representatives or 39 duplicates. Positive trigger detection untested.",
+    "recall": null
+  },
+  "coarse_flag_presence_agreement": {
+    "matched": 4,
+    "scope": "SUPPLEMENTAL_FLAG_PRESENCE_ONLY_NOT_STRICT_EVENT_ACCURACY",
+    "total": 4,
+    "wilson_95": [
+      0.510109,
+      1
+    ]
+  },
+  "coverage_warning": {
+    "distinct_filings_incomplete": 1,
+    "distinct_filings_total": 4,
+    "read_only_code_check": "Deployed instruction regex matches a benign public-link invitation in an investor release; original risk flag retained. Review context handling without removing injection protection.",
+    "reason": "UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE",
+    "requests_incomplete": 21,
+    "requests_total": 43
+  },
+  "duplicate_note": "39 repeats belong to two already-scored filings; never count them as new independent events or replace the earliest representative.",
+  "gold_actionable_class_1_2_events": 0,
+  "gold_adverse_events": 1,
+  "gold_freeze_record_sha256": "7e6a5ab28228abcb5719edc917642e402692b0d5c07a27562446d00870c1901b",
+  "gold_sha256": "f4274c0b1c887f0b4c85d4ebe80d2d0bf2b0408a00b4ac69e6e03822ca3933be",
+  "gold_source_spans_verified": 27,
+  "gold_validation": {
+    "T01_qualified": false,
+    "adjudicated_labels_sha256": "f4274c0b1c887f0b4c85d4ebe80d2d0bf2b0408a00b4ac69e6e03822ca3933be",
+    "adjudicator_baseline_blinding_declared": true,
+    "adjudicator_origin": "AI_GENERATED",
+    "all_four_cases_complete": true,
+    "all_six_questions_resolved": true,
+    "baseline_answers_examined_for_scoring_after_this_freeze": false,
+    "blocking_label_disputes": 0,
+    "bytes": 87177,
+    "independence_limits_preserved": true,
+    "original_label_dispositions_verified": 31,
+    "record_id": "PC-LABEL02-R2",
+    "schema": "ValidatedDiagnosticGoldFreeze.v1",
+    "scope": "AI_ASSISTED_RETROSPECTIVE_DIAGNOSTIC_ONLY",
+    "scoring_status": "NOT_RUN",
+    "source_quotation_spans_verified": 27,
+    "v3_M9_qualified": false,
+    "validated_at_utc": "2026-10-18T13:11:54.477674+00:00"
+  },
+  "host_mutations": false,
+  "input_bindings": {
+    "answers_export_sha256": "0b55595521dcdc347f9d9c9108eb92cc410aea1f3d1f76fdfb00b60a8f4c784d",
+    "population_manifest_sha256": "32cca36303f885fe9826b460ef7519ec9a28e7f909c32e4207fad9a324c5b2ce",
+    "runtime_export_sha256": "76633137e4f996960003da312fb3fb73f8178cf82e6b5bf9674c5831b26e2281",
+    "selection_manifest_sha256": "a53f8ff28dc5b3eace8d5c4bd9353014c103699807368d3626cb50475d5e489e",
+    "source_index_sha256": "b3caa1a698ed5d9ff40b4f874ade52dd8e7a97038f4f69cdc33d88ba53e6f424"
+  },
+  "issuers": 2,
+  "model_replay_performed": false,
+  "numeric_facts": {
+    "fn": 0,
+    "fp": 0,
+    "gold_positive_count": 0,
+    "note": "All four sources lack values for the five scoped financial metrics; no numeric positive test.",
+    "precision": null,
+    "recall": null,
+    "tp": 0
+  },
+  "paid_provider_calls": false,
+  "private_artifact_hashes": {
+    "case-scores-private.json": "575ee434cf52a2be225995baedd125bced338cc2b7fddfbcd9ba57c87e1a4800",
+    "diagnostic-score-summary.json": "a87cde3719419d850411990f7793d1e43d074b9e3a76c54ec370e7c4bdf3f160",
+    "gold-freeze.json": "7e6a5ab28228abcb5719edc917642e402692b0d5c07a27562446d00870c1901b",
+    "pairwise-matches-private.json": "df4af629c733a083552d74820196b6d93781e652f2323f449bab55d624b979dd",
+    "scoring-script.py": "adcff13b13c2cb7c04585da201e00e4b17ef86cc86ccd5b551461b4e0b8bc291"
+  },
+  "qualification": {
+    "T01": false,
+    "adoption_authorized": false,
+    "human_gold": false,
+    "limitations": [
+      "Four filings/two issuers and only one taxonomy-adverse event, which is non-actionable.",
+      "AI annotations/adjudication have disclosed independence and correlated-error limitations.",
+      "Predictions precede labels; this is not a prospective held-out evaluation.",
+      "No actionable Class 1/2 positives or scoped numerical positives."
+    ],
+    "v3_M9": false
+  },
+  "record_id": "PC-LABEL02-R2",
+  "representative_cases": 4,
+  "schema": "RetrospectiveDeterministicDiagnosticScore.v1",
+  "scope": "AI_ADJUDICATED_RETROSPECTIVE_DIAGNOSTIC_ONLY",
+  "scoped_statement_detail": {
+    "emitted_event_statements": 0,
+    "fn": 7,
+    "fp": 0,
+    "gold_propositions": 7,
+    "note": "Item-metadata findings do not encode the adjudicated proposition/actuality/span. Supplementary context is not scored.",
+    "tp": 0
+  },
+  "scored_at_utc": "2026-10-18T13:15:19.822313+00:00",
+  "source_build": "bb46234f1b997dae968e2c3f3668d73627857376",
+  "source_documents": 5,
+  "strict_adverse_findings": {
+    "fn": 1,
+    "fp": 1,
+    "precision": 0.0,
+    "recall": 0.0,
+    "rule": "Frozen source-span/actor/actuality/event matching; item names alone do not qualify.",
+    "tp": 0,
+    "unmatched_prediction_interpretation": "The one unmatched metadata alert has the correct coarse event type; FP means unsupported under strict matching, not a demonstrated false source event."
+  },
+  "verification": {
+    "all43_cutoff_deadlines": "PASS",
+    "earliest_request_no_retry_rescue": "PASS",
+    "gold_counts_cross_checked": "PASS",
+    "gold_hash_unchanged": "PASS",
+    "metadata_only_strict_failure": "PASS",
+    "raw_export_matches_frozen_selection": "PASS"
+  },
+  "window_end_utc": "2026-10-18T11:00:00+00:00",
+  "window_start_utc": "2026-10-17T11:00:00+00:00"
+}

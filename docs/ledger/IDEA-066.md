@@ -1177,3 +1177,32 @@ contents stay outside Git. Gold NOT_FROZEN/scoring NOT_RUN, with no baseline
 unblinding for this review. Yao supplies independent adjudication; custodian/Keith
 validates/freezes gold then scores original representatives. No model rerun,
 paid call or host change; T01/v3 M9 are unqualified.
+
+### PC-LABEL02-R2 — retrospective diagnostic scoring complete
+
+Adjudicated AI labels/checksum received, exact hashf4274c0b…933be/87177 bytes
+verified; all27 supporting spans/four cases/six decisions/31 original-label
+dispositions validated. Gold frozen13:11:54.477674Z before this scoring pass;
+original source/population/selection hashes rechecked. Four first requests scored
+at original cutoff/deadline;39 repeats separate, no replay or retry rescue.
+
+Broad flag-presence agreement4/4 (descriptive Wilson95%0.510109–1), but strict
+source-backed adverse-event matching TP0/FP1/FN1: the correct coarse alert lacks
+source-text span/actor/actuality proof and stays unmatched under the frozen
+rubric. This is an evidence-support failure, not proof of an invented source
+event. Proposition detail0/7; no numeric positives or Class1/2 positives, so
+those recall/precision claims remain unqualified. All43 ASSESSED within original
+cutoff+60s; local processing2–16ms/median8, not LLM/news latency.
+
+One distinct source filing is coverage-incomplete on21 repeated requests because
+a benign public-link invitation matches the conservative instruction detector.
+Original flag/results retained. New PC-LABEL02-INJ01: Yao owns exact routed
+configuration trust/coverage review/regression evidence, with Keegan peer review,
+preserving injection defenses. Aggregate scores/provenance/hashes in
+../build/evidence/deterministic-diagnostic-score-20261018.json; all private
+labels, answer matching and full report remain outside Git.
+
+This completes only PC-LABEL02's small AI-assisted retrospective diagnostic.
+Human-gold independence, T01/v3 M9, larger positive samples, actual hosted
+LLM evaluation and adoption remain unqualified. No model call/replay, host
+change, app code/test or golden change; PR133 remains open.

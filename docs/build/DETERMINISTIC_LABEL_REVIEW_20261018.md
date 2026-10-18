@@ -118,3 +118,49 @@ source-supported labels, question resolutions and exposure/identity provenance.
 Custodian/Keith verifies it, freezes/hashes gold, then scores the already frozen
 first requests with duplicate outcomes separate. Gold NOT_FROZEN; scoring NOT_RUN.
 No paid calls, model reruns or host changes. Formal T01/v3 M9 stay unqualified.
+
+## PC-LABEL02-R2 — adjudication frozen and original assessments scored
+
+Yao returned the adjudicated label bytes and detached checksum. Exact SHA-256
+`f4274c0b1c887f0b4c85d4ebe80d2d0bf2b0408a00b4ac69e6e03822ca3933be`
+(87,177 bytes) matches. All four case reviews/six decisions are complete with
+no blocking disputes. All27 final supporting quotation spans pass saved-source
+hash/Unicode-offset checks; all31 original label dispositions resolve to final
+records. Original annotations and adjudication are retained unchanged outside
+Git. The adjudicator declares baseline blinding; AI provenance, repository
+summary exposure and limited/declined independence remain explicit. This does
+not create human ground truth or pre-prediction labels.
+
+Validated freeze at2026-10-18T13:11:54.477674Z precedes this scoring pass. The
+existing source/population/selection hashes were rechecked. Scoring uses the
+four original earliest requests at their original cutoff/deadline; all39 repeats
+remain separate. No model replay, live fetch or host change was performed.
+Private pairwise and case-level matching records are retained outside Git.
+
+| Measure | Observed result | Meaning / limit |
+|---|---|---|
+| Supplemental broad adverse-flag presence | 4/4 agreement; Wilson95% interval0.510109–1 | Tiny descriptive flag comparison, not full semantic accuracy |
+| Strict adverse-event matching | TP0 / unmatched prediction1 / FN1 | The correct coarse item-type alert has only ITEM_METADATA facts with null text spans; actor/actuality/event proof is absent. The frozen source-span matching rule cannot award a TP. The unmatched prediction does not establish a fabricated source event |
+| Scoped statement detail | 0/7 adjudicated propositions explicitly emitted;0 statement FP | Metadata item findings do not encode the supported proposition/actuality/span; supplementary context is outside this denominator |
+| Class1/2 | 0 false promotions;0 positive gold events | Negative behavior only; positive trigger recall unqualified |
+| Scoped financial metrics | 0 predicted facts;0 gold facts | Appropriate silence on these sources; no positive numeric extraction test |
+| Timing/availability | 4/4 representatives and39/39 repeats ASSESSED within original cutoff+60s | Local processing2–16ms, median8ms; maximum cutoff-to-completion18.092s. Not LLM latency or source-to-event latency |
+| Coverage flag | 1/4 distinct filings incomplete;21/43 requests | Conservative instruction regex matches a benign public-link invitation. Original flag retained;21 includes repeats, not21 independent filings |
+
+Aggregate measures, frozen input hashes and matching-record/script hashes:
+[evidence/deterministic-diagnostic-score-20261018.json](evidence/deterministic-diagnostic-score-20261018.json).
+Cross-checks against the raw runtime export verify representative selection,
+all43 original deadlines, gold counts, null metadata spans and unchanged gold.
+No application code/tests or golden files changed; no application suite rerun.
+
+**Diagnostic completed, limited result:** fast operational baseline and coarse
+flag agreement on this tiny set, with no demonstrated source-backed semantic
+event recall. Four filings/two issuers and one non-actionable taxonomy adverse
+event cannot establish general accuracy, profitability or superiority to an LLM.
+T01, v3 M9, human independence and adoption remain unqualified.
+
+**PC-LABEL02-INJ01 remaining (Yao Zhu):** review the benign public-link
+instruction flag in the exact new routed configuration with Keegan peer review;
+record intended trust/coverage behavior and real-source regression evidence
+before calling that source fully qualified. Preserve actual injection defenses
+and the old outputs; do not erase or relabel the historical incomplete result.
