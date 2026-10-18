@@ -205,3 +205,17 @@ Sourcify404/no verified match at07:44UTC; exact UTC/status/response hashes in
 independent review invented. Keith handoff file hashes verify; route check
 NOT_RUN until source/review. PR139 remains draft; #138/#33/signing remain blocked.
 No AWS, key access, transaction, model/receiver call or vendor message.
+
+## RE-02 — separate source-point follow-through (prospective, 2026-10-18)
+
+User requests each immediate point in its own PR and reports no source export
+available. Keep this source-only PR139 as that point's dedicated PR rather than
+open a duplicate. Make at most three new public GETs with system curl/TLS,
+20s/no redirects/retries: candidate Code page, public BscScan source API and
+Etherscan v2 source API without account credentials. They are supported retrieval
+alternatives, not Cloudflare/VPN/auth bypass. API authentication/deprecation
+errors establish access blockers only, never verification status. Retain UTC,
+status/error/response hashes; no complete source/ABI means no RouterEvidence,
+source guarantee, review or route-check PASS. No vendor message or paid account.
+Prepare the minimal export/vendor-request checklist, keep #138/#33 open and
+PR139 draft. Validate JSON/hashes and diff only for this evidence/doc slice.
