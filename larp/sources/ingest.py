@@ -73,6 +73,12 @@ class SourceIngestor:
         scanning_head = head_probe or resume is None
         head_invalid = False
         new_in_poll = set()
+        # Only a completed scan may advance an established head checkpoint. Rows
+        # from an unfinished scan cannot prove their own missing middle was covered.
+        checkpoint = list(cursor.get('head_checkpoint', cursor.get('seen', {})))
+        checkpoint_ids = set(checkpoint)
+        durable_rejected = set(cursor.get('rejected', {}))
+        first_head_ids = None
         url = source.listing_url if head_probe else (resume or {}).get("next_url") or source.listing_url
         first = head_probe or resume is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
@@ -116,7 +122,8 @@ class SourceIngestor:
                                     "record_id": stored_record["record_id"], "status": stored_record["status"],
                                     "first_seen_ms": stored_record["first_seen_ms"],
                                     "published_ms": stored_record["published"]["ms"]}
-                prior_anchor = previous is not None and item['item_id'] not in new_in_poll
+                prior_anchor = (item['item_id'] in checkpoint_ids and item['item_id'] not in new_in_poll
+                                and (previous is not None or item['item_id'] in durable_rejected))
                 head_anchor = head_anchor or prior_anchor
                 if prior_anchor and anchor_id is None:
                     anchor_id = item['item_id']
@@ -150,12 +157,18 @@ class SourceIngestor:
                 key = "withdrawn" if record["status"] == "WITHDRAWN" else "versions" if record["version"] else "new"
                 outcome[key].append(record["record_id"])
             if scanning_head:
+                if first_head_ids is None:
+                    first_head_ids = [item['item_id'] for item in items]
                 head_invalid = head_invalid or item_truncated or bool(
                     [r for r in outcome['rejected'] if r not in outcome['policy_rejected']])
                 if not head_invalid and (head_anchor or not next_url):
                     head.update(complete=True, checked_ms=now, anchor_item_id=anchor_id,
                                 basis='DURABLE_OVERLAP' if head_anchor else 'END_OF_LISTING')
                     scanning_head = False
+                    checkpoint = first_head_ids or checkpoint
+                elif not checkpoint and not head_invalid:
+                    # Initial observed head is a baseline, not a claim of complete history.
+                    checkpoint = first_head_ids
             pages_done += 1
             cycle_incomplete = cycle_incomplete or item_truncated
             if head_probe:
@@ -183,7 +196,7 @@ class SourceIngestor:
             if continuation and resume and next_url == resume['next_url']:
                 continuation['failures'] = resume.get('failures', 0)
             cursor = dict(cursor, version=cursor["version"] + 1, seen=self._bounded(seen), rejected=rejected,
-                          in_progress=continuation, head_coverage=dict(head),
+                          in_progress=continuation, head_coverage=dict(head), head_checkpoint=list(checkpoint),
                           watermark_ms=max([cursor["watermark_ms"] or 0] + published) or None,
                           last_truncated=bool(next_url or outcome["truncated"]),
                           health=dict(health, status="OK", last_success_ms=now, consecutive_failures=0,
