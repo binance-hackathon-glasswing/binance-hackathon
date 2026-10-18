@@ -172,3 +172,29 @@ checks again returned repository-not-found /HTTP404. Access is still required
 for CI/original artifacts; it is not needed for the already completed source
 fix, local tests, protocol carry-forward, service declaration or evidence review.
 No AWS access or repeated protocol approval is requested.
+
+### V3-REL02 — user-authorized private mirror, prospective acceptance
+
+User redirects CI to their private repository on Oct18: use
+`Keegan4/Keegan4-larp-ci-mirror` instead of the inaccessible Cookiemunchrr
+repository. Read-only API/Git checks confirm this private mirror exists, allows
+pushes and has active runtime.yml. This supersedes the mirror-access blocker
+for the selected route; organization billing and Cookiemunchrr access are not
+claimed fixed. Latest integration remains817eb71; candidate includes165/167.
+
+Before dispatch: commit/push this record and all candidate code to origin, then
+push the exact branch SHA normally to the private mirror. Dispatch runtime.yml
+on that branch ourselves. Pass criteria: all four jobs complete successfully
+on that exact SHA; runtime tests, explicit five systemd tests, Terraform checks
+and both-role host-bundle smoke execute, without weakened checks. Download the
+original `larp-bundle-x86_64` artifact from that run and preserve its bytes.
+Verify tarball sidecar, external/internal manifest equality, source/build SHA,
+registered repository identity and honest mirror build_origin, every manifested
+file hash, BUNDLE.env identity and actual packaged CA hash. Record run ID,
+bundle/manifest/CA hashes and publish original files as a new unsigned GitHub
+release. Local rebuilds/source ZIPs/old7a0ea14 are not substitutes.
+
+Only after CI passes may PR169 be merged with an ordinary merge under the user's
+standing instruction; keep133/126 open and preserve the frozen release SHA.
+Record completed evidence in PR133 and release notes without modifying the
+frozen deployment bytes. No paid provider, AWS or host deployment action.

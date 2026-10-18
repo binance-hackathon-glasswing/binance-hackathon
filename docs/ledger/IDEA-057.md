@@ -967,3 +967,19 @@ PR169 remains open pending required CI. User asked whether mirror access is
 still needed; fresh Git/API reads again return repository-not-found/HTTP404.
 It remains required for direct CI dispatch and original artifact delivery,
 not for source/testing work already complete. No AWS access is requested.
+
+
+### V3-REL02 — prospective private-mirror CI and original-artifact delivery
+
+User explicitly redirects CI to their private repo. Verified API/Git access and
+push permission on Keegan4/Keegan4-larp-ci-mirror with active runtime.yml.
+Cookiemunchrr access is no longer needed for the selected route. Before running
+CI, push this record and exact candidate normally to origin and that mirror.
+Pass: all four exact-SHA jobs green including runtime/systemd/Terraform and
+both-role host provisioning smoke; original artifact downloaded; sidecar,
+external/internal manifest, every file hash, source/build/registered repository/
+mirror origin, BUNDLE.env and CA verified. Publish original binary/sidecar/
+manifest plus run ID and hashes to a new unsigned GitHub release. No rebuild
+or old handoff ZIP substitution. Merge169 ordinarily after green; keep133/126
+open and update133 with results. Gap report remains pending after19:00 SGT.
+Detailed prospective criteria: docs/build/LLM_V3_RELEASE_20261018.md V3-REL02.
