@@ -1086,3 +1086,16 @@ message to Keegan or new host action was performed.
 Final local Python3.12/macOS suite: 1,630 passed, 436 environment-dependent skips, 2,659 subtests passed. Actual retained DOJ page replay preserves20 ordered IDs while reducing20,757,780 wire bytes to91,830 permitted bytes. Full prospective criteria/results, test hashes, opt-in routing hash, preserving setup/export/report commands and remaining owners are in docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md and evidence/doj-trial-cap-fixes-20261018.json on PR174. No host mutation or paid inference occurred.
 
 Keegan owns review, fresh exact-source Linux/PostgreSQL/all-job CI and a new original release; d8aa7d5 lacks these fixes. Yao owns private provider/funding/rights reconciliation, preserving host setup, poll/restart/report qualification, activation and first-assessment/ACK evidence. Keegan independently reviews the prior raw FAIL/current-listing scope before Gate A disposition. Keith owns actual blind labels and measured trial report after immutable exports. Signed adoption and later preserving trial-ledger transition remain separate. PR133 stays open; pre-existing Claude outputs/ untouched.
+
+## PC-LABEL02 — deterministic independent-label packet, Oct18
+
+Yao requested independent labels for the collected deterministic run and will
+arrange independent annotators. Prospective packet/annotation/scoring criteria:
+[DETERMINISTIC_LABEL_REVIEW_20261018.md](../build/DETERMINISTIC_LABEL_REVIEW_20261018.md).
+Read-only fixed-window inventory has 43 round requests and 43 matching audit
+inputs, four referenced filings/five documents and ten original/text artifacts.
+Selection/packet hashes will be frozen before annotation; answers stay with the
+custodian. This is a retrospective diagnostic: not a claim of pre-prediction gold
+labels, T01 held-out qualification or v3 M9 trial completion. No model rerun or
+paid call is authorized/needed for packet preparation. Yao supplies independent
+readings; Keith reviews rubric/report; actual labels and scoring remain pending.
