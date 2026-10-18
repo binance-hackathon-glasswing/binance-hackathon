@@ -640,3 +640,51 @@ reviews new budget/quality bars and supplies blind labels; Keegan reviews the
 release/host capacity; team decides adoption. No one was assigned or messaged
 for review by the assistant. PR133 stays OPEN; the new checklist line tracks
 review/adoption preparation without claiming an implemented proposal is deployed.
+
+
+## PC-REL03 — release-readiness refresh for PR133 (2026-10-18 06:38 UTC)
+
+Yao asks what remains before asking Keegan for the release. Read the current
+PR133 checklist atf6e0f3e, live backlog, integration declarations/handoff,
+relevant PR/issue states and mirror/release metadata. This is a static review,
+not a host, credential, billing-account or deployment check.
+
+- #167 merged Oct18 06:01:29UTC at integration4312cd1. GitHub returned no
+  submitted reviews/comments; do not infer personal reviewer approval.
+  The new capability is present but the default v2 file/reserve is unchanged.
+- Latest successful mirror run remains39091699018, source7a0ea14. There is
+  no newer accepted CI build containing #167 in the retrieved latest five runs.
+  Existing7a0ea14 acceptance remains valid for its unsigned v2 scope.
+- Published prerelease `model-trial-7a0ea14` (05:57UTC) has no uploaded assets;
+  its body links a committed handoff ZIP and explicitly says the original CI
+  deployment binary is absent (`AWAITING_ORIGINAL_CI_ARTIFACT`). The ZIP is
+  documentation/download helpers, not a new host binary and not #167. Yao
+  already has the original old bundle locally; do not rebuild/relabel its bytes.
+- #165 is OPEN atcbcb8d3, #139 remains DRAFT atbd8a34b. A fresh unsigned trial
+  build does not wait on signed router/signer/profile gates. A signed release
+  scope must disposition #165 and retain real router/fee/native-trace/policy
+  prerequisites; packaging alone cannot approve it.
+- `services.v1.json` still has an undecided Claude/OpenAI model row; DEV-19 is
+  DRAFT/OPEN. Keegan must align these with the actual selected runtime route
+  before its release freeze. V3 requires separate reviewed budget/forecast/
+  stop bars and time window; TR-AC2's v2 US$40/US$10 and strict US$8/US$2.50
+  trial bars are not silently replaced. Keith reviews budget/quality protocol.
+- Yao still owns the fixed-window11:00UTC gap report/raw poll review and hashes,
+  private provider checks, exact current balance reconciliation, budget setup,
+  prepared/bound configuration, version activation and first assessment/ACK.
+  At this review the report's window has not ended. Keegan's migration/role
+  review remains unrecorded. Keys and midnight archive-health check are done;
+  the fixed incident-backup path still needs validation on the installed fix.
+- Signed rehearsal additionally needs Isaac's verified router evidence and
+  on-quote PASS (#138/#139/#119), signing lifetime (#27; Keith impact review
+  then Keegan decision/code), actual caps/gas/#44 decision, native tracing/BNB
+  (#30), signed/live network scope, Keith's measured profile/owner acceptance
+  (#120), and Yao's signer provisioning/key-session/host drills. S1 B4/B5/input
+  wiring and #165 B6 remain separate code scope. Later freeze/final-wallet/
+  evidence/operations tasks stay open; they do not all block an unsigned build.
+
+Corrected stale PR167/release/declaration checklist wording without marking
+unknown host or peer-review outcomes complete. Validation: exact source/head/run
+identities compared, all checklist additions have one owner, `git diff --check`.
+No new tests required for documentation-only status changes. No GitHub message
+to Keegan, mirror push, release creation, AWS operation or spend performed.
