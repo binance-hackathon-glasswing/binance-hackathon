@@ -464,3 +464,28 @@ script and test files of refreshed #158 exactly match tested candidate b06c15c;
 only ledger/result documentation differs. #158 is the final eligible merge.
 #126/#133 remain excluded; #139 stays draft and #165 remains unreviewed here.
 No hosted deployment or policy/model adoption approval is inferred.
+
+### MERGE-20261018 completion
+
+GitHub merge outcomes, all confirmed merged into `codex/system-testing-20261012`:
+
+| PR | Merge commit |
+|---|---|
+| #155 | `2f10b9ddbf4b1cecbf2ec763bbc033bd000da43a` |
+| #157 | `ad9a8b92964c8bdf556aec7a00dd22e3d0fffd97` |
+| #163 | `2b4f397611a1fc5c978111ba8159e18209f7219a` |
+| #161 | `7cd789223f768fa370a5d3423ea5fd1baae3e77a` |
+| #158 | `ce9115e49fda12c84ee71212961b938e5871de6a` |
+
+Final target ce9115e and refreshed #158 head7a0ea14 have the exact application,
+configuration, migration, script and test tree of pushed/passing b06c15c. Only
+three ledger/result documents differ. No repeated tests are needed for those
+documentation changes. The following completion update is documentation only.
+The five PRs are now merged; #155/#157 were completed concurrently and their
+code/result deltas were checked. Merge branches were retained, without squash,
+rebase, force-push or main promotion. #126 and #133 remain OPEN as explicitly
+requested. #139 remains DRAFT with missing verified source/ABI. New #165 is OPEN
+and outside this completed review. No cloud or hosted activation was performed;
+all source, cap/lifetime, actual model/provider and hosted acceptance gates remain
+with their existing owners. Org Actions billing is unresolved; local Linux
+regression success is not represented as hosted CI success.
