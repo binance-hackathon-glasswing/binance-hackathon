@@ -7,7 +7,7 @@ and #159. Historical open review scope was #126/#133/#139/#155/#157/#158/#161, p
 repository deliveries below are distinct from pending evidence, decisions and
 host checks. Host results are prior owner reports, not fresh checks by this review.
 
-Release-status refresh Oct18 06:38 UTC: integration `4312cd1` includes merged #167 (OpenAI-preferred v3/paced full credit). #165 remains open; #139 remains draft. The latest successful mirror build is still `7a0ea14` (39091699018), which lacks #167. Its published `model-trial-7a0ea14` prerelease is a handoff ZIP with download helpers, not the original CI deployment binary. A fresh unsigned bundle can be built while host checks wait; v3 protocol approval is now complete (PC-REL05); implementation/host/trial evidence remains open. See IDEA-066 PC-REL03/05.
+Release-status refresh Oct18 (V3-REL01): integration817eb71 includes merged #165 and #167. #165 was reviewed and retained for the next unsigned release; #139 remains draft. OpenAI-primary services/DEV-19 and KMP-P2 remediation are pushed on the release branch; approved PR168 protocol/rubric is carried without merging PR133. Direct mirror push and Actions dispatch are actually blocked (repository-not-found/HTTP404). No new CI binary/run ID exists yet. Old7a0ea14 remains v2 only. See the release record linked below.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -73,9 +73,9 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Real-provider `native_trace` qualification (#30) | Isaac | **UNQUALIFIED SP-NATIVE:** BNB/NodeReal historical trace: missing trie node; recent finalized trace: -32002 resource debug_traceTransaction not available. Need a permitted endpoint supporting exact prestateTracer diff plus recovery retention; Yao hosted acceptance follows. No capability enabled |
 | Attributable fee-netting evidence (#119) | Isaac | **UNVERIFIED SP-FEE:**15 current routes retain nonzero network tradeFee/null custom-fee fields; these do not prove wallet-net route fees. Applicable source semantics or exact first planned agent quote/receipt still required; #119/#120 open |
 | Decide the first-trade window and POLICY-HOLD | Isaac | **Decided SP-D1..4:** existing Oct21–22 window after gates; conditional measured EQUAL_WEIGHT fallback; DETERMINISTIC S1 limiter with B4 required; retain bounded per-symbol price-jump hold including urgent exits. Original O6 assessor adoption and actual profile/hash approval remain open |
-| Review Yao Zhu's migration, database-role and TLS evidence | Keegan | **Not recorded.** Evidence to review: IDEA-066 PC-AWS06 (migrations 001–013, roles, four `primary` roles pass IAM login and TLS) |
+| Review Yao Zhu's migration, database-role and TLS evidence | Keegan | **Reviewed PC-AWS06-RV1 / V3-REL01:** reported empty-DB migrations001–013 and limited primary IAM/TLS checks match unchanged source. Admin verify-ca differs from runtime verify-full; preserve the initial timeout. Signer-host, populated upgrade and new-release installation are separate, unverified checks. See the release record |
 | Settle O2 (what ships if EXP-007 is inconclusive) | Keegan | **Not recorded.** IDEA-075 §16 recommends shipping the trend guard as declared. Blocks EXP-007 |
-| Update the model services list and DEV-19 | Keegan | **Not done.** `config/release/services.v1.json` still says "pending decision B8: Anthropic Claude or OpenAI ChatGPT"; DEV-19 in `deviations.v1.json` is still OPEN |
+| Update the model services list and DEV-19 | Keegan | **Done V3-REL01:** selected opt-in unsigned OpenAI Sol medium primary with high-effort AIand Kimi K3 then GLM-5.3 review/fallback; PROVISIONING means actual provider/host qualification pending. DEV-19 dated Oct18, final scored adoption remains separate |
 | B4 exposure-evidence producer | Keegan | **Not built.** `larp/strategy/policy.py` reads `exposure_evidence`, but no runtime or integration code produces it, so the limiter stays NORMAL |
 | Draft the outstanding operations decisions; update #22/#42 and #98's mirror-CI disposition | Keegan | **Not recorded.** D-DN-01, 04, 06, 07, 08, 11 still open (IDEA-049-D §5); #22, #42 and #98 last updated Oct 15 |
 | After the trial starts: budget status, ledger backup, memory use | Yao Zhu | **Waits for the trial.** Deterministic memory baselines: PC-AWS09 (Oct 17) and PC-AWS11 (Oct 18) |
@@ -97,14 +97,13 @@ SP-01 refresh Oct18: #165 reviewed/merged at817eb71 after combined-head local ac
 - [x] **Yao Zhu:** after Isaac's RPC choice, open network access from `primary` to those RPC hosts (Terraform, reviewed plan). Done 2026-10-17: no change needed, since `primary` already allows outbound HTTPS; both provider hosts answered from `primary` (IDEA-066 PC-AWS05). The private URLs still come from Isaac for the Oct 20 `prepare`.
 - [x] **Yao Zhu:** after the bundle exists, upload it and provision `primary` over SSM (`provision.sh primary <bundle> --expect-sha256 <CI hash>`; AWS_RUNBOOK step 5). Done 2026-10-17 with the mirror-CI bundle `bb46234` (IDEA-066 PC-AWS06).
 - [x] **Yao Zhu:** after provisioning, run migrations 012/013 and `roles.sql` through an SSM port-forward, then check IAM token login and TLS for each database role (AWS_RUNBOOK step 6, PR99-RV1, IDEA-044 V10/V11). Done 2026-10-17: migrations 001–013 and roles applied; all four `primary` roles pass (IDEA-066 PC-AWS06).
-- [ ] **Keegan:** review Yao Zhu's PC-AWS06 migration/role output for PR99-RV1; host execution is already reported complete, independent review is not implied.
-- [x] **Yao Zhu:** copy the six retained terms files from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register. Done 2026-10-17: installed, host preflight `ok` (IDEA-066 PC-AWS06).
+- [x] **Yao Zhu:** copy the four distinct retained terms files covering six source entries from the 2026-10-17 capture to `/var/lib/larp-evidence/artifacts/<prefix>/<hash>` on `primary`, then rerun source preflight there. DOJ and EC pages change on every fetch, so only that capture's files match the register. Done 2026-10-17: installed, host preflight `ok` (IDEA-066 PC-AWS06).
 - [x] **Yao Zhu:** on `primary`, run the route check (`python -m larp.runtime.routes --role primary`) and record `chronyc tracking`. Also confirm that `/etc/chrony.conf` has `rtcsync` and that `kernel_clock_synchronized()` prints `True` there (command in DEPLOYMENT_DAY step 9); without that signal a `CLOCK` HALT never clears (D-DN-10, #125). Send the reports to Keegan (R-07, R-08). Done 2026-10-17: 13/13 PASS, chrony normal (IDEA-066 PC-AWS06).
 
 ### Gate B setup
 
 - [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete. SP-01 recheck: candidate Code403 challenge and Sourcify404/no match; source/ABI still unavailable. See [current evidence and next action](SIGNED_PREREQUISITES_20261018.md#evidence-results--sp-01-r1).
-- [ ] **Keegan:** produce and hand off the next mirror-CI release at an explicit reviewed SHA containing #167 (integration `4312cd1` as of Oct18 06:38 UTC). Existing `7a0ea14` is already accepted for the unsigned v2 trial (PC-REL01) and includes #130/#144/#148/#153/#155/#157/#158/#161/#163/#164, but lacks #167. Hand off the original `.tar.gz`, sidecar, external manifest, CI run/job result and `BUNDLE.env` CA hash; the published handoff ZIP is not the deployment binary. Decide whether #165 is in scope before freezing a signed-rehearsal build; #139/source evidence and signed-host acceptance remain separate. Keegan/his release agent is explicitly authorized to push/dispatch the mirror directly (PC-DEC04); involve Yao only if access is actually blocked.
+- [ ] **Keegan:** finish the V3-REL01 mirror-CI release and original artifact handoff from `codex/llm-v3-trial-release-20261018` (latest integration817eb71 includes #167 and #165; #165 reviewed and retained without S1 adoption). Code/protocol/services/DEV-19 and KMP-P2 are ready for CI; Linux/PostgreSQL verification is in the release record. Direct push was attempted under PC-DEC04 and denied repository-not-found; direct runtime.yml dispatch returned HTTP404. Restore this environment's access to Cookiemunchrr/larp-ci-mirror, then Keegan retries personally, requires all-job green at the exact SHA and hands over the original tar.gz, sidecar, manifest, CA hash and run ID. Old7a0ea14/handoff ZIP is not this binary; no new artifact or CI pass exists yet.
 - [ ] **Keegan:** independently review Isaac's complete verified router evidence (#138/#139) when supplied. Decoder PR #130 is already merged and its repository review is recorded in IDEA-070; that does not approve missing real source evidence.
 - [x] **Keith:** interim quote handoff supplied for Isaac via #118 and [KMP-QUOTE01](evidence/quotes-interim-20261018/README.md): complete JSONL snapshots/26 latest raw artifacts, verified hashes, actual coverage/gaps and fee/gas caveats. Final capture/profile review remains open.
 - [ ] **Isaac:** using merged #130, after the source-evidence review, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed. **NOT_RUN SP-01:** all29 handoff hashes/lengths verify, but source and independent review are absent; do not manufacture evidence to invoke the command.
@@ -157,7 +156,6 @@ Decided by Yao Zhu, 2026-10-17 (IDEA-066 PC-DEC02): switch the live shadow run t
 - [ ] **Keegan:** after it merges, build the mirror bundle for Gate B with it (the bundle line under "Gate B setup") and send the hashes to Yao Zhu.
 - [ ] **Keith:** on Oct 20 (morning UTC), publish an **interim/provisional** report: actual unsigned hours/unique jobs, M1/M2/M3/M5/M6, all kills, route/stage counts and M9 label/positive coverage. Use end charge plus forecast future charge (TRB-01D). Fewer than 72 observed hours or missing coverage means inconclusive unless a kill/safety defect makes it not supported; an interim report cannot establish SUPPORTED.
 - [ ] **Keegan:** on Oct 20, separately decide whether a bounded development-only signed rehearsal proceeds (early DR-11), and tell Yao Zhu before re-activation. If unsigned qualification is inconclusive, record missing evidence, scope, owner, fallback and the explicit deviation under TRB-01E; do not call it trial support or scored adoption. A no means `deterministic` for the rehearsal and the corresponding DEV-19 disposition.
-- [ ] **Keegan:** update the AIand/OpenAI services declaration (`config/release/services.v1.json`) and DEV-19 before freezing the selected model release (GAP-62). Describe the route actually selected: v2 external-first with optional Sol review, or explicitly adopted v3 Sol-primary with paced full credit and high-effort AIand fallback. #167 merging alone does not choose the runtime file or adopt v3.
 
 **LLM: everything else between now and the scored run (audit 2026-10-17, IDEA-066 PC-AUD01)**
 
@@ -196,9 +194,9 @@ These were missing from every list; each one is needed for the LLM to be in the 
 
 ## Keith prerequisite review — Oct18 (KMP-02)
 
-Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its documents are not yet on integration. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
+Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its approved protocol/rubric/register and public manifests are carried on the V3-REL01 release branch; the complete checklist/quote handoff remains here. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
 
-- [ ] **Keegan:** implement the approved PR168/KMP-BUD01 protocol and resolve KMP-P2 (post-admission dispatch at/after end) with reviewed regression evidence before freezing the v3 release. Protocol/window/stop bars, KMP-LABEL01 rubric and five-route mapping are approved by Yao (PC-REL05), not awaiting another confirmation. Coordinate actual trial-limit enforcement with Yao; push/dispatch the mirror release directly under PC-DEC04. Read PR168's documents from this branch; keep PR133 open.
+- [ ] **Keegan / Yao Zhu:** complete actual v3 trial-limit enforcement and CI/host qualification under approved PR168/KMP-BUD01. KMP-P2 and model service/DEV-19 implementation are done in V3-REL01; no repeat protocol approval. Yao records an admission method enforcing US$8 total /US$2.50 UTC-day caps with maximum in-flight costs before paid testing; without it paid v3 testing waits. Keegan retries direct mirror push/dispatch after the current repository access block is resolved; original artifact handoff remains pending. PR133 stays open.
 
 [Model prerequisites](MODEL_PREREQUISITES_20261018.md) and its linked budget,
 blind-label, provider-rights and signing/profile records carry the proposed v3
@@ -313,3 +311,37 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
   | `docs/idea-052-timesfm-20261015` | Cookiemunchrr | none | Keegan |
   | `codex/pr-review-system-20261012` | wtvlol | none | Keegan identifies the responsible team member before disposition |
   | `codex/thin-path` | Keegan | #10 (closed) | Keegan |
+
+
+## V3-REL01 / PC-AWS06-RV1 — release-agent update, Oct18 UTC
+
+[PR169](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/169)
+contains the next unsigned release candidate from integration817eb71 (#165 and
+#167), KMP-P2 fix6955eaf, OpenAI-primary services/DEV-19 and approved PR168
+protocol/rubric/register. No repeat approval. Full pushed61a123a verification:
+**2029 passed,6 skipped,2981 subtests**, Linux/Python3.12.14/PostgreSQL14.24;
+external corpus1 and actual-systemd5 skipped, Linux bubblewrap ran. No xfails.
+Focused85 tests/111 subtests, deviation rendering and offline demo pass.
+
+[Release/evidence record at published0441806](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/0441806/docs/build/LLM_V3_RELEASE_20261018.md)
+records prospective criteria, corrected red/green tests, PR165 review/inclusion,
+PC-AWS06 report review and full log hash. The migration/roles/TLS review is
+complete for reported empty-DB primary checks only; signer-host login, populated
+upgrade and new-release deployment stay separate. Source migrations/roles/TLS
+configuration are unchanged from the reported bb46234 bundle. Preserve the
+initial runtime timeout, admin verify-ca versus runtime verify-full distinction,
+and four distinct terms files covering six source entries.
+
+The release agent attempted the authorized direct mirror push (exit128, repository
+not found) and direct Actions dispatch (HTTP404) to Cookiemunchrr/larp-ci-mirror.
+This is an actual access blocker; GitHub connection access was requested, not
+repeated release permission. No new mirror run, binary, checksum or manifest has
+been produced. The release agent resumes push/dispatch and original-artifact
+verification after access restoration. Old7a0ea14/its handoff ZIP is not this
+release. Org billing is not fixed and no all-job CI pass is claimed.
+
+Pending: Yao's actual in-flight stop-cap enforcement, P0/P1/P2 and host start;
+Keith's real usage forecast and blind labels; Keegan's fixed-window gap review
+after Yao supplies it after Oct18 11:00 UTC/19:00 SGT. Pending gap report does not
+delay building. No AWS, paid-provider, signer or deployment action performed.
+PR133 remains open and unmerged; PR126 is untouched.

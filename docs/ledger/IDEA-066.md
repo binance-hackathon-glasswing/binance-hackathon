@@ -845,3 +845,44 @@ expanded: explicit user approval is required for the exact signed/live proposal.
 All session changes are committed/pushed with clean trees and main=origin/main;
 no session unpushed commits. Local PostgreSQL is disposed. No AWS/key/wallet
 operation; a new session resumes from SP-01's owner table and pending proposal.
+
+
+## PC-REL06 / PC-AWS06-RV1 — v3 candidate and existing-host report review, Oct18 UTC
+
+User updated release instruction explicitly accepts PC-REL05/merged PR168
+protocol and authorizes direct mirror push/dispatch. PR169 carries the approved
+protocol/rubric/register, services/DEV-19 and KMP-P2 transport-boundary fix on
+latest integration817eb71 including165/167. PR165 reviewed and retained without
+S1 adoption. KMP-P2 corrected red9b5b7cd reproduces; fix6955eaf suppresses actual
+POSTs at/end+1 after preparation and refunds only known-unsent reservations;
+sent/unknown reservations and safety latches remain conservative.
+
+Pushed61a123a combined Linux/Python3.12.14/PostgreSQL14.24 verification:2029
+passed,6 skipped,2981 subtests,174.77 s; external corpus1 and systemd5 skipped.
+Focused85/111 subtests, deviations rendering, dependencies and offline demo pass.
+The complete criteria/results/source/protocol and log hash are in
+[release record](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/0441806/docs/build/LLM_V3_RELEASE_20261018.md).
+No golden changes, xfails, paid provider or host actions.
+
+PC-AWS06 existing report reviewed against unchanged migrations001–013, roles.sql
+and TLS configuration: internally consistent for empty RDS migrations and the
+reported limited four-role primary IAM/TLS checks. Admin verify-ca is not runtime
+verify-full. Retain first runtime timeout and successful rerun. Signer refusal
+from primary is expected; signer-host login remains Yao's later check. Empty
+DB does not qualify populated upgrade/unsafe-row refusal; no independent AWS
+observation or new-release installation claimed. Four distinct terms files
+cover six entries. The old13/13 route result does not qualify model endpoints.
+
+Actual direct Git push to Cookiemunchrr/larp-ci-mirror was denied repository-not-
+found (exit128), and actual runtime.yml dispatch returned HTTP404 (exit1), while
+origin pushes work. Access restoration was requested securely through the
+existing GitHub connection. Release agent retains push/dispatch after restoration;
+no original artifact/run/new hashes or freeze acceptance exists. Old7a0ea14 and
+its handoff-only ZIP cannot substitute. This is access blocking, not absent
+permission or a request for Yao to perform the authorized push himself.
+
+PC-GAP01 report review remains pending until Yao supplies the Oct17 11Z–Oct18
+11Z report after Oct18 11:00 UTC/19:00 SGT; raw cadence/errors and INCOMPLETE
+coverage remain required. Pending report does not delay build. Actual trial-cap
+enforcement, provider/rights/host qualification and start remain with Yao;
+measured forecast/labels with Keith and adoption with team. PR133 stays open.
