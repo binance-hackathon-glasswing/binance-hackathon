@@ -256,3 +256,11 @@ on complete source/imports/ABI/compiler/settings with a verifiable deployed-code
 binding; independent review and all four guarantees remain separate. Empty,
 unsupported-chain or access-error responses retain source/review/check NOT_RUN.
 No repeated blind probing after these two requests. No wallet/key/AWS operation.
+
+RE-03 result: both bounded direct GETs returned HTTP200/status0,
+`chain not supported` at13:59:09–10UTC. Source intake failed at provider
+chain coverage, not verification status. Public report SHA256 `f7b24db6572f2c43e314dcc4daa99d83af588a5cb0a6cc93fa14424193f39047`;
+body/length/JSON/hash checks PASS, no runtime test needed for this doc/evidence
+change. No source guarantee/reviewer/ABI/code match was invented. PR139 stays
+draft; real review and quote replay remain NOT_RUN. Source export/account
+contact remains the next external input; no AWS/key/signing/vendor action.

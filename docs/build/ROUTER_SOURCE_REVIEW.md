@@ -168,3 +168,25 @@ After delivery: retain/hash original bytes, establish signature/paths/native
 semantics and all four guarantees from complete code, obtain Keegan's actual
 review, then run the existing real-artifact checker. Keep this PR draft and
 #138/#33/GAP29/signing blocked until that evidence actually exists.
+
+## RE-03 — additional public retrieval, 2026-10-18
+
+Both direct public Routescan Etherscan-compatible chain56 source requests
+(router and candidate facet) returned HTTP200/status0, `chain not supported`,
+at13:59:09–10UTC. This API cannot supply BSC source. It says nothing about
+whether the actual router/facet is verified elsewhere. Browser BscScan access
+also failed (router403; facet inaccessible); same-address Ethereum/Polygon
+search results and cached Ethereum bytecode are not chain56 source evidence.
+No cross-chain code match or source review is inferred.
+
+[Exact two-request report](evidence/router-source-routescan-20261018.json),
+SHA256 `f7b24db6572f2c43e314dcc4daa99d83af588a5cb0a6cc93fa14424193f39047`. Raw public60-byte response hashes/lengths/JSON were recomputed
+against the retained local bodies. Normal TLS,20s/no retries/no redirects,
+no credentials/signing/AWS. No further blind retries.
+
+The complete verified source/imports/ABI/compiler/settings and deployed-code
+binding remain absent. Next: obtain the existing export/request packet above
+through the team's own approved source/account contact; no vendor message was
+sent here. Guarantees, Keegan review and router check remain NOT_RUN; PR139
+stays draft. The independent SR-01 startup fix is in PR176; that code cannot
+replace source acquisition or authorize a policy.
