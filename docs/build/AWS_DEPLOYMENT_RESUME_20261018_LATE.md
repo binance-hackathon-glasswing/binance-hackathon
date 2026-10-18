@@ -1,5 +1,21 @@
 # PC-HO02 — late Oct18 deployment continuation for Yao Zhu
 
+**PC-DEPLOY02 — current live state (Oct18 17:20 UTC; supersedes the pending-installation text below):**
+the unsigned capped LLM trial is **deployed and running** on `ea25b52` (merged PR178 OpenAI
+JSON-input fix, a **local non-CI build** per Yao, PC-BUILD01), run
+`larp-dev-llm-trial-20261018t170339z` in database `larp_trial2`, execution off. Earlier runs
+are frozen: `larp-dev-shadow-20261017` (bb46234, database `larp`) and the 86b1476 trial run
+(database `larp_trial`), configs under `/etc/larp-history/`. Because `runs` allows one run
+per wallet, **every new build or profile needs a new trial database** until reviewed
+version-switch support exists. The one ledger at
+`/var/lib/larp-runtime/model-budget/openai-budget.sqlite` is kept across runs (backup
+`2a20adc1…`); it holds one UNKNOWN 84,764 µUSD charge from the 86b1476 JSON-mode bug. First
+fixed job: OpenAI ASSESSED/settled, combined UNAVAILABLE at the 60 s deadline, receiver
+`STORED`. Full record: IDEA-066 PC-DEPLOY01/02 and
+[llm-trial-deployment-20261018.json](evidence/llm-trial-deployment-20261018.json); owner
+scripts in ignored `deploy/activation/redeploy-20261018/`. AWS/host writes are run by Yao
+(Claude's are blocked by the permission classifier); read-only SSM checks work.
+
 **PC-MIRROR01 correction:** PC-DEC01 already accepts the exact approved mirror-only checker failure with production bind PASS. The previous continuation overstated it as a deployment blocker. PR177 supplies a narrow corrected local verifier; pushed4eb33bb passes all7 checks on unchanged original86b1476 bytes. No checker-only bundle rebuild is required. See the continuation/evidence below; host/account/fresh preparation gates remain.
 
 **Oct18 continuation:** [PC-REL09 / PC-HOST02 / PC-PROV02 / PC-PREP02](PR174_DEPLOYMENT_CONTINUATION_20261018.md) now verifies the supplied tar/original CI assets, refreshes host state and records the local mirror-origin checker FAIL. PC-PROV03 now resolves historical AIand401: replacement key/high-effort/USD catalogue200, other secret fields preserved; balance403/expiry still open. Read that supplement before acting on the earlier pending-verification observations below. No host deployment occurred.

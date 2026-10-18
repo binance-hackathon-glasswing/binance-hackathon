@@ -1577,3 +1577,67 @@ PC-PREP02 acceptance item removed from the live backlog; review/merge PR177 and
 future release propagation remain Keegan's separate item. Existing GateA/account/
 funding/rights/preserving host/ledger/source/trial/signed acceptance remains open.
 PR133 remains OPEN; no automatic merge/deployment follows this correction.
+
+## PC-DEPLOY01 / PC-FIX02 / PC-BUILD01 / PC-DEPLOY02 — unsigned capped LLM trial deployed (Oct18 15:00–17:20 UTC)
+
+Yao asked for the deployment to be run (chat, Oct18). Claude verified, wrote every
+script and ran read-only SSM checks; the permission classifier blocked Claude's
+own AWS/RDS/host writes, so **Yao ran each mutation from his Mac**. Machine-readable
+record: [llm-trial-deployment-20261018.json](../build/evidence/llm-trial-deployment-20261018.json).
+Scripts/results are private in ignored `deploy/activation/{deploy-86b1476,redeploy}-20261018/`.
+
+- **PC-REL09-R2 (re-verified):** supplied tar = original CI gzip decompressed
+  (`7632df2c…`/`277fd2b6…`); 235/235 checksums, 196/196 files equal Git 86b1476,
+  manifest/CA/BUNDLE.env/routing `a5fca50a…` equal. Nothing executed first.
+- **PC-DEPLOY01-B1 blocker:** `runs` has UNIQUE(wallet_id, chain_id); `service init`
+  refuses a second run for the dev wallet and `activate` refuses another build on an
+  existing run. A build switch on one database is impossible with current code
+  (this also affects the planned Oct20 profile swap). **Yao chose option 1:** a separate
+  trial database per build on the same RDS instance (no Terraform/new resource);
+  earlier runs stay frozen and unmodified.
+- **Old shadow run retired, preserved:** `larp-dev-shadow-20261017` stopped 15:31:06Z,
+  50 audit events/74 chunks ACK, final anchor slot 16:00Z ACK; configs moved to
+  `/etc/larp-history/bb46234-larp-dev-shadow-20261017/`; evidence store/poll log copied.
+- **PC-DB01:** `larp_trial` = migrations 001–013 equal to `larp`, 21 tables, roles.sql with
+  only the database name changed. Reported pre-existing from an earlier interrupted
+  owner attempt (to confirm with Yao); 0 runs.
+- **86b1476 run (PC-PREP03):** first prepare refused (renderer requires the example
+  database name to equal Terraform's); a narrow wrapper renders from the real output,
+  then sets only `database_name`. Prepared 16:07:59Z, 6 PASS + accepted mirror-only
+  FAIL. **New ledger** created with 2,000,000 µUSD prior spend (owner-confirmed US$48 of
+  US$50 left, no other consumers), no reserve, trial US$8/US$2.50 day. Bind/routes 15/15/
+  time OK; first activate refused (205-char review ref > 200), retried; activated 16:11Z.
+- **First assessment (cadence:1991489#1, SKHYB):** OpenAI `gpt-6.1-sol` medium returned
+  **HTTP 400** (Responses `json_object` needs the word "json" in input); router fell back
+  to AIand Kimi K3 high → ASSESSED; receiver `STORED`. The failed OpenAI attempt holds
+  an **UNKNOWN 84,764 µUSD** charge (kept; OpenAI almost certainly did not bill it).
+  Paused 16:22:55Z after one attempt; final anchor 17:00Z ACK; configs moved to
+  `/etc/larp-history/86b1476-larp-dev-llm-trial-20261018t160739z/`; ledger backup
+  `2a20adc1…` (SQLite backup API). Ledger itself kept.
+- **PC-FIX02 / [PR178](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/178):**
+  red test `0e45096` pushed first (fake applies OpenAI's rule), fix `470814c` (one JSON
+  label line + unchanged input; revision `input=json-labelled`), fixtures `5317b18`.
+  Focused 109 pass; full suite in a `requirements.lock` venv **1846 passed/0 failed/436
+  skipped** (macOS). Merged `ea25b52` **without CI, per Yao**.
+- **PC-BUILD01 (local build, no CI provenance):** `tools/build_release_bundle.py` from
+  pushed `ea25b52` → `larp-ea25b5232565-x86_64.tar.gz` `9c7ac630…`, manifest `fc3adfb4…`.
+  Versus Keegan's CI 86b1476 bundle only `providers.py`, manifest and BUNDLE.env differ;
+  all wheels, Python, CA, provision.sh and register are byte-identical.
+- **PC-DEPLOY02:** `larp_trial2` (PC-DB02 PASS, new); ea25b52 provisioned; prepared
+  17:04:05Z **7/7 PASS**; ledger kept (read-only check: pacing/trial policies match
+  routing; no init/migration/status); bound (`e592a13e…`), routes 15/15, activated run
+  `larp-dev-llm-trial-20261018t170339z`, epoch 2, reviewer Yao Zhu.
+- **First fixed assessment (cadence:1991492#1, 17:15Z):** OpenAI primary 2 steps OK,
+  served `gpt-6.1-sol`/medium, labelled input, ASSESSED, charges **SETTLED 6,190 + 13,792
+  µUSD**. Kimi K3 high ABSTAIN (UNSUPPORTED_CLAIM; one step 33.8 s/3,280 tokens);
+  GLM 5.3 second step in flight at deadline. **Combined UNAVAILABLE,
+  ASSESSMENT_DEADLINE_EXCEEDED** (60,019 ms). Round COMPLETE; 2 chunks receiver `STORED`.
+
+**Still open (not completed by this entry):** (1) Keegan/Keith: disposition of the 60 s
+assessment budget versus sequential primary + two high-effort reviews (first fixed job
+UNAVAILABLE although OpenAI ASSESSED); (2) Keegan: reviewed version-switch support so a
+new build or the Oct20 profile does not need another database, and review of the
+unreviewed PR178/local build; (3) Yao: reviewed reconciliation of the one UNKNOWN
+84,764 µUSD charge (never edited), AIand usage/units/expiry, S3 transfer-copy cleanup;
+(4) post-fix DOJ polls/restart/new observed report; (5) Keith: actual qualified start,
+unique jobs/labels/M9 and trial report. Signed gates are unchanged and separate.
