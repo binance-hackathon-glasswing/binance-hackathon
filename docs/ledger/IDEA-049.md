@@ -420,3 +420,23 @@ archive fix deployment/health, source gap-report preparation, provider/model sec
 and budget checks, signer provisioning and hosted signed acceptance. PC-AWS10's
 DOJ/BIS history-walk decision remains with Keegan. No cloud, signing, wallet,
 provider inference, receiver upload or deployment was performed by this review.
+
+## MERGE-20261018 — authorised reviewed PR integration (prospective)
+
+User requests merging fixed PRs and explicitly excludes #126 and #133. Include
+#155 at387160a (base refresh and criteria only after fbd86ba), #157 at9d8f168,
+#158 atd7d3e7c, #161 atfa5c40f and #163 at19339bd. Keep #139 draft for missing
+verified router source/ABI; new #165 was outside the completed review and is not
+included. Target integration advanced to a2af2df with reviewed PR164, requiring
+new combined validation of stage prompts against its deferred model/audit code.
+
+Acceptance before merge: ordinary merges only, preserve PR164 provider-worker
+ownership and audit behavior, resolve documentation conflicts retaining current
+signed-model status, and keep #126/#133/#139/#165 out of the target. Push the
+candidate before executing it; full Linux/Python3.12/PostgreSQL14 suite must pass
+with no new failures or unexplained skips. Static checks require no conflict
+markers or whitespace errors and no protected kit/vendor changes. Merge the
+five authorised PRs using GitHub merge commits bound to checked head hashes,
+retaining branches. If concurrent target/head changes occur, inspect them and
+reconcile before proceeding. Record final merge SHAs and any remaining blockers.
+Repository integration grants no hosted/model/source/policy acceptance.
