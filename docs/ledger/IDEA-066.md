@@ -446,3 +446,33 @@ the reviewed reserve implementation is needed for theUS$5 policy. Do not edit
 an existing ledger, initialize a new one over it or label the old bundleUS$5.
 The implementation PR and its validation/mirror requirement will be recorded
 under IDEA057 R5-01; PR133 remains open.
+
+
+## PC-BUD03 — retain US$10 reserve; inference continues externally (2026-10-18)
+
+Yao Zhu withdraws the US$5 reserve choice in PC-BUD02 before implementation,
+preferring US$10 because usage estimates may be inexact. This supersedes only
+the reserve-change and R5-01 implementation requirements above; the exact US$48
+OpenAI remaining balance, derived US$2 prior usage and reported AIand140+
+balance remain recorded. Current policy stays original allocationUS$50,
+reserveUS$10, cumulative operating ceilingUS$40 and current headroomUS$38.
+Host initialization input remains **2,000,000 micro-USD**.
+
+Yao also requires the model/agent not to stop when OpenAI reaches its reserve.
+The existing implementation already routes routine work to AIand and switches
+hard-review work to AIand when a bounded OpenAI request would consume protected
+funds. This is a per-account durable ledger admission check, not a live balance
+poll. The external-only latch stops OpenAI dispatch, not LLM assessment or the
+agent; external availability/funding is still required. If external providers
+also fail, retain the existing UNAVAILABLE/risk behaviour rather than inventing
+a usable model result. Source: model_budget.ModelBudget.admit; routing.RoutedAssessor
+external-review branch; tests/intelligence/test_aiand_routing.py AR4 budget-limit
+and credit-refusal fallback/restart checks (covered by the recorded mirror run).
+No new test or runtime change is needed for this documentation-only reversal.
+
+No application code or tests were changed, executed or published for the US$5
+proposal; no implementation PR was opened and no host budget was initialized
+or modified. The unused local branch is removed without rewriting commits.
+The verified7a0ea14 release retains the desired US$10 policy, so there is no
+new reserve-specific build prerequisite. Report, release acceptance, trial-bar
+confirmation, P0/P1/P2 and actual activation remain open as before.
