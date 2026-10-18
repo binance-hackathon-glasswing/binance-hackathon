@@ -241,3 +241,30 @@ execution, signer and PostgreSQL replay regressions pass on the combined head;
 then the full offline suite passes with explicit platform skips. No real model,
 venue, wallet, receiver or AWS activity. Keegan/Keith peer review and exact Linux
 release qualification remain separate; no self-attributed peer approval.
+
+### EB-RV2 results (2026-10-18)
+
+Reviewed full production diff, new regressions and GitHub submitted/inline review
+records (both empty at review time). No remaining reproducible B6 code finding
+was identified. Preserved current integration via merge8f2d364, including new
+OpenAI routing/pacing work and both ledger records; no history rewriting.
+
+At pushed8f2d364, focused strategy/execution/signer/PostgreSQL replay checks:
+**80 passed,57 subtests,9.52s**. Full offline suite:
+**2021 passed,9 skipped,2981 subtests,415.04s** on macOS/Python3.12.14 and
+disposable PostgreSQL14 (container image digest
+sha256:14bfab572eec6abf65892e1db7c3ba8d41b2a2855c1b143664907d6e146eb6e1).
+Command: `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55443/postgres
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr20-venv/bin/python -m pytest
+-q -ra -p no:cacheprovider tests`. Nine skips retain one external recording,
+five opt-in systemd and three Linux bubblewrap checks; no xfails, regenerated
+goldens or real external adapters. Full log:
+/private/tmp/larp-signed-prereqs-b6-full.log, SHA256
+0888347788c35c03c1fba0185042052d333f1795f9670148cc9b6c5eb1435412.
+
+This completes Isaac's delegated code review/current-integration local
+verification. It does not attribute a personal Keegan/Keith approval or Linux CI
+pass. User requests finishing PR165; normal merge can preserve all commits.
+Exact-release Linux/mirror qualification and real-cost parameter/profile freeze,
+B4/B5 integration, provider/source/#27/#44 and hosted/signed acceptance remain
+separate release gates; merge is not deployment authority.
