@@ -441,3 +441,19 @@ keep parent106/GAP49 open; remove no unfinished live backlog item. Check officia
 verbatim source_page/kit gas text plus F120/G13/Q03 and existing confirmed team
 position before writing the handoff. Validate public JSON and receipt arithmetic;
 no unnecessary application tests for documentation/evidence-only scope.
+
+### FG-02 public preflight and handoff results
+
+At10:59:12UTC chain56 finalized block128350421 rechecked canonical; native
+2694498869362886wei, USDT98 with18decimals, nonces2/2/2. Historical nonce1
+funding tx/receipt/block/time reverified. Exactly14 public read-only calls, no
+retry/redirect/key/wallet/AWS action. Report SHA256
+2784503923b345095e58302becf06220818b3dde869f0749ff33941d3e93a83a. Source bytes/requests/hashes and limits in
+[FG-02 handoff](../build/DEV_GAS_FUNDING_HANDOFF_20261018.md). Positive BNB and
+nonce agreement are not full activity/run or post-last-seed opening proof.
+
+User has no additional hash; remaining about2USDT funding is NOT_DONE and Yao
+opening capture NOT_RUN. Draft PR records the exact manual step, reconciliation
+precondition and verification fields without manufacturing a new transaction.
+Source/JSON/hash/receipt checks pass; no application tests needed for this
+documentation/evidence-only scope. Parent106/GAP49 remain open.
