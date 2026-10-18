@@ -32,7 +32,7 @@ EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
-    """A configuration asks for a path that is not built yet: a hosted model assessor (DR-11)."""
+    """A configuration asks for an assessor that is not integrated (DR-11)."""
 
 
 class StartRefused(ContractError):
@@ -198,8 +198,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     """The round driver (IDEA-048, IDEA-050) from the `driver` block of the manifest-bound runtime configuration.
 
     `execution: "shadow"` ends every intent unsigned; `execution: "service"` hands committed commands to the execution
-    service (larp/execution_live/loop.py) and journals its observations. Hosted model assessors (DR-11) are not
-    integrated: asking for one raises NotIntegrated. Any other missing or inconsistent input is a ContractError, which
+    service (larp/execution_live/loop.py) and journals its observations. AIand/OpenAI routing is integrated for
+    shadow use or explicitly reviewed service/live use through a bounded background lane. Missing or inconsistent input is a ContractError, which
     `main` turns into a start refusal (exit 4)."""
     from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
     from larp.integration.settlement import ExecutionBridge
@@ -231,9 +231,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
-        raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
-    if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
-        raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
+        raise NotIntegrated('Supported assessors are deterministic and aiand_routed (DR-11)')
+    signed_model = d['assessor'] == 'aiand_routed' and (d['execution'] == 'service' or config.get('mode') == 'live')
+    if signed_model and (d['execution'] != 'service' or type(d.get('model_adoption_ref')) is not str
+                         or not d['model_adoption_ref'].strip()):
+        raise ContractError('Signed routed assessments need service execution and a reviewed model_adoption_ref')
     if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
             'model_routing_file', 'model_routing_sha256', 'model_budget_root')):
         raise ContractError('AIand routing needs a pinned file and shared model budget root')
@@ -248,6 +250,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         raise ContractError('Expected a StrategyProfile.v1 file')
     if mode in ('dev', 'live') and profile.get('mode') != 'LIVE':
         raise ContractError('A dev or live run needs a LIVE strategy profile')
+    if signed_model and mode in ('dev', 'live'):
+        from larp.strategy.profiles import validate_live
+        validate_live(profile)
+        if profile.get('environment') != ('FINAL' if mode == 'live' else 'REHEARSAL'):
+            raise ContractError('Signed model profile environment differs from the run')
     calendar = SessionCalendar(_pinned_json(d['session_calendar_file'], d['session_calendar_sha256'],
                                             'Session calendar'))
     profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
@@ -331,8 +338,14 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                                      max_age_ms=balance['max_age_ms'])
         health.balances = balance_check
         builder.price_jump = dict(bps=balance['price_jump_bps'], hold_ms=balance['max_age_ms'])  # IDEA-055 PR 4
+    deferred = None
+    if signed_model:
+        from larp.runtime.deferred_models import DeferredAssessments
+        deferred = DeferredAssessments(assessor, root=Path(d['market_artifact_root']) / 'model' / 'assessments',
+                                       run_id=config['run_id'], build_id=config['build_id'], profile_hash=profile_hash)
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
+                       assessments=deferred,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 

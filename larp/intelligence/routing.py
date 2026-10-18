@@ -11,9 +11,9 @@ from pathlib import Path
 import time
 from types import SimpleNamespace
 
-from larp.contracts import Document
+from larp.contracts import ContractError, Document
 from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
-from larp.intelligence.aiand import AIandChatModel
+from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, sha256_hex
 from larp.intelligence.model_budget import ModelBudget
 from larp.intelligence.models import ModelIdentity, response
@@ -21,6 +21,34 @@ from larp.intelligence.providers import OpenAIResponsesModel
 
 OPENAI_PRICE = dict(input_micro_usd_per_mtok=2_000_000, output_micro_usd_per_mtok=10_000_000,
                     source='https://developers.openai.com/api/docs/models/gpt-6.1-sol;2026-10-15;standard')
+
+
+def validate_routing_spec(spec):
+    """Validate public configuration without credentials, storage, models or network I/O."""
+    fields = {'schema', 'provenance', 'routine', 'external_reviewers', 'openai_model', 'openai_effort',
+              'max_output_tokens', 'budget_account', 'audit_sample_bps', 'audit_seed'}
+    if (type(spec) is not dict or set(spec) != fields or spec['schema'] != 'AIandRouting.v1'
+            or spec['openai_model'] != 'gpt-6.1-sol'
+            or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
+            or type(spec['max_output_tokens']) is not int or not 0 < spec['max_output_tokens'] <= 16000
+            or type(spec['budget_account']) is not str or not spec['budget_account'].strip()
+            or len(spec['budget_account']) > 100
+            or type(spec['audit_sample_bps']) is not int or not 0 <= spec['audit_sample_bps'] <= 10000
+            or type(spec['audit_seed']) is not str or not spec['audit_seed'].strip()
+            or type(spec['provenance']) is not dict
+            or set(spec['provenance']) != {'source', 'checked', 'scope'}
+            or any(type(v) is not str or not v.strip() for v in spec['provenance'].values())
+            or type(spec['external_reviewers']) is not list or not 1 <= len(spec['external_reviewers']) <= 2):
+        raise IntelligenceError('Invalid AIand routing specification')
+    for entry in [spec['routine'], *spec['external_reviewers']]:
+        if type(entry) is not dict or set(entry) != {'model_id', 'effort', 'catalog'}:
+            raise IntelligenceError('Invalid AIand routing model entry')
+        validate_settings(entry['model_id'], entry['effort'], entry['catalog'], spec['max_output_tokens'])
+    # The runtime hashes the spec as a Document (no floats); refuse here so preparation cannot pass what startup refuses.
+    try:
+        Document.from_dict(spec)
+    except ContractError:
+        raise IntelligenceError('AIand routing specification is not a canonical document') from None
 
 
 class BudgetedOpenAI:
@@ -112,6 +140,21 @@ def _signature(result):
             sorted(Document.from_dict(f).payload for f in result.get('falsifiers', [])))
 
 
+class AuditedModel:
+    """Record a call before dispatch and its reply before verification, without headers/keys."""
+    def __init__(self, model, hook, stage):
+        self.model, self.hook, self.stage = model, hook, stage
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
+    def step(self, request, remaining_ms):
+        self.hook(dict(kind='MODEL_REQUEST', stage=self.stage, model=self.identity.record(), request=request.read()))
+        reply = self.model.step(request, remaining_ms)
+        self.hook(dict(kind='MODEL_RESPONSE', stage=self.stage, model=self.identity.record(), response=reply.read()))
+        return reply
+
+
 class RoutedAssessor:
     def __init__(self, *, routine, external_reviewers, openai, budget, make_assessor, clock_ms,
                  policy, artifacts, monotonic=time.monotonic):
@@ -140,7 +183,14 @@ class RoutedAssessor:
         except IntelligenceError:
             return dict(account=self.budget.account, external_only=True, reason='MODEL_BUDGET_UNAVAILABLE')
 
+    def assess_deferred(self, request, *, audit_hook):
+        """Keep timed-out stage workers owned until their actual calls and audit writes end."""
+        return self._assess(request, audit_hook=audit_hook, wait_for_workers=True)
+
     def assess(self, request):
+        return self._assess(request, audit_hook=getattr(self, 'audit_hook', None))
+
+    def _assess(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
@@ -169,15 +219,19 @@ class RoutedAssessor:
                 tool_allowance = min(tool_allowance, 3)  # leave independent review a retrieval budget
             stage['budget'] = dict(tool_calls=tool_allowance,
                                    deadline_ms=min(remaining, allowance or remaining))
-            assessor = self.make_assessor(model)
+            hook = audit_hook
+            assessor = self.make_assessor(AuditedModel(model, hook, label) if hook is not None else model)
             assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage)).read()
+            result = assessor.assess(Document.from_dict(stage), wait_for_worker=True).read() if wait_for_workers else \
+                assessor.assess(Document.from_dict(stage)).read()
             tools += result.get('budget_used', {}).get('tool_calls') or 0
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)
             if ref != sha256_hex(payload):
                 raise IntelligenceError('Routing artifact content address mismatch')
             stages.append(dict(stage=label, model=model.identity.record(), result=result, artifact=ref))
+            if hook is not None:
+                hook(dict(kind='STAGE', stage=label, result=result, artifact=ref))
             return result
 
         chosen = run(self.routine, 'routine', max(1, total//2))
@@ -266,10 +320,7 @@ class RoutedAssessor:
 def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts, secrets, budget_root,
                           transports=None):
     """Construct without network I/O. Spec bytes are pinned by the runtime config before this call."""
-    if spec.get('schema') != 'AIandRouting.v1' or spec.get('openai_model') != 'gpt-6.1-sol':
-        raise IntelligenceError('Unsupported routing schema or OpenAI model')
-    if type(spec.get('max_output_tokens')) is not int or not 0 < spec['max_output_tokens'] <= 16000:
-        raise IntelligenceError('Routing output limit must be 1..16000')
+    validate_routing_spec(spec)
     if not secrets.get('LARP_AIAND_API_KEY'):
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}

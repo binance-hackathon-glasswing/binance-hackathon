@@ -14,20 +14,28 @@ ENDPOINT = 'https://api.aiand.com/v1/chat/completions'
 MODELS = frozenset(('moonshotai/kimi-k3', 'zai-org/glm-5.3'))
 
 
+def validate_settings(model_id, effort, catalog, maximum):
+    """Pure validation shared by preparation and the provider constructor."""
+    if type(model_id) is not str or model_id not in MODELS:
+        raise IntelligenceError('AIand model must be an explicitly supported catalog ID')
+    if (type(catalog) is not dict or catalog.get('id') != model_id
+            or type(catalog.get('capabilities')) is not list
+            or 'reasoning' not in catalog['capabilities']
+            or type(catalog.get('reasoning_efforts')) is not list
+            or type(effort) is not str or effort not in ('low', 'high', 'max')
+            or effort not in catalog['reasoning_efforts']):
+        raise IntelligenceError('AIand catalog identity/effort mismatch')
+    if (type(maximum) is not int or any(type(catalog.get(k)) is not int
+                                      for k in ('max_output_tokens', 'context_window'))
+            or not 0 < maximum <= catalog['max_output_tokens'] < catalog['context_window']):
+        raise IntelligenceError('AIand catalog output/context bound invalid')
+
+
 class AIandChatModel(HostedModel):
     provider = 'aiand'
 
     def __init__(self, *, model_id, effort, catalog, transport=None, **kwargs):
-        if model_id not in MODELS:
-            raise IntelligenceError('AIand model must be an explicitly supported catalog ID')
-        if type(catalog) is not dict or catalog.get('id') != model_id or \
-                'reasoning' not in catalog.get('capabilities', []) or \
-                effort not in catalog.get('reasoning_efforts', []):
-            raise IntelligenceError('AIand catalog identity/effort mismatch')
-        maximum = kwargs.get('max_output_tokens', 16000)
-        if any(type(catalog.get(k)) is not int for k in ('max_output_tokens', 'context_window')) or \
-                not 0 < maximum <= catalog['max_output_tokens'] < catalog['context_window']:
-            raise IntelligenceError('AIand catalog output/context bound invalid')
+        validate_settings(model_id, effort, catalog, kwargs.get('max_output_tokens', 16000))
         self.effort = effort
         self.catalog_hash = digest('larp.aiand.catalog-model.v1', catalog)
         endpoint = kwargs.pop('endpoint', ENDPOINT)
