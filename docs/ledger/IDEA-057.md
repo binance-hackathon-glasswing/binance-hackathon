@@ -930,3 +930,30 @@ Pass criteria recorded before changed code executes:
    Update PR133 checklist without closing/merging it. AWS/host actions stay Yao's.
 
 Results and actual access limitations will be appended after execution.
+
+
+### V3-REL01 results — 2026-10-18 UTC
+
+- KMP-P2 fixed at `6955eaf`: per-POST durable dispatch recheck after preparation;
+  known-unsent refusals refund atomically, uncertain/sent work stays reserved.
+  Corrected red `9b5b7cd`:4 failures/2 controls; focused green85 tests/111 subtests.
+- Combined pushed `61a123a`: **2029 passed,6 skipped,2981 subtests**,174.77 s,
+  Linux/Python3.12.14/PostgreSQL14.24. Skips: external corpus1, actual systemd5;
+  Linux bubblewrap ran. No xfails/golden changes. Deviation rendering, dependency
+  check and offline recovery/audit demo pass. See the release record for commands,
+  log hash and the corrected manual-demo setup refusal.
+- Services/DEV-19 now select opt-in unsigned OpenAI Sol medium primary and
+  high-effort AIand review/fallback. Approved PR168 protocol/rubric/register and
+  public evidence carried from PR1338b0b238 without merging/closing133. No repeat
+  protocol approval. V3 zero permanent reserve is separate from legacy v2.
+- Reviewed already-merged165 and retained it in this latest integration candidate;
+  S1 activation/parameter adoption remains separate. PC-AWS06-RV1 reviews existing
+  empty-DB migration and limited primary IAM/TLS report with explicit limitations;
+  no new host checks or deployment. Gap report remains due after11:00 UTC/19:00 SGT.
+- Actual direct mirror push failed exit128/repository-not-found; actual workflow
+  dispatch failed HTTP404. This is a confirmed repository-access blocker despite
+  successful origin pushes. No new run/artifact/hash/freeze acceptance exists;
+  local results and the old7a0ea14 handoff ZIP do not replace the CI binary.
+
+Current evidence, inclusion decision, protocol provenance and remaining owners:
+[LLM_V3_RELEASE_20261018.md](../build/LLM_V3_RELEASE_20261018.md).

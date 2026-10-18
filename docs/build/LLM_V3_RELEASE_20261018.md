@@ -110,3 +110,44 @@ substitute a rebuilt local bundle, source ZIP or handoff-only ZIP.
 Initial mirror Git/API reads both return repository-not-found while the
 registered repository works. Actual push/dispatch outcomes and validation are
 recorded below when attempted. This document grants no CI/artifact acceptance.
+
+### Combined validation and actual mirror block
+
+Pushed validation source `61a123aa32af34f17e5640bbc9778293851e460e`:
+**2029 passed, 6 skipped, 2981 subtests passed**, 174.77 s, exit0, Linux /
+Python3.12.14 / pinned test lock / disposable PostgreSQL14.24. Three Linux
+bubblewrap tests ran. Five actual-systemd tests remain skipped because this
+container does not run systemd; one external recorded-response corpus is opt-in.
+No xfails, golden regeneration or changed acceptance thresholds. Command:
+
+```sh
+env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  PIP_CACHE_DIR=/workspace/.cache/pip \
+  LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test \
+  .venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider
+```
+
+Full raw log `/workspace/larp-cloud/llm-v3-release-20261018/full.log`, SHA-256
+`163d29469c38653bfe0540793279df6c05a35a15bcfea63097ece7932f7e2380`. Release-register tests, bundle/provenance
+regressions and PR165 strategy/integration/execution/signer cases pass in that
+run. Separate `tools/render_deviations.py --check`, dependency `pip check`,
+`git diff --check` and offline PostgreSQL recovery/audit demo pass. The first
+manual demo invocation omitted the required disposable DB variable and was
+refused before execution; supplying it passed. This is local verification, not
+mirror CI or actual provider/host qualification.
+
+Actual authorized mirror push of this SHA to
+`refs/heads/codex/llm-v3-trial-release-20261018` returned exit128:
+`remote: Repository not found.` Direct
+`gh workflow run runtime.yml --repo Cookiemunchrr/larp-ci-mirror --ref codex/llm-v3-trial-release-20261018`
+returned exit1 / HTTP404 for the workflow endpoint. The registered-repository
+push works. Asked for the existing GitHub connection's mirror repository access
+to be restored, without asking for a token or repeated release authorization.
+
+**Release status: CI/ARTIFACT BLOCKED, not frozen/accepted.** No new mirror run
+ID, original tarball, checksum, external manifest or verified new CA hash exists
+here. Do not reuse PC-AWS06's CA hash as verification of a nonexistent new bundle.
+Once access works, the release agent retries the direct push and dispatch, waits
+for all jobs green at the exact published SHA, downloads and verifies the original
+artifact and attaches those original bytes to a new GitHub release. AWS and host
+deployment remain with Yao. The pending 19:00 SGT gap report is separate.
