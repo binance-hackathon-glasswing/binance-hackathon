@@ -764,3 +764,14 @@ new threshold against6f377dd, correct the handoff/backlog/checklist to one curre
 protocol, preserve published budget history and PR133/126 open status, and verify
 all changed files remain documentation. No new application tests are needed for
 this documentation reconciliation; the earlier24/18 source-report checks stand.
+
+## KMP-01 — Keith's model/budget prerequisites (2026-10-18 UTC, prospective)
+
+The user requests PR167 routing/prompt/window review, a v3 full-credit budget/stop proposal for
+Keegan, blind matching/sampling, provider terms, quote handoff/continuation, and #27/profile/limiter
+proposals. Prospective acceptance KMP1–KMP8 is recorded in
+[MODEL_PREREQUISITES_20261018.md](../build/MODEL_PREREQUISITES_20261018.md) before new measurement
+or sampling. It grants no paid inference, wallet, AWS, host model activation or adoption authority.
+Private labels/complete provider captures remain outside Git; existing v2 confirmation is not v3
+approval. The user clarified that existing quote files are interim data, not evidence of continuous
+capture. Actual coverage and any authentication interruption must be reported, not assumed away.
