@@ -1076,3 +1076,12 @@ sidecar/embedded+external manifest/all files/CA/source/repository identity, and
 publish the original files through scoped private-mirror Actions if cloud asset
 upload remains401. Keep133/126 open and update the checklist/evidence. Review
 Yao's now-due fixed-window gap evidence separately, preserving any actual FAIL.
+
+
+PR174-R1 implementation b141074 fixes all three reproduced findings; focused
+152 tests/169 subtests PASS (4.02s). Preserve legacy fallback, exact paid I/O and
+reserved unknown costs. PC-GAP02-RV1 reviewed the now-completed fixed-window
+report/retained verification metadata on PR13348fb70d: retain raw FAIL and
+withheld explanation; DOJ96 actual errors cannot receive a historical-only
+waiver. Future source qualification and host/provider/start remain Yao's.
+Full prospective/verification/disposition: DOJ_TRIAL_CAP_FIXES_20261018.md.

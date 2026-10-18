@@ -238,3 +238,15 @@ item/page identity, checkpoint/restart and transport bounds with existing source
 regressions. Source review does not upgrade the failed Oct17–18 report or imply
 new observed coverage. New original release waits for exact-source Linux/all-job
 private CI; host installation/start and actual source/provider checks remain Yao.
+
+
+PC-GAP02-RV1 / PR174-R1: independent review of retained PC-GAP02 metadata
+(13348fb70d) accepts reported raw FAIL, no DOJ exemption and correctly withheld
+combined explanation. DOJ144 incomplete=48 OK/truncated+96 size errors;
+BIS96 transports=3 complete+93 historical-incomplete, eligible only for its own
+historical explanation. Owner's31-file/13-SSM/old-code reproduction is retained
+evidence, not another raw-byte reproduction here. New CURRENT_LISTING proof
+does not rewrite that failed window. Future actual source/restart/window checks
+remain Yao's. Malformed proof now forces current-report FAIL; focused source/
+trial/preparation/provider152 tests/169 subtests PASS at b141074. Full exact
+Linux/private CI/original release follows; no host or paid-provider action.

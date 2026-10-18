@@ -210,3 +210,60 @@ integration source. Yao retains P0/funding/rights, actual ledger setup/backup,
 source/report disposition, install/bind/activate and first-assessment/ACK checks.
 The old failed24h report is never rewritten. No host change, provider inference,
 wallet action, new release or PR merge was performed here. PR133 stays open.
+
+
+## PR174-R1 — independent review and corrections
+
+Review of published1dee43d and actual GitHub comments/reviews found no posted
+issue/inline comments or submitted reviews. Direct code review produced three
+reproducible findings. Prospective criteria b4abb08 and tests45cda3e/d373dde
+were pushed before execution. Red45cda3e: two actual-dispatch regressions fail
+and four malformed-proof subcases crash; one control passes.
+
+- R1-CAP: OpenAI settlement failure marked its wrapper budget_unavailable, but
+  a successful SQLite reread allowed AIand trial continuation. Fix b141074
+  checks that same primary accounting quarantine at every AIand transport
+  boundary, including later jobs in the router. Exact paid reply/artifacts and
+  conservative reservations remain retained; storage recovery cannot itself
+  reconcile uncertain settlement. V1/v2 external fallback is unchanged.
+- R1-CLOCK: migration can attach a trial to an unused ledger whose pacing
+  watermark is ahead of the new trial watermark. The shared trial guard now
+  honors the existing pacing CLOCK_ROLLBACK refusal too. No existing charge,
+  watermark or safety latch is cleared.
+- R1-SOURCE: non-object head proof crashed current report. It now counts as
+  corrupt proof/failed coverage and forces FAIL, even when a single malformed
+  proof is within healthy cadence tolerance. Legacy historical report remains
+  byte-for-byte unchanged for the same input.
+
+Focused pushed b141074: **152 passed,169 subtests**,4.02s; trial/pacing/legacy
+routing/providers/source/current+historical reports/model preparation.
+Full Linux/PostgreSQL/all-job CI and original bundle verification follow on a
+separately frozen release branch. All4 CI jobs must PASS, including actual
+systemd/Terraform/Docker/demo/both-role bundle checks. Publish original tarball,
+sidecar and manifest with actual CA/source/run identity; never substitute old
+d8aa7d5 or a local rebuild. PR133/126 stay open; merge174 normally after green.
+
+## PC-GAP02-RV1 — disposition of the completed Oct17–18 report
+
+Reviewed PR133 snapshot48fb70d's PC-GAP02 and machine-readable
+`gap-report-review-20261018.json`. Retained report SHA092c18e5…dfa5cf5 and
+poll snapshot18d6ec9e…bd1168 identify the installed bb46234 fixed24h window.
+Its recorded31-file/13-SSM verification and exact old-code reproduction were
+performed by the evidence owner; the private raw bytes are not in this cloud
+checkout, so this reviewer does not claim another raw-byte reproduction.
+
+Accept the reported **FAIL**,0 corrupt lines. DOJ144 incomplete polls comprise
+48 OK/truncated and96 actual RESPONSE_TOO_LARGE failures: historical-only
+exception is ineligible. BIS96 successful transports include3 report-complete
+and93 historical-incomplete; only BIS meets the scoped backfill-explanation
+conditions. Combined explained report was correctly withheld. Other sources'
+reported complete counts do not repair DOJ or qualify the whole Gate A.
+
+Disposition: do not apply a full-window DOJ waiver, rewrite logs or turn this
+window into PASS. PR174's bounded image repair/current-head scope addresses
+future ingestion, not those historical failures. Authorize this code/new-bundle
+work for unsigned trial preparation only. Yao must qualify actual post-install
+polls/restart/new observed window with retained raw+historical reports; a short
+post-fix check remains INCONCLUSIVE. SourceCoverage stays conservative and
+signed/final source acceptance remains open. No host action or new coverage
+observation was performed by this review.
