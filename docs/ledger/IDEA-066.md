@@ -213,3 +213,15 @@ successful asset upload, publish the prerelease with immutable repository links
 to docs/build/releases/larp-7a0ea14-handoff.zip and its checksum on the separate
 codex/release-handoff-7a0ea14 branch. This makes the requested handoff downloadable
 to repository readers without changing main/integration or original release bytes.
+
+PC-PKG01 result: published private-repository prerelease416264073 at
+https://github.com/binance-hackathon-glasswing/binance-hackathon/releases/tag/model-trial-7a0ea14
+(2026-10-18T05:57:24Z), draft=false, prerelease=true, not marked latest. Remote
+tag model-trial-7a0ea14 resolves to exact accepted7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce.
+Its notes link the ZIP/checksum at immutable commitf7f272d; the release has zero
+uploaded assets because uploads authentication remains401. Independently read
+the24776-byte ZIP back through the repository contents API: SHA256 matches
+646d89cefdafb607152ae734edcf05654285a1365bb4c39b4ddce4ec279330de.
+The ZIP is downloadable by repository readers via the linked file. It remains
+a handoff kit awaiting original CI binary, not the deployment archive. Source
+branch/main/integration and trial/host authority are unchanged by this publication.
