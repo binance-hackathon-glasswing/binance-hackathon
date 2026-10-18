@@ -227,3 +227,14 @@ next release gate. No goldens, paid calls, AWS/host/wallet changes or release.
 Results/hashes in ../build/evidence/doj-trial-cap-fixes-20261018.json. Yao retains
 P0/funding/source disposition/setup/install/start/ACK; Keith real usage/labels;
 Keegan peer review/CI/new binary. PR133 stays open; main checkout untouched.
+
+
+### PR174-R1 source review criteria — Oct18 UTC
+
+Owning cross-cutting criteria are in IDEA057 PR174-R1, pushed before new code
+execution. Non-object current-head proof must fail coverage without crashing;
+keep original historical report/failure counts. Inspect DOJ wire normalization,
+item/page identity, checkpoint/restart and transport bounds with existing source
+regressions. Source review does not upgrade the failed Oct17–18 report or imply
+new observed coverage. New original release waits for exact-source Linux/all-job
+private CI; host installation/start and actual source/provider checks remain Yao.

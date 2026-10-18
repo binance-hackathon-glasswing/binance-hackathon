@@ -1042,3 +1042,37 @@ provider calls. Signed/live use of this trial config refuses. Local final suite
 1630 passed/436 skips/2659 subtests; peer review/Linux CI/new release, Yao host/
 account qualification, actual evaluation/adoption and later preserving signed
 transition remain open. No ledger reset, deployment, paid inference or adoption.
+
+
+### PR174-R1 — prospective review/fix and new LLM release, Oct18 UTC
+
+User requests PR174 comments/mistakes fixed and a new original release in
+Keegan4/Keegan4-larp-ci-mirror. Reviewed published1dee43d and actual GitHub
+records: no issue/inline comments or submitted reviews currently exist. Direct
+review identifies three cases to reproduce before fixing:
+
+1. Shared accounting quarantine: after OpenAI settlement fails, its local
+   budget_unavailable flag persists but AIand's trial guard can reread healthy
+   SQLite and dispatch. Regression injects settlement failure after a synthetic
+   provider reply; no subsequent AIand POST may occur in that trial/router,
+   including later jobs. Preserve paid response provenance and full reservation;
+   legacy v1/v2 fallback remains unchanged.
+2. Clock watermark migration: an unused paced ledger can already carry a future
+   watermark when trial migration initializes a new trial watermark. AIand must
+   honor the pacing CLOCK_ROLLBACK block as well as trial clock/window/stops,
+   without clearing latches or refunding uncertain charges. Exercise preserving
+   migration and actual guarded dispatch.
+3. Source proof validation: non-object current-head proof in otherwise parseable
+   poll JSON must count as failed coverage, never crash the report or become a
+   PASS. Current/history scopes and raw historical failures remain distinct.
+
+Pass criteria: push regression changes before RED, then push fixes before GREEN;
+focused trial/routing/provider/source/report/preparation suites pass, followed
+by full available Linux/PostgreSQL regression and all4 exact-source private CI
+jobs (explicit systemd/Terraform/Docker/demo/both-role bundle checks). No golden
+changes, weakened bars, paid provider or host actions. Ordinary merges only.
+After green, merge174, download original CI artifact, verify ZIP digest, original
+sidecar/embedded+external manifest/all files/CA/source/repository identity, and
+publish the original files through scoped private-mirror Actions if cloud asset
+upload remains401. Keep133/126 open and update the checklist/evidence. Review
+Yao's now-due fixed-window gap evidence separately, preserving any actual FAIL.
