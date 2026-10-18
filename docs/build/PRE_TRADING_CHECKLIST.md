@@ -13,10 +13,16 @@ Current Yao receipt (PC-REL08, Oct18 10:36Z): original d8aa7d5 binary locally
 verified (195 source files/234 checksums); host still bb46234 deterministic shadow,
 healthy with62 audit chunks ACK and no model ledger. **New blocker PC-SRC01:**
 DOJ94 RESPONSE_TOO_LARGE failures since Oct17 19:00Z fall outside PC-GAP01.
-Do not explain these as pagination-only gaps. Actual fixed report remains due
-11Z/19SGT. **PC-CAP01:** $8 trial/$2.50 UTC-day admission enforcement still needs
+Do not explain these as pagination-only gaps. The later fixed-window result is
+recorded below in PC-GAP02. **PC-CAP01:** $8 trial/$2.50 UTC-day admission enforcement still needs
 an established method before paid work; the binary enforces account pacing.
 Yao reconfirms OpenAI US$48/AIand140+; AIand units/actual funding still unqualified.
+
+Fixed report now complete (PC-GAP02): located the19:00SGT local collector output,
+verified31 hashes/718,138 raw bytes and independently reproduced **FAIL**.
+DOJ96 RESPONSE_TOO_LARGE errors exclude PC-GAP01; BIS historical-only checks pass.
+No combined explained PASS. Collection/hash verification is done; Keegan review,
+DOJ repair/disposition and PC-CAP01 enforcement remain open.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -63,7 +69,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Confirm release bundle `7a0ea14` | Keegan | **Accepted for unsigned trial:** PC-REL01 / TR-AC2, based on PC-CI02's retained exact CI bundle/manifest/CA verification and independent source validation. Bundle SHA256 ff951451…5de06; manifest bb17b7ff…ca70a. This session could not independently download the private mirror artifact. See MODEL_TRIAL_HANDOFF_20261018.md |
 | Confirm the trial bars | Keegan | **Confirmed:** TR-AC2 accepts PR166 TRB-01A–E at6f377dd; unchanged operational thresholds plus corrected verdicts, recall/route coverage, spending boundaries/forecast and 72 unsigned observation hours. Seed/allocation frozen; actual measurements are pending |
 | Decide how `doj-press` and `fr-bis` pass the gap report | Keegan | **Decided PC-GAP01:** two exact historical-backfill explanations for Oct17 11:00Z–Oct18 11:00Z and the unsigned trial only, after raw cadence/error/rejection review. Keep raw/explained reports and hashes; runtime coverage stays INCOMPLETE; no full-source Gate A or signed acceptance. Incident JSON and limits in MODEL_TRIAL_HANDOFF_20261018.md |
-| 24 h gap report at 11:00 UTC (19:00 SGT); save its hash; send to Keegan | Yao Zhu | **Not due yet** (the fixed window ends Oct 18 11:00 UTC). Command and output location in the git-ignored `deploy/activation/oct18-run-sheet.md`; dry run PC-AWS10. Per PC-AWS11, report the PC-AWS09 blocked-archive period and the retained PERMANENT incident-backup row alongside it |
+| 24 h gap report at 11:00 UTC (19:00 SGT); save its hash; send to Keegan | Yao Zhu | **Collection/hash/local verification DONE (PC-GAP02):** raw FAIL, report SHA092c18e5…a5cf5; original718,138-byte snapshot hash verified. DOJ96 response-size errors exclude the blanket gap exception; BIS historical-only checks pass. Private evidence sharing/Keegan independent review and source repair/disposition remain open. Separate historical archive incident preserved |
 | After the report, bundle acceptance and Keith's inputs: install the bundle, start the trial, verify its first assessment | Yao Zhu | **Remaining:** actual fixed-window report/exception checks, P0 provider identity/terms/funding, P1 initialization using confirmed2,000,000 prior spend and in-flight headroom monitoring, P2 prepared/bound shadow config, installation/version event and first assessment. Release/bars/gap disposition are recorded in PC-REL01/TR-AC2/PC-GAP01 |
 
 **In parallel while waiting**
@@ -91,7 +97,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 
 SP-01 refresh Oct18: #165 reviewed/merged at817eb71 after combined-head local acceptance (2021 passed /9 skips /2981 subtests). Exact-release Linux/host qualification and real-cost parameter freeze remain; see B6 below.
 
-**Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A still needs its actual 24 h gap report and review; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. Oct 18 02:46 UTC read-only recheck is healthy after the daily backup superseded that historical failure (PC-AWS11); #163 still needs release/host qualification.
+**Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A now has its actual 24 h report (PC-GAP02, FAIL); repair/disposition and independent review remain; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. Oct 18 02:46 UTC read-only recheck is healthy after the daily backup superseded that historical failure (PC-AWS11); #163 still needs release/host qualification.
 
 ## Isaac immediate points — separate PRs (2026-10-18)
 
@@ -221,7 +227,7 @@ These were missing from every list; each one is needed for the LLM to be in the 
 Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its approved protocol/rubric/register and public manifests are carried on the V3-REL01 release branch; the complete checklist/quote handoff remains here. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
 
 - [x] **Yao Zhu:** verify receipt of the supplied original d8aa7d5 bundle against source/sidecar/manifest/CA (PC-REL08:195 files/234 checksums). Installation is separate.
-- [ ] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures and retain the final fixed-window report; Keegan independently reviews the repair/disposition before the switch.
+- [ ] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures; final report/raw retention is complete in PC-GAP02. Keegan independently reviews the repair/disposition before the switch.
 - [ ] **Yao Zhu:** record actual v3 trial-limit enforcement and host/provider qualification under approved PR168/KMP-BUD01 before paid testing. New unsigned release d8aa7d5, KMP-P2 fix, services/DEV-19 and exact-SHA CI/original-artifact handoff are complete (V3-REL02). Enforce US$8 total/US$2.50 UTC-day caps with maximum in-flight costs; without it paid v3 testing waits. No repeat protocol approval. PR133 stays open.
 
 [Model prerequisites](MODEL_PREREQUISITES_20261018.md) and its linked budget,
@@ -264,7 +270,8 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [x] **Keegan:** review and merge the incident-backup fix #163 (IDEA-082). Merged 2026-10-18 at `2b4f397`; exact-head mirror39091506616 passes all four jobs. The combined `7a0ea14` bundle includes it; release handoff accepted in PC-REL01; the fixed release's hosted incident-backup ACK remains open (IDEA-066 PC-CI02).
 - [x] **Yao Zhu:** after Oct 18 00:00 UTC, check archive health. Done 02:46 UTC over SSM with read-only SQL: healthy, 00:00 daily backup ACK, latest anchor ACK, all 44 audit chunks ACK, no HALT or delivery breach (IDEA-066 PC-AWS11). Historical incident backup remains PERMANENT; #163 still needed.
 - [x] **Keegan:** decide DOJ/BIS gap treatment. Done PC-GAP01: fixed-window historical-backfill explanations for the unsigned trial, retaining raw reports, actual error/cadence checks and INCOMPLETE runtime coverage; see MODEL_TRIAL_HANDOFF_20261018.md. No signed/final source acceptance.
-- [ ] **Yao Zhu:** after 24 h of ingestion, produce the gap report on `primary` (`python -m larp.sources.live report --from … --to …`) and send it to Keegan. **PC-REL08 pre-end check:** DOJ has RESPONSE_TOO_LARGE faults outside the approved PC-GAP01 historical exception; retain raw failures and do not manufacture an explained PASS. PC-AWS10 remains the earlier 4.7h command rehearsal. Exact command and output location in `deploy/activation/oct18-run-sheet.md`.
+- [x] **Yao Zhu:** collect/hash the fixed Oct17 11Z–Oct18 11Z report and raw snapshot. PC-GAP02 verifies all31 hashes and reproduces raw FAIL; DOJ96 RESPONSE_TOO_LARGE errors remain unexplained. No combined explained report was produced.
+- [ ] **Yao Zhu:** supply the retained private fixed-window evidence to Keegan for his independent source/report review; published sanitized report hashes/results are in PC-GAP02.
 - [ ] **Keegan:** review Gate A item by item in IDEA-042, using the gap report and Yao Zhu's host reports.
 - [ ] **Yao Zhu:** crash tests at each execution step on the host (DR-04, DR-05), then switch the runtime to signed rehearsal mode.
 - [ ] **Isaac:** if not done on Oct 20: check the runtime's first approve plus swap on chain inside the rehearsal buy window (Oct 21 00:00 – Oct 22 00:00 UTC).

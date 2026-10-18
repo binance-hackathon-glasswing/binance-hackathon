@@ -6,6 +6,18 @@ supersedes the older conversational `aws-deployment-resume` handoff and stale
 v2-only instructions for the next trial. Do not repeat completed protocol/key/
 migration work or ask for already granted approval.
 
+## PC-GAP02 update — fixed report located and verified after19:00SGT
+
+Report collection is done: ignored gap-report-20261018T110022718213Z contains
+raw24h report and718,138-byte exact original log snapshot. All31 hashes verify;
+raw report independently reproduces from original bb46234 code. Verdict FAIL:
+DOJ96 RESPONSE_TOO_LARGE errors exclude PC-GAP01; BIS historical-only checks
+pass. Combined explained report correctly withheld. Do not ask Yao to rerun or
+resupply already local files. See IDEA066 PC-GAP02 and sanitized
+build/evidence/gap-report-review-20261018.json for full hashes/results.
+Yao source repair/private sharing and Keegan independent review remain open;
+PC-CAP01/account/provider/installation/start remain pending. No new host action.
+
 ## Continuation update — PC-REL08, Oct18 10:36–10:39 UTC
 
 This update supersedes the older pending-release/PC-AWS06-review statements

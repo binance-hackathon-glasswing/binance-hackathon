@@ -1033,3 +1033,47 @@ slices are evidence/docs only, with no unnecessary application tests. No AWS,
 wallet key, signing/transaction, model/official-log action. Parent133 is a
 coordination record; none of the child PRs is silently merged. Open ownership is
 in the checklist's "Isaac immediate points" table and each child ledger entry.
+
+
+## PC-GAP02 — completed fixed-window evidence found and verified, Oct18
+
+Yao clarifies that the data are already in the VS Code repository. Found the
+completed19:00SGT collector output under ignored
+`deploy/activation/gap-report-20261018T110022718213Z/`; do not rerun collection
+or request these files again. It covers Oct17 11:00Z–Oct18 11:00Z (24h), from
+installed bb46234. Verified all31 saved file hashes,13 successful SSM results,
+718,138 original poll-log bytes and snapshot hash. Independently reproduced
+raw report exactly using original pushed bb46234 iso/gap_report functions over
+those saved bytes; no changed runtime code, host/API calls or model spend.
+
+Raw report **FAIL**,0 corrupt lines. Each of five EDGAR issuers has288 complete
+polls; EC96, FR-public-inspection96 and SEC-press144 complete, all without gaps
+or failed polls. DOJ144 report-incomplete polls (48 OK/truncated plus96 actual
+SOURCE_UNAVAILABLE/RESPONSE_TOO_LARGE),0 report-complete polls and1 full-window
+unexplained gap. Actual DOJ size failures span Oct17 19:00:53.025Z through
+Oct18 10:50:53.046Z. BIS96 OK transport polls, of which3 are report-complete and
+93 truncated; four report gaps reflect historical pagination. Do not conflate
+the report's incomplete-poll count with transport errors.
+
+PC-GAP01 preconditions: DOJ bad_polls96/max start gap600001ms => **ineligible**;
+BIS bad_polls0/max gap913038ms => eligible for its historical-only explanation.
+Collector correctly withheld the combined explained report; no explained PASS
+exists. Applying both full-window incident entries despite DOJ errors would hide
+a real failure. PC-SRC01 investigation and Keegan's review/disposition remain
+open; collection and local verification are now complete. Separate PC-REL08
+archive evidence stays healthy at its prior10:36Z snapshot, with the historical
+PERMANENT backup retained; this source report is no new archive inspection.
+
+Hashes (complete machine-readable evidence in
+../build/evidence/gap-report-review-20261018.json):
+- Raw report092c18e555d73f34be6b95d3c02b80c470c31073539fce0836dfa22abdfa5cf5.
+- Original poll snapshot18d6ec9eb70591198befe43a7b765f76a713163060d2c7fff635df1bb4bd1168.
+- Exception checks94ce385e392984cfd3b4edee0c20c474c143a302dffdcbef6ecd7ad3f97f2e35.
+- Proposed incidentsabe860ee0bd95a248f8094b9790a62f51b4950e707da7c634186378b01f98bae
+  (retained, not applied to mask DOJ).
+
+Checklist splits completed raw collection/hash/local verification from pending
+private evidence sharing/independent Keegan review/source repair. Backlog keeps
+only remaining PC-SRC01 work. PC-CAP01/account/provider/install/start and all
+signed gates remain open. PR133 stays open; Claude outputs/ untouched. No direct
+message to Keegan or new host action was performed.
