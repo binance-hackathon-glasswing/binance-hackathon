@@ -196,3 +196,12 @@ remain open. Updated the source-review handoff to use current merged code rather
 than waiting for PR130. Validation: evidence JSON parses, ledger IDs are unique,
 no conflict markers, and `git diff --check` passes. Documentation-only review;
 no application, provider, wallet, host or AWS action is required or performed.
+
+## SP-01 — source acquisition recheck (2026-10-18)
+
+PR133 criteria946edfc precede public requests. Candidate Code403/Cloudflare and
+Sourcify404/no verified match at07:44UTC; exact UTC/status/response hashes in
+../build/evidence/router-source-recheck-20261018.json. No source/ABI obtained or
+independent review invented. Keith handoff file hashes verify; route check
+NOT_RUN until source/review. PR139 remains draft; #138/#33/signing remain blocked.
+No AWS, key access, transaction, model/receiver call or vendor message.

@@ -108,3 +108,31 @@ the team supporting the router returned by the Web3 API; it has **not** been sen
 Do not mark these guarantees true on the strength of an unsupported statement
 or decompiled bytecode. Source provenance, source-to-code binding and independent
 review remain required.
+
+## SP-01 recheck — 2026-10-18 07:44UTC
+
+User requested obtaining source or recording the exact blocker. Bounded public
+reads after pushed SP-01/T1 criteria946edfc are retained in
+[evidence/router-source-recheck-20261018.json](evidence/router-source-recheck-20261018.json).
+System curl with TLS verification reached the candidate facet Code page:
+HTTP403, Cloudflare challenge,5549bytes, body hash
+02abae28a7f42917badf2c92803bc42706aacacec7df35ebda0167df0965a263.
+Sourcify v2: HTTP404,125bytes, all match fields null, hash
+d7ab73b48ed5ffaad1ab9898b249500c806f723b81eb2e4f3d908705cbbb0a0c.
+The initial Python transport had no CA file and received no HTTP bodies; it
+did not establish endpoint availability or verification status. No TLS bypass.
+
+No verified source/ABI, dispatch/helper/deployed-code binding or independent
+four-guarantee review was obtained. The403 does not prove the candidate is
+unverified; the old router-unverified finding remains Isaac's attributed browser
+evidence. Exact-address web search and checked LiquidMesh overview did not
+supply attributable chain56 source. Keep this PR draft, #138/#33 open and signing
+blocked. No compiler/signature/field path/upgrade guarantee has been invented.
+
+Keith's interim handoff is now in PR133: all29 file hashes/lengths verify;15
+latest successful BUY/SELL/requote artifacts cover all five stock directions.
+**Router check NOT_RUN** until truthful source evidence and Keegan's actual
+independent review exist. A source export from a permitted ordinary browser or
+the existing vendor-request draft remains the next action; no vendor message
+was sent. Current source, fee, native and gas findings/owner decisions are
+recorded in PR133's docs/build/SIGNED_PREREQUISITES_20261018.md (SP-01).
