@@ -33,8 +33,11 @@ class Register(unittest.TestCase):
     def test_r1_services_list(self):
         services = validate_services(load(SERVICES))
         pending = [s for s in services['services'] if s['status'] == 'PENDING_DECISION']
-        # B8 remains open. Isaac selected the dev balance RPCs; deployment/host checks remain provisioning.
-        self.assertEqual([s['service_id'] for s in pending], ['assessor-model'])
+        # V3 trial providers selected; host qualification and final adoption remain separate.
+        self.assertEqual(pending, [])
+        model = next(s for s in services['services'] if s['service_id'] == 'assessor-model')
+        self.assertEqual(model['selection_scope'], 'UNSIGNED_V3_TRIAL')
+        self.assertEqual(model['status'], 'PROVISIONING')
         rpc = next(s for s in services['services'] if s['service_id'] == 'bsc-rpc')
         self.assertEqual(rpc['status'], 'PROVISIONING')
         self.assertEqual(rpc['selection_scope'], 'DEVELOPMENT_BALANCE_READS_ONLY')
@@ -44,6 +47,7 @@ class Register(unittest.TestCase):
         with self.assertRaises(ContractError):
             validate_services(broken)
         broken = copy.deepcopy(services)
+        broken['services'][4].update(status='PENDING_DECISION', candidates=['synthetic'])
         del broken['services'][4]['fallback']
         with self.assertRaises(ContractError):
             validate_services(broken)

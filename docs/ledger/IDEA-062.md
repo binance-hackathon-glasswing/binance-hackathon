@@ -165,3 +165,13 @@ provider-policy clearance, release/host acceptance or activation is inferred.
 SP-NET D2 delivery: dedicated [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171),
 OPEN against PR133's checklist branch. Ready for review; no merge/deploy was
 requested here. Provider compatibility/adoption/host gates remain separate.
+
+
+SP-NET D2 parent refresh (Oct18): normal merge of PR133 ab4d57f preserves the
+new signer PR176/source-retrieval handoff and latest approved v3/release records.
+Resolve the backlog insertion conflict with both the new signer paragraph and
+this PR's already-authorized signed/live scope; do not restore the superseded
+review-only approval blocker. The unique application delta remains the same
+routes.py purpose/comment text verified in the40-test/48-subtest run; no new
+client/network/IAM/firewall/runtime setting or AWS operation is introduced.
+No new runtime test acceptance is claimed for this documentation merge.

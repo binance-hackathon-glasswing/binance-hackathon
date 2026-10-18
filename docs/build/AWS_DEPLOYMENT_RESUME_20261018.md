@@ -1,10 +1,24 @@
 # AWS deployment resume — PC-HO01 / aws-deployment-resume
 
+**LATEST HANDOFF:** [AWS_DEPLOYMENT_RESUME_20261018_LATE.md](AWS_DEPLOYMENT_RESUME_20261018_LATE.md) supersedes older release/cap/report snapshots below. PR174 repairs and original86b1476 release are delivered; local supplied uncompressed tar still needs verification. Read the late handoff first.
+
 Snapshot: 2026-10-18 ~07:46 UTC (15:46 SGT). Refresh GitHub and host state on
 resume; this is not a new host inspection. User is **Yao Zhu**. This record
 supersedes the older conversational `aws-deployment-resume` handoff and stale
 v2-only instructions for the next trial. Do not repeat completed protocol/key/
 migration work or ask for already granted approval.
+
+## PC-GAP02 update — fixed report located and verified after19:00SGT
+
+Report collection is done: ignored gap-report-20261018T110022718213Z contains
+raw24h report and718,138-byte exact original log snapshot. All31 hashes verify;
+raw report independently reproduces from original bb46234 code. Verdict FAIL:
+DOJ96 RESPONSE_TOO_LARGE errors exclude PC-GAP01; BIS historical-only checks
+pass. Combined explained report correctly withheld. Do not ask Yao to rerun or
+resupply already local files. See IDEA066 PC-GAP02 and sanitized
+build/evidence/gap-report-review-20261018.json for full hashes/results.
+Yao source repair/private sharing and Keegan independent review remain open;
+PC-CAP01/account/provider/installation/start remain pending. No new host action.
 
 ## Continuation update — PC-REL08, Oct18 10:36–10:39 UTC
 

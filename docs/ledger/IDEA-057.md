@@ -963,3 +963,251 @@ to be increased. All four jobs have empty step lists (three failed, one
 cancelled). This is the existing account-level CI gate, not a tested product
 failure or CI acceptance; the new head still needs accepted mirror/Linux checks
 before release. PR133 is verified OPEN at `e9e07b1`.
+
+
+### V3-REL01 — prospective unsigned release criteria, 2026-10-18 UTC
+
+User authorizes the next unsigned trial, direct mirror push/dispatch and ordinary
+merges; keep PR133 open. Base integration `817eb71` already merges PR165 and
+PR167. Adopt Keith's protocol from merged PR168 / PR133 snapshot
+`8b0b2381d82d0c596b3ccc33b50579dd159fa78b`, approved by Yao in PC-REL05;
+no repeated approval. Old `7a0ea14` and its documentation ZIP are not this binary.
+
+Pass criteria recorded before changed code executes:
+
+1. KMP-P2: check the durable paced budget immediately before the actual OpenAI
+   transport, after payload/artifact/header preparation. Admission at end−1 ms
+   followed by dispatch preparation at end or end+1 must produce zero OpenAI
+   POSTs, a temporary WINDOW_ENDED refusal and a durable zero-charge settlement
+   for that known-unsent reservation; no external-only latch is cleared/created.
+   Recheck clock rollback and concurrent safety latches. Before-end calls still
+   dispatch and settle; transport timeouts/unknown usage retain their reservation.
+   Missing/broken accounting fails closed without inventing a refund. Preserve
+   v1/v2 behavior and assessment deadline controls. Run a pushed red regression,
+   then pushed implementation and focused routing/provider/budget/audit checks.
+2. Declare OpenAI GPT-6.1 Sol medium primary and high-effort AIand Kimi K3 then
+   GLM-5.3 review/fallback in services and DEV-19, as an opt-in unsigned v3 trial.
+   Import approved protocol/rubric/rights with source revision; v3 uses US$50
+   total, US$2 owner-reported prior spend, zero permanent reserve and cumulative
+   pacing. Preserve legacy v2's separate limits and unmeasured trial verdicts.
+3. Review already-merged PR165 against its integration parent; retain it if
+   focused execution-bound tests and combined Linux/PostgreSQL regression pass.
+   Preserve proposed S1 parameters and unsigned scope, without adopting S1.
+4. Full available Linux/PostgreSQL14 suite and release/deviation checks pass;
+   enumerate skips. All changed executable code/config/tests are committed and
+   pushed before execution. No provider spend, secret reads or host changes.
+5. Push the frozen branch directly to Cookiemunchrr/larp-ci-mirror and dispatch
+   runtime.yml ourselves. Freeze only with green all-job CI on the same SHA,
+   then download original host-bundle artifact, verify checksum/manifest/source
+   commit and CA hash, and record run ID. Do not replace the deployment binary
+   with a local rebuild, GitHub source archive or handoff-only ZIP. An actual
+   access refusal is an external blocker, not CI acceptance. Initial read-only
+   Git and API checks both returned repository-not-found; still attempt writes.
+6. Review PC-AWS06 migration/roles/TLS evidence as reported, compare relevant
+   source changes and distinguish empty-DB/primary checks from signer/populated
+   upgrade/new-release qualification. Review Oct17 11Z–Oct18 11Z gap report only
+   when Yao supplies it after Oct18 11:00 UTC; pending report does not block build.
+   Update PR133 checklist without closing/merging it. AWS/host actions stay Yao's.
+
+Results and actual access limitations will be appended after execution.
+
+
+### V3-REL01 results — 2026-10-18 UTC
+
+- KMP-P2 fixed at `6955eaf`: per-POST durable dispatch recheck after preparation;
+  known-unsent refusals refund atomically, uncertain/sent work stays reserved.
+  Corrected red `9b5b7cd`:4 failures/2 controls; focused green85 tests/111 subtests.
+- Combined pushed `61a123a`: **2029 passed,6 skipped,2981 subtests**,174.77 s,
+  Linux/Python3.12.14/PostgreSQL14.24. Skips: external corpus1, actual systemd5;
+  Linux bubblewrap ran. No xfails/golden changes. Deviation rendering, dependency
+  check and offline recovery/audit demo pass. See the release record for commands,
+  log hash and the corrected manual-demo setup refusal.
+- Services/DEV-19 now select opt-in unsigned OpenAI Sol medium primary and
+  high-effort AIand review/fallback. Approved PR168 protocol/rubric/register and
+  public evidence carried from PR1338b0b238 without merging/closing133. No repeat
+  protocol approval. V3 zero permanent reserve is separate from legacy v2.
+- Reviewed already-merged165 and retained it in this latest integration candidate;
+  S1 activation/parameter adoption remains separate. PC-AWS06-RV1 reviews existing
+  empty-DB migration and limited primary IAM/TLS report with explicit limitations;
+  no new host checks or deployment. Gap report remains due after11:00 UTC/19:00 SGT.
+- Actual direct mirror push failed exit128/repository-not-found; actual workflow
+  dispatch failed HTTP404. This is a confirmed repository-access blocker despite
+  successful origin pushes. No new run/artifact/hash/freeze acceptance exists;
+  local results and the old7a0ea14 handoff ZIP do not replace the CI binary.
+
+Current evidence, inclusion decision, protocol provenance and remaining owners:
+[LLM_V3_RELEASE_20261018.md](../build/LLM_V3_RELEASE_20261018.md).
+
+
+V3-REL01 published as [PR169](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/169).
+PR133 checklist updated at eeddbed and verified OPEN/unmerged. PR169 organization
+run39111509565 on0441806 ran zero steps across all four jobs; runtime and
+host-bundle annotations confirm account payments/spending-limit block (#98).
+PR169 remains open pending required CI. User asked whether mirror access is
+still needed; fresh Git/API reads again return repository-not-found/HTTP404.
+It remains required for direct CI dispatch and original artifact delivery,
+not for source/testing work already complete. No AWS access is requested.
+
+
+### V3-REL02 — prospective private-mirror CI and original-artifact delivery
+
+User explicitly redirects CI to their private repo. Verified API/Git access and
+push permission on Keegan4/Keegan4-larp-ci-mirror with active runtime.yml.
+Cookiemunchrr access is no longer needed for the selected route. Before running
+CI, push this record and exact candidate normally to origin and that mirror.
+Pass: all four exact-SHA jobs green including runtime/systemd/Terraform and
+both-role host provisioning smoke; original artifact downloaded; sidecar,
+external/internal manifest, every file hash, source/build/registered repository/
+mirror origin, BUNDLE.env and CA verified. Publish original binary/sidecar/
+manifest plus run ID and hashes to a new unsigned GitHub release. No rebuild
+or old handoff ZIP substitution. Merge169 ordinarily after green; keep133/126
+open and update133 with results. Gap report remains pending after19:00 SGT.
+Detailed prospective criteria: docs/build/LLM_V3_RELEASE_20261018.md V3-REL02.
+
+
+## V3-REL02 — completed unsigned release and original artifacts
+
+User redirected CI to their private mirror. Frozen source
+`d8aa7d53e5e27543135f8729ff7a7afd4450278a` (includes165/167 and KMP-P2 fix) is accepted
+for the unsigned v3 trial on this verified evidence:
+
+- [Private mirror run39111854179](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179): all four jobs PASS.
+  Python3.12.15/PostgreSQL14.24:2029 passed,6 skipped,2981 subtests (423.47 s);
+  actual-systemd5 tests/5 subtests separately PASS. Both Terraform jobs, offline
+  demo, restricted Docker and both-role offline bundle provisioning PASS.
+- Original artifact12129754965 independently downloaded; ZIP digest verified,
+  external/embedded manifest equal; all195 manifest files and234 full bundle
+  checksums verified. Registered repository stays the challenge repo and
+  build_origin honestly names Keegan4's mirror. No local binary rebuild.
+- Original `larp-d8aa7d53e5e2-x86_64.tar.gz` (98,379,380 bytes) SHA-256:
+  `9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89`.
+- External/embedded manifest SHA-256:
+  `8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0`.
+- Actual packaged RDS CA SHA-256 (freshly checked from this bundle):
+  `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b`.
+- [Published GitHub prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5), tag pinned to the frozen
+  source, has six real uploaded assets: original tarball/sidecar/manifest,
+  VERIFICATION.json, BUNDLE.env and README. Asset API sizes/digests verified.
+  Direct cloud uploads returned401; separate publishing-only branch4e7159b
+  reverified and uploaded the same original bytes through a scoped mirror
+  Actions token in [publication run39112659498](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39112659498),
+  PASS. This job did not replace acceptance CI or rebuild the binary. The
+  unused empty challenge-repo draft was deleted. Org billing remains unfixed.
+- PR169 merged normally at95f6a8f after green CI. Source branch/tag stay frozen;
+  these result-only docs change no manifested runtime file. PR133/126 stay open.
+
+[Machine-readable evidence](../build/evidence/llm-v3-release-20261018.json) records
+identities, checksums, job URLs and remaining owners. Original sendable folder
+and ZIP: `/workspace/exports/larp-d8aa7d53e5e2-unsigned-v3` and matching `.zip`.
+They contain the actual new deployment binary, not a handoff-only substitute.
+
+Release-agent code/review/build/handoff work is complete. Yao retains actual
+provider/rights/funding checks, in-flight trial stop-cap enforcement before
+paid testing, AWS/host installation/binding/activation. Keith retains actual
+usage forecast and blind labels; team retains adoption. Keegan reviews Yao's
+fixed-window gap report after it is supplied after Oct18 19:00 SGT. No future
+gap report, paid provider calls or AWS/host deployment are claimed here.
+
+
+## PC-FIX01 — opt-in unsigned trial caps (2026-10-18)
+
+Yao requests ledger-enforced trial total/UTC-day stops and DOJ/report readiness
+for Keegan PR review/new release. Code and synthetic verification are in
+IDEA-066 PC-FIX01 and ../build/DOJ_TRIAL_CAP_FIXES_20261018.md. New trial example
+hash a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d
+is separate from legacy/preferred examples. All attempts/reservations/unknowns
+count, dispatch-day attribution survives settlement, existing latches remain,
+and stale binaries/config omissions refuse. Trial expiry/stops block new paid
+provider calls. Signed/live use of this trial config refuses. Local final suite
+1630 passed/436 skips/2659 subtests; peer review/Linux CI/new release, Yao host/
+account qualification, actual evaluation/adoption and later preserving signed
+transition remain open. No ledger reset, deployment, paid inference or adoption.
+
+
+### PR174-R1 — prospective review/fix and new LLM release, Oct18 UTC
+
+User requests PR174 comments/mistakes fixed and a new original release in
+Keegan4/Keegan4-larp-ci-mirror. Reviewed published1dee43d and actual GitHub
+records: no issue/inline comments or submitted reviews currently exist. Direct
+review identifies three cases to reproduce before fixing:
+
+1. Shared accounting quarantine: after OpenAI settlement fails, its local
+   budget_unavailable flag persists but AIand's trial guard can reread healthy
+   SQLite and dispatch. Regression injects settlement failure after a synthetic
+   provider reply; no subsequent AIand POST may occur in that trial/router,
+   including later jobs. Preserve paid response provenance and full reservation;
+   legacy v1/v2 fallback remains unchanged.
+2. Clock watermark migration: an unused paced ledger can already carry a future
+   watermark when trial migration initializes a new trial watermark. AIand must
+   honor the pacing CLOCK_ROLLBACK block as well as trial clock/window/stops,
+   without clearing latches or refunding uncertain charges. Exercise preserving
+   migration and actual guarded dispatch.
+3. Source proof validation: non-object current-head proof in otherwise parseable
+   poll JSON must count as failed coverage, never crash the report or become a
+   PASS. Current/history scopes and raw historical failures remain distinct.
+
+Pass criteria: push regression changes before RED, then push fixes before GREEN;
+focused trial/routing/provider/source/report/preparation suites pass, followed
+by full available Linux/PostgreSQL regression and all4 exact-source private CI
+jobs (explicit systemd/Terraform/Docker/demo/both-role bundle checks). No golden
+changes, weakened bars, paid provider or host actions. Ordinary merges only.
+After green, merge174, download original CI artifact, verify ZIP digest, original
+sidecar/embedded+external manifest/all files/CA/source/repository identity, and
+publish the original files through scoped private-mirror Actions if cloud asset
+upload remains401. Keep133/126 open and update the checklist/evidence. Review
+Yao's now-due fixed-window gap evidence separately, preserving any actual FAIL.
+
+
+PR174-R1 implementation b141074 fixes all three reproduced findings; focused
+152 tests/169 subtests PASS (4.02s). Preserve legacy fallback, exact paid I/O and
+reserved unknown costs. PC-GAP02-RV1 reviewed the now-completed fixed-window
+report/retained verification metadata on PR13348fb70d: retain raw FAIL and
+withheld explanation; DOJ96 actual errors cannot receive a historical-only
+waiver. Future source qualification and host/provider/start remain Yao's.
+Full prospective/verification/disposition: DOJ_TRIAL_CAP_FIXES_20261018.md.
+
+
+## PR174-REL01 — new original LLM bundle delivered
+
+PR174-R1 fixes and frozen source `86b14761324faeb8f57df5c0d86ff00320b4361c` passed
+[private mirror39126353379](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379), all4 jobs PASS. Full Linux/
+Python3.12.15/PostgreSQL14.24:2064 passed,6 skipped,2992 subtests,236.95s;
+actual systemd5 tests/5 subtests separately PASS. Terraform, offline demo,
+restricted Docker and both-role bundle provisioning PASS. Local same-source
+Linux2064/6/2992 passed in173.13s. Skips: external corpus1 plus5 systemd cases
+exercised separately. No xfails, golden changes or weakened acceptance checks.
+
+PR174 merged normally at `100d49327f4f50e13ff4c16f297b1acccf187496` after green CI and
+original-artifact verification. No issue/inline comments or submitted reviews
+existed at either inspection; the three direct-review findings and regressions
+were corrected before release. Frozen source/tag stay unchanged.
+
+[Published unsigned LLM prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476)
+has six actual assets: original tarball, original sha256 sidecar, external
+manifest, VERIFICATION.json, BUNDLE.env and README. Dedicated publication-only
+[run39126901213](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126901213)
+reverified/uploaded originals using the mirror's scoped Actions token. It did
+not rebuild the bundle or replace acceptance CI. Tag/source and asset API
+sizes/digests verified. Organization billing is not claimed fixed.
+
+| Verified original | SHA-256 |
+|---|---|
+| `larp-86b14761324f-x86_64.tar.gz` (98,383,598 bytes) | `277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343` |
+| External/embedded manifest | `0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+Original artifact12135774607 ZIP digest verified;196 manifested source files
+and235 full-bundle checksums checked. Registered repository stays the challenge
+repo; build_origin honestly names the Keegan4 mirror. The packaged trial config
+hash is `a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d`.
+Yao must explicitly prepare/pin this capped unsigned trial file; the legacy
+preferred file remains separate. No ledger reset, policy removal or automatic
+signed adoption is authorized. [Machine-readable evidence](../build/evidence/pr174-release-20261018.json).
+
+PR133/126 stay open. Code/review/CI/new-original-bundle work is complete. Yao
+retains private provider/account/funding/rights checks, preserving ledger setup,
+host install/bind/activate, actual post-fix polls/restart/new observed window
+and first assessment/receiver ACK. Keith retains actual usage/labels; team
+retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
+raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
+is claimed. These result-only records change no manifested runtime file.

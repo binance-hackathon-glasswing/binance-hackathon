@@ -1,5 +1,9 @@
 # IDEA-066 — Gate A inventory and offline package qualification
 
+PC-FIX01 (2026-10-18, Yao): requested DOJ/source-report and atomic unsigned-trial
+cap corrections for Keegan review/new release. Prospective acceptance is in
+../build/DOJ_TRIAL_CAP_FIXES_20261018.md; no runtime/host adoption implied.
+
 - Date / owner: 2026-10-16 SGT / Isaac with Codex; runtime/deployment review: Keegan.
 - Baseline: `eda2ed2`, fetched from `codex/system-testing-20261012`; PR87 and the Gate A assembly are already merged.
 - Issues: [#127](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/127) tracks hosted qualification; [#128](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/128) covers the offline package check. Existing #32/#49/#92/#98/#118–120 keep their own acceptance criteria.
@@ -1033,3 +1037,363 @@ slices are evidence/docs only, with no unnecessary application tests. No AWS,
 wallet key, signing/transaction, model/official-log action. Parent133 is a
 coordination record; none of the child PRs is silently merged. Open ownership is
 in the checklist's "Isaac immediate points" table and each child ledger entry.
+
+
+## PC-GAP02 — completed fixed-window evidence found and verified, Oct18
+
+Yao clarifies that the data are already in the VS Code repository. Found the
+completed19:00SGT collector output under ignored
+`deploy/activation/gap-report-20261018T110022718213Z/`; do not rerun collection
+or request these files again. It covers Oct17 11:00Z–Oct18 11:00Z (24h), from
+installed bb46234. Verified all31 saved file hashes,13 successful SSM results,
+718,138 original poll-log bytes and snapshot hash. Independently reproduced
+raw report exactly using original pushed bb46234 iso/gap_report functions over
+those saved bytes; no changed runtime code, host/API calls or model spend.
+
+Raw report **FAIL**,0 corrupt lines. Each of five EDGAR issuers has288 complete
+polls; EC96, FR-public-inspection96 and SEC-press144 complete, all without gaps
+or failed polls. DOJ144 report-incomplete polls (48 OK/truncated plus96 actual
+SOURCE_UNAVAILABLE/RESPONSE_TOO_LARGE),0 report-complete polls and1 full-window
+unexplained gap. Actual DOJ size failures span Oct17 19:00:53.025Z through
+Oct18 10:50:53.046Z. BIS96 OK transport polls, of which3 are report-complete and
+93 truncated; four report gaps reflect historical pagination. Do not conflate
+the report's incomplete-poll count with transport errors.
+
+PC-GAP01 preconditions: DOJ bad_polls96/max start gap600001ms => **ineligible**;
+BIS bad_polls0/max gap913038ms => eligible for its historical-only explanation.
+Collector correctly withheld the combined explained report; no explained PASS
+exists. Applying both full-window incident entries despite DOJ errors would hide
+a real failure. PC-SRC01 investigation and Keegan's review/disposition remain
+open; collection and local verification are now complete. Separate PC-REL08
+archive evidence stays healthy at its prior10:36Z snapshot, with the historical
+PERMANENT backup retained; this source report is no new archive inspection.
+
+Hashes (complete machine-readable evidence in
+../build/evidence/gap-report-review-20261018.json):
+- Raw report092c18e555d73f34be6b95d3c02b80c470c31073539fce0836dfa22abdfa5cf5.
+- Original poll snapshot18d6ec9eb70591198befe43a7b765f76a713163060d2c7fff635df1bb4bd1168.
+- Exception checks94ce385e392984cfd3b4edee0c20c474c143a302dffdcbef6ecd7ad3f97f2e35.
+- Proposed incidentsabe860ee0bd95a248f8094b9790a62f51b4950e707da7c634186378b01f98bae
+  (retained, not applied to mask DOJ).
+
+Checklist splits completed raw collection/hash/local verification from pending
+private evidence sharing/independent Keegan review/source repair. Backlog keeps
+only remaining PC-SRC01 work. PC-CAP01/account/provider/install/start and all
+signed gates remain open. PR133 stays open; Claude outputs/ untouched. No direct
+message to Keegan or new host action was performed.
+
+
+## PC-FIX01 — repair PR delivered for Keegan review, Oct18
+
+[PR174](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/174) targets codex/system-testing-20261012; branch codex/doj-trial-cap-fixes-20261018, delivery 1dee43d, tested application ae7ccaa. It implements DOJ-only bounded embedded-image exclusion with original wire provenance and all ordered records retained, durable current-head coverage proofs/explicit current-listing report with historical failure retained, and immutable unsigned OpenAI trial caps strictly below US$8 total/US$2.50 UTC day. Atomic maximum reservations include retries/concurrency/UNKNOWN and actual UTC dispatch day; migration retains charges/latches and fences pre-cap workers. Trial stop/window also guards AIand transport; signed/live trial preparation refuses.
+
+Final local Python3.12/macOS suite: 1,630 passed, 436 environment-dependent skips, 2,659 subtests passed. Actual retained DOJ page replay preserves20 ordered IDs while reducing20,757,780 wire bytes to91,830 permitted bytes. Full prospective criteria/results, test hashes, opt-in routing hash, preserving setup/export/report commands and remaining owners are in docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md and evidence/doj-trial-cap-fixes-20261018.json on PR174. No host mutation or paid inference occurred.
+
+Keegan owns review, fresh exact-source Linux/PostgreSQL/all-job CI and a new original release; d8aa7d5 lacks these fixes. Yao owns private provider/funding/rights reconciliation, preserving host setup, poll/restart/report qualification, activation and first-assessment/ACK evidence. Keegan independently reviews the prior raw FAIL/current-listing scope before Gate A disposition. Keith owns actual blind labels and measured trial report after immutable exports. Signed adoption and later preserving trial-ledger transition remain separate. PR133 stays open; pre-existing Claude outputs/ untouched.
+
+## PC-LABEL02 — deterministic independent-label packet, Oct18
+
+Yao requested independent labels for the collected deterministic run and will
+arrange independent annotators. Prospective packet/annotation/scoring criteria:
+[DETERMINISTIC_LABEL_REVIEW_20261018.md](../build/DETERMINISTIC_LABEL_REVIEW_20261018.md).
+Read-only fixed-window inventory has 43 round requests and 43 matching audit
+inputs, four referenced filings/five documents and ten original/text artifacts.
+Selection/packet hashes will be frozen before annotation; answers stay with the
+custodian. This is a retrospective diagnostic: not a claim of pre-prediction gold
+labels, T01 held-out qualification or v3 M9 trial completion. No model rerun or
+paid call is authorized/needed for packet preparation. Yao supplies independent
+readings; Keith reviews rubric/report; actual labels and scoring remain pending.
+
+
+## PC-FIX01 — DOJ repair, explicit forward coverage and trial caps, Oct18
+
+Yao requests fixes in a PR for Keegan review/new release. Acceptance was pushed
+atc6097e0 before tests. See ../build/DOJ_TRIAL_CAP_FIXES_20261018.md for criteria,
+actual public DOJ evidence, behavior, hashes, host steps and remaining owners.
+DOJ page97 is20,757,780 bytes because of one inline JPEG; bounded media removal
+preserves all20 ordered article IDs and produces91,830 bytes without changing
+page offsets or skipping records. Global permitted-payload limits stay unchanged;
+DOJ-only wire bound32 MB and excluded-media provenance are explicit.
+
+Durable head checkpoints/proofs and history retries distinguish current-listing
+coverage from archive backlog. Default historical semantics and old logs are
+unchanged. Explicit current scope requires new proof and embeds the unchanged
+historical report; it cannot relabel old24h errors or create observed hours.
+Trial config binds immutable8M total/2.5M UTC-day limits to the same50M allocation,
+reserving atomically and rechecking actual dispatch day. Unknowns/latches/charges
+persist, old binaries are fenced by stored pacing identity, and expiry/stops block
+both provider transports. Trial files cannot enter signed/live preparation or
+runtime. Missing/ambiguous existing dispatch attribution refuses migration rather
+than guessing or resetting. Later signed-ledger transition remains separate.
+
+Pushed final application/tests ae7ccaa:1630 passed/436 environment skips/2659
+subtests,39.32s on local macOS. Exact-source Linux/PG/mirror acceptance is Keegan's
+next release gate. No goldens, paid calls, AWS/host/wallet changes or release.
+Results/hashes in ../build/evidence/doj-trial-cap-fixes-20261018.json. Yao retains
+P0/funding/source disposition/setup/install/start/ACK; Keith real usage/labels;
+Keegan peer review/CI/new binary. PR133 stays open; main checkout untouched.
+
+
+### PR174-R1 source review criteria — Oct18 UTC
+
+Owning cross-cutting criteria are in IDEA057 PR174-R1, pushed before new code
+execution. Non-object current-head proof must fail coverage without crashing;
+keep original historical report/failure counts. Inspect DOJ wire normalization,
+item/page identity, checkpoint/restart and transport bounds with existing source
+regressions. Source review does not upgrade the failed Oct17–18 report or imply
+new observed coverage. New original release waits for exact-source Linux/all-job
+private CI; host installation/start and actual source/provider checks remain Yao.
+
+
+PC-GAP02-RV1 / PR174-R1: independent review of retained PC-GAP02 metadata
+(13348fb70d) accepts reported raw FAIL, no DOJ exemption and correctly withheld
+combined explanation. DOJ144 incomplete=48 OK/truncated+96 size errors;
+BIS96 transports=3 complete+93 historical-incomplete, eligible only for its own
+historical explanation. Owner's31-file/13-SSM/old-code reproduction is retained
+evidence, not another raw-byte reproduction here. New CURRENT_LISTING proof
+does not rewrite that failed window. Future actual source/restart/window checks
+remain Yao's. Malformed proof now forces current-report FAIL; focused source/
+trial/preparation/provider152 tests/169 subtests PASS at b141074. Full exact
+Linux/private CI/original release follows; no host or paid-provider action.
+
+
+## PR174-REL01 — new original LLM bundle delivered
+
+PR174-R1 fixes and frozen source `86b14761324faeb8f57df5c0d86ff00320b4361c` passed
+[private mirror39126353379](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379), all4 jobs PASS. Full Linux/
+Python3.12.15/PostgreSQL14.24:2064 passed,6 skipped,2992 subtests,236.95s;
+actual systemd5 tests/5 subtests separately PASS. Terraform, offline demo,
+restricted Docker and both-role bundle provisioning PASS. Local same-source
+Linux2064/6/2992 passed in173.13s. Skips: external corpus1 plus5 systemd cases
+exercised separately. No xfails, golden changes or weakened acceptance checks.
+
+PR174 merged normally at `100d49327f4f50e13ff4c16f297b1acccf187496` after green CI and
+original-artifact verification. No issue/inline comments or submitted reviews
+existed at either inspection; the three direct-review findings and regressions
+were corrected before release. Frozen source/tag stay unchanged.
+
+[Published unsigned LLM prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476)
+has six actual assets: original tarball, original sha256 sidecar, external
+manifest, VERIFICATION.json, BUNDLE.env and README. Dedicated publication-only
+[run39126901213](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126901213)
+reverified/uploaded originals using the mirror's scoped Actions token. It did
+not rebuild the bundle or replace acceptance CI. Tag/source and asset API
+sizes/digests verified. Organization billing is not claimed fixed.
+
+| Verified original | SHA-256 |
+|---|---|
+| `larp-86b14761324f-x86_64.tar.gz` (98,383,598 bytes) | `277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343` |
+| External/embedded manifest | `0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+Original artifact12135774607 ZIP digest verified;196 manifested source files
+and235 full-bundle checksums checked. Registered repository stays the challenge
+repo; build_origin honestly names the Keegan4 mirror. The packaged trial config
+hash is `a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d`.
+Yao must explicitly prepare/pin this capped unsigned trial file; the legacy
+preferred file remains separate. No ledger reset, policy removal or automatic
+signed adoption is authorized. [Machine-readable evidence](../build/evidence/pr174-release-20261018.json).
+
+PR133/126 stay open. Code/review/CI/new-original-bundle work is complete. Yao
+retains private provider/account/funding/rights checks, preserving ledger setup,
+host install/bind/activate, actual post-fix polls/restart/new observed window
+and first assessment/receiver ACK. Keith retains actual usage/labels; team
+retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
+raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
+is claimed. These result-only records change no manifested runtime file.
+
+### PC-LABEL02 packet delivered
+
+After pushed criteria 059b250/merge6820c7b, the complete fixed-window population
+was frozen into four cases/five saved documents from43 requests (four first
+representatives,39 duplicate requests kept separately). Ten original/text
+artifact hashes,43 matching audit requests, source-at-cutoff checks,25-file ZIP
+integrity and blind metadata exclusion PASS. Private blind ZIP in Downloads:
+LARP-independent-labels-20261018/LARP-blind-annotation-20261018.zip,39380 bytes,
+SHA256253ac12e649272bb46361c4489bca357fcfded2148f7556c0a072b1132db2249.
+Population/selection/blind hashes and QA are in
+../build/evidence/deterministic-label-packet-20261018.json. Source/answers/labels
+stay outside Git; only the blind ZIP goes to annotators. Yao obtains independent
+readings/adjudication; custodian/Keith scores after gold freeze. Labels
+NOT_STARTED/scoring NOT_RUN; neither T01 nor v3 M9 is qualified. No host changes,
+inference calls, baseline replay or messaging to others occurred.
+
+### PC-LABEL02-R1 — returned AI annotation validation
+
+Yao returned two AI label files. Both originals preserved byte-for-byte outside
+Git; all four case IDs/full-read/no-answer-exposure declarations checked.
+All31 quoted spans (15/16) pass exact source hash and Unicode-offset validation.
+AI provenance and limited/declined implementer independence remain explicit.
+Uncertain/disputed semantic labels still need baseline-blind adjudication under
+the frozen rubric; the output-aware custodian does not serve as blind annotator.
+Private adjudication ZIP59023 bytes/SHA0865de5f…ac14 was source/hash/ZIP verified
+and excludes assessor outputs. Input hashes/provenance/status only are saved in
+../build/evidence/deterministic-label-return-review-20261018.json; private label
+contents stay outside Git. Gold NOT_FROZEN/scoring NOT_RUN, with no baseline
+unblinding for this review. Yao supplies independent adjudication; custodian/Keith
+validates/freezes gold then scores original representatives. No model rerun,
+paid call or host change; T01/v3 M9 are unqualified.
+
+### PC-LABEL02-R2 — retrospective diagnostic scoring complete
+
+Adjudicated AI labels/checksum received, exact hashf4274c0b…933be/87177 bytes
+verified; all27 supporting spans/four cases/six decisions/31 original-label
+dispositions validated. Gold frozen13:11:54.477674Z before this scoring pass;
+original source/population/selection hashes rechecked. Four first requests scored
+at original cutoff/deadline;39 repeats separate, no replay or retry rescue.
+
+Broad flag-presence agreement4/4 (descriptive Wilson95%0.510109–1), but strict
+source-backed adverse-event matching TP0/FP1/FN1: the correct coarse alert lacks
+source-text span/actor/actuality proof and stays unmatched under the frozen
+rubric. This is an evidence-support failure, not proof of an invented source
+event. Proposition detail0/7; no numeric positives or Class1/2 positives, so
+those recall/precision claims remain unqualified. All43 ASSESSED within original
+cutoff+60s; local processing2–16ms/median8, not LLM/news latency.
+
+One distinct source filing is coverage-incomplete on21 repeated requests because
+a benign public-link invitation matches the conservative instruction detector.
+Original flag/results retained. New PC-LABEL02-INJ01: Yao owns exact routed
+configuration trust/coverage review/regression evidence, with Keegan peer review,
+preserving injection defenses. Aggregate scores/provenance/hashes in
+../build/evidence/deterministic-diagnostic-score-20261018.json; all private
+labels, answer matching and full report remain outside Git.
+
+This completes only PC-LABEL02's small AI-assisted retrospective diagnostic.
+Human-gold independence, T01/v3 M9, larger positive samples, actual hosted
+LLM evaluation and adoption remain unqualified. No model call/replay, host
+change, app code/test or golden change; PR133 remains open.
+
+### PC-LABEL02-R3 — interpretation corrected after Yao role clarification
+
+Yao clarifies that the harness is not assigned semantic evidence assessment;
+it supplies evidence/tools, verifies claims and enforces policy/risk/execution/
+audit. The LLM is the semantic assessor; RuleBaselineModel is the temporary
+deterministic path. Checked IDEA-012/056 and the service/model composition.
+The conversational4/10 was not a frozen/validated metric and is WITHDRAWN;
+no harness intelligence/readiness rating follows from that comparison. The
+0/7 proposition-detail comparison is a task/output representation gap, not
+proof that the harness failed an assigned semantic-analysis role. Existing
+labels, original outputs, frozen strict rules and measured counts are unchanged.
+
+Corrected boundary is in ../build/DETERMINISTIC_LABEL_REVIEW_20261018.md and
+the aggregate score JSON interpretation_correction. The private original
+reports are retained with a separate INTERPRETATION-CORRECTION.md addendum.
+Harness operational evidence/source limitations stand; actual composed LLM
+assessment quality remains unmeasured. PC-LABEL02-INJ01 trust/coverage review
+and broader source/model/qualification gates remain open. No runtime or
+acceptance-rule change, model call, deployment or new rating was made.
+
+## PC-HAR01 — current harness requirements/readiness audit
+
+Targeted audit after Yao asks whether the harness meets its specifications.
+[HARNESS_READINESS_AUDIT_20261018.md](../build/HARNESS_READINESS_AUDIT_20261018.md)
+separates implemented/tested controls, current host evidence and unresolved
+features/acceptance. Integration1306bbb matches frozen86b1476 under app/config/
+deploy/test/lock paths; retained release record2064/6/2992 and actual systemd5/5
+PASS, all4 CI jobs green. No new full-suite rerun or bundle download claimed.
+
+Fresh read-only base64 SSM d763f48e-aefd-4399-a4cf-43c186282651 at13:29:41UTC
+(21:29:41SGT): healthy=true/reasons=[],70 chunks ACK,27 anchors ACK/latest13Z,
+00Z daily backup ACK; historical incident backup PERMANENT retained. Still
+bb46234 dev/shadow/deterministic, execution inactive, no model ledger/routing
+hash. Latest DOJ still size failure; BIS historical scan truncated;0 corrupt
+lines. Operational health is not source-coverage PASS. No host mutation, metric
+publication, inference, signer action or new spend. Sanitized evidence/hashes:
+../build/evidence/harness-readiness-audit-20261018.json.
+
+Most core control architecture is built/tested, but complete spec/acceptance is
+NOT established: DEV20 event planner OPEN/not built, S1 B4 producer missing,
+new-release/provider/account/source/trust/LLM host proof pending, plus real
+router/native-provider/profile/signed drills and final operations/declarations.
+Existing backlog owners remain; no whole GAP closes. Rule/temporary-assessor
+semantic output is not a harness intelligence rating; no new /10 assigned.
+
+### PC-HAR02 — PR133 gap tracking verified and planner item made explicit
+
+Fetched remote and verified PR133 OPEN on claude/pre-trading-checklist-20261017,
+target codex/system-testing-20261012. PR133 directly tracks new-release install/
+ledger/provider/first-assessment/ACK and source checks (Yao), B4 producer
+(Keegan), PC-LABEL02-INJ01 trust/coverage review (Yao with Keegan peer review),
+actual model usage/labels/profile evidence (Keith), real router/native-provider
+prerequisites (Isaac), host signed/restore/drills (Yao), GateA/B review/final
+declarations (Keegan). Code/review/CI/original unsigned release for174 is done;
+remaining host and signed gates are not marked complete.
+
+DEV20 had been named in the linked audit and covered by the general final
+deviations item; added an explicit unchecked Keegan coordination item under
+the cut/finalization work: implement/verify the adopted event planner or obtain
+and record an approved reasoned final deviation, with decision byOct22 and
+release disposition beforeOct26. Tracking/ownership is not evidence every item
+is already started. No runtime/host action, new approval or gate closure.
+
+## PC-HO02 — late Oct18 handoff for new chat
+
+Yao requests a continuation prompt after receiving Keegan's release. Latest
+tracked handoff: ../build/AWS_DEPLOYMENT_RESUME_20261018_LATE.md; older resume
+now points there first. Covers completed174/175 release delivery, local candidate
+verification, current host/source/cap distinction, exact capped routing,
+preserving budget/provider/prepare/bind/activate/first-job sequence and remaining
+owners. Local supplied file located at Downloads/larp-86b14761324f-x86_64.tar:
+101519360 bytes, uncompressed ustar/no gzip magic. Packaging inspection only;
+its contents/source/full checksum verification remains the next chat's task.
+Do not compare that file's whole hash to the original gzip or repackage and
+claim original CI provenance. Expected release/manifest/CA hashes retained.
+
+Completed clean Codex fix worktree archived with a recoverable snapshot;
+pre-existing worktrees untouched. Main matches origin/main, no session commits
+unpushed; primary status still has only pre-existing untracked Claude outputs/.
+Private source/label reports stay outside Git; local ignored sectionC updated
+to the new capped86b1476 release and the tracked runbook. Historical v2/$10
+tail and old d8aa7d5 snapshot cannot govern the new trial. No host mutation,
+paid inference or deployment happened. PR133 remains OPEN.
+
+
+## PC-SIGNER-READY01 — Isaac's signer implementation follow-through (2026-10-18)
+
+User asked to implement what is needed to get the signer ready. Preserve earlier
+separate-PR instruction, no AWS changes, and wallet-key placement only in Yao's
+approved signer session. Current PR/issue/source inspection finds no new #27
+owner decision or measured #44/source input; no missing approval is inferred.
+
+Delivered separate PR176 (IDEA-070 SR-01): refuse pending-decision caps in both
+dev/live and load pinned router evidence/validate its spender before check/run
+reach DB/key access. Successful check explicitly reports local scope/hash,
+signing_enabled=false and gate_b_accepted=false. RED21 failures (including
+subtests), GREEN139 tests/219 subtests,0 skips,24.35s at pushed f9d0917 with
+macOS/Python3.12.14/disposable PostgreSQL14.24/synthetic source/releases/keys.
+Existing malicious-intent, key/wallet, registration/quarantine and immutable
+signing-authority checks pass. Local database container stopped/disposed.
+PR176 is open for review, not merged or deployed. Its org CI run39133862711
+ran zero steps because annotation confirms failed payments/spending limit/#98;
+no Linux/systemd/signed-host bundle acceptance is claimed.
+
+Updated existing source-only draft PR139 RE-03: two exact public chain56
+Routescan source GETs at13:59:09–10UTC returned HTTP200/status0 `chain not
+supported`. Browser BscScan access still fails; same-address other-chain/cached
+results do not prove BSC source/deployment. Public body/length/JSON/report hashes
+verify (reportf7b24db6572f2c43e314dcc4daa99d83af588a5cb0a6cc93fa14424193f39047).
+Complete source/imports/ABI/compiler/settings/deployed-code binding are absent;
+Keegan review and actual router replay remain NOT_RUN. Retained export/vendor
+request is ready for the team's approved contact; no external message sent.
+
+No cap value, numeric policy, new lifetime, router guarantee or activation is
+adopted. Needed next: Isaac source input; Keegan independent source review;
+Isaac route checker; Keegan #27 decision/code with real timing; Keith measured
+profile/gas/holding inputs then Isaac exact #44 approval; qualified native/fee
+and funding evidence; Keegan exact signed release; Yao provisioning/config/
+isolation/session/drills, Isaac approved-session key placement and real-round
+verification. PR171/172/173 retain their already-recorded open state. All owner
+rows remain open where incomplete; no complete Gate B line is removed. No AWS,
+real wallet/key, signing/broadcast, account signup/payment/model or official-log
+operation took place. This record and PR133 description link the separate fix;
+PR133 remains open.
+
+
+
+PC-SIGNER-READY01 integration refresh: normal merge of integration1306bbb
+resolves documentation-only conflicts. Preserve parent label/harness/source
+handoffs and completed POLICY-HOLD decision; keep approved v3 protocol and the
+latest PR174 review/CI/original86b1476 release as completed. Narrow stale
+PC-SRC01/PC-CAP01 backlog wording to actual host/provider/retention qualification.
+No repeated approval/review request or new model/host action. The separate
+PR176 implementation remains unmerged; this parent carries its coordination.

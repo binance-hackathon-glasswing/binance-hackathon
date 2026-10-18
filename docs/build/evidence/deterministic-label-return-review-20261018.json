@@ -1,0 +1,60 @@
+{
+  "T01_qualified": false,
+  "adjudication_manifest_sha256": "88c6dc976cdcfe5ea85e5f1af48631198b4463e88e4e6543663049e0dc6cec75",
+  "adjudication_zip": {
+    "bytes": 59023,
+    "file": "LARP-blind-adjudication-20261018.zip",
+    "files": 31,
+    "sha256": "0865de5ffec62453ccc0e074feeeb0cac39149c5e3da4eec46ebfa206101ac14"
+  },
+  "all_31_exact_spans": "PASS",
+  "baseline_outputs_read_for_this_review": false,
+  "gold_status": "NOT_FROZEN",
+  "host_mutations": false,
+  "label_inputs": [
+    {
+      "AI_generated": true,
+      "all_documents_read_declared": true,
+      "baseline_answers_unseen_declared": true,
+      "bytes": 20185,
+      "case_count": 4,
+      "case_status_counts": {
+        "COMPLETE": 3,
+        "UNCERTAIN": 1
+      },
+      "exact_quotation_records": 15,
+      "file": "labels-claude-opus-5-5-AI-20261018.json",
+      "independence_from_implementers_declared": false,
+      "quotation_offsets": "PASS",
+      "sha256": "738f96c17356c1091d186c92b30054c7aec26afbf10bbeb163ecd250c44aad51",
+      "source_hashes": "PASS"
+    },
+    {
+      "AI_generated": true,
+      "all_documents_read_declared": true,
+      "baseline_answers_unseen_declared": true,
+      "bytes": 30110,
+      "case_count": 4,
+      "case_status_counts": {
+        "COMPLETE": 4
+      },
+      "exact_quotation_records": 16,
+      "file": "LARP-labels-AI-GPT-6-20261018.json",
+      "independence_from_implementers_declared": true,
+      "quotation_offsets": "PASS",
+      "sha256": "b1f19a73ab1b97cb0914058c4b9c9e5c2c18fb8bc77c07acfae3a4227d76b24a",
+      "source_hashes": "PASS"
+    }
+  ],
+  "labels_status": "TWO_AI_READINGS_RECEIVED_ADJUDICATION_PENDING",
+  "original_packet_sha256": "253ac12e649272bb46361c4489bca357fcfded2148f7556c0a072b1132db2249",
+  "originals_preserved_byte_for_byte": true,
+  "paid_provider_calls": false,
+  "record_id": "PC-LABEL02-R1",
+  "remaining_owner": "Yao obtains baseline-blind independent adjudication; custodian/Keith validates and freezes gold before scoring.",
+  "reviewed_at_utc": "2026-10-18T13:00:39.891863+00:00",
+  "schema": "ReturnedBlindLabelsReview.v1",
+  "scoring_status": "NOT_RUN",
+  "semantic_adjudication_by_custodian": false,
+  "v3_M9_qualified": false
+}

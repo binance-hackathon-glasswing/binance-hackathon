@@ -273,6 +273,8 @@ class LiveRunner:
                            "rejected": len(outcome.get("rejected", [])) - len(outcome.get("policy_rejected", [])),
                            "policy_rejected": len(outcome.get("policy_rejected", [])),
                            "truncated": outcome.get("truncated"), "error": outcome.get("error")}
+                if 'head_coverage' in outcome:
+                    summary['head_coverage'] = outcome['head_coverage']
             else:
                 outcome = self.edgar.poll(ident).read()
                 summary = {"status": outcome["status"], "new": len(outcome.get("new_records", [])),
@@ -307,7 +309,7 @@ class LiveRunner:
 
 
 def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incidents: list = (),
-               required_ms: int = 86_400_000, tolerance: int = 2) -> dict:
+               required_ms: int = 86_400_000, tolerance: int = 2, coverage_scope: str = 'historical') -> dict:
     """DR-12 evidence from the poll log. A gap is the time between consecutive successful polls of one target (and
     from `start_ms` to the first, and from the last to `end_ms`); it is unexplained when it exceeds `tolerance` x
     cadence and no incident {target, from_ms, to_ms, reason} covers it. The cadence is the stricter of the declared
@@ -316,7 +318,17 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
     to it, and a run that logged a slower cadence than declared cannot pass (IDEA-041 R13). The report lists the
     logged cadences per target. PASS needs a window of at least
     `required_ms`, no unexplained gap and no corrupt log line; a shorter window is INCONCLUSIVE."""
+    if coverage_scope not in ('historical', 'current'):
+        raise ValueError('Unknown ingestion coverage scope')
+    historical = gap_report(lines, cadences=cadences, start_ms=start_ms, end_ms=end_ms,
+                            incidents=incidents, required_ms=required_ms, tolerance=tolerance) \
+        if coverage_scope == 'current' else None
     corrupt = sum(1 for line in lines if line.get("corrupt"))
+    if coverage_scope == 'current':
+        # A structurally corrupt proof is not an ordinary missed poll that cadence tolerance can hide.
+        corrupt += sum(1 for line in lines if line.get('target') in cadences
+                       and line['target'].startswith('source:') and 'head_coverage' in line
+                       and type(line['head_coverage']) is not dict)
     targets = {}
     for key, declared in sorted(cadences.items()):
         mine = [l for l in lines if l.get("target") == key and type(l.get("started_ms")) is int]
@@ -324,6 +336,15 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
                   if type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
         def complete(line):
             finished = line.get("finished_ms", line["started_ms"])  # legacy log without a completion clock
+            if coverage_scope == 'current' and key.startswith('source:'):
+                proof = line.get('head_coverage') or {}
+                return (type(proof) is dict and proof.get('schema') == 'SourceHeadCoverage.v1'
+                        and proof.get('complete') is True
+                        and proof.get('basis') in ('DURABLE_OVERLAP', 'END_OF_LISTING')
+                        and (proof.get('basis') != 'DURABLE_OVERLAP' or
+                             type(proof.get('anchor_item_id')) is str and bool(proof['anchor_item_id']))
+                        and type(proof.get('checked_ms')) is int
+                        and type(finished) is int and line['started_ms'] <= proof['checked_ms'] <= finished <= end_ms)
             return (line.get("status") in OK_STATUSES and line.get("coverage_complete") is not False
                     and not any(line.get(k) for k in ("truncated", "rejected", "dead_letter", "retry_pending",
                                                        "malformed_rows", "unexpected_forms", "rejected_future"))
@@ -353,10 +374,15 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
     unexplained = sum(t["unexplained_gaps"] for t in targets.values())
     verdict = ("INCONCLUSIVE" if end_ms - start_ms < required_ms else
                "PASS" if not unexplained and not corrupt and targets else "FAIL")
-    return {"schema": "LiveIngestionReport.v1", "window": {"from_utc": iso(start_ms), "to_utc": iso(end_ms),
+    result = {"schema": "LiveIngestionReport.v1", "window": {"from_utc": iso(start_ms), "to_utc": iso(end_ms),
                                                            "hours": round((end_ms - start_ms) / 3_600_000, 2)},
             "tolerance_x_cadence": tolerance, "verdict": verdict, "corrupt_log_lines": corrupt,
             "commits": sorted({l.get("commit") for l in lines if l.get("commit")}), "targets": targets}
+    if historical is not None:
+        result.update(coverage_scope='CURRENT_LISTING', historical_report=historical)
+        for key, target in targets.items():
+            target['history_incomplete_polls'] = historical['targets'][key]['failed_polls']
+    return result
 
 
 # ------------------------------------------------------------------------------------------------ wiring
@@ -539,6 +565,8 @@ def main(argv=None, env=None) -> int:
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)
     rep.add_argument("--incidents", help="JSON list of {target, from_ms, to_ms, reason}")
+    rep.add_argument('--coverage-scope', choices=('historical', 'current'), default='historical',
+                     help='Explicit current-listing proof, with the unchanged historical report retained')
     rep.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS,
                      help="cadence for EDGAR log lines that logged none (each line's own cadence_ms is used)")
     bake = sub.add_parser("bakeoff")
@@ -585,13 +613,15 @@ def main(argv=None, env=None) -> int:
         root = Path(env["LARP_ARTIFACT_ROOT"]).resolve()
         start = int(datetime.fromisoformat(args.start.replace("Z", "+00:00")).timestamp() * 1000)
         end = int(datetime.fromisoformat(args.end.replace("Z", "+00:00")).timestamp() * 1000)
+        if end > epoch_ms() or start >= end:
+            raise SystemExit('Report window must be ordered and must already have ended')
         cadences = {f"source:{s.source_id}": s.limits["min_interval_ms"]
                     for s in load_register()[0].values() if s.enabled}
         from larp.intelligence.config import load_registry
         cadences.update({f"edgar:{e.issuer_id}": args.edgar_interval_ms for e in load_registry().entries})
         incidents = json.loads(Path(args.incidents).read_text("utf-8")) if args.incidents else []
         report = gap_report(PollLog(root / "live" / LOG_NAME).lines(), cadences=cadences, start_ms=start, end_ms=end,
-                            incidents=incidents)
+                            incidents=incidents, coverage_scope=args.coverage_scope)
         print(json.dumps(report, indent=1, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
     if args.command == "run":
