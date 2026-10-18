@@ -132,13 +132,13 @@ those exact files rather than editing the prepared runtime afterward.
 
 October18 owner decisions and the exact accepted7a0ea14 release are recorded in
 [MODEL_TRIAL_HANDOFF_20261018.md](MODEL_TRIAL_HANDOFF_20261018.md): confirmed
-unchanged bars, fixed-window DOJ/BIS explanations and remaining host inputs.
+TRB-01A–E bars (TR-AC2), fixed-window DOJ/BIS explanations and remaining host inputs.
 This does not mark provider checks, budget initialization or adoption complete.
 
 
 Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill criteria: [IDEA-057](../ledger/IDEA-057.md) "Shadow trial on the Gate A deploy". Yao Zhu runs these steps on the `primary` host and in Yao Zhu's own terminal; nobody pastes a key into a chat, commit or command line.
 
-**Before starting.** The release on the host must contain this integration (merged into `codex/system-testing-20261012`) and the Gate A assembly (PR #87, not merged as of 2026-10-16). Steps 4–6 change `/etc/larp/runtime.json`, so do them before binding `/etc/larp/release.json` (DEPLOYMENT_DAY step 7). If `release.json` is already bound, binding refuses to replace it: move the old file aside, record that as a version event, and bind again.
+**Before starting.** The release on the host must contain this integration and the Gate A assembly (PR #87, now merged); actual host qualification is separate. Steps 4–6 change `/etc/larp/runtime.json`, so do them before binding `/etc/larp/release.json` (DEPLOYMENT_DAY step 7). If `release.json` is already bound, binding refuses to replace it: move the old file aside, record that as a version event, and bind again.
 
 1. **Runtime secret (Mac terminal).** `AWS_PROFILE=larp bash tools/deploy/put_service_secrets.sh --name larp-dev --only runtime`. Every run replaces the whole secret value, so re-enter the wallet address and both Binance keys. Then enter `LARP_AIAND_API_KEY` at its hidden prompt, and `LARP_MODEL_API_KEY` (OpenAI) at its own; press Enter at that prompt for an AIand-only trial. Record the printed version ID. Only key names are printed.
 2. **Provider check, part 1 (P0, open).** On `primary`, list the account's AIand catalog without putting the key on a command line:

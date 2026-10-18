@@ -1,4 +1,4 @@
-# October 18 model-trial handoff — TR-AC1 / PC-GAP01
+# October 18 model-trial handoff — TR-AC2 / PC-GAP01
 
 User-delegated confirmation for Keegan's workstream, recorded by the assistant.
 This records Keegan's release/bar/gap decisions. It does not attribute personal
@@ -23,7 +23,7 @@ Acceptance relies on the published PC-CI02 verification at PR #133 commit
 file hashes, repository identity and CA. The verification record is retained
 byte-for-byte in [the mirror evidence](evidence/model-trial-mirror-20261018.json).
 Its `PENDING_KEEGAN` field describes that earlier verification time; the current
-decision is [TR-AC1](evidence/model-trial-decision-20261018.json).
+decision is [TR-AC2](evidence/model-trial-decision-20261018.json).
 This session's private-mirror API requests returned404, so it did not download or
 independently re-hash the bundle. Independent source validation of the identical
 application/config/test tree passed 1973 tests and 2934 subtests, with 6 documented
@@ -33,27 +33,40 @@ Yao verifies these same exact hashes at installation and retains the existing
 version/bind/activation procedure. The archive fix and signed-model capability
 are present, but this acceptance is for `mode: dev`, `execution: shadow` only.
 
-## Trial bars confirmed unchanged
+## Trial protocol confirmed: TRB-01A–E / TR-AC2
 
-TR-AC1 confirms IDEA-057 M1–M9 and K1–K4 as written, effective when this decision
-is pushed. Keith's independent review and labels remain his tasks; no such
-review is invented. If inference already began before publication, retain its
-actual start time and report the sequencing as a deviation.
+TR-AC2 confirms the corrected protocol proposed in PR166 at `6f377dd`, reviewed
+while this handoff was being prepared. It supersedes the initial TR-AC1
+confirmation of the October 16 bars where they differ. The exact proposal text
+and its SHA-256 are retained in [IDEA-057](../ledger/IDEA-057.md). Publication is
+effective before the first job under this protocol; earlier jobs retain their
+original protocol and are never relabelled prospectively. No personal Keith or
+collective team sign-off is inferred.
 
 | Measure | Frozen bar |
 |---|---|
 | M1 availability | At least 95% of jobs return validated ASSESSED/ABSTAIN by 60 s; unavailable/late jobs remain failures. |
 | M2 latency | p50 at most 20 s; p95 at most 45 s; any job over 60 s is a reported defect. |
-| M3 OpenAI | Trial charge at most US$8; stop OpenAI at US$8 or a UTC day over US$2.50. Forecast cumulative usage through Nov 12 at most US$40, retaining the US$10 reserve. Include RESERVED/UNKNOWN charges. |
+| M3 OpenAI | Trial charge strictly below US$8 and each UTC day strictly below US$2.50; reaching either triggers K1. Forecast `C_end + conservative daily rate × remaining days + planned extra evaluation spend ≤ US$40`, through Nov 13 00:00 UTC as a budgeting horizon, retaining the US$10 reserve. Include RESERVED/UNKNOWN charges and reconcile prior reservations. |
 | M4/M6/M7/M8 | Report external usage/cost, escalation, switches and baseline disagreements. Escalation over 60% is an alert, not a kill. |
-| M5 verification | Routine claim-verification at least 80%; each review stage at least 90%; schema-valid at least 95% per stage. An unexercised stage is NOT_RUN, not a passing rate. |
-| M9 independent labels | Adverse-event omission no worse than the deterministic baseline; zero unsupported Class 1/2 findings. ABSTAIN is separate, not a correct detection. |
+| M5 verification | Routine claim-verification at least 80%; each reviewer at least 90%; schema-valid at least 95% per stage. Require 10 completed jobs per declared path and 10 replies/claims per required stage; under-covered paths are unqualified. |
+| M9 independent labels | Adverse-event recall at least 90% and omission no worse than baseline; zero unsupported Class 1/2 findings. Need 10 distinct adverse events across 5 filing families, including both classes. Abstained/unavailable/late detections are misses. |
 
-Keep all K1–K4 identity, safety and accounting stop criteria. They are operator
-actions for this unsigned development trial, not an instruction for the scored
-run. Provider funding is not established by the reported balance alone. Never
-initialize the budget from an approximate displayed US$48; Keith supplies exact
-prior usage and its billing basis.
+Keep K1–K4 identity, safety and accounting stop criteria and TRB-01A outcome
+order: a demonstrated kill/safety defect is NOT_SUPPORTED even with little data;
+otherwise missing evidence is INCONCLUSIVE; with sufficient evidence any M1/M2/
+M3/M5/M9 miss is NOT_SUPPORTED; only then can all passing bars support the tested
+unsigned scope. Operator spend stops require monitoring/headroom before dispatch,
+including in-flight reservations; a daily snapshot cannot enforce the sublimits.
+The implemented automatic US$40/US$10 account guard remains unchanged.
+
+PC-BUD03 at PR133 commit `2bac3a5` now records owner confirmation of exactly
+US$48 from the original US$50 allocation: use **2,000,000 micro-USD prior spend**
+for P1, retaining US$10 reserve and US$38 operating headroom. This supersedes our
+earlier pending-input note; it is owner-reported, not an independent billing API
+check. No ledger was initialized here. AIand can continue assessments when
+OpenAI admission stops; report any failed mixed-route window and its external-only
+continuation separately. Funding/availability still require actual provider checks.
 
 Freeze M9 seed `larp-model-trial-20261018-M9-v1` before drawing. Use all
 filings if at most 40. Otherwise take 40 unique `(issuer ID, filing artifact hash)`
@@ -69,11 +82,14 @@ strata. Retain the population/selection manifests and their hashes before blind
 labelling; labels and private document sets stay outside Git. No drawing or
 labelling occurred here. This freezes selection without inventing the population.
 
-The original inconclusive rule remains: fewer than 3 trial days, fewer than 20
-completed jobs, or missing labels by Oct 21 is inconclusive. An early Oct 20
-decision cannot be called a completed three-day PASS. Record the actual elapsed
-trial window; later rehearsal observations are separately dated. This trial does
-not establish model adoption or approval for signed/final operation.
+Qualification needs **72 observed unsigned hours**, at least 20 completed unique
+jobs, route/stage coverage and independent-label coverage under TRB-01. Planned
+maximum cutoff is **2026-10-22T00:00:00Z** (end of Oct 21). Pauses, deterministic
+operation, supplemental probes and signed rehearsal never supply unsigned hours.
+Close/archive the unsigned window before any separately approved signed window.
+An Oct 20 report is interim/provisional if evidence is short; a development-only
+rehearsal exception must be a separate recorded decision/deviation, preserving
+an inconclusive/failed trial verdict. No scored adoption is granted here.
 
 ## DOJ/BIS: explained historical-backfill gaps for this shadow window
 
@@ -126,9 +142,10 @@ the accepted 7a0ea14 bundle.
 
 ## Remaining handoff inputs
 
-- Keith: independent bar review, exact prior OpenAI spend/billing basis, provider
-  terms/funding work and blind trial labels. Key receipt is owner-reported in
-  PC-KEY01; this session did not read or validate keys.
+- Keith: matching/adjudication rubric and blind labels, provider terms/funding
+  work and the trial report. Review proposal PR166 is supplied and confirmed by
+  TR-AC2; exact prior-spend input is owner-confirmed in PC-BUD03. Key receipt is
+  owner-reported in PC-KEY01; this session did not read or validate keys.
 - Yao: finish and hash the 11:00 UTC report and scoped explanation checks; retain
   archive incident/health evidence; verify/install the accepted release, provider
   catalog/served identities, budget P1, routing/build P2, new prepared/bound shadow

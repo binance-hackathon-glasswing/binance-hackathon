@@ -156,3 +156,21 @@ Only documentation differs from accepted7a0ea14; no new runtime/bundle is needed
 Raw verification logs stay outside Git under
 `/workspace/larp-cloud/llm-trial-handoff-20261018/`. These are synthetic/local
 checks, not the future host report or independently downloaded release bytes.
+
+## PC-REL02 — concurrent protocol and budget reconciliation (2026-10-18)
+
+During PC-REL01 publication, PR166 supplied TRB-01A–E review corrections and
+PR133 advanced to2bac3a5 with PC-BUD02/03. Reviewed those published deltas.
+TR-AC2 now confirms TRB-01 at6f377dd, superseding our first unchanged-original
+bar confirmation where inconsistent. The dated handoff/decision JSON identify
+one current protocol, including ordered verdicts,90% recall/positive and route
+minima, end-charge forecast, strict spending stops and72 unsigned hours.
+
+PC-BUD03's owner confirmation supplies prior spend2,000,000 micro-USD from the
+original50/exact48 balance, retaining10 reserve/40 operating and38 headroom;
+the temporary5-reserve proposal was withdrawn. This supersedes our earlier
+"exact input still pending" wording. Actual P1 initialization/snapshot and real
+provider/funding checks are still unverified here. The same7a0ea14 release and
+fixed-window PC-GAP01 explanation remain accepted; these docs require no new
+bundle, host change or paid request. Keith's proposal task is supplied; labels,
+matching rubric, reporting and remaining rights/funding tasks stay open.

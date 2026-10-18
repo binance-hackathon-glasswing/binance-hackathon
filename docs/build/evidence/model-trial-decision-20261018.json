@@ -1,7 +1,7 @@
 {
   "schema": "ModelTrialOwnerDecision.v1",
-  "decision_id": "TR-AC1-20261018",
-  "decided_at": "2026-10-18T05:20:21+00:00",
+  "decision_id": "TR-AC2-20261018",
+  "decided_at": "2026-10-18T05:28:49+00:00",
   "workstream_owner": "Keegan",
   "authority": "User-delegated assistant confirmation; no personal Keith or collective team sign-off inferred",
   "release": {
@@ -17,10 +17,11 @@
     "evidence_file": "model-trial-mirror-20261018.json",
     "evidence_sha256": "30b893ff60399bc819c361744910011504c8da9d78a8a4a829e8d55a48dc7c58",
     "evidence_source_commit": "9b363e6",
-    "basis": "Published PC-CI02 artifact verification plus independent source/full-suite validation; private mirror API returns404 to this session; bundle bytes not independently downloaded here"
+    "basis": "Published PC-CI02 artifact verification plus independent source/full-suite validation; private mirror API returns404 to this session; bundle bytes not independently downloaded here",
+    "decision_status": "ACCEPTED_PC_REL01_RETAINED_BY_TR_AC2"
   },
   "trial_bars": {
-    "status": "CONFIRMED_UNCHANGED_M1_TO_M9_AND_K1_TO_K4",
+    "status": "CONFIRMED_TRB_01A_TO_E",
     "effective": "Published decision before first routed assessment; earlier start must be disclosed as a deviation",
     "availability_min_bps": 9500,
     "latency_p50_max_ms": 20000,
@@ -42,8 +43,32 @@
     "independent_label_sample_max": 40,
     "independent_label_sampling_seed": "larp-model-trial-20261018-M9-v1",
     "independent_Keith_review_recorded": false,
-    "prior_spend": "Exact prior OpenAI usage required; approximate displayed balance is insufficient",
-    "independent_label_sampling_algorithm": "Unique issuer/artifact pairs; earliest-request stratum; canonical-JSON SHA256-ranked strata and filings; round-robin to40; record unrepresented strata and population/selection hashes before blind labels"
+    "prior_spend": "Owner-confirmed PC-BUD03 exact original-allocation input; host initialization pending",
+    "independent_label_sampling_algorithm": "Unique issuer/artifact pairs; earliest-request stratum; canonical-JSON SHA256-ranked strata and filings; round-robin to40; record unrepresented strata and population/selection hashes before blind labels",
+    "protocol_source_commit": "6f377dde8eeb0e1e58b4b61fc4446abe72504657",
+    "protocol_section_sha256": "03fe7dff31b2c0863395de3189903a39b97ef4d79344915ef26f8755da3ae181",
+    "protocol_pr": 166,
+    "review_proposal_supplied": true,
+    "minimum_unsigned_observation_hours": 72,
+    "maximum_unsigned_cutoff_utc": "2026-10-22T00:00:00Z",
+    "adverse_event_recall_min_bps": 9000,
+    "minimum_distinct_adverse_events": 10,
+    "minimum_filing_families": 5,
+    "requires_class_1_and_2_positives": true,
+    "minimum_completed_jobs_per_declared_path": 10,
+    "minimum_replies_per_required_stage": 10,
+    "minimum_proposed_claims_per_required_stage": 10,
+    "openai_trial_charge_requirement": "< 8000000 micro-USD",
+    "openai_daily_charge_requirement": "< 2500000 micro-USD",
+    "spend_forecast": "C_end + conservative_rate * exact_days_remaining_to_2026-11-13T00:00Z + E_remaining <= 40000000 micro-USD",
+    "outcome_order": [
+      "NOT_SUPPORTED_ON_KILL_OR_SAFETY",
+      "INCONCLUSIVE_ON_INSUFFICIENT_EVIDENCE",
+      "NOT_SUPPORTED_ON_FROZEN_BAR_FAILURE",
+      "SUPPORTED_UNSIGNED_SCOPE_ONLY"
+    ],
+    "initial_openai_spent_micro_usd": 2000000,
+    "openai_current_operating_headroom_micro_usd": 38000000
   },
   "coverage_exception": {
     "decision_id": "PC-GAP01",
@@ -64,5 +89,6 @@
   "host_actions_performed": false,
   "trial_start_verified": false,
   "signing_authorized": false,
-  "model_adoption_approved": false
+  "model_adoption_approved": false,
+  "supersedes": "TR-AC1-20261018 where inconsistent with TRB-01"
 }
