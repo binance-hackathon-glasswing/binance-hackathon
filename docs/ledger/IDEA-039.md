@@ -380,3 +380,17 @@ checks. Full per-PR dispositions and exact heads: IDEA-049 ALLPR-20261017 on
 PR158. This confirms offline engineering behavior only; current external input
 files, #27/#44 decisions, source/route proof and hosted signed acceptance remain
 with their existing owners. This result commit changes documentation only.
+
+## GB-RV155 — integration refresh and merge review (2026-10-18, prospective)
+
+Yao Zhu requests review, repair where needed and merge of PR155/157 into the
+integration branch; PR133 stays open. Review PR155 at fbd86ba against integration
+a2af2df, incorporating the base by ordinary merge. Preserve GB-CAP1..3,
+GB-REPORT4 and GB-RW3 acceptance: exact request/returned economics and raw units,
+full-position/holding/top-up and fee bounds, private exclusive output, blocked
+owner acceptance and no signing authority. Re-run caps/proposal/Gate B report
+checks on the refreshed pushed head; require no failures/skips in that subset.
+Run the execution suite to check consumer compatibility; explicitly retain any
+macOS/PostgreSQL/Linux-only skips and do not claim a new Linux release build.
+Inspect the diff and existing review discussions before merge. No new runtime
+policy, live profile acceptance, owner sign-off or host deployment is implied.
