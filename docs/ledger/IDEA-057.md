@@ -983,3 +983,22 @@ manifest plus run ID and hashes to a new unsigned GitHub release. No rebuild
 or old handoff ZIP substitution. Merge169 ordinarily after green; keep133/126
 open and update133 with results. Gap report remains pending after19:00 SGT.
 Detailed prospective criteria: docs/build/LLM_V3_RELEASE_20261018.md V3-REL02.
+
+
+### V3-REL02-PUB — prospective original-artifact publisher
+
+All four mirror jobs passed at frozen d8aa7d5 (run39111854179); original ZIP
+digest2f4c0808…, bundle9930f361…, manifest8bed2539…, all195 manifested files
+and234 bundle-file checksums independently verified. Direct cloud release-asset
+upload returns401 at uploads.github.com despite release metadata access.
+Use a dedicated publishing-only branch/workflow on the authorized private
+mirror with its scoped Actions token (contents:write/actions:read), leaving the
+frozen candidate untouched. The existing runtime.yml path is dispatched on
+this helper branch; it is a publication job, not replacement acceptance CI.
+Before execution push all helper code/docs to both repos. Pass criteria: fresh
+original acceptance run/4job success/source checks; pinned artifact ZIP digest;
+bundle/manifest/CA/full file hash verification without executing the binary;
+create an unsigned mirror GitHub prerelease tagged to the frozen d8aa7d5 and
+upload original tarball, sidecar, manifest plus verification/readme. Fetch final
+asset metadata and verify sizes/digests and frozen tag. No rebuild, provider call
+or host action; the successful acceptance run remains39111854179.
