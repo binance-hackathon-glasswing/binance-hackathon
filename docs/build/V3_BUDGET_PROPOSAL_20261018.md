@@ -2,6 +2,14 @@
 
 2026-10-18 UTC. Keith protocol, **approved by Yao Zhu through review/merge of PR168**, explicitly confirmed Oct18 07:38 UTC (IDEA-066 PC-REL05). Criteria were pushed at `1536af8` before this analysis. This approval supersedes pre-merge requests for Keegan to confirm the same protocol. No ledger initialization, provider measurement or deployment is claimed. The confirmed v2 TR-AC2 protocol remains historical and unchanged for its own observations.
 
+Release carry-forward: imported from PR133 commit
+`8b0b2381d82d0c596b3ccc33b50579dd159fa78b` after merged PR168. The
+historical KMP-P2 finding below is remediated by V3-REL01 (`6955eaf`),
+with real transport-boundary regressions. Protocol bars are unchanged. See
+[release record](LLM_V3_RELEASE_20261018.md) for current validation/access status.
+The source-review manifest describes Keith's reviewed PR167 snapshot, not the
+later remediation; the new CI release manifest must bind the final release SHA.
+
 ## Routing, prompts and window reviewed
 
 Reviewed PR #167 at `f20e941801230c183bd5b849434bffd095a8ceaa`, merged into

@@ -17,7 +17,7 @@ from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
 from larp.intelligence.config import CONFIG_DIR
-from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing
+from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing, validate_trial
 from larp.intelligence.models import ModelIdentity, response
 from larp.intelligence.providers import OpenAIResponsesModel
 
@@ -43,6 +43,8 @@ def validate_routing_spec(spec, prompt_dir=None):
         fields = fields | {'openai_prompt'}
     if preferred:
         fields = fields | {'openai_pacing'}
+        if 'openai_trial' in spec:
+            fields = fields | {'openai_trial'}
     if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3')
             or spec['openai_model'] != 'gpt-6.1-sol'
             or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
@@ -58,6 +60,11 @@ def validate_routing_spec(spec, prompt_dir=None):
         raise IntelligenceError('Invalid AIand routing specification')
     if preferred:
         validate_pacing(spec['openai_pacing'])
+        if 'openai_trial' in spec:
+            validate_trial(spec['openai_trial'])
+            if not spec['openai_pacing']['start_ms'] <= spec['openai_trial']['start_ms'] < \
+                    spec['openai_trial']['end_ms'] <= spec['openai_pacing']['end_ms']:
+                raise IntelligenceError('Trial window must fit pacing window')
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
@@ -114,7 +121,22 @@ class BudgetedOpenAI:
             return response(request.read(), status='TIMEOUT', output=None, latency_ms=elapsed,
                             error='DEADLINE_EXCEEDED')
         # The reservation is durable even if step raises, the worker is abandoned, or the process dies.
-        reply = self.model.step(request, remaining_ms)
+        if getattr(self.budget, 'pacing', None) is not None:
+            try:
+                reply = self.model.step(request, remaining_ms,
+                    before_dispatch=lambda: self.budget.before_dispatch(token))
+            except AdmissionDeferred as error:
+                # The boundary check durably settled this known-unsent POST at zero.
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started), error=error.reason)
+            except IntelligenceError:
+                # No reliable accounting means no dispatch. Do not invent a refund.
+                self.budget_unavailable = True
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started),
+                                error='MODEL_BUDGET_UNAVAILABLE')
+        else:
+            reply = self.model.step(request, remaining_ms)
         value = reply.read()
         usage = value.get('usage') or {}
         actual = None
@@ -137,6 +159,28 @@ class BudgetedOpenAI:
             value.update(status='ERROR', output=None, error='MODEL_BUDGET_UNAVAILABLE')
             return Document.from_dict(value)
         return reply
+
+
+class TrialGuardedExternal:
+    """No new paid AIand POST outside a trial or after its durable accounting stop."""
+    def __init__(self, model, budget, *, accounting_guard=None):
+        self.model, self.budget = model, budget
+        self.accounting_guard = accounting_guard
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
+    def _before_dispatch(self):
+        if self.accounting_guard is not None:
+            self.accounting_guard()
+        self.budget.guard_trial()
+
+    def step(self, request, remaining_ms):
+        try:
+            return self.model.step(request, remaining_ms, before_dispatch=self._before_dispatch)
+        except IntelligenceError as error:
+            reason = error.reason if isinstance(error, AdmissionDeferred) else 'MODEL_BUDGET_UNAVAILABLE'
+            return response(request.read(), status='ERROR', output=None, latency_ms=0, error=reason)
 
 
 def _review_reasons(result, request, sample_bps, seed):
@@ -203,7 +247,7 @@ class RoutedAssessor:
         self.model = SimpleNamespace(identity=identity)
 
     def _budget_state(self):
-        # Missing/locked/corrupt storage blocks OpenAI (admission raises too), never the external path.
+        # Legacy routing may fall back externally; trial routing separately guards every paid POST.
         try:
             if self.openai is not None and self.openai.budget_unavailable:
                 raise IntelligenceError('Model budget reconciliation required')
@@ -422,6 +466,13 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}
     common = dict(clock_ms=clock_ms, artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
+    openai = None
+
+    def primary_accounting_guard():
+        # A transient storage recovery cannot lift a quarantine caused by an uncertain settlement.
+        # Keep the same stop across all subsequent trial stages/jobs until owner reconciliation.
+        if openai is not None and openai.budget_unavailable:
+            raise IntelligenceError('Model budget reconciliation required')
 
     def external(entry):
         c = config_for(entry.get('prompt'))
@@ -429,15 +480,18 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
                                catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
                                transport=transports.get('aiand'), prompt_text=c.prompt_text,
                                prompt_sha256=c.prompt_sha256, **common)
+        if spec.get('openai_trial') is not None:
+            model = TrialGuardedExternal(model, budget, accounting_guard=primary_accounting_guard)
         configs[model] = c
         return model
 
     budget_options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'],
                           reserve=0, clock_ms=clock_ms) if preferred else {}
+    if spec.get('openai_trial') is not None:
+        budget_options['trial'] = spec['openai_trial']
     budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'], **budget_options)
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]
-    openai = None
     openai_config = config_for(spec.get('openai_prompt'))  # checked even without a key: the spec is all-or-nothing
     if secrets.get('LARP_MODEL_API_KEY'):
         openai = BudgetedOpenAI(OpenAIResponsesModel(model_id=spec['openai_model'],
