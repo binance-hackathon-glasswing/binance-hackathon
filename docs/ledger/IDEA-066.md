@@ -194,3 +194,22 @@ installation/bind/activation, first assessment, labels and later adoption remain
 with their existing owners. No service, API inference, wallet, host or AWS action
 was performed. The source-report verification remains24 passed/18 subtests;
 no additional runtime tests for documentation-only protocol reconciliation.
+
+## PC-PKG01 — GitHub release handoff publication (2026-10-18)
+
+User asks for the sendable handoff ZIP to be attached to a GitHub release.
+The package contains the published acceptance/protocol/gap records and fetch/
+verification helpers; original CI deployment bytes remain unavailable here.
+ZIP status explicitly says AWAITING_ORIGINAL_CI_ARTIFACT, binary_included=false.
+Checksum, ZIP integrity and missing-original refusal were checked; no bundle
+rebuild, installation, provider call or hosted activation was performed.
+
+GitHub repository API authentication succeeds as Keegan4, but both CLI and
+explicit authenticated uploads to uploads.github.com return401. The API-host
+asset POST is unsupported (404). A retained draft release416264073 was created
+for tag model-trial-7a0ea14, targeting full7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce.
+The earlier CLI failure cleaned up its temporary draft. Rather than claim a
+successful asset upload, publish the prerelease with immutable repository links
+to docs/build/releases/larp-7a0ea14-handoff.zip and its checksum on the separate
+codex/release-handoff-7a0ea14 branch. This makes the requested handoff downloadable
+to repository readers without changing main/integration or original release bytes.
