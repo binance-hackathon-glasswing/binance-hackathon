@@ -1,5 +1,7 @@
 # PC-HO02 — late Oct18 deployment continuation for Yao Zhu
 
+**New coordinator: start at [COORDINATOR_HANDOFF_20261019.md](COORDINATOR_HANDOFF_20261019.md)** (Yao Zhu stepped down as coordinator on Oct 19).
+
 **PC-DEPLOY02 — current live state (Oct18 17:20 UTC; supersedes the pending-installation text below):**
 the unsigned capped LLM trial is **deployed and running** on `ea25b52` (merged PR178 OpenAI
 JSON-input fix, a **local non-CI build** per Yao, PC-BUILD01), run
