@@ -4,6 +4,11 @@ Written 2026-10-16. Gate B turns the signer on for the **dev wallet** at minimum
 
 The repository side of the swap decoder is built (IDEA-070). Everything below needs a person, a host, the router's verified source, or a team decision.
 
+Current PR reconciliation, lifecycle evidence and the offline current-input
+signer-cap checker are in [Gate B remaining work](GATE_B_REMAINING.md)
+(IDEA-039 GB-RW1). Source acquisition PR139 and the proposal/host dependencies
+remain explicit; numeric cap coverage never enables signing.
+
 ## What changed in the code (IDEA-070)
 
 - `larp/execution_live/router.py`: `RouterEvidence.v1`, `PinnedRouterDecoder` and the `selector` / `check` command line.

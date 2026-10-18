@@ -1,7 +1,7 @@
 # IDEA-076 — Build the S1 trading plan (trend-guarded volatility-weighted book)
 
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
-- Status: open (criteria pre-registered; implementation follows on `claude/s1-trading-plan`).
+- Status: open (S1 core repository review PASS; Isaac B6 full offline verification PASS in PR165 / EB-01 below; owner review, parameter approval, live inputs, B5/B7 and rehearsal remain).
 - What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:
   - **B2:** a profile baseline, `TREND_GUARDED_VOL`, with its own `s1` block and bounds.
   - **B3:** the policy and planner: target gross = min(trend level, LLM level), with the planner's risk ladder on top; precedence as in IDEA-075 §6; reuse of the IDEA-037 trim latch.
@@ -11,7 +11,7 @@
 - Not in this record:
   - EXP-007, the trend-guard replay. It is NOT RUN, because this session can't reach any price history (network policy).
   - Wiring live session bars into the runtime driver. Today the driver passes no `series`, and the candle reader needs timestamp-convention evidence (DR-08). Until then the live trend guard keeps its starting state (UP), and every round says so.
-  - The execution window and the per-leg attempt limit at execution level (B6, Isaac).
+  - Originally outside the core increment: execution window and per-leg attempt limits (B6, Isaac); now implemented under EB-01 below, with real-cost/parameter and hosted acceptance still open.
   - The session-close job and the round-log `input`/`cot` fields (B5, Keegan).
   - The deviations-register rows (B7).
   - Any LLM call. The limiter accepts a model's output only through the evidence check; producing that output is B4's model half.
@@ -194,3 +194,92 @@ R4–R10 PASS at pushed `8d59d0e`: complete strategy/risk/integration groups **4
 [Issue #154](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/154) tracks the completed repository implementation/review slice and is PR131's closing issue. GitHub Actions run [39024686734](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39024686734) at8d59d0e, runtime job117373243661: annotation confirms job not started because recent account payments failed or spending limit must increase (#98). No org-CI, Linux/systemd, official-bundle, host or LIVE pass claimed. The subsequent result/status changes are documentation only.
 
 Remaining owners: Keith — §12 measured profile/weights and EXP007/token-session qualification; Yao Zhu/Keegan — verified limiter feed, live input wiring and B5 scheduling/log fields per the delivery plan; Isaac — B6 actual execution-window/attempt/session enforcement (the existing discretionary count still associates a late broadcast with its planning session); Keegan — B7 deviations and integration/rehearsal acceptance. Team — O1–O6 and parameter freeze. No whole live backlog line is complete for removal. RV-131 supersedes the prior note accepting delayed Class2-held reductions: entry blocks now block only increases, never S1 cuts. Live/default profiles are not changed or installed by this merge, and no S1 value is adopted by these synthetic results.
+
+## EB-01 — Isaac B6: execution windows and bounded leg attempts (2026-10-18 SGT, prospective)
+
+User requests the next highest-priority unblocked Isaac feature. PR164 is merged at integration `a2af2df`; verified router source, approved caps and hosted/provider acceptance remain external dependencies. B6 is implemented on a separate branch, without deploying or selecting live parameters.
+
+Pass criteria, recorded before implementation/test execution:
+
+- **EB1 Configuration:** S1 explicitly supplies open delay, close buffer and maximum attempts per leg/session. No silent production defaults or parameter adoption. Other baselines retain their behavior. Calendar bounds come from the runtime's pinned regular-session calendar, covering holidays, early closes and UTC/DST transitions.
+- **EB2 Planning and costs:** discretionary BUY and SELL legs are attempted only inside `[open + delay, close - buffer)`. Existing exact-size logged quote/slippage/cost gates remain in force. One round evaluating a leg's quotes counts once, including quote/cost refusals; internal same-round quote refinement does not consume extra attempts. No loop or fresh round/intent ID resets the count.
+- **EB3 Durability:** counts are committed atomically with the planned round and retained after it closes, crash/restart, settlement and replay; they reset only at the next actual regular-session open. Scope is `(symbol, side, mandatory/discretionary)` so failed entries cannot exhaust safety-sale attempts. The explicit attempt bound applies to both lanes; exhausted safety requirements remain outstanding and logged, never silently cleared. Gas top-ups retain their separate controls.
+- **EB4 Execution:** every new execution step and the independent signer check the durable planned authority against current time. Discretionary approval/swap signing and release stop at the window end, including a command delayed into another session. Unbroadcast work is revoked/aborted and reconciled normally; possibly submitted transactions always continue reconciliation. Mandatory sales bypass the regular execution window, but keep quote, integrity and bounded-attempt checks.
+- **EB5 Evidence:** window, attempt ordinal/budget and quote refusal/cost facts remain in the round's plan/input/output audit. Synthetic regressions cover both window edges, actual session rollover, mandatory paths, malformed state, same-round replan, independent signer/release refusal, PostgreSQL restart and exact recorded-port replay. Run focused tests and the full repository suite with disposable PostgreSQL; state environmental/hosted skips explicitly. Push all behavior-affecting code before execution.
+
+The example 30-minute delay, 15-minute close buffer and three attempts in IDEA075 §12 remain proposals. This feature does not resolve #27/#44, obtain router evidence, qualify native tracing, enable signing, approve a model/network destination or change AWS/wallet state. B5 scheduling and real quote-cost/profile review remain with their named owners.
+
+### EB-01 implementation and focused evidence (2026-10-18 SGT)
+
+**EB3a review extension, before running new regressions:** a committed intent or terminal quote refusal closes its quote-chain slot. Supplying an older parent again must consume a fresh ordinal, including after NOT_SUBMITTED/restart and during replay. An unfinished bounded refinement may still reuse its original slot. The initial full-suite run was interrupted for this additional hardening; do not count it as full-suite evidence.
+
+**EB4a review extension, before running regressions:** window authority must bind the actual pay/receive tokens, exact input and minimum receipt to the planned leg. A primary-supplied BUY or changed amount cannot borrow a mandatory SELL's after-hours authority. The subsequent full run was stopped before changing this code; final full-suite evidence must cover the final repair.
+
+- Criteria committed/pushed at `b6c324f`, before implementation and execution. Application/tests pushed at `f5e058e`; quote-child integration at `d4b3b28`. S1 now requires explicit `s1.execution` parameters; examples remain proposed. Usage and exact scope: `../build/S1_EXECUTION_BOUNDS.md`.
+- The planner journals session/leg/ordinal/interval and the durable attempt budget atomically with each plan, including refused quotes and costs. The budget survives closed rounds, restart and settlement; it rolls at the next frozen-calendar session open. Safety/discretionary BUY/SELL scopes are separate. Exhausted mandatory requirements remain outstanding. S1 requests one missing wallet-leg quote at a time; bounded quote children reuse a matching committed parent's slot instead of charging each refinement as a new attempt. New ordinary rounds consume a fresh slot.
+- Command expiry is clamped to the logged window/session. Current-time checks run in execution guards, unbroadcast-step admission, the independent signer and the locked broadcast release. Unbroadcast work is aborted/revoked after expiry; possible submissions keep reconciling. Other baselines' behavior is retained. No new migration.
+- **Focused PASS at pushed `d4b3b28`: 78 tests, 47 subtests, 76.51 s**, macOS/Python3.12.14/disposable PostgreSQL14.24, no skips. Includes the three new regression modules, existing signed runtime service, live replay and S1 planning tests. Earlier pure coverage: 93 tests /77 subtests PASS; the first DB attempt failed because sandbox TCP was denied, then reran with approved local access. Initial fixture corrections supplied missing LIVE session bounds, real UTC day rolls and adequate calendar coverage; no assertion was disabled. The first quote-chain design's excessive reservation of unrequested names was corrected before this pass.
+- Verification limits: synthetic market/provider boundaries and throwaway signing keys only; no real provider call, paid model call, production key, wallet transaction, ai-seeds upload, host/AWS action or activation. Full-suite and PR delivery follow below. Isaac/Keith retain real-cost checks and parameter selection, Keegan release/B5 integration, Yao Zhu host setup, and all owners signed rehearsal acceptance. No whole IDEA075 backlog item is complete for removal.
+
+### EB-01 final verification and delivery (2026-10-18 SGT)
+
+- Closed quote slots are durable: a terminal refusal or issued intent closes the current ordinal. Old-parent references cannot reopen it, including after an intent ends NOT_SUBMITTED. The subsequent chain consumes the next ordinal, and exact replay reproduces both. The signer/window check additionally binds actual pay/receive tokens, exact input and canonical `Intent.minimum_output` to the planned leg; an altered BUY cannot borrow a mandatory SELL's after-hours authority. Gas-top-up rounds retain their existing independent native-resource controls.
+- **Full suite PASS at pushed `264412603040405de9c354dbb88381688874673e`: 1966 passed, 9 skipped, 2892 subtests passed, 412.88 s**, macOS / Python3.12.14 / disposable PostgreSQL14.24. Command: `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55441/postgres PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr20-venv/bin/python -m pytest -q -ra -p no:cacheprovider tests`. No failures, xfails or golden regeneration. Skips: one external real-response corpus, five opt-in disposable-systemd checks, three Linux bubblewrap checks. Those platform/host checks are not claimed here.
+- Final focused verification at `9c9c4c1`: **62 passed /54 subtests**, 9.41 s, no skips, covering all new B6 modules, S1 planner and native-gas settlement. Final actual planner-command mapping plus PostgreSQL replay at `2644126`: **4 passed**, 5.33 s, no skips. An earlier minimum-output field-name mistake was caught by the regression and corrected before these passes; no assertion was weakened.
+- Full log retained outside Git: `/private/tmp/larp-isaac12-full.log`, SHA256 `7739d194e3a96ecf9e5359a4c03ede5386bd72138dd0bbfee3a57b30806728e2`. The two interrupted full runs are not full-suite evidence. All behavior-affecting source/tests were committed and pushed before execution.
+- Delivery: [PR165](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/165), `codex/isaac-12-execution-bounds-20261018` into `codex/system-testing-20261012`, refs PR133 / IDEA075 B6. Code review/merge and Linux release evidence remain with Keegan/Keith; Isaac+Keith retain measured-cost validation and explicit parameter/profile approval, Yao Zhu host configuration, and all owners the signed rehearsal. No whole activation/Gate B/C item closes. S1 inputs require the new explicit execution block; parameters remain proposals until their freeze.
+- Org CI [39058015293](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39058015293) at tested source `2644126` ran **zero steps** in runtime, host-bundle and infrastructure jobs. Runtime check `117469905041` annotation confirms recent account payments failed or the spending limit needs increasing (existing #98). This is infrastructure refusal, not a CI test result; Linux/mirror release qualification remains open. PR165 is mergeable with no conflict. Final evidence commits change documentation only. The disposable local PostgreSQL container was stopped/removed; the feature branch is clean/pushed, no unpushed commits, and local `main` matches `origin/main` (0/0). Review/merge and the explicitly assigned external gates above are the remaining handoff items.
+
+### EB-RV2 — final current-integration review (2026-10-18, prospective)
+
+User requests finishing PR165 alongside the signed prerequisites. Inspect the complete
+B6 source diff and actual GitHub inline/submitted review records; report only
+reproducible findings. Merge current integration without rewriting history and
+push before running decision/trade/logging code. Preserve both B6 and newly merged
+model-routing records in the ledger conflict. Pass criteria: all B6 strategy,
+execution, signer and PostgreSQL replay regressions pass on the combined head;
+then the full offline suite passes with explicit platform skips. No real model,
+venue, wallet, receiver or AWS activity. Keegan/Keith peer review and exact Linux
+release qualification remain separate; no self-attributed peer approval.
+
+### EB-RV2 results (2026-10-18)
+
+Reviewed full production diff, new regressions and GitHub submitted/inline review
+records (both empty at review time). No remaining reproducible B6 code finding
+was identified. Preserved current integration via merge8f2d364, including new
+OpenAI routing/pacing work and both ledger records; no history rewriting.
+
+At pushed8f2d364, focused strategy/execution/signer/PostgreSQL replay checks:
+**80 passed,57 subtests,9.52s**. Full offline suite:
+**2021 passed,9 skipped,2981 subtests,415.04s** on macOS/Python3.12.14 and
+disposable PostgreSQL14 (container image digest
+sha256:14bfab572eec6abf65892e1db7c3ba8d41b2a2855c1b143664907d6e146eb6e1).
+Command: `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55443/postgres
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr20-venv/bin/python -m pytest
+-q -ra -p no:cacheprovider tests`. Nine skips retain one external recording,
+five opt-in systemd and three Linux bubblewrap checks; no xfails, regenerated
+goldens or real external adapters. Full log:
+/private/tmp/larp-signed-prereqs-b6-full.log, SHA256
+0888347788c35c03c1fba0185042052d333f1795f9670148cc9b6c5eb1435412.
+
+This completes Isaac's delegated code review/current-integration local
+verification. It does not attribute a personal Keegan/Keith approval or Linux CI
+pass. User requests finishing PR165; normal merge can preserve all commits.
+Exact-release Linux/mirror qualification and real-cost parameter/profile freeze,
+B4/B5 integration, provider/source/#27/#44 and hosted/signed acceptance remain
+separate release gates; merge is not deployment authority.
+
+
+### V3-REL01 release inclusion review — 2026-10-18 UTC
+
+PR165 is already merged into integration at817eb71. Reviewed its production diff
+against the integration parent: durable session/attempt and closed quote-child
+slots, economic-bound signer checks, dispatch window and unsent revocation,
+continued reconciliation and replay. No remaining reproducible finding found.
+Retain it in the next unsigned v3 candidate; this does not activate S1 or adopt
+its proposed30-minute/15-minute/three-attempt parameters. Existing B4/B5/B7,
+EXP007, measured profile and signed-host acceptance remain open. Combined Linux/
+PostgreSQL14.24 verification at pushed61a123a:2029 passed,6 skipped,2981 subtests;
+includes the strategy/integration/execution/signer bounds cases. Actual mirror
+push/dispatch are blocked by repository access. See IDEA057 V3-REL01 and
+[release record](../build/LLM_V3_RELEASE_20261018.md); no CI binary accepted yet.

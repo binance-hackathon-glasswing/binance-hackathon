@@ -151,7 +151,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,
-                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast'))))
+                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast')), clock_s=clock_s))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
@@ -166,8 +166,14 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     mapping = execution_mapping(config, profile, decimals, wallet=wallet)
     loop.service = ExecutionService(store=store, executor=executor, mapping=mapping, observe=loop.publish,
                                     wallet_id=wallet, epoch=epoch, authority_version=epoch, settlement=facts,
-                                    round_terminal=terminal)
+                                    round_terminal=terminal,
+                                    admission=lambda intent, now: _execution_permitted(store, run_id, intent, now))
     return loop
+
+
+def _execution_permitted(store, run_id, intent, now_s):
+    from larp.strategy.execution_bounds import permitted
+    return permitted(store.load(run_id).read()['projection'], intent, now_s * 1000)
 
 
 def main(argv=None):

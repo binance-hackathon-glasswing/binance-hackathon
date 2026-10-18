@@ -1,0 +1,86 @@
+{
+  "schema": "UnsignedTrialReleaseVerification.v1",
+  "verified_at_utc": "2026-10-18T08:41:58.879471+00:00",
+  "scope": "UNSIGNED_V3_TRIAL_ONLY",
+  "build_id": "d8aa7d53e5e27543135f8729ff7a7afd4450278a",
+  "mirror_repository": "Keegan4/Keegan4-larp-ci-mirror",
+  "run_id": 39111854179,
+  "run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179",
+  "artifact_id": 12129754965,
+  "artifact_digest": "sha256:2f4c0808689376ed6db03aad65de6b0950a53cbce6d3652e84e7f29a611fcee4",
+  "all_four_jobs_passed": true,
+  "bundle": "larp-d8aa7d53e5e2-x86_64.tar.gz",
+  "bundle_sha256": "9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89",
+  "bundle_bytes": 98379380,
+  "manifest": "larp-d8aa7d53e5e2-x86_64.release.json",
+  "manifest_sha256": "8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0",
+  "external_embedded_manifest_equal": true,
+  "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+  "build_origin": "https://github.com/Keegan4/Keegan4-larp-ci-mirror",
+  "manifest_file_count": 195,
+  "bundle_file_checksums_verified": 234,
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "routing_spec_sha256": "baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e",
+  "bundle_identity": {
+    "build_id": "d8aa7d53e5e27543135f8729ff7a7afd4450278a",
+    "arch": "x86_64",
+    "python_version": "3.12.15",
+    "python_tag": "20261001",
+    "python_file": "cpython-3.12.15+20261001-x86_64-unknown-linux-gnu-install_only.tar.gz",
+    "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+    "rds_region": "ap-southeast-2",
+    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+  },
+  "jobs": [
+    {
+      "id": 117629480920,
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179/job/117629480920"
+    },
+    {
+      "id": 117629480996,
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179/job/117629480996"
+    },
+    {
+      "id": 117629481010,
+      "name": "runtime",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179/job/117629481010"
+    },
+    {
+      "id": 117629481061,
+      "name": "host-bundle",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179/job/117629481061"
+    }
+  ],
+  "host_deployment_performed": false,
+  "paid_provider_calls_performed": false,
+  "pending": [
+    "Yao host/provider identity/funding/rights checks and actual trial-cap enforcement before paid jobs",
+    "Yao AWS/host install/bind/activation",
+    "Gap-report review after Yao supplies it after 19:00 SGT"
+  ],
+  "publication_run_id": 39112659498,
+  "publication_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39112659498",
+  "release_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5",
+  "release_id": 416334156,
+  "tag_name": "llm-trial-v3-d8aa7d5",
+  "pr169_merge": "95f6a8fa822d654f390b6a1396c67d16869047f7",
+  "ci_summary": {
+    "passed": 2029,
+    "skipped": 6,
+    "subtests": 2981,
+    "actual_systemd_passed": 5,
+    "actual_systemd_subtests": 5,
+    "terraform_aws": "PASS",
+    "terraform_bootstrap": "PASS",
+    "both_role_bundle_provisioning": "PASS",
+    "docker": "PASS",
+    "demo": "PASS"
+  },
+  "acceptance_scope": "Original CI bundle accepted for unsigned v3 trial; actual host/provider/stop-cap/start and signed/scored adoption remain separate"
+}

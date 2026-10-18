@@ -230,3 +230,10 @@ Current intake/vendor packet is updated in ROUTER_SOURCE_REVIEW.md; no message
 sent. PR139 stays draft; source guarantees/review/route check remain NOT_RUN.
 JSON/source-byte hash/diff checks pass; no application test/runtime, key, signing,
 wallet, official-log or AWS operation. No whole source/readiness item closes.
+
+RE-02 final integration: normal merge of current integration preserves its
+completed GAP30 removal and updated GAP31/32 qualification wording; retains the
+exact source blocker under GAP29. Source PR139 remains draft, now synchronized
+for review with no application-source delta from integration. JSON/response
+hashes, no conflict markers and diff checks pass; no runtime test needed for
+the documentation/evidence-only delta. No source/adoption/host gate closes.

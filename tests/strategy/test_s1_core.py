@@ -16,6 +16,8 @@ def block(**changes):
                  weights={s: [1, 5] for s in NAMES}, weight_cap=[3, 10], hard_name_weight=[7, 20],
                  top_up_band=[1, 20], trend_window_sessions=5, trend_band_bps=100, trend_delay_seconds=900,
                  trend_start_state="UP", llm_expiry_sessions=3, max_legs_per_symbol_session=3,
+                 execution=dict(open_delay_seconds=1800, close_buffer_seconds=900,
+                                max_attempts_per_leg_session=3),
                  limiter_mode="DETERMINISTIC")
     value.update(changes)
     return value

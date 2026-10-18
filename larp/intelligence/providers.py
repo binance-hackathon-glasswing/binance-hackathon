@@ -347,15 +347,18 @@ class HostedModel:
         if self._artifacts.put(data) != sha256_hex(data):
             raise IntelligenceError("Artifact store returned a different content address")
 
-    def step(self, request, remaining_ms: int):
+    def step(self, request, remaining_ms: int, *, before_dispatch=None):
         r = request.read()
         body = self.request_payload(request)
         record = dict(artifacts=self._artifacts, request_payload=body,
                       cost=dict(amount_micro_usd=None, basis='UNKNOWN_PROVIDER_USAGE'))
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
+        headers = self._headers()
+        if before_dispatch is not None:
+            before_dispatch()  # after preparation, immediately before any network I/O
         try:
-            result = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
+            result = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
             status, raw = result[:2]
             metadata = result[2] if len(result) == 3 else {}
         except LateReply as exc:  # paid for and complete, but late: a timeout whose bytes are kept

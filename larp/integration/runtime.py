@@ -202,6 +202,9 @@ class ContextBuilder:
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
+        if self.profile.get('baseline') == 'TREND_GUARDED_VOL':
+            context['execution_session'] = self.calendar.window(now_ms)
+            context['execution_attempt_budget'] = projection.get('execution_attempt_budget')
         if self.gas_quotes is not None:
             context["gas_quotes"] = self.gas_quotes(now_ms)
         if broadcast_ms is not None:
@@ -287,6 +290,8 @@ class RuntimePlanner:
         intents, deltas = [], []
         for intent in raw["intents"]:
             expires = iso_ms(intent["quote_expiry"])
+            if 'execution_bounds' in intent:
+                expires = min(expires, intent['execution_bounds']['valid_until_ms'])
             if valid_until is not None and not intent["mandatory"]:
                 expires = min(expires, valid_until)  # a discretionary intent never outlives its proposal
             decision_id = "decision:" + digest("larp.decision.v1", {"snapshot_id": snapshot.snapshot_id,
