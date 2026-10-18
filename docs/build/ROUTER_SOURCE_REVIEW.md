@@ -136,3 +136,35 @@ independent review exist. A source export from a permitted ordinary browser or
 the existing vendor-request draft remains the next action; no vendor message
 was sent. Current source, fee, native and gas findings/owner decisions are
 recorded in PR133's docs/build/SIGNED_PREREQUISITES_20261018.md (SP-01).
+
+## RE-02 — current separate-PR source point (2026-10-18)
+
+Isaac asks for each immediate point in its own PR and confirms no source export
+is available. This existing source-only draft PR139 remains that point's PR.
+Three bounded public GETs at10:59:10–11UTC returned:
+
+| Alternative | Result / significance |
+|---|---|
+| Candidate facet BscScan Code |403/Cloudflare challenge; still no source body, no inference about verification status |
+| BscScan public legacy source API |301, not followed under no-redirect acquisition policy; not source evidence |
+| Etherscan v2, chainid56, exact facet, no account key |HTTP200 but status failure/NOTOK, Missing/Invalid API Key; authenticated source retrieval is unavailable without account access |
+
+[Exact report](evidence/router-source-alternatives-20261018.json), SHA256
+3d04c7186a398794f53b0818bd891ee3b09a80a8e8de541f261f3b00a85495e4. These are request/response hashes, never source/ABI hashes.
+Existing Sourcify no-match evidence stands. No source export or account access
+was invented, no paid signup/key search was attempted and no external message
+was sent. Independent source review and route checker remain NOT_RUN.
+
+**Concrete missing input:** a permitted browser export or authenticated source
+retrieval for the exact candidate plus router dispatch/all delegated helpers,
+including full source imports, ABI, compiler/settings and deployed-code binding.
+The wallet/private key is irrelevant to acquiring public contract source. An
+explorer API key, if the owner already has one, is a distinct account credential
+and stays outside Git/chat; none was supplied or read here.
+
+The existing vendor request above is ready to forward through the team's own
+confirmed contact; no contact or permission to impersonate a teammate is assumed.
+After delivery: retain/hash original bytes, establish signature/paths/native
+semantics and all four guarantees from complete code, obtain Keegan's actual
+review, then run the existing real-artifact checker. Keep this PR draft and
+#138/#33/GAP29/signing blocked until that evidence actually exists.

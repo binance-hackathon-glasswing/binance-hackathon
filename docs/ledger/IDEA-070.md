@@ -219,3 +219,14 @@ status/error/response hashes; no complete source/ABI means no RouterEvidence,
 source guarantee, review or route-check PASS. No vendor message or paid account.
 Prepare the minimal export/vendor-request checklist, keep #138/#33 open and
 PR139 draft. Validate JSON/hashes and diff only for this evidence/doc slice.
+
+### RE-02 results / point2 dedicated PR
+
+At10:59:10–11UTC: candidate Code403/Cloudflare; legacy source API301 (not
+followed); v2 chain56 exact-facet source API reports Missing/Invalid API Key.
+Source/ABI still absent and no user export/account access is available.
+Report SHA2563d04c7186a398794f53b0818bd891ee3b09a80a8e8de541f261f3b00a85495e4. Request/body hashes never become source/ABI hashes.
+Current intake/vendor packet is updated in ROUTER_SOURCE_REVIEW.md; no message
+sent. PR139 stays draft; source guarantees/review/route check remain NOT_RUN.
+JSON/source-byte hash/diff checks pass; no application test/runtime, key, signing,
+wallet, official-log or AWS operation. No whole source/readiness item closes.
