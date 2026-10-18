@@ -7,7 +7,7 @@ and #159. Historical open review scope was #126/#133/#139/#155/#157/#158/#161, p
 repository deliveries below are distinct from pending evidence, decisions and
 host checks. Host results are prior owner reports, not fresh checks by this review.
 
-Release-status refresh Oct18 (V3-REL01): integration817eb71 includes merged #165 and #167. #165 was reviewed and retained for the next unsigned release; #139 remains draft. OpenAI-primary services/DEV-19 and KMP-P2 remediation are pushed on the release branch; approved PR168 protocol/rubric is carried without merging PR133. Direct mirror push and Actions dispatch are actually blocked (repository-not-found/HTTP404). No new CI binary/run ID exists yet. Old7a0ea14 remains v2 only. See the release record linked below.
+Release-status refresh Oct18 (V3-REL02): new unsigned release d8aa7d5 includes merged165/167 and KMP-P2 correction; PR169 merged95f6a8f. User selected private Keegan4 mirror: run39111854179 all4 PASS; original bundle/sidecar/manifest/CA verified and uploaded to [GitHub prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5). Old7a0ea14 remains historical v2. PR133 stays open; host/provider/stop-cap/start and actual trial evaluation remain pending. Gap-report review after Yao supplies it after19:00 SGT.
 
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
@@ -103,7 +103,6 @@ SP-01 refresh Oct18: #165 reviewed/merged at817eb71 after combined-head local ac
 ### Gate B setup
 
 - [ ] **Isaac:** fill in `RouterEvidence.v1` from the router's verified source on BscScan, following `docs/build/GATE_B.md` in #130 (#33, GAP-29). **Blocked (2026-10-17, draft #139):** the router's code is unverified on BscScan, Read Facets gives no usable ABI and Sourcify has no match, so there is no verified source yet. #139 holds the acquisition report and the handoff in `ROUTER_SOURCE_REVIEW.md`; it is not to be merged until the evidence is complete. SP-01 recheck: candidate Code403 challenge and Sourcify404/no match; source/ABI still unavailable. See [current evidence and next action](SIGNED_PREREQUISITES_20261018.md#evidence-results--sp-01-r1).
-- [ ] **Keegan:** finish the V3-REL01 mirror-CI release and original artifact handoff from `codex/llm-v3-trial-release-20261018` (latest integration817eb71 includes #167 and #165; #165 reviewed and retained without S1 adoption). Code/protocol/services/DEV-19 and KMP-P2 are ready for CI; Linux/PostgreSQL verification is in the release record. Direct push was attempted under PC-DEC04 and denied repository-not-found; direct runtime.yml dispatch returned HTTP404. Restore this environment's access to Cookiemunchrr/larp-ci-mirror, then Keegan retries personally, requires all-job green at the exact SHA and hands over the original tar.gz, sidecar, manifest, CA hash and run ID. Old7a0ea14/handoff ZIP is not this binary; no new artifact or CI pass exists yet.
 - [ ] **Keegan:** independently review Isaac's complete verified router evidence (#138/#139) when supplied. Decoder PR #130 is already merged and its repository review is recorded in IDEA-070; that does not approve missing real source evidence.
 - [x] **Keith:** interim quote handoff supplied for Isaac via #118 and [KMP-QUOTE01](evidence/quotes-interim-20261018/README.md): complete JSONL snapshots/26 latest raw artifacts, verified hashes, actual coverage/gaps and fee/gas caveats. Final capture/profile review remains open.
 - [ ] **Isaac:** using merged #130, after the source-evidence review, run `python -m larp.execution_live.router check` on those files until it reports PASS. No separate route capture is needed. **NOT_RUN SP-01:** all29 handoff hashes/lengths verify, but source and independent review are absent; do not manufacture evidence to invoke the command.
@@ -196,7 +195,7 @@ These were missing from every list; each one is needed for the LLM to be in the 
 
 Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its approved protocol/rubric/register and public manifests are carried on the V3-REL01 release branch; the complete checklist/quote handoff remains here. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
 
-- [ ] **Keegan / Yao Zhu:** complete actual v3 trial-limit enforcement and CI/host qualification under approved PR168/KMP-BUD01. KMP-P2 and model service/DEV-19 implementation are done in V3-REL01; no repeat protocol approval. Yao records an admission method enforcing US$8 total /US$2.50 UTC-day caps with maximum in-flight costs before paid testing; without it paid v3 testing waits. Keegan retries direct mirror push/dispatch after the current repository access block is resolved; original artifact handoff remains pending. PR133 stays open.
+- [ ] **Yao Zhu:** record actual v3 trial-limit enforcement and host/provider qualification under approved PR168/KMP-BUD01 before paid testing. New unsigned release d8aa7d5, KMP-P2 fix, services/DEV-19 and exact-SHA CI/original-artifact handoff are complete (V3-REL02). Enforce US$8 total/US$2.50 UTC-day caps with maximum in-flight costs; without it paid v3 testing waits. No repeat protocol approval. PR133 stays open.
 
 [Model prerequisites](MODEL_PREREQUISITES_20261018.md) and its linked budget,
 blind-label, provider-rights and signing/profile records carry the proposed v3
@@ -323,7 +322,7 @@ protocol/rubric/register. No repeat approval. Full pushed61a123a verification:
 external corpus1 and actual-systemd5 skipped, Linux bubblewrap ran. No xfails.
 Focused85 tests/111 subtests, deviation rendering and offline demo pass.
 
-[Release/evidence record at published0441806](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/0441806/docs/build/LLM_V3_RELEASE_20261018.md)
+[Release/evidence record at published0441806](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/996ef0f/docs/build/LLM_V3_RELEASE_20261018.md)
 records prospective criteria, corrected red/green tests, PR165 review/inclusion,
 PC-AWS06 report review and full log hash. The migration/roles/TLS review is
 complete for reported empty-DB primary checks only; signer-host login, populated
@@ -345,3 +344,37 @@ Keith's real usage forecast and blind labels; Keegan's fixed-window gap review
 after Yao supplies it after Oct18 11:00 UTC/19:00 SGT. Pending gap report does not
 delay building. No AWS, paid-provider, signer or deployment action performed.
 PR133 remains open and unmerged; PR126 is untouched.
+
+
+## V3-REL02 / PC-REL07 — original unsigned release delivered
+
+[GitHub prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5),
+frozen source `d8aa7d53e5e27543135f8729ff7a7afd4450278a`. User selected their
+private Keegan4 mirror; direct push and dispatch completed. Acceptance
+[run39111854179](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179)
+passes all4 jobs:2029 tests/2981 subtests;6 skips include5 actual-systemd tests
+subsequently passed separately (5 tests/5 subtests), plus1 external corpus.
+Terraform, Docker/demo and both-role bundle provisioning pass. PR169 merged
+ordinarily at95f6a8f. PR133/126 remain open. No repeated protocol approval.
+
+Original CI artifact12129754965 downloaded and independently verified: ZIP
+digest, sidecar, external/embedded manifest,195 release files,234 bundle-file
+checksums, source/repository/mirror identity and packaged CA. Six actual assets
+are uploaded to the prerelease. The publishing-only branch/run39112659498
+reverified and uploaded originals with a scoped mirror Actions token after
+direct cloud uploads returned401; it did not rebuild the binary or substitute
+for acceptance CI. Frozen tag/source stay d8aa7d5; org billing is not fixed.
+
+| Item | SHA-256 |
+|---|---|
+| Original bundle | `9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89` |
+| External/embedded manifest | `8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+[Machine-readable evidence](evidence/llm-v3-release-20261018.json). Sendable
+folder/ZIP are in `/workspace/exports/larp-d8aa7d53e5e2-unsigned-v3` and `.zip`,
+including the real deployment binary. AWS/host deployment, provider/funding/
+rights checks, in-flight trial-cap enforcement and start remain with Yao.
+Keith supplies actual usage/labels; team decides adoption. Keegan's fixed-window
+gap-report review is pending until Yao supplies it after19:00 SGT. No paid calls,
+AWS changes, host deployment or future coverage pass claimed.

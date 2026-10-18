@@ -886,3 +886,37 @@ PC-GAP01 report review remains pending until Yao supplies the Oct17 11Z–Oct18
 coverage remain required. Pending report does not delay build. Actual trial-cap
 enforcement, provider/rights/host qualification and start remain with Yao;
 measured forecast/labels with Keith and adoption with team. PR133 stays open.
+
+
+## V3-REL02 / PC-REL07 — original unsigned release delivered
+
+[GitHub prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5),
+frozen source `d8aa7d53e5e27543135f8729ff7a7afd4450278a`. User selected their
+private Keegan4 mirror; direct push and dispatch completed. Acceptance
+[run39111854179](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179)
+passes all4 jobs:2029 tests/2981 subtests;6 skips include5 actual-systemd tests
+subsequently passed separately (5 tests/5 subtests), plus1 external corpus.
+Terraform, Docker/demo and both-role bundle provisioning pass. PR169 merged
+ordinarily at95f6a8f. PR133/126 remain open. No repeated protocol approval.
+
+Original CI artifact12129754965 downloaded and independently verified: ZIP
+digest, sidecar, external/embedded manifest,195 release files,234 bundle-file
+checksums, source/repository/mirror identity and packaged CA. Six actual assets
+are uploaded to the prerelease. The publishing-only branch/run39112659498
+reverified and uploaded originals with a scoped mirror Actions token after
+direct cloud uploads returned401; it did not rebuild the binary or substitute
+for acceptance CI. Frozen tag/source stay d8aa7d5; org billing is not fixed.
+
+| Item | SHA-256 |
+|---|---|
+| Original bundle | `9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89` |
+| External/embedded manifest | `8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+[Machine-readable evidence](../build/evidence/llm-v3-release-20261018.json). Sendable
+folder/ZIP are in `/workspace/exports/larp-d8aa7d53e5e2-unsigned-v3` and `.zip`,
+including the real deployment binary. AWS/host deployment, provider/funding/
+rights checks, in-flight trial-cap enforcement and start remain with Yao.
+Keith supplies actual usage/labels; team decides adoption. Keegan's fixed-window
+gap-report review is pending until Yao supplies it after19:00 SGT. No paid calls,
+AWS changes, host deployment or future coverage pass claimed.
