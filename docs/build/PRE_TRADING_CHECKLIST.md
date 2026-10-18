@@ -3,7 +3,7 @@
 This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Audited 2026-10-17 for the LLM path and against every open issue (IDEA-066 PC-AUD01). Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 Review refresh: integration `a428bab` includes #130/#131/#143/#144/#148/#149/#151
-and #159. Historical open review scope was #126/#133/#139/#155/#157/#158/#161, plus #163 opened during review. Oct 18 refresh: #155/#157 reviewed and merged; #158/#163/#161 now also merged; #164 signed-LLM code merged; #133 remains open. Completed
+and #159. Historical open review scope was #126/#133/#139/#155/#157/#158/#161, plus #163 opened during review. Oct 18 refresh: #155/#157 reviewed and merged; #158/#163/#161 now also merged; #164 signed-LLM code merged; #133 remains open. Oct 18 03:30 UTC: status board below checked against integration `63ee226`; #165 newly open. Completed
 repository deliveries below are distinct from pending evidence, decisions and
 host checks. Host results are prior owner reports, not fresh checks by this review.
 
@@ -26,6 +26,47 @@ host checks. Host results are prior owner reports, not fresh checks by this revi
 ## Plan (team decision 2026-10-17)
 
 Finish every Gate A and Gate B step that doesn't need the strategy profile this weekend, then on **Oct 20** build the profile from the finished quote capture and run everything that needs it, in order. Three things need the profile: `prepare` builds the runtime config from it, the evidence service refuses to start without that runtime config, and the planner takes its minimum trade size and slippage limits from it. Gate A `prepare` accepts only a profile built from a real measured `QuoteCostSummary.v1` (`validate_live`), so it can't be faked to start early.
+
+## Oct 18 status board (team task list, checked 03:30 UTC / 11:30 SGT)
+
+One row per item on the team's Oct 18 list: its owner, then the evidence found in the repository and issues at integration `63ee226` (plus open PRs #126, #133, #139, #165), or the blocker. "Not recorded" means nothing in the ledger, the issues or this file shows it done; it may have happened privately. Owners tick the matching line further down when done. No keys, private RPC URLs or database hosts go in this file, the issues or the group chat; send those privately.
+
+**Priority: unblock the LLM shadow trial.** The trial switch (last row) needs all four inputs above it.
+
+| Item | Owner | Status, evidence or blocker |
+|---|---|---|
+| Send Yao Zhu both model keys (AIand, OpenAI) and the exact prior OpenAI spend, privately | Keith | **Not recorded.** No receipt in IDEA-066 or IDEA-057 P1. Blocks budget `init` and the runtime secret. Yao Zhu records receipt only (never the keys); the spend number itself is not secret and goes into IDEA-057 P1 with the `init` |
+| Review the trial's acceptance bars | Keith | **Not recorded.** No comment on #97; IDEA-057 "Shadow trial" bars M2, M5 and the others are still ⚠ PROPOSED. Blocks Keegan's confirmation and the switch |
+| Confirm release bundle `7a0ea14` | Keegan | **Verified, not yet accepted.** Yao Zhu verified mirror run 39091699018 (all four jobs pass), bundle SHA-256 `ff951451…5de06`, manifest `bb17b7ff…ca70a`, 192 file hashes and the RDS CA (IDEA-066 PC-CI02, `docs/build/evidence/model-trial-mirror-20261018.json`). Keegan's acceptance is not inferred from those checks; record it in IDEA-066 |
+| Confirm the trial bars | Keegan | **Blocked** on Keith's review above |
+| Decide how `doj-press` and `fr-bis` pass the gap report | Keegan | **Not decided.** Cause in IDEA-066 PC-AWS10: unbounded listing history, so every poll ends `truncated` and DOJ can never show a complete 24 h. Options: bound the history walk in code (names an owner and needs a new bundle) or accept both as explained gaps in this report. The 11:00 report will show both failing either way |
+| 24 h gap report at 11:00 UTC (19:00 SGT); save its hash; send to Keegan | Yao Zhu | **Not due yet** (the fixed window ends Oct 18 11:00 UTC). Command and output location in the git-ignored `deploy/activation/oct18-run-sheet.md`; dry run PC-AWS10. Per PC-AWS11, report the PC-AWS09 blocked-archive period and the retained PERMANENT incident-backup row alongside it |
+| After the report, bundle acceptance and Keith's inputs: install the bundle, start the trial, verify its first assessment | Yao Zhu | **Blocked** on the four rows above. Steps: "Model trial" section below and `docs/build/AIAND_MODEL_ROUTING.md` "Host steps"; record P0–P2 and the start time in IDEA-057 |
+
+**In parallel while waiting**
+
+| Item | Owner | Status, evidence or blocker |
+|---|---|---|
+| Send Isaac the quote artifacts collected so far; keep the capture running | Keith | **Not recorded.** Capture still scheduled to end Oct 20 00:00 UTC (IDEA-063). The router check also waits on #139, so this is not the critical path |
+| Record the interim profile's coverage settings and capture/profile hashes in IDEA-063 | Keith | **Not recorded** in IDEA-063. Known from this file: `--min-days 2 --min-samples 9`, profile `d951207f…`; the capture/summary hash is missing |
+| Comment on #27's signing-lifetime options | Keith | **Not recorded.** #27's last comment is from Oct 15; options in `SIGNING_LIFETIME_PROPOSAL.md` (#144). Blocks Keegan's #27 decision, which blocks every real swap |
+| Oct 19 proposals: first-trade window, profile (`EQUAL_WEIGHT` or S1), POLICY-HOLD | Keith | **Not recorded.** Facts for the window option: the rehearsal profile's buy window is Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS`, `larp/strategy/profiles.py`); trading inside it needs no code change, a dev window before it does (version event). Isaac decides after |
+| Capture AIand/OpenAI terms; check current AIand funding | Keith | **Not recorded.** Provider terms are not in the licence register (IDEA-066 PC-AUD01, IDEA-049-A rights row). Funding check needs trial usage (IDEA-057 M4) |
+| Run EXP-007 after O2 | Keith | **Blocked** on Keegan's O2 below. EXP-007 is still draft; result due Oct 19 |
+| Router source/evidence for #139: exact blocker and next action | Isaac | **Blocked, still blocks signing.** No change since Oct 17 (#139 head `bd8a34b` only merges integration). Blocker: the router `0xb444…fdda5` is unverified on BscScan, Read Facets gives no ABI, and Sourcify has no match for the router or for the candidate facet `0xa9fa…e603` found by `facetAddress(0xad43f73d)`. Next action: open the candidate facet's own BscScan Code page; if it is also unverified, send the drafted vendor request in `ROUTER_SOURCE_REVIEW.md` (not sent yet). Cloud agent sessions cannot reach BscScan, Sourcify or BSC RPC (proxy refuses them, checked Oct 17), so this needs Isaac's browser |
+| Re-approve the AIand/OpenAI network destinations for signed/live use | Isaac | **Not done.** Both rows in `architecture-deployment.md` "Approved network destinations" still say "Shadow only" |
+| Execution gas limits within the 0.0002 BNB per-transaction fee cap | Isaac | **Not set.** `max_gas` and `max_gas_price` are null in `config/hosts/execution.example.json`. #155's `larp/execution_live/caps_review.py` checks `max_gas × max_gas_price ≤ 200 000 000 000 000` wei once values exist; choose them from the capture's measured gas |
+| Real-provider `native_trace` qualification (#30) | Isaac | **Inconclusive.** Both public providers return "missing trie node" for standalone `debug_traceTransaction` (IDEA-039 FG); a trace-capable (archive) provider is needed. #30 open |
+| Attributable fee-netting evidence (#119) | Isaac | **Unverified.** #157 merged (`ad9a8b9`): `tradeFee` is labelled as an estimated network fee, per Binance's API docs rechecked Oct 18 (IDEA-063 FN-RV157). Route-fee netting itself is still unproved; #119 and #120 open |
+| Decide the first-trade window and POLICY-HOLD | Isaac | **Blocked** on Keith's proposals |
+| Review Yao Zhu's migration, database-role and TLS evidence | Keegan | **Not recorded.** Evidence to review: IDEA-066 PC-AWS06 (migrations 001–013, roles, four `primary` roles pass IAM login and TLS) |
+| Settle O2 (what ships if EXP-007 is inconclusive) | Keegan | **Not recorded.** IDEA-075 §16 recommends shipping the trend guard as declared. Blocks EXP-007 |
+| Update the model services list and DEV-19 | Keegan | **Not done.** `config/release/services.v1.json` still says "pending decision B8: Anthropic Claude or OpenAI ChatGPT"; DEV-19 in `deviations.v1.json` is still OPEN |
+| B4 exposure-evidence producer | Keegan | **Not built.** `larp/strategy/policy.py` reads `exposure_evidence`, but no runtime or integration code produces it, so the limiter stays NORMAL |
+| Draft the outstanding operations decisions; update #22/#42 and #98's mirror-CI disposition | Keegan | **Not recorded.** D-DN-01, 04, 06, 07, 08, 11 still open (IDEA-049-D §5); #22, #42 and #98 last updated Oct 15 |
+| After the trial starts: budget status, ledger backup, memory use | Yao Zhu | **Waits for the trial.** Deterministic memory baselines: PC-AWS09 (Oct 17) and PC-AWS11 (Oct 18) |
+
+Also new since the last refresh: Isaac's #165 (S1 execution windows and per-leg attempt limits, IDEA-075 B6) is open and unreviewed; see the B6 line under Oct 24.
 
 **Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A still needs its actual 24 h gap report and review; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. Oct 18 02:46 UTC read-only recheck is healthy after the daily backup superseded that historical failure (PC-AWS11); #163 still needs release/host qualification.
 
@@ -60,7 +101,7 @@ Finish every Gate A and Gate B step that doesn't need the strategy profile this 
 - [x] **Isaac:** hand over a development `signer.json` draft and a technical cap review (#160, PR #161; received by Yao Zhu 2026-10-17, IDEA-066 PC-SIG01). Draft SHA-256 `339c4202…1442`; its `signing_policy` is byte-identical to the merged CP-01 development candidate (policy SHA-256 `254f5c31…2033`). Nominal check passed: the largest input is 20.10 USDT (EQUAL_WEIGHT) or 28.60 USDT (proposed S1) against the 35 USDT cap, at 100 USDT capital. The review was done by Isaac's delegated assistant, not by Keith. `ready_to_install: false`.
 - [x] **Keegan:** review and merge #161 (the handoff record). Merged 2026-10-18 at `7cd7892`; numeric-policy approval and host installation remain separate.
 - [ ] **Keith:** after the Oct 20 profile, finish the cap checks the handoff could not run, and record the file hashes on #44: the profile's `per_trade_cap_units` and `gas_top_up_cash_units` are each ≤ 35 000 000 micro-USDT; every full stock holding in the fresh wallet capture fits its token cap; measured approve and swap fees each fit 0.0002 BNB. PR #155's numeric-review tool can do this. Do not count the 40 USDT quote-capture size as a trade size: it is above the 35 USDT cap.
-- [ ] **Isaac:** set the execution gas limits so `max_gas × max_gas_price ≤ 200 000 000 000 000` wei (0.0002 BNB); otherwise the signer refuses the transaction. Example: at 1 116 000 gas the price must stay ≤ 0.179 gwei.
+- [ ] **Isaac:** set the execution gas limits so `max_gas × max_gas_price ≤ 200 000 000 000 000` wei (0.0002 BNB); otherwise the signer refuses the transaction. Example: at 1 116 000 gas the price must stay ≤ 0.179 gwei. #155's `larp/execution_live/caps_review.py` checks the configured pair; both values are still null in `config/hosts/execution.example.json` (Oct 18).
 - [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. A `dev` signer would start with the example label, so this decision is the real lock, not the code.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
 - [ ] **Keegan:** review Yao Zhu's actual IDEA-080 Terraform plan before apply. #143 and implementation #149 are already merged/reviewed in the repository; the host apply is still pending. Preserve SA3 (both host groups), SA8 signer egress and SA9 primary SSM checks.
@@ -202,7 +243,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Keegan:** LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131). With the LLM in the rehearsal (PC-DEC03), land it as early as possible: until then the rehearsal tests the LLM running under signing, but not its effect on exposure.
 - [ ] **Keith:** trend-guard input from token session bars (DR-08). Until it's wired, the trend guard stays UP (#131).
 - [ ] **Keegan:** session-close job and round-log fields (B5).
-- [ ] **Isaac:** per-leg attempt limit and execution-window checks (B6).
+- [ ] **Isaac:** per-leg attempt limit and execution-window checks (B6). Code is in open PR #165 (Oct 17), not yet reviewed or merged.
 - [ ] **Keegan:** write up the T4 dev-wallet run from the rehearsal round logs (B8, Oct 24–26).
 - [ ] **Keith:** check the T4 results against what S1 should have done.
 

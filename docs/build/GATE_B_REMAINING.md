@@ -16,7 +16,7 @@ submitted-review records were fetched and their heads matched against Git,
 with no discrepancies. The inventory distinguishes head subjects from API PR
 titles and includes state, merge time and review-event counts. The live Gate B
 issue discussions were also read: #27 and #44 still record pending decisions.
-At this inspection, only PR126 and PR133 are open and PR139 remains draft.
+At this inspection, only PR126 and PR133 are open and PR139 remains draft. Oct 18 update: #155, #157, #158, #161, #163 and #164 are merged into integration (IDEA-049 MERGE-20261018); #126 and #133 stay open, #139 stays draft, and Isaac's #165 (S1 execution windows, B6) is newly open and unreviewed.
 
 Seven heads remain outside integration: historical closed PR10/82/83/89, the
 remaining-work brief PR126, the pre-trading checklist PR133, and router-source
