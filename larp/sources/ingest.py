@@ -96,6 +96,8 @@ class SourceIngestor:
                     raise SourceError("RETRIEVAL_CLOCK_INVALID")
                 now = received  # bytes become available only after retrieval, including all retries
                 if response.status == 304:
+                    if not conditional or not (cursor.get('etag') or cursor.get('last_modified')):
+                        raise SourceError('UNEXPECTED_NOT_MODIFIED')
                     items, next_url, item_truncated = [], None, False
                     outcome["status"] = "NOT_MODIFIED"
                 else:
