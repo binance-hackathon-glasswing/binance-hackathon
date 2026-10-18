@@ -1396,3 +1396,26 @@ rows remain open where incomplete; no complete Gate B line is removed. No AWS,
 real wallet/key, signing/broadcast, account signup/payment/model or official-log
 operation took place. This record and PR133 description link the separate fix;
 PR133 remains open.
+
+
+### PC-PROV02-R1 — owner usage confirmation and AIand authentication diagnosis
+
+Yao confirms no further usage since reported OpenAI48 remaining/2 prior, AIand
+still140+, no other shared consumers. This is owner confirmation; AIand currency,
+conversion and expiry remain unverified. Read-only diagnostic SSM
+08c768ec-18f0-4d81-9bc8-9e34efdf4535 at14:22:37UTC reports HTTP401,
+invalid_api_key/authentication_error. Stored AIand value is ASCII/sk-prefix with
+no surrounding whitespace/control characters. No secret printed/replaced and no
+inference. Yao is obtaining a new key from his friend; preserve all other runtime
+secret fields on any owner-performed update, then repeat catalogue/high-effort
+checks. This does not activate services or waive PC-PREP02/account/host gates.
+Concurrent signer-readiness commit ea93752 was preserved with a normal merge;
+its separate PR176/real signed-owner gates remain open, no history rewrite.
+
+Owner-only replacement helper prepared/syntax-checked, NOT RUN:
+deploy/activation/pr174-verification-20261018/update-aiand-key-owner.py. Hidden
+input; authenticated catalogue/model/high-effort check before AWS write; stdin
+pipe for SecretString, other JSON fields preserved, detected concurrent version
+change refused and resulting AWSCURRENT verified. Yao runs only after secure key
+receipt with no concurrent secret updater; AWS put has no compare-and-swap.
+No inference/service activation. Helper remains ignored/private, no secret stored.

@@ -262,5 +262,30 @@
   "paid_provider_calls": 0,
   "ledger_initialized_or_migrated": false,
   "original_failed_gap_report_unchanged": true,
-  "historical_permanent_backup_failure_retained": true
+  "historical_permanent_backup_failure_retained": true,
+  "provider_auth_diagnostic": {
+    "checked_at_ms": 1792333357536,
+    "error_code": "invalid_api_key",
+    "error_type": "authentication_error",
+    "http_status": 401,
+    "inference_calls": 0,
+    "key_has_control_characters": false,
+    "key_has_surrounding_whitespace": false,
+    "key_is_ascii": true,
+    "key_present": true,
+    "matches_documented_sk_prefix": true,
+    "record_id": "PC-PROV02-R1",
+    "response_bytes": 107,
+    "response_sha256": "f3e8df007609650ae1fb94fea65ebc5b38d4ae7ac1eb457ded88be516d72b323",
+    "secret_changed": false
+  },
+  "provider_auth_diagnostic_ssm_command_id": "08c768ec-18f0-4d81-9bc8-9e34efdf4535",
+  "owner_reconciliation_followup": {
+    "source": "Yao reply during continuation, Oct18 SGT",
+    "additional_openai_usage_reported": false,
+    "shared_account_consumers_reported": false,
+    "aiand_balance_reported": "140+",
+    "aiand_currency_conversion_expiry_confirmed": false,
+    "new_aiand_key": "Yao is obtaining a new key from his friend after invalid_api_key; no replacement performed"
+  }
 }

@@ -70,7 +70,20 @@ Do not replace the stored secret without diagnosing account/key status. Yao
 checks that the existing key is enabled and belongs to the funded organization;
 confirm currency, conversion, expiry, available funds and other consumers.
 OpenAI model-list success establishes neither served medium effort nor actual
-credit/usage. Reconcile current account usage before budget setup.
+credit/usage. Yao subsequently confirms no additional use and no shared consumers,
+with AIand still reported140+; currency/conversion/expiry remain unconfirmed.
+PC-PROV02-R1 read-only SSM08c768ec-18f0-4d81-9bc8-9e34efdf4535 at14:22:37UTC
+returns401/error invalid_api_key/authentication_error. Stored key is ASCII with
+sk- prefix, no surrounding whitespace/control characters. Yao is obtaining a
+new key from his friend. No key value was requested, printed or replaced.
+Owner-only hidden-input helper (prepared, syntax-checked, NOT RUN):
+`deploy/activation/pr174-verification-20261018/update-aiand-key-owner.py`.
+It requires authenticated catalogue/high-effort checks before writing, preserves
+all other JSON secret fields, refuses a detected concurrent version change and
+verifies the resulting version. Run manually with no concurrent secret updater;
+Secrets Manager has no compare-and-swap on this operation. It must not invoke
+the whole-secret re-entry tool. Reconcile
+current account usage before budget setup.
 [OpenAI's models API](https://developers.openai.com/api/reference/resources/models/methods/list)
 is a listing check; actual response identity/effort remains a first-job check.
 
