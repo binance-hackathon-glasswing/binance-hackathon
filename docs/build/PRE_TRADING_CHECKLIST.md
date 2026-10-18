@@ -93,6 +93,22 @@ SP-01 refresh Oct18: #165 reviewed/merged at817eb71 after combined-head local ac
 
 **Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A still needs its actual 24 h gap report and review; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. Oct 18 02:46 UTC read-only recheck is healthy after the daily backup superseded that historical failure (PC-AWS11); #163 still needs release/host qualification.
 
+## Isaac immediate points — separate PRs (2026-10-18)
+
+Isaac authorizes carrying out the listed immediate points, each in its own PR,
+and reports no source export, private RPC config or additional funding hash.
+No AWS operation, key placement or wallet transaction occurred in this follow-up.
+
+| Point | Owner | Dedicated PR and current result |
+|---|---|---|
+| Signed/live model-network scope | Isaac | [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171), OPEN for review into this checklist branch. Explicit authorization settles the previous review-only blocker; same-host policy/report change is isolated in that PR.40 tests/48 subtests pass, no skips. Provider-policy/adoption/host gates remain; no AWS or client endpoint/config changes |
+| Verified router/facet source | Isaac | Existing draft [PR139](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/139), source point only. RE-02: Code403, legacy API301, v2 source API Missing/Invalid API Key; no export/account access. No source/ABI/independent review; route check NOT_RUN. Keegan reviews after complete evidence is obtained |
+| Real native-tracing provider | Isaac | [PR173](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/173), OPEN tool review. NT-Q1 uses production canonical/native receipt proof;42 tests/56 subtests pass. PublicNode tracer unavailable, SubQuery DNS failed; no usable private account. Actual provider qualification/selection NOT_RUN, tracing remains off; Yao host check follows |
+| Remaining dev gas funding | Isaac | Draft [PR172](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/172). FG-02 public snapshot:98USDT,0.002694498869362886BNB, nonces2/2/2. No additional hash/action; remaining seed NOT_DONE. Isaac/Yao first confirm no first-agent-trade/in-flight work, Isaac completes MetaMask step, Yao takes actual post-last-seed opening capture |
+
+These PRs are intentionally separate and remain reviewable. This status entry
+merges none of them and does not claim source/provider/wallet/host readiness.
+
 ## This weekend (Oct 17–19): no profile needed
 
 ### Gate A setup
