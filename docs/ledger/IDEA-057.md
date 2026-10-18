@@ -512,3 +512,49 @@ unsigned trial, preserving raw reports/logs and INCOMPLETE runtime coverage.
 It does not satisfy signed/final source completeness, waive actual poll errors,
 or explain other targets/archives. The prospective11:00UTC report was not read.
 See IDEA-066 PC-GAP01 and the handoff for the exact window and checks.
+
+## OP-01 — OpenAI preferred with paced full credit (2026-10-18, prospective)
+
+Yao Zhu requests a separate PR for human review implementing PC-ROUTE01
+(PR133). This authorizes development, not merge, deployment, model calls or
+spend. Existing v1/v2 configurations and their US$10 reserve stay unchanged.
+The new opt-in v3 policy prefers GPT-6.1 Sol medium, with Kimi K3 high then
+GLM-5.3 high on the qualified AIand endpoint as fallback. Model quality is
+unproved; effort/cost is not evidence of accuracy.
+
+Pass criteria recorded before changed code/tests run:
+
+- **OP1:** strict public v3 configuration pins a UTC start/end, period, total
+  allocation and prior-spend baseline. Example values are review candidates,
+  not adopted dates: US$50 total, US$2 already spent, US$48 remaining, no fixed
+  reserve. Preparation validates/hashes this without credentials or network.
+- **OP2:** cumulative equal-period allowances use integer micro-USD, carry unused
+  allowance forward and release all remaining allocation by the final period.
+  Every POST reserves its bounded cost atomically. Temporary pacing/window/
+  oversized-request refusal grants no OpenAI call and does not latch exhaustion;
+  a later period or smaller request can use remaining credit. Full allocation
+  exhaustion and provider credit exhaustion persist external-only across restarts.
+- **OP3:** durable policy/account/limits binding prevents accidental legacy or
+  mismatched-policy access. Explicit initialization never overwrites a ledger;
+  explicit development migration preserves every charge, unknown/reserved amount
+  and existing safety latch. Unknown usage keeps its bound; underestimation and
+  storage failure block further OpenAI dispatch. Clock rollback fails closed
+  until wall time catches up; no automatic budget or policy reset.
+- **OP4:** real routed assessments try OpenAI first with a shared deadline/tool
+  budget. Missing key, pacing, errors, invalid claims and exhaustion fall back
+  to high-effort AIand using original evidence. Required independent review
+  uses AIand; disagreement abstains, failed required review grants no authority.
+  Provider rate limits do not imply permanent credit exhaustion. Existing
+  verification, evidence acceptance and deferred-worker safety ownership stay.
+- **OP5:** identity and audit expose the frozen policy, current allowance,
+  remaining allocation, stage order, refusals, model I/O and known/unknown cost;
+  keys never enter them. Synthetic tests exercise multi-period/restart/concurrent
+  admission, migration and malformed policy, real verifier/fallback/deferred
+  composition and offline preparation. Existing routing/prompt/runtime suites
+  and full available local suite must pass, with skips and host limits reported.
+
+Finite credit cannot guarantee every assessment stays on OpenAI or consumes the
+last cent: conservative multi-call reservations, unknown usage and external
+account spending reduce availability. No credit-balance query or paid provider
+call is required. New policy adoption needs a fresh trial evaluation and an
+accepted mirror release; existing v2 trial evidence is not v3 qualification.
