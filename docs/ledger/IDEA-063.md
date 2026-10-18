@@ -205,3 +205,16 @@ The FN-01 review found that Binance's dated Trading API describes `tradeFee` as 
 - **FN5/FN6:** regression commit `585512c` failed on the old producer as expected: missing fee-observation records and missing UNVERIFIED report metadata (7 failures including five stock subtests, 1 passed test). Fix `61cb527` retains the four raw fee fields on all three legs and labels the assumption and legacy buy-only network estimates. Missing/null/zero distinctions preserved; original captures still summarize; numeric costs unchanged. This changes evidence recording/reporting, not trading-cost arithmetic or profile validation. Existing server capture need not be restarted.
 - **Verification at pushed application/test head `61cb527`:** Python 3.12.14, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr20-venv/bin/python -m pytest -q -p no:cacheprovider tests/marketdata tests/strategy`: **235 passed, 1 skipped, 131 subtests passed**, 18.34 s. The recorded-market integration test is opt-in (external artifacts), so was skipped. Local log: `/private/tmp/larp-fee-netting-20261017-tests.log`. Full suite, hosted capture, live fill and CI acceptance not run for this change.
 - **Delivery:** [PR #157](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/157), branch `codex/isaac-09-quote-fees-20261017`, targets the integration branch and includes `Closes #156`; #119's body now records the findings and remaining acceptance without closing it. PR is open for review, not merged. GitHub Actions run `39033396981`, runtime check `117398314355`, did not start: annotation says recent account payments failed or the spending limit must be increased (#98). This is not a CI test failure; no hosted acceptance is claimed.
+
+## FN-RV157 — refreshed merge review (2026-10-18, prospective)
+
+Yao Zhu requests review/fix/merge of PR157. Review head 9d8f168 and merge the
+current integration base (including PR155) without rewriting history. Preserve
+FN5/FN6: raw BUY/SELL/REQUOTE fields keep absent/null/zero distinctions, old
+captures remain readable, numeric costs remain unchanged, and fee netting stays
+explicitly UNVERIFIED with #119/#120 owner acceptance outstanding. Require the
+marketdata/strategy subset and the PR155 cap/report subset to pass on the pushed
+combined head; report platform/external-data skips honestly. Re-check the primary
+Binance Flash API field definitions as a dated source check, not a quote/fill
+comparison. No new quotes, wallet/host actions, profile approval or fee-rate
+assumption is authorized by this review.
