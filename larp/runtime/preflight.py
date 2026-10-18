@@ -18,6 +18,8 @@ def release_files(root):
     patterns = [('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock'),
                 ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'),
                 ('deploy', 'Dockerfile'), ('config', '*.json'), ('config', '*.txt'),
+                # Routed-assessor stage prompts are pinned by the routing spec and read at startup (IDEA-081).
+                ('config/intelligence/prompts', '*.md'),
                 # The deviations register validates verbatim quotes against this file at every host startup.
                 ('docs/proposal', 'proposal_answers.md')]
     for directory, pattern in patterns:
