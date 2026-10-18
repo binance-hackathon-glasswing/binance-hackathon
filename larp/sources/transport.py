@@ -11,12 +11,15 @@ connectivity probe uses `urllib_fetch`. Retrieved bytes are untrusted data.
 from dataclasses import dataclass
 from urllib.parse import unquote, urljoin, urlsplit
 import http.client
+import hashlib
+import json
 import re
 import time
 
 _DOT_SEGMENT = re.compile(r"(?:^|/)\.{1,2}(?:/|$)")
 
 USER_AGENT_DEFAULT = "LARP-free-source-ingest/1 (IDEA-031; no contact configured)"
+DOJ_WIRE_CAP = 32_000_000  # bounded exception for excluded inline image bytes, not permitted text
 
 
 class SourceError(Exception):
@@ -31,6 +34,48 @@ class Response:
     url: str
     attempts: int
     truncated: bool
+    wire_sha256: str | None = None
+    wire_bytes: int | None = None
+    media_removed: dict | None = None
+
+
+def _doj_api(url):
+    p = urlsplit(url)
+    return p.scheme == 'https' and p.hostname == 'www.justice.gov' and p.path.startswith('/api/v1/press_releases')
+
+
+def _doj_without_inline_images(body):
+    """Remove only already-excluded img elements; never discard records or permitted body text.
+
+    The hard wire bound is checked before JSON decoding. Retain original wire identity,
+    and carry per-item exclusion counts to the permitted artifact's provenance.
+    """
+    if len(body) > DOJ_WIRE_CAP:
+        raise SourceError('RESPONSE_TOO_LARGE')
+    try:
+        data = json.loads(body)
+        rows = data['results']
+        if type(rows) is not list or any(type(r) is not dict for r in rows):
+            raise ValueError()
+        removed = {}
+        # A quoted '>' is part of an attribute, not the end of the image tag.
+        image = re.compile(r'''<img\b(?:[^>"']|"[^"]*"|'[^']*')*>''', re.I)
+        for row in rows:
+            value = row.get('body')
+            html = value.get('value') if type(value) is dict else value
+            if type(html) is not str:
+                continue
+            cleaned, count = image.subn(' ', html)
+            if count:
+                if type(row.get('uuid')) is not str or row['uuid'] in removed:
+                    raise ValueError()
+                removed[row['uuid']] = count
+                row['body'] = dict(value, value=cleaned) if type(value) is dict else cleaned
+        if not removed:
+            raise ValueError()
+        return json.dumps(data, ensure_ascii=True, separators=(',', ':')).encode(), removed
+    except (ValueError, KeyError, TypeError, RecursionError):
+        raise SourceError('RESPONSE_TOO_LARGE') from None
 
 
 def allowed(source, url: str) -> bool:
@@ -107,10 +152,15 @@ class AllowlistedClient:
             if status != 200:
                 raise SourceError(f"HTTP_{status}")
             cap = limits.get("max_response_bytes", 2_000_000)
+            wire_sha, wire_bytes, removed = None, None, None
+            if body is not None and len(body) > cap and source.format == 'DOJ_PRESS_JSON' and _doj_api(current):
+                wire_sha, wire_bytes = hashlib.sha256(body).hexdigest(), len(body)
+                body, removed = _doj_without_inline_images(body)
             truncated = body is not None and len(body) > cap
             if truncated:
                 raise SourceError("RESPONSE_TOO_LARGE")
-            return Response(200, reply_headers, body, current, attempts, truncated)
+            return Response(200, reply_headers, body, current, attempts, truncated,
+                            wire_sha, wire_bytes, removed)
 
 
 class _NoRedirect:
@@ -133,6 +183,7 @@ def urllib_fetch(url: str, headers: dict, timeout_s: float) -> tuple:
     request = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with opener.open(request, timeout=timeout_s) as reply:  # noqa: S310 - allowlisted by the caller
-            return reply.status, dict(reply.headers), reply.read(8_000_001)
+            limit = DOJ_WIRE_CAP if _doj_api(url) else 8_000_000
+            return reply.status, dict(reply.headers), reply.read(limit + 1)
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers or {}), None

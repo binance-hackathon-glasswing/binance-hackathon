@@ -1,0 +1,104 @@
+{
+  "schema": "AIandRouting.v3",
+  "provenance": {
+    "source": "https://api.aiand.com/v1/models",
+    "checked": "2026-10-15",
+    "scope": "public unauthenticated catalog; account access/inference unverified"
+  },
+  "routine": {
+    "model_id": "zai-org/glm-5.3",
+    "effort": "low",
+    "catalog": {
+      "id": "zai-org/glm-5.3",
+      "context_window": 1048576,
+      "max_output_tokens": 131072,
+      "capabilities": [
+        "reasoning",
+        "tool_calling"
+      ],
+      "reasoning_efforts": [
+        "low",
+        "high",
+        "max"
+      ]
+    },
+    "prompt": {
+      "name": "routine.md",
+      "sha256": "0e9341e0967c8ab191bb30953f9806251fb82b3a32edee36db8a261ef12ab93e"
+    }
+  },
+  "external_reviewers": [
+    {
+      "model_id": "moonshotai/kimi-k3",
+      "effort": "high",
+      "catalog": {
+        "id": "moonshotai/kimi-k3",
+        "context_window": 1048576,
+        "max_output_tokens": 131072,
+        "capabilities": [
+          "reasoning",
+          "tool_calling",
+          "vision",
+          "document"
+        ],
+        "reasoning_efforts": [
+          "low",
+          "high",
+          "max"
+        ]
+      },
+      "prompt": {
+        "name": "review.md",
+        "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
+      }
+    },
+    {
+      "model_id": "zai-org/glm-5.3",
+      "effort": "high",
+      "catalog": {
+        "id": "zai-org/glm-5.3",
+        "context_window": 1048576,
+        "max_output_tokens": 131072,
+        "capabilities": [
+          "reasoning",
+          "tool_calling"
+        ],
+        "reasoning_efforts": [
+          "low",
+          "high",
+          "max"
+        ]
+      },
+      "prompt": {
+        "name": "review.md",
+        "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
+      }
+    }
+  ],
+  "openai_model": "gpt-6.1-sol",
+  "openai_effort": "medium",
+  "openai_prompt": {
+    "name": "primary.md",
+    "sha256": "50a5c46eba1a78670cf00db4daf63410e615c7fefb47f8fa65ab1e853fee7def"
+  },
+  "max_output_tokens": 4096,
+  "budget_account": "larp-openai-2026",
+  "audit_sample_bps": 1000,
+  "audit_seed": "idea-057-initial-design-v1",
+  "openai_pacing": {
+    "schema": "OpenAIPacing.v1",
+    "total_micro_usd": 50000000,
+    "prior_spent_micro_usd": 2000000,
+    "start_ms": 1792321200000,
+    "end_ms": 1794528000000,
+    "period_ms": 86400000
+  },
+  "openai_trial": {
+    "schema": "OpenAITrial.v1",
+    "trial_id": "larp-unsigned-v3-20261018",
+    "start_ms": 1792321200000,
+    "end_ms": 1792627200000,
+    "total_micro_usd": 8000000,
+    "utc_day_micro_usd": 2500000
+  }
+}

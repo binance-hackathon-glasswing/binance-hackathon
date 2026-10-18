@@ -17,7 +17,7 @@ from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
 from larp.intelligence.config import CONFIG_DIR
-from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing
+from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing, validate_trial
 from larp.intelligence.models import ModelIdentity, response
 from larp.intelligence.providers import OpenAIResponsesModel
 
@@ -43,6 +43,8 @@ def validate_routing_spec(spec, prompt_dir=None):
         fields = fields | {'openai_prompt'}
     if preferred:
         fields = fields | {'openai_pacing'}
+        if 'openai_trial' in spec:
+            fields = fields | {'openai_trial'}
     if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3')
             or spec['openai_model'] != 'gpt-6.1-sol'
             or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
@@ -58,6 +60,11 @@ def validate_routing_spec(spec, prompt_dir=None):
         raise IntelligenceError('Invalid AIand routing specification')
     if preferred:
         validate_pacing(spec['openai_pacing'])
+        if 'openai_trial' in spec:
+            validate_trial(spec['openai_trial'])
+            if not spec['openai_pacing']['start_ms'] <= spec['openai_trial']['start_ms'] < \
+                    spec['openai_trial']['end_ms'] <= spec['openai_pacing']['end_ms']:
+                raise IntelligenceError('Trial window must fit pacing window')
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
@@ -152,6 +159,22 @@ class BudgetedOpenAI:
             value.update(status='ERROR', output=None, error='MODEL_BUDGET_UNAVAILABLE')
             return Document.from_dict(value)
         return reply
+
+
+class TrialGuardedExternal:
+    """No new paid AIand POST outside a trial or after its durable accounting stop."""
+    def __init__(self, model, budget):
+        self.model, self.budget = model, budget
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
+    def step(self, request, remaining_ms):
+        try:
+            return self.model.step(request, remaining_ms, before_dispatch=self.budget.guard_trial)
+        except IntelligenceError as error:
+            reason = error.reason if isinstance(error, AdmissionDeferred) else 'MODEL_BUDGET_UNAVAILABLE'
+            return response(request.read(), status='ERROR', output=None, latency_ms=0, error=reason)
 
 
 def _review_reasons(result, request, sample_bps, seed):
@@ -444,11 +467,15 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
                                catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
                                transport=transports.get('aiand'), prompt_text=c.prompt_text,
                                prompt_sha256=c.prompt_sha256, **common)
+        if spec.get('openai_trial') is not None:
+            model = TrialGuardedExternal(model, budget)
         configs[model] = c
         return model
 
     budget_options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'],
                           reserve=0, clock_ms=clock_ms) if preferred else {}
+    if spec.get('openai_trial') is not None:
+        budget_options['trial'] = spec['openai_trial']
     budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'], **budget_options)
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]

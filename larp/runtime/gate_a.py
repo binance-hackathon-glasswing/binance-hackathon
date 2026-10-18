@@ -254,6 +254,8 @@ def model_routing_report(spec, sha256):
     if spec['schema'] == 'AIandRouting.v3':
         report.update(routine=spec['openai_model'], reviewer=spec['external_reviewers'][0]['model_id'],
                       openai_pacing=spec['openai_pacing'], reserve_micro_usd=0)
+        if 'openai_trial' in spec:
+            report['openai_trial'] = spec['openai_trial']
     return report
 
 

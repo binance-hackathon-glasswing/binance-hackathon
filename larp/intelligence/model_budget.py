@@ -30,6 +30,20 @@ def _policy_bytes(policy):
     return json.dumps(policy, sort_keys=True, separators=(',', ':'))
 
 
+DAY_MS = 86_400_000
+
+
+def validate_trial(policy):
+    fields = {'schema', 'trial_id', 'start_ms', 'end_ms', 'total_micro_usd', 'utc_day_micro_usd'}
+    if (type(policy) is not dict or set(policy) != fields or policy['schema'] != 'OpenAITrial.v1'
+            or type(policy['trial_id']) is not str or not policy['trial_id'].strip() or len(policy['trial_id']) > 100
+            or any(type(policy[k]) is not int for k in fields - {'schema', 'trial_id'})
+            or not 0 <= policy['start_ms'] < policy['end_ms'] < 2**63
+            or not 0 < policy['utc_day_micro_usd'] < 2**63
+            or not 0 < policy['total_micro_usd'] < 2**63):
+        raise IntelligenceError('Invalid frozen OpenAI trial policy')
+
+
 class AdmissionDeferred(IntelligenceError):
     """A temporary refusal: preserve future eligibility and disclose its audit reason."""
     def __init__(self, reason):
@@ -49,12 +63,17 @@ def _private_parent(path):
 
 class ModelBudget:
     def __init__(self, path, account, *, total=50_000_000, reserve=10_000_000,
-                 pacing=None, clock_ms=None):
+                 pacing=None, trial=None, clock_ms=None):
         self.path = Path(path).resolve()
         self.account, self.total, self.reserve = account, total, reserve
         if pacing is not None:
             validate_pacing(pacing)
         self.pacing = json.loads(_policy_bytes(pacing)) if pacing is not None else None
+        if trial is not None:
+            validate_trial(trial)
+            if pacing is None or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+                raise IntelligenceError('Trial requires matching paced allocation/window')
+        self.trial = json.loads(_policy_bytes(trial)) if trial is not None else None
         self.clock = clock_ms if clock_ms is not None else lambda: time.time_ns() // 1_000_000
         if self.pacing is not None:
             if total != self.pacing['total_micro_usd'] or reserve != 0:
@@ -69,7 +88,11 @@ class ModelBudget:
 
     @classmethod
     def initialize(cls, path, account, *, initial_spent, total=50_000_000, reserve=10_000_000,
-                   pacing=None, clock_ms=None):
+                   pacing=None, trial=None, clock_ms=None):
+        if trial is not None:
+            validate_trial(trial)
+            if pacing is None or not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+                raise IntelligenceError('Trial requires matching paced allocation/window')
         if pacing is not None:
             validate_pacing(pacing)
             if initial_spent != pacing['prior_spent_micro_usd'] or total != pacing['total_micro_usd'] or reserve != 0:
@@ -92,7 +115,30 @@ class ModelBudget:
             db.execute('INSERT INTO charges VALUES(?,?,?,?)', ('initial', initial_spent, 'SETTLED', 'prior-usage'))
             if pacing is not None:
                 cls._create_pacing(db, pacing)
-        return cls(path, account, total=total, reserve=reserve, pacing=pacing, clock_ms=clock_ms)
+            if trial is not None:
+                cls._create_trial(db, trial)
+        return cls(path, account, total=total, reserve=reserve, pacing=pacing, trial=trial, clock_ms=clock_ms)
+
+    @staticmethod
+    def _create_trial(db, policy):
+        db.execute('CREATE TABLE trial (id INTEGER PRIMARY KEY CHECK(id=1), policy TEXT NOT NULL, '
+                   'last_ms INTEGER NOT NULL, stopped INTEGER NOT NULL, reason TEXT NOT NULL)')
+        db.execute('INSERT INTO trial VALUES(1,?,-1,0,\'\')', (_policy_bytes(policy),))
+        db.execute('CREATE TABLE trial_charges (charge_id TEXT PRIMARY KEY, utc_day INTEGER NOT NULL, '
+                   'dispatched_ms INTEGER)')
+
+    @classmethod
+    def enable_trial(cls, path, account, *, trial, pacing, total=50_000_000, reserve=0, clock_ms=None):
+        """Attach a first trial only to an unused paced ledger; never guess old dispatch days."""
+        validate_trial(trial)
+        if not pacing['start_ms'] <= trial['start_ms'] < trial['end_ms'] <= pacing['end_ms']:
+            raise IntelligenceError('Trial window must fit pacing window')
+        old = cls(path, account, pacing=pacing, total=total, reserve=reserve, clock_ms=clock_ms)
+        with old.transaction() as db:
+            if db.execute("SELECT 1 FROM charges WHERE id != 'initial' LIMIT 1").fetchone():
+                raise IntelligenceError('Prior request attribution requires reconciliation before trial migration')
+            cls._create_trial(db, trial)
+        return cls(path, account, trial=trial, pacing=pacing, total=total, reserve=reserve, clock_ms=clock_ms)
 
     @staticmethod
     def _create_pacing(db, policy):
@@ -131,6 +177,10 @@ class ModelBudget:
                     raise IntelligenceError('Model budget pacing policy mismatch')
                 if has_pacing and db.execute('SELECT policy FROM pacing WHERE id=1').fetchone() != (_policy_bytes(self.pacing),):
                     raise IntelligenceError('Model budget pacing policy mismatch')
+                has_trial = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='trial'").fetchone()
+                if bool(has_trial) != (self.trial is not None) or (has_trial and
+                        db.execute('SELECT policy FROM trial WHERE id=1').fetchone() != (_policy_bytes(self.trial),)):
+                    raise IntelligenceError('Model budget trial policy mismatch')
                 yield db
                 db.commit()
             except BaseException:
@@ -142,13 +192,14 @@ class ModelBudget:
             raise IntelligenceError('Model budget storage unavailable or malformed') from None
 
     def _snapshot(self, db):
+        now = self.clock()
         only, reason = db.execute('SELECT external_only,reason FROM account WHERE id=1').fetchone()
         spent = db.execute('SELECT COALESCE(SUM(amount),0) FROM charges').fetchone()[0]
         result = dict(account=self.account, total_micro_usd=self.total, reserve_micro_usd=self.reserve,
                     charged_micro_usd=spent, available_micro_usd=max(0, self.total-self.reserve-spent),
                     external_only=bool(only), reason=reason)
         if self.pacing is not None:
-            p, now = self.pacing, self.clock()
+            p = self.pacing
             if type(now) is not int or not 0 <= now < 2**63:
                 raise IntelligenceError('Invalid model budget clock')
             last = db.execute('SELECT last_ms FROM pacing WHERE id=1').fetchone()[0]
@@ -165,11 +216,64 @@ class ModelBudget:
                                     released_micro_usd=released, admission_block=blocked)
             result['available_micro_usd'] = 0 if blocked else max(0, min(self.total-spent,
                 p['prior_spent_micro_usd'] + released - spent))
+        if self.trial is not None:
+            result['trial'] = self._trial_snapshot(db, now=now)
         return result
+
+    def _trial_snapshot(self, db, *, exclude=None, now=None):
+        now = self.clock() if now is None else now
+        if type(now) is not int or not 0 <= now < 2**63:
+            raise IntelligenceError('Invalid model budget clock')
+        last, stopped, reason = db.execute('SELECT last_ms,stopped,reason FROM trial WHERE id=1').fetchone()
+        p, day = self.trial, now // DAY_MS
+        rows = db.execute('SELECT c.id,c.amount,t.utc_day FROM charges c JOIN trial_charges t '
+                          'ON c.id=t.charge_id').fetchall()
+        total = sum(amount for token, amount, _ in rows if token != exclude)
+        daily = sum(amount for token, amount, d in rows if token != exclude and d == day)
+        # A missing attribution row is corrupt accounting, never free headroom.
+        if db.execute("SELECT 1 FROM charges c LEFT JOIN trial_charges t ON c.id=t.charge_id "
+                      "WHERE c.id!='initial' AND t.charge_id IS NULL LIMIT 1").fetchone():
+            raise IntelligenceError('Model trial attribution missing')
+        block = (reason if stopped else 'OPENAI_TRIAL_CLOCK_ROLLBACK' if now < last else
+                 'OPENAI_TRIAL_NOT_STARTED' if now < p['start_ms'] else
+                 'OPENAI_TRIAL_WINDOW_ENDED' if now >= p['end_ms'] else '')
+        if now >= last:
+            db.execute('UPDATE trial SET last_ms=? WHERE id=1', (now,))
+        return dict(policy=json.loads(_policy_bytes(p)), charged_micro_usd=total,
+                    remaining_micro_usd=max(0, p['total_micro_usd']-total),
+                    utc_day=day, utc_day_charged_micro_usd=daily,
+                    utc_day_remaining_micro_usd=max(0, p['utc_day_micro_usd']-daily),
+                    stopped=bool(stopped), reason=reason, admission_block=block, observed_ms=now)
+
+    def _trial_reason(self, db, amount, *, exclude=None, now=None):
+        state = self._trial_snapshot(db, exclude=exclude, now=now)
+        return (state['admission_block'] or
+                ('OPENAI_TRIAL_TOTAL_LIMIT' if amount >= state['remaining_micro_usd'] else
+                 'OPENAI_TRIAL_DAILY_LIMIT' if amount >= state['utc_day_remaining_micro_usd'] else ''))
 
     def snapshot(self):
         with self.transaction() as db:
             return self._snapshot(db)
+
+    def guard_trial(self):
+        """Block paid external continuation after trial expiry/stop or untrusted accounting."""
+        state = self.snapshot()
+        if self.trial is not None:
+            reason = state['trial']['admission_block'] or (
+                state['reason'] if state['reason'] == 'OPENAI_USAGE_EXCEEDED_BOUND' else '')
+            if reason:
+                raise AdmissionDeferred(reason)
+
+    def export(self):
+        """Private accounting export, including unknowns and original dispatch UTC attribution."""
+        with self.transaction() as db:
+            state = self._snapshot(db)
+            state['charges'] = [dict(id=r[0], amount_micro_usd=r[1], state=r[2], request_id=r[3])
+                                for r in db.execute('SELECT id,amount,state,request_id FROM charges ORDER BY id')]
+            if self.trial is not None:
+                state['trial_dispatch'] = [dict(charge_id=r[0], utc_day=r[1], dispatched_ms=r[2]) for r in
+                                          db.execute('SELECT * FROM trial_charges ORDER BY charge_id')]
+            return state
 
     @staticmethod
     def _switch(db, reason):
@@ -189,16 +293,19 @@ class ModelBudget:
             s = self._snapshot(db)
             if s['external_only']:
                 return None
+            trial_refusal = self._trial_reason(db, amount, now=s['trial']['observed_ms']) if self.trial is not None else ''
             if self.pacing is not None:
                 if s['remaining_allocation_micro_usd'] == 0:
                     self._switch(db, 'OPENAI_ALLOCATION_EXHAUSTED')
                     return None
-                deferred = s['pacing']['admission_block'] or (
+                deferred = trial_refusal or s['pacing']['admission_block'] or (
                     'OPENAI_REQUEST_EXCEEDS_REMAINING' if amount > s['remaining_allocation_micro_usd'] else
                     'OPENAI_PACING_LIMIT' if amount > s['available_micro_usd'] else '')
                 if not deferred:
                     token = uuid.uuid4().hex
                     db.execute('INSERT INTO charges VALUES(?,?,?,?)', (token, amount, 'RESERVED', request_id))
+                    if self.trial is not None:
+                        db.execute('INSERT INTO trial_charges VALUES(?,?,NULL)', (token, s['trial']['observed_ms']//DAY_MS))
                     return token
                 # Exit/commit the clock watermark before raising this temporary refusal.
             elif amount > s['available_micro_usd']:
@@ -218,13 +325,22 @@ class ModelBudget:
         roll back and retain the original conservative reservation.
         """
         with self.transaction() as db:
-            row = db.execute('SELECT state FROM charges WHERE id=?', (token,)).fetchone()
-            if row != ('RESERVED',):
+            row = db.execute('SELECT state,amount FROM charges WHERE id=?', (token,)).fetchone()
+            if row is None or row[0] != 'RESERVED':
                 raise IntelligenceError('Unknown or already settled model reservation')
+            if self.trial is not None and db.execute(
+                    'SELECT dispatched_ms FROM trial_charges WHERE charge_id=?', (token,)).fetchone() != (None,):
+                raise IntelligenceError('Trial reservation already dispatched or missing')
             s = self._snapshot(db)
             reason = s['reason'] if s['external_only'] else (
+                self._trial_reason(db, row[1], exclude=token, now=s['trial']['observed_ms']) if self.trial is not None else
                 s['pacing']['admission_block'] if self.pacing is not None else '')
+            reason = reason or (s['pacing']['admission_block'] if self.pacing is not None else '')
             if not reason:
+                if self.trial is not None:
+                    now = s['trial']['observed_ms']
+                    db.execute('UPDATE trial_charges SET utc_day=?,dispatched_ms=? WHERE charge_id=?',
+                               (now//DAY_MS, now, token))
                 return
             db.execute("UPDATE charges SET amount=0,state='SETTLED' WHERE id=?", (token,))
         raise AdmissionDeferred(reason)
@@ -242,11 +358,23 @@ class ModelBudget:
             db.execute("UPDATE charges SET amount=?,state='SETTLED' WHERE id=?", (actual, token))
             if actual > row[0]:
                 self._switch(db, 'OPENAI_USAGE_EXCEEDED_BOUND')
+            if self.trial is not None:
+                # Settlement never reassigns a charge to today's UTC bucket.
+                p = self.trial
+                total = db.execute('SELECT COALESCE(SUM(c.amount),0) FROM charges c JOIN trial_charges t '
+                                   'ON c.id=t.charge_id').fetchone()[0]
+                day = db.execute('SELECT utc_day FROM trial_charges WHERE charge_id=?', (token,)).fetchone()[0]
+                daily = db.execute('SELECT COALESCE(SUM(c.amount),0) FROM charges c JOIN trial_charges t '
+                                   'ON c.id=t.charge_id WHERE t.utc_day=?', (day,)).fetchone()[0]
+                reason = ('OPENAI_TRIAL_TOTAL_STOP' if total >= p['total_micro_usd'] else
+                          'OPENAI_TRIAL_DAILY_STOP' if daily >= p['utc_day_micro_usd'] else '')
+                if reason:
+                    db.execute("UPDATE trial SET stopped=1,reason=? WHERE id=1 AND stopped=0", (reason,))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('init', 'status', 'enable-pacing'))
+    parser.add_argument('command', choices=('init', 'status', 'export', 'enable-pacing', 'enable-trial'))
     parser.add_argument('--path', required=True)
     parser.add_argument('--account', required=True)
     parser.add_argument('--initial-spent-micro-usd', type=int)
@@ -260,15 +388,23 @@ def main(argv=None):
         if spec['schema'] != 'AIandRouting.v3' or spec['budget_account'] != args.account:
             parser.error('A matching reviewed v3 routing file is required')
         options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'], reserve=0)
-    if args.command == 'enable-pacing':
+        if spec.get('openai_trial') is not None:
+            options['trial'] = spec['openai_trial']
+    if args.command == 'enable-trial':
+        if 'trial' not in options:
+            parser.error('enable-trial requires reviewed trial routing')
+        budget = ModelBudget.enable_trial(args.path, args.account, **options)
+    elif args.command == 'enable-pacing':
         if not options:
             parser.error('enable-pacing requires --routing-file')
         budget = ModelBudget.enable_pacing(args.path, args.account, pacing=options['pacing'], total=options['total'])
+        if 'trial' in options:
+            budget = ModelBudget.enable_trial(args.path, args.account, **options)
     elif args.command == 'init':
         budget = ModelBudget.initialize(args.path, args.account, initial_spent=args.initial_spent_micro_usd, **options)
     else:
         budget = ModelBudget(args.path, args.account, **options)
-    print(json.dumps(budget.snapshot(), sort_keys=True))
+    print(json.dumps(budget.export() if args.command == 'export' else budget.snapshot(), sort_keys=True))
     return 0
 
 
