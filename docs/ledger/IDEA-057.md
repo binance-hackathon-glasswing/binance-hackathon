@@ -1085,3 +1085,17 @@ report/retained verification metadata on PR13348fb70d: retain raw FAIL and
 withheld explanation; DOJ96 actual errors cannot receive a historical-only
 waiver. Future source qualification and host/provider/start remain Yao's.
 Full prospective/verification/disposition: DOJ_TRIAL_CAP_FIXES_20261018.md.
+
+
+### PR174-PUB — original artifact publication criteria
+
+Acceptance run39126353379 all4 PASS at frozen86b1476; local2064/6/2992 and
+private CI2064/6/2992 plus actual systemd5/5. Original artifact12135774607,
+ZIP419bf1c5…, bundle277fd2b6…, manifest0053cbc9…,196 manifest files/235
+bundle checksums/packaged CA independently verified. Publish via dedicated
+publishing-only branch using scoped mirror Actions token; original acceptance
+workflow/source remains frozen. Before execution push helper/docs to origin
+and mirror. Recheck accepted run/SHA/all4 jobs, ZIP digest, full original-file
+hashes, source/model/trial limits/CA; create prerelease tag pointing to86b1476
+with original tarball/sidecar/manifest and verification/readme. Verify uploaded
+asset sizes/digests and tag. No new binary build or host/provider calls.
