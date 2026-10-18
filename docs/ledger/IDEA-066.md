@@ -727,3 +727,33 @@ recheck between reservation and provider step; this review did not execute or
 fix that code. No inference that #168 merged planning docs into integration.
 PR133 remains OPEN. Corrected the stale status-board statement that Isaac was
 still waiting for Keith's already supplied policy proposals.
+
+
+## PC-REL05 — Yao confirms PR168 protocol approval (2026-10-18 07:38 UTC)
+
+Yao clarifies that he already reviewed and merged the v3 budget/window work
+(PR168, merge622c522). Treat that review/merge and this explicit clarification
+as approval of KMP-BUD01's unsigned v3 budget/window/stop/forecast protocol,
+including its route mapping and linked blind-label rubric. Do not request the
+same protocol confirmation again from Keegan. Approval is Yao's; no personal
+Keegan approval is invented. This supersedes PC-REL04's pending-confirmation
+wording and the proposal's pre-merge status.
+
+The approved protocol uses US$50 cumulative allocation, reported US$2 prior/
+US$48 remaining, no permanent reserve, the documented pacing horizon and
+experimental stop/forecast rules. Existing historical v2 results remain under
+their original protocol. Record actual first-job/config/budget/cutoff identity
+and fresh account reconciliation; approval is not a claim that the host was
+initialized, the experiment ran or affordability/quality was demonstrated.
+
+Keegan now proceeds with implementation and release work: KMP-P2 dispatch
+boundary correction/regression, actual trial-limit enforcement arrangement,
+services/DEV-19 alignment, accepted mirror build and handoff. Yao retains host
+checks/activation; Keith retains actual labels/usage/forecast and later profile
+work. Signed provider/policy/router/signer gates are not approved by this
+unsigned-protocol clarification. No code, provider request, paid spend, AWS
+operation or runtime setting changed here. Correct current checklist/backlog/
+protocol status and sampling protocol ID; actual sampling stays NOT_RUN.
+
+Documentation validation: JSON parses; diff whitespace check passes. No new
+application tests for this status-only correction. PR133 remains open.

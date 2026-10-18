@@ -9,7 +9,7 @@
     "independent blind annotator/adjudicator assignment"
   ],
   "population_sha256": null,
-  "protocol": "PROPOSED_V3_PENDING_KEEGAN",
+  "protocol": "KMP-BUD01_APPROVED_BY_YAO_PR168_PC-REL05",
   "reason": "No immutable eligible v3 trial job/stage export and matching filing artifacts supplied.",
   "schema": "KMPFrozenSamplingStatus.v1",
   "seed": "larp-model-trial-20261018-M9-v1",

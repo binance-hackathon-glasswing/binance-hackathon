@@ -3,7 +3,7 @@
 Date: 2026-10-18 UTC. Requested owner work for PR #133 and #97.
 Status: criteria recorded before new sampling, affordability calculations or quote-summary work.
 No paid inference, signing, AWS mutation or adoption is authorized by this document.
-Keegan confirms the proposed v3 budget/window/stop policy; v2 TR-AC2 is not v3 approval.
+Yao Zhu confirms his review/merge of PR168 approved the v3 budget/window/stop protocol (IDEA-066 PC-REL05); no repeat Keegan confirmation is needed. V2 TR-AC2 applies only to its own observations.
 
 ## Prospective acceptance and evidence
 
@@ -30,8 +30,8 @@ signing, trial/ledger initialization or AWS mutation occurred.
 
 | Item | Result / remaining owner |
 |---|---|
-| KMP1/2 | [V3 review and budget proposal](V3_BUDGET_PROPOSAL_20261018.md), source hashes retained. No permanent US$10 reserve. KMP-P2 dispatch cutoff remains a code finding. Measured affordability NOT_MEASURED; Yao supplies usage/charges and Keegan confirms protocol/window/stop enforcement before the first v3 job. |
-| KMP3 | [Blind-label rubric](BLIND_LABEL_RUBRIC_20261018.md) defines one-to-one matching and retains the frozen TR-AC2 selection method. Actual draw/labels NOT_RUN: no v3 job/source export. Keith applies it before annotation when Yao supplies the immutable population; Keegan confirms rubric first. |
+| KMP1/2 | [V3 review and budget proposal](V3_BUDGET_PROPOSAL_20261018.md), source hashes retained. No permanent US$10 reserve. KMP-P2 dispatch cutoff remains a code finding. Measured affordability NOT_MEASURED; Protocol approval is complete (PC-REL05); Yao supplies usage/charges and records actual stop enforcement before the first v3 job. |
+| KMP3 | [Blind-label rubric](BLIND_LABEL_RUBRIC_20261018.md) defines one-to-one matching and retains the frozen TR-AC2 selection method. Actual draw/labels NOT_RUN: no v3 job/source export. Keith applies it before annotation when Yao supplies the immutable population; Rubric approval is recorded in PC-REL05; actual inputs/annotation remain pending. |
 | KMP4 | [Model-provider licence register](MODEL_PROVIDER_RIGHTS_20261018.md) and dated hashed capture manifest. Public raw/rendered text distinguished; no account contract or signed/scored financial-policy clearance inferred. Keegan review and private durable archival remain. |
 | KMP5/6 | [Interim quotes](evidence/quotes-interim-20261018/README.md): 1,021 records and26 latest referenced raw artifacts verified; default summary refuses9 US-session samples/token. Original data interim, not continuous. Stored keys work;40103 was timestamp freshness. Existing pushed runner resumed06:54:40Z through Oct20 00:00Z; two successful rounds verified. Future health/final coverage remain open. |
 | KMP7 | [Signing/profile review](REHEARSAL_PROFILE_REVIEW_20261018.md): conditional finite authority; no unmeasured60s adoption. Existing Oct21 window, EQUAL_WEIGHT fallback if S1 unqualified; S1 DETERMINISTIC limiter proposed, with B4 still required. #27 comment carries this recommendation; Isaac/Keegan decide. |
@@ -47,8 +47,8 @@ of inheriting unreachable v2 path names. The blind rubric scores the frozen
 representative job at its original cutoff; later retries cannot rescue a miss.
 The source review also distinguishes shared retrieval/deadline bounds from
 per-stage model loops, and preserves dispatch-day charging and separate
-external-only continuation. Keegan still confirms these proposals before v3;
-this PR review/merge does not supply that experiment or deployment approval.
+external-only continuation. PC-REL05 records Yao's approval of these unsigned-trial protocol proposals;
+actual experiment results and deployment/host acceptance remain pending.
 
 ### KMP-03 — published delivery and validation
 

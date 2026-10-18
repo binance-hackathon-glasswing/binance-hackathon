@@ -1,7 +1,8 @@
 # Blind-label matching and frozen selection — KMP-LABEL01
 
-Keith, 2026-10-18 UTC. Prospective rubric for the new unsigned v3 trial; Keegan
-confirms with the protocol before its first assessment. Criteria: `1536af8`.
+Keith, 2026-10-18 UTC. Rubric included in Yao Zhu's approved PR168 unsigned
+v3 protocol (IDEA-066 PC-REL05); no repeat protocol confirmation required.
+Criteria: `1536af8`. Actual drawing/labels remain NOT_RUN until inputs exist.
 The selection method is TR-AC2 unchanged; this adds matching semantics, not a
 new seed or an outcome-selected population. Private labels/documents stay outside Git.
 

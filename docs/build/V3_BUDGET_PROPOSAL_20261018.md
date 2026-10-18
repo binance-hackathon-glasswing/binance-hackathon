@@ -1,9 +1,6 @@
 # V3 budget and stop proposal — KMP-BUD01
 
-2026-10-18 UTC. Keith proposal for Keegan's confirmation on #97 / PR #133.
-Criteria were pushed at `1536af8` before this analysis. **Not adopted or initialized.**
-The confirmed v2 TR-AC2 protocol remains historical and unchanged. A new v3
-window needs its own confirmation before its first routed assessment.
+2026-10-18 UTC. Keith protocol, **approved by Yao Zhu through review/merge of PR168**, explicitly confirmed Oct18 07:38 UTC (IDEA-066 PC-REL05). Criteria were pushed at `1536af8` before this analysis. This approval supersedes pre-merge requests for Keegan to confirm the same protocol. No ledger initialization, provider measurement or deployment is claimed. The confirmed v2 TR-AC2 protocol remains historical and unchanged for its own observations.
 
 ## Routing, prompts and window reviewed
 
@@ -73,7 +70,7 @@ delete/reinitialize the ledger or turn a prior spend into new headroom.
 
 ## Proposed trial stop limits and verdict
 
-Keegan is asked to confirm the following as a **new v3** protocol, retaining
+Yao approved the following as the **new unsigned v3** protocol, retaining
 TR-AC2's M1/M2/M5/M9 coverage and ordered outcomes, frozen sampling and 72
 observed unsigned hours / 20 unique completed jobs. Signed hours never count.
 The planned unsigned cutoff remains Oct22 00:00 UTC; a later start or earlier
@@ -85,7 +82,8 @@ as inconclusive rather than extending or relabelling observations.
 TR-AC2's v2 `routine-only` and `openai-review` names are unreachable in the
 OpenAI-preferred branch. For v3, freeze these actual ordered stage signatures
 with the protocol; keep v2 results under their original names. The following
-mapping is a proposal for Keegan's confirmation, not an approved bar change.
+mapping is included in the approved PR168 protocol (PC-REL05). Actual route
+qualification still needs measured evidence.
 
 | V3 path | Exact ordered stage labels |
 |---|---|
@@ -106,7 +104,7 @@ qualification blocks may fill route/stage coverage under TRB-01C, but cannot
 rescue natural M9 or add unsigned observation hours. Removing a path requires
 a separately frozen configuration/window before observation, never after
 seeing its result. Route mapping and representative-job scoring in the
-[blind rubric](BLIND_LABEL_RUBRIC_20261018.md) must be confirmed before v3 starts.
+[blind rubric](BLIND_LABEL_RUBRIC_20261018.md) are approved in PC-REL05; actual measured coverage is still pending.
 
 ### Stop limits
 
@@ -180,6 +178,4 @@ attempts can cost more than a single completed reply. These are reference rates,
 not measured spending or account entitlements; captured sources are in the
 [provider register](MODEL_PROVIDER_RIGHTS_20261018.md).
 
-Keegan confirms window, limits, margin, cutoff meaning and protocol ID on #97
-before Yao prepares/initializes the new release. Keith then issues measured
-interim/final forecasts from Yao's export. No affordability verdict is granted here.
+Protocol approval is recorded in PC-REL05; Keegan proceeds with implementation, release identity and KMP-P2 remediation, and Yao records actual host enforcement/start/config identities before the first paid job. Keith then issues measured interim/final forecasts from Yao's export. No affordability verdict or host activation is granted by the protocol approval.
