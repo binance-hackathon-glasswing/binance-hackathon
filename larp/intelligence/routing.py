@@ -114,7 +114,22 @@ class BudgetedOpenAI:
             return response(request.read(), status='TIMEOUT', output=None, latency_ms=elapsed,
                             error='DEADLINE_EXCEEDED')
         # The reservation is durable even if step raises, the worker is abandoned, or the process dies.
-        reply = self.model.step(request, remaining_ms)
+        if getattr(self.budget, 'pacing', None) is not None:
+            try:
+                reply = self.model.step(request, remaining_ms,
+                    before_dispatch=lambda: self.budget.before_dispatch(token))
+            except AdmissionDeferred as error:
+                # The boundary check durably settled this known-unsent POST at zero.
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started), error=error.reason)
+            except IntelligenceError:
+                # No reliable accounting means no dispatch. Do not invent a refund.
+                self.budget_unavailable = True
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started),
+                                error='MODEL_BUDGET_UNAVAILABLE')
+        else:
+            reply = self.model.step(request, remaining_ms)
         value = reply.read()
         usage = value.get('usage') or {}
         actual = None

@@ -210,6 +210,25 @@ class ModelBudget:
                 return token
         raise AdmissionDeferred(deferred)
 
+    def before_dispatch(self, token):
+        """Recheck a reserved POST at the transport boundary; refund only known-unsent work.
+
+        The caller must invoke this before transport, never after an uncertain send.
+        Commit the refusal/refund and clock watermark before raising. Storage failures
+        roll back and retain the original conservative reservation.
+        """
+        with self.transaction() as db:
+            row = db.execute('SELECT state FROM charges WHERE id=?', (token,)).fetchone()
+            if row != ('RESERVED',):
+                raise IntelligenceError('Unknown or already settled model reservation')
+            s = self._snapshot(db)
+            reason = s['reason'] if s['external_only'] else (
+                s['pacing']['admission_block'] if self.pacing is not None else '')
+            if not reason:
+                return
+            db.execute("UPDATE charges SET amount=0,state='SETTLED' WHERE id=?", (token,))
+        raise AdmissionDeferred(reason)
+
     def settle(self, token, actual):
         with self.transaction() as db:
             row = db.execute('SELECT amount,state FROM charges WHERE id=?', (token,)).fetchone()
