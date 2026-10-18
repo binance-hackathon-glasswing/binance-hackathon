@@ -1,5 +1,7 @@
 # PC-HO02 — late Oct18 deployment continuation for Yao Zhu
 
+**Oct18 continuation:** [PC-REL09 / PC-HOST02 / PC-PROV02 / PC-PREP02](PR174_DEPLOYMENT_CONTINUATION_20261018.md) now verifies the supplied tar/original CI assets, refreshes host state and records AIand401 plus the local mirror-origin checker FAIL. Read that supplement before acting on the earlier pending-verification observations below. No host deployment occurred.
+
 This is the latest handoff. It supersedes pending-release/cap-code/report and
 older v2 instructions in AWS_DEPLOYMENT_RESUME_20261018.md and the local run
 sheet. Refresh remote and host state; these are dated observations, not live state.

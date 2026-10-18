@@ -1290,3 +1290,68 @@ Private source/label reports stay outside Git; local ignored sectionC updated
 to the new capped86b1476 release and the tracked runbook. Historical v2/$10
 tail and old d8aa7d5 snapshot cannot govern the new trial. No host mutation,
 paid inference or deployment happened. PR133 remains OPEN.
+
+
+## PC-REL09 / PC-HOST02 — independent supplied-release verification (prospective)
+
+Yao requests continuation from PC-HO02 and a PR133 update. Before content
+verification, pass criteria: (1) original published gzip/sidecar/external manifest
+match recorded hashes; its decompressed stream equals the supplied tar exactly;
+(2) reject unsafe/duplicate/link members; verify every checksum and exact covered
+file set, all196 manifest source files against Git86b1476, BUNDLE.env, packaged CA,
+Python archive, provisioner and capped routing hash; (3) independently query exact
+CI/source/artifact metadata, attributing retained tests rather than claiming a
+rerun; (4) refresh remote and host with read-only base64 SSM/SQL, keeping provider
+keys/private endpoints out of outputs. Nothing from the archive executes before
+verification. No host mutation, paid call, ledger setup, signing or original-asset
+rebuild is authorized here. Prepare a separate exact-source checkout and concrete
+owner steps; PR133 stays OPEN. Provider/account reconciliation remains required.
+
+
+### PC-REL09 / PC-HOST02 / PC-PROV02 / PC-PREP02 — verified results
+
+PC-REL09 PASS at13:52:48UTC: original published assets and original CI ZIP
+independently downloaded/verified. Supplied101,519,360-byte tar SHA7632df2c…24665
+is byte-for-byte decompressed original277fd2b6…4343 gzip.196 manifested source
+files match exact Git/selector;235 checksums cover all bundle files; both
+provisioner copies, BUNDLE.env, Python archive, manifest0053cbc9…fff2f,
+CAd7389074…2398b and capped routinga5fca50a…22d8d verify. No archive execution
+preceded verification; no rebuild/recompression. Exact CI39126353379 all4 PASS;
+downloaded logs confirm2064/6/2992 and separate actual-systemd5/5, no new rerun.
+Fetched integration1306bbb application tree still equals86b1476; main matches
+origin/mainfb95114f. Evidence: ../build/evidence/pr174-independent-verification-20261018.json.
+
+PC-HOST02 at13:50:34UTC /21:50:34SGT: stillbb46234 deterministic dev/shadow,
+no routing or model ledger; healthy,71 audit chunks ACK,27 anchors ACK/latest13Z,
+daily backup ACK, historical PERMANENT retained. DOJ RESPONSE_TOO_LARGE persists;
+BIS OK/truncated, other latest sources OK/NOT_MODIFIED,0 corrupt lines. Read-only
+SSM8d35489e-d121-4f8a-97bd-8312bf8df5ff/explicit READ ONLY SQL, no host mutation.
+
+PC-PROV02 at13:53:34UTC, SSM70102d52-0233-4c51-b1d0-25508cf731ea: both stored
+keys present and unchanged. OpenAI authenticated model listing200 includes
+exactgpt-6.1-sol; AIand listing401 with the adapter/documented Bearer header.
+New active provider authentication blocker, not proof of empty funding. No paid
+inference; actual effort/response identity and current balances/usage remain
+unverified. Yao checks enabled/key-organization status and account funds/units/
+expiry/other consumers; no key requested or automatically replaced. Ledger
+still absent, not initialized. Evidence: ../build/evidence/deployment-continuation-20261018.json.
+
+PC-PREP02: separate clean managed exact86b1476 checkout, local preparation branch
+tracking frozen remote release. Fresh actual-wallet/RPC capture13:56:15.500UTC;
+prepared within5min using approved interim profiled951207f…b4542 and capped
+routing. Missing inputs=[]; six local checks PASS. CI_RELEASE_BYTES FAIL and
+local_ready=false: gate_a_check.check_release149–159 accepts registered-only
+build_origin and rejects the truthful approved Keegan4 mirror. Production
+bind_manifest verifies those same bytes in memory without a write. Manifest and
+checker verdict unchanged; no PASS override. Keegan owns reviewed provenance-
+aware acceptance/repair; a code repair needs new original CI source/assets.
+Yao retains AIand401/account/preserving host gates. Initial contact-quote helper
+refusal retained; only local input parsing corrected, no application edit.
+
+Concrete owner sequence and exact private paths:
+../build/PR174_DEPLOYMENT_CONTINUATION_20261018.md. Re-capture/re-prepare when
+resuming if stale. No ledger/host/service mutation, paid call, wallet transaction
+or Terraform apply. PR133 remains OPEN; old fixed24h FAIL/PERMANENT backup,
+PR168 approval, B4/DEV20/trust/labels/signed owners are preserved. Original
+release verification is complete; host installation and local qualification are
+not. The pre-existing Claude outputs/ and unrelated worktrees remain untouched.
