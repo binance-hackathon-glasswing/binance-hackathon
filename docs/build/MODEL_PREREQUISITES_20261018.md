@@ -39,3 +39,28 @@ signing, trial/ledger initialization or AWS mutation occurred.
 
 The actual trial verdict is pending. Documentation and a healthy quote process
 cannot substitute for provider usage, blind labels, hosted readiness or adoption.
+
+### KMP-03 — published delivery and validation
+
+[PR168](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/168)
+targets PR133's checklist branch. Posted the authorized
+[#27 review](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/27#issuecomment-6247055075),
+[Isaac handoff](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/118#issuecomment-6247055982),
+[PR133 update](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133#issuecomment-6247056684)
+and [Keegan budget proposal](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/97#issuecomment-6247057362).
+No PR merged. The destination was verified as the same private project repository;
+the exact snapshot was screened again on the host against both stored Web3
+credential values, including decoded response bodies (30 files, zero values exported).
+
+Validation:29 transferred data hashes/lengths,26 latest raw references,1,021
+complete records, raw JSON/base64, changed JSON and Markdown links PASS;
+19 term-capture hashes/lengths and public-manifest equality PASS;9 source-file
+hashes and composed prompt hashes retained;26-period/1,846,153-microUSD initial
+allowance arithmetic checked. Default offline summary correctly refuses the
+documented US-session shortfall. `git diff --check` PASS. No application source
+changed and no full application suite rerun for this documentation/evidence PR.
+
+Hosted run[39107075081](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39107075081)
+at325f76c could not start runtime/host-bundle/AWS jobs: each failure annotation
+names failed payments/spending limit; bootstrap was cancelled. This is not a
+code-test result or hosted acceptance. #98/account owner remains responsible.
