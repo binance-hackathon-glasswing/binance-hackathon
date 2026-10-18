@@ -218,3 +218,22 @@ combined head; report platform/external-data skips honestly. Re-check the primar
 Binance Flash API field definitions as a dated source check, not a quote/fill
 comparison. No new quotes, wallet/host actions, profile approval or fee-rate
 assumption is authorized by this review.
+
+### FN-RV157 results — 2026-10-18
+
+Pushed combined head `a3918e0` includes integration `2f10b9d` (PR155) by ordinary
+merge. Full changed producer/tests and historical evidence reviewed; no further
+code defect found. Primary Binance Trading API / Flash API response definitions
+rechecked on 2026-10-18: `tradeFee` is still described as an estimated network fee
+in USD. This supports the reporting label, not route-fee inclusion or actual fills.
+
+First focused run: 267 passed, 1 failed, 1 external-corpus skip, 236 subtests.
+The shell-wrapper test selected system `python3` without dotenv, while pytest
+used the pinned temporary venv. Set the wrapper's supported `PYTHON` variable to
+the same venv interpreter (no source/assertion change), then the complete same
+subset passed: **268 passed, 1 skipped, 236 subtests**, 13.96s, macOS arm64 /
+Python3.12. Subset: marketdata, strategy, caps, cap proposal and Gate B evidence.
+Only skip: opt-in external recorded-market corpus. `git diff --check` passes.
+No new Linux/release/host acceptance claimed. #119 fee-netting proof and #120
+Isaac/Keith profile acceptance remain open; merging PR157 completes #156's
+reporting/evidence correction only. The ongoing capture is not interrupted.
