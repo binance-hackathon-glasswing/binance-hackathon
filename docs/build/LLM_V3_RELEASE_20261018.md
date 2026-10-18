@@ -198,3 +198,47 @@ Only after CI passes may PR169 be merged with an ordinary merge under the user's
 standing instruction; keep133/126 open and preserve the frozen release SHA.
 Record completed evidence in PR133 and release notes without modifying the
 frozen deployment bytes. No paid provider, AWS or host deployment action.
+
+
+## V3-REL02 — completed unsigned release and original artifacts
+
+User redirected CI to their private mirror. Frozen source
+`d8aa7d53e5e27543135f8729ff7a7afd4450278a` (includes165/167 and KMP-P2 fix) is accepted
+for the unsigned v3 trial on this verified evidence:
+
+- [Private mirror run39111854179](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39111854179): all four jobs PASS.
+  Python3.12.15/PostgreSQL14.24:2029 passed,6 skipped,2981 subtests (423.47 s);
+  actual-systemd5 tests/5 subtests separately PASS. Both Terraform jobs, offline
+  demo, restricted Docker and both-role offline bundle provisioning PASS.
+- Original artifact12129754965 independently downloaded; ZIP digest verified,
+  external/embedded manifest equal; all195 manifest files and234 full bundle
+  checksums verified. Registered repository stays the challenge repo and
+  build_origin honestly names Keegan4's mirror. No local binary rebuild.
+- Original `larp-d8aa7d53e5e2-x86_64.tar.gz` (98,379,380 bytes) SHA-256:
+  `9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89`.
+- External/embedded manifest SHA-256:
+  `8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0`.
+- Actual packaged RDS CA SHA-256 (freshly checked from this bundle):
+  `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b`.
+- [Published GitHub prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-v3-d8aa7d5), tag pinned to the frozen
+  source, has six real uploaded assets: original tarball/sidecar/manifest,
+  VERIFICATION.json, BUNDLE.env and README. Asset API sizes/digests verified.
+  Direct cloud uploads returned401; separate publishing-only branch4e7159b
+  reverified and uploaded the same original bytes through a scoped mirror
+  Actions token in [publication run39112659498](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39112659498),
+  PASS. This job did not replace acceptance CI or rebuild the binary. The
+  unused empty challenge-repo draft was deleted. Org billing remains unfixed.
+- PR169 merged normally at95f6a8f after green CI. Source branch/tag stay frozen;
+  these result-only docs change no manifested runtime file. PR133/126 stay open.
+
+[Machine-readable evidence](evidence/llm-v3-release-20261018.json) records
+identities, checksums, job URLs and remaining owners. Original sendable folder
+and ZIP: `/workspace/exports/larp-d8aa7d53e5e2-unsigned-v3` and matching `.zip`.
+They contain the actual new deployment binary, not a handoff-only substitute.
+
+Release-agent code/review/build/handoff work is complete. Yao retains actual
+provider/rights/funding checks, in-flight trial stop-cap enforcement before
+paid testing, AWS/host installation/binding/activation. Keith retains actual
+usage forecast and blind labels; team retains adoption. Keegan reviews Yao's
+fixed-window gap report after it is supplied after Oct18 19:00 SGT. No future
+gap report, paid provider calls or AWS/host deployment are claimed here.
