@@ -272,6 +272,13 @@ The "finding outside this change" above is fixed by SG-7. Not yet measured on a 
 
 **Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
 
+**Current owner decision (2026-10-18): TR-AC1 confirms the unchanged M1–M9/K1–K4
+bars for the unsigned trial.** The PROPOSED labels below preserve the original
+October16 registration; the current decision, frozen sampling seed/method and
+remaining Keith/Yao prerequisites are in
+[MODEL_TRIAL_HANDOFF_20261018.md](../build/MODEL_TRIAL_HANDOFF_20261018.md).
+No earlier trial start, Keith personal review or collective adoption is inferred.
+
 ### Preconditions (before the first routed assessment)
 
 - **P0 Provider check (open; Yao Zhu, on the host).** The AIand account's org-scoped catalog lists `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with the pinned efforts (`low` for GLM routine; `high` for the K3 primary and GLM secondary reviewers), and the first real routed assessment's recorded reply headers `x-model` and `x-reasoning-effort` match the requested model and effort for every stage that ran. Record the date, the catalog response hash and the first assessment's ID in this entry. A mismatch is a kill (K4). Not run yet.
@@ -480,3 +487,28 @@ PR164-R1 implementation: `6a57d1d` adds an explicit `RoutedAssessor.assess_defer
 - Final corrected full CI runtime run at `6a57d1d`: **1945 passed, 6 skipped, 2862 subtests passed**, 247.09 s, exit 0. The six skips are the five opt-in systemd tests (all five PASS in the explicit job above) and one opt-in external-data case. No xfails or golden regeneration. Raw runtime/demo evidence retained outside Git at `/private/tmp/larp-pr164-results/`; synthetic credentials/throwaway test keys only.
 
 PR164-R1 final review: no remaining implementation blockers found on the tested application head. The user requested fixing the finding, adding PR comments, running CI locally and merging after completion. The verification-only documentation commit changes no executable source or tests. PR #164's target remains `codex/system-testing-20261012`; merge receipt/head are authoritative in its GitHub metadata. Hosted Actions at fixed head `6a57d1d` (run `39051309773`, runtime check `117450296047`) again ran no steps: the annotation confirms the same account-payment/spending-limit refusal (#98). This local acceptance does not approve activation or settle #97's provider/rights/network/trial/adoption/hosted/B4 gates. Keep #97 and the narrowed incomplete-work item open; #162's implementation scope is complete once merged.
+
+## TR-AC1 — release and trial-bar confirmation (2026-10-18)
+
+The user delegates completion of Keegan's LLM application tasks: accept release
+7a0ea14, confirm trial bars and dispose of DOJ/BIS gaps. The assistant records
+Keegan-workstream decisions, without attributing Keith/team personal approval.
+Accepted release, fixed hashes, unchanged M1–M9/K1–K4, frozen blind-label seed
+and deterministic selection method are in the dated handoff and machine-readable
+`ModelTrialOwnerDecision.v1`. Effective at publication before the first routed
+assessment; an earlier start must remain an explicit deviation. An early Oct20
+outcome with fewer than3 trial days is inconclusive under the original rule.
+
+Release acceptance relies on PC-CI02's published artifact verification at PR133
+commit9b363e6 plus independent application-tree/full-suite evidence; this session
+received404 from private-mirror APIs and did not independently download/hash
+bundle bytes. No provider call, budget initialization, host operation, signing
+or model-adoption approval occurred. Keith's independent bar review, exact prior
+OpenAI spend, rights/funding and labels remain his tasks. Yao retains actual
+P0–P2, report, prepare/bind/activation and first-assessment evidence.
+
+PC-GAP01 allows two fixed-window historical-backfill explanations for the
+unsigned trial, preserving raw reports/logs and INCOMPLETE runtime coverage.
+It does not satisfy signed/final source completeness, waive actual poll errors,
+or explain other targets/archives. The prospective11:00UTC report was not read.
+See IDEA-066 PC-GAP01 and the handoff for the exact window and checks.

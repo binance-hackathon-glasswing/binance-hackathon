@@ -94,3 +94,53 @@ At pushed `1ea851c`, Python 3.13/macOS unittest: 10 passed, 1 failed. The terms-
   - P6: every existing Gate A test (GA01–GA14, `gate_a_check`) and the runtime service tests still pass unchanged.
 - Results (2026-10-17): P1–P6 **PASS**. New `ProviderFile` tests in `tests/runtime/test_gate_a.py` (6 tests, 10 subtests) cover P1–P5; a mutation that writes only the first provider fails P1. Existing Gate A tests (GA01–GA14) and `test_gate_a_check.py`: 42 passed, 1 skipped, unchanged. Full local suite (Anaconda Python 3.14): 1353 passed, 400 skipped; the only failures are the three already present without this change (`psycopg`/`boto3` missing locally) and the `test_final_review_d.py` collection error (`eth_account`). `prepare` imports `larp.runtime.service.balance_providers`, which needs neither package. Org CI remains billing-blocked (#98). GATE_A.md and RPC_QUALIFICATION.md now show `--balance-rpc-config`.
 
+
+## PC-REL01 / PC-GAP01 — Keegan LLM handoff decisions (2026-10-18)
+
+User-delegated assistant decision for Keegan's workstream. Relevant published
+host/mirror inputs were read from PR133 commit9b363e6 (PC-CI02, PC-KEY01,
+PC-BUD01 and PC-AWS10); no PR133/126 merge is performed by this handoff.
+
+**PC-REL01 complete:** accept CI bundle build7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce
+for the unsigned dev/shadow model trial. Exact bundle SHA256 is
+ff951451bc80b518620f895b2b0a871df188ce2cb2d3e36e04a58754c7f5de06;
+manifest bb17b7ffc28eeb2e14594a80895827bed5327b8408f519692870dcdeffdca70a;
+CA d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b.
+Retained published evidence: `docs/build/evidence/model-trial-mirror-20261018.json`
+(byte-identical to9b363e6, SHA256
+30b893ff60399bc819c361744910011504c8da9d78a8a4a829e8d55a48dc7c58).
+It records run39091699018/artifact12122169313 and192 verified manifest hashes.
+The old PENDING_KEEGAN field is historical; current acceptance is TR-AC1 in
+`model-trial-decision-20261018.json`. Private-mirror APIs return404 here;
+acceptance relies on the published verification plus our independent source
+validation, not a claim of newly downloaded bundle bytes. Install-time exact
+hash/manifest checks remain Yao's existing responsibility.
+
+**TR-AC1 complete for Keegan:** unchanged original M1–M9/K1–K4 bars confirmed,
+with frozen sampling seed/method before drawing. Keith's personal independent
+bar review and exact prior-spend input remain unverified; acceptance of the
+release/Keegan bars does not invent those inputs or permit guessed ledger init.
+The approximate US$48 balance is not used as an exact billing figure.
+
+**PC-GAP01 decision complete:** accept the documented historical pagination
+backlog for source:doj-press and source:fr-bis as explained gaps only for the
+fixed Oct17 11:00Z–Oct18 11:00Z report and unsigned trial, after Yao checks the
+raw polling cadence/errors/rejections. Preserve the original report, generate a
+second using the two exact incident entries, and retain both report hashes plus
+the incident hash. A PASS with explanations is not full-source GateA acceptance;
+runtime coverage stays INCOMPLETE. Actual outages, corrupt lines, other targets
+and archive health are outside the exception. No wildcard or future-window
+waiver is granted. At publication the report's end is still future; no actual
+report/host success is claimed. Yao owns bounded-history/window coverage work;
+Keegan reviews its evidence and release before signed/final source acceptance.
+
+Authoritative instructions, limits and remaining owners:
+[MODEL_TRIAL_HANDOFF_20261018.md](../build/MODEL_TRIAL_HANDOFF_20261018.md).
+P0/P1/P2, actual11:00 report, archive-delivery evidence, provider/rights and
+fresh shadow activation/start remain open. No AWS/host/inference/signing action.
+
+Prospective verification, before running local checks: retained release evidence
+matches its source bytes and all acceptance hashes; the two incident entries
+have exact targets and the24h window; JSON parses; existing report tests retain
+truncation/failure counts, reject corrupt/unrelated-target gaps, and preserve a
+short-window INCONCLUSIVE. No application or runtime/config changes are made.

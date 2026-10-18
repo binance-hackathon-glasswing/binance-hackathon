@@ -130,6 +130,12 @@ those exact files rather than editing the prepared runtime afterward.
 
 ## Host steps for the Gate A shadow trial (2026-10-16)
 
+October18 owner decisions and the exact accepted7a0ea14 release are recorded in
+[MODEL_TRIAL_HANDOFF_20261018.md](MODEL_TRIAL_HANDOFF_20261018.md): confirmed
+unchanged bars, fixed-window DOJ/BIS explanations and remaining host inputs.
+This does not mark provider checks, budget initialization or adoption complete.
+
+
 Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill criteria: [IDEA-057](../ledger/IDEA-057.md) "Shadow trial on the Gate A deploy". Yao Zhu runs these steps on the `primary` host and in Yao Zhu's own terminal; nobody pastes a key into a chat, commit or command line.
 
 **Before starting.** The release on the host must contain this integration (merged into `codex/system-testing-20261012`) and the Gate A assembly (PR #87, not merged as of 2026-10-16). Steps 4–6 change `/etc/larp/runtime.json`, so do them before binding `/etc/larp/release.json` (DEPLOYMENT_DAY step 7). If `release.json` is already bound, binding refuses to replace it: move the old file aside, record that as a version event, and bind again.
