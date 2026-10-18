@@ -1,0 +1,108 @@
+{
+  "schema": "UnsignedTrialReleaseVerification.v1",
+  "verified_at_utc": "2026-10-18T12:18:59.286461+00:00",
+  "scope": "UNSIGNED_V3_TRIAL_ONLY",
+  "build_id": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+  "mirror_repository": "Keegan4/Keegan4-larp-ci-mirror",
+  "run_id": 39126353379,
+  "run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379",
+  "artifact_id": 12135774607,
+  "artifact_digest": "sha256:419bf1c56e4dd0f08c9d4e262abdda78654c2e9e483f3595c8c755b0f25a9b77",
+  "all_four_jobs_passed": true,
+  "bundle": "larp-86b14761324f-x86_64.tar.gz",
+  "bundle_sha256": "277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343",
+  "bundle_bytes": 98383598,
+  "manifest": "larp-86b14761324f-x86_64.release.json",
+  "manifest_sha256": "0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f",
+  "external_embedded_manifest_equal": true,
+  "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+  "build_origin": "https://github.com/Keegan4/Keegan4-larp-ci-mirror",
+  "manifest_file_count": 196,
+  "bundle_file_checksums_verified": 235,
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "routing_spec_sha256": "baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e",
+  "unsigned_trial_spec_sha256": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+  "trial_policy": {
+    "schema": "OpenAITrial.v1",
+    "trial_id": "larp-unsigned-v3-20261018",
+    "start_ms": 1792321200000,
+    "end_ms": 1792627200000,
+    "total_micro_usd": 8000000,
+    "utc_day_micro_usd": 2500000
+  },
+  "bundle_identity": {
+    "build_id": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+    "arch": "x86_64",
+    "python_version": "3.12.15",
+    "python_tag": "20261001",
+    "python_file": "cpython-3.12.15+20261001-x86_64-unknown-linux-gnu-install_only.tar.gz",
+    "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+    "rds_region": "ap-southeast-2",
+    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+  },
+  "jobs": [
+    {
+      "id": 117672194453,
+      "name": "runtime",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379/job/117672194453"
+    },
+    {
+      "id": 117672194558,
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379/job/117672194558"
+    },
+    {
+      "id": 117672194588,
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379/job/117672194588"
+    },
+    {
+      "id": 117672194668,
+      "name": "host-bundle",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379/job/117672194668"
+    }
+  ],
+  "host_deployment_performed": false,
+  "paid_provider_calls_performed": false,
+  "original_gap_report_verdict": "FAIL",
+  "gap_review_record": "PC-GAP02-RV1",
+  "pending": [
+    "Yao preserving ledger setup and actual provider/funding/rights checks",
+    "Yao AWS/host install/bind/activation, source polls/restart/new observed coverage and first job/ACK",
+    "Keith immutable usage/labels and team adoption"
+  ],
+  "record_id": "PR174-REL01",
+  "pr174_merge": "100d49327f4f50e13ff4c16f297b1acccf187496",
+  "release_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476",
+  "release_id": 416434123,
+  "tag_name": "llm-trial-pr174-86b1476",
+  "publication_run_id": 39126901213,
+  "publication_source": "00603288f41e17f7f016425ed3bfa868e7b8ff89",
+  "local_validation": {
+    "source": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+    "passed": 2064,
+    "skipped": 6,
+    "subtests": 2992,
+    "seconds": 173.13,
+    "log_sha256": "99c3688784eb9fa211737c73a04ddca09dc8014d3d635cc06ab291197f62063d"
+  },
+  "mirror_validation": {
+    "passed": 2064,
+    "skipped": 6,
+    "subtests": 2992,
+    "seconds": 236.95,
+    "actual_systemd_passed": 5,
+    "actual_systemd_subtests": 5,
+    "log_sha256": "967e7f4f705dcfcc8ed0b9692a25fd3264af46ec115105e5d2ec907cf55bda53"
+  },
+  "review_findings": [
+    "R1-CAP: AIand honors primary accounting quarantine",
+    "R1-CLOCK: AIand honors migrated pacing rollback",
+    "R1-SOURCE: malformed proof fails reporting without crash or cadence waiver"
+  ],
+  "posted_comments_or_reviews_at_inspection": 0
+}
