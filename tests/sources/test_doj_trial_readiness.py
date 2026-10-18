@@ -137,3 +137,17 @@ class Readiness(Harness):
                 self.assertEqual(report['verdict'], 'FAIL')
                 self.assertEqual(report['historical_report'], historical)
                 self.assertEqual(report['targets']['source:doj-press']['failed_polls'],144)
+                self.assertEqual(report['corrupt_log_lines'],144)
+
+    def test_one_malformed_proof_cannot_hide_behind_healthy_cadence(self):
+        end=T0+86_400_000
+        lines=[dict(target='source:doj-press',started_ms=t,finished_ms=t+1,status='OK',cadence_ms=600_000,
+                    head_coverage=dict(schema='SourceHeadCoverage.v1',complete=True,checked_ms=t+1,
+                                       anchor_item_id='old',basis='DURABLE_OVERLAP'))
+               for t in range(T0,end,600_000)]
+        lines[50]['head_coverage']=['corrupt']
+        report=gap_report(lines,cadences={'source:doj-press':600_000},start_ms=T0,end_ms=end,
+                          coverage_scope='current')
+        self.assertEqual(report['targets']['source:doj-press']['unexplained_gaps'],0)
+        self.assertEqual(report['corrupt_log_lines'],1)
+        self.assertEqual(report['verdict'],'FAIL')
