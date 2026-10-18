@@ -161,3 +161,7 @@ No new tests mirror the wording. Existing constants/host set, AWS files, service
 configs and client allowlists are unchanged; git diff --check passes. This
 separate PR supplies the requested approval/documentation slice; no model use,
 provider-policy clearance, release/host acceptance or activation is inferred.
+
+SP-NET D2 delivery: dedicated [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171),
+OPEN against PR133's checklist branch. Ready for review; no merge/deploy was
+requested here. Provider compatibility/adoption/host gates remain separate.
