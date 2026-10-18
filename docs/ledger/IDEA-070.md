@@ -191,3 +191,13 @@ check/run precheck does not inspect registered-run state or host permissions;
 run still applies its existing registration/quarantine/release gates afterward.
 No new Linux/systemd/bundle or hosted acceptance is claimed from this local
 suite. A reviewed signed release including this change is still required.
+
+SR-01 delivery: [PR176](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/176)
+is a separate open, non-draft PR targeting integration; implementation507d82b
+contains tested sourcef9d0917 plus results only. No merge/installation is claimed.
+GitHub run39133862711 runtime job117694306416 ran **zero steps**: its annotation
+confirms recent failed account payments/spending limit (#98). This is not a
+runtime-test failure or a CI pass; Linux/systemd/original signed bundle remain
+open. The local disposable PostgreSQL container was stopped/disposed after the
+139-test run. PR133 separately tracks SR-01 and the remaining source/lifetime/
+measured-policy/provider/host inputs; no complete Gate B backlog item closes.
