@@ -324,6 +324,11 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
                             incidents=incidents, required_ms=required_ms, tolerance=tolerance) \
         if coverage_scope == 'current' else None
     corrupt = sum(1 for line in lines if line.get("corrupt"))
+    if coverage_scope == 'current':
+        # A structurally corrupt proof is not an ordinary missed poll that cadence tolerance can hide.
+        corrupt += sum(1 for line in lines if line.get('target') in cadences
+                       and line['target'].startswith('source:') and 'head_coverage' in line
+                       and type(line['head_coverage']) is not dict)
     targets = {}
     for key, declared in sorted(cadences.items()):
         mine = [l for l in lines if l.get("target") == key and type(l.get("started_ms")) is int]
@@ -333,7 +338,8 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
             finished = line.get("finished_ms", line["started_ms"])  # legacy log without a completion clock
             if coverage_scope == 'current' and key.startswith('source:'):
                 proof = line.get('head_coverage') or {}
-                return (proof.get('schema') == 'SourceHeadCoverage.v1' and proof.get('complete') is True
+                return (type(proof) is dict and proof.get('schema') == 'SourceHeadCoverage.v1'
+                        and proof.get('complete') is True
                         and proof.get('basis') in ('DURABLE_OVERLAP', 'END_OF_LISTING')
                         and (proof.get('basis') != 'DURABLE_OVERLAP' or
                              type(proof.get('anchor_item_id')) is str and bool(proof['anchor_item_id']))

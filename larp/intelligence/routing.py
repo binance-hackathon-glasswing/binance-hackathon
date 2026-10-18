@@ -163,15 +163,21 @@ class BudgetedOpenAI:
 
 class TrialGuardedExternal:
     """No new paid AIand POST outside a trial or after its durable accounting stop."""
-    def __init__(self, model, budget):
+    def __init__(self, model, budget, *, accounting_guard=None):
         self.model, self.budget = model, budget
+        self.accounting_guard = accounting_guard
 
     def __getattr__(self, name):
         return getattr(self.model, name)
 
+    def _before_dispatch(self):
+        if self.accounting_guard is not None:
+            self.accounting_guard()
+        self.budget.guard_trial()
+
     def step(self, request, remaining_ms):
         try:
-            return self.model.step(request, remaining_ms, before_dispatch=self.budget.guard_trial)
+            return self.model.step(request, remaining_ms, before_dispatch=self._before_dispatch)
         except IntelligenceError as error:
             reason = error.reason if isinstance(error, AdmissionDeferred) else 'MODEL_BUDGET_UNAVAILABLE'
             return response(request.read(), status='ERROR', output=None, latency_ms=0, error=reason)
@@ -241,7 +247,7 @@ class RoutedAssessor:
         self.model = SimpleNamespace(identity=identity)
 
     def _budget_state(self):
-        # Missing/locked/corrupt storage blocks OpenAI (admission raises too), never the external path.
+        # Legacy routing may fall back externally; trial routing separately guards every paid POST.
         try:
             if self.openai is not None and self.openai.budget_unavailable:
                 raise IntelligenceError('Model budget reconciliation required')
@@ -460,6 +466,13 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}
     common = dict(clock_ms=clock_ms, artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
+    openai = None
+
+    def primary_accounting_guard():
+        # A transient storage recovery cannot lift a quarantine caused by an uncertain settlement.
+        # Keep the same stop across all subsequent trial stages/jobs until owner reconciliation.
+        if openai is not None and openai.budget_unavailable:
+            raise IntelligenceError('Model budget reconciliation required')
 
     def external(entry):
         c = config_for(entry.get('prompt'))
@@ -468,7 +481,7 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
                                transport=transports.get('aiand'), prompt_text=c.prompt_text,
                                prompt_sha256=c.prompt_sha256, **common)
         if spec.get('openai_trial') is not None:
-            model = TrialGuardedExternal(model, budget)
+            model = TrialGuardedExternal(model, budget, accounting_guard=primary_accounting_guard)
         configs[model] = c
         return model
 
@@ -479,7 +492,6 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
     budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'], **budget_options)
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]
-    openai = None
     openai_config = config_for(spec.get('openai_prompt'))  # checked even without a key: the spec is all-or-nothing
     if secrets.get('LARP_MODEL_API_KEY'):
         openai = BudgetedOpenAI(OpenAIResponsesModel(model_id=spec['openai_model'],

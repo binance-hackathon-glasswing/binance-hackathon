@@ -292,6 +292,8 @@ class ModelBudget:
         state = self.snapshot()
         if self.trial is not None:
             reason = state['trial']['admission_block'] or (
+                state['pacing']['admission_block']
+                if state['pacing']['admission_block'] == 'OPENAI_CLOCK_ROLLBACK' else '') or (
                 state['reason'] if state['reason'] == 'OPENAI_USAGE_EXCEEDED_BOUND' else '')
             if reason:
                 raise AdmissionDeferred(reason)
