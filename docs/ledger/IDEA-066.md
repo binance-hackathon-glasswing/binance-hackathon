@@ -610,3 +610,33 @@ The status board now marks Keegan's three requested decisions complete, with
 actual report/P0–P2/install/start/labels and later adoption explicitly pending.
 PC-ROUTE01 is an unsettled future routing/pacing design request; it does not
 change accepted7a0ea14 or the current40/10 budget policy.
+
+
+## PC-ROUTE02 — OpenAI-preferred pacing delivered for review (2026-10-18)
+
+Following PC-ROUTE01, Yao requests implementation as a new PR and will arrange
+a reviewer. [PR #167](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/167)
+is OPEN against `codex/system-testing-20261012`, branch
+`codex/openai-preferred-pacing-20261018` at `f20e941`. The opt-in v3 candidate
+uses OpenAI first, cumulative time allowances over the whole remaining allocation
+and high-effort Kimi/GLM fallback; temporary pacing can recover, actual exhaustion
+and accounting safety latches persist. Explicit development migration retains
+charges/unknown reservations/latches. Existing v1/v2 behavior and fixed reserve
+remain unchanged. Source criteria/results: IDEA-057 OP-01 on that PR.
+
+Application/test head6bcbef0 plus docs-only merge75282ec passes the available
+macOS suite:1580 tests and2622 subtests;426 skips require PostgreSQL/Linux/
+systemd or external opt-in. Hosted Actions39101498071 ran no steps because
+the verified annotation reports account payment/spending-limit blockage. No
+new mirror build, host deployment, key read, provider request, spend or trial
+start occurred. Existing accepted7a0ea14/TR-AC2/TRB-01/PC-BUD03 remain current;
+v3 requires peer review, separately preregistered budget/forecast/stop bars,
+fresh quality/availability evidence, an accepted mirror release and explicit
+adoption. Its forecast can use the full allocation and must not silently
+waive v2's US$40 forecast / US$8 window / US$2.50 day bars or pool trial blocks.
+
+Owners: Yao arranges peer review and retains private account/SSM steps; Keith
+reviews new budget/quality bars and supplies blind labels; Keegan reviews the
+release/host capacity; team decides adoption. No one was assigned or messaged
+for review by the assistant. PR133 stays OPEN; the new checklist line tracks
+review/adoption preparation without claiming an implemented proposal is deployed.
