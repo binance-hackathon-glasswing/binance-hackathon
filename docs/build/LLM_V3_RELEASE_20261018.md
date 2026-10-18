@@ -151,3 +151,24 @@ Once access works, the release agent retries the direct push and dispatch, waits
 for all jobs green at the exact published SHA, downloads and verifies the original
 artifact and attaches those original bytes to a new GitHub release. AWS and host
 deployment remain with Yao. The pending 19:00 SGT gap report is separate.
+
+### Published review and checklist delivery
+
+[PR169](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/169)
+publishes this candidate against integration. PR133's checklist was updated and
+pushed normally at `eeddbed6a5a56b291427a292d969414ed6ba0884`; it remains OPEN
+and unmerged. Completed migration-review and service-declaration checklist lines
+were removed; the remaining release/host items describe only unfinished work.
+
+Organization run [39111509565](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39111509565)
+on candidate0441806 did not execute any steps: host-bundle/runtime/infrastructure
+AWS failed and infrastructure bootstrap was cancelled. Host-bundle and runtime
+annotations explicitly state recent account payments failed or the spending
+limit must increase. This is the existing #98 billing block, not an application
+regression or CI acceptance. PR169 remains open pending required CI.
+
+After the user asked whether mirror access was still needed, fresh Git and API
+checks again returned repository-not-found /HTTP404. Access is still required
+for CI/original artifacts; it is not needed for the already completed source
+fix, local tests, protocol carry-forward, service declaration or evidence review.
+No AWS access or repeated protocol approval is requested.

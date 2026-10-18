@@ -957,3 +957,13 @@ Results and actual access limitations will be appended after execution.
 
 Current evidence, inclusion decision, protocol provenance and remaining owners:
 [LLM_V3_RELEASE_20261018.md](../build/LLM_V3_RELEASE_20261018.md).
+
+
+V3-REL01 published as [PR169](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/169).
+PR133 checklist updated at eeddbed and verified OPEN/unmerged. PR169 organization
+run39111509565 on0441806 ran zero steps across all four jobs; runtime and
+host-bundle annotations confirm account payments/spending-limit block (#98).
+PR169 remains open pending required CI. User asked whether mirror access is
+still needed; fresh Git/API reads again return repository-not-found/HTTP404.
+It remains required for direct CI dispatch and original artifact delivery,
+not for source/testing work already complete. No AWS access is requested.
