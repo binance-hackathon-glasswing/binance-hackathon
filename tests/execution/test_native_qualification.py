@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from larp.execution import Blocked
-from tests.execution.test_gate_b_native import NativeRPC as _NativeRPC
+from tests.execution import test_gate_b_native as native_fixtures
 from tests.execution_fixtures import WALLET, ROUTER
 from tests.execution import test_settlement as fixtures
 from tools.deploy import qualify_native_rpc as q
@@ -21,7 +21,7 @@ class NativeQualification(unittest.TestCase):
 
     def factory(self, *, bad=None, calls=None):
         def factory(url, **kwargs):
-            rpc, seen = _NativeRPC().rpc(bad=bad)
+            rpc, seen = native_fixtures.NativeRPC().rpc(bad=bad)
             rpc.source_id = kwargs['source_id']
             rpc.opener = object()  # synthetic call implementation never opens a socket
             if calls is not None:
@@ -56,12 +56,28 @@ class NativeQualification(unittest.TestCase):
     def test_foreign_wallet_and_no_positive_credit_cannot_pass(self):
         value = self.inputs();value['wallet'] = ROUTER
         self.assertFalse(self.run_probe(value, rpc_factory=self.factory())['all_transaction_proofs_passed'])
-        rpc, _ = _NativeRPC().rpc()
+        rpc, _ = native_fixtures.NativeRPC().rpc()
         from larp.execution_live.chain import ChainEvidence
         proof = ChainEvidence(rpc).native_receipt(fixtures.HASH)
         proof['native_balance']['after_wei'] = proof['native_balance']['before_wei'] - 500000
         with self.assertRaises(Blocked):
             q.native_credit(proof, q.validate_inputs(self.inputs()))
+
+    def test_wrong_chain_and_reverted_receipt_cannot_qualify_native_credit(self):
+        for bad in ('chain', 'revert'):
+            def factory(url, **kwargs):
+                rpc = self.factory()(url, **kwargs)
+                original = rpc.call
+                def call(method, params):
+                    value = original(method, params)
+                    if bad == 'chain' and method == 'eth_chainId':return '0x1'
+                    if bad == 'revert' and method == 'eth_getTransactionReceipt':
+                        return dict(value, status='0x0')
+                    return value
+                rpc.call = call
+                return rpc
+            with self.subTest(bad=bad):
+                self.assertFalse(self.run_probe(rpc_factory=factory)['all_transaction_proofs_passed'])
 
     def test_read_budget_stops_before_extra_transport(self):
         class RPC:
