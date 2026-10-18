@@ -516,3 +516,97 @@ No API calls, key reads, runtime/config changes, initialization or deployment.
 If adopted, the new routing/pacing policy needs prospective ledger criteria,
 versioned implementation, explicit tests of temporary versus permanent fallback,
 revised trial evaluation and a matching accepted mirror release before host use.
+
+
+## PC-REL01 / PC-GAP01 — Keegan LLM handoff decisions (2026-10-18)
+
+User-delegated assistant decision for Keegan's workstream. Relevant published
+host/mirror inputs were read from PR133 commit9b363e6 (PC-CI02, PC-KEY01,
+PC-BUD01 and PC-AWS10); no PR133/126 merge is performed by this handoff.
+
+**PC-REL01 complete:** accept CI bundle build7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce
+for the unsigned dev/shadow model trial. Exact bundle SHA256 is
+ff951451bc80b518620f895b2b0a871df188ce2cb2d3e36e04a58754c7f5de06;
+manifest bb17b7ffc28eeb2e14594a80895827bed5327b8408f519692870dcdeffdca70a;
+CA d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b.
+Retained published evidence: `docs/build/evidence/model-trial-mirror-20261018.json`
+(byte-identical to9b363e6, SHA256
+30b893ff60399bc819c361744910011504c8da9d78a8a4a829e8d55a48dc7c58).
+It records run39091699018/artifact12122169313 and192 verified manifest hashes.
+The old PENDING_KEEGAN field is historical; current acceptance is TR-AC1 in
+`model-trial-decision-20261018.json`. Private-mirror APIs return404 here;
+acceptance relies on the published verification plus our independent source
+validation, not a claim of newly downloaded bundle bytes. Install-time exact
+hash/manifest checks remain Yao's existing responsibility.
+
+**TR-AC1 complete for Keegan:** unchanged original M1–M9/K1–K4 bars confirmed,
+with frozen sampling seed/method before drawing. Keith's personal independent
+bar review and exact prior-spend input remain unverified; acceptance of the
+release/Keegan bars does not invent those inputs or permit guessed ledger init.
+The approximate US$48 balance is not used as an exact billing figure.
+
+**PC-GAP01 decision complete:** accept the documented historical pagination
+backlog for source:doj-press and source:fr-bis as explained gaps only for the
+fixed Oct17 11:00Z–Oct18 11:00Z report and unsigned trial, after Yao checks the
+raw polling cadence/errors/rejections. Preserve the original report, generate a
+second using the two exact incident entries, and retain both report hashes plus
+the incident hash. A PASS with explanations is not full-source GateA acceptance;
+runtime coverage stays INCOMPLETE. Actual outages, corrupt lines, other targets
+and archive health are outside the exception. No wildcard or future-window
+waiver is granted. At publication the report's end is still future; no actual
+report/host success is claimed. Yao owns bounded-history/window coverage work;
+Keegan reviews its evidence and release before signed/final source acceptance.
+
+Authoritative instructions, limits and remaining owners:
+[MODEL_TRIAL_HANDOFF_20261018.md](../build/MODEL_TRIAL_HANDOFF_20261018.md).
+P0/P1/P2, actual11:00 report, archive-delivery evidence, provider/rights and
+fresh shadow activation/start remain open. No AWS/host/inference/signing action.
+
+Prospective verification, before running local checks: retained release evidence
+matches its source bytes and all acceptance hashes; the two incident entries
+have exact targets and the24h window; JSON parses; existing report tests retain
+truncation/failure counts, reject corrupt/unrelated-target gaps, and preserve a
+short-window INCONCLUSIVE. No application or runtime/config changes are made.
+
+PC-REL01/PC-GAP01 verification at pushed6493a3c: existing source live/report
+suite **24 passed, 18 subtests, 0 skips**, 0.19s, Python3.12.14. Separate local
+synthetic checks using the exact incident JSON verify rawFAIL/explainedPASS,
+zero complete polls and unchanged failed-poll counts, corrupt/unrelated-target
+failures, future-window refusal and short-window INCONCLUSIVE. Published mirror
+evidence bytes match9b363e6 and the decision hashes exactly; all new JSON parses,
+relative handoff links resolve, ledger IDs are unique and whitespace checks pass.
+Only documentation differs from accepted7a0ea14; no new runtime/bundle is needed.
+Raw verification logs stay outside Git under
+`/workspace/larp-cloud/llm-trial-handoff-20261018/`. These are synthetic/local
+checks, not the future host report or independently downloaded release bytes.
+
+## PC-REL02 — concurrent protocol and budget reconciliation (2026-10-18)
+
+During PC-REL01 publication, PR166 supplied TRB-01A–E review corrections and
+PR133 advanced to2bac3a5 with PC-BUD02/03. Reviewed those published deltas.
+TR-AC2 now confirms TRB-01 at6f377dd, superseding our first unchanged-original
+bar confirmation where inconsistent. The dated handoff/decision JSON identify
+one current protocol, including ordered verdicts,90% recall/positive and route
+minima, end-charge forecast, strict spending stops and72 unsigned hours.
+
+PC-BUD03's owner confirmation supplies prior spend2,000,000 micro-USD from the
+original50/exact48 balance, retaining10 reserve/40 operating and38 headroom;
+the temporary5-reserve proposal was withdrawn. This supersedes our earlier
+"exact input still pending" wording. Actual P1 initialization/snapshot and real
+provider/funding checks are still unverified here. The same7a0ea14 release and
+fixed-window PC-GAP01 explanation remain accepted; these docs require no new
+bundle, host change or paid request. Keith's proposal task is supplied; labels,
+matching rubric, reporting and remaining rights/funding tasks stay open.
+PC-REL02 checklist completion: PR166 merged by ordinary GitHub merge into its
+own checklist target at a3fa18a314325b94f677c874430227056c4df1c6. PR133 itself
+remains OPEN, as does PR126. Refreshed this branch from committed integration
+0a2c0f9, retaining all original host/budget/PC-ROUTE01 history and both release
+and protocol decision records. The original TRB-01 proposal section is retained
+byte-for-byte and its SHA matches the decision JSON; declared72h/90%/coverage
+and exact2,000,000 prior-spend/10,000,000 reserve fields match. Application,
+config, scripts and tests are byte-identical to integration. Ledger IDs, relative
+links and conflict/whitespace checks pass; no application retest for docs only.
+The status board now marks Keegan's three requested decisions complete, with
+actual report/P0–P2/install/start/labels and later adoption explicitly pending.
+PC-ROUTE01 is an unsettled future routing/pacing design request; it does not
+change accepted7a0ea14 or the current40/10 budget policy.

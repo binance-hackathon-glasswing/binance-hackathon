@@ -1,0 +1,14 @@
+[
+  {
+    "target": "source:doj-press",
+    "from_ms": 1792234800000,
+    "to_ms": 1792321200000,
+    "reason": "PC-GAP01: known historical pagination backlog; unsigned shadow-trial exception only; coverage remains INCOMPLETE"
+  },
+  {
+    "target": "source:fr-bis",
+    "from_ms": 1792234800000,
+    "to_ms": 1792321200000,
+    "reason": "PC-GAP01: known historical pagination backlog; unsigned shadow-trial exception only; coverage remains INCOMPLETE"
+  }
+]

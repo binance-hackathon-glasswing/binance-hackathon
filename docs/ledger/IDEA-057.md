@@ -272,6 +272,13 @@ The "finding outside this change" above is fixed by SG-7. Not yet measured on a 
 
 **Pre-registered 2026-10-16 SGT, before the trial starts.** Decision context: IDEA-056 MR-06 (2026-10-16). The trial runs the `aiand_routed` assessor with `execution: shadow` on the Gate A `primary` host with real AIand and OpenAI APIs, for 3–5 days, ending no later than 2026-10-21 so the team can decide by Oct 22. It is shadow only: no order is signed or broadcast; its rounds are test rounds (`mode: dev`). Bars marked **⚠ PROPOSED — team to confirm before the trial starts** are not frozen until the team confirms them in a commit before the first routed assessment; if the trial starts first, the bars apply as written here and any later change is reported as a deviation.
 
+**Current owner decision (2026-10-18): TR-AC2 confirms TRB-01A–E from PR166,
+superseding the initial TR-AC1 confirmation where they differ.** The PROPOSED labels below preserve the original
+October16 registration; the current decision, frozen sampling seed/method and
+remaining Keith/Yao prerequisites are in
+[MODEL_TRIAL_HANDOFF_20261018.md](../build/MODEL_TRIAL_HANDOFF_20261018.md).
+No earlier trial start, Keith personal review or collective adoption is inferred.
+
 ### Preconditions (before the first routed assessment)
 
 - **P0 Provider check (open; Yao Zhu, on the host).** The AIand account's org-scoped catalog lists `moonshotai/kimi-k3` and `zai-org/glm-5.3`, each with the pinned efforts (`low` for GLM routine; `high` for the K3 primary and GLM secondary reviewers), and the first real routed assessment's recorded reply headers `x-model` and `x-reasoning-effort` match the requested model and effort for every stage that ran. Record the date, the catalog response hash and the first assessment's ID in this entry. A mismatch is a kill (K4). Not run yet.
@@ -481,6 +488,37 @@ PR164-R1 implementation: `6a57d1d` adds an explicit `RoutedAssessor.assess_defer
 
 PR164-R1 final review: no remaining implementation blockers found on the tested application head. The user requested fixing the finding, adding PR comments, running CI locally and merging after completion. The verification-only documentation commit changes no executable source or tests. PR #164's target remains `codex/system-testing-20261012`; merge receipt/head are authoritative in its GitHub metadata. Hosted Actions at fixed head `6a57d1d` (run `39051309773`, runtime check `117450296047`) again ran no steps: the annotation confirms the same account-payment/spending-limit refusal (#98). This local acceptance does not approve activation or settle #97's provider/rights/network/trial/adoption/hosted/B4 gates. Keep #97 and the narrowed incomplete-work item open; #162's implementation scope is complete once merged.
 
+## TR-AC1 — release and trial-bar confirmation (2026-10-18)
+
+The user delegates completion of Keegan's LLM application tasks: accept release
+7a0ea14, confirm trial bars and dispose of DOJ/BIS gaps. The assistant records
+Keegan-workstream decisions, without attributing Keith/team personal approval.
+Accepted release, fixed hashes, unchanged M1–M9/K1–K4, frozen blind-label seed
+and deterministic selection method are in the dated handoff and machine-readable
+`ModelTrialOwnerDecision.v1`. Effective at publication before the first routed
+assessment; an earlier start must remain an explicit deviation. An early Oct20
+outcome with fewer than3 trial days is inconclusive under the original rule.
+
+Release acceptance relies on PC-CI02's published artifact verification at PR133
+commit9b363e6 plus independent application-tree/full-suite evidence; this session
+received404 from private-mirror APIs and did not independently download/hash
+bundle bytes. No provider call, budget initialization, host operation, signing
+or model-adoption approval occurred. Keith's independent bar review, exact prior
+OpenAI spend, rights/funding and labels remain his tasks. Yao retains actual
+P0–P2, report, prepare/bind/activation and first-assessment evidence.
+
+PC-GAP01 allows two fixed-window historical-backfill explanations for the
+unsigned trial, preserving raw reports/logs and INCOMPLETE runtime coverage.
+It does not satisfy signed/final source completeness, waive actual poll errors,
+or explain other targets/archives. The prospective11:00UTC report was not read.
+See IDEA-066 PC-GAP01 and the handoff for the exact window and checks.
+
+## TR-AC2 review source — original TRB-01 proposal retained verbatim
+
+Source: PR166 at6f377dde8eeb0e1e58b4b61fc4446abe72504657, published during
+this handoff. The PROPOSED/awaiting-confirmation statements in this retained
+source describe proposal publication. The operative owner confirmation follows
+it in TR-AC2; no earlier results are re-registered.
 ## TRB-01 — shadow-trial protocol correction (2026-10-18 SGT, proposed)
 
 Keith requested a separate PR for the five review findings on
@@ -688,3 +726,41 @@ the first routed job; **Keith** freezes sample seed/allocation/matching rubric, 
 labels and the report; **Yao Zhu** supplies P0–P2, actual timestamps, charge reconciliation,
 monitoring and qualification evidence. #97 and the existing incomplete-work item remain open; no
 host, paid inference, wallet or adoption action is authorized by the documentation checks.
+
+## TR-AC2 — confirm corrected trial protocol (2026-10-18)
+
+After reviewing all five PR166 documentation changes, its eleven desk cases and
+submitted discussions (none at inspection), the user-delegated Keegan workstream
+confirms TRB-01A–E as written at6f377dd. This supersedes the initial TR-AC1
+"unchanged original bars" confirmation where it conflicts. Its operational
+M1/M2/M5 thresholds remain95%,20s/45s and80%/90%/95%; the outcome order, real
+positive/route/stage minima,90% adverse-event recall, corrected spend forecast,
+strict $8/$2.50 stop boundaries and72 unsigned observation hours now govern.
+These are experiment policies, not organiser rules or measured performance.
+
+Protocol source SHA256 (the retained TRB-01 section): 03fe7dff31b2c0863395de3189903a39b97ef4d79344915ef26f8755da3ae181.
+The existing TR-AC1 frozen sampling seed/allocation is retained; Keith still
+freezes the event-matching/adjudication rubric before scoring and supplies blind
+labels. Planned maximum unsigned cutoff is2026-10-22T00:00:00Z; an earlier signed
+switch or pauses reduce actual unsigned hours, never supply extra qualification.
+Any earlier routed work keeps its original protocol and cannot be relabelled.
+Actual adoption/rehearsal decisions remain separate. No numeric bar is treated
+as already met, and exactly $8 or $2.50 triggers K1 rather than passing.
+
+Concurrent PC-BUD02/03 owner updates at2bac3a5 confirm exactlyUS$48 remaining
+from the originalUS$50 allocation: initial prior charge2,000,000 micro-USD,
+US$10 reserve, US$40 operating ceiling andUS$38 available headroom. This is
+owner-reported exact input, not an independent billing API check; it replaces
+our earlier pending/approximate-input status. The temporaryUS$5 proposal was
+withdrawn before implementation. Existing AIand fallback continues LLM work
+when OpenAI admission stops; a failed mixed-route trial remains failed, with
+external-only continuation a separate block. P1 initialization remains Yao's
+actual host step; no ledger was created/reset or model request made here.
+
+Release PC-REL01 and source-gap PC-GAP01 decisions stand unchanged. This is
+protocol/decision documentation only, so the accepted7a0ea14 bundle is retained.
+Prospective completion checks: verify the retained proposal bytes/hash and every
+new threshold against6f377dd, correct the handoff/backlog/checklist to one current
+protocol, preserve published budget history and PR133/126 open status, and verify
+all changed files remain documentation. No new application tests are needed for
+this documentation reconciliation; the earlier24/18 source-report checks stand.
