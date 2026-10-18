@@ -32,7 +32,7 @@ EVIDENCE_CLASSES = ("CLASS_2_RED_FLAG", "TRADE_RESTRICTION", "TRADING_SUSPENSION
 EVIDENCE_WINDOW_SESSIONS = 5
 KEYS = frozenset({"levels", "weights", "weight_cap", "hard_name_weight", "top_up_band", "trend_window_sessions",
                   "trend_band_bps", "trend_delay_seconds", "trend_start_state", "llm_expiry_sessions",
-                  "max_legs_per_symbol_session", "limiter_mode"})
+                  "max_legs_per_symbol_session", "limiter_mode", "execution"})
 MAX_GROSS = Fraction(19, 20)
 MAX_WEIGHT_CAP = Fraction(3, 10)
 MAX_HARD_NAME = Fraction(7, 20)
@@ -74,7 +74,9 @@ def config(p):
         raise ContractError("s1.trend_start_state must be UP or DOWN")
     if s["limiter_mode"] not in ("DETERMINISTIC", "MODEL"):
         raise ContractError("s1.limiter_mode must be DETERMINISTIC or MODEL")
+    from .execution_bounds import parameters
     return dict(high=high, mid=mid, low=low, cap=cap, weights=weights, hard=hard, band=band,
+                execution=parameters(s['execution']),
                 window=_bounded(s["trend_window_sessions"], 2, 20, "trend_window_sessions"),
                 band_bps=_bounded(s["trend_band_bps"], 1, 1000, "trend_band_bps"),
                 delay=_bounded(s["trend_delay_seconds"], 0, 86400, "trend_delay_seconds"),

@@ -80,7 +80,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Draft the outstanding operations decisions; update #22/#42 and #98's mirror-CI disposition | Keegan | **Not recorded.** D-DN-01, 04, 06, 07, 08, 11 still open (IDEA-049-D §5); #22, #42 and #98 last updated Oct 15 |
 | After the trial starts: budget status, ledger backup, memory use | Yao Zhu | **Waits for the trial.** Deterministic memory baselines: PC-AWS09 (Oct 17) and PC-AWS11 (Oct 18) |
 
-Also new since the last refresh: Isaac's #165 (S1 execution windows and per-leg attempt limits, IDEA-075 B6) is open and unreviewed; see the B6 line under Oct 24.
+SP-01 refresh Oct18: #165 reviewed/merged at817eb71 after combined-head local acceptance (2021 passed /9 skips /2981 subtests). Exact-release Linux/host qualification and real-cost parameter freeze remain; see B6 below.
 
 **Risk:** the interim shadow services already started on Oct 17 (PC-AWS07). Gate A still needs its actual 24 h gap report and review; the Oct 20 final profile needs fresh preparation/binding/activation. Early shadow success does not qualify those later configs or signed Gate B operation. The later PC-AWS09 host report found archive delivery blocked after the restart drill; #163 and its hosted recheck remain necessary. Oct 18 02:46 UTC read-only recheck is healthy after the daily backup superseded that historical failure (PC-AWS11); #163 still needs release/host qualification.
 
@@ -276,7 +276,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Keegan:** LLM exposure limiter (B4). Its input isn't wired yet, so the limiter stays NORMAL until this lands (#131). With the LLM in the rehearsal (PC-DEC03), land it as early as possible: until then the rehearsal tests the LLM running under signing, but not its effect on exposure.
 - [ ] **Keith:** trend-guard input from token session bars (DR-08). Until it's wired, the trend guard stays UP (#131).
 - [ ] **Keegan:** session-close job and round-log fields (B5).
-- [ ] **Isaac:** per-leg attempt limit and execution-window checks (B6). Code is in open PR #165 (Oct 17), not yet reviewed or merged.
+- [x] **Isaac:** B6 per-leg attempt/execution-window code reviewed and merged in #165 at817eb71 (EB-RV2:2021 passed /9 platform-or-external skips /2981 subtests). Proposed values still need Isaac/Keith measured-cost/profile freeze; Keegan retains exact-release Linux/mirror evidence, Yao hosted qualification.
 - [ ] **Keegan:** write up the T4 dev-wallet run from the rehearsal round logs (B8, Oct 24–26).
 - [ ] **Keith:** check the T4 results against what S1 should have done.
 

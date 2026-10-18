@@ -10,9 +10,31 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import time
 import uuid
 
 from larp.intelligence.common import IntelligenceError
+
+
+def validate_pacing(policy):
+    fields = {'schema', 'total_micro_usd', 'prior_spent_micro_usd', 'start_ms', 'end_ms', 'period_ms'}
+    if (type(policy) is not dict or set(policy) != fields or policy['schema'] != 'OpenAIPacing.v1'
+            or any(type(policy[k]) is not int for k in fields - {'schema'})
+            or not 0 <= policy['prior_spent_micro_usd'] < policy['total_micro_usd'] < 2**63
+            or not 0 <= policy['start_ms'] < policy['end_ms'] < 2**63
+            or not 0 < policy['period_ms'] <= policy['end_ms'] - policy['start_ms']):
+        raise IntelligenceError('Invalid frozen OpenAI pacing policy')
+
+
+def _policy_bytes(policy):
+    return json.dumps(policy, sort_keys=True, separators=(',', ':'))
+
+
+class AdmissionDeferred(IntelligenceError):
+    """A temporary refusal: preserve future eligibility and disclose its audit reason."""
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
 
 
 def _private_parent(path):
@@ -26,9 +48,17 @@ def _private_parent(path):
 
 
 class ModelBudget:
-    def __init__(self, path, account, *, total=50_000_000, reserve=10_000_000):
+    def __init__(self, path, account, *, total=50_000_000, reserve=10_000_000,
+                 pacing=None, clock_ms=None):
         self.path = Path(path).resolve()
         self.account, self.total, self.reserve = account, total, reserve
+        if pacing is not None:
+            validate_pacing(pacing)
+        self.pacing = json.loads(_policy_bytes(pacing)) if pacing is not None else None
+        self.clock = clock_ms if clock_ms is not None else lambda: time.time_ns() // 1_000_000
+        if self.pacing is not None:
+            if total != self.pacing['total_micro_usd'] or reserve != 0:
+                raise IntelligenceError('Pacing requires matching total and no permanent reserve')
         if type(account) is not str or not account or len(account) > 100 or \
                 type(total) is not int or type(reserve) is not int or not 0 <= reserve < total:
             raise IntelligenceError('Invalid model budget settings')
@@ -38,7 +68,12 @@ class ModelBudget:
         self.snapshot()  # schema/account/limits must match the provisioned ledger
 
     @classmethod
-    def initialize(cls, path, account, *, initial_spent, total=50_000_000, reserve=10_000_000):
+    def initialize(cls, path, account, *, initial_spent, total=50_000_000, reserve=10_000_000,
+                   pacing=None, clock_ms=None):
+        if pacing is not None:
+            validate_pacing(pacing)
+            if initial_spent != pacing['prior_spent_micro_usd'] or total != pacing['total_micro_usd'] or reserve != 0:
+                raise IntelligenceError('Pacing initialization must match reviewed prior spend/limits')
         if type(initial_spent) is not int or not 0 <= initial_spent <= total:
             raise IntelligenceError('Explicit nonnegative prior OpenAI spend required')
         path = Path(path).absolute()
@@ -55,7 +90,30 @@ class ModelBudget:
                 CREATE TABLE switches (id INTEGER PRIMARY KEY, reason TEXT NOT NULL);''')
             db.execute('INSERT INTO account VALUES(1,?,?,?,?,?)', (account, total, reserve, 0, ''))
             db.execute('INSERT INTO charges VALUES(?,?,?,?)', ('initial', initial_spent, 'SETTLED', 'prior-usage'))
-        return cls(path, account, total=total, reserve=reserve)
+            if pacing is not None:
+                cls._create_pacing(db, pacing)
+        return cls(path, account, total=total, reserve=reserve, pacing=pacing, clock_ms=clock_ms)
+
+    @staticmethod
+    def _create_pacing(db, policy):
+        db.execute('CREATE TABLE pacing (id INTEGER PRIMARY KEY CHECK(id=1), policy TEXT NOT NULL, '
+                   'last_ms INTEGER NOT NULL)')
+        db.execute('INSERT INTO pacing VALUES(1,?,-1)', (_policy_bytes(policy),))
+
+    @classmethod
+    def enable_pacing(cls, path, account, *, pacing, total=50_000_000, reserve=10_000_000, clock_ms=None):
+        """Explicit development migration. Never clear charges, unknowns or a safety latch."""
+        validate_pacing(pacing)
+        if total != pacing['total_micro_usd']:
+            raise IntelligenceError('Pacing migration total mismatch')
+        old = cls(path, account, total=total, reserve=reserve)
+        with old.transaction() as db:
+            initial = db.execute("SELECT amount,state FROM charges WHERE id='initial'").fetchone()
+            if initial != (pacing['prior_spent_micro_usd'], 'SETTLED'):
+                raise IntelligenceError('Pacing migration prior spend mismatch; reconciliation required')
+            cls._create_pacing(db, pacing)
+            db.execute('UPDATE account SET reserve=0 WHERE id=1')
+        return cls(path, account, total=total, reserve=0, pacing=pacing, clock_ms=clock_ms)
 
     @contextmanager
     def transaction(self):
@@ -68,6 +126,11 @@ class ModelBudget:
                 row = db.execute('SELECT name,total,reserve FROM account WHERE id=1').fetchone()
                 if row != (self.account, self.total, self.reserve):
                     raise IntelligenceError('Model budget account/limits mismatch')
+                has_pacing = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='pacing'").fetchone()
+                if bool(has_pacing) != (self.pacing is not None):
+                    raise IntelligenceError('Model budget pacing policy mismatch')
+                if has_pacing and db.execute('SELECT policy FROM pacing WHERE id=1').fetchone() != (_policy_bytes(self.pacing),):
+                    raise IntelligenceError('Model budget pacing policy mismatch')
                 yield db
                 db.commit()
             except BaseException:
@@ -81,9 +144,28 @@ class ModelBudget:
     def _snapshot(self, db):
         only, reason = db.execute('SELECT external_only,reason FROM account WHERE id=1').fetchone()
         spent = db.execute('SELECT COALESCE(SUM(amount),0) FROM charges').fetchone()[0]
-        return dict(account=self.account, total_micro_usd=self.total, reserve_micro_usd=self.reserve,
+        result = dict(account=self.account, total_micro_usd=self.total, reserve_micro_usd=self.reserve,
                     charged_micro_usd=spent, available_micro_usd=max(0, self.total-self.reserve-spent),
                     external_only=bool(only), reason=reason)
+        if self.pacing is not None:
+            p, now = self.pacing, self.clock()
+            if type(now) is not int or not 0 <= now < 2**63:
+                raise IntelligenceError('Invalid model budget clock')
+            last = db.execute('SELECT last_ms FROM pacing WHERE id=1').fetchone()[0]
+            periods = (p['end_ms'] - p['start_ms'] + p['period_ms'] - 1) // p['period_ms']
+            current = min(periods, max(0, (now - p['start_ms']) // p['period_ms'] + 1))
+            released = (self.total - p['prior_spent_micro_usd']) * current // periods
+            blocked = ('OPENAI_CLOCK_ROLLBACK' if now < last else
+                       'OPENAI_PACING_NOT_STARTED' if now < p['start_ms'] else
+                       'OPENAI_PACING_WINDOW_ENDED' if now >= p['end_ms'] else '')
+            if now >= last:
+                db.execute('UPDATE pacing SET last_ms=? WHERE id=1', (now,))
+            result['remaining_allocation_micro_usd'] = max(0, self.total-spent)
+            result['pacing'] = dict(policy=json.loads(_policy_bytes(p)), observed_ms=now, period_count=periods,
+                                    released_micro_usd=released, admission_block=blocked)
+            result['available_micro_usd'] = 0 if blocked else max(0, min(self.total-spent,
+                p['prior_spent_micro_usd'] + released - spent))
+        return result
 
     def snapshot(self):
         with self.transaction() as db:
@@ -107,12 +189,26 @@ class ModelBudget:
             s = self._snapshot(db)
             if s['external_only']:
                 return None
-            if amount > s['available_micro_usd']:
+            if self.pacing is not None:
+                if s['remaining_allocation_micro_usd'] == 0:
+                    self._switch(db, 'OPENAI_ALLOCATION_EXHAUSTED')
+                    return None
+                deferred = s['pacing']['admission_block'] or (
+                    'OPENAI_REQUEST_EXCEEDS_REMAINING' if amount > s['remaining_allocation_micro_usd'] else
+                    'OPENAI_PACING_LIMIT' if amount > s['available_micro_usd'] else '')
+                if not deferred:
+                    token = uuid.uuid4().hex
+                    db.execute('INSERT INTO charges VALUES(?,?,?,?)', (token, amount, 'RESERVED', request_id))
+                    return token
+                # Exit/commit the clock watermark before raising this temporary refusal.
+            elif amount > s['available_micro_usd']:
                 self._switch(db, 'OPENAI_OPERATING_LIMIT')
                 return None
-            token = uuid.uuid4().hex
-            db.execute('INSERT INTO charges VALUES(?,?,?,?)', (token, amount, 'RESERVED', request_id))
-            return token
+            else:
+                token = uuid.uuid4().hex
+                db.execute('INSERT INTO charges VALUES(?,?,?,?)', (token, amount, 'RESERVED', request_id))
+                return token
+        raise AdmissionDeferred(deferred)
 
     def settle(self, token, actual):
         with self.transaction() as db:
@@ -131,15 +227,28 @@ class ModelBudget:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('init', 'status'))
+    parser.add_argument('command', choices=('init', 'status', 'enable-pacing'))
     parser.add_argument('--path', required=True)
     parser.add_argument('--account', required=True)
     parser.add_argument('--initial-spent-micro-usd', type=int)
+    parser.add_argument('--routing-file', help='Reviewed v3 routing JSON; required for paced ledgers')
     args = parser.parse_args(argv)
-    if args.command == 'init':
-        budget = ModelBudget.initialize(args.path, args.account, initial_spent=args.initial_spent_micro_usd)
+    options = {}
+    if args.routing_file:
+        from larp.intelligence.routing import validate_routing_spec
+        spec = json.loads(Path(args.routing_file).read_bytes())
+        validate_routing_spec(spec)
+        if spec['schema'] != 'AIandRouting.v3' or spec['budget_account'] != args.account:
+            parser.error('A matching reviewed v3 routing file is required')
+        options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'], reserve=0)
+    if args.command == 'enable-pacing':
+        if not options:
+            parser.error('enable-pacing requires --routing-file')
+        budget = ModelBudget.enable_pacing(args.path, args.account, pacing=options['pacing'], total=options['total'])
+    elif args.command == 'init':
+        budget = ModelBudget.initialize(args.path, args.account, initial_spent=args.initial_spent_micro_usd, **options)
     else:
-        budget = ModelBudget(args.path, args.account)
+        budget = ModelBudget(args.path, args.account, **options)
     print(json.dumps(budget.snapshot(), sort_keys=True))
     return 0
 

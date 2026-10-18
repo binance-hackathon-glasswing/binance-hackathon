@@ -55,7 +55,7 @@ stderr/exit code as well as response bodies. This is an explicit transport
 correction within the original request caps, not a transient retry loop. Keep
 TLS verification, no redirects, a20s timeout and the same read-only methods.
 
-Results and remaining owners will be appended after verification.
+Results and remaining owners are recorded below.
 
 ## Evidence results — SP-01 R1
 
@@ -203,8 +203,8 @@ trading. Keegan must resolve KMP-RIGHTS01's signed-use policy
 compatibility, account/model terms, services declaration/DEV-19 and team adoption.
 Keith retains trial/quality/funding evidence; Yao retains P0, secret/budget/route
 and exact-release hosted qualification. The legacy40USD limit/10USD reserve
-applies to v1/v2; v3 full-credit pacing needs its own reviewed protocol and exact
-release pins. The proposed network scope would not select a routing/budget version. Signer
+applies to v1/v2; Yao approved the KMP-BUD01 v3 protocol in PC-REL05; implementation/release
+conformance, measured affordability and actual hosted qualification remain. The proposed network scope would not select a routing/budget version. Signer
 isolation remains RDS/S3 only, and primary HTTPS is not an FQDN firewall.
 
 ## Remaining ownership
@@ -215,7 +215,7 @@ isolation remains RDS/S3 only, and primary HTTPS is not an FQDN firewall.
 | Net fee evidence and final measured profile/full-holding caps hashes | Isaac + Keith — #119/#120/#44, IDEA063 SP-FEE / IDEA049-C SP-CAPS |
 | Actual trace-capable execution endpoint and transaction-local native evidence | Isaac; Yao hosted check — #30, IDEA039 SP-NATIVE |
 | Finite signing lifetime/margins implementation and host latency | Keegan; Yao measurements — #27, C-OPEN-003 |
-| PR165 peer review, merge and Linux release qualification | Keegan/Keith — IDEA076 EB-RV2; Isaac completes local review/fixes |
+| PR165 exact-release Linux/mirror and hosted qualification | Keegan/Keith/Yao — IDEA076 EB-RV2; code review/full local verification complete, merged817eb71 |
 | Provider policy compatibility/adoption and release declaration | Keegan; Keith quality/funding, Yao hosted inputs — KMP-RIGHTS01 / IDEA057 |
 | Signer access, host assembly and approved session | Yao; Isaac key placement only in that session — IDEA080 |
 
@@ -229,10 +229,28 @@ Replace only the approved application scope for the existing two destinations:
 | From / unit | Destination | Proposed scope and constraints |
 |---|---|---|
 | primary / larp-runtime with aiand_routed | api.aiand.com:443 | Shadow plus explicitly adopted signed/live builds; fixed /v1/chat/completions, pinned model/effort/routing/prompts, only lawful registered evidence; provider-policy/account/model terms, funded account, declarations, trial/adoption and exact-release/host gates first |
-| primary / larp-runtime with aiand_routed | api.openai.com:443 | Same signed/live gates; fixed /v1/responses, optional runtime key and exact adopted durable budget; v1/v2 reserve remains unchanged, v3 adoption separate |
+| primary / larp-runtime with aiand_routed | api.openai.com:443 | Same signed/live gates; fixed /v1/responses, optional runtime key and exact adopted durable budget; v1/v2 reserve remains unchanged, v3 protocol approved PC-REL05; implementation/release/host conformance separate |
 
 No execution/signer unit receives model-network scope. No AWS, firewall, secret,
 provider setting, runtime configuration or service change is included. The existing
 application table would cite this decision and explain SLM-01's merged capability
 without claiming that service/live is mechanically unavailable. Until approved,
 that table's shadow-only approval continues to govern.
+
+## PR165 completion and SP-01 verification
+
+PR165 merged normally into integration at817eb71 (2026-10-18 07:54UTC), after
+full source/review-record inspection and combined-head verification at8f2d364:
+2021 passed /9 explicit platform-or-external skips /2981 subtests,415.04s.
+Focused B6:80 passed /57 subtests,9.52s. No remaining reproducible B6 finding
+was identified or personal peer approval attributed. GitHub39109312981 at
+d635ce9 ran no steps; runtime/infrastructure annotations confirm billing/#98.
+Linux/mirror release qualification remains open. See IDEA076 EB-RV2.
+
+SP-01 validation at pushed7e96ca7: existing route, caps-proposal/current-input,
+native-accounting and GateB evidence regressions **61 passed /135 subtests**,
+1.51s, no skips. The actual SigningPolicy parser/check accepts the draft gas
+envelope and refuses an over-cap price in **8 synthetic approve/swap cases**
+across development/final candidates, without keys or signatures. All29 quote
+handoff hashes/lengths verify. These local checks do not substitute for the
+full current-input caps review, actual gas measurement or source/native gates.

@@ -813,3 +813,24 @@ session unpushed commits. The pre-existing untracked `Claude outputs/` remains
 untouched, so the strict clean-tree handoff check does NOT pass; report this
 exception rather than claim a fully clean ready state. No cleanup, branch
 rewrite, new thread, message to a teammate or AWS mutation performed.
+
+
+PC-REL02 final publication: corrected protocol PR166 merged into its stacked
+checklist target at a3fa18a; PR133 remains OPEN at e9e07b1 and PR126 remains
+OPEN. The checklist's three Keegan decision rows are complete. TRB-01 proposal
+bytes/hash and all decision fields were independently checked; all touched
+relative links, unique ledger IDs and whitespace/conflict checks pass. This
+integration update imports only the corrected runbook wording and completion
+record, not the unmerged checklist/PR133 or any runtime/config/test changes.
+
+New owner updates in PC-BUD03 confirm prior spend2,000,000 with the unchanged
+10,000,000 reserve; actual host P1 snapshot is pending. PC-ROUTE01 on the
+checklist branch is a future proposed OpenAI-preference/time-pacing/full-credit
+design, not an adopted replacement. The accepted7a0ea14 release remains GLM
+routine/OpenAI difficult review with Kimi/GLM fallback under the current40/10
+policy. No paused or permanent fallback behavior was changed by these docs.
+Actual fixed-window report and scoped exception checks, provider/rights/funding,
+installation/bind/activation, first assessment, labels and later adoption remain
+with their existing owners. No service, API inference, wallet, host or AWS action
+was performed. The source-report verification remains24 passed/18 subtests;
+no additional runtime tests for documentation-only protocol reconciliation.

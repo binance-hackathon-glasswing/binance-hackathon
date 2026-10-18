@@ -78,12 +78,14 @@ def broadcast_observation(state,attempt,*,wallet_id):
 
 
 class ExecutionService:
-    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None,round_terminal=None):
+    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None,
+                 round_terminal=None,admission=None):
         self.store,self.executor,self.mapping,self.observe=store,executor,mapping,observe
         if not wallet_id:raise Blocked('configured wallet identity required')
         self.wallet_id=wallet_id
         self.settlement=settlement
         self.round_terminal = round_terminal or (lambda state: False)
+        self.admission = admission
         self.epoch, self.authority_version = epoch, authority_version
     def create_from_command(self,run_id,command_id,epoch,now_ms):
         if epoch != self.epoch:raise Blocked('command caller ownership mismatch')
@@ -127,6 +129,15 @@ class ExecutionService:
                 fact = self.executor.store.put_observation(fact, self.epoch, self.authority_version)
             self.observe(fact)
         if state.status!='ACTIVE':return state
+        if self.admission is not None and not self.admission(state.intent, now):
+            # A delayed S1 command cannot sign/send outside its recorded session.
+            # Revoke only positive unbroadcast authority; pending/unknown sends
+            # still reconcile and publish receipts even after the window ends.
+            last = state.attempts[-1] if state.attempts else None
+            if last is None or last.state in ('PREPARED', 'FINAL_SUCCESS'):
+                return self.executor.abort_unsigned(key, now)
+            if last.broadcast_at is None and last.state in ('AUTHORIZED', 'SIGNED_DURABLE'):
+                return self.executor.abort_unbroadcast(key, now)
         if (now >= state.intent.valid_until and (not state.attempts
                 or state.attempts[-1].state in ('PREPARED', 'FINAL_SUCCESS'))):
             # No signature exists for the next step. Expiry must release this
