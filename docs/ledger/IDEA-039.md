@@ -420,3 +420,24 @@ execution endpoint exposing exact prestateTracer diff semantics/retention; Yao
 retains actual host/receipt-path verification. No native_trace enablement or swap.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## FG-02 — remaining dev funding preflight/handoff (prospective, 2026-10-18)
+
+User asks each immediate point in its own PR and has no additional funding hash.
+No wallet key/session or MetaMask control is available. Prepare the independent
+#106 handoff and collect at most16 public read-only RPC method calls using the
+existing public BNB Chain endpoint; 20s/no retries/redirects, no keys or wallet
+transactions. Bind chain56, canonical finalized block/hash, dev public wallet,
+latest/pending/finalized nonces, native balance, USDT decimals/balance, and the
+known historical transaction/receipt/time. Recheck the same numeric block.
+
+Pass: accurately retain observed fields with source/UTC/body hashes and classify
+remaining funding and opening capture as NOT_DONE unless actual new transaction
+evidence is supplied. A positive balance or unchanged nonce is not proof that all
+activity/funding has been audited, nor Yao's actual opening capture. Do not send a
+swap or imply signing/key-placement approval. Record exact human next step and
+required funding-note fields, preserve F120/first-agent-trade precondition,
+keep parent106/GAP49 open; remove no unfinished live backlog item. Check official
+verbatim source_page/kit gas text plus F120/G13/Q03 and existing confirmed team
+position before writing the handoff. Validate public JSON and receipt arithmetic;
+no unnecessary application tests for documentation/evidence-only scope.
