@@ -757,3 +757,50 @@ protocol status and sampling protocol ID; actual sampling stays NOT_RUN.
 
 Documentation validation: JSON parses; diff whitespace check passes. No new
 application tests for this status-only correction. PR133 remains open.
+
+## PC-DEC04 — Keegan may push and dispatch mirror CI directly (2026-10-18)
+
+Yao explicitly updates the earlier delegation: Keegan/his release agent should
+push the release branch to `Cookiemunchrr/larp-ci-mirror` and dispatch CI directly,
+not route routine mirror operations through Yao. Involve Yao only for an actual
+access blocker. This supersedes the older "assistant cannot push; give Yao the
+commands" convention for that release worker. PC-DEC01's accepted mirror builds
+remain the release source; org billing is not thereby fixed. AWS provisioning,
+configuration, Terraform approval, host deployment/spend and signer session
+ownership remain with Yao. No mirror push/dispatch was performed by this chat.
+
+## PC-HO01 — checklist completion and durable session handoff (2026-10-18)
+
+Yao requests completed items checked on PR133 and a new-thread starter prompt.
+Saved [AWS_DEPLOYMENT_RESUME_20261018.md](../build/AWS_DEPLOYMENT_RESUME_20261018.md)
+as the current `aws-deployment-resume` record. It contains completed work,
+explicit approvals and latest mirror delegation; source/checklist branch split;
+last observed host/artifact identities and exact accepted old hashes; active
+v3 protocol and remaining code/release/report/host/evaluation/signed gates;
+the last agreed Keegan prompt and Git audit. Read it before old run-sheet C.
+
+Checklist now explicitly checks this session's completed155/157 review/merge,
+167 delivery, Keith168 prerequisite handoff and frozen rubric, Yao168 approval,
+model-secret storage, old v2 release acceptance and direct-mirror authorization.
+Split completed rubric preparation from the remaining actual draw/labels. Keep
+new release/KMP-P2, actual report/provider/budget/preparation/activation and
+measurement/host/signed acceptance unchecked. Remove no whole incomplete-work
+item merely because a proposal/delivery is complete; surviving lines describe
+remaining work. The old v2-only host initializer instruction is replaced by
+approved v3 setup with its matching reviewed routing file/migration constraints.
+
+Latest read-only remote snapshot at07:46UTC: integration4312cd1;133946edfc;
+165OPEN8f2d364 (new base merge),139DRAFTbd8a34b; latest successful mirror remains
+39091699018 at7a0ea14. Concurrent946edfc/7fad891 add Isaac SP-01 criteria and a
+bounded TLS transport correction, not completed signed/provider qualification;
+retain those changes. No actual new binary, host report, provider result or paid
+trial is inferred. The handoff instructs refreshing all statuses on resume.
+
+Validation/audit: changed documentation links, all new checklist lines' owner
+shape, preserved current branches, whitespace and secret-pattern screening.
+No application code/test changes or application test rerun. All session changes
+are to be committed/pushed on133; main is equal to origin/main atfb95114. No
+session unpushed commits. The pre-existing untracked `Claude outputs/` remains
+untouched, so the strict clean-tree handoff check does NOT pass; report this
+exception rather than claim a fully clean ready state. No cleanup, branch
+rewrite, new thread, message to a teammate or AWS mutation performed.
