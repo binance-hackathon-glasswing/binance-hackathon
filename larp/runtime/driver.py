@@ -89,6 +89,18 @@ class SessionCalendar:
         index = max(i for i, opened, _ in self.sessions if opened <= now_ms)
         return {'index': index, 'remaining': sum(1 for _, _, closed in self.sessions if closed > now_ms)}
 
+    def window(self, now_ms):
+        """B6 regular-session bounds; off-hours keep the latest opened session.
+
+        Use the frozen calendar, including early closes and the next actual open,
+        rather than midnight/weekday arithmetic. The last close ends coverage.
+        """
+        index = self(now_ms)['index']
+        position = next(n for n, s in enumerate(self.sessions) if s[0] == index)
+        _, opened, closed = self.sessions[position]
+        next_open = self.sessions[position + 1][1] if position + 1 < len(self.sessions) else closed
+        return dict(index=index, open_ms=opened, close_ms=closed, next_open_ms=next_open)
+
 
 class RuntimeHealth:
     """Planner gates from the store (larp/risk/planner.py; config/strategy/LIVE.md `new_spending_ok`)."""
@@ -921,6 +933,7 @@ class RoundDriver:
             if not executable:
                 self.market.clear_quotes()
                 return
+            source_round = round_id
             round_id = child if (n == first and child is not None) else self.work.child_round(parent, n)
             if round_id is None:
                 self.market.clear_quotes()
@@ -931,6 +944,8 @@ class RoundDriver:
                 current = c.store.load(c.run_id).read()
                 # The quoted observations stand in for this round's fetch; the decision clock follows them.
                 c.start(round_id, self.work.request(item, current, now_ms), now_ms,
+                        **(dict(execution_parent_round=source_round)
+                           if getattr(c.context_builder, 'profile', {}).get('baseline') == 'TREND_GUARDED_VOL' else {}),
                         **(dict(assessment_override=None, use_accepted_evidence=True) if self.assessments else {}))
             finally:
                 self.market.clear_quotes()
