@@ -45,4 +45,14 @@ IDEA-063 SP-FEE, IDEA-062 SP-NET, IDEA-049-C SP-CAPS and IDEA-076 EB-RV2.
    Keegan's #27 implementation/finite-lifetime decision and Yao's host ownership.
    PR165 review/combined offline validation follows EB-RV2 before completion.
 
+### SP-01 T1 — transport correction (prospective)
+
+The first Python transport failed before receiving any HTTP body on all six
+GETs and both chain-ID RPCs. No endpoint support/verification verdict follows
+from URLError. Use the system curl trust store once for the distinct candidate
+Code/Sourcify GETs (eight GETs total) and up to ten remaining RPC calls; retain
+stderr/exit code as well as response bodies. This is an explicit transport
+correction within the original request caps, not a transient retry loop. Keep
+TLS verification, no redirects, a20s timeout and the same read-only methods.
+
 Results and remaining owners will be appended after verification.
