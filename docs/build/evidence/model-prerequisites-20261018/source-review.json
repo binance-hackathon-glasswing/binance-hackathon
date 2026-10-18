@@ -1,0 +1,63 @@
+{
+  "composed_prompts": [
+    {
+      "bytes": 4104,
+      "composition": "core.rstrip(LF) + LF LF + stage, UTF-8; stage_config at reviewed source",
+      "sha256": "6b1247a243979b012a37b6e5f180c92bf7f26de98acc184102ae76377dcdcd9c",
+      "stage_appendix": "primary.md"
+    },
+    {
+      "bytes": 5614,
+      "composition": "core.rstrip(LF) + LF LF + stage, UTF-8; stage_config at reviewed source",
+      "sha256": "5b064c93c7f09b742f5c620143099aa1b7d18f32d921da8a3c6df80c5dfa9158",
+      "stage_appendix": "review.md"
+    },
+    {
+      "bytes": 5072,
+      "composition": "core.rstrip(LF) + LF LF + stage, UTF-8; stage_config at reviewed source",
+      "sha256": "73667abdfc6b99c51efc2a89530bf0f43ab632f89b7ab46edb40f54f07bc1d55",
+      "stage_appendix": "routine.md"
+    }
+  ],
+  "files": [
+    {
+      "path": "config/intelligence/aiand-routing.openai-preferred.example.json",
+      "sha256": "baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e"
+    },
+    {
+      "path": "config/intelligence/prompts/assessor.v2.txt",
+      "sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be"
+    },
+    {
+      "path": "config/intelligence/prompts/routing/primary.md",
+      "sha256": "50a5c46eba1a78670cf00db4daf63410e615c7fefb47f8fa65ab1e853fee7def"
+    },
+    {
+      "path": "config/intelligence/prompts/routing/review.md",
+      "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
+    },
+    {
+      "path": "config/intelligence/prompts/routing/routine.md",
+      "sha256": "0e9341e0967c8ab191bb30953f9806251fb82b3a32edee36db8a261ef12ab93e"
+    },
+    {
+      "path": "larp/intelligence/routing.py",
+      "sha256": "5c86fddba01e77a82753e617b09b2db8ae1051399f2301af51657c29a19e9426"
+    },
+    {
+      "path": "larp/intelligence/providers.py",
+      "sha256": "63376fe66efea7f45120ca35374e74511f0dc061fc59ce02d864361d127cfa06"
+    },
+    {
+      "path": "larp/intelligence/model_budget.py",
+      "sha256": "0e2ec5ff46e9495287a933f74ef6c01c2e4bbb1a472007f4394dd089fdf544d9"
+    },
+    {
+      "path": "config/intelligence/red_flags.v1.json",
+      "sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55"
+    }
+  ],
+  "merged_at": "4312cd17f212df9f370a2c802bb17ff85d3d0250",
+  "schema": "KMPSourceReview.v1",
+  "source_head": "f20e941801230c183bd5b849434bffd095a8ceaa"
+}
