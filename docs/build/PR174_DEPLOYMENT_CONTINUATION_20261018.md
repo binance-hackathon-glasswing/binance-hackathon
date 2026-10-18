@@ -3,6 +3,13 @@
 Observed Oct18 2026, 13:50–13:56 UTC (21:50–21:56 SGT). Supplements
 [PC-HO02](AWS_DEPLOYMENT_RESUME_20261018_LATE.md). PR133 remains OPEN on
 `claude/pre-trading-checklist-20261017`, targeting `codex/system-testing-20261012`.
+**PC-PROV03 update,14:30UTC /22:30SGT:** replacement AIand key is independently
+verified from the host; authenticated catalogue200, both exact models/high effort,
+USD currency, every other secret field preserved. Prior401 is resolved. Balance
+endpoint403 leaves the numeric140+ owner-reported and expiry unverified.
+[Evidence](evidence/aiand-key-verification-20261018.json). PC-PREP02/host gates
+remain open; no paid call or observer secret/ledger/service mutation.
+
 Host actions remain Yao's. No host configuration/service mutation, paid inference,
 ledger setup, wallet transaction or Terraform apply occurred.
 
@@ -61,7 +68,8 @@ GET `/v1/models` returns200 and includes `gpt-6.1-sol`. AIand authenticated
 GET `/v1/models` returns401. No inference POST, account-setting change or ledger
 command was run. Ledger still absent at this second observation.
 
-**AIand authentication is a new active blocker**, not a verified empty balance.
+**Historical AIand authentication blocker, resolved by PC-PROV03 above.**
+The original401 was not evidence of an empty balance.
 Bearer authentication matches both the exact adapter and
 [AIand authentication documentation](https://docs.aiand.com/authentication/).
 The [models endpoint](https://docs.aiand.com/api/models/) distinguishes anonymous
@@ -123,8 +131,8 @@ this snapshot as fresh installation evidence.
 
 ## Owner sequence after blockers resolve
 
-These are **future Yao actions**, not executed steps. Resolve AIand/P0, actual
-funding/usage and PC-PREP02 acceptance first. PR168 protocol is already approved;
+These are **future Yao actions**, not executed steps. AIand catalogue/P0 part1 now passes (PC-PROV03); resolve actual
+funding/expiry/usage and PC-PREP02 acceptance first. PR168 protocol is already approved;
 no repeat protocol approval or request for keys is needed. Use the
 [frozen86b1476 DOJ/cap runbook](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/86b14761324faeb8f57df5c0d86ff00320b4361c/docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md).
 If a replacement release is needed, verify its original CI assets/source and
@@ -241,7 +249,8 @@ update the build/manifest hashes before preparing;86b1476 remains historical.
 
 ## Remaining owners
 
-Yao: provider401/funding/usage, preserving setup and installation, first-job/I/O/
+Yao: remaining account-expiry/funding/usage/rights (catalogue auth now PASS),
+preserving setup and installation, first-job/I/O/
 charge/receiver ACK, source/restart/new-window and benign-link trust regression.
 Keegan: checker acceptance/repair, GateA/B and operations/release decisions,
 B4 exposure_evidence producer and DEV20 event-calendar planner disposition.

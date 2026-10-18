@@ -1518,3 +1518,29 @@ config/key was searched for/read, account/signup/payment, provider selection,
 wallet transaction or teammate/vendor message occurred. No runtime or tests
 changed. Checklist/links/diff/owner/status checks validate this documentation
 follow-up; every partially blocked backlog item stays open. PR133 remains open.
+
+
+## PC-PROV03 — replacement AIand key independently verified (Oct18)
+
+Yao entered the replacement with the owner-only helper. Read-only host SSM
+daf2cf42-3bb2-4df6-8897-5f4dbf51fc60 at14:30:12UTC verifies AWSCURRENT changed
+only LARP_AIAND_API_KEY relative to AWSPREVIOUS: AIand value differs, every other
+JSON field equals. New versionbd7623d3-ffd0-4070-9bd3-3a2a1cecafa1. No secret
+value printed or committed. Observer performed no secret write/host mutation.
+
+Authenticated AIand GET/v1/models200 includes exactmoonshotai/kimi-k3 and
+zai-org/glm-5.3 with high effort. Both list USD pricing (Kimi3/12.5, GLM1/4 per
+million input/output catalogue tokens); these are advertised account catalogue
+rates, not actual charges or an affordability result. OpenAI listing still200
+withgpt-6.1-sol. Ledger path remains absent; no init/migration/status/export.
+PC-PROV02 authentication blocker is resolved; original401 evidence retained.
+
+Documented AIand balance GET/billing/balance (docs.aiand.com/billing/balance/)
+was attempted read-only through SSMb821e9ec-0795-4914-aaf0-19ce75033187 at
+14:31:22UTC and returns403. Do not infer current numeric balance/expiry from it.
+140+ remains Yao-reported; currencyUSD is authenticated catalogue evidence.
+Balance endpoint refusal does not undo successful model authentication.
+No purchase/settings change, inference or service activation. Actual served
+identity/effort, account-expiry/funding/usage/rights and first-job/charge/ACK
+qualification remain; PC-PREP02 mirror-origin checker and host installation
+remain open. Evidence: ../build/evidence/aiand-key-verification-20261018.json.
