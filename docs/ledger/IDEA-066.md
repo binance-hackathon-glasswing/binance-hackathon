@@ -1,5 +1,9 @@
 # IDEA-066 — Gate A inventory and offline package qualification
 
+PC-FIX01 (2026-10-18, Yao): requested DOJ/source-report and atomic unsigned-trial
+cap corrections for Keegan review/new release. Prospective acceptance is in
+../build/DOJ_TRIAL_CAP_FIXES_20261018.md; no runtime/host adoption implied.
+
 - Date / owner: 2026-10-16 SGT / Isaac with Codex; runtime/deployment review: Keegan.
 - Baseline: `eda2ed2`, fetched from `codex/system-testing-20261012`; PR87 and the Gate A assembly are already merged.
 - Issues: [#127](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/127) tracks hosted qualification; [#128](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/128) covers the offline package check. Existing #32/#49/#92/#98/#118–120 keep their own acceptance criteria.
