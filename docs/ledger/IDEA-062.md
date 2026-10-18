@@ -118,3 +118,14 @@ At pushed `62ef585`, `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.runtim
 Isaac explicitly selected **“Approve reviewed destination scope (Recommended)”** in response to the PR137 decision question. This supersedes the pending-approval status in the dated entries above. The approved scope retains primary's general HTTPS egress with application destinations controlled by code/config; signer application access stays RDS + S3 gateway only. DNS failures no longer count as isolation proof. Yao Zhu retains real-host route/SG, sandbox, IAM/TLS and configured-bucket S3 evidence under #32/GAP-70. No AWS action, permission expansion, deployment or hosted acceptance is authorized by this table decision.
 
 Recorded the decision in the authoritative architecture table and task2 review; narrowed the live backlog and index. The offline fix remains verified at pushed b720b2a (27 passed /5 opt-in systemd skips); this decision changes documentation only, so no test rerun is needed. PR137 retains `Closes #136`; parent #32 stays open for hosted evidence. Task3 (verified router evidence, reviewed with Keegan before PR130 merge) follows separately.
+
+## SP-NET — signed/live application scope review (2026-10-18)
+
+User requested review. Reviewed the same primary/runtime AIand/OpenAI fixed HTTPS
+paths, merged SLM-01 adoption/profile/routing/prompt gates and provider-policy/rights
+limits. The exact proposal is in [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+Automatic approval review rejected publishing a broadened sensitive-egress scope
+because review did not explicitly authorize approval. The current shadow-only
+approval and all runtime/route code remain unchanged. Explicit user approval is
+needed to update the policy table; provider compatibility/adoption/host evidence
+would still be required afterwards. No AWS or application-egress change occurred.

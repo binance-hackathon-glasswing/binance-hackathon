@@ -135,3 +135,11 @@ gets bounded public rechecks; route replay remains conditional on truthful
 RouterEvidence and independent review. Keith's interim artifacts are now present
 in PR133; their delivery alone does not clear source, fees, current caps or gas.
 No AWS, signer session or key operation is authorized in this workstream.
+
+### SP-01 R1 — acquisition stays blocked
+
+Candidate facet BscScan403/Cloudflare, Sourcify404/no match at07:44:34UTC.
+No verified source/ABI or independent four-guarantee review exists; router check
+NOT_RUN. Exact handoff hashes verify; routes are available when source is ready.
+Details and hash-pinned evidence: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+No vendor message, synthetic ABI, source hash substitution or signing approval.

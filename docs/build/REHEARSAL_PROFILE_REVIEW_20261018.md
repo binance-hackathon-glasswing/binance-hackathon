@@ -73,3 +73,14 @@ POLICY-HOLD is a separate owner decision. Recommendation: retain the implemented
 HALT on mandatory-sale price-jump refusal until a reviewed, bounded mandatory-exit
 policy is adopted; do not bypass freshness/chain-safe sizing to force a sale.
 Isaac decides with Yao/Keith; this proposal does not change the existing behavior.
+
+## Isaac follow-through — SP-D1..5 (2026-10-18)
+
+Decisions and code-review clarification are recorded in
+[SIGNED_PREREQUISITES_20261018.md](SIGNED_PREREQUISITES_20261018.md#supplied-policy-decisions--sp-d1d5).
+Existing-window choice, conditional rehearsal profile rule, deterministic S1
+limiter and bounded per-symbol hold are decided; no final profile/hash or
+assessor/provider adoption follows. Original IDEA075 O6 is assessor choice and
+is separate from limiter_mode. The phrase "mandatory-sale HALT" above refers
+to BLOCKED_PRICE_JUMP in the existing per-symbol planner, not a permanent or
+global HALT. Keegan retains finite #27 lifetime/margins and implementation.

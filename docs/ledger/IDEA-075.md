@@ -251,3 +251,15 @@ The register source is `config/release/deviations.v1.json`, rendered into plan.m
 - **O4 `new_risk_end`.** **Recommended:** Nov 9 21:00 UTC, so that a trend recovery after Nov 4 can still be rebought. IDEA-018's Nov 4 candidate would freeze the book for the last four sessions.
 - **O5 Scheduled events.** **Recommended:** no cut on a scheduled event alone (§4.2). Alternative: a declared CAUTION over the Nov 3 elections, at a cost of two level changes.
 - **O6 Assessor.** Model or deterministic assessor for v1.0 (DEV-19). The plan works either way (§4.2).
+
+## SP-D2 / SP-D3 — rehearsal selection and limiter mode (2026-10-18)
+
+User-delegated decision on KMP-SIGN01: use measured EQUAL_WEIGHT on Oct20
+if S1's actual inputs/frozen weights/parameters/EXP007/B4 are unqualified;
+otherwise use explicitly adopted exact TREND_GUARDED_VOL profile. Profile/hash
+adoption awaits real final coverage. For adopted S1 choose DETERMINISTIC limiter,
+which maps verified LLM evidence to exposure levels; B4 producer remains required.
+This does not settle original O6 model-vs-deterministic ASSESSOR adoption: that
+retains team/trial/rights/declaration gates. No final strategy or values frozen.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).

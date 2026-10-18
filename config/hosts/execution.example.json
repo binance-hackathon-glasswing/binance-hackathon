@@ -27,8 +27,8 @@
     "TSLAB": null,
     "MSFTB": null
   },
-  "max_gas": null,
-  "max_gas_price": null,
+  "max_gas": 1200000,
+  "max_gas_price": 160000000,
   "gas_budget": null,
   "strategy_profile_file": "/etc/larp/strategy-profile.json",
   "strategy_profile_sha256": null

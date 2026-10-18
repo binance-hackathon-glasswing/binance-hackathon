@@ -746,3 +746,17 @@ PR115-C06's independent macOS counts/hashes are author-reported: its raw logs ar
 #### RPC-Q01 H1 — private handoff sent (2026-10-17)
 
 Isaac explicitly reports “I have sent him the file”, referring to Yao and the prepared `deploy/activation/balance-rpc/selected-providers.json`. Isaac's provider selection and private URL/source-ID handoff are complete. This is user-reported delivery, not confirmation of receipt, installation, actual-wallet capture or hosted BALANCE_CHECKED. PR135 is now merged into integration (38b57f5; branch head includes the follow-up release-list test at97c413d). Yao retains host config/manifest binding and actual-wallet balance acceptance under #92/GAP-71; native-tracing/execution qualification is separate. No endpoint or credential is copied into Git or an issue. This administrative status record accompanies the next independent task's documentation PR.
+
+## SP-D4 — decide the mandatory-exit price-jump policy (2026-10-18)
+
+The user delegates deciding Keith's supplied KMP-SIGN01 policy. Retain existing
+bounded per-symbol price-jump holds for all actions including Class1 and terminal
+requirements, until comparable chain reconciliation clears them or original expiry
+is reached. Keep obligations outstanding and all chain-safe sizing/freshness/
+min-output/signing checks. Accept delayed urgent exits, possibly near terminal
+cutoff; no timely-flatten guarantee. "Mandatory-sale HALT" in the proposal is
+imprecise: code uses BLOCKED_PRICE_JUMP, not a new permanent/global HALT. This
+settles the owner policy question; host/signed clearing and expiry qualification
+remain with Yao/Keith under DR gates, and any bypass needs separate policy/code.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).

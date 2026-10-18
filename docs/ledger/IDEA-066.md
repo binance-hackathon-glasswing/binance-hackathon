@@ -757,3 +757,12 @@ protocol status and sampling protocol ID; actual sampling stays NOT_RUN.
 
 Documentation validation: JSON parses; diff whitespace check passes. No new
 application tests for this status-only correction. PR133 remains open.
+
+## SP-01 — Isaac signed prerequisites (2026-10-18)
+
+[SP-01](../build/SIGNED_PREREQUISITES_20261018.md) records public source/native
+qualification blockers, fee/cap remaining data, concrete draft gas ceilings,
+signed/live application network scope and supplied profile/window/limiter/hold
+decisions. No AWS/session/key placement or unsigned trial operation occurred.
+PR165 current-integration verification is IDEA076 EB-RV2, separate from release
+and actual hosted signing qualification. PR139 stays draft without source.

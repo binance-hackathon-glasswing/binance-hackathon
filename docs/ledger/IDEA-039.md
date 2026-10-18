@@ -408,3 +408,15 @@ historical. `git diff --check` passes. Existing organization Actions jobs at
 run39047166150 have zero steps (the known billing block), not failed assertions.
 No runtime code or cap values changed in this refresh; #27/#44 approval,
 real-source/route evidence and all host/signing acceptance remain outstanding.
+
+## SP-NATIVE — public endpoint qualification attempt (2026-10-18)
+
+SP-01 R1 records bounded public reads at07:44UTC. Both providers agree on
+chain56 and rechecked finalized block identities, but both return -32002
+resource debug_traceTransaction not available even for a recent finalized tx,
+as well as -32000 missing trie node for the historical funding hash. #30 is
+UNQUALIFIED, not merely an archive-history problem. Isaac needs a permitted
+execution endpoint exposing exact prestateTracer diff semantics/retention; Yao
+retains actual host/receipt-path verification. No native_trace enablement or swap.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).

@@ -680,3 +680,17 @@ SH-01 delivery: [PR #161](https://github.com/binance-hackathon-glasswing/binance
 [Review/proposal](../build/REHEARSAL_PROFILE_REVIEW_20261018.md), criteria1536af8. Confirms SL-01 option A conditionally: keep measured quote age and fresh≤15s proposal admission, persist original t0/P and finite A=min(t0+L,signing_end,applicable action-window end), require every fresh decoded route now<deadline≤A with margin. Re-quote/restart/claim cannot extend A or economic limits; mandatory/gas bounds remain finite and action-specific. Expired authority never releases an uncertain approval's nonce/allowance/reconciliation barrier. OptionB needs a source-qualified caller-controlled deadline within the same original expiry, not calldata patching.60s and kit~30s are unqualified examples, #53 synthetic spacing is not host/finality timing. No runtime/profile/lifetime change; #27 remains open for Keegan's C-OPEN-003 decision/code and Isaac/Yao qualification.
 
 Recommends first signed trade inside existing Oct21 00:00–Oct22 00:00UTC window after gates. Earlier dev window requires separate reviewed version. Proposes measured EQUAL_WEIGHT fallback if S1 inputs/weights/EXP-007/B4 remain unqualified; otherwise explicitly frozen/adopted S1. For S1 proposes DETERMINISTIC limiter (maps LLM-verified evidence, no separate exposure call), B4 producer still needed; this is not a deterministic assessor. MODEL remains unqualified until separate pinned call/audit/budget/expiry tests. POLICY-HOLD recommendation retains existing mandatory-sale HALT pending a reviewed bounded alternative. Isaac confirms profile/window/O6/POLICY-HOLD, Keegan owns B4/finite-authority implementation; no adoption inferred. Keith's #27 comment supplies the review; final Oct20 measured profile/cap proof remains open.
+
+## SP-CAPS / SP-D1..5 — supplied proposal decisions and draft gas (2026-10-18)
+
+SP-01 records Oct21 existing-window choice, conditional measured EQUAL_WEIGHT
+rehearsal fallback, DETERMINISTIC S1 limiter and bounded per-symbol POLICY-HOLD.
+Original IDEA075 O6 assessor adoption remains separate; no deterministic assessor
+is adopted by selecting that limiter. Support conditional #27 OptionA; finite
+L/margins/implementation remain Keegan's, with real router/Yao latency evidence.
+Execution example ceilings1,200,000 gas×160,000,000wei=192,000,000,000,000wei
+(<candidate200,000,000,000,000wei per tx). Actual gas remains unmeasured; aggregate
+action budget/final measured profile/fresh full holdings/native quote and exact
+policy approval hashes remain unavailable. #44 stays open; no install approval.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
