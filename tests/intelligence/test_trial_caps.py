@@ -105,6 +105,13 @@ class Caps(unittest.TestCase):
         opts=self.options();opts['trial']=changed
         with self.assertRaises(IntelligenceError):ModelBudget(self.path,'trial',**opts)
 
+    def test_old_binary_pacing_comparison_refuses_after_trial_is_enabled(self):
+        self.init()
+        with sqlite3.connect(self.path) as db:stored=db.execute('SELECT policy FROM pacing').fetchone()[0]
+        legacy_expected=json.dumps(self.p,sort_keys=True,separators=(',',':'))
+        self.assertNotEqual(stored,legacy_expected)  # exact comparison made by pre-cap binary on every transaction
+        self.assertIn('trial_policy_sha256',json.loads(stored))
+
     def test_explicit_enable_preserves_original_rows_and_account_latch(self):
         opts=self.options();opts.pop('trial')
         b=ModelBudget.initialize(self.path,'trial',initial_spent=2_000_000,**opts)
