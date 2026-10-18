@@ -237,3 +237,22 @@ exact source blocker under GAP29. Source PR139 remains draft, now synchronized
 for review with no application-source delta from integration. JSON/response
 hashes, no conflict markers and diff checks pass; no runtime test needed for
 the documentation/evidence-only delta. No source/adoption/host gate closes.
+
+## RE-03 — additional public source intake for signer readiness (prospective)
+
+The current signer implementation request still provides no export/account.
+Browser-tool BscScan router open returns403; facet open is inaccessible. Search
+and Ethereum/Polygon pages identify the same address on other chains but do not
+establish BSC source or facet/helper semantics. The Ethereum page is cached and
+has no verified source listing; do not use its displayed runtime bytecode as
+BSC deployment evidence. The browser tool cannot open the public Routescan
+source API; that is a tool-access failure, not a contract verification verdict.
+
+Try exactly two direct public Routescan Etherscan-compatible source GETs for
+chain56 router and candidate facet. System curl, normal TLS,20s cap, no retry,
+redirect following, credentials, paid service or access bypass. Record status,
+response hashes and UTC outside Git, then summarize public responses. Pass only
+on complete source/imports/ABI/compiler/settings with a verifiable deployed-code
+binding; independent review and all four guarantees remain separate. Empty,
+unsupported-chain or access-error responses retain source/review/check NOT_RUN.
+No repeated blind probing after these two requests. No wallet/key/AWS operation.
