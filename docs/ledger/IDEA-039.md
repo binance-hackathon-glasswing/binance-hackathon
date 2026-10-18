@@ -1,5 +1,109 @@
 # IDEA-039 — Isaac: live market and execution integration
 
+## GB-RW3 — PR155 review: returned quote binding (2026-10-17 SGT, prospective)
+
+All-PR review found that the offline numeric checker binds request parameters but
+does not compare returned `routerResult` token addresses/decimals or input amount.
+Its synthetic fixtures omitted those real response fields. This can report
+numeric COVERED for a mismatched response, despite GB-CAP2's stated units/binding
+criterion; owner approval still remains blocked.
+
+Before changed code runs: extend fixtures to the actual response shape; compare
+returned pay/receive token addresses and metadata scales against the requested
+pair and configured stock units (USDT/BNB18), and require the exact returned input
+amount, positive received/minimum quantities and minimum <= quoted receipt.
+Check GET method and any supplied transaction sender/chain metadata; missing
+optional transaction sender/chain metadata is not invented. Mutations of each
+binding must yield numeric BLOCKED/missing pair, with unchanged owner/signing
+refusals. Push regression and fix before execution; run focused caps/proposal/
+Gate B checks and the combined review regression. No source or quote-execution
+qualification is inferred from these numeric comparisons.
+
+GB-RW3 review status: regression commit `2c594db` was pushed before execution;
+all 12 response/method mutations reproduced false numeric coverage. Fix `617abb0`
+is committed locally, but GitHub authentication subsequently returned HTTP401
+and Git push lost authentication. Changed-code tests have not run because the
+push-before-execution rule applies. Push the repair, then run the caps/proposal/
+Gate B regressions and combined review suite; do not call this repair verified yet.
+
+GB-RW3 update: authentication recovered and `a8101a9` (including fix `617abb0`)
+was pushed before changed-code execution. Focused cap/proposal/Gate B regression
+**33 passed, 105 subtests**, 0.88s, no skips (Linux/Python3.12.14). All 12 returned
+response/method mutations now block numeric coverage; non18 metadata and omitted
+optional transaction fields remain supported. The earlier blocked status above
+is historical. Combined review verification follows in IDEA-049 ALLPR-20261017.
+
+## GB-RW1 — remaining Gate B reconciliation (2026-10-17, prospective)
+
+User requests all remaining Gate B work after inspecting all PRs and the remaining-work briefs. Base: integration `0672fb8`, rather than lagging main `fb95114`. All 85 advertised PR heads were fetched through native Git and compared with both branches. Seven heads are outside integration: historical closed #10/#82/#83/#89, remaining-work brief #126, checklist #133 and incomplete source acquisition #139. Their documents were read as references; no PR is merged or represented as independently approved here. Initial GitHub API/discussion requests were blocked by cloud egress; `api.github.com` was added to the environment draft, preserving the package-manager preset. API access later recovered and was verified directly; publication of that draft is not claimed.
+
+The independent repository work is the missing #44 current-input qualification, plus reconciling GAP-30/31/32/47 with the actual execution/storage/replay implementation. Existing caps, lifetime proposals, decoder and signer-access code are reused. Router source/ABI, recorded quote files, current measured profile/holdings, numeric approvals, account/host access and real rehearsal evidence are external prerequisites. No team decision is inferred from a proposal or a synthetic PASS. B6's actual-session/attempt enforcement remains separate from the existing planning-session swap counter; it is not silently called complete.
+
+Pass criteria, before implementation or test execution:
+
+1. **GB-CAP1:** an offline, read-only cap review loads hash-pinned profile, policy, execution configuration and starting portfolio. It uses the existing LIVE-profile, signing-policy and execution-config validators. It checks one complete largest target position plus reserve, per-trade and gas-top-up USDT inputs in raw token units, every current token holding without assuming sell splitting, all configured tokens/spenders, and configured worst-case `max_gas * max_gas_price` against the signer fee ceiling. Use integer/rational arithmetic; reject boolean/negative/malformed quantities, wrong identities, units, environments and altered hashes.
+2. **GB-CAP2:** review existing recorded successful quote artifacts as additional raw input/fee observations, with chain, wallet, spender, exact supported pair, execution mode, token decimals, positive quantities and capture time checked. Missing five-name BUY/SELL or top-up coverage, stale/future captures, missing evidence and an example policy remain explicit blockers. A numeric-coverage result never grants approval or signing authority, generates an installable policy, calls a provider, reads credentials or starts a service.
+3. **GB-CAP3:** CLI inputs are size-bounded and pinned; output is a new private file, never overwrites, and failure output does not echo supplied content or secrets. Tests cover cap equality/+1, non-18 token scales, full-holding sale limits, gas envelope, environment/wallet/build binding, missing/stale/malformed evidence and byte changes. Push code/tests before running them.
+4. **GB-AUDIT:** verify relevant existing real-PostgreSQL identifier, crash/fencing, settlement/reservation, nonce/reorg and replay tests on this branch. Update stale remaining-work text only as far as those results demonstrate; keep source, owner, host and signed acceptance distinct. Run the full Linux/PostgreSQL14 suite with required namespace execution after focused checks pass.
+
+This record authorizes only offline repository qualification; the named human/account/wallet steps remain with the pre-trading checklist. Results are recorded below.
+
+GB-RW1 report finding (prospective): the no-input `gate_b report` correctly exits 2 with overall BLOCKED, but prints `blockers: []` while all 19 DR checks are blocked in the retained artifact. **GB-REPORT4:** expose the sorted blocked-check IDs and OWNER_REVIEW_REQUIRED acceptance in the CLI summary, preserving probe behavior and exit codes. The cap checker must also refuse an output inside the checkout and profile/ledger native-scale disagreement. Push these changes before execution.
+
+### GB-RW1 results and remaining qualification
+
+- Criteria pushed at `2bff036`; implementation/tests pushed at `6f3b668` before execution. First focused result: 6 passed, 1 failed, 27 subtests; the failure was a missing refusal-type import in the test, corrected/pushed at `73d5826` before rerun. No assertion was disabled.
+- **GB-AUDIT PASS** at `73d5826`: execution/cap/native/settlement/PostgreSQL crash/replay subset **117 passed, 165 subtests**, 19.18 s. Includes real database process death and immutable registry/observation recovery, actual I3/I4/accounting, reservation release on fill/revert/NOT_SUBMITTED, retained uncertainty after timeout/reorg, and recorded-port replay.
+- **GB-CAP1..3 / GB-REPORT4 PASS** at pushed `768d333`: cap/proposal/Gate B report subset **32 passed, 93 subtests**, 0.56 s. The new cap review has 10 tests, covering S1 largest frozen-position input, all raw stock holdings, fee equality/+1, non18 stock metadata, missing/stale/wrong-wallet/chain/pair quote evidence, source-byte changes, output privacy/non-overwrite, scope, native-scale mismatch and fixed failure output. `numeric_status: COVERED` never changes BLOCKED/ready_to_install=false/signing_enabled=false or supplies owner approval.
+- Full initial run at `768d333`: **1932 passed, 1 failed, 6 skipped, 2856 subtests**, 312.74 s. The one failure was the pre-existing stubbed archive SDK test inheriting a platform AWS_PROFILE selection without a backing profile (ProfileNotFound); it was an environment issue. `env -u AWS_PROFILE` for that offline test process made all four archive tests pass. No runtime or test source was changed for it.
+- **Full corrected run PASS**, same pushed code `768d333`, Linux x86_64 / Python3.12.14 / disposable PostgreSQL14.24 / required bubblewrap namespaces through elevated execution: **1933 passed, 6 skipped, 2856 subtests**, 339.97 s, exit0. Command: `env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PIP_CACHE_DIR=/workspace/.cache/pip LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test .venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider`. Skips: one opt-in real-market artifact test and five disposable-systemd cases (systemd is not PID1 here). No xfailed cases. Saved environment startup instructions now include the test-only profile override; real deployment authentication is unchanged.
+- Logs retained outside Git under `/workspace/larp-cloud`: `gate-b-focused.log` SHA256 `0ff06575145f1baf2540135c00a68ada73540c6a22c8d93ccab666569ffd8485`; `gate-b-qualification.log` `6d12be72d9f0578ef2c0be90093a71eec7a27cc30dbc3d7087a848c495b5becb`; initial `gate-b-full.log` `14a7788dacbc5aa495961d1d5446c4cb2078ede8b25447e8b26122955135feba`; corrected `gate-b-full-corrected.log` `e6974f5827fc022f186069d79f040c08e9b51f737e6cb8a2e93cea1017e197bb`.
+- **GAP-30 definition/uniqueness COMPLETE**: the economic key, command/intent, decision/round/version/reservation, per-step attempt/payload/transaction and stable observation/round-log identities are implemented and exercised by the tests above. The exact mapping is in [GATE_B_REMAINING.md](../build/GATE_B_REMAINING.md). Remove its obsolete undefined-identifiers checklist item; real signed-pair and receiver acceptance remain DR-02 and other Gate B items. GAP-31/32/47 are narrowed to actual provider, source and hosted/signed qualification, not closed wholesale.
+- Actual no-input report at this code emits all 19 blocked DR IDs, OWNER_REVIEW_REQUIRED and signing_enabled=false, exit2; retained artifact SHA256 `6ef7cb8c507303c1cac99ea022cc67360f4feb131137eb1d3f90fa5beb77433e`. This is an inventory, not missing evidence being marked passed. Current-wallet cap review, real source/recorded routes, native tracing, signed rounds, hosted drills and release CI are **NOT RUN** in this machine.
+- All available PR heads and outstanding handoffs are recorded in [GATE_B_REMAINING.md](../build/GATE_B_REMAINING.md). After API connectivity recovered, all 85 PR descriptions and submitted-review events were fetched; every API head matched the Git inventory. Live issue discussions #27/#30/#32/#33/#36/#44/#92/#106/#127/#138/#142/#146/#150 were inspected. No later #27/#44 approval was found: available records still require the owner decisions. The current-input/artifact question remains unanswered. A technical #27 profile review is prepared in SIGNING_LIFETIME_PROPOSAL.md without attributing owner sign-off or changing the lifetime. No AWS/host/key/funding action, provider call, ai-seeds upload or real transaction was performed. Native Git read/push and GitHub API read work. The saved api.github.com network addition remains draft configuration; publication is not claimed.
+
+### GB-RW2 — current integration mirror bundle (prospective)
+
+The pre-trading checklist's Gate B mirror-bundle line is actionable with the existing authenticated Keegan4 mirror (repository permissions verified, no credential values read). Build reviewed integration `0672fb8d51056702c1d9e05450b422072bcb3138` on a new mirror branch `codex/gate-b-release-20261017`; preserve existing branches and use no force push. It contains PR130/144/148/149/153/131, and the registered-source manifest logic is already integrated. Criteria: dispatch the existing Runtime acceptance workflow once, require all runtime/infrastructure/host-bundle jobs to pass on that exact SHA, download the host-bundle artifact, verify the bundle sidecar checksum and the CI-built external/embedded manifest bytes, and retain run ID, artifact identity and both hashes. No AWS/upload/provisioning, settings/permissions edits, source promotion or signing. A later adopted source change requires a new build; this is not Gate B acceptance. Push this record before dispatch. Record blocked/failed CI distinctly rather than treating a queued workflow as success.
+
+### GB-RW2 result — CI passed, artifact verification blocked
+
+Criteria were pushed at `e38afb0` before creating the new mirror branch and
+dispatching workflow385777152 once. [Run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352)
+completed SUCCESS at 2026-10-17T12:05:47Z on the exact reviewed integration
+`0672fb8d51056702c1d9e05450b422072bcb3138`. All four jobs passed: Terraform
+aws/bootstrap, runtime (Python3.12.15/PostgreSQL14.24, systemd, demo, Docker),
+and host-bundle (both Amazon Linux roles). This does not test unmerged PR155.
+
+Artifact12099524179, `larp-bundle-x86_64`, 98,397,459 bytes, is retained until
+2027-01-15; GitHub reports archive digest
+`sha256:0a2b764f848239d529f68fd60f40cf64134ee0a547b8e86909153b12a95fd782`.
+That is not a locally verified bundle or manifest hash. Two authenticated
+downloads were refused by the cloud egress policy at GitHub's artifact-storage
+hostname. The environment draft now preserves existing rules and adds
+`productionresultssa9.blob.core.windows.net`; revision4 saving is confirmed,
+but review/save and publication are required and application is not claimed.
+Sidecar checksum, external/embedded manifest byte comparison, and retaining
+both file hashes remain BLOCKED. The complete GB-RW2 pass criteria are not met.
+Public metadata is retained in
+[gate-b-mirror-build-20261017.json](../build/evidence/gate-b-mirror-build-20261017.json).
+No artifact was uploaded to AWS, no host was provisioned and nobody was messaged.
+
+### GB-RW1 publication / AWS access clarification
+
+[PR155](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/155)
+targets integration with the cap checker, blocked-check CLI summary and remaining-work audit.
+Its organization Actions run [39030940212](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39030940212)
+ran no steps; the runtime annotation retains the account-payment/spending-limit refusal.
+The passing local results above remain the verification of this code; the separate
+GB-RW2 mirror release is reviewed integration, not this unmerged PR.
+
+The user asked whether this session can access their AWS account. A metadata-only
+recheck found zero profiles in both injected AWS config files, no environment,
+web-identity or container credential binding, and boto3 ProfileNotFound. No account
+lookup was attempted from an email address; email alone grants no AWS access.
+AWS/host work remains with the checklist's authenticated AWS owner, Yao Zhu.
+
 ## GB-20261015 — Gate B implementation (prospective)
 
 User requests a new Gate B PR into `codex/system-testing-20261012`, and confirms using the existing build documents. Base target `0820b0dd87219cb6b96f2ede34051129fab9f49c`; carry unmerged PR70 prerequisite tree `9a14d6e4fc30387feb82be7923d479f71deb1f46` without merging either PR into the target. Branch `codex/gate-b-20261015`, worktree `/private/tmp/larp-gate-b-20261015`. Existing C baseline: 1303 passed, 7 skipped, 1 known D legacy-export expected failure, 1615 subtests (IDEA-049-C C-RESULT-007); this is recorded prior evidence, not a new run.
@@ -267,3 +371,40 @@ PR #151 carries `Closes #150` for the historical-record slice only; because its 
 Validation for U1: evidence JSON parses; exact BNB/wei and receipt gas arithmetic, recipient identity and every retained raw artifact SHA256 match; `git diff --check` passes. Documentation/evidence-only change, so no application tests were added or run.
 
 FG-01 U1 publication: pushed `321980a`; [PR #151](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/151) is OPEN and ready for review with `Closes #150`, targeting integration. Child #150 now states the completed attributed-record scope and remains open pending merge; parent #106 now distinguishes the recorded trial from remaining Isaac funding and Yao opening capture. GitHub reports no automatic closing-issue linkage for this non-default target; verify closure at merge. Actions run [39016527481](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39016527481), head `321980a`, runtime annotation: job did not start because recent account payments failed or spending limit needs increasing (existing #98). No CI pass or hosted acceptance claimed. Remaining source/decoder, signing-lifetime, caps approval, signer access/key placement and funding/host gates stay with their previously recorded owners.
+
+GB-RW3 combined regression: published review head `7328e0a` includes this PR's
+repaired code from `4c19ee8` and all seven other open PRs. Linux/Python3.12.14 /
+PostgreSQL14.24: **1957 passed, 6 expected skips, 2931 subtests**, 326.89s, no
+failures or xfails. Skips: one external recorded corpus and five opt-in systemd
+checks. Full per-PR dispositions and exact heads: IDEA-049 ALLPR-20261017 on
+PR158. This confirms offline engineering behavior only; current external input
+files, #27/#44 decisions, source/route proof and hosted signed acceptance remain
+with their existing owners. This result commit changes documentation only.
+
+## GB-RV155 — integration refresh and merge review (2026-10-18, prospective)
+
+Yao Zhu requests review, repair where needed and merge of PR155/157 into the
+integration branch; PR133 stays open. Review PR155 at fbd86ba against integration
+a2af2df, incorporating the base by ordinary merge. Preserve GB-CAP1..3,
+GB-REPORT4 and GB-RW3 acceptance: exact request/returned economics and raw units,
+full-position/holding/top-up and fee bounds, private exclusive output, blocked
+owner acceptance and no signing authority. Re-run caps/proposal/Gate B report
+checks on the refreshed pushed head; require no failures/skips in that subset.
+Run the execution suite to check consumer compatibility; explicitly retain any
+macOS/PostgreSQL/Linux-only skips and do not claim a new Linux release build.
+Inspect the diff and existing review discussions before merge. No new runtime
+policy, live profile acceptance, owner sign-off or host deployment is implied.
+
+### GB-RV155 result — 2026-10-18
+
+Refreshed/pushed head `387160a` includes integration `a2af2df` by ordinary merge.
+No further code defect found after reading the full cap checker, its validators,
+report consumer, fixtures, prior corrections and empty GitHub review discussions.
+Focused caps/proposal/report: **33 passed, 105 subtests, no skips**, 1.29s.
+Execution suite: **170 passed, 52 skipped, 694 subtests**, 2.20s on macOS arm64 /
+Python3.12. Skips require disposable PostgreSQL or Linux isolation; this is not a
+new Linux/host/release qualification. Prior GB-RW3 combined Linux evidence remains
+historical. `git diff --check` passes. Existing organization Actions jobs at
+run39047166150 have zero steps (the known billing block), not failed assertions.
+No runtime code or cap values changed in this refresh; #27/#44 approval,
+real-source/route evidence and all host/signing acceptance remain outstanding.

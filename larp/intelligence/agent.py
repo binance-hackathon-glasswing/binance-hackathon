@@ -203,7 +203,13 @@ class EvidenceAssessor:
         return Document.from_dict(result)
 
     # ------------------------------------------------------------------ assess
-    def assess(self, request: Document) -> Document:
+    def assess(self, request: Document, *, wait_for_worker=False) -> Document:
+        """Bound policy authority by the deadline, optionally drain on a deferred caller's thread.
+
+        A deferred caller already runs outside the safety loop. It must keep ownership of a timed-out
+        provider until its actual worker exits, including all audit/artifact writes. The late output
+        remains UNAVAILABLE; synchronous callers still return at the hard deadline.
+        """
         start = self.clock()
         r = request.read()
         try:
@@ -224,6 +230,8 @@ class EvidenceAssessor:
         worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
         if worker.is_alive():
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
+            if wait_for_worker:
+                worker.join()  # deferred caller only; never block the runtime safety/execution thread
             return self._abandoned(r, validated, start, io)
         if "error" in box:
             raise box["error"]

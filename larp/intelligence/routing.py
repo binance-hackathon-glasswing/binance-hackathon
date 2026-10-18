@@ -157,6 +157,21 @@ def _signature(result):
             sorted(Document.from_dict(f).payload for f in result.get('falsifiers', [])))
 
 
+class AuditedModel:
+    """Record a call before dispatch and its reply before verification, without headers/keys."""
+    def __init__(self, model, hook, stage):
+        self.model, self.hook, self.stage = model, hook, stage
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
+    def step(self, request, remaining_ms):
+        self.hook(dict(kind='MODEL_REQUEST', stage=self.stage, model=self.identity.record(), request=request.read()))
+        reply = self.model.step(request, remaining_ms)
+        self.hook(dict(kind='MODEL_RESPONSE', stage=self.stage, model=self.identity.record(), response=reply.read()))
+        return reply
+
+
 class RoutedAssessor:
     def __init__(self, *, routine, external_reviewers, openai, budget, make_assessor, clock_ms,
                  policy, artifacts, monotonic=time.monotonic):
@@ -185,7 +200,14 @@ class RoutedAssessor:
         except IntelligenceError:
             return dict(account=self.budget.account, external_only=True, reason='MODEL_BUDGET_UNAVAILABLE')
 
+    def assess_deferred(self, request, *, audit_hook):
+        """Keep timed-out stage workers owned until their actual calls and audit writes end."""
+        return self._assess(request, audit_hook=audit_hook, wait_for_workers=True)
+
     def assess(self, request):
+        return self._assess(request, audit_hook=getattr(self, 'audit_hook', None))
+
+    def _assess(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
@@ -214,15 +236,19 @@ class RoutedAssessor:
                 tool_allowance = min(tool_allowance, 3)  # leave independent review a retrieval budget
             stage['budget'] = dict(tool_calls=tool_allowance,
                                    deadline_ms=min(remaining, allowance or remaining))
-            assessor = self.make_assessor(model)
+            hook = audit_hook
+            assessor = self.make_assessor(AuditedModel(model, hook, label) if hook is not None else model)
             assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage)).read()
+            result = assessor.assess(Document.from_dict(stage), wait_for_worker=True).read() if wait_for_workers else \
+                assessor.assess(Document.from_dict(stage)).read()
             tools += result.get('budget_used', {}).get('tool_calls') or 0
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)
             if ref != sha256_hex(payload):
                 raise IntelligenceError('Routing artifact content address mismatch')
             stages.append(dict(stage=label, model=model.identity.record(), result=result, artifact=ref))
+            if hook is not None:
+                hook(dict(kind='STAGE', stage=label, result=result, artifact=ref))
             return result
 
         chosen = run(self.routine, 'routine', max(1, total//2))

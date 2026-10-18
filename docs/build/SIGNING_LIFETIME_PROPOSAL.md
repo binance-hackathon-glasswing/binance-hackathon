@@ -162,3 +162,33 @@ No real signing/trading experiment is authorized by this proposal. Source
 evidence, measured profiles, signer setup, first gas and the other Gate B
 prerequisites remain independent. Parent #27 stays open after this writing
 slice is complete. Existing router task3 and route replay task4 stay separate.
+
+## GB-RW1 technical review for the profile owner (2026-10-17)
+
+This is a repository review prepared for the checklist's Keith review of #27,
+not Keith's sign-off, Keegan's decision, or approval of a lifetime value.
+The adopted code remains unchanged.
+
+| Profile implication | Option A | Option B |
+|---|---|---|
+| Quote age and proposal admission | Preserve the existing short ages and admission expiry. A separate finite authority must not make an expired proposal admissible. | Preserve the existing ages and parent expiry. Every route must fit inside that same absolute parent bound. |
+| Economic limits | Persist the admitted exact pay amount, minimum output, cost/slippage bounds and original policy/build identity. Current guards, reservations and independent signer caps still apply at each step. | Same limits; requesting a shorter deadline must not change amounts, recipient or signed/RFQ economics. |
+| Re-quote and restart | Keep the original decision time and absolute authority end. A re-quote can refresh its own payload, never the parent authority or attempt budget. | Keep the original absolute parent expiry. A fresh now-plus-duration deadline would improperly extend it. |
+| S1 and action windows | Bound new-risk authority by the applicable entry/execution window; preserve separate rules for reductions and gas. The planning-session counter does not establish B6's actual-session checks. | The same action/window restrictions apply in addition to the shorter parent bound. |
+| Approval delay | Measure the complete approve/finality/re-quote/sign/release path before choosing the duration and margin. A late approval does not grant a new window. | The whole path must fit the short parent window; no current API evidence demonstrates a caller-controlled encoded deadline. |
+
+Option A remains the technically supported direction to investigate, conditional
+on the recorded decision and source/timing evidence. It does not require changing
+`proposal_seconds` or `quote_age_seconds`. Option B is not established by editing
+calldata or adding an undocumented API parameter. Neither option is qualified by
+the synthetic request-spacing measurements in WR-C.
+
+Before implementation, the owner decision must specify the duration and
+clock/submission margins, each action's applicable window, the original durable
+decision timestamp and the persisted admission/authority fields, with producer
+and consumer agreement for any I3 change. Source-qualified route deadlines and
+actual host queue, RPC, approval/finality, signer and release timings must show
+that the limits can be met. An approval has no encoded expiry: delayed/possible
+submission continues reconciliation and retains the appropriate reservations
+and wallet barrier. The numeric lifetime and the necessary owner decisions
+remain outstanding in the available repository records.

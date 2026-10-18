@@ -420,3 +420,47 @@ archive fix deployment/health, source gap-report preparation, provider/model sec
 and budget checks, signer provisioning and hosted signed acceptance. PC-AWS10's
 DOJ/BIS history-walk decision remains with Keegan. No cloud, signing, wallet,
 provider inference, receiver upload or deployment was performed by this review.
+
+## MERGE-20261018 — authorised reviewed PR integration (prospective)
+
+User requests merging fixed PRs and explicitly excludes #126 and #133. Include
+#155 at387160a (base refresh and criteria only after fbd86ba), #157 at9d8f168,
+#158 atd7d3e7c, #161 atfa5c40f and #163 at19339bd. Keep #139 draft for missing
+verified router source/ABI; new #165 was outside the completed review and is not
+included. Target integration advanced to a2af2df with reviewed PR164, requiring
+new combined validation of stage prompts against its deferred model/audit code.
+
+Acceptance before merge: ordinary merges only, preserve PR164 provider-worker
+ownership and audit behavior, resolve documentation conflicts retaining current
+signed-model status, and keep #126/#133/#139/#165 out of the target. Push the
+candidate before executing it; full Linux/Python3.12/PostgreSQL14 suite must pass
+with no new failures or unexplained skips. Static checks require no conflict
+markers or whitespace errors and no protected kit/vendor changes. Merge the
+five authorised PRs using GitHub merge commits bound to checked head hashes,
+retaining branches. If concurrent target/head changes occur, inspect them and
+reconcile before proceeding. Record final merge SHAs and any remaining blockers.
+Repository integration grants no hosted/model/source/policy acceptance.
+
+MERGE-20261018 validation result: pushed candidate `b06c15cb06987183aacb9d7f9868bdac7e00559c`
+passed Linux/Python3.12.14 / pinned test dependencies / PostgreSQL14.24 full
+regression: **1973 passed, 6 skipped, 2934 subtests**, no failures or xfails,
+166.14s. Skips: one external recorded corpus and five opt-in real-systemd checks.
+Bubblewrap isolation and actual database tests ran unchanged. Full log SHA-256:
+`bdcb7a76b20c3dfd2a11ae143834ff748b6f95066aa0b0a72714fe55c0a65ea5`;
+raw log `/workspace/larp-cloud/pr-merge-20261018/full-with-postgres.log`.
+The first attempt had 417 database-connection refusals (1556 passed); its
+PostgreSQL container was stopped. Restarted the existing disposable service,
+verified its version and SELECT1, then reran the full suite above; no test or
+application workaround was made. Offline test process only unsets the injected
+nonexistent AWS_PROFILE, leaving deployment authentication unchanged.
+
+Concurrent #155/#157 updates changed documentation only beyond the reviewed
+code. Their merged outcomes were independently confirmed: #155 `2f10b9d`,
+#157 `ad9a8b9`. After the fresh full PASS, merged #163 `2b4f397` and #161
+`7cd7892` using GitHub merge commits with exact checked PR-head guards. Refreshed
+#158 by ordinary merge of that target, preserving signed/deferred audit code,
+both ledger rows and current model status. All application/config/migration,
+script and test files of refreshed #158 exactly match tested candidate b06c15c;
+only ledger/result documentation differs. #158 is the final eligible merge.
+#126/#133 remain excluded; #139 stays draft and #165 remains unreviewed here.
+No hosted deployment or policy/model adoption approval is inferred.

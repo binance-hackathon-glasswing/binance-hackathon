@@ -35,6 +35,9 @@ QUOTE_TTL_SECONDS = 30  # "bStock quotes ... expire after about 30 s" (kit, F-96
 SESSION_CALENDAR = Path(__file__).resolve().parents[2] / 'config' / 'runtime' / 'session-calendar.2026.json'
 REGIMES = ('US_SESSION', 'OFF_SESSION')
 WORSE_OF_REGIMES = ('median_impact_bps', 'spread_bps', 'approve_gas_bnb_units', 'swap_gas_bnb_units', 'slippage_bps')
+# Raw vendor fields, without treating the network estimate as an additional route-fee rate (IDEA-063 FN-02).
+FEE_FIELDS = ('tradeFee', 'feeAmount', 'feeToken', 'actualSwapAmount')
+TRADE_FEE_SOURCE = 'https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api'
 # Outcomes no later round can recover from: the capture stops instead of recording failures for days.
 FATAL_OUTCOMES = frozenset({'authentication_error', 'compliance_restriction'})
 
@@ -129,6 +132,8 @@ def capture_round(market: MarketPort, *, cash_units=40_000_000, requote_seconds=
                 sell_impact_bps=str(number(rr_sell['priceImpactPercent']) * 100),
                 approve_gas_wei=max(approve_cash, approve_token), swap_gas_wei=[buy_gas, sell_gas],
                 gas_methods=[buy_method, sell_method], trade_fee=rr_buy.get('tradeFee'),
+                fee_observations={leg: {key: rr[key] for key in FEE_FIELDS if key in rr}
+                                  for leg, rr in (('BUY', rr_buy), ('SELL', rr_sell), ('REQUOTE', rr_again))},
                 token_open=open_state.get(symbol),
                 artifacts=[buy['artifact_sha256'], sell['artifact_sha256'], requote['artifact_sha256'], a1, a2,
                            *[e for e in (e1, e2) if e], *meta_artifacts]))
@@ -294,7 +299,11 @@ def summarize(records, *, min_samples=10, min_days=3, require_weekend=True, quot
                                   regimes='US_SESSION inside a calendar session, else OFF_SESSION; trading is 24/7',
                                   combine='per field, the worse of US_SESSION and OFF_SESSION',
                                   quote_ttl_seconds=quote_ttl_seconds, quote_ttl_seconds_source='KIT_STATED',
-                                  fee_bps='0: fees are netted in quoted amounts',
+                                  fee_bps='0: assumes route fees are included in quoted amounts; unverified (#119)',
+                                  fee_netting_status='UNVERIFIED',
+                                  trade_fee_semantics='ESTIMATED_NETWORK_FEE_USD',
+                                  trade_fees_scope='BUY only; raw BUY/SELL/REQUOTE fields in new SAMPLE fee_observations',
+                                  trade_fee_source=TRADE_FEE_SOURCE, trade_fee_source_checked_at='2026-10-17',
                                   gas='p90 nearest rank, wei; swap = max(tx.gas, ceil(1.2 x estimate)) x gasPrice',
                                   impact='median of buy and sell priceImpactPercent x 100, ceiled, >= 1',
                                   spread='median(round trip - buy impact - sell impact), ceiled, >= 0',

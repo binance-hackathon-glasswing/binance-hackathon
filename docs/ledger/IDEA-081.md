@@ -1,8 +1,8 @@
 # IDEA-081 — Stage prompts for the routed LLM assessor (routine and review)
 
 - Date / author: 2026-10-17 UTC / Yao Zhu, implemented with Claude.
-- Status: open — shadow-only code change; pass criteria below written before any changed code ran.
-- From: [IDEA-056](IDEA-056.md) (routing proposal, MR-06) and [IDEA-057](IDEA-057.md) (AIand implementation, shadow trial). Changes the routed assessor only; the deterministic assessor, the shadow-only guard in `larp/runtime/service.py` and every trading path are untouched.
+- Status: repository prompt review PASS; hosted trial and provider quality remain open. Signed/service capability is separately implemented in merged PR164.
+- From: [IDEA-056](IDEA-056.md) (routing proposal, MR-06) and [IDEA-057](IDEA-057.md) (AIand implementation, shadow trial). This prompt change affects the routed assessor; deterministic behavior is unchanged. Signed/service capability is a separate change in PR164.
 - Why: OpenAI credits cannot carry the assessor alone, so the funded AIand models (GLM-5.3 routine, Kimi K3 and GLM-5.3 high reviewers) do most of the work and must do it well. Today every stage gets the same system prompt (`assessor.v2.txt`), so the cheap first pass and the hard-case reviewer get the same instructions, and nothing tells the Chinese models about the harness's exact reply rules (JSON only, no native tool calls, finish before the output limit). IDEA-056 §4 names omission as the main risk; neither stage is told that.
 
 ## Change
@@ -37,7 +37,7 @@ Out of scope and NOT RUN here: real AIand/OpenAI inference, prompt quality (that
 
 ## Open points
 
-- **The deployed Gate A run was reported deterministic, not freshly inspected here.** Merged PR159 / IDEA-057 SG-8 now prepares and locally qualifies `aiand_routed` with explicit `--model-routing` and `--model-routing-sha256` inputs; no manual edit of prepared runtime bytes is needed. Existing deployments do not switch automatically. Yao Zhu's PC-DEC02 schedules the host switch after the Oct 18 gap report with a new reviewed release, keys, actual prior spend, provider checks and a fresh bind/init/activation. The current guard still refuses service/live routing; the signed-rehearsal extension and adoption decision remain separate work in PR133. Keith supplies the exact budget figures; the approximate $49 balance is not a ledger initialization value.
+- **The deployed Gate A run was reported deterministic, not freshly inspected here.** Merged PR159 / IDEA-057 SG-8 now prepares and locally qualifies `aiand_routed` with explicit `--model-routing` and `--model-routing-sha256` inputs; no manual edit of prepared runtime bytes is needed. Existing deployments do not switch automatically. Yao Zhu's PC-DEC02 schedules the host switch after the Oct 18 gap report with a new reviewed release, keys, actual prior spend, provider checks and a fresh bind/init/activation. Merged PR164 separately adds opt-in signed/service routing and explicit preparation, requiring a real adoption reference and the existing gates; actual adoption and hosted rehearsal acceptance remain open. Keith supplies the exact budget figures; the approximate $49 balance is not a ledger initialization value.
 - The v2 routing file needs a release built after this change; the host's `bb46234` only accepts the v1 file.
 
 ## Merge with PR #159 (IDEA-057 SG-8), 2026-10-17 — prospective

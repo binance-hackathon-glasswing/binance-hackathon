@@ -180,8 +180,8 @@ def raw_balances(capture):
     return result
 
 
-def initial_state(capture, profile, run_id):
-    """Only a fresh, stock-flat dev wallet can be initialized without cost-basis history.
+def initial_state(capture, profile, run_id, *, mode='dev'):
+    """Only a fresh, stock-flat wallet can be initialized without cost-basis history.
 
     USDT is floored from chain 18 decimals into ledger micro-USDT. Exact raw
     balances and the discarded sub-micro remainder stay in the pinned capture.
@@ -202,7 +202,7 @@ def initial_state(capture, profile, run_id):
                                if r.get('tokenContractAddress', '').lower() == token))
                 for s, token in TOKENS.items()}
     day = instant(capture['observed_at']).date().isoformat()
-    state = dict(schema='PortfolioState.v1', mode='dev', run_id=run_id, wallet_id=wallet_address(capture['wallet']),
+    state = dict(schema='PortfolioState.v1', mode=mode, run_id=run_id, wallet_id=wallet_address(capture['wallet']),
                 cash_units=cash, bnb_units=bnb, bnb_decimals=18, bnb_price_units=costs['bnb_price_units'],
                 opening_equity_units=opening,
                 positions={s: dict(units=0, decimals=decimals[s], cost_basis_units=0) for s in sorted(TOKENS)},
@@ -210,19 +210,19 @@ def initial_state(capture, profile, run_id):
                 accounting=dict(realized_units=0, fees_units=0, gas_value_units=0, service_units=0, turnover_units=0),
                 risk=dict(day=day, day_anchor_units=opening, peak_units=opening,
                           daily_halt=False, run_halt=False, deep_cut=False))
-    check_initial_state(state, capture)
+    check_initial_state(state, capture, mode=mode)
     return state
 
 
-def check_initial_state(state, capture):
+def check_initial_state(state, capture, *, mode='dev'):
     """GA-P2: the runtime can build its ledger from the state, and it has gate_b DR-06's shape (ported from PR #89)."""
     from larp.integration.runtime import initial_projection, ledger_from
     units = [state.get('cash_units'), state.get('bnb_units'),
              *[p.get('units') for p in (state.get('positions') or {}).values()]]
     if (state.get('schema') != 'PortfolioState.v1' or state.get('wallet_id') != wallet_address(capture['wallet'])
-            or state.get('bnb_decimals') != 18 or state.get('mode') != 'dev'
+            or state.get('bnb_decimals') != 18 or mode not in ('dev', 'live') or state.get('mode') != mode
             or any(type(u) is not int or u < 0 for u in units)):
-        raise ContractError('Initial state lacks the DR-06 shape (identity, wei, dev mode, non-negative units)')
+        raise ContractError('Initial state lacks the DR-06 shape (identity, wei, matching mode, non-negative units)')
     try:
         ledger_from(initial_projection(state), [])
     except (ValueError, KeyError, TypeError) as error:
@@ -255,7 +255,8 @@ def model_routing_report(spec, sha256):
 
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
-            model_routing_raw=None, model_routing_sha256=None):
+            model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
+            adoption_ref=None):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
 
     The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
@@ -263,12 +264,17 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     routing = None
     if model_routing_raw is not None or model_routing_sha256 is not None:
         routing = model_routing(model_routing_raw, model_routing_sha256)
+    signed = execution == 'service'
+    if (execution not in ('shadow', 'service') or runtime_mode not in ('dev', 'live')
+            or (not signed and (runtime_mode != 'dev' or adoption_ref is not None))
+            or (signed and (routing is None or type(adoption_ref) is not str or not adoption_ref.strip()))):
+        raise ContractError('Signed preparation needs reviewed routing and an explicit adoption reference')
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('A separately reviewed LIVE profile is required')
     validate_live(profile)
-    if profile.get('environment') != 'REHEARSAL':
-        raise ContractError('Gate A requires a dev rehearsal profile')
+    if profile.get('environment') != ('FINAL' if runtime_mode == 'live' else 'REHEARSAL'):
+        raise ContractError('Profile environment differs from preparation mode')
     if capture.get('schema') != 'GateAInputs.v1' or not re.fullmatch('[0-9a-f]{40}', build_id or ''):
         raise ContractError('Captured inputs and full pushed build SHA required')
     age = (instant(now) - instant(capture['observed_at'])).total_seconds()
@@ -290,14 +296,14 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
         check_chain(capture, now)
         if providers is not None and capture['chain'].get('source_id') not in {p['source_id'] for p in providers}:
             raise ContractError('The chain balance capture came from another RPC source')
-    state = initial_state(capture, profile, run_id)
+    state = initial_state(capture, profile, run_id, mode=runtime_mode)
     state_raw = encoded(state) + b'\n'
     configs = json.loads(json.dumps(configs))
     runtime, uploader, operations = (configs[n] for n in ('runtime.json', 'uploader.json', 'operations.json'))
     wallet = state['wallet_id']
     if any(c.get('wallet_address') != wallet for c in (runtime, uploader)):
         raise ContractError('Infrastructure and captured wallet identities differ')
-    runtime.update(run_id=run_id, build_id=build_id, mode='dev', initial_state_sha256=digest(state_raw))
+    runtime.update(run_id=run_id, build_id=build_id, mode=runtime_mode, initial_state_sha256=digest(state_raw))
     # IDEA-055 (#84): a dev start needs the manifested BSC RPC for the chain-balance check (GA10). Without it the
     # values stay null, the report names BALANCE_RPC, and the runtime refuses to start.
     if 'balance_rpc_providers' in runtime['driver']:
@@ -309,16 +315,18 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
             raise ContractError('This rendered config uses the single balance_rpc_url form; it cannot hold a backup')
         first = providers[0] if providers else dict(url=None, source_id=None)
         runtime['driver'].update(balance_rpc_url=first['url'], balance_rpc_source_id=first['source_id'])
-    runtime['driver'].update(execution='shadow', assessor='deterministic', intelligence_mode='shadow',
+    runtime['driver'].update(execution=execution, assessor='deterministic', intelligence_mode='live' if signed else 'shadow',
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
                              strategy_profile_sha256=digest(profile_raw),
                              session_calendar_sha256=digest(calendar_raw), issuers=issuers)
-    for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root'):
+    for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root', 'model_adoption_ref'):
         runtime['driver'].pop(key, None)
     if routing is not None:
         runtime['driver'].update(assessor='aiand_routed', model_routing_file=MODEL_ROUTING_FILE,
                                  model_routing_sha256=model_routing_sha256, model_budget_root=MODEL_BUDGET_ROOT)
-    uploader.update(run_id=run_id, build_id=build_id, mode='dev')
+    if signed:
+        runtime['driver']['model_adoption_ref'] = adoption_ref
+    uploader.update(run_id=run_id, build_id=build_id, mode=runtime_mode)
     # Explicit bounded dev operations values; no trading-policy parameter changes.
     operations.update(run_id=run_id, archive_prefix='archive/' + run_id, retention_days=82,
                       backup_interval_hours=24, max_attempts=3, retry_seconds=60,
@@ -329,7 +337,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   'initial-state.json': state_raw, 'input-capture.json': capture_raw})
     if routing is not None:
         files['model-routing.json'] = model_routing_raw
-    env = 'LARP_ARTIFACT_ROOT=/var/lib/larp-evidence\nLARP_EVIDENCE_CONFIG_MODE=shadow\n'
+    env = 'LARP_ARTIFACT_ROOT=/var/lib/larp-evidence\nLARP_EVIDENCE_CONFIG_MODE=' + ('live' if signed else 'shadow') + '\n'
     if sec_contact:
         from larp.intelligence.config import sec_user_agent
         sec_user_agent({'LARP_SEC_USER_AGENT': sec_contact})
@@ -344,9 +352,10 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     from larp.sources.register import load_edgar_terms
     if not load_edgar_terms().get('terms_evidence_sha256'):
         terms_missing.append('sec-edgar')
-    load_config('shadow')
+    if not signed:
+        load_config('shadow')
     report = dict(schema='GateAPreparation.v1', build_id=build_id, run_id=run_id, signing_enabled=False,
-                  runtime_mode='dev', execution='shadow', prepared=True, gate_a_passed=False,
+                  runtime_mode=runtime_mode, execution=execution, prepared=True, gate_a_passed=False,
                   # No BNB does not stop a shadow run (no gas), but Gate B (DR-06) refuses it (GA-P3, Q-03).
                   missing_inputs=([] if sec_contact else ['SEC_CONTACT']) + ['TERMS_CAPTURE:' + s for s in terms_missing]
                   + ([] if state['bnb_units'] else ['FIRST_BNB (Q-03)'])
@@ -361,5 +370,9 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if routing is not None:
         report['model_routing'] = model_routing_report(routing, model_routing_sha256)
         report['notes'].append('OpenAI runtime secret is optional; absent or exhausted OpenAI uses external review')
+    if signed:
+        report['model_adoption_ref'] = adoption_ref
+        report['missing_inputs'].append('LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE')
+        report['notes'].append('Signed scope prepared only; no activation or signing authority granted')
     files['preparation-report.json'] = encoded(report) + b'\n'
     return files
