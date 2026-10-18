@@ -1,10 +1,21 @@
 # Experimental AIand model routing (IDEA-057)
 
-This is an opt-in **shadow-only** implementation of [IDEA-056](../ledger/IDEA-056.md). It has no live/scored activation approval. The default runtime remains deterministic. Kimi K3 and GLM-5.3 are funded through AIand; do not point these routes at the original labs or AIand's `auto` selector.
+This is an opt-in implementation of [IDEA-056](../ledger/IDEA-056.md): unsigned shadow by default, with explicitly reviewed signed/service capability (SLM-01). Code capability does not grant live/scored activation approval. The default runtime remains deterministic. Kimi K3 and GLM-5.3 are funded through AIand; do not point these routes at the original labs or AIand's `auto` selector.
 
 ## Endpoint and identities
 
 The example uses `zai-org/glm-5.3` at low effort, then optional direct OpenAI `gpt-6.1-sol` at medium for review. If OpenAI is absent, limited or unavailable, the difficult route is `moonshotai/kimi-k3` high followed by GLM-5.3 high. All external calls use `https://api.aiand.com/v1/chat/completions`.
+
+This implements the requested ChatGPT/Chinese-model split through API calls:
+
+| Work | Model |
+|---|---|
+| Routine extraction and straightforward evidence questions | GLM-5.3, low effort, through AIand |
+| Main/difficult judgments: material events, conflicting or incomplete evidence, failed verification, and sampled clean-case audits | OpenAI `gpt-6.1-sol`, medium effort, through the direct OpenAI API |
+| Difficult review when OpenAI is absent, unavailable or over its shared operating limit | Kimi K3 high, then GLM-5.3 high, through AIand |
+
+The stronger reviewer receives original evidence and uses the same verifier.
+Unresolved disagreement abstains. Arithmetic, sizing and execution remain code.
 
 AIand's [catalog](https://docs.aiand.com/models/catalog/) lists models per organization. The public catalog was checked 2026-10-15; authenticated account entitlement and inference are not verified. The example embeds selected public capability metadata. Review/freeze that metadata and the exact settings before an authorized experiment. Body/header model mismatch or an applied effort different from the requested one is an error, not an accepted substitution. See [response headers](https://docs.aiand.com/reference/response-headers/).
 
@@ -63,6 +74,45 @@ If a required reviewer fails, or accepted findings disagree, the result abstains
 
 The primary capability this PR validates is synthetic component behavior. Provider access, real extraction quality, omission rates, latency, hosted permissions, rights/audit retention terms and production service declaration still need independent evidence before adoption. See [IDEA-057 AR1–AR8](../ledger/IDEA-057.md).
 
+## Prepare the routed configuration without manual runtime edits (SG-8)
+
+The [Gate A preparation command](GATE_A.md#assemble-inputs-before-spending) now
+accepts `--model-routing` together with `--model-routing-sha256`. Review the public
+example's exact model IDs, efforts, catalog snapshot, audit seed and account before
+using it. Set `LARP_MODEL_ROUTING_SHA256` to that reviewed file's SHA256 in the local
+terminal. Other variables and inputs below have the same meanings as in Gate A:
+
+```sh
+python tools/deploy/prepare_shadow.py prepare \
+  --terraform-output deploy/activation/tf-output.json \
+  --profile deploy/activation/profile/rehearsal-live.json \
+  --capture "$LARP_CAPTURE_ROOT/gate-a-inputs.json" \
+  --run-id larp-dev-model-shadow-20261017 --build-id "$LARP_BUILD_ID" \
+  --rds-ca-sha256 "$LARP_RDS_CA_SHA256" \
+  --sec-contact "$LARP_SEC_USER_AGENT" \
+  --balance-rpc-config deploy/activation/balance-rpc/selected-providers.json \
+  --model-routing config/intelligence/aiand-routing.example.json \
+  --model-routing-sha256 "$LARP_MODEL_ROUTING_SHA256" \
+  --out deploy/activation/gate-a-model-prepared
+```
+
+Use a fresh capture and new output directory. The command copies exact reviewed
+bytes to `model-routing.json`, pins them in `runtime.json` and the preparation
+report, selects `aiand_routed`, and keeps dev-shadow settings. A missing or wrong
+hash, unsupported model/effort or invalid catalog refuses before any package is
+written. Omitting both flags retains deterministic preparation.
+
+The report's `model_routing.checks` remain `NOT_RUN`: preparation cannot prove
+credentials, provider identity, budget initialization or trial evaluation.
+`gate_a_check` verifies the routed package and pins offline; `local_ready` does
+not establish those host/trial requirements. It never opens a budget ledger or
+constructs a provider. Install `model-routing.json` root-owned `0644` at
+`/etc/larp/model-routing.json` with the other prepared files, before binding the
+release manifest. Continue the host steps below for actual credentials, prior
+spend, ledger initialization, provider checks and trial evidence. When using
+this preparation path, host steps 4–5 are already assembled: install and verify
+those exact files rather than editing the prepared runtime afterward.
+
 ## Host steps for the Gate A shadow trial (2026-10-16)
 
 Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill criteria: [IDEA-057](../ledger/IDEA-057.md) "Shadow trial on the Gate A deploy". Yao Zhu runs these steps on the `primary` host and in Yao Zhu's own terminal; nobody pastes a key into a chat, commit or command line.
@@ -107,3 +157,34 @@ Decision: IDEA-056 MR-06 (2026-10-16). Pre-registered measures, bars and kill cr
      ```
      Copy the backup off the host to private storage. Never restore a backup over a ledger that has newer charges: the runtime would re-admit spend already used. On a host migration, stop `larp-runtime` first, then carry the live file.
    - Check the kill criteria K1–K4 in IDEA-057. Stopping OpenAI use means re-running step 1 without `LARP_MODEL_API_KEY`, then restarting `larp-runtime`. Reverting means setting `"assessor": "deterministic"`, re-pinning the config and re-binding `release.json` (a version event).
+
+
+## Signed rehearsal and live preparation — SLM-01 (#162)
+
+The signed path is opt-in. `aiand_routed` with `execution: service` requires a nonblank `driver.model_adoption_ref`, hash-pinned routing, a validated LIVE profile matching REHEARSAL/dev or FINAL/live, live intelligence settings and all existing release/balance/signer/registration gates. The reference names a real reviewed decision; the code does not make that decision. Network scope, source/model rights, the trial and host acceptance remain the owners' tasks under #97.
+
+`tools/deploy/prepare_shadow.py prepare` accepts these additional options, on top of its existing actual Terraform/profile/fresh-capture/CI/CA/RPC/contact inputs:
+
+```text
+--execution service
+--runtime-mode dev
+--model-routing /absolute/path/to/reviewed-routing.json
+--model-routing-sha256 <actual reviewed SHA256>
+--model-adoption-ref <actual recorded rehearsal model decision>
+```
+
+Angle-bracket text is a required input, not a value to copy. For the final wallet use `--runtime-mode live` and the separately reviewed FINAL profile/fresh final-wallet capture. No old-wallet balance or existing stock position is initialized without accounting history. Omit the new flags to keep unsigned deterministic dev-shadow preparation. Signed preparation sets live evidence settings; it does not silently reuse shadow evidence values. The report still says `signing_enabled: false`, preserves NOT_RUN host checks and names signed/live intelligence and Gate B acceptance as outstanding. It does not create signer/execution configs, initialize a budget, call providers, start services or activate a run. Local package qualification checks `SIGNED_IDENTITIES` and live evidence prerequisites; the default path retains `UNSIGNED_IDENTITIES`.
+
+### Runtime and audit behavior
+
+Signed model work runs in one daemon worker, away from the main runtime thread. A hung provider retains that one slot: no concurrent replacement calls or unbounded queue are launched. The main thread keeps settlement, supervision, mandatory risk checks and execution handoff running, subject to their existing data/health/authority checks. Completed results return to the main thread with the original request and pass the unchanged result identity/expiry checks and evidence acceptance gate before affecting policy. A failed, missing, duplicate or invalid assessment cannot advance the S1 limiter's healthy-session expiry clock. Existing accepted evidence remains usable by the deterministic policy and risk planner.
+
+PR164-R1: an inner assessor deadline does not release the deferred slot while its provider worker is still alive. Only the background thread waits for that worker; synchronous callers retain their hard deadline. Late replies and returned reasoning are retained as audit-only I/O in an UNAVAILABLE result before RESULT/ACK, so no late writer can append after acknowledgement or revive a completed journal on restart.
+
+The safety cycle runs at the runtime service tick, even while a model is pending or no filing is due. These are actual planning rounds and are logged, including HOLDs. Include their log/DB volume in the hosted rehearsal capacity check (#60); no real capacity/load qualification is claimed by the synthetic tests.
+
+Append-only, hash-chained private model journals live under `<market_artifact_root>/model/assessments/<run-build-profile hash>/`. Each request is recorded before dispatch, each model reply before verification, each completed routed stage with its full model/tool records, and the final result before consumption. An ACK follows the committed round, not the other way round. The worker has read-only evidence access and the existing private model artifacts and shared budget ledger; it never writes trading state or signs.
+
+A restart retains the original request and completed I/O. Complete, unconsumed results are rechecked at the new decision time; incomplete chains are logged as interrupted with any completed calls/stages, granting no new assessment authority. Expired/rejected results retain their original audit-only I/O and provider summaries in the round log. Tampered or incomplete journal records refuse startup/processing rather than being silently ignored. Never delete/reinitialize the shared OpenAI budget to recover a model worker; its unknown-spend reservations remain intact.
+
+This does **not** implement B4's exposure-evidence producer or the optional MODEL-mode exposure call. The limiter can only use those inputs once their separate reviewed wiring exists; this change cannot be presented as a complete exposure-limiter deployment. Signed/live model adoption still needs the recorded team decision, reviewed endpoint scope/terms, frozen live settings/prompts, hosted budget/provider checks and a signed rehearsal with complete logs.

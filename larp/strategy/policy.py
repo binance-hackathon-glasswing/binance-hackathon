@@ -70,8 +70,8 @@ def decide(snapshot, state):
                                        max_age_seconds=p["feature_age_seconds"])
         # An absent evidence input stays None: in DETERMINISTIC mode that session is not healthy (IDEA-076 L09).
         limiter, limiter_record = s1_plan.limiter_step(before.get("limiter"), session=session, cfg=cfg,
-                                                       evidence=c.get("exposure_evidence"),
-                                                       assessment=c.get("exposure_assessment"))
+                                                       evidence=c.get("exposure_evidence") if c.get("assessment_available") is not False else None,
+                                                       assessment=c.get("exposure_assessment") if c.get("assessment_available") is not False else None)
         level = s1_plan.level_fraction(cfg, trend["state"], limiter["level"])
         applied = before.get("applied_target")
         # A level change ends per name (IDEA-076 R1): only the names still listed are moved to the new target, so

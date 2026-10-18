@@ -1,4 +1,4 @@
-"""Read-only, local qualification of an IDEA-058 prepared shadow package.
+"""Read-only, local qualification of an IDEA-058 explicitly scoped prepared package.
 
 Exit 0 means the local files pass; it never means Gate A passed. No database,
 AWS client, network transport, service, activation or uploader is constructed.
@@ -16,7 +16,7 @@ from larp.runtime import gate_a
 REQUIRED = frozenset(('runtime.json', 'uploader.json', 'operations.json', 'strategy-profile.json',
                       'session-calendar.json', 'initial-state.json', 'input-capture.json',
                       'preparation-report.json'))
-OPTIONAL = frozenset(('evidence.env',))
+OPTIONAL = frozenset(('evidence.env', 'model-routing.json'))
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
 
@@ -54,12 +54,27 @@ def check_scope(values, report):
     runtime, uploader, operations, state = (values[n] for n in
                                             ('runtime.json', 'uploader.json', 'operations.json', 'initial-state.json'))
     driver = runtime['driver']
-    if (runtime.get('mode') != 'dev' or uploader.get('mode') != 'dev' or state.get('mode') != 'dev'
-            or driver.get('execution') != 'shadow' or driver.get('assessor') != 'deterministic'
-            or driver.get('intelligence_mode') != 'shadow' or 'signing' in driver
+    signed = report.get('execution') == 'service'
+    mode = report.get('runtime_mode')
+    if (mode not in ('dev', 'live') or (not signed and mode != 'dev')
+            or any(v.get('mode') != mode for v in (runtime, uploader, state))
+            or driver.get('execution') != ('service' if signed else 'shadow')
+            or driver.get('assessor') not in (('aiand_routed',) if signed else ('deterministic', 'aiand_routed'))
+            or driver.get('intelligence_mode') != ('live' if signed else 'shadow') or 'signing' in driver
             or driver.get('cadence_ms') != gate_a.CADENCE_MS or driver.get('day_roll_window_ms') != gate_a.DAY_ROLL_MS
-            or report.get('execution') != 'shadow' or report.get('runtime_mode') != 'dev'):
-        raise ContractError('Unsigned preparation scope required')
+            or report.get('execution') not in ('shadow', 'service')):
+        raise ContractError('Preparation scope differs')
+    ref = driver.get('model_adoption_ref')
+    if signed and (type(ref) is not str or not ref.strip() or report.get('model_adoption_ref') != ref):
+        raise ContractError('Signed scope requires the reviewed adoption reference')
+    if not signed and ('model_adoption_ref' in driver or 'model_adoption_ref' in report):
+        raise ContractError('Unexpected signed adoption in shadow scope')
+    routed = driver['assessor'] == 'aiand_routed'
+    if routed != ('model-routing.json' in values) or routed != ('model_routing' in report):
+        raise ContractError('Model routing file and preparation scope differ')
+    if routed and report['model_routing'] != gate_a.model_routing_report(
+            values['model-routing.json'], driver.get('model_routing_sha256')):
+        raise ContractError('Model preparation report differs')
     run_id, build_id = report['run_id'], report['build_id']
     if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id)
             or not re.fullmatch(r'[0-9a-f]{40}', build_id)
@@ -80,13 +95,21 @@ def check_scope(values, report):
 def check_inputs(files, values):
     runtime, profile, capture = (values[n] for n in ('runtime.json', 'strategy-profile.json', 'input-capture.json'))
     driver = runtime['driver']
+    model_keys = ('model_routing_file', 'model_routing_sha256', 'model_budget_root')
+    if driver.get('assessor') == 'aiand_routed':
+        gate_a.model_routing(files['model-routing.json'], driver.get('model_routing_sha256'))
+        if (driver.get('model_routing_file') != gate_a.MODEL_ROUTING_FILE
+                or driver.get('model_budget_root') != gate_a.MODEL_BUDGET_ROOT):
+            raise ContractError('Prepared model paths differ from the shared host paths')
+    elif 'model-routing.json' in files or any(k in driver for k in model_keys):
+        raise ContractError('Unexpected model configuration in deterministic preparation')
     pins = ((runtime, 'initial_state_sha256', 'initial_state_file', 'initial-state.json'),
             (driver, 'strategy_profile_sha256', 'strategy_profile_file', 'strategy-profile.json'),
             (driver, 'session_calendar_sha256', 'session_calendar_file', 'session-calendar.json'))
     for config, pin, path, name in pins:
         if config.get(pin) != gate_a.digest(files[name]) or Path(config[path]).name != name:
             raise ContractError('Runtime input pin differs')
-    if profile.get('mode') != 'LIVE' or profile.get('environment') != 'REHEARSAL':
+    if profile.get('mode') != 'LIVE' or profile.get('environment') != ('FINAL' if runtime['mode'] == 'live' else 'REHEARSAL'):
         raise ContractError('Reviewed LIVE rehearsal profile required')
     gate_a.validate_live(profile)
     if capture.get('schema') != 'GateAInputs.v1' or driver['issuers'] != gate_a.issuer_map(capture):
@@ -98,7 +121,7 @@ def check_inputs(files, values):
     providers = balance_providers(driver)
     if not providers or capture['chain'].get('source_id') != providers[0]['source_id']:
         raise ContractError('Chain capture and configured RPC differ')
-    if values['initial-state.json'] != gate_a.initial_state(capture, profile, runtime['run_id']):
+    if values['initial-state.json'] != gate_a.initial_state(capture, profile, runtime['run_id'], mode=runtime['mode']):
         raise ContractError('Starting state differs from captured balances')
     calendar = gate_a.SessionCalendar(values['session-calendar.json'])
     for at in (capture['observed_at'], profile['signing_end']):
@@ -118,7 +141,7 @@ def check_configs(values, ca_file):
         # Validate the same bytes before transfer; the configured /etc path exists only on the host.
         config['database_ca_file'] = str(Path(ca_file).resolve())
         validate(config)
-    balance_settings(values['runtime.json']['driver'], 'dev')
+    balance_settings(values['runtime.json']['driver'], values['runtime.json']['mode'])
 
 
 def check_release(manifest_path, release_root, report):
@@ -138,13 +161,15 @@ def source_reasons(files, artifact_root, release_root):
     from larp.intelligence.config import load_config
     from larp.sources.register import live_preflight, load_edgar_terms, load_register
     lines = files['evidence.env'].decode('utf-8').splitlines()
+    signed = json.loads(files['runtime.json'])['driver']['execution'] == 'service'
+    intelligence_mode = 'live' if signed else 'shadow'
     if (len(lines) != 3 or lines[:2] != ['LARP_ARTIFACT_ROOT=/var/lib/larp-evidence',
-                                       'LARP_EVIDENCE_CONFIG_MODE=shadow']
+                                       'LARP_EVIDENCE_CONFIG_MODE=' + intelligence_mode]
             or not lines[2].startswith('LARP_SEC_USER_AGENT=')):
         raise ContractError('Expected generated public evidence environment')
     contact = json.loads(lines[2].partition('=')[2])
     root = Path(release_root)
-    load_config('shadow', root / 'config/intelligence')
+    load_config(intelligence_mode, root / 'config/intelligence')
     register = root / 'config/sources/sources.v1.json'
     # Return only counts to the caller. Source/exception text is never reflected in stdout.
     return live_preflight(load_register(register)[0],
@@ -179,7 +204,8 @@ def qualify(directory, *, rds_ca=None, ci_manifest=None, release_root=None, arti
     if not run('PACKAGE_JSON', lambda: values.update({n: json.loads(raw) for n, raw in files.items()
                                                      if n.endswith('.json')})):
         return result
-    run('UNSIGNED_IDENTITIES', lambda: check_scope(values, report))
+    run('SIGNED_IDENTITIES' if report.get('execution') == 'service' else 'UNSIGNED_IDENTITIES',
+        lambda: check_scope(values, report))
     run('PINNED_INPUTS', lambda: check_inputs(files, values))
     run('SERVICE_CONFIGS', lambda: check_configs(values, rds_ca), missing=rds_ca is None)
     run('CI_RELEASE_BYTES', lambda: check_release(ci_manifest, release_root, report),
