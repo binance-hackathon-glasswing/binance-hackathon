@@ -15,6 +15,15 @@ Procedure: [GATE_A.md](build/GATE_A.md). IDEA-058 (PR #87, based on `codex/syste
 
 Gate B stays separate: decoder, capability proof, signer provisioning/version binding, first BNB (Q-03; Gate A reports `FIRST_BNB` when the wallet has none), real trades and hosted recovery/restore/replay drills remain with Isaac/Keegan/Keith.
 
+PC-SIGNER-READY01 (Oct18): separate PR176 implements the local startup
+prerequisite check (139 tests/219 subtests PASS,0 skips); review/merge and exact
+signed release remain Keegan's work. Source PR139 RE-03's alternate public API
+reports chain56 unsupported; real source/independent review/router check, #27,
+measured #44 approval and Yao's host/session gates remain open. Detailed owner
+order and evidence: PRE_TRADING_CHECKLIST.md / IDEA-066 PC-SIGNER-READY01.
+No whole Gate B item is completed by the offline startup fix.
+
+
 Section C network review (Isaac checklist task 2, IDEA-062 NC-01 / #136): the destination-scope review and DNS false-PASS correction are verified offline; Isaac explicitly approved the reviewed application destination scope on 2026-10-17 (NC-01 D1). Yao Zhu retains real-host route/SG, IAM/TLS, bucket/archive and sandbox evidence under #32/GAP-70. See [NETWORK_SECTION_C_REVIEW.md](build/NETWORK_SECTION_C_REVIEW.md). No whole readiness item closes from this local review. SP-NET (2026-10-18): signed/live destination review complete and exact proposal retained; automatic approval review requires explicit user approval to broaden the policy scope. Current shadow-only approval remains; provider-policy compatibility, declarations/adoption and hosted evidence also remain open.
 
 ## Commitments and scope

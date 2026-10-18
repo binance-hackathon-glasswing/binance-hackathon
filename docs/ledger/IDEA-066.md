@@ -1290,3 +1290,44 @@ Private source/label reports stay outside Git; local ignored sectionC updated
 to the new capped86b1476 release and the tracked runbook. Historical v2/$10
 tail and old d8aa7d5 snapshot cannot govern the new trial. No host mutation,
 paid inference or deployment happened. PR133 remains OPEN.
+
+
+## PC-SIGNER-READY01 — Isaac's signer implementation follow-through (2026-10-18)
+
+User asked to implement what is needed to get the signer ready. Preserve earlier
+separate-PR instruction, no AWS changes, and wallet-key placement only in Yao's
+approved signer session. Current PR/issue/source inspection finds no new #27
+owner decision or measured #44/source input; no missing approval is inferred.
+
+Delivered separate PR176 (IDEA-070 SR-01): refuse pending-decision caps in both
+dev/live and load pinned router evidence/validate its spender before check/run
+reach DB/key access. Successful check explicitly reports local scope/hash,
+signing_enabled=false and gate_b_accepted=false. RED21 failures (including
+subtests), GREEN139 tests/219 subtests,0 skips,24.35s at pushed f9d0917 with
+macOS/Python3.12.14/disposable PostgreSQL14.24/synthetic source/releases/keys.
+Existing malicious-intent, key/wallet, registration/quarantine and immutable
+signing-authority checks pass. Local database container stopped/disposed.
+PR176 is open for review, not merged or deployed. Its org CI run39133862711
+ran zero steps because annotation confirms failed payments/spending limit/#98;
+no Linux/systemd/signed-host bundle acceptance is claimed.
+
+Updated existing source-only draft PR139 RE-03: two exact public chain56
+Routescan source GETs at13:59:09–10UTC returned HTTP200/status0 `chain not
+supported`. Browser BscScan access still fails; same-address other-chain/cached
+results do not prove BSC source/deployment. Public body/length/JSON/report hashes
+verify (reportf7b24db6572f2c43e314dcc4daa99d83af588a5cb0a6cc93fa14424193f39047).
+Complete source/imports/ABI/compiler/settings/deployed-code binding are absent;
+Keegan review and actual router replay remain NOT_RUN. Retained export/vendor
+request is ready for the team's approved contact; no external message sent.
+
+No cap value, numeric policy, new lifetime, router guarantee or activation is
+adopted. Needed next: Isaac source input; Keegan independent source review;
+Isaac route checker; Keegan #27 decision/code with real timing; Keith measured
+profile/gas/holding inputs then Isaac exact #44 approval; qualified native/fee
+and funding evidence; Keegan exact signed release; Yao provisioning/config/
+isolation/session/drills, Isaac approved-session key placement and real-round
+verification. PR171/172/173 retain their already-recorded open state. All owner
+rows remain open where incomplete; no complete Gate B line is removed. No AWS,
+real wallet/key, signing/broadcast, account signup/payment/model or official-log
+operation took place. This record and PR133 description link the separate fix;
+PR133 remains open.
