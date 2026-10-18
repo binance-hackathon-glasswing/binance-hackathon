@@ -688,3 +688,42 @@ unknown host or peer-review outcomes complete. Validation: exact source/head/run
 identities compared, all checklist additions have one owner, `git diff --check`.
 No new tests required for documentation-only status changes. No GitHub message
 to Keegan, mirror push, release creation, AWS operation or spend performed.
+
+
+## PC-REL04 — verify Keith prerequisite delivery (2026-10-18)
+
+Yao asks whether Keith's work is done so Keegan can start his release prompt.
+PR168 is MERGED at622c522 into `claude/pre-trading-checklist-20261017`, not
+`codex/system-testing-20261012` (still4312cd1 at inspection). Its review at
+fa43160 fixes v3 route coverage and immutable representative-job scoring.
+Source/prompt review, v3 budget/stop proposal, blind rubric, dated provider-term
+register, interim quote handoff and #27/profile/window/limiter proposals are
+delivered. #27 and #118 comments link the recommendations/artifact handoff.
+
+Independent read-only checks: all29 quote files match declared SHA256/lengths;
+1,021 JSONL records and26 selected raw artifacts present; all9 reviewed source
+hashes match current integration4312cd1; all3 composed prompt hashes/lengths
+match. Provider manifest contains19 capture rows; private raw term bytes and
+current collector health were not independently checked here. Existing stored
+keys were not read. No application test rerun, model/API call, AWS operation,
+release build or deployment.
+
+Completion means pre-release proposals/handoff, not all future Keith tasks:
+measured affordability remains NOT_MEASURED pending Yao's usage/account export;
+actual draw/labels NOT_RUN pending immutable trial population and independent
+annotator; default final quote summary still refuses9<10 US-session samples;
+final capture/profile/caps, later evaluations/freeze/sign-off and EXP-007 after
+Keegan's O2 remain open. Missing original older-interim capture/full summary
+hashes still need Yao's export. Terms/account/signed-use applicability remains
+Keegan review plus Yao account checks.
+
+Keegan can start now using MODEL_PREREQUISITES_20261018.md and linked documents
+on PR133's branch: confirm KMP-BUD01/rubric/five-route mapping, resolve KMP-P2's
+post-admission end-time dispatch finding if enforcing a strict cutoff, agree
+trial sublimit enforcement, update services/DEV-19, freeze reviewed release
+source/config/prompt identities and arrange mirror build/handoff with Yao.
+KMP-P2 is explicitly retained by PR168 and current source has no pacing-boundary
+recheck between reservation and provider step; this review did not execute or
+fix that code. No inference that #168 merged planning docs into integration.
+PR133 remains OPEN. Corrected the stale status-board statement that Isaac was
+still waiting for Keith's already supplied policy proposals.

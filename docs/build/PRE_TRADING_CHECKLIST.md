@@ -60,7 +60,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Execution gas limits within the 0.0002 BNB per-transaction fee cap | Isaac | **Not set.** `max_gas` and `max_gas_price` are null in `config/hosts/execution.example.json`. #155's `larp/execution_live/caps_review.py` checks `max_gas × max_gas_price ≤ 200 000 000 000 000` wei once values exist; choose them from the capture's measured gas |
 | Real-provider `native_trace` qualification (#30) | Isaac | **Inconclusive.** Both public providers return "missing trie node" for standalone `debug_traceTransaction` (IDEA-039 FG); a trace-capable (archive) provider is needed. #30 open |
 | Attributable fee-netting evidence (#119) | Isaac | **Unverified.** #157 merged (`ad9a8b9`): `tradeFee` is labelled as an estimated network fee, per Binance's API docs rechecked Oct 18 (IDEA-063 FN-RV157). Route-fee netting itself is still unproved; #119 and #120 open |
-| Decide the first-trade window and POLICY-HOLD | Isaac | **Blocked** on Keith's proposals |
+| Decide the first-trade window and POLICY-HOLD | Isaac | **Ready for decision:** Keith's KMP-SIGN01 proposals and #27 comment are supplied in merged PR168; actual profile/window/O6/POLICY-HOLD decisions remain Isaac's |
 | Review Yao Zhu's migration, database-role and TLS evidence | Keegan | **Not recorded.** Evidence to review: IDEA-066 PC-AWS06 (migrations 001–013, roles, four `primary` roles pass IAM login and TLS) |
 | Settle O2 (what ships if EXP-007 is inconclusive) | Keegan | **Not recorded.** IDEA-075 §16 recommends shipping the trend guard as declared. Blocks EXP-007 |
 | Update the model services list and DEV-19 | Keegan | **Not done.** `config/release/services.v1.json` still says "pending decision B8: Anthropic Claude or OpenAI ChatGPT"; DEV-19 in `deviations.v1.json` is still OPEN |
@@ -182,6 +182,10 @@ These were missing from every list; each one is needed for the LLM to be in the 
 - [ ] **Keith:** after O2, run EXP-007 on token session bars up to the Oct 16 close (IDEA-075 B1) and record the result by Oct 19.
 
 ## Keith prerequisite review — Oct18 (KMP-02)
+
+Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its documents are not yet on integration. Keith's pre-release proposals/handoffs are supplied. Keegan can start confirmation/release work now, retaining KMP-P2 and actual measurement/label/profile gates.
+
+- [ ] **Keegan:** review/confirm KMP-BUD01's v3 window, allocation, stop/enforcement and forecast protocol, KMP-LABEL01 rubric and five-route mapping; resolve documented KMP-P2 (post-admission dispatch at/after end) with reviewed regression evidence before freezing a v3 release under a strict dispatch cutoff. Read PR168's documents from this branch; keep PR133 open.
 
 [Model prerequisites](MODEL_PREREQUISITES_20261018.md) and its linked budget,
 blind-label, provider-rights and signing/profile records carry the proposed v3
