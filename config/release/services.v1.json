@@ -1,42 +1,80 @@
 {
   "schema": "ServicesList.v1",
-  "updated": "2026-10-16",
+  "updated": "2026-10-18",
   "basis": "F-61: third-party services are declared in the version manifest. Draft (IDEA-042 item 8); final at the Oct 26 freeze.",
   "services": [
-    {"service_id": "binance-web3-open-api", "provider": "Binance (Web3 Open API, https://web3.binance.com/build)",
-     "purpose": "market data, executable quotes, approve/swap transaction building, token balances and history",
-     "scope": "the five eligible bStocks and USDT/BNB on BNB Smart Chain (F-91, F-93)",
-     "terms_ref": "participant kit (F-90..F-106); docs/skill/reference/participant-kit.md", "status": "ACTIVE"},
-    {"service_id": "ai-seeds-event-log", "provider": "AI Seeds event log (https://api.commonservice.io/ai-seeds-event-log)",
-     "purpose": "official per-round decision logs (input, cot, output, orders)",
-     "scope": "one log per decision round, signed with the wallet's AI_SEEDS_SECRET (F-99..F-101)",
-     "terms_ref": "participant kit PROTOCOL.md; F-99..F-103", "status": "ACTIVE"},
-    {"service_id": "sec-edgar", "provider": "U.S. Securities and Exchange Commission (data.sec.gov, www.sec.gov/Archives)",
-     "purpose": "filings for the evidence assessor (8-K and periodic reports of the eligible issuers)",
-     "scope": "submissions JSON and filing archives, contact User-Agent (LARP_SEC_USER_AGENT)",
-     "terms_ref": "config/sources/sources.v1.json; GAP-23", "status": "ACTIVE"},
-    {"service_id": "official-free-sources", "provider": "SEC press, Federal Register (two feeds), DOJ press, European Commission press",
-     "purpose": "official event flags for the evidence state (SHADOW_ONLY records)",
-     "scope": "the sources enabled in config/sources/sources.v1.json; all others disabled",
-     "terms_ref": "config/sources/sources.v1.json (rights and terms per source); IDEA-031; GAP-23/24", "status": "ACTIVE"},
-    {"service_id": "assessor-model", "provider": "pending decision B8: Anthropic Claude or OpenAI ChatGPT",
-     "purpose": "evidence assessment only, no trade authority (D-11); deterministic verifier on every claim",
-     "scope": "request/response records and reasoning summaries logged in full (F-102, Q-16)",
-     "terms_ref": "IDEA-035 B8 and §8.2; GAP-57",
-     "status": "PENDING_DECISION",
-     "candidates": ["anthropic-claude", "openai-chatgpt"],
-     "fallback": "deterministic assessor (no model call), declared as v1.0 if no model is chosen by Oct 22"},
-    {"service_id": "bsc-rpc", "provider": "Development balance reads: BNB Chain public primary, NodeReal public backup (Isaac, 2026-10-17; IDEA-055 RPC-Q01 D1); execution provider qualification remains separate",
-     "purpose": "finalized-block wallet balance reads for the chain-balance check (IDEA-055) and the execution service's chain reads and receipts",
-     "scope": "read-only allowlisted methods (larp/execution_live/chain.py); eth_call only for decimals() and balanceOf(wallet) on the six pinned contracts",
-     "terms_ref": "#92; docs/build/RPC_QUALIFICATION.md; IDEA-055 RPC-Q01 D1; docs/build/architecture-deployment.md Approved network destinations (IDEA-062)",
-     "status": "PROVISIONING",
-     "selection_scope": "DEVELOPMENT_BALANCE_READS_ONLY",
-     "development_balance_source_ids": ["BSC_BNBCHAIN_PUBLIC", "BSC_NODEREAL_PUBLIC"],
-     "fallback": "with no provider configured, a dev or live start is refused (exit 4)"},
-    {"service_id": "aws-hosting", "provider": "Amazon Web Services (account and region pending, B9)",
-     "purpose": "runtime hosts, RDS PostgreSQL, S3 Object Lock archive and hourly anchors, KMS, CloudWatch alarms",
-     "scope": "deploy/aws Terraform; retention at least to 2026-12-31 (IDEA-036)",
-     "terms_ref": "docs/build/architecture-deployment.md; IDEA-035 B9", "status": "PROVISIONING"}
+    {
+      "service_id": "binance-web3-open-api",
+      "provider": "Binance (Web3 Open API, https://web3.binance.com/build)",
+      "purpose": "market data, executable quotes, approve/swap transaction building, token balances and history",
+      "scope": "the five eligible bStocks and USDT/BNB on BNB Smart Chain (F-91, F-93)",
+      "terms_ref": "participant kit (F-90..F-106); docs/skill/reference/participant-kit.md",
+      "status": "ACTIVE"
+    },
+    {
+      "service_id": "ai-seeds-event-log",
+      "provider": "AI Seeds event log (https://api.commonservice.io/ai-seeds-event-log)",
+      "purpose": "official per-round decision logs (input, cot, output, orders)",
+      "scope": "one log per decision round, signed with the wallet's AI_SEEDS_SECRET (F-99..F-101)",
+      "terms_ref": "participant kit PROTOCOL.md; F-99..F-103",
+      "status": "ACTIVE"
+    },
+    {
+      "service_id": "sec-edgar",
+      "provider": "U.S. Securities and Exchange Commission (data.sec.gov, www.sec.gov/Archives)",
+      "purpose": "filings for the evidence assessor (8-K and periodic reports of the eligible issuers)",
+      "scope": "submissions JSON and filing archives, contact User-Agent (LARP_SEC_USER_AGENT)",
+      "terms_ref": "config/sources/sources.v1.json; GAP-23",
+      "status": "ACTIVE"
+    },
+    {
+      "service_id": "official-free-sources",
+      "provider": "SEC press, Federal Register (two feeds), DOJ press, European Commission press",
+      "purpose": "official event flags for the evidence state (SHADOW_ONLY records)",
+      "scope": "the sources enabled in config/sources/sources.v1.json; all others disabled",
+      "terms_ref": "config/sources/sources.v1.json (rights and terms per source); IDEA-031; GAP-23/24",
+      "status": "ACTIVE"
+    },
+    {
+      "service_id": "assessor-model",
+      "provider": "OpenAI Responses API (api.openai.com), gpt-6.1-sol / medium",
+      "purpose": "Primary evidence assessment in opt-in AIandRouting.v3; deterministic verification of every claim; no trade authority (D-11)",
+      "scope": "Unsigned v3 trial approved in PR168 / PC-REL05; complete model I/O and reasoning summaries retained. Host/provider qualification pending; signed/scored adoption remains separate.",
+      "terms_ref": "docs/build/MODEL_PROVIDER_RIGHTS_20261018.md; docs/build/V3_BUDGET_PROPOSAL_20261018.md; IDEA-057 V3-REL01",
+      "status": "PROVISIONING",
+      "fallback": "Independent AIand Kimi K3 high, then GLM-5.3 high; required review failures grant no authority and verified disagreement abstains. Deterministic shadow remains the default until explicit prepared routing.",
+      "selection_scope": "UNSIGNED_V3_TRIAL"
+    },
+    {
+      "service_id": "assessor-model-aiand",
+      "provider": "AIand inference API (api.aiand.com): moonshotai/kimi-k3 / high, then zai-org/glm-5.3 / high",
+      "purpose": "Independent evidence review and fallback for OpenAI-primary v3; reviewers receive original evidence",
+      "scope": "Opt-in unsigned v3 trial only; account funding/identity/network/rights checks pending. No low-effort routine call in v3; legacy v1/v2 configurations retain their own policies.",
+      "terms_ref": "docs/build/MODEL_PROVIDER_RIGHTS_20261018.md; IDEA-057; config/intelligence/aiand-routing.openai-preferred.example.json",
+      "status": "PROVISIONING",
+      "selection_scope": "UNSIGNED_V3_TRIAL"
+    },
+    {
+      "service_id": "bsc-rpc",
+      "provider": "Development balance reads: BNB Chain public primary, NodeReal public backup (Isaac, 2026-10-17; IDEA-055 RPC-Q01 D1); execution provider qualification remains separate",
+      "purpose": "finalized-block wallet balance reads for the chain-balance check (IDEA-055) and the execution service's chain reads and receipts",
+      "scope": "read-only allowlisted methods (larp/execution_live/chain.py); eth_call only for decimals() and balanceOf(wallet) on the six pinned contracts",
+      "terms_ref": "#92; docs/build/RPC_QUALIFICATION.md; IDEA-055 RPC-Q01 D1; docs/build/architecture-deployment.md Approved network destinations (IDEA-062)",
+      "status": "PROVISIONING",
+      "selection_scope": "DEVELOPMENT_BALANCE_READS_ONLY",
+      "development_balance_source_ids": [
+        "BSC_BNBCHAIN_PUBLIC",
+        "BSC_NODEREAL_PUBLIC"
+      ],
+      "fallback": "with no provider configured, a dev or live start is refused (exit 4)"
+    },
+    {
+      "service_id": "aws-hosting",
+      "provider": "Amazon Web Services (account and region pending, B9)",
+      "purpose": "runtime hosts, RDS PostgreSQL, S3 Object Lock archive and hourly anchors, KMS, CloudWatch alarms",
+      "scope": "deploy/aws Terraform; retention at least to 2026-12-31 (IDEA-036)",
+      "terms_ref": "docs/build/architecture-deployment.md; IDEA-035 B9",
+      "status": "PROVISIONING"
+    }
   ]
 }

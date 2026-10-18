@@ -1,5 +1,12 @@
 # Experimental AIand model routing (IDEA-057)
 
+For the next unsigned v3 run, PC-FIX01 adds opt-in
+`config/intelligence/aiand-routing.openai-trial.example.json` with ledger-enforced
+US$8 total/US$2.50 UTC-day limits and unsigned-only preparation/runtime guards.
+See [repair, verification and owner steps](DOJ_TRIAL_CAP_FIXES_20261018.md).
+A newly reviewed release is required; d8aa7d5 lacks these repairs. Existing
+examples/defaults stay separate; preserve all existing charges/latches.
+
 This is an opt-in implementation of [IDEA-056](../ledger/IDEA-056.md): unsigned shadow by default, with explicitly reviewed signed/service capability (SLM-01). Code capability does not grant live/scored activation approval. The default runtime remains deterministic. Kimi K3 and GLM-5.3 are funded through AIand; do not point these routes at the original labs or AIand's `auto` selector.
 
 ## Endpoint and identities

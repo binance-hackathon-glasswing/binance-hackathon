@@ -1,5 +1,9 @@
 # IDEA-066 — Gate A inventory and offline package qualification
 
+PC-FIX01 (2026-10-18, Yao): requested DOJ/source-report and atomic unsigned-trial
+cap corrections for Keegan review/new release. Prospective acceptance is in
+../build/DOJ_TRIAL_CAP_FIXES_20261018.md; no runtime/host adoption implied.
+
 - Date / owner: 2026-10-16 SGT / Isaac with Codex; runtime/deployment review: Keegan.
 - Baseline: `eda2ed2`, fetched from `codex/system-testing-20261012`; PR87 and the Gate A assembly are already merged.
 - Issues: [#127](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/127) tracks hosted qualification; [#128](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/128) covers the offline package check. Existing #32/#49/#92/#98/#118–120 keep their own acceptance criteria.
@@ -1101,6 +1105,58 @@ paid call is authorized/needed for packet preparation. Yao supplies independent
 readings; Keith reviews rubric/report; actual labels and scoring remain pending.
 
 
+## PC-FIX01 — DOJ repair, explicit forward coverage and trial caps, Oct18
+
+Yao requests fixes in a PR for Keegan review/new release. Acceptance was pushed
+atc6097e0 before tests. See ../build/DOJ_TRIAL_CAP_FIXES_20261018.md for criteria,
+actual public DOJ evidence, behavior, hashes, host steps and remaining owners.
+DOJ page97 is20,757,780 bytes because of one inline JPEG; bounded media removal
+preserves all20 ordered article IDs and produces91,830 bytes without changing
+page offsets or skipping records. Global permitted-payload limits stay unchanged;
+DOJ-only wire bound32 MB and excluded-media provenance are explicit.
+
+Durable head checkpoints/proofs and history retries distinguish current-listing
+coverage from archive backlog. Default historical semantics and old logs are
+unchanged. Explicit current scope requires new proof and embeds the unchanged
+historical report; it cannot relabel old24h errors or create observed hours.
+Trial config binds immutable8M total/2.5M UTC-day limits to the same50M allocation,
+reserving atomically and rechecking actual dispatch day. Unknowns/latches/charges
+persist, old binaries are fenced by stored pacing identity, and expiry/stops block
+both provider transports. Trial files cannot enter signed/live preparation or
+runtime. Missing/ambiguous existing dispatch attribution refuses migration rather
+than guessing or resetting. Later signed-ledger transition remains separate.
+
+Pushed final application/tests ae7ccaa:1630 passed/436 environment skips/2659
+subtests,39.32s on local macOS. Exact-source Linux/PG/mirror acceptance is Keegan's
+next release gate. No goldens, paid calls, AWS/host/wallet changes or release.
+Results/hashes in ../build/evidence/doj-trial-cap-fixes-20261018.json. Yao retains
+P0/funding/source disposition/setup/install/start/ACK; Keith real usage/labels;
+Keegan peer review/CI/new binary. PR133 stays open; main checkout untouched.
+
+
+### PR174-R1 source review criteria — Oct18 UTC
+
+Owning cross-cutting criteria are in IDEA057 PR174-R1, pushed before new code
+execution. Non-object current-head proof must fail coverage without crashing;
+keep original historical report/failure counts. Inspect DOJ wire normalization,
+item/page identity, checkpoint/restart and transport bounds with existing source
+regressions. Source review does not upgrade the failed Oct17–18 report or imply
+new observed coverage. New original release waits for exact-source Linux/all-job
+private CI; host installation/start and actual source/provider checks remain Yao.
+
+
+PC-GAP02-RV1 / PR174-R1: independent review of retained PC-GAP02 metadata
+(13348fb70d) accepts reported raw FAIL, no DOJ exemption and correctly withheld
+combined explanation. DOJ144 incomplete=48 OK/truncated+96 size errors;
+BIS96 transports=3 complete+93 historical-incomplete, eligible only for its own
+historical explanation. Owner's31-file/13-SSM/old-code reproduction is retained
+evidence, not another raw-byte reproduction here. New CURRENT_LISTING proof
+does not rewrite that failed window. Future actual source/restart/window checks
+remain Yao's. Malformed proof now forces current-report FAIL; focused source/
+trial/preparation/provider152 tests/169 subtests PASS at b141074. Full exact
+Linux/private CI/original release follows; no host or paid-provider action.
+
+
 ## PR174-REL01 — new original LLM bundle delivered
 
 PR174-R1 fixes and frozen source `86b14761324faeb8f57df5c0d86ff00320b4361c` passed
@@ -1419,3 +1475,46 @@ pipe for SecretString, other JSON fields preserved, detected concurrent version
 change refused and resulting AWSCURRENT verified. Yao runs only after secure key
 receipt with no concurrent secret updater; AWS put has no compare-and-swap.
 No inference/service activation. Helper remains ignored/private, no secret stored.
+
+
+
+PC-SIGNER-READY01 integration refresh: normal merge of integration1306bbb
+resolves documentation-only conflicts. Preserve parent label/harness/source
+handoffs and completed POLICY-HOLD decision; keep approved v3 protocol and the
+latest PR174 review/CI/original86b1476 release as completed. Narrow stale
+PC-SRC01/PC-CAP01 backlog wording to actual host/provider/retention qualification.
+No repeated approval/review request or new model/host action. The separate
+PR176 implementation remains unmerged; this parent carries its coordination.
+
+## PC-SIGNER-NEXT01 — exact owner requests for Isaac (2026-10-18)
+
+Isaac asks to finish whatever can be done on his side and identify what others
+must do. Refreshed remote PR/issue records: PR176 OPEN/no submitted reviews;
+#27 OPEN with Keith's KMP-SIGN01 proposal but no later decision; #44 OPEN with
+no final measured-input approval; PR139/171/172/173 still open. No new source,
+RPC account/config or funding hash has been supplied. Do not repeat unchanged
+tests or the already bounded failed public probes, invent another local code
+task, or claim a new readiness result.
+
+PRE_TRADING_CHECKLIST.md PC-SIGNER-NEXT01 now provides a concrete forwardable
+owner/deliverable/action table: Keegan reviews176/173/171 and implements adopted
+#27; Isaac requests the source packet via a confirmed team contact, then obtains
+Keegan review and runs route checks; Keith supplies final capture/profile/gas/
+fee measurements, Yao the fresh full holdings/run config, then Isaac decides
+#44; Isaac arranges a permitted trace-capable account with the team's account
+owner, runs the existing native qualifier after private config arrives, and Yao
+qualifies the host; Yao first reconciles funding prerequisites, Isaac performs
+any remaining approved-plan MetaMask step and supplies the public receipt hash,
+then Yao refreshes the opening capture. Finally Keegan delivers the signed
+release, Yao provisions/verifies the host/session, Isaac places the key only in
+that session and verifies real-round logs. No AWS action in this work.
+
+Funding guard checked against verbatim official/source_page.md wallet/capital
+restrictions, official/kit/bstocks-trading-guide.md gas/wallet text and the
+existing SKILL.md F120/G13/Q03 team-confirmed exception/funding handoff. The
+MetaMask exception is settled; no organiser re-question or new sizing decision.
+The source packet is prepared in source PR139 and has not been sent. No private
+config/key was searched for/read, account/signup/payment, provider selection,
+wallet transaction or teammate/vendor message occurred. No runtime or tests
+changed. Checklist/links/diff/owner/status checks validate this documentation
+follow-up; every partially blocked backlog item stays open. PR133 remains open.

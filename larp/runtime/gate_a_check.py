@@ -72,6 +72,8 @@ def check_scope(values, report):
     routed = driver['assessor'] == 'aiand_routed'
     if routed != ('model-routing.json' in values) or routed != ('model_routing' in report):
         raise ContractError('Model routing file and preparation scope differ')
+    if routed and values['model-routing.json'].get('openai_trial') is not None and (signed or mode != 'dev'):
+        raise ContractError('Unsigned trial routing requires dev/shadow scope')
     if routed and report['model_routing'] != gate_a.model_routing_report(
             values['model-routing.json'], driver.get('model_routing_sha256')):
         raise ContractError('Model preparation report differs')

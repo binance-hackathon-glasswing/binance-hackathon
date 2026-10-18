@@ -268,3 +268,18 @@ pass. User requests finishing PR165; normal merge can preserve all commits.
 Exact-release Linux/mirror qualification and real-cost parameter/profile freeze,
 B4/B5 integration, provider/source/#27/#44 and hosted/signed acceptance remain
 separate release gates; merge is not deployment authority.
+
+
+### V3-REL01 release inclusion review — 2026-10-18 UTC
+
+PR165 is already merged into integration at817eb71. Reviewed its production diff
+against the integration parent: durable session/attempt and closed quote-child
+slots, economic-bound signer checks, dispatch window and unsent revocation,
+continued reconciliation and replay. No remaining reproducible finding found.
+Retain it in the next unsigned v3 candidate; this does not activate S1 or adopt
+its proposed30-minute/15-minute/three-attempt parameters. Existing B4/B5/B7,
+EXP007, measured profile and signed-host acceptance remain open. Combined Linux/
+PostgreSQL14.24 verification at pushed61a123a:2029 passed,6 skipped,2981 subtests;
+includes the strategy/integration/execution/signer bounds cases. Actual mirror
+push/dispatch are blocked by repository access. See IDEA057 V3-REL01 and
+[release record](../build/LLM_V3_RELEASE_20261018.md); no CI binary accepted yet.
