@@ -145,3 +145,19 @@ report wording to match merged SLM-01 capability; retain rights/account/provider
 policy, funding, trial/adoption, signed profile/prompt/routing/budget pins and
 actual host/release checks. Push before executing tests. Existing route-plan and
 signed-model preparation regressions must pass; no real requests or credentials.
+
+### SP-NET D2 verification
+
+At pushedb2c3d06, existing route-plan/probe, routed package preparation and
+signed-model checks pass: **40 tests,48 subtests,0 skips**,7.86s, macOS/
+Python3.12.14/disposable PostgreSQL14 on loopback. External/model boundaries are
+synthetic; route probes use local sockets. The first sandboxed attempt had three
+loopback permission failures and five unconfigured-PostgreSQL skips; rerunning
+with authorized local access/database resolved all of them without code changes.
+Log /private/tmp/larp-network-scope-pr-tests-local.log SHA256
+cef09c9e79a99e5bac533e922eda3b4965434363e8677c05bc3697673352529f.
+
+No new tests mirror the wording. Existing constants/host set, AWS files, service
+configs and client allowlists are unchanged; git diff --check passes. This
+separate PR supplies the requested approval/documentation slice; no model use,
+provider-policy clearance, release/host acceptance or activation is inferred.
