@@ -201,3 +201,15 @@ class TrialRouting(unittest.TestCase):
         self.assertEqual(f.calls,[])
         self.assertEqual(value['status'],'UNAVAILABLE')
         self.assertEqual(value['routing']['budget']['trial']['admission_block'],'OPENAI_TRIAL_WINDOW_ENDED')
+
+    def test_unsigned_trial_preparation_pins_caps_and_refuses_signed_scope(self):
+        from larp.contracts import ContractError
+        from larp.runtime import gate_a
+        from tests.runtime.test_gate_a import assembled
+        raw=(Path(__file__).resolve().parents[2]/'config/intelligence/aiand-routing.openai-trial.example.json').read_bytes()
+        files=assembled(model_routing_raw=raw,model_routing_sha256=gate_a.digest(raw))
+        report=json.loads(files['preparation-report.json'])
+        self.assertEqual(report['model_routing']['openai_trial']['total_micro_usd'],8_000_000)
+        with self.assertRaisesRegex(ContractError,'Unsigned trial'):
+            assembled(model_routing_raw=raw,model_routing_sha256=gate_a.digest(raw),execution='service',
+                      adoption_ref='test-only-do-not-adopt')

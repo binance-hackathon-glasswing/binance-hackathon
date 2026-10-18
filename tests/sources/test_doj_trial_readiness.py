@@ -5,6 +5,7 @@ import json
 from larp.sources.live import gap_report, LiveRunner, PollLog
 from larp.sources.transport import AllowlistedClient, SourceError
 from tests.sources.test_sources import Harness, FakeNet, T0, fr, doj
+from larp.sources.store import SQLiteSourceStore
 
 
 class Readiness(Harness):
@@ -89,3 +90,29 @@ class Readiness(Harness):
                for t in range(T0,end,600_000)]
         self.assertEqual(gap_report(lines,cadences={'source:doj-press':600_000},start_ms=T0,end_ms=end,
                                     coverage_scope='current')['verdict'],'FAIL')
+
+    def test_unanchored_head_does_not_become_its_own_checkpoint_after_restart(self):
+        source=self.register['fr-bis'];source=replace(source,limits=dict(source.limits,max_pages=2))
+        tail=source.listing_url+'&page=2';archive=source.listing_url+'&page=3'
+        initial=fr([{'document_number':'baseline','title':'Old head'}],tail)
+        moved=fr([{'document_number':'new-head','title':'New head'}],tail)
+        middle=fr([{'document_number':'new-middle','title':'More new rows'}],archive)
+        net=FakeNet({source.listing_url:[(200,{},initial),(200,{},moved)],
+                     tail:[(200,{},fr([],archive)),(200,{},middle)],
+                     archive:[(200,{},fr([],archive))]})
+        ingest=self.ingestor(net,register={source.source_id:source})
+        ingest.poll(source.source_id)
+        self.assertFalse(ingest.poll(source.source_id)['head_coverage']['complete'])
+        restarted=SQLiteSourceStore(self.db_path);self.addCleanup(restarted.close)
+        out=self.ingestor(net,register={source.source_id:source},store=restarted).poll(source.source_id)
+        self.assertFalse(out['head_coverage']['complete'])  # baseline has still never been reached
+
+    def test_transport_wire_bound_and_embedded_rights_notice_remain_fail_closed(self):
+        from unittest.mock import patch
+        from larp.sources import transport
+        source=self.register['doj-press'];source=replace(source,limits=dict(source.limits,max_response_bytes=300))
+        body=doj([('x','Release','<img alt="not covered under third-party terms" src="'+'A'*2000+'">',1791500000,1791500000)])
+        with self.assertRaises(SourceError):
+            AllowlistedClient(FakeNet({source.listing_url:[(200,{},body)]})).get(source,source.listing_url)
+        with patch.object(transport,'DOJ_WIRE_CAP',100),self.assertRaises(SourceError):
+            AllowlistedClient(FakeNet({source.listing_url:[(200,{},body)]})).get(source,source.listing_url)
