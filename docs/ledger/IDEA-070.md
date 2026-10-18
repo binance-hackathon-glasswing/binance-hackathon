@@ -163,3 +163,10 @@ recorded-real router check, Keegan's #27 lifetime decision/implementation and
 real timing, measured #44 acceptance, native/provider/route-fee evidence,
 funding reconciliation, exact signed bundle and Yao's provisioning/approved
 signer session/hosted rehearsal. SR-01 does not claim the signer is ready.
+
+SR-01 RED at pushed c7deec2: **21 failed,3 passed,2 subtests passed**
+(including subtest failures; pytest's displayed counts),0.89s, macOS/Python3.12.14.
+Check accepted missing/changed evidence and lacked local-scope/hash reporting;
+run reached DB access first; dev and whitespace-wrapped pending cap labels were
+accepted. Mock DB/key adapters proved ordering without network or real key use.
+Log: `/private/tmp/larp-signer-readiness-red.log`.

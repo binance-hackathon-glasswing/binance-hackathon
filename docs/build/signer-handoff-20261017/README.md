@@ -13,7 +13,7 @@ Isaac asked the assistant to take over the technical review. The review is attri
 - Key delivery: `key_credential: wallet.key`, matching the existing systemd `LoadCredential` unit. There is no key value in this file.
 - Dedicated signer DB role, Sydney region, standard CA/key paths, poll interval and clock skew from the existing example.
 
-The example `cap_basis` is intentionally retained: neither the user delegating this review nor a successful boundary test establishes missing profile/holding/gas evidence. A dev-mode service may accept this label after other fields are filled, so do not treat the label as an installation lock.
+The example `cap_basis` is intentionally retained: neither the user delegating this review nor a successful boundary test establishes missing profile/holding/gas evidence. SR-01 now refuses this pending-decision marker in both dev and live service configurations. Replacing the label alone does not prove the missing numeric evidence or owner approval.
 
 ## Explicit unset fields — Yao's assembly inputs
 
