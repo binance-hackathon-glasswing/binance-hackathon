@@ -17,7 +17,7 @@ from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
 from larp.intelligence.config import CONFIG_DIR
-from larp.intelligence.model_budget import ModelBudget
+from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing
 from larp.intelligence.models import ModelIdentity, response
 from larp.intelligence.providers import OpenAIResponsesModel
 
@@ -36,11 +36,14 @@ def validate_routing_spec(spec, prompt_dir=None):
     refuses what startup would refuse."""
     fields = {'schema', 'provenance', 'routine', 'external_reviewers', 'openai_model', 'openai_effort',
               'max_output_tokens', 'budget_account', 'audit_sample_bps', 'audit_seed'}
-    staged = type(spec) is dict and spec.get('schema') == 'AIandRouting.v2'
+    preferred = type(spec) is dict and spec.get('schema') == 'AIandRouting.v3'
+    staged = type(spec) is dict and spec.get('schema') in ('AIandRouting.v2', 'AIandRouting.v3')
     entry_fields = {'model_id', 'effort', 'catalog'} | ({'prompt'} if staged else set())
     if staged:
         fields = fields | {'openai_prompt'}
-    if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2')
+    if preferred:
+        fields = fields | {'openai_pacing'}
+    if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3')
             or spec['openai_model'] != 'gpt-6.1-sol'
             or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
             or type(spec['max_output_tokens']) is not int or not 0 < spec['max_output_tokens'] <= 16000
@@ -53,6 +56,10 @@ def validate_routing_spec(spec, prompt_dir=None):
             or any(type(v) is not str or not v.strip() for v in spec['provenance'].values())
             or type(spec['external_reviewers']) is not list or not 1 <= len(spec['external_reviewers']) <= 2):
         raise IntelligenceError('Invalid AIand routing specification')
+    if preferred:
+        validate_pacing(spec['openai_pacing'])
+        if any(entry.get('effort') not in ('high', 'max') for entry in spec['external_reviewers']):
+            raise IntelligenceError('OpenAI preferred routing requires high-effort external fallback')
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
@@ -93,7 +100,10 @@ class BudgetedOpenAI:
             return response(request.read(), status='ERROR', output=None, latency_ms=0,
                             error='OPENAI_INPUT_OR_TIME_BOUND')
         maximum = (input_bound * 2_000_000 + self.model.max_output_tokens * 10_000_000 + 999999) // 1_000_000
-        token = self.budget.admit(maximum, request.read()['request_id'])
+        try:
+            token = self.budget.admit(maximum, request.read()['request_id'])
+        except AdmissionDeferred as error:
+            return response(request.read(), status='ERROR', output=None, latency_ms=0, error=error.reason)
         if token is None:
             return response(request.read(), status='ERROR', output=None, latency_ms=0,
                             error='OPENAI_OPERATING_LIMIT')
@@ -187,7 +197,8 @@ class RoutedAssessor:
                        external=[m.identity.record() for m in self.external],
                        openai_declared=policy['spec_hash'],
                        account=budget.account, total=budget.total, reserve=budget.reserve)
-        identity = ModelIdentity('larp-router', 'aiand-external-first', 'v1:' + digest('larp.routing.v1', binding),
+        name = 'openai-preferred-paced' if policy.get('openai_preferred') else 'aiand-external-first'
+        identity = ModelIdentity('larp-router', name, 'v1:' + digest('larp.routing.v1', binding),
                                  digest('larp.routing.models.v1', binding), 'HOSTED')
         self.model = SimpleNamespace(identity=identity)
 
@@ -232,7 +243,7 @@ class RoutedAssessor:
                 return None
             stage = deepcopy(r)
             tool_allowance = max(0, original_tools-tools)
-            if label == 'routine':
+            if label in ('routine', 'openai-primary'):
                 tool_allowance = min(tool_allowance, 3)  # leave independent review a retrieval budget
             stage['budget'] = dict(tool_calls=tool_allowance,
                                    deadline_ms=min(remaining, allowance or remaining))
@@ -250,6 +261,32 @@ class RoutedAssessor:
             if hook is not None:
                 hook(dict(kind='STAGE', stage=label, result=result, artifact=ref))
             return result
+
+        if self.policy.get('openai_preferred'):
+            state = self._budget_state()
+            chosen = run(self.openai, 'openai-primary', max(1, total//2)) \
+                if self.openai is not None and not state['external_only'] else None
+            reasons = _review_reasons(chosen, r, self.policy['audit_sample_bps'], self.policy['audit_seed']) \
+                if chosen is not None else ['OPENAI_NOT_AVAILABLE']
+            reasons = ['PRIMARY_NOT_ASSESSED' if x == 'ROUTINE_NOT_ASSESSED' else x for x in reasons]
+            if chosen is None or reasons:
+                reviewed = None
+                for index, model in enumerate(self.external):
+                    candidate = run(model, 'external-review-' + str(index))
+                    if candidate is not None:
+                        reviewed = candidate
+                    if reviewed is not None and reviewed['status'] == 'ASSESSED':
+                        break
+                if reviewed is None:
+                    if chosen is None:
+                        chosen = validator._abandoned(r, validated, start, dict(steps=[], tool_calls=[], started=0)).read()
+                    chosen = dict(chosen, status='UNAVAILABLE', reasons=['ROUTING_DEADLINE_EXHAUSTED'])
+                else:
+                    if chosen is not None and chosen['status'] == reviewed['status'] == 'ASSESSED' and \
+                            _signature(chosen) != _signature(reviewed):
+                        reviewed = dict(reviewed, status='ABSTAIN', reasons=['ROUTING_FINDING_DISAGREEMENT'])
+                    chosen = reviewed
+            return self._combine(r, chosen, stages, reasons, start)
 
         chosen = run(self.routine, 'routine', max(1, total//2))
         if chosen is None:
@@ -375,7 +412,8 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
     AIandRouting.v2 pins one stage prompt per model (`prompt` on each entry, `openai_prompt`);
     v1 sends every stage the core prompt, as before."""
     validate_routing_spec(spec, prompt_dir=prompt_dir)
-    staged = spec['schema'] == 'AIandRouting.v2'
+    preferred = spec['schema'] == 'AIandRouting.v3'
+    staged = spec['schema'] in ('AIandRouting.v2', 'AIandRouting.v3')
     configs = {}
 
     def config_for(prompt):
@@ -394,7 +432,9 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         configs[model] = c
         return model
 
-    budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'])
+    budget_options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'],
+                          reserve=0, clock_ms=clock_ms) if preferred else {}
+    budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'], **budget_options)
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]
     openai = None
@@ -405,9 +445,13 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
             transport=transports.get('openai'), prompt_text=openai_config.prompt_text,
             prompt_sha256=openai_config.prompt_sha256, **common), budget)
         configs[openai] = openai_config
-    make = lambda model: EvidenceAssessor(registry=registry, reader=reader, model=model,
-                                          config=configs.get(model, config), clock_ms=clock_ms)
+    def make(model):
+        # Audit wrappers retain the exact stage prompt/config, including on the deferred lane.
+        stage_model = model.model if isinstance(model, AuditedModel) else model
+        return EvidenceAssessor(registry=registry, reader=reader, model=model,
+                                config=configs.get(stage_model, config), clock_ms=clock_ms)
     return RoutedAssessor(routine=routine, external_reviewers=reviewers, openai=openai, budget=budget,
                           make_assessor=make, clock_ms=clock_ms, artifacts=artifacts,
                           policy=dict(audit_sample_bps=spec['audit_sample_bps'], audit_seed=spec['audit_seed'],
+                                      **(dict(openai_preferred=True) if preferred else {}),
                                       spec_hash=sha256_hex(Document.from_dict(spec).payload)))

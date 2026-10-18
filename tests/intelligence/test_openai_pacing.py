@@ -9,7 +9,7 @@ import unittest
 
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.model_budget import ModelBudget
-from tests.intelligence.test_aiand_routing import Routing
+from tests.intelligence import test_aiand_routing as fixtures
 
 
 def policy(start=1000):
@@ -67,9 +67,9 @@ class Pacing(unittest.TestCase):
 class Preferred(unittest.TestCase):
     def setUp(self):
         # Reuse only the synthetic HTTP/evidence fixture, not its legacy test cases.
-        self.fx=Routing(); self.fx.setUp(); self.addCleanup(self.fx.doCleanups)
+        self.fx=fixtures.Routing(); self.fx.setUp(); self.addCleanup(self.fx.doCleanups)
         f=self.fx; (f.root/'openai-budget.sqlite').unlink()
-        f.s['schema']='AIandRouting.v3'
+        f.s=json.loads((fixtures.ROOT/'config/intelligence/aiand-routing.openai-preferred.example.json').read_bytes())
         f.s['openai_pacing']=policy(f.w.clock())
         ModelBudget.initialize(f.root/'openai-budget.sqlite',f.s['budget_account'],
             initial_spent=2_000_000,total=50_000_000,reserve=0,
