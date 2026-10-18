@@ -413,3 +413,66 @@ currency, actual token/call usage and effective charges. Trial bars and release
 acceptance remain separate. Do not treat this balance report as adoption or
 permission for unbounded paid calls. Record the final initial charge and P1
 snapshot in IDEA057 when the reviewed host initialization occurs.
+
+
+## PC-BUD02 — exact OpenAI balance and US$5 reserve decision (2026-10-18)
+
+Yao Zhu confirms OpenAI remaining credit is **exactly US$48**, reports AIand
+balance140+ (currency not separately stated), and explicitly chooses a **US$5
+OpenAI reserve**. Against the recorded original US$50 allocation, initialize
+prior spend at **2,000,000 micro-USD**. The new cumulative operating ceiling is
+US$45 and currently available operating headroom is **US$43**. This supersedes
+the US$10 reserve/US$40 operating-policy component of IDEA056 MR-04 and PC-BUD01;
+the initial US$50 allocation is unchanged. No new purchase or unbounded spend.
+
+The keys/prior-spend handoff is now complete by Yao's account confirmation; the
+private key values remain outside Git/chat. P0 provider validity, actual P1 host
+initialization/snapshot, trial-bar review and release acceptance remain open.
+AIand whole-run coverage still needs M4 usage/charge projection, not inference
+from the140+ balance alone. Trial US$8 and daily US$2.50 stop triggers are unchanged.
+
+**Implementation acceptance before changed code runs (R5-01):** initialization,
+CLI status and runtime reopening use total50,000,000 /reserve5,000,000; initial
+charge2,000,000 leaves43,000,000. Admission at the exact boundary succeeds and an
+extra micro-dollar is refused with durable external-only fallback. Restart,
+unknown reservations and cross-worker bounds retain all prior charges. A ledger
+with the old10,000,000 reserve is refused without modification or reset. Test
+actual prepared runtime composition/external fallback and router identity;
+push code/tests before execution. No hosted initialization, restart, inference
+or cloud spend in this repository change.
+
+The verified7a0ea14 bundle hard-codes the oldUS$10 default. A release containing
+the reviewed reserve implementation is needed for theUS$5 policy. Do not edit
+an existing ledger, initialize a new one over it or label the old bundleUS$5.
+The implementation PR and its validation/mirror requirement will be recorded
+under IDEA057 R5-01; PR133 remains open.
+
+
+## PC-BUD03 — retain US$10 reserve; inference continues externally (2026-10-18)
+
+Yao Zhu withdraws the US$5 reserve choice in PC-BUD02 before implementation,
+preferring US$10 because usage estimates may be inexact. This supersedes only
+the reserve-change and R5-01 implementation requirements above; the exact US$48
+OpenAI remaining balance, derived US$2 prior usage and reported AIand140+
+balance remain recorded. Current policy stays original allocationUS$50,
+reserveUS$10, cumulative operating ceilingUS$40 and current headroomUS$38.
+Host initialization input remains **2,000,000 micro-USD**.
+
+Yao also requires the model/agent not to stop when OpenAI reaches its reserve.
+The existing implementation already routes routine work to AIand and switches
+hard-review work to AIand when a bounded OpenAI request would consume protected
+funds. This is a per-account durable ledger admission check, not a live balance
+poll. The external-only latch stops OpenAI dispatch, not LLM assessment or the
+agent; external availability/funding is still required. If external providers
+also fail, retain the existing UNAVAILABLE/risk behaviour rather than inventing
+a usable model result. Source: model_budget.ModelBudget.admit; routing.RoutedAssessor
+external-review branch; tests/intelligence/test_aiand_routing.py AR4 budget-limit
+and credit-refusal fallback/restart checks (covered by the recorded mirror run).
+No new test or runtime change is needed for this documentation-only reversal.
+
+No application code or tests were changed, executed or published for the US$5
+proposal; no implementation PR was opened and no host budget was initialized
+or modified. The unused local branch is removed without rewriting commits.
+The verified7a0ea14 release retains the desired US$10 policy, so there is no
+new reserve-specific build prerequisite. Report, release acceptance, trial-bar
+confirmation, P0/P1/P2 and actual activation remain open as before.
