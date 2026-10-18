@@ -791,3 +791,57 @@ Criteria pushed at1536af8 before analysis. [Work record](../build/MODEL_PREREQUI
 ### KMP-03 — delivery and validation
 
 [PR168](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/168) stacks onto PR133; no merge. Authorized #27/#118/#133/#97 comments link the review, Isaac handoff and Keegan confirmation request (exact links in MODEL_PREREQUISITES_20261018.md). Destination verified as the same private project repository; exact30-file snapshot re-screened on host against both stored Web3 values, including decoded bodies, zero credential values exported. All29 data-file hashes/lengths,26 latest raw references,1,021 records, raw JSON/base64, changed JSON/Markdown links,19 term captures and9 source hashes PASS;26-period initial allowance arithmetic checked. Default summary refuses documented9US-session shortfall. No application changes/full-suite rerun/paid inference. Hosted39107075081 at325f76c did not start: runtime/host-bundle/AWS annotations name failed payments/spending limit, bootstrap cancelled (#98). This is not a code-test failure or hosted acceptance. KMP-BUD01 now states K2 availability<80% rolling24h with≥20 jobs and K3/K4 explicitly, preserving existing meanings rather than conflating availability with identity. Measurements/labels/adoption owners remain open.
+
+## KMP-RV168 — PR168 review and corrections (2026-10-18 SGT)
+
+Review scope: all 46 changed documentation/evidence files against PR168's
+`claude/pre-trading-checklist-20261017` base. Acceptance: verify transferred
+hashes/body digests, exact source/composed prompts and coverage; reconcile the
+proposed v3 protocol with actual routing labels and immutable M9 selection;
+keep unmeasured work and approval owners explicit. No application change,
+paid inference, capture restart, deployment or experiment approval is implied.
+
+Findings fixed:
+
+- **RV168-R1:** TR-AC2 names v2 paths `routine-only`/`openai-review`, while the
+  reviewed v3 code emits `openai-primary` and optional external-review stages.
+  KMP-BUD01 now proposes all five reachable ordered signatures with unchanged
+  per-path/stage count minima, dispatch-aware reporting and no retrospective
+  waiver. Keegan must confirm this mapping before a v3 window starts.
+- **RV168-R2:** the rubric selected an earliest representative job but did not
+  bind TP/FN matching to it. It now pins both routed and baseline scoring to
+  that job's original cutoff, evidence and deadline; later retries cannot turn
+  its unavailable/late/missed event into a hit.
+- **RV168-R3:** corrected the claimed shared ten-step counter to the actual
+  shared six-retrieval/deadline bounds and per-stage model loops; explicitly
+  preserve dispatch-day charging and failed-window identity on external-only
+  continuation. Split new joint-owner checklist lines into decision, export,
+  build and verification tasks with one owner each.
+
+Independent checks on the submitted snapshot: all 29 file lengths/SHA-256,
+1,021 records and kind counts, 26 raw GET artifact/decoded-body digests, latest
+per-token references, calendar/regime counts/largest gaps, nine source hashes
+at `f20e941` and all three composed-prompt hashes PASS. Existing offline summary
+reproduces the exact expected refusal (nine US-session samples/token < ten).
+The private original term archives and earlier host-process reports are not
+independently available in this checkout; their retained hashes/report status
+are not fresh host or account qualification. Current public OpenAI Usage
+Policies and AIand inference terms and both publisher licence pages were
+reopened; the existing signed-policy/account applicability questions remain
+with Keegan/Yao, not settled by this review.
+
+Hosted run39107303866 at5a2824e has no executed job steps; the runtime annotation
+explicitly reports failed account payments/spending limit (#98). It supplies
+no application test result. This documentation/evidence review uses offline
+verification, not a new full-suite or hosted-runtime acceptance claim.
+
+Post-edit validation PASS on Python3.12: 25 added relative Markdown targets,
+all changed JSON, all snapshot/source/prompt/provider-manifest hashes above,
+26 pacing periods and the 1,846,153-microUSD first release, the five v3 stage
+signatures, representative-only scoring text and exact offline-summary refusal.
+`git diff --check` PASS. No whole backlog item closes: Keegan owns v3 protocol,
+rights and subsequent adoption; Yao owns private exports/host evidence; Keith
+owns actual drawing/labels/forecasts; Isaac/Keith own final profile/cap review.
+PR168 is authorized to merge into its checklist base only; parent PR133 remains
+open. Pre-existing untracked `Claude outputs/` is untouched, so this review does
+not declare the full session/main handoff clean or complete.

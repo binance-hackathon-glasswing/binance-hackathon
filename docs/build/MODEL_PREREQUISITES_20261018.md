@@ -40,6 +40,16 @@ signing, trial/ledger initialization or AWS mutation occurred.
 The actual trial verdict is pending. Documentation and a healthy quote process
 cannot substitute for provider usage, blind labels, hosted readiness or adoption.
 
+### KMP-RV168 — review corrections
+
+The v3 proposal now maps coverage to its actual ordered routing stages instead
+of inheriting unreachable v2 path names. The blind rubric scores the frozen
+representative job at its original cutoff; later retries cannot rescue a miss.
+The source review also distinguishes shared retrieval/deadline bounds from
+per-stage model loops, and preserves dispatch-day charging and separate
+external-only continuation. Keegan still confirms these proposals before v3;
+this PR review/merge does not supply that experiment or deployment approval.
+
 ### KMP-03 — published delivery and validation
 
 [PR168](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/168)

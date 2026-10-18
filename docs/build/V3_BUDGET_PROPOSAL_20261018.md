@@ -17,8 +17,10 @@ V3 tries `gpt-6.1-sol` / medium first, with half the shared assessment deadline
 cases and the frozen audit sample require independent AIand review. Failed
 primary work also falls back to Kimi K3 high, then GLM-5.3 high. A verified
 disagreement abstains; required review cannot inherit a clean finding on failure.
-All stages share six tools/ten steps and the overall deadline. This is source
-behavior, not measured provider availability, latency or accuracy.
+Stages share at most six retrieval calls and the overall deadline; each stage
+has its own assessor loop and all model steps must be counted in usage. There
+is no separate shared ten-step admission counter in the reviewed routing code.
+This is source behavior, not measured provider availability, latency or accuracy.
 
 The primary and reviewer appendices preserve the core assessor contract, request
 original evidence, distinguish actuality/issuer/time/negation and require
@@ -78,6 +80,36 @@ The planned unsigned cutoff remains Oct22 00:00 UTC; a later start or earlier
 signed rehearsal may make a supported unsigned verdict impossible. Report that
 as inconclusive rather than extending or relabelling observations.
 
+### Proposed v3 route-coverage mapping
+
+TR-AC2's v2 `routine-only` and `openai-review` names are unreachable in the
+OpenAI-preferred branch. For v3, freeze these actual ordered stage signatures
+with the protocol; keep v2 results under their original names. The following
+mapping is a proposal for Keegan's confirmation, not an approved bar change.
+
+| V3 path | Exact ordered stage labels |
+|---|---|
+| Primary only | `openai-primary` |
+| Primary plus first external reviewer | `openai-primary`, `external-review-0` |
+| Primary plus second external reviewer | `openai-primary`, `external-review-0`, `external-review-1` |
+| External only, first reviewer | `external-review-0` |
+| External only, second reviewer | `external-review-0`, `external-review-1` |
+
+Retain TR-AC2's minimum of ten distinct completed jobs per declared path and
+ten actual replies/ten proposed claims per required stage, with M2 applied to
+each qualified path as well as the aggregate. Count unsuccessful attempts and
+deadline jobs in M1 and report each path's statuses. Record provider dispatch
+and budget disposition separately: an `openai-primary` stage denied by pacing
+is not a successful or paid primary response. No completed natural traffic on
+a path means unqualified coverage, not a waived denominator. Separately frozen
+qualification blocks may fill route/stage coverage under TRB-01C, but cannot
+rescue natural M9 or add unsigned observation hours. Removing a path requires
+a separately frozen configuration/window before observation, never after
+seeing its result. Route mapping and representative-job scoring in the
+[blind rubric](BLIND_LABEL_RUBRIC_20261018.md) must be confirmed before v3 starts.
+
+### Stop limits
+
 | Stop / admission bar | Proposed action |
 |---|---|
 | New OpenAI trial charges reach US$8, or any UTC day's reach US$2.50 | Stop that experimental window (K1). Reserve conservative maximum in-flight cost before dispatch so it cannot cross the stop while a monitor sleeps. Count all attempts, failures, retries, probes, RESERVED and UNKNOWN, not only accepted results. These temporary experiment limits do not withhold a permanent reserve. |
@@ -92,6 +124,10 @@ routes, labels or reconciled costs mean INCONCLUSIVE; with sufficient evidence
 any required M1/M2/M3/M5/M9 miss means NOT_SUPPORTED; only all passing required
 bars support the tested unsigned scope. Planned fallback does not waive those
 availability/quality bars. Earlier v2 data retain v2 bars and are reported separately.
+Assign each reservation/charge to its dispatch UTC day and retain that day on
+settlement; a delayed settlement cannot move spending across the daily stop.
+Any external-only continuation after K1/K3 is a separate observation block;
+the original mixed-route window retains its NOT_SUPPORTED verdict.
 
 The US$8/US$2.50 sublimits require host admission/monitoring with in-flight
 headroom; #167 implements account/pacing admission, not these experimental

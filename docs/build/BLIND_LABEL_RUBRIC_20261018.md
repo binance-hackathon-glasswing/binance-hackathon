@@ -64,6 +64,13 @@ seeing which events the model missed.
 Match a final, accepted, on-time routed finding to one gold event only when
 issuer, source filing/revision, factual event/predicate, actor, actuality and
 material event/period identity agree, and its evidence span supports that event.
+Score only the representative job frozen in the selection manifest (earliest
+request, then assessment ID), using its original request cutoff, evidence and
+deadline. Replay the baseline with those same inputs. A later duplicate/retry,
+new source revision or later evidence cannot rescue that job's FN or replace an
+unavailable/late result; report duplicate-job outcomes separately. For example,
+an unavailable representative followed by a successful retry remains an FN for
+each adverse event missed by the representative.
 Paraphrases and equivalent date formats may match; a changed sign/unit/scale,
 different event, stale revision, attribution or hypothetical-to-actual error does
 not. A duplicated paraphrase gets no extra true positive. One broad prediction

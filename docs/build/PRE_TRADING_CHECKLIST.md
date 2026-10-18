@@ -172,7 +172,8 @@ These were missing from every list; each one is needed for the LLM to be in the 
 - [x] **Keegan:** decide and record the rehearsal shape (D-DN-02), including what happens if Gate A only passes on Oct 21. If Gate B slips past Oct 20, record the shortfall as a deviation (GAP-04). Done 2026-10-17 (IDEA-049-D D-DN-02, #140).
 - [x] **Keith:** first-trade options recorded in KMP-SIGN01. Recommend existing Oct21 00:00–Oct22 00:00 UTC buy window after gates; earlier development window needs a separate reviewed release/version event. Isaac decides.
 - [ ] **Isaac:** pick one of Keith's two options and tell Yao Zhu.
-- [ ] **Keith + Isaac:** KMP-SIGN01 proposes measured EQUAL_WEIGHT fallback if S1 inputs/weights/parameters/EXP-007/B4 remain unqualified; otherwise use explicitly frozen/adopted TREND_GUARDED_VOL. Confirm actual selection and build/hash the final measured Oct20 profile. Proposal alone does not complete this item.
+- [ ] **Isaac:** confirm the actual rehearsal profile selection from KMP-SIGN01: measured EQUAL_WEIGHT fallback if S1 inputs/weights/parameters/EXP-007/B4 remain unqualified; otherwise explicitly frozen/adopted TREND_GUARDED_VOL. Proposal alone does not complete this decision.
+- [ ] **Keith:** after Isaac's selection, build/hash the final measured Oct20 profile. The proposal and interim shadow profile do not complete this item.
 - [x] **Keith:** POLICY-HOLD proposal in KMP-SIGN01: retain implemented mandatory-sale HALT pending a separately reviewed bounded alternative; preserve chain-safe sizing/freshness. Isaac decision remains open.
 - [ ] **Isaac:** decide POLICY-HOLD from Keith's proposal.
 - [x] **Keegan:** confirm the trial bars. Done TR-AC2: reviewed and confirmed PR166 TRB-01A–E before the planned first job; sample seed/method frozen. Actual trial/label evidence and later adoption remain open.
@@ -198,7 +199,8 @@ The interim profile is already running in the owner-reported Oct 17 shadow run (
 - [x] **Keith:** on the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5. Done 2026-10-17 (`--min-days 2 --min-samples 9`).
 - [x] **Keith:** build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`, and send `rehearsal-live.json` to Yao Zhu. Done 2026-10-17 by Yao Zhu from Keith's summary (`d951207f…`).
 - [x] **Isaac:** a quick look at spread, impact, gas and minimum trade size in Keith's interim summary and profile. Done: Keith and Isaac approved it for the shadow run (2026-10-17).
-- [ ] **Keith + Yao Zhu:** KMP-QUOTE01 records interim-only two-day/nine-sample settings and full reported profile SHA. Supply original capture hash/full summary bytes; the later snapshot has separate verified hashes and cannot substitute for the original interim evidence.
+- [ ] **Yao Zhu:** supply the original interim capture hash/full summary bytes for KMP-QUOTE01; the later snapshot cannot substitute for that provenance.
+- [ ] **Keith:** after Yao's export, verify and record the original interim capture/summary hashes in IDEA-063 alongside the existing two-day/nine-sample settings and reported profile SHA.
 - [x] **Yao Zhu:** if the weekend Gate A setup is done, run the Oct 20 steps 5–8 early with this profile. On Oct 20 the final profile means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`, because the profile hash is pinned in the runtime config. Done 2026-10-17: shadow run live, first round ACKed by the receiver (IDEA-066 PC-AWS07).
 
 ## Oct 20: profile day, in this order
