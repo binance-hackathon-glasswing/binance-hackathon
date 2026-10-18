@@ -323,6 +323,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 ## Oct 26–29
 
 - [ ] **Keegan:** deviations-register rows for exceeding the proposal's 80% / 20% / four-name limits (B7).
+- [ ] **Keegan:** coordinate the team disposition of the declared event-calendar planner (G-52 / DEV-20): implement and verify the adopted planner, or record an explicitly approved, reasoned final deviation. Current DEV-20 remains OPEN/not built; resolve the decision by the Oct22 cut line and the release disposition before Oct26. See [PC-HAR01](HARNESS_READINESS_AUDIT_20261018.md).
 - [ ] **Keegan:** every deviations-register row FINAL, including DEV-18 (standby), and the services list (DR-18, GAP-62).
 - [ ] **Keegan:** activation pack and the Gate C review (DR-22). The pack's runtime config names `aiand_routed` with the frozen routing file, unless the Oct 22 decision was deterministic.
 - [ ] **Keegan:** team acceptance that the final assessor and harness are the declared agentic system, with the model and source deviations listed (IDEA-049-A A-DEC-004, A-REQ-079), before Oct 26.

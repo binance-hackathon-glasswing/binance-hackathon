@@ -1251,3 +1251,21 @@ new-release/provider/account/source/trust/LLM host proof pending, plus real
 router/native-provider/profile/signed drills and final operations/declarations.
 Existing backlog owners remain; no whole GAP closes. Rule/temporary-assessor
 semantic output is not a harness intelligence rating; no new /10 assigned.
+
+### PC-HAR02 — PR133 gap tracking verified and planner item made explicit
+
+Fetched remote and verified PR133 OPEN on claude/pre-trading-checklist-20261017,
+target codex/system-testing-20261012. PR133 directly tracks new-release install/
+ledger/provider/first-assessment/ACK and source checks (Yao), B4 producer
+(Keegan), PC-LABEL02-INJ01 trust/coverage review (Yao with Keegan peer review),
+actual model usage/labels/profile evidence (Keith), real router/native-provider
+prerequisites (Isaac), host signed/restore/drills (Yao), GateA/B review/final
+declarations (Keegan). Code/review/CI/original unsigned release for174 is done;
+remaining host and signed gates are not marked complete.
+
+DEV20 had been named in the linked audit and covered by the general final
+deviations item; added an explicit unchecked Keegan coordination item under
+the cut/finalization work: implement/verify the adopted event planner or obtain
+and record an approved reasoned final deviation, with decision byOct22 and
+release disposition beforeOct26. Tracking/ownership is not evidence every item
+is already started. No runtime/host action, new approval or gate closure.
