@@ -394,3 +394,17 @@ Run the execution suite to check consumer compatibility; explicitly retain any
 macOS/PostgreSQL/Linux-only skips and do not claim a new Linux release build.
 Inspect the diff and existing review discussions before merge. No new runtime
 policy, live profile acceptance, owner sign-off or host deployment is implied.
+
+### GB-RV155 result — 2026-10-18
+
+Refreshed/pushed head `387160a` includes integration `a2af2df` by ordinary merge.
+No further code defect found after reading the full cap checker, its validators,
+report consumer, fixtures, prior corrections and empty GitHub review discussions.
+Focused caps/proposal/report: **33 passed, 105 subtests, no skips**, 1.29s.
+Execution suite: **170 passed, 52 skipped, 694 subtests**, 2.20s on macOS arm64 /
+Python3.12. Skips require disposable PostgreSQL or Linux isolation; this is not a
+new Linux/host/release qualification. Prior GB-RW3 combined Linux evidence remains
+historical. `git diff --check` passes. Existing organization Actions jobs at
+run39047166150 have zero steps (the known billing block), not failed assertions.
+No runtime code or cap values changed in this refresh; #27/#44 approval,
+real-source/route evidence and all host/signing acceptance remain outstanding.
