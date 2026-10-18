@@ -114,11 +114,11 @@ class Readiness(Harness):
         body=doj([('x','Release','<img alt="not covered under third-party terms" src="'+'A'*2000+'">',1791500000,1791500000)])
         with self.assertRaises(SourceError):
             AllowlistedClient(FakeNet({source.listing_url:[(200,{},body)]})).get(source,source.listing_url)
+        with patch.object(transport,'DOJ_WIRE_CAP',100),self.assertRaises(SourceError):
+            AllowlistedClient(FakeNet({source.listing_url:[(200,{},body)]})).get(source,source.listing_url)
 
     def test_unconditional_not_modified_is_not_proof_of_an_empty_complete_listing(self):
         source=self.register['fr-bis']
         out=self.ingestor(FakeNet({source.listing_url:[(304,{},None)]})).poll(source.source_id)
         self.assertEqual(out['status'],'SOURCE_UNAVAILABLE')
         self.assertFalse(out['head_coverage']['complete'])
-        with patch.object(transport,'DOJ_WIRE_CAP',100),self.assertRaises(SourceError):
-            AllowlistedClient(FakeNet({source.listing_url:[(200,{},body)]})).get(source,source.listing_url)
