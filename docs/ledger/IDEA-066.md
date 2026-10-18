@@ -1397,3 +1397,36 @@ latest PR174 review/CI/original86b1476 release as completed. Narrow stale
 PC-SRC01/PC-CAP01 backlog wording to actual host/provider/retention qualification.
 No repeated approval/review request or new model/host action. The separate
 PR176 implementation remains unmerged; this parent carries its coordination.
+
+## PC-SIGNER-NEXT01 — exact owner requests for Isaac (2026-10-18)
+
+Isaac asks to finish whatever can be done on his side and identify what others
+must do. Refreshed remote PR/issue records: PR176 OPEN/no submitted reviews;
+#27 OPEN with Keith's KMP-SIGN01 proposal but no later decision; #44 OPEN with
+no final measured-input approval; PR139/171/172/173 still open. No new source,
+RPC account/config or funding hash has been supplied. Do not repeat unchanged
+tests or the already bounded failed public probes, invent another local code
+task, or claim a new readiness result.
+
+PRE_TRADING_CHECKLIST.md PC-SIGNER-NEXT01 now provides a concrete forwardable
+owner/deliverable/action table: Keegan reviews176/173/171 and implements adopted
+#27; Isaac requests the source packet via a confirmed team contact, then obtains
+Keegan review and runs route checks; Keith supplies final capture/profile/gas/
+fee measurements, Yao the fresh full holdings/run config, then Isaac decides
+#44; Isaac arranges a permitted trace-capable account with the team's account
+owner, runs the existing native qualifier after private config arrives, and Yao
+qualifies the host; Yao first reconciles funding prerequisites, Isaac performs
+any remaining approved-plan MetaMask step and supplies the public receipt hash,
+then Yao refreshes the opening capture. Finally Keegan delivers the signed
+release, Yao provisions/verifies the host/session, Isaac places the key only in
+that session and verifies real-round logs. No AWS action in this work.
+
+Funding guard checked against verbatim official/source_page.md wallet/capital
+restrictions, official/kit/bstocks-trading-guide.md gas/wallet text and the
+existing SKILL.md F120/G13/Q03 team-confirmed exception/funding handoff. The
+MetaMask exception is settled; no organiser re-question or new sizing decision.
+The source packet is prepared in source PR139 and has not been sent. No private
+config/key was searched for/read, account/signup/payment, provider selection,
+wallet transaction or teammate/vendor message occurred. No runtime or tests
+changed. Checklist/links/diff/owner/status checks validate this documentation
+follow-up; every partially blocked backlog item stays open. PR133 remains open.

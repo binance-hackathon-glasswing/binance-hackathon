@@ -485,3 +485,29 @@ full-holding checks **Keith**, exact #44 approval **Isaac**; signed release
 #119 evidence remain separate rehearsal gates. Earlier PR171/172/173 remain
 open and are not silently merged by this work. No AWS, wallet key, transaction,
 paid-provider or official receiver operation occurred; signing remains blocked.
+
+## What Isaac can do next — PC-SIGNER-NEXT01 (Oct18)
+
+Fresh GitHub inspection: PR176 is OPEN with no submitted reviews; #27 and #44
+remain OPEN with no newer decision/input. PR139/171/172/173 remain separate
+open PRs. The local implementation/proposal/qualification-tool work already
+reported above is delivered; no new runtime fix or readiness pass is inferred
+from this follow-up. No unchanged tests or failed public probes are repeated.
+
+| Request now | Owner / exact deliverable | Isaac's next action after delivery |
+|---|---|---|
+| Review the delivered code | Keegan: review PR176 (startup refusal), PR173 (native proof tool) and PR171 (same-host scope); merge each accepted change into its intended base. Keep source139 and funding172 draft until their missing evidence/actions are complete. | Address concrete review findings; use the reviewed release for later qualification. |
+| Obtain real source | Isaac asks the team's confirmed Binance/Web3/LiquidMesh contact for complete verified router/facet/helper source/imports, ABI, compiler/settings and chain56 deployed-code/dispatch binding for router0xb44446b0c8e56988c34f7ff73ae904982b5fdda5, selector0xad43f73d, candidate facet0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603. Existing request packet is in PR139 ROUTER_SOURCE_REVIEW.md. No source/account input or contact is available to this agent. | Hash/inspect the original export; fill real RouterEvidence only for supported guarantees, obtain Keegan's actual independent review, then run the existing checker on Keith's artifacts. Do not sign or guess an ABI while waiting. |
+| Resolve signing lifetime | Keegan: record C-OPEN-003/#27's adopted authority model, finite duration/margins and per-action windows; implement persisted original decision/admission/authority bounds across planner, commands, executor, signer and restart. Keith's review is already supplied. Yao supplies real queue/signer/approval-finality timing; Isaac supplies source-qualified route deadlines when available. | Run/inspect approve-confirm-requote, stale/expired/restart/uncertain-send acceptance against the reviewed implementation. Neither60s nor the kit's approximate30s is a measured adopted bound. |
+| Supply measured policy inputs | Keith: finish capture/coverage and selected profile when available (planned Oct20), with original summary/report/artifact hashes, raw token scales, per-trade/top-up amounts, actual approve/swap estimates and fee-netting disposition. Yao: fresh reconciled full holdings/opening-state hash and matching execution config, after the last manual funding. | Run caps_review on those exact pinned inputs, assess full sell holdings/gas/top-up coverage, then record the exact #44 policy decision and hashes. Current40USDT captures and fallback gas cannot close it. |
+| Arrange native-trace access | Isaac retains provider qualification ownership. Yao/team account owner: help supply an already-approved chain56 endpoint/account supporting exact prestateTracer diffMode with disableCode/disableStorage, canonical finalized reads and recovery-state retention. Keep account credentials in a private0600 external input file; supply its local path only. No signup/spend or service selection is inferred. | Run PR173's bounded qualifier on the known wallet funding transaction (or a supported wallet-native-credit receipt), review the sanitized proof/hashes, then hand accepted provider evidence to Yao for real-host checks. A public block balance is insufficient. |
+| Reconcile and finish manual funding | Yao: confirm from actual run/signing/wallet state that the dev wallet has not made its first agent trade and has no in-flight work. Isaac: only after that confirmation, finish the existing MetaMask gas-funding plan if still needed and retain the public hash/amounts/UTC (PR172 handoff). This agent has no wallet UI/session. | Verify the supplied receipt read-only; Yao then takes the post-last-funding opening capture. No keys or seed phrase are sent to the assistant. |
+| Prepare actual signed deployment | After the preceding approvals, Keegan supplies the exact reviewed Gate B release/bundle/manifest; Yao completes private run/build/DB/CA/router config pins, isolation/time/IAM checks, provisioning and the approved signer session, followed by hosted drills/round/ACK evidence. | Place the key only in that approved session, then verify the actual signed rounds and logs. No AWS or key-placement action is authorized/performed by this follow-up. |
+
+Source intake, account access and funding UI are the immediate human inputs
+Isaac can arrange. Final numeric approval, real route/native qualification and
+key placement wait for their stated prerequisites. #119 fee evidence and the
+measured floor/top-up remain open with Isaac/Keith; do not conflate a MetaMask
+funding receipt with the bStock route's fees. The signer remains disabled.
+These are requests for Isaac to forward, not messages already sent to teammates
+or a vendor. No new policy, account, deployment or transaction is created.
