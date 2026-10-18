@@ -420,3 +420,28 @@ execution endpoint exposing exact prestateTracer diff semantics/retention; Yao
 retains actual host/receipt-path verification. No native_trace enablement or swap.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## NT-Q1 — native RPC qualification, separate PR (prospective, 2026-10-18)
+
+Isaac asks to carry out each immediate point in its own PR and reports no source
+export, private RPC config or extra funding hash available. Build a bounded
+read-only qualification CLI using the exact production Rpc/ChainEvidence.native_receipt,
+not a trace-shaped mock or balance/block delta substituted for transaction proof.
+
+Pass criteria: exact chain56 successful canonical finalized receipt rechecked
+around prestateTracer diff; expected public wallet/sender, nonce and positive
+native credit after actual gas; value0. No native receipt/foreign wallet/reorg,
+wrong chain, unsupported tracer, malformed response or exhausted read budget
+can pass. Per provider at most16 RPC calls, four configured candidates maximum,
+20s per call/no retries/redirects. Inputs stay private/ignored, new output stays
+outside Git and cannot overwrite. Output excludes URLs/credentials/echoed errors;
+real evidence PASS is not automatic selection, runtime enablement, hosted
+qualification or the dedicated agent top-up round. Push criteria/code before
+execution, test privacy/refusal/actual production receipt composition offline.
+
+Public investigation: examine no more than two new primary-documented public
+candidates (SubQuery BNB endpoint listed by BNB Chain and PublicNode's published
+BSC endpoint), at most8 availability/chain/finalized/trace discovery calls total.
+Only a positive exact tracer response can advance to the committed production
+qualification CLI. No account signup/payment/keys, AWS, model call, signing or
+wallet transaction. Retain response status/hashes and exact sanitized blocker.
