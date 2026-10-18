@@ -129,3 +129,19 @@ because review did not explicitly authorize approval. The current shadow-only
 approval and all runtime/route code remain unchanged. Explicit user approval is
 needed to update the policy table; provider compatibility/adoption/host evidence
 would still be required afterwards. No AWS or application-egress change occurred.
+
+## SP-NET D2 — user authorizes the reviewed signed/live destination scope
+
+2026-10-18: after the assistant listed network approval as immediate point1,
+Isaac says "help me do what is needed now, do each point in its own PR". This
+authorizes implementing the exact SP-NET proposal in a separate PR and
+supersedes the prior review-only approval blocker. It is application destination
+approval, not provider/model adoption, a live release or an AWS permission change.
+
+Prospective pass criteria: keep only primary/larp-runtime to the same two fixed
+HTTPS API endpoints; no signer/execution model access, client endpoint change,
+AWS/IAM/firewall/secret or runtime-config change. Correct outdated shadow-only
+report wording to match merged SLM-01 capability; retain rights/account/provider
+policy, funding, trial/adoption, signed profile/prompt/routing/budget pins and
+actual host/release checks. Push before executing tests. Existing route-plan and
+signed-model preparation regressions must pass; no real requests or credentials.
