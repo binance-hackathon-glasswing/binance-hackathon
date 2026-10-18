@@ -49,3 +49,35 @@ Packet construction, frozen hashes, independent readings and scoring results
 will be recorded below. Yao owns obtaining the independent readings; the custodian
 prepares/fixes the sealed packet; Keith owns rubric/report review. KMP-LABEL01,
 T01 and the later signed/adoption gates stay open.
+
+## Packet delivery and verification
+
+Criteria 059b250 were pushed with normal merge 6820c7b before packet selection.
+The complete referenced population produces four cases / five documents / two
+issuers; 43 requests give four frozen representative requests and 39 duplicate
+requests retained separately. All ten raw/text artifacts passed SHA-256 checks;
+all 43 audit inputs equal the round-table requests. Every selected revision was
+available at its representative cutoff. No rerun or paid call was made.
+
+Private packet is retained outside the repository in Yao's Downloads directory,
+LARP-independent-labels-20261018. Only LARP-blind-annotation-20261018.zip is for
+annotators: 39,380 bytes, SHA-256
+`253ac12e649272bb46361c4489bca357fcfded2148f7556c0a072b1132db2249`.
+The 25 ZIP files include exact saved text/original bytes, source metadata,
+character-offset indexes, pinned predicates/taxonomy, instructions and an empty
+label template. Custodian requests, predictions, duplicate outcomes and maps
+are separate and must not be forwarded with the blind ZIP. Population,
+selection, blind and file manifests were hashed before annotation.
+
+ZIP integrity, all included file hashes, source references, cutoff checks,
+absence of prediction/context fields from blind metadata and unstarted label
+state PASS. Sanitized manifest hashes/byte counts and QA are recorded in
+[evidence/deterministic-label-packet-20261018.json](evidence/deterministic-label-packet-20261018.json).
+No source text, prediction details or labels enter Git.
+
+**Remaining:** Yao obtains two separate independent readings; an independent
+reviewer resolves uncertain/disputed labels before unblinding; preserve and hash
+both originals and adjudicated gold. Custodian/Keith validates source spans and
+one-to-one matching, then scores the four original representatives and reports
+duplicate outcomes separately. Actual labels NOT_STARTED; scoring NOT_RUN.
+T01/v3 M9 remain unqualified. Empty templates are not gold negatives.

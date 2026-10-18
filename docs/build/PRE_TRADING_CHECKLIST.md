@@ -228,6 +228,8 @@ These were missing from every list; each one is needed for the LLM to be in the 
 
 Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch at `622c522`; its approved protocol/rubric/register and public manifests are carried on the V3-REL01 release branch; the complete checklist/quote handoff remains here. Keith's pre-release proposals/handoffs are supplied. Yao confirms PR168 review/merge approves the unsigned v3 protocol (PC-REL05); Keegan proceeds with release implementation, retaining KMP-P2 and actual measurement/label/profile gates.
 
+- [x] **Yao Zhu:** prepare/hash retrospective deterministic blind packet (PC-LABEL02): four filings/five documents, all 43 audit requests matched, ten source artifacts verified; private source/answer separation checked. This is separate from v3 M9.
+- [ ] **Yao Zhu:** arrange two independent readings of the PC-LABEL02 blind packet and independent adjudication before unblinding; return original labels/gold freeze for custodian/Keith scoring. Actual labels/scoring remain NOT_RUN.
 - [x] **Yao Zhu:** verify receipt of the supplied original d8aa7d5 bundle against source/sidecar/manifest/CA (PC-REL08:195 files/234 checksums). Installation is separate.
 - [x] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures and implement bounded repair/current-head evidence (PC-FIX01, PR174; 1,630 local tests passed). Final report/raw retention is complete in PC-GAP02.
 - [ ] **Yao Zhu:** after the new accepted release, qualify DOJ polls/restart/report on the host and obtain independent Keegan disposition of the old failed window before the switch.
