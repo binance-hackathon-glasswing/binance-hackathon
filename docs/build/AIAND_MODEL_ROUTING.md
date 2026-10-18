@@ -21,7 +21,7 @@ AIand's [catalog](https://docs.aiand.com/models/catalog/) lists models per organ
 
 ## Stage prompts (IDEA-081)
 
-The routing file is `AIandRouting.v2`. Each model gets the core assessor prompt (`config/intelligence/prompts/assessor.v2.txt`) followed by a blank line and its stage's Markdown addendum from `config/intelligence/prompts/routing/`:
+The default routing file is `AIandRouting.v2` (the separate OP-01 candidate below uses v3). Each model gets the core assessor prompt (`config/intelligence/prompts/assessor.v2.txt`) followed by a blank line and its stage's Markdown addendum from `config/intelligence/prompts/routing/`:
 
 | Stage | Model(s) | Addendum |
 |---|---|---|

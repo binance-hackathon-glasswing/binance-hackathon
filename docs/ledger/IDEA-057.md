@@ -812,3 +812,63 @@ last cent: conservative multi-call reservations, unknown usage and external
 account spending reduce availability. No credit-balance query or paid provider
 call is required. New policy adoption needs a fresh trial evaluation and an
 accepted mirror release; existing v2 trial evidence is not v3 qualification.
+
+### OP-01 implementation and verification — 2026-10-18
+
+- Added opt-in `AIandRouting.v3` and a separate example; original v1/v2 example
+  bytes and US$10 reserve defaults are unchanged. GPT-6.1 Sol medium is the
+  preferred primary, with independent high-effort AIand review/fallback and a
+  pinned primary addendum. Invalid/failed required reviews grant no authority;
+  verified disagreement abstains. No low-effort routine POST is made by v3.
+- Durable SQLite pacing binds exact policy/account/limits and clock watermark;
+  integer cumulative allowances carry forward and release the whole allocation
+  by the last period. Temporary refusal is separate from persistent credit/
+  allocation/underestimation latches. Per-POST admission and unknown-usage
+  reservations stay conservative. Explicit development-only `enable-pacing`
+  preserves all charges and switches, refuses mismatched baselines/repeat
+  migration and never clears an existing latch. The runbook requires inference
+  quiescence and a consistent backup before migration; no host migration ran.
+- Fixed an audit-wrapper composition defect exposed while tracing the new
+  primary: `make_assessor` now resolves the wrapped stage's composed config,
+  so ModelRequest/result prompt hashes name the prompt actually sent. Previously
+  the audited/deferred wrapper selected the core config. Provider prompt bytes
+  and legacy routing policy are unchanged; stage provenance is corrected.
+- RED at pushed `b067467`: six new regressions fail because paced budget APIs
+  do not exist; 20 legacy fixture controls / 4 subtests pass (the initial file
+  imported the fixture class directly, later changed to a module import).
+- Initial focused GREEN at `4593117`: 68 passed, 5 PostgreSQL skips,
+  84 subtests. Expanded run at `c22643e`: 86 passed / 5 skipped / 98 subtests,
+  one new timeout assertion failed because it released the primary while half
+  the shared deadline legitimately remained for fallback. The fixture now
+  explicitly advances the synthetic clock through the full request deadline;
+  no product change was needed. At `7ac93c0`: 87 passed, 5 skipped,
+  98 subtests, 4.64 s.
+- Final application/test head `6bcbef0`, then docs-only ordinary merge
+  `75282ec` of integration `9c5c421`: complete available local suite on macOS,
+  Python3.12.14, pinned test venv, no plugin autoload, **1580 passed,
+  426 skipped, 2622 subtests passed**, 38.35 s, exit0. Command:
+  `PYTHON=/private/tmp/larp-pr-review-20261018-venv/bin/python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /private/tmp/larp-pr-review-20261018-venv/bin/python -m pytest -q -p no:cacheprovider -rs tests`.
+  Raw log `/private/tmp/larp-openai-pacing-full-permitted.log`. The initial
+  sandboxed full attempt had five local socket-binding PermissionErrors;
+  the permitted rerun passed without changing product/test code for those errors.
+- Skips: 417 disposable PostgreSQL cases, 2 combined systemd/PostgreSQL,
+  3 systemd runner, 3 Linux bubblewrap, 1 external real-response opt-in.
+  Docker CLI exists but its daemon/socket is unavailable on this Mac. No
+  PostgreSQL/Linux host acceptance, Docker/bundle build, Terraform or accepted
+  mirror release is claimed for this new head. CI/mirror acceptance remains
+  before deployment. No golden regeneration or xfail substitution.
+- Regressions cover period carry/partial final release, temporary refusal and
+  recovery, clock rollback/restart, atomic workers, full-allocation and provider
+  exhaustion, generic rate limits, unknown/underestimated usage, policy binding,
+  migrations preserving reserved/unknown/settled charges and latches, original
+  evidence verification, disagreement and failed review, actual deferred worker
+  ownership/late audit, prompt hashes, offline preparation/CLI, and the real
+  prepared service builder with synthetic HTTP ports. New v3 trial budget bars,
+  real provider entitlement, identity, latency, quality and funding remain
+  unqualified. TR-AC2/TRB-01 stays operative for the existing v2 trial.
+
+All executable source/tests and prospective criteria were committed and pushed
+before execution. No real provider request, key read, AWS/host/service change,
+wallet operation, model spend, merge or activation occurred. The current PR is
+implementation for peer review only; Yao will ask a reviewer. #97, the live
+backlog and PR133 remain open. Existing untracked `Claude outputs/` is untouched.
