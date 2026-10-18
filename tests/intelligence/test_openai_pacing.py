@@ -155,6 +155,85 @@ class Preferred(unittest.TestCase):
             initial_spent=2_000_000,total=50_000_000,reserve=0,
             pacing=f.s['openai_pacing'],clock_ms=f.w.clock)
 
+    def test_dispatch_cutoff_after_request_artifact_preparation_refunds_unsent(self):
+        f=self.fx
+        for overshoot in (0, 1):
+            with self.subTest(overshoot=overshoot):
+                primary=f.build().openai
+                end=f.s['openai_pacing']['end_ms']
+                f.w.clock.advance(end-1-f.w.clock())
+                keep=primary.model._keep
+                def prepare(body):
+                    keep(body)
+                    f.w.clock.advance(1+overshoot)
+                with patch.object(primary.model, '_keep', side_effect=prepare):
+                    reply=primary.step(fixtures.request(), 1000).read()
+                self.assertEqual(reply['error'], 'OPENAI_PACING_WINDOW_ENDED')
+                self.assertFalse(f.calls)
+                self.assertEqual(primary.budget.snapshot()['charged_micro_usd'], 2_000_000)
+                self.assertFalse(primary.budget.snapshot()['external_only'])
+                with sqlite3.connect(primary.budget.path) as db:
+                    rows=db.execute("SELECT amount,state FROM charges WHERE request_id='r:1'").fetchall()
+                self.assertTrue(rows)
+                self.assertTrue(all(row==(0, 'SETTLED') for row in rows))
+                # Restore only the synthetic policy fixture, never a running ledger.
+                if overshoot == 0:
+                    self.setUp()
+                    f=self.fx
+
+    def test_dispatch_rechecks_clock_and_latch_without_clearing_safety_state(self):
+        f=self.fx; primary=f.build().openai; keep=primary.model._keep
+        def rollback(body):
+            keep(body); f.w.clock.advance(-1)
+        with patch.object(primary.model, '_keep', side_effect=rollback):
+            reply=primary.step(fixtures.request(), 1000).read()
+        self.assertEqual(reply['error'], 'OPENAI_CLOCK_ROLLBACK')
+        f.w.clock.advance(1)
+        def latch(body):
+            keep(body); primary.budget.external_only('OPENAI_CREDIT_EXHAUSTED')
+        with patch.object(primary.model, '_keep', side_effect=latch):
+            reply=primary.step(fixtures.request(), 1000).read()
+        self.assertEqual(reply['error'], 'OPENAI_CREDIT_EXHAUSTED')
+        self.assertFalse(f.calls)
+        snapshot=primary.budget.snapshot()
+        self.assertEqual(snapshot['charged_micro_usd'], 2_000_000)
+        self.assertEqual(snapshot['reason'], 'OPENAI_CREDIT_EXHAUSTED')
+
+    def test_dispatch_accounting_failure_keeps_bound_and_sends_nothing(self):
+        f=self.fx; primary=f.build().openai; keep=primary.model._keep
+        def unavailable(body):
+            keep(body); primary.budget.path.rename(f.root/'temporarily-unavailable.sqlite')
+        with patch.object(primary.model, '_keep', side_effect=unavailable):
+            reply=primary.step(fixtures.request(), 1000).read()
+        self.assertEqual(reply['error'], 'MODEL_BUDGET_UNAVAILABLE')
+        self.assertFalse(f.calls)
+        self.assertFalse(primary.budget.path.exists())
+        (f.root/'temporarily-unavailable.sqlite').rename(primary.budget.path)
+        self.assertGreater(primary.budget.snapshot()['charged_micro_usd'], 2_000_000)
+        self.assertTrue(primary.budget_unavailable)
+
+    def test_dispatch_before_cutoff_settles_but_sent_timeout_keeps_bound(self):
+        from tests.intelligence.test_providers import openai_reply
+        f=self.fx; primary=f.build().openai; sent=[]
+        def success(url, headers, body, timeout):
+            sent.append(body)
+            return 200, json.dumps(openai_reply(fixtures.FINISH)(json.loads(body))).encode()
+        with patch.object(primary.model, '_transport', side_effect=success):
+            reply=primary.step(fixtures.request(), 1000).read()
+        self.assertEqual(reply['status'], 'OK')
+        self.assertEqual(len(sent), 1)
+        before=primary.budget.snapshot()['charged_micro_usd']
+        self.assertEqual(before, 2_000_000+reply['cost']['amount_micro_usd'])
+        def timeout(*args):
+            sent.append(args[2]); raise TimeoutError('synthetic sent request')
+        with patch.object(primary.model, '_transport', side_effect=timeout):
+            reply=primary.step(fixtures.request(), 1000).read()
+        self.assertEqual(reply['status'], 'TIMEOUT')
+        self.assertEqual(len(sent), 2)
+        self.assertGreater(primary.budget.snapshot()['charged_micro_usd'], before)
+        with sqlite3.connect(primary.budget.path) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM charges WHERE state='UNKNOWN'").fetchone()[0], 1)
+
     def test_openai_is_first_and_aiand_reviews_original_evidence(self):
         f=self.fx; _,result=f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
