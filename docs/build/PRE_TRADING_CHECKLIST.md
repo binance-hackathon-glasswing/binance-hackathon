@@ -26,6 +26,8 @@ PR174 review/new exact-source CI/original release are complete (PR174-REL01); DO
 
 Repair delivery PC-FIX01 / PR174-REL01: [PR174](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/174) reviewed, corrected and merged100d493. Accounting quarantine, migrated pacing clock and malformed proof regressions fixed; local/private CI2064/6/2992 and separate actual-systemd5/5 PASS. Original deployment files are attached to [the new86b1476 release](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476); no host install, paid inference or activation performed. Review and preserving setup/report instructions are in the frozen docs/build/DOJ_TRIAL_CAP_FIXES_20261018.md.
 
+Current harness audit PC-HAR01 (Oct18 21:29SGT): [requirements/readiness matrix](HARNESS_READINESS_AUDIT_20261018.md). Fresh read-only host healthy with70 chunks ACK, but still bb46234 deterministic/shadow with no model ledger and continuing DOJ size failure. New86b1476 release is built/tested, not installed. DEV20 planner and S1 B4 producer remain open; full GateA/B/C acceptance is not inferred.
+
 **Every line has exactly one owner.** Work that needs more than one person is split into small pieces, usually one person proposes or does it and another reviews or decides. A piece that depends on another names it ("after …").
 
 **Who does what (2026-10-17):** Yao Zhu owns AWS access, host operations and Terraform (IDEA-066 PC-AWS01). The one explicit exception is Isaac placing the wallet key in the separately approved signer-host session supplied by Yao Zhu; Yao still owns session access, provisioning and teardown. Decisions, reviews, merges, code and write-ups sit with Isaac, Keith and Keegan.

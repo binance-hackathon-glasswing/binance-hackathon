@@ -1226,3 +1226,28 @@ Harness operational evidence/source limitations stand; actual composed LLM
 assessment quality remains unmeasured. PC-LABEL02-INJ01 trust/coverage review
 and broader source/model/qualification gates remain open. No runtime or
 acceptance-rule change, model call, deployment or new rating was made.
+
+## PC-HAR01 — current harness requirements/readiness audit
+
+Targeted audit after Yao asks whether the harness meets its specifications.
+[HARNESS_READINESS_AUDIT_20261018.md](../build/HARNESS_READINESS_AUDIT_20261018.md)
+separates implemented/tested controls, current host evidence and unresolved
+features/acceptance. Integration1306bbb matches frozen86b1476 under app/config/
+deploy/test/lock paths; retained release record2064/6/2992 and actual systemd5/5
+PASS, all4 CI jobs green. No new full-suite rerun or bundle download claimed.
+
+Fresh read-only base64 SSM d763f48e-aefd-4399-a4cf-43c186282651 at13:29:41UTC
+(21:29:41SGT): healthy=true/reasons=[],70 chunks ACK,27 anchors ACK/latest13Z,
+00Z daily backup ACK; historical incident backup PERMANENT retained. Still
+bb46234 dev/shadow/deterministic, execution inactive, no model ledger/routing
+hash. Latest DOJ still size failure; BIS historical scan truncated;0 corrupt
+lines. Operational health is not source-coverage PASS. No host mutation, metric
+publication, inference, signer action or new spend. Sanitized evidence/hashes:
+../build/evidence/harness-readiness-audit-20261018.json.
+
+Most core control architecture is built/tested, but complete spec/acceptance is
+NOT established: DEV20 event planner OPEN/not built, S1 B4 producer missing,
+new-release/provider/account/source/trust/LLM host proof pending, plus real
+router/native-provider/profile/signed drills and final operations/declarations.
+Existing backlog owners remain; no whole GAP closes. Rule/temporary-assessor
+semantic output is not a harness intelligence rating; no new /10 assigned.
