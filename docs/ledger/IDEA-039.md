@@ -457,3 +457,9 @@ opening capture NOT_RUN. Draft PR records the exact manual step, reconciliation
 precondition and verification fields without manufacturing a new transaction.
 Source/JSON/hash/receipt checks pass; no application tests needed for this
 documentation/evidence-only scope. Parent106/GAP49 remain open.
+
+FG-02 delivery: dedicated draft [PR172](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/172)
+against PR133's checklist branch. Source-byte/normalized JSON/diff and exact
+98USDT/nonces2/2/2 checks pass. Owner wallet action/new hash and Yao's actual
+post-last-seed capture remain incomplete. No wallet signing/funding/key or AWS
+operation occurred; parent106/GAP49 remain open.
