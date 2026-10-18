@@ -368,3 +368,24 @@ The mirror prerequisite is technically verified, with release-owner acceptance
 still open. No upload to AWS, installation, restart, inference, signing or spend.
 The original archive PERMANENT row and hosted fixed-release incident test remain
 as recorded in PC-AWS11/IDEA082. This does not mark Gate A/B or model adoption PASS.
+
+
+## PC-KEY01 — model keys received and runtime secret version stored (2026-10-18)
+
+Yao Zhu confirms Keith delivered the LLM keys privately and reports successful
+`put_service_secrets.sh --only runtime` output. At 05:08:41 UTC (13:08 SGT),
+verified Secrets Manager metadata only for `larp-dev/runtime`: version
+`d227ba39-c9c9-40c5-a32f-1aa9bb3dfc3e` is **AWSCURRENT**; LastChangedDate is
+2026-10-18 05:08:18.851 UTC. No secret value was fetched, printed or committed.
+Provider validity and the entered key set are not established by metadata; the
+receipt/content entry is Yao's report and P0 remains pending.
+
+Marked Keith's private-key delivery complete and the runtime-secret storage
+portion of Yao's switch task complete. The exact prior OpenAI spend is still
+not supplied in this session; do not initialize the ledger from an approximate
+balance. Keegan's release acceptance and trial-bar confirmation, the fixed
+24-hour report ending11:00 UTC, provider checks, budget initialization, fresh
+preparation/binding/activation and the first routed assessment remain open.
+No services restarted, configs installed, inference invoked or wallet action
+performed in this verification. Storing a new secret version alone does not
+switch the currently deployed deterministic shadow run.
