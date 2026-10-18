@@ -72,6 +72,7 @@ class SourceIngestor:
         head_probe = bool(resume and source.limits.get("max_pages", 1) >= 2)
         scanning_head = head_probe or resume is None
         head_invalid = False
+        new_in_poll = set()
         url = source.listing_url if head_probe else (resume or {}).get("next_url") or source.listing_url
         first = head_probe or resume is None
         pages_done = (cursor["in_progress"] or {}).get("pages_done", 0)
@@ -115,8 +116,9 @@ class SourceIngestor:
                                     "record_id": stored_record["record_id"], "status": stored_record["status"],
                                     "first_seen_ms": stored_record["first_seen_ms"],
                                     "published_ms": stored_record["published"]["ms"]}
-                head_anchor = head_anchor or previous is not None
-                if previous is not None and anchor_id is None:
+                prior_anchor = previous is not None and item['item_id'] not in new_in_poll
+                head_anchor = head_anchor or prior_anchor
+                if prior_anchor and anchor_id is None:
                     anchor_id = item['item_id']
                 item_hash = digest("larp.sources.item-policy.v1", item)
                 old_rejection = rejected.get(item["item_id"], {})
@@ -139,6 +141,8 @@ class SourceIngestor:
                     outcome["rejected"].append([item["item_id"], why])
                     continue
                 records.append(record)
+                if previous is None:
+                    new_in_poll.add(item['item_id'])
                 seen[item["item_id"]] = {"version": record["version"], "content_hash": record["content_hash"],
                                          "record_id": record["record_id"], "status": record["status"],
                                          "first_seen_ms": record["first_seen_ms"],

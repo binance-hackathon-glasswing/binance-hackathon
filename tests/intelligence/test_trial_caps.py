@@ -6,10 +6,15 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
+from contextlib import redirect_stdout
+from io import StringIO
 
 from larp.intelligence.common import IntelligenceError
 from larp.intelligence.model_budget import ModelBudget, AdmissionDeferred
 from larp.intelligence.routing import validate_routing_spec
+from larp.intelligence.model_budget import main as budget_cli
+from tests.intelligence import test_aiand_routing as fixtures
 
 DAY=86_400_000
 
@@ -122,3 +127,77 @@ class Caps(unittest.TestCase):
         for bad in (True,0,-1,1.5):
             mutated=deepcopy(s);mutated['openai_trial']['utc_day_micro_usd']=bad
             with self.subTest(bad=bad),self.assertRaises(IntelligenceError):validate_routing_spec(mutated)
+
+    def test_corrupt_day_attribution_refuses_instead_of_restoring_daily_headroom(self):
+        b=self.init();x=b.admit(100,'reserved')
+        with sqlite3.connect(self.path) as db:db.execute('UPDATE trial_charges SET utc_day=1 WHERE charge_id=?',(x,))
+        with self.assertRaises(IntelligenceError):self.reopen()
+
+    def test_combined_legacy_migration_is_atomic_on_unattributable_charges(self):
+        old=ModelBudget.initialize(self.path,'trial',initial_spent=2_000_000)
+        old.admit(100,'unattributed');before=self.charged()
+        with self.assertRaises(IntelligenceError):
+            ModelBudget.enable_pacing(self.path,'trial',pacing=self.p,trial=self.t)
+        self.assertEqual(self.charged(),before)
+        self.assertEqual(old.snapshot()['reserve_micro_usd'],10_000_000)
+
+    def test_combined_legacy_migration_preserves_latch_and_exports_dispatch_day(self):
+        old=ModelBudget.initialize(self.path,'trial',initial_spent=2_000_000)
+        old.external_only('OPENAI_CREDIT_EXHAUSTED')
+        b=ModelBudget.enable_pacing(self.path,'trial',pacing=self.p,trial=self.t,clock_ms=lambda:self.now)
+        self.assertTrue(b.snapshot()['external_only'])
+        self.assertEqual(b.export()['charges'][0]['amount_micro_usd'],2_000_000)
+
+    def test_cli_matching_trial_init_status_and_private_export(self):
+        root=Path(__file__).resolve().parents[2]
+        cfg=Path(self.tmp.name)/'trial.json'
+        cfg.write_bytes((root/'config/intelligence/aiand-routing.openai-trial.example.json').read_bytes())
+        args=['--path',str(self.path),'--account','larp-openai-2026','--routing-file',str(cfg)]
+        with redirect_stdout(StringIO()) as output:budget_cli(['init',*args,'--initial-spent-micro-usd','2000000'])
+        self.assertEqual(json.loads(output.getvalue())['trial']['charged_micro_usd'],0)
+        with redirect_stdout(StringIO()) as output:budget_cli(['export',*args])
+        self.assertEqual(json.loads(output.getvalue())['charges'][0]['id'],'initial')
+
+
+class TrialRouting(unittest.TestCase):
+    def setUp(self):
+        self.fx=fixtures.Routing();self.fx.setUp();self.addCleanup(self.fx.doCleanups)
+        f=self.fx;(f.root/'openai-budget.sqlite').unlink()
+        root=Path(__file__).resolve().parents[2]
+        f.s=json.loads((root/'config/intelligence/aiand-routing.openai-trial.example.json').read_bytes())
+        now=f.w.clock();f.s['openai_pacing'].update(start_ms=now,end_ms=now+10*DAY,period_ms=DAY)
+        f.s['openai_trial'].update(start_ms=now,end_ms=now+3*DAY)
+
+    def init(self):
+        f=self.fx
+        return ModelBudget.initialize(f.root/'openai-budget.sqlite',f.s['budget_account'],initial_spent=2_000_000,
+                                     total=50_000_000,reserve=0,pacing=f.s['openai_pacing'],
+                                     trial=f.s['openai_trial'],clock_ms=f.w.clock)
+
+    def test_preventive_cap_refusal_is_audited_and_can_use_funded_external_route(self):
+        f=self.fx;f.s['openai_trial']['utc_day_micro_usd']=1;self.init()
+        _,value=f.run_assessment(f.build())
+        self.assertFalse(any(x[0]=='openai' for x in f.calls))
+        self.assertTrue(any(x[0]=='aiand' for x in f.calls))
+        self.assertEqual(value['routing']['budget']['trial']['charged_micro_usd'],0)
+        self.assertEqual(value['model_io']['steps'][0]['response']['error'],'OPENAI_TRIAL_DAILY_LIMIT')
+
+    def test_external_transport_boundary_refuses_after_request_preparation_crosses_cutoff(self):
+        f=self.fx;f.s['openai_trial']['end_ms']=f.w.clock()+10
+        b=self.init();router=f.build(key=False);model=router.external[0].model
+        keep=model._keep
+        def cross(raw):
+            keep(raw);f.w.clock.advance(f.s['openai_trial']['end_ms']-f.w.clock())
+        with patch.object(model,'_keep',side_effect=cross):_,value=f.run_assessment(router)
+        self.assertEqual(f.calls,[])
+        self.assertEqual(value['status'],'UNAVAILABLE')
+        self.assertEqual(b.snapshot()['trial']['charged_micro_usd'],0)
+
+    def test_trial_window_end_blocks_all_provider_posts_and_is_visible(self):
+        f=self.fx;f.s['openai_trial']['end_ms']=f.w.clock()+10
+        self.init();router=f.build()
+        f.w.clock.advance(f.s['openai_trial']['end_ms']-f.w.clock())
+        _,value=f.run_assessment(router)
+        self.assertEqual(f.calls,[])
+        self.assertEqual(value['status'],'UNAVAILABLE')
+        self.assertEqual(value['routing']['budget']['trial']['admission_block'],'OPENAI_TRIAL_WINDOW_ENDED')

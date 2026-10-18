@@ -127,7 +127,7 @@ class ModelBudget:
                    'last_ms INTEGER NOT NULL, stopped INTEGER NOT NULL, reason TEXT NOT NULL)')
         db.execute('INSERT INTO trial VALUES(1,?,-1,0,\'\')', (_policy_bytes(policy),))
         db.execute('CREATE TABLE trial_charges (charge_id TEXT PRIMARY KEY, utc_day INTEGER NOT NULL, '
-                   'dispatched_ms INTEGER)')
+                   'admitted_ms INTEGER NOT NULL, dispatched_ms INTEGER)')
 
     @classmethod
     def enable_trial(cls, path, account, *, trial, pacing, total=50_000_000, reserve=0, clock_ms=None):
@@ -239,10 +239,18 @@ class ModelBudget:
             raise IntelligenceError('Invalid model budget clock')
         last, stopped, reason = db.execute('SELECT last_ms,stopped,reason FROM trial WHERE id=1').fetchone()
         p, day = self.trial, now // DAY_MS
-        rows = db.execute('SELECT c.id,c.amount,t.utc_day FROM charges c JOIN trial_charges t '
+        rows = db.execute('SELECT c.id,c.amount,t.utc_day,t.admitted_ms,t.dispatched_ms FROM charges c JOIN trial_charges t '
                           'ON c.id=t.charge_id').fetchall()
-        total = sum(amount for token, amount, _ in rows if token != exclude)
-        daily = sum(amount for token, amount, d in rows if token != exclude and d == day)
+        if type(last) is not int or last < -1 or stopped not in (0, 1) or type(reason) is not str:
+            raise IntelligenceError('Invalid trial clock/stop accounting')
+        for token, amount, d, admitted, dispatched in rows:
+            if (type(admitted) is not int or not p['start_ms'] <= admitted < p['end_ms']
+                    or dispatched is not None and (type(dispatched) is not int or
+                        not admitted <= dispatched < p['end_ms'])
+                    or type(d) is not int or d != (admitted if dispatched is None else dispatched)//DAY_MS):
+                raise IntelligenceError('Invalid trial dispatch attribution')
+        total = sum(amount for token, amount, *_ in rows if token != exclude)
+        daily = sum(amount for token, amount, d, *_ in rows if token != exclude and d == day)
         # A missing attribution row is corrupt accounting, never free headroom.
         if db.execute("SELECT 1 FROM charges c LEFT JOIN trial_charges t ON c.id=t.charge_id "
                       "WHERE c.id!='initial' AND t.charge_id IS NULL LIMIT 1").fetchone():
@@ -284,7 +292,7 @@ class ModelBudget:
             state['charges'] = [dict(id=r[0], amount_micro_usd=r[1], state=r[2], request_id=r[3])
                                 for r in db.execute('SELECT id,amount,state,request_id FROM charges ORDER BY id')]
             if self.trial is not None:
-                state['trial_dispatch'] = [dict(charge_id=r[0], utc_day=r[1], dispatched_ms=r[2]) for r in
+                state['trial_dispatch'] = [dict(charge_id=r[0], utc_day=r[1], admitted_ms=r[2], dispatched_ms=r[3]) for r in
                                           db.execute('SELECT * FROM trial_charges ORDER BY charge_id')]
             return state
 
@@ -318,7 +326,8 @@ class ModelBudget:
                     token = uuid.uuid4().hex
                     db.execute('INSERT INTO charges VALUES(?,?,?,?)', (token, amount, 'RESERVED', request_id))
                     if self.trial is not None:
-                        db.execute('INSERT INTO trial_charges VALUES(?,?,NULL)', (token, s['trial']['observed_ms']//DAY_MS))
+                        now = s['trial']['observed_ms']
+                        db.execute('INSERT INTO trial_charges VALUES(?,?,?,NULL)', (token, now//DAY_MS, now))
                     return token
                 # Exit/commit the clock watermark before raising this temporary refusal.
             elif amount > s['available_micro_usd']:
