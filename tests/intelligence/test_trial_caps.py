@@ -181,6 +181,38 @@ class TrialRouting(unittest.TestCase):
                                      total=50_000_000,reserve=0,pacing=f.s['openai_pacing'],
                                      trial=f.s['openai_trial'],clock_ms=f.w.clock)
 
+    def test_settlement_failure_blocks_external_dispatch_and_later_jobs(self):
+        f=self.fx; b=self.init(); router=f.build()
+        with patch.object(router.budget, 'settle', side_effect=IntelligenceError('synthetic settlement failure')):
+            _,value=f.run_assessment(router)
+        self.assertTrue(router.openai.budget_unavailable)
+        self.assertTrue(any(c[0]=='openai' for c in f.calls))
+        self.assertFalse(any(c[0]=='aiand' for c in f.calls))
+        self.assertEqual(value['status'], 'UNAVAILABLE')
+        paid=value['model_io']['steps'][0]['response']
+        self.assertEqual(paid['provider_outcome']['status'], 'OK')
+        self.assertIsNotNone(paid['raw_response_artifact'])
+        self.assertGreater(b.snapshot()['trial']['charged_micro_usd'], 0)
+        f.calls.clear()
+        _,again=f.run_assessment(router)
+        self.assertEqual(f.calls, [])
+        self.assertEqual(again['status'], 'UNAVAILABLE')
+
+    def test_migrated_pacing_clock_fault_blocks_actual_external_dispatch(self):
+        f=self.fx
+        opts=dict(total=50_000_000,reserve=0,pacing=f.s['openai_pacing'],clock_ms=f.w.clock)
+        legacy=ModelBudget.initialize(f.root/'openai-budget.sqlite',f.s['budget_account'],
+                                     initial_spent=2_000_000,**opts)
+        f.w.clock.advance(1000); legacy.snapshot()
+        f.w.clock.now-=1000  # simulate rollback before migration of this unused ledger
+        upgraded=ModelBudget.enable_trial(f.root/'openai-budget.sqlite',f.s['budget_account'],
+                                         trial=f.s['openai_trial'],**opts)
+        self.assertEqual(upgraded.snapshot()['pacing']['admission_block'], 'OPENAI_CLOCK_ROLLBACK')
+        _,value=f.run_assessment(f.build(key=False))
+        self.assertEqual(f.calls, [])
+        self.assertEqual(value['status'], 'UNAVAILABLE')
+        self.assertEqual(upgraded.snapshot()['trial']['charged_micro_usd'], 0)
+
     def test_preventive_cap_refusal_is_audited_and_can_use_funded_external_route(self):
         f=self.fx;f.s['openai_trial']['utc_day_micro_usd']=1;self.init()
         _,value=f.run_assessment(f.build())

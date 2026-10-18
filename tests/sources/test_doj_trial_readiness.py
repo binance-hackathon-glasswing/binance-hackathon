@@ -122,3 +122,18 @@ class Readiness(Harness):
         out=self.ingestor(FakeNet({source.listing_url:[(304,{},None)]})).poll(source.source_id)
         self.assertEqual(out['status'],'SOURCE_UNAVAILABLE')
         self.assertFalse(out['head_coverage']['complete'])
+
+    def test_non_object_current_head_proof_fails_report_without_crashing(self):
+        end=T0+86_400_000
+        args=dict(cadences={'source:doj-press':600_000},start_ms=T0,end_ms=end)
+        lines=[dict(target='source:doj-press',started_ms=t,finished_ms=t+1,status='OK',
+                    cadence_ms=600_000,truncated=True,rejected=0,head_coverage=['invalid'])
+               for t in range(T0,end,600_000)]
+        historical=gap_report(lines,**args)
+        for proof in (['invalid'], 'invalid', 1, True):
+            with self.subTest(proof=proof):
+                for line in lines:line['head_coverage']=proof
+                report=gap_report(lines,coverage_scope='current',**args)
+                self.assertEqual(report['verdict'], 'FAIL')
+                self.assertEqual(report['historical_report'], historical)
+                self.assertEqual(report['targets']['source:doj-press']['failed_polls'],144)
