@@ -883,3 +883,50 @@ to be increased. All four jobs have empty step lists (three failed, one
 cancelled). This is the existing account-level CI gate, not a tested product
 failure or CI acceptance; the new head still needs accepted mirror/Linux checks
 before release. PR133 is verified OPEN at `e9e07b1`.
+
+
+### V3-REL01 — prospective unsigned release criteria, 2026-10-18 UTC
+
+User authorizes the next unsigned trial, direct mirror push/dispatch and ordinary
+merges; keep PR133 open. Base integration `817eb71` already merges PR165 and
+PR167. Adopt Keith's protocol from merged PR168 / PR133 snapshot
+`8b0b2381d82d0c596b3ccc33b50579dd159fa78b`, approved by Yao in PC-REL05;
+no repeated approval. Old `7a0ea14` and its documentation ZIP are not this binary.
+
+Pass criteria recorded before changed code executes:
+
+1. KMP-P2: check the durable paced budget immediately before the actual OpenAI
+   transport, after payload/artifact/header preparation. Admission at end−1 ms
+   followed by dispatch preparation at end or end+1 must produce zero OpenAI
+   POSTs, a temporary WINDOW_ENDED refusal and a durable zero-charge settlement
+   for that known-unsent reservation; no external-only latch is cleared/created.
+   Recheck clock rollback and concurrent safety latches. Before-end calls still
+   dispatch and settle; transport timeouts/unknown usage retain their reservation.
+   Missing/broken accounting fails closed without inventing a refund. Preserve
+   v1/v2 behavior and assessment deadline controls. Run a pushed red regression,
+   then pushed implementation and focused routing/provider/budget/audit checks.
+2. Declare OpenAI GPT-6.1 Sol medium primary and high-effort AIand Kimi K3 then
+   GLM-5.3 review/fallback in services and DEV-19, as an opt-in unsigned v3 trial.
+   Import approved protocol/rubric/rights with source revision; v3 uses US$50
+   total, US$2 owner-reported prior spend, zero permanent reserve and cumulative
+   pacing. Preserve legacy v2's separate limits and unmeasured trial verdicts.
+3. Review already-merged PR165 against its integration parent; retain it if
+   focused execution-bound tests and combined Linux/PostgreSQL regression pass.
+   Preserve proposed S1 parameters and unsigned scope, without adopting S1.
+4. Full available Linux/PostgreSQL14 suite and release/deviation checks pass;
+   enumerate skips. All changed executable code/config/tests are committed and
+   pushed before execution. No provider spend, secret reads or host changes.
+5. Push the frozen branch directly to Cookiemunchrr/larp-ci-mirror and dispatch
+   runtime.yml ourselves. Freeze only with green all-job CI on the same SHA,
+   then download original host-bundle artifact, verify checksum/manifest/source
+   commit and CA hash, and record run ID. Do not replace the deployment binary
+   with a local rebuild, GitHub source archive or handoff-only ZIP. An actual
+   access refusal is an external blocker, not CI acceptance. Initial read-only
+   Git and API checks both returned repository-not-found; still attempt writes.
+6. Review PC-AWS06 migration/roles/TLS evidence as reported, compare relevant
+   source changes and distinguish empty-DB/primary checks from signer/populated
+   upgrade/new-release qualification. Review Oct17 11Z–Oct18 11Z gap report only
+   when Yao supplies it after Oct18 11:00 UTC; pending report does not block build.
+   Update PR133 checklist without closing/merging it. AWS/host actions stay Yao's.
+
+Results and actual access limitations will be appended after execution.
