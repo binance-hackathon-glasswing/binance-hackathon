@@ -65,3 +65,39 @@ deletion or secret/environment-file migration is part of this work.
   source verification or prove minimum-output/recipient/deadline enforcement.
 
 Validation and final promotion/disposition results: IDEA-066 CONS-01.
+
+
+## Combined validation and promotion record
+
+Runtime/config/test/tool source: `bd4dbeef652819a15ceb195588fc987b25b40f30`,
+pushed to the registered repository before execution. Later changes only record
+results/status; verify their runtime/config/test/tool trees remain identical.
+
+- Linux/Python3.12.15/PostgreSQL14.24: **2162 passed,7 skipped,3628 subtests**,
+  154.04s. Five skips are the separately exercised systemd cases; the other two
+  require external source/market-response fixtures and remain unrun.
+- Separate disposable real-systemd: **5 tests/5 subtests PASS**,9.57s.
+- Production Docker build and network-disabled/read-only/no-capabilities smoke
+  PASS; offline runtime demo emits valid JSON. No host release bundle was built
+  or published by this consolidation. Terraform source is byte-identical to the
+  starting integration branch and was not reapplied or re-tested here.
+- Renderer and original interim provenance reproduction PASS. All six frozen
+  PR heads retained, all62 open GAP IDs and79 ledger index IDs preserved,
+  all15 original per-PR evidence files byte-identical, new local links valid,
+  and no .env/official-kit/vendor or Terraform changes.
+- Initial environment run:2157 pass/5 fail/7 skips. Three failures were caused
+  by a read-only synthetic activation directory and two by the container's
+  inability to mount isolated /proc. Corrected disposable runner permissions
+  and a tmpfs activation directory; no application/sandbox weakening. Complete
+  corrected suite and real-systemd results above supersede that environment run.
+- Org CI39271681737 runtime job118125327031 atbd4dbee ran zero steps; its
+  annotation explicitly reports failed account payments/spending limit. This
+  is not an executed suite failure or a remote-CI PASS. Local verification is
+  recorded separately; exact future release/host qualification remains open.
+
+[Machine receipt](evidence/consolidation-20261019.json) records inputs/scope.
+[PR195](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/195)
+is the reviewed promotion vehicle. Its merge establishes the canonical build;
+all six original lanes are then merged/closed as absorbed work. PR133 stays
+OPEN with only its noticeboard file differing from canonical. Branches/worktrees
+are retained as historical references; new work must use the canonical branch.

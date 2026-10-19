@@ -1,5 +1,7 @@
 # Isaac task 3: router source review (#138)
 
+**CONS-01 archived PR lane:** this evidence/handoff is retained on `codex/system-testing-20261012`; the separate source/funding draft is retired by consolidation. Actual missing inputs remain in the [live backlog](../INCOMPLETE_WORK.md). Use [current status](CURRENT_STATUS.md), including the conditional untrusted-router alternative. Historical observations below are not current readiness or an instruction to fund/sign.
+
 Status reviewed 2026-10-19: **source/ABI unavailable in this evidence packet;
 current explorer verification status unresolved**, not ready for deployment. Record: IDEA-070 RE-01 / RV139. Decoder
 PR130 is merged into integration; this handoff uses its current RV-130 checks.

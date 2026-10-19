@@ -1,5 +1,7 @@
 # Remaining development gas funding — FG-02 / #106
 
+**CONS-01 archived PR lane:** this evidence/handoff is retained on `codex/system-testing-20261012`; the separate source/funding draft is retired by consolidation. Actual missing inputs remain in the [live backlog](../INCOMPLETE_WORK.md). Use [current status](CURRENT_STATUS.md), including the conditional untrusted-router alternative. Historical observations below are not current readiness or an instruction to fund/sign.
+
 Status: **preflight recorded; remaining wallet action NOT_DONE; hosted opening
 capture NOT_RUN**. This is immediate point4 in its own PR. Isaac reports no
 additional funding hash. No wallet key/session or MetaMask control is available

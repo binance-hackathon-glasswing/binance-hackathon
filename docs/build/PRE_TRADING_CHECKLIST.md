@@ -27,7 +27,7 @@ AWS, fresh holdings or a signer session. IQ01 and IQ02 are delivered and indepen
 Keegan retains final acceptance/activation ownership.
 If a deliverable already exists, link and review it rather than create a duplicate.
 
-- [x] **Isaac — IQ01: mandatory activation-blocker matrix delivered (GAP-05 review pending).**
+- [x] **Isaac — IQ01: mandatory activation-blocker matrix delivered/accepted (GAP-05 closed).**
   [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19)
   maps all22 DR requirements to current controls, evidence and remaining owners;
   mandatory controls, optional scope and staged acceptance are explicit. Static
@@ -35,7 +35,7 @@ If a deliverable already exists, link and review it rather than create a duplica
 - [x] **Isaac — IQ02: declaration consistency audit reviewed (GAP-02/GAP-62 decisions/evidence pending).**
   [Discrepancy table](../skill/larp/plan.md#iq02-declaration-consistency-audit-2026-10-19)
   compares submitted claims, dated decisions, implementation and release registers;
-  proven wording drift is repaired. All22 deviations remain DRAFT; DEV18/20 OPEN.
+  proven wording drift is repaired. All23 deviations remain DRAFT; DEV18 OPEN, DEV20 omission decided, DEV23 untrusted-mode adoption still pending.
   Exact S1 profile/parameters, standby/recovery/planner policy, provider rights,
   measured and actual-host evidence remain with their named owners. IQ02-RV01 accepts the audit;
   final register/activation is not completed by this audit. Results: IDEA-066 IQ02.

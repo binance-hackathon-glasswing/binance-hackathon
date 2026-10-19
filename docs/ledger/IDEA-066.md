@@ -2388,3 +2388,34 @@ minimum/deadline enforcement, not a proven loss bound or approved policy. Full
 source verification is one alternative. The current config has no untrusted
 policy selected. Its signed/live adoption, #27/#44, exact operator observations,
 allowance/abnormal-fill/native support and host qualification remain open.
+
+
+### CONS-01 validation and disposition — runtime sourcebd4dbee
+
+Combined Linux/Python3.12.15/PostgreSQL14.24 full suite:2162 passed/7 skips/
+3628 subtests,154.04s; separate real-systemd5 tests/5 subtests PASS9.57s.
+Production Docker build/offline read-only/no-network/no-capabilities smoke and
+runtime demo PASS. The full suite's five systemd skips are exercised separately;
+two external fixture cases remain genuinely unrun. Environment setup failures
+(2157/5/7 initial run, read-only synthetic activation and /proc mount restrictions)
+were corrected only in disposable Docker runner setup, then full suite rerun;
+production sandbox/source unchanged. No new Terraform run: source matches the
+starting branch exactly; no host bundle/release or deployment is published.
+
+Source/merge review retains all six frozen PR heads and15 original evidence
+files byte-identically; all62 old backlog GAP IDs and79 index IDs remain.
+Renderer, exact interim-summary provenance and new local links/whitespace pass.
+Machine receipt: [CONS-01 evidence](../build/evidence/consolidation-20261019.json).
+No evidence/ledger/raw capture is rewritten, no policy is enabled, no real
+provider/model/receiver or AWS/key/funding/signing operation occurs. #139/#172
+remain evidence/handoffs; actual source/funding acceptance stays in backlog.
+#191/#192/#193 preserve delivered review/provenance/input work; #194 is gated,
+without a real untrusted policy or proven loss guarantee/adoption.
+
+Org CI39271681737 runtime118125327031 atbd4dbee has zero steps; check annotation
+states failed account payments/spending limit. No remote CI PASS is inferred.
+PR195 is the canonical promotion PR; all original open lanes except133 are
+absorbed after merge. README/AGENTS/CURRENT_STATUS identify one base and backlog.
+PR133 keeps only noticeboard status/links and remains OPEN. Original branches
+and local worktrees stay historical, avoiding deletion of other agents' work.
+Final commit/disposition is externally recorded by PR195 and the PR133 board.

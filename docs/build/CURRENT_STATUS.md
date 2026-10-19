@@ -5,9 +5,14 @@ All new implementation branches and PRs start from this branch. PR133 is an
 open noticeboard for links/status/owners only. Its branch is not a build base.
 The one live backlog is [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md).
 
-CONS-01 consolidation is undergoing validation; final promotion/results are
-recorded in [the consolidation record](CONSOLIDATION_20261019.md) and
-[IDEA-066 CONS-01](../ledger/IDEA-066.md). No deployment/readiness is inferred.
+CONS-01 combines all six retained PR heads through [PR195](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/195).
+Validated runtime source `bd4dbee`: Linux/Python3.12.15/PostgreSQL14.24 **2162 tests
+PASS /3628 subtests**, separate real-systemd **5/5**, Docker build/offline smoke
+and runtime demo PASS. Two external-fixture tests remain unrun (the full suite
+skipped those plus the five systemd tests tested separately).
+[Consolidation evidence](CONSOLIDATION_20261019.md) / [machine receipt](evidence/consolidation-20261019.json).
+The canonical promotion is effective when PR195 merges; org CI executed zero
+steps because of account billing/spending limits. No host/deployment/readiness is inferred.
 
 ## Repository scope retained
 
