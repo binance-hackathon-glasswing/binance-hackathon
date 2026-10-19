@@ -2309,3 +2309,55 @@ no mirror/release/host acceptance is inferred. All task changes are pushed.
 Pre-existing untracked `Claude outputs/` is untouched; no session-clean/main
 handoff assertion is made. Peer reviews and listed external/host gates remain.
 
+
+## C05-RV01 — Isaac's delegated operations review (2026-10-19, prospective)
+
+The user asks the assistant to complete available prerequisites toward an
+installable signer.json on Isaac's behalf. Review PC-OPS01 at sourceaa97b8b:
+D-DN-01/07/11 risk dispositions and D-DN-04 requirements are executable now;
+D-DN-04/06/08 numeric values, source/caps and actual host acceptance are not.
+This is Isaac's delegated review, never Keegan's independent acceptance.
+
+Pass criteria before validation: source-check supervision/unit restart behavior,
+restore quarantine, signing fences and the existing delivery-deadline guard;
+record exact proposal revision, disposition, reason and residual risk; do not
+adopt illustrative2h/600s/memory/authority values or change runtime/configuration.
+Existing supervision and anchor/restore tests must pass against disposable local
+PostgreSQL, with no skips. Verify new documentation links, unchanged release JSON
+and signer draft, preserved unresolved backlog items and clean whitespace.
+Push the review before validation. Keep DEV18 DRAFT/OPEN until Keegan records
+the reviewed scope decision, and keep C05 partial for measurements/code/host
+qualification. Deliver a separate PR and update PR133. No AWS, real key/provider,
+signing, funding, paid inference or external log receiver operation is included.
+
+
+### C05-RV01 results — source1769b30, 2026-10-19
+
+Existing supervision, anchor/role/restore, register/version-event and live
+OPEN/DRAFT activation-refusal suites: **38 tests PASS,0 skips**,10.058s,
+Python3.12.14/pinned test environment with disposable loopback PostgreSQL14.24
+(127.0.0.1:55452/larp_test). These verify existing same-build restart incidents,
+exit/refusal behavior, HALT/signing fences, integrity/restore quarantine, roles,
+anchors, replay and release-register gates. They do not test a future D-DN-04
+age guard or claim OS/real-host/backup delivery/availability qualification.
+Renderer `--check` PASS. Static new-link/anchor and whitespace checks PASS;
+application/config/deploy/tests/tools/migrations/official/proposal/vendor and
+historical signer.json/review unchanged fromaa97b8b. Historical draft still has
+six unset bindings and pending caps, ready_to_install/signing_enabled false.
+
+Dispositions and residual risks are in PC-OPS01 C05-RV01. Only C05's review
+slice is complete: numeric settings, D-DN-04 code, Keegan independent review/
+DEV18 recording and actual measurements/host acceptance remain open. No whole
+backlog item was fully completed or removed. No AWS, real provider/key/wallet,
+funding, signing, inference, installation or external receiver was accessed.
+
+
+C05 delivery: [PR192](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/192),
+branch codex/isaac-c05-signer-prereqs-20261019, independent Keegan review pending.
+Normal merge5bd3c6f preserves concurrent parente169fa1/PR189 balance-health work;
+IQ/C05 does not qualify that process/provider or transfer balance-only acceptance
+to native tracing. Static15-link/doc-only checks pass against parente169fa1.
+Org CI39261004131 runtime job118088305654 at2cb3d64 executed zero steps;
+annotation confirms failed account payments/spending limit, despite #98 having
+been closed not-planned. No CI or real-host PASS is claimed. Local38-test results
+remain scoped to1769b30. No branch rewrite, secret or AWS action occurred.
