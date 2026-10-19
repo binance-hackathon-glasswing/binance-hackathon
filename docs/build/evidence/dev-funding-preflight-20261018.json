@@ -1,0 +1,281 @@
+{
+  "schema": "DevFundingPreflight.v1",
+  "criteria": "IDEA-039 FG-02",
+  "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+  "chain_id": 56,
+  "observed_at": "2026-10-18T10:59:17.509815+00:00",
+  "block_number": 128350421,
+  "block_hash": "0xf99fd175d1d4b7634111e131fc06bcbcd07d573f6058cc0ed6c06bc1dda3fda2",
+  "block_time_utc": "2026-10-18T10:59:12+00:00",
+  "canonical_rechecked": true,
+  "native_balance_wei": "2694498869362886",
+  "usdt_decimals": 18,
+  "usdt_balance_raw": "98000000000000000000",
+  "finalized_nonce": 2,
+  "latest_nonce": 2,
+  "pending_nonce": 2,
+  "nonce_read_agreement": true,
+  "historical_funding_hash": "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+  "historical_funding_nonce": 1,
+  "historical_funding_block": 127946341,
+  "historical_funding_time": "2026-10-16T08:27:44+00:00",
+  "new_funding_status": "NOT_RECORDED_USER_HAS_NO_ADDITIONAL_HASH",
+  "opening_capture_status": "NOT_RUN_NOT_A_PORTFOLIOSTATE_OR_HOST_CAPTURE",
+  "signing_enabled": false,
+  "funding_performed": false,
+  "wallet_key_accessed": false,
+  "scope": "PUBLIC_POINT_IN_TIME_PREFLIGHT_ONLY_NOT_FULL_ACTIVITY_RECONCILIATION",
+  "criteria_commit": "c2d5218",
+  "observations": [
+    {
+      "label": "fund-chain",
+      "requested_at": "2026-10-18T10:59:12.823691+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "4ea12381c33345ac1422a811c87ce3f1cda3b7cbd1d7a5a37e8f0fc60e194b60",
+      "response_bytes": 40,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "eth_chainId",
+        "params": []
+      }
+    },
+    {
+      "label": "fund-finalized",
+      "requested_at": "2026-10-18T10:59:13.183113+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "3e8075ea694c895edf2f4670a0323ce077219a55c1690b22f59e5b2885f61156",
+      "response_bytes": 9191,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ]
+      }
+    },
+    {
+      "label": "fund-canonical",
+      "requested_at": "2026-10-18T10:59:13.516690+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "590b83dc79fcfd8c1f5d9938ffe68bd55f0682337380477bda9660cf8ee2b0a4",
+      "response_bytes": 9191,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 11,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x7a678d5",
+          false
+        ]
+      }
+    },
+    {
+      "label": "fund-bnb",
+      "requested_at": "2026-10-18T10:59:13.842582+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "048a73fcbc8a5026ebeb6b7746586bf9fa1c653c15bf0c7f66303cb55e61a457",
+      "response_bytes": 52,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "eth_getBalance",
+        "params": [
+          "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "0x7a678d5"
+        ]
+      }
+    },
+    {
+      "label": "fund-nonce-final",
+      "requested_at": "2026-10-18T10:59:14.170187+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "055ccdfddeb0be64370669bafc1ffdc340d44c5b66e4342475188b36ac7ac3b4",
+      "response_bytes": 40,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 13,
+        "method": "eth_getTransactionCount",
+        "params": [
+          "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "0x7a678d5"
+        ]
+      }
+    },
+    {
+      "label": "fund-nonce-latest",
+      "requested_at": "2026-10-18T10:59:14.501431+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "5a2726e23aeecb9e1777ec7c10ed49e7a332ab7e8a78a8472d05c109e2ebd12c",
+      "response_bytes": 40,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 14,
+        "method": "eth_getTransactionCount",
+        "params": [
+          "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "latest"
+        ]
+      }
+    },
+    {
+      "label": "fund-nonce-pending",
+      "requested_at": "2026-10-18T10:59:14.835724+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "c138808abb7ccdea4db302cbd624b246d8f5e523207f1f1e03c2c56c122f700a",
+      "response_bytes": 40,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 15,
+        "method": "eth_getTransactionCount",
+        "params": [
+          "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "pending"
+        ]
+      }
+    },
+    {
+      "label": "fund-usdt-decimals",
+      "requested_at": "2026-10-18T10:59:15.170269+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "a472f1db0f8c792c75b355d7366587343e920fd544987c45dd8a2e39a23a6715",
+      "response_bytes": 103,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 16,
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0x55d398326f99059ff775485246999027b3197955",
+            "data": "0x313ce567"
+          },
+          "0x7a678d5"
+        ]
+      }
+    },
+    {
+      "label": "fund-usdt-balance",
+      "requested_at": "2026-10-18T10:59:15.499089+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "7039fbda9a0ff8eecab12e652b9bdbfaf699798966e0081827c268834026ceab",
+      "response_bytes": 103,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 17,
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0x55d398326f99059ff775485246999027b3197955",
+            "data": "0x70a0823100000000000000000000000062b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479"
+          },
+          "0x7a678d5"
+        ]
+      }
+    },
+    {
+      "label": "fund-history-tx",
+      "requested_at": "2026-10-18T10:59:15.827161+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "891b80b5148708d889efe025908a1cad952f8a4a9daeef2643933180a22f79ec",
+      "response_bytes": 2765,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 18,
+        "method": "eth_getTransactionByHash",
+        "params": [
+          "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55"
+        ]
+      }
+    },
+    {
+      "label": "fund-history-receipt",
+      "requested_at": "2026-10-18T10:59:16.151914+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "a0e010bcf31526c21f5bb400b6a2f2257337e7ef72aa1c7a57509c3c8451ec06",
+      "response_bytes": 5731,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 19,
+        "method": "eth_getTransactionReceipt",
+        "params": [
+          "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55"
+        ]
+      }
+    },
+    {
+      "label": "fund-history-block",
+      "requested_at": "2026-10-18T10:59:16.502151+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "ebf0ef3d4dd6fa1bdac3f4437b5e399f62694cf555ca3a4bd55e36e9fbb5b5ba",
+      "response_bytes": 9051,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 20,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x7a04e65",
+          false
+        ]
+      }
+    },
+    {
+      "label": "fund-recheck",
+      "requested_at": "2026-10-18T10:59:16.847470+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "f1958ff12785aed6f5da7e48876267cb68e473923aa35338afaba43d959e08e1",
+      "response_bytes": 9191,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 21,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x7a678d5",
+          false
+        ]
+      }
+    },
+    {
+      "label": "fund-last-chain",
+      "requested_at": "2026-10-18T10:59:17.178557+00:00",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "706940cf4f1421fb5b1c267c749259cbf68f754b5069d4da140aa35bd8815e05",
+      "response_bytes": 41,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 22,
+        "method": "eth_chainId",
+        "params": []
+      }
+    }
+  ]
+}
