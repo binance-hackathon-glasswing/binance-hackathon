@@ -10,7 +10,7 @@
 
 The user assigns the following repository preparation to Isaac, in this order.
 Both can start from committed files without source export, private RPC access,
-AWS, fresh holdings or a signer session. IQ01 is delivered below; IQ02 remains unstarted.
+AWS, fresh holdings or a signer session. IQ01 and IQ02 are delivered and independently reviewed (IQ01-RV01/IQ02-RV01).
 Keegan retains final acceptance/activation ownership.
 If a deliverable already exists, link and review it rather than create a duplicate.
 
@@ -19,19 +19,14 @@ If a deliverable already exists, link and review it rather than create a duplica
   maps all22 DR requirements to current controls, evidence and remaining owners;
   mandatory controls, optional scope and staged acceptance are explicit. Static
   source/link/gate checks pass; results in IDEA-066 IQ01. IQ01-RV01 accepts the repository matrix; GAP-05 is closed. No missing external acceptance or policy decision is inferred.
-- [ ] **Isaac — IQ02, start after IQ01: declaration consistency audit (GAP-02/GAP-62).**
-  Cross-check `../proposal/proposal_answers.md`, current adopted plan decisions,
-  `../../config/release/deviations.v1.json` and `../../config/release/services.v1.json`.
-  Build a discrepancy table in the existing declaration/review documentation:
-  declared claim, implemented/adopted behavior, exact source reference, register
-  row, and remaining owner decision or external evidence. Focus on unresolved
-  standby/recovery, strategy/horizon/sizing and service/model declarations; the
-  already completed IDEA083 release metadata repair is not new work.
-  Repair proven wording/link/status drift in a reviewable PR; leave unresolved
-  choices OPEN/DRAFT. Validate JSON/register rendering if those files change.
-  Do not finalize a deviation, certify provider rights, select a model/strategy,
-  or invent rehearsal evidence. Keegan reviews; account/measurement owners supply
-  any external facts later. IQ02's audit does not wait for those facts.
+- [x] **Isaac — IQ02: declaration consistency audit reviewed (GAP-02/GAP-62 decisions/evidence pending).**
+  [Discrepancy table](../skill/larp/plan.md#iq02-declaration-consistency-audit-2026-10-19)
+  compares submitted claims, dated decisions, implementation and release registers;
+  proven wording drift is repaired. All22 deviations remain DRAFT; DEV18/20 OPEN.
+  Exact S1 profile/parameters, standby/recovery/planner policy, provider rights,
+  measured and actual-host evidence remain with their named owners. IQ02-RV01 accepts the audit;
+  final register/activation is not completed by this audit. Results: IDEA-066 IQ02.
+
 
 **Blocked queue, resume per ready packet:** B03 route checks after source+review;
 B05 after private tracing input/suitable transaction; B07 after B06-pre;

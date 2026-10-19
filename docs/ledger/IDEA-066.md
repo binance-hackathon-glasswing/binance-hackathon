@@ -2106,3 +2106,96 @@ links PR185 as delivered with Keegan review pending and retains IQ02/C05 status.
 Criteria before verification: all22 original DR requirements/gate stages preserved; each mapped control and remaining proof accurately scoped; no circular first-signed-receipt precondition, implicit policy adoption, host readiness or CI transfer; local targets/source references/whitespace valid; runtime/config/tools unchanged. Review accepts the mandatory-component/cut-line inventory as the GAP05 repository deliverable; all actual DR acceptance rows remain open. IQ02 is reviewed separately.
 
 IQ01-RV01 verification PASS: all22 original DR table rows remain byte-for-byte, all22 matrix IDs mapped once; relative targets resolve and whitespace clean. No runtime/config/tool/test/deploy changes. Repository matrix accepted and GAP05 line removed; no actual gate/host/model/source/funding acceptance inferred.
+
+## IQ02 — declaration consistency audit (2026-10-19, prospective criteria)
+
+Isaac requests IQ02 after delivery of IQ01 (PR185); IQ01 review is still pending.
+Audit source c2839fd includes PR133 bcfcf80 and the IQ01 matrix. Pass criteria,
+written before validation:
+
+1. Compare the immutable submitted proposal, dated adopted decisions, actual
+   implementation and both release registers in an existing declaration document.
+   Cover standby/recovery, model/horizon/sizing, services and rehearsal scope;
+   identify exact sources, register rows, remaining owners and evidence.
+2. Correct proven descriptive drift, preserving historical decisions and separating
+   the selected S1 family from unadopted parameters and measured rehearsal fallback.
+   Keep every deviation DRAFT and DEV18/20 OPEN; do not adopt policy, certify rights
+   or infer host/provider qualification from code or old trial receipts.
+3. Validate both JSON documents, exact proposal quotes, evidence-ID resolution and
+   generated plan consistency. Run existing register/version-event and live
+   OPEN/DRAFT activation-refusal tests against disposable local PostgreSQL.
+   Check local document links, unchanged submitted proposal, and clean whitespace.
+4. Push changed release metadata before executing its renderer/tests. Record results,
+   narrow GAP02/GAP62 to remaining acceptance, and deliver a separate PR with PR133
+   updated. Changed register hashes require a future reviewed release; existing
+   c5be269 artifacts/CI/host receipts cannot qualify these new bytes.
+
+No AWS, real provider/receiver call, wallet, signing, funding, installation or
+policy acceptance is authorized or needed by this audit. Keegan reviews IQ02;
+account/measurement owners supply remaining facts separately.
+
+
+### IQ02 results — audited metadata source037b632, 2026-10-19
+
+PASS: fifteen discrepancy rows in existing plan.md §6.5 map submitted claims,
+implemented/dated adopted behavior, source links, register disposition and remaining
+owner/evidence. Coverage includes all22 deviation IDs plus service/proposal
+claims without a settled new row. Corrected stale trained-model/planner status,
+G-22/G-29 values, dated S1 versus equal-weight scope, F-124 restart/F-120
+bootstrap descriptions, original60s proposal attribution, AWS Sydney and the
+scope of historical model responses. No pending numeric S1 setting is adopted.
+DEV19 distinguishes implemented/offline-tested caps from new exact-host checks.
+IDEA083 routing is not changed or requalified by this audit.
+
+Metadata was committed/pushed at9f099c5 before its renderer ran; final register
+correction8b739d1 was also pushed before rendering. Canonical output pushed at
+037b632 before final focused tests. `tools/render_deviations.py --check` PASS.
+Existing `tests.runtime.test_release_register` and
+`tests.runtime.test_final_review_d.LiveActivation`: **9 tests PASS, 0 skips**
+(1.287s), Python3.12.14 using pinned test dependencies and disposable loopback
+PostgreSQL14.24 at127.0.0.1:55451/larp_test. This verifies exact proposal quotes,
+ID resolution, services, renderer, manifest hash refusal, version-event replay,
+and live OPEN/DRAFT activation refusal. Local test PostgreSQL removed afterward.
+
+Static checker /private/tmp/verify-larp-iq02-20261019.py PASS: fifteen findings,
+all22 unique rows still DRAFT, only DEV18/20 decision OPEN, all original declared
+quotes/dates/statuses preserved and all service statuses/selection scopes
+preserved. All30 added local links/anchors resolve; application/tests/tools/deploy/
+migrations/workflows/vendor/official/submitted-proposal files unchanged from
+c2839fd. Whitespace and conflict-marker checks PASS. Full-suite CI, new release
+assembly and actual-host acceptance were not run or inferred.
+
+GAP02/GAP62 remain open, narrowed to Keegan review, team/exact-profile decisions,
+new S1 deviation rows upon adoption, operations/planner scope, account rights,
+external measurements/host/rehearsal evidence and final register review. Isaac
+C05 remains a separate ready review, unstarted here. No AWS, wallet/key, funding,
+signing, paid model, actual receiver or installation operation occurred. Both
+register hashes changed: oldc5be269 artifacts/CI/host observations keep only
+their original scope. A future reviewed release/manifest must include accepted
+metadata and receive its own required checks before installation.
+
+
+IQ02 delivery: [PR186](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/186),
+branch codex/isaac-iq02-declaration-audit-20261019 stacked on IQ01 PR185
+(c2839fd). Rebase/history rewrite is not used; retarget to the PR133 branch when
+IQ01 merges. Keegan review is pending; no merge or policy approval is claimed.
+PR133's description tracks this delivery separately from final acceptance.
+Final static checks: fifteen findings,22 DRAFT rows,30 new local links/anchors;
+renderer PASS. The disposable local database was removed. All session changes
+are committed/pushed on the feature branch; main matches origin/main (0/0).
+
+
+PR186 org CI39223891886 at947365e did not execute: runtime job117965388903
+has zero steps and its check annotation explicitly reports failed account
+payments/spending limit (#98). This is a CI availability blocker, not an
+executed runtime failure or a PASS. Local focused results above stand; a future
+release still needs its required exact-source qualification. No AWS or billing
+setting was changed. PR133 description update succeeded and links PR186.
+
+## IQ02-RV01 — independent review of PR186 (2026-10-19)
+
+Criteria before verification: preserve submitted quotes/status/dates and OPEN/DRAFT refusal; verify register rendering/version-event/hash-binding and PostgreSQL live-activation checks; validate all local links,22 DR mappings and15 audit findings. Metadata changes require a future qualified release, not transfer of old artifacts.
+
+Found and fixed P2 semantic cross-reference errors: scope table cited swap/gas/hosting rows for evidence tools, gas for post-mortems, signer/settlement for strategy, and final-wallet/schedule rows for round logging; loss-control audit also cited settlement. Corrected to actual matching DR controls. Fixed stale B4 fixture ownership (current A07 Keegan) and Yao-only signer-session wording (accepted approved operator handoff). No register status, decision date, source quote, runtime behavior or readiness gate changed.
+
+IQ02-RV01 final verification at pushed8c9613e: canonical renderer --check PASS; independent Linux/Python3.12.14/PostgreSQL14 focused register/version-event/hash-binding/live OPEN-DRAFT refusal checks **9 passed /5 subtests /0 skips**,4.59s. Original runa339635 also passed9/5 in6.25s before parent reconciliation; final run covers reconciled source. All22 declaration quotes/dates/statuses and service adoption scopes unchanged; relative links/conflicts/whitespace pass. Only release metadata and documentation changed; no application/deploy/tool/test bytes. Audit accepted after the documented fixes; GAP02/GAP62 remain open for actual decisions/evidence/finalization and future release qualification. PR185 already merged into133 atac2a4d2.
