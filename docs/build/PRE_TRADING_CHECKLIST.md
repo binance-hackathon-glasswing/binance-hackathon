@@ -551,3 +551,15 @@ Final combined-tree validation at pushed2202c15:282 tests/434 subtests PASS,
 0 skips,30.71s (all four changes together, pinned Python/PostgreSQL). Source
 code is unchanged by the following result-only documentation commit. CI remains
 billing-blocked, and no AWS or hosted acceptance is inferred.
+
+
+### Signer file readiness — PC-SIGNER-CHECK02 (Oct19)
+
+The tracked signer-handoff signer.json is **sendable only as a labelled assembly
+draft**, not final/ready to install. Its six run/build/DB/CA/router fields are
+still null and its policy is explicitly pending decision. Current merged176
+validator refuses it before service/key/DB access. Measured #44 inputs/approval,
+real source/route evidence and #27 remain open; the coordinator/operator must
+finish exact release/config/manifest/host assembly. Corrected handoff README
+and IDEA-066 PC-SIGNER-CHECK02 give owners and exact file hash. No key belongs
+in the JSON; key placement stays in Yao's approved session.

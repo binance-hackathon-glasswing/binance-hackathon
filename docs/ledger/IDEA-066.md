@@ -1862,3 +1862,38 @@ Remaining review observations:
  the open current tracker. Main remains unchanged and matches origin/main; all
  session edits and review trees are committed/pushed, with remaining owners
  recorded above. No deployment or key-placement authorization is inferred.
+
+
+## PC-SIGNER-CHECK02 — Is signer.json ready to send? (2026-10-19)
+
+User asks for actual signer readiness after the prerequisite merges. Read
+current PR133 at578aecc, its handoff/README/review and merged signer validator;
+refresh GitHub #44/#27/#138 and draft139. Startup safeguards176 are merged,
+but final signer configuration and Gate B are not complete. Exact tracked
+`docs/build/signer-handoff-20261017/signer.json` remains SHA256
+339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442.
+All six assembly inputs remain null: run_id, build_id, database_host,
+database_ca_sha256, router_evidence_file and router_evidence_sha256. It retains
+EXAMPLE_PENDING_TEAM_DECISION. A read-only invocation of pushed validate_config
+refuses with Missing signer settings: run_id,build_id; no service/key/DB is
+constructed or contacted. The existing review.json still truthfully says
+ready_to_install=false; its historical evidence is unchanged. No new runtime
+or test code runs, no new experiment or approval is inferred.
+
+Missing acceptance: measured selected profile/current full holdings/top-up and
+fee envelope plus exact policy decision/hash (#44, Isaac with Keith inputs;
+delegated technical review is already authorized); real attributable router/
+facet/helper evidence, independent review and recorded route check (Isaac,
+Keegan, #138/#139); Keegan's finite signing authority/expiry implementation
+with actual router/host timing (#27). Coordinator/approved operator completes
+run/build/DB/CA/config/manifest and release/host checks after those inputs.
+User has supplied no source export/private native account/additional funding
+receipt; these earlier blockers are not cleared by repository merges.
+
+Disposition: can send the public key-free JSON with README/review.json only as
+a clearly labelled ASSEMBLY DRAFT requiring completion; cannot describe it as
+a final installation-ready signer config. Do not substitute unsigned run IDs,
+change the cap label to manufacture approval or include a key. Key placement
+waits for Yao's separately approved signer session. Corrected the stale README
+claim that production router evidence is optional; current176 check/run require
+it before DB/key access. No AWS/host/wallet/private-key/provider/receiver action.
