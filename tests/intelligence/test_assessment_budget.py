@@ -14,7 +14,7 @@ from larp.intelligence import routing
 from larp.intelligence.common import digest
 from larp.intelligence.config import load_config
 from larp.runtime.deferred_models import DeferredAssessments
-from tests.intelligence.test_openai_pacing import Preferred
+from tests.intelligence import test_openai_pacing as pacing
 from tests.intelligence.test_aiand_routing import EXSEMI
 
 
@@ -48,13 +48,13 @@ class Outcomes(unittest.TestCase):
                 self.assertEqual(len(verdicts), 2)
 
     def test_ab6_declared_maximum(self):
-        for mode in ('dev', 'shadow'):
+        for mode in ('development', 'shadow'):
             self.assertEqual(load_config(mode=mode).max_deadline_ms, 180000)
 
 
 class RoutedConcurrency(unittest.TestCase):
     def setUp(self):
-        self.owner = Preferred(); self.owner.setUp(); self.addCleanup(self.owner.doCleanups)
+        self.owner = pacing.Preferred(); self.owner.setUp(); self.addCleanup(self.owner.doCleanups)
         self.fx = self.owner.fx
 
     def test_ab3_reviewers_overlap_and_primary_content_is_preserved(self):

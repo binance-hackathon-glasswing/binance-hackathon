@@ -263,8 +263,8 @@ class ModelPreparation(unittest.TestCase):
             result = router.assess(request)
             assessment_result(result, request, clock())
             self.assertEqual([s['stage'] for s in result.read()['routing']['stages']],
-                             ['openai-primary', 'external-review-0'] if preferred else ['routine', 'openai-review'])
-            self.assertEqual(set(calls), {'moonshotai/kimi-k3', 'gpt-6.1-sol'} if preferred
+                             ['openai-primary', 'external-review-0', 'external-review-1'] if preferred else ['routine', 'openai-review'])
+            self.assertEqual(set(calls), {'moonshotai/kimi-k3', 'zai-org/glm-5.3', 'gpt-6.1-sol'} if preferred
                              else {'zai-org/glm-5.3', 'gpt-6.1-sol'})
             if preferred: self.assertEqual(calls[0], 'gpt-6.1-sol')
             self.assertTrue(all(sentence in text for text in texts))  # Each tier sees original filing text.
@@ -280,7 +280,7 @@ class ModelPreparation(unittest.TestCase):
                 # subsequent assessments use the persisted external-only latch directly.
                 expected = (['openai-primary'] if preferred else ['routine'] + ([] if secondary else ['openai-review'])) \
                     + ['external-review-0']
-                expected += ['external-review-1'] if secondary else []
+                expected += ['external-review-1']  # both reviewers run regardless of arrival order
                 self.assertEqual([s['stage'] for s in value['routing']['stages']], expected)
                 self.assertEqual(budget.snapshot()['external_only'], not preferred)
                 self.assertLessEqual(value['budget_used']['tool_calls'], 6)

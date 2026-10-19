@@ -397,7 +397,7 @@ class HostedModel:
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started
-        if latency > remaining_ms:
+        if latency > remaining_ms or dispatch_remaining(bound.remaining()) <= 0:
             return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
         if status != 200:
             if self.provider == 'openai':

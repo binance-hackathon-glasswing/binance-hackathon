@@ -435,7 +435,7 @@ class RequestValidationTests(AgentHarness):
             "UNKNOWN_ISSUER": dict(base, issuer_id="NVDA"),
             "SCHEMA": dict(base, schema="AssessmentRequest.v0"),
         }
-        cases["BUDGET_EXCEEDS_DECLARATION_TIME"] = dict(base, budget={"tool_calls": 6, "deadline_ms": 60001})
+        cases["BUDGET_EXCEEDS_DECLARATION_TIME"] = dict(base, budget={"tool_calls": 6, "deadline_ms": 180001})
         for reason, request in cases.items():
             with self.subTest(reason=reason):
                 model = ScriptedModel(self.w.clock, [{"output": {"action": "FINISH", "claims": [], "notes": "x"}}])

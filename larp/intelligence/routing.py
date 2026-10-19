@@ -311,6 +311,8 @@ class RoutedAssessor:
     def _assess_group(self, request, *, audit_hook):
         r = request.read()
         start = self.clock()
+        raw_limit = r.get('budget', {}).get('deadline_ms', 0)
+        bound = Deadline(raw_limit if type(raw_limit) is int else 0, self.clock, monotonic=self.monotonic)
         validator = self.make_assessor(self.routine)
         try:
             validated = validator._validate(r)
@@ -319,7 +321,6 @@ class RoutedAssessor:
         total = r['budget']['deadline_ms']
         if not 0 < total <= MAX_ASSESSMENT_MS:
             return validator._rejected(r, 'BUDGET_EXCEEDS_DECLARATION', start)
-        bound = Deadline(total, self.clock, monotonic=self.monotonic)
         original_tools = r['budget']['tool_calls']
         stages = []
 

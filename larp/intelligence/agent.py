@@ -214,6 +214,9 @@ class EvidenceAssessor:
         """
         start = self.clock()
         r = request.read()
+        raw_limit = r.get("budget", {}).get("deadline_ms", 0)
+        if deadline is None and type(raw_limit) is int and raw_limit > 0:
+            deadline = Deadline(raw_limit, self.clock)
         try:
             validated = self._validate(r)
         except (IntelligenceError, KeyError, TypeError) as exc:
@@ -236,7 +239,7 @@ class EvidenceAssessor:
             worker_group.append(worker)
         worker.start()
         worker.join(deadline.remaining() / 1000)
-        if worker.is_alive():
+        if worker.is_alive() or deadline.remaining() <= 0:
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
             frozen = self._abandoned(r, validated, start, deepcopy(io))
             if wait_for_worker:

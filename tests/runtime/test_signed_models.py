@@ -146,11 +146,11 @@ class DeferredProviderTimeouts(unittest.TestCase):
         self.assertFalse(q.finished.wait(1), 'An abandoned inner provider still owns the lane')
         self.assertIsNone(q.ready())
         self.assertFalse(q.submit('replacement', req))
-        self.assertEqual(len(workers), 1)  # no overlapping review or replacement call
+        self.assertEqual(len(workers), 3)  # one owned primary plus two reviewers; no replacement
         release.set()
         self.assertTrue(q.finished.wait(3))
         self.assertEqual(q.ready()['result']['status'], 'UNAVAILABLE')
-        self.assertEqual(len(workers), 1)  # the elapsed chain cannot dispatch a late review
+        self.assertEqual(len(workers), 3)  # no post-cutoff dispatch
 
     def test_slm5_late_response_precedes_result_and_ack_and_cannot_reopen_on_restart(self):
         q, _, release, _, fixture = self.start_blocked_provider()
@@ -164,9 +164,10 @@ class DeferredProviderTimeouts(unittest.TestCase):
         self.assertEqual(events[-1]['kind'], 'RESULT')
         self.assertEqual(ready['result']['status'], 'UNAVAILABLE')
         responses = [e for e in events if e['kind'] == 'MODEL_RESPONSE']
-        self.assertEqual(len(responses), 1)
+        self.assertEqual(len(responses), 3)
         self.assertEqual(responses[0]['response']['reasoning_summary'], 'Synthetic reasoning.')
-        self.assertIn('Synthetic reasoning.', ready['result']['model_io']['cot'])
+        self.assertTrue(all(e['response']['reasoning_summary'] == 'Synthetic reasoning.' for e in responses))
+        self.assertFalse(ready['result']['model_io']['cot'])  # late replies stay audit-only
         path = q.pending['provider-timeout']
         q.ack('provider-timeout')
         self.assertEqual(q._read(path)[-1]['kind'], 'ACK')

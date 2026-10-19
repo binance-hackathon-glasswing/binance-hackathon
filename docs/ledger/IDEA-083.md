@@ -484,3 +484,10 @@ suites, then the full pinned Linux/PostgreSQL suite and available systemd checks
 No golden regeneration, provider call, wallet action or host deployment is part
 of this local verification. AB8's measured cycle evidence and AB10 environment
 limits must be recorded explicitly rather than inferred from stage arithmetic.
+
+AB-IMPL01 review correction: the first ceiling test used unsupported mode `dev`;
+corrected to `development`. Its initial failure is not a ceiling regression
+witness; the old60000 value is independently source-verified. Existing serial
+review-order assertions now check stable stage precedence with both reviewers;
+B11's both-unavailable case now preserves the primary as INCOMPLETE. Deferred
+late response summaries remain in the durable audit, not the frozen decision.
