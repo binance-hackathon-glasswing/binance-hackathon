@@ -13,8 +13,8 @@ The gates and DR items are defined in [DEPLOYMENT_BUILD.md](../DEPLOYMENT_BUILD.
 
 ## Current state on 2026-10-19 (verify before acting)
 
-Read the local [pre-trading checklist](../PRE_TRADING_CHECKLIST.md) and
-[coordinator handoff](../COORDINATOR_HANDOFF_20261019.md) in this tracker. For a
+Read the local [pre-trading checklist](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/764eff39ac900dfb9bbc9cc05c5358ab78deae1c/docs/build/PRE_TRADING_CHECKLIST.md) and
+[coordinator handoff](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/764eff39ac900dfb9bbc9cc05c5358ab78deae1c/docs/build/COORDINATOR_HANDOFF_20261019.md) in this tracker. For a
 checkout lacking them, use [PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133).
 Historical paragraphs are dated evidence, not instructions to repeat setup.
 

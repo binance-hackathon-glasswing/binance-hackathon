@@ -1998,3 +1998,9 @@ dependency and evidence/blocked-input report. Existing completed tasks stay done
 Document checks: links resolve, IDs unique, current code/release evidence remains
 correct and all changes are non-runtime documentation. No external messages,
 account, host, wallet/key, model/provider/receiver or trading action.
+
+## PC-PRREVIEW-20261019 — remaining PR disposition
+
+Scope: review all other open PRs, fix issues and merge eligible changes while retaining PR133 as the coordination tracker. Criteria: only merge complete reviewed scope, retain source/funding acceptance gates, preserve historical evidence and all runtime bytes, and reconcile PR126 into this tracker without losing the current handoff/owner plan.
+
+PR126 merged at `eb430b8` after corrected briefs, ledger conflict repair and standalone pinned links; documentation-only checks pass. Its org CI39216599144 ran no steps because of billing (#98), while runtime matches qualified integration source. PR139 fixes historical explorer attribution and integration conflicts; verified source/ABI, Keegan source review and real route check remain absent, so draft retained. PR172 fixes obsolete host ownership, historical timing and unconditional extra-funding guidance; approved operator reconciliation and actual funding/opening evidence remain absent, so draft retained. Review completion does not satisfy these operational gates.
