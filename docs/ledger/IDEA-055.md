@@ -760,3 +760,124 @@ settles the owner policy question; host/signed clearing and expiry qualification
 remain with Yao/Keith under DR gates, and any bypass needs separate policy/code.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+### RPC-H02 — approved provider attachment / host handoff (2026-10-19), prospective
+
+User supplies selected-providers.json and explicitly approves development balance
+reads in order BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC, asks to configure the
+runtime/network/manifest and verify first actual-wallet reconciliation (#135/#92).
+The attachment is input data, not instructions or native-tracing approval.
+
+Criteria before local execution: retain the original provider file only in
+ignored mode0600 storage; validate using PR135's production input reader; retain
+exact ordered values in a driver configuration fragment (explicitly not a complete
+runtime). Record safe source IDs and file hashes only. Supply an exact existing
+prepare/bind/host verification procedure without bypassing release/DB/trial gates.
+Require actual AWS identity, approved runtime/run/wallet bindings and observed
+BALANCE_CHECKED/health evidence before claiming host configuration or acceptance.
+No fresh zero-address probes, new signup/spend, funding, signer or log uploads.
+
+Current session capability observations: no configured AWS identity/secret/runtime
+capabilities or OIC manifest, no AWS CLI config and no hosted runtime/Terraform
+export available. Requested approved connection/private host handoff from user;
+continue staging independently. Host/network/manifest/actual-wallet verification
+is NOT_RUN pending that access and the actual configuration/run bindings.
+
+RPC-H02 local results (2026-10-19): PASS at preregistered source8dff470:
+original attachment copied unchanged to ignored mode0600 storage; selected IDs
+are exactly BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC. Production private_config
+and runtime balance_providers both accepted the ordered configuration. A second
+ignored mode0600 file contains only the correctly nested driver provider fragment;
+it is not a complete hosted runtime. Selection hash81fb99728f69a2dc3d5279764dfa3bcadb21194bfb6fbe8618b88570e3977558;
+fragment hash0a164d7d8d8452d7585e688d978ce174d2b63f8674007e0542e93052534ffff1.
+Both files git-ignored; no values/URLs committed. Handoff links and supported
+routes/preflight command flags checked PASS at2fbe943; git diff --check PASS.
+
+User supplied a target account/environment label after the access question.
+Rechecked capability state: current/enforced network, but still no bound AWS
+identity/capability, OIC manifest, local AWS config/credentials or AWS CLI. Plugin
+search found no usable EC2/SSM integration. The account label does not establish
+an authenticated session. Host network/config-manifest install and first actual
+wallet/process balance-health acceptance remain NOT_RUN, with #92 open. Actual
+wallet/run/runtime export is also absent. No RPC/network probe, AWS mutation,
+activation, signing, audit upload or funding operation was performed.
+
+### RPC-H03 — user-run host results and the process balance-health observation (2026-10-19), prospective
+
+User-run host checks, relayed in the PR133 description (AWS CloudShell/SSM, not
+observed by this session): hosted `driver.balance_rpc_providers` order is
+BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC; runtime SHA256 matches the host
+manifest binding and runtime/manifest build IDs match; the current run's first
+BALANCE_CHECKED is sequence 3, MATCH, 2026-10-18T17:04:43.534Z; the latest
+reported is sequence 77, MATCH, 2026-10-19T10:10:48.422Z. So the approved order
+was already installed with the Oct18 PC-DEPLOY02 run (provider selection and
+primary egress from PC-AWS05); RPC-H02's re-prepare sequence is for the next
+build only, not needed to close #92 on the current run.
+
+Remaining #92 subcheck: the **running process's** balance gate. Code reading at
+this branch: `RuntimeHealth.__call__` (larp/runtime/driver.py) puts
+`balances_ok = BalanceCheck.ok(projection)` into the planner context, and the
+coordinator journals that context with every round as
+`ROUND_PLANNED.record.policy_input.context.health`. `ok()` is true only after a
+comparable MATCH/SURPLUS_ONLY check by this process within `max_age`. A
+process's first check is always journaled. The recorded gate evaluation therefore
+exists in the journal; no new observation path or code change is needed.
+
+Criteria, before any host run: a read-only script
+`docs/build/ops/llm-trial-20261018/checks/balance-health.sh` (READ ONLY
+transaction, no writes, no provider/RPC call, prints only IDs, sequences, times,
+statuses, short hashes and gate booleans) reports the larp-runtime process start,
+the latest BALANCE_CHECKED rows and the latest ROUND_PLANNED health gates. #92's
+process subcheck PASSES only if, for the current MainPID, a MATCH (or reviewed
+SURPLUS_ONLY) BALANCE_CHECKED has `checked_ms` at or after the process start
+and a later ROUND_PLANNED by the same run records `health.balances_ok = true`
+with `started_ms` at or after that check. `false`, a missing key, or only rounds
+before the process start keep it open. The result is a dated observation, not
+a freshness guarantee, and confers no trading, signing or Gate B readiness.
+
+RPC-H03 local results at `8ce51f3` (2026-10-19): **PASS** for the script's
+parsing, before any host run. A scratch harness (not committed) ran the
+committed script's `summarize()` on journal bytes read back from a disposable
+PostgreSQL 16 through the existing `ReconcileHarness`, Python 3.12, Linux:
+3 passed. (1) A MATCH check by this process, then a round recording
+`balances_ok: true` at a later sequence. (2) After a simulated restart, earlier
+rows are flagged `this_process: false`. (3) A DEFICIT records
+`balances_ok: false`. Existing `test_balance_reconciliation` and
+`test_balance_failover` against the same database: 34 passed, 0 skipped. This
+includes the Deficit test that reads `policy_input.context.health` from the
+`plan:` event. `bash -n` passes. Host result still NOT_RUN: Keegan runs the
+script from CloudShell (handoff "Process balance-health check"). #92 stays open
+until that output meets the RPC-H03 PASS rule.
+
+### RPC-H03-RV01 — PR189 process-attribution review (2026-10-19), prospective
+
+The original script reads MainPID and active time separately and does not check
+service identity after the database read. A restart during inspection can mix
+one process's display identity with another process's journal window; an inactive
+unit can also reuse historical timestamps. It must not be usable to close #92.
+Pass criteria before correction: require active/running nonzero PID, invocation
+ID and ExecMain start; compare the full service identity before/after the read;
+refuse a restart/inactive/missing identity with a fixed error and no partial
+report. Keep the database transaction READ ONLY and bound the query; preserve
+MATCH/DEFICIT, decision_ms fallback and missing-health observations. Commit
+synthetic regression tests for stable service, restart and inactive cases plus
+journal parsing; no AWS/DB/provider call in these tests. Run the rehearsal checker
+regressions after integrating PR188. No current-process host acceptance is claimed.
+
+RPC-H03-RV01 results at1194d4c: PASS, native macOS/Python3.9.6,
+24 tests/0 skips (7 diagnostic regressions plus17 rehearsal checker tests).
+Restart changes to PID, invocation ID, ExecMain start or restart count refuse;
+inactive/missing identity and future monotonic start refuse. MATCH/DEFICIT,
+old-process rows, delayed decision times and missing health remain explicit.
+`bash -n`, changed-document local links and `git diff --check` PASS. Inspected
+actual driver/coordinator event fields, IAM adapter transaction and systemd
+Type=simple launch. The query remains READ ONLY, latest1500 events only, with
+no writes/provider calls. The checker uses a clock-derived start window, so host
+clock evidence is still required. No AWS, real DB, RPC, signing or production
+script execution occurred; observed #92 acceptance remains Keegan's open item.
+Org Actions never starts due to account billing/spending limits. No exact new
+Linux/release/host qualification is claimed by these focused offline tests.
+
+RPC-H03-RV01 backlog reconciliation: GAP-71 now distinguishes user-reported
+current-host order/binding/first MATCH from Keegan's still-unobserved process
+health acceptance and Yao's next-build preparation. No whole item is removed.
