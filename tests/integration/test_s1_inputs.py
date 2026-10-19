@@ -8,14 +8,14 @@ from larp.integration.contract import context_hash, red_flag_predicates
 from larp.integration.runtime import RuntimePlanner
 from larp.runtime.driver import SessionCalendar
 from larp.strategy import s1
-from tests.integration.test_published_red_flag_policy import PublishedPredicatePolicy
+from tests.integration import test_published_red_flag_policy as published
 from tests.strategy.test_s1_core import cfg
 from tests.strategy.test_s1_plan import snap
 
 
 class ExposureInputs(unittest.TestCase):
     def setup_record(self):
-        s, record, _, now = PublishedPredicatePolicy().producer_context('RF2-1.05-SUPPORTED', '1.05')
+        s, record, _, now = published.PublishedPredicatePolicy().producer_context('RF2-1.05-SUPPORTED', '1.05')
         markets = {m['symbol']: m for m in s.context.read()['markets']}
         # A frozen synthetic calendar surrounds the actual verifier fixture's event.
         event = record['falsifier_findings'][0]['red_flag']['event_original_ms']

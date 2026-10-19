@@ -205,6 +205,13 @@ class ContextBuilder:
         if self.profile.get('baseline') == 'TREND_GUARDED_VOL':
             context['execution_session'] = self.calendar.window(now_ms)
             context['execution_attempt_budget'] = projection.get('execution_attempt_budget')
+            from larp.integration.exposure import exposure_inputs
+            parsed = market_view(markets, self.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc), self.profile)
+            context['exposure_input'] = exposure_inputs(records=contexts, profile=self.profile,
+                run_id=self.run_id, profile_hash=self.profile_hash, now_ms=now_ms, markets=parsed,
+                known_versions=((current.get('policy_state') or {}).get('data') or {}).get('evidence_versions', {}),
+                universe=self.universe, session=session['index'], calendar=self.calendar)
+            context['exposure_evidence'] = context['exposure_input']['evidence']
         if self.gas_quotes is not None:
             context["gas_quotes"] = self.gas_quotes(now_ms)
         if broadcast_ms is not None:
@@ -328,6 +335,15 @@ class RuntimePlanner:
     def _jobs(self, snapshot, proposal, now_ms) -> list:
         context = snapshot.context.read()
         jobs = []
+        if context.get('profile', {}).get('baseline') == 'TREND_GUARDED_VOL':
+            from larp.strategy.s1 import config
+            close = context['execution_session']['close_ms']
+            due = close + config(context['profile'])['delay'] * 1000
+            for symbol, issuer in sorted(self.issuer_by_token.items()):
+                if symbol in snapshot.universe:
+                    jobs.append(self._job(dict(kind='REASSESS_ISSUER', issuer_id=issuer,
+                        reason='S1_SESSION_CLOSE', session=context['execution_session']['index'],
+                        close_ms=close, profile_hash=snapshot.policy_profile_hash), due, 45))
         for record in context.get("assessments", []):
             if record.get("due_reviews"):
                 due = record.get("review_due_ms")
