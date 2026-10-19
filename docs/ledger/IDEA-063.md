@@ -265,3 +265,29 @@ Default final coverage remains refused (9 US-session samples,10 required);
 40USDT quote size exceeds35USDT development signer input cap. No profile pin.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## YP-01 — recovered original interim-summary provenance (2026-10-19 SGT)
+
+Criteria: IDEA-066 PC-YAO-NB01 (`47fa8f9`, pushed before verification). The user
+requests remaining non-blocked Yao work from PR133. The old PC-AWS07/KMP-QUOTE01
+summary/report/metadata originals were retained in Yao's download and deployment
+copies. They are now supplied in
+[`interim-provenance-20261019`](../build/evidence/interim-provenance-20261019/README.md).
+
+At pushed verifier `6833462`: four transfer checksums PASS; summary SHA
+`41e17b4d14322d79b0231544d81d058b128c039b6abb707de5f2c7a5f183be2b`, report
+`0195e57623b6aa1bf6fdb9f02cbd6aa83f1dbe6d5c7ef763d42ddcfaba824f89`, capture
+`2ec51d514bff738a1b09a5c0be694d69a0e1334dc3bc2990b9c7d57354dde7da`.
+The metadata's two original capture byte prefixes in the later committed export
+verify against their pre-existing hashes/counts:180+336 records,516 total. The
+current summarizer reproduces the complete summary object and report coverage/
+symbol details. Actual retained profile SHA `d951207f…4542` matches the previously
+reported SHA; its embedded summary equals the original. No profile regenerated.
+
+This completes Yao's missing-original handoff, not Keith's independent review.
+Historical originals retain the unverified fee-netting statement; FN3/#119
+supersedes that assumption. Coverage is still2days/9US-session samples/token,
+all860 swap-gas estimates FALLBACK; final defaults correctly refuse. Raw API
+responses were not reverified. Final capture/profile, #119/#120/#44 acceptance
+and full-holdings/gas inputs remain open with Keith/Isaac. Results and reproducible
+verifier are in the linked directory; no new market/host/wallet operation.

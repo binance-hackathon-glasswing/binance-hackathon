@@ -2250,6 +2250,7 @@ This session's delete push was refused (HTTP 403), so they still exist; Keegan
 deletes them in GitHub. Correction: the earlier option text for #49 cited the
 Oct19 binding check. That check covered the current non-CI `ea25b52` host
 build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.
+
 ## PC-YAO-NB01 — remaining local Yao work (2026-10-19 SGT; prospective)
 
 Scope: user requests the non-blocked work in Yao's PR133 section and a review PR.
@@ -2273,4 +2274,29 @@ Pass criteria, before running regressions:
 4. Publish only sanitized evidence, verification code/tests and review findings;
    update the checklist/backlog to retain exact peer/host/input dependencies.
    No whole readiness gate closes. Keegan owns independent review.
+
+### PC-YAO-NB01 results / PC-LABEL02-INJ01-R1 — 2026-10-19 SGT
+
+Criteria committed/pushed `47fa8f9`; tests/original handoff pushed `35f42b9` before
+execution. Original saved public HTML hash `74b6088a…977c3` verified. All5 new
+trust tests/13 subtests pass, including the private public-source fixture in a
+synthetic issuer/time context and mocked v3 transports. Exact capped v3 routing,
+current shadow config and primary/review prompt composition tested. All3 stages
+retain the benign-link instruction flag/incomplete coverage;10 instruction
+examples remain flagged, URL tool destinations refused and ordinary text clean.
+No detector/prompt/runtime change or historical-output/label change. Intent:
+retain the existing conservative trust/coverage behavior, pending Keegan review.
+
+Full intelligence suite on macOS arm64/Python3.12.14:425 passed,2 skipped,
+1394 subtests,13.39s. The private-source fixture passes in the separate5-test
+run. Two loopback-bind sandbox failures in the first run were environment-only;
+the same full suite passed with loopback access. No Linux/release/host or live
+provider/semantic-quality qualification is claimed. YP-01 recovers/reproduces the
+old summary/capture provenance (IDEA-063), completing Yao's original-file export.
+
+Review findings, commands, exact remaining owners and pinned receipts:
+[`YAO_NONBLOCKING_REVIEW_20261019.md`](../build/YAO_NONBLOCKING_REVIEW_20261019.md).
+Remaining: Keegan independent INJ01 trust review, Keith original-summary/final
+measurement review, and existing private-input/host/source/funding/signer gates.
+No whole GAP closes; T01/M9 and source/live-model qualification remain open.
 
