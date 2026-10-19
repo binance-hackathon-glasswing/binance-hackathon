@@ -1,0 +1,926 @@
+{
+  "schema": "SignedPrerequisitesEvidence.v1",
+  "criteria_ref": "IDEA-070 SP-01",
+  "criteria_commits": [
+    "b96a932",
+    "946edfc"
+  ],
+  "signing_enabled": false,
+  "ready_to_install": false,
+  "source_status": "BLOCKED_NO_VERIFIED_SOURCE",
+  "route_check_status": "NOT_RUN_SOURCE_AND_INDEPENDENT_REVIEW_REQUIRED",
+  "fee_status": "UNVERIFIED_NO_APPLICABLE_SOURCE_OR_TRANSACTION_BOUND_QUOTE_RECEIPT",
+  "native_trace_status": "UNQUALIFIED",
+  "caps_status": "BLOCKED_FINAL_PROFILE_FRESH_HOLDINGS_AND_APPROVAL_REQUIRED",
+  "raw_public_capture_root": "/private/tmp/larp-sp01-public-20261018",
+  "python_transport_default_ca_exists": false,
+  "transport_observations": [
+    {
+      "label": "source-router-bscscan",
+      "url": "https://bscscan.com/address/0xb44446b0c8e56988c34f7ff73ae904982b5fdda5#code",
+      "requested_at": "2026-10-18T07:43:34.100679+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "challenge_marker": false
+    },
+    {
+      "label": "source-router-sourcify",
+      "url": "https://sourcify.dev/server/v2/contract/56/0xb44446b0c8e56988c34f7ff73ae904982b5fdda5?fields=all",
+      "requested_at": "2026-10-18T07:43:34.244262+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "challenge_marker": false
+    },
+    {
+      "label": "source-facet-bscscan",
+      "url": "https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code",
+      "requested_at": "2026-10-18T07:43:34.506865+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "challenge_marker": false
+    },
+    {
+      "label": "source-facet-sourcify",
+      "url": "https://sourcify.dev/server/v2/contract/56/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603?fields=all",
+      "requested_at": "2026-10-18T07:43:34.582076+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "challenge_marker": false
+    },
+    {
+      "label": "vendor-index",
+      "url": "https://docs.liquidmesh.io/llms.txt",
+      "requested_at": "2026-10-18T07:43:34.658640+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError"
+    },
+    {
+      "label": "vendor-quote",
+      "url": "https://docs.liquidmesh.io/docs/quote-api",
+      "requested_at": "2026-10-18T07:43:34.915241+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError"
+    },
+    {
+      "label": "bnb-chain",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:43:34.989490+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "eth_chainId",
+        "params": []
+      }
+    },
+    {
+      "label": "nodereal-chain",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:43:35.236667+00:00",
+      "http_status": null,
+      "response_bytes": 0,
+      "response_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transport_error": "URLError",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "eth_chainId",
+        "params": []
+      }
+    }
+  ],
+  "curl_observations": [
+    {
+      "label": "curl-facet-bscscan",
+      "url": "https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code",
+      "requested_at": "2026-10-18T07:44:34.082530+00:00",
+      "http_status": "403",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 5549,
+      "response_body_sha256": "02abae28a7f42917badf2c92803bc42706aacacec7df35ebda0167df0965a263",
+      "challenge_marker": true
+    },
+    {
+      "label": "curl-facet-sourcify",
+      "url": "https://sourcify.dev/server/v2/contract/56/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603?fields=all",
+      "requested_at": "2026-10-18T07:44:34.220310+00:00",
+      "http_status": "404",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 125,
+      "response_body_sha256": "d7ab73b48ed5ffaad1ab9898b249500c806f723b81eb2e4f3d908705cbbb0a0c",
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-bnb-chain",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:44:35.608845+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 40,
+      "response_body_sha256": "671e6983d47c9d4dc5b0eb1fcff273542fd9c1f38637b91908d773a5564a0868",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "eth_chainId",
+        "params": []
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-bnb-finalized",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:44:36.063025+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 9673,
+      "response_body_sha256": "febc99863da23bd0b17ee3750bbaf799bae90d914547ed934a41a8c1290a3710",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ]
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-bnb-historical-trace",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:44:36.492054+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 78,
+      "response_body_sha256": "c163f4dc5ce3ae5a4d7bb089e92eccc6e78479ba120e7f83a8fb6cdbf2f5a1c7",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32000,
+        "message": "missing trie node"
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-bnb-recent-trace",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:44:36.944704+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 114,
+      "response_body_sha256": "48b501312eea43cb77baad8e6f2ebf557f0b3b8ef6010d8bf81738d40d8a9077",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0xb54100f836ae29b646ae69e1149741b873cc467d3d810f38fb7e7f313e5d6525",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32002,
+        "message": "the resource debug_traceTransaction is not available."
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-bnb-recheck",
+      "url": "https://bsc-dataseed.bnbchain.org",
+      "requested_at": "2026-10-18T07:44:37.401980+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 9673,
+      "response_body_sha256": "4bb8b3042b14bd36d174c43b6e44cff5f3bdec1f1828f792f7d76321880f96ba",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x7a6137d",
+          false
+        ]
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-nodereal-chain",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:44:37.863430+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 40,
+      "response_body_sha256": "2937fe907a12a8546dfa06e587e4b440a863035fbc204cd6574b813ce725966c",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "eth_chainId",
+        "params": []
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-nodereal-finalized",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:44:38.282521+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 9190,
+      "response_body_sha256": "2470390d357766b9e95f92329baf5275b516f1261ffb4c3876589c3446f5be99",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ]
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-nodereal-historical-trace",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:44:38.697375+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 79,
+      "response_body_sha256": "70d92ed9a76d67c2d6daf7b986904ca4e88c4657c263d6b06e2722ee1d1c069e",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32000,
+        "message": "missing trie node"
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-nodereal-recent-trace",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:44:39.145143+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 115,
+      "response_body_sha256": "643f8f6a4759aad3d4f9d2bfb847f0876fdffd7b74b9f2e2cbce0b30312b9d83",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 11,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0x8aea9aca70f52dd9285c8055560ea9d9a9d3332f2dc325f233a651a22a0eb072",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32002,
+        "message": "the resource debug_traceTransaction is not available."
+      },
+      "challenge_marker": false
+    },
+    {
+      "label": "curl-nodereal-recheck",
+      "url": "https://bsc.nodereal.io",
+      "requested_at": "2026-10-18T07:44:39.538151+00:00",
+      "http_status": "200",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 9191,
+      "response_body_sha256": "21614f4b8773cfdf3b3e57bb264d6864e67a40d1f9d31c43d5b93b4012b18c27",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x7a61381",
+          false
+        ]
+      },
+      "challenge_marker": false
+    }
+  ],
+  "quote_handoff": {
+    "manifest_sha256": "b6db3560fdbfd2e7f6b2fba70ddd6c99927567642b2edf95e95a7ba6b4e5a1b4",
+    "verified_files": [
+      {
+        "path": "capture-2026-10-16.jsonl",
+        "sha256": "a125d2a400c1a5375d609dfdd24200aead10099aa23376ac29b9a4f6fbaa3379",
+        "bytes": 140585
+      },
+      {
+        "path": "capture-2026-10-17.jsonl",
+        "sha256": "a07a128bf34cde047e2985ae9657379672ad0e6dcfc2ed44e55e81a634b8e3b6",
+        "bytes": 585327
+      },
+      {
+        "path": "capture-2026-10-18.jsonl",
+        "sha256": "172ba988ec5862a0ad979ae57014f0c942ac53d6d8afd26cec7d3d8c84e23a64",
+        "bytes": 70382
+      },
+      {
+        "path": "selected-raw/0626c8a8be48743ad35210de65be00ef1851724fce7fa4936a1d05c8889de104.json",
+        "sha256": "0626c8a8be48743ad35210de65be00ef1851724fce7fa4936a1d05c8889de104",
+        "bytes": 12472
+      },
+      {
+        "path": "selected-raw/17f9a85686bee78852cfaea77a2357f01f2deeaf1b63166db37c46c5f9f8bbc9.json",
+        "sha256": "17f9a85686bee78852cfaea77a2357f01f2deeaf1b63166db37c46c5f9f8bbc9",
+        "bytes": 12472
+      },
+      {
+        "path": "selected-raw/18a64bdee42e3279f6c2de92d7c7348f1d07da5260c1e7574987236e6faa7796.json",
+        "sha256": "18a64bdee42e3279f6c2de92d7c7348f1d07da5260c1e7574987236e6faa7796",
+        "bytes": 16862
+      },
+      {
+        "path": "selected-raw/1938e35d69548d222d1834004aa0a81bd7826711a73d2ad3743baa4e94c41bc5.json",
+        "sha256": "1938e35d69548d222d1834004aa0a81bd7826711a73d2ad3743baa4e94c41bc5",
+        "bytes": 1313
+      },
+      {
+        "path": "selected-raw/1a422811eaf4eaa86770751fbdf990530c292541fe497cc5e6c764baa481f183.json",
+        "sha256": "1a422811eaf4eaa86770751fbdf990530c292541fe497cc5e6c764baa481f183",
+        "bytes": 16865
+      },
+      {
+        "path": "selected-raw/1f8785c50e106327674bcb64b1ae853c9ee938f649e5a20f99591c4b5fd2b4c1.json",
+        "sha256": "1f8785c50e106327674bcb64b1ae853c9ee938f649e5a20f99591c4b5fd2b4c1",
+        "bytes": 16861
+      },
+      {
+        "path": "selected-raw/2d59d6113ea8fbe4848ea1fcdea3a88747311b482b880854b2feffcb0f29fb4b.json",
+        "sha256": "2d59d6113ea8fbe4848ea1fcdea3a88747311b482b880854b2feffcb0f29fb4b",
+        "bytes": 12471
+      },
+      {
+        "path": "selected-raw/3a075f620cd510d7c12dfb640555e3f7e8db07ea73e21d057a8dfbe4005cb43b.json",
+        "sha256": "3a075f620cd510d7c12dfb640555e3f7e8db07ea73e21d057a8dfbe4005cb43b",
+        "bytes": 12469
+      },
+      {
+        "path": "selected-raw/4d181bad780c43755efe8f7843dcb92703b7e8bc74ec882a5615c3637fa21e18.json",
+        "sha256": "4d181bad780c43755efe8f7843dcb92703b7e8bc74ec882a5615c3637fa21e18",
+        "bytes": 1311
+      },
+      {
+        "path": "selected-raw/51ac12dfcdc5d9d4ffb5af78ba703ab4a676a8f71c438a71ca9516c8c01b50c1.json",
+        "sha256": "51ac12dfcdc5d9d4ffb5af78ba703ab4a676a8f71c438a71ca9516c8c01b50c1",
+        "bytes": 1313
+      },
+      {
+        "path": "selected-raw/567bf36c1792df9296dfc2ddcab91f47f251eac0b15712e915fd9e5360bf70d8.json",
+        "sha256": "567bf36c1792df9296dfc2ddcab91f47f251eac0b15712e915fd9e5360bf70d8",
+        "bytes": 12479
+      },
+      {
+        "path": "selected-raw/63f706282bc5e0648feddd2284b47fd8a0e44e949bd83a55932f8917e8388840.json",
+        "sha256": "63f706282bc5e0648feddd2284b47fd8a0e44e949bd83a55932f8917e8388840",
+        "bytes": 12472
+      },
+      {
+        "path": "selected-raw/653052af21d480144a04b2fffd344b2ea8635cb78ca23024efb5e2871e5b52c6.json",
+        "sha256": "653052af21d480144a04b2fffd344b2ea8635cb78ca23024efb5e2871e5b52c6",
+        "bytes": 12472
+      },
+      {
+        "path": "selected-raw/653bf6cd7ac84614cd42ea484cd2b2eb736d8e332811d9c8a4429ccf90912652.json",
+        "sha256": "653bf6cd7ac84614cd42ea484cd2b2eb736d8e332811d9c8a4429ccf90912652",
+        "bytes": 81081
+      },
+      {
+        "path": "selected-raw/77ad70ae62c4fcee1f056cbcb252277fd9e877098049cb7266d8a30cb59a1cf6.json",
+        "sha256": "77ad70ae62c4fcee1f056cbcb252277fd9e877098049cb7266d8a30cb59a1cf6",
+        "bytes": 1313
+      },
+      {
+        "path": "selected-raw/7f38e60cdf9225eb40d21c6558fcbdfd971079b5a7c63843048aadd21025f73f.json",
+        "sha256": "7f38e60cdf9225eb40d21c6558fcbdfd971079b5a7c63843048aadd21025f73f",
+        "bytes": 1310
+      },
+      {
+        "path": "selected-raw/84f902b0cc70eebdb2bd3e07310f35def893912f66f40126600e78f45815c4b7.json",
+        "sha256": "84f902b0cc70eebdb2bd3e07310f35def893912f66f40126600e78f45815c4b7",
+        "bytes": 1313
+      },
+      {
+        "path": "selected-raw/9d3bdb990dfdd91a6638be4c83e9b267883bad91524a29039c328be8348f19d2.json",
+        "sha256": "9d3bdb990dfdd91a6638be4c83e9b267883bad91524a29039c328be8348f19d2",
+        "bytes": 12476
+      },
+      {
+        "path": "selected-raw/9ec75efeba6ba5201e35f681d6fd8725180991efb56458d52ae4490043f21f03.json",
+        "sha256": "9ec75efeba6ba5201e35f681d6fd8725180991efb56458d52ae4490043f21f03",
+        "bytes": 12466
+      },
+      {
+        "path": "selected-raw/a1ba86337cd3c7b3b9d5836a3574b57f426203e41b93b2a30334cd1a0e6028b2.json",
+        "sha256": "a1ba86337cd3c7b3b9d5836a3574b57f426203e41b93b2a30334cd1a0e6028b2",
+        "bytes": 1313
+      },
+      {
+        "path": "selected-raw/ab8914769bc5be8cf726d51c15556aabe95216a5b78e80f184f48b64267ba109.json",
+        "sha256": "ab8914769bc5be8cf726d51c15556aabe95216a5b78e80f184f48b64267ba109",
+        "bytes": 12471
+      },
+      {
+        "path": "selected-raw/ad354b628f01e3276b0795d33e617fd8acb3cb0669a2689d8ddf33c2d5a76d92.json",
+        "sha256": "ad354b628f01e3276b0795d33e617fd8acb3cb0669a2689d8ddf33c2d5a76d92",
+        "bytes": 1311
+      },
+      {
+        "path": "selected-raw/db70616de742f3d43803670d7c2f34401a881391fe6936ed28c017abdaea1883.json",
+        "sha256": "db70616de742f3d43803670d7c2f34401a881391fe6936ed28c017abdaea1883",
+        "bytes": 1311
+      },
+      {
+        "path": "selected-raw/dc7755e3d447b8d7588f810c7d46fb1c4c9d12b0f4fc981fc764bad0c20a301f.json",
+        "sha256": "dc7755e3d447b8d7588f810c7d46fb1c4c9d12b0f4fc981fc764bad0c20a301f",
+        "bytes": 19392
+      },
+      {
+        "path": "selected-raw/e5a443c986653be8aa6896ae1df81c00d9f686e9b8ba6344534dc73f7f8ba238.json",
+        "sha256": "e5a443c986653be8aa6896ae1df81c00d9f686e9b8ba6344534dc73f7f8ba238",
+        "bytes": 1311
+      },
+      {
+        "path": "selected-raw/f8b2ddbddf0ce56e4a655c24f4837024945a824ab9763ceeab99af8a1cd7b4bd.json",
+        "sha256": "f8b2ddbddf0ce56e4a655c24f4837024945a824ab9763ceeab99af8a1cd7b4bd",
+        "bytes": 13233
+      }
+    ],
+    "token_samples": 850,
+    "gas_methods": {
+      "FALLBACK": 1700
+    },
+    "max_fallback_swap_fee_wei": 117060138252000,
+    "actual_gas_qualified": false,
+    "quotes": [
+      {
+        "artifact_sha256": "0626c8a8be48743ad35210de65be00ef1851724fce7fa4936a1d05c8889de104",
+        "at": "2026-10-18T06:55:32.358Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 53000748,
+        "value": 0,
+        "minimum_output": "113323159321621368",
+        "quoted_output": "113892622433790320",
+        "fee_fields": {
+          "tradeFee": "0.00953356",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "17f9a85686bee78852cfaea77a2357f01f2deeaf1b63166db37c46c5f9f8bbc9",
+        "at": "2026-10-18T06:55:47.837Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 52530943,
+        "value": 0,
+        "minimum_output": "113319348006587462",
+        "quoted_output": "113888791966419560",
+        "fee_fields": {
+          "tradeFee": "0.00944631",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "18a64bdee42e3279f6c2de92d7c7348f1d07da5260c1e7574987236e6faa7796",
+        "at": "2026-10-18T06:55:49.587Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 61311490,
+        "value": 0,
+        "minimum_output": "75475470171068124",
+        "quoted_output": "75854743890520728",
+        "fee_fields": {
+          "tradeFee": "0.01102526",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "1a422811eaf4eaa86770751fbdf990530c292541fe497cc5e6c764baa481f183",
+        "at": "2026-10-18T06:55:49.937Z",
+        "params": {
+          "amount": "75854743890520728",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 60045974,
+        "value": 0,
+        "minimum_output": "39735757455349544075",
+        "quoted_output": "39935434628492004096",
+        "fee_fields": {
+          "tradeFee": "0.01080073",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "1f8785c50e106327674bcb64b1ae853c9ee938f649e5a20f99591c4b5fd2b4c1",
+        "at": "2026-10-18T06:56:05.101Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 55735071,
+        "value": 0,
+        "minimum_output": "75473663722341886",
+        "quoted_output": "75852928364162700",
+        "fee_fields": {
+          "tradeFee": "0.01002553",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "2d59d6113ea8fbe4848ea1fcdea3a88747311b482b880854b2feffcb0f29fb4b",
+        "at": "2026-10-18T06:54:40.600Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 62282249,
+        "value": 0,
+        "minimum_output": "186117951814976624",
+        "quoted_output": "187053217904499120",
+        "fee_fields": {
+          "tradeFee": "0.0112056",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "3a075f620cd510d7c12dfb640555e3f7e8db07ea73e21d057a8dfbe4005cb43b",
+        "at": "2026-10-18T06:55:15.465Z",
+        "params": {
+          "amount": "296781465669062960",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 57829327,
+        "value": 0,
+        "minimum_output": "39780858412243193598",
+        "quoted_output": "39980762223359993566",
+        "fee_fields": {
+          "tradeFee": "0.0104041",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "567bf36c1792df9296dfc2ddcab91f47f251eac0b15712e915fd9e5360bf70d8",
+        "at": "2026-10-18T06:54:57.841Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 58339916,
+        "value": 0,
+        "minimum_output": "117292185676159294",
+        "quoted_output": "117881593644381200",
+        "fee_fields": {
+          "tradeFee": "0.01049657",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "63f706282bc5e0648feddd2284b47fd8a0e44e949bd83a55932f8917e8388840",
+        "at": "2026-10-18T06:54:56.090Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 55208681,
+        "value": 0,
+        "minimum_output": "186118012041677008",
+        "quoted_output": "187053278433846240",
+        "fee_fields": {
+          "tradeFee": "0.0099325",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "653052af21d480144a04b2fffd344b2ea8635cb78ca23024efb5e2871e5b52c6",
+        "at": "2026-10-18T06:55:13.329Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 55533365,
+        "value": 0,
+        "minimum_output": "117289873404410677",
+        "quoted_output": "117879269753176560",
+        "fee_fields": {
+          "tradeFee": "0.00999083",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "9d3bdb990dfdd91a6638be4c83e9b267883bad91524a29039c328be8348f19d2",
+        "at": "2026-10-18T06:55:32.708Z",
+        "params": {
+          "amount": "113892622433790320",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 54327482,
+        "value": 0,
+        "minimum_output": "39771866227819587862",
+        "quoted_output": "39971724852079987802",
+        "fee_fields": {
+          "tradeFee": "0.00977266",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "9ec75efeba6ba5201e35f681d6fd8725180991efb56458d52ae4490043f21f03",
+        "at": "2026-10-18T06:55:15.115Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 56909232,
+        "value": 0,
+        "minimum_output": "295297558340717645",
+        "quoted_output": "296781465669062960",
+        "fee_fields": {
+          "tradeFee": "0.0102386",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "ab8914769bc5be8cf726d51c15556aabe95216a5b78e80f184f48b64267ba109",
+        "at": "2026-10-18T06:55:30.607Z",
+        "params": {
+          "amount": "40000000000000000000",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 53000748,
+        "value": 0,
+        "minimum_output": "295298997179082753",
+        "quoted_output": "296782911737771612",
+        "fee_fields": {
+          "tradeFee": "0.00953412",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "dc7755e3d447b8d7588f810c7d46fb1c4c9d12b0f4fc981fc764bad0c20a301f",
+        "at": "2026-10-18T06:54:58.191Z",
+        "params": {
+          "amount": "117881593644381200",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 54770131,
+        "value": 0,
+        "minimum_output": "39789032893763673256",
+        "quoted_output": "39988977782677058549",
+        "fee_fields": {
+          "tradeFee": "0.00985429",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      },
+      {
+        "artifact_sha256": "f8b2ddbddf0ce56e4a655c24f4837024945a824ab9763ceeab99af8a1cd7b4bd",
+        "at": "2026-10-18T06:54:40.950Z",
+        "params": {
+          "amount": "187053217904499120",
+          "binanceChainId": "56",
+          "fromTokenAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "slippagePercent": "0.5",
+          "toTokenAddress": "0x55d398326f99059ff775485246999027b3197955",
+          "userWalletAddress": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+          "vendor": "LiquidMesh"
+        },
+        "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+        "selector": "0xad43f73d",
+        "gas": 250000,
+        "gas_price_wei": 59609814,
+        "value": 0,
+        "minimum_output": "39774432729261841473",
+        "quoted_output": "39974304250514413541",
+        "fee_fields": {
+          "tradeFee": "0.01072235",
+          "feeAmount": null,
+          "feeToken": null,
+          "actualSwapAmount": null
+        }
+      }
+    ]
+  },
+  "execution_ceiling": {
+    "max_gas": 1200000,
+    "max_gas_price": 160000000,
+    "worst_transaction_fee_wei": 192000000000000,
+    "proposed_signer_fee_cap_wei": 200000000000000,
+    "observed_quote_gas_price_min": 52530943,
+    "observed_quote_gas_price_max": 62282249,
+    "measurement_status": "DRAFT_CEILING_NOT_MEASURED_GAS_OR_INSTALLATION_APPROVAL"
+  }
+}

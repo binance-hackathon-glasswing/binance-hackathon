@@ -1,0 +1,217 @@
+{
+  "continuous_coverage_claimed": false,
+  "default_summarize": {
+    "error": "Capture coverage incomplete: NVDAB: 9 US_SESSION samples < 10; GOOGLB: 9 US_SESSION samples < 10; SKHYB: 9 US_SESSION samples < 10; TSLAB: 9 US_SESSION samples < 10; MSFTB: 9 US_SESSION samples < 10",
+    "min_days": 3,
+    "min_samples": 10,
+    "require_weekend": true,
+    "status": "REFUSED"
+  },
+  "failures": [
+    {
+      "at": "2026-10-18T02:41:22.837Z",
+      "kind": "FAILURE",
+      "reason": "authentication_error",
+      "stage": "ROUND",
+      "symbol": null
+    }
+  ],
+  "first_utc": "2026-10-16T18:19:09.205Z",
+  "kinds": {
+    "BNB_PRICE": 170,
+    "FAILURE": 1,
+    "SAMPLE": 850
+  },
+  "last_utc": "2026-10-18T06:56:06.986Z",
+  "manifest_sha256": "b6db3560fdbfd2e7f6b2fba70ddd6c99927567642b2edf95e95a7ba6b4e5a1b4",
+  "records": 1021,
+  "schema": "InterimQuoteCoverage.v1",
+  "session_calendar_sha256": "bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c",
+  "symbols": {
+    "GOOGLB": {
+      "fee_observations_present": 0,
+      "gas_methods": {
+        "['FALLBACK', 'FALLBACK']": 170
+      },
+      "largest_gaps": [
+        {
+          "from_utc": "2026-10-18T02:30:13.854000+00:00",
+          "seconds": 15884.114,
+          "to_utc": "2026-10-18T06:54:57.968000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:19:30.513000+00:00",
+          "seconds": 708.448,
+          "to_utc": "2026-10-16T18:31:18.961000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:43:06.797000+00:00",
+          "seconds": 708.382,
+          "to_utc": "2026-10-16T18:54:55.179000+00:00"
+        }
+      ],
+      "latest_utc": "2026-10-18T06:54:57.968Z",
+      "regime_counts": {
+        "OFF_SESSION": 161,
+        "US_SESSION": 9
+      },
+      "samples": 170,
+      "token_open": {
+        "True": 170
+      },
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    "MSFTB": {
+      "fee_observations_present": 0,
+      "gas_methods": {
+        "['FALLBACK', 'FALLBACK']": 170
+      },
+      "largest_gaps": [
+        {
+          "from_utc": "2026-10-18T02:31:05.589000+00:00",
+          "seconds": 15884.161,
+          "to_utc": "2026-10-18T06:55:49.750000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T20:30:23.471000+00:00",
+          "seconds": 708.487,
+          "to_utc": "2026-10-16T20:42:11.958000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:44:10.685000+00:00",
+          "seconds": 708.434,
+          "to_utc": "2026-10-16T18:55:59.119000+00:00"
+        }
+      ],
+      "latest_utc": "2026-10-18T06:55:49.750Z",
+      "regime_counts": {
+        "OFF_SESSION": 161,
+        "US_SESSION": 9
+      },
+      "samples": 170,
+      "token_open": {
+        "True": 170
+      },
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    "NVDAB": {
+      "fee_observations_present": 0,
+      "gas_methods": {
+        "['FALLBACK', 'FALLBACK']": 170
+      },
+      "largest_gaps": [
+        {
+          "from_utc": "2026-10-18T02:29:56.617000+00:00",
+          "seconds": 15884.11,
+          "to_utc": "2026-10-18T06:54:40.727000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:54:33.898000+00:00",
+          "seconds": 708.521,
+          "to_utc": "2026-10-16T19:06:22.419000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:19:09.205000+00:00",
+          "seconds": 708.439,
+          "to_utc": "2026-10-16T18:30:57.644000+00:00"
+        }
+      ],
+      "latest_utc": "2026-10-18T06:54:40.727Z",
+      "regime_counts": {
+        "OFF_SESSION": 161,
+        "US_SESSION": 9
+      },
+      "samples": 170,
+      "token_open": {
+        "True": 170
+      },
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    "SKHYB": {
+      "fee_observations_present": 0,
+      "gas_methods": {
+        "['FALLBACK', 'FALLBACK']": 170
+      },
+      "largest_gaps": [
+        {
+          "from_utc": "2026-10-18T02:30:31.097000+00:00",
+          "seconds": 15884.14,
+          "to_utc": "2026-10-18T06:55:15.237000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T20:29:40.906000+00:00",
+          "seconds": 708.632,
+          "to_utc": "2026-10-16T20:41:29.538000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:43:27.950000+00:00",
+          "seconds": 708.584,
+          "to_utc": "2026-10-16T18:55:16.534000+00:00"
+        }
+      ],
+      "latest_utc": "2026-10-18T06:55:15.237Z",
+      "regime_counts": {
+        "OFF_SESSION": 161,
+        "US_SESSION": 9
+      },
+      "samples": 170,
+      "token_open": {
+        "True": 170
+      },
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    "TSLAB": {
+      "fee_observations_present": 0,
+      "gas_methods": {
+        "['FALLBACK', 'FALLBACK']": 170
+      },
+      "largest_gaps": [
+        {
+          "from_utc": "2026-10-18T02:30:48.331000+00:00",
+          "seconds": 15884.152,
+          "to_utc": "2026-10-18T06:55:32.483000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T18:43:49.210000+00:00",
+          "seconds": 708.65,
+          "to_utc": "2026-10-16T18:55:37.860000+00:00"
+        },
+        {
+          "from_utc": "2026-10-16T20:30:02.245000+00:00",
+          "seconds": 708.488,
+          "to_utc": "2026-10-16T20:41:50.733000+00:00"
+        }
+      ],
+      "latest_utc": "2026-10-18T06:55:32.483Z",
+      "regime_counts": {
+        "OFF_SESSION": 161,
+        "US_SESSION": 9
+      },
+      "samples": 170,
+      "token_open": {
+        "True": 170
+      },
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    }
+  }
+}

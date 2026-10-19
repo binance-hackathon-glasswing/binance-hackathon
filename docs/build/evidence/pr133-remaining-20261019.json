@@ -1,0 +1,84 @@
+{
+  "schema": "PR133RemainingRepositoryVerification.v1",
+  "pr": 187,
+  "parent_pr": 133,
+  "implementation_source": "01916338d30d560892742b8ef3a7a2fa49583cb7",
+  "challenge_repository": "binance-hackathon-glasswing/binance-hackathon",
+  "mirror_repository": "Keegan4/Keegan4-larp-ci-mirror",
+  "ci_run_id": 39227766192,
+  "ci_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192",
+  "ci_conclusion": "success",
+  "jobs": [
+    {
+      "name": "host-bundle",
+      "conclusion": "success",
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192/job/117978146235"
+    },
+    {
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success",
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192/job/117978146474"
+    },
+    {
+      "name": "runtime",
+      "conclusion": "success",
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192/job/117978146497"
+    },
+    {
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success",
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192/job/117978146524"
+    }
+  ],
+  "ci_log_sha256": "143639073c8d7134cb8cc31f75a94caa86188b9b94cb7aa059abce2e54ead554",
+  "runtime": {
+    "passed": 2119,
+    "skipped": 6,
+    "subtests": 3340,
+    "seconds": 372.18
+  },
+  "systemd": {
+    "passed": 5,
+    "subtests": 5,
+    "seconds": 14.6
+  },
+  "targeted": {
+    "passed": 17,
+    "subtests": 9,
+    "skipped": 0,
+    "seconds": 3.13
+  },
+  "local_full_suite": {
+    "status": "PASS",
+    "source": "01916338d30d560892742b8ef3a7a2fa49583cb7",
+    "python": "3.12.14",
+    "postgresql": "14.24",
+    "passed": 2119,
+    "skipped": 6,
+    "subtests": 3340,
+    "seconds": 809.39,
+    "log_sha256": "8cfdf21675b75d94884efd5f7732ecebf72ebeaa402cf60a2e21046eea048675"
+  },
+  "org_ci": {
+    "run_id": 39228699044,
+    "status": "NOT_STARTED_BILLING_LIMIT",
+    "runtime_steps_executed": 0
+  },
+  "exposure_scope": "ENABLED_CLASS2_FILINGS_ONLY",
+  "live_input_qualification": false,
+  "unsupported_classes": [
+    "TRADE_RESTRICTION",
+    "TRADING_SUSPENSION",
+    "SCHEDULED_EVENT"
+  ],
+  "signing_enabled": false,
+  "gate_b_accepted": false,
+  "host_operations_performed": false,
+  "actual_native_provider_qualified": false,
+  "release_published": false,
+  "original_artifacts_independently_downloaded": false,
+  "notes": [
+    "CI qualification is for exact repository source, not real host/source/provider/trading acceptance.",
+    "Later changes are non-manifested documentation only; exact source also passes the independent local full suite."
+  ]
+}

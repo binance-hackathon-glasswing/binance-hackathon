@@ -118,3 +118,60 @@ At pushed `62ef585`, `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.runtim
 Isaac explicitly selected **“Approve reviewed destination scope (Recommended)”** in response to the PR137 decision question. This supersedes the pending-approval status in the dated entries above. The approved scope retains primary's general HTTPS egress with application destinations controlled by code/config; signer application access stays RDS + S3 gateway only. DNS failures no longer count as isolation proof. Yao Zhu retains real-host route/SG, sandbox, IAM/TLS and configured-bucket S3 evidence under #32/GAP-70. No AWS action, permission expansion, deployment or hosted acceptance is authorized by this table decision.
 
 Recorded the decision in the authoritative architecture table and task2 review; narrowed the live backlog and index. The offline fix remains verified at pushed b720b2a (27 passed /5 opt-in systemd skips); this decision changes documentation only, so no test rerun is needed. PR137 retains `Closes #136`; parent #32 stays open for hosted evidence. Task3 (verified router evidence, reviewed with Keegan before PR130 merge) follows separately.
+
+## SP-NET — signed/live application scope review (2026-10-18)
+
+User requested review. Reviewed the same primary/runtime AIand/OpenAI fixed HTTPS
+paths, merged SLM-01 adoption/profile/routing/prompt gates and provider-policy/rights
+limits. The exact proposal is in [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+Automatic approval review rejected publishing a broadened sensitive-egress scope
+because review did not explicitly authorize approval. The current shadow-only
+approval and all runtime/route code remain unchanged. Explicit user approval is
+needed to update the policy table; provider compatibility/adoption/host evidence
+would still be required afterwards. No AWS or application-egress change occurred.
+
+## SP-NET D2 — user authorizes the reviewed signed/live destination scope
+
+2026-10-18: after the assistant listed network approval as immediate point1,
+Isaac says "help me do what is needed now, do each point in its own PR". This
+authorizes implementing the exact SP-NET proposal in a separate PR and
+supersedes the prior review-only approval blocker. It is application destination
+approval, not provider/model adoption, a live release or an AWS permission change.
+
+Prospective pass criteria: keep only primary/larp-runtime to the same two fixed
+HTTPS API endpoints; no signer/execution model access, client endpoint change,
+AWS/IAM/firewall/secret or runtime-config change. Correct outdated shadow-only
+report wording to match merged SLM-01 capability; retain rights/account/provider
+policy, funding, trial/adoption, signed profile/prompt/routing/budget pins and
+actual host/release checks. Push before executing tests. Existing route-plan and
+signed-model preparation regressions must pass; no real requests or credentials.
+
+### SP-NET D2 verification
+
+At pushedb2c3d06, existing route-plan/probe, routed package preparation and
+signed-model checks pass: **40 tests,48 subtests,0 skips**,7.86s, macOS/
+Python3.12.14/disposable PostgreSQL14 on loopback. External/model boundaries are
+synthetic; route probes use local sockets. The first sandboxed attempt had three
+loopback permission failures and five unconfigured-PostgreSQL skips; rerunning
+with authorized local access/database resolved all of them without code changes.
+Log /private/tmp/larp-network-scope-pr-tests-local.log SHA256
+cef09c9e79a99e5bac533e922eda3b4965434363e8677c05bc3697673352529f.
+
+No new tests mirror the wording. Existing constants/host set, AWS files, service
+configs and client allowlists are unchanged; git diff --check passes. This
+separate PR supplies the requested approval/documentation slice; no model use,
+provider-policy clearance, release/host acceptance or activation is inferred.
+
+SP-NET D2 delivery: dedicated [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171),
+OPEN against PR133's checklist branch. Ready for review; no merge/deploy was
+requested here. Provider compatibility/adoption/host gates remain separate.
+
+
+SP-NET D2 parent refresh (Oct18): normal merge of PR133 ab4d57f preserves the
+new signer PR176/source-retrieval handoff and latest approved v3/release records.
+Resolve the backlog insertion conflict with both the new signer paragraph and
+this PR's already-authorized signed/live scope; do not restore the superseded
+review-only approval blocker. The unique application delta remains the same
+routes.py purpose/comment text verified in the40-test/48-subtest run; no new
+client/network/IAM/firewall/runtime setting or AWS operation is introduced.
+No new runtime test acceptance is claimed for this documentation merge.

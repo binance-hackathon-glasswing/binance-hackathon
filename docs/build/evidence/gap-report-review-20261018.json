@@ -1,0 +1,104 @@
+{
+  "schema": "FixedWindowGapReportReview.v1",
+  "record_id": "PC-GAP02",
+  "reviewed_at_utc": "2026-10-18T11:20:06.416842+00:00",
+  "window": {
+    "from_utc": "2026-10-17T11:00:00Z",
+    "hours": 24.0,
+    "to_utc": "2026-10-18T11:00:00Z"
+  },
+  "installed_build": "bb46234f1b997dae968e2c3f3668d73627857376",
+  "raw_verdict": "FAIL",
+  "corrupt_log_lines": 0,
+  "raw_report_sha256": "092c18e555d73f34be6b95d3c02b80c470c31073539fce0836dfa22abdfa5cf5",
+  "poll_snapshot_sha256": "18d6ec9eb70591198befe43a7b765f76a713163060d2c7fff635df1bb4bd1168",
+  "poll_snapshot_bytes": 718138,
+  "exception_checks_sha256": "94ce385e392984cfd3b4edee0c20c474c143a302dffdcbef6ecd7ad3f97f2e35",
+  "proposed_incidents_sha256": "abe860ee0bd95a248f8094b9790a62f51b4950e707da7c634186378b01f98bae",
+  "saved_file_hashes_verified": 31,
+  "ssm_successful_commands": 13,
+  "independent_reproduction": "Exact equality with original pushed bb46234 iso/gap_report functions over retained raw bytes",
+  "explanation_checks": {
+    "source:doj-press": {
+      "bad_polls": 96,
+      "eligible_for_historical_explanation": false,
+      "errors": [
+        "RESPONSE_TOO_LARGE"
+      ],
+      "max_poll_gap_ms": 600001,
+      "polls": 144
+    },
+    "source:fr-bis": {
+      "bad_polls": 0,
+      "eligible_for_historical_explanation": true,
+      "errors": [],
+      "max_poll_gap_ms": 913038,
+      "polls": 96
+    }
+  },
+  "doj_actual_status_counts": {
+    "OK_truncated": 48,
+    "SOURCE_UNAVAILABLE_RESPONSE_TOO_LARGE": 96
+  },
+  "report_successful_failed_polls": {
+    "edgar:SEC-CIK-0000789019": {
+      "successful": 288,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "edgar:SEC-CIK-0001045810": {
+      "successful": 288,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "edgar:SEC-CIK-0001318605": {
+      "successful": 288,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "edgar:SEC-CIK-0001652044": {
+      "successful": 288,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "edgar:SEC-CIK-0002120882": {
+      "successful": 288,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "source:doj-press": {
+      "successful": 0,
+      "failed": 144,
+      "unexplained_gaps": 1
+    },
+    "source:ec-press": {
+      "successful": 96,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "source:fr-bis": {
+      "successful": 3,
+      "failed": 93,
+      "unexplained_gaps": 4
+    },
+    "source:fr-public-inspection": {
+      "successful": 96,
+      "failed": 0,
+      "unexplained_gaps": 0
+    },
+    "source:sec-press": {
+      "successful": 144,
+      "failed": 0,
+      "unexplained_gaps": 0
+    }
+  },
+  "explained_report": "WITHHELD: DOJ exception conditions fail",
+  "archive_context": "PC-REL08 separate 10:36Z read-only health: healthy, 62 audit chunks ACK; historical incident backup PERMANENT preserved. No fresh archive claim from source report.",
+  "host_mutations": false,
+  "paid_provider_calls": false,
+  "pending": [
+    "Yao DOJ response-size/pagination investigation; Keegan source/report review",
+    "Yao guaranteed trial-cap enforcement/account qualification before paid v3 start",
+    "Yao installation/binding/activation and first assessment after prerequisites"
+  ]
+}
