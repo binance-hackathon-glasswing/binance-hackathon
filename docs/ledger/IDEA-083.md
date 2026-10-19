@@ -350,3 +350,14 @@ completed deliverable is Isaac's static runtime review plus current-path checks;
 Keegan still supplies corrected design/implementation and new red-first evidence
 for runtime acceptance. No production credentials, paid calls, model effort/
 prompt changes, new lifetime/caps, official uploads, AWS or wallet action.
+
+IR179 delivery: [PR180](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/180)
+is OPEN/non-draft/mergeable against PR179's unchanged5557824 design branch;
+Keegan can merge the review before implementing. PR133 records Isaac's design
+review as delivered at1ba0414, with future implementation/runtime/host acceptance
+still open. No review of nonexistent implementation is claimed. Remote runtime
+job117859512110/run39189676522 at6ab83cb ran zero steps; annotation confirms
+failed payments/spending-limit (#98). Local129/120 verification is separate
+from this CI blocker. The temporary local PostgreSQL container was stopped and
+disposed. All review changes are documentation only; no app/config/test files
+or model/account state changed.
