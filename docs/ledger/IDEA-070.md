@@ -218,3 +218,78 @@ runtime-test failure or a CI pass; Linux/systemd/original signed bundle remain
 open. The local disposable PostgreSQL container was stopped/disposed after the
 139-test run. PR133 separately tracks SR-01 and the remaining source/lifetime/
 measured-policy/provider/host inputs; no complete Gate B backlog item closes.
+
+## B02-U — untrusted-router swap mode (2026-10-19, prospective)
+
+**Why.** B02 (Keegan's source review) cannot be done: on 2026-10-19 Keegan
+checked BscScan and Etherscan, and neither the router `0xb44446b0…fdda5` nor
+the swap facet `0xa9fa1b56…e603` has published source. Findings recorded first,
+all from public data:
+
+- The router is a minimal diamond proxy (solc 0.8.23). It loads
+  `facet = sload(keccak256(selector ‖ 0x5e12654f…a35c5)) & (2^160-1)`, then
+  `DELEGATECALL`s with the full calldata. Unknown selectors revert with
+  `FunctionDoesNotExist()`; empty calldata stops.
+- On BSC the slot for `0xad43f73d` is
+  `0x7ddc1c45a5ae31800e181de98e8cb97525e9b89f99e5829d49f25a8ca4bac1d7`. Keegan's
+  CloudShell read returned `0x…02a9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`, so
+  the swap goes to facet `0xa9fa1b56…`. The router and the facet have identical
+  code on BSC and Ethereum (Keegan's CloudShell `eth_getCode` hashes).
+- On Ethereum the diamond has ownership write functions
+  (`transferOwnership`/`confirmOwnershipTransfer`), so an owner can replace facets.
+- All 15 recorded swap quotes in `quotes-interim-20261018/selected-raw` share one
+  calldata layout. Words 1 = 0, 2 = `0x3d90f66b…6be9`, 7 = `0xd2a27f8f…a271`,
+  3/4/5/6/8 = pay token/amount/receive token/minimum output/quoted output, and
+  word 9 = offset 0x140 to a bytes blob. The blob is an inner call `0x47ee97ff`
+  whose words 6/7/8/9/10 are pay token/receive token/amount/minimum (equal to
+  or one more than the outer value)/a deadline (quote time + about 500 s).
+  **The wallet address appears nowhere in the calldata.**
+
+Keegan decided on 2026-10-19 to treat the router as untrusted, accepting that a
+misbehaving router or inner call can cost up to one capped trade's input. This
+work implements that decision. **Adoption is Isaac's (B09 signing policy); this
+entry and its PR do not enable signing.**
+
+**Design.** An `UntrustedRouterDecoder` from a pinned `UntrustedRouterPolicy.v1`
+file. The guarantees it does not have are replaced as follows:
+
+| Source guarantee (RouterEvidence) | Untrusted-mode replacement |
+|---|---|
+| input pulled only from sender; wallet debits limited to pay token and amount | exact approve (existing) + before each swap step, on chain: allowance(wallet, router) ≤ amount for the pay token and = 0 for every other pinned token; no native value |
+| minimum output checked on recipient balance | NOT replaced: layout check only (outer and inner minimum ≥ intent minimum); settlement already refuses a below-minimum fill, and B02-U blocks further signing while one is unsettled |
+| deadline enforced | NOT replaced: layout check only (inner deadline in (now, valid_until]) |
+| code cannot change silently | before each swap step: facet slot holds the pinned facet, and router/facet code hashes equal the pinned values |
+
+**Pass criteria, written before any implementation:**
+
+- U1. On the 15 recorded swap quotes, the decoder returns exactly the quote's
+  pay token, receive token, amount and minimum output (the `minReceiveAmount`
+  field), with recipient unverified (`None`).
+- U2. It refuses each tampered copy: another selector, a trailing or missing
+  byte, any fixed word changed, a non-canonical address word, the inner selector,
+  a mismatch between inner and outer amount/pay/receive, an inner minimum below
+  the outer one, non-zero padding, a wrong blob offset or length, and a token
+  outside USDT/bStocks (including native BNB).
+- U3. With a fake RPC, `preflight` refuses: a facet slot pointing elsewhere; a
+  changed router or facet code hash; a non-zero allowance for any other pinned
+  token; a pay-token allowance above the amount; and any RPC error (as
+  DependencyUnavailable). It passes the all-correct case. It reads only at a
+  numeric block, using only allowlisted methods.
+- U4. The `Executor` accepts a live bundle with an untrusted decoder only when it
+  is bound to an RPC, and it runs `preflight` on every swap validation (prepare,
+  authorize, sign, broadcast). `validate_payload` and `SigningPolicy.check` accept
+  an unverified recipient only from an untrusted-mode decoder; a verified decoder
+  that returns no recipient is still refused.
+- U5. The signer and execution configs take `untrusted_router_policy_file` +
+  `_sha256` (both or neither), never together with router evidence. The signer
+  refuses a policy router outside `allowed_spenders`.
+- U6. In untrusted mode, run authorization withholds `risk_valid` while any
+  terminal swap of this run has no stored final fact (an unsettleable fill).
+- U7. A DEV-23 deviation row (DRAFT) states the residual risk. The register
+  renders, and the release-register tests pass.
+- U8. Existing suites still pass with disposable PostgreSQL: execution, signer,
+  router, settlement, Gate B and the release register.
+
+Out of scope: booking a below-minimum fill (needs Keith's accounting), native-BNB
+swaps (gas top-ups) in untrusted mode, the real policy file's code hashes (to
+be taken by the operator with the new `observe` command), and adoption.
