@@ -1,5 +1,7 @@
 # Pre-trading checklist (2026-10-17)
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 ## Remaining-work implementation — PC-S1WIRE01 / NT-RV02
 
 Class2-only S1 evidence producer, incomplete-input expiry protection, frozen

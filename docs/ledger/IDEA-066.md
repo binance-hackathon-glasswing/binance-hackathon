@@ -2361,3 +2361,30 @@ Org CI39261004131 runtime job118088305654 at2cb3d64 executed zero steps;
 annotation confirms failed account payments/spending limit, despite #98 having
 been closed not-planned. No CI or real-host PASS is claimed. Local38-test results
 remain scoped to1769b30. No branch rewrite, secret or AWS action occurred.
+
+
+## CONS-01 — consolidate canonical integration (2026-10-19, prospective)
+
+User explicitly authorizes reviewing/merging all open PRs except133 into
+codex/system-testing-20261012, closing outdated/duplicate PR work and keeping133
+solely as noticeboard. Inventory139/172/191/192/193/194 and frozen heads, review
+limits, acceptance criteria and open owners are in
+[CONS-01](../build/CONSOLIDATION_20261019.md). Criteria are committed/pushed before
+combined code executes. No AWS/key/account/funding/signing/paid-model/receiver
+operation or deployment is authorized by this consolidation.
+
+Normal merge commits retain previously reviewed parente169fa1 and all six PR
+histories. Conflict resolution retains current backlog wording, both append-only
+ledger workstreams and original evidence. An intermediate source-evidence merge
+resolution truncated the backlog/index; the following additive merge restored
+both complete files frome169fa1 and retained the funding handoff. Verification
+must compare the full original backlog ID set and index IDs; no unresolved item
+is intentionally deleted. No intermediate combination was executed or deployed.
+PR133 noticeboard-only commit31182ce is deliberately excluded from canonical
+ancestry so133 remains OPEN; all prior implementation history is retained.
+
+PR194 is kept as an opt-in implementation with explicit unverified recipient/
+minimum/deadline enforcement, not a proven loss bound or approved policy. Full
+source verification is one alternative. The current config has no untrusted
+policy selected. Its signed/live adoption, #27/#44, exact operator observations,
+allowance/abnormal-fill/native support and host qualification remain open.

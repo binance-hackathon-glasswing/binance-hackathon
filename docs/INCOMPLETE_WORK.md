@@ -1,5 +1,12 @@
 # Incomplete work
 
+**CONS-01 canonical backlog:** implementation lives on `codex/system-testing-20261012`;
+PR133 is noticeboard only. [Current build/status](build/CURRENT_STATUS.md) resolves
+superseded branch/review wording below. PR194 provides an optional untrusted
+router path, still pending Isaac B09/#44 adoption and real policy/host checks;
+verified source is required only for the source-verified path. No actual funding,
+source verification, signed acceptance or deployment item closes by merging docs.
+
 Initial inventory: 2026-10-04, based on a review of all 17 repository Markdown files. These items identify missing specifications, conflicting commitments, and undocumented readiness evidence; they do not establish that implementation work has not happened. External claims and implementation were not independently verified in that review. Updated 2026-10-05 for the participant kit (`skill/SKILL.md` F-90..F-112; detail in `skill/reference/participant-kit.md`): existing items narrowed where the kit settles part of them; new items GAP-41..GAP-52.
 
 This is a live checklist. Remove an entire item once its work is fully completed and verified. Keep partial or blocked items, narrowing them to the remaining work. Preserve supporting decisions, test evidence, and experimental results in their authoritative documents before removal. IDs are stable; do not renumber surviving items. This checklist does not override the rules in `skill/SKILL.md` or the append-only experiment ledger.

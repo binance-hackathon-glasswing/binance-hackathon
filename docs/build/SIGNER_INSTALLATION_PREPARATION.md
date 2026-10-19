@@ -1,5 +1,13 @@
 # Signer installation preparation — SA-01 (2026-10-19)
 
+**CONS-01:** use the canonical `codex/system-testing-20261012` build and
+[current status](CURRENT_STATUS.md). PR194 adds an optional untrusted-router
+policy path; selecting it requires actual B09/#44 adoption and qualification.
+Its `untrusted_router_policy_file`/`_sha256` replace the source-path evidence
+fields. Both paths cannot be configured together. The old six-null-field draft
+and SA-02 inventory remain historical; no final candidate is generated here.
+The source-only requests below apply when pursuing the verified-source path.
+
 The merged signer guards and IDEA083 model implementation do not make the
 historical signer.json draft installable. Its six unset bindings and pending
 policy remain unchanged. This procedure completes offline configuration assembly

@@ -1,5 +1,7 @@
 # Four-person deployment build brief — IDEA-038
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 This is the common instruction sheet for prompts 06–09 beside this file. Read it with your own prompt; it is part of that prompt. Its goal: **when the four PRs are integrated, the repository contains everything needed to deploy LARP for the development rehearsal and for final activation** (F-13, F-14). It does not authorize live trading, organiser messages, or merges to `main`.
 
 The previous brief, [PARALLEL_BUILD.md](PARALLEL_BUILD.md) (IDEA-024), built the offline components. Its rules still apply unless this file changes them.

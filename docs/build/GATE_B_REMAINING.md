@@ -1,5 +1,7 @@
 # Gate B remaining work — 2026-10-17
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 Record: [IDEA-039 GB-RW1](../ledger/IDEA-039.md). Repository base: integration
 `0672fb8`, which includes reviewed PR130 (decoder), PR131 (S1), PR144
 (lifetime proposal), PR148 (cap proposal), PR149 (temporary signer access),

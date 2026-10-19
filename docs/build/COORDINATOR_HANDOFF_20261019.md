@@ -1,5 +1,7 @@
 # Coordinator handoff — 2026-10-19 (SGT)
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 Yao Zhu is stepping down as coordinator after the Oct 18 deployment. This page is the entry point for the next
 coordinator. PR133 (`claude/pre-trading-checklist-20261017`, base `codex/system-testing-20261012`) stays OPEN and
 carries the live checklist; this page and IDEA-066 hold the detail.
