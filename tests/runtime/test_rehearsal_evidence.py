@@ -14,7 +14,7 @@ class RehearsalEvidenceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.identity = dict(source_commit='a'*40, bundle_sha256='b'*64,
                              manifest_sha256='c'*64, profile_sha256='d'*64,
                              bound_config_sha256='e'*64, run_id='dev-rehearsal',
@@ -146,6 +146,16 @@ class RehearsalEvidenceTests(unittest.TestCase):
             gates.check(self.packet, self.identity, alias)
         self.packet['gates'][0]['artifacts'].append(self.artifact.copy())
         self.assertIn('DUPLICATE_ARTIFACT', self.result()['results'][0]['reasons'])
+
+    def test_symlinked_ancestor_is_refused(self):
+        real = self.root/'real'
+        real.mkdir()
+        nested = real/'nested'
+        nested.mkdir()
+        alias = self.root/'alias'
+        alias.symlink_to(real, target_is_directory=True)
+        with self.assertRaises(gates.Refused):
+            gates.check(self.packet, self.identity, alias/'nested')
 
     def test_input_special_files_and_symlinks_refused_without_blocking(self):
         import os

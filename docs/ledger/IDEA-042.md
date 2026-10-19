@@ -483,3 +483,23 @@ tests' temporary directories. Keep the sanitized export under the home
 directory, which is not a symlink. RG-02's own scope is unchanged:
 `gate_c_accepted`, `signing_enabled` and `host_results_verified` stay false
 and every live drill result stays NOT_RUN.
+
+## RG-02-RV02 — PR188 integration review (2026-10-19), prospective
+
+Review current PR188 merged with its checklist base. Native macOS synthetic
+verification exposed the documented symlink-ancestor limitation in the test
+fixture itself: tempfile returns a path through /var, so ordinary positive
+cases never reach validation. Keep the checker strict; canonicalize only the
+fresh synthetic fixture directory. Pass criteria before the fix: all16 tests
+pass on macOS, including explicit symlink refusals and all CLI exit codes;
+add a symlinked-ancestor regression; packet links and whitespace pass. No host
+or release acceptance is transferred. GitHub run39240046615 never started:
+its annotation reports failed account payments/spending limit, not test failure.
+
+RG-02-RV02 results: PASS on native macOS/Python3.9.6,17 tests/0 skips,
+including new symlinked-ancestor refusal. Canonical fixture paths fix only test
+portability; production path refusal is unchanged. All7 packet local links and
+`git diff --check` PASS. Reviewed the DR mapping, CLI/API references and complete
+changed docs; no additional blocker. Application/runtime/config source is
+unchanged from the current checklist base. Hosted CI remains billing-blocked;
+new tools still need future release qualification and all live drills stay open.

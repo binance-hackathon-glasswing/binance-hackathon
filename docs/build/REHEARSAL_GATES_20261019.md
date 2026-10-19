@@ -202,7 +202,9 @@ results. All required criterion keys are emitted by `init`; do not remove them.
 Every claimed PASS needs actual supporting artifacts; artifact rows have exactly
 `file` (a flat local sanitized export filename) and `sha256` (lowercase hex).
 No directory traversal, nested artifact paths, symlinks or special files are
-accepted. Input JSON is bounded to1MiB and each artifact to16MiB; split large
+accepted. The evidence directory must also have no symlinked ancestors; on
+macOS use its canonical `/private/tmp` or `/private/var` path rather than the
+`/tmp` or `/var` alias. Input JSON is bounded to1MiB and each artifact to16MiB; split large
 sanitized exports into separately hashed files. Private credentials/signed bytes
 and unredacted provider configs are never valid evidence exports.
 
