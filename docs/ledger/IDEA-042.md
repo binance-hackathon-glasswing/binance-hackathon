@@ -420,3 +420,26 @@ explicit and the check passed. `git diff --check` PASS. Documentation-only chang
 no runtime tests, cloud operations, fault injections or live drills run. Missing
 host-specific harnesses/procedures are explicitly BLOCKED until pinned/reviewed.
 C09/C10 and operational Gate A/B/C outcomes remain open/NOT_RUN.
+
+## RG-02 — offline rehearsal evidence index (2026-10-19), prospective criteria
+
+Next repository slice: implement a stdlib-only local packet initializer/checker
+for RG-01. It makes no AWS, RPC, database, signer or receiver calls and cannot
+approve a rehearsal or enable execution. Tool/code additions require their own
+future release qualification; prior release evidence does not cover these bytes.
+
+Prospective acceptance:
+- Initialization creates a new packet with ten NOT_RUN gates, never overwrites.
+- Checking requires exact source/bundle/manifest/profile/config/run/wallet binding;
+  duplicate/missing gates and malformed inputs fail closed without raw input output.
+- Reviewed evidence claims require UTC ordered times, distinct attributed operator
+  and reviewer, procedure/approval refs, complete gate-specific criterion results,
+  and actual local artifact hashes. Missing/refused/synthetic evidence cannot be
+  reported as observed host evidence. Evidence completeness is never Gate C PASS.
+- Artifact reads stay within an explicit sanitized evidence directory: refuse
+  absolute/traversal/symlink/special-file paths and bound file/input sizes. No raw
+  paths, provider URLs, input content or exception strings in reports.
+- Synthetic tests exercise tamper, wrong identity, missing criteria/reviews,
+  duplicate keys/gates, path escape, symlinks, malformed timestamps and overwrite
+  refusal. Commit/push implementation before execution; targeted tests suffice
+  for this independent offline utility. Live outcomes remain NOT_RUN.
