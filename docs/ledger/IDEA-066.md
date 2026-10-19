@@ -356,3 +356,11 @@ Evidence and log hashes: ../build/evidence/gate-a-approved-mirror-20261018.json.
 Remaining: review/merge correction and eventual propagation to future releases;
 Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
 all existing source/quality/signed owners. No host/AWS/model/ledger operation.
+
+MERGE-RV20261019 / PR177 malformed metadata negative control: added array/object
+build_origin cases at pushed6e3b148. The existing qualification wrapper catches
+the internal membership TypeError and records CI_RELEASE_BYTES=FAIL;14 tests/
+52 subtests PASS (2.60s), so this is not a reproduced CLI failure and needs no
+runtime fix. Keep the added negative controls. The initial source-only suspicion
+was corrected after executing the actual qualification path. No acceptance or
+error handling was weakened.
