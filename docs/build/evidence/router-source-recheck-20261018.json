@@ -1,0 +1,43 @@
+{
+  "schema": "RouterSourceAcquisition.v1",
+  "chain_id": 56,
+  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+  "observed_selector": "0xad43f73d",
+  "candidate_facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+  "criteria_ref": "IDEA-070 SP-01 / SP-01 T1",
+  "criteria_commit": "946edfc",
+  "status": "BLOCKED_SOURCE_UNAVAILABLE",
+  "verified_source_obtained": false,
+  "abi_obtained": false,
+  "proxy_status": "UNKNOWN",
+  "source_guarantees": "NOT_REVIEWED",
+  "keegan_review": "PENDING",
+  "deployable_router_evidence": false,
+  "route_check_status": "NOT_RUN_SOURCE_AND_INDEPENDENT_REVIEW_REQUIRED",
+  "observations": [
+    {
+      "label": "curl-facet-bscscan",
+      "url": "https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code",
+      "requested_at": "2026-10-18T07:44:34.082530+00:00",
+      "http_status": "403",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 5549,
+      "response_body_sha256": "02abae28a7f42917badf2c92803bc42706aacacec7df35ebda0167df0965a263",
+      "challenge_marker": true
+    },
+    {
+      "label": "curl-facet-sourcify",
+      "url": "https://sourcify.dev/server/v2/contract/56/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603?fields=all",
+      "requested_at": "2026-10-18T07:44:34.220310+00:00",
+      "http_status": "404",
+      "curl_exit": 0,
+      "stderr": "",
+      "response_bytes": 125,
+      "response_body_sha256": "d7ab73b48ed5ffaad1ab9898b249500c806f723b81eb2e4f3d908705cbbb0a0c",
+      "challenge_marker": false
+    }
+  ],
+  "raw_body_root": "/private/tmp/larp-sp01-public-20261018",
+  "warning": "Response/challenge hashes are not source or ABI hashes; HTTP403 does not establish explorer verification status."
+}
