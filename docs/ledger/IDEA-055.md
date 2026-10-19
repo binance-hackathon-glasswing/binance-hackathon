@@ -801,3 +801,36 @@ an authenticated session. Host network/config-manifest install and first actual
 wallet/process balance-health acceptance remain NOT_RUN, with #92 open. Actual
 wallet/run/runtime export is also absent. No RPC/network probe, AWS mutation,
 activation, signing, audit upload or funding operation was performed.
+
+### RPC-H03 — user-run host results and the process balance-health observation (2026-10-19), prospective
+
+User-run host checks, relayed in the PR133 description (AWS CloudShell/SSM, not
+observed by this session): hosted `driver.balance_rpc_providers` order is
+BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC; runtime SHA256 matches the host
+manifest binding and runtime/manifest build IDs match; the current run's first
+BALANCE_CHECKED is sequence 3, MATCH, 2026-10-18T17:04:43.534Z; the latest
+reported is sequence 77, MATCH, 2026-10-19T10:10:48.422Z. So the approved order
+was already installed with the Oct18 PC-DEPLOY02 run (provider selection and
+primary egress from PC-AWS05); RPC-H02's re-prepare sequence is for the next
+build only, not needed to close #92 on the current run.
+
+Remaining #92 subcheck: the **running process's** balance gate. Code reading at
+this branch: `RuntimeHealth.__call__` (larp/runtime/driver.py) puts
+`balances_ok = BalanceCheck.ok(projection)` into the planner context, and the
+coordinator journals that context with every round as
+`ROUND_PLANNED.record.policy_input.context.health`. `ok()` is true only after a
+comparable MATCH/SURPLUS_ONLY check by this process within `max_age`. A
+process's first check is always journaled. The recorded gate evaluation therefore
+exists in the journal; no new observation path or code change is needed.
+
+Criteria, before any host run: a read-only script
+`docs/build/ops/llm-trial-20261018/checks/balance-health.sh` (READ ONLY
+transaction, no writes, no provider/RPC call, prints only IDs, sequences, times,
+statuses, short hashes and gate booleans) reports the larp-runtime process start,
+the latest BALANCE_CHECKED rows and the latest ROUND_PLANNED health gates. #92's
+process subcheck PASSES only if, for the current MainPID, a MATCH (or reviewed
+SURPLUS_ONLY) BALANCE_CHECKED has `checked_ms` at or after the process start
+and a later ROUND_PLANNED by the same run records `health.balances_ok = true`
+with `started_ms` at or after that check. `false`, a missing key, or only rounds
+before the process start keep it open. The result is a dated observation, not
+a freshness guarantee, and confers no trading, signing or Gate B readiness.
