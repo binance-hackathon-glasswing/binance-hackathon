@@ -29,6 +29,8 @@ def exposure_inputs(*, records, profile, run_id, profile_hash, now_ms, markets,
             # calendar opens define the same session clock used by policy.
             eligible = [i for i, opened, _ in sessions if type(event) is int and opened <= event]
             sid = max(eligible) if eligible and event <= now_ms else None
+            if sid is None:
+                complete = False
             if sid is None or not session - EVIDENCE_WINDOW_SESSIONS < sid <= session:
                 decisions.append(dict(symbol=symbol, reason='OUT_OF_WINDOW_EVENT', finding_id=finding['finding_id']))
                 continue

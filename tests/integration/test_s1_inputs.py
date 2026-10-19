@@ -79,6 +79,14 @@ class ExposureInputs(unittest.TestCase):
             self.assertFalse(result['complete']); self.assertEqual(result['evidence'], [])
         self.assertFalse(self.produce([])['complete'])
 
+    def test_unmappable_event_time_is_incomplete_not_a_healthy_empty_review(self):
+        _, record, _, _, _ = self.setup_record()
+        for finding in record['falsifier_findings']:
+            if finding.get('red_flag'):finding['red_flag']['event_original_ms'] = None
+        record['context_hash'] = context_hash(record)
+        result = self.produce([record])
+        self.assertFalse(result['complete']); self.assertEqual(result['evidence'], [])
+
     def test_old_event_is_not_restamped_and_incomplete_input_cannot_expire_cut(self):
         first = self.produce(session=7)
         self.assertEqual(first['evidence'], [])
