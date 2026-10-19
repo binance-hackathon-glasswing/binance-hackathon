@@ -23,9 +23,11 @@ class Outcomes(unittest.TestCase):
         primary = dict(status='ASSESSED', findings=[{'finding': 'primary'}],
                        event_findings=[], falsifiers=[], rationale='primary', result_id='primary')
         variants = [dict(primary), dict(primary, findings=[{'finding': 'different'}]),
-                    dict(primary, status='ABSTAIN'), dict(primary, status='UNAVAILABLE'), None]
+                    dict(primary, status='ABSTAIN'), dict(primary, status='TIMEOUT'),
+                    dict(primary, status='ERROR'), dict(primary, status='UNAVAILABLE'), None]
         for pstatus, a, b, order in itertools.product(
-                ('ASSESSED', 'ABSTAIN', 'UNAVAILABLE', 'ERROR', None), range(5), range(5), ((0, 1), (1, 0))):
+                ('ASSESSED', 'ABSTAIN', 'UNAVAILABLE', 'ERROR', 'TIMEOUT', None),
+                range(len(variants)), range(len(variants)), ((0, 1), (1, 0))):
             with self.subTest(primary=pstatus, reviewers=(a, b), order=order):
                 p = dict(primary, status=pstatus) if pstatus else None
                 arrivals = {i: deepcopy(variants[(a, b)[i]]) for i in order}
@@ -50,6 +52,19 @@ class Outcomes(unittest.TestCase):
     def test_ab6_declared_maximum(self):
         for mode in ('development', 'shadow'):
             self.assertEqual(load_config(mode=mode).max_deadline_ms, 180000)
+
+    def test_ab6_absolute_bound_equality_and_rollback(self):
+        from larp.intelligence.deadlines import Deadline
+        clock, mono = [1000], [1.0]
+        bound = Deadline(180000, lambda: clock[0], monotonic=lambda: mono[0])
+        clock[0] += 40000
+        self.assertEqual(bound.remaining(), 140000)
+        mono[0] += 180
+        self.assertEqual(bound.remaining(), 0)  # wall time cannot extend authority
+        clock[0] = 999
+        self.assertEqual(bound.remaining(), 0)
+        clock[0] = 1000
+        self.assertEqual(bound.remaining(), 0)  # rollback cancellation never refreshes
 
 
 class RoutedConcurrency(unittest.TestCase):
@@ -226,6 +241,14 @@ class JournalConcurrency(unittest.TestCase):
             self.assertIsNone(ready['result'])
             self.assertEqual(ready['audit']['state'], 'FAILED')
             self.assertNotIn('private endpoint', json.dumps(ready))
+            from larp.contracts import ContractError
+            with self.assertRaises(ContractError):
+                q.ack('failed')
+            reopened = DeferredAssessments(model, root=tmp, **q.identity)
+            with self.assertRaises(ContractError):
+                reopened.ack('failed')
+            with self.assertRaises(ContractError):
+                reopened.submit('another', request())
 
     def test_ab7_simultaneous_append_has_one_valid_chain(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -36,6 +36,8 @@ class DeferredAssessments:
         self.finished = threading.Event()
         for path in sorted(self.root.glob('*.jsonl')):
             events = self._read(path)
+            if any(e.get('audit_failed') is True for e in events):
+                self._audit_failed = True
             if not events or events[0].get('kind') != 'REQUEST':
                 raise ContractError('Model journal lacks request')
             first = events[0]
@@ -104,6 +106,8 @@ class DeferredAssessments:
 
     def submit(self, round_id, request, *, claim=None):
         self._identity(request.read())
+        if self._audit_failed:
+            raise ContractError('Model audit requires reconciliation')
         if self.busy:
             return False
         path = self.root / (hashlib.sha256(round_id.encode()).hexdigest() + '.jsonl')
@@ -131,7 +135,7 @@ class DeferredAssessments:
                 self._append(path, dict(kind='RESULT', result=result.read()))
             except Exception as error:
                 # Never persist exception text: provider/OS exceptions can include credentials.
-                self._append(path, dict(kind='ERROR', error=type(error).__name__))
+                self._append(path, dict(kind='ERROR', error=type(error).__name__, audit_failed=self._audit_failed))
             finally:
                 self.finished.set()
         threading.Thread(target=run, name='larp-assessment', daemon=True).start()
@@ -150,6 +154,8 @@ class DeferredAssessments:
         return None
 
     def ack(self, round_id):
+        if self._audit_failed:
+            raise ContractError('Cannot acknowledge an incomplete model audit')
         path = self.pending[round_id]
         if round_id == self.active and not self.finished.is_set():
             raise ContractError('Cannot acknowledge a running assessment')
