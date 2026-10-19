@@ -863,3 +863,17 @@ MATCH/DEFICIT, decision_ms fallback and missing-health observations. Commit
 synthetic regression tests for stable service, restart and inactive cases plus
 journal parsing; no AWS/DB/provider call in these tests. Run the rehearsal checker
 regressions after integrating PR188. No current-process host acceptance is claimed.
+
+RPC-H03-RV01 results at1194d4c: PASS, native macOS/Python3.9.6,
+24 tests/0 skips (7 diagnostic regressions plus17 rehearsal checker tests).
+Restart changes to PID, invocation ID, ExecMain start or restart count refuse;
+inactive/missing identity and future monotonic start refuse. MATCH/DEFICIT,
+old-process rows, delayed decision times and missing health remain explicit.
+`bash -n`, changed-document local links and `git diff --check` PASS. Inspected
+actual driver/coordinator event fields, IAM adapter transaction and systemd
+Type=simple launch. The query remains READ ONLY, latest1500 events only, with
+no writes/provider calls. The checker uses a clock-derived start window, so host
+clock evidence is still required. No AWS, real DB, RPC, signing or production
+script execution occurred; observed #92 acceptance remains Keegan's open item.
+Org Actions never starts due to account billing/spending limits. No exact new
+Linux/release/host qualification is claimed by these focused offline tests.
