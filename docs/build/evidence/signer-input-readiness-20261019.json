@@ -1,0 +1,75 @@
+{
+  "schema": "SignerInputReadinessAudit.v1",
+  "audit_id": "SA-02",
+  "date": "2026-10-19",
+  "repository_baseline": "75e5d7f",
+  "scope": "REPOSITORY_INPUT_INVENTORY_ONLY",
+  "ready_to_install": false,
+  "signing_enabled": false,
+  "gate_b_accepted": false,
+  "candidate_generated": false,
+  "draft": {
+    "path": "docs/build/signer-handoff-20261017/signer.json",
+    "sha256": "339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442",
+    "null_bindings": [
+      "build_id",
+      "database_ca_sha256",
+      "database_host",
+      "router_evidence_file",
+      "router_evidence_sha256",
+      "run_id"
+    ],
+    "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION"
+  },
+  "local_config_check": "NOT_RUN",
+  "assembly_status": "NOT_RUN_MISSING_APPROVED_INPUTS",
+  "required_inputs": [
+    {
+      "ids": [
+        "B01",
+        "B02",
+        "B03"
+      ],
+      "owner": "account/source supplier, Keegan review, Isaac route/fee check",
+      "status": "NO_VERIFIED_SOURCE_REVIEW_PACKET_SUPPLIED"
+    },
+    {
+      "ids": [
+        "B06-pre",
+        "B07",
+        "B06-post",
+        "B08",
+        "B09"
+      ],
+      "owner": "operator reconciliation, Keith measurements, Isaac exact policy approval",
+      "status": "NO_CURRENT_APPROVED_MEASURED_PACKET_SUPPLIED"
+    },
+    {
+      "ids": [
+        "B10"
+      ],
+      "owner": "Keegan with operator/source timing",
+      "status": "NO_ADOPTED_IMPLEMENTED_27_BOUND_SUPPLIED"
+    },
+    {
+      "ids": [
+        "B04",
+        "B05"
+      ],
+      "owner": "approved provider owner, Isaac local proof, operator host qualification",
+      "status": "NO_APPROVED_TRACE_CONFIG_AND_PROOF_SUPPLIED"
+    },
+    {
+      "ids": [
+        "C06",
+        "C07",
+        "C08"
+      ],
+      "owner": "Keegan release, Yao/approved operator bindings/session, Isaac session key placement",
+      "status": "NO_QUALIFIED_SIGNED_RELEASE_BINDINGS_OR_SESSION_SUPPLIED"
+    }
+  ],
+  "c05_review_pr": 192,
+  "external_operations_performed": false,
+  "historical_host_or_balance_evidence_qualifies_signer": false
+}

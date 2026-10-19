@@ -788,3 +788,24 @@ configuration and signed/model-routing preparation. Log retained in this
 workspace at /tmp/pr184-review.log. Real assembly remains NOT_RUN_MISSING_INPUTS;
 no owner approval, source/provider/host qualification, key or signing action.
 The result-only follow-up changes no application or test bytes.
+
+
+### SA-02 — current signer input-readiness handoff (2026-10-19, prospective)
+
+User asks for all available work toward installation. C05 review is separately
+submitted in PR192, not merged/independently accepted. Prepare a current exact
+input/owner handoff using the existing SA-01 assembler, never another template
+or fabricated final signer.json. Base75e5d7f includes current PR133 e169fa1 and
+C05; actual source/native/#27/#44/host inputs are still not supplied here.
+
+Pass criteria before verification: preserve historical draft/review bytes; pin
+its hash and all six null fields; check current blocker issues and local input
+contract; show distinct remaining inputs/owners and production assembly/check
+commands. Run the already pushed production validate_config against the actual
+historical draft, expecting refusal without DB/key/network access. Verify the
+readiness JSON, local links/anchors, old draft hash, changed-file scope and
+renderer. No candidate generated without current approved inputs; all ready/
+signing/GateB/installation flags remain false. Publish a separate stacked PR
+and update PR133, with actual missing owner deliverables rather than repeated
+public source/RPC probes or requests for secrets. No runtime implementation or
+host/provider/trading acceptance is claimed by this handoff.

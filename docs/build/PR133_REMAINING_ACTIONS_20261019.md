@@ -28,6 +28,8 @@ They are preparation slices of GAP-05 and GAP-02/GAP-62; final acceptance remain
 with Keegan. Missing external facts are recorded, not prerequisites to finishing
 the audit. Blocked execution tasks resume independently when inputs arrive.
 
+**Signer assembly input handoff:** [SA-02](SIGNER_INSTALLATION_PREPARATION.md#sa-02-current-handoff--2026-10-19) lists the exact missing artifacts/owners and the existing assembly/check sequence. The old six-null-binding signer.json is not installable. No candidate or private input is manufactured; source/native/#27/#44/release/session gates remain.
+
 ## Execution order — PC-ORDER01
 
 Dependencies cannot be removed by changing the task list. This order prevents
