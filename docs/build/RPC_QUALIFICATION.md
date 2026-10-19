@@ -16,6 +16,12 @@ balance reader does not use that method. PublicNode's [terms](https://www.public
 describe intended RPC access and a revocable service. Neither a listed endpoint
 nor a successful one-time test establishes uptime or host reachability.
 
+Oct19 approved attachment received and locally validated: see
+[RPC-H02 host handoff](BALANCE_RPC_HOST_HANDOFF_20261019.md) for the staged
+private settings, primary/backup order, existing prepare/routes/manifest commands
+and the outstanding actual-wallet/process-health evidence. The candidate research
+above is historical; PublicNode is not in the approved selection.
+
 ## Qualification
 
 From the clean, pushed task branch, create an ignored config such as
