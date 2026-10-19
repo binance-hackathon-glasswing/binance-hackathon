@@ -1,5 +1,46 @@
 # Pre-trading checklist (2026-10-17)
 
+## Isaac — ready work first (PC-ISAAC-QUEUE01, 2026-10-19)
+
+The user assigns the following repository preparation to Isaac, in this order.
+Both can start from committed files without source export, private RPC access,
+AWS, fresh holdings or a signer session. Assignment does not record Isaac's
+acknowledgment or completion. Keegan retains final acceptance/activation ownership.
+If a deliverable already exists, link and review it rather than create a duplicate.
+
+- [ ] **Isaac — IQ01, start first: mandatory activation-blocker matrix (GAP-05).**
+  Compare `DEPLOYMENT_BUILD.md` DR-01–DR-22, the current Gate A/B procedures,
+  `../skill/larp/plan.md` §6.2 and the live backlog. Add the missing explicit
+  mandatory-component/cut-line matrix to the existing deployment procedure.
+  Each row must name the requirement, code/config guard or manual acceptance
+  check, existing evidence reference, and exact missing evidence/owner.
+  Distinguish implemented, offline-tested and actually qualified states; retain
+  safety/logging/reconciliation/recovery requirements as activation blockers.
+  List removable optional features separately. Deliver a documentation PR with
+  source references and link checks; Keegan reviews before GAP-05 is closed.
+  No host check or policy adoption is needed to write the matrix. If an external
+  fact is absent, mark that row MISSING and continue the repository audit.
+- [ ] **Isaac — IQ02, start after IQ01: declaration consistency audit (GAP-02/GAP-62).**
+  Cross-check `../proposal/proposal_answers.md`, current adopted plan decisions,
+  `../../config/release/deviations.v1.json` and `../../config/release/services.v1.json`.
+  Build a discrepancy table in the existing declaration/review documentation:
+  declared claim, implemented/adopted behavior, exact source reference, register
+  row, and remaining owner decision or external evidence. Focus on unresolved
+  standby/recovery, strategy/horizon/sizing and service/model declarations; the
+  already completed IDEA083 release metadata repair is not new work.
+  Repair proven wording/link/status drift in a reviewable PR; leave unresolved
+  choices OPEN/DRAFT. Validate JSON/register rendering if those files change.
+  Do not finalize a deviation, certify provider rights, select a model/strategy,
+  or invent rehearsal evidence. Keegan reviews; account/measurement owners supply
+  any external facts later. IQ02's audit does not wait for those facts.
+
+**Blocked queue, resume per ready packet:** B03 route checks after source+review;
+B05 after private tracing input/suitable transaction; B07 after B06-pre;
+B09 after measured cap review; C05 after its proposals/measurements; C08 after
+the approved signer session. These remain blocked until their own inputs arrive.
+IQ01/IQ02 support final acceptance preparation; completing them does not unblock
+signing or satisfy missing source, funding, host, timing or cap evidence.
+
 This is a snapshot of what stands between today and the scored run (Oct 29 – Nov 12 UTC), split into what the team does this weekend without the strategy profile and what runs on Oct 20 once the profile exists. It was checked against `codex/system-testing-20261012` at `1ab47ae` (#129 merged), every open PR (#123–#126, #130–#132), the PRs merged on Oct 15–17 and the open issues on 2026-10-17, so nothing below repeats finished work. Refreshed 2026-10-17 08:20 UTC against `bb46234` (#123 and #125 merged) and the open PRs #126, #130, #131, #139, #143, #144, #148, #149 and #151. Audited 2026-10-17 for the LLM path and against every open issue (IDEA-066 PC-AUD01). Times are UTC (SGT = UTC+8). The live backlog stays [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md). Tick items here as they finish, and remove the matching backlog line only when its whole item is done.
 
 Review refresh: integration `a428bab` includes #130/#131/#143/#144/#148/#149/#151
