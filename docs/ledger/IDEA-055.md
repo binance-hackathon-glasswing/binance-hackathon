@@ -834,3 +834,17 @@ and a later ROUND_PLANNED by the same run records `health.balances_ok = true`
 with `started_ms` at or after that check. `false`, a missing key, or only rounds
 before the process start keep it open. The result is a dated observation, not
 a freshness guarantee, and confers no trading, signing or Gate B readiness.
+
+RPC-H03 local results at `8ce51f3` (2026-10-19): **PASS** for the script's
+parsing, before any host run. A scratch harness (not committed) ran the
+committed script's `summarize()` on journal bytes read back from a disposable
+PostgreSQL 16 through the existing `ReconcileHarness`, Python 3.12, Linux:
+3 passed. (1) A MATCH check by this process, then a round recording
+`balances_ok: true` at a later sequence. (2) After a simulated restart, earlier
+rows are flagged `this_process: false`. (3) A DEFICIT records
+`balances_ok: false`. Existing `test_balance_reconciliation` and
+`test_balance_failover` against the same database: 34 passed, 0 skipped. This
+includes the Deficit test that reads `policy_input.context.health` from the
+`plan:` event. `bash -n` passes. Host result still NOT_RUN: Keegan runs the
+script from CloudShell (handoff "Process balance-health check"). #92 stays open
+until that output meets the RPC-H03 PASS rule.

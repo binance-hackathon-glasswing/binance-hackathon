@@ -131,6 +131,54 @@ Retain a sanitized, UTC-stamped record with:
 Do not infer trading readiness from balances_ok: all other spending, execution,
 strategy/source, signing and Gate B checks remain independently required.
 
+## User-run host results, 2026-10-19 (RPC-H03)
+
+Keegan ran these checks through AWS CloudShell/SSM and relayed them; this
+repository session did not observe AWS directly. The approved order was already
+installed with the Oct18 run (PC-DEPLOY02), so the operator sequence above is
+for the **next** build. It is not needed to close #92 on the current run.
+
+- Hosted `driver.balance_rpc_providers`: BSC_BNBCHAIN_PUBLIC, then BSC_NODEREAL_PUBLIC.
+- Runtime SHA256 matches the host manifest binding; runtime and manifest build
+  IDs match. This is binding consistency, not new release qualification.
+- First BALANCE_CHECKED of the current run: sequence 3, MATCH,
+  2026-10-18T17:04:43.534Z. Latest reported: sequence 77, MATCH,
+  2026-10-19T10:10:48.422Z (a dated observation, not a freshness guarantee).
+
+## Process balance-health check (last #92 subcheck)
+
+The runtime already records the gate. Each round's journaled
+`ROUND_PLANNED.record.policy_input.context.health` holds `balances_ok` exactly
+as the running process evaluated it (`RuntimeHealth` in `larp/runtime/driver.py`;
+`BalanceCheck.ok()` needs this process's own comparable check within
+`max_age`). No new observation path is needed. The read-only script
+[`checks/balance-health.sh`](ops/llm-trial-20261018/checks/balance-health.sh)
+prints the larp-runtime MainPID, start time and restarts, the latest
+BALANCE_CHECKED rows and the latest rounds' gate booleans, each flagged
+`this_process`. It uses a READ ONLY transaction and makes no RPC or provider
+call.
+
+From CloudShell in `ap-southeast-2`, with the script saved as `balance-health.sh`:
+
+```sh
+python3 - <<'EOF'
+import base64, json
+s = base64.b64encode(open('balance-health.sh', 'rb').read()).decode()
+json.dump({'commands': ['echo ' + s + ' | base64 --decode | bash']}, open('bh-params.json', 'w'))
+EOF
+CMD=$(aws ssm send-command --region ap-southeast-2 --instance-ids i-040fc5fea8b700e9a \
+  --document-name AWS-RunShellScript --parameters file://bh-params.json \
+  --query Command.CommandId --output text)
+sleep 15; aws ssm get-command-invocation --region ap-southeast-2 --command-id "$CMD" \
+  --instance-id i-040fc5fea8b700e9a --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
+```
+
+**PASS** (RPC-H03 criteria in IDEA-055): a MATCH (or reviewed SURPLUS_ONLY)
+BALANCE_CHECKED with `this_process: true`, and a later round with
+`this_process: true` and `health.balances_ok: true`. `false`, a missing key or
+only `this_process: false` rows keep #92 open. Record the output's run ID, PID,
+sequences and times in IDEA-055, not the raw output.
+
 ## Current disposition
 
 | Item | Result |
@@ -138,7 +186,8 @@ strategy/source, signing and Gate B checks remain independently required.
 | Approved file received and ordered driver fragment staged | PASS, local only |
 | Existing private reader and runtime provider validation | PASS, no network calls |
 | Ignored private files and permissions | PASS |
-| AWS network state / primary route check | NOT_RUN, no configured AWS identity |
-| Complete actual runtime config / host manifest binding | NOT_RUN, actual config/build/run inputs missing |
-| First actual-wallet BALANCE_CHECKED and process balance-health | NOT_RUN, needs approved host access and run evidence |
+| Hosted provider order and runtime/manifest binding on the current run | PASS, user-run Oct19 (RPC-H03) |
+| First actual-wallet BALANCE_CHECKED on the current run | PASS, user-run: seq 3 MATCH, latest seq 77 MATCH |
+| Process balance-health (`balances_ok` recorded by this process's rounds) | NOT_RUN; read-only script ready above |
+| Next-build re-prepare / route check / new binding | Only for the next build; not needed for #92 |
 | Native tracing / signing qualification | Separate, no acceptance conferred |
