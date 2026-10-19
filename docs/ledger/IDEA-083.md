@@ -663,3 +663,19 @@ contains PR181 and the INT01 fixes, is merged on top together with the current `
 (`26b93fe`, clean merge). Full suite on that merged tree (`43d3346`, same environment as above): **2087 passed,
 10 skipped (same environment skips), 3324 subtests, 0 failed** (598 s). PR179 is then merged into
 `codex/system-testing-20261012`; PR180 and PR181 are merged by inclusion.
+
+## AB-REL01 — exact merged-release qualification (2026-10-19)
+
+User asks to perform the next deployment step: qualify/package the merged
+IDEA-083 release. Source is integration8c1e6df (PR179 with181/182); no substitute
+implementation is eligible. This criteria-only commit freezes the candidate.
+Pass criteria before execution: approved mirror Runtime acceptance all four
+jobs succeed at this exact candidate; full pinned Linux/PostgreSQL regression,
+actual systemd and restricted-worker checks, Terraform checks, demo/container
+smoke and both-role original host-bundle provisioning pass. Download the
+original CI artifact, verify its API digest and every bundle checksum, compare
+manifested sources with the frozen Git commit, and verify external/embedded
+manifest identity and packaged CA. Record exact hashes/run/source and deliver
+the original bundle as a candidate release; never rebuild/recompress it for
+publication. No host deployment, account/ledger changes, funding or signing.
+Existing source/native/#27/#44/adoption and host acceptance gates stay open.
