@@ -129,3 +129,31 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
   conservative maximum?
 - Expected AIand cost increase: parallel review calls both reviewers on every triggered job, where today GLM runs
   only when Kimi is not ASSESSED (Keith: affordability).
+
+## IR179-RV01 — Isaac runtime review: prospective verification (2026-10-19)
+
+Requested scope: Isaac reviews runtime timing/concurrency; Keegan retains
+implementation, Keith model-protocol/affordability review and Yao deployment.
+Review target PR179 head5557824; application baselineea25b52325656a19b29e8ddb07b94dd792be6e18
+is unchanged by that design-only PR. This review does not adopt a new policy,
+modify runtime/defaults, sign, access providers or change AWS.
+
+Write these review pass criteria before running any tests:
+- Trace all producer/consumer deadline checks, actual deferred worker ownership,
+  audit writer, global tool accounting, result identity and main-thread gates.
+  Distinguish a demonstrated existing contract from hazards introduced by the
+  proposed concurrency; do not claim parallel code has been implemented/tested.
+- Run the already-pushed focused routing, provider, trial/pacing accounting,
+  signed-model/safety/restart and watchdog tests against this exact source,
+  using synthetic external adapters and disposable local PostgreSQL only.
+  Record counts/skips/environment; no full-suite/new180s-path/host acceptance.
+- Findings name source lines, consequence, required change, owner and a
+  prospective acceptance case. In particular address AB1/B11, append-chain
+  serialization, deadline versus provider cleanup, six-tool-call accounting,
+  deterministic combination/result identity, late usage and watchdog headroom.
+- Keep model effort/prompt/routing/account identities and Yao's B11 semantics
+  unchanged; do not silently resolve a policy/identity ambiguity on his behalf.
+  Retain uncertainty charges, trial stops and all signed safety/recovery gates.
+- Deliver the runtime review in its own PR based on179; leave the implementer
+  concrete obligations and record the linkage in PR133. No vendor/teammate
+  message, production credential, wallet/API call or AWS action is part of it.
