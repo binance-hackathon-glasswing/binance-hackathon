@@ -1673,3 +1673,52 @@ INCOMPLETE_WORK retains the concrete implementation/acceptance work. No entire
 model/signer/host gate closes. No app/config/test changes, production secrets,
 paid inference, official receiver, wallet signing/key placement or AWS operation.
 The review PR itself is the handoff; no teammate/vendor message was sent.
+
+
+## PC-IMPL18101 — Isaac delivers Keegan's IDEA-083 implementation (2026-10-19)
+
+User requested the implementation as well as Isaac's runtime review. Delivered
+[PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181),
+stacked on179/180; authoritative record is IDEA-083 AB-IMPL01 on that branch.
+Isaac explicitly chose a separate canonical routed-envelope ID with unchanged
+primary ID/content retained as a linked original artifact. B11 primary semantics
+stay unchanged; the conflicting AB1 witness is clarified to primary-not-ASSESSED
+fallback, with assessed-primary ABSTAIN review retained as DISSENT.
+
+Implemented180000ms common ceiling, ≤60000ms/one-third primary, two parallel
+≤90000ms reviewer allowances, absolute dispatch deadlines, deterministic B11
+selection/verdict/model/status metadata, immutable selected artifacts, six-tool
+pre-dispatch allocation, complete owned-worker lifetime, serialized deferred
+audit and conservative late TIMEOUT/UNKNOWN charges. Late audit cannot revive
+a decision. DEV-22/G-50 and research budget parity are recorded. Frozen v1/v2
+evaluation thresholds stay unchanged; new v3 changes only the elapsed ceiling.
+Both goldens and the copied producer fixture were reviewed as config-hash/
+derived-identity changes only. No prompts, efforts or trial-routing bytes change
+(SHA256 a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d).
+
+Pushed red-first2ecb3a1:6 targeted failures, including concurrent audit-chain
+corruption and primary-timeout reviewer starvation. Final runtime c8e8150:
+**2079 passed,9 skipped,3272 subtests**,290.41s; later commits add only tests/docs.
+Expanded components at3792b0b:14 passed/257 subtests,3.36s, including both B11
+completion orders, actual greedy3+2+1 tools, owned finalizer, stalled reviewer-0
+fallback and clarified18s/34s/10s AB1. Real parallel blocked workers cannot stop
+mandatory reduction/CLOCK HALT/reconciliation; PG guard/heartbeat and actual
+Service watchdog pass a measured1:100 bounded-boundary composite substitute.
+Environment: macOS ARM64/Python3.12.14, exact requirements-test.lock venv, local
+disposable PostgreSQL14.24. Nine NOT_RUNs: one external-data, five disposable
+systemd, three Linux bubblewrap checks. Test PostgreSQL disposed; no AWS state.
+
+GitHub PR181 run39192967295 runtime117869557655 had zero steps; annotation
+explicitly reports failed account payments/spending-limit (#98). No mirror/
+Linux/systemd/original host-bundle or production-latency acceptance is claimed.
+
+Remaining: **Keegan** independently reviews179/180/181 and qualifies the exact
+release; **account owner** resolves #98 or supplies approved CI substitute;
+**Keith** reviews protocol/reporting and measured AIand/OpenAI affordability;
+**next coordinator with approved AWS operator**, following the coordinator
+handoff, installs/qualifies the reviewed release while preserving all ledger
+charges/latches, then records actual timing, charges and receiver ACK. Yao
+access handoff may be needed; no approval or action is inferred on his behalf.
+Signed adoption, router/source/native/profile/holding/caps and approved signer
+session/key gates remain open. No deployment, AWS action, secrets, key placement,
+paid provider calls, wallet signing or real receiver writes by this session.
