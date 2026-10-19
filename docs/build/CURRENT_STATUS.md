@@ -15,6 +15,14 @@ PR195 merged at `dfabdea` on2026-10-19; all six original PRs are MERGED.
 PR133 is the only open PR and remains noticeboard-only. Org CI executed zero
 steps because of account billing/spending limits. No host/deployment/readiness is inferred.
 
+## Live deployment continuation — 2026-10-20 SGT
+
+[LIVE-PLAN01](LIVE_DEPLOYMENT_PLAN_20261020.md) replaces source-export-first
+execution ordering with the selected API-trusted/untrusted path. Its LD01–LD24
+checklist assigns concrete code, input, measurement, installation and acceptance
+work; all LD items are OPEN. PR133 mirrors this noticeboard checklist. These
+changes are proposed in PR196 until merged; no live policy/config is installed.
+
 ## Repository scope retained
 
 - Existing unsigned runtime, model routing, durable audit/accounting, S1 input

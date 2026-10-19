@@ -516,3 +516,23 @@ resource or live transaction is changed by this documentation decision.
 
 **Verification:** documentation consistency and whitespace checks only; no
 execution/provider/chain experiment is performed.
+
+
+### LIVE-PLAN01 — API-trusted deployment continuation (2026-10-20 SGT)
+
+Isaac requested a system-adjustment/deployment plan and a replacement checklist
+on PR133 following B09-TRUST01. [The plan](../build/LIVE_DEPLOYMENT_PLAN_20261020.md)
+maps LD01–LD24 to existing GAP/issues/DR gates with one accountable owner,
+dependencies and completion evidence. It separates existing dual-mode capability
+from source-only reporting, #27 authority, abnormal-fill accounting, allowance
+liveness and the gas-scope decision; caps_review still requires BNB:BUY despite
+the untrusted decoder rejecting native routes. No native omission, numeric
+setting, changed readiness flag or deployment is adopted by planning.
+
+PR133's current body/comments and open issues were checked, including the
+retained Oct19 host report (#92 process health, partial snapshot, two UNKNOWN
+charges, no native trace config). This session made no fresh host/chain/provider
+observation. Required owners keep actual policy/profile/caps/source/model/host
+evidence and final acceptance. PR196 carries this documentation continuation;
+PR133 remains noticeboard-only. Validation: exact checklist-ID parity, local
+link/anchor consistency and whitespace checks; no runtime tests or live action.
