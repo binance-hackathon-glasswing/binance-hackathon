@@ -14,8 +14,8 @@ remain explicit; numeric cap coverage never enables signing.
 - `larp/execution_live/router.py`: `RouterEvidence.v1`, `PinnedRouterDecoder` and the `selector` / `check` command line.
 - The `Executor` now accepts live ports only together with a `PinnedRouterDecoder` built from hash-pinned evidence. Without it, nothing changes:
   - `larp-execution` exits 2 `EXECUTOR_CAPABILITY_GATE`;
-  - the signer refuses every swap and reports `"swap_decoder": "UNVERIFIED"` at start.
-- New settings in `execution.json` and `signer.json`: `router_evidence_file` and `router_evidence_sha256`. Set both or neither.
+  - the signer refuses `check` and `run` before database/key access (SR-01); it cannot start an approval-only path without its pinned decoder.
+- New settings in `execution.json` and `signer.json`: `router_evidence_file` and `router_evidence_sha256`. The execution configuration accepts both or neither; the production signer requires both before check/run can pass.
   - The execution service refuses evidence for another router than its `router`.
   - The signer refuses evidence for a router outside its own `signing_policy.allowed_spenders`.
 - The Gate B report (`python -m larp.execution_live.gate_b report`) accepts a pinned `router_check` file. DR-02 shows VALIDATED only for pinned evidence plus a passing recorded-route check, and still says the source review and a logged dev approve + swap are required.
@@ -36,7 +36,7 @@ remain explicit; numeric cap coverage never enables signing.
 | 5 | Isaac | Run the recorded-route check on the IDEA-063 capture artifacts (prompt 1): `python -m larp.execution_live.router check --evidence config/execution/router-evidence.v1.json --sha256 <file sha256> --artifacts <capture>/artifacts --out <outside repo>/router-check.json`. It must report `PASS`, which needs both directions. Add the report's hash to IDEA-070. | `PASS` |
 | 6 | Team | Decide #27 (above), and the signer's per-token caps and fee cap (#44 WR-C). Use the approved policy and exact hash; do not install the unapproved example caps. `allowed_spenders` must name the router. | Decisions recorded with dates |
 | 7 | Isaac | MetaMask USDT → BNB first-gas swap on the **dev** wallet: about 4 USDT **total**, gas paid in USDT, before any agent trade (#106, F-120). Record each funding note. Yao Zhu then re-takes the opening balance capture (GATE_A.md) and `gate_b probe-chain` with the `finalized` RPC (#92) on the host. | Funded native balance in the chain capture |
-| 8 | Yao Zhu | Configs on the hosts: `router`, `router_evidence_file` (`/etc/larp/router-evidence.json`) and `router_evidence_sha256` in both `execution.json` and `signer.json`; `allowed_spenders` and the decided caps in `signer.json`. Rebind the manifest (`preflight --bind ... --service-config`). | `check` passes for both services |
+| 8 | Yao Zhu | Configs on the hosts: `router`, `router_evidence_file` (`/etc/larp/router-evidence.json`) and `router_evidence_sha256` in both `execution.json` and `signer.json`; `allowed_spenders` and the decided caps in `signer.json`. Rebind the manifest (`preflight --bind ... --service-config`). | `check` passes for both services; signer check reports local config/evidence scope only, signing disabled and no Gate B acceptance |
 | 9 | Isaac | Put the key at `/etc/larp/signer/wallet.key` (root, `0600`) on the signer host only. Start the signer. Expect `"swap_decoder": "VERIFIED"` with the evidence hash. | Start line shows VERIFIED |
 | 10 | Yao Zhu | Start `larp-execution`. Expect no exit 2. | Service running |
 | 11 | Agent, watched by all | The first approve and swap come from the agent's own round, at minimum size, each with its decision record and an ACKed round log. Then run the crash tests at each execution step on the host (DR-04), the reservation checks (DR-05), and a shadow-day replay (DR-19). | DR-02..06 and DR-19 evidence in IDEA-039/042 |
