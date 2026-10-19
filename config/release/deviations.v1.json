@@ -327,6 +327,19 @@
    ],
    "decided": "2026-10-19",
    "status": "DRAFT"
+  },
+ {
+   "id": "DEV-23",
+   "area": "Swap router trust",
+   "declared": "The order aborts if quoted slippage exceeds its cap.",
+   "v1_behaviour": "The kit router (a diamond proxy) and its swap facet publish no verified source, so the on-chain enforcement of the minimum output, the recipient and the deadline is not proven, and the wallet address is not in the swap calldata. In untrusted-router mode the agent still refuses any quote whose minimum is below the cap, checks the full calldata layout (outer and inner economics agree), and before every swap step re-checks on chain that the facet and code are the pinned ones and that the router's allowance is at most this swap's amount (zero for every other token). A fill below its minimum is never booked; it withholds all further signing.",
+   "reason": "Decided 2026-10-19 by Keegan (IDEA-070 B02-U) after BscScan and Etherscan showed no source for either contract. A misbehaving router or inner call can cost up to one trade's input, bounded by the per-trade cap and the signer's per-token caps. Signing-policy adoption is Isaac's (B09).",
+   "evidence": [
+    "IDEA-070",
+    "GAP-29"
+   ],
+   "decided": "2026-10-19",
+   "status": "DRAFT"
   }
  ]
 }

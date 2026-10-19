@@ -42,6 +42,25 @@ remain explicit; numeric cap coverage never enables signing.
 | 11 | Agent, watched by all | The first approve and swap come from the agent's own round, at minimum size, each with its decision record and an ACKed round log. Then run the crash tests at each execution step on the host (DR-04), the reservation checks (DR-05), and a shadow-day replay (DR-19). | DR-02..06 and DR-19 evidence in IDEA-039/042 |
 | 12 | Keegan | Run `gate_b report` with inputs including `router_check`. Review Gate B item by item in IDEA-042. **If Oct 20 slips, record the rehearsal shortfall as a deviation that day (GAP-04).** | Gate B reviewed |
 
+## Untrusted-router alternative to steps 1–5 (IDEA-070 B02-U, DEV-23)
+
+Step 1 stopped on 2026-10-19: neither the router nor its swap facet `0xa9fa1b56…e603` has verified source on BscScan
+or Etherscan. Keegan chose to treat the router as untrusted rather than wait. This replaces steps 1–5 and the
+`router_evidence_*` settings in step 8. It does **not** replace step 6 (#27, caps): adoption is Isaac's, together
+with the #44 caps, and #27 is still required, because the swap's deadline is about 8 minutes after the quote.
+
+| # | Who | Step | Done when |
+|---|---|---|---|
+| U-a | Operator, on primary | `python -m larp.execution_live.untrusted_router observe --rpc-url <approved balance RPC> --artifacts <fresh IDEA-063 quote capture> --out <outside repo>/untrusted-router.json`. It records the facet the swap selector dispatches to, both code hashes, and the head words all quotes share. | Draft written; facet is `0xa9fa1b56…` or the change is investigated |
+| U-b | Named reviewer (not the operator) | Check the draft against IDEA-070 B02-U, then replace both `REVIEW_REQUIRED` values with their name and a dated review reference. The policy refuses to load until they do. | Reviewed policy and its SHA-256 recorded in IDEA-070 |
+| U-c | Operator | `python -m larp.execution_live.untrusted_router check --policy <file> --sha256 <hash> --artifacts <capture>` must report `PASS` (every quote decodes to its own values, and every tampered copy is refused). Keep the report for `gate_b report` as `router_check`. | `PASS` |
+| U-d | Operator | Put `untrusted_router_policy_file` and `_sha256` (never together with `router_evidence_*`) in both `execution.json` and `signer.json`, then rebind. The signer's start line shows `"swap_decoder": "UNTRUSTED"` and `"deviation": "DEV-23"`. | Both `check`s pass |
+
+Before every swap step, primary re-checks at the latest block that the facet slot and code hashes are unchanged, and
+that the router's allowance is zero for every other token (and at most the amount for the pay token, after the approve).
+Any change refuses the swap. A fill whose settlement is refused (paying anything but the exact amount, or receiving
+less than the minimum) withholds all further signing until it is resolved.
+
 ## Evidence template
 
 The values in angle brackets are placeholders, and the validator refuses them as written. Every value must come from the verified source; none may be guessed.

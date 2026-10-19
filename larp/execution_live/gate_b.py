@@ -214,19 +214,38 @@ def readiness_report(inputs, *, now, base_dir):
     except errors:
         checks['DR-04']['detail'] = 'Execution configuration absent, invalid, mismatched or hash changed'
     try:
+        from .config import untrusted_router_settings
         from .router import PinnedRouterDecoder, evidence_settings, validate_route_report
         settings = None if config is None else evidence_settings(config)
-        if settings is None:
-            raise Blocked('router evidence not configured')
-        decoder = PinnedRouterDecoder(pinned(dict(path=settings[0], sha256=settings[1]), base_dir),
-                                      evidence_sha256=settings[1])
-        if decoder.router != address(config['router']):
-            raise Blocked('router evidence is for another router')
-        value = load('router_check')
-        validate_route_report(value, decoder, wallet=wallet)
-        result['evidence_hashes']['router_evidence'] = settings[1]
-        checks['DR-02'].update(status='VALIDATED', detail='Pinned router evidence and a passing recorded-route check '
-                               'only; owner review of the verified source and a logged dev approve + swap still required')
+        untrusted = None if config is None else untrusted_router_settings(config)
+        if untrusted is not None:
+            # IDEA-070 B02-U: no source guarantees; DEV-23 records the residual risk owners must accept.
+            from .untrusted_router import UntrustedRouterDecoder
+            decoder = UntrustedRouterDecoder(pinned(dict(path=untrusted[0], sha256=untrusted[1]), base_dir),
+                                             policy_sha256=untrusted[1])
+            if decoder.router != address(config['router']):
+                raise Blocked('untrusted-router policy is for another router')
+            value = load('router_check')
+            if (type(value) is not dict or value.get('schema') != 'UntrustedRouteCheck.v1'
+                    or value.get('status') != 'PASS' or value.get('policy_sha256') != untrusted[1]
+                    or type(value.get('quotes')) is not int or value['quotes'] < 1):
+                raise Blocked('passing untrusted-route check for this policy required')
+            result['evidence_hashes']['untrusted_router_policy'] = untrusted[1]
+            checks['DR-02'].update(status='VALIDATED', detail='UNTRUSTED router policy and a passing recorded-quote '
+                                   'check only (DEV-23); no source guarantees. Owner acceptance of the residual risk, '
+                                   'live preflight and a logged dev approve + swap still required')
+        else:
+            if settings is None:
+                raise Blocked('router evidence not configured')
+            decoder = PinnedRouterDecoder(pinned(dict(path=settings[0], sha256=settings[1]), base_dir),
+                                          evidence_sha256=settings[1])
+            if decoder.router != address(config['router']):
+                raise Blocked('router evidence is for another router')
+            value = load('router_check')
+            validate_route_report(value, decoder, wallet=wallet)
+            result['evidence_hashes']['router_evidence'] = settings[1]
+            checks['DR-02'].update(status='VALIDATED', detail='Pinned router evidence and a passing recorded-route check '
+                                   'only; owner review of the verified source and a logged dev approve + swap still required')
     except errors:
         checks['DR-02']['detail'] = ('Pinned router evidence or a passing recorded-route check absent or mismatched; '
                                      'the swap decoder stays unverified')
