@@ -28,7 +28,7 @@ class BudgetContract(unittest.TestCase):
 
     def test_one_budget_contract_bounds_stage_shares_and_tool_allocations(self):
         from larp.intelligence.time_budget import stage_limits, reviewer_tools
-        for total, primary in ((180000,60000),(120000,40000),(60000,20000),(600,200)):
+        for total, primary in ((180000,60000),(120000,40000),(60000,20000),(600,200),(1,0)):
             self.assertEqual(stage_limits(total), (primary, min(90000,total-primary)))
         for total in (0,180001,True,'180000'):
             with self.subTest(total=total),self.assertRaises(IntelligenceError):stage_limits(total)
@@ -73,6 +73,42 @@ class ParallelRouting(unittest.TestCase):
     def setUp(self):
         fixture=preferred.Preferred();fixture.setUp();self.addCleanup(fixture.doCleanups)
         self.fx=fixture.fx
+
+    def test_dispatch_tool_allocations_enforce_global_six_calls(self):
+        f=self.fx;aiand=f.aiand;openai=f.openai
+        def greedy(state):
+            return dict(action='CALL_TOOL',tool='prior_context',args=dict(metric='revenue')) if state['remaining_tool_calls'] \
+                else dict(action='FINISH',claims=state['claimable'],notes='synthetic tool-budget test')
+        def primary(url,headers,raw,timeout):
+            status,reply=openai(url,headers,raw,timeout);body=json.loads(raw);payload=json.loads(reply)
+            payload['output'][0]['content'][0]['text']=json.dumps(greedy(json.loads(body['input'].split('\n',1)[1])))
+            return status,json.dumps(payload).encode()
+        def reviewer(url,headers,raw,timeout):
+            status,reply,metadata=aiand(url,headers,raw,timeout);body=json.loads(raw);payload=json.loads(reply)
+            payload['choices'][0]['message']['content']=json.dumps(greedy(json.loads(body['messages'][1]['content'])))
+            return status,json.dumps(payload).encode(),metadata
+        f.openai=primary;f.aiand=reviewer
+        _,value=f.run_assessment(f.build())
+        records={s['stage']:json.loads(f.w.artifacts.get(s['result_artifact'])) for s in value['routing']['stages']}
+        self.assertEqual([records[s]['budget_used']['tool_calls'] for s in
+                          ('openai-primary','external-review-0','external-review-1')],[3,2,1])
+        self.assertEqual(value['budget_used']['tool_calls'],6)
+
+    def test_request_boundary_accepts_180_seconds_and_refuses_larger_without_dispatch(self):
+        from larp.contracts import ContractError
+        from larp.runtime.schema import assessment_request
+        f=self.fx;router=f.build()
+        for total in (60000,180000,180001):
+            with self.subTest(total=total):
+                req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='boundary',deadline_ms=total)
+                if total>180000:
+                    with self.assertRaises(ContractError):assessment_request(req,req.read()['run_id'],req.read()['policy_profile_hash'],f.w.clock())
+                    before=len(f.calls)
+                    self.assertEqual(router.assess(req).read()['status'],'REJECTED_REQUEST')
+                    self.assertEqual(len(f.calls),before)
+                else:
+                    assessment_request(req,req.read()['run_id'],req.read()['policy_profile_hash'],f.w.clock())
+                    self.assertNotEqual(router.assess(req).read()['status'],'REJECTED_REQUEST')
 
     def test_both_reviewers_enter_transport_before_either_completes(self):
         f=self.fx; original=f.aiand; barrier=threading.Barrier(2,timeout=2); entered=set();lock=threading.Lock()
