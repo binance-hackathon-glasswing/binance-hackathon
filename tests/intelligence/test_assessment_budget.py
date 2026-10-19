@@ -240,6 +240,27 @@ class ParallelRouting(unittest.TestCase):
         self.assertTrue(all(row==('UNKNOWN',) for row in charges))
         self.assertNotEqual(first['routing']['primary_result']['result_id'],first['result_id'])
 
+    def test_hung_first_reviewer_cannot_starve_second_fallback(self):
+        f=self.fx;original=f.aiand;release=threading.Event();entered=threading.Event()
+        f.openai_error='rate_limit_exceeded'
+        def review(url,headers,raw,timeout):
+            if json.loads(raw)['model']=='moonshotai/kimi-k3':
+                entered.set();release.wait(3)
+            return original(url,headers,raw,timeout)
+        f.aiand=review;router=f.build()
+        try:
+            req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='hung-first-reviewer',deadline_ms=600)
+            value=router.assess(req).read()
+            self.assertTrue(entered.is_set())
+            self.assertEqual((value['status'],value['routing']['review_outcome']),('ASSESSED','FALLBACK'))
+            selected=json.loads(f.w.artifacts.get(value['routing']['selected_result']['artifact']))
+            self.assertEqual(selected['model']['model_id'],'zai-org/glm-5.3')
+            self.assertEqual([r['status'] for r in value['routing']['reviewers']],['UNAVAILABLE','ASSESSED'])
+            self.assertTrue(any(w.is_alive() for w in router._workers))
+        finally:
+            release.set()
+            for worker in router._workers:worker.join(2)
+
     def test_absolute_deadline_includes_payload_preparation(self):
         f=self.fx;router=f.build();model=router.external[0]
         keep=model._keep

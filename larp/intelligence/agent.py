@@ -192,7 +192,9 @@ class AssessmentTask:
     def result(self):
         if self.immediate is not None:return self.immediate
         if self.frozen is None:
-            if self.worker.is_alive() or self.expired or not self.box.get('on_time',False):
+            # Completion eligibility and thread cleanup are different boundaries.
+            # A saved on-time result remains eligible while its finalizer drains.
+            if not self.box.get('on_time',False):
                 self.cancel.set()
                 self.frozen = self.assessor._abandoned(self.r,self.validated,self.start_ms,self.io)
             elif 'error' in self.box:

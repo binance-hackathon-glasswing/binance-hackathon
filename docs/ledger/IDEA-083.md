@@ -448,3 +448,12 @@ inside the scaled300s target with a scaled600s watchdog; no watchdog increase.
 This measures the local injected boundary contract, not production I/O maxima
 or actual host latency. Host measurement and exact Linux/release acceptance
 remain Yao/Keegan gates.
+
+AB-IMPL01 finalization race found in source review: a stage may finish its
+verified result before its deadline yet still own its worker during final
+context cleanup. Red witness pushed8e2c989 blocks that finalizer after logical
+completion: the old Task.result incorrectly returns UNAVAILABLE (1 failed,
+0.41s). Completion eligibility must use the saved on-time terminal marker;
+actual worker lifetime still fences new groups/audit ACK. Add this regression
+and the stalled reviewer-0/successful reviewer-1 fallback witness to final
+acceptance. Neither changes timeout accounting or permits late content.
