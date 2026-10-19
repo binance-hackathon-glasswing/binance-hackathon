@@ -2084,3 +2084,12 @@ DR proof and its supplier remain in the matrix/current action plan; no source,
 measurements, policy approval, deployment, gate qualification or activation is
 inferred from document completion. No AWS, wallet-key, funding, signing, actual
 provider/model/receiver, organiser message or other host operation occurred.
+
+IQ01 delivery: [PR185](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/185),
+codex/isaac-iq01-activation-matrix-20261019 → PR133. Normal merge d9e9d46
+incorporates concurrent parentbcfcf80: preserve the PC-DBPLAN01/PC-OPS01 results
+and newly ready C05 policy-review packet alongside IQ01. The sole conflict was
+adjacent ledger additions, explicitly retained in full. Repeated static checks
+pass with the same22/122/41 results; no application/config/source-evidence or
+numeric policy changed. Keegan's IQ01 review remains pending; no IQ02/C05 work
+was started by this IQ01 delivery.
