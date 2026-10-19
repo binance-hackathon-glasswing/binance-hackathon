@@ -26,7 +26,9 @@ with the approved order. No provider URL is in this document or Git.
 runtime, wallet/run binding, Terraform output or AWS identity is available in
 this session. The fragment must never replace a complete hosted runtime file.
 Account-owner details are resolved per the user; working host access and evidence
-are separate. No new zero-address probe was run, since that does not establish
+are separate. The user also supplied the target account/environment label, but
+a fresh capability check still exposes no bound AWS identity. A name alone
+cannot authenticate an AWS/SSM session. No new zero-address probe was run, since that does not establish
 the requested actual-wallet result.
 
 ## Operator sequence — use the approved access handoff

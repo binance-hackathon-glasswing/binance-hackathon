@@ -782,3 +782,22 @@ capabilities or OIC manifest, no AWS CLI config and no hosted runtime/Terraform
 export available. Requested approved connection/private host handoff from user;
 continue staging independently. Host/network/manifest/actual-wallet verification
 is NOT_RUN pending that access and the actual configuration/run bindings.
+
+RPC-H02 local results (2026-10-19): PASS at preregistered source8dff470:
+original attachment copied unchanged to ignored mode0600 storage; selected IDs
+are exactly BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC. Production private_config
+and runtime balance_providers both accepted the ordered configuration. A second
+ignored mode0600 file contains only the correctly nested driver provider fragment;
+it is not a complete hosted runtime. Selection hash81fb99728f69a2dc3d5279764dfa3bcadb21194bfb6fbe8618b88570e3977558;
+fragment hash0a164d7d8d8452d7585e688d978ce174d2b63f8674007e0542e93052534ffff1.
+Both files git-ignored; no values/URLs committed. Handoff links and supported
+routes/preflight command flags checked PASS at2fbe943; git diff --check PASS.
+
+User supplied a target account/environment label after the access question.
+Rechecked capability state: current/enforced network, but still no bound AWS
+identity/capability, OIC manifest, local AWS config/credentials or AWS CLI. Plugin
+search found no usable EC2/SSM integration. The account label does not establish
+an authenticated session. Host network/config-manifest install and first actual
+wallet/process balance-health acceptance remain NOT_RUN, with #92 open. Actual
+wallet/run/runtime export is also absent. No RPC/network probe, AWS mutation,
+activation, signing, audit upload or funding operation was performed.
