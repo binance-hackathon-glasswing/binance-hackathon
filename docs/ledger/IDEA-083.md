@@ -1,7 +1,7 @@
 # IDEA-083 — Assessment time budget and review outcome rule: per-stage shares, parallel reviewers, longer deadline, reviewers never replace an assessed primary
 
 - Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Initial implementer: Keegan**; Isaac takes over implementation at the user's request (AB-IMPL01). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
-- Status: **implemented in PR181; final local acceptance in progress.** Yao approved direction on2026-10-19.
+- Status: **implemented and locally verified in PR181; independent review/release/host acceptance open.** Yao approved direction on2026-10-19.
   Pass criteria were preregistered; pushed red witnesses and implementation evidence are recorded in AB-IMPL01.
 - Scope: unsigned and signed routed assessments (`aiand_routed`, OpenAI-preferred routing). **Model effort stays as
   is** (OpenAI medium, AIand reviewers high). Yao: lower reviewer effort only if latency is still a problem after
@@ -456,3 +456,58 @@ completion: the old Task.result incorrectly returns UNAVAILABLE (1 failed,
 actual worker lifetime still fences new groups/audit ACK. Add this regression
 and the stalled reviewer-0/successful reviewer-1 fallback witness to final
 acceptance. Neither changes timeout accounting or permits late content.
+
+AB-IMPL01 delivery is [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181),
+stacked on design179 and runtime-review180. At f92b2a0 the full pinned suite
+passed2077 tests/3272 subtests,9 expected platform/external skips (277.19s).
+The separately reproduced finalizer race is fixed at c8e8150: logical on-time
+completion stays eligible while the real worker remains owned; late completion
+still fails closed. Expanded components at3792b0b pass14 tests/257 subtests
+(3.36s), including the corrected18s failed-primary /34s ABSTAIN /10s ASSESSED
+AB1 witness (conservative shared fake-clock elapsed62s, FALLBACK) and a truly
+stalled reviewer-0 that cannot starve reviewer-1. No runtime/config changes
+follow c8e8150;3792b0b adds only that AB1 test and documentation. Final full-suite
+verification is recorded below when finished.
+
+| Criteria / finding | Repository acceptance evidence |
+|---|---|
+| B1–B3, AB2/4/6, IR179-01/05 | Shared180000ms ceiling; primary min(total//3,60000), reviewer min(remaining,90000); absolute deadline spans validation, payload persistence and dispatch guards. Real blocked-primary dispatch, stalled-reviewer fallback, request/schema180000/180001, payload-crossing-cutoff and completed-finalizer tests. |
+| B4/B11, AB1/3/11–15, IR179-04 | Pure125-case B11 matrix plus250 real task/combiner/consumer cases across both completion orders; original artifacts and primary semantic fields unchanged, own routed ID, explicit reviewer status/reasons/model/outcome. Fallback verdicts carry role=fallback and compare against the fixed-precedence selected candidate. |
+| B5, IR179-03 | Actual greedy transports consume exactly3+2+1 tool calls; at most six globally, including reserved late-primary allowance. Model/effort/prompt files unchanged; trial-routing SHA256 remains a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d. |
+| B6, AB5, IR179-06 | Existing atomic admission/day/total/window/quarantine tests plus unsigned late-worker charge assertion: timeout remains UNKNOWN/full reserved cost, with no refund or restored authority. AIand guards enforce the existing OpenAI trial/accounting boundaries; they do not invent a USD cap for separately funded AIand. |
+| B7, AB7, IR179-02 | Concurrent callback hash-chain test, immutable stage artifacts and deferred audit-before-RESULT/ACK/restart checks. Late reply bytes remain in artifacts; parseable deferred replies preserve safe usage/reasoning and audit-only late_calls in ModelTrace; in-flight cutoff markers remain unchanged. |
+| IR179-07 | Real parallel reviewer workers remain blocked while mandatory planner/CLOCK HALT/reconciliation execute; PostgreSQL-backed restart retains completed audit without paid replay. Existing limiter outage, expired/context rejection, receiver and replay checks remain in the full suite. |
+| B8, AB8, IR179-08 | Measured1:100 composite bounded-boundary substitute executes actual workers, accounting/artifact checks, concurrent fsync, PG guard/heartbeat and Service watchdog. Both unsigned synchronous and signed background lanes remain below scaled300s with scaled600s watchdog; host I/O maxima/latency remain unqualified. |
+| B9/B10, AB9/10 | DEV-22, G-50 and rendered register; research requests configured180s, new v3 elapsed threshold with all frozen v1/v2 quality criteria preserved. Explicit historical60s demo fixtures retained; identity-only goldens and copied producer fixture reviewed. Pinned local full regression; actual Linux/systemd/original host bundle acceptance remains separate. |
+
+CI evidence: PR181 run39192967295 runtime job117869557655 has zero steps.
+GitHub annotation explicitly reports failed account payments/spending-limit;
+this is the existing account-owner #98 blocker, not a source/test assertion.
+No claim of Linux/systemd/mirror/original-bundle qualification or deployment.
+PR133's coordinator handoff says Yao stepped down: exact release/host work is
+with Keegan for release review and the next coordinator/AWS operator for host
+qualification, with Yao/account-owner access handoff if needed. Keith retains
+protocol/affordability, actual AIand usage and trial population/labels. No
+named review/endorsement is inferred, no adoption gate closes, and no AWS,
+private credentials, wallet keys, real provider calls or receiver writes occur.
+
+AB-IMPL01 final local acceptance at pushed runtime c8e8150: **2079 passed,
+9 skipped,3272 subtests passed,0 failures**,290.41s. The9 skips are one opt-in
+external-data check, five disposable-systemd checks and three Linux bubblewrap
+checks; these remain NOT_RUN on macOS, not waived or represented as PASS.
+Environment: macOS ARM64, Python3.12.14, exact deploy/requirements-test.lock
+venv (pip check clean), disposable PostgreSQL14.24 pinned image on local55448.
+Expanded components at3792b0b:14 passed/257 subtests,3.36s, including the added
+AB1 witness. Runtime/config/fixture bytes are unchanged after c8e8150; later
+commits add tests and result documentation only. Register rendering and diff
+whitespace checks PASS. Local test PostgreSQL is disposed after acceptance.
+
+Remaining: **Keegan** independently reviews179/180/181 and supplies exact
+Linux/systemd/restricted-worker/original-bundle release evidence; **account
+owner** resolves #98 or provides the approved CI substitute; **Keith** reviews
+B11 protocol/reporting and measured AIand/OpenAI affordability; **next coordinator
+with approved AWS operator** installs/qualifies the reviewed release, preserves
+ledger state and records real stage timing, charges and receiver ACK. This
+session performs none of those host operations. Signed adoption, source/route,
+profile/holding/caps and approved signer-session/key gates remain unchanged.
+PR133's live checklist/handoff is updated with PR181 and these remaining owners.
