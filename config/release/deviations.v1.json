@@ -302,6 +302,19 @@
    ],
    "decided": "2026-10-11",
    "status": "DRAFT"
+  },
+  {
+   "id": "DEV-22",
+   "area": "Evidence loop time budget",
+   "declared": "The loop is capped at 6 calls and 60 s per decision.",
+   "v1_behaviour": "Evidence assessments accept at most 180 s; OpenAI-preferred routing gives its primary at most 60 s and one third of the decision budget, then runs two independent reviewers concurrently with at most 90 s each. One global six-tool-call allowance is deterministically partitioned. Stage deadline results are separate from actual worker cleanup; late replies never restore authority. B11 preserves selected primary content in an immutable linked result under a canonical routed envelope.",
+   "reason": "IDEA-083: hosted high-effort review exhausted the previous 60 s serial budget despite an assessed primary. Yao approved longer budgets/parallel review/B11; Isaac approved separate routed identity with unchanged primary identity/content on 2026-10-19. Legacy AIand-first selection remains historical, without B11 changes.",
+   "evidence": [
+    "IDEA-083",
+    "IDEA-066"
+   ],
+   "decided": "2026-10-19",
+   "status": "DRAFT"
   }
  ]
 }

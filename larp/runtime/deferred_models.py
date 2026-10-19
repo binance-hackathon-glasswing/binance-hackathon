@@ -30,6 +30,7 @@ class DeferredAssessments:
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         if self.root.is_symlink():
             raise ContractError('Model journal directory cannot be a symlink')
+        self._writer_lock = threading.RLock()
         self.pending, self.active = {}, None
         self.finished = threading.Event()
         for path in sorted(self.root.glob('*.jsonl')):
@@ -76,7 +77,11 @@ class DeferredAssessments:
         return events
 
     def _append(self, path, event):
-        # Only one writer exists for an active chain. ACK is written after its worker finished.
+        with self._writer_lock:
+            return self._append_locked(path,event)
+
+    def _append_locked(self, path, event):
+        # All reviewer callbacks serialize head/read/hash/write/fsync; ACK follows worker drain.
         events = self._read(path)
         previous = '0' * 64
         if events:

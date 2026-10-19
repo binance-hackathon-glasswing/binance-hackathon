@@ -240,7 +240,9 @@ class Preferred(unittest.TestCase):
 
     def test_missing_openai_key_uses_high_effort_fallback(self):
         f=self.fx; _,result=f.run_assessment(f.build(key=False))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertEqual(result['status'],'ASSESSED')
 
     def test_model_identity_is_stable_across_key_and_period_changes(self):
@@ -264,7 +266,9 @@ class Preferred(unittest.TestCase):
         token=b.admit(b.snapshot()['available_micro_usd'],'synthetic-other-work'); b.settle(token,None)
         _,result=f.run_assessment(router)
         self.assertFalse(any(c[0]=='openai' for c in f.calls))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertFalse(result['routing']['budget']['external_only'])
         steps=result['model_io']['steps']
         self.assertEqual(steps[0]['response']['error'],'OPENAI_PACING_LIMIT')
@@ -289,13 +293,15 @@ class Preferred(unittest.TestCase):
         f.openai_error=None; f.calls.clear(); f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
 
-    def test_both_external_failures_strip_required_review_authority(self):
+    def test_both_external_failures_preserve_verified_primary_as_incomplete(self):
         f=self.fx; f.fail_external=True
         _,result=f.run_assessment(f.build())
-        self.assertNotEqual(result['status'],'ASSESSED')
-        self.assertFalse(result['findings'])
-        self.assertFalse(result['event_findings'])
-        self.assertEqual([c[:3] for c in f.calls if c[0]=='aiand'],
+        self.assertEqual(result['status'],'ASSESSED')
+        self.assertEqual(result['routing']['review_outcome'],'INCOMPLETE')
+        primary=json.loads(f.w.artifacts.get(result['routing']['primary_result']['artifact']))
+        for key in ('claims','findings','event_findings','rationale','confidence'):
+            self.assertEqual(result[key],primary[key])
+        self.assertCountEqual([c[:3] for c in f.calls if c[0]=='aiand'],
                          [('aiand','moonshotai/kimi-k3','high'),('aiand','zai-org/glm-5.3','high')])
 
     def test_disagreement_abstains_instead_of_selecting_a_model(self):
@@ -308,7 +314,7 @@ class Preferred(unittest.TestCase):
         f.openai=disagree
         _,result=f.run_assessment(f.build())
         self.assertEqual(result['status'],'ABSTAIN')
-        self.assertIn('ROUTING_FINDING_DISAGREEMENT',result['reasons'])
+        self.assertIn('ROUTING_REVIEW_DISSENT',result['reasons'])
         self.assertFalse(result['findings'])
 
     def test_missing_storage_does_not_recreate_or_dispatch_openai(self):
