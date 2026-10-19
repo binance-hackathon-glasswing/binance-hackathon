@@ -2100,3 +2100,30 @@ This is not an executed test failure or CI PASS. IQ01 is documentation-only,
 retains its passing static checks and does not claim a new runtime suite,
 mirror release, host acceptance or billing resolution. PR133's description now
 links PR185 as delivered with Keegan review pending and retains IQ02/C05 status.
+
+## IQ02 — declaration consistency audit (2026-10-19, prospective criteria)
+
+Isaac requests IQ02 after delivery of IQ01 (PR185); IQ01 review is still pending.
+Audit source c2839fd includes PR133 bcfcf80 and the IQ01 matrix. Pass criteria,
+written before validation:
+
+1. Compare the immutable submitted proposal, dated adopted decisions, actual
+   implementation and both release registers in an existing declaration document.
+   Cover standby/recovery, model/horizon/sizing, services and rehearsal scope;
+   identify exact sources, register rows, remaining owners and evidence.
+2. Correct proven descriptive drift, preserving historical decisions and separating
+   the selected S1 family from unadopted parameters and measured rehearsal fallback.
+   Keep every deviation DRAFT and DEV18/20 OPEN; do not adopt policy, certify rights
+   or infer host/provider qualification from code or old trial receipts.
+3. Validate both JSON documents, exact proposal quotes, evidence-ID resolution and
+   generated plan consistency. Run existing register/version-event and live
+   OPEN/DRAFT activation-refusal tests against disposable local PostgreSQL.
+   Check local document links, unchanged submitted proposal, and clean whitespace.
+4. Push changed release metadata before executing its renderer/tests. Record results,
+   narrow GAP02/GAP62 to remaining acceptance, and deliver a separate PR with PR133
+   updated. Changed register hashes require a future reviewed release; existing
+   c5be269 artifacts/CI/host receipts cannot qualify these new bytes.
+
+No AWS, real provider/receiver call, wallet, signing, funding, installation or
+policy acceptance is authorized or needed by this audit. Keegan reviews IQ02;
+account/measurement owners supply remaining facts separately.
