@@ -2250,3 +2250,27 @@ This session's delete push was refused (HTTP 403), so they still exist; Keegan
 deletes them in GitHub. Correction: the earlier option text for #49 cited the
 Oct19 binding check. That check covered the current non-CI `ea25b52` host
 build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.
+## PC-YAO-NB01 — remaining local Yao work (2026-10-19 SGT; prospective)
+
+Scope: user requests the non-blocked work in Yao's PR133 section and a review PR.
+Base: PR133 `aca1b7c`. Complete the local PC-LABEL02-INJ01 trust review and
+recover the original interim quote-summary handoff (IDEA-063 YP-01). Host,
+account, funding, source-provider and signer actions retain their prerequisites.
+
+Pass criteria, before running regressions:
+
+1. Reproduce the instruction flag on the original hash-verified saved public
+   filing, without committing the private packet, labels or original outputs.
+2. Exercise the current capped v3 routing file and pinned stage prompts offline
+   with synthetic transports: benign link text remains untrusted/incomplete,
+   real instruction examples remain flagged, and an attempted URL-fetch tool is
+   refused. Preserve the detector and historical outputs. This tests harness
+   composition, not live-model behavior, T01, M9 or source qualification.
+3. Recover the old summary/report/metadata bytes; verify transfer checksums,
+   summary/capture identities and declared coverage. Distinguish reported capture
+   provenance from a new raw-capture reproduction. Do not regenerate a profile,
+   infer fee netting or accept fallback gas as measured gas.
+4. Publish only sanitized evidence, verification code/tests and review findings;
+   update the checklist/backlog to retain exact peer/host/input dependencies.
+   No whole readiness gate closes. Keegan owns independent review.
+
