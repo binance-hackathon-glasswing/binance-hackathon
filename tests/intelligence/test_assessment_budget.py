@@ -21,6 +21,28 @@ def candidate(status='ASSESSED', finding='same', identity='primary'):
 
 
 class BudgetContract(unittest.TestCase):
+    def test_completed_stage_remains_eligible_while_its_finalizer_is_owned(self):
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.intelligence.scenarios import build_world,EXSEMI
+        from larp.intelligence.time_budget import ACTIVE_DEADLINE
+        entered=threading.Event();release=threading.Event();owned=[]
+        class Finalizer:
+            def set(self,value):return ACTIVE_DEADLINE.set(value)
+            def get(self):return ACTIVE_DEADLINE.get()
+            def reset(self,token):
+                entered.set();release.wait(3);ACTIVE_DEADLINE.reset(token)
+        world=build_world(['EXSEMI_Q2_8K','EXSEMI_Q3_8K'])
+        assessor=world.assessor(RuleBaselineModel(world.clock))
+        req=world.request(['EXSEMI_Q3_8K'],issuer_id=EXSEMI,job_id='finalizer',deadline_ms=300)
+        with patch('larp.intelligence.agent.ACTIVE_DEADLINE',Finalizer()):
+            task=assessor.start(req,worker_owner=owned.append)
+            try:
+                self.assertTrue(entered.wait(1))
+                task.wait()
+                self.assertTrue(owned[0].is_alive())
+                self.assertEqual(task.result().read()['status'],'ASSESSED')
+            finally:release.set();task.worker.join(2)
+
     def test_config_supports_180_seconds_but_preserves_six_tools(self):
         for mode in ('development', 'shadow'):
             self.assertEqual(load_config(mode).max_deadline_ms, 180000)
