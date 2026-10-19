@@ -65,7 +65,10 @@ class ExposureInputs(unittest.TestCase):
         self.assertEqual(result['evidence'][0]['evidence_id'], original['evidence_id'])
         flag['amends_accession'] = None; amended['context_hash'] = context_hash(amended)
         refused = self.produce([amended])
-        self.assertFalse(refused['complete']); self.assertEqual(refused['evidence'], [])
+        self.assertFalse(refused['complete'])
+        # The fixture also retains an independent original finding: keep that
+        # valid fact, but the malformed amendment must add no renewal identity.
+        self.assertLessEqual({i['evidence_id'] for i in refused['evidence']}, {original['evidence_id']})
 
     def test_shadow_wrong_profile_corrupt_hash_and_missing_issuer_are_not_healthy(self):
         s, record, _, _, _ = self.setup_record()
