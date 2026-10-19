@@ -6,9 +6,11 @@ additional funding hash. No wallet key/session or MetaMask control is available
 to this agent, and no swap was submitted. About4USDT total development funding
 and about6USDT final funding are existing team policy, not new sizing decisions.
 
-## Verified public preflight
+## Historical public preflight
 
-On2026-10-18 10:59:12UTC (18:59:12SGT), BNB Chain public RPC returned chain56,
+The 2026-10-18 collection completed at10:59:17.509815UTC. Its anchored block
+time was10:59:12UTC (18:59:12SGT); this is historical evidence, not current wallet
+state. BNB Chain public RPC returned chain56,
 finalized block128350421, hash
 0xf99fd175d1d4b7634111e131fc06bcbcd07d573f6058cc0ed6c06bc1dda3fda2.
 Numeric block identity and chain were rechecked after the reads.
@@ -32,17 +34,21 @@ Public evidence: [dev-funding-preflight-20261018.json](evidence/dev-funding-pref
 SHA256 `2784503923b345095e58302becf06220818b3dde869f0749ff33941d3e93a83a`. Exactly14 RPC calls, within FG-02's16-call limit,20s per call,
 no retries/redirects or credentials. Original public response bytes remain at
 /private/tmp/larp-isaac-now-public-20261018; the report retains every request,
-UTC/status, byte length and response hash. This is not PortfolioState.v1 or Yao's
+UTC/status, byte length and response hash. This is not PortfolioState.v1 or the approved operator's
 post-last-funding opening capture.
 
 ## Finish in the wallet, then hand off
 
-1. **Yao + Isaac:** confirm from actual run/signing/wallet reconciliation that
+1. **Named approved operator, after accepted coordinator handoff:** confirm from actual run/signing/wallet reconciliation that
    the development wallet has not made its first agent trade and has no in-flight
    work. The public snapshot alone does not establish that precondition.
-2. **Isaac, in MetaMask:** if that precondition holds, complete the existing
-   remaining plan of about2USDT additional USDT→BNB funding from this same wallet,
-   on BNB Smart Chain, selecting USDT for the network fee. Review the wallet's
+2. **Isaac, in MetaMask:** only after that confirmation and fresh reconciliation
+   establishes that additional funding is still needed under the existing
+   about4USDT total development plan, complete the required USDT→BNB seed from
+   this same wallet. About2USDT was the historical remaining target, not an
+   instruction to repeat funding based on this old snapshot. If funding is
+   already sufficient, record that reconciliation instead. For any required swap,
+   use BNB Smart Chain, selecting USDT for the network fee. Review the wallet's
    actual total USDT debit/fee; about2 is the remaining target, not a fabricated
    executed amount. No own funds, external deposit, wallet-to-wallet transfer,
    BNB sell-back, key export or agent trade is part of this handoff.
@@ -52,7 +58,8 @@ post-last-funding opening capture.
    do not replace it with a whole-block/current balance delta. The earlier2USDT
    note remains separate. Supply the new public hash for independent read-only
    receipt verification; never provide private keys or the mnemonic.
-4. **Yao:** after the last manual funding swap, take the fresh canonical
+4. **Named approved operator, after accepted handoff:** after the last manual
+   funding swap, take the fresh canonical
    all-asset/nonce/kit cross-checked opening capture, build the actual run's
    PortfolioState.v1, record/pin its SHA256 and re-prepare/bind as required.
    Existing shadow captures are not automatically the signed run's opening.
@@ -74,10 +81,11 @@ first signed round, final-wallet funding and all hosted acceptance remain open.
 
 | Remaining step | Owner / record |
 |---|---|
-| Confirm no first agent trade/in-flight work; carry out extra MetaMask seed and supply hash | Isaac, with Yao reconciliation — #106 / GAP49 |
+| Reconcile current holdings/funding need and confirm no first agent trade/in-flight work | Named approved operator after accepted handoff — #106 / GAP49 |
+| If still needed, execute confirmed MetaMask seed and supply hash/amounts | Isaac — #106 / GAP49 |
 | Independently verify the supplied new hash/amounts | Isaac execution workstream — IDEA039 FG-02 |
-| Actual post-last-seed opening capture and binding | Yao — DEPLOYMENT_DAY §5 / GAP70 |
-| Trace-qualified agent top-up and measured floor | Isaac + Keith; Yao host path — #30 |
+| Actual post-last-seed opening capture and binding | Named approved operator after accepted handoff — DEPLOYMENT_DAY §5 / GAP70 |
+| Trace-qualified agent top-up and measured floor | Isaac execution workstream; Keith measurement and approved operator host dependencies — #30 |
 
 Parent106 and GAP49 remain open. This PR is a draft preparation/evidence slice,
 not a claim that remaining funding or the opening capture is complete.

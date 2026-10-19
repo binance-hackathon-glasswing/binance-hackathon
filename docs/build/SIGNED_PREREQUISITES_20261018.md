@@ -191,7 +191,10 @@ main-thread verification/safety planning and durable audit. The old table's clai
 that all service/live routing is refused is stale. No additional hosts, signer
 internet access, model-selected endpoint or AWS route/security change is proposed.
 
-**Scope approval is pending.** Automatic approval review rejected publishing the
+**Scope approval is now recorded in SP-NET D2 (2026-10-18).** The user asked
+to carry out each listed immediate point in its own PR, including this exact
+reviewed proposal. The following describes the earlier review-only blocker;
+it is superseded by D2. Automatic approval review originally rejected publishing the
 approval because the user requested review, not authorization to broaden sensitive
 egress. The approved table remains shadow-only and no route/runtime change is
 part of this safer alternative. The review-ready exact proposal is below. Explicit
@@ -222,7 +225,7 @@ isolation remains RDS/S3 only, and primary HTTPS is not an FQDN firewall.
 No AWS, key placement, wallet signing/broadcast, paid inference or official log
 upload occurred. The separate unsigned trial remains pending its own host gates.
 
-### Exact network-scope proposal awaiting approval
+### Exact network-scope proposal — approved in SP-NET D2
 
 Replace only the approved application scope for the existing two destinations:
 
@@ -234,8 +237,8 @@ Replace only the approved application scope for the existing two destinations:
 No execution/signer unit receives model-network scope. No AWS, firewall, secret,
 provider setting, runtime configuration or service change is included. The existing
 application table would cite this decision and explain SLM-01's merged capability
-without claiming that service/live is mechanically unavailable. Until approved,
-that table's shadow-only approval continues to govern.
+without claiming that service/live is mechanically unavailable. SP-NET D2 updates the table; all provider-policy/adoption/host gates above
+remain mandatory before use.
 
 ## PR165 completion and SP-01 verification
 
@@ -274,3 +277,12 @@ Open owners/records are listed above, including explicit user approval for the
 network proposal. No AWS changes or wallet-key placement occurred. The local
 throwaway PostgreSQL is disposed after testing. Ready for a new session with
 these explicit source/provider/data/approval/release gates still open.
+
+## SP-NET D2 current disposition
+
+The earlier pending-user-approval status is superseded by explicit authorization
+to carry out the immediate network point in its own PR. Architecture table and
+route-report wording are updated; runtime endpoints/allowlists/configs and AWS
+permissions are unchanged. See IDEA-062 SP-NET D2 for criteria/results. All
+provider-policy, rights/account/model, funded budget, trial/adoption, declaration
+and release/host gates remain; this does not activate signed model traffic.

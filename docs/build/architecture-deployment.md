@@ -176,7 +176,7 @@ accepted trade-off. It sits next to the open
 
 ## Approved network destinations (two-host layout; IDEA-062, #32)
 
-**Status: approved by Keegan (section B) 2026-10-16 and Isaac (section C) 2026-10-17** (the owners #32 names). Every destination below is derived
+**Status: approved by Keegan (section B) 2026-10-16 and Isaac (section C) 2026-10-17; Isaac extends the same model destinations to explicitly adopted signed/live builds on 2026-10-18 (IDEA-062 SP-NET D2)** (the owners #32 names). Every destination below is derived
 by `larp/runtime/routes.py` from the manifested service configs, `config/sources/sources.v1.json` and the clients'
 own endpoint constants; `tests/runtime/test_routes.py` R8 checks this table against that derivation. `<region>` is
 the config's `region` (`ap-southeast-2` now).
@@ -187,8 +187,8 @@ the config's `region` (`ap-southeast-2` now).
 | primary | larp-runtime | host of each `driver.balance_rpc_providers` URL in `runtime.json` (primary first, then backups; or the legacy `driver.balance_rpc_url`) | 443 | BSC RPC for the finalized chain-balance check (IDEA-055) with failover (PR 5); account-specific, chosen by Isaac (#92), declared as `bsc-rpc` in `config/release/services.v1.json` and bound to the manifest through the runtime config hash |
 | primary | larp-execution | host of `rpc_url` in `execution.json` | 443 | BSC RPC for chain reads and receipts; account-specific |
 | primary | larp-uploader | `api.commonservice.io` | 443 | ai-seeds event log (F-99..F-101) |
-| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | **Shadow only** (IDEA-057; MR-06, 2026-10-16): AIand Chat Completions for the GLM-5.3 routine stage and the K3/GLM external reviews. The runtime refuses this assessor with `execution: service` or `mode: live` |
-| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | **Shadow only** (IDEA-057; MR-06): OpenAI Responses for the optional GPT-6.1 Sol review, used only when `LARP_MODEL_API_KEY` is in the runtime secret, within the $40 admission ledger |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | Shadow and explicitly adopted signed/live application scope (SP-NET D2): fixed `/v1/chat/completions` for configured GLM/Kimi stages. Provider-policy/account/model rights, funding, trial/adoption and exact-release host gates remain required |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | Shadow and explicitly adopted signed/live application scope (SP-NET D2): fixed `/v1/responses` for configured OpenAI stages, optional runtime key and exact adopted durable budget. V1/v2 retain $40/$10; approved v3 protocol still needs release/host conformance |
 | primary | larp-runtime, larp-execution, larp-uploader | `secretsmanager.<region>.amazonaws.com` | 443 | service secrets (public endpoint; no interface endpoint, IDEA-046) |
 | primary | larp-archive | `s3.<region>.amazonaws.com` and the configured archive bucket's virtual-hosted S3 hostname | 443 | archive and hourly anchors through the S3 gateway endpoint; bucket-scoped IAM still applies |
 | primary | larp-archive | `monitoring.<region>.amazonaws.com` | 443 | CloudWatch metrics |
@@ -203,14 +203,18 @@ the config's `region` (`ap-southeast-2` now).
   the runtime reads the evidence store from local disk (IDEA-047 R3) and hands work to the execution service through
   the database. The signer is reached only through the database, under its own role `larp_signer`. Every database
   login is a per-role RDS IAM token over certificate-verified TLS (`deploy/postgres/roles.sql`).
-- **Model endpoints: shadow-only approval (2026-10-16, Yao Zhu; IDEA-056 MR-06).** `api.aiand.com` and
-  `api.openai.com` are approved from `primary` for `larp-runtime` only, and only while the runtime runs the
-  experimental `aiand_routed` assessor in shadow (`execution: shadow`, not `mode: live`): the 3–5-day shadow trial on
-  the Gate A deploy, pre-registered in IDEA-057, with the team's adoption decision due Oct 22. `build_driver` refuses
-  this assessor for service execution and live mode, so this approval cannot carry a signed order; live or service use
-  needs a later reviewed code change and a new approval here. The route check lists both hosts only when the runtime
-  config names `aiand_routed`. **Not approved:** `api.anthropic.com` (no assessor uses it; DR-11 / services B8).
-  SSM endpoints are used only by the development SSM agent on `primary`.
+- **Model endpoints: application scope approval (2026-10-18, Isaac; IDEA-062 SP-NET D2).**
+  The user explicitly authorizes the exact reviewed proposal after the earlier review-only
+  refusal. The same `api.aiand.com` and `api.openai.com` destinations are approved only
+  from `primary`/`larp-runtime` with `aiand_routed`, including explicitly adopted signed
+  rehearsal/live builds. Merged SLM-01 supports these builds with an adoption reference,
+  LIVE profile and pinned routing/prompts; it does not activate them by itself.
+  Only lawful registered public evidence/model requests are in scope. KMP-RIGHTS01
+  provider-policy compatibility, account/model terms, funding, trial/quality/adoption,
+  services/DEV-19 and exact-release/host qualification remain separate prerequisites.
+  No model-selected endpoint, signer/execution model access or AWS/IAM/firewall/secret
+  change follows. The route checker lists both hosts only for `aiand_routed`.
+  **Not approved:** `api.anthropic.com`. Development SSM remains a provisioning concern.
 - **Enforcement.** The security group allows HTTPS to any address from `primary` (AWS security groups cannot filter by
   host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
   manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no

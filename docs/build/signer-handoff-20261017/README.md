@@ -13,9 +13,9 @@ Isaac asked the assistant to take over the technical review. The review is attri
 - Key delivery: `key_credential: wallet.key`, matching the existing systemd `LoadCredential` unit. There is no key value in this file.
 - Dedicated signer DB role, Sydney region, standard CA/key paths, poll interval and clock skew from the existing example.
 
-The example `cap_basis` is intentionally retained: neither the user delegating this review nor a successful boundary test establishes missing profile/holding/gas evidence. A dev-mode service may accept this label after other fields are filled, so do not treat the label as an installation lock.
+The example `cap_basis` is intentionally retained: neither the user delegating this review nor a successful boundary test establishes missing profile/holding/gas evidence. SR-01 now refuses this pending-decision marker in both dev and live service configurations. Replacing the label alone does not prove the missing numeric evidence or owner approval.
 
-## Explicit unset fields — Yao's assembly inputs
+## Explicit unset fields — coordinator/operator assembly inputs
 
 These six fields are intentionally null, never inferred from the existing unsigned shadow run:
 
@@ -28,7 +28,7 @@ These six fields are intentionally null, never inferred from the existing unsign
 | `router_evidence_file` | Signer's local path to the source-reviewed `RouterEvidence.v1` |
 | `router_evidence_sha256` | SHA-256 of those exact evidence bytes |
 
-The existing unsigned shadow run ID/build must not be silently reused. The router-evidence pair is optional for generic signer startup, but is required for a usable swap decoder; without it every swap stays refused. No verified router evidence is available here, and #27's signing-lifetime qualification remains separate.
+The existing unsigned shadow run ID/build must not be silently reused. Merged PR176 requires valid hash-pinned router evidence for both production `check` and `run`, before database/key access. This draft has no such evidence and cannot start. Source provenance/independent review and #27's signing-lifetime qualification remain separate prerequisites.
 
 ## Numeric technical review
 
@@ -50,8 +50,8 @@ The token quantities are based on half of historical October 10 marks. That is n
 1. Yao/Keith provide the selected development profile (and measured summary), fresh initial/current wallet state, intended execution configuration and relevant successful quote/gas evidence. Keep private RPC credentials out of chat and Git; the review can use local files. PR #155 supplies the hash-pinned numeric-review tool and remains a separate dependency, not part of this handoff.
 2. Complete the missing profile/full-holding/top-up/fee comparisons above; record the reviewed file hashes and any value changes under #44. The assistant can do this review once the files exist locally. Do not write that Keith approved it unless he actually did.
 3. Record Isaac's decision for the exact policy bytes; replace `EXAMPLE_PENDING_TEAM_DECISION` with its real decision reference only after that acceptance. Record the resulting policy SHA-256 (changing `cap_basis` changes it).
-4. Yao fills the six host/run/evidence fields and checks the public CA file locally. Record the final complete `signer.json` SHA-256 and bind its exact bytes into the selected release manifest. The draft's hash is not the installed config hash.
-5. Yao performs provisioning/route/config checks, then Isaac places the key in the separate approved session. No key is passed with this handoff. Activation remains gated by source evidence, #27 and the other Gate B checks.
+4. The next coordinator/approved host operator fills the six host/run/evidence fields and checks the public CA file locally. Record the final complete `signer.json` SHA-256 and bind its exact bytes into the selected release manifest. The draft's hash is not the installed config hash.
+5. The approved host operator performs provisioning/route/config checks, then Isaac places the key only in Yao's separately approved signer session. No key is passed with this handoff. Activation remains gated by source evidence, #27 and the other Gate B checks.
 
 **Message Isaac can pass with this folder:**
 
@@ -64,3 +64,31 @@ At pushed handoff commit `7f5e5ac`, Python 3.12.14: the existing proposal/policy
 - Draft `signer.json` SHA-256: `339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442`.
 - Policy SHA-256: `254f5c31b2b1bb22f706acfb95343f9e885097786d22918747eb6951c5a42033`, encoded as UTF-8 JSON with sorted keys, compact separators and a final LF.
 - Machine-readable outcome: `review.json`. Missing-data checks remain NOT_RUN; neither policy nor configuration is installation-approved. Logs: `/private/tmp/larp-signer-handoff-20261017-tests.log`. No application/enforcement change, new network request, signing, model call, host or AWS action. Full-suite/host/CI acceptance was not run for this static handoff.
+
+## Current readiness check — PC-SIGNER-CHECK02 (2026-10-19)
+
+PR176 startup hardening is merged; that does not complete this configuration.
+The exact draft remains unchanged: SHA256
+`339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442`.
+A read-only check against the pushed current validator refuses it with
+`Missing signer settings: run_id,build_id`. All six fields listed above remain
+null, and `cap_basis` still says `EXAMPLE_PENDING_TEAM_DECISION`, which is an
+additional production refusal after the identities are filled. #44, #27 and
+source/#138/#139 are still open. Interim quotes and example gas ceilings do not
+replace measured-profile/full-holding/fee acceptance or actual router evidence.
+
+This public, key-free JSON may be sent **as an assembly draft for completion**
+with this README and review.json. It is not a final approved signer.json and
+must not be installed/activated as one. No private key belongs in the handoff.
+The next coordinator/operator supplies run/release/DB/CA assembly values after
+the policy/source decisions; the previously approved key-session gate remains.
+No host, AWS, wallet/key, provider or receiver action occurs in this check.
+
+## Offline assembly follow-through — SA-01 (2026-10-19)
+
+The [installation preparation procedure](../SIGNER_INSTALLATION_PREPARATION.md)
+now supplies `python -m larp.signer.assembly`. Once the real pinned numeric,
+execution/CA/router inputs exist, it builds a new key-free configuration candidate
+and exact-hash report using the production validators. It does not edit this
+historical draft, invent missing inputs or approve installation. All #27/#44,
+source/native/host/release and approved signer-session gates remain explicit.

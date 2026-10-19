@@ -1,0 +1,291 @@
+{
+  "schema": "DeploymentContinuationObservation.v1",
+  "record_ids": [
+    "PC-HOST02",
+    "PC-PROV02",
+    "PC-PREP02"
+  ],
+  "host_read_only_ssm_command_id": "8d35489e-d121-4f8a-97bd-8312bf8df5ff",
+  "provider_read_only_ssm_command_id": "70102d52-0233-4c51-b1d0-25508cf731ea",
+  "host": [
+    {
+      "assessor": "deterministic",
+      "budget_exists": false,
+      "build_id": "bb46234f1b997dae968e2c3f3668d73627857376",
+      "checked_at_ms": 1792331434989,
+      "corrupt_poll_lines": 0,
+      "execution": "shadow",
+      "latest_source_polls": {
+        "edgar:SEC-CIK-0000789019": {
+          "error": null,
+          "finished_ms": 1792331225726,
+          "started_ms": 1792331225416,
+          "status": "OK",
+          "truncated": null
+        },
+        "edgar:SEC-CIK-0001045810": {
+          "error": null,
+          "finished_ms": 1792331226821,
+          "started_ms": 1792331226776,
+          "status": "OK",
+          "truncated": null
+        },
+        "edgar:SEC-CIK-0001318605": {
+          "error": null,
+          "finished_ms": 1792331228146,
+          "started_ms": 1792331228091,
+          "status": "OK",
+          "truncated": null
+        },
+        "edgar:SEC-CIK-0001652044": {
+          "error": null,
+          "finished_ms": 1792331229570,
+          "started_ms": 1792331229338,
+          "status": "OK",
+          "truncated": null
+        },
+        "edgar:SEC-CIK-0002120882": {
+          "error": null,
+          "finished_ms": 1792331230794,
+          "started_ms": 1792331230573,
+          "status": "OK",
+          "truncated": null
+        },
+        "source:doj-press": {
+          "error": "RESPONSE_TOO_LARGE",
+          "finished_ms": 1792330913972,
+          "started_ms": 1792330913751,
+          "status": "SOURCE_UNAVAILABLE",
+          "truncated": false
+        },
+        "source:ec-press": {
+          "error": null,
+          "finished_ms": 1792331216862,
+          "started_ms": 1792331215118,
+          "status": "OK",
+          "truncated": false
+        },
+        "source:fr-bis": {
+          "error": null,
+          "finished_ms": 1792331220255,
+          "started_ms": 1792331218137,
+          "status": "OK",
+          "truncated": true
+        },
+        "source:fr-public-inspection": {
+          "error": null,
+          "finished_ms": 1792331222691,
+          "started_ms": 1792331221709,
+          "status": "OK",
+          "truncated": false
+        },
+        "source:sec-press": {
+          "error": null,
+          "finished_ms": 1792330924335,
+          "started_ms": 1792330924079,
+          "status": "NOT_MODIFIED",
+          "truncated": false
+        }
+      },
+      "mode": "dev",
+      "model_routing_sha256": null,
+      "section": "host_inventory",
+      "units": {
+        "larp-archive.timer": {
+          "ActiveState": "active",
+          "SubState": "waiting"
+        },
+        "larp-evidence": {
+          "ActiveState": "active",
+          "MemoryCurrent": "42549248",
+          "NRestarts": "1",
+          "SubState": "running"
+        },
+        "larp-execution": {
+          "ActiveState": "inactive",
+          "MemoryCurrent": "[not set]",
+          "NRestarts": "0",
+          "SubState": "dead"
+        },
+        "larp-runtime": {
+          "ActiveState": "active",
+          "MemoryCurrent": "92000256",
+          "NRestarts": "1",
+          "SubState": "running"
+        },
+        "larp-uploader": {
+          "ActiveState": "active",
+          "MemoryCurrent": "55894016",
+          "NRestarts": "0",
+          "SubState": "running"
+        }
+      }
+    },
+    {
+      "archive_tasks_by_kind_status": [
+        {
+          "count": 27,
+          "kind": "anchor",
+          "last_slot_ms": 1792328400000,
+          "status": "ACK"
+        },
+        {
+          "count": 2,
+          "kind": "backup",
+          "last_slot_ms": 1792281600000,
+          "status": "ACK"
+        },
+        {
+          "count": 1,
+          "kind": "backup",
+          "last_slot_ms": 1792235176666,
+          "status": "PERMANENT"
+        }
+      ],
+      "audit_chunks_by_status": {
+        "ACK": 71
+      },
+      "checked_at_ms": 1792331435700,
+      "health_fields": [
+        "age_ms",
+        "audit_deadline_breaches",
+        "audit_failures",
+        "counts",
+        "healthy",
+        "missed",
+        "reasons",
+        "schema",
+        "signing_enabled"
+      ],
+      "healthy": true,
+      "reasons": [],
+      "section": "read_only_operational_health"
+    }
+  ],
+  "provider": {
+    "checked_at_ms": 1792331614409,
+    "inference_calls": 0,
+    "keys_replaced": false,
+    "ledger_exists": false,
+    "provider_settings_changed": false,
+    "providers": {
+      "aiand": {
+        "endpoint": "https://api.aiand.com/v1/models",
+        "http_status": 401,
+        "method": "GET",
+        "status": "HTTP_REFUSED",
+        "stored_key_present": true,
+        "wanted_models": [
+          "moonshotai/kimi-k3",
+          "zai-org/glm-5.3"
+        ]
+      },
+      "openai": {
+        "all_wanted_present": true,
+        "endpoint": "https://api.openai.com/v1/models",
+        "http_status": 200,
+        "method": "GET",
+        "models_found": [
+          {
+            "id": "gpt-6.1-sol"
+          }
+        ],
+        "response_bytes": 20644,
+        "response_sha256": "11a5c4d1a9af46098377385cba74314325708ea6bf8676f691f453b48adc688f",
+        "stored_key_present": true,
+        "wanted_models": [
+          "gpt-6.1-sol"
+        ]
+      }
+    },
+    "record_id": "PC-PROV02"
+  },
+  "preparation": {
+    "record_id": "PC-PREP02",
+    "build_id": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+    "scope": "dev/shadow",
+    "profile_sha256": "d951207f432879eda6b349ae334104e47803f809eb5e94aef422c2e31cab4542",
+    "routing_sha256": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+    "capture_sha256": "761880aec8f20826f5239febce3f3c3d13dd90298c0787452e79d87f87efb052",
+    "capture_observed_at": "2026-10-18T13:56:15.500Z",
+    "preparation_missing_inputs": [],
+    "qualification": {
+      "checks": {
+        "CI_RELEASE_BYTES": "FAIL",
+        "PACKAGE_INTEGRITY": "PASS",
+        "PACKAGE_JSON": "PASS",
+        "PINNED_INPUTS": "PASS",
+        "SERVICE_CONFIGS": "PASS",
+        "SOURCE_TERMS": "PASS",
+        "UNSIGNED_IDENTITIES": "PASS"
+      },
+      "gate_a_passed": false,
+      "host_checks": {
+        "24H_INGESTION": "NOT_RUN",
+        "ALARM_RECEIVED": "NOT_RUN",
+        "HOST_RESTART": "NOT_RUN",
+        "HOURLY_ANCHOR": "NOT_RUN",
+        "IAM_TLS_ROLES": "NOT_RUN",
+        "NETWORK_ROUTES": "NOT_RUN",
+        "REAL_RECEIVER_ACK": "NOT_RUN",
+        "TIME_SYNC": "NOT_RUN"
+      },
+      "local_ready": false,
+      "remote_ci_verified": false,
+      "schema": "GateALocalQualification.v1",
+      "signing_enabled": false
+    },
+    "blocker": "check_release requires build_origin equal registered repository; original verified Keegan4 CI manifest truthfully names mirror. No manifest edit or PASS override.",
+    "package_hashes": {
+      "initial-state.json": "3b5c308c656f8050b7b57092509ac25618499c005f13c4e69ca01237c44ab551",
+      "uploader.json": "d279f271a8076d7f0840c6fd5bcf2fdd4a199a46d0d45db227fa2dad3690ec6c",
+      "runtime.json": "5ba12e02c66e398d5222356231f24b0e85d896f3df2db7e2efb4e7bb6247b0d7",
+      "session-calendar.json": "bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c",
+      "evidence.env": "157b0a33afe35071355f7e149c04a60e09157d074ae27b61cbebdab4950e42ae",
+      "input-capture.json": "761880aec8f20826f5239febce3f3c3d13dd90298c0787452e79d87f87efb052",
+      "model-routing.json": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+      "strategy-profile.json": "d951207f432879eda6b349ae334104e47803f809eb5e94aef422c2e31cab4542",
+      "preparation-report.json": "1332ab64aed2024360f7b379a93befd3879504a65643f928e29f448e0b3c9c7d",
+      "operations.json": "f55a886f371e781c278093c1724549a237865a4dd4d91474bf3dbb9ebdb37933"
+    },
+    "paid_model_calls": 0,
+    "host_installed": false,
+    "note": "Capture was fresh for preparation; repeat when actual deployment resumes."
+  },
+  "production_bind": {
+    "production_bind_code_verification_without_writing": true,
+    "build_id": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+    "local_checker_remains_failed": true,
+    "manifest_modified": false
+  },
+  "host_mutations": false,
+  "paid_provider_calls": 0,
+  "ledger_initialized_or_migrated": false,
+  "original_failed_gap_report_unchanged": true,
+  "historical_permanent_backup_failure_retained": true,
+  "provider_auth_diagnostic": {
+    "checked_at_ms": 1792333357536,
+    "error_code": "invalid_api_key",
+    "error_type": "authentication_error",
+    "http_status": 401,
+    "inference_calls": 0,
+    "key_has_control_characters": false,
+    "key_has_surrounding_whitespace": false,
+    "key_is_ascii": true,
+    "key_present": true,
+    "matches_documented_sk_prefix": true,
+    "record_id": "PC-PROV02-R1",
+    "response_bytes": 107,
+    "response_sha256": "f3e8df007609650ae1fb94fea65ebc5b38d4ae7ac1eb457ded88be516d72b323",
+    "secret_changed": false
+  },
+  "provider_auth_diagnostic_ssm_command_id": "08c768ec-18f0-4d81-9bc8-9e34efdf4535",
+  "owner_reconciliation_followup": {
+    "source": "Yao reply during continuation, Oct18 SGT",
+    "additional_openai_usage_reported": false,
+    "shared_account_consumers_reported": false,
+    "aiand_balance_reported": "140+",
+    "aiand_currency_conversion_expiry_confirmed": false,
+    "new_aiand_key": "Yao is obtaining a new key from his friend after invalid_api_key; no replacement performed"
+  }
+}

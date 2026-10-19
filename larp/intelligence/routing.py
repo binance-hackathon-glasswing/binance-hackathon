@@ -10,6 +10,7 @@ import json
 import math
 from pathlib import Path
 import time
+import threading
 from types import SimpleNamespace
 
 from larp.contracts import ContractError, Document
@@ -17,9 +18,10 @@ from larp.intelligence.agent import EvidenceAssessor, _structured_assessment
 from larp.intelligence.aiand import AIandChatModel, validate_settings
 from larp.intelligence.common import IntelligenceError, digest, require_hash, sha256_hex
 from larp.intelligence.config import CONFIG_DIR
-from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing
+from larp.intelligence.model_budget import AdmissionDeferred, ModelBudget, validate_pacing, validate_trial
 from larp.intelligence.models import ModelIdentity, response
 from larp.intelligence.providers import OpenAIResponsesModel
+from larp.intelligence.time_budget import MAX_ASSESSMENT_MS, Deadline, stage_limits, reviewer_tools
 
 # Stage prompts (IDEA-081): Markdown addenda appended to the core assessor prompt, read only from the release.
 STAGE_PROMPT_DIR = CONFIG_DIR / 'prompts' / 'routing'
@@ -43,6 +45,8 @@ def validate_routing_spec(spec, prompt_dir=None):
         fields = fields | {'openai_prompt'}
     if preferred:
         fields = fields | {'openai_pacing'}
+        if 'openai_trial' in spec:
+            fields = fields | {'openai_trial'}
     if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3')
             or spec['openai_model'] != 'gpt-6.1-sol'
             or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
@@ -58,6 +62,11 @@ def validate_routing_spec(spec, prompt_dir=None):
         raise IntelligenceError('Invalid AIand routing specification')
     if preferred:
         validate_pacing(spec['openai_pacing'])
+        if 'openai_trial' in spec:
+            validate_trial(spec['openai_trial'])
+            if not spec['openai_pacing']['start_ms'] <= spec['openai_trial']['start_ms'] < \
+                    spec['openai_trial']['end_ms'] <= spec['openai_pacing']['end_ms']:
+                raise IntelligenceError('Trial window must fit pacing window')
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
@@ -114,7 +123,22 @@ class BudgetedOpenAI:
             return response(request.read(), status='TIMEOUT', output=None, latency_ms=elapsed,
                             error='DEADLINE_EXCEEDED')
         # The reservation is durable even if step raises, the worker is abandoned, or the process dies.
-        reply = self.model.step(request, remaining_ms)
+        if getattr(self.budget, 'pacing', None) is not None:
+            try:
+                reply = self.model.step(request, remaining_ms,
+                    before_dispatch=lambda: self.budget.before_dispatch(token))
+            except AdmissionDeferred as error:
+                # The boundary check durably settled this known-unsent POST at zero.
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started), error=error.reason)
+            except IntelligenceError:
+                # No reliable accounting means no dispatch. Do not invent a refund.
+                self.budget_unavailable = True
+                return response(request.read(), status='ERROR', output=None,
+                                latency_ms=max(0, self.model.clock()-started),
+                                error='MODEL_BUDGET_UNAVAILABLE')
+        else:
+            reply = self.model.step(request, remaining_ms)
         value = reply.read()
         usage = value.get('usage') or {}
         actual = None
@@ -137,6 +161,28 @@ class BudgetedOpenAI:
             value.update(status='ERROR', output=None, error='MODEL_BUDGET_UNAVAILABLE')
             return Document.from_dict(value)
         return reply
+
+
+class TrialGuardedExternal:
+    """No new paid AIand POST outside a trial or after its durable accounting stop."""
+    def __init__(self, model, budget, *, accounting_guard=None):
+        self.model, self.budget = model, budget
+        self.accounting_guard = accounting_guard
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
+    def _before_dispatch(self):
+        if self.accounting_guard is not None:
+            self.accounting_guard()
+        self.budget.guard_trial()
+
+    def step(self, request, remaining_ms):
+        try:
+            return self.model.step(request, remaining_ms, before_dispatch=self._before_dispatch)
+        except IntelligenceError as error:
+            reason = error.reason if isinstance(error, AdmissionDeferred) else 'MODEL_BUDGET_UNAVAILABLE'
+            return response(request.read(), status='ERROR', output=None, latency_ms=0, error=reason)
 
 
 def _review_reasons(result, request, sample_bps, seed):
@@ -167,6 +213,29 @@ def _signature(result):
             sorted(Document.from_dict(f).payload for f in result.get('falsifiers', [])))
 
 
+def review_outcome(primary, reviewers):
+    """B11 semantic selection, stable reviewer precedence; never mutate a stage result."""
+    assessed_primary = primary is not None and primary['status']=='ASSESSED'
+    reference=primary if assessed_primary else next((r for r in reviewers if r is not None and r['status']=='ASSESSED'),None)
+    verdicts=[]
+    for index,value in enumerate(reviewers):
+        status = value['status'] if value is not None else 'NOT_RUN'
+        verdict = ('confirm' if _signature(value)==_signature(reference) else 'dissent') \
+            if reference is not None and status=='ASSESSED' else \
+            'dissent' if assessed_primary and status=='ABSTAIN' else 'no result'
+        verdicts.append(dict(stage='external-review-'+str(index),status=status,verdict=verdict,
+                             role='review' if assessed_primary else 'fallback',
+                             reasons=list(value.get('reasons',[])) if value else ['NOT_RUN']))
+    if assessed_primary:
+        if any(v['verdict']=='dissent' for v in verdicts):
+            return dict(primary,status='ABSTAIN',reasons=['ROUTING_REVIEW_DISSENT']), 'DISSENT',verdicts
+        return deepcopy(primary), ('CONFIRMED' if any(v['verdict']=='confirm' for v in verdicts) else 'INCOMPLETE'),verdicts
+    candidates=[v for v in reviewers if v is not None and v['status']=='ASSESSED']
+    if len(candidates)>1 and _signature(candidates[0])!=_signature(candidates[1]):
+        return dict(candidates[0],status='ABSTAIN',reasons=['ROUTING_FINDING_DISAGREEMENT']),'DISSENT',verdicts
+    return (deepcopy(candidates[0]),'FALLBACK',verdicts) if candidates else (None,'NONE_AVAILABLE',verdicts)
+
+
 class AuditedModel:
     """Record a call before dispatch and its reply before verification, without headers/keys."""
     def __init__(self, model, hook, stage):
@@ -193,6 +262,8 @@ class RoutedAssessor:
         self.routine, self.external, self.openai, self.budget = routine, tuple(external_reviewers), openai, budget
         self.make_assessor, self.clock, self.policy, self.monotonic = make_assessor, clock_ms, deepcopy(policy), monotonic
         self.artifacts = artifacts
+        self._ownership_lock = threading.RLock()
+        self._workers, self._group_active = [], False
         binding = dict(policy=policy, routine=routine.identity.record(),
                        external=[m.identity.record() for m in self.external],
                        openai_declared=policy['spec_hash'],
@@ -203,7 +274,7 @@ class RoutedAssessor:
         self.model = SimpleNamespace(identity=identity)
 
     def _budget_state(self):
-        # Missing/locked/corrupt storage blocks OpenAI (admission raises too), never the external path.
+        # Legacy routing may fall back externally; trial routing separately guards every paid POST.
         try:
             if self.openai is not None and self.openai.budget_unavailable:
                 raise IntelligenceError('Model budget reconciliation required')
@@ -218,8 +289,59 @@ class RoutedAssessor:
     def assess(self, request):
         return self._assess(request, audit_hook=getattr(self, 'audit_hook', None))
 
+    def _own_worker(self, worker):
+        with self._ownership_lock:self._workers.append(worker)
+
     def _assess(self, request, *, audit_hook=None, wait_for_workers=False):
+        with self._ownership_lock:
+            self._workers = [w for w in self._workers if w.is_alive()]
+            busy = self._group_active or bool(self._workers)
+            if not busy:self._group_active=True
+        if busy:
+            validator=self.make_assessor(self.routine)
+            r=request.read()
+            try:validated=validator._validate(r)
+            except (IntelligenceError,KeyError,TypeError):return validator.assess(request)
+            # Never started: a previous group still owns its workers. Not a deadline overrun.
+            return validator._abandoned(r,validated,self.clock(),dict(steps=[],tool_calls=[],started=0),
+                                        reason='ROUTING_GROUP_BUSY')
+        responses=[];requests={}
+        def record(event):
+            with self._ownership_lock:
+                if event['kind']=='MODEL_REQUEST':requests[event['request']['request_id']]=event['request']
+                elif event['kind']=='MODEL_RESPONSE':
+                    responses.append(dict(deepcopy(event),request=requests[event['response']['request_id']]))
+            if audit_hook is not None:audit_hook(event)
+        try:
+            result=self._assess_owned(request,audit_hook=record if wait_for_workers else audit_hook,
+                                      wait_for_workers=wait_for_workers)
+        finally:
+            if wait_for_workers:
+                # The cutoff result is already immutable. Only the background deferred
+                # caller may drain real workers before publishing RESULT/ACK.
+                with self._ownership_lock:workers=list(self._workers)
+                for worker in workers:worker.join()
+            with self._ownership_lock:self._group_active=False
+        if wait_for_workers:
+            # Preserve late provider I/O for the round log without reopening the cutoff
+            # decision or changing the selected stage artifact. Late charges stay UNKNOWN.
+            value=result.read()
+            known={s.get('response',{}).get('request_id') for s in value.get('model_io',{}).get('steps',[])}
+            late=[e for e in responses if e['response'].get('request_id') not in known]
+            if late:
+                value['model_io']['late_responses']=late
+                value['model_io']['cot'].extend(e['response']['reasoning_summary'] for e in late
+                                               if e['response'].get('reasoning_summary'))
+                value.pop('result_id',None)
+                value['result_id']='res:'+digest('larp.intel.result.v1',value)
+                result=Document.from_dict(value)
+        return result
+
+    def _assess_owned(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
+        budget=r.get('budget')
+        total = budget.get('deadline_ms') if type(budget) is dict else None
+        overall = Deadline(total if type(total) is int and total>0 else 1,self.clock)
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
         try:
@@ -227,7 +349,7 @@ class RoutedAssessor:
         except (IntelligenceError, KeyError, TypeError):
             return validator.assess(request)
         total = r.get('budget', {}).get('deadline_ms')
-        if type(total) is not int or not 0 < total <= 60000:
+        if type(total) is not int or not 0 < total <= MAX_ASSESSMENT_MS:
             return self.make_assessor(self.routine).assess(request)
         start, wall = self.clock(), self.monotonic()
         stages, tools = [], 0
@@ -250,8 +372,8 @@ class RoutedAssessor:
             hook = audit_hook
             assessor = self.make_assessor(AuditedModel(model, hook, label) if hook is not None else model)
             assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage), wait_for_worker=True).read() if wait_for_workers else \
-                assessor.assess(Document.from_dict(stage)).read()
+            result = assessor.assess(Document.from_dict(stage), worker_owner=self._own_worker,
+                                     wait_for_worker=wait_for_workers).read()
             tools += result.get('budget_used', {}).get('tool_calls') or 0
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)
@@ -263,30 +385,7 @@ class RoutedAssessor:
             return result
 
         if self.policy.get('openai_preferred'):
-            state = self._budget_state()
-            chosen = run(self.openai, 'openai-primary', max(1, total//2)) \
-                if self.openai is not None and not state['external_only'] else None
-            reasons = _review_reasons(chosen, r, self.policy['audit_sample_bps'], self.policy['audit_seed']) \
-                if chosen is not None else ['OPENAI_NOT_AVAILABLE']
-            reasons = ['PRIMARY_NOT_ASSESSED' if x == 'ROUTINE_NOT_ASSESSED' else x for x in reasons]
-            if chosen is None or reasons:
-                reviewed = None
-                for index, model in enumerate(self.external):
-                    candidate = run(model, 'external-review-' + str(index))
-                    if candidate is not None:
-                        reviewed = candidate
-                    if reviewed is not None and reviewed['status'] == 'ASSESSED':
-                        break
-                if reviewed is None:
-                    if chosen is None:
-                        chosen = validator._abandoned(r, validated, start, dict(steps=[], tool_calls=[], started=0)).read()
-                    chosen = dict(chosen, status='UNAVAILABLE', reasons=['ROUTING_DEADLINE_EXHAUSTED'])
-                else:
-                    if chosen is not None and chosen['status'] == reviewed['status'] == 'ASSESSED' and \
-                            _signature(chosen) != _signature(reviewed):
-                        reviewed = dict(reviewed, status='ABSTAIN', reasons=['ROUTING_FINDING_DISAGREEMENT'])
-                    chosen = reviewed
-            return self._combine(r, chosen, stages, reasons, start)
+            return self._preferred(r,validated,start,wall,audit_hook,overall)
 
         chosen = run(self.routine, 'routine', max(1, total//2))
         if chosen is None:
@@ -313,7 +412,70 @@ class RoutedAssessor:
                 chosen = reviewed
         return self._combine(r, chosen, stages, reasons, start)
 
-    def _combine(self, request, selected, stages, reasons, start):
+    def _preferred(self, r, validated, start, wall, audit_hook,overall):
+        total=r['budget']['deadline_ms']
+        primary_ms,review_ms=stage_limits(total)
+        stages=[]
+
+        def begin(model,label,tool_allowance,allowance):
+            remaining=overall.remaining()
+            stage=deepcopy(r)
+            stage['budget']=dict(tool_calls=tool_allowance,deadline_ms=max(1,min(remaining,allowance)))
+            wrapped=AuditedModel(model,audit_hook,label) if audit_hook is not None else model
+            assessor=self.make_assessor(wrapped)
+            assessor.request_namespace=label+':'
+            task=assessor.start(Document.from_dict(stage),worker_owner=self._own_worker,parent_deadline=overall)
+            return dict(stage=label,model=model.identity.record(),task=task,assessor=assessor)
+
+        def collect(stage):
+            value=stage.pop('task').result().read()
+            stage.pop('assessor')
+            payload=Document.from_dict(value).payload
+            ref=self.artifacts.put(payload)
+            if ref!=sha256_hex(payload):raise IntelligenceError('Routing artifact content address mismatch')
+            stage.update(result=value,artifact=ref)
+            stages.append(stage)
+            if audit_hook is not None:audit_hook(dict(kind='STAGE',stage=stage['stage'],result=value,artifact=ref))
+            return value
+
+        state=self._budget_state()
+        primary=None;primary_stage=None;reserved=0
+        if self.openai is not None and not state['external_only'] and primary_ms>0 and overall.remaining()>0:
+            reserved=min(3,r['budget']['tool_calls'])
+            primary_stage=begin(self.openai,'openai-primary',reserved,primary_ms)
+            task=primary_stage['task'];task.wait()
+            if task.worker is None or not task.worker.is_alive():
+                # No late tool dispatch remains, so unused primary tokens can be reassigned.
+                reserved=task.result().read().get('budget_used',{}).get('tool_calls',reserved)
+            primary=collect(primary_stage)
+        reasons=_review_reasons(primary,r,self.policy['audit_sample_bps'],self.policy['audit_seed']) \
+            if primary is not None else ['OPENAI_NOT_AVAILABLE']
+        reasons=['PRIMARY_NOT_ASSESSED' if x=='ROUTINE_NOT_ASSESSED' else x for x in reasons]
+        pending=[];reviewers=[None]*len(self.external)
+        if primary is None or reasons:
+            shares=reviewer_tools(r['budget']['tool_calls'],reserved,len(self.external))
+            # Both workers start before any reviewer is awaited. Each owns a fixed
+            # tool share and independent deadline, clamped by the original decision.
+            for i,model in enumerate(self.external):
+                if overall.remaining()>0:
+                    pending.append(begin(model,'external-review-'+str(i),shares[i],review_ms))
+            for stage in pending:
+                stage['task'].wait()
+            for stage in pending:
+                index=int(stage['stage'].rsplit('-',1)[1])
+                reviewers[index]=collect(stage)
+            chosen,outcome,verdicts=review_outcome(primary,reviewers)
+            for verdict,model in zip(verdicts,self.external):verdict['model']=model.identity.record()
+        else:chosen,outcome,verdicts=deepcopy(primary),'NOT_TRIGGERED',[]
+        if chosen is None:
+            validator=self.make_assessor(self.routine)
+            chosen=validator._abandoned(r,validated,start,dict(steps=[],tool_calls=[],started=0)).read()
+            chosen=dict(chosen,status='UNAVAILABLE',reasons=['ROUTING_DEADLINE_EXHAUSTED'])
+        selected=next((s for s in stages if s['result']['result_id']==chosen.get('result_id')),None)
+        return self._combine(r,chosen,stages,reasons,start,review_outcome=outcome,verdicts=verdicts,
+                             selected_stage=selected,primary_stage=primary_stage)
+
+    def _combine(self, request, selected, stages, reasons, start, **review):
         result = deepcopy(selected)
         result.pop('result_id', None)
         result['job_id'] = request.get('job_id')
@@ -349,11 +511,16 @@ class RoutedAssessor:
         result['routing'] = dict(reasons=reasons, budget=self._budget_state(),
                                  stages=[dict(stage=s['stage'], model=s['model'], result_id=s['result']['result_id'],
                                               status=s['result']['status'], result_artifact=s['artifact']) for s in stages])
+        if review:
+            result['routing'].update(review_outcome=review['review_outcome'],reviewers=review['verdicts'])
+            for key,field in (('selected_stage','selected_result'),('primary_stage','primary_result')):
+                stage=review.get(key)
+                result['routing'][field]=dict(result_id=stage['result']['result_id'],artifact=stage['artifact']) if stage else None
         costs = [s['result']['cost'] for s in stages]
         result['cost'] = dict(amount_micro_usd=None if any(c['amount_micro_usd'] is None for c in costs)
                              else sum(c['amount_micro_usd'] for c in costs),
                              basis=sorted({b for c in costs for b in c['basis']}))
-        if 'ROUTING_FINDING_DISAGREEMENT' in result.get('reasons', []):
+        if set(result.get('reasons', [])) & {'ROUTING_FINDING_DISAGREEMENT','ROUTING_REVIEW_DISSENT'}:
             assessor = self.make_assessor(self.routine)
             entry = next(e for e in assessor.registry.entries if e.issuer_id == request['issuer_id'])
             result['review_requests'] = assessor._reviews(request, entry, 'ABSTAIN',
@@ -422,6 +589,13 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}
     common = dict(clock_ms=clock_ms, artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
+    openai = None
+
+    def primary_accounting_guard():
+        # A transient storage recovery cannot lift a quarantine caused by an uncertain settlement.
+        # Keep the same stop across all subsequent trial stages/jobs until owner reconciliation.
+        if openai is not None and openai.budget_unavailable:
+            raise IntelligenceError('Model budget reconciliation required')
 
     def external(entry):
         c = config_for(entry.get('prompt'))
@@ -429,15 +603,18 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
                                catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
                                transport=transports.get('aiand'), prompt_text=c.prompt_text,
                                prompt_sha256=c.prompt_sha256, **common)
+        if spec.get('openai_trial') is not None:
+            model = TrialGuardedExternal(model, budget, accounting_guard=primary_accounting_guard)
         configs[model] = c
         return model
 
     budget_options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'],
                           reserve=0, clock_ms=clock_ms) if preferred else {}
+    if spec.get('openai_trial') is not None:
+        budget_options['trial'] = spec['openai_trial']
     budget = ModelBudget(Path(budget_root) / 'openai-budget.sqlite', spec['budget_account'], **budget_options)
     routine = external(spec['routine'])
     reviewers = [external(e) for e in spec['external_reviewers']]
-    openai = None
     openai_config = config_for(spec.get('openai_prompt'))  # checked even without a key: the spec is all-or-nothing
     if secrets.get('LARP_MODEL_API_KEY'):
         openai = BudgetedOpenAI(OpenAIResponsesModel(model_id=spec['openai_model'],

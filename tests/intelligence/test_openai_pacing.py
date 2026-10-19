@@ -155,6 +155,82 @@ class Preferred(unittest.TestCase):
             initial_spent=2_000_000,total=50_000_000,reserve=0,
             pacing=f.s['openai_pacing'],clock_ms=f.w.clock)
 
+    def _dispatch_cutoff(self, overshoot):
+        f=self.fx; primary=f.build().openai
+        end=f.s['openai_pacing']['end_ms']
+        f.w.clock.advance(end-1-f.w.clock())
+        keep=primary.model._keep
+        def prepare(body):
+            keep(body); f.w.clock.advance(1+overshoot)
+        with patch.object(primary.model, '_keep', side_effect=prepare):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['error'], 'OPENAI_PACING_WINDOW_ENDED')
+        self.assertFalse(f.calls)
+        self.assertEqual(primary.budget.snapshot()['charged_micro_usd'], 2_000_000)
+        self.assertFalse(primary.budget.snapshot()['external_only'])
+        with sqlite3.connect(primary.budget.path) as db:
+            rows=db.execute("SELECT amount,state FROM charges WHERE request_id='r:1'").fetchall()
+        self.assertEqual(rows, [(0, 'SETTLED')])
+
+    def test_dispatch_at_cutoff_after_request_artifact_preparation_refunds_unsent(self):
+        self._dispatch_cutoff(0)
+
+    def test_dispatch_after_cutoff_after_request_artifact_preparation_refunds_unsent(self):
+        self._dispatch_cutoff(1)
+
+    def test_dispatch_rechecks_clock_and_latch_without_clearing_safety_state(self):
+        f=self.fx; primary=f.build().openai; keep=primary.model._keep
+        def rollback(body):
+            keep(body); f.w.clock.now -= 1  # explicit simulated wall-clock rollback
+        with patch.object(primary.model, '_keep', side_effect=rollback):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['error'], 'OPENAI_CLOCK_ROLLBACK')
+        f.w.clock.advance(1)
+        def latch(body):
+            keep(body); primary.budget.external_only('OPENAI_CREDIT_EXHAUSTED')
+        with patch.object(primary.model, '_keep', side_effect=latch):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['error'], 'OPENAI_CREDIT_EXHAUSTED')
+        self.assertFalse(f.calls)
+        snapshot=primary.budget.snapshot()
+        self.assertEqual(snapshot['charged_micro_usd'], 2_000_000)
+        self.assertEqual(snapshot['reason'], 'OPENAI_CREDIT_EXHAUSTED')
+
+    def test_dispatch_accounting_failure_keeps_bound_and_sends_nothing(self):
+        f=self.fx; primary=f.build().openai; keep=primary.model._keep
+        def unavailable(body):
+            keep(body); primary.budget.path.rename(f.root/'temporarily-unavailable.sqlite')
+        with patch.object(primary.model, '_keep', side_effect=unavailable):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['error'], 'MODEL_BUDGET_UNAVAILABLE')
+        self.assertFalse(f.calls)
+        self.assertFalse(primary.budget.path.exists())
+        (f.root/'temporarily-unavailable.sqlite').rename(primary.budget.path)
+        self.assertGreater(primary.budget.snapshot()['charged_micro_usd'], 2_000_000)
+        self.assertTrue(primary.budget_unavailable)
+
+    def test_dispatch_before_cutoff_settles_but_sent_timeout_keeps_bound(self):
+        from tests.intelligence.test_providers import openai_reply
+        f=self.fx; primary=f.build().openai; sent=[]
+        def success(url, headers, body, timeout):
+            sent.append(body)
+            return 200, json.dumps(openai_reply(fixtures.FINISH)(json.loads(body))).encode()
+        with patch.object(primary.model, '_transport', side_effect=success):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['status'], 'OK')
+        self.assertEqual(len(sent), 1)
+        before=primary.budget.snapshot()['charged_micro_usd']
+        self.assertEqual(before, 2_000_000+reply['cost']['amount_micro_usd'])
+        def timeout(*args):
+            sent.append(args[2]); raise TimeoutError('synthetic sent request')
+        with patch.object(primary.model, '_transport', side_effect=timeout):
+            reply=primary.step(fixtures.request(dict(gaps=[], claimable=[])), 1000).read()
+        self.assertEqual(reply['status'], 'TIMEOUT')
+        self.assertEqual(len(sent), 2)
+        self.assertGreater(primary.budget.snapshot()['charged_micro_usd'], before)
+        with sqlite3.connect(primary.budget.path) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM charges WHERE state='UNKNOWN'").fetchone()[0], 1)
+
     def test_openai_is_first_and_aiand_reviews_original_evidence(self):
         f=self.fx; _,result=f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
@@ -164,7 +240,9 @@ class Preferred(unittest.TestCase):
 
     def test_missing_openai_key_uses_high_effort_fallback(self):
         f=self.fx; _,result=f.run_assessment(f.build(key=False))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertEqual(result['status'],'ASSESSED')
 
     def test_model_identity_is_stable_across_key_and_period_changes(self):
@@ -188,7 +266,9 @@ class Preferred(unittest.TestCase):
         token=b.admit(b.snapshot()['available_micro_usd'],'synthetic-other-work'); b.settle(token,None)
         _,result=f.run_assessment(router)
         self.assertFalse(any(c[0]=='openai' for c in f.calls))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertFalse(result['routing']['budget']['external_only'])
         steps=result['model_io']['steps']
         self.assertEqual(steps[0]['response']['error'],'OPENAI_PACING_LIMIT')
@@ -213,13 +293,15 @@ class Preferred(unittest.TestCase):
         f.openai_error=None; f.calls.clear(); f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
 
-    def test_both_external_failures_strip_required_review_authority(self):
+    def test_both_external_failures_preserve_verified_primary_as_incomplete(self):
         f=self.fx; f.fail_external=True
         _,result=f.run_assessment(f.build())
-        self.assertNotEqual(result['status'],'ASSESSED')
-        self.assertFalse(result['findings'])
-        self.assertFalse(result['event_findings'])
-        self.assertEqual([c[:3] for c in f.calls if c[0]=='aiand'],
+        self.assertEqual(result['status'],'ASSESSED')
+        self.assertEqual(result['routing']['review_outcome'],'INCOMPLETE')
+        primary=json.loads(f.w.artifacts.get(result['routing']['primary_result']['artifact']))
+        for key in ('claims','findings','event_findings','rationale','confidence'):
+            self.assertEqual(result[key],primary[key])
+        self.assertCountEqual([c[:3] for c in f.calls if c[0]=='aiand'],
                          [('aiand','moonshotai/kimi-k3','high'),('aiand','zai-org/glm-5.3','high')])
 
     def test_disagreement_abstains_instead_of_selecting_a_model(self):
@@ -232,7 +314,7 @@ class Preferred(unittest.TestCase):
         f.openai=disagree
         _,result=f.run_assessment(f.build())
         self.assertEqual(result['status'],'ABSTAIN')
-        self.assertIn('ROUTING_FINDING_DISAGREEMENT',result['reasons'])
+        self.assertIn('ROUTING_REVIEW_DISSENT',result['reasons'])
         self.assertFalse(result['findings'])
 
     def test_missing_storage_does_not_recreate_or_dispatch_openai(self):
