@@ -1,7 +1,7 @@
-# IDEA-083 — Assessment time budget: per-stage shares, parallel reviewers, longer deadline
+# IDEA-083 — Assessment time budget and review outcome rule: per-stage shares, parallel reviewers, longer deadline, reviewers never replace an assessed primary
 
 - Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Implementer: Keegan** (Yao asks him
-  directly). Reviewers: Keith (model protocol/affordability), Isaac (runtime timing).
+  directly). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
 - Status: **proposed, approved in direction by Yao 2026-10-19; not implemented.** The pass criteria below are written
   before any code exists; the implementer adds red tests against them first.
 - Scope: unsigned and signed routed assessments (`aiand_routed`, OpenAI-preferred routing). **Model effort stays as
@@ -38,13 +38,34 @@ How the deployed code spends the time (`larp/intelligence/routing.py:265-333` at
 ## Decision (Yao, 2026-10-19)
 
 Adopt the recommendation: raise the per-decision budget to **about 120–180 s**, give **each stage its own share**,
-and run the **two reviewers in parallel**. Do not lower model effort now.
+and run the **two reviewers in parallel**. Do not lower model effort now. Also (B11): when the primary is ASSESSED,
+reviewers can only confirm or block it, never replace it, and a review in which no reviewer finishes leaves the
+primary's result standing.
 
 Timing context (why this does not make decisions too slow): rounds run on a 15-minute cadence or on a new filing;
 an assessment stays valid for about 1 hour (`expiry_ms` − `completed_ms` ≈ 3,600 s on the 17:15 job); a round that
 wants to trade re-quotes in a follow-up quote round. The hard ceiling is the runtime watchdog
 `cycle_timeout_seconds` = **600 s** (a longer cycle restarts the process), and the runtime runs one round at a time,
 so a burst of filings queues behind slow assessments.
+
+### Observed in the running trial (read-only check, 2026-10-19 01:34 UTC, run `larp-dev-llm-trial-20261018t170339z`)
+
+14 rounds, 13 assessments since 17:04 UTC. Every review was triggered by risk reasons
+(`EVENT_INTERPRETATION` + `INCOMPLETE_OR_CONFLICTING_EVIDENCE`, once `PRIMARY_NOT_ASSESSED`), none by the seeded audit;
+GLM never finished a review.
+
+| Case | Jobs | Today | Under B11 |
+|---|---|---|---|
+| No review triggered (OpenAI alone, 3–5 s) | 7 | ASSESSED | unchanged |
+| OpenAI ASSESSED, Kimi confirmed | 1 | ASSESSED but Kimi's result replaced OpenAI's | OpenAI's result, CONFIRMED |
+| OpenAI ASSESSED, Kimi timed out or errored, GLM no time | 3 | UNAVAILABLE | OpenAI's result, INCOMPLETE |
+| OpenAI ASSESSED, Kimi ABSTAIN, GLM no time | 2 | UNAVAILABLE | ABSTAIN, DISSENT |
+| OpenAI not ASSESSED, Kimi ASSESSED | 1 | ASSESSED (Kimi) | unchanged, FALLBACK |
+
+Yao's reasoning for "no reviewer finished → primary stands": a timeout is a capacity failure, not information about
+the filing; the primary's claims still pass the harness's evidence verification and the downstream risk limits; with
+B1–B3 these cases should become rare, and every one is recorded for the trial report. The conservative alternative
+(ABSTAIN `REVIEW_INCOMPLETE`) was considered and not chosen.
 
 ## Required behaviour (implementer may tune the numbers with a recorded reason)
 
@@ -53,13 +74,14 @@ so a burst of filings queues behind slow assessments.
 | B1 | Per-decision assessment budget **180 s maximum** (proposed default 180,000 ms; anything from 120,000 ms is acceptable with a recorded reason). One constant/config value drives all five places listed above; no hidden 60,000 ms remains on the routed path. |
 | B2 | **OpenAI primary share ≤ 60 s** (the original per-decision figure) and never more than one third of the budget. |
 | B3 | **Reviewers run in parallel**: when a review is triggered, external-review-0 and external-review-1 start together and each gets its **own allowance** (proposed: the remaining budget, capped at 90 s each), so neither can starve the other. |
-| B4 | Combination keeps today's conservative semantics and is deterministic regardless of which reply arrives first: reviewer-0's ASSESSED result takes precedence, else reviewer-1's ASSESSED, else the most informative non-ASSESSED result (ABSTAIN before UNAVAILABLE); if the primary and the selected reviewer are both ASSESSED with different `_signature`s → ABSTAIN `ROUTING_FINDING_DISAGREEMENT` as today. Document any change and its reason. |
+| B4 | Combination of the primary and the parallel reviewers follows **B11** exactly and is deterministic regardless of which reply arrives first. The disagreement test is today's `_signature` comparison (findings, event findings, falsifiers). |
 | B5 | No change to: model IDs, efforts, prompts, the routing file `a5fca50a…` (so the existing ledger's pacing/trial policies still match), review triggers, the 10 % audit seed, tool limits (≤ 6 calls, ≤ 3 per primary), or fail-safe UNAVAILABLE handling. Effort reduction is explicitly out of scope. |
 | B6 | Accounting unchanged and safe under concurrency: every OpenAI POST still reserves its maximum atomically; every AIand POST passes the trial/accounting guard at its own transport boundary; two concurrent reviewer POSTs cannot bypass the trial day/total limits or the accounting quarantine. |
 | B7 | Every stage's request, reply, reasoning summary, usage, latency and in-flight status is recorded in the round log and model artifacts exactly as today, for both parallel reviewers, including a reviewer still in flight at the deadline. |
 | B8 | Worst case fits the watchdog with margin: budget + market/quote/balance work stays **≤ 300 s** per cycle (half of `cycle_timeout_seconds`). |
 | B9 | Train/serve parity (plan.md "Declared values" table, row "Evidence loop budget (G-50)"): the historical/research evidence pass uses the same budget values, or the difference is recorded. |
 | B10 | Declared deviation: add **DEV-22** to `config/release/deviations.v1.json` and plan.md §6.5, and update G-50's text in plan.md. The submitted proposal says "The loop is capped at 6 calls and 60 s per decision" (`docs/proposal/proposal_answers.md:12`); G-50 is a POLICY, so this is allowed but must be declared (F-61, GAP-62). The release register hash changes as a result. |
+| B11 | **Review outcome rule (decided by Yao 2026-10-19; replaces today's `chosen = reviewed`).** Each finished reviewer is *confirm* (ASSESSED, same `_signature` as the primary), *dissent* (ASSESSED with a different `_signature`, or ABSTAIN) or *no result* (TIMEOUT, ERROR, UNAVAILABLE, in flight at the deadline, or not run). **If the primary is ASSESSED, its result is the final result and is never replaced by a reviewer's content:** ≥1 confirm and no dissent → primary result unchanged, `review_outcome: CONFIRMED`; any dissent → ABSTAIN, reason `ROUTING_REVIEW_DISSENT` (`ROUTING_FINDING_DISAGREEMENT` may be kept for the ASSESSED-different case), `review_outcome: DISSENT`; no reviewer finished → **primary result stands**, `review_outcome: INCOMPLETE`. **If the primary is not ASSESSED** (error, timeout, ABSTAIN, unavailable or not run for budget), reviewers are the fallback as today: the first ASSESSED reviewer in precedence order (reviewer-0, then reviewer-1) becomes the result, `review_outcome: FALLBACK`; two ASSESSED reviewers that disagree → ABSTAIN `ROUTING_FINDING_DISAGREEMENT`; none ASSESSED → UNAVAILABLE `ROUTING_DEADLINE_EXHAUSTED`, `review_outcome: NONE_AVAILABLE`. No review triggered → `review_outcome: NOT_TRIGGERED`. The same rule applies whatever triggered the review (risk reasons or the seeded audit). Record `review_outcome` and each reviewer's verdict (confirm/dissent/no result, with model, status and reasons) in the result's `routing` block and the round log; add any new reason code wherever the result schema checks reason codes. Apply the same rule to the legacy AIand-first branch (`routing.py:335-358`) or record why not. |
 
 Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
@@ -84,6 +106,11 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 | AB8 | Watchdog: a cycle with every stage at its limit completes in ≤ 300 s against `cycle_timeout_seconds` 600 (B8). |
 | AB9 | DEV-22 present in the register, plan.md §6.5 and G-50; release-register tests updated only for the new row. |
 | AB10 | Full suite in a `requirements.lock` venv: no new failures against the base; Linux/PostgreSQL/systemd parts on the mirror (preferred) or a recorded local substitute. No golden regenerated without review. |
+| AB11 | Red first: a job with primary ASSESSED, reviewer-0 timing out and reviewer-1 never finishing ends **UNAVAILABLE** on the base and **ASSESSED with the primary's `result_id` and content**, `review_outcome: INCOMPLETE`, after the change. |
+| AB12 | Confirmation never overrides: primary ASSESSED and a confirming reviewer → the final result's `result_id`, claims, findings, rationale and confidence are byte-for-byte the primary's (only routing/review metadata added), `review_outcome: CONFIRMED`. |
+| AB13 | Dissent blocks: primary ASSESSED with a reviewer that ABSTAINs (e.g. `UNSUPPORTED_CLAIM`) or ASSESSes different findings → ABSTAIN with the dissent reason, for either reviewer and either completion order, even if the other reviewer confirms. |
+| AB14 | Fallback unchanged: primary ERROR/TIMEOUT/ABSTAIN/budget-refused → first ASSESSED reviewer by precedence; both ASSESSED and different → ABSTAIN; none → UNAVAILABLE. Matches the observed 86b1476 and seq-19 cases. |
+| AB15 | Full matrix: primary {ASSESSED, ABSTAIN, ERROR, TIMEOUT, not run} × reviewer-0 {confirm, dissent-different, dissent-ABSTAIN, timeout, error} × reviewer-1 (same set) × both completion orders gives exactly the B11 table; `review_outcome` and per-reviewer verdicts are in the round log; the result validates against the consumer schema. |
 
 ## Deployment notes
 
@@ -98,7 +125,6 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
 ## Open questions for the implementer/reviewers (not decided here)
 
-- Should a reviewer timeout override an ASSESSED primary (today the reviewer's result always replaces it)?
 - Should a late provider reply after the deadline be recorded and its real cost settled instead of keeping the
   conservative maximum?
 - Expected AIand cost increase: parallel review calls both reviewers on every triggered job, where today GLM runs
