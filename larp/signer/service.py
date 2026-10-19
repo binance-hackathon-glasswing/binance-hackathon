@@ -13,6 +13,7 @@ Because primary writes the intent, the signer also checks every request against 
 (larp/signer/policy.py; `signing_policy` in its config): allowed spenders and tokens, per-token input caps and a fee
 cap, so a compromised primary cannot get an approve to another spender or an unlimited approve signed (WR02, #44).
 A swap needs a decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29),
+or an untrusted-router policy (`untrusted_router_policy_file` + `_sha256`; IDEA-070 B02-U, DEV-23), never both,
 loaded from the signer's own pinned copy and for a router in its own `allowed_spenders`. Check and run refuse
 missing or invalid evidence before database/key access. Both dev and live refuse the undecided example caps.
 Check verifies local config/release/evidence only; it does not accept Gate B or inspect the run, host or key.
@@ -176,14 +177,33 @@ def router_decoder(config, policy):
     UnverifiedRouter. A production service must not start an approval-only path
     while its subsequent swap cannot be validated (IDEA-070 SR-01).
     """
+    from larp.execution_live.config import untrusted_router_settings
     from larp.execution_live.router import evidence_settings, load_evidence
     settings = evidence_settings(config)
-    if settings is None:
-        raise ContractError('Signer requires pinned router evidence')
-    decoder = load_evidence(*settings)
+    untrusted = untrusted_router_settings(config)
+    if untrusted is not None:
+        # Offline: the signer never binds an RPC; primary's preflight checks the live router state (B02-U).
+        from larp.execution_live.untrusted_router import load_policy
+        decoder = load_policy(*untrusted)
+    elif settings is None:
+        raise ContractError('Signer requires pinned router evidence or an untrusted-router policy')
+    else:
+        decoder = load_evidence(*settings)
     if decoder.router not in policy.allowed_spenders:
         raise ContractError('Router evidence is for a router outside signing_policy.allowed_spenders')
     return decoder
+
+
+def _decoder_identity(decoder):
+    """How the signer decodes swaps, for its start/check line: VERIFIED evidence, an UNTRUSTED router policy
+    (B02-U, DEV-23) or UNVERIFIED (no swap is ever signed)."""
+    mode = getattr(decoder, 'mode', None)
+    if mode == 'verified':
+        return dict(swap_decoder='VERIFIED', router_evidence_sha256=decoder.evidence_sha256)
+    if mode == 'untrusted':
+        return dict(swap_decoder='UNTRUSTED', untrusted_router_policy_sha256=decoder.policy_sha256,
+                    router_evidence_sha256=None, deviation=decoder.deviation)
+    return dict(swap_decoder='UNVERIFIED', router_evidence_sha256=None)
 
 
 def key_path(config, environ=os.environ):
@@ -232,8 +252,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         except (ContractError, OSError, ValueError):
             raise StartRefused('router evidence refused') from None
         if args.command == 'check':
-            print(json.dumps(dict(configuration_valid=True, signing_enabled=False,
-                                  swap_decoder='VERIFIED', router_evidence_sha256=decoder.evidence_sha256,
+            print(json.dumps(dict(configuration_valid=True, signing_enabled=False, **_decoder_identity(decoder),
                                   scope='LOCAL_CONFIG_AND_ROUTER_EVIDENCE_ONLY', gate_b_accepted=False)))
             return 0
         from larp.runtime.database import open_service_store
@@ -261,10 +280,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             return EXIT_REFUSED
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
-        verified = getattr(decoder, 'mode', None) == 'verified'
-        print(json.dumps(dict(started=True, signing_enabled=True,
-                              swap_decoder='VERIFIED' if verified else 'UNVERIFIED',
-                              router_evidence_sha256=decoder.evidence_sha256 if verified else None,
+        print(json.dumps(dict(started=True, signing_enabled=True, **_decoder_identity(decoder),
                               cap_basis=service.policy.cap_basis)))
         cycles = 0
         while not stopping and (max_cycles is None or cycles < max_cycles):

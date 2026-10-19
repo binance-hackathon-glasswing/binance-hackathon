@@ -364,3 +364,121 @@ Criteria before verification: preserve original reports and hashes, retain every
 Fixed the forwardable source request: the Oct17 browser finding is now dated and attributed; HTTP403 does not establish current verification status. Merged current integration and preserved SR-01 plus RE acquisition history. No actual source export or independent source review exists; #138/#33 remain open and PR139 remains draft until those acceptance inputs and the recorded-real route check exist. No new provider probe, vendor message, wallet or host action.
 
 RV139 verification: nine documentation files only against merged integrationeb430b8; all relative Markdown links exist and whitespace checks pass. Five original JSON reports parse and are byte-identical to the pre-review head395f2c6; chain56 and all stored readiness/safety flags remain false. Alternatives SHA2563d04c7186a398794f53b0818bd891ee3b09a80a8e8de541f261f3b00a85495e4 and Routescan SHA256f7b24db6572f2c43e314dcc4daa99d83af588a5cb0a6cc93fa14424193f39047 match the handoff. No new source/provenance or current external observation is claimed.
+
+## B02-U — untrusted-router swap mode (2026-10-19, prospective)
+
+**Why.** B02 (Keegan's source review) cannot be done: on 2026-10-19 Keegan
+checked BscScan and Etherscan, and neither the router `0xb44446b0…fdda5` nor
+the swap facet `0xa9fa1b56…e603` has published source. Findings recorded first,
+all from public data:
+
+- The router is a minimal diamond proxy (solc 0.8.23). It loads
+  `facet = sload(keccak256(selector ‖ 0x5e12654f…a35c5)) & (2^160-1)`, then
+  `DELEGATECALL`s with the full calldata. Unknown selectors revert with
+  `FunctionDoesNotExist()`; empty calldata stops.
+- On BSC the slot for `0xad43f73d` is
+  `0x7ddc1c45a5ae31800e181de98e8cb97525e9b89f99e5829d49f25a8ca4bac1d7`. Keegan's
+  CloudShell read returned `0x…02a9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`, so
+  the swap goes to facet `0xa9fa1b56…`. The router and the facet have identical
+  code on BSC and Ethereum (Keegan's CloudShell `eth_getCode` hashes).
+- On Ethereum the diamond has ownership write functions
+  (`transferOwnership`/`confirmOwnershipTransfer`), so an owner can replace facets.
+- All 15 recorded swap quotes in `quotes-interim-20261018/selected-raw` share one
+  calldata layout. Words 1 = 0, 2 = `0x3d90f66b…6be9`, 7 = `0xd2a27f8f…a271`,
+  3/4/5/6/8 = pay token/amount/receive token/minimum output/quoted output, and
+  word 9 = offset 0x140 to a bytes blob. The blob is an inner call `0x47ee97ff`
+  whose words 6/7/8/9/10 are pay token/receive token/amount/minimum (equal to
+  or one more than the outer value)/a deadline (quote time + about 500 s).
+  **The wallet address appears nowhere in the calldata.**
+
+Keegan decided on 2026-10-19 to treat the router as untrusted, accepting that a
+misbehaving router or inner call can cost up to one capped trade's input. This
+work implements that decision. **Adoption is Isaac's (B09 signing policy); this
+entry and its PR do not enable signing.**
+
+**Design.** An `UntrustedRouterDecoder` from a pinned `UntrustedRouterPolicy.v1`
+file. The guarantees it does not have are replaced as follows:
+
+| Source guarantee (RouterEvidence) | Untrusted-mode replacement |
+|---|---|
+| input pulled only from sender; wallet debits limited to pay token and amount | exact approve (existing) + before each swap step, on chain: allowance(wallet, router) ≤ amount for the pay token and = 0 for every other pinned token; no native value |
+| minimum output checked on recipient balance | NOT replaced: layout check only (outer and inner minimum ≥ intent minimum); settlement already refuses a below-minimum fill, and B02-U blocks further signing while one is unsettled |
+| deadline enforced | NOT replaced: layout check only (inner deadline in (now, valid_until]) |
+| code cannot change silently | before each swap step: facet slot holds the pinned facet, and router/facet code hashes equal the pinned values |
+
+**Pass criteria, written before any implementation:**
+
+- U1. On the 15 recorded swap quotes, the decoder returns exactly the quote's
+  pay token, receive token, amount and minimum output (the `minReceiveAmount`
+  field), with recipient unverified (`None`).
+- U2. It refuses each tampered copy: another selector, a trailing or missing
+  byte, any fixed word changed, a non-canonical address word, the inner selector,
+  a mismatch between inner and outer amount/pay/receive, an inner minimum below
+  the outer one, non-zero padding, a wrong blob offset or length, and a token
+  outside USDT/bStocks (including native BNB).
+- U3. With a fake RPC, `preflight` refuses: a facet slot pointing elsewhere; a
+  changed router or facet code hash; a non-zero allowance for any other pinned
+  token; a pay-token allowance above the amount; and any RPC error (as
+  DependencyUnavailable). It passes the all-correct case. It reads only at a
+  numeric block, using only allowlisted methods.
+- U4. The `Executor` accepts a live bundle with an untrusted decoder only when it
+  is bound to an RPC, and it runs `preflight` on every swap validation (prepare,
+  authorize, sign, broadcast). `validate_payload` and `SigningPolicy.check` accept
+  an unverified recipient only from an untrusted-mode decoder; a verified decoder
+  that returns no recipient is still refused.
+- U5. The signer and execution configs take `untrusted_router_policy_file` +
+  `_sha256` (both or neither), never together with router evidence. The signer
+  refuses a policy router outside `allowed_spenders`.
+- U6. In untrusted mode, run authorization withholds `risk_valid` while any
+  terminal swap of this run has no stored final fact (an unsettleable fill).
+- U7. A DEV-23 deviation row (DRAFT) states the residual risk. The register
+  renders, and the release-register tests pass.
+- U8. Existing suites still pass with disposable PostgreSQL: execution, signer,
+  router, settlement, Gate B and the release register.
+
+Out of scope: booking a below-minimum fill (needs Keith's accounting), native-BNB
+swaps (gas top-ups) in untrusted mode, the real policy file's code hashes (to
+be taken by the operator with the new `observe` command), and adoption.
+
+### B02-U results at `b800794` (2026-10-19)
+
+Criteria were pushed first, at `3a179fa`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **U1 PASS.** All 15 recorded quotes decode to their own pay token, receive
+  token, amount and `minReceiveAmount`, with the recipient unverified.
+- **U2 PASS.** All 15 tampered variants of every quote are refused (225 cases).
+  One gap was found and fixed before commit: a blob length one byte longer,
+  borrowing padding, had passed. Inner calls must now be a selector plus whole
+  words.
+- **U3 PASS.** All six refusal cases plus an RPC error are refused, and the
+  correct case passes. Every read is at a numeric block and accepted by the
+  production allowlist. Fixed during self-review: before this execution's own
+  approve, the pay token's allowance is not limited, because our approve
+  overwrites it. Without that, a leftover allowance after a reverted swap would
+  block every later swap of the same token. A leftover on any other token still
+  refuses, so after a reverted swap, sells of other tokens (including the final
+  flatten) wait until an intent re-approves the reverted token. A revoke intent
+  is a recorded follow-up.
+- **U4 PASS.** The `Executor` refuses an unbound untrusted decoder, and preflight
+  runs on swap validation. A verified-mode decoder returning no recipient is
+  refused by both `validate_payload` and `SigningPolicy`.
+- **U5 PASS.** Settings must be set as a pair (both or neither), and router
+  evidence plus a policy together is refused. The signer refuses a router
+  outside `allowed_spenders` and a policy whose hash differs, and loads the
+  policy unbound.
+- **U6 PASS.** On the halt-split service harness with real PostgreSQL,
+  `risk_valid` stays true with no hold and turns false with a hold. The hold
+  covers any terminal execution without its stored fact, which is broader than
+  only swaps.
+- **U7 PASS.** DEV-23 is DRAFT. The register renders and `--check` passes.
+- **U8 PASS.** New tests: 13 passed, 255 subtests, including Gate B DR-02
+  (VALIDATED only with a passing check for this policy, and labelled
+  UNTRUSTED). Full suite at `b800794`: **2130 passed, 10 skipped (environment),
+  3597 subtests**, 422.9 s.
+
+Not done here: the real policy file (operator `observe` on primary, then a
+named reviewer), a `check` on fresh quotes, a live preflight, Isaac's adoption
+with #44 (B09) and B10/#27. The swap's own deadline is about 8 minutes after
+the quote, so it still conflicts with short intent expiries. Signing stays
+disabled; nothing here accepts Gate B.

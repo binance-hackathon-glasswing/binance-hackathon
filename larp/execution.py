@@ -318,8 +318,11 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         economics = decoder.decode(payload)  # MUST bind decoded fields to bytes.
         for value in (economics.amount, economics.minimum_output, economics.deadline):
             integer(value, positive=True)
+        # Only an untrusted-router decoder may leave the recipient unverified (IDEA-070 B02-U, DEV-23); its
+        # preflight bounds what the router can take instead.
+        unverified = economics.recipient is None and getattr(decoder, "mode", None) == "untrusted"
         if (economics.pay_token != intent.pay_token or economics.receive_token != intent.receive_token
-                or economics.amount != intent.amount or economics.recipient != intent.wallet
+                or economics.amount != intent.amount or (economics.recipient != intent.wallet and not unverified)
                 or economics.minimum_output < intent.minimum_output
                 or not now < economics.deadline <= intent.valid_until
                 or economics.native_value != payload.value):
@@ -345,13 +348,16 @@ def validate_sequence(state, step, payload, gates):
 class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
         # A bundle is all fake (offline fixtures), or all live with a swap decoder built from pinned router
-        # evidence (IDEA-070; GAP-29). Never a mix, and never live with UnverifiedRouter.
+        # evidence (IDEA-070; GAP-29) or an untrusted-router policy bound to a live RPC for its preflight (B02-U).
+        # Never a mix, and never live with UnverifiedRouter.
         ports = tuple(getattr(port, "mode", None) for port in (guards, venue, signer))
         fake = ports == ("fake",) * 3 and getattr(decoder, "mode", None) == "fake"
         live = False
         if ports == ("live",) * 3:
             from larp.execution_live.router import PinnedRouterDecoder
-            live = type(decoder) is PinnedRouterDecoder
+            from larp.execution_live.untrusted_router import UntrustedRouterDecoder
+            live = (type(decoder) is PinnedRouterDecoder
+                    or (type(decoder) is UntrustedRouterDecoder and decoder.rpc is not None))
         if not (fake or live):
             raise Blocked("live execution needs live ports and a decoder pinned to router evidence")
         self.store, self.guards, self.venue, self.signer, self.decoder = store, guards, venue, signer, decoder
@@ -396,6 +402,11 @@ class Executor:
             raise Blocked("clock regression")
         validate_payload(state.intent, step, payload, gates, now, self.decoder)
         validate_sequence(state, step, payload, gates)
+        if step == "SWAP" and getattr(self.decoder, "mode", None) == "untrusted":
+            # The live router state still bounds the swap (B02-U); before this execution's approve, the approve will
+            # overwrite the pay token's allowance.
+            approved = any(a.step == "APPROVE" and a.state == "FINAL_SUCCESS" for a in state.attempts)
+            self.decoder.preflight(state.intent, payload, approved=approved)
 
     def prepare(self, key, now):
         state = self._load(key)

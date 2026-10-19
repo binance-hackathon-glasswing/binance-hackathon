@@ -63,11 +63,12 @@ def assemble(inputs, *, now, base_dir):
     # The execution decoder also binds the evidence's router to execution's
     # router. The signer independently binds it to its own spender allow-list.
     decoder = execution_decoder(config)
-    if decoder.mode != 'verified':
-        raise ContractError('Pinned router evidence required')
+    if decoder.mode not in ('verified', 'untrusted'):
+        raise ContractError('Pinned router evidence or an untrusted-router policy required')
+    swap_keys = (('router_evidence_file', 'router_evidence_sha256') if decoder.mode == 'verified' else
+                 ('untrusted_router_policy_file', 'untrusted_router_policy_sha256'))  # IDEA-070 B02-U, DEV-23
     signer = {key: config[key] for key in (
-        'run_id', 'build_id', 'mode', 'wallet_address', *IAM_SETTINGS,
-        'router_evidence_file', 'router_evidence_sha256')}
+        'run_id', 'build_id', 'mode', 'wallet_address', *IAM_SETTINGS, *swap_keys)}
     signer.update(schema='SignerService.v1', database_user='larp_signer',
                   key_credential='wallet.key', interval_seconds=1, max_clock_skew_seconds=2,
                   signing_policy=policy_value)
@@ -80,7 +81,8 @@ def assemble(inputs, *, now, base_dir):
         scope='OFFLINE_NUMERIC_AND_LOCAL_CONFIGURATION_ONLY', checked_at=now,
         signer_config_sha256=hashlib.sha256(raw).hexdigest(),
         input_hashes={name: ref['sha256'] for name, ref in inputs['files'].items()},
-        router_evidence_sha256=signer['router_evidence_sha256'],
+        router_evidence_sha256=signer.get('router_evidence_sha256'),
+        untrusted_router_policy_sha256=signer.get('untrusted_router_policy_sha256'),
         database_ca_sha256=signer['database_ca_sha256'],
         numeric_review=numeric, remaining_gates=REMAINING_GATES,
     )
