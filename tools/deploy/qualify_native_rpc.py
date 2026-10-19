@@ -67,7 +67,8 @@ def native_credit(proof, expected):
             or native['wallet'] != expected['wallet'] or native['tx_hash'] != expected['tx_hash']
             or native['block_hash'] != proof['block_hash'] or quantity(tx['value']) != 0):
         raise Blocked('expected successful wallet-native credit proof required')
-    gas = quantity(receipt['gasUsed']) * quantity(receipt.get('effectiveGasPrice', tx['gasPrice']))
+    price = receipt['effectiveGasPrice'] if 'effectiveGasPrice' in receipt else tx['gasPrice']
+    gas = quantity(receipt['gasUsed']) * quantity(price)
     flow = native['after_wei'] - native['before_wei'] + gas
     if type(flow) is not int or flow <= 0:
         raise Blocked('positive transaction-native credit required')

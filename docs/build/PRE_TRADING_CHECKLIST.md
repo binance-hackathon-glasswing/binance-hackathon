@@ -1,5 +1,15 @@
 # Pre-trading checklist (2026-10-17)
 
+## Remaining-work implementation — PC-S1WIRE01 / NT-RV02
+
+Class2-only S1 evidence producer, incomplete-input expiry protection, frozen
+session-close jobs, recorded-calendar replay and the native receipt gas-price
+repair are supplied in the [remaining-work PR scope](PR133_REPOSITORY_COMPLETION_20261019.md).
+PR review and full verification are separate from implementation. A07 remains
+partial: verified official-event producers, full issuer coverage, selected inputs
+and hosted S1 acceptance are not supplied. Source/provider/funding/#27/#44 and
+all actual host/session/adoption gates remain open.
+
 ## Current repository continuation — PC-DBPLAN01 / PC-OPS01
 
 - [x] **Keegan:** A04 next-build database procedure delivered: [fresh trial DB on existing RDS](NEXT_TRIAL_DATABASE_20261019.md), preserving old runs, the shared budget ledger and fixed cutoff. Actual DB/host execution remains the approved operator's uncompleted task.

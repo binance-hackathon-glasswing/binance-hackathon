@@ -263,3 +263,13 @@ This does not settle original O6 model-vs-deterministic ASSESSOR adoption: that
 retains team/trial/rights/declaration gates. No final strategy or values frozen.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## PC-O2-20261019 — candidate inconclusive default delivered for review
+
+PR187, under the user's remaining-task instruction, records the concrete O2
+choice RETAIN_DECLARED_TREND_GUARD if EXP007 is INCONCLUSIVE. It follows the
+existing recommendation; it does not change EXP007's supported/not-supported
+rules or adopt S1 parameters. Acceptance/pinning must precede the real experiment;
+Keith's actual run/result, all frozen profile inputs and live acceptance remain
+open. See EXP007 PC-O2-20261019. This entry records the PR candidate and does not
+impersonate an owner signoff or manufacture a retrospective pre-registration.
