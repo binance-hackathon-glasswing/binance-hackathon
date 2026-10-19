@@ -12,6 +12,11 @@ CLEAR inputs still count healthy. Push criteria/tests before RED and behavior
 before GREEN; run the focused S1/native suite and applicable full regression.
 No profile, experiment result, policy default or live gate is adopted.
 
+R1 RED at pushed d96e1cb: both incomplete-review and expired-review subcases
+incorrectly report complete=True (2 failed / 1 passed). Fix requires the
+consumption-time complete review or complete-review-excluding-Class2 flag;
+ADVERSE alone grants no healthy session. Facts remain independently usable.
+
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
 - Status: open (S1 core repository review PASS; Isaac B6 full offline verification PASS in PR165 / EB-01 below; owner review, parameter approval, live inputs, B5/B7 and rehearsal remain).
 - What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:

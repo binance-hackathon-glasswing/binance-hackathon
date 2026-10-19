@@ -118,6 +118,20 @@ class ExposureInputs(unittest.TestCase):
                 self.assertEqual(following['level'], 'CAUTION')
                 self.assertFalse(audit['healthy'])
 
+    def test_fresh_clear_review_still_counts_toward_expiry(self):
+        _, record, now, _, _ = self.setup_record()
+        clear = dict(record, status='CLEAR', falsifier_findings=[], statements_pending=[],
+                     assessed_until_ms=now+60000)
+        clear['context_hash'] = context_hash(clear)
+        report = self.produce([clear])
+        self.assertTrue(report['complete'])
+        self.assertEqual(report['evidence'], [])
+        previous = dict(level='CAUTION', healthy_sessions=2, counted_session=1, used_evidence_ids=[])
+        following, audit = s1.limiter_step(previous, session=2, cfg=cfg(),
+            evidence=report['evidence'], assessment=None, input_complete=report['complete'])
+        self.assertEqual(following['level'], 'NORMAL')
+        self.assertTrue(audit['healthy'])
+
 
 class SessionCloseJobs(unittest.TestCase):
     def test_frozen_close_delay_and_identity_survive_later_planning(self):

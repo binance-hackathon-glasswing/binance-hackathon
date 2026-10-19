@@ -14,7 +14,12 @@ def exposure_inputs(*, records, profile, run_id, profile_hash, now_ms, markets,
         now_ms=now_ms, markets=markets, known_versions=known_versions, profile=profile, universe=universe)
     complete = (bool(universe) and not rejected and set(accepted) == set(universe)
                 and all(r.get('quality') == 'VERIFIED' and r.get('availability') == 'AVAILABLE'
-                        and r['status'] in ('CLEAR', 'ADVERSE') for r in accepted.values()))
+                        # ADVERSE is a durable latch, not proof that the latest
+                        # assessment is complete or still fresh. Acceptance
+                        # recomputes both review flags at consumption time.
+                        and (r.get('review_complete') is True
+                             or r.get('review_complete_excluding_timed_blocks') is True)
+                        for r in accepted.values()))
     items, decisions = {}, list(rejected)
     sessions = getattr(calendar, 'sessions', ())
     for symbol, record in sorted(accepted.items()):
