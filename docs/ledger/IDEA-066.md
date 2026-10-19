@@ -2241,3 +2241,12 @@ Not done here, since each is blocked on its inputs: B02 (no source export),
 B10 (needs B02 and A02 timing), C04/C06/C10 (need measured reports, release
 inputs and rehearsal evidence). No AWS, wallet, signing, provider, organiser or
 branch operation was performed.
+
+PC-KEEGAN-20261019 follow-up, same day: Keegan closed #98 as not planned and
+#49 as completed, with comments posted. Current-state comments are on #22 and
+#42. Keegan approved deleting `claude/gate-a-inputs`,
+`claude/issue31-day-roll-tests` and `claude/issue59-systemd-runtime-dirs`.
+This session's delete push was refused (HTTP 403), so they still exist; Keegan
+deletes them in GitHub. Correction: the earlier option text for #49 cited the
+Oct19 binding check. That check covered the current non-CI `ea25b52` host
+build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.

@@ -49,14 +49,15 @@ do not describe billing as fixed.
 
 All seven existed on origin on 2026-10-19 with no open PR. **Keegan decided
 2026-10-19:** delete the three Claude-session branches whose PRs are closed and
-keep the other four. The full head SHAs of the deleted branches are recorded
-below so they can be restored.
+keep the other four. The full head SHAs are recorded below so they can be
+restored. This session's delete push was refused (HTTP 403), so Keegan deletes
+the three from GitHub's branches page, checking each head still matches.
 
 | Branch | Last commit by | Earlier PR | Head |
 |---|---|---|---|
-| `claude/gate-a-inputs` | Claude session | #89 (closed) | `a3f284f139fd6d668b0bcde78014394e1f9db7ac` — **deleted 2026-10-19 (Keegan)** |
-| `claude/issue31-day-roll-tests` | Claude session | #82 (closed) | `09c3ed631310cc363cd5580380c111ccefe5bdeb` — **deleted 2026-10-19 (Keegan)** |
-| `claude/issue59-systemd-runtime-dirs` | Claude session | #83 (closed) | `96a474de20a535c5e6d9100b9fe8b1e108a5c62f` — **deleted 2026-10-19 (Keegan)** |
+| `claude/gate-a-inputs` | Claude session | #89 (closed) | `a3f284f139fd6d668b0bcde78014394e1f9db7ac` — **approved for deletion 2026-10-19 (Keegan); not yet deleted** |
+| `claude/issue31-day-roll-tests` | Claude session | #82 (closed) | `09c3ed631310cc363cd5580380c111ccefe5bdeb` — **approved for deletion 2026-10-19 (Keegan); not yet deleted** |
+| `claude/issue59-systemd-runtime-dirs` | Claude session | #83 (closed) | `96a474de20a535c5e6d9100b9fe8b1e108a5c62f` — **approved for deletion 2026-10-19 (Keegan); not yet deleted** |
 | `claude/local-ci-20261015` | Cookiemunchrr | none | `4cf9412` — kept |
 | `docs/idea-052-timesfm-20261015` | Cookiemunchrr | none | `6a3a336` — kept |
 | `codex/pr-review-system-20261012` | wtvlol | none | `3c837f7` — kept; ask Keith |
