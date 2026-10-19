@@ -341,9 +341,11 @@ class RuntimePlanner:
             due = close + config(context['profile'])['delay'] * 1000
             for symbol, issuer in sorted(self.issuer_by_token.items()):
                 if symbol in snapshot.universe:
-                    jobs.append(self._job(dict(kind='REASSESS_ISSUER', issuer_id=issuer,
+                    job = self._job(dict(kind='REASSESS_ISSUER', issuer_id=issuer,
                         reason='S1_SESSION_CLOSE', session=context['execution_session']['index'],
-                        close_ms=close, profile_hash=snapshot.policy_profile_hash), due, 45))
+                        close_ms=close, profile_hash=snapshot.policy_profile_hash), due, 45)
+                    job['missed'] = 'expire'  # a delayed trigger cannot pretend to be a timely close review
+                    jobs.append(job)
         for record in context.get("assessments", []):
             if record.get("due_reviews"):
                 due = record.get("review_due_ms")

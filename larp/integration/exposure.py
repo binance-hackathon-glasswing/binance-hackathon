@@ -46,6 +46,7 @@ def exposure_inputs(*, records, profile, run_id, profile_hash, now_ms, markets,
     sessions = [list(s) for s in sessions]
     return dict(schema='S1ExposureInput.v1', scope='ENABLED_CLASS2_FILINGS_ONLY', complete=complete,
         evidence=evidence, decisions=decisions, calendar_sessions=sessions,
+        live_input_qualification=False, unsupported_classes=['TRADE_RESTRICTION', 'TRADING_SUSPENSION', 'SCHEDULED_EVENT'],
         contexts={s: r['context_hash'] for s, r in sorted(accepted.items())},
         input_hash=digest('larp.s1.exposure-input.v1', dict(evidence=evidence, complete=complete,
                                                         contexts={s: r['context_hash'] for s, r in sorted(accepted.items())},

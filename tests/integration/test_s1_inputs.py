@@ -45,6 +45,28 @@ class ExposureInputs(unittest.TestCase):
         self.assertEqual(item['evidence_id'], second['evidence'][0]['evidence_id'])
         self.assertTrue(first['complete'])
 
+    def test_two_eligible_names_cut_without_counting_incomplete_input_as_healthy(self):
+        _, record, _, _, _ = self.setup_record()
+        first = self.produce()['evidence'][0]
+        second = dict(first, evidence_id='different-original-filing', symbols=['GOOGLB'])
+        state, audit = s1.limiter_step(None, session=2, cfg=cfg(), evidence=[first, second],
+                                      assessment=None, input_complete=False)
+        self.assertEqual(state['level'], 'CAUTION')
+        self.assertTrue(audit['accepted']); self.assertFalse(audit['healthy'])
+
+    def test_amendment_keeps_original_identity_and_missing_origin_cannot_renew(self):
+        _, record, _, _, _ = self.setup_record()
+        original = self.produce()['evidence'][0]
+        amended = deepcopy(record)
+        flag = amended['falsifier_findings'][0]['red_flag']
+        flag.update(amendment=True, amends_accession=flag['accession'], accession='synthetic-amendment')
+        amended['context_hash'] = context_hash(amended)
+        result = self.produce([amended])
+        self.assertEqual(result['evidence'][0]['evidence_id'], original['evidence_id'])
+        flag['amends_accession'] = None; amended['context_hash'] = context_hash(amended)
+        refused = self.produce([amended])
+        self.assertFalse(refused['complete']); self.assertEqual(refused['evidence'], [])
+
     def test_shadow_wrong_profile_corrupt_hash_and_missing_issuer_are_not_healthy(self):
         s, record, _, _, _ = self.setup_record()
         shadow = dict(s.context.read()['profile']); shadow.pop('red_flag_authority')
