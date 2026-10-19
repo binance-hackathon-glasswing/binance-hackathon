@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from larp.contracts import ContractError
 from larp.execution import Blocked
-from larp.signer.assembly import assemble, main
+from larp.signer.assembly import ROOT, assemble, main
 from tests.execution import test_caps_review as numeric_fixtures
 from tests.execution.test_router_decoder import evidence
 from tools.deploy.propose_signer_caps import ROUTER
@@ -180,3 +180,20 @@ class SignerAssembly(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertNotIn('DO_NOT_ECHO_PRIVATE_HOST', json.dumps(result))
         self.assertFalse(result['signing_enabled'])
+
+    def test_dangling_symlink_and_checkout_output_refuse(self):
+        target = self.root / 'must-not-create'
+        link = self.root / 'dangling'
+        link.symlink_to(target, target_is_directory=True)
+        self.assertEqual(self.invoke(link)[0], 4)
+        self.assertFalse(target.exists())
+        self.assertEqual(self.invoke(ROOT / 'must-not-create-signer-candidate')[0], 4)
+        self.assertFalse((ROOT / 'must-not-create-signer-candidate').exists())
+
+    def test_failed_output_write_cleans_up_this_attempt(self):
+        output = self.root / 'candidate'
+        with patch('larp.signer.assembly.os.fsync', side_effect=OSError('DO_NOT_ECHO_PRIVATE_ERROR')):
+            code, result = self.invoke(output)
+        self.assertEqual(code, 4)
+        self.assertFalse(output.exists())
+        self.assertNotIn('DO_NOT_ECHO_PRIVATE_ERROR', json.dumps(result))
