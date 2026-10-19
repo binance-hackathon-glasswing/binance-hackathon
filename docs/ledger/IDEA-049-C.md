@@ -694,3 +694,41 @@ action budget/final measured profile/fresh full holdings/native quote and exact
 policy approval hashes remain unavailable. #44 stays open; no install approval.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+### SA-01 — offline signer installation-candidate assembly (2026-10-19; prospective)
+
+Isaac requests the remaining feasible preparation after model/review branches
+merged. PR133 now includes integration8c1e6df through normal merge cabc159; two
+documentation conflicts preserve current evidence and the merged IDEA083 status.
+Live #27/#44 remain undecided/unqualified; no new source/profile/host inputs were
+supplied. The existing signer draft remains intentionally unusable.
+
+Implement a separate offline assembler using the existing GateBCapsInputs.v1
+numeric reviewer, rather than asking an operator to transcribe six fields and
+policy amounts by hand. Pass criteria, before execution:
+
+1. Re-run numeric coverage against hash-pinned profile, holdings, execution and
+   policy bytes plus fresh quotes for all five buy/sell pairs and native top-up.
+   Missing/changed pins, uncovered holdings/fees or stale/incomplete quotes refuse.
+2. Refuse the pending cap marker including surrounding whitespace; load actual
+   pinned router evidence through the production decoder and require matching
+   router/spender. Missing/changed/invalid/wrong-router evidence refuses.
+3. Copy exact execution run/build/wallet/mode and IAM DB/CA/evidence bindings;
+   change only the dedicated DB role to larp_signer and use wallet.key credential
+   delivery. Require the pinned local CA. Refuse local DSN or incomplete identity;
+   never read a wallet key, DSN, AWS client, database or network.
+4. Validate the generated candidate with production signer config/decoder code;
+   record exact config/input hashes. Local assembly success never establishes
+   owner/source approval, #27 resolution, manifest/host or Gate B acceptance:
+   ready_to_install/signing_enabled/gate_b_accepted remain false.
+5. Write only a new external directory, mode0700/files0600, without overwrites or
+   symlink replacement. Refusal emits no config and no private input/error values.
+6. Push tests/criteria before RED, implementation before GREEN. Run focused
+   assembly/numeric/startup/policy/router tests. All external evidence in tests is
+   synthetic. No AWS action, wallet key placement, signing or real provider call.
+
+Actual preparation remains blocked on the real source-reviewed evidence,
+selected measured profile/fresh holdings/quotes, exact #44 acceptance, #27
+policy/code/timing and coordinator/operator run/release/DB/CA/session inputs.
+An arbitrary decided cap_basis string is an operator assertion, not proof of
+Isaac's approval. The tool must never manufacture approval or replace these gates.
