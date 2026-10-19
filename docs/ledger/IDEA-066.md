@@ -1839,3 +1839,26 @@ reviews remain open. The next coordinator/operator owns real host qualification;
 Keegan owns exact release review, Keith measured protocol/affordability/profile
 inputs, Isaac real source/route/native/caps decisions as already listed. No AWS,
 key, wallet, model/RPC/receiver live request or deployment occurred.
+
+Final combined-tree verification at pushed2202c15: **282 passed/434 subtests,
+0 skipped**,30.71s. Covers all four merges together: mirror negative controls
+and package/preparation/bundle/register, signer startup/policy/router/authority,
+route scope, native qualification/receipt/settlement, PostgreSQL top-up round
+and signed runtime/recovery. Register rendering and whitespace checks PASS.
+Integration application/config/tool bytes equal the full-tested f6ebda0 tree;
+PR177 adds only the tested malformed-metadata cases and review documentation.
+No further runtime edits follow this acceptance. Local PostgreSQL disposed.
+
+Remaining review observations:
+- MERGE-RV20261019-M1: design179 now has newer contract adfa58d. Reconcile
+ 180/181 with its explicit routing.primary_result_id field and audit-write-failure
+ acceptance case;181 currently exposes nested primary_result provenance. PR180
+ is CONFLICTING with the updated draft design. No original policy approval or
+ Keith affordability review is inferred from this source observation.
+- MERGE-RV20261019-M2: PR126 head e33df6d conflicts with current integration
+ and its Oct17 briefs need alignment with the Oct19 coordinator handoff. It
+ remains open; no stale owner brief is merged as current instructions.
+- PR139/172 remain drafts awaiting source/account/funding inputs; PR133 remains
+ the open current tracker. Main remains unchanged and matches origin/main; all
+ session edits and review trees are committed/pushed, with remaining owners
+ recorded above. No deployment or key-placement authorization is inferred.

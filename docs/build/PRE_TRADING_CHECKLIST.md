@@ -7,7 +7,7 @@ and #159. Historical open review scope was #126/#133/#139/#155/#157/#158/#161, p
 repository deliveries below are distinct from pending evidence, decisions and
 host checks. Host results are prior owner reports, not fresh checks by this review.
 
-Latest checker correction **PC-MIRROR01 / PR177**: Yao approved the code fix; pushed verifier4eb33bb accepts only the exact registered challenge repo/approved Keegan4 mirror and passes all7 checks on the unchanged saved86b1476 package.65 focused tests PASS/3 PostgreSQL skips. **Correction:** PC-DEC01 already accepts the old mirror-only FAIL with production bind PASS; earlier wording that it was a deployment blocker or required a new binary is withdrawn. Original observed FAIL remains historical. PR177 review/merge is separate; existing accepted86b1476 can proceed through fresh owner preparation without a checker-only rebuild. [Evidence](evidence/gate-a-approved-mirror-20261018.json).
+Latest checker correction **PC-MIRROR01 / PR177**: Yao approved the code fix; pushed verifier4eb33bb accepts only the exact registered challenge repo/approved Keegan4 mirror and passes all7 checks on the unchanged saved86b1476 package.65 focused tests PASS/3 PostgreSQL skips. **Correction:** PC-DEC01 already accepts the old mirror-only FAIL with production bind PASS; earlier wording that it was a deployment blocker or required a new binary is withdrawn. Original observed FAIL remains historical. PR177 was reviewed/merged on2026-10-19 (MERGE-RV20261019); future exact-release qualification remains separate; existing accepted86b1476 can proceed through fresh owner preparation without a checker-only rebuild. [Evidence](evidence/gate-a-approved-mirror-20261018.json).
 
 Latest provider check Oct18 14:30UTC: **PC-PROV03 resolves AIand401**. Yao updated only the AIand secret field; host verifies all other fields match previous version. Authenticated AIand catalogue200 lists both exact models with high effort and USD currency; OpenAI still200. Balance endpoint403 leaves140+ owner-reported/expiry unverified. No inference/ledger/service action. [Evidence](evidence/aiand-key-verification-20261018.json).
 
@@ -117,13 +117,12 @@ No AWS operation, key placement or wallet transaction occurred in this follow-up
 
 | Point | Owner | Dedicated PR and current result |
 |---|---|---|
-| Signed/live model-network scope | Isaac | [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171), OPEN for review into this checklist branch. Explicit authorization settles the previous review-only blocker; same-host policy/report change is isolated in that PR.40 tests/48 subtests pass, no skips. Provider-policy/adoption/host gates remain; no AWS or client endpoint/config changes |
+| Signed/live model-network scope | Isaac | [PR171](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/171), merged into this checklist branch on2026-10-19 (MERGE-RV20261019). Explicit authorization settles the previous review-only blocker; same-host policy/report change is isolated in that PR.40 tests/48 subtests pass, no skips. Provider-policy/adoption/host gates remain; no AWS or client endpoint/config changes |
 | Verified router/facet source | Isaac | Existing draft [PR139](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/139), source point only. RE-02: Code403, legacy API301, v2 source API Missing/Invalid API Key; no export/account access. No source/ABI/independent review; route check NOT_RUN. Keegan reviews after complete evidence is obtained |
-| Real native-tracing provider | Isaac | [PR173](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/173), OPEN tool review. NT-Q1 uses production canonical/native receipt proof;42 tests/56 subtests pass. PublicNode tracer unavailable, SubQuery DNS failed; no usable private account. Actual provider qualification/selection NOT_RUN, tracing remains off; Yao host check follows |
+| Real native-tracing provider | Isaac | [PR173](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/173), tool reviewed/merged into this checklist branch on2026-10-19 (MERGE-RV20261019). NT-Q1 uses production canonical/native receipt proof;42 tests/56 subtests pass. PublicNode tracer unavailable, SubQuery DNS failed; no usable private account. Actual provider qualification/selection NOT_RUN, tracing remains off; Yao host check follows |
 | Remaining dev gas funding | Isaac | Draft [PR172](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/172). FG-02 public snapshot:98USDT,0.002694498869362886BNB, nonces2/2/2. No additional hash/action; remaining seed NOT_DONE. Isaac/Yao first confirm no first-agent-trade/in-flight work, Isaac completes MetaMask step, Yao takes actual post-last-seed opening capture |
 
-These PRs are intentionally separate and remain reviewable. This status entry
-merges none of them and does not claim source/provider/wallet/host readiness.
+These points remain separate. PR171/173 are now merged; PR139/172 remain draft. Repository merges do not claim source/provider/wallet/host readiness.
 
 ## This weekend (Oct 17–19): no profile needed
 
@@ -547,3 +546,8 @@ PR126's older briefs conflict and need alignment with the current handoff;
 PR179 is draft and gained additional contract requirements, so180/181 remain
 open for reconciliation/protocol review. PR139/172 retain their input blockers.
 No AWS changes, key access, model/chain/receiver live call or deployment.
+
+Final combined-tree validation at pushed2202c15:282 tests/434 subtests PASS,
+0 skips,30.71s (all four changes together, pinned Python/PostgreSQL). Source
+code is unchanged by the following result-only documentation commit. CI remains
+billing-blocked, and no AWS or hosted acceptance is inferred.
