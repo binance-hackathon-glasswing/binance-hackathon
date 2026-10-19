@@ -848,3 +848,18 @@ includes the Deficit test that reads `policy_input.context.health` from the
 `plan:` event. `bash -n` passes. Host result still NOT_RUN: Keegan runs the
 script from CloudShell (handoff "Process balance-health check"). #92 stays open
 until that output meets the RPC-H03 PASS rule.
+
+### RPC-H03-RV01 — PR189 process-attribution review (2026-10-19), prospective
+
+The original script reads MainPID and active time separately and does not check
+service identity after the database read. A restart during inspection can mix
+one process's display identity with another process's journal window; an inactive
+unit can also reuse historical timestamps. It must not be usable to close #92.
+Pass criteria before correction: require active/running nonzero PID, invocation
+ID and ExecMain start; compare the full service identity before/after the read;
+refuse a restart/inactive/missing identity with a fixed error and no partial
+report. Keep the database transaction READ ONLY and bound the query; preserve
+MATCH/DEFICIT, decision_ms fallback and missing-health observations. Commit
+synthetic regression tests for stable service, restart and inactive cases plus
+journal parsing; no AWS/DB/provider call in these tests. Run the rehearsal checker
+regressions after integrating PR188. No current-process host acceptance is claimed.

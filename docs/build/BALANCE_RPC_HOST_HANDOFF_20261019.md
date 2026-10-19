@@ -153,10 +153,16 @@ as the running process evaluated it (`RuntimeHealth` in `larp/runtime/driver.py`
 `BalanceCheck.ok()` needs this process's own comparable check within
 `max_age`). No new observation path is needed. The read-only script
 [`checks/balance-health.sh`](ops/llm-trial-20261018/checks/balance-health.sh)
-prints the larp-runtime MainPID, start time and restarts, the latest
+prints the larp-runtime MainPID, invocation ID, start time and restarts, the latest
 BALANCE_CHECKED rows and the latest rounds' gate booleans, each flagged
 `this_process`. It uses a READ ONLY transaction and makes no RPC or provider
-call.
+call. It requires an active/running service and the same PID/invocation/start/
+restart count before and after the database read, with unchanged config bytes.
+A stopped service or concurrent restart/config change exits2 with the fixed
+`BALANCE_HEALTH_REFUSED` report; no partial result is usable. The wall-clock
+start estimate uses ExecMain start and the host's current wall/monotonic clocks,
+so retain the existing host clock-health evidence. Only the latest1500 events
+and eight checks/rounds are shown; absence in this window remains inconclusive.
 
 From CloudShell in `ap-southeast-2`, with the script saved as `balance-health.sh`:
 
@@ -173,7 +179,8 @@ sleep 15; aws ssm get-command-invocation --region ap-southeast-2 --command-id "$
   --instance-id i-040fc5fea8b700e9a --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
 ```
 
-**PASS** (RPC-H03 criteria in IDEA-055): a MATCH (or reviewed SURPLUS_ONLY)
+**PASS** (RPC-H03 criteria in IDEA-055): `process_identity_stable: true`,
+a MATCH (or reviewed SURPLUS_ONLY)
 BALANCE_CHECKED with `this_process: true`, and a later round with
 `this_process: true` and `health.balances_ok: true`. `false`, a missing key or
 only `this_process: false` rows keep #92 open. Record the output's run ID, PID,
