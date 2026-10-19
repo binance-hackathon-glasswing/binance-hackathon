@@ -2250,3 +2250,16 @@ Findings for owners:
 Result: fresh evidence collected; it qualifies nothing by itself. Host
 qualification acceptance stays with Keegan (GAP-72); the routing decision with
 the team; the UNKNOWN reconciliation with the account owner/coordinator.
+
+## PC-NT-AWS01 — native-tracing check from AWS not runnable (2026-10-19 ~10:55 UTC)
+
+Asked to verify the approved native-tracing provider from `primary`. No approved
+provider exists to verify: PR133 B04 (account owner supplies an approved
+prestateTracer/diffMode config) is open, and the newest qualification record
+(`NATIVE_RPC_QUALIFICATION_20261018.md`) names QuickNode only as an uninvestigated
+candidate. Read-only SSM `d6dfbb5a-b9f7-4ef5-9b85-cebd2fd4806d` found no native-trace
+or execution RPC setting in any `/etc/larp/*.json` (only
+`driver.balance_rpc_providers`); this session's IAM user cannot list Secrets
+Manager. No public endpoint was re-probed (known refusals, per the qualification
+record), and no account, signup or spend occurred. NOT_RUN, blocked on B04, then
+B05 (Isaac's PR173 qualifier) before the host check.
