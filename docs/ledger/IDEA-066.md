@@ -2270,3 +2270,24 @@ Push the review before validation. Keep DEV18 DRAFT/OPEN until Keegan records
 the reviewed scope decision, and keep C05 partial for measurements/code/host
 qualification. Deliver a separate PR and update PR133. No AWS, real key/provider,
 signing, funding, paid inference or external log receiver operation is included.
+
+
+### C05-RV01 results — source1769b30, 2026-10-19
+
+Existing supervision, anchor/role/restore, register/version-event and live
+OPEN/DRAFT activation-refusal suites: **38 tests PASS,0 skips**,10.058s,
+Python3.12.14/pinned test environment with disposable loopback PostgreSQL14.24
+(127.0.0.1:55452/larp_test). These verify existing same-build restart incidents,
+exit/refusal behavior, HALT/signing fences, integrity/restore quarantine, roles,
+anchors, replay and release-register gates. They do not test a future D-DN-04
+age guard or claim OS/real-host/backup delivery/availability qualification.
+Renderer `--check` PASS. Static new-link/anchor and whitespace checks PASS;
+application/config/deploy/tests/tools/migrations/official/proposal/vendor and
+historical signer.json/review unchanged fromaa97b8b. Historical draft still has
+six unset bindings and pending caps, ready_to_install/signing_enabled false.
+
+Dispositions and residual risks are in PC-OPS01 C05-RV01. Only C05's review
+slice is complete: numeric settings, D-DN-04 code, Keegan independent review/
+DEV18 recording and actual measurements/host acceptance remain open. No whole
+backlog item was fully completed or removed. No AWS, real provider/key/wallet,
+funding, signing, inference, installation or external receiver was accessed.
