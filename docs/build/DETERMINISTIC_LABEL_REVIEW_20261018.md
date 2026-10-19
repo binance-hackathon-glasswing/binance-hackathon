@@ -176,3 +176,16 @@ The conversational 4/10 judgment was not a predefined or statistically validated
 Appropriate interpretation: the collected run supplies evidence about ingestion, scheduling, completion, recovery, verification/control wiring and audit delivery, with the recorded source gaps and benign-link trust/coverage limitation. It does not measure the semantic performance of the selected LLM or the complete LLM-plus-harness system. That needs actual composed-model outputs, supported claims and separate blind evaluation. Verification and policy rules still constrain which supported model claims can be accepted; adding a model does not silently alter those contracts.
 
 Source architecture checked: IDEA-012 role split, IDEA-056 deterministic boundaries and runtime service/RuleBaselineModel versus routed assessor wiring. No runtime, schema, model, prompt, threshold, guardrail or release change follows from this interpretation correction. Original gold, score JSON, pairwise records and report are preserved.
+
+
+## PC-LABEL02-INJ01-R1 — local trust review delivered (2026-10-19 SGT)
+
+[PC-YAO-NB01](YAO_NONBLOCKING_REVIEW_20261019.md) supplies the local review and
+regressions against the exact capped v3 routing/pinned stage prompts, with saved
+public-source HTML and mocked transports. Five tests/13 subtests pass; the benign
+link retains its instruction flag/incomplete coverage in all three stages and
+the combined result. Tool URL redirection is refused; detector and historical
+outputs/labels/scores remain unchanged. This records the cost of the existing
+conservative behavior; no domain exception or live-model quality claim follows.
+Keegan's independent review remains. T01, v3 M9, human labels and actual deployed
+provider/source qualification keep their separate gates.
