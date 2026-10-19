@@ -38,7 +38,7 @@ Owner assignments below are requests, not recorded acceptance or access grants.
 
 | Order | Work that becomes ready | Responsible person and required handoff |
 |---|---|---|
-| 1 — unblock access and inputs | Name the coordinator/operator (A01); obtain source export (B01 supply); provide approved tracing config (B04); verify account rights/funding (A03). These requests can proceed independently. | Account owner coordinates suppliers and a confirmed Binance/Web3/LiquidMesh contact for the complete #139 export. Do not send Isaac another source-acquisition task while he lacks the contact/export. Transfer RPC credentials privately. No new paid account is authorized by this plan. |
+| 1 — unblock access and inputs | Account-owner details resolved; complete approved access/input delivery (A01); obtain source export (B01 supply); provide approved tracing config (B04); verify account rights/funding (A03). These requests can proceed independently. | Account owner coordinates suppliers and a confirmed Binance/Web3/LiquidMesh contact for the complete #139 export. Do not send Isaac another source-acquisition task while he lacks the contact/export. Transfer RPC credentials privately. No new paid account is authorized by this plan. |
 | 1 — repository preparation | Database procedure (A04), O2 decision and operations proposals (A06), B4/B5 code (A07). Keith can finish existing capture/provenance/quote-only analysis within A08. | Keegan prepares code/decisions now; Keith reports actual available coverage and missing measurements. Values requiring host/source evidence remain pending. This work need not wait for Isaac. |
 | 2 — inspect delivered prerequisites | After A01, actual host/wallet/signing/account/ledger snapshot and timing (A02), pre-funding reconciliation (B06-pre), unsigned exports (C01). After the complete source export, independent source review (B02). | Approved operator supplies fresh sanitized evidence; Keegan supplies attributable source review. Neither requires Isaac to finish route checks or funding first. No circular request for a signed trade as a prerequisite to approving that first trade. |
 | 3 — Isaac's first ready tasks, independently | B03 after complete B01+B02 source review and recorded routes; B05 local qualification after B04 private config and a suitable canonical transaction; B07 only after B06-pre confirms eligibility and remaining need; C05 after complete A06 proposals and required A02 measurements. | Give Isaac each complete input packet as soon as it arrives. Do not wait for all four lanes. If no suitable native-credit transaction exists, keep B05 blocked explicitly; an approved B07 transaction may supply it when applicable. B07 can be resolved by reconciliation showing no further seed is needed. |
@@ -71,8 +71,8 @@ is inferred.
 
 | ID | Owner | Required next output | Dependency / completion evidence |
 |---|---|---|---|
-| A01 | Account owner | Name the successor coordinator and approved AWS operator; have them accept the handoff. Transfer approved access and private Terraform/provider/runtime/profile/terms/SEC-contact files privately. | Record names, scope and handoff acknowledgment. Give this workspace only approved profile names or private local paths; never credentials in GitHub/chat. Yao's former ownership is not reassigned by assumption. |
-| A02 | Approved operator, once named | Fresh read-only host/run/build/DB/service snapshot; preserved budget-ledger backup/export, actual spend/UNKNOWN/reservations/latches, unit memory, ACK/anchor/backup/source-gap state, and available queue/signer/finality timing. | After A01. Supply sanitized UTC reports and artifact hashes; distinguish unknown timing from measured bounds. Oct 18 observations are historical. |
+| A01 | Account owner | **Account-owner details resolved per user Oct19.** Complete any outstanding approved access/private-input delivery to the designated operator; retain accepted handoff scope. | Actual access/acceptance evidence remains required. Give this workspace only approved profile names or private local paths; never credentials in GitHub/chat. Do not reopen owner identification or infer working host access from identity details alone. |
+| A02 | Approved operator | Fresh read-only host/run/build/DB/service snapshot; preserved budget-ledger backup/export, actual spend/UNKNOWN/reservations/latches, unit memory, ACK/anchor/backup/source-gap state, and available queue/signer/finality timing. | After A01. Supply sanitized UTC reports and artifact hashes; distinguish unknown timing from measured bounds. Oct 18 observations are historical. |
 | A03 | Account owner | Verify AIand balance units, expiry/funding, actual usage and account-specific rights; reconcile the retained UNKNOWN 84,764 micro-USD through the reviewed process. | Owner evidence/status/export and decision reference. Catalogue authentication and reported 140+ are insufficient. Preserve every charge/reservation/latch; no direct ledger edits/reset. |
 | A04 | Keegan | **Repository deliverable DONE:** fresh trial DB procedure selected in [PC-DBPLAN01](NEXT_TRIAL_DATABASE_20261019.md). Operator creation/prepare/bind remains NOT_RUN. | Preserve old DBs and the same ledger/cutoff; verify new name is absent. Version switching is separate future work. |
 | A05 | Keith | Review IDEA083 protocol/reporting, measured latency/cost and affordable parallel-review usage; finish provider-rights/financial-policy review with Keegan. | A02/A03 exports; dated review and measured evidence. Prior unsigned protocol approval stands; signed/scored adoption remains separate. |
@@ -104,6 +104,14 @@ backup failure. Complete the benign-link/injection-defense qualification on the
 exact routed configuration. These are actual host tasks, not new code-review tasks.
 
 ## Rehearsal, adoption and final activation
+
+[RG-01 rehearsal gate packet](REHEARSAL_GATES_20261019.md) prepares C09/C10:
+ordered DR13–22 criteria, DR04/05 crash prerequisites, existing host commands,
+per-attempt evidence and daily records. RG-02 adds the runnable offline index/
+artifact-integrity checker; its completeness result never approves a gate. Preparation is complete; actual drills,
+missing host-specific invocation harnesses and owner reviews remain open.
+Account-owner details are resolved per the user's Oct19 update; actual access
+and qualification still require evidence.
 
 | ID | Owner | Required next output | Dependency / completion evidence |
 |---|---|---|---|
