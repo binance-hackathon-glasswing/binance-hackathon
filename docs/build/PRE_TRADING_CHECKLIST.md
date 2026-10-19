@@ -10,7 +10,7 @@
 
 The user assigns the following repository preparation to Isaac, in this order.
 Both can start from committed files without source export, private RPC access,
-AWS, fresh holdings or a signer session. IQ01 and IQ02 are delivered below; Keegan reviews both.
+AWS, fresh holdings or a signer session. IQ01 and IQ02 are delivered and independently reviewed (IQ01-RV01/IQ02-RV01).
 Keegan retains final acceptance/activation ownership.
 If a deliverable already exists, link and review it rather than create a duplicate.
 
@@ -19,12 +19,12 @@ If a deliverable already exists, link and review it rather than create a duplica
   maps all22 DR requirements to current controls, evidence and remaining owners;
   mandatory controls, optional scope and staged acceptance are explicit. Static
   source/link/gate checks pass; results in IDEA-066 IQ01. IQ01-RV01 accepts the repository matrix; GAP-05 is closed. No missing external acceptance or policy decision is inferred.
-- [x] **Isaac — IQ02: declaration consistency audit delivered (GAP-02/GAP-62 review pending).**
+- [x] **Isaac — IQ02: declaration consistency audit reviewed (GAP-02/GAP-62 decisions/evidence pending).**
   [Discrepancy table](../skill/larp/plan.md#iq02-declaration-consistency-audit-2026-10-19)
   compares submitted claims, dated decisions, implementation and release registers;
   proven wording drift is repaired. All22 deviations remain DRAFT; DEV18/20 OPEN.
   Exact S1 profile/parameters, standby/recovery/planner policy, provider rights,
-  measured and actual-host evidence remain with their named owners. Keegan reviews;
+  measured and actual-host evidence remain with their named owners. IQ02-RV01 accepts the audit;
   final register/activation is not completed by this audit. Results: IDEA-066 IQ02.
 
 
