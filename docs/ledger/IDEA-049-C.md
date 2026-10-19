@@ -809,3 +809,22 @@ signing/GateB/installation flags remain false. Publish a separate stacked PR
 and update PR133, with actual missing owner deliverables rather than repeated
 public source/RPC probes or requests for secrets. No runtime implementation or
 host/provider/trading acceptance is claimed by this handoff.
+
+
+SA-02 results at pushed3a4727a: production `validate_config` refuses the actual
+historical draft for missing run_id/build_id before database/key access. This is
+an expected refusal, not a signer-ready PASS. Static inventory confirms exactly
+six null bindings, unchanged config SHA339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442,
+pending caps, and installation/signing/GateB/candidate flags false. Six added
+local links/anchors, JSON, renderer and whitespace PASS; application/registers/
+old draft/review unchanged. No new runtime tests were needed for this doc/report
+slice; C05's38-test check is separate at1769b30, not new SA-02 qualification.
+No actual caps-input packet was supplied; assembly/release check NOT_RUN.
+
+Fresh GitHub issue inspection: #27/#44/#30/#119/#138 remain OPEN; #27's latest
+comment is still the conditional OptionA proposal with60s illustrative, #44
+still needs actual team cap values, and no source/RPC packet was supplied here.
+No repeated failed public probes, new account, funding, paid call or AWS/key
+operation was performed. Required inputs and actor sequence are in SA-02;
+private credentials must not be posted as a response. No policy, source review,
+provider right or exact-release acceptance can be replaced by numeric coverage.

@@ -21,7 +21,7 @@
     ],
     "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION"
   },
-  "local_config_check": "NOT_RUN",
+  "local_config_check": "DRAFT_REFUSED_MISSING_RUN_AND_BUILD",
   "assembly_status": "NOT_RUN_MISSING_APPROVED_INPUTS",
   "required_inputs": [
     {
@@ -71,5 +71,13 @@
   ],
   "c05_review_pr": 192,
   "external_operations_performed": false,
-  "historical_host_or_balance_evidence_qualifies_signer": false
+  "historical_host_or_balance_evidence_qualifies_signer": false,
+  "validation": {
+    "checked_source": "3a4727a",
+    "production_validate_config": "REFUSED_ACTUAL_INCOMPLETE_DRAFT",
+    "static_new_local_links": 6,
+    "historical_draft_and_review_unchanged": true,
+    "renderer": "PASS",
+    "new_candidate_or_installation_check": "NOT_RUN_MISSING_APPROVED_INPUTS"
+  }
 }
