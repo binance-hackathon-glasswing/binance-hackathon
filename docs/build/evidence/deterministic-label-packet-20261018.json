@@ -1,0 +1,58 @@
+{
+  "T01_qualified": false,
+  "artifact_export_sha256": "d87a524e42f2309605f2c110b122125c73b4d2ef4d6c83bf2a35a32c8a3f0017",
+  "audit_inputs_verified_equal": 43,
+  "criteria_commit": "059b250",
+  "criteria_pushed_merge": "6820c7b",
+  "duplicate_requests": 39,
+  "filing_cases": 4,
+  "frozen_files": {
+    "LARP-blind-annotation-20261018.zip": {
+      "bytes": 39380,
+      "sha256": "253ac12e649272bb46361c4489bca357fcfded2148f7556c0a072b1132db2249"
+    },
+    "SHA256SUMS.json": {
+      "bytes": 3088,
+      "sha256": "25f3d22ff7906070471c203316da5e65c86a16952a4a335a4d83654a4965a0d1"
+    },
+    "blind-manifest.json": {
+      "bytes": 431,
+      "sha256": "539fd0af59302bdce0c998efe154e93fb5cea31477b1566c5eb49482c984e9a6"
+    },
+    "population-manifest.json": {
+      "bytes": 150541,
+      "sha256": "32cca36303f885fe9826b460ef7519ec9a28e7f909c32e4207fad9a324c5b2ce"
+    },
+    "selection-manifest.json": {
+      "bytes": 6510,
+      "sha256": "a53f8ff28dc5b3eace8d5c4bd9353014c103699807368d3626cb50475d5e489e"
+    }
+  },
+  "host_mutations": false,
+  "labels_status": "NOT_STARTED",
+  "paid_provider_calls": false,
+  "record_id": "PC-LABEL02",
+  "remaining_owner": "Yao arranges two independent readings; independent adjudication; custodian/Keith scores after gold freeze.",
+  "represented_issuers": 2,
+  "requests": 43,
+  "runtime_export_sha256": "76633137e4f996960003da312fb3fb73f8178cf82e6b5bf9674c5831b26e2281",
+  "schema": "RetrospectiveBlindPacketStatus.v1",
+  "scope": "RETROSPECTIVE_DETERMINISTIC_DIAGNOSTIC_ONLY",
+  "scoring_status": "NOT_RUN",
+  "source_artifacts_verified": 10,
+  "source_build": "bb46234f1b997dae968e2c3f3668d73627857376",
+  "source_documents": 5,
+  "source_index_sha256": "b3caa1a698ed5d9ff40b4f874ade52dd8e7a97038f4f69cdc33d88ba53e6f424",
+  "v3_M9_qualified": false,
+  "verification": {
+    "blank_labels_not_scored": "PASS",
+    "blind_metadata_excludes_predictions": "PASS",
+    "file_hashes": "PASS",
+    "representative_cutoffs": "PASS",
+    "source_artifact_references": "PASS",
+    "zip_files": 25,
+    "zip_integrity": "PASS"
+  },
+  "window_end_utc": "2026-10-18T11:00:00+00:00",
+  "window_start_utc": "2026-10-17T11:00:00+00:00"
+}

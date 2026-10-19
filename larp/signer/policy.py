@@ -10,7 +10,8 @@ before the key is used:
   signer's own lists;
 - an approve's amount and a swap's decoded input are at most the per-token cap, and an unlimited approve is refused;
 - the transaction fee limit (`gas * gas_price`) is at most the fee cap;
-- a swap pays out to the signer's wallet and sends no native value.
+- a swap pays out to the signer's wallet and sends no native value. With the untrusted-router decoder the recipient
+  is not in the calldata; that mode is chosen by the signer's own pinned config (IDEA-070 B02-U, DEV-23).
 
 Cap values are a team decision (IDEA-049-C WR-C); `cap_basis` labels where they come from. Both dev and live
 service configurations refuse the pending-decision example marker (IDEA-070 SR-01).
@@ -104,7 +105,9 @@ class SigningPolicy:
             economics = decoder.decode(payload)  # GAP-29: UnverifiedRouter refuses every swap here
             if economics.receive_token not in self.allowed_tokens:
                 raise Blocked('signer policy: swap token not allowed')
-            if economics.recipient != wallet or economics.native_value != 0:
+            # The untrusted-router mode comes from the signer's own pinned policy, never from the request (B02-U).
+            unverified = economics.recipient is None and getattr(decoder, 'mode', None) == 'untrusted'
+            if (economics.recipient != wallet and not unverified) or economics.native_value != 0:
                 raise Blocked('signer policy: swap recipient or native value refused')
             self._input(economics.pay_token, economics.amount)
         else:

@@ -1,0 +1,65 @@
+{
+  "schema": "IndependentReleaseVerification.v1",
+  "record_id": "PC-REL09",
+  "verified_at_utc": "2026-10-18T13:52:48.341535+00:00",
+  "scope": "UNSIGNED_V3_TRIAL_ONLY",
+  "source": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+  "supplied_tar": {
+    "bytes": 101519360,
+    "sha256": "7632df2ca4b678cd36a4aed7a4a7c8c7045feef72dbb643571b3b8bee2224665",
+    "equals_original_gzip_decompressed_stream": true
+  },
+  "original_gzip": {
+    "bytes": 98383598,
+    "sha256": "277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343"
+  },
+  "packaging_conclusion": "Supplied tar is byte-for-byte the decompressed original CI/published gzip. Which client decompressed it is not established.",
+  "manifest_sha256": "0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f",
+  "manifest_source_files_verified_against_git": 196,
+  "exact_release_file_set_matches_git": true,
+  "bundle_checksums_verified": 235,
+  "all_regular_files_accounted_for": true,
+  "unsafe_or_duplicate_or_link_members": 0,
+  "bundle_env_matches_published_and_recorded": true,
+  "provisioner_matches_git": true,
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "python_archive_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+  "trial_routing_sha256": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+  "original_ci_artifact_zip_sha256": "419bf1c56e4dd0f08c9d4e262abdda78654c2e9e483f3595c8c755b0f25a9b77",
+  "original_ci_artifact_assets_equal_release_assets": true,
+  "ci_run_id": 39126353379,
+  "ci_jobs": [
+    {
+      "name": "runtime",
+      "conclusion": "success"
+    },
+    {
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success"
+    },
+    {
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success"
+    },
+    {
+      "name": "host-bundle",
+      "conclusion": "success"
+    }
+  ],
+  "publication_run_id": 39126901213,
+  "source_on_integration": true,
+  "archive_contents_executed": false,
+  "rebuilt_or_recompressed": false,
+  "host_deployed": false,
+  "paid_provider_calls": false,
+  "manifest_scope_note": "196 manifest paths exactly match the committed release-file selector; one additional release/deploy/host/provision.sh copy equals the top-level provisioner and exact Git file. Both copies are in SHA256SUMS.",
+  "retained_ci_logs_independently_read": {
+    "passed": 2064,
+    "skipped": 6,
+    "subtests": 2992,
+    "actual_systemd_passed": 5,
+    "actual_systemd_subtests": 5,
+    "new_suite_rerun": false
+  },
+  "local_preparation": "PC-PREP02: assembled; six checks PASS, CI_RELEASE_BYTES FAIL due registered-only build_origin predicate; no local-ready or deployment claim."
+}

@@ -11,7 +11,7 @@ it grants no AWS, signing or hosted readiness authority.
 | Primary → Web3, TCP443 | Market data, quote/transaction construction and the Web3 broadcast path | Client constants; `routes.fixed_hosts`; execution-service boundaries |
 | Primary → configured RPCs, TCP443 | Runtime balance providers and execution provider are separately manifested read-only inputs | `routes.plan`, `chain.Rpc` method allowlist; provider selection in separate PR135 does not qualify execution/native tracing |
 | Primary → official audit receiver, TCP443 | Uploader's durable round-log delivery | `larp.audit.delivery.BASE_URL`; uploader-only secret loading |
-| Primary → model APIs, TCP443 | Existing AIand/OpenAI shadow trial only; no additional provider or service/live authority | Runtime assessor scope gate and `routes.plan`; Anthropic stays outside the table |
+| Primary → model APIs, TCP443 | Same fixed AIand/OpenAI hosts; signed/live application scope approved by SP-NET D2, with separate provider/adoption/host gates | Runtime assessor scope gate and `routes.plan`; Anthropic stays outside the table |
 | Primary → enabled evidence sources, TCP443 | Release-registered SEC/FR/DOJ/EC destinations; no disabled-source approval | Enabled source listing/allow hosts; EDGAR constants; evidence-unit metadata deny remains a separate sandbox check |
 | Primary → AWS APIs, TCP443 | Secrets Manager for the configured service secrets; CloudWatch metrics; configured S3 buckets | Client region/config; host IAM policy and bucket/object-scoped grants |
 | Both hosts → RDS, TCP5432 | Per-service IAM token login over pinned-CA TLS; execution ↔ signer uses database handoffs | Host DB security-group references, SQL-role map, runtime database client |
@@ -53,3 +53,14 @@ route/security suite at pushed `b720b2a` has **27 passed / 5 opt-in systemd
 skips**, macOS/Python3.13. The existing mock-credential test needed pinned
 botocore in a disposable test directory; no AWS client or real host was used.
 IDEA-062 NC-01 records the commands, environment correction and limits.
+
+## SP-NET D2 — signed/live application scope (2026-10-18)
+
+Isaac authorizes carrying out the exact SP-NET proposal in its own PR. The
+architecture table now approves the same two fixed primary/runtime HTTPS
+model endpoints for explicitly adopted signed/live builds. This supersedes the
+earlier review-only refusal and stale shadow-only capability description. No
+client URL/allowlist, model choice, credential, runtime config, AWS permission
+or signer isolation change. Provider-policy/account/model rights, funding,
+trial/quality/adoption, services and release/host prerequisites remain required.
+Criteria/results: IDEA-062 SP-NET D2; current owner checklist: PR133.

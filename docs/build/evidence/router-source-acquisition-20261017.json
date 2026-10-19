@@ -1,0 +1,33 @@
+{
+  "schema": "RouterSourceAcquisition.v1",
+  "chain_id": 56,
+  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+  "observed_selector": "0xad43f73d",
+  "criteria_ref": "IDEA-070 RE-01",
+  "criteria_commit": "455cb29",
+  "status": "INCONCLUSIVE",
+  "verified_source_obtained": false,
+  "abi_obtained": false,
+  "proxy_status": "UNKNOWN",
+  "source_guarantees": "NOT_REVIEWED",
+  "keegan_review": "PENDING",
+  "deployable_router_evidence": false,
+  "observations": [
+    {
+      "url": "https://bscscan.com/address/0xb44446b0c8e56988c34f7ff73ae904982b5fdda5#code",
+      "http_status": 403,
+      "outcome": "CLOUDFLARE_CHALLENGE",
+      "response_body_sha256": "f748132683130c90dd3abf03a9f9bafc360438c0a8eeaaa641d024b7e40d0126",
+      "saved_at_utc": "2026-10-17T05:38:48.829862+00:00",
+      "response_bytes": 5549
+    },
+    {
+      "url": "https://sourcify.dev/server/v2/contract/56/0xB44446b0c8E56988c34f7Ff73Ae904982b5FdDA5?fields=all",
+      "http_status": 404,
+      "outcome": "NO_VERIFIED_MATCH_RETURNED",
+      "response_body_sha256": "2f330bdf9094896e44b7944263122c48cc1ef34adfb4f99168a0a5dfce1a7a8b",
+      "saved_at_utc": "2026-10-17T05:39:01.693527+00:00",
+      "response_bytes": 125
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "schema": "NativeRpcCandidateSearch.v1",
+  "criteria_ref": "IDEA-039 NT-Q1",
+  "criteria_commit": "02ae4cb",
+  "observed_calls": 5,
+  "max_discovery_calls": 8,
+  "private_provider_inputs_available": false,
+  "transaction_native_proof_status": "NOT_QUALIFIED",
+  "production_qualification_run": "NOT_RUN_NO_TRACE_CAPABLE_CANDIDATE_OR_ACCOUNT",
+  "runtime_enabled": false,
+  "providers_selected": false,
+  "signing_enabled": false,
+  "observations": [
+    {
+      "label": "subquery-chain",
+      "requested_at": "2026-10-18T10:59:11.879650+00:00",
+      "url": "https://bnb.rpc.subquery.network/public",
+      "http_status": "000",
+      "curl_exit": 6,
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "response_bytes": 0,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "eth_chainId",
+        "params": []
+      }
+    },
+    {
+      "label": "publicnode-chain",
+      "requested_at": "2026-10-18T10:59:11.918164+00:00",
+      "url": "https://bsc-rpc.publicnode.com",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "7936534925bf3634454e57bb7c27bc67415b7816e33d2ad05cd959886d970b2a",
+      "response_bytes": 41,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "eth_chainId",
+        "params": []
+      }
+    },
+    {
+      "label": "publicnode-finalized",
+      "requested_at": "2026-10-18T10:59:12.163037+00:00",
+      "url": "https://bsc-rpc.publicnode.com",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "02f3e54a9b1404f887b6958ebcc9693c2ec813d2299307546631034e80e272a6",
+      "response_bytes": 10230,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ]
+      }
+    },
+    {
+      "label": "publicnode-recent",
+      "requested_at": "2026-10-18T10:59:12.378855+00:00",
+      "url": "https://bsc-rpc.publicnode.com",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "b0936f0a117d291c39b9fd3a0225ea5e618adbd71b3f432378a3a9cfc2ca3d5f",
+      "response_bytes": 127,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0xbdad6544e5d6a93f36abfa6843fe09a99870b942d8f4c8fdb15e39fbe3b98c34",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32601,
+        "message": "the method debug_traceTransaction does not exist/is not available"
+      }
+    },
+    {
+      "label": "publicnode-historical",
+      "requested_at": "2026-10-18T10:59:12.604117+00:00",
+      "url": "https://bsc-rpc.publicnode.com",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "cd25867b3a254fa33995010b749ba9a1bbbcd4c60d0636d9ccec7f3123c47726",
+      "response_bytes": 127,
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "debug_traceTransaction",
+        "params": [
+          "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+          {
+            "tracer": "prestateTracer",
+            "tracerConfig": {
+              "diffMode": true,
+              "disableCode": true,
+              "disableStorage": true
+            }
+          }
+        ]
+      },
+      "rpc_error": {
+        "code": -32601,
+        "message": "the method debug_traceTransaction does not exist/is not available"
+      }
+    }
+  ],
+  "raw_response_root": "/private/tmp/larp-isaac-now-public-20261018",
+  "account_candidate_docs": {
+    "url": "https://www.quicknode.com/docs/bnb-smart-chain/debug_traceTransaction",
+    "checked_at": "2026-10-18",
+    "scope": "PRIMARY_DOCUMENTATION_ONLY_NOT_ACCOUNT_OR_FINALITY_OR_RETENTION_QUALIFICATION"
+  },
+  "rejected_substitution_docs": {
+    "url": "https://docs.nodereal.io/reference/debug-tracetransaction",
+    "checked_at": "2026-10-18",
+    "reason": "BSC_DOCS_LIST_CALLTRACER_ONLY_NOT_REQUIRED_PRESTATE_DIFF"
+  }
+}

@@ -176,9 +176,9 @@ def plan(role, configs, sources):
                 _url(p, provider.get('url'), f'runtime.driver.balance_rpc_providers[{i}].url', u,
                      'BSC RPC (balance check, ' + ('primary' if i == 0 else f'backup {i}') + ')')
         if driver.get('assessor') == 'aiand_routed':
-            # Shadow-only model routing (IDEA-057, MR-06): AIand always, OpenAI when its optional key is set.
+            # Same fixed hosts in shadow or explicitly adopted signed/live builds (IDEA-062 SP-NET D2).
             for h in fixed['models']:
-                p.add(h, HTTPS, u, 'hosted model API (aiand_routed, shadow only)')
+                p.add(h, HTTPS, u, 'hosted model API (aiand_routed; signed/live require explicit adoption)')
         _aws(p, c, 'runtime', u, 'secretsmanager', 'Secrets Manager (runtime secret)')
         _database(p, c, 'runtime', u)
     if 'execution' in configs:

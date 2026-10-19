@@ -1,5 +1,7 @@
 # Gate B remaining work — 2026-10-17
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 Record: [IDEA-039 GB-RW1](../ledger/IDEA-039.md). Repository base: integration
 `0672fb8`, which includes reviewed PR130 (decoder), PR131 (S1), PR144
 (lifetime proposal), PR148 (cap proposal), PR149 (temporary signer access),
@@ -16,7 +18,7 @@ submitted-review records were fetched and their heads matched against Git,
 with no discrepancies. The inventory distinguishes head subjects from API PR
 titles and includes state, merge time and review-event counts. The live Gate B
 issue discussions were also read: #27 and #44 still record pending decisions.
-At this inspection, only PR126 and PR133 are open and PR139 remains draft.
+At this inspection, only PR126 and PR133 are open and PR139 remains draft. Oct 18 update: #155, #157, #158, #161, #163 and #164 are merged into integration (IDEA-049 MERGE-20261018); #126 and #133 stay open, #139 stays draft, and Isaac's #165 (S1 execution windows, B6) merged817eb71 after EB-RV2 current-integration review/full local acceptance.
 
 Seven heads remain outside integration: historical closed PR10/82/83/89, the
 remaining-work brief PR126, the pre-trading checklist PR133, and router-source
@@ -42,7 +44,7 @@ Neither proposal approval nor host acceptance is inferred from merging code.
 | Work | Current evidence and next concrete action |
 |---|---|
 | Router source/ABI and all four guarantees (#33/#138, GAP-29) | PR139 found an unverified router, unusable explorer ABI and no Sourcify match. Its finalized selector lookup identifies candidate facet `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`; that is not verified source, dispatch/upgrade proof or an allowed spender. Obtain complete attributable router/facet/helper source and ABI, bind to deployed code, and perform the independent source review. Keep signing blocked if unavailable. |
-| Recorded-real route qualification | After source review, run the existing `larp.execution_live.router check` against Keith's retained quote artifacts. Require both stock directions, exact wallet/economic binding and the mutation checks. No actual capture files are present in this cloud checkout. |
+| Recorded-real route qualification | After source review, run the existing `larp.execution_live.router check` against Keith's retained quote artifacts. Require both stock directions, exact wallet/economic binding and the mutation checks. Keith's KMP-QUOTE01 artifacts are now present in PR133; all29 file hashes verify (SP-01). Route replay still waits on source/review. |
 | Signing lifetime (#27) | PR144's Option A is a conditional recommendation; 60 seconds is illustrative. Keith reviews; Keegan decides the model, finite lifetime and margins, records C-OPEN-003, and implements the adopted contract. Do not extend the 15-second admission window or remove the encoded-deadline comparison. The kit's approximate 30-second quote lifetime is not measured encoded expiry. |
 | Independent signer caps (#44) | PR148 proposes development/final USDT inputs 35/70 and fee 0.0002 BNB. These remain unapproved for installation. Run the current-input review below, review full holdings and adjustment/splitting scenarios, then record the exact policy/profile/metadata evidence and approved hash. Use the router as spender, never the facet. |
 | New release bundle | GB-RW2 mirror [run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352) passed all four jobs on reviewed integration `0672fb8`, including PR130/144/148/149/153/131. Artifact `12099524179` exists; this session's network policy blocks downloading it. Sidecar/manifest verification and the two file hashes remain required before the AWS-owner handoff; see the [build record](evidence/gate-b-mirror-build-20261017.json). Any later adopted source change requires a newer reviewed release. |
@@ -120,6 +122,12 @@ Malformed input returns 4. Output is private, exclusive and outside the checkout
 no overwrite, credential lookup, networking, policy installation or signing occurs.
 Pins do not prove real-world provenance, fresh portfolio reconciliation, source
 guarantees, quote executability or owner approval.
+
+SA-01 adds [offline signer candidate assembly](SIGNER_INSTALLATION_PREPARATION.md)
+from the same pinned inputs. It re-runs coverage, loads the actual pinned decoder,
+validates the signer configuration and copies exact execution identity/CA/evidence
+bindings with the dedicated signer role. It never establishes installation,
+source/owner approval, #27, release or host acceptance.
 
 ## Identifier and execution audit
 

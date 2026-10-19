@@ -1,0 +1,205 @@
+{
+  "all_four_ci_jobs_passed": true,
+  "application_config_deploy_test_paths_unchanged_from_release": true,
+  "assessment_rating": "NO_UNVALIDATED_NUMERICAL_RATING",
+  "checked_at_sgt": "2026-10-18T21:29:41.054000+08:00",
+  "checked_at_utc": "2026-10-18T13:29:41.054000+00:00",
+  "ci": {
+    "actual_systemd_passed": 5,
+    "actual_systemd_subtests": 5,
+    "log_sha256": "967e7f4f705dcfcc8ed0b9692a25fd3264af46ec115105e5d2ec907cf55bda53",
+    "passed": 2064,
+    "seconds": 236.95,
+    "skipped": 6,
+    "subtests": 2992
+  },
+  "ci_evidence_source": "pr174-release-20261018.json retained Keegan verification; no new artifact download or suite rerun in this audit",
+  "frozen_release_source": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+  "host": {
+    "assessor": "deterministic",
+    "budget_exists": false,
+    "build_id": "bb46234f1b997dae968e2c3f3668d73627857376",
+    "checked_at_ms": 1792330180348,
+    "corrupt_poll_lines": 0,
+    "execution": "shadow",
+    "latest_source_polls": {
+      "edgar:SEC-CIK-0000789019": {
+        "error": null,
+        "finished_ms": 1792330025467,
+        "started_ms": 1792330025415,
+        "status": "OK",
+        "truncated": null
+      },
+      "edgar:SEC-CIK-0001045810": {
+        "error": null,
+        "finished_ms": 1792330026816,
+        "started_ms": 1792330026776,
+        "status": "OK",
+        "truncated": null
+      },
+      "edgar:SEC-CIK-0001318605": {
+        "error": null,
+        "finished_ms": 1792330028132,
+        "started_ms": 1792330028091,
+        "status": "OK",
+        "truncated": null
+      },
+      "edgar:SEC-CIK-0001652044": {
+        "error": null,
+        "finished_ms": 1792330029383,
+        "started_ms": 1792330029338,
+        "status": "OK",
+        "truncated": null
+      },
+      "edgar:SEC-CIK-0002120882": {
+        "error": null,
+        "finished_ms": 1792330030414,
+        "started_ms": 1792330030385,
+        "status": "OK",
+        "truncated": null
+      },
+      "source:doj-press": {
+        "error": "RESPONSE_TOO_LARGE",
+        "finished_ms": 1792329713976,
+        "started_ms": 1792329713751,
+        "status": "SOURCE_UNAVAILABLE",
+        "truncated": false
+      },
+      "source:ec-press": {
+        "error": null,
+        "finished_ms": 1792329416364,
+        "started_ms": 1792329415100,
+        "status": "OK",
+        "truncated": false
+      },
+      "source:fr-bis": {
+        "error": null,
+        "finished_ms": 1792329420465,
+        "started_ms": 1792329418137,
+        "status": "OK",
+        "truncated": true
+      },
+      "source:fr-public-inspection": {
+        "error": null,
+        "finished_ms": 1792329423251,
+        "started_ms": 1792329421674,
+        "status": "OK",
+        "truncated": false
+      },
+      "source:sec-press": {
+        "error": null,
+        "finished_ms": 1792329724147,
+        "started_ms": 1792329724079,
+        "status": "NOT_MODIFIED",
+        "truncated": false
+      }
+    },
+    "mode": "dev",
+    "model_routing_sha256": null,
+    "section": "host_inventory",
+    "units": {
+      "larp-archive.timer": {
+        "ActiveState": "active",
+        "SubState": "waiting"
+      },
+      "larp-evidence": {
+        "ActiveState": "active",
+        "MemoryCurrent": "42471424",
+        "NRestarts": "1",
+        "SubState": "running"
+      },
+      "larp-execution": {
+        "ActiveState": "inactive",
+        "MemoryCurrent": "[not set]",
+        "NRestarts": "0",
+        "SubState": "dead"
+      },
+      "larp-runtime": {
+        "ActiveState": "active",
+        "MemoryCurrent": "91471872",
+        "NRestarts": "1",
+        "SubState": "running"
+      },
+      "larp-uploader": {
+        "ActiveState": "active",
+        "MemoryCurrent": "55894016",
+        "NRestarts": "0",
+        "SubState": "running"
+      }
+    }
+  },
+  "host_mutations": false,
+  "host_snapshot_bytes": 2804,
+  "host_snapshot_sha256": "b3401cea83e0b0927fdb301da8b2419aa4e297deacde45d4f6e825fd86cbf81b",
+  "integration_head": "1306bbb2822b2b421e847d51c23549a22dca713b",
+  "model_or_paid_provider_calls": false,
+  "operational_health": {
+    "archive_tasks_by_kind_status": [
+      {
+        "count": 27,
+        "kind": "anchor",
+        "last_slot_ms": 1792328400000,
+        "status": "ACK"
+      },
+      {
+        "count": 2,
+        "kind": "backup",
+        "last_slot_ms": 1792281600000,
+        "status": "ACK"
+      },
+      {
+        "count": 1,
+        "kind": "backup",
+        "last_slot_ms": 1792235176666,
+        "status": "PERMANENT"
+      }
+    ],
+    "audit_chunks_by_status": {
+      "ACK": 70
+    },
+    "checked_at_ms": 1792330181054,
+    "health_fields": [
+      "age_ms",
+      "audit_deadline_breaches",
+      "audit_failures",
+      "counts",
+      "healthy",
+      "missed",
+      "reasons",
+      "schema",
+      "signing_enabled"
+    ],
+    "healthy": true,
+    "reasons": [],
+    "section": "read_only_operational_health"
+  },
+  "read_only_transactions": true,
+  "record_id": "PC-HAR01",
+  "requirements_status": {
+    "S1_B4_exposure_evidence": "RUNTIME_PRODUCER_MISSING",
+    "bounded_tools_timeouts_and_fallback": "IMPLEMENTED_TESTED_LLM_HOST_QUALIFICATION_PENDING",
+    "claim_verification": "IMPLEMENTED_TESTED_REAL_DOCUMENT_T01_NOT_QUALIFIED",
+    "complete_harness_specification_acceptance": "NOT_ESTABLISHED",
+    "complete_scored_system_acceptance": "NOT_ESTABLISHED",
+    "declared_event_calendar_planner": "DEV20_OPEN_NOT_BUILT_OR_FINAL_DEVIATION",
+    "model_trial_accounting": "NEW_RELEASE_TESTED_NOT_INITIALIZED_OR_DEPLOYED_ON_HOST",
+    "point_in_time_sources_and_provenance": "IMPLEMENTED_HISTORICAL_SOURCE_COVERAGE_FAIL_NEW_DEPLOY_PENDING",
+    "round_audit_delivery": "HOST_ACK_OBSERVED_HISTORICAL_BACKUP_FAILURE_PRESERVED",
+    "signed_execution": "CAPABILITY_GATED_REAL_ROUTER_TRACE_PROFILE_AND_HOST_DRILLS_PENDING",
+    "thesis_memory_falsifiers": "IMPLEMENTED_TESTED_HOST_POSITIVE_CASE_QUALIFICATION_PENDING"
+  },
+  "schema": "HarnessReadinessAudit.v1",
+  "scope": "TARGETED_REQUIREMENTS_AND_EXISTING_EVIDENCE_AUDIT",
+  "source_checks": [
+    "docs/official/source_page.md",
+    "docs/official/kit/logging.md",
+    "docs/official/kit/PROTOCOL.md",
+    "docs/skill/SKILL.md F/K/Q and relayed organizer corrections",
+    "docs/skill/reference/participant-kit.md K13-K15",
+    "docs/skill/larp/plan.md G50-G54",
+    "docs/build/DEPLOYMENT_BUILD.md DR01-DR22",
+    "current integration DEV19/DEV20 register, runtime/policy/assessor/routing/budget code",
+    "PR133 live checklist/backlog and retained release evidence"
+  ],
+  "ssm_command_id": "d763f48e-aefd-4399-a4cf-43c186282651"
+}

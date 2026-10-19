@@ -82,3 +82,25 @@ preparation and PostgreSQL checks ran. Full record: IDEA-049 ALLPR-20261017.
 Owner-reported mirror run39045682226 is also green for `6a65b39`; this session
 could not independently read the private mirror API (404). Provider quality,
 actual account/budget initialization, hosted trial and adoption remain open.
+
+
+## Verified refreshed mirror result and merge — 2026-10-18
+
+Yao Zhu dispatched [run39091503450](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091503450)
+on d7d3e7c, which completed SUCCESS. PR158 then advanced by normal integration
+refresh to **7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce**, adding the merged
+PR155/157/161/163/164 changes. Yao dispatched the refreshed head on
+[run39091699018](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091699018):
+independently verified **all four jobs SUCCESS**. Runtime **1973 passed,
+6 skipped, 2934 subtests**, 418.45s; explicit systemd **5 passed, 5 subtests**,
+16.73s. Terraform AWS19/19 + bootstrap1/1, host-bundle, demo and restricted
+Docker smoke pass. The first passing run does not establish the newer tree.
+
+PR158 merged at ce9115e; source head7a0ea14 remains the exact tested/bundled
+identity. Downloaded artifact12122169313: sidecar, external/embedded manifest,
+all192 manifest file hashes, registered repository, build ID and included CA
+verified. Public release evidence is in
+`docs/build/evidence/model-trial-mirror-20261018.json`; full hash/handoff record
+IDEA066 PC-CI02. Results and hashes posted on PR158. Keegan's release acceptance,
+real providers, prompt quality and the hosted trial remain open. No AWS upload,
+installation, model calls or signing occurred.

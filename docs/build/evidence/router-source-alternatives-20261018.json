@@ -1,0 +1,50 @@
+{
+  "schema": "RouterSourceAcquisition.v1",
+  "criteria_ref": "IDEA-070 RE-02",
+  "criteria_commit": "42d6aba",
+  "chain_id": 56,
+  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+  "candidate_facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+  "selector": "0xad43f73d",
+  "status": "BLOCKED_SOURCE_UNAVAILABLE",
+  "verified_source_obtained": false,
+  "abi_obtained": false,
+  "deployable_router_evidence": false,
+  "source_guarantees": "NOT_REVIEWED",
+  "independent_review": "NOT_RUN",
+  "route_check": "NOT_RUN",
+  "user_export_available": false,
+  "observations": [
+    {
+      "label": "source-code",
+      "requested_at": "2026-10-18T10:59:10.964706+00:00",
+      "url": "https://bscscan.com/address/0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603#code",
+      "http_status": "403",
+      "curl_exit": 0,
+      "response_sha256": "54f9b86e82e4003e27edb1a6e13ddc718c26629ae48dab7cfc8530e8192cffe4",
+      "response_bytes": 5549
+    },
+    {
+      "label": "source-bscscan-api",
+      "requested_at": "2026-10-18T10:59:11.044591+00:00",
+      "url": "https://api.bscscan.com/api?module=contract&action=getsourcecode&address=0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+      "http_status": "301",
+      "curl_exit": 0,
+      "response_sha256": "446a6087825fa73eadb045e5a2e9e2adf7df241b571228187728191d961dda1f",
+      "response_bytes": 167
+    },
+    {
+      "label": "source-etherscan-v2",
+      "requested_at": "2026-10-18T10:59:11.129710+00:00",
+      "url": "https://api.etherscan.io/v2/api?chainid=56&module=contract&action=getsourcecode&address=0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+      "http_status": "200",
+      "curl_exit": 0,
+      "response_sha256": "15a829feaac786f421a396f1e60977a508a6e29434bd7b62a75a743710cdb150",
+      "response_bytes": 67,
+      "api_message": "NOTOK",
+      "api_result": "Missing/Invalid API Key"
+    }
+  ],
+  "raw_response_root": "/private/tmp/larp-isaac-now-public-20261018",
+  "signing_enabled": false
+}

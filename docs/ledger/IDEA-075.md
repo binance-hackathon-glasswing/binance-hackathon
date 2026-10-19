@@ -246,8 +246,30 @@ The register source is `config/release/deviations.v1.json`, rendered into plan.m
 ## 16. Open decisions for the team (before Oct 22)
 
 - **O1 Reset of the 8% stop.** The declared ladder does not say when the buy block ends (GAP-12). With 95% exposure it fires in about 1 run in 10 (synthetic), and a DOWN → UP rebuy would then be blocked for the rest of the run. **Recommended:** lift the block when drawdown recovers below 5%. **Default if not decided:** no reset.
-- **O2 Default if EXP-007 is inconclusive.** Must be settled **before** EXP-007 runs, because it is part of the pre-registered decision rule. **Recommended:** ship the trend guard as declared, since the team chose S1 for drawdown protection and its cost is bounded by one change per session. Alternative: drop it and run at 95% with the limiter and ladder only.
+- **O2 Default if EXP-007 is inconclusive.** Must be settled **before** EXP-007 runs, because it is part of the pre-registered decision rule. **Recommended:** ship the trend guard as declared, since the team chose S1 for drawdown protection and its cost is bounded by one change per session. Alternative: drop it and run at 95% with the limiter and ladder only. **Decided 2026-10-19 (Keegan), before any EXP-007 run:** ship the trend guard as declared (EXP-007 PC-O2-ACCEPT-20261019).
 - **O3 Five names or four.** SKHYB is the most expensive route (F-93). **Recommended:** five, since the entry-cost gate already skips a name whose buy is too expensive.
 - **O4 `new_risk_end`.** **Recommended:** Nov 9 21:00 UTC, so that a trend recovery after Nov 4 can still be rebought. IDEA-018's Nov 4 candidate would freeze the book for the last four sessions.
 - **O5 Scheduled events.** **Recommended:** no cut on a scheduled event alone (§4.2). Alternative: a declared CAUTION over the Nov 3 elections, at a cost of two level changes.
 - **O6 Assessor.** Model or deterministic assessor for v1.0 (DEV-19). The plan works either way (§4.2).
+
+## SP-D2 / SP-D3 — rehearsal selection and limiter mode (2026-10-18)
+
+User-delegated decision on KMP-SIGN01: use measured EQUAL_WEIGHT on Oct20
+if S1's actual inputs/frozen weights/parameters/EXP007/B4 are unqualified;
+otherwise use explicitly adopted exact TREND_GUARDED_VOL profile. Profile/hash
+adoption awaits real final coverage. For adopted S1 choose DETERMINISTIC limiter,
+which maps verified LLM evidence to exposure levels; B4 producer remains required.
+This does not settle original O6 model-vs-deterministic ASSESSOR adoption: that
+retains team/trial/rights/declaration gates. No final strategy or values frozen.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## PC-O2-20261019 — candidate inconclusive default delivered for review
+
+PR187, under the user's remaining-task instruction, records the concrete O2
+choice RETAIN_DECLARED_TREND_GUARD if EXP007 is INCONCLUSIVE. It follows the
+existing recommendation; it does not change EXP007's supported/not-supported
+rules or adopt S1 parameters. Acceptance/pinning must precede the real experiment;
+Keith's actual run/result, all frozen profile inputs and live acceptance remain
+open. See EXP007 PC-O2-20261019. This entry records the PR candidate and does not
+impersonate an owner signoff or manufacture a retrospective pre-registration.

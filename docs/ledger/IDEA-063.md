@@ -237,3 +237,57 @@ Only skip: opt-in external recorded-market corpus. `git diff --check` passes.
 No new Linux/release/host acceptance claimed. #119 fee-netting proof and #120
 Isaac/Keith profile acceptance remain open; merging PR157 completes #156's
 reporting/evidence correction only. The ongoing capture is not interrupted.
+
+
+## KMP-QUOTE01 — verified interim handoff and capture recovery (2026-10-18 UTC)
+
+Criteria: KMP-01/1536af8, before snapshot/summary work. [Handoff and caveats](../build/evidence/quotes-interim-20261018/README.md); [coverage](../build/evidence/quotes-interim-20261018/coverage.json).
+
+The user clarifies earlier captures were interim data, not continuous operation. Checked actual tmux1:0.0: bash/sudo/systemd-inhibit/sleep kept the host awake, no collector. Historical capture exited on fatal authentication_error; underlying HTTP401/40103 says timestamp outside recv_window, request02:42:13.154Z versus server02:42:18.219Z (~5.1s). NTP synchronized. Fresh read-only token-list preflight with the same privately stored Web3 pair succeededHTTP200/552ms. No new keys needed; no timestamp/security window was relaxed.
+
+Unchanged pushed capture implementation eda2ed2ab1ab4b72f220eb6b92e882737d950825 resumed at Oct18 06:54:40Z, PID106610, configured through Oct20 00:00Z at600s sleep after each round/40USDT/15s re-quote. Two completed resumed rounds verified,5 samples/zero failures each. This is health at inspection, not a future uptime guarantee. Existing files/logs preserved; no signing/approval/broadcast/ai-seeds credentials used.
+
+Snapshot first/last observations Oct16 18:19:09.205Z–Oct18 06:56:06.986Z:1,021 complete JSONL records (850SAMPLE/170BNB_PRICE/1FAILURE), each token170 samples across3 UTC days including weekend,9US_SESSION/161OFF_SESSION. All1,700 swap-gas estimates FALLBACK; no measured final gas/cap claim. Largest inter-success gap per token about4h24m, explicitly retained. The snapshot includes26 exact referenced raw artifacts for the latest successful sample/token; older raw references remain in the private original store, so this is not an exhaustive raw export. Stored credential values screened remotely before export, no values disclosed.
+
+Transport archive SHA d2127481bd8835a1f6f12abcaae5a39ed961c521c07ad1a49567c3de729e9520; manifest b6db3560fdbfd2e7f6b2fba70ddd6c99927567642b2edf95e95a7ba6b4e5a1b4; coverage1aac4be95d68dbc2e2c16bdfa902cb28beec9f4559a24b261e7650ae3a8a23df. Each transferred file's SHA/length verified. User-authorized sanitized data PR and #118 handoff supply Isaac's interim router inputs.
+
+Default offline summarize, unchanged10samples/token/regime/3days/weekend, REFUSED every token's9US_SESSION<10. No weakened flags, final summary/profile or pin produced. Continue capture into Monday's session through Oct20, then final measurement/review #120. Old PC-AWS07 interim settings2days/9samples and owner-reported profile SHA d951207f432879eda6b349ae334104e47803f809eb5e94aef422c2e31cab4542 are recorded; original capture hash/full summary bytes still missing here (summary prefix41e17b4d only), need Yao's export. This later snapshot does not replace that provenance. Route-fee inclusion #119, actual router/deadline, final signer caps and final profile owner review remain open;40USDT quote size exceeds candidate35USDT signer input cap and is not a proposed trade.
+
+## SP-FEE — current quote handoff and fee-evidence disposition (2026-10-18)
+
+Verified all29 handoff hashes/lengths:850 samples,1,700 FALLBACK swap-gas
+estimates,15 successful latest buy/sell/requote artifacts covering all five names.
+Input quantities match request/response. Nonzero tradeFee is network-fee metadata;
+null custom-fee fields do not prove wallet-net vendor/pool fees. Applicable
+source/semantics and transaction-bound agent-quote/receipt evidence are absent.
+#119/#120 stay open; collect the first planned agent swap only after gates.
+Default final coverage remains refused (9 US-session samples,10 required);
+40USDT quote size exceeds35USDT development signer input cap. No profile pin.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## YP-01 — recovered original interim-summary provenance (2026-10-19 SGT)
+
+Criteria: IDEA-066 PC-YAO-NB01 (`47fa8f9`, pushed before verification). The user
+requests remaining non-blocked Yao work from PR133. The old PC-AWS07/KMP-QUOTE01
+summary/report/metadata originals were retained in Yao's download and deployment
+copies. They are now supplied in
+[`interim-provenance-20261019`](../build/evidence/interim-provenance-20261019/README.md).
+
+At pushed verifier `6833462`: four transfer checksums PASS; summary SHA
+`41e17b4d14322d79b0231544d81d058b128c039b6abb707de5f2c7a5f183be2b`, report
+`0195e57623b6aa1bf6fdb9f02cbd6aa83f1dbe6d5c7ef763d42ddcfaba824f89`, capture
+`2ec51d514bff738a1b09a5c0be694d69a0e1334dc3bc2990b9c7d57354dde7da`.
+The metadata's two original capture byte prefixes in the later committed export
+verify against their pre-existing hashes/counts:180+336 records,516 total. The
+current summarizer reproduces the complete summary object and report coverage/
+symbol details. Actual retained profile SHA `d951207f…4542` matches the previously
+reported SHA; its embedded summary equals the original. No profile regenerated.
+
+This completes Yao's missing-original handoff, not Keith's independent review.
+Historical originals retain the unverified fee-netting statement; FN3/#119
+supersedes that assumption. Coverage is still2days/9US-session samples/token,
+all860 swap-gas estimates FALLBACK; final defaults correctly refuse. Raw API
+responses were not reverified. Final capture/profile, #119/#120/#44 acceptance
+and full-holdings/gas inputs remain open with Keith/Isaac. Results and reproducible
+verifier are in the linked directory; no new market/host/wallet operation.

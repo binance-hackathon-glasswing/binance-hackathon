@@ -87,15 +87,24 @@ def execution_mapping(config, profile, decimals, *, wallet):
                 native_settlement=config.get('native_trace', False) is True)
 
 
-def router_decoder(config):
-    """The swap decoder: pinned to router evidence when configured (IDEA-070), else `UnverifiedRouter`, which keeps
-    the Executor's capability gate closed (exit 2). Evidence for another router than the configured one is refused."""
+def router_decoder(config, rpc=None):
+    """The swap decoder: pinned to router evidence (IDEA-070), or an untrusted-router policy bound to `rpc` for its
+    preflight (B02-U, DEV-23), when configured; else `UnverifiedRouter`, which keeps the Executor's capability gate
+    closed (exit 2). A decoder for another router than the configured one is refused."""
+    from larp.execution_live.config import untrusted_router_settings
     from larp.execution_live.router import evidence_settings, load_evidence
     from larp.execution_live.venue import UnverifiedRouter
     settings = evidence_settings(config)
-    if settings is None:
+    untrusted = untrusted_router_settings(config)
+    if untrusted is not None:
+        from larp.execution_live.untrusted_router import load_policy
+        decoder = load_policy(*untrusted)
+        if rpc is not None:
+            decoder.bind(rpc)
+    elif settings is None:
         return UnverifiedRouter()
-    decoder = load_evidence(*settings)
+    else:
+        decoder = load_evidence(*settings)
     if decoder.router != config['router']:
         raise ContractError('Router evidence is for another router than the configured one')
     return decoder
@@ -144,10 +153,12 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     chain = ChainEvidence(Rpc(config['rpc_url'], artifacts=Artifacts(config['chain_artifact_root']),
                               source_id=config['rpc_source_id'], native_trace=config.get('native_trace', False)))
     market = MarketPort(client, wallet, quote_limits=profile)
+    decoder = router_decoder(config, rpc=chain.rpc)
+    # Untrusted router (IDEA-070 B02-U): an unsettled terminal execution withholds risk authority from every intent.
+    hold = (lambda: bool(loop._unpublished_terminal())) if getattr(decoder, 'mode', None) == 'untrusted' else None
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
-                                                       manifest_sha256=manifest_sha256))
-    decoder = router_decoder(config)
+                                                       manifest_sha256=manifest_sha256, settlement_hold=hold))
     venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,

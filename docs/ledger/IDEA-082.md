@@ -44,3 +44,22 @@ run39045756102 (PR163 comment); this session's private-mirror API read returned
 404, so that is owner-reported evidence. The hosted incident check still needs
 a bundle containing this fix and a newly acknowledged backup; historical
 PERMANENT rows stay recorded. No host or AWS changes were made by this review.
+
+
+## Verified mirror result and merge — 2026-10-18
+
+Yao Zhu dispatched the mirror build. Independently verified exact head
+`19339bdc7e72b8cf79f8d5c54d069072c49bd585` on
+[run39091506616](https://github.com/Cookiemunchrr/larp-ci-mirror/actions/runs/39091506616):
+**all four jobs SUCCESS**. Runtime: **1931 passed, 6 skipped, 2859 subtests**,
+415.24s; explicit systemd check: **5 passed, 5 subtests**, 17.00s. Terraform AWS
+19/19 and bootstrap1/1; host-bundle tests, demo and restricted Docker smoke pass.
+The six full-suite skips retain the external-corpus and separately run systemd
+scope; they are not hosted acceptance. Results posted on PR163.
+
+PR163 merged at `2b4f397` on Oct18 02:51:57 UTC. The combined PR158 head7a0ea14
+also contains the fix. A candidate bundle was downloaded and verified locally;
+its final combined CI result and release evidence are recorded in IDEA066
+PC-CI02. Nothing uploaded to AWS or installed. Hosted incident-backup ACK on the
+fixed release remains required. PC-AWS11 healthy status comes from the newer
+scheduled backup superseding the old failure; its PERMANENT row stays recorded.

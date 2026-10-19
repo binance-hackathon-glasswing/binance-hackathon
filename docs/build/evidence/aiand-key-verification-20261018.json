@@ -1,0 +1,102 @@
+{
+  "schema": "StoredProviderKeyVerification.v1",
+  "record_id": "PC-PROV03",
+  "catalogue_ssm_command_id": "daf2cf42-3bb2-4df6-8897-5f4dbf51fc60",
+  "catalogue": {
+    "aiand_value_changed_from_previous": true,
+    "checked_at_ms": 1792333812423,
+    "inference_calls": 0,
+    "keys_replaced": false,
+    "ledger_exists": false,
+    "other_secret_fields_equal_previous": true,
+    "provider_settings_changed": false,
+    "providers": {
+      "aiand": {
+        "all_wanted_present": true,
+        "endpoint": "https://api.aiand.com/v1/models",
+        "http_status": 200,
+        "method": "GET",
+        "models_found": [
+          {
+            "capabilities": [
+              "reasoning",
+              "tool_calling"
+            ],
+            "currency": "usd",
+            "id": "zai-org/glm-5.3",
+            "input_per_1m": "1.000000",
+            "max_output_tokens": 131072,
+            "output_per_1m": "4.000000",
+            "reasoning_efforts": [
+              "low",
+              "high",
+              "max"
+            ]
+          },
+          {
+            "capabilities": [
+              "reasoning",
+              "tool_calling",
+              "vision",
+              "document"
+            ],
+            "currency": "usd",
+            "id": "moonshotai/kimi-k3",
+            "input_per_1m": "3.000000",
+            "max_output_tokens": 131072,
+            "output_per_1m": "12.500000",
+            "reasoning_efforts": [
+              "low",
+              "high",
+              "max"
+            ]
+          }
+        ],
+        "response_bytes": 6931,
+        "response_sha256": "4647dd417dc7cfac7ad0d8f61ab9286e5541b88c4632a5d72af714110fa84893",
+        "stored_key_present": true,
+        "wanted_models": [
+          "moonshotai/kimi-k3",
+          "zai-org/glm-5.3"
+        ]
+      },
+      "openai": {
+        "all_wanted_present": true,
+        "endpoint": "https://api.openai.com/v1/models",
+        "http_status": 200,
+        "method": "GET",
+        "models_found": [
+          {
+            "id": "gpt-6.1-sol"
+          }
+        ],
+        "response_bytes": 20644,
+        "response_sha256": "26c643cba5c122cbbe66ffcfcad939d058f6159fcef6270fd377e5b02708067f",
+        "stored_key_present": true,
+        "wanted_models": [
+          "gpt-6.1-sol"
+        ]
+      }
+    },
+    "record_id": "PC-PROV03",
+    "secret_version_id": "bd7623d3-ffd0-4070-9bd3-3a2a1cecafa1"
+  },
+  "key_update_actor": "Yao, manually via hidden-input helper before observer check",
+  "observer_secret_writes": false,
+  "balance_ssm_command_id": "b821e9ec-0795-4914-aaf0-19ce75033187",
+  "balance": {
+    "checked_at_ms": 1792333882718,
+    "endpoint": "https://api.aiand.com/billing/balance",
+    "http_status": 403,
+    "inference_calls": 0,
+    "method": "GET",
+    "record_id": "PC-PROV03-BAL",
+    "secret_changed": false,
+    "status": "HTTP_REFUSED"
+  },
+  "balance_source_limit": "Numeric140+ remains owner-reported; authenticated catalogue confirms USD currency, balance GET403 does not establish current amount/expiry.",
+  "paid_provider_calls": 0,
+  "services_activated": false,
+  "budget_ledger_written": false,
+  "remaining": "Expiry/account funding/usage/rights; served model/effort and first-job I/O/charges/receiver ACK; PC-PREP02 and host setup."
+}

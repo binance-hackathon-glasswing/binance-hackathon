@@ -673,3 +673,173 @@ SH1/SH2/SH3/SH4/SH5's bounded handoff deliverable is prepared in [signer-handoff
 Draft config SHA256 `339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442`; canonical policy SHA256 `254f5c31b2b1bb22f706acfb95343f9e885097786d22918747eb6951c5a42033` (UTF-8 sorted compact JSON + LF). Neither is an approved installed-policy/config hash. The machine-readable review names missing facts and every null host field. No decision/trading/enforcement code changed; no new API/network, key, signing, model, AWS or deployment action occurred. Full suite and hosted acceptance not run for this static handoff. Parent44 remains open, backlog narrowed rather than removed. Actual profile/holdings/top-up/gas files remain the technical-review dependencies; Yao owns host/run/manifest assembly and source/lifetime/host gates remain separate.
 
 SH-01 delivery: [PR #161](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/161), `codex/isaac-10-signer-handoff-20261017` → integration, includes `Closes #160`; open for review, not merged. Parent #44 updated with the delegated review, exact draft hash and remaining external facts. Isaac can pass the entire handoff folder to Yao for assembly, explicitly as an unfinished draft. No direct message to another person was sent.
+
+
+## KMP-SIGN01 — Keith's #27/profile/limiter review (2026-10-18 UTC)
+
+[Review/proposal](../build/REHEARSAL_PROFILE_REVIEW_20261018.md), criteria1536af8. Confirms SL-01 option A conditionally: keep measured quote age and fresh≤15s proposal admission, persist original t0/P and finite A=min(t0+L,signing_end,applicable action-window end), require every fresh decoded route now<deadline≤A with margin. Re-quote/restart/claim cannot extend A or economic limits; mandatory/gas bounds remain finite and action-specific. Expired authority never releases an uncertain approval's nonce/allowance/reconciliation barrier. OptionB needs a source-qualified caller-controlled deadline within the same original expiry, not calldata patching.60s and kit~30s are unqualified examples, #53 synthetic spacing is not host/finality timing. No runtime/profile/lifetime change; #27 remains open for Keegan's C-OPEN-003 decision/code and Isaac/Yao qualification.
+
+Recommends first signed trade inside existing Oct21 00:00–Oct22 00:00UTC window after gates. Earlier dev window requires separate reviewed version. Proposes measured EQUAL_WEIGHT fallback if S1 inputs/weights/EXP-007/B4 remain unqualified; otherwise explicitly frozen/adopted S1. For S1 proposes DETERMINISTIC limiter (maps LLM-verified evidence, no separate exposure call), B4 producer still needed; this is not a deterministic assessor. MODEL remains unqualified until separate pinned call/audit/budget/expiry tests. POLICY-HOLD recommendation retains existing mandatory-sale HALT pending a reviewed bounded alternative. Isaac confirms profile/window/O6/POLICY-HOLD, Keegan owns B4/finite-authority implementation; no adoption inferred. Keith's #27 comment supplies the review; final Oct20 measured profile/cap proof remains open.
+
+## SP-CAPS / SP-D1..5 — supplied proposal decisions and draft gas (2026-10-18)
+
+SP-01 records Oct21 existing-window choice, conditional measured EQUAL_WEIGHT
+rehearsal fallback, DETERMINISTIC S1 limiter and bounded per-symbol POLICY-HOLD.
+Original IDEA075 O6 assessor adoption remains separate; no deterministic assessor
+is adopted by selecting that limiter. Support conditional #27 OptionA; finite
+L/margins/implementation remain Keegan's, with real router/Yao latency evidence.
+Execution example ceilings1,200,000 gas×160,000,000wei=192,000,000,000,000wei
+(<candidate200,000,000,000,000wei per tx). Actual gas remains unmeasured; aggregate
+action budget/final measured profile/fresh full holdings/native quote and exact
+policy approval hashes remain unavailable. #44 stays open; no install approval.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+### SA-01 — offline signer installation-candidate assembly (2026-10-19; prospective)
+
+Isaac requests the remaining feasible preparation after model/review branches
+merged. PR133 now includes integration8c1e6df through normal merge cabc159; two
+documentation conflicts preserve current evidence and the merged IDEA083 status.
+Live #27/#44 remain undecided/unqualified; no new source/profile/host inputs were
+supplied. The existing signer draft remains intentionally unusable.
+
+Implement a separate offline assembler using the existing GateBCapsInputs.v1
+numeric reviewer, rather than asking an operator to transcribe six fields and
+policy amounts by hand. Pass criteria, before execution:
+
+1. Re-run numeric coverage against hash-pinned profile, holdings, execution and
+   policy bytes plus fresh quotes for all five buy/sell pairs and native top-up.
+   Missing/changed pins, uncovered holdings/fees or stale/incomplete quotes refuse.
+2. Refuse the pending cap marker including surrounding whitespace; load actual
+   pinned router evidence through the production decoder and require matching
+   router/spender. Missing/changed/invalid/wrong-router evidence refuses.
+3. Copy exact execution run/build/wallet/mode and IAM DB/CA/evidence bindings;
+   change only the dedicated DB role to larp_signer and use wallet.key credential
+   delivery. Require the pinned local CA. Refuse local DSN or incomplete identity;
+   never read a wallet key, DSN, AWS client, database or network.
+4. Validate the generated candidate with production signer config/decoder code;
+   record exact config/input hashes. Local assembly success never establishes
+   owner/source approval, #27 resolution, manifest/host or Gate B acceptance:
+   ready_to_install/signing_enabled/gate_b_accepted remain false.
+5. Write only a new external directory, mode0700/files0600, without overwrites or
+   symlink replacement. Refusal emits no config and no private input/error values.
+6. Push tests/criteria before RED, implementation before GREEN. Run focused
+   assembly/numeric/startup/policy/router tests. All external evidence in tests is
+   synthetic. No AWS action, wallet key placement, signing or real provider call.
+
+Actual preparation remains blocked on the real source-reviewed evidence,
+selected measured profile/fresh holdings/quotes, exact #44 acceptance, #27
+policy/code/timing and coordinator/operator run/release/DB/CA/session inputs.
+An arbitrary decided cap_basis string is an operator assertion, not proof of
+Isaac's approval. The tool must never manufacture approval or replace these gates.
+
+SA-01 results at pushed runtime **a324fb71bb26fcf863315a4dfb5e9ee7202f530e**:
+
+- Initial RED17bd49e: collection refuses the absent assembly module, as expected.
+  No candidate assembler existed. Log: /private/tmp/larp-signer-assembly-red-20261019.log.
+- Initial GREEN8fe5175:192 tests/349 subtests PASS,0 skips,22.15s with PostgreSQL.
+  Additional filesystem REDa34ccab:1 failed/10 passed/7 subtests; dangling output
+  symlinks were followed before resolution. Fixed before delivery by checking
+  symlink identity before resolving. No runtime signer behavior was changed.
+- Final: **194 passed,349 subtests,0 skipped**,21.66s. Pinned Python3.12.14 and
+  PostgreSQL14.24 disposable loopback container. Suite: tests/signer plus
+  execution tests caps_review, signer_caps_proposal, router_decoder/router_review/
+  router_wiring, section_c_signed_state, signing_request; runtime tests
+  service_configs, signed_models and model_routing_preparation.
+  Log: /private/tmp/larp-signer-assembly-final-20261019.log.
+- Eleven new assembler tests exercise exact bindings/hashes, independent signer
+  role and local validation, numeric/refreshed quote refusals, pending caps,
+  changed CA/router/pins, incomplete source evidence, local DSN and unsafe run
+  refusal, private non-overwrite/symlink/checkout boundaries, partial-write cleanup
+  and private-error redaction. Boundary mocks assert no DB/AWS/key/network calls.
+  Existing policy malicious-intent, epoch/release authority and startup tests pass.
+
+Real candidate assembly **NOT_RUN_MISSING_INPUTS**. No numeric cap approval,
+source provenance/replay, #27 decision/code, host/release or Gate B claim follows
+from these synthetic tests. No AWS, external RPC/model/receiver, wallet-key,
+funding or broadcast operation. The original draft is unchanged; the new command
+and precise owner dependencies are in SIGNER_INSTALLATION_PREPARATION.md.
+
+Delivery: [PR184](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/184),
+stacked on PR133, open for review. CI39210809471 runtime job117923526599 ran zero
+steps; its annotation confirms account payments/spending limit (#98), so no
+remote CI PASS is claimed. PR183 separately qualifies the merged IDEA083 release
+and explicitly leaves signer gates open. PR133 records current owner requests
+under IDEA-066 PC-SIGNER-ASSEMBLY01. No installation or real assembly is claimed.
+
+### SA-RV01 — independent PR184 review criteria (2026-10-19)
+
+Continue the user-requested PR133 work by reviewing the delivered offline
+assembler before merging it. Source review checks exact numeric/config pins,
+independent signer role and decoder/CA validation, private exclusive outputs,
+redacted failures, no key/DB/network boundary calls and permanently false
+installation/signing/Gate B flags. No new source, numeric approval or #27 timing
+is inferred. Pass criteria: assembly, numeric coverage, signer policy/startup,
+router and signed-model preparation regressions pass with disposable PostgreSQL;
+then reconcile the tracker with qualified release183 and require full combined
+Linux/mirror acceptance. Keep real assembly NOT_RUN_MISSING_INPUTS.
+
+SA-RV01 independent source review and focused verification **PASS** at468d8e1
+(application/tests identical to PR184c97d651). No code defect or weakened gate
+was found. Exact pinned Python3.12.14 / disposable PostgreSQL14.24 suite:
+**194 passed,349 subtests,0 skips**,49.19s. Tested assembly, numeric coverage,
+all signer tests, router decoder/review/wiring, signed state/requests, service
+configuration and signed/model-routing preparation. Log retained in this
+workspace at /tmp/pr184-review.log. Real assembly remains NOT_RUN_MISSING_INPUTS;
+no owner approval, source/provider/host qualification, key or signing action.
+The result-only follow-up changes no application or test bytes.
+
+
+### SA-02 — current signer input-readiness handoff (2026-10-19, prospective)
+
+User asks for all available work toward installation. C05 review is separately
+submitted in PR192, not merged/independently accepted. Prepare a current exact
+input/owner handoff using the existing SA-01 assembler, never another template
+or fabricated final signer.json. Base75e5d7f includes current PR133 e169fa1 and
+C05; actual source/native/#27/#44/host inputs are still not supplied here.
+
+Pass criteria before verification: preserve historical draft/review bytes; pin
+its hash and all six null fields; check current blocker issues and local input
+contract; show distinct remaining inputs/owners and production assembly/check
+commands. Run the already pushed production validate_config against the actual
+historical draft, expecting refusal without DB/key/network access. Verify the
+readiness JSON, local links/anchors, old draft hash, changed-file scope and
+renderer. No candidate generated without current approved inputs; all ready/
+signing/GateB/installation flags remain false. Publish a separate stacked PR
+and update PR133, with actual missing owner deliverables rather than repeated
+public source/RPC probes or requests for secrets. No runtime implementation or
+host/provider/trading acceptance is claimed by this handoff.
+
+
+SA-02 results at pushed3a4727a: production `validate_config` refuses the actual
+historical draft for missing run_id/build_id before database/key access. This is
+an expected refusal, not a signer-ready PASS. Static inventory confirms exactly
+six null bindings, unchanged config SHA339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442,
+pending caps, and installation/signing/GateB/candidate flags false. Six added
+local links/anchors, JSON, renderer and whitespace PASS; application/registers/
+old draft/review unchanged. No new runtime tests were needed for this doc/report
+slice; C05's38-test check is separate at1769b30, not new SA-02 qualification.
+No actual caps-input packet was supplied; assembly/release check NOT_RUN.
+
+Fresh GitHub issue inspection: #27/#44/#30/#119/#138 remain OPEN; #27's latest
+comment is still the conditional OptionA proposal with60s illustrative, #44
+still needs actual team cap values, and no source/RPC packet was supplied here.
+No repeated failed public probes, new account, funding, paid call or AWS/key
+operation was performed. Required inputs and actor sequence are in SA-02;
+private credentials must not be posted as a response. No policy, source review,
+provider right or exact-release acceptance can be replaced by numeric coverage.
+
+
+SA-02 delivery: [PR193](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/193),
+branch codex/isaac-signer-input-handoff-20261019, stacked on C05 PR192
+(head75e5d7f; parent PR133 e169fa1). Keegan independently reviews both; no merge
+or final config approval is claimed. PR133's description now links both slices,
+marks the review/handoff delivered and retains the input/installation blockers.
+
+Org CI39261664104 runtime job118090596312 atf6628e9 has zero steps and its
+annotation explicitly reports failed account payments/spending limit. This is
+not a runtime test failure or qualification PASS; no billing/AWS setting was
+changed. Static checks6 added local links/anchors, JSON/hash/status flags,
+renderer and whitespace PASS. No synthetic installable candidate was created.
+All changes are committed/pushed in the two review branches; no unpushed work,
+wallet/key/provider/receiver access or new artifacts in the IDE checkout.

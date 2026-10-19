@@ -2,6 +2,11 @@
 
 This repo builds LARP, our agent for the Binance Agentic AI Challenge.
 
+## Canonical branch and noticeboard
+- `codex/system-testing-20261012` is the latest shared integration build. Fetch it and base all new implementation branches/PRs on it. Do not base implementation on PR133 or another agent's historical worktree.
+- PR133 stays OPEN solely as a noticeboard for links, ownership, progress and blockers. No application/config/test/release changes belong on its branch.
+- Canonical current status: `docs/build/CURRENT_STATUS.md`; live remaining work: `docs/INCOMPLETE_WORK.md`. Historical release/host receipts apply only to their recorded commits. Consolidation evidence: `docs/build/CONSOLIDATION_20261019.md`.
+
 ## Read in this order
 1. `docs/skill/SKILL.md`: official facts, the never-do list, hard guardrails and open questions. Follow its reading rules (§0).
 2. `docs/LEDGER.md`: the index of ideas and experiments. Read the table only.
