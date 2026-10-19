@@ -13,7 +13,8 @@ measures retrieval/comparison value on designed fixtures and is NOT a test of LL
 `model_vs_deterministic` runs both arms on identical inputs and budgets, only with an authorised
 no-additional-cost model; otherwise NOT_RUN. A scripted fake exercises the harness only.
 
-Thresholds are read from config/intelligence/eval_thresholds.v2.json, frozen before any run.
+Thresholds are read from config/intelligence/eval_thresholds.v3.json (IDEA-083 budget parity).
+The historical v1/v2 files remain unchanged; v3 changes only the elapsed-time ceiling.
 Results describe the synthetic pack only: they are not evidence about real filings, model
 quality on live data or trading performance.
 
@@ -220,7 +221,7 @@ def _check(name, value, threshold, kind):
     return {"metric": name, "value": value, "threshold": threshold, "pass": v >= t if kind == "min" else v <= t}
 
 
-def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v2.json", model_arm: dict | None = None) -> dict:
+def evaluate(thresholds_path=CONFIG_DIR / "eval_thresholds.v3.json", model_arm: dict | None = None) -> dict:
     raw = thresholds_path.read_bytes()
     thresholds = json.loads(raw.decode("utf-8"))
     runs = {"baseline": [], "agent": []}

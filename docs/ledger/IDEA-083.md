@@ -422,3 +422,29 @@ fixtures remain comparable; the research evaluation entry point now requests
 config.max_deadline_ms (180s), matching the runtime request builder. The six-call
 cap and provider settings stay unchanged. No research quality/affordability
 claim follows from these synthetic acceptance checks.
+
+AB-IMPL01 initial full regression at3872856:2068 passed,9 expected platform/
+external skips,3265 subtests,7 failures (274.72s). Failures identify old60s
+boundary/reason expectations, serial-review preparation expectations, the copied
+strategy producer fixture, and synthetic evaluation still using v2's frozen60s
+ceiling and70s timeout script. Preserve v1/v2 threshold files unchanged; freeze
+v3 before its first run, copying every quality threshold and changing only the
+elapsed ceiling to180000 under B9/DEV-22. The synthetic timeout witness becomes
+190s so it still exceeds the declared budget. This is a budget-parity change,
+not a relaxation of precision, abstention or quality criteria. Re-capture the
+strategy fixture's request/result from the reviewed golden, binding its producer
+commit to f3cf851; its semantic fields remain unchanged as above. Update exact
+boundary (180001), hard-deadline reason and two-reviewer assertions accordingly.
+
+Additional pushed acceptance at4ad4044:11 assessment tests/257 subtests PASS;
+18 runtime tests/5 subtests PASS, including both real reviewer workers blocked
+while the PostgreSQL-backed mandatory-reduction planner, CLOCK HALT and
+reconciliation continue; restart retains the result without another paid call.
+The composite substitute uses actual stage tasks/transports, SQLite accounting,
+artifact checks, concurrent audit fsync, PostgreSQL guard/heartbeat and the real
+Service watchdog, with 1:100 timing and explicit bounded balance/market/day-roll/
+quote delays. Both unsigned synchronous and signed-background cycles complete
+inside the scaled300s target with a scaled600s watchdog; no watchdog increase.
+This measures the local injected boundary contract, not production I/O maxima
+or actual host latency. Host measurement and exact Linux/release acceptance
+remain Yao/Keegan gates.

@@ -279,7 +279,7 @@ SCRIPTS = {
     "trade_field": [{"latency_ms": 1200, "output": script_trade_field}],
     "fabricated_claim": [{"latency_ms": 1500, "output": script_fabricated_claim}],
     "consensus_claim": [{"latency_ms": 1500, "output": script_consensus_claim}],
-    "timeout": [{"latency_ms": 70_000, "output": {"action": "FINISH", "claims": [], "notes": "late"}}],
+    "timeout": [{"latency_ms": 190_000, "output": {"action": "FINISH", "claims": [], "notes": "late"}}],
 }
 
 
