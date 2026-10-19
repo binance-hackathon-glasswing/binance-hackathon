@@ -33,9 +33,12 @@ def intent_key(run_id, wallet, intent_id):
 class RunAuthorization:
     """`LiveGuards.authorization`: run facts for one intent, from the journal at the moment of the snapshot."""
 
-    def __init__(self, store, *, run_id, build_id, manifest_sha256=None):
+    def __init__(self, store, *, run_id, build_id, manifest_sha256=None, settlement_hold=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
         self.manifest_sha256 = manifest_sha256
+        # Untrusted-router mode (IDEA-070 B02-U): True while a terminal execution has no stored final fact, e.g. a
+        # fill settlement refused below its minimum. No new signature until it is resolved.
+        self.settlement_hold = settlement_hold
 
     def facts(self, intent, now_s):
         from larp.runtime.coordinator import halt_reasons
@@ -59,6 +62,8 @@ class RunAuthorization:
         facts['risk_valid'] = not run['quarantined'] and halts.permits(projection, intent.round_id, intent.intent_id)
         from larp.strategy.execution_bounds import permitted
         facts['risk_valid'] = facts['risk_valid'] and permitted(projection, intent, now_s * 1000)
+        if facts['risk_valid'] and self.settlement_hold is not None and self.settlement_hold() is not False:
+            facts['risk_valid'] = False
         last = projection.get('last_decision_ms')
         facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
         record = projection.get('round_records', {}).get(intent.round_id)

@@ -692,3 +692,16 @@ Adversarial review of `claude/d-dn-10-clock-clear` after merging `codex/system-t
   - The CLOCK HALT event and its projection still carry `latched: true`. Nothing reads that field.
 - **Full suite** (merged head `bb9dc7a`, PostgreSQL 16.15, Python 3.12.3, root): **1774 passed, 10 skipped, 2607 subtests, 0 failed**. Against the PR body's 1763/7, that is +13 tests from the merged base and +1 from CKR-2. The 3 extra skips are the bubblewrap cases, because `bwrap` is not installed in this container. `git diff --check` is clean.
 - **Still open:** the Gate A host check on `primary` (CKR-3).
+
+
+### C05-RV01 — delegated Isaac review, 2026-10-19
+
+[PC-OPS01 dispositions](../build/OPERATIONS_DECISIONS_20261019.md#c05-rv01--isaacs-review-and-dispositions-2026-10-19)
+record ACCEPT for D-DN-01/07/11 candidate risk choices and D-DN-04 requirements,
+under the user's explicit delegation to the assistant. No illustrative number,
+new runtime path, RTO/RPO, host acceptance, #27/#44 or installation is approved.
+Keegan independent review/D-05/DEV18 recording, D-DN-04 code, measurements and
+final numeric decisions remain open. Original dated findings above are retained;
+the old incident-backup rate limit does not bound all restart/journal/disk growth.
+DEV18 remains OPEN/DRAFT pending Keegan's scope decision. Criteria/results:
+IDEA-066 C05-RV01. C05 is partial, not wholly complete.

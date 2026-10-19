@@ -2250,3 +2250,184 @@ This session's delete push was refused (HTTP 403), so they still exist; Keegan
 deletes them in GitHub. Correction: the earlier option text for #49 cited the
 Oct19 binding check. That check covered the current non-CI `ea25b52` host
 build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.
+
+## PC-YAO-NB01 — remaining local Yao work (2026-10-19 SGT; prospective)
+
+Scope: user requests the non-blocked work in Yao's PR133 section and a review PR.
+Base: PR133 `aca1b7c`. Complete the local PC-LABEL02-INJ01 trust review and
+recover the original interim quote-summary handoff (IDEA-063 YP-01). Host,
+account, funding, source-provider and signer actions retain their prerequisites.
+
+Pass criteria, before running regressions:
+
+1. Reproduce the instruction flag on the original hash-verified saved public
+   filing, without committing the private packet, labels or original outputs.
+2. Exercise the current capped v3 routing file and pinned stage prompts offline
+   with synthetic transports: benign link text remains untrusted/incomplete,
+   real instruction examples remain flagged, and an attempted URL-fetch tool is
+   refused. Preserve the detector and historical outputs. This tests harness
+   composition, not live-model behavior, T01, M9 or source qualification.
+3. Recover the old summary/report/metadata bytes; verify transfer checksums,
+   summary/capture identities and declared coverage. Distinguish reported capture
+   provenance from a new raw-capture reproduction. Do not regenerate a profile,
+   infer fee netting or accept fallback gas as measured gas.
+4. Publish only sanitized evidence, verification code/tests and review findings;
+   update the checklist/backlog to retain exact peer/host/input dependencies.
+   No whole readiness gate closes. Keegan owns independent review.
+
+### PC-YAO-NB01 results / PC-LABEL02-INJ01-R1 — 2026-10-19 SGT
+
+Criteria committed/pushed `47fa8f9`; tests/original handoff pushed `35f42b9` before
+execution. Original saved public HTML hash `74b6088a…977c3` verified. All5 new
+trust tests/13 subtests pass, including the private public-source fixture in a
+synthetic issuer/time context and mocked v3 transports. Exact capped v3 routing,
+current shadow config and primary/review prompt composition tested. All3 stages
+retain the benign-link instruction flag/incomplete coverage;10 instruction
+examples remain flagged, URL tool destinations refused and ordinary text clean.
+No detector/prompt/runtime change or historical-output/label change. Intent:
+retain the existing conservative trust/coverage behavior, pending Keegan review.
+
+Full intelligence suite on macOS arm64/Python3.12.14:425 passed,2 skipped,
+1394 subtests,13.39s. The private-source fixture passes in the separate5-test
+run. Two loopback-bind sandbox failures in the first run were environment-only;
+the same full suite passed with loopback access. No Linux/release/host or live
+provider/semantic-quality qualification is claimed. YP-01 recovers/reproduces the
+old summary/capture provenance (IDEA-063), completing Yao's original-file export.
+
+Review findings, commands, exact remaining owners and pinned receipts:
+[`YAO_NONBLOCKING_REVIEW_20261019.md`](../build/YAO_NONBLOCKING_REVIEW_20261019.md).
+Remaining: Keegan independent INJ01 trust review, Keith original-summary/final
+measurement review, and existing private-input/host/source/funding/signer gates.
+No whole GAP closes; T01/M9 and source/live-model qualification remain open.
+
+PC-YAO-NB01 delivery: [PR191](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/191)
+targets PR133, open/unmerged; Keegan4 review requested. GitHub reports MERGEABLE.
+Org Actions39251649314 at `b3c2138` ran no tests: runtime annotation explicitly
+says recent account payments failed or the spending limit needs increasing.
+This is an account CI block, not new test evidence. Local results above stand;
+no mirror/release/host acceptance is inferred. All task changes are pushed.
+Pre-existing untracked `Claude outputs/` is untouched; no session-clean/main
+handoff assertion is made. Peer reviews and listed external/host gates remain.
+
+
+## C05-RV01 — Isaac's delegated operations review (2026-10-19, prospective)
+
+The user asks the assistant to complete available prerequisites toward an
+installable signer.json on Isaac's behalf. Review PC-OPS01 at sourceaa97b8b:
+D-DN-01/07/11 risk dispositions and D-DN-04 requirements are executable now;
+D-DN-04/06/08 numeric values, source/caps and actual host acceptance are not.
+This is Isaac's delegated review, never Keegan's independent acceptance.
+
+Pass criteria before validation: source-check supervision/unit restart behavior,
+restore quarantine, signing fences and the existing delivery-deadline guard;
+record exact proposal revision, disposition, reason and residual risk; do not
+adopt illustrative2h/600s/memory/authority values or change runtime/configuration.
+Existing supervision and anchor/restore tests must pass against disposable local
+PostgreSQL, with no skips. Verify new documentation links, unchanged release JSON
+and signer draft, preserved unresolved backlog items and clean whitespace.
+Push the review before validation. Keep DEV18 DRAFT/OPEN until Keegan records
+the reviewed scope decision, and keep C05 partial for measurements/code/host
+qualification. Deliver a separate PR and update PR133. No AWS, real key/provider,
+signing, funding, paid inference or external log receiver operation is included.
+
+
+### C05-RV01 results — source1769b30, 2026-10-19
+
+Existing supervision, anchor/role/restore, register/version-event and live
+OPEN/DRAFT activation-refusal suites: **38 tests PASS,0 skips**,10.058s,
+Python3.12.14/pinned test environment with disposable loopback PostgreSQL14.24
+(127.0.0.1:55452/larp_test). These verify existing same-build restart incidents,
+exit/refusal behavior, HALT/signing fences, integrity/restore quarantine, roles,
+anchors, replay and release-register gates. They do not test a future D-DN-04
+age guard or claim OS/real-host/backup delivery/availability qualification.
+Renderer `--check` PASS. Static new-link/anchor and whitespace checks PASS;
+application/config/deploy/tests/tools/migrations/official/proposal/vendor and
+historical signer.json/review unchanged fromaa97b8b. Historical draft still has
+six unset bindings and pending caps, ready_to_install/signing_enabled false.
+
+Dispositions and residual risks are in PC-OPS01 C05-RV01. Only C05's review
+slice is complete: numeric settings, D-DN-04 code, Keegan independent review/
+DEV18 recording and actual measurements/host acceptance remain open. No whole
+backlog item was fully completed or removed. No AWS, real provider/key/wallet,
+funding, signing, inference, installation or external receiver was accessed.
+
+
+C05 delivery: [PR192](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/192),
+branch codex/isaac-c05-signer-prereqs-20261019, independent Keegan review pending.
+Normal merge5bd3c6f preserves concurrent parente169fa1/PR189 balance-health work;
+IQ/C05 does not qualify that process/provider or transfer balance-only acceptance
+to native tracing. Static15-link/doc-only checks pass against parente169fa1.
+Org CI39261004131 runtime job118088305654 at2cb3d64 executed zero steps;
+annotation confirms failed account payments/spending limit, despite #98 having
+been closed not-planned. No CI or real-host PASS is claimed. Local38-test results
+remain scoped to1769b30. No branch rewrite, secret or AWS action occurred.
+
+
+## CONS-01 — consolidate canonical integration (2026-10-19, prospective)
+
+User explicitly authorizes reviewing/merging all open PRs except133 into
+codex/system-testing-20261012, closing outdated/duplicate PR work and keeping133
+solely as noticeboard. Inventory139/172/191/192/193/194 and frozen heads, review
+limits, acceptance criteria and open owners are in
+[CONS-01](../build/CONSOLIDATION_20261019.md). Criteria are committed/pushed before
+combined code executes. No AWS/key/account/funding/signing/paid-model/receiver
+operation or deployment is authorized by this consolidation.
+
+Normal merge commits retain previously reviewed parente169fa1 and all six PR
+histories. Conflict resolution retains current backlog wording, both append-only
+ledger workstreams and original evidence. An intermediate source-evidence merge
+resolution truncated the backlog/index; the following additive merge restored
+both complete files frome169fa1 and retained the funding handoff. Verification
+must compare the full original backlog ID set and index IDs; no unresolved item
+is intentionally deleted. No intermediate combination was executed or deployed.
+PR133 noticeboard-only commit31182ce is deliberately excluded from canonical
+ancestry so133 remains OPEN; all prior implementation history is retained.
+
+PR194 is kept as an opt-in implementation with explicit unverified recipient/
+minimum/deadline enforcement, not a proven loss bound or approved policy. Full
+source verification is one alternative. The current config has no untrusted
+policy selected. Its signed/live adoption, #27/#44, exact operator observations,
+allowance/abnormal-fill/native support and host qualification remain open.
+
+
+### CONS-01 validation and disposition — runtime sourcebd4dbee
+
+Combined Linux/Python3.12.15/PostgreSQL14.24 full suite:2162 passed/7 skips/
+3628 subtests,154.04s; separate real-systemd5 tests/5 subtests PASS9.57s.
+Production Docker build/offline read-only/no-network/no-capabilities smoke and
+runtime demo PASS. The full suite's five systemd skips are exercised separately;
+two external fixture cases remain genuinely unrun. Environment setup failures
+(2157/5/7 initial run, read-only synthetic activation and /proc mount restrictions)
+were corrected only in disposable Docker runner setup, then full suite rerun;
+production sandbox/source unchanged. No new Terraform run: source matches the
+starting branch exactly; no host bundle/release or deployment is published.
+
+Source/merge review retains all six frozen PR heads and15 original evidence
+files byte-identically; all62 old backlog GAP IDs and79 index IDs remain.
+Renderer, exact interim-summary provenance and new local links/whitespace pass.
+Machine receipt: [CONS-01 evidence](../build/evidence/consolidation-20261019.json).
+No evidence/ledger/raw capture is rewritten, no policy is enabled, no real
+provider/model/receiver or AWS/key/funding/signing operation occurs. #139/#172
+remain evidence/handoffs; actual source/funding acceptance stays in backlog.
+#191/#192/#193 preserve delivered review/provenance/input work; #194 is gated,
+without a real untrusted policy or proven loss guarantee/adoption.
+
+Org CI39271681737 runtime118125327031 atbd4dbee has zero steps; check annotation
+states failed account payments/spending limit. No remote CI PASS is inferred.
+PR195 is the canonical promotion PR; all original open lanes except133 are
+absorbed after merge. README/AGENTS/CURRENT_STATUS identify one base and backlog.
+PR133 keeps only noticeboard status/links and remains OPEN. Original branches
+and local worktrees stay historical, avoiding deletion of other agents' work.
+Final commit/disposition is externally recorded by PR195 and the PR133 board.
+
+
+CONS-01 promotion complete: PR195 merged atdfabdea27b2125daaee23b7a2b997d29adc2171d
+(2026-10-19 14:55:15UTC); GitHub independently reports139/172/191/192/193/194
+MERGED at14:55:17–18UTC. Only PR133 remains OPEN as noticeboard. All frozen heads
+are canonical ancestors; noticeboard-only31182ce is excluded. The shared IDE
+checkout is now codex/system-testing-20261012, fast-forwarded without reading or
+modifying .env/private keys. A final documentation record leaves runtime/config/
+tests/tools/migrations/workflows identical to testedbd4dbee. Docker test
+containers/databases/network and the empty synthetic activation directory have
+been removed. Full external/host/adoption/installation tasks and owners remain
+in CURRENT_STATUS/backlog; historical branches/worktrees are retained.

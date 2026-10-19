@@ -1,5 +1,7 @@
 # Pre-trading checklist (2026-10-17)
 
+**CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
+
 ## Remaining-work implementation — PC-S1WIRE01 / NT-RV02
 
 Class2-only S1 evidence producer, incomplete-input expiry protection, frozen
@@ -14,7 +16,8 @@ all actual host/session/adoption gates remain open.
 
 - [x] **Keegan:** A04 next-build database procedure delivered: [fresh trial DB on existing RDS](NEXT_TRIAL_DATABASE_20261019.md), preserving old runs, the shared budget ledger and fixed cutoff. Actual DB/host execution remains the approved operator's uncompleted task.
 - [x] **Keegan:** A06 operations-proposal slice delivered: [decision packet](OPERATIONS_DECISIONS_20261019.md), covering D-DN-01/04/06/07/08/11 and a DEV20 recommendation. O2 settled and DEV-20 omission decided 2026-10-19 (Keegan); Isaac's operations decisions remain.
-- [ ] **Isaac:** C05 can start now for D-DN-01/07/11 risk choices and D-DN-04 requirements. Review the packet and record accept/reject/change with revision and reason. Numeric delivery/watchdog/memory settings still need measurements; no policy is adopted by this assignment.
+- [x] **Isaac — C05 review slice:** delegated D-DN-01/07/11 risk dispositions and D-DN-04 requirements delivered in [C05-RV01](OPERATIONS_DECISIONS_20261019.md#c05-rv01--isaacs-review-and-dispositions-2026-10-19). Keegan independent review/scope recording remains.
+- [ ] **Isaac — C05 remaining:** exact delivery-age/watchdog/memory settings after operator measurements and Keith/Keegan analysis; D-DN-04 implementation/review and actual-host qualification remain open. No numeric setting, signer cap, lifetime or installation approval is inferred.
 
 ## Isaac — ready work first (PC-ISAAC-QUEUE01, 2026-10-19)
 
@@ -24,7 +27,7 @@ AWS, fresh holdings or a signer session. IQ01 and IQ02 are delivered and indepen
 Keegan retains final acceptance/activation ownership.
 If a deliverable already exists, link and review it rather than create a duplicate.
 
-- [x] **Isaac — IQ01: mandatory activation-blocker matrix delivered (GAP-05 review pending).**
+- [x] **Isaac — IQ01: mandatory activation-blocker matrix delivered/accepted (GAP-05 closed).**
   [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19)
   maps all22 DR requirements to current controls, evidence and remaining owners;
   mandatory controls, optional scope and staged acceptance are explicit. Static
@@ -32,7 +35,7 @@ If a deliverable already exists, link and review it rather than create a duplica
 - [x] **Isaac — IQ02: declaration consistency audit reviewed (GAP-02/GAP-62 decisions/evidence pending).**
   [Discrepancy table](../skill/larp/plan.md#iq02-declaration-consistency-audit-2026-10-19)
   compares submitted claims, dated decisions, implementation and release registers;
-  proven wording drift is repaired. All22 deviations remain DRAFT; DEV18/20 OPEN.
+  proven wording drift is repaired. All23 deviations remain DRAFT; DEV18 OPEN, DEV20 omission decided, DEV23 untrusted-mode adoption still pending.
   Exact S1 profile/parameters, standby/recovery/planner policy, provider rights,
   measured and actual-host evidence remain with their named owners. IQ02-RV01 accepts the audit;
   final register/activation is not completed by this audit. Results: IDEA-066 IQ02.
@@ -40,7 +43,7 @@ If a deliverable already exists, link and review it rather than create a duplica
 
 **Blocked queue, resume per ready packet:** B03 route checks after source+review;
 B05 after private tracing input/suitable transaction; B07 after B06-pre;
-B09 after measured cap review; C05 after its proposals/measurements; C08 after
+B09 after measured cap review; C05 numeric settings after measurements (review slice delivered); C08 after
 the approved signer session. These remain blocked until their own inputs arrive.
 IQ01/IQ02 support final acceptance preparation; completing them does not unblock
 signing or satisfy missing source, funding, host, timing or cap evidence.
@@ -132,7 +135,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Item | Owner | Status, evidence or blocker |
 |---|---|---|
 | Send Isaac the quote artifacts collected so far; keep the capture running | Keith | **Handoff prepared/published:** KMP-QUOTE01 links1,021 records/26 latest raw artifacts, exact hashes/coverage and #118 handoff. Unchanged runner resumed Oct18 06:54:40Z through Oct20 00:00Z; future health/final coverage remain open |
-| Record the interim profile's coverage settings and capture/profile hashes in IDEA-063 | Keith | **Partial:** KMP-QUOTE01 records new snapshot hashes and default-summary refusal (9 US-session samples/token), plus the older two-day/nine-sample profile's full reported SHA. Its original capture hash/full summary bytes still need Yao's export; no reconstruction or final-profile acceptance |
+| Record the interim profile's coverage settings and capture/profile hashes in IDEA-063 | Keith | **Yao export complete (YP-01):** [original summary/report/metadata](evidence/interim-provenance-20261019/README.md), four checksums and exact 516-record snapshot prefixes verified; summary reproduced, actual retained profile SHA matches. Keith reviews the supplied originals/verification. Still interim 2 days/9 US-session samples; final defaults refuse. No final-profile/fee/gas acceptance |
 | Comment on #27's signing-lifetime options | Keith | **Proposal supplied:** KMP-SIGN01 / #27 comment recommends SL-01 option A conditionally; keep fresh ≤15s admission and measured quote age, persist finite authority across re-quotes/restarts. No unmeasured60s adoption; Keegan decides/implements C-OPEN-003 |
 | Oct 19 proposals: first-trade window, profile (`EQUAL_WEIGHT` or S1), POLICY-HOLD | Keith | **Proposal supplied:** KMP-SIGN01 recommends existing Oct21–22 window, measured EQUAL_WEIGHT fallback if S1 prerequisites remain unqualified, S1 DETERMINISTIC limiter with B4 required, and retaining the current bounded per-symbol hold. Isaac decisions now recorded SP-D1..4; original O6 assessor adoption remains separate |
 | Capture AIand/OpenAI terms; check current AIand funding | Keith | **Terms captured/review recorded:** KMP-RIGHTS01 register + dated hash manifest; account overrides and signed/scored financial-policy compatibility await Keegan review. Funding remains NOT_MEASURED: AIand140+ units/current balance and actual usage/charges need Yao export; no affordability approval |
@@ -212,7 +215,7 @@ These points remain separate. PR171/173 are now merged; PR139/172 remain draft. 
   Shortcut for the database fields: `python tools/deploy/render_host_configs.py --terraform-output /tmp/tf.json --wallet 0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479 --out deploy/activation/development --rds-ca-sha256 <verified BUNDLE.env rds_ca_sha256>` (DEPLOYMENT_DAY step 7) fills them and lists what is still unset; replace its example `signing_policy` with Isaac's decided one. Then record the final file's SHA-256 (not the draft's `339c4202…`), install it as `/etc/larp/signer.json` and re-bind with `--service-config signer=/etc/larp/signer.json`.
 - [ ] **Yao Zhu:** after #44's approval and Keegan's review of #143 and #149, apply the IDEA-080 Terraform change (built 2026-10-17 in #149: temporary SSM endpoints, off by default, `terraform test` 19 passed; planned, not applied), provision the signer, install the decided `/etc/larp/signer.json`, run the signer route check (SA4) and give Isaac a session for the key. After the key is placed, tear the endpoints down and record SA5.
 - [ ] **Isaac:** after that, place the key file on the signer host only (`/etc/larp/signer/wallet.key`, root, `0600`) (DR-03).
-- [ ] **Isaac:** swap about 2 USDT more in MetaMask and record the fresh opening balance afterwards (#106). The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is recorded in merged #151; parent #106 retains the remaining funding/capture.
+- [ ] **Isaac:** after actual no-first-agent-trade/in-flight reconciliation, complete the existing about2USDT remaining MetaMask funding and supply its hash (#106). FG-02's [public preflight/handoff](DEV_GAS_FUNDING_HANDOFF_20261018.md) records98USDT/0.002694498869362886BNB and nonces2/2/2; no funding was performed. Yao takes the actual fresh opening capture after the last seed. The record of the first 2 USDT swap (0.002685 BNB received, 2026-10-16 08:27:44 UTC) is recorded in merged #151; parent #106 retains the remaining funding/capture.
 - [ ] **Keith:** propose the BNB floor and top-up size (G-28) from the measured gas (#30).
 - [ ] **Isaac:** show BNB tracking (`native_trace`) works on a real provider, and accept or change Keith's floor and top-up size (#30).
 
@@ -283,7 +286,8 @@ Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch 
 - [x] **Yao Zhu:** prepare/hash retrospective deterministic blind packet (PC-LABEL02): four filings/five documents, all 43 audit requests matched, ten source artifacts verified; private source/answer separation checked. This is separate from v3 M9.
 - [x] **Yao Zhu:** return two AI readings for PC-LABEL02 (R1): both original files retained; all31 exact source/hash/quote spans validated. AI provenance and declined/limited independence remain explicit.
 - [x] **Yao Zhu:** return the baseline-blind AI adjudication for PC-LABEL02-R2; validate27 final supporting spans, freeze exact gold hash and score four original representatives with39 repeats separate. Broad flag agreement4/4; strict evidenced adverse matching0/1, because metadata-only output lacks source-text support. AI provenance retained; T01/v3 M9/human-ground-truth qualification stay separate.
-- [ ] **Yao Zhu:** review PC-LABEL02-INJ01 benign-link instruction detection in the exact new routed configuration with Keegan peer review/regression evidence; preserve the historical incomplete result and injection defenses.
+- [x] **Yao Zhu:** deliver PC-LABEL02-INJ01 local trust review/regressions. [PC-YAO-NB01](YAO_NONBLOCKING_REVIEW_20261019.md): exact capped v3 config/pinned prompts, original public-source HTML with synthetic transports; 5 tests/13 subtests PASS. Benign-link incomplete flag and all injection defenses retained; historical outputs unchanged.
+- [ ] **Keegan:** independently review PC-LABEL02-INJ01-R1's conservative trust disposition and regression evidence. Live-provider/source qualification and T01/M9 remain separate; no exemption or runtime change proposed.
 - [x] **Yao Zhu:** verify receipt of the supplied original d8aa7d5 bundle against source/sidecar/manifest/CA (PC-REL08:195 files/234 checksums). Installation is separate.
 - [x] **Yao Zhu:** investigate PC-SRC01 DOJ response-size failures and implement bounded repair/current-head evidence (PC-FIX01, PR174; 1,630 local tests passed). Final report/raw retention is complete in PC-GAP02.
 - [ ] **Yao Zhu:** after installation, qualify DOJ polls/restart/report on the host. Keegan prior-window disposition is complete (PC-GAP02-RV1: retain FAIL/no DOJ waiver); actual post-fix coverage remains open.
@@ -314,8 +318,8 @@ The interim profile is already running in the owner-reported Oct 17 shadow run (
 - [x] **Keith:** on the capture server, summarise the files so far into a **new** directory, without stopping the capture: `python -m larp.marketdata.cost_summary summarize --captures <capture dir> --output <interim>/summary.json --min-days 2`. If a token has fewer than 10 US-session samples the tool names it; rerun with `--min-samples` at the lowest count it reports, never below 5. Done 2026-10-17 (`--min-days 2 --min-samples 9`).
 - [x] **Keith:** build the profiles: `python -m larp.strategy.profiles --summary <interim>/summary.json --predicates config/intelligence/red_flags.v1.json --output-dir <interim>/profiles`, and send `rehearsal-live.json` to Yao Zhu. Done 2026-10-17 by Yao Zhu from Keith's summary (`d951207f…`).
 - [x] **Isaac:** a quick look at spread, impact, gas and minimum trade size in Keith's interim summary and profile. Done: Keith and Isaac approved it for the shadow run (2026-10-17).
-- [ ] **Yao Zhu:** supply the original interim capture hash/full summary bytes for KMP-QUOTE01; the later snapshot cannot substitute for that provenance.
-- [ ] **Keith:** after Yao's export, verify and record the original interim capture/summary hashes in IDEA-063 alongside the existing two-day/nine-sample settings and reported profile SHA.
+- [x] **Yao Zhu:** supply the original interim capture hash/full summary bytes for KMP-QUOTE01. YP-01 delivers original summary/report/metadata and checksums, verifies the exact original byte prefixes in the later export and reproduces the summary; [handoff](evidence/interim-provenance-20261019/README.md). Retained profile SHA `d951207f…4542` and embedded summary also verified.
+- [ ] **Keith:** review YP-01's supplied originals/verifier/receipt and the IDEA-063 hash record. No longer waiting on Yao's export; original 2-day/9-sample coverage and all860 fallback swap-gas estimates remain interim, #119/#120 and final profile/caps remain open.
 - [x] **Yao Zhu:** if the weekend Gate A setup is done, run the Oct 20 steps 5–8 early with this profile. On Oct 20 the final profile means rerunning `prepare`, rebinding the manifest and a fresh `service init`/`activate`, because the profile hash is pinned in the runtime config. Done 2026-10-17: shadow run live, first round ACKed by the receiver (IDEA-066 PC-AWS07).
 
 ## Oct 20: profile day, in this order

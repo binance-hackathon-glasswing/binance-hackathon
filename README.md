@@ -1,4 +1,6 @@
 # Binance Agentic AI Hackathon
+
+**Shared integration branch:** [`codex/system-testing-20261012`](https://github.com/binance-hackathon-glasswing/binance-hackathon/tree/codex/system-testing-20261012). Base new work and PRs on this branch. [Current status](docs/build/CURRENT_STATUS.md) and [live backlog](docs/INCOMPLETE_WORK.md) are canonical. [PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133) is a noticeboard only.
 Agentic AI Hackathon where we build an autonomous AI trading agent that operates under real market conditions.
 
 Members

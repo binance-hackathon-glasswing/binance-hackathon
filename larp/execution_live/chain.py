@@ -13,24 +13,29 @@ from larp.execution import USDT, Blocked, DependencyUnavailable, Outcome
 from larp.marketdata.web3 import NoRedirect, encoded, utc
 
 METHODS = frozenset(('eth_chainId', 'eth_getTransactionCount', 'eth_getTransactionByHash',
-                     'eth_getTransactionReceipt', 'eth_getBlockByNumber', 'eth_getBalance', 'eth_getCode'))
+                     'eth_getTransactionReceipt', 'eth_getBlockByNumber', 'eth_getBalance', 'eth_getCode',
+                     'eth_getStorageAt'))  # storage: the untrusted-router facet pin (IDEA-070 B02-U)
 
 
 # IDEA-055 (#36): the one eth_call form, a balance read on a pinned contract at a numeric block. Nothing that could
-# move funds or reach another contract passes; ERC-20 `decimals()` and `balanceOf(address)` are views.
+# move funds or reach another contract passes; ERC-20 `decimals()`, `balanceOf(address)` and, for the untrusted-router
+# preflight (IDEA-070 B02-U), `allowance(address,address)` are views.
 DECIMALS_CALL = '0x313ce567'
 BALANCE_OF_CALL = '0x70a08231'
+ALLOWANCE_CALL = '0xdd62ed3e'
 
 
 def balance_call(params):
-    """Raise Blocked unless `params` is `[{to, data}, <hex block>]` for decimals()/balanceOf() on a pinned token."""
+    """Raise Blocked unless `params` is `[{to, data}, <hex block>]` for decimals()/balanceOf()/allowance() on a pinned
+    token."""
     from larp.marketdata.port import TOKENS  # the pinned bStock contracts; USDT is the pay token
     pinned = {USDT, *TOKENS.values()}
     if (type(params) is not list or len(params) != 2 or type(params[0]) is not dict
             or set(params[0]) != {'to', 'data'} or type(params[0]['to']) is not str
             or params[0]['to'].lower() not in pinned or type(params[0]['data']) is not str
             or not (params[0]['data'] == DECIMALS_CALL
-                    or re.fullmatch(BALANCE_OF_CALL + '0{24}[0-9a-f]{40}', params[0]['data']))):
+                    or re.fullmatch(BALANCE_OF_CALL + '0{24}[0-9a-f]{40}', params[0]['data'])
+                    or re.fullmatch(ALLOWANCE_CALL + '(?:0{24}[0-9a-f]{40}){2}', params[0]['data']))):
         raise Blocked('eth_call outside the balance-read allowlist')
     quantity(params[1])
 

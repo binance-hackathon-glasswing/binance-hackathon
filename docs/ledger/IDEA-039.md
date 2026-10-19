@@ -479,3 +479,54 @@ During remaining-task review, native_credit eagerly evaluates tx[gasPrice] even 
 NT-RV02 RED at e6d8a91 demonstrates eager gasPrice KeyError with a valid effectiveGasPrice receipt. Initial test used incorrect proof key transaction; corrected to actual tx before the genuine RED. GREEN native subset is included in final17 passed/9 subtests at0191633. No private RPC input or positive actual provider qualification supplied; all enabled/selected/signing flags remain false.
 
 NT-RV02 final validation is included in all4-green mirror39227766192 and independent local full2119/6/3340 suite. The receipt gas-price repair is delivered in PR187; actual native-account proof remains NOT_RUN_MISSING_APPROVED_INPUT. No provider/runtime/signing enablement or real RPC call.
+
+## FG-02 — remaining dev funding preflight/handoff (prospective, 2026-10-18)
+
+User asks each immediate point in its own PR and has no additional funding hash.
+No wallet key/session or MetaMask control is available. Prepare the independent
+#106 handoff and collect at most16 public read-only RPC method calls using the
+existing public BNB Chain endpoint; 20s/no retries/redirects, no keys or wallet
+transactions. Bind chain56, canonical finalized block/hash, dev public wallet,
+latest/pending/finalized nonces, native balance, USDT decimals/balance, and the
+known historical transaction/receipt/time. Recheck the same numeric block.
+
+Pass: accurately retain observed fields with source/UTC/body hashes and classify
+remaining funding and opening capture as NOT_DONE unless actual new transaction
+evidence is supplied. A positive balance or unchanged nonce is not proof that all
+activity/funding has been audited, nor Yao's actual opening capture. Do not send a
+swap or imply signing/key-placement approval. Record exact human next step and
+required funding-note fields, preserve F120/first-agent-trade precondition,
+keep parent106/GAP49 open; remove no unfinished live backlog item. Check official
+verbatim source_page/kit gas text plus F120/G13/Q03 and existing confirmed team
+position before writing the handoff. Validate public JSON and receipt arithmetic;
+no unnecessary application tests for documentation/evidence-only scope.
+
+### FG-02 public preflight and handoff results
+
+At10:59:12UTC chain56 finalized block128350421 rechecked canonical; native
+2694498869362886wei, USDT98 with18decimals, nonces2/2/2. Historical nonce1
+funding tx/receipt/block/time reverified. Exactly14 public read-only calls, no
+retry/redirect/key/wallet/AWS action. Report SHA256
+2784503923b345095e58302becf06220818b3dde869f0749ff33941d3e93a83a. Source bytes/requests/hashes and limits in
+[FG-02 handoff](../build/DEV_GAS_FUNDING_HANDOFF_20261018.md). Positive BNB and
+nonce agreement are not full activity/run or post-last-seed opening proof.
+
+User has no additional hash; remaining about2USDT funding is NOT_DONE and Yao
+opening capture NOT_RUN. Draft PR records the exact manual step, reconciliation
+precondition and verification fields without manufacturing a new transaction.
+Source/JSON/hash/receipt checks pass; no application tests needed for this
+documentation/evidence-only scope. Parent106/GAP49 remain open.
+
+FG-02 delivery: dedicated draft [PR172](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/172)
+against PR133's checklist branch. Source-byte/normalized JSON/diff and exact
+98USDT/nonces2/2/2 checks pass. Owner wallet action/new hash and Yao's actual
+post-last-seed capture remain incomplete. No wallet signing/funding/key or AWS
+operation occurred; parent106/GAP49 remain open.
+
+## RV172-20261019 — independent funding-handoff review
+
+Criteria before verification: preserve the original public report bytes/hash and all FG-02/NT-Q1 history; separate block timestamp from collection completion; require accepted operator handoff plus fresh holdings/funding reconciliation and no first agent trade/in-flight work before any manual step. Validate report JSON/hash/arithmetic, relative links and documentation-only diff against PR133.
+
+Corrected obsolete host ownership: operational work needs a named approved operator after accepted handoff; no access/acceptance is assumed. Additional funding is conditional on actual remaining need under the existing plan, not automatically another swap from an old balance. Isaac remains the manual wallet operator; approved signer-session requirements remain. No new transaction/hash, current holdings or hosted opening capture was provided. PR172 remains draft, #106/GAP49/GAP70 remain open.
+
+RV172 verification: original report bytes and SHA256 unchanged; chain56,98USDT, native2694498869362886wei, nonce2/2/2,14 observations and disabled signing/funding/key flags verify. Opening status remains NOT_RUN_NOT_A_PORTFOLIOSTATE_OR_HOST_CAPTURE. All five changed files are documentation; JSON, relative Markdown links and whitespace checks pass. An initial checker expected a shortened opening-status label; corrected it to the exact stored label without changing evidence. No current RPC/host/wallet state was checked.

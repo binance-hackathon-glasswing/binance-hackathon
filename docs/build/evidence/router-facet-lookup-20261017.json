@@ -1,0 +1,59 @@
+{
+  "schema": "RouterFacetLookup.v1",
+  "criteria_ref": "IDEA-070 RE-01 RQ2",
+  "criteria_commit": "b75f481",
+  "status": "IDENTITY_LOOKUP_SUPPORTED_SOURCE_UNRESOLVED",
+  "chain_id": 56,
+  "source_id": "BSC_BNBCHAIN_PUBLIC",
+  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+  "swap_selector": "0xad43f73d",
+  "lookup_signature": "facetAddress(bytes4)",
+  "lookup_selector": "0xcdffacc6",
+  "block_number": "0x7a2eb81",
+  "block_hash": "0xed600646f050ef598e02be50d553f6d9a75aae3b92c922fc9f72dd15c17dfbce",
+  "block_hash_rechecked": true,
+  "candidate_facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+  "router_code_bytes": 180,
+  "facet_code_bytes": 8622,
+  "facet_code_sha256": "924e9da536e78a9ce92f633058a62907ee5834738947432d186e02b212a0d574",
+  "rpc_requests": 6,
+  "wallet_used": false,
+  "transaction_submitted": false,
+  "verified_source_obtained": false,
+  "abi_obtained": false,
+  "guarantees_reviewed": false,
+  "deployable_router_evidence": false,
+  "facet_sourcify_http_status": 404,
+  "artifacts": [
+    {
+      "file": "rq2-bnb-head.json",
+      "response_or_request_sha256": "0cc9e7080d7f9e04794e3a9f86b643c049a55a288de17edb28fcd2cfdfb7e9f2",
+      "saved_at_utc": "2026-10-17T05:52:49.355387+00:00"
+    },
+    {
+      "file": "rq2-bnb-lookup-request.json",
+      "response_or_request_sha256": "19cef312f33a7eb9964b6ba935412623e71506349786b92189809943fba00ef6",
+      "saved_at_utc": "2026-10-17T05:53:11.315088+00:00"
+    },
+    {
+      "file": "rq2-bnb-lookup.json",
+      "response_or_request_sha256": "1522fa8a0e189e1fa590bd158521cb6f48f2ec1c8a56b72332e1b9956da0f006",
+      "saved_at_utc": "2026-10-17T05:53:13.877045+00:00"
+    },
+    {
+      "file": "rq2-bnb-facet-request.json",
+      "response_or_request_sha256": "491e55f4f0c73c3a1b7ac96cda88cef33a4b1f034447f8089b34b128560a4021",
+      "saved_at_utc": "2026-10-17T05:53:28.268843+00:00"
+    },
+    {
+      "file": "rq2-bnb-facet.json",
+      "response_or_request_sha256": "d5b242b7bb4f484a945fdb0befbfc2414923a62911c20b642042911c7f5a12ec",
+      "saved_at_utc": "2026-10-17T05:53:30.862870+00:00"
+    },
+    {
+      "file": "rq2-facet-sourcify.json",
+      "response_or_request_sha256": "d7ab73b48ed5ffaad1ab9898b249500c806f723b81eb2e4f3d908705cbbb0a0c",
+      "saved_at_utc": "2026-10-17T05:53:51.382532+00:00"
+    }
+  ]
+}
