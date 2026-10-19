@@ -1,11 +1,11 @@
 # Operations decision packet — PC-OPS01 / A06
 
 Prepared for Isaac's C05 review, 2026-10-19, from committed repository evidence.
-**Proposals only: no policy, register, unit or runtime setting is changed.**
+**Original proposal packet with dated owner dispositions below. No unit or runtime setting changes in this review.**
 This completes the operations-proposal portion of A06; O2 and DEV20's final
 owner disposition remain separate. Isaac can review the policy/risk choices
 below now; measurements are required before accepting numeric settings or
-claiming host readiness. This packet is not Isaac's approval.
+claiming host readiness. The original packet was not approval; C05-RV01 below records Isaac's subsequent delegated review.
 
 Source baseline: [IDEA-049-D §5](../ledger/IDEA-049-D.md),
 [current runbook](runbook.md), runtime service/supervision and current systemd
@@ -123,3 +123,42 @@ O2, final DEV20 disposition, adopted numeric settings, required code and actual
 host acceptance remain open. No unchanged runtime tests were rerun to prepare
 this decision packet; linked existing tests are coverage references, not new
 results.
+
+
+## C05-RV01 — Isaac's review and dispositions, 2026-10-19
+
+The user explicitly asks the assistant to do the remaining work on Isaac's
+behalf toward signer installation. The following are Isaac's delegated policy
+review decisions, not Keegan's independent signoff or a host/release approval.
+Reviewed proposal revision: `aa97b8b`, original PC-OPS01 file SHA256
+`59037d4554081a66690b07328ee226a6578863ddeb1f6db3972bd7f34cb35517` (bytes before this review).
+Keegan's already decided O2 and DEV20 are preserved and are not reopened here.
+
+| Decision | Disposition | Reason and accepted limits | Next owner / acceptance |
+|---|---|---|---|
+| D-DN-01 — no fenced standby | ACCEPT the proposed no-standby scope for the candidate | Match the built primary + isolated-signer topology; do not promise unbuilt failover. Primary/AZ failure may end trading for the run. No measured RTO/RPO, availability or recovery guarantee is asserted. No third host, promotion path or infrastructure change is authorized. Existing fencing remains mandatory. | Keegan independently reviews and records D-05/DEV-18 scope; DEV18 remains OPEN/DRAFT until that decision. Yao/approved operator supplies exact-host isolation/restart/reboot/backup evidence. |
+| D-DN-07 — restart behavior | ACCEPT retaining current supervision for the candidate | Preserve same-version supervisor restart, `Restart=always`, `RestartSec=10`, `StartLimitIntervalSec=0`, with exit2/3/4 restart suppression. Accept the residual exit1 crash-loop/resource-growth risk; repeated incidents are not healthy operation or a bounded-storage guarantee. Do not add an unqualified restart-limit/HALT/clear path. | Keegan records/reviews the policy. Operator measures repeated-error/restart, RSS, disk and incident growth before host acceptance. A failed drill remains failed and requires a reviewed correction, not a waived resource gate. |
+| D-DN-11 — restored-run quarantine | ACCEPT keeping restored runs quarantined during scoring | Prefer loss of availability over unqualified reactivation of restored state. Database loss/quarantine may stop trading for the rest of the run. No human or new automatic scored-run reactivation is authorized; no backup-delivery/RPO/recovery-time claim follows. | Keegan records/reviews the limitation; operator performs empty-target checksum/journal/anchor/fencing drills under the development procedure. |
+| D-DN-04 — earlier delivery-age guard | ACCEPT the requirements; numeric B and implementation remain pending | Require a durable oldest-pending-log identity/age guard that HALTs all signing, preserves reconciliation and never weakens the hard upload deadline. Only positive stored per-chunk ACKs release pending work. Restart, partial/out-of-order ACKs, empty200/timeouts, clock reversal/future timestamps and exact threshold boundaries must fail closed. Clearing requires the reviewed complete-ACK/clock rule; no restart/refresh may extend authority. No illustrative2h value is adopted. | Keegan supplies reviewed code and lifecycle/clock/ACK tests. Operator supplies normal and tail dispatch/ACK measurements; Isaac decides the exact B with a documented margin after those inputs. This guard is not implemented or qualified by this review. |
+
+D-DN-06 watchdog and D-DN-08 memory remain **MEASUREMENT_BLOCKED**. No600s
+watchdog,2h delivery bound, sum-of-MemoryMax capacity claim, instance resize or
+swap policy is adopted. Operator provides the timestamped whole-cycle/drain/
+finality and concurrent-memory packet described above; Keith/Keegan analyze
+coverage/headroom and Isaac then decides the exact settings.
+
+Evidence checked: [runtime unit](../../deploy/systemd/larp-runtime.service),
+[`Sessions` and `Guard`](../../larp/runtime/supervision.py),
+[service start/activation](../../larp/runtime/service.py),
+[restore quarantine](../../larp/storage/backup.py),
+[operations restore command](../../larp/runtime/operations.py),
+[supervision tests](../../tests/runtime/test_supervision.py),
+[anchor/restore tests](../../tests/runtime/test_anchors_roles.py).
+Rules checked: verbatim source-page repository/autonomy/logging passages,
+kit PROTOCOL and SKILL F-114/F-117/F-124 and answered Q-40. These decisions
+retain the same registered-build boundary; they are team policy, not new rules.
+
+**C05 status: review slice delivered; measurements, D-DN-04 code, independent
+review and actual qualification remain open.** This does not approve #27/#44,
+source/native capability, signed release, host installation or a signer session.
+Validation and exact scope are recorded in IDEA-066 C05-RV01.

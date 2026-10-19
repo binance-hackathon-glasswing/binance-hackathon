@@ -14,7 +14,8 @@ all actual host/session/adoption gates remain open.
 
 - [x] **Keegan:** A04 next-build database procedure delivered: [fresh trial DB on existing RDS](NEXT_TRIAL_DATABASE_20261019.md), preserving old runs, the shared budget ledger and fixed cutoff. Actual DB/host execution remains the approved operator's uncompleted task.
 - [x] **Keegan:** A06 operations-proposal slice delivered: [decision packet](OPERATIONS_DECISIONS_20261019.md), covering D-DN-01/04/06/07/08/11 and a DEV20 recommendation. O2 settled and DEV-20 omission decided 2026-10-19 (Keegan); Isaac's operations decisions remain.
-- [ ] **Isaac:** C05 can start now for D-DN-01/07/11 risk choices and D-DN-04 requirements. Review the packet and record accept/reject/change with revision and reason. Numeric delivery/watchdog/memory settings still need measurements; no policy is adopted by this assignment.
+- [x] **Isaac — C05 review slice:** delegated D-DN-01/07/11 risk dispositions and D-DN-04 requirements delivered in [C05-RV01](OPERATIONS_DECISIONS_20261019.md#c05-rv01--isaacs-review-and-dispositions-2026-10-19). Keegan independent review/scope recording remains.
+- [ ] **Isaac — C05 remaining:** exact delivery-age/watchdog/memory settings after operator measurements and Keith/Keegan analysis; D-DN-04 implementation/review and actual-host qualification remain open. No numeric setting, signer cap, lifetime or installation approval is inferred.
 
 ## Isaac — ready work first (PC-ISAAC-QUEUE01, 2026-10-19)
 
@@ -40,7 +41,7 @@ If a deliverable already exists, link and review it rather than create a duplica
 
 **Blocked queue, resume per ready packet:** B03 route checks after source+review;
 B05 after private tracing input/suitable transaction; B07 after B06-pre;
-B09 after measured cap review; C05 after its proposals/measurements; C08 after
+B09 after measured cap review; C05 numeric settings after measurements (review slice delivered); C08 after
 the approved signer session. These remain blocked until their own inputs arrive.
 IQ01/IQ02 support final acceptance preparation; completing them does not unblock
 signing or satisfy missing source, funding, host, timing or cap evidence.

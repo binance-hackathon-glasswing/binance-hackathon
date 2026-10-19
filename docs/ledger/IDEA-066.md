@@ -2250,3 +2250,23 @@ This session's delete push was refused (HTTP 403), so they still exist; Keegan
 deletes them in GitHub. Correction: the earlier option text for #49 cited the
 Oct19 binding check. That check covered the current non-CI `ea25b52` host
 build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.
+
+## C05-RV01 — Isaac's delegated operations review (2026-10-19, prospective)
+
+The user asks the assistant to complete available prerequisites toward an
+installable signer.json on Isaac's behalf. Review PC-OPS01 at sourceaa97b8b:
+D-DN-01/07/11 risk dispositions and D-DN-04 requirements are executable now;
+D-DN-04/06/08 numeric values, source/caps and actual host acceptance are not.
+This is Isaac's delegated review, never Keegan's independent acceptance.
+
+Pass criteria before validation: source-check supervision/unit restart behavior,
+restore quarantine, signing fences and the existing delivery-deadline guard;
+record exact proposal revision, disposition, reason and residual risk; do not
+adopt illustrative2h/600s/memory/authority values or change runtime/configuration.
+Existing supervision and anchor/restore tests must pass against disposable local
+PostgreSQL, with no skips. Verify new documentation links, unchanged release JSON
+and signer draft, preserved unresolved backlog items and clean whitespace.
+Push the review before validation. Keep DEV18 DRAFT/OPEN until Keegan records
+the reviewed scope decision, and keep C05 partial for measurements/code/host
+qualification. Deliver a separate PR and update PR133. No AWS, real key/provider,
+signing, funding, paid inference or external log receiver operation is included.
