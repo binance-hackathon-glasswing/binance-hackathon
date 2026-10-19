@@ -1,5 +1,5 @@
 {
- "producer_commit": "94359bf22efddc17f9b79a1f8cbbfcccb6b3629d",
+ "producer_commit": "dd46c8f580b3c651f3d7733990bbf927ab08539c",
  "request": {
   "allowed_tools": [
    "fetch_document",
@@ -70,7 +70,7 @@
   }
  },
  "result": {
-  "assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
+  "assessment_key": "ce27ffb972afe939a4c73cd98f685100a20deebfc65757d90531a344f60bb144",
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -399,7 +399,7 @@
    "calibrated": false,
    "level": "LOW"
   },
-  "config_sha256": "b5d51b6e4c8671e18a35ef6b064b76450263cbe0da31daa90a98937b5f5fe84c",
+  "config_sha256": "080ef5cae989519079cd0a255b69e5c72cfff56b9644cbaa6701bb811c081f83",
   "conflicts": [],
   "context_hash": "965e2b9456a019e007609b841911013fe5d444d4fbb9e0f3ddebe10025627046",
   "cost": {
@@ -4774,7 +4774,7 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:d1b98e2bbe60d5c18f590f778069b30549841b75f6d4627f55dafeec5ec38bb9",
+  "result_id": "res:c87020c6534bfc951a1e9597d5ee790fd27eaa1214f05b0738494c432787580f",
   "retained_facts": [],
   "review_requests": [
    {
@@ -4782,12 +4782,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f",
+     "job_id": "evidence:99bbcfa2b299a8d8901cc5ecdbf522323371afa2039381a934692bf1f9889178",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
+      "after_assessment_key": "ce27ffb972afe939a4c73cd98f685100a20deebfc65757d90531a344f60bb144",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -4798,7 +4798,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f"
+    "request_id": "evidence:99bbcfa2b299a8d8901cc5ecdbf522323371afa2039381a934692bf1f9889178"
    }
   ],
   "review_scope": null,
