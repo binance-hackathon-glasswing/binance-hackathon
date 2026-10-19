@@ -70,7 +70,7 @@ read-only checks. Never reset, edit or re-initialize the ledger; never delete a 
 
 | Owner | Item |
 |---|---|
-| Keegan / Keith | 60 s assessment budget vs sequential OpenAI primary + two high-effort reviews (first fixed job UNAVAILABLE although OpenAI ASSESSED). Reviewed change only |
+| Keegan (implement) / Keith (review) | [PR #179](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/179) / IDEA-083: Yao decided 2026-10-19 to raise the assessment budget to ≤180 s with an OpenAI share ≤60 s and parallel reviewers, effort unchanged, DEV-22 declared. Criteria AB1–AB10; before the Oct 26 freeze; redeploy needs a new trial DB (combine with the Oct 20 profile swap if possible) |
 | Keegan | Review merged PR178 and the local non-CI ea25b52 build; reviewed version-switch support (one run per wallet); review/merge PR177; Gate A/B review; B4 `exposure_evidence` producer; DEV20 planner disposition |
 | Account owner / coordinator | Reconcile the one UNKNOWN 84,764 µUSD charge (reviewed; never edited); AIand units/expiry/funding; owner `status`/`export` snapshot with hashes; delete S3 transfer copies `releases/llm-trial-20261018t160739z/` and `releases/llm-trial-20261018t170339z/` (`mac/r9-cleanup-s3-package.sh`); confirm who created `larp_trial` before the first recorded setup |
 | Coordinator | Post-fix DOJ polls/restart and a NEW observed-window `report --coverage-scope current`; original fixed 24 h report stays FAIL; historical PERMANENT backup failure stays recorded; PC-LABEL02-INJ01 benign-link trust check |
