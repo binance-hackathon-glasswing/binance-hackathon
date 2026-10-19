@@ -131,8 +131,100 @@ class RoutedConcurrency(unittest.TestCase):
         self.assertEqual(result['status'], 'TIMEOUT')
         self.assertFalse(f.calls)
 
+    def test_ab11_both_hung_reviewers_leave_primary_frozen_and_owned(self):
+        f = self.fx
+        release = threading.Event()
+        entered = threading.Barrier(3)
+        original = f.aiand
+        def blocked(*args):
+            entered.wait(2)
+            release.wait(3)
+            return original(*args)
+        f.aiand = blocked
+        router = f.build()
+        req = f.w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='late', deadline_ms=600)
+        try:
+            box = {}
+            caller = threading.Thread(target=lambda: box.update(result=router.assess(req).read()))
+            caller.start()
+            entered.wait(2)
+            caller.join(2)
+            self.assertFalse(caller.is_alive())
+            result = box['result']
+            self.assertEqual(result['routing']['review_outcome'], 'INCOMPLETE')
+            self.assertEqual(result['status'], 'ASSESSED')
+            self.assertEqual(len(result['model_io']['in_flight_calls']), 2)
+            self.assertEqual(router.assess(req).read()['reasons'], ['ASSESSMENT_GROUP_BUSY'])
+            frozen = Document.from_dict(result).payload
+        finally:
+            release.set()
+            for worker in router._workers:
+                worker.join(3)
+        self.assertEqual(Document.from_dict(result).payload, frozen)
+
+    def test_ab1_observed_timings_dissent_and_non_assessed_fallback(self):
+        f = self.fx
+        router = f.build()
+        req, template = f.run_assessment(router)
+        original_factory = router.make_assessor
+        for primary_status in ('ASSESSED', 'UNAVAILABLE'):
+            start = f.w.clock()
+            barrier = threading.Barrier(2)
+            clock_lock = threading.Lock()
+            allowances = []
+            def factory(model):
+                delegate = original_factory(model)
+                class Scripted:
+                    request_namespace = ''
+                    _validate = delegate._validate
+                    _abandoned = delegate._abandoned
+                    def assess(inner, request, **kwargs):
+                        label = inner.request_namespace.rstrip(':')
+                        value = deepcopy(template)
+                        value['model_io'] = dict(steps=[], tool_calls=[], cot=[], model_called=False,
+                                                 requests_started=0, no_model_call_reason='SYNTHETIC')
+                        allowances.append(request.read()['budget']['tool_calls'])
+                        if label == 'openai-primary':
+                            f.w.clock.advance(18000)
+                            value['status'] = primary_status
+                        else:
+                            barrier.wait(2)
+                            with clock_lock:
+                                f.w.clock.now = max(f.w.clock(), start+18000+(34000 if label.endswith('0') else 10000))
+                            value['status'] = 'ABSTAIN' if label.endswith('0') else 'ASSESSED'
+                        value['result_id'] = label
+                        return Document.from_dict(value)
+                return Scripted()
+            router.make_assessor = factory
+            raw = req.read(); raw['budget']['deadline_ms'] = 180000
+            value = router.assess(Document.from_dict(raw)).read()
+            self.assertEqual(value['status'], 'ABSTAIN' if primary_status == 'ASSESSED' else 'ASSESSED')
+            self.assertEqual(value['routing']['review_outcome'], 'DISSENT' if primary_status == 'ASSESSED' else 'FALLBACK')
+            self.assertEqual(f.w.clock()-start, 52000)
+            self.assertEqual(sorted(allowances), [1, 2, 3])
+            self.assertLessEqual(sum(allowances), 6)
+            router.make_assessor = original_factory
+
 
 class JournalConcurrency(unittest.TestCase):
+    def test_ab7_audit_failure_cannot_publish_accepted_result(self):
+        from tests.runtime.test_signed_models import Blocking, request
+        with tempfile.TemporaryDirectory() as tmp:
+            model = Blocking(); model.release.set()
+            q = DeferredAssessments(model, root=tmp, run_id='r', build_id='e'*40, profile_hash='a'*64)
+            original = q._append_locked
+            def fail(path, event):
+                if event['kind'] == 'MODEL_RESPONSE':
+                    raise OSError('synthetic private endpoint must not be logged')
+                return original(path, event)
+            with patch.object(q, '_append_locked', fail):
+                q.submit('failed', request())
+                self.assertTrue(q.finished.wait(2))
+            ready = q.ready()
+            self.assertIsNone(ready['result'])
+            self.assertEqual(ready['audit']['state'], 'FAILED')
+            self.assertNotIn('private endpoint', json.dumps(ready))
+
     def test_ab7_simultaneous_append_has_one_valid_chain(self):
         with tempfile.TemporaryDirectory() as tmp:
             q = DeferredAssessments(None, root=tmp, run_id='r', build_id='e'*40, profile_hash='a'*64)

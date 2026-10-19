@@ -491,3 +491,11 @@ witness; the old60000 value is independently source-verified. Existing serial
 review-order assertions now check stable stage precedence with both reviewers;
 B11's both-unavailable case now preserves the primary as INCOMPLETE. Deferred
 late response summaries remain in the durable audit, not the frozen decision.
+
+Golden review: generated candidates outside the repository and recursively
+compared them before updating the two demonstration goldens. The only changes
+are config_sha256 and its dependent assessment/result/review/state/falsifier IDs
+(23 and17 scalar fields). Status, findings, claims, tools, amounts, timestamps,
+features and gate outcomes are unchanged. Explicit historical60000ms requests
+remain valid; the config identity correctly changes for DEV-22. This is reviewed
+identity propagation, not a change to expected economic behavior.
