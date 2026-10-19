@@ -216,13 +216,15 @@ def _signature(result):
 def review_outcome(primary, reviewers):
     """B11 semantic selection, stable reviewer precedence; never mutate a stage result."""
     assessed_primary = primary is not None and primary['status']=='ASSESSED'
+    reference=primary if assessed_primary else next((r for r in reviewers if r is not None and r['status']=='ASSESSED'),None)
     verdicts=[]
     for index,value in enumerate(reviewers):
         status = value['status'] if value is not None else 'NOT_RUN'
-        verdict = ('confirm' if _signature(value)==_signature(primary) else 'dissent') \
-            if assessed_primary and status=='ASSESSED' else \
+        verdict = ('confirm' if _signature(value)==_signature(reference) else 'dissent') \
+            if reference is not None and status=='ASSESSED' else \
             'dissent' if assessed_primary and status=='ABSTAIN' else 'no result'
         verdicts.append(dict(stage='external-review-'+str(index),status=status,verdict=verdict,
+                             role='review' if assessed_primary else 'fallback',
                              reasons=list(value.get('reasons',[])) if value else ['NOT_RUN']))
     if assessed_primary:
         if any(v['verdict']=='dissent' for v in verdicts):
@@ -301,8 +303,14 @@ class RoutedAssessor:
             try:validated=validator._validate(r)
             except (IntelligenceError,KeyError,TypeError):return validator.assess(request)
             return validator._abandoned(r,validated,self.clock(),dict(steps=[],tool_calls=[],started=0))
+        responses=[]
+        def record(event):
+            if event['kind']=='MODEL_RESPONSE':
+                with self._ownership_lock:responses.append(deepcopy(event))
+            if audit_hook is not None:audit_hook(event)
         try:
-            return self._assess_owned(request,audit_hook=audit_hook,wait_for_workers=wait_for_workers)
+            result=self._assess_owned(request,audit_hook=record if wait_for_workers else audit_hook,
+                                      wait_for_workers=wait_for_workers)
         finally:
             if wait_for_workers:
                 # The cutoff result is already immutable. Only the background deferred
@@ -310,9 +318,25 @@ class RoutedAssessor:
                 with self._ownership_lock:workers=list(self._workers)
                 for worker in workers:worker.join()
             with self._ownership_lock:self._group_active=False
+        if wait_for_workers:
+            # Preserve late provider I/O for the round log without reopening the cutoff
+            # decision or changing the selected stage artifact. Late charges stay UNKNOWN.
+            value=result.read()
+            known={s.get('response',{}).get('request_id') for s in value.get('model_io',{}).get('steps',[])}
+            late=[e for e in responses if e['response'].get('request_id') not in known]
+            if late:
+                value['model_io']['late_responses']=late
+                value['model_io']['cot'].extend(e['response']['reasoning_summary'] for e in late
+                                               if e['response'].get('reasoning_summary'))
+                value.pop('result_id',None)
+                value['result_id']='res:'+digest('larp.intel.result.v1',value)
+                result=Document.from_dict(value)
+        return result
 
     def _assess_owned(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
+        total = r.get('budget', {}).get('deadline_ms')
+        overall = Deadline(total if type(total) is int and total>0 else 1,self.clock)
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
         try:
@@ -355,7 +379,7 @@ class RoutedAssessor:
             return result
 
         if self.policy.get('openai_preferred'):
-            return self._preferred(r,validated,start,wall,audit_hook)
+            return self._preferred(r,validated,start,wall,audit_hook,overall)
 
         chosen = run(self.routine, 'routine', max(1, total//2))
         if chosen is None:
@@ -382,9 +406,8 @@ class RoutedAssessor:
                 chosen = reviewed
         return self._combine(r, chosen, stages, reasons, start)
 
-    def _preferred(self, r, validated, start, wall, audit_hook):
+    def _preferred(self, r, validated, start, wall, audit_hook,overall):
         total=r['budget']['deadline_ms']
-        overall=Deadline(total,self.clock)
         primary_ms,review_ms=stage_limits(total)
         stages=[]
 
@@ -411,7 +434,7 @@ class RoutedAssessor:
 
         state=self._budget_state()
         primary=None;primary_stage=None;reserved=0
-        if self.openai is not None and not state['external_only']:
+        if self.openai is not None and not state['external_only'] and primary_ms>0 and overall.remaining()>0:
             reserved=min(3,r['budget']['tool_calls'])
             primary_stage=begin(self.openai,'openai-primary',reserved,primary_ms)
             task=primary_stage['task'];task.wait()
@@ -422,7 +445,7 @@ class RoutedAssessor:
         reasons=_review_reasons(primary,r,self.policy['audit_sample_bps'],self.policy['audit_seed']) \
             if primary is not None else ['OPENAI_NOT_AVAILABLE']
         reasons=['PRIMARY_NOT_ASSESSED' if x=='ROUTINE_NOT_ASSESSED' else x for x in reasons]
-        pending=[];reviewers=[]
+        pending=[];reviewers=[None]*len(self.external)
         if primary is None or reasons:
             shares=reviewer_tools(r['budget']['tool_calls'],reserved,len(self.external))
             # Both workers start before any reviewer is awaited. Each owns a fixed
@@ -432,8 +455,11 @@ class RoutedAssessor:
                     pending.append(begin(model,'external-review-'+str(i),shares[i],review_ms))
             for stage in pending:
                 stage['task'].wait()
-            for stage in pending:reviewers.append(collect(stage))
+            for stage in pending:
+                index=int(stage['stage'].rsplit('-',1)[1])
+                reviewers[index]=collect(stage)
             chosen,outcome,verdicts=review_outcome(primary,reviewers)
+            for verdict,model in zip(verdicts,self.external):verdict['model']=model.identity.record()
         else:chosen,outcome,verdicts=deepcopy(primary),'NOT_TRIGGERED',[]
         if chosen is None:
             validator=self.make_assessor(self.routine)
@@ -488,7 +514,7 @@ class RoutedAssessor:
         result['cost'] = dict(amount_micro_usd=None if any(c['amount_micro_usd'] is None for c in costs)
                              else sum(c['amount_micro_usd'] for c in costs),
                              basis=sorted({b for c in costs for b in c['basis']}))
-        if 'ROUTING_FINDING_DISAGREEMENT' in result.get('reasons', []):
+        if set(result.get('reasons', [])) & {'ROUTING_FINDING_DISAGREEMENT','ROUTING_REVIEW_DISSENT'}:
             assessor = self.make_assessor(self.routine)
             entry = next(e for e in assessor.registry.entries if e.issuer_id == request['issuer_id'])
             result['review_requests'] = assessor._reviews(request, entry, 'ABSTAIN',

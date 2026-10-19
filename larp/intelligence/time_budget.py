@@ -13,7 +13,7 @@ ACTIVE_DEADLINE = ContextVar('larp_assessment_deadline', default=None)
 def stage_limits(total):
     if type(total) is not int or not 0 < total <= MAX_ASSESSMENT_MS:
         raise IntelligenceError('Invalid assessment deadline')
-    primary = min(PRIMARY_MAX_MS, max(1, total // 3))
+    primary = min(PRIMARY_MAX_MS, total // 3)
     return primary, min(REVIEW_MAX_MS, total-primary)
 
 

@@ -1,6 +1,6 @@
 """Bounded evidence agent: assess(AssessmentRequest.v1) -> AssessmentResult.v1.
 
-Loop (G-50 budget, at most 6 tool calls and 60 s, <= 3 tool types):
+Loop (G-50 budget, at most 6 tool calls and 180 s, <= 3 tool types):
 1. Validate identities, budget, tool allowlist, context hash and point-in-time evidence refs.
 2. Load the referenced filings' primary documents and 8-K item metadata; extract facts.
 3. The harness computes open gaps (unloaded exhibit, unknown prior comparison point,
@@ -149,12 +149,14 @@ class AssessmentTask:
     def __init__(self, assessor, request, *, worker_owner=None, parent_deadline=None):
         self.assessor, self.r, self.start_ms = assessor, request.read(), assessor.clock()
         self.worker, self.timer, self.immediate = None, None, None
+        allowance=self.r.get('budget',{}).get('deadline_ms')
+        self.deadline = Deadline(allowance if type(allowance) is int and allowance>0 else 1,
+                                 assessor.clock,parent=parent_deadline)
         try:
             self.validated = assessor._validate(self.r)
         except (IntelligenceError, KeyError, TypeError) as exc:
             self.immediate = assessor._rejected(self.r, str(exc) if isinstance(exc,IntelligenceError) else 'MALFORMED', self.start_ms)
             return
-        self.deadline = Deadline(self.validated[3],assessor.clock,parent=parent_deadline)
         self.cancel, self.box = threading.Event(), {}
         self.io = dict(steps=[],started=0,tool_calls=[],in_flight=None)
         self.expired, self.frozen = False, None
