@@ -1,0 +1,79 @@
+{
+  "schema": "PR133PreparationVerification.v1",
+  "source_commit": "9a0b80e03cbec0d07c089ef8830ec6409ecc5f95",
+  "ci_run_id": 39213335253,
+  "ci_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253",
+  "all_four_jobs_passed": true,
+  "ci_log_sha256": "70aca3d946bcc48f67b2b458b57074a78795bee261d81d682a47d94a71734415",
+  "full_suite": {
+    "passed": 2109,
+    "skipped": 6,
+    "subtests": 3340,
+    "seconds": 450.04
+  },
+  "real_systemd": {
+    "passed": 5,
+    "subtests": 5,
+    "seconds": 16.83
+  },
+  "independent_pr184_review": {
+    "passed": 194,
+    "subtests": 349,
+    "skipped": 0,
+    "seconds": 49.19,
+    "merge_commit": "851c2514493964d5e84b6b3a24f4bcc8d4aa53ff"
+  },
+  "jobs": [
+    {
+      "name": "runtime",
+      "conclusion": "success",
+      "id": 117931423722,
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253/job/117931423722"
+    },
+    {
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success",
+      "id": 117931423909,
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253/job/117931423909"
+    },
+    {
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success",
+      "id": 117931423970,
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253/job/117931423970"
+    },
+    {
+      "name": "host-bundle",
+      "conclusion": "success",
+      "id": 117931424037,
+      "url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253/job/117931424037"
+    }
+  ],
+  "retained_ci_bundle": {
+    "artifact_id": 12167744255,
+    "digest": "sha256:91bc09d4c40a3d7a5093cdbddca8c0d05cb38d7b07fc9a13d8db0770ea107b2e",
+    "source_commit": "9a0b80e03cbec0d07c089ef8830ec6409ecc5f95",
+    "independently_downloaded": false,
+    "published_as_new_release": false
+  },
+  "subsequent_documentation_commit": "e80960e77a06dd0da010521eb693269ad182b251",
+  "documentation_checks": {
+    "local_links_resolved": 14,
+    "ledger_ids_unique": 75,
+    "register_rendering": true,
+    "only_nonmanifested_docs_changed": true
+  },
+  "existing_published_candidate": "c5be26959a2b99d603c8d548f7c9767c9c2cf1e0",
+  "real_signer_assembly": "NOT_RUN_MISSING_INPUTS",
+  "host_operations": false,
+  "signing_enabled": false,
+  "gate_b_accepted": false,
+  "remaining": [
+    "approved coordinator/operator access and private inputs",
+    "router source/review/replay and native tracing",
+    "measured profile/full holdings/fees and exact #44 approval",
+    "#27 authority bounds/code/timing",
+    "B4 and other strategy/input/evaluation work",
+    "host installation/qualification, funding reconciliation and approved signer session"
+  ]
+}

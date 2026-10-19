@@ -1956,3 +1956,31 @@ errors, and no changed prompts/efforts/routing/cap/lifetime decisions. No host,
 real provider/key/funding or receiver operation; no real signer assembly without
 inputs. Coordinator/operator access and private paths were requested; no input
 has arrived. Source/native/#27/#44/profile/holding/fee/session gates remain open.
+
+
+PC-CONT01 combined verification **PASS** at pushed9a0b80e:
+[mirror39213335253](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39213335253),
+all four jobs. Full pinned Linux/Python3.12.15/PostgreSQL14.24 suite:
+**2109 passed,6 expected skips,3340 subtests**,450.04s. Real systemd separately:
+**5 passed,5 subtests**,16.83s. Both Terraform directories, restricted workers,
+demo/container and both-role original bundle build/provisioning checks pass.
+This closes combined repository verification, not host acceptance or org billing.
+Receipt: [pr133-continuation-20261019.json](../build/evidence/pr133-continuation-20261019.json).
+
+PR126's existing briefs are incorporated and aligned in the later e80960e merge:
+14 relative Markdown links resolve,75 ledger IDs are unique, register rendering,
+conflict and whitespace checks pass. No application/config/build/proposal bytes
+differ from the CI source; these subsequent documents are not in its frozen
+bundle. Historical ledger text is retained and newer status is explicit.
+The retained new CI bundle is not independently downloaded/published as a new
+release; publishedc5be269 remains the separately verified unsigned candidate.
+
+PR184 source review, PostgreSQL regressions and merge; PR183 tracker integration;
+and PR126 current-handoff alignment are complete. Parent133 stays OPEN. No real
+signer candidate was assembled and no host/provider/key/funding/receiver action
+occurred. No new private inputs or adopted #27 bound arrived: source139/funding172
+are still drafts, #27/#44 still open. B4/other strategy-input and evaluation work
+remain tracked separately. Actual deployment needs the approved operator/private
+handoff, preserving ledger/UNKNOWN charges and fixed cutoff, then actual host
+and signer/source/caps/session evidence. Temporary review PostgreSQL is disposed
+at session completion; no production database is involved.

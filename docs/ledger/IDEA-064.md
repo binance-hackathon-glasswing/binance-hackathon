@@ -54,3 +54,12 @@ explicit PR133 fallback; ledger IDs unique, register rendering valid, no conflic
 markers or whitespace errors; diff from9a0b80e contains only documentation and no
 manifested runtime/config/build bytes. Combined CI at9a0b80e therefore covers the
 unchanged application tree; do not claim its bundle contains these later briefs.
+
+
+RV126-CONT01 documentation verification **PASS** at e80960e:14 relative links,
+75 unique ledger IDs, register rendering and whitespace/conflict checks. Diff
+from combined CI source9a0b80e is only nonmanifested documentation. The briefs
+are incorporated into PR133; original PR126's integration promotion remains
+separate until the parent tracker is promoted. No market experiment, adoption,
+host, credential or trading action. Combined application CI39213335253 passes
+2109 tests/3340 subtests with6 expected skips and separate systemd5/5.

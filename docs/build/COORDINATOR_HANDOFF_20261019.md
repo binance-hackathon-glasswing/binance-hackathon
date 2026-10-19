@@ -108,3 +108,11 @@ The frozen release predates the new assembler; run that preparation tool from
 the reviewed checkout when real inputs arrive. Host installation, preserved
 ledger state, actual timing/charges/ACK, numeric/source/native/#27/#44 and the
 approved signer session remain separate. No host or key action occurred.
+
+
+PC-CONT01 acceptance: combined source9a0b80e passes all4 mirror39213335253 jobs,
+2109 tests/3340 subtests/6 expected skips, separate real systemd5/5. PR126 briefs
+are aligned and included in the tracker after doc checks; application bytes
+are unchanged by that follow-up. Refer to the machine receipt
+`evidence/pr133-continuation-20261019.json` and current checklist for limits.
+No host result, real assembly or later contents are attributed to frozenc5be269.
