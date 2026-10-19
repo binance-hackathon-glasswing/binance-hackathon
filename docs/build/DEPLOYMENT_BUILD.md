@@ -97,7 +97,7 @@ Readiness is checked at **three gates**, in order. Each gate needs every DR item
 ## IQ01 activation-blocker matrix (2026-10-19)
 
 **IQ01 / GAP-05, repository audit at PR133 source2b7ed42. Prepared by Isaac's
-delegated assistant; Keegan review outstanding. This matrix is complete as a
+delegated assistant; independent repository review accepted in IDEA-066 IQ01-RV01. This matrix is complete as a
 repository deliverable; the missing acceptance evidence below is not complete.**
 
 ### Gate scope, evidence meaning and the Oct22 cut line
@@ -231,7 +231,7 @@ even when there is no automatic guard for it. In particular:
 ### Completing IQ01 versus accepting a gate
 
 The matrix supplies the missing mandatory-component/cut-line inventory and all22
-DR mappings. Keegan reviews this deliverable before GAP-05 closes. IQ02 remains
+DR mappings. IQ01-RV01 accepts this repository deliverable and closes GAP-05. IQ02 remains
 separate. Every MISSING row stays open with its named supplier; this does not
 prevent finishing the repository audit.
 

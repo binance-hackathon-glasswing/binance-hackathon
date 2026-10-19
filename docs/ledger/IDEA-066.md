@@ -2101,6 +2101,12 @@ retains its passing static checks and does not claim a new runtime suite,
 mirror release, host acceptance or billing resolution. PR133's description now
 links PR185 as delivered with Keegan review pending and retains IQ02/C05 status.
 
+## IQ01-RV01 — independent review of PR185 (2026-10-19)
+
+Criteria before verification: all22 original DR requirements/gate stages preserved; each mapped control and remaining proof accurately scoped; no circular first-signed-receipt precondition, implicit policy adoption, host readiness or CI transfer; local targets/source references/whitespace valid; runtime/config/tools unchanged. Review accepts the mandatory-component/cut-line inventory as the GAP05 repository deliverable; all actual DR acceptance rows remain open. IQ02 is reviewed separately.
+
+IQ01-RV01 verification PASS: all22 original DR table rows remain byte-for-byte, all22 matrix IDs mapped once; relative targets resolve and whitespace clean. No runtime/config/tool/test/deploy changes. Repository matrix accepted and GAP05 line removed; no actual gate/host/model/source/funding acceptance inferred.
+
 ## IQ02 — declaration consistency audit (2026-10-19, prospective criteria)
 
 Isaac requests IQ02 after delivery of IQ01 (PR185); IQ01 review is still pending.
