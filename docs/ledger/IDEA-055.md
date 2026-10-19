@@ -801,3 +801,42 @@ an authenticated session. Host network/config-manifest install and first actual
 wallet/process balance-health acceptance remain NOT_RUN, with #92 open. Actual
 wallet/run/runtime export is also absent. No RPC/network probe, AWS mutation,
 activation, signing, audit upload or funding operation was performed.
+
+## RPC-H03 — running-process balance-health confirmed on primary (2026-10-19, Claude Code session for the user)
+
+Criterion (from the RPC-H02 handoff, "Actual-wallet acceptance evidence"): the
+running process's `balances_ok` must be shown true from a recorded runtime gate
+evaluation that follows a comparable fresh check in the same process, not from a
+journal MATCH or the persisted projection alone.
+
+Observation path: `RuntimeHealth` puts `balances_ok` (from the process-local
+`BalanceCheck.ok()`) into the round's `StrategyContext.health`, and the coordinator
+journals that context in each `ROUND_PLANNED` event as
+`record.policy_input.context.health`. No new code or probe was needed.
+
+Evidence: direct read-only SSM from this session (IAM user `larp-claude-session`,
+each command approved by the user), Python from the installed release, RDS IAM
+login as the runtime role with `default_transaction_read_only=on` (confirmed `on`).
+SSM commands `0e57312b-e98d-42a3-89a4-21094a6703a6` (discovery, 10:44:58Z),
+`768520e5-14ac-4fe3-aa41-73a6b7f1bcab` and `f76b8ddd-9277-4bb5-b445-b0898158cb0d`
+(journal reads, 10:45–10:47Z).
+
+- Host `larp-dev-primary`, release `/opt/larp/releases/ea25b52325656a19b29e8ddb07b94dd792be6e18`;
+  `/etc/larp/runtime.json` sha256 `8cb8fc74d54c70b30880afa882a1a9465fb76b26b7b1dadf57eb4b52a61cb119`,
+  `/etc/larp/release.json` sha256 `e592a13e4859cc155702b9dbd64016acd1597903db38d0bb907b6144ad056573`.
+- Database `larp_trial2`, single run `larp-dev-llm-trial-20261018t170339z` (version 79,
+  epoch 2, not quarantined).
+- `larp-runtime.service` PID 128529 active since 2026-10-18T17:04:41Z, NRestarts=0,
+  so every event below comes from this one process.
+- BALANCE_CHECKED seq 3 MATCH (block 128399135, checked 17:04:43.534Z) and seq 77
+  MATCH (block 128535904, checked 2026-10-19T10:10:48.422Z); 18 BALANCE_CHECKED in all.
+- 29 of 29 ROUND_PLANNED events record `balances_ok=true`; the first is seq 4
+  (`cadence:1991492#1`), immediately after seq 3. Latest: seq 78
+  (`cadence:1991562#1`, decision 2026-10-19T10:31:11.634Z) with all gates true
+  (`balances_ok`, `clock_ok`, `integrity_ok`, `journal_ok`, `ownership_ok`, `new_spending_ok`).
+
+Result: PASS for the process balance-health subcheck. This is a dated observation,
+not a freshness guarantee. It does not qualify native tracing, signing, execution
+or trading readiness; `new_spending_ok=true` in a shadow/unsigned trial confers
+no spending capability. #92 stays open for reviewer acceptance. No host, database,
+config, service or AWS resource was changed.

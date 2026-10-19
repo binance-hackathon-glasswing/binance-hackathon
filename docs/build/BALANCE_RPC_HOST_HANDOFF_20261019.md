@@ -140,5 +140,5 @@ strategy/source, signing and Gate B checks remain independently required.
 | Ignored private files and permissions | PASS |
 | AWS network state / primary route check | NOT_RUN, no configured AWS identity |
 | Complete actual runtime config / host manifest binding | NOT_RUN, actual config/build/run inputs missing |
-| First actual-wallet BALANCE_CHECKED and process balance-health | NOT_RUN, needs approved host access and run evidence |
+| First actual-wallet BALANCE_CHECKED and process balance-health | PASS 2026-10-19: seq 3/77 MATCH; 29/29 ROUND_PLANNED record `balances_ok=true` in one process (IDEA-055 RPC-H03); reviewer acceptance pending |
 | Native tracing / signing qualification | Separate, no acceptance conferred |
