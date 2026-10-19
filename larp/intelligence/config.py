@@ -7,7 +7,6 @@ refuses to start while any live parameter is unset, while the prompt file differ
 pinned hash, or while the model/EDGAR environment settings are missing. Secret values are
 returned only inside `LiveModelSettings` and never appear in its repr or in any document.
 """
-from larp.intelligence.deadlines import MAX_ASSESSMENT_MS
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -58,7 +57,7 @@ def load_config(mode: str = "development", base: Path = CONFIG_DIR) -> Intellige
     budget = raw["budget"]
     # G-50 [POLICY] is the declared ceiling; config may tighten it, never loosen it.
     if not (type(budget["max_tool_calls"]) is int and 0 <= budget["max_tool_calls"] <= 6
-            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= MAX_ASSESSMENT_MS
+            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= 60000
             and budget["max_tool_types"] <= 3):
         raise IntelligenceError("Evidence budget exceeds the G-50 declaration")
     tools = tuple(raw["tools"])

@@ -158,7 +158,7 @@ class IssuerMappingTests(unittest.TestCase):
 class ConfigurationTests(unittest.TestCase):
     def test_development_config_pins_prompt_and_declared_budget(self):
         config = load_config("development")
-        self.assertEqual((config.max_tool_calls, config.max_deadline_ms), (6, 180000))
+        self.assertEqual((config.max_tool_calls, config.max_deadline_ms), (6, 60000))
         self.assertEqual(config.tools, ("fetch_document", "prior_context", "compare_facts"))
         self.assertEqual(len(config.prompt_sha256), 64)
 

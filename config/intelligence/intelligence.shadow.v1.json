@@ -7,7 +7,7 @@
     "bounds_and_lifecycle": "IDEA-031 S2.4-S2.5, 2026-10-10: work bounds (document chars, facts/statements per document, prior records, statement comparisons, model-input chars as a token proxy) and statement review lifecycle (attempts, backoff, retention). Synthetic development values chosen for offline tests, uncalibrated; live values null until a team decision",
     "severity": "mechanical 8-K item map: IDEA-007 Track A label source 1 (filer-assigned item codes) and IDEA-018's declared falsifier items {4.02, 1.05, 2.06}; keyword events cover 6-K filers, which have no item codes. Not a validated severity model"
   },
-  "budget": {"max_tool_calls": 6, "max_deadline_ms": 180000, "max_tool_types": 3},
+  "budget": {"max_tool_calls": 6, "max_deadline_ms": 60000, "max_tool_types": 3},
   "tools": ["fetch_document", "prior_context", "compare_facts"],
   "prompt": {"path": "prompts/assessor.v2.txt", "sha256": "5ce36961f1b7fba79b328e8a22bbcc5502f6582a3e613be56329e36dea8e52be"},
   "limits": {"max_documents_per_filing": 6, "max_tool_result_chars": 20000, "max_claims": 64,

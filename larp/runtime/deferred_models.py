@@ -31,13 +31,9 @@ class DeferredAssessments:
         if self.root.is_symlink():
             raise ContractError('Model journal directory cannot be a symlink')
         self.pending, self.active = {}, None
-        self._writer_lock = threading.RLock()
-        self._audit_failed = False
         self.finished = threading.Event()
         for path in sorted(self.root.glob('*.jsonl')):
             events = self._read(path)
-            if any(e.get('audit_failed') is True for e in events):
-                self._audit_failed = True
             if not events or events[0].get('kind') != 'REQUEST':
                 raise ContractError('Model journal lacks request')
             first = events[0]
@@ -80,14 +76,7 @@ class DeferredAssessments:
         return events
 
     def _append(self, path, event):
-        with self._writer_lock:
-            try:
-                self._append_locked(path, event)
-            except BaseException:
-                self._audit_failed = True
-                raise
-
-    def _append_locked(self, path, event):
+        # Only one writer exists for an active chain. ACK is written after its worker finished.
         events = self._read(path)
         previous = '0' * 64
         if events:
@@ -106,8 +95,6 @@ class DeferredAssessments:
 
     def submit(self, round_id, request, *, claim=None):
         self._identity(request.read())
-        if self._audit_failed:
-            raise ContractError('Model audit requires reconciliation')
         if self.busy:
             return False
         path = self.root / (hashlib.sha256(round_id.encode()).hexdigest() + '.jsonl')
@@ -130,12 +117,10 @@ class DeferredAssessments:
                 else:
                     self.assessor.audit_hook = hook
                     result = self.assessor.assess(request)
-                if self._audit_failed:
-                    raise ContractError('Model audit write failed')
                 self._append(path, dict(kind='RESULT', result=result.read()))
             except Exception as error:
                 # Never persist exception text: provider/OS exceptions can include credentials.
-                self._append(path, dict(kind='ERROR', error=type(error).__name__, audit_failed=self._audit_failed))
+                self._append(path, dict(kind='ERROR', error=type(error).__name__))
             finally:
                 self.finished.set()
         threading.Thread(target=run, name='larp-assessment', daemon=True).start()
@@ -154,8 +139,6 @@ class DeferredAssessments:
         return None
 
     def ack(self, round_id):
-        if self._audit_failed:
-            raise ContractError('Cannot acknowledge an incomplete model audit')
         path = self.pending[round_id]
         if round_id == self.active and not self.finished.is_set():
             raise ContractError('Cannot acknowledge a running assessment')

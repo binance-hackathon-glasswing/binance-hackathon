@@ -533,4 +533,4 @@ class Routing(unittest.TestCase):
         self.assertTrue(trace['in_flight_calls'])
         self.assertTrue(all(c['model']['provider']=='aiand' for c in trace['in_flight_calls']))
         time.sleep(.2)  # late workers may finish only the already-started call
-        self.assertLessEqual(len(self.calls),3)  # one primary and two owned parallel reviewers
+        self.assertLessEqual(len(self.calls),2)

@@ -265,7 +265,7 @@ class ThroughTheAssessor(unittest.TestCase):
         self.assertEqual((r["status"], r["reasons"]), ("UNAVAILABLE", ["ASSESSMENT_DEADLINE_EXCEEDED"]))
         self.assertIsNone(r["proposed_thesis"])
         _, result, _ = self.assess(self.model(AnthropicMessagesModel, self.rule, latency=61_000))
-        self.assertIn(result.read()["reasons"], (["MODEL_TIMEOUT"], ["ASSESSMENT_DEADLINE_EXCEEDED"]))
+        self.assertEqual(result.read()["reasons"], ["MODEL_TIMEOUT"])
 
     def test_invalid_model_output_abstains(self):
         for output in ({"action": "FINISH", "claims": [], "notes": "x", "orders": []}, {"action": "SELL"}):

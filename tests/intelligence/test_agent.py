@@ -435,7 +435,7 @@ class RequestValidationTests(AgentHarness):
             "UNKNOWN_ISSUER": dict(base, issuer_id="NVDA"),
             "SCHEMA": dict(base, schema="AssessmentRequest.v0"),
         }
-        cases["BUDGET_EXCEEDS_DECLARATION_TIME"] = dict(base, budget={"tool_calls": 6, "deadline_ms": 180001})
+        cases["BUDGET_EXCEEDS_DECLARATION_TIME"] = dict(base, budget={"tool_calls": 6, "deadline_ms": 60001})
         for reason, request in cases.items():
             with self.subTest(reason=reason):
                 model = ScriptedModel(self.w.clock, [{"output": {"action": "FINISH", "claims": [], "notes": "x"}}])
@@ -477,8 +477,7 @@ class BudgetAndFailureTests(AgentHarness):
         slow = ScriptedModel(self.w.clock, [{"latency_ms": 25_000, "output": {
             "action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue"}}}])
         result, _ = self.assess(["EXSEMI_Q3_8K"], model=slow)
-        self.assertEqual(result["status"], "UNAVAILABLE")
-        self.assertIn(result["reasons"], (["MODEL_TIMEOUT"], ["ASSESSMENT_DEADLINE_EXCEEDED"]))
+        self.assertEqual((result["status"], result["reasons"]), ("UNAVAILABLE", ["MODEL_TIMEOUT"]))
         self.assertLessEqual(result["budget_used"]["elapsed_ms"], 60000)
 
     def test_missing_artifact_is_a_tool_error_not_a_crash(self):

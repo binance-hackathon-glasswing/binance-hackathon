@@ -302,20 +302,6 @@
    ],
    "decided": "2026-10-11",
    "status": "DRAFT"
-  },
-  {
-   "id": "DEV-22",
-   "area": "Evidence loop time budget",
-   "declared": "The loop is capped at 6 calls and 60 s per decision.",
-   "v1_behaviour": "Assessment ceiling 180 s; primary at most one third and 60 s; external reviewers run concurrently with at most 90 s each. Six tool calls remain globally bounded by fixed stage allocations. B11 preserves assessed primary content unless a reviewer dissents. Deferred delivery retains all workers through durable audit completion.",
-   "reason": "IDEA-083: observed sequential review starvation. The user authorizes implementation of the reviewed Yao decision; model efforts, prompts and routing policy bytes remain unchanged. Host timing and affordability remain separate qualification.",
-   "evidence": [
-    "IDEA-083",
-    "G-50",
-    "GAP-62"
-   ],
-   "decided": "2026-10-19",
-   "status": "DRAFT"
   }
  ]
 }

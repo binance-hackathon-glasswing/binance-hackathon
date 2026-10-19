@@ -240,7 +240,7 @@ class Preferred(unittest.TestCase):
 
     def test_missing_openai_key_uses_high_effort_fallback(self):
         f=self.fx; _,result=f.run_assessment(f.build(key=False))
-        self.assertIn(('aiand','moonshotai/kimi-k3','high'), [c[:3] for c in f.calls])
+        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
         self.assertEqual(result['status'],'ASSESSED')
 
     def test_model_identity_is_stable_across_key_and_period_changes(self):
@@ -264,7 +264,7 @@ class Preferred(unittest.TestCase):
         token=b.admit(b.snapshot()['available_micro_usd'],'synthetic-other-work'); b.settle(token,None)
         _,result=f.run_assessment(router)
         self.assertFalse(any(c[0]=='openai' for c in f.calls))
-        self.assertIn(('aiand','moonshotai/kimi-k3','high'), [c[:3] for c in f.calls])
+        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
         self.assertFalse(result['routing']['budget']['external_only'])
         steps=result['model_io']['steps']
         self.assertEqual(steps[0]['response']['error'],'OPENAI_PACING_LIMIT')
@@ -289,12 +289,13 @@ class Preferred(unittest.TestCase):
         f.openai_error=None; f.calls.clear(); f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
 
-    def test_both_external_failures_preserve_assessed_primary_incomplete(self):
+    def test_both_external_failures_strip_required_review_authority(self):
         f=self.fx; f.fail_external=True
         _,result=f.run_assessment(f.build())
-        self.assertEqual(result['status'],'ASSESSED')
-        self.assertEqual(result['routing']['review_outcome'], 'INCOMPLETE')
-        self.assertCountEqual([c[:3] for c in f.calls if c[0]=='aiand'],
+        self.assertNotEqual(result['status'],'ASSESSED')
+        self.assertFalse(result['findings'])
+        self.assertFalse(result['event_findings'])
+        self.assertEqual([c[:3] for c in f.calls if c[0]=='aiand'],
                          [('aiand','moonshotai/kimi-k3','high'),('aiand','zai-org/glm-5.3','high')])
 
     def test_disagreement_abstains_instead_of_selecting_a_model(self):
@@ -364,7 +365,7 @@ class Preferred(unittest.TestCase):
             release.set(); self.assertTrue(q.finished.wait(2))
         ready=q.ready(); self.assertEqual(ready['result']['status'],'UNAVAILABLE')
         self.assertEqual(len(workers),1)
-        self.assertLessEqual(len([c for c in f.calls if c[0]=='aiand']), 2)
+        self.assertFalse(any(c[0]=='aiand' for c in f.calls))
         self.assertEqual(ready['audit']['events'][-1]['kind'],'RESULT')
         self.assertTrue(any(e['kind']=='MODEL_RESPONSE' for e in ready['audit']['events']))
         q.ack('blocked')
