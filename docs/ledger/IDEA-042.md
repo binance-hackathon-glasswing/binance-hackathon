@@ -390,3 +390,24 @@ User authorizes review/fix all open PRs, ordinary target merges including PR11 t
 4.7 additional prospective acceptance: exercise real published red-flag directives through both policy and the independent no-policy risk path; a Class 1 exit remains mandatory and precedes replenishment/buys. Wire the actual execution service, PostgreSQL execution store and receipt producer through coordinator settlement, then prove reservation release, order mapping, durable ACKs and same-head replay. Synthetic venue/chain/signer fixtures only; no live release.
 
 4.7 release inspection finding: release_files includes JSON configuration but omits the assessor's deployed .txt prompts (G-03/G-12), and the runtime Dockerfile. Prospective pass: manifest includes both when present, changing only either invalidates verify_release; synthetic temp trees only. Add these files to the existing manifest inventory; do not relax startup/version gates.
+
+## RG-01 — rehearsal gate packet (2026-10-19), prospective criteria
+
+User asks to create/work on rehearsal gates. Prepare a repository-only operator
+packet for C09/C10 in PR133. Account-owner details are resolved per the user's
+2026-10-19 update; no host access or signed acceptance is inferred.
+
+Pass criteria before verification:
+1. Map every DR13–22 requirement and DR04/05 crash/reconciliation prerequisite
+   to an ordered gate, observation, explicit failure condition and evidence.
+2. Separate ready preparation, unsigned observation, signed drills and final
+   acceptance; use existing adopted bounds, never invent numerical acceptance.
+3. Supply reusable per-drill and daily records; all actual outcomes start NOT_RUN.
+4. Reference existing supported commands/APIs; flag missing host-specific fault
+   injection plans rather than inventing CLI options or unsafe generic mutations.
+5. Check changed Markdown links and mapping coverage after pushing this packet;
+   no cloud, receiver, signer, wallet or live trading operations. C09/C10 and
+   all partially completed GAPs remain open pending measured host evidence.
+
+Results: NOT_RUN at registration. Operational status: NOT_RUN; packet preparation
+cannot approve a policy, qualify a release, or pass Gate A/B/C.
