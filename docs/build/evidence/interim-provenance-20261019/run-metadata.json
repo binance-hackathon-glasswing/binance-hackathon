@@ -1,0 +1,64 @@
+{
+  "capture_interrupted": false,
+  "capture_pid": 91310,
+  "capture_pid_alive_after_summary": true,
+  "capture_source_commit": "eda2ed2ab1ab4b72f220eb6b92e882737d950825",
+  "coverage": {
+    "bnb_quotes": 86,
+    "failures": 0,
+    "samples": 430,
+    "utc_days": [
+      "2026-10-16",
+      "2026-10-17"
+    ],
+    "weekend_days": [
+      "2026-10-17"
+    ]
+  },
+  "failures_by_stage": {},
+  "files": [
+    {
+      "bytes": 140585,
+      "name": "capture-2026-10-16.jsonl",
+      "omitted_incomplete_bytes": 0,
+      "records": 180,
+      "sha256": "a125d2a400c1a5375d609dfdd24200aead10099aa23376ac29b9a4f6fbaa3379"
+    },
+    {
+      "bytes": 261914,
+      "name": "capture-2026-10-17.jsonl",
+      "omitted_incomplete_bytes": 0,
+      "records": 336,
+      "sha256": "3796ebfd29b1f83f622dbaf8c7c7f933cfe56c12eafc948e788a84dbb75cc190"
+    }
+  ],
+  "final_result": "SUCCESS_WITH_APPROVED_INTERIM_THRESHOLDS",
+  "initial_min_samples_10_result": "REFUSED: every token has 9 US_SESSION samples",
+  "kinds": {
+    "BNB_PRICE": 86,
+    "SAMPLE": 430
+  },
+  "observed_at": "2026-10-17T10:40:52.945Z",
+  "output_sha256": {
+    "quote-cost-summary.json": "41e17b4d14322d79b0231544d81d058b128c039b6abb707de5f2c7a5f183be2b",
+    "quote-cost-summary.report.json": "0195e57623b6aa1bf6fdb9f02cbd6aa83f1dbe6d5c7ef763d42ddcfaba824f89"
+  },
+  "parameters": {
+    "min_days": 2,
+    "min_samples": 9,
+    "require_weekend": true,
+    "session_calendar_sha256": "bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c"
+  },
+  "profiles_generated": false,
+  "purpose": "INTERIM SUMMARY ONLY - NOT APPROVED FOR PINNING OR TRADING",
+  "samples_by_token": {
+    "GOOGLB": 86,
+    "MSFTB": 86,
+    "NVDAB": 86,
+    "SKHYB": 86,
+    "TSLAB": 86
+  },
+  "snapshot_at_utc": "2026-10-17T10:41:34.290368+00:00",
+  "summary_capture_hash": "2ec51d514bff738a1b09a5c0be694d69a0e1334dc3bc2990b9c7d57354dde7da",
+  "summary_created_at_utc": "2026-10-17T10:43:21.638513+00:00"
+}
