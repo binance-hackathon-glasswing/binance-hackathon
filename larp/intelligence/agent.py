@@ -597,9 +597,10 @@ class EvidenceAssessor:
         result["result_id"] = "res:" + digest("larp.intel.result.v1", result)
         return Document.from_dict(result)
 
-    def _abandoned(self, r, validated, start, io) -> Document:
+    def _abandoned(self, r, validated, start, io, *, reason="ASSESSMENT_DEADLINE_EXCEEDED") -> Document:
         """UNAVAILABLE at the hard deadline. Nothing from the abandoned worker is used as evidence; the model calls it
-        completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted."""
+        completed before the deadline are recorded for audit (F-49 (c)), and a call still in flight is counted.
+        `reason` names a refusal that never started (e.g. ROUTING_GROUP_BUSY), so it is not logged as a timeout."""
         steps = list(io["steps"])
         tool_calls = [dict(c) for c in io["tool_calls"]]
         for call in tool_calls:
@@ -607,12 +608,13 @@ class EvidenceAssessor:
                 call["status"] = "IN_FLIGHT_AT_DEADLINE"
         in_flight = self._in_flight(io.get("in_flight"))
         entry, cutoff, _, _, tools, _, refs = validated
-        now, reasons = self.clock(), ["ASSESSMENT_DEADLINE_EXCEEDED"]
+        now, reasons = self.clock(), [reason]
         key = digest("larp.intel.assessment-key.v1", {
             "issuer_id": entry.issuer_id, "cutoff_ms": cutoff, "evidence_refs": refs, "context_hash": r["context_hash"],
             "policy_profile_hash": r["policy_profile_hash"], "model_hash": self.model.identity.model_hash,
             "prompt_sha256": self.config.prompt_sha256, "config_sha256": self.config.config_sha256,
-            "tools": list(tools), "budget": r["budget"], "outcome": "DEADLINE_EXCEEDED"})
+            "tools": list(tools), "budget": r["budget"],
+            "outcome": "DEADLINE_EXCEEDED" if reason == "ASSESSMENT_DEADLINE_EXCEEDED" else reason})
         result = {
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"], "cutoff_ms": cutoff,
@@ -633,7 +635,7 @@ class EvidenceAssessor:
                          "cot": [x["response"]["reasoning_summary"] for x in steps
                                  if "response" in x and x["response"]["reasoning_summary"]],
                          "model_called": io["started"] > 0, "requests_started": io["started"],
-                         "no_model_call_reason": None if io["started"] else "ASSESSMENT_DEADLINE_EXCEEDED",
+                         "no_model_call_reason": None if io["started"] else reason,
                          "in_flight": in_flight,
                          "note": "worker abandoned at the deadline: model calls completed before it are recorded for "
                                  "audit only; a call in flight at the deadline is counted in requests_started and "

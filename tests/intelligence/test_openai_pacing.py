@@ -240,7 +240,9 @@ class Preferred(unittest.TestCase):
 
     def test_missing_openai_key_uses_high_effort_fallback(self):
         f=self.fx; _,result=f.run_assessment(f.build(key=False))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertEqual(result['status'],'ASSESSED')
 
     def test_model_identity_is_stable_across_key_and_period_changes(self):
@@ -264,7 +266,9 @@ class Preferred(unittest.TestCase):
         token=b.admit(b.snapshot()['available_micro_usd'],'synthetic-other-work'); b.settle(token,None)
         _,result=f.run_assessment(router)
         self.assertFalse(any(c[0]=='openai' for c in f.calls))
-        self.assertEqual(f.calls[0][:3],('aiand','moonshotai/kimi-k3','high'))
+        # Parallel reviewers (IDEA-083 B3): either may dispatch first; both use high effort.
+        self.assertEqual((f.calls[0][0],f.calls[0][2]),('aiand','high'))
+        self.assertIn(('aiand','moonshotai/kimi-k3','high'),[c[:3] for c in f.calls])
         self.assertFalse(result['routing']['budget']['external_only'])
         steps=result['model_io']['steps']
         self.assertEqual(steps[0]['response']['error'],'OPENAI_PACING_LIMIT')

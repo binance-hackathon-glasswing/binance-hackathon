@@ -567,3 +567,30 @@ ledger state and records real stage timing, charges and receiver ACK. This
 session performs none of those host operations. Signed adoption, source/route,
 profile/holding/caps and approved signer-session/key gates remain unchanged.
 PR133's live checklist/handoff is updated with PR181 and these remaining owners.
+
+## PR179-INT01 — Integration review of PR179/180/181 before merge (2026-10-19)
+
+Requested by the user: review, fix and merge PR179 with its stacked runtime review (PR180) and implementation
+(PR181). GitHub CI is not used (organisation Actions billing, #98); verification is local. Branch
+`claude/funny-shannon-jwaru9` = PR181 head `dfe9f95` + PR179 head `adfa58d` (Keith's PR179-RV01, which PR180/181
+did not contain) + the fixes below.
+
+Pass criteria, written before the final runs:
+- Merge conflicts in this file and `docs/LEDGER.md` resolved without losing PR179-RV01, IR179 or AB-IMPL01 text.
+- The full suite on the integrated branch in a `deploy/requirements-test.lock` venv with disposable local
+  PostgreSQL has no failures; skips are only the platform/external ones already listed in AB-IMPL01.
+- Every test touched here passes 10 repeated runs of its file (flake check), without changing runtime decisions.
+- B11, budgets, prompts, efforts and the routing file `a5fca50a…` are unchanged by these fixes.
+
+Findings and fixes:
+
+| ID | Finding at PR181 `dfe9f95` | Fix |
+|---|---|---|
+| INT01-1 | PR180 conflicted with PR179 (`adfa58d`, PR179-RV01) in this file and the ledger row. | Merged. AB1/AB2/AB11/AB12 take PR179-RV01's wording, which keeps Isaac's AB-IMPL01 clarifications (fallback witness for a non-ASSESSED primary; separate outer routed ID). PR179-RV01's `routing.primary_result_id` is implemented as `routing.primary_result.result_id` (with the primary's `artifact`; `null` when no primary ran). |
+| INT01-2 | PR179-RV01 AB1 (ASSESSED primary at 18 s, reviewer-0 ABSTAIN at 34 s, reviewer-1 confirming at 10 s → ABSTAIN / `ROUTING_REVIEW_DISSENT` / DISSENT) had only the pure matrix witness, no timing witness. | Added `test_ab1_18s_assessed_primary_34s_abstain_and_10s_confirm_is_dissent`, both completion orders: verdicts `[dissent, confirm]`, no claims, elapsed 62 s. |
+| INT01-3 | A routed request refused because the previous group still owns its workers was logged as `ASSESSMENT_DEADLINE_EXCEEDED`, although it never started; trial latency reports would count it as a timeout. | Reason `ROUTING_GROUP_BUSY` (also `no_model_call_reason`). Still UNAVAILABLE with no model call; the default deadline path and its assessment key are byte-identical. |
+| INT01-4 | Four PR181-era tests were flaky (failed 1–4 of 6–10 runs here; the PR181 full run here had 2 failures): `test_agent` first-step timeout reason depends on whether real elapsed time exceeds fake-clock time; two pacing tests and two cutoff tests assumed reviewer-0 dispatches first or only delayed reviewer-0's preparation. | Tests accept either fail-closed timeout reason, assert "an AIand high-effort reviewer first" instead of Kimi first, and delay both reviewers' preparation. No runtime change. |
+| INT01-5 | DEV-22 register text and plan.md G-50 / declared-values cells had missing spaces (`at most180s`, `on2026-10-19`). | Fixed in `deviations.v1.json` and re-rendered plan.md §6.5 from it (register test passes). |
+
+Not changed (noted for owners): the AB-IMPL01/IR179 prose keeps its missing spaces between words and numbers;
+`Deadline.remaining()` takes the larger of fake-clock and real elapsed time, which only matters with fake clocks.

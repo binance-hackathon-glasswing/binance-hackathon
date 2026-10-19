@@ -302,7 +302,9 @@ class RoutedAssessor:
             r=request.read()
             try:validated=validator._validate(r)
             except (IntelligenceError,KeyError,TypeError):return validator.assess(request)
-            return validator._abandoned(r,validated,self.clock(),dict(steps=[],tool_calls=[],started=0))
+            # Never started: a previous group still owns its workers. Not a deadline overrun.
+            return validator._abandoned(r,validated,self.clock(),dict(steps=[],tool_calls=[],started=0),
+                                        reason='ROUTING_GROUP_BUSY')
         responses=[];requests={}
         def record(event):
             with self._ownership_lock:

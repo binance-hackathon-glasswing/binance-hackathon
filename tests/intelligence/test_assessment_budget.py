@@ -230,7 +230,9 @@ class ParallelRouting(unittest.TestCase):
         first=router.assess(req).read()
         self.assertTrue(entered.is_set())
         before=len(f.calls)
-        self.assertEqual(router.assess(req).read()['status'],'UNAVAILABLE')
+        busy=router.assess(req).read()
+        self.assertEqual((busy['status'],busy['reasons']),('UNAVAILABLE',['ROUTING_GROUP_BUSY']))
+        self.assertEqual(busy['model_io']['no_model_call_reason'],'ROUTING_GROUP_BUSY')
         self.assertEqual(len(f.calls),before)
         release.set()
         for worker in router._workers:worker.join(2)
@@ -281,12 +283,54 @@ class ParallelRouting(unittest.TestCase):
         self.assertEqual([s['status'] for s in value['routing']['stages']],['UNAVAILABLE','ABSTAIN','ASSESSED'])
         self.assertEqual(value['budget_used']['elapsed_ms'],62000)
 
+    def test_ab1_18s_assessed_primary_34s_abstain_and_10s_confirm_is_dissent(self):
+        # PR179-RV01 AB1: the observed hosted case. Reviewer-0's ABSTAIN blocks the
+        # assessed primary although reviewer-1 confirms; nothing replaces the primary.
+        # Elapsed time is charged on each stage's final step (the fixture's OpenAI
+        # pacing window is shorter than 18 s), on a fresh fixture per completion order.
+        def finishing(text):return json.loads(text).get('action')=='FINISH'
+        for first in (0,1):
+            with self.subTest(first_reviewer=first):
+                fixture=preferred.Preferred();fixture.setUp();self.addCleanup(fixture.doCleanups)
+                f=fixture.fx;original=f.openai;original_review=f.aiand;f.delay=0
+                def primary(*args):
+                    status,raw=original(*args)
+                    if finishing(json.loads(raw)['output'][0]['content'][0]['text']):f.w.clock.advance(18000)
+                    return status,raw
+                barrier=threading.Barrier(2,timeout=2);entered=set();done=threading.Event()
+                def review(url,headers,raw,timeout):
+                    body=json.loads(raw);kimi=body['model']=='moonshotai/kimi-k3'
+                    if body['model'] not in entered:entered.add(body['model']);barrier.wait()
+                    if kimi:
+                        status,reply=200,json.dumps(preferred.fixtures.chat_reply(body,dict(
+                            action='FINISH',claims=[],notes='synthetic timing witness',
+                            extra='invalid action forces ABSTAIN'))).encode()
+                        metadata={'x-model':body['model'],'x-reasoning-effort':body['reasoning_effort']}
+                    else:status,reply,metadata=original_review(url,headers,raw,timeout)
+                    final=kimi or finishing(json.loads(reply)['choices'][0]['message']['content'])
+                    if final:
+                        if (0 if kimi else 1)!=first:self.assertTrue(done.wait(2))
+                        f.w.clock.advance(34000 if kimi else 10000)
+                        if (0 if kimi else 1)==first:done.set()
+                    return status,reply,metadata
+                f.openai=primary;f.aiand=review
+                _,value=f.run_assessment(f.build(),deadline_ms=180000)
+                self.assertEqual([s['status'] for s in value['routing']['stages']],['ASSESSED','ABSTAIN','ASSESSED'])
+                self.assertEqual((value['status'],value['reasons'],value['routing']['review_outcome']),
+                                 ('ABSTAIN',['ROUTING_REVIEW_DISSENT'],'DISSENT'))
+                self.assertEqual([v['verdict'] for v in value['routing']['reviewers']],['dissent','confirm'])
+                self.assertFalse(value['claims'])
+                self.assertEqual(value['budget_used']['elapsed_ms'],62000)
+
     def test_absolute_deadline_includes_payload_preparation(self):
-        f=self.fx;router=f.build();model=router.external[0]
-        keep=model._keep
-        def expire(raw):
-            ref=keep(raw);f.w.clock.advance(181000);return ref
-        with patch.object(model,'_keep',side_effect=expire):
+        f=self.fx;router=f.build()
+        # Both reviewers prepare in parallel; each crosses the cutoff before its own dispatch.
+        def expiring(model):
+            keep=model._keep
+            def expire(raw):
+                ref=keep(raw);f.w.clock.advance(181000);return ref
+            return patch.object(model,'_keep',side_effect=expire)
+        with expiring(router.external[0]),expiring(router.external[1]):
             router.openai=None
             _,value=f.run_assessment(router)
         self.assertFalse(f.calls)

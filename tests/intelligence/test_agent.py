@@ -514,7 +514,9 @@ class BudgetAndFailureTests(AgentHarness):
     def test_model_timeout_error_and_invalid_output(self):
         self.world("EXSEMI_Q2_8K", "EXSEMI_Q3_8K")
         cases = (
-            (make_model(self.w, "timeout"), "UNAVAILABLE", "ASSESSMENT_DEADLINE_EXCEEDED"),
+            # IDEA-083: the stage deadline takes the larger of fake-clock and real elapsed time, so a
+            # timeout on the first step ends either at the provider or at the cutoff; both fail closed.
+            (make_model(self.w, "timeout"), "UNAVAILABLE", ("MODEL_TIMEOUT", "ASSESSMENT_DEADLINE_EXCEEDED")),
             (ScriptedModel(self.w.clock, [{"error": "HTTP 500"}]), "UNAVAILABLE", "MODEL_ERROR"),
             (ScriptedModel(self.w.clock, [{"output": {"action": "FINISH", "claims": [], "notes": "x", "score": 0.7}}]),
              "ABSTAIN", "MODEL_OUTPUT_INVALID"),
@@ -524,7 +526,8 @@ class BudgetAndFailureTests(AgentHarness):
         for model, status, reason in cases:
             with self.subTest(reason=reason):
                 result, doc = self.assess(["EXSEMI_Q3_8K"], model=model)
-                self.assertEqual((result["status"], result["reasons"]), (status, [reason]))
+                self.assertEqual(result["status"], status)
+                self.assertIn(result["reasons"], [[r] for r in reason] if type(reason) is tuple else [[reason]])
                 self.assertIsNone(result["proposed_thesis"])
                 self.assertEqual(result["claims"], [])
                 self.assertTrue(result["review_requests"])
