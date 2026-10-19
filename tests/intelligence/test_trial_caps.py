@@ -223,11 +223,16 @@ class TrialRouting(unittest.TestCase):
 
     def test_external_transport_boundary_refuses_after_request_preparation_crosses_cutoff(self):
         f=self.fx;f.s['openai_trial']['end_ms']=f.w.clock()+10
-        b=self.init();router=f.build(key=False);model=router.external[0].model
-        keep=model._keep
-        def cross(raw):
-            keep(raw);f.w.clock.advance(f.s['openai_trial']['end_ms']-f.w.clock())
-        with patch.object(model,'_keep',side_effect=cross):_,value=f.run_assessment(router)
+        b=self.init();router=f.build(key=False)
+        # IDEA-083 B3: reviewers prepare in parallel, so each one's preparation crosses the cutoff
+        # before its own transport boundary (serially, the first crossing also blocked the second).
+        def crossing(model):
+            keep=model._keep
+            def cross(raw):
+                keep(raw);f.w.clock.advance(max(0,f.s['openai_trial']['end_ms']-f.w.clock()))
+            return patch.object(model,'_keep',side_effect=cross)
+        with crossing(router.external[0].model),crossing(router.external[1].model):
+            _,value=f.run_assessment(router)
         self.assertEqual(f.calls,[])
         self.assertEqual(value['status'],'UNAVAILABLE')
         self.assertEqual(b.snapshot()['trial']['charged_micro_usd'],0)
