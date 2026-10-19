@@ -49,8 +49,8 @@ post-last-funding opening capture.
    instruction to repeat funding based on this old snapshot. If funding is
    already sufficient, record that reconciliation instead. For any required swap,
    use BNB Smart Chain, selecting USDT for the network fee. Review the wallet's
-   actual total USDT debit/fee; about2 is the remaining target, not a fabricated
-   executed amount. No own funds, external deposit, wallet-to-wallet transfer,
+   actual total USDT debit/fee against the freshly reconciled remaining need;
+   the historical about2 target is not an executed amount. No own funds, external deposit, wallet-to-wallet transfer,
    BNB sell-back, key export or agent trade is part of this handoff.
 3. **Isaac:** retain the exact transaction hash and receipt UTC, USDT outgoing/
    incoming/net debit, BNB received, and the source for each amount. Keep native
