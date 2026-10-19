@@ -1,5 +1,17 @@
 # IDEA-076 — Build the S1 trading plan (trend-guarded volatility-weighted book)
 
+## PR187-RV1 — independent review (2026-10-19, prospective)
+
+User requests review, fixes and merge of PR187 into its existing PR133 parent.
+R1: an ADVERSE latch survives incomplete and expired later reviews. Status and
+availability alone therefore cannot certify a healthy limiter-expiry session.
+Pass: an accepted Class2 fact with an incomplete or expired underlying review
+remains available for reductions, but marks the input incomplete and cannot
+expire a previously accepted CAUTION. Fresh complete Class2-only reviews and
+CLEAR inputs still count healthy. Push criteria/tests before RED and behavior
+before GREEN; run the focused S1/native suite and applicable full regression.
+No profile, experiment result, policy default or live gate is adopted.
+
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
 - Status: open (S1 core repository review PASS; Isaac B6 full offline verification PASS in PR165 / EB-01 below; owner review, parameter approval, live inputs, B5/B7 and rehearsal remain).
 - What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:

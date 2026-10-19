@@ -99,6 +99,25 @@ class ExposureInputs(unittest.TestCase):
         report = self.produce(universe=('NVDAB', 'GOOGLB'))
         self.assertFalse(report['complete']); self.assertEqual(len(report['evidence']), 1)
 
+    def test_adverse_latch_cannot_hide_incomplete_or_expired_review(self):
+        _, record, now, _, _ = self.setup_record()
+        for changes in [
+            dict(review_complete_excluding_timed_blocks=False),
+            dict(assessed_until_excluding_timed_ms=now),
+        ]:
+            with self.subTest(changes=changes):
+                incomplete = dict(record, **changes)
+                incomplete['context_hash'] = context_hash(incomplete)
+                report = self.produce([incomplete])
+                self.assertFalse(report['complete'])
+                self.assertEqual(len(report['evidence']), 1)
+                previous = dict(level='CAUTION', healthy_sessions=2, counted_session=1,
+                                used_evidence_ids=[report['evidence'][0]['evidence_id']])
+                following, audit = s1.limiter_step(previous, session=2, cfg=cfg(),
+                    evidence=report['evidence'], assessment=None, input_complete=report['complete'])
+                self.assertEqual(following['level'], 'CAUTION')
+                self.assertFalse(audit['healthy'])
+
 
 class SessionCloseJobs(unittest.TestCase):
     def test_frozen_close_delay_and_identity_survive_later_planning(self):
