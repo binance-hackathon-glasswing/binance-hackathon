@@ -178,6 +178,8 @@ class RoutedConcurrency(unittest.TestCase):
                     request_namespace = ''
                     _validate = delegate._validate
                     _abandoned = delegate._abandoned
+                    registry = delegate.registry
+                    _reviews = delegate._reviews
                     def assess(inner, request, **kwargs):
                         label = inner.request_namespace.rstrip(':')
                         value = deepcopy(template)

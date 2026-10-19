@@ -239,6 +239,9 @@ class EvidenceAssessor:
             worker_group.append(worker)
         worker.start()
         worker.join(deadline.remaining() / 1000)
+        if not worker.is_alive() and box.get('result') is not None and \
+                box['result'].read()['status'] == 'UNAVAILABLE':
+            return box['result']  # keep completed timeout diagnostics; they carry no assessment authority
         if worker.is_alive() or deadline.remaining() <= 0:
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
             frozen = self._abandoned(r, validated, start, deepcopy(io))

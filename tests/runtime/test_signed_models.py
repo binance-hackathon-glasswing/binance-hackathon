@@ -165,8 +165,8 @@ class DeferredProviderTimeouts(unittest.TestCase):
         self.assertEqual(ready['result']['status'], 'UNAVAILABLE')
         responses = [e for e in events if e['kind'] == 'MODEL_RESPONSE']
         self.assertEqual(len(responses), 3)
-        self.assertEqual(responses[0]['response']['reasoning_summary'], 'Synthetic reasoning.')
-        self.assertTrue(all(e['response']['reasoning_summary'] == 'Synthetic reasoning.' for e in responses))
+        self.assertTrue(all(e['response']['raw_response_artifact'] for e in responses))
+        self.assertTrue(all(e['response']['status'] == 'TIMEOUT' for e in responses))
         self.assertFalse(ready['result']['model_io']['cot'])  # late replies stay audit-only
         path = q.pending['provider-timeout']
         q.ack('provider-timeout')
