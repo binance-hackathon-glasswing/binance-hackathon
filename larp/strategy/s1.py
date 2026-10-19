@@ -245,7 +245,8 @@ def limiter_step(previous, *, session, cfg, evidence, assessment, input_complete
                if cfg["limiter_mode"] == "DETERMINISTIC" else record["rejected"] is None)
     healthy = healthy and input_complete is True
     if cfg["limiter_mode"] == "DETERMINISTIC" and evidence is not None and not healthy:
-        record["rejected"] = "MALFORMED_OR_UNVERIFIED_EVIDENCE_INPUT"
+        record["rejected"] = ("INCOMPLETE_EVIDENCE_INPUT" if input_complete is not True
+                              else "MALFORMED_OR_UNVERIFIED_EVIDENCE_INPUT")
     record["healthy"] = healthy
     if level != "NORMAL" and healthy and (counted is None or session > counted):
         healthy_sessions, counted = healthy_sessions + 1, session

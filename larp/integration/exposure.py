@@ -43,8 +43,10 @@ def exposure_inputs(*, records, profile, run_id, profile_hash, now_ms, markets,
             items[eid] = dict(evidence_id=eid, verified=True, **{'class': 'CLASS_2_RED_FLAG'},
                              symbols=[symbol], session_index=sid)
     evidence = [items[k] for k in sorted(items)]
+    sessions = [list(s) for s in sessions]
     return dict(schema='S1ExposureInput.v1', scope='ENABLED_CLASS2_FILINGS_ONLY', complete=complete,
-        evidence=evidence, decisions=decisions,
+        evidence=evidence, decisions=decisions, calendar_sessions=sessions,
         contexts={s: r['context_hash'] for s, r in sorted(accepted.items())},
         input_hash=digest('larp.s1.exposure-input.v1', dict(evidence=evidence, complete=complete,
-                                                        contexts={s: r['context_hash'] for s, r in sorted(accepted.items())})))
+                                                        contexts={s: r['context_hash'] for s, r in sorted(accepted.items())},
+                                                        calendar_sessions=sessions)))

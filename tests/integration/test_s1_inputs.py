@@ -81,3 +81,80 @@ class SessionCloseJobs(unittest.TestCase):
         self.assertEqual(close, [j for j in planner._jobs(s, None, now+1000)
                                  if j['payload']['reason'] == 'S1_SESSION_CLOSE'])
         self.assertEqual(close[0]['payload']['issuer_id'], 'issuer')
+
+
+# A real store/Coordinator/RuntimePlanner/scheduler/replay path; all external ports
+# and prices are synthetic. No service mode or signing capability is activated.
+from larp.integration.runtime import ContextBuilder, StrategyPolicy, initial_projection, initial_policy_state
+from larp.integration.settlement import ExecutionBridge, settle
+from larp.integration.replay import replay_live
+from larp.runtime.coordinator import Coordinator
+from larp.runtime.fixtures import FakeAssessor
+from larp.runtime.scheduler import Scheduler
+from larp.storage.postgres import doc
+from tests.support import DatabaseCase, request
+
+
+class S1Durability(DatabaseCase):
+    def setUp(self):
+        super().setUp()
+        self.snapshot = snap()
+        self.context = self.snapshot.context.read()
+        self.profile = self.context['profile']
+        self.h = Document.from_dict(self.profile).digest('StrategyProfile.v1')
+        self.now = int(self.snapshot.observed_at.timestamp()*1000)
+        bounds = self.context['execution_session']
+        self.cal = SessionCalendar(dict(schema='USRegularSessions.v1', calendar_id='FROZEN_SYNTHETIC', sessions=[
+            dict(session_index=bounds['index']+n,
+                 open_at=datetime.fromtimestamp((bounds['open_ms']+n*86400000)/1000, timezone.utc).isoformat(),
+                 close_at=datetime.fromtimestamp((bounds['close_ms']+n*86400000)/1000, timezone.utc).isoformat())
+            for n in range(2)]))
+        self.initial = initial_projection(self.context['portfolio'])
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        self.store.initialize('run', 'wallet', 56, doc(self.initial))
+        self.store.takeover('run', 1, offline=True)
+        self.builder = ContextBuilder(profile=self.profile, profile_hash=self.h, run_id='run',
+            issuers={}, universe=self.snapshot.universe, calendar=self.cal,
+            market=lambda now: self.context['markets'], health=lambda current: self.context['health'])
+        self.planner = RuntimePlanner(job_validity_ms=60000, job_max_attempts=2,
+                                     issuers={'issuer': {'token': 'NVDAB'}})
+
+    def coordinator(self):
+        return Coordinator(self.store, FakeAssessor(), StrategyPolicy(), self.planner,
+            execution=ExecutionBridge(), run_id='run', version_id='synthetic-s1', profile_hash=self.h,
+            address='0x'+'1'*40, context_builder=self.builder,
+            initial_policy_state=initial_policy_state('run', self.profile), clock_ms=lambda: self.now)
+
+    def start(self, identity):
+        req = request(job=identity, cutoff=self.now).read(); req['policy_profile_hash'] = self.h
+        self.coordinator().start(identity, doc(req), self.now)
+
+    def test_jobs_audit_and_frozen_calendar_replay_survive_restart(self):
+        self.start('first')
+        event = self.store.event('run', 'plan:first')['record']
+        self.assertIn('exposure_input', event['policy_input']['context'])
+        self.assertFalse(event['policy_input']['context']['exposure_input']['complete'])
+        jobs = [j for j in event['plan']['jobs'] if j['payload']['reason'] == 'S1_SESSION_CLOSE']
+        self.assertEqual(len(jobs), 1)
+        self.assertIsNone(Scheduler(self.store).claim('run', self.epoch, 'evidence', self.now))
+        # A fresh Coordinator does not change the calendar/job identity.
+        self.now += 1000
+        self.start('after-restart')
+        again = self.store.event('run', 'plan:after-restart')['record']
+        self.assertEqual(jobs, [j for j in again['plan']['jobs'] if j['payload']['reason'] == 'S1_SESSION_CLOSE'])
+        expected, journal = self.store.verify('run'), self.store.journal('run')
+        # Replay must use recorded calendar data as well as market ports.
+        def dead(*args):raise AssertionError('live port called by replay')
+        self.builder.market = self.builder.calendar = self.builder.health = dead
+        with self.store.transaction() as db:db.execute('TRUNCATE runs CASCADE')
+        actual = replay_live(journal, doc(self.initial), self.store, builder=self.builder,
+            run_id='run', wallet_id='wallet', chain_id=56, version_id='synthetic-s1', profile_hash=self.h,
+            address='0x'+'1'*40, policy=StrategyPolicy(), planner=self.planner,
+            execution=ExecutionBridge(), reducer=settle, initial_policy_state=initial_policy_state('run', self.profile))
+        self.assertEqual(actual, expected)
+        scheduler = Scheduler(self.store)
+        claim = scheduler.claim('run', self.store.load('run').read()['epoch'], 'evidence', jobs[0]['due_ms'])
+        self.assertEqual(claim.read()['job'], jobs[0])
+        scheduler.finish('run', claim)
+        self.assertIsNone(scheduler.claim('run', claim.read()['epoch'], 'evidence', jobs[0]['due_ms']+1))

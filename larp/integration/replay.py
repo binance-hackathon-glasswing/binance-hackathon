@@ -42,7 +42,8 @@ class RecordedPorts:
             "remaining": context["remaining_sessions"]}
         if 'execution_session' in context:
             recorded.calendar.window = lambda now_ms: context['execution_session']
-            recorded.calendar.sessions = getattr(self.builder.calendar, 'sessions', ())
+            recorded.calendar.sessions = (context.get('exposure_input') or {}).get(
+                'calendar_sessions', getattr(self.builder.calendar, 'sessions', ()))
         recorded.health = lambda current: context["health"]
         recorded.series = lambda now_ms: context["series"]
         recorded.gas_quotes = (lambda now_ms: context["gas_quotes"]) if "gas_quotes" in context else None
