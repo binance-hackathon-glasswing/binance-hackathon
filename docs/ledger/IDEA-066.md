@@ -2167,3 +2167,21 @@ signing, paid model, actual receiver or installation operation occurred. Both
 register hashes changed: oldc5be269 artifacts/CI/host observations keep only
 their original scope. A future reviewed release/manifest must include accepted
 metadata and receive its own required checks before installation.
+
+
+IQ02 delivery: [PR186](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/186),
+branch codex/isaac-iq02-declaration-audit-20261019 stacked on IQ01 PR185
+(c2839fd). Rebase/history rewrite is not used; retarget to the PR133 branch when
+IQ01 merges. Keegan review is pending; no merge or policy approval is claimed.
+PR133's description tracks this delivery separately from final acceptance.
+Final static checks: fifteen findings,22 DRAFT rows,30 new local links/anchors;
+renderer PASS. The disposable local database was removed. All session changes
+are committed/pushed on the feature branch; main matches origin/main (0/0).
+
+
+PR186 org CI39223891886 at947365e did not execute: runtime job117965388903
+has zero steps and its check annotation explicitly reports failed account
+payments/spending limit (#98). This is a CI availability blocker, not an
+executed runtime failure or a PASS. Local focused results above stand; a future
+release still needs its required exact-source qualification. No AWS or billing
+setting was changed. PR133 description update succeeded and links PR186.
