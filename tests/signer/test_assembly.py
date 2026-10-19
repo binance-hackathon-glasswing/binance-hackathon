@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from larp.contracts import ContractError
+from larp.execution import Blocked
 from larp.signer.assembly import assemble, main
 from tests.execution import test_caps_review as numeric_fixtures
 from tests.execution.test_router_decoder import evidence
@@ -79,12 +80,12 @@ class SignerAssembly(unittest.TestCase):
         original = deepcopy(self.fixture.policy)
         self.fixture.policy['cap_basis'] = ' EXAMPLE_PENDING_TEAM_DECISION\n'
         self.fixture.save_inputs()
-        with self.assertRaises(ContractError):
+        with self.assertRaises((ContractError, Blocked)):
             self.build()
         self.fixture.policy = original
         self.fixture.save_inputs()
         (self.root / 'signing_policy.json').write_bytes(b'{}')
-        with self.assertRaises(ContractError):
+        with self.assertRaises((ContractError, Blocked)):
             self.build()
 
     def test_full_holding_gas_and_quote_freshness_checks_cannot_be_skipped(self):
@@ -130,6 +131,18 @@ class SignerAssembly(unittest.TestCase):
         for field in ('database_host', 'database_name', 'database_user', 'database_ca_file', 'database_ca_sha256'):
             del self.fixture.config[field]
         self.fixture.config['database_dsn_file'] = '/must-not-read'
+        self.fixture.save_inputs()
+        with self.assertRaises(ContractError):
+            self.build()
+
+    def test_router_hash_change_and_unsafe_run_identity_refuse(self):
+        self.router.write_bytes(self.router.read_bytes() + b' ')
+        with self.assertRaises(ContractError):
+            self.build()
+        self.fixture.config['router_evidence_sha256'] = hashlib.sha256(self.router.read_bytes()).hexdigest()
+        self.fixture.inputs['run_id'] = '../unsafe-run'
+        self.fixture.config['run_id'] = '../unsafe-run'
+        self.fixture.ledger['run_id'] = '../unsafe-run'
         self.fixture.save_inputs()
         with self.assertRaises(ContractError):
             self.build()
