@@ -121,6 +121,12 @@ no overwrite, credential lookup, networking, policy installation or signing occu
 Pins do not prove real-world provenance, fresh portfolio reconciliation, source
 guarantees, quote executability or owner approval.
 
+SA-01 adds [offline signer candidate assembly](SIGNER_INSTALLATION_PREPARATION.md)
+from the same pinned inputs. It re-runs coverage, loads the actual pinned decoder,
+validates the signer configuration and copies exact execution identity/CA/evidence
+bindings with the dedicated signer role. It never establishes installation,
+source/owner approval, #27, release or host acceptance.
+
 ## Identifier and execution audit
 
 | Contract | Implemented evidence | Remaining qualification |
