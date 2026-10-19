@@ -321,6 +321,16 @@ class SignerRefusals(SigningCase):
         self.assertEqual((self.signatures(), self.refusals()), ([], {}))
 
 
+def pinned_router_settings(directory):
+    """Synthetic source only, for production CLI tests; never real evidence."""
+    import hashlib
+    from tests.execution.test_router_decoder import evidence
+    raw = json.dumps(evidence(router=ROUTER)).encode()
+    path = Path(directory) / 'router-evidence.json'
+    path.write_bytes(raw)
+    return dict(router_evidence_file=str(path), router_evidence_sha256=hashlib.sha256(raw).hexdigest())
+
+
 class CommandCase(SigningCase):
     """Fixture only: a key file, a DSN file and a registered dev run for the `main` command tests."""
 
@@ -339,7 +349,8 @@ class CommandCase(SigningCase):
         self.store.initialize('live-run', self.wallet, 56, doc(dict(balances=dict(USDT=1))), mode='dev')
         self.config = dict(schema='SignerService.v1', run_id='live-run', build_id=BUILD, mode='dev',
                            wallet_address=self.wallet, key_file=str(self.key), interval_seconds=1,
-                           database_dsn_file=str(dsn), signing_policy=policy_config())
+                           database_dsn_file=str(dsn), signing_policy=policy_config(),
+                           **pinned_router_settings(self.dir))
 
     def write(self, config=None, pin=True):
         raw = json.dumps(config or self.config).encode()
