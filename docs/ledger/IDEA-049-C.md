@@ -766,3 +766,15 @@ steps; its annotation confirms account payments/spending limit (#98), so no
 remote CI PASS is claimed. PR183 separately qualifies the merged IDEA083 release
 and explicitly leaves signer gates open. PR133 records current owner requests
 under IDEA-066 PC-SIGNER-ASSEMBLY01. No installation or real assembly is claimed.
+
+### SA-RV01 — independent PR184 review criteria (2026-10-19)
+
+Continue the user-requested PR133 work by reviewing the delivered offline
+assembler before merging it. Source review checks exact numeric/config pins,
+independent signer role and decoder/CA validation, private exclusive outputs,
+redacted failures, no key/DB/network boundary calls and permanently false
+installation/signing/Gate B flags. No new source, numeric approval or #27 timing
+is inferred. Pass criteria: assembly, numeric coverage, signer policy/startup,
+router and signed-model preparation regressions pass with disposable PostgreSQL;
+then reconcile the tracker with qualified release183 and require full combined
+Linux/mirror acceptance. Keep real assembly NOT_RUN_MISSING_INPUTS.
