@@ -89,7 +89,10 @@ def assemble(inputs, *, now, base_dir):
 
 def write_new(directory, files):
     """Exclusive private output, with cleanup of this attempt on write failure."""
-    directory = Path(directory).resolve()
+    directory = Path(directory)
+    if directory.is_symlink():
+        raise ContractError('Signer output must not be a symlink')
+    directory = directory.resolve()
     if directory == ROOT or ROOT in directory.parents:
         raise ContractError('Signer candidates must remain outside the checkout')
     directory.mkdir(mode=0o700)  # existing directories and symlinks always refuse
