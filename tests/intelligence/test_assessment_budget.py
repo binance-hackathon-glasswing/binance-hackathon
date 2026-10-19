@@ -261,6 +261,26 @@ class ParallelRouting(unittest.TestCase):
             release.set()
             for worker in router._workers:worker.join(2)
 
+    def test_ab1_18s_failed_primary_34s_abstain_and_10s_assessed_fallback(self):
+        # AB1's original assessed-primary wording contradicted B11. Use its
+        # clarified failed-primary witness; assessed-primary dissent is AB13.
+        f=self.fx;original=f.openai;f.delay=0;f.openai_error='rate_limit_exceeded'
+        barrier=threading.Barrier(2,timeout=2)
+        def primary(*args):
+            reply=original(*args);f.w.clock.advance(18000);return reply
+        def review(url,headers,raw,timeout):
+            body=json.loads(raw);kimi=body['model']=='moonshotai/kimi-k3'
+            barrier.wait();f.w.clock.advance(34000 if kimi else 10000)
+            action=dict(action='FINISH',claims=[],notes='synthetic timing witness')
+            if kimi:action['extra']='invalid action forces ABSTAIN'
+            return 200,json.dumps(preferred.fixtures.chat_reply(body,action)).encode(),{
+                'x-model':body['model'],'x-reasoning-effort':body['reasoning_effort']}
+        f.openai=primary;f.aiand=review
+        _,value=f.run_assessment(f.build(),deadline_ms=180000)
+        self.assertEqual((value['status'],value['routing']['review_outcome']),('ASSESSED','FALLBACK'))
+        self.assertEqual([s['status'] for s in value['routing']['stages']],['UNAVAILABLE','ABSTAIN','ASSESSED'])
+        self.assertEqual(value['budget_used']['elapsed_ms'],62000)
+
     def test_absolute_deadline_includes_payload_preparation(self):
         f=self.fx;router=f.build();model=router.external[0]
         keep=model._keep

@@ -1,9 +1,8 @@
 # IDEA-083 — Assessment time budget and review outcome rule: per-stage shares, parallel reviewers, longer deadline, reviewers never replace an assessed primary
 
-- Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Implementer: Keegan** (Yao asks him
-  directly). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
-- Status: **proposed, approved in direction by Yao 2026-10-19; not implemented.** The pass criteria below are written
-  before any code exists; the implementer adds red tests against them first.
+- Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Initial implementer: Keegan**; Isaac takes over implementation at the user's request (AB-IMPL01). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
+- Status: **implemented in PR181; final local acceptance in progress.** Yao approved direction on2026-10-19.
+  Pass criteria were preregistered; pushed red witnesses and implementation evidence are recorded in AB-IMPL01.
 - Scope: unsigned and signed routed assessments (`aiand_routed`, OpenAI-preferred routing). **Model effort stays as
   is** (OpenAI medium, AIand reviewers high). Yao: lower reviewer effort only if latency is still a problem after
   this change.
@@ -96,7 +95,7 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
 | ID | Criterion |
 |---|---|
-| AB1 | Red first, pushed before the fix: a fake-clock routed job with primary 18 s, reviewer-0 needing 34 s and ABSTAINing, and reviewer-1 needing 10 s and ASSESSing ends **UNAVAILABLE** on the base and **ASSESSED (reviewer-1)** after the change, inside the new budget. |
+| AB1 | Clarified against B11: primary **not ASSESSED** after18s, reviewer-0 needs34s and ABSTAINS, reviewer-1 needs10s and ASSESSES: the180s path returns reviewer-1 / FALLBACK. The historical60s serial path has only8s left for reviewer-1. The originally observed **ASSESSED** primary plus ABSTAIN review is DISSENT under AB13, never reviewer replacement. |
 | AB2 | A reviewer that never answers cannot starve the other: reviewer-0 stalls past its allowance, reviewer-1 still gets its full allowance and its result is used. |
 | AB3 | Both reviewers are dispatched before either finishes (parallel), and the combined result is identical for every completion order (B4). |
 | AB4 | Primary capped at its share: a primary that would run 70 s is cut at ≤ 60 s, then reviewers still run with their own allowances. |
@@ -106,8 +105,8 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 | AB8 | Watchdog: a cycle with every stage at its limit completes in ≤ 300 s against `cycle_timeout_seconds` 600 (B8). |
 | AB9 | DEV-22 present in the register, plan.md §6.5 and G-50; release-register tests updated only for the new row. |
 | AB10 | Full suite in a `requirements.lock` venv: no new failures against the base; Linux/PostgreSQL/systemd parts on the mirror (preferred) or a recorded local substitute. No golden regenerated without review. |
-| AB11 | Red first: a job with primary ASSESSED, reviewer-0 timing out and reviewer-1 never finishing ends **UNAVAILABLE** on the base and **ASSESSED with the primary's `result_id` and content**, `review_outcome: INCOMPLETE`, after the change. |
-| AB12 | Confirmation never overrides: primary ASSESSED and a confirming reviewer → the final result's `result_id`, claims, findings, rationale and confidence are byte-for-byte the primary's (only routing/review metadata added), `review_outcome: CONFIRMED`. |
+| AB11 | Red first: primary ASSESSED and neither reviewer finishes yields ASSESSED / INCOMPLETE, with the unchanged primary ID/content in its linked selected artifact. Isaac clarified canonical identity in AB-IMPL01: the routed envelope has its own ID. |
+| AB12 | Confirming review never overrides the selected primary artifact: its result ID/content remain unchanged; root claims, findings, rationale and confidence equal the primary, review_outcome CONFIRMED. The root has a separate canonical routed ID (Isaac's AB-IMPL01 clarification). |
 | AB13 | Dissent blocks: primary ASSESSED with a reviewer that ABSTAINs (e.g. `UNSUPPORTED_CLAIM`) or ASSESSes different findings → ABSTAIN with the dissent reason, for either reviewer and either completion order, even if the other reviewer confirms. |
 | AB14 | Fallback unchanged: primary ERROR/TIMEOUT/ABSTAIN/budget-refused → first ASSESSED reviewer by precedence; both ASSESSED and different → ABSTAIN; none → UNAVAILABLE. Matches the observed 86b1476 and seq-19 cases. |
 | AB15 | Full matrix: primary {ASSESSED, ABSTAIN, ERROR, TIMEOUT, not run} × reviewer-0 {confirm, dissent-different, dissent-ABSTAIN, timeout, error} × reviewer-1 (same set) × both completion orders gives exactly the B11 table; `review_outcome` and per-reviewer verdicts are in the round log; the result validates against the consumer schema. |
