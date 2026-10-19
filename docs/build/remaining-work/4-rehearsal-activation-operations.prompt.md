@@ -1,0 +1,99 @@
+You are the agent for **Gate C: rehearsal, final activation and operations**. You prepare the work behind the checklist's rehearsal-shape decision, "Oct 21–26: rehearsal drills", the operations lines of "Oct 22 cut line", "Oct 26–29" and "Housekeeping" in [`docs/build/PRE_TRADING_CHECKLIST.md`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133). You work for the owner each of those lines names, and each review or decision goes to the person its line names; take both from the checklist, not from this brief. Your job is to make the build that trades from Oct 29:
+- rehearsed;
+- able to recover and halt on its own;
+- declared honestly in its manifest and deviations register;
+- switched to the final wallet;
+- handed over as a complete activation pack by **Oct 26**.
+
+During the run there are no deploys (F-117) and no manual restarts (F-124); a human HALT is treated as not allowed (F-114). Anything the run might need has to exist as automatic, tested code before the freeze.
+
+Read `docs/build/remaining-work/README.md` first; its rules apply here, especially rule 2 (owners come from the checklist; AWS/host operations go to the checklist's AWS owner, with its explicit Isaac key-placement exception). Then read these, on `origin/codex/system-testing-20261012`:
+- `docs/build/DEPLOYMENT_BUILD.md` (Gate C and DR-13..22), `docs/build/runbook.md` and `docs/build/AWS_RUNBOOK.md`
+- IDEA-042, IDEA-049-D (all, especially §5: D-DN-01..11, and the R-01..R-14 risks), IDEA-036, IDEA-046, IDEA-047 and IDEA-009 §F
+- `config/release/deviations.v1.json` and `config/release/services.v1.json`
+- these GAP items in `docs/INCOMPLETE_WORK.md`: GAP-04, GAP-05, GAP-33..42, GAP-45, GAP-46, GAP-48, GAP-52, GAP-62 and GAP-65
+- issues #49, #60 and #106
+- PR #125 (branch `claude/d-dn-10-clock-clear`)
+
+IDEA-080/081/082/083 are consumed. Extend IDEA-042/049-D and the relevant existing records; check the current index before allocating any unused ID.
+
+The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that touches AWS or the hosts is a checklist line for the AWS owner: prepare the exact command, hand it over, and record the evidence. You have no AWS access; don't re-plan or re-apply anything.
+
+## Deliver
+
+1. **Rehearsal shape (D-DN-02, GAP-04). Conditional decision already recorded Oct17.**
+   - Apply the existing conditional choice in IDEA-049-D rather than making a new decision:
+     - (a) keep the declared signed rehearsal, Oct 21–26, covering Oct 24–25;
+     - (b) shadow rehearsal plus a shorter signed window, recorded as a deviation.
+   - Base it on prompt 2's Gate B forecast. If Gate B slips past Oct 20, the shortfall is recorded as a deviation that same day.
+   - Then support the daily rehearsal log in IDEA-042 (5+ days including the Oct 24–25 weekend), built from the round logs and alarms: incidents, fixes, cycle length (D-DN-06) and any crash loop (D-DN-07). A late start is recorded as a deviation. **DR-21** is satisfied when that log is complete.
+
+2. **Cut line (GAP-05), on Oct 22.** Classify every component as removable or as mandatory (safety, logging, verification, recovery). Anything not working at the cut is either removed, or the activation is blocked, and each choice is recorded as a deviation. Coordinate with prompts 2 and 3 on their items.
+
+3. **Operations decisions.** For each one, write the proposal with a recommendation for the checklist's proposal line, get the deciding line's dated answer, then build and test it.
+   - **D-DN-01:** standby, or record DEV-18 as a deviation.
+   - **D-DN-04:** a delivery-bound HALT on the oldest unacknowledged log.
+   - **D-DN-06:** the watchdog timeout.
+   - **D-DN-07:** crash loop to HALT after N restarts.
+   - **D-DN-08 (#60):** memory limits on a `t3.small` against the RSS prompt 1 records.
+   - **D-DN-10:** automatic CLOCK HALT clear. It is merged in #125; verify its remaining host configuration/evidence rather than rebuilding it.
+   - **D-DN-11:** what a restore during the run means, given that F-114 forbids manual activation.
+   - D-DN-09 (HALT semantics) is built (#117).
+
+4. **Drills on the host, with evidence in IDEA-042.** These are host steps (checklist "Oct 21–26: rehearsal drills"); prepare each drill's script and pass criteria, and record the results.
+   - **DR-13:** an automatic HALT drill.
+   - **DR-15:** IDEA-036 criteria 1–6. That means hourly anchors to write-once storage, retention at least to Dec 31 2026, verification against anchored heads and a restore from anchors. Update IDEA-036's status, which still says "not started".
+   - **DR-16:** a restore drill into an empty database, and an alarm test that reaches a person.
+   - **DR-17:** the final-wallet switch with a throwaway config (item 6).
+
+5. **Release, manifest and deviations (DR-18, GAP-62, D-DN-03).**
+   - Collect every deviation from the submitted proposal: IDEA-009 §F, IDEA-035 §4/§5, IDEA-037, IDEA-075 and IDEA-076 (S1, B7: exceeding the proposal's 80% / 20% / four-name limits), the build records IDEA-039..041/055/057/058/070, and each cut and decision above. For each row record the declared text, the v1.0 behaviour, the reason with evidence IDs, the date and the version.
+   - Make every row FINAL by Oct 26, including DEV-18 (standby). `activate_run` refuses a `live` run with an OPEN or DRAFT row.
+   - Complete the services list (F-61).
+   - **#49:** make the release-integrity step (IDEA-047 R6) something an operator can actually follow.
+   - With prompt 1: use AB-REL01's verified originalc5be269 candidate when applicable; any later frozen source needs its own exact-release CI/bundle evidence. Do not attribute new module contents to an old bundle. Mirror builds are accepted releases (PC-DEC01); organization billing is still unresolved separately (#98).
+
+6. **Final wallet (DR-17, GAP-52, #106 final part).** Who owns the final wallet is settled by the team (2026-10-16); don't chase it. Record each step with its date, as the checklist's "Oct 26–29" lines set it out:
+   - The fresh final wallet is generated and registered (F-14).
+   - Confirm final-wallet credential issuance under Q-35; obtain its applicable `AI_SEEDS_SECRET` by Oct26 and deliver it securely for the host secret if a new one is issued, never in chat or an issue; putting it into AWS Secrets Manager (`put_service_secrets.sh`) is a host step. Q-35 is among the organiser questions sent by the checklist's GAP-42 line; agents never contact organisers.
+   - The final wallet's first-gas swap (about 6 USDT, in MetaMask) happens before **Oct 29 00:00 UTC** and before its first agent trade.
+   - The opening balance capture comes after that.
+   - The switch is rehearsed on the dev host with a throwaway config: a new address and secret, a separate `.ai-seeds/` directory and nonce records, and refusal on any address mismatch.
+
+7. **Activation pack (DR-22, GAP-37), by Oct 26.**
+   - The frozen commit and its manifest.
+   - The final-wallet config with an empty secret slot.
+   - The runbook: start, automatic restart, HALT, restore, switch, end of run.
+   - The on-call rota, which the team has settled: just include it.
+   - Each owner signs off the DR items the checklist gives them in IDEA-042.
+   - Then the Gate C review, and the integration → `main` promotion PR. The go-ahead process is settled by the team. Keep `main` in step: it lags integration, which already contains the PR85 records; use ordinary merges and inspect current refs rather than assuming a missing historical docs commit.
+
+8. **Accountability and audit readiness.**
+   - **GAP-46, GAP-48:** verify the round-log contract and test-log hygiene on the real receiver.
+   - **GAP-33:** safe mode during repository outages against the version gate.
+   - **GAP-34:** the audit journal's durability.
+   - **GAP-36:** measurable security and recovery criteria with attached drill evidence.
+   - **GAP-35:** close it with the DR-15 evidence.
+   - **GAP-65:** close or narrow it against IDEA-043/044/049.
+   - Prepare for the winner audit (F-17, Nov 16–20): version history, manifests and complete local logs kept and retrievable.
+   - Remove each GAP line only when it is verified.
+
+9. **Documentation and backlog (GAP-38..42, GAP-45).**
+   - Update the Adopted, Implemented and Tested status from evidence.
+   - Fix stale paths and provenance.
+   - Bring the I-65 onboarding gate register and the organiser-question list up to date with F-113..F-124, and prepare the organiser questions on the checklist's GAP-42 line.
+   - Narrow GAP-41 and GAP-45 to what is really left.
+   - Prepare the thread handoff at the end, following AGENTS.md.
+
+## Acceptance
+
+Write the criteria in your record and push them before running anything.
+- Gate C is reviewed in IDEA-042 with every DR-13..22 item evidenced (SHA, drill date or log).
+- The deviations register has no OPEN or DRAFT row.
+- The final-wallet switch has been rehearsed.
+- No secret appears in Git, logs or chat.
+- Nothing is promoted to `main` except through the team's settled go-ahead.
+
+## What you need from the team
+
+The owners of the checklist lines above: the rehearsal shape, the daily log, the operations proposals and decisions, #125's review, every host drill and the final-wallet host secret, the final-wallet secret and first gas, the DR sign-offs, the Gate C review and the organiser questions. The team: confirmation of the settled final-wallet, rota and `main` go-ahead arrangements so you can record them. From prompts 1–3: their evidence and deviations.
