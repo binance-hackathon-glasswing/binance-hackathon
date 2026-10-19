@@ -877,3 +877,7 @@ clock evidence is still required. No AWS, real DB, RPC, signing or production
 script execution occurred; observed #92 acceptance remains Keegan's open item.
 Org Actions never starts due to account billing/spending limits. No exact new
 Linux/release/host qualification is claimed by these focused offline tests.
+
+RPC-H03-RV01 backlog reconciliation: GAP-71 now distinguishes user-reported
+current-host order/binding/first MATCH from Keegan's still-unobserved process
+health acceptance and Yao's next-build preparation. No whole item is removed.
