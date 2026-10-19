@@ -153,14 +153,24 @@ No secrets, network/DB/AWS calls, writes, activation or uploads occur.
 Exit **0** and `local_ready: true` mean those local checks passed. Exit **4**
 means a failed check or missing prerequisite (`NOT_RUN`). `gate_a_passed` and
 `remote_ci_verified` always remain false, and all host checks remain `NOT_RUN`.
-Obtain the exact artifact and check its hash against the CI job summary
-separately (#49); local bytes alone cannot establish CI provenance. Since
-2026-10-17 the team's release builds come from the CI mirror, because org Actions
-are blocked (#98; decision IDEA-066 PC-DEC01). For a mirror bundle this checker
-reports `CI_RELEASE_BYTES: FAIL` (it requires the registered repository as
-`build_origin`); that result is accepted and recorded, and the host's
-`preflight --bind` byte check must still pass.
-Run this command from the checked build's environment; it does not verify the
+Obtain the exact artifact and check its hash against the recorded CI job summary
+separately (#49/#98); local bytes alone cannot establish CI provenance. Under
+Yao's PC-DEC01 decision, mirror builds are the accepted release builds. The
+registered repository remains the challenge repository in every manifest.
+
+PC-MIRROR01 accepts the exact approved origin
+`https://github.com/Keegan4/Keegan4-larp-ci-mirror` for that registered challenge
+repository, with an optional `.git` suffix. Other mirrors and lookalike URLs
+still fail. Build/repository identity, remote_verified, unbound manifest and all
+production `preflight --bind` file/register checks remain enforced.
+
+Older checkers report the approved mirror as `CI_RELEASE_BYTES: FAIL`. PC-DEC01
+already accepts that single recorded result when all remaining checks and the
+production byte check pass; it is not a new deployment blocker. Preserve those
+historical reports. A newer pushed local verifier can inspect the unchanged
+original bundle: record verifier commit and candidate build separately, without
+editing its manifest, replacing its application source or rebuilding the bundle.
+Run this command in the checked build's compatible environment; it does not verify the
 installed dependency versions or host file permissions. It neither refreshes
 the captured wallet balances nor qualifies a real RPC provider. First BNB is
 Gate B work and does not prevent this unsigned check. Keep the frozen directory

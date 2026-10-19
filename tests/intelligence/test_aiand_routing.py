@@ -270,7 +270,7 @@ class Routing(unittest.TestCase):
         self.w.clock.advance(self.delay)
         if self.openai_error:
             return 429,json.dumps({'error':dict(code=self.openai_error,type=self.openai_error)}).encode()
-        output=decide(json.loads(body['input']))
+        output=decide(json.loads(body['input'].split('\n',1)[1]))  # after the JSON label
         return 200,json.dumps(dict(model=body['model'],status='completed',output=[dict(type='message',content=[
             dict(type='output_text',text=json.dumps(output))])],usage=dict(input_tokens=100,output_tokens=20))).encode()
 

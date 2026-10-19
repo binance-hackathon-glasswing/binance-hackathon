@@ -1722,3 +1722,120 @@ access handoff may be needed; no approval or action is inferred on his behalf.
 Signed adoption, router/source/native/profile/holding/caps and approved signer
 session/key gates remain open. No deployment, AWS action, secrets, key placement,
 paid provider calls, wallet signing or real receiver writes by this session.
+
+## PC-MIRROR01 — explicit approved CI mirror in local package checker
+
+Yao approves the checker correction on Oct18. Existing PC-DEC01 (retained on
+PR133, docs/build/GATE_A.md) already accepts Keegan4 mirror release bytes when
+production bind verification passes. The continuation incorrectly elevated the
+known mirror-only local failure into a new deployment blocker; correct that
+statement without erasing the original observed FAIL. No new mirror approval,
+manifest rewrite, binary rebuild or paid/host operation is needed for the
+existing accepted86b1476 release. A corrected local verifier may inspect that
+unchanged bundle, recording verifier SHA separately from candidate build SHA.
+
+Prospective criteria, before new code/tests execute:
+- M1: registered challenge repository and exact approved Keegan4 mirror origins
+  (canonical HTTPS, optionally .git) qualify; other origins, lookalike URL hosts,
+  credentials/query/fragment/path variants and a mirror attached to another
+  registered repository refuse. No arbitrary origin override or wildcard trust.
+- M2: approved origin cannot bypass exact prepared-build/registered-repository,
+  remote_verified, unbound-manifest, per-file hashes or complete release/register
+  checks. Preserve old rejection tests and verify those defects with mirror too.
+- M3: all successful paths remain read-only; local_ready never implies Gate A,
+  remote CI verification, live signing, network or database authority.
+- M4: commit/push tests before RED; commit/push implementation before GREEN;
+  run focused package/preparation/release tests and record honest environment
+  limits. Recheck the original saved86b1476 package with the pushed verifier;
+  keep its bytes/manifest/checksums unchanged and retain the historical FAIL.
+- M5: keep PR133 OPEN and update its current decision/checklist/backlog wording;
+  record review/merge and future release propagation separately. No host
+  mutation, service activation, ledger command or paid inference in this fix.
+
+
+PC-MIRROR01 RED at pushed ae6bf7a:14 package-check tests, two failing subcases
+reproduce rejection of canonical/.git approved mirror; unauthorized-origin,
+foreign-registration and integrity controls pass. All six other package checks
+are PASS for those two failures. Implementation pushed4eb33bb adds an exact
+repository-scoped verifier allowlist; all content/identity/bind checks remain.
+No configurable wildcard trust. The existing86b1476 binary and its historical
+FAIL remain unchanged; the separate local verifier corrects reporting without
+creating an installation/rebuild dependency. Results follow after execution.
+
+
+PC-MIRROR01 GREEN: pushed implementation4eb33bb, local macOS/Python3.12.14
+package/preparation/release-bundle/register suite68 run:65 PASS,3 existing
+PostgreSQL-dependent skips,0 failures (4.085s). Initial restricted run had two
+fixture mkdir permission errors; rerun with permitted local paths passes without
+code/test changes. The original-package terms-store check likewise needed local
+path access; same code then passes all7 checks/local_ready=true. Remote-CI and
+GateA remain false, signing false, all host checks NOT_RUN.
+
+The separately identified verifier4eb33bb checked the saved original86b1476
+package, manifest0053cbc9…fff2f, original bundle extraction/CA/terms. Every input
+file hash stayed unchanged. Capture remains the original13:56UTC snapshot and
+must be refreshed at actual preparation; this is local byte qualification only.
+Original FAIL is historical, retained; this corrects reporting under existing
+PC-DEC01 rather than reopening approved provenance or rebuilding a CI asset.
+Evidence and log hashes: ../build/evidence/gate-a-approved-mirror-20261018.json.
+Remaining: review/merge correction and eventual propagation to future releases;
+Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
+all existing source/quality/signed owners. No host/AWS/model/ledger operation.
+
+MERGE-RV20261019 / PR177 malformed metadata negative control: added array/object
+build_origin cases at pushed6e3b148. The existing qualification wrapper catches
+the internal membership TypeError and records CI_RELEASE_BYTES=FAIL;14 tests/
+52 subtests PASS (2.60s), so this is not a reproduced CLI failure and needs no
+runtime fix. Keep the added negative controls. The initial source-only suspicion
+was corrected after executing the actual qualification path. No acceptance or
+error handling was weakened.
+
+
+## MERGE-RV20261019 — Isaac review/merge of available prerequisite PRs
+
+User authorizes reviewing and merging eligible PRs on2026-10-19. Prospective
+criteria: PR177 must accept only the exact repository-scoped approved mirror,
+retain all production content/identity/binding refusals and remain read-only.
+PR176 must refuse pending caps and missing/invalid router evidence before DB/key
+access, preserve per-request fences and claim no source/GateB acceptance. PR171
+may update labels and approved same-host scope only; no endpoint/access change.
+PR173 must remain bounded/read-only/private, use the production finalized native
+proof and leave actual provider/runtime/top-up qualification open. Inspect full
+code diffs and existing owner decisions; test pushed prospective merge trees
+with pinned dependencies/local PostgreSQL, including focused negative controls
+and full regression. Merge with normal merge commits only after acceptance,
+using exact reviewed head hashes. Record billing-blocked CI separately; no AWS,
+host, key, wallet, paid provider or receiver action. PR133 stays open as the
+coordination tracker. Draft/source/funding and unresolved model-protocol/release
+gates stay open; this review does not claim another person's approval.
+
+Review results: full prospective177+176 tree f6ebda0 **2071 passed,9 skipped,
+3040 subtests**,273.51s. Exact requirements-test.lock/Python3.12.14 on macOS
+ARM64 with disposable PostgreSQL14.24. Skips: external-data1, systemd5, Linux
+bubblewrap3. Final177 runtime/config identical to this tested tree; its extra
+array/object negative controls passed14 tests/52 subtests,2.60s, and needed no
+runtime fix. Scope/native combined tree passed67 tests/72 subtests,6.18s;
+PostgreSQL top-up round added8 tests/10 subtests,1.71s. Two preliminary commands
+named nonexistent receipt test files and ran zero tests; these are not passes.
+
+Merges verified through GitHub, normal merge commits and exact head guards:
+- PR171 head62f7d15 → PR133 merge53cbadac634e92d7a97ab0df7e6c3a0a7364f0c1.
+- PR173 head849b66d → PR133 merge6de94721eefd4e71b90044ac446caa2776e6c7f3.
+- PR177 headaa293f8 → integration merge5d7c8f0016ad1eac7711be85432ba98f651bb5c0.
+- PR176 head33e1cee → integration merge26b93fea4f1eea0220a5a93a851e254024c681f7.
+
+Isaac's review/merge is authorized by the user; no Keegan approval or independent
+real router-source/caps review is claimed. GitHub job annotations for all four
+show account billing/spending-limit refusals (#98), with zero test steps. No CI,
+Linux/systemd/exact bundle or actual host qualification is represented as PASS.
+
+PR133 stays OPEN. Merging its new integration base required only five document
+conflicts: preserve SP-CAPS and SR-01 obligations, both IDEA-070 source/startup
+records, all IDEA-066 historical deployment evidence and current mirror-checker
+documentation. No application conflict or history rewrite. Final pushed
+combined-tree focused validation is recorded below. Source/funding drafts139/172,
+conflicted stale briefs126 and the new179 contract /180/181 protocol-release
+reviews remain open. The next coordinator/operator owns real host qualification;
+Keegan owns exact release review, Keith measured protocol/affordability/profile
+inputs, Isaac real source/route/native/caps decisions as already listed. No AWS,
+key, wallet, model/RPC/receiver live request or deployment occurred.

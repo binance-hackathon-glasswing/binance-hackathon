@@ -58,6 +58,7 @@ ANTHROPIC_HOSTS = frozenset({"api.anthropic.com"})
 ANTHROPIC_VERSION = "2023-06-01"
 OPENAI_ENDPOINT = "https://api.openai.com/v1/responses"
 OPENAI_HOSTS = frozenset({"api.openai.com"})
+OPENAI_INPUT_LABEL = "Model input (JSON). Reply with one JSON object as the instructions specify."
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 MAX_REPLY_BYTES = 8_000_000
 MAX_USAGE_TOKENS = 10**9
@@ -510,12 +511,16 @@ class OpenAIResponsesModel(HostedModel):
         super().__init__(endpoint=endpoint, allowed_hosts=allowed_hosts, **kwargs)
 
     def _revision(self) -> str:
-        return f"responses;reasoning={self.effort}+summary-auto;format=json_object;store=false;" \
+        return f"responses;reasoning={self.effort}+summary-auto;format=json_object;input=json-labelled;store=false;" \
                f"max_output_tokens={self.max_output_tokens}"
 
     def _body(self, model_input: dict) -> dict:
+        # json_object output requires the word "json" in the input messages; `instructions` does not count
+        # (HTTP 400 invalid_request_error, first hosted request PC-DEPLOY01). The label is one line; the model
+        # input follows unchanged.
         return {"model": self.identity.model_id, "instructions": self._prompt,
-                "input": json.dumps(model_input, sort_keys=True), "reasoning": {"effort": self.effort, "summary": "auto"},
+                "input": OPENAI_INPUT_LABEL + "\n" + json.dumps(model_input, sort_keys=True),
+                "reasoning": {"effort": self.effort, "summary": "auto"},
                 "text": {"format": {"type": "json_object"}}, "max_output_tokens": self.max_output_tokens,
                 "store": False}
 

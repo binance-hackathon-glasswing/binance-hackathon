@@ -155,7 +155,7 @@ merges none of them and does not claim source/provider/wallet/host readiness.
 - [x] **Keegan:** review and merge #161 (the handoff record). Merged 2026-10-18 at `7cd7892`; numeric-policy approval and host installation remain separate.
 - [ ] **Keith:** after the Oct 20 profile, finish the cap checks the handoff could not run, and record the file hashes on #44: the profile's `per_trade_cap_units` and `gas_top_up_cash_units` are each ≤ 35 000 000 micro-USDT; every full stock holding in the fresh wallet capture fits its token cap; measured approve and swap fees each fit 0.0002 BNB. PR #155's numeric-review tool can do this. Do not count the 40 USDT quote-capture size as a trade size: it is above the 35 USDT cap.
 - [x] **Isaac:** set conservative draft execution ceilings within the candidate fee cap. SP-CAPS: `max_gas=1200000`, `max_gas_price=160000000`wei; product192000000000000wei (<200000000000000). Example only, uninstalled; actual gas, aggregate budget and final profile/full-holding #44 acceptance remain open.
-- [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. Current integration accepts the example label for `dev`; PR176 adds startup refusal for both dev/live and is pending review/merge. Replacing a label does not establish numeric approval; the exact #44 decision remains required.
+- [ ] **Isaac:** after Keith's checks, decide the exact policy on #44 and replace `cap_basis: EXAMPLE_PENDING_TEAM_DECISION` with the decision reference. That changes the policy hash; record the new one. PR176 is merged into integration (MERGE-RV20261019): both dev/live now refuse the pending-decision label before startup. Replacing a label does not establish numeric approval; the exact #44 decision remains required.
 - [x] **Keegan:** choose how the signer host is reached for key placement (options in AWS_RUNBOOK step 5) and record the choice in a short IDEA entry. Done 2026-10-17: option (b), temporary SSM interface endpoints in the signer subnet, criteria SA1–SA7 (IDEA-080, #140).
 - [ ] **Keegan:** review Yao Zhu's actual IDEA-080 Terraform plan before apply. #143 and implementation #149 are already merged/reviewed in the repository; the host apply is still pending. Preserve SA3 (both host groups), SA8 signer egress and SA9 primary SSM checks.
 - [ ] **Yao Zhu:** on Gate B day, finish `signer.json` from Isaac's draft (copy kept outside Git in `deploy/activation/signer-dev-20261017/`). Order: Keegan's Gate B bundle exists, Isaac's router evidence is merged and his #44 policy decision is in, then the IDEA-080 apply below. The six fields the draft leaves null, and where each comes from: **Progress 2026-10-17:** `database_host` and `database_ca_sha256` pre-filled in `signer.prefilled.json` next to the draft (IDEA-066 PC-PREP01); four fields left.
@@ -245,7 +245,7 @@ Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch 
 - [ ] **Yao Zhu:** after installation, qualify DOJ polls/restart/report on the host. Keegan prior-window disposition is complete (PC-GAP02-RV1: retain FAIL/no DOJ waiver); actual post-fix coverage remains open.
 - [x] **Yao Zhu:** independently verify supplied86b1476 tar against original published/CI gzip, manifest, exact Git, all235 checksums/196 source files, BUNDLE.env and CA (PC-REL09). No contents executed before verification.
 - [x] **Yao Zhu:** PC-PREP02 provenance reconciled under existing PC-DEC01; approved checker correction pushed and tested in PR177, original unchanged86b1476 package7/7 PASS with separate verifier4eb33bb. No new binary needed for local-verifier correction; historical FAIL retained.
-- [ ] **Keegan:** review/merge PR177 and propagate correction to future releases; this is not a new prerequisite for the already accepted original86b1476 release.
+- [ ] **Keegan:** include merged PR177 in the next exact reviewed release and verify its original bundle/manifest binding. Isaac reviewed/merged it on2026-10-19 (MERGE-RV20261019); no checker-only rebuild is needed for already accepted original86b1476.
 - [x] **Yao Zhu:** replace the invalid AIand key preserving all other runtime-secret fields; authenticated host catalogue/high-effort checks PASS (PC-PROV03). USD currency confirmed; original401 retained.
 - [ ] **Yao Zhu:** complete remaining account-expiry/funding/usage/rights reconciliation; balance endpoint403 leaves140+ owner-reported. Actual served effort/first-reply evidence remains open. No further key replacement is required by the passing catalogue check.
 - [ ] **Yao Zhu:** verify actual preserving trial ledger setup and host/provider qualification before paid testing. 2026-10-18 (PC-DEPLOY01/02): ledger created once and preserved across the ea25b52 redeploy (SQLite backup `2a20adc1…`; policies matched routing read-only); OpenAI served identity/effort and AIand Kimi K3/GLM 5.3 high served identities observed in real jobs. Remaining: owner `status`/`export` snapshot with hashes, AIand funding/expiry, and the UNKNOWN-charge reconciliation. Reviewed PR174 is merged and new86b1476 original release is delivered (PR174-REL01), including atomic8M total/2.5M UTC-day maximum/UNKNOWN reservations, accounting quarantine, clock guard and unsigned-only preparation. Explicitly prepare/pin the capped trial example (SHAa5fca50a…22d8d), preserve all charges/latches, and record installed source/config, status/export/P0 and first-job/ACK. No repeat protocol approval; no ledger reset. PR133 stays open.
@@ -488,7 +488,7 @@ is claimed. These result-only records change no manifested runtime file.
 ## Signer startup follow-through — PC-SIGNER-READY01 (Oct18)
 
 - [x] **Isaac:** implement and deliver [PR176](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/176), separately from source/provider/network/funding PRs. Both dev/live refuse explicitly pending cap labels; check/run require loadable hash-pinned router evidence for a policy spender before DB/key access. Check reports the evidence hash, local-only scope, signing disabled and no Gate B acceptance. IDEA-070 SR-01:139 tests/219 subtests PASS,0 skips, with local disposable PostgreSQL14.24 and synthetic evidence/keys. Org run39133862711 executed zero steps due confirmed billing/#98; no new signed bundle/host qualification claimed.
-- [ ] **Keegan:** review PR176 and merge if accepted, then include it with the adopted #27 implementation in the exact Gate B release and verify original CI bundle/manifest/config bindings. PR176 does not choose a lifetime, approve caps or establish real source provenance.
+- [ ] **Keegan:** include merged PR176 with the adopted #27 implementation in the exact Gate B release and verify original CI bundle/manifest/config bindings. Isaac reviewed/merged PR176 on2026-10-19 (MERGE-RV20261019). PR176 does not choose a lifetime, approve caps or establish real source provenance.
 - [ ] **Isaac:** obtain complete verified source/imports/ABI/compiler/settings and deployed-code binding for #139. RE-03 also tried the public Routescan chain56 source API at13:59:09–10UTC: both router/facet requests returned HTTP200/status0 `chain not supported`. This is an access/coverage blocker, not an explorer-verification verdict. No source export/account supplied; use the retained export/vendor-request packet through an approved team contact. No vendor message sent. Keegan's independent source review and the existing router check still wait for that input.
 
 Remaining owner order: source intake **Isaac**, independent review **Keegan**,
@@ -497,21 +497,18 @@ real-artifact check **Isaac**; finite authority/margins decision and implementat
 full-holding checks **Keith**, exact #44 approval **Isaac**; signed release
 **Keegan**, provisioning/config/isolation/session/drills **Yao**, key placement
 **Isaac only during Yao's approved session**. Native #30/provider and route-fee
-#119 evidence remain separate rehearsal gates. Earlier PR171/172/173 remain
-open and are not silently merged by this work. No AWS, wallet key, transaction,
+#119 evidence remain separate rehearsal gates. PR171/173 were explicitly reviewed and merged into this tracker on2026-10-19; funding PR172 remains draft/open. No AWS, wallet key, transaction,
 paid-provider or official receiver operation occurred; signing remains blocked.
 
 ## What Isaac can do next — PC-SIGNER-NEXT01 (Oct18)
 
-Fresh GitHub inspection: PR176 is OPEN with no submitted reviews; #27 and #44
-remain OPEN with no newer decision/input. PR139/171/172/173 remain separate
-open PRs. The local implementation/proposal/qualification-tool work already
+Current merge status (2026-10-19, MERGE-RV20261019): PR176/177 are merged into integration; PR171/173 are merged into this tracker. PR139/172 remain draft/open; #27/#44 still require their recorded decisions/inputs. The local implementation/proposal/qualification-tool work already
 reported above is delivered; no new runtime fix or readiness pass is inferred
 from this follow-up. No unchanged tests or failed public probes are repeated.
 
 | Request now | Owner / exact deliverable | Isaac's next action after delivery |
 |---|---|---|
-| Review the delivered code | Keegan: review PR176 (startup refusal), PR173 (native proof tool) and PR171 (same-host scope); merge each accepted change into its intended base. Keep source139 and funding172 draft until their missing evidence/actions are complete. | Address concrete review findings; use the reviewed release for later qualification. |
+| Qualify the reviewed release | Keegan supplies the exact reviewed release including merged176/177; the next coordinator/operator qualifies the host. PR171/173 are merged here. Keep source139/funding172 draft until their missing inputs/actions are complete. | Use the exact reviewed release for real source/native/route and signer qualification; code merge alone closes none of those gates. |
 | Obtain real source | Isaac asks the team's confirmed Binance/Web3/LiquidMesh contact for complete verified router/facet/helper source/imports, ABI, compiler/settings and chain56 deployed-code/dispatch binding for router0xb44446b0c8e56988c34f7ff73ae904982b5fdda5, selector0xad43f73d, candidate facet0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603. Existing request packet is in PR139 ROUTER_SOURCE_REVIEW.md. No source/account input or contact is available to this agent. | Hash/inspect the original export; fill real RouterEvidence only for supported guarantees, obtain Keegan's actual independent review, then run the existing checker on Keith's artifacts. Do not sign or guess an ABI while waiting. |
 | Resolve signing lifetime | Keegan: record C-OPEN-003/#27's adopted authority model, finite duration/margins and per-action windows; implement persisted original decision/admission/authority bounds across planner, commands, executor, signer and restart. Keith's review is already supplied. Yao supplies real queue/signer/approval-finality timing; Isaac supplies source-qualified route deadlines when available. | Run/inspect approve-confirm-requote, stale/expired/restart/uncertain-send acceptance against the reviewed implementation. Neither60s nor the kit's approximate30s is a measured adopted bound. |
 | Supply measured policy inputs | Keith: finish capture/coverage and selected profile when available (planned Oct20), with original summary/report/artifact hashes, raw token scales, per-trade/top-up amounts, actual approve/swap estimates and fee-netting disposition. Yao: fresh reconciled full holdings/opening-state hash and matching execution config, after the last manual funding. | Run caps_review on those exact pinned inputs, assess full sell holdings/gas/top-up coverage, then record the exact #44 policy decision and hashes. Current40USDT captures and fallback gas cannot close it. |
@@ -526,3 +523,27 @@ measured floor/top-up remain open with Isaac/Keith; do not conflate a MetaMask
 funding receipt with the bStock route's fees. The signer remains disabled.
 These are requests for Isaac to forward, not messages already sent to teammates
 or a vendor. No new policy, account, deployment or transaction is created.
+
+
+## Reviewed prerequisite merges — MERGE-RV20261019 (Oct19)
+
+User authorized review/merge. PR177 (exact approved mirror) and PR176 (signer
+startup refusals) are merged into integration; PR171 (same-host scope labels)
+and PR173 (bounded native-proof CLI) are merged into this tracker. Normal merge
+commits only, reviewed head hashes matched. PR133 stays OPEN and now includes
+the current integration base; five documentation-only conflicts retain both
+source/caps and historical deployment/review evidence. No application conflicts.
+
+Full prospective177+176 tree f6ebda0:2071 passed/9 explicit platform-external
+skips/3040 subtests. Scope/native focused tree:67 passed/72 subtests, with an
+additional8 PostgreSQL top-up tests/10 subtests. PR177 array/object negative
+controls:14 passed/52 subtests, no runtime change. Org CI billing #98 ran zero
+steps; no Linux/systemd/original release or host PASS is inferred. Final
+combined-tree checks are recorded in IDEA-066 MERGE-RV20261019.
+
+Remaining: exact release/bundle and host qualification; source/route/native
+account inputs and measured profile/holding/caps/signing-session decisions.
+PR126's older briefs conflict and need alignment with the current handoff;
+PR179 is draft and gained additional contract requirements, so180/181 remain
+open for reconciliation/protocol review. PR139/172 retain their input blockers.
+No AWS changes, key access, model/chain/receiver live call or deployment.
