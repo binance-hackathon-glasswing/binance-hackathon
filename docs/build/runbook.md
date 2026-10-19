@@ -45,6 +45,10 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 
 7. **Execution service (`larp-execution`, IDEA-050):** each cycle it claims current commands, advances every execution and writes its facts to `execution_observations`; the runtime journals them. Its guard facts come from the journal at every step, so a HALT stops the next signature of an execution already under way, while reconciliation of a possible send continues. Today `run` exits 2 `NOT_INTEGRATED` with reason `EXECUTOR_CAPABILITY_GATE`: the W04 Executor accepts only fake capability bundles until the verified router decoder exists (GAP-29, Isaac). The broadcast path is `FencedRelease`: it re-checks the durable possible-send record, then submits through the Web3 Open API `broadcast-transaction` endpoint with its own submit-only authenticated client (F-104; PR #66 R1).
 
+For ordered execution, acceptance criteria and per-attempt/daily evidence, use
+[RG-01 rehearsal gates](REHEARSAL_GATES_20261019.md). Its entry checks apply
+before the host drills below; no host result is inferred from this runbook.
+
 ## 2. Automatic restart (C5) — **host** drill at Gate A
 
 - Unit: `deploy/systemd/larp-runtime.service`: `Restart=always`, `RestartSec=10`, no start limit, preflight before every start, `KillMode=control-group`.

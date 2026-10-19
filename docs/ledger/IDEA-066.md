@@ -2207,3 +2207,46 @@ User requests tackling remaining work and opening a PR. PR187 implements the cur
 At frozen0191633, approved mirror39227766192 all4 PASS:2119 tests/6 skips/3340 subtests plus actual systemd5/5, infrastructure, restricted worker, demo/Docker and host bundle both roles. Independent local full matches2119/6/3340 in809.39s. Criteria/RED/GREEN in IDEA076 PC-S1WIRE01 and IDEA039 NT-RV02; machine receipt build/evidence/pr133-remaining-20261019.json. Later changes non-manifested docs only. Org39228699044 ran no runtime steps due billing. No original release asset download/publication or host operations claimed. PR187 ready for review and unmerged; parent133 remains open.
 
 No approved source export/private RPC/operator-host/profile-holdings inputs supplied to this session. A07 remains partial: official-event producers, full issuer/source coverage and actual S1 inputs/acceptance; O2 acceptance, DEV20/operations decisions, finite #27 implementation/adoption with actual source/timing, measured #44, funding/opening reconciliation, signer/session and actual rehearsal/DR/final pack remain open. This PR does not fabricate those outputs or owner signoffs. Disposable local PostgreSQL stopped/removed after completion; all changes committed/pushed.
+
+## PC-KEEGAN-20261019 — Keegan's ready PR133 work (2026-10-19)
+
+The user (Keegan) asked for the PR133 tasks assigned to them to be worked on.
+
+- **A06 decisions (Keegan, 2026-10-19).** O2: an INCONCLUSIVE EXP-007 ships
+  the trend guard as declared, accepted before any run; EXP-007 criteria are
+  frozen (EXP-007 PC-O2-ACCEPT-20261019). DEV-20: the event-calendar planner is
+  omitted and declared (`decided` 2026-10-19, status DRAFT until C10;
+  `config/release/deviations.v1.json`, plan.md §6.5 re-rendered). The register
+  change needs inclusion in a future reviewed release; `c5be269` is not
+  requalified by it. Checks: `render_deviations --check` PASS; release
+  register, release bundle and final-review-D tests 46 passed / 43 subtests
+  with PostgreSQL 16.
+- **PR188 review (RG-02-RV01, IDEA-042).** Fixed a traceback on deeply nested
+  input and normalized operator/reviewer independence. Red test first at
+  `ddc9df0`, fix at `fa04d54`, 16 tests pass. Merge left to the user: the PR is
+  self-authored, and this session's merge attempt was refused for lack of an
+  independent review.
+- **PR189 update (RPC-H03, IDEA-055).** Recorded the user-run host results and
+  added a read-only `balance-health.sh` that reads the `balances_ok` gate the
+  running process journals with each round. Parser checked on a real
+  PostgreSQL journal. The host run is the user's next step; #92 stays open
+  until it passes.
+- **C12.** [C12 reconciliation](../build/C12_RECONCILIATION_20261019.md): #22
+  9/18 and #42 17/22 children closed, #49 a close candidate, #98 options, the
+  seven branches (all still present) and the organiser message draft. Q-33 is
+  dropped from the send list as resolved in practice. Dispositions, posting
+  and sending remain with Keegan.
+
+Not done here, since each is blocked on its inputs: B02 (no source export),
+B10 (needs B02 and A02 timing), C04/C06/C10 (need measured reports, release
+inputs and rehearsal evidence). No AWS, wallet, signing, provider, organiser or
+branch operation was performed.
+
+PC-KEEGAN-20261019 follow-up, same day: Keegan closed #98 as not planned and
+#49 as completed, with comments posted. Current-state comments are on #22 and
+#42. Keegan approved deleting `claude/gate-a-inputs`,
+`claude/issue31-day-roll-tests` and `claude/issue59-systemd-runtime-dirs`.
+This session's delete push was refused (HTTP 403), so they still exist; Keegan
+deletes them in GitHub. Correction: the earlier option text for #49 cited the
+Oct19 binding check. That check covered the current non-CI `ea25b52` host
+build, so the closing comment cites `bb46234`'s PC-AWS07 bind PASS instead.

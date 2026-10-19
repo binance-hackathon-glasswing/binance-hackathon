@@ -390,3 +390,116 @@ User authorizes review/fix all open PRs, ordinary target merges including PR11 t
 4.7 additional prospective acceptance: exercise real published red-flag directives through both policy and the independent no-policy risk path; a Class 1 exit remains mandatory and precedes replenishment/buys. Wire the actual execution service, PostgreSQL execution store and receipt producer through coordinator settlement, then prove reservation release, order mapping, durable ACKs and same-head replay. Synthetic venue/chain/signer fixtures only; no live release.
 
 4.7 release inspection finding: release_files includes JSON configuration but omits the assessor's deployed .txt prompts (G-03/G-12), and the runtime Dockerfile. Prospective pass: manifest includes both when present, changing only either invalidates verify_release; synthetic temp trees only. Add these files to the existing manifest inventory; do not relax startup/version gates.
+
+## RG-01 — rehearsal gate packet (2026-10-19), prospective criteria
+
+User asks to create/work on rehearsal gates. Prepare a repository-only operator
+packet for C09/C10 in PR133. Account-owner details are resolved per the user's
+2026-10-19 update; no host access or signed acceptance is inferred.
+
+Pass criteria before verification:
+1. Map every DR13–22 requirement and DR04/05 crash/reconciliation prerequisite
+   to an ordered gate, observation, explicit failure condition and evidence.
+2. Separate ready preparation, unsigned observation, signed drills and final
+   acceptance; use existing adopted bounds, never invent numerical acceptance.
+3. Supply reusable per-drill and daily records; all actual outcomes start NOT_RUN.
+4. Reference existing supported commands/APIs; flag missing host-specific fault
+   injection plans rather than inventing CLI options or unsafe generic mutations.
+5. Check changed Markdown links and mapping coverage after pushing this packet;
+   no cloud, receiver, signer, wallet or live trading operations. C09/C10 and
+   all partially completed GAPs remain open pending measured host evidence.
+
+Results: NOT_RUN at registration. Operational status: NOT_RUN; packet preparation
+cannot approve a policy, qualify a release, or pass Gate A/B/C.
+
+RG-01 repository verification (2026-10-19): PASS at `6e0373b` for all7 local
+packet links, RG1–10 and DR13–22 mapping, three actual API definitions, existing
+operations CLI choices/options and tracker/runbook/backlog links. Initial literal
+DR coverage check failed on combined `DR18/20` formatting; references were made
+explicit and the check passed. `git diff --check` PASS. Documentation-only change;
+no runtime tests, cloud operations, fault injections or live drills run. Missing
+host-specific harnesses/procedures are explicitly BLOCKED until pinned/reviewed.
+C09/C10 and operational Gate A/B/C outcomes remain open/NOT_RUN.
+
+## RG-02 — offline rehearsal evidence index (2026-10-19), prospective criteria
+
+Next repository slice: implement a stdlib-only local packet initializer/checker
+for RG-01. It makes no AWS, RPC, database, signer or receiver calls and cannot
+approve a rehearsal or enable execution. Tool/code additions require their own
+future release qualification; prior release evidence does not cover these bytes.
+
+Prospective acceptance:
+- Initialization creates a new packet with ten NOT_RUN gates, never overwrites.
+- Checking requires exact source/bundle/manifest/profile/config/run/wallet binding;
+  duplicate/missing gates and malformed inputs fail closed without raw input output.
+- Reviewed evidence claims require UTC ordered times, distinct attributed operator
+  and reviewer, procedure/approval refs, complete gate-specific criterion results,
+  and actual local artifact hashes. Missing/refused/synthetic evidence cannot be
+  reported as observed host evidence. Evidence completeness is never Gate C PASS.
+- Artifact reads stay within an explicit sanitized evidence directory: refuse
+  absolute/traversal/symlink/special-file paths and bound file/input sizes. No raw
+  paths, provider URLs, input content or exception strings in reports.
+- Synthetic tests exercise tamper, wrong identity, missing criteria/reviews,
+  duplicate keys/gates, path escape, symlinks, malformed timestamps and overwrite
+  refusal. Commit/push implementation before execution; targeted tests suffice
+  for this independent offline utility. Live outcomes remain NOT_RUN.
+
+RG-02 results at `0ca9621262cd32cc405a568c9e70a7303e4749da`: PASS,
+`python -m unittest tests.runtime.test_rehearsal_evidence -q`, Python3.12.14,
+14 tests,0 skips,0.043s. Initial11 tests passed at0628f62; added CLI completeness/
+refusal distinctions and special-file input checks passed at the final source.
+PASS all7 local packet links and `git diff --check`. Source was pushed before
+execution. Tests use synthetic claims/artifacts only and explicitly retain
+host_results_verified=false, gate_c_accepted=false, signing_enabled=false even
+for complete packet indexes. No application path changed and no host/runtime
+suite or new original release qualification was run. All live C09/C10 drill
+results remain NOT_RUN. A01 wording and the handoff now acknowledge the user's
+resolved account-owner details while retaining actual access/evidence requirements.
+
+## RG-02-RV01 — Keegan review of PR188 (2026-10-19), criteria before the fix
+
+Review of `510c3c0` found one defect against RG-02's "malformed inputs fail
+closed without raw input output": a deeply nested JSON packet (well under the
+1MiB bound) raises `RecursionError`, which `main` does not catch, so the CLI
+prints a Python traceback and exits 1 (the "incomplete" code) instead of the
+fixed `PACKET_REFUSED` report with exit 2. Operator/reviewer independence also
+compares raw strings, so `"Isaac"` and `" isaac"` count as different people.
+
+Pass criteria, written before the fix:
+- RV01-1: a nested packet or identity file raises `Refused` from `load`, and
+  the CLI prints only `PACKET_REFUSED` and exits 2 (red test pushed first).
+- RV01-2: operator and reviewer that differ only by case or surrounding
+  whitespace report `INDEPENDENT_REVIEW_REQUIRED`.
+- RV01-3: all existing RG-02 tests still pass; no other behaviour changes.
+
+RG-02-RV01 results at `fa04d5428aa7900c9d238989756d061d1d9bd226`: **PASS** RV01-1..3. Red first at `ddc9df0`
+(1 failure, 1 error); after the fix `python -m unittest
+tests.runtime.test_rehearsal_evidence -q` on Python 3.12, Linux: 16 tests,
+0 skips. A 200,000-deep packet from the CLI now prints only `PACKET_REFUSED`
+and exits 2. Not changed, recorded for the operator: the checker refuses an
+evidence root with any symlinked ancestor, so on macOS a root under `/tmp` or
+`/var/folders` (both behind symlinks) is refused, and so are these synthetic
+tests' temporary directories. Keep the sanitized export under the home
+directory, which is not a symlink. RG-02's own scope is unchanged:
+`gate_c_accepted`, `signing_enabled` and `host_results_verified` stay false
+and every live drill result stays NOT_RUN.
+
+## RG-02-RV02 — PR188 integration review (2026-10-19), prospective
+
+Review current PR188 merged with its checklist base. Native macOS synthetic
+verification exposed the documented symlink-ancestor limitation in the test
+fixture itself: tempfile returns a path through /var, so ordinary positive
+cases never reach validation. Keep the checker strict; canonicalize only the
+fresh synthetic fixture directory. Pass criteria before the fix: all16 tests
+pass on macOS, including explicit symlink refusals and all CLI exit codes;
+add a symlinked-ancestor regression; packet links and whitespace pass. No host
+or release acceptance is transferred. GitHub run39240046615 never started:
+its annotation reports failed account payments/spending limit, not test failure.
+
+RG-02-RV02 results: PASS on native macOS/Python3.9.6,17 tests/0 skips,
+including new symlinked-ancestor refusal. Canonical fixture paths fix only test
+portability; production path refusal is unchanged. All7 packet local links and
+`git diff --check` PASS. Reviewed the DR mapping, CLI/API references and complete
+changed docs; no additional blocker. Application/runtime/config source is
+unchanged from the current checklist base. Hosted CI remains billing-blocked;
+new tools still need future release qualification and all live drills stay open.

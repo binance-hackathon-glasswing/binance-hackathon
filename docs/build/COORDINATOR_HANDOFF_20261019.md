@@ -29,6 +29,12 @@ carries the live checklist; this page and IDEA-066 hold the detail.
 
 ## 3. Access and private inputs (not in Git)
 
+Oct19 user update: account-owner details are resolved. The historical access
+notes below describe the previous handoff; they do not reopen owner identification.
+Current approved access/input delivery and observed host qualification still need
+evidence. RG-01/RG-02 rehearsal preparation is in PR188; actual host results remain
+NOT_RUN.
+
 - **AWS:** only Yao Zhu had working `larp` profile access (`aws login --profile larp --region ap-southeast-2`). The new
   coordinator must get access from the account owner, or ask Yao to run host steps. No Terraform apply or new spend
   without the account owner's explicit OK.
