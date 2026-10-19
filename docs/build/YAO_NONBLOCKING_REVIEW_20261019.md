@@ -1,5 +1,9 @@
 # Yao local PR133 work — PC-YAO-NB01
 
+Delivery: [PR191](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/191),
+stacked on PR133, open for Keegan's requested review. Org CI39251649314 could
+not start due to the account's billing/spending limit; no hosted CI pass claimed.
+
 Completed against PR133 `aca1b7c`: source-link trust review/regressions and the
 missing original interim-summary handoff. Criteria were committed/pushed at
 `47fa8f9` before the checks; test/data source `35f42b9`, provenance verifier
