@@ -313,3 +313,40 @@ This completes the static runtime review scope, not implementation acceptance.
 The review does not settle Keith's affordability question or Yao's late-cost/
 identity choices. Keegan implements the recorded contract and addresses these
 findings; Isaac reviews the resulting evidence; Yao deploys/qualifies afterward.
+
+### IR179 current-path verification result
+
+At pushed review commit730c99e (application/config/deploy/tests identical to
+integrationea25b52), the focused suite passed **129 tests,120 subtests,0 skips**,
+14.32s. Environment: macOS ARM64, Python3.12.14, fresh external venv populated
+from `deploy/requirements-test.lock`, disposable PostgreSQL14.24. Command:
+
+```sh
+LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55447/larp_test \
+  /private/tmp/larp-pr179-review-venv/bin/python -m pytest -q \
+  tests/intelligence/test_aiand_routing.py \
+  tests/intelligence/test_openai_pacing.py \
+  tests/intelligence/test_trial_caps.py \
+  tests/intelligence/test_providers.py \
+  tests/runtime/test_signed_models.py \
+  tests/runtime/test_final_review_d.py::Watchdog -p no:cacheprovider
+```
+
+Retained log: `/private/tmp/larp-pr179-runtime-review-tests.log`. The original
+old temporary venv had no pytest, so its attempted command ran no tests; a new
+pinned venv was created before the actual successful run. No assertions or
+source were changed to obtain this result. Existing inner-provider-timeout,
+single-lane ownership, main-thread mandatory/HALT safety, model outage limiter,
+restart audit, concurrent SQLite reservation, UTC-day/UNKNOWN/quarantine,
+transport deadline and watchdog cases pass on the existing serial routed code.
+
+These tests do not implement or accept the new180s budget, simultaneous reviewers,
+concurrent deferred audit callbacks, B11 outcome/identity changes, new AB1–AB15,
+full composite300s timing or actual host behavior. IR179-02/03 are source-traced
+hazards of naively parallelizing the serial design, not reproduced failures of
+the current serial routing. No full suite, Linux/systemd, provider/account,
+release bundle, deployment or signed-wallet qualification is claimed. The
+completed deliverable is Isaac's static runtime review plus current-path checks;
+Keegan still supplies corrected design/implementation and new red-first evidence
+for runtime acceptance. No production credentials, paid calls, model effort/
+prompt changes, new lifetime/caps, official uploads, AWS or wallet action.
