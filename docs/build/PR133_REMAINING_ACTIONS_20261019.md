@@ -8,13 +8,51 @@ is not assumed to have access or to have accepted the handoff. All times are UTC
 Completed: reviews/merges176/177/171/173/179–184; PR126 briefs aligned and included
 in PR133; original candidate `c5be269` qualified/published; combined preparation
 source `9a0b80e` all four CI jobs PASS (2109 tests/3340 subtests,6 expected skips;
-separate systemd5/5). PR126's separate integration promotion and PR133 itself
-remain open. Release availability does not establish installation or trading.
+separate systemd5/5). PR126 merged into integration at `eb430b8`; PR133 remains open. Release availability does not establish installation or trading.
 
 Use the [live checklist](PRE_TRADING_CHECKLIST.md),
 [coordinator handoff](COORDINATOR_HANDOFF_20261019.md),
 [release handoff](releases/idea083-c5be269/README.md), and
 [signer preparation](SIGNER_INSTALLATION_PREPARATION.md) for commands and evidence.
+
+## Execution order — PC-ORDER01
+
+Dependencies cannot be removed by changing the task list. This order prevents
+assigning work before its inputs exist. It supersedes the earlier implication
+that every item under “Start now” or “In parallel” is immediately executable.
+Only ready tasks enter a person's queue; a missing input stays with its supplier.
+Owner assignments below are requests, not recorded acceptance or access grants.
+
+| Order | Work that becomes ready | Responsible person and required handoff |
+|---|---|---|
+| 1 — unblock access and inputs | Name the coordinator/operator (A01); obtain source export (B01 supply); provide approved tracing config (B04); verify account rights/funding (A03). These requests can proceed independently. | Account owner coordinates suppliers and a confirmed Binance/Web3/LiquidMesh contact for the complete #139 export. Do not send Isaac another source-acquisition task while he lacks the contact/export. Transfer RPC credentials privately. No new paid account is authorized by this plan. |
+| 1 — repository preparation | Database procedure (A04), O2 decision and operations proposals (A06), B4/B5 code (A07). Keith can finish existing capture/provenance/quote-only analysis within A08. | Keegan prepares code/decisions now; Keith reports actual available coverage and missing measurements. Values requiring host/source evidence remain pending. This work need not wait for Isaac. |
+| 2 — inspect delivered prerequisites | After A01, actual host/wallet/signing/account/ledger snapshot and timing (A02), pre-funding reconciliation (B06-pre), unsigned exports (C01). After the complete source export, independent source review (B02). | Approved operator supplies fresh sanitized evidence; Keegan supplies attributable source review. Neither requires Isaac to finish route checks or funding first. No circular request for a signed trade as a prerequisite to approving that first trade. |
+| 3 — Isaac's first ready tasks, independently | B03 after complete B01+B02 source review and recorded routes; B05 local qualification after B04 private config and a suitable canonical transaction; B07 only after B06-pre confirms eligibility and remaining need; C05 after complete A06 proposals and required A02 measurements. | Give Isaac each complete input packet as soon as it arrives. Do not wait for all four lanes. If no suitable native-credit transaction exists, keep B05 blocked explicitly; an approved B07 transaction may supply it when applicable. B07 can be resolved by reconciliation showing no further seed is needed. |
+| 4 — finish measurements and policies | Operator takes B06-post after B07 disposition. Keith completes A08/B08 from the actual profile, B03 fee/source evidence, fresh B06-post holdings and sufficient approve/swap gas evidence; A05 follows A02/A03. Keegan finalizes B10 after B02 and actual A02 timing. | Keith hands Isaac the exact measured #44 policy/coverage packet. Missing receipt gas stays missing; do not assume a fallback estimate or first signed trade establishes pre-signing coverage. Source-qualified estimates/other attributable evidence must meet the existing review standard. |
+| 5 — Isaac's policy decisions | B09 after B08 and source-qualified spender/evidence. C05 can complete independently when its own proposal/measurement packet is ready. | Isaac approves or rejects the supplied exact policy hashes; preparation is not approval. No further upstream implementation is assigned to him to manufacture these inputs. |
+| 6 — release, then signer session | C06 after B02/B03/B05/B09/B10 and applicable strategy inputs; C07 after that exact qualified release and all required real inputs/approvals. | Keegan delivers the reviewed bundle; approved operator assembles/provisions/isolates it and supplies the approved session plus exact identity/config bindings. Local B05 proof and operator provider acceptance must both be present before signing; operator provider qualification can happen earlier once access/config exist. |
+| 7 — key placement and rehearsal | C08 after C07 and all execution gates; C09 after the qualified first logged agent round. | Isaac places the key only in the approved session. The agent generates the approve/swap; the operator completes drills. Hand the evidence back to Keegan for Gate A/B review. |
+| 8 — final acceptance | C10 after required Gate A/B, strategy/model, rehearsal and DR evidence; C11 before the final wallet's first agent trade and activation. C12 closes only its actually evidenced items. | Keegan completes the activation pack/signoffs; Isaac handles the authorized final-wallet steps with the approved operator. No date or ordering change waives a gate. |
+
+The strategy/model lane runs alongside this sequence: A06/O2 and A08 → C03;
+A02/A03 → A05, and A01/A02 → C01; C01+A05 → C02;
+C02+C03+A07 → C04. Each arrow requires the actual output, not just a task being
+assigned. Signed adoption and final acceptance wait for the selected lane's
+required evidence. C12 billing/administrative preparation can start independently;
+actual closure/signoffs wait for their evidence. The fixed trial cutoff remains.
+
+B06 is split into **B06-pre** (eligibility and current funding need) and
+**B06-post** (opening capture after B07's funding/no-additional-funding disposition).
+The sequence is B06-pre → B07 → B06-post → B08 → B09. This removes the old
+B06/B07 circular wording while preserving both checks.
+
+A ready handoff names the accepted owner, exact task ID, input paths/artifact
+hashes, measured UTC/validity and required acceptance result. Missing or stale
+inputs return the task to its supplier. Isaac can therefore remain idle until a
+packet is ready without blocking the independent preparation lanes. This is a
+planned order; no supplier delivery, reassignment acceptance or work completion
+is inferred.
 
 ## Start now: unblock people, inputs and code
 
@@ -33,14 +71,14 @@ Use the [live checklist](PRE_TRADING_CHECKLIST.md),
 
 | ID | Owner | Required next output | Dependency / completion evidence |
 |---|---|---|---|
-| B01 | Isaac | Obtain complete verified router/facet/helper source, imports/ABI/compiler/settings and chain56 deployed-code/dispatch binding using draft139's request packet through a confirmed team contact. | Original export and hashes. Source access is still missing; do not manufacture an ABI or treat an access error as a verification verdict. |
+| B01 | Account owner coordinates source supplier; Isaac receives ready packet | Obtain complete verified router/facet/helper source, imports/ABI/compiler/settings and chain56 deployed-code/dispatch binding using draft139's request packet through a confirmed team contact. Source delivery must not depend on blocked Isaac acquiring unavailable access. | Original export and hashes. Source access is still missing; do not manufacture an ABI or treat an access error as a verification verdict. |
 | B02 | Keegan | Independently review source guarantees, including nested-call wallet debit bounds, minimum receipt and enforced deadlines. | After B01. Attributable review/guarantees and supported economic paths. |
 | B03 | Isaac | Build the real pinned router evidence and replay the existing recorded routes in both directions. Resolve attributable route-fee netting (#119), with source/quote/receipt evidence as applicable. | After B02. Reviewed evidence/hash and router-check PASS; reporting fix157 alone does not prove fee inclusion. |
 | B04 | Account owner | Supply an approved BSC native-tracing account/config privately, including required prestateTracer diffMode capabilities and canonical/finalized history. | Existing approved service/config and private path; no new signup/spend is inferred. Public balance reads are insufficient. |
 | B05 | Isaac | Run merged PR173's real native-proof qualifier and review the sanitized proof; operator then qualifies the same provider on the host. | B04. Exact proof/input/provider hashes and host acceptance; native_trace stays unqualified until then. |
-| B06 | Approved operator | Confirm from actual wallet/run/signing state that no first agent trade or in-flight work prevents remaining manual funding. After the last funding action, capture fresh reconciled full holdings/opening state. | Actual reconciliation, not nonce equality alone. Retain the final capture/hash and exact matching execution settings. |
-| B07 | Isaac | Only after B06's confirmation, finish the remaining MetaMask gas-funding plan if needed; retain public transaction hash, amount and UTC. | Draft172 procedure; operator takes the post-last-funding capture. No seed/key is shared with the assistant. |
-| B08 | Keith | Check exact measured profile, full fresh holdings, top-up amounts and approve/swap fee envelope against per-token/per-request caps and aggregate gas budget. | A08, B03 and post-funding B06 inputs. Produce pinned coverage inputs/report; historical prices or nominal headroom are insufficient. |
+| B06 | Approved operator | Confirm from actual wallet/run/signing state that no first agent trade or in-flight work prevents remaining manual funding. This is B06-pre. Separately, B06-post captures fresh reconciled full holdings/opening state after B07 funding or no-additional-funding disposition. | Actual reconciliation, not nonce equality alone. Retain the final capture/hash and exact matching execution settings. |
+| B07 | Isaac | Only after B06-pre's confirmation, finish the remaining MetaMask gas-funding plan if needed; retain public transaction hash, amount and UTC. | Draft172 procedure; operator takes the post-last-funding capture. No seed/key is shared with the assistant. |
+| B08 | Keith | Check exact measured profile, full fresh holdings, top-up amounts and approve/swap fee envelope against per-token/per-request caps and aggregate gas budget. | A08, B03 and B06-post inputs. Produce pinned coverage inputs/report; historical prices or nominal headroom are insufficient. |
 | B09 | Isaac | Decide/approve exact #44 development/final policies and hashes after the measured review; review the exact summary/profile (#120). | B08 and source-qualified spender/evidence. Pending/example cap labels must not be installed. |
 | B10 | Keegan | Adopt and implement #27's finite authority model, duration/margins and per-action windows; preserve original authority through quote refresh/restart and uncertain-send reconciliation. | B02 and A02 timing inputs. Deliver dated C-OPEN-003 decision, reviewed code and expiry/requote/restart tests.60s remains illustrative; kit quote TTL is not verified router expiry. |
 
