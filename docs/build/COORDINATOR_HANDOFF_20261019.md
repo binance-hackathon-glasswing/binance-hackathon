@@ -70,7 +70,7 @@ read-only checks. Never reset, edit or re-initialize the ledger; never delete a 
 
 | Owner | Item |
 |---|---|
-| Keegan (code/release review) / Keith (protocol/affordability) | Isaac implemented IDEA-083 at the user's request in [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181), stacked on179/180. Final local PG14 suite2079 passed/9 platform-external skips/3272 subtests, plus14 expanded components/257 subtests (PC-IMPL18101). B11/180s/parallel review/DEV-22 and linked primary identity are implemented; prompts/efforts/pinned routing unchanged. Remaining: independent review, exact Linux/systemd/original release (org CI billing-blocked #98), Keith cost/protocol review, then coordinator/operator install and actual stage timings/charges/receiver ACK. No AWS/deployment/key change by this session; preserve ledger, existing adoption and Gate B prerequisites. |
+| Keegan (code/release review) / Keith (protocol/affordability) | Isaac implemented IDEA-083 at the user's request in [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181), stacked on179/180. Final local PG14 suite2079 passed/9 platform-external skips/3272 subtests, plus14 expanded components/257 subtests (PC-IMPL18101). B11/180s/parallel review/DEV-22 and linked primary identity are implemented; prompts/efforts/pinned routing unchanged. PR179/180/181/182 are now merged. Remaining: exact Linux/systemd/original release qualification (PR183; org CI billing-blocked #98), Keith cost/protocol review, then coordinator/operator install and actual stage timings/charges/receiver ACK. No AWS/deployment/key change by this session; preserve ledger, existing adoption and Gate B prerequisites. |
 | Keegan | Review merged PR178 and the local non-CI ea25b52 build; reviewed version-switch support (one run per wallet); include merged PR177/176 in the exact next reviewed release; Gate A/B review; B4 `exposure_evidence` producer; DEV20 planner disposition |
 | Account owner / coordinator | Reconcile the one UNKNOWN 84,764 µUSD charge (reviewed; never edited); AIand units/expiry/funding; owner `status`/`export` snapshot with hashes; delete S3 transfer copies `releases/llm-trial-20261018t160739z/` and `releases/llm-trial-20261018t170339z/` (`mac/r9-cleanup-s3-package.sh`); confirm who created `larp_trial` before the first recorded setup |
 | Coordinator | Post-fix DOJ polls/restart and a NEW observed-window `report --coverage-scope current`; original fixed 24 h report stays FAIL; historical PERMANENT backup failure stays recorded; PC-LABEL02-INJ01 benign-link trust check |
@@ -85,3 +85,15 @@ and171/173 into PR133 under the user's instruction. This tracker includes the
 updated integration base and remains OPEN. Evidence and remaining release/host/
 source/caps/model-contract gates: IDEA-066 MERGE-RV20261019 and the live checklist.
 No deployment or AWS/key operation follows from repository merges.
+
+PC-SIGNER-ASSEMBLY01 (Oct19): PR179/180/181/182 are now merged; PR133 includes
+integration8c1e6df via cabc159. Code reconciliation is complete. PR183 contains
+release-declaration alignment and separate exact-release qualification; review
+and host acceptance remain distinct. New [PR184](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/184)
+delivers the offline signer installation-candidate assembler and procedure,
+194 tests/349 subtests/0 skips PASS. It is stacked on133 for review, not installed.
+Actual assembly still needs source-reviewed evidence, measured profile/fresh
+full holdings/top-up/fee quotes, #44 acceptance, #27 finite policy/code/timing,
+and the operator's signed run/release/DB/CA bindings. See the checklist's current
+PC-SIGNER-ASSEMBLY01 owner rows. The old draft stays unchanged/uninstallable;
+all generated reports keep installation/signing/Gate B false. No AWS or keys.

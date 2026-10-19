@@ -1897,3 +1897,43 @@ change the cap label to manufacture approval or include a key. Key placement
 waits for Yao's separately approved signer session. Corrected the stale README
 claim that production router evidence is optional; current176 check/run require
 it before DB/key access. No AWS/host/wallet/private-key/provider/receiver action.
+
+## PC-SIGNER-ASSEMBLY01 — preparation after merged branches (2026-10-19)
+
+Isaac asks to complete remaining feasible signer work. Refreshed current remote:
+179/180/181/182 are merged into8c1e6df. Normal merge cabc159 brings that source
+into PR133, resolving only two doc conflicts: preserve current tracker/ledger
+evidence and retain the new IDEA083 row/merged acceptance. Code did not conflict.
+The original broad conflict-resolution/push command was automatically rejected
+because a scripted edit might discard tracker entries. Replaced it with narrow
+explicit patches and inspected the complete resulting diff before committing;
+the verified merge/push was accepted. No action remains blocked by that review.
+
+Separate PR184, codex/isaac-signer-assembly-20261019 → PR133, implements SA-01:
+offline production-validator-backed candidate assembly from the existing pinned
+numeric inputs, exact execution identity/IAM/CA/router bindings, dedicated signer
+role and wallet.key credential name. New private/exclusive outputs contain the
+key-free config plus exact hashes and unresolved owner gates. No owner/source
+approval is inferred. Historical draft SHA339c4202…31442 is unchanged.
+
+At pushed runtime a324fb7, pinned Python3.12.14/PostgreSQL14.24:
+**194 passed,349 subtests,0 skips**,21.66s. Includes all signer tests and numeric/
+proposal/router/authority/service-config/signed-model preparation regressions.
+Additional filesystem negative test reproduced dangling-symlink following and
+was fixed before final acceptance. Runtime/criteria/results in IDEA-049-C SA-01;
+new procedure SIGNER_INSTALLATION_PREPARATION.md in PR184. Temporary local PG
+container was disposed. No complete new full-suite, Linux/systemd/host acceptance
+is claimed. CI39210809471 runtime job117923526599 ran zero steps; annotation
+confirms failed payments/spending limit (#98), not a test failure or remote PASS.
+
+Real assembly NOT_RUN_MISSING_INPUTS. #27/#44 remain OPEN without new decisions:
+Keith's conditional OptionA review is supplied, but Keegan's finite bounds/margins/
+action-window adoption, implementation and real timings are absent. Measured
+selected profile/fresh full holdings/top-up/approve/swap fees and exact policy
+acceptance are absent. Source139 remains draft; no actual verified router/facet/
+helper evidence/review exists, so recorded route replay cannot run. Native
+provider and attributable route fees remain #30/#119. Coordinator/operator must
+supply actual signed run/release/DB/CA/evidence bindings and host/session checks.
+New183 independently addresses IDEA083 release declarations/qualification; its
+body explicitly leaves all these signer gates open. No AWS, real provider/model/
+receiver, funding, wallet-key, signing, broadcasting or installation action.

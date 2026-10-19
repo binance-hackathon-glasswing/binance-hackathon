@@ -248,7 +248,7 @@ Delivery verified in IDEA-066 PC-REL04: PR168 merged into this checklist branch 
 - [x] **Yao Zhu:** replace the invalid AIand key preserving all other runtime-secret fields; authenticated host catalogue/high-effort checks PASS (PC-PROV03). USD currency confirmed; original401 retained.
 - [ ] **Yao Zhu:** complete remaining account-expiry/funding/usage/rights reconciliation; balance endpoint403 leaves140+ owner-reported. Actual served effort/first-reply evidence remains open. No further key replacement is required by the passing catalogue check.
 - [ ] **Yao Zhu:** verify actual preserving trial ledger setup and host/provider qualification before paid testing. 2026-10-18 (PC-DEPLOY01/02): ledger created once and preserved across the ea25b52 redeploy (SQLite backup `2a20adc1…`; policies matched routing read-only); OpenAI served identity/effort and AIand Kimi K3/GLM 5.3 high served identities observed in real jobs. Remaining: owner `status`/`export` snapshot with hashes, AIand funding/expiry, and the UNKNOWN-charge reconciliation. Reviewed PR174 is merged and new86b1476 original release is delivered (PR174-REL01), including atomic8M total/2.5M UTC-day maximum/UNKNOWN reservations, accounting quarantine, clock guard and unsigned-only preparation. Explicitly prepare/pin the capped trial example (SHAa5fca50a…22d8d), preserve all charges/latches, and record installed source/config, status/export/P0 and first-job/ACK. No repeat protocol approval; no ledger reset. PR133 stays open.
-- [ ] **Keegan (code/release review), Keith (protocol/affordability):** [PR #179](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/179) / IDEA-083, assessment time budget. **Decided by Yao 2026-10-19:** raise to ≤180 s, OpenAI share ≤60 s, reviewers in parallel with their own allowances, effort unchanged (lower it only if latency remains), declare DEV-22. must land before the Oct 26 freeze. Also decided (B11): when OpenAI reaches ASSESSED, reviewers only confirm or block it, never replace it; if no reviewer finishes, OpenAI's result stands (recorded INCOMPLETE); any dissent → ABSTAIN. Criteria AB1–AB15. The first fixed job (IDEA-066 PC-DEPLOY02, cadence:1991492#1) had OpenAI ASSESSED but the combined result UNAVAILABLE (`ASSESSMENT_DEADLINE_EXCEEDED`, 60,019 ms; Kimi K3 step 33.8 s). Reviewed config/code change only; keep the original job records. Isaac has now implemented this at the user's request in [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181), stacked on179/180; see PC-IMPL18101. Remaining: independent review, exact Linux/systemd/release qualification and coordinator/operator host timing/charges/ACK; no deployment is implied.
+- [ ] **Keegan (code/release review), Keith (protocol/affordability):** [PR #179](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/179) / IDEA-083, assessment time budget. **Decided by Yao 2026-10-19:** raise to ≤180 s, OpenAI share ≤60 s, reviewers in parallel with their own allowances, effort unchanged (lower it only if latency remains), declare DEV-22. must land before the Oct 26 freeze. Also decided (B11): when OpenAI reaches ASSESSED, reviewers only confirm or block it, never replace it; if no reviewer finishes, OpenAI's result stands (recorded INCOMPLETE); any dissent → ABSTAIN. Criteria AB1–AB15. The first fixed job (IDEA-066 PC-DEPLOY02, cadence:1991492#1) had OpenAI ASSESSED but the combined result UNAVAILABLE (`ASSESSMENT_DEADLINE_EXCEEDED`, 60,019 ms; Kimi K3 step 33.8 s). Reviewed config/code change only; keep the original job records. Isaac has now implemented this at the user's request in [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181), stacked on179/180; see PC-IMPL18101. PR179/180/181/182 are now merged; code review/reconciliation is complete. Remaining: exact release qualification (PR183), Keith protocol/affordability and coordinator/operator host timing/charges/ACK; no deployment is implied.
 - [x] **Isaac:** runtime design review of PR179 delivered in [PR180](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/180), IDEA-083 IR179-RV01 / PC-RUNTIME17901. Eight source-linked findings cover deadline/worker-drain separation, concurrent audit serialization, the global six-tool-call budget, AB1/B11/result identity, dispatch/late accounting, signed safety/recovery and composite watchdog evidence. Current-path focused129 tests/120 subtests PASS,0 skips (local PostgreSQL14.24); this does not accept the future180s/parallel implementation. Isaac subsequently supplies implementation/evidence in PR181 below; Keith retains protocol/affordability and the next coordinator/operator retains host qualification.
 - [x] **Isaac:** implement Keegan's IDEA-083 work, delivered in [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181), PC-IMPL18101 / IDEA-083 AB-IMPL01. 180s ceiling; primary ≤60s/one third; parallel reviewers ≤90s each; deterministic B11; separate canonical routed ID linked to unchanged primary ID/content (Isaac approved); owned late workers, serialized audit, global six tools and conservative UNKNOWN charges. Final local pushed runtime c8e8150:2079 passed/9 explicit platform-external skips/3272 subtests; expanded components14/257. Goldens reviewed; DEV-22/research parity recorded. Org CI billing-blocked #98 (zero steps); no Linux/systemd/original release or actual host PASS claimed. Keegan review/release, Keith affordability, coordinator/operator hosted qualification remain open; no AWS, paid calls or keys.
 - [ ] **Keegan:** review merged PR178 and the local non-CI `ea25b52` bundle (PC-FIX02/PC-BUILD01; differs from CI 86b1476 only in `providers.py`, manifest and BUNDLE.env), and add reviewed version-switch support: `runs` UNIQUE(wallet_id, chain_id) means every new build or the Oct 20 profile currently needs a new trial database (PC-DEPLOY01-B1).
@@ -543,8 +543,9 @@ combined-tree checks are recorded in IDEA-066 MERGE-RV20261019.
 Remaining: exact release/bundle and host qualification; source/route/native
 account inputs and measured profile/holding/caps/signing-session decisions.
 PR126's older briefs conflict and need alignment with the current handoff;
-PR179 is draft and gained additional contract requirements, so180/181 remain
-open for reconciliation/protocol review. PR139/172 retain their input blockers.
+PR179/180/181/182 are now merged; code reconciliation is complete. Exact-release
+qualification is in PR183; protocol/affordability and host acceptance remain.
+PR139/172 retain their input blockers.
 No AWS changes, key access, model/chain/receiver live call or deployment.
 
 Final combined-tree validation at pushed2202c15:282 tests/434 subtests PASS,
@@ -563,3 +564,43 @@ real source/route evidence and #27 remain open; the coordinator/operator must
 finish exact release/config/manifest/host assembly. Corrected handoff README
 and IDEA-066 PC-SIGNER-CHECK02 give owners and exact file hash. No key belongs
 in the JSON; key placement stays in Yao's approved session.
+
+### Signer preparation after merged branches — PC-SIGNER-ASSEMBLY01 (Oct19)
+
+PR133 now includes integration8c1e6df through normal merge cabc159. Two
+documentation-only conflicts retained current source/caps evidence and the merged
+IDEA083 acceptance; no application conflict. IDEA083 code review/reconciliation is
+complete; PR183 supplies a separately reviewed release candidate/qualification,
+not signer installation acceptance. Do not repeat the earlier draft179 blocker.
+
+Isaac delivered the remaining offline assembly work in separate
+[PR184](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/184),
+stacked here for review: `python -m larp.signer.assembly` re-runs the pinned
+numeric review, copies exact signed execution identity/CA/router bindings with
+the signer DB role, checks production validators and writes a new key-free
+candidate plus exact-hash report. **194 tests/349 subtests/0 skips PASS** with
+Python3.12.14/PostgreSQL14.24, including malicious-intent/authority/startup,
+signed-model preparation, and output symlink/non-overwrite/cleanup checks.
+CI39210809471 runtime ran zero steps: verified failed-payment/spending-limit
+annotation (#98), not a test failure or remote PASS. No real candidate assembled.
+
+- [ ] **Source supplier / Isaac / Keegan:** real router/facet/helper evidence and
+  independent review, then recorded-route replay; draft139/#138 remain blocked.
+- [ ] **Keith/coordinator inputs, Isaac review/decision:** selected measured
+  profile, fresh full holdings/top-up/approve/swap/fee quotes, then exact #44
+  policy acceptance/hash. Existing historical caps and fallback gas are insufficient.
+- [ ] **Keegan plus operator timing:** adopt finite #27 authority/margins/action
+  windows, implement and qualify expiry/requote/restart/uncertain-send behavior.
+  Keith supplied the conditional OptionA review; no finite lifetime is adopted.
+- [ ] **Provider owner / Isaac:** private native-trace provider input and
+  attributable route-fee evidence for #30/#119; native_trace stays off.
+- [ ] **Coordinator/release owner/approved operator:** exact signed run/build/DB/CA/
+  evidence values, registered manifest/config binding and host acceptance. Use
+  PR184's preparation procedure after review; do not reuse unsigned identities.
+
+The tracked old signer.json is unchanged, still has six null bindings and pending
+caps, and is not ready to install. Candidate assembly success also keeps all
+installation/signing/Gate B flags false. Key placement remains restricted to
+Yao's approved signer session. No AWS, wallet/key, provider/model/receiver live
+action, funding, signing or installation occurred. Details: IDEA-066
+PC-SIGNER-ASSEMBLY01 and IDEA-049-C SA-01 in PR184.
