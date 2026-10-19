@@ -46,7 +46,10 @@ producer. No extra MODEL exposure call is selected or implemented.
 source-qualified deadlines, measured host timing, selected finite duration and
 margins needed to adopt the parent-authority change. This PR does not extend
 proposal admission, quote freshness or signing authority to conceal that mismatch.
-O2, DEV20 and the operations risk choices remain explicit owner decisions; the
+PR187 submits the concrete O2 default RETAIN_DECLARED_TREND_GUARD on an
+INCONCLUSIVE EXP007 result (EXP007 PC-O2-20261019). Acceptance and immutable
+code/config/data pins must precede a real run; no result or live profile is
+adopted. DEV20 and the operations risk choices remain explicit owner decisions; the
 existing ready decision packet can be reviewed without new credentials.
 
 ## Remaining actions and suppliers
@@ -55,7 +58,7 @@ existing ready decision packet can be reviewed without new credentials.
 |---|---|
 | A01/A02, access and current host state | Account owner names accepted operator and transfers approved access/private files; operator supplies fresh build/run/service/ledger/timing reports. No approved private inputs were supplied to this session. |
 | A03/A05/C01/C02, accounts and trial evaluation | Account owner supplies funding/expiry/rights/usage reconciliation; operator exports immutable actual populations and preserved accounting; Keith supplies independent labels, M9/coverage, actual cost/latency and unsigned verdict. UNKNOWN charges and fixed cutoff stay intact. |
-| A06/C03/C04, strategy/research decisions | Keegan/owner settles O2 before Keith's real EXP007 run and decides DEV20; Keith supplies recorded candles, frozen weights/parameters/profile and evaluations. Selected profile/model/adoption remains separate from available code. |
+| A06/C03/C04, strategy/research decisions | Owner accepts the submitted O2 rule before Keith's real EXP007 run and decides DEV20; Keith supplies recorded candles, frozen weights/parameters/profile and evaluations. Selected profile/model/adoption remains separate from available code. |
 | B01/B02/B03, router | Confirmed source supplier delivers complete export/ABI/compiler/helper/deployed-code bindings; Keegan independently reviews guarantees; Isaac then runs recorded-real route/fee checks. Draft139 remains the source intake. |
 | B04/B05, native tracing | Account owner supplies approved private RPC config and suitable public transaction; Isaac runs the repaired qualifier, then operator qualifies the same provider on the host. No credentials enter GitHub. |
 | B06-pre/B07/B06-post, funding | Operator reconciles actual no-first-agent-trade/no-in-flight state and remaining need; Isaac funds only if needed; operator captures fresh complete holdings afterward. Draft172 remains the handoff; historical balances are not current proof. |
