@@ -1,5 +1,9 @@
 # IDEA-066 — Gate A inventory and offline package qualification
 
+PC-FIX01 (2026-10-18, Yao): requested DOJ/source-report and atomic unsigned-trial
+cap corrections for Keegan review/new release. Prospective acceptance is in
+../build/DOJ_TRIAL_CAP_FIXES_20261018.md; no runtime/host adoption implied.
+
 - Date / owner: 2026-10-16 SGT / Isaac with Codex; runtime/deployment review: Keegan.
 - Baseline: `eda2ed2`, fetched from `codex/system-testing-20261012`; PR87 and the Gate A assembly are already merged.
 - Issues: [#127](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/127) tracks hosted qualification; [#128](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/128) covers the offline package check. Existing #32/#49/#92/#98/#118–120 keep their own acceptance criteria.
@@ -194,3 +198,169 @@ installation/bind/activation, first assessment, labels and later adoption remain
 with their existing owners. No service, API inference, wallet, host or AWS action
 was performed. The source-report verification remains24 passed/18 subtests;
 no additional runtime tests for documentation-only protocol reconciliation.
+
+
+## PC-FIX01 — DOJ repair, explicit forward coverage and trial caps, Oct18
+
+Yao requests fixes in a PR for Keegan review/new release. Acceptance was pushed
+atc6097e0 before tests. See ../build/DOJ_TRIAL_CAP_FIXES_20261018.md for criteria,
+actual public DOJ evidence, behavior, hashes, host steps and remaining owners.
+DOJ page97 is20,757,780 bytes because of one inline JPEG; bounded media removal
+preserves all20 ordered article IDs and produces91,830 bytes without changing
+page offsets or skipping records. Global permitted-payload limits stay unchanged;
+DOJ-only wire bound32 MB and excluded-media provenance are explicit.
+
+Durable head checkpoints/proofs and history retries distinguish current-listing
+coverage from archive backlog. Default historical semantics and old logs are
+unchanged. Explicit current scope requires new proof and embeds the unchanged
+historical report; it cannot relabel old24h errors or create observed hours.
+Trial config binds immutable8M total/2.5M UTC-day limits to the same50M allocation,
+reserving atomically and rechecking actual dispatch day. Unknowns/latches/charges
+persist, old binaries are fenced by stored pacing identity, and expiry/stops block
+both provider transports. Trial files cannot enter signed/live preparation or
+runtime. Missing/ambiguous existing dispatch attribution refuses migration rather
+than guessing or resetting. Later signed-ledger transition remains separate.
+
+Pushed final application/tests ae7ccaa:1630 passed/436 environment skips/2659
+subtests,39.32s on local macOS. Exact-source Linux/PG/mirror acceptance is Keegan's
+next release gate. No goldens, paid calls, AWS/host/wallet changes or release.
+Results/hashes in ../build/evidence/doj-trial-cap-fixes-20261018.json. Yao retains
+P0/funding/source disposition/setup/install/start/ACK; Keith real usage/labels;
+Keegan peer review/CI/new binary. PR133 stays open; main checkout untouched.
+
+
+### PR174-R1 source review criteria — Oct18 UTC
+
+Owning cross-cutting criteria are in IDEA057 PR174-R1, pushed before new code
+execution. Non-object current-head proof must fail coverage without crashing;
+keep original historical report/failure counts. Inspect DOJ wire normalization,
+item/page identity, checkpoint/restart and transport bounds with existing source
+regressions. Source review does not upgrade the failed Oct17–18 report or imply
+new observed coverage. New original release waits for exact-source Linux/all-job
+private CI; host installation/start and actual source/provider checks remain Yao.
+
+
+PC-GAP02-RV1 / PR174-R1: independent review of retained PC-GAP02 metadata
+(13348fb70d) accepts reported raw FAIL, no DOJ exemption and correctly withheld
+combined explanation. DOJ144 incomplete=48 OK/truncated+96 size errors;
+BIS96 transports=3 complete+93 historical-incomplete, eligible only for its own
+historical explanation. Owner's31-file/13-SSM/old-code reproduction is retained
+evidence, not another raw-byte reproduction here. New CURRENT_LISTING proof
+does not rewrite that failed window. Future actual source/restart/window checks
+remain Yao's. Malformed proof now forces current-report FAIL; focused source/
+trial/preparation/provider152 tests/169 subtests PASS at b141074. Full exact
+Linux/private CI/original release follows; no host or paid-provider action.
+
+
+## PR174-REL01 — new original LLM bundle delivered
+
+PR174-R1 fixes and frozen source `86b14761324faeb8f57df5c0d86ff00320b4361c` passed
+[private mirror39126353379](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126353379), all4 jobs PASS. Full Linux/
+Python3.12.15/PostgreSQL14.24:2064 passed,6 skipped,2992 subtests,236.95s;
+actual systemd5 tests/5 subtests separately PASS. Terraform, offline demo,
+restricted Docker and both-role bundle provisioning PASS. Local same-source
+Linux2064/6/2992 passed in173.13s. Skips: external corpus1 plus5 systemd cases
+exercised separately. No xfails, golden changes or weakened acceptance checks.
+
+PR174 merged normally at `100d49327f4f50e13ff4c16f297b1acccf187496` after green CI and
+original-artifact verification. No issue/inline comments or submitted reviews
+existed at either inspection; the three direct-review findings and regressions
+were corrected before release. Frozen source/tag stay unchanged.
+
+[Published unsigned LLM prerelease](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/llm-trial-pr174-86b1476)
+has six actual assets: original tarball, original sha256 sidecar, external
+manifest, VERIFICATION.json, BUNDLE.env and README. Dedicated publication-only
+[run39126901213](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39126901213)
+reverified/uploaded originals using the mirror's scoped Actions token. It did
+not rebuild the bundle or replace acceptance CI. Tag/source and asset API
+sizes/digests verified. Organization billing is not claimed fixed.
+
+| Verified original | SHA-256 |
+|---|---|
+| `larp-86b14761324f-x86_64.tar.gz` (98,383,598 bytes) | `277fd2b6e4b26e0725b38c1f4f2bcb35cab7e25fe3857639683b283e7b684343` |
+| External/embedded manifest | `0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f` |
+| Actual packaged RDS CA | `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b` |
+
+Original artifact12135774607 ZIP digest verified;196 manifested source files
+and235 full-bundle checksums checked. Registered repository stays the challenge
+repo; build_origin honestly names the Keegan4 mirror. The packaged trial config
+hash is `a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d`.
+Yao must explicitly prepare/pin this capped unsigned trial file; the legacy
+preferred file remains separate. No ledger reset, policy removal or automatic
+signed adoption is authorized. [Machine-readable evidence](../build/evidence/pr174-release-20261018.json).
+
+PR133/126 stay open. Code/review/CI/new-original-bundle work is complete. Yao
+retains private provider/account/funding/rights checks, preserving ledger setup,
+host install/bind/activate, actual post-fix polls/restart/new observed window
+and first assessment/receiver ACK. Keith retains actual usage/labels; team
+retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
+raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
+is claimed. These result-only records change no manifested runtime file.
+
+
+## PC-MIRROR01 — explicit approved CI mirror in local package checker
+
+Yao approves the checker correction on Oct18. Existing PC-DEC01 (retained on
+PR133, docs/build/GATE_A.md) already accepts Keegan4 mirror release bytes when
+production bind verification passes. The continuation incorrectly elevated the
+known mirror-only local failure into a new deployment blocker; correct that
+statement without erasing the original observed FAIL. No new mirror approval,
+manifest rewrite, binary rebuild or paid/host operation is needed for the
+existing accepted86b1476 release. A corrected local verifier may inspect that
+unchanged bundle, recording verifier SHA separately from candidate build SHA.
+
+Prospective criteria, before new code/tests execute:
+- M1: registered challenge repository and exact approved Keegan4 mirror origins
+  (canonical HTTPS, optionally .git) qualify; other origins, lookalike URL hosts,
+  credentials/query/fragment/path variants and a mirror attached to another
+  registered repository refuse. No arbitrary origin override or wildcard trust.
+- M2: approved origin cannot bypass exact prepared-build/registered-repository,
+  remote_verified, unbound-manifest, per-file hashes or complete release/register
+  checks. Preserve old rejection tests and verify those defects with mirror too.
+- M3: all successful paths remain read-only; local_ready never implies Gate A,
+  remote CI verification, live signing, network or database authority.
+- M4: commit/push tests before RED; commit/push implementation before GREEN;
+  run focused package/preparation/release tests and record honest environment
+  limits. Recheck the original saved86b1476 package with the pushed verifier;
+  keep its bytes/manifest/checksums unchanged and retain the historical FAIL.
+- M5: keep PR133 OPEN and update its current decision/checklist/backlog wording;
+  record review/merge and future release propagation separately. No host
+  mutation, service activation, ledger command or paid inference in this fix.
+
+
+PC-MIRROR01 RED at pushed ae6bf7a:14 package-check tests, two failing subcases
+reproduce rejection of canonical/.git approved mirror; unauthorized-origin,
+foreign-registration and integrity controls pass. All six other package checks
+are PASS for those two failures. Implementation pushed4eb33bb adds an exact
+repository-scoped verifier allowlist; all content/identity/bind checks remain.
+No configurable wildcard trust. The existing86b1476 binary and its historical
+FAIL remain unchanged; the separate local verifier corrects reporting without
+creating an installation/rebuild dependency. Results follow after execution.
+
+
+PC-MIRROR01 GREEN: pushed implementation4eb33bb, local macOS/Python3.12.14
+package/preparation/release-bundle/register suite68 run:65 PASS,3 existing
+PostgreSQL-dependent skips,0 failures (4.085s). Initial restricted run had two
+fixture mkdir permission errors; rerun with permitted local paths passes without
+code/test changes. The original-package terms-store check likewise needed local
+path access; same code then passes all7 checks/local_ready=true. Remote-CI and
+GateA remain false, signing false, all host checks NOT_RUN.
+
+The separately identified verifier4eb33bb checked the saved original86b1476
+package, manifest0053cbc9…fff2f, original bundle extraction/CA/terms. Every input
+file hash stayed unchanged. Capture remains the original13:56UTC snapshot and
+must be refreshed at actual preparation; this is local byte qualification only.
+Original FAIL is historical, retained; this corrects reporting under existing
+PC-DEC01 rather than reopening approved provenance or rebuilding a CI asset.
+Evidence and log hashes: ../build/evidence/gate-a-approved-mirror-20261018.json.
+Remaining: review/merge correction and eventual propagation to future releases;
+Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
+all existing source/quality/signed owners. No host/AWS/model/ledger operation.
+
+MERGE-RV20261019 / PR177 malformed metadata negative control: added array/object
+build_origin cases at pushed6e3b148. The existing qualification wrapper catches
+the internal membership TypeError and records CI_RELEASE_BYTES=FAIL;14 tests/
+52 subtests PASS (2.60s), so this is not a reproduced CLI failure and needs no
+runtime fix. Keep the added negative controls. The initial source-only suspicion
+was corrected after executing the actual qualification path. No acceptance or
+error handling was weakened.

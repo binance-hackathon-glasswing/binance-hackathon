@@ -306,6 +306,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['assessor'] == 'aiand_routed':
         from larp.intelligence.routing import build_routed_assessor
         spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
+        if spec.get('openai_trial') is not None and (d['execution'] != 'shadow' or config['mode'] != 'dev'):
+            raise ContractError('Unsigned trial routing requires dev/shadow runtime')
         assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
             clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
     else:

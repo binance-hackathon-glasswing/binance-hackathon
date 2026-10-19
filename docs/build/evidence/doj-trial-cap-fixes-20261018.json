@@ -1,0 +1,39 @@
+{
+  "schema": "DOJTrialCapFixVerification.v1",
+  "record_id": "PC-FIX01",
+  "application_and_test_commit": "ae7ccaa",
+  "full_suite": {
+    "passed": 1630,
+    "skipped": 436,
+    "subtests_passed": 2659,
+    "seconds": "39.32",
+    "log_sha256": "6cef2a1e3c1197cba58a13bbec179a52cb133761d17985c4d83a065eca2ce45d",
+    "scope": "local macOS; PostgreSQL/Linux/systemd/external checks remain skipped, new exact-source Linux CI required before release"
+  },
+  "red_regressions": {
+    "commit": "ddcfb2f",
+    "failed": 17,
+    "passed_controls": 1,
+    "log_sha256": "59171469ea38933010060ee9e8575b3fcdc6ae2bd6c6be78b63b2231f3b65fe4"
+  },
+  "public_doj_cached_response_replay": {
+    "source": "DOJ public page97 retained response",
+    "wire_bytes": 20757780,
+    "normalized_bytes": 91830,
+    "wire_sha256": "a22e0edf7a0f4d6925bb0720cc167d3ecf3cdad147d1de28f68d1248870fd018",
+    "normalized_sha256": "abe9fc05e62c9cfb513e56be69bf088f0584de8f33c672a6076900f6ecd5289f",
+    "items_preserved": 20,
+    "inline_images_removed": 1,
+    "seconds": 0.22,
+    "network_calls": 0
+  },
+  "trial_routing_sha256": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+  "host_mutations": false,
+  "paid_provider_calls": false,
+  "remaining": [
+    "Keegan PR review and fresh Linux/PostgreSQL/all-job CI/new original release",
+    "Yao source/report disposition, P0/account/AIand funding, matching trial ledger setup, install/bind/activate and first assessment",
+    "Actual observed hours/routes/labels/reconciled affordability",
+    "Later reviewed preserving trial-to-signed ledger transition; removing trial config/resetting is refused"
+  ]
+}

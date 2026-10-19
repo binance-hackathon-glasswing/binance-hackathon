@@ -19,6 +19,13 @@ REQUIRED = frozenset(('runtime.json', 'uploader.json', 'operations.json', 'strat
 OPTIONAL = frozenset(('evidence.env', 'model-routing.json'))
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
+# IDEA-066 PC-DEC01 / PC-MIRROR01: approval belongs to this registered repository,
+# not to arbitrary mirrors or to an origin allowlist supplied by the candidate.
+APPROVED_CI_MIRRORS = {
+    'https://github.com/binance-hackathon-glasswing/binance-hackathon':
+        ('https://github.com/Keegan4/Keegan4-larp-ci-mirror',),
+}
+
 
 def read_file(path):
     path = Path(path)
@@ -72,6 +79,8 @@ def check_scope(values, report):
     routed = driver['assessor'] == 'aiand_routed'
     if routed != ('model-routing.json' in values) or routed != ('model_routing' in report):
         raise ContractError('Model routing file and preparation scope differ')
+    if routed and values['model-routing.json'].get('openai_trial') is not None and (signed or mode != 'dev'):
+        raise ContractError('Unsigned trial routing requires dev/shadow scope')
     if routed and report['model_routing'] != gate_a.model_routing_report(
             values['model-routing.json'], driver.get('model_routing_sha256')):
         raise ContractError('Model preparation report differs')
@@ -149,8 +158,10 @@ def check_release(manifest_path, release_root, report):
     manifest = Document(read_file(manifest_path))
     value = manifest.read()
     registered = json.loads(read_file(Path(release_root) / 'config/release/repository.v1.json'))['repository']
+    origins = (registered, *APPROVED_CI_MIRRORS.get(registered, ()))
+    accepted_origins = {origin + suffix for origin in origins for suffix in ('', '.git')}
     if (value.get('build_id') != report['build_id'] or value.get('repository') != registered
-            or value.get('build_origin') not in (registered, registered + '.git')
+            or value.get('build_origin') not in accepted_origins
             or value.get('remote_verified') is not True):
         raise ContractError('Expected matching registered-repository CI release bytes')
     # Reuse the production code/register/path checks without writing or registering its returned manifest.

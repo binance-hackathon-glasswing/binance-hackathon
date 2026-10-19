@@ -238,6 +238,55 @@ from tests.runtime.test_round_driver_service import ServiceHarness
 
 
 class SignedIntegration(ServiceHarness):
+    def test_parallel_reviewers_cannot_block_mandatory_planning_halt_or_reconciliation(self):
+        from larp.intelligence.models import ModelIdentity, response
+        from larp.intelligence.routing import RoutedAssessor
+        from larp.runtime.coordinator import batch_for
+        from larp.runtime.deferred_models import DeferredAssessments
+        from larp.runtime.supervision import Guard
+        from tests.integration.test_evidence_pipeline import evidence_state, RUN
+        from types import SimpleNamespace
+        release=threading.Event();entered=[threading.Event(),threading.Event()];calls=[]
+        self.addCleanup(release.set)
+        class Reviewer:
+            def __init__(inner,index):
+                inner.index=index
+                inner.identity=ModelIdentity('synthetic','reviewer-'+str(index),'v1',str(index+1)*64,'HOSTED')
+            def step(inner,request,remaining_ms):
+                calls.append(inner.index);entered[inner.index].set()
+                if not release.wait(5):raise TimeoutError('test reviewer was not released')
+                return response(request.read(),status='ERROR',output=None,latency_ms=0,error='SYNTHETIC')
+        models=[Reviewer(0),Reviewer(1)]
+        budget=SimpleNamespace(account='synthetic',total=1,reserve=0,snapshot=lambda:dict(external_only=True))
+        router=RoutedAssessor(routine=models[0],external_reviewers=models,openai=None,budget=budget,
+            make_assessor=self.w.assessor,clock_ms=self.w.clock,artifacts=self.w.artifacts,
+            policy=dict(openai_preferred=True,audit_sample_bps=10000,audit_seed='synthetic',spec_hash='a'*64))
+        driver=self.service_driver(cadence=True)
+        q,item,req=self.seed_pending(driver,router)
+        self.addCleanup(lambda:q.finished.wait(5))
+        self.addCleanup(release.set)
+        self.assertTrue(all(event.wait(2) for event in entered))
+        _,state,_=evidence_state(['EXSEMI_402_8K'],self.profile,world=self.w)
+        current=self.store.load(RUN);projection=current.read()['projection']
+        projection['evidence']={req.read()['issuer_id']:state}
+        self.store.commit(batch_for(current,'parallel-accepted',dict(kind='TEST_ACCEPTED_EVIDENCE'),projection=projection))
+        driver.once(self.w.clock())
+        self.assertTrue(any(i['mandatory'] and i['side']=='SELL'
+                            for r in self.planned().values() for i in r['plan']['intents']))
+        self.assertFalse(q.finished.is_set())
+        Guard(self.store,RUN,max_failures=3,clear_after=2)._halt('CLOCK',self.w.clock(),{})
+        with patch.object(driver.execution,'settle_open',wraps=driver.execution.settle_open) as settle:
+            driver.once(self.w.clock());self.assertTrue(settle.called)
+        self.assertIn('CLOCK',self.store.load(RUN).read()['projection']['halt']['reasons'])
+        release.set();self.assertTrue(q.finished.wait(3))
+        self.assertCountEqual(calls,[0,1])
+        ready=q.ready()
+        self.assertEqual(len([e for e in ready['audit']['events'] if e['kind']=='MODEL_RESPONSE']),2)
+        restarted=DeferredAssessments(router,root=q.root.parent,**q.identity)
+        self.assertTrue(restarted.busy)
+        self.assertEqual(restarted.ready()['result'],ready['result'])
+        self.assertCountEqual(calls,[0,1])
+
     def queue(self, driver, model):
         from larp.runtime.deferred_models import DeferredAssessments
         q=DeferredAssessments(model,root=Path(self.tmp.name)/'deferred',run_id=driver.coordinator.run_id,

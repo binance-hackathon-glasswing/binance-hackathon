@@ -12,8 +12,8 @@ before the key is used:
 - the transaction fee limit (`gas * gas_price`) is at most the fee cap;
 - a swap pays out to the signer's wallet and sends no native value.
 
-Cap values are a team decision (IDEA-049-C WR-C); `cap_basis` labels where they come from, and a live run refuses
-the example values.
+Cap values are a team decision (IDEA-049-C WR-C); `cap_basis` labels where they come from. Both dev and live
+service configurations refuse the pending-decision example marker (IDEA-070 SR-01).
 """
 from dataclasses import dataclass
 import re

@@ -265,7 +265,7 @@
    "id": "DEV-19",
    "area": "Assessor model",
    "declared": "**Hosted reasoning LLM for the evidence step:**",
-   "v1_behaviour": "Opt-in unsigned AIandRouting.v3 trial: OpenAI gpt-6.1-sol medium primary; independent high-effort AIand Kimi K3 then GLM-5.3 review/fallback. All claims remain deterministically verified; failures/verified disagreement withhold authority. Default remains deterministic shadow until prepared routing is installed. Signed/scored adoption is pending.",
+   "v1_behaviour": "Opt-in unsigned AIandRouting.v3 trial: OpenAI gpt-6.1-sol medium primary; independent high-effort AIand Kimi K3 and GLM-5.3 review/fallback. IDEA-083 / DEV-22 runs external reviewers concurrently: an ASSESSED primary stands unless a reviewer dissents; without one, fallback uses fixed reviewer precedence. All claims remain deterministically verified. Default remains deterministic shadow until prepared routing is installed. Signed/scored adoption is pending.",
    "reason": "User selects OpenAI-primary v3 and Yao approved Keith's PR168 trial protocol (PC-REL05). V3 paces the full US$50 allocation including US$2 owner-reported prior spend, with no permanent reserve; legacy v2 limits remain separate. Actual provider/account/rights qualification, stop-cap enforcement, measurements and final adoption remain pending.",
    "evidence": [
     "IDEA-035",
@@ -301,6 +301,19 @@
     "Q-03"
    ],
    "decided": "2026-10-11",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-22",
+   "area": "Evidence loop time budget",
+   "declared": "The loop is capped at 6 calls and 60 s per decision.",
+   "v1_behaviour": "Evidence assessments accept at most 180 s; OpenAI-preferred routing gives its primary at most 60 s and one third of the decision budget, then runs two independent reviewers concurrently with at most 90 s each. One global six-tool-call allowance is deterministically partitioned. Stage deadline results are separate from actual worker cleanup; late replies never restore authority. B11 preserves selected primary content in an immutable linked result under a canonical routed envelope.",
+   "reason": "IDEA-083: hosted high-effort review exhausted the previous 60 s serial budget despite an assessed primary. Yao approved longer budgets/parallel review/B11; Isaac approved separate routed identity with unchanged primary identity/content on 2026-10-19. Legacy AIand-first selection remains historical, without B11 changes.",
+   "evidence": [
+    "IDEA-083",
+    "IDEA-066"
+   ],
+   "decided": "2026-10-19",
    "status": "DRAFT"
   }
  ]

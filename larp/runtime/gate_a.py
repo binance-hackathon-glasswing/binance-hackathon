@@ -254,6 +254,8 @@ def model_routing_report(spec, sha256):
     if spec['schema'] == 'AIandRouting.v3':
         report.update(routine=spec['openai_model'], reviewer=spec['external_reviewers'][0]['model_id'],
                       openai_pacing=spec['openai_pacing'], reserve_micro_usd=0)
+        if 'openai_trial' in spec:
+            report['openai_trial'] = spec['openai_trial']
     return report
 
 
@@ -269,6 +271,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if model_routing_raw is not None or model_routing_sha256 is not None:
         routing = model_routing(model_routing_raw, model_routing_sha256)
     signed = execution == 'service'
+    if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
+        raise ContractError('Unsigned trial routing requires dev/shadow preparation')
     if (execution not in ('shadow', 'service') or runtime_mode not in ('dev', 'live')
             or (not signed and (runtime_mode != 'dev' or adoption_ref is not None))
             or (signed and (routing is None or type(adoption_ref) is not str or not adoption_ref.strip()))):

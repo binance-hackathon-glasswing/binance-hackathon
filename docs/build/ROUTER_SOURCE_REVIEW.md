@@ -1,11 +1,11 @@
 # Isaac task 3: router source review (#138)
 
-Status 2026-10-17: **router Code page is unverified; facet source remains
-unresolved**, not ready for deployment. Record: IDEA-070 RE-01 / RV139. Decoder
+Status reviewed 2026-10-19: **source/ABI unavailable in this evidence packet;
+current explorer verification status unresolved**, not ready for deployment. Record: IDEA-070 RE-01 / RV139. Decoder
 PR130 is merged into integration; this handoff uses its current RV-130 checks.
 This task has its own branch, `codex/isaac-03-router-evidence-20261017`.
 
-## Current browser finding (RE-01 B1)
+## Historical browser finding (RE-01 B1, 2026-10-17)
 
 Isaac's screenshot shows “Verify and Publish”, “Add Custom ABI”, and hexadecimal
 bytecode rather than published source/ABI. The hexadecimal is compiled code;
@@ -96,7 +96,9 @@ the team supporting the router returned by the Web3 API; it has **not** been sen
 
 > Our BSC quote-and-swap responses target router
 > `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, selector `0xad43f73d`.
-> Its explorer Code page is unverified and Read Facets cannot retrieve an ABI.
+> On 2026-10-17 our browser observation showed no published router source/ABI,
+> and Read Facets failed to retrieve an ABI. Later automated Code requests were
+> blocked (HTTP403), so current explorer verification status remains unknown.
 > A public `facetAddress(bytes4)` lookup at finalized block `0x7a2eb81` returned
 > `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`. Could you provide the
 > complete verified source/ABI and compiler settings for this selector's code,
