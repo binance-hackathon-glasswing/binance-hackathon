@@ -1,5 +1,11 @@
 # Pre-trading checklist (2026-10-17)
 
+## Current repository continuation — PC-DBPLAN01 / PC-OPS01
+
+- [x] **Keegan:** A04 next-build database procedure delivered: [fresh trial DB on existing RDS](NEXT_TRIAL_DATABASE_20261019.md), preserving old runs, the shared budget ledger and fixed cutoff. Actual DB/host execution remains the approved operator's uncompleted task.
+- [x] **Keegan:** A06 operations-proposal slice delivered: [decision packet](OPERATIONS_DECISIONS_20261019.md), covering D-DN-01/04/06/07/08/11 and a DEV20 recommendation. O2 and final DEV20 disposition remain open.
+- [ ] **Isaac:** C05 can start now for D-DN-01/07/11 risk choices and D-DN-04 requirements. Review the packet and record accept/reject/change with revision and reason. Numeric delivery/watchdog/memory settings still need measurements; no policy is adopted by this assignment.
+
 ## Isaac — ready work first (PC-ISAAC-QUEUE01, 2026-10-19)
 
 The user assigns the following repository preparation to Isaac, in this order.
