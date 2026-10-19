@@ -356,3 +356,21 @@ Evidence and log hashes: ../build/evidence/gate-a-approved-mirror-20261018.json.
 Remaining: review/merge correction and eventual propagation to future releases;
 Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
 all existing source/quality/signed owners. No host/AWS/model/ledger operation.
+
+## MERGE-RV20261019 — Isaac review/merge of available prerequisite PRs
+
+User authorizes reviewing and merging eligible PRs on2026-10-19. Prospective
+criteria: PR177 must accept only the exact repository-scoped approved mirror,
+retain all production content/identity/binding refusals and remain read-only.
+PR176 must refuse pending caps and missing/invalid router evidence before DB/key
+access, preserve per-request fences and claim no source/GateB acceptance. PR171
+may update labels and approved same-host scope only; no endpoint/access change.
+PR173 must remain bounded/read-only/private, use the production finalized native
+proof and leave actual provider/runtime/top-up qualification open. Inspect full
+code diffs and existing owner decisions; test pushed prospective merge trees
+with pinned dependencies/local PostgreSQL, including focused negative controls
+and full regression. Merge with normal merge commits only after acceptance,
+using exact reviewed head hashes. Record billing-blocked CI separately; no AWS,
+host, key, wallet, paid provider or receiver action. PR133 stays open as the
+coordination tracker. Draft/source/funding and unresolved model-protocol/release
+gates stay open; this review does not claim another person's approval.
