@@ -499,11 +499,3 @@ are config_sha256 and its dependent assessment/result/review/state/falsifier IDs
 features and gate outcomes are unchanged. Explicit historical60000ms requests
 remain valid; the config identity correctly changes for DEV-22. This is reviewed
 identity propagation, not a change to expected economic behavior.
-
-AB-IMPL01 full-suite follow-up: the diagnostic Linux run at3e614d6 found
-2056 passes,6 skips and3261 subtests, with four failures: the already-fixed
-cutoff snapshot race, two checks of the same stale strategy producer fixture,
-and the generated deviation table. Re-capture the strategy fixture only from
-the reviewed golden (config hash and dependent IDs only); render the table from
-the register. Pass criteria: both consumer boundary checks and register checks
-pass, then full exact-source mirror acceptance.
