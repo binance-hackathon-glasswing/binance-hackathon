@@ -77,11 +77,43 @@ B1–B3 these cases should become rare, and every one is recorded for the trial 
 | B4 | Combination of the primary and the parallel reviewers follows **B11** exactly and is deterministic regardless of which reply arrives first. The disagreement test is today's `_signature` comparison (findings, event findings, falsifiers). |
 | B5 | No change to: model IDs, efforts, prompts, the routing file `a5fca50a…` (so the existing ledger's pacing/trial policies still match), review triggers, the 10 % audit seed, tool limits (≤ 6 calls, ≤ 3 per primary), or fail-safe UNAVAILABLE handling. Effort reduction is explicitly out of scope. |
 | B6 | Accounting unchanged and safe under concurrency: every OpenAI POST still reserves its maximum atomically; every AIand POST passes the trial/accounting guard at its own transport boundary; two concurrent reviewer POSTs cannot bypass the trial day/total limits or the accounting quarantine. |
-| B7 | Every stage's request, reply, reasoning summary, usage, latency and in-flight status is recorded in the round log and model artifacts exactly as today, for both parallel reviewers, including a reviewer still in flight at the deadline. |
+| B7 | Every stage's request, reply, reasoning summary, usage, latency and in-flight status is recorded in the round log and model artifacts, for both parallel reviewers, including a reviewer still in flight at the deadline. **All writers to a deferred audit journal must serialize the full read-head/hash/append/flush/fsync operation**; provider calls remain parallel. Preserve worker ownership and terminal-event ordering as specified in the B7 concurrency contract below. |
 | B8 | Worst case fits the watchdog with margin: budget + market/quote/balance work stays **≤ 300 s** per cycle (half of `cycle_timeout_seconds`). |
 | B9 | Train/serve parity (plan.md "Declared values" table, row "Evidence loop budget (G-50)"): the historical/research evidence pass uses the same budget values, or the difference is recorded. |
 | B10 | Declared deviation: add **DEV-22** to `config/release/deviations.v1.json` and plan.md §6.5, and update G-50's text in plan.md. The submitted proposal says "The loop is capped at 6 calls and 60 s per decision" (`docs/proposal/proposal_answers.md:12`); G-50 is a POLICY, so this is allowed but must be declared (F-61, GAP-62). The release register hash changes as a result. |
 | B11 | **Review outcome rule (decided by Yao 2026-10-19; replaces today's `chosen = reviewed`).** Each finished reviewer is *confirm* (ASSESSED, same `_signature` as the primary), *dissent* (ASSESSED with a different `_signature`, or ABSTAIN) or *no result* (TIMEOUT, ERROR, UNAVAILABLE, in flight at the deadline, or not run). **If the primary is ASSESSED, its result is the final result and is never replaced by a reviewer's content:** ≥1 confirm and no dissent → primary result unchanged, `review_outcome: CONFIRMED`; any dissent → ABSTAIN, reason `ROUTING_REVIEW_DISSENT` (`ROUTING_FINDING_DISAGREEMENT` may be kept for the ASSESSED-different case), `review_outcome: DISSENT`; no reviewer finished → **primary result stands**, `review_outcome: INCOMPLETE`. **If the primary is not ASSESSED** (error, timeout, ABSTAIN, unavailable or not run for budget), reviewers are the fallback as today: the first ASSESSED reviewer in precedence order (reviewer-0, then reviewer-1) becomes the result, `review_outcome: FALLBACK`; two ASSESSED reviewers that disagree → ABSTAIN `ROUTING_FINDING_DISAGREEMENT`; none ASSESSED → UNAVAILABLE `ROUTING_DEADLINE_EXHAUSTED`, `review_outcome: NONE_AVAILABLE`. No review triggered → `review_outcome: NOT_TRIGGERED`. The same rule applies whatever triggered the review (risk reasons or the seeded audit). Record `review_outcome` and each reviewer's verdict (confirm/dissent/no result, with model, status and reasons) in the result's `routing` block and the round log; add any new reason code wherever the result schema checks reason codes. Apply the same rule to the legacy AIand-first branch (`routing.py:335-358`) or record why not. |
+
+### B7 concurrency contract
+
+- Use one lock shared by **every writer to the same deferred journal**, or one serialized writer with durable
+  completion acknowledgements. The protected operation starts before reading the previous chain head and ends
+  after the new canonical event has been appended, flushed and fsynced. `O_APPEND` alone is insufficient: two
+  callers can otherwise hash different events against the same previous head. Never hold this lock during a
+  provider call, evidence retrieval or assessment; both reviewers must still satisfy B3.
+- Apply the same serialization to `MODEL_REQUEST`, `MODEL_RESPONSE`, `STAGE`, `RESULT`, `ERROR` and `ACK` events.
+  A request event is durable before its provider dispatch; completed response/stage events are durable before
+  the terminal result. A failed audit write must not be treated as a successful recorded assessment.
+- Preserve the existing deferred-lane ownership contract (`larp/runtime/deferred_models.py` and
+  `EvidenceAssessor.assess(wait_for_worker=True)`): a timed-out worker remains owned until its actual provider
+  call and audit writes finish. With two reviewers, **both** workers must drain before terminal `RESULT`/`ERROR`,
+  readiness, `ACK` or a replacement job can release/reuse the lane. Deadline expiry does not prove worker exit;
+  late replies remain audit-only and cannot change the B11 verdict fixed at the stage deadline. Runtime safety
+  ticks continue independently of this draining. This requirement does not authorize an unbounded synchronous cycle.
+
+### B11 selected content and combined identity
+
+"Primary result unchanged" means the primary's semantic assessment content: status, claims, findings, event
+findings, falsifiers, proposed thesis, rationale and confidence remain unchanged for `CONFIRMED`, `INCOMPLETE`
+and `NOT_TRIGGERED`. Reviewer content never replaces those fields. The final routed result still carries the
+router's provenance, aggregate model I/O/costs, timing and review metadata, as `_combine` does today.
+
+Keep the original primary result and its original `result_id` in its content-addressed stage artifact and in
+`routing.stages`; additionally expose `routing.primary_result_id` (null when no primary ran). **Do not reuse that
+ID as the final routed result's ID.** After all final fields and derived structured assessment are assembled,
+compute the outer `result_id` using the existing rule: `'res:' + digest('larp.intel.result.v1', final_without_result_id)`.
+This applies to every B11 outcome, including `FALLBACK`, `DISSENT` and `NOT_TRIGGERED`. Adding routing metadata
+changes the bytes being hashed even when the semantic assessment is unchanged. Consumers must still receive
+the complete routed provenance and costs; returning the bare primary is insufficient.
 
 Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
@@ -96,18 +128,18 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
 | ID | Criterion |
 |---|---|
-| AB1 | Red first, pushed before the fix: a fake-clock routed job with primary 18 s, reviewer-0 needing 34 s and ABSTAINing, and reviewer-1 needing 10 s and ASSESSing ends **UNAVAILABLE** on the base and **ASSESSED (reviewer-1)** after the change, inside the new budget. |
-| AB2 | A reviewer that never answers cannot starve the other: reviewer-0 stalls past its allowance, reviewer-1 still gets its full allowance and its result is used. |
+| AB1 | Red first, pushed before the fix: a fake-clock routed job with primary **ASSESSED at 18 s**, reviewer-0 needing 34 s and ABSTAINing, and reviewer-1 needing 10 s and ASSESSing with the primary's signature ends **UNAVAILABLE** on the 60 s base and **ABSTAIN**, reason `ROUTING_REVIEW_DISSENT`, `review_outcome: DISSENT`, after the change, inside the new budget. Reviewer-0's dissent blocks even when reviewer-1 confirms. Separately exercise a non-ASSESSED primary with the same reviewer timings: reviewer-1 is then selected as `FALLBACK`, as required by AB14. |
+| AB2 | A reviewer that never answers cannot starve the other: reviewer-0 stalls past its allowance, reviewer-1 still gets its full allowance and its verdict is included in the B11 decision. With an ASSESSED primary it confirms or dissents; with a non-ASSESSED primary its ASSESSED result becomes `FALLBACK`. For the deferred lane, keep ownership until the stalled worker actually exits, without blocking safety ticks or admitting a replacement job (B7). |
 | AB3 | Both reviewers are dispatched before either finishes (parallel), and the combined result is identical for every completion order (B4). |
 | AB4 | Primary capped at its share: a primary that would run 70 s is cut at ≤ 60 s, then reviewers still run with their own allowances. |
 | AB5 | Concurrency accounting: two parallel AIand POSTs near the trial UTC-day/total limit, and with the accounting quarantine set, are each refused or admitted exactly as the sequential rules require; OpenAI reservations/settlements/UNKNOWN unchanged. |
 | AB6 | Config/schema/agent/routing accept the new maximum and refuse anything above it; existing 60 s requests and configs still validate; no 60,000 ms literal remains on the routed path. |
-| AB7 | Round log and artifacts contain both reviewers' I/O and in-flight records (B7); existing round-log/receiver contract tests pass unchanged. |
+| AB7 | Round log and artifacts contain both reviewers' I/O and in-flight records (B7); existing round-log/receiver contract tests pass unchanged. Red first: synchronize two reviewer audit appends at the journal-writer entry to reproduce the base's shared-previous-head race; the fix serializes both complete append operations, preserves every event in one valid chain and passes `_read` and restart verification for either writer order. Also hold one provider past its deadline while the other finishes: no terminal `RESULT`/`ERROR`, readiness, `ACK` or replacement admission until both workers and their durable late audit writes finish; all response/stage events precede the terminal result and ACK; a late dissent cannot change the deadline-fixed verdict. Inject an audit-write failure and verify it cannot produce an accepted result or premature ACK. |
 | AB8 | Watchdog: a cycle with every stage at its limit completes in ≤ 300 s against `cycle_timeout_seconds` 600 (B8). |
 | AB9 | DEV-22 present in the register, plan.md §6.5 and G-50; release-register tests updated only for the new row. |
 | AB10 | Full suite in a `requirements.lock` venv: no new failures against the base; Linux/PostgreSQL/systemd parts on the mirror (preferred) or a recorded local substitute. No golden regenerated without review. |
-| AB11 | Red first: a job with primary ASSESSED, reviewer-0 timing out and reviewer-1 never finishing ends **UNAVAILABLE** on the base and **ASSESSED with the primary's `result_id` and content**, `review_outcome: INCOMPLETE`, after the change. |
-| AB12 | Confirmation never overrides: primary ASSESSED and a confirming reviewer → the final result's `result_id`, claims, findings, rationale and confidence are byte-for-byte the primary's (only routing/review metadata added), `review_outcome: CONFIRMED`. |
+| AB11 | Red first: a job with primary ASSESSED, reviewer-0 timing out and reviewer-1 never finishing ends **UNAVAILABLE** on the base and **ASSESSED with the primary's semantic assessment content**, `review_outcome: INCOMPLETE`, after the change. Its original ID is retained as `routing.primary_result_id` and in the primary stage artifact; the final routed result has its own recomputed ID (B11 identity contract). Deferred delivery still waits for actual worker exit and durable late audit writes (B7). |
+| AB12 | Confirmation never overrides: primary ASSESSED and a confirming reviewer → status, claims, findings, event findings, falsifiers, proposed thesis, rationale and confidence are byte-for-byte the primary's, `review_outcome: CONFIRMED`. Preserve the primary ID/artifact as provenance, but require the final `result_id` to equal `'res:' + digest('larp.intel.result.v1', final_without_result_id)`. Recompute this digest for every B11 outcome and validate the complete routed result with the consumer schema; verify all reviewers' I/O and costs remain included. Adding or changing routing metadata must invalidate the old digest. |
 | AB13 | Dissent blocks: primary ASSESSED with a reviewer that ABSTAINs (e.g. `UNSUPPORTED_CLAIM`) or ASSESSes different findings → ABSTAIN with the dissent reason, for either reviewer and either completion order, even if the other reviewer confirms. |
 | AB14 | Fallback unchanged: primary ERROR/TIMEOUT/ABSTAIN/budget-refused → first ASSESSED reviewer by precedence; both ASSESSED and different → ABSTAIN; none → UNAVAILABLE. Matches the observed 86b1476 and seq-19 cases. |
 | AB15 | Full matrix: primary {ASSESSED, ABSTAIN, ERROR, TIMEOUT, not run} × reviewer-0 {confirm, dissent-different, dissent-ABSTAIN, timeout, error} × reviewer-1 (same set) × both completion orders gives exactly the B11 table; `review_outcome` and per-reviewer verdicts are in the round log; the result validates against the consumer schema. |
@@ -125,7 +157,31 @@ Proposed DEV-22 row (implementer adjusts the numbers to what is built):
 
 ## Open questions for the implementer/reviewers (not decided here)
 
-- Should a late provider reply after the deadline be recorded and its real cost settled instead of keeping the
-  conservative maximum?
+- Should a late provider reply's real cost be settled instead of keeping the conservative maximum? Capturing
+  late replies for audit and retaining ownership through their durable writes is already required by B7;
+  settlement policy remains open, and late replies never gain decision authority.
 - Expected AIand cost increase: parallel review calls both reviewers on every triggered job, where today GLM runs
   only when Kimi is not ASSESSED (Keith: affordability).
+
+## PR179-RV01 — Review corrections (2026-10-19)
+
+Scope: repair the prospective implementation contract in PR179 at `5557824`; runtime implementation remains
+with Keegan. These corrections preserve Yao's B11 decision, model settings and time-budget direction.
+
+| Finding | Evidence at the reviewed head | Contract correction / implementation acceptance |
+|---|---|---|
+| PR179-RV01-R1 | An offline reproduction forced two calls to `DeferredAssessments._append()` to read the same journal head; the resulting file failed `_read()` with `Model journal hash mismatch`. The existing writer assumes one writer. | B7 now requires serialization of the entire durable append operation across all reviewer and terminal-event writers; AB7 requires concurrent-write/restart and late-worker ordering regressions. |
+| PR179-RV01-R2 | AB1 expected reviewer-1 to replace the observed ASSESSED primary although reviewer-0 ABSTAINs; this contradicts B11/AB13. | AB1 explicitly expects `ABSTAIN` / `DISSENT` for that case and separates the non-ASSESSED-primary fallback case; AB2 also uses the B11 selection rule. |
+| PR179-RV01-R3 | An offline check of a real synthetic ASSESSED result verified its original digest, then added routing metadata; the unchanged primary ID no longer matched the complete result. `agent.py` and `routing.py` hash the complete final result excluding `result_id`. | B11 now distinguishes preserved semantic content and primary provenance from the outer routed identity; AB11/AB12 require a recomputed outer digest and retain complete routed I/O/costs. |
+
+Prospective document verification: inspect B7/B11 against the pushed writer and result producers; check AB1/AB2
+against the assessed-primary and fallback branches of B11; verify unique B1–B11 / AB1–AB15 IDs, local Markdown
+links, ledger/backlog consistency and `git diff --check`. No application code or runtime acceptance changes are
+included. AB1–AB15, full-suite verification, hosted deployment and adoption remain prospective with Keegan and
+the owners already listed above; the earlier offline counterexamples establish the review findings only.
+
+Document verification **PASS** (2026-10-19): B7/B11 checked against the existing journal writer, worker drain and
+result producers; B11/AB1/AB2 manually reconciled; all 11 requirement IDs and 15 acceptance IDs are unique and
+ordered; both added/changed local Markdown links resolve; the ledger and GAP-34 retain prospective runtime
+acceptance and Keegan's ownership; `git diff --check` passes. Only three documentation files changed; no
+application suite, paid-provider request, deployment or new runtime acceptance was performed for this correction.
