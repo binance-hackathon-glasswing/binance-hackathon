@@ -759,3 +759,10 @@ source provenance/replay, #27 decision/code, host/release or Gate B claim follow
 from these synthetic tests. No AWS, external RPC/model/receiver, wallet-key,
 funding or broadcast operation. The original draft is unchanged; the new command
 and precise owner dependencies are in SIGNER_INSTALLATION_PREPARATION.md.
+
+Delivery: [PR184](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/184),
+stacked on PR133, open for review. CI39210809471 runtime job117923526599 ran zero
+steps; its annotation confirms account payments/spending limit (#98), so no
+remote CI PASS is claimed. PR183 separately qualifies the merged IDEA083 release
+and explicitly leaves signer gates open. PR133 records current owner requests
+under IDEA-066 PC-SIGNER-ASSEMBLY01. No installation or real assembly is claimed.
