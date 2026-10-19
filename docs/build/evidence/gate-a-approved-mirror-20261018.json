@@ -1,0 +1,67 @@
+{
+  "schema": "ApprovedMirrorVerifierValidation.v1",
+  "record_id": "PC-MIRROR01",
+  "verified_at_utc": "2026-10-18T14:41:31.223819+00:00",
+  "approval": "Yao approved correction; PC-DEC01 already accepts original verified mirror builds",
+  "red_source": "ae6bf7a",
+  "implementation_source": "4eb33bb0f5d754ecb537c3fac5eb83cd4884f5e2",
+  "base": "1306bbb2822b2b421e847d51c23549a22dca713b",
+  "tests": {
+    "runner": "unittest",
+    "python": "3.12.14",
+    "platform": "macOS",
+    "run": 68,
+    "passed": 65,
+    "skipped": 3,
+    "failed": 0,
+    "skips": "Three existing disposable-PostgreSQL tests; PostgreSQL was not configured",
+    "red_failures": 2,
+    "red_note": "Only canonical and .git approved-origin subcases fail; negative controls pass"
+  },
+  "logs": {
+    "red.log": "e26002d5607d14e8c09a1e1f079c417b218d56b59529481364b36aa4247adcc5",
+    "green.log": "2a9960afeee6dc0fb4af7e799f6209b7b35c5f5205ce5a8047fe52c13b5c9628",
+    "green-permitted.log": "7cddd0fb60126c3363a19e4300256aa0376cdbef6c6cbd17c2342e7b93047606"
+  },
+  "initial_environment_limits": "Initial restricted run: two fixture mkdir permission errors; original package SOURCE_TERMS false failure from restricted local artifact access. Same code passed with permitted existing paths. No checks disabled.",
+  "original_candidate": {
+    "record_id": "PC-MIRROR01",
+    "verifier_commit": "4eb33bb0f5d754ecb537c3fac5eb83cd4884f5e2",
+    "candidate_build": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+    "candidate_manifest_sha256": "0053cbc9c7eb68c3ec82dfc519f01979a5e3a0171fee784d43d12b76c7dfff2f",
+    "original_inputs_unchanged": true,
+    "qualification": {
+      "schema": "GateALocalQualification.v1",
+      "local_ready": true,
+      "gate_a_passed": false,
+      "signing_enabled": false,
+      "remote_ci_verified": false,
+      "checks": {
+        "PACKAGE_INTEGRITY": "PASS",
+        "PACKAGE_JSON": "PASS",
+        "UNSIGNED_IDENTITIES": "PASS",
+        "PINNED_INPUTS": "PASS",
+        "SERVICE_CONFIGS": "PASS",
+        "CI_RELEASE_BYTES": "PASS",
+        "SOURCE_TERMS": "PASS"
+      },
+      "host_checks": {
+        "REAL_RECEIVER_ACK": "NOT_RUN",
+        "24H_INGESTION": "NOT_RUN",
+        "HOST_RESTART": "NOT_RUN",
+        "HOURLY_ANCHOR": "NOT_RUN",
+        "IAM_TLS_ROLES": "NOT_RUN",
+        "NETWORK_ROUTES": "NOT_RUN",
+        "TIME_SYNC": "NOT_RUN",
+        "ALARM_RECEIVED": "NOT_RUN"
+      }
+    },
+    "host_actions": false,
+    "paid_provider_calls": 0,
+    "note": "Saved original13:56UTC package byte qualification; capture is not refreshed, host/remote-CI checks not performed."
+  },
+  "host_mutation": false,
+  "paid_provider_calls": 0,
+  "bundle_rebuilt_or_recompressed": false,
+  "remaining": "Code PR review/merge; actual fresh owner preparation/install/provider-budget/first-job/ACK and source gates remain. Original86b1476 has no new checker-only deployment blocker under PC-DEC01."
+}
