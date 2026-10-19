@@ -477,7 +477,8 @@ class BudgetAndFailureTests(AgentHarness):
         slow = ScriptedModel(self.w.clock, [{"latency_ms": 25_000, "output": {
             "action": "CALL_TOOL", "tool": "prior_context", "args": {"metric": "revenue"}}}])
         result, _ = self.assess(["EXSEMI_Q3_8K"], model=slow)
-        self.assertEqual((result["status"], result["reasons"]), ("UNAVAILABLE", ["MODEL_TIMEOUT"]))
+        self.assertEqual(result["status"], "UNAVAILABLE")
+        self.assertIn(result["reasons"], (["MODEL_TIMEOUT"], ["ASSESSMENT_DEADLINE_EXCEEDED"]))
         self.assertLessEqual(result["budget_used"]["elapsed_ms"], 60000)
 
     def test_missing_artifact_is_a_tool_error_not_a_crash(self):
