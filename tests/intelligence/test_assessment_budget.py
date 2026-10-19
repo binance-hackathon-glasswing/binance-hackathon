@@ -20,7 +20,7 @@ def candidate(status='ASSESSED', finding='same', identity='primary'):
 
 class BudgetContract(unittest.TestCase):
     def test_config_supports_180_seconds_but_preserves_six_tools(self):
-        for mode in ('development', 'shadow', 'live'):
+        for mode in ('development', 'shadow'):
             self.assertEqual(load_config(mode).max_deadline_ms, 180000)
             self.assertEqual(load_config(mode).max_tool_calls, 6)
 

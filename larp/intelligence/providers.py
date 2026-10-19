@@ -349,6 +349,7 @@ class HostedModel:
             raise IntelligenceError("Artifact store returned a different content address")
 
     def step(self, request, remaining_ms: int, *, before_dispatch=None):
+        from larp.intelligence.time_budget import remaining
         r = request.read()
         body = self.request_payload(request)
         record = dict(artifacts=self._artifacts, request_payload=body,
@@ -356,8 +357,14 @@ class HostedModel:
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
         headers = self._headers()
+        remaining_ms = remaining(remaining_ms)
+        if remaining_ms <= 0:
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
         if before_dispatch is not None:
             before_dispatch()  # after preparation, immediately before any network I/O
+        remaining_ms = remaining(remaining_ms)
+        if remaining_ms <= 0:
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
         try:
             result = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
             status, raw = result[:2]
@@ -391,7 +398,7 @@ class HostedModel:
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started
-        if latency > remaining_ms:
+        if latency > remaining_ms or remaining(remaining_ms) <= 0:
             return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
         if status != 200:
             if self.provider == 'openai':

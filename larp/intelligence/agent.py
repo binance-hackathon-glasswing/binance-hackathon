@@ -21,6 +21,9 @@ result existed (feature availability); `cutoff_ms` is the evidence observation t
 """
 
 import threading
+import time
+
+from larp.intelligence.time_budget import ACTIVE_DEADLINE, Deadline
 
 from larp.contracts import Document
 from larp.intelligence.common import (
@@ -141,6 +144,60 @@ class _State:
                 "claimable": [fact_as_claim(f) for f in self.current_facts()]}
 
 
+class AssessmentTask:
+    """One stage's immutable deadline snapshot and separately owned worker lifetime."""
+    def __init__(self, assessor, request, *, worker_owner=None, parent_deadline=None):
+        self.assessor, self.r, self.start_ms = assessor, request.read(), assessor.clock()
+        self.worker, self.timer, self.immediate = None, None, None
+        try:
+            self.validated = assessor._validate(self.r)
+        except (IntelligenceError, KeyError, TypeError) as exc:
+            self.immediate = assessor._rejected(self.r, str(exc) if isinstance(exc,IntelligenceError) else 'MALFORMED', self.start_ms)
+            return
+        self.deadline = Deadline(self.validated[3],assessor.clock,parent=parent_deadline)
+        self.cancel, self.box = threading.Event(), {}
+        self.io = dict(steps=[],started=0,tool_calls=[],in_flight=None)
+        self.expired, self.frozen = False, None
+
+        def expire():
+            self.expired = True
+            self.cancel.set()
+
+        def work():
+            token = ACTIVE_DEADLINE.set(self.deadline)
+            try:
+                self.box['result'] = assessor._assess(self.r,self.start_ms,self.validated,self.cancel,self.io)
+                # A completed stage stays eligible if another stage later consumes the shared clock.
+                self.box['on_time'] = not self.cancel.is_set() and self.deadline.remaining() > 0
+            except BaseException as exc:
+                self.box['error'] = exc
+            finally:
+                self.box.setdefault('on_time', not self.cancel.is_set() and self.deadline.remaining()>0)
+                self.timer.cancel()
+                ACTIVE_DEADLINE.reset(token)
+
+        self.worker = threading.Thread(target=work,name='larp-assess:'+self.r['job_id'],daemon=True)
+        self.timer = threading.Timer(max(.001,self.deadline.remaining()/1000),expire)
+        self.timer.daemon = True
+        self.timer.start()
+        self.worker.start()
+        if worker_owner is not None:worker_owner(self.worker)
+
+    def wait(self):
+        if self.worker is not None:self.worker.join(self.deadline.remaining()/1000)
+
+    def result(self):
+        if self.immediate is not None:return self.immediate
+        if self.frozen is None:
+            if self.worker.is_alive() or self.expired or not self.box.get('on_time',False):
+                self.cancel.set()
+                self.frozen = self.assessor._abandoned(self.r,self.validated,self.start_ms,self.io)
+            elif 'error' in self.box:
+                raise self.box['error']
+            else:self.frozen = self.box['result']
+        return self.frozen
+
+
 class EvidenceAssessor:
     """Implements the shared Assessor port: assess(request: Document) -> Document."""
 
@@ -203,39 +260,17 @@ class EvidenceAssessor:
         return Document.from_dict(result)
 
     # ------------------------------------------------------------------ assess
-    def assess(self, request: Document, *, wait_for_worker=False) -> Document:
-        """Bound policy authority by the deadline, optionally drain on a deferred caller's thread.
+    def start(self, request, *, worker_owner=None, parent_deadline=None):
+        """Start one owned stage; a cutoff snapshot never releases its real worker."""
+        return AssessmentTask(self, request, worker_owner=worker_owner, parent_deadline=parent_deadline)
 
-        A deferred caller already runs outside the safety loop. It must keep ownership of a timed-out
-        provider until its actual worker exits, including all audit/artifact writes. The late output
-        remains UNAVAILABLE; synchronous callers still return at the hard deadline.
-        """
-        start = self.clock()
-        r = request.read()
-        try:
-            validated = self._validate(r)
-        except (IntelligenceError, KeyError, TypeError) as exc:
-            return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
-        box, cancel = {}, threading.Event()
-        io = {"steps": [], "started": 0, "tool_calls": []}  # completed I/O survives hard abandonment
-
-        def work():
-            try:
-                box["result"] = self._assess(r, start, validated, cancel, io)
-            except BaseException as exc:  # re-raised in the caller's thread
-                box["error"] = exc
-
-        worker = threading.Thread(target=work, name=f"larp-assess:{r['job_id']}", daemon=True)
-        worker.start()
-        worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
-        if worker.is_alive():
-            cancel.set()  # no further model or tool call; whatever the worker returns is discarded
-            if wait_for_worker:
-                worker.join()  # deferred caller only; never block the runtime safety/execution thread
-            return self._abandoned(r, validated, start, io)
-        if "error" in box:
-            raise box["error"]
-        return box["result"]
+    def assess(self, request: Document, *, wait_for_worker=False, worker_owner=None) -> Document:
+        task = self.start(request, worker_owner=worker_owner)
+        task.wait()
+        result = task.result()
+        if wait_for_worker and task.worker is not None:
+            task.worker.join()  # ownership drain only, never change the frozen cutoff result
+        return result
 
     def _assess(self, r, start, validated, cancel, io) -> Document:
         entry, cutoff, max_calls, deadline, tools, context, refs = validated
@@ -252,7 +287,7 @@ class EvidenceAssessor:
             if cancel.is_set():
                 status, reasons = "UNAVAILABLE", ["ASSESSMENT_DEADLINE_EXCEEDED"]
                 break
-            remaining = deadline - (self.clock() - start)
+            remaining = min(deadline - (self.clock() - start), ACTIVE_DEADLINE.get().remaining())
             if remaining <= 0:
                 status, reasons = "UNAVAILABLE", ["TIME_BUDGET_EXHAUSTED"]
                 break
@@ -301,6 +336,8 @@ class EvidenceAssessor:
                 break
             if cancel.is_set():
                 continue  # the loop head records the abandonment
+            if ACTIVE_DEADLINE.get().remaining() <= 0:
+                continue
             self._call_tool(state, action["tool"], action["args"])
         return self._result(r, state, entry, start, status, reasons, model_io, claims_out, rejected)
 

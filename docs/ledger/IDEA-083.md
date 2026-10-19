@@ -394,3 +394,19 @@ routing/accounting/provider/signed/restart/watchdog checks, then the full pinned
 suite with local PostgreSQL. Review any required golden changes explicitly;
 never regenerate blindly. Declare DEV-22 and train/serve budget parity. Full
 Linux/systemd/original release and hosted acceptance stay separate owner gates.
+
+
+AB-IMPL01 RED at pushed2ecb3a1: all6 targeted tests failed (3.81s), including
+actual concurrent audit hash mismatch, lack of simultaneous reviewer dispatch,
+and reviewers starved until a blocked primary exits. Other failures demonstrate
+old config ceilings and absent new budget/B11 contract helpers. Log retained at
+/private/tmp/larp-idea083-red.log. The live config remains refused while its
+independent parameters are unset; numeric ceiling tests use development/shadow
+instead of bypassing those existing live gates.
+
+Isaac explicitly selected the recommended identity contract in this session:
+separate canonical routed-envelope ID, with unchanged primary ID/content linked
+as an original artifact. This clarifies AB11/AB12's wording: semantic primary
+fields and selected-stage identity are preserved, not the envelope ID itself.
+B11 behavior is unchanged. No optional answer or named teammate endorsement is
+inferred. Default late usage remains TIMEOUT/UNKNOWN/conservative, not refunded.
