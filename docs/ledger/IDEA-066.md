@@ -2093,3 +2093,10 @@ adjacent ledger additions, explicitly retained in full. Repeated static checks
 pass with the same22/122/41 results; no application/config/source-evidence or
 numeric policy changed. Keegan's IQ01 review remains pending; no IQ02/C05 work
 was started by this IQ01 delivery.
+
+PR185 org CI39221051469 at446d3a9: runtime job117956171150 has **zero steps**;
+its check-run annotation confirms failed account payments/spending limit (#98).
+This is not an executed test failure or CI PASS. IQ01 is documentation-only,
+retains its passing static checks and does not claim a new runtime suite,
+mirror release, host acceptance or billing resolution. PR133's description now
+links PR185 as delivered with Keegan review pending and retains IQ02/C05 status.
