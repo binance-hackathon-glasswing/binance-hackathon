@@ -840,3 +840,32 @@ not a freshness guarantee. It does not qualify native tracing, signing, executio
 or trading readiness; `new_spending_ok=true` in a shadow/unsigned trial confers
 no spending capability. #92 stays open for reviewer acceptance. No host, database,
 config, service or AWS resource was changed.
+
+## RPC-H04 — #92 acceptance check against the RPC-H02 criteria (2026-10-19 ~11:20 UTC, Claude Code session for the user)
+
+Read-only SSM `74790377-bff4-41a6-a46f-0580628290a3` and `ff7ace37-54cc-4571-b02f-04b4b619a792`
+(SQL `READ ONLY`; files read only; no RPC call, no host/AWS change). Method: for every
+journaled BALANCE_CHECKED, rebuild the ChainBalances.v1 observation from the runtime's own
+archived raw RPC responses (`<market_artifact_root>/chain`, each file's name verified as the
+SHA-256 of its bytes), hash it with the production digest, compare it with the journaled
+`observation_sha256`, then re-run the production `compare_balances` on that observation
+against the ledger journaled in the same batch.
+
+| RPC-H02 criterion | Result |
+|---|---|
+| Wallet | runtime `wallet_address` = `runs.wallet_id` = portfolio `wallet_id` = wallet in every archived call |
+| Version binding | registered `build_id` = runtime `build_id`; registered `manifest_sha256` = sha256(`/etc/larp/release.json`) |
+| Provider order | `BSC_BNBCHAIN_PUBLIC`, `BSC_NODEREAL_PUBLIC`; legacy single-URL fields empty |
+| Observation readback | **19/19** BALANCE_CHECKED observation hashes reproduced exactly from 3,438 hash-verified archived responses |
+| Serving provider | all 19 by `BSC_BNBCHAIN_PUBLIC` (primary); the backup was never needed, so host failover is unexercised |
+| Chain 56, finalized numeric block and hash | 19/19 block hash equals the finalized block read; balances read at that numeric block |
+| All pinned balances/scales | production `compare_balances` recomputation equals the recorded check 19/19, all MATCH |
+| Nonce / in-flight | latest = pending nonce 19/19; no reservations or open rounds at the checks |
+| Egress/DNS/TLS from primary | functionally shown by the successful reads; route-check report is PC-AWS05/06 (Oct 17) |
+| Running-process `balances_ok` | RPC-H03: 29/29 ROUND_PLANNED true in one process |
+| Original CI/bundle provenance | **Exception:** `ea25b52` is a local non-CI build (Yao, PC-BUILD01); its review is Keegan's (GAP-72) |
+
+Verdict: every functional #92 criterion PASSES. Carried exception: build provenance
+(local non-CI build), owned by Keegan under GAP-72. This check was made by the same
+session that collected RPC-H03, so it is not independent reviewer acceptance; the
+issue stays open for Keegan or Isaac to accept and close.
