@@ -471,3 +471,15 @@ Pass criteria, written before the fix:
 - RV01-2: operator and reviewer that differ only by case or surrounding
   whitespace report `INDEPENDENT_REVIEW_REQUIRED`.
 - RV01-3: all existing RG-02 tests still pass; no other behaviour changes.
+
+RG-02-RV01 results at `fa04d5428aa7900c9d238989756d061d1d9bd226`: **PASS** RV01-1..3. Red first at `ddc9df0`
+(1 failure, 1 error); after the fix `python -m unittest
+tests.runtime.test_rehearsal_evidence -q` on Python 3.12, Linux: 16 tests,
+0 skips. A 200,000-deep packet from the CLI now prints only `PACKET_REFUSED`
+and exits 2. Not changed, recorded for the operator: the checker refuses an
+evidence root with any symlinked ancestor, so on macOS a root under `/tmp` or
+`/var/folders` (both behind symlinks) is refused, and so are these synthetic
+tests' temporary directories. Keep the sanitized export under the home
+directory, which is not a symlink. RG-02's own scope is unchanged:
+`gate_c_accepted`, `signing_enabled` and `host_results_verified` stay false
+and every live drill result stays NOT_RUN.
