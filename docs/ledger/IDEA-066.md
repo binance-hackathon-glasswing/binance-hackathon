@@ -1641,3 +1641,35 @@ unreviewed PR178/local build; (3) Yao: reviewed reconciliation of the one UNKNOW
 84,764 µUSD charge (never edited), AIand usage/units/expiry, S3 transfer-copy cleanup;
 (4) post-fix DOJ polls/restart/new observed report; (5) Keith: actual qualified start,
 unique jobs/labels/M9 and trial report. Signed gates are unchanged and separate.
+
+
+## PC-RUNTIME17901 — Isaac completes PR179 runtime design review (2026-10-19)
+
+User explicitly requests Isaac's runtime review, leaving Keegan implementation.
+Review delivered as separate [PR180](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/180)
+based on PR179 head5557824/applicationea25b52, record IDEA-083 IR179-RV01.
+Eight source-linked obligations: result deadline versus provider drain/worker
+ownership; single-writer deferred hash-chain serialization; pre-dispatch global
+six-tool-call enforcement; AB1/B11 primary status and canonical result identity;
+absolute budget propagation/dispatch overhead; conservative late I/O/accounting;
+signed safety/restart/verification; composite300s timing under600s watchdog.
+No model effort, B11 policy or unresolved late-cost/identity choice is silently
+changed. Runtime acceptance is withheld until Keegan implements and supplies
+new red-first AB1–AB15/IR179 evidence; Keith retains affordability/protocol review
+and Yao actual deployment/host timing/first-review/charges/receiver acceptance.
+
+Pass criteria were committed/pushed first (f031883). At pushed730c99e (docs-only
+review, application unchanged), current-path routing/provider/trial/pacing/
+signed-safety/recovery/watchdog tests:129 passed,120 subtests,0 skips,14.32s;
+macOS ARM64/Python3.12.14, fresh requirements-test.lock venv, disposable local
+PostgreSQL14.24. Old temporary venv lacked pytest, so the first attempted test
+command executed none; the actual result uses the fresh pinned environment.
+No changed assertions/goldens, full suite, Linux/systemd/new180s concurrency or
+real provider/host pass is claimed. Audit/tool concurrency findings are static
+hazards of naive parallelization, not newly reproduced serial failures.
+
+PRE_TRADING_CHECKLIST marks only Isaac's review delivered and links PR180;
+INCOMPLETE_WORK retains the concrete implementation/acceptance work. No entire
+model/signer/host gate closes. No app/config/test changes, production secrets,
+paid inference, official receiver, wallet signing/key placement or AWS operation.
+The review PR itself is the handoff; no teammate/vendor message was sent.
