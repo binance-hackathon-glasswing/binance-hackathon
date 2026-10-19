@@ -411,3 +411,12 @@ Pass criteria before verification:
 
 Results: NOT_RUN at registration. Operational status: NOT_RUN; packet preparation
 cannot approve a policy, qualify a release, or pass Gate A/B/C.
+
+RG-01 repository verification (2026-10-19): PASS at `6e0373b` for all7 local
+packet links, RG1–10 and DR13–22 mapping, three actual API definitions, existing
+operations CLI choices/options and tracker/runbook/backlog links. Initial literal
+DR coverage check failed on combined `DR18/20` formatting; references were made
+explicit and the check passed. `git diff --check` PASS. Documentation-only change;
+no runtime tests, cloud operations, fault injections or live drills run. Missing
+host-specific harnesses/procedures are explicitly BLOCKED until pinned/reviewed.
+C09/C10 and operational Gate A/B/C outcomes remain open/NOT_RUN.
