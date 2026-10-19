@@ -348,6 +348,17 @@ class HostedModel:
         if self._artifacts.put(data) != sha256_hex(data):
             raise IntelligenceError("Artifact store returned a different content address")
 
+    def _late_audit(self, raw, metadata):
+        """Extract audit fields only; a late reply never supplies output or a usage refund."""
+        try:
+            served,_,usage,reasoning=self._parse_reply(json.loads(raw.decode('utf-8')),metadata)
+            if not all(type(usage.get(k)) is int and 0<=usage[k]<=MAX_USAGE_TOKENS
+                       for k in ('input_tokens','output_tokens')):return {}
+            return dict(served_model=served,usage=usage,reasoning=reasoning)
+        except (_ProviderReply,AttributeError,KeyError,IndexError,TypeError,ValueError,UnicodeDecodeError,
+                OverflowError,RecursionError,MemoryError):
+            return {}
+
     def step(self, request, remaining_ms: int, *, before_dispatch=None):
         from larp.intelligence.time_budget import remaining
         r = request.read()
@@ -399,7 +410,9 @@ class HostedModel:
         record["raw"] = raw
         latency = self.clock() - started
         if latency > remaining_ms or remaining(remaining_ms) <= 0:
-            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
+            audit=self._late_audit(raw,metadata) if status==200 else {}
+            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED",
+                            **audit,**record)
         if status != 200:
             if self.provider == 'openai':
                 try:

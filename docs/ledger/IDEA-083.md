@@ -410,3 +410,15 @@ as an original artifact. This clarifies AB11/AB12's wording: semantic primary
 fields and selected-stage identity are preserved, not the envelope ID itself.
 B11 behavior is unchanged. No optional answer or named teammate endorsement is
 inferred. Default late usage remains TIMEOUT/UNKNOWN/conservative, not refunded.
+
+AB-IMPL01 golden review at pushed f3cf851: generated candidates outside Git.
+Structured comparison found exactly23 changed leaves in the thesis-revision
+trace and17 in the abstention trace: config_sha256 and its dependent assessment,
+result, falsifier, review-job, persisted-batch and gate/feature references only.
+Claims, findings, source spans, tools, model I/O, rationale, confidence, timestamps,
+status, gates and thesis semantics are unchanged. Accepted these reviewed bytes;
+no blanket golden regeneration. The deliberately explicit historical60s demo
+fixtures remain comparable; the research evaluation entry point now requests
+config.max_deadline_ms (180s), matching the runtime request builder. The six-call
+cap and provider settings stay unchanged. No research quality/affordability
+claim follows from these synthetic acceptance checks.
