@@ -2026,3 +2026,59 @@ PC-ISAAC-QUEUE01 checks PASS: two distinct unchecked tasks with ordered delivera
 User requests continuing other PR133 tasks while Isaac has his ready queue. Scope: complete A04 repository database procedure and A06 operations proposals, preserving all actual input/approval/host gates. Criteria before verification: exact current code/template references, fresh-DB procedure preserves old runs and shared ledger/cutoff, no existing template falsely called runnable unchanged, each operations proposal distinguishes current behavior/recommendation/missing evidence, three credential-free risk choices are ready for Isaac review, no policy/register/runtime change, valid local links/JSON references and clean diff.
 
 Delivered NEXT_TRIAL_DATABASE_20261019.md: select existing fresh-database procedure rather than add version switching to the critical path; new name must be absent, old databases immutable, ledger preserved, guarded drain/backup/prepare/bind/ACK steps and failure disposition. Delivered OPERATIONS_DECISIONS_20261019.md: D-DN-01/04/06/07/08/11 recommendations and conditional DEV20 proposal. D-DN-01/07/11 are ready for Isaac policy review without credentials; numeric delivery/watchdog/memory and host qualification remain pending. Crash-loop proposal explicitly corrects the inference that backup-rate limits bound incident/log growth. No operational policy is adopted or external action performed.
+
+## IQ01 — mandatory activation-blocker matrix (2026-10-19; prospective)
+
+Isaac accepts PC-ISAAC-QUEUE01/IQ01 at the user's request. Source baseline:
+PR133 head2b7ed42596617b58bec43cbcd3c1afdf1b29ccac. Extend the existing
+DEPLOYMENT_BUILD.md rather than duplicate DR-01–DR-22 in another procedure.
+This is documentation preparation, not IQ02, a new gate waiver or host acceptance.
+
+Pass criteria written before verification:
+1. Exactly one matrix row for each DR-01–DR-22, preserving its staged A/B/C
+   obligations. Each row names the requirement, real guard or manual acceptance,
+   retained evidence/scope, exact missing proof and responsible owner.
+2. Explicitly separate implementation, offline tests, retained scoped host
+   observations and actual gate qualification. No local PASS, VALIDATED, reviewer
+   string, successful assembly or release bundle is treated as all-DR approval.
+3. Preserve mandatory signing/allowlist/caps/lifetime, risk, write-ahead logging/
+   ACK, integrity, nonce/finality/reservation/reconciliation and recovery blocks;
+   map G-50/G-53 and G-51 falsifiers, and distinguish optional features from
+   declared features needing a reviewed disposition. Do not invent source,
+   profile, measurements, final-wallet credentials or policy decisions.
+4. Explain first-signing prerequisites separately from the observed dev round/
+   drill evidence needed to finish Gate B, following PC-ORDER01 without a cycle.
+5. Read the captured official page/kit and current F/K/Q qualifications before
+   describing rules; mark DR/cut-line choices as team policy. Validate local
+   links/anchors and actual source symbols/test/evidence paths, all22 row IDs,
+   unchanged gate assignments, documentation-only diff and whitespace. No runtime
+   suite or external/host/AWS/key/signing/provider/receiver action is needed.
+6. Deliver a separate PR, update the PR133 queue and narrow GAP-05 to Keegan's
+   outstanding review; do not close it before that review or start IQ02 here.
+
+IQ01 repository audit and static verification complete at baseline2b7ed42 plus
+this documentation change. Existing deployment brief extended in place:
+**22/22 DR rows**, original22 requirements unchanged and staged gate obligations
+preserved; mandatory controls and optional/conditional scope are separated.
+The matrix names manual acceptance where no automatic all-DR guard exists,
+retains #27/#44/source/provider/host/recovery blocks, and separates first-signing
+prerequisites from the observed first round/drills needed for Gate B completion.
+The permitted measured EQUAL_WEIGHT alternative is explicitly rehearsal scope;
+no final S1 omission, standby/crash-loop/restore proposal or numeric policy is
+adopted. Historical results remain attributed to their actual build/run/scope.
+
+Static checks PASS: **122 local links/anchors** resolve in DEPLOYMENT_BUILD.md;
+**41 referenced definitions in29 source files** verified by AST without imports;
+all22 matrix IDs unique/ordered, full original DR rows retained, earliest and
+staged gate requirements preserved. Retained CI receipt9a0b80e matches the
+recorded2109/3340/6 plus real-systemd5/5; git diff confirms unchanged larp/config/
+deploy/tests/migrations/tools/workflows versus that source. No suite/host/CI run
+is claimed by this audit. Checker: /private/tmp/verify-larp-iq01-20261019.py.
+Documentation-only diff, no conflict markers and clean git diff --check.
+
+IQ01 delivery is marked complete in the ready queue; GAP-05 is narrowed to
+Keegan's review/acceptance and remains open. IQ02 remains unstarted. All missing
+DR proof and its supplier remain in the matrix/current action plan; no source,
+measurements, policy approval, deployment, gate qualification or activation is
+inferred from document completion. No AWS, wallet-key, funding, signing, actual
+provider/model/receiver, organiser message or other host operation occurred.
