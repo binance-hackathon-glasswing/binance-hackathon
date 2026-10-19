@@ -170,6 +170,12 @@ class ModelPreparation(unittest.TestCase):
                 self.assertFalse(fixture.qualify()['local_ready'])
 
     def test_prepared_runtime_uses_glm_then_openai_and_budget_fallback_on_original_evidence(self):
+        self.check_prepared_runtime(preferred=False)
+
+    def test_prepared_runtime_uses_openai_then_high_effort_aiand_with_temporary_pacing(self):
+        self.check_prepared_runtime(preferred=True)
+
+    def check_prepared_runtime(self, *, preferred):
         from larp.intelligence.agent import build_request, EMPTY_CONTEXT
         from larp.intelligence.config import load_config, load_registry
         from larp.intelligence.fakes import FakeClock, FakeFilingSource
@@ -200,7 +206,7 @@ class ModelPreparation(unittest.TestCase):
         def openai(url, headers, raw, timeout):
             body = json.loads(raw)
             calls.append(body['model'])
-            state = json.loads(body['input'])
+            state = json.loads(body['input'].split('\n', 1)[1])  # after the JSON label
             texts.append(json.dumps(state))
             return 200, encoded(dict(model=body['model'], status='completed', output=[dict(type='message',
                 content=[dict(type='output_text', text=json.dumps(decide(state)))])],
@@ -208,7 +214,9 @@ class ModelPreparation(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            files = routed()
+            routing_raw = (gate_a.ROOT / 'config/intelligence/aiand-routing.openai-preferred.example.json').read_bytes() \
+                if preferred else RAW
+            files = assembled(model_routing_raw=routing_raw, model_routing_sha256=gate_a.digest(routing_raw))
             for name, raw in files.items(): (root / name).write_bytes(raw)
             config = json.loads(files['runtime.json'])
             driver = config['driver']
@@ -220,8 +228,11 @@ class ModelPreparation(unittest.TestCase):
                           model_budget_root=str(root / 'budget'))
             (root / 'evidence').mkdir()
             (root / 'budget').mkdir(mode=0o700)
+            budget_options = dict(initial_spent=2_000_000, reserve=0,
+                                  pacing=json.loads(routing_raw)['openai_pacing'], clock_ms=clock) \
+                if preferred else dict(initial_spent=0)
             budget = ModelBudget.initialize(root / 'budget' / 'openai-budget.sqlite', 'larp-openai-2026',
-                                            initial_spent=0)
+                                            **budget_options)
             evidence = SQLiteEvidenceStore(str(root / 'evidence' / 'evidence.sqlite'), journal_mode='DELETE')
             source = FakeFilingSource(clock, {1045810: 'NVIDIA'})
             sentence = 'Prior financial statements should no longer be relied upon.'
@@ -251,8 +262,11 @@ class ModelPreparation(unittest.TestCase):
             self.addCleanup(router.make_assessor(router.routine).reader.store.close)
             result = router.assess(request)
             assessment_result(result, request, clock())
-            self.assertEqual([s['stage'] for s in result.read()['routing']['stages']], ['routine', 'openai-review'])
-            self.assertEqual(set(calls), {'zai-org/glm-5.3', 'gpt-6.1-sol'})
+            self.assertEqual([s['stage'] for s in result.read()['routing']['stages']],
+                             ['openai-primary', 'external-review-0', 'external-review-1'] if preferred else ['routine', 'openai-review'])
+            self.assertEqual(set(calls), {'moonshotai/kimi-k3', 'zai-org/glm-5.3', 'gpt-6.1-sol'} if preferred
+                             else {'zai-org/glm-5.3', 'gpt-6.1-sol'})
+            if preferred: self.assertEqual(calls[0], 'gpt-6.1-sol')
             self.assertTrue(all(sentence in text for text in texts))  # Each tier sees original filing text.
             self.assertGreater(budget.snapshot()['charged_micro_usd'], 0)
             budget.admit(budget.snapshot()['available_micro_usd'], 'synthetic-other-usage')
@@ -264,12 +278,13 @@ class ModelPreparation(unittest.TestCase):
                 self.assertIn('moonshotai/kimi-k3', calls)
                 # The first refused admission is retained as an OpenAI stage without a POST;
                 # subsequent assessments use the persisted external-only latch directly.
-                expected = ['routine'] + ([] if secondary else ['openai-review']) + ['external-review-0']
-                expected += ['external-review-1'] if secondary else []
+                expected = (['openai-primary'] if preferred else ['routine'] + ([] if secondary else ['openai-review'])) \
+                    + ['external-review-0']
+                expected += ['external-review-1'] if preferred or secondary else []
                 self.assertEqual([s['stage'] for s in value['routing']['stages']], expected)
-                self.assertTrue(budget.snapshot()['external_only'])
+                self.assertEqual(budget.snapshot()['external_only'], not preferred)
                 self.assertLessEqual(value['budget_used']['tool_calls'], 6)
                 self.assertLessEqual(value['budget_used']['model_steps'], 10)
                 self.assertLessEqual(value['budget_used']['elapsed_ms'], 60000)
                 self.assertTrue(value['model_io']['steps'])
-            self.assertEqual(budget.snapshot()['reserve_micro_usd'], 10_000_000)
+            self.assertEqual(budget.snapshot()['reserve_micro_usd'], 0 if preferred else 10_000_000)

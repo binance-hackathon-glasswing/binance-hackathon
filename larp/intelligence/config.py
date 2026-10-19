@@ -8,6 +8,8 @@ pinned hash, or while the model/EDGAR environment settings are missing. Secret v
 returned only inside `LiveModelSettings` and never appear in its repr or in any document.
 """
 
+from larp.intelligence.time_budget import MAX_ASSESSMENT_MS
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import json
@@ -48,16 +50,15 @@ class IntelligenceConfig:
 def load_config(mode: str = "development", base: Path = CONFIG_DIR) -> IntelligenceConfig:
     if mode not in MODES:
         raise IntelligenceError("Unknown configuration mode")
-    # Keep the existing development/live configuration bytes and hashes stable.
-    # Shadow is a separately versioned operational choice, not a mutation of the
-    # synthetic evaluation inputs or pending final/live parameters (IDEA-058).
+    # Shadow keeps separate operational parameters (IDEA-058). All modes share the
+    # IDEA-083 ceiling; final/live parameters still require an explicit decision.
     raw, config_hash = _load("intelligence.shadow.v1.json" if mode == "shadow" else "intelligence.v1.json", base)
     if raw.get("schema") != "IntelligenceConfig.v1":
         raise IntelligenceError("Unknown evidence configuration schema")
     budget = raw["budget"]
     # G-50 [POLICY] is the declared ceiling; config may tighten it, never loosen it.
     if not (type(budget["max_tool_calls"]) is int and 0 <= budget["max_tool_calls"] <= 6
-            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= 60000
+            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= MAX_ASSESSMENT_MS
             and budget["max_tool_types"] <= 3):
         raise IntelligenceError("Evidence budget exceeds the G-50 declaration")
     tools = tuple(raw["tools"])

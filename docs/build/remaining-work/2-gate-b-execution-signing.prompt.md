@@ -22,8 +22,8 @@ Put new records in IDEA-071..074 (IDEA-070 is the decoder record in #130); exten
 2. **Signer policy values (WR-C, #44).**
    - Fill `allowed_spenders` from the router evidence (the router's `tx.to`).
    - Use the unapproved candidates already delivered by #148 and the handoff in #161; finish the numeric check that the per-trade cap allows at least one full position at the plan's weight (IDEA-075's sizing, the profile's per-trade cap, and the #56 flatten-splitting issue, with prompt 3).
-   - Verify the existing refusal for a `live` signer while `cap_basis` is `EXAMPLE_PENDING_TEAM_DECISION`.
-   - Installing the decided `/etc/larp/signer.json` on the signer host is a host step.
+   - Both dev and live signer startup now refuse pending caps and missing/unqualified router evidence (merged PR176). Review the existing guards rather than duplicating them.
+   - Use the merged PR184 offline assembler after actual pinned inputs arrive (SIGNER_INSTALLATION_PREPARATION.md). It rechecks numeric coverage/config/CA/router bindings and emits a key-free candidate with all installation/signing/Gate B flags false. It cannot authenticate owner approval or fill missing evidence. Installing the decided `/etc/larp/signer.json` remains an approved host step.
 
 3. **Signer host and key (D-DN-05, DR-03).**
    - How the signer host is reached for key placement is a checklist decision, chosen from the options in AWS_RUNBOOK step 5 and recorded in a short IDEA entry. The choice is already IDEA-080 option (b), with temporary SSM access code in merged #149. Review the actual owner-produced plan; do not restart the choice or rebuild the route.
@@ -33,16 +33,16 @@ Put new records in IDEA-071..074 (IDEA-070 is the decoder record in #130); exten
    - Update EXP-005's nonce and finality verdicts with real-node evidence from the #92 RPC (chosen and opened through prompt 1). The GB-1/GB-2 fixes are already merged.
 
 4. **First gas and gas floor (#106, F-120; GAP-49, DR-06; #30).**
-   - The dev-wallet first-gas swap is done by hand in MetaMask: the historical 2-USDT trial note is already delivered by merged #151. Only the remaining planned development funding and fresh capture remain; record each actual funding action as a funding note with no ai-seeds log (SKILL.md v0.7.9). Then prompt 1's wallet capture can include the BNB.
+   - The dev-wallet first-gas swap is done by hand in MetaMask: the historical 2-USDT trial note is already delivered by merged #151. Before any remaining manual funding, the coordinator/operator must confirm no first agent trade or in-flight work from actual state (draft PR172). Reconcile the remaining need, then retain the public transaction receipt/amount/UTC and take the fresh opening capture; record each actual funding action as a funding note with no ai-seeds log (SKILL.md v0.7.9). Then prompt 1's wallet capture can include the BNB.
    - **#30:** the gas top-up round is built end to end (#103, IDEA-061). Prepare the BNB floor and top-up size proposal from the measured gas (G-28) and the evidence that BNB tracking (`native_trace`) works on a real provider.
    - #56's "no top-up after `new_risk_end`" is a strategy question; agree it with prompt 3.
 
 5. **Reconciliation and routes.**
    - **#36 / #90:** D1–D6 are decided (#110) and built (#115, #116); closing #90 is a housekeeping line. #36 then waits only on #92.
-   - **#32 / #33:** the destination table's section B is approved (#113); section C's approval is a checklist line. The route check on `primary` is a host step; record its report.
+   - **#32 / #33:** the destination table's section B is approved (#113); section C scope labels are reviewed in PR171; actual host/provider checks remain separate. The route check on `primary` is a host step; record its report.
    - Keep #33 open until the decoder, the measured profile, the live evidence values and the hosted rehearsal all exist. Comment on #33 with the remaining list.
 
-6. **Execution state machine and identifiers (GAP-30/31/32, GAP-47).** Check what IDEA-039, IDEA-050 and EXP-006 already prove against each GAP's remaining text. Close or narrow each item with evidence. Identifiers, persisted nonce/signatures, timeout uncertainty and reservation release already exist. Verify actual provider/host qualification. A timeout or expired deadline never proves a dropped send; replacement is disabled unless separately specified and qualified. PR155 reconciles the remaining acceptance work.
+6. **Execution state machine and identifiers (GAP-30/31/32, GAP-47).** Check what IDEA-039, IDEA-050 and EXP-006 already prove against each GAP's remaining text. Close or narrow each item with evidence. Identifiers, persisted nonce/signatures, timeout uncertainty and reservation release already exist. Verify actual provider/host qualification. A timeout or expired deadline never proves a dropped send; replacement is disabled unless separately specified and qualified. Merged PR155 reconciles the remaining acceptance work. Merged PR173 supplies the bounded native-proof qualifier; a real private tracing-capable account and accepted proof are still required. Public balance reads do not establish it.
 
 7. **Gate B proof on the dev wallet.** Do this from committed, manifested code, with the signer on, at minimum size, after Gate A. The rehearsal profile plans no buys before Oct 21 00:00 UTC unless the checklist's "first signed trade" decision adds a dev window.
    - **DR-02:** one approve plus one swap, each with its decision record and a logged, ACKed round, checked on chain against the logged round; a top-up round as well if one is needed.

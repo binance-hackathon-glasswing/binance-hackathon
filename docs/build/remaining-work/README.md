@@ -1,6 +1,6 @@
 # Remaining work before trading: four AI-agent tasks (IDEA-064)
 
-Prepared 2026-10-16 (Claude Code session); aligned 2026-10-17 with the pre-trading checklist. This folder splits everything still left between today and the scored run into four task prompts, one per AI agent session. **Owners come from [`docs/build/PRE_TRADING_CHECKLIST.md`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133)** (PR #133; on branch `claude/pre-trading-checklist-20261017` until it merges). It gives every line exactly one owner, and AWS/host operations belong to the named AWS owner, except the explicitly authorized Isaac key-placement session. **People: read the checklist for your own tasks and dates.** [WHO_DOES_WHAT.md](WHO_DOES_WHAT.md) only says why the split moved there. The agent does the repository work; the checklist's owner does anything that needs credentials, money, a wallet, AWS or the hosts, or a team decision.
+Prepared 2026-10-16; refreshed 2026-10-19 against PR133, PR183 release evidence and merged PR184 preparation. These are task briefs; they do not authorize spawning agents or host operations. This folder splits everything still left between today and the scored run into four task prompts, one per AI agent session. **Owners come from [`docs/build/PRE_TRADING_CHECKLIST.md`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133)** (PR #133; on branch `claude/pre-trading-checklist-20261017` until it merges). It gives every line exactly one owner, and AWS/host operations belong to the named AWS owner, except the explicitly authorized Isaac key-placement session. **People: read the checklist for your own tasks and dates.** [WHO_DOES_WHAT.md](WHO_DOES_WHAT.md) only says why the split moved there. The agent does the repository work; the checklist's owner does anything that needs credentials, money, a wallet, AWS or the hosts, or a team decision.
 
 | # | Prompt | Checklist sections it serves | Gate it drives | Hard date (UTC, F-121) |
 |---|---|---|---|---|
@@ -11,22 +11,41 @@ Prepared 2026-10-16 (Claude Code session); aligned 2026-10-17 with the pre-tradi
 
 The gates and DR items are defined in [DEPLOYMENT_BUILD.md](../DEPLOYMENT_BUILD.md). Organiser dates (F-13..F-17, all UTC per F-121): development ends Oct 26, final activation Oct 27–29, scored run Oct 29 – Nov 12, provisional ranking Nov 13, winner audit Nov 16–20. Once the run starts there are no deploys (F-117) and no manual restarts (F-124), so everything that must happen during the run has to be automatic, tested code by Oct 26.
 
-## State on 2026-10-17 (verify before acting)
+## Current state on 2026-10-19 (verify before acting)
 
-The checklist's "Done" list is the current record of finished work; this is a short summary.
+Read the local [pre-trading checklist](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/764eff39ac900dfb9bbc9cc05c5358ab78deae1c/docs/build/PRE_TRADING_CHECKLIST.md) and
+[coordinator handoff](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/764eff39ac900dfb9bbc9cc05c5358ab78deae1c/docs/build/COORDINATOR_HANDOFF_20261019.md) in this tracker. For a
+checkout lacking them, use [PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133).
+Historical paragraphs are dated evidence, not instructions to repeat setup.
 
-- **Read integration `a428bab` or later**, not lagging main. PR159's reviewed routing preparation is merged; #130/#131/#143/#144/#148/#149/#151 are also merged. No duplicate merge or rebuild of those implementations is needed.
-- **The Oct17 interim shadow run is already reported live** (IDEA-066 PC-AWS07/08): primary provisioning, migrations/roles, terms install, route/time checks, alarm delivery, first receiver ACK, restart and first anchor were reported completed. Remaining: actual 24 h gap report/review, new bundles/configs and the final-profile reactivation; do not repeat completed host steps from this older brief.
-- **The real quote capture continues** on Keith's server through Oct20 00:00 UTC. Its final summary, fee-netting evidence and owner review remain open. The interim profile already enabled shadow operation; the final profile is still due Oct20.
-- **Terms:** five enabled non-EDGAR sources plus EDGAR = six retained files; installation was reported complete. Provider-model rights and new release/config qualification remain separate.
-- **Signing remains blocked** on real router/facet source and recorded routes, adopted #27 lifetime and #44 numeric inputs/decision, funding/native tracing and signer-host/signed acceptance. Existing proposals and the temporary-access choice/code are delivered (#144/#148/#149); applications and approvals are not inferred.
-- **S1 code is merged** (#131 / IDEA-076). Parameters, weights, live input producers, later B5/B6 work and rehearsal evidence remain with the checklist's owners.
-- **Accepted mirror builds** replace the need to restore org Actions for release building (PC-DEC01). Organization billing itself remains broken. Record exact current build/bundle/manifest evidence.
-- **Open at this review:** #126/#133/#139 (draft)/#155/#157/#158/#161. #139 stays draft without verified source. Review existing work before creating a duplicate.
-
-The local `docs/build/PRE_TRADING_CHECKLIST.md` is preferred after PR133 merges.
-Until then read [PR133's current checklist](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133);
-this brief's checkout may not contain that file. Do not invent owners from a missing local path.
+- Yao stepped down as coordinator. The next coordinator and approved AWS operator
+  need the account/access/private-input handoff; do not assume another team member
+  has access. Isaac key placement remains restricted to the approved session.
+- Latest recorded host observation is Oct18: ea25b52 unsigned trial in larp_trial2,
+  execution disabled, no signer host. It is not a fresh health check. The previous
+  source-gap FAIL and UNKNOWN charge remain retained.
+- Quote capture was interrupted by timestamp freshness failure and resumed Oct18
+  06:54Z through Oct20 00:00Z. Do not claim uninterrupted three-day coverage.
+  Keith still supplies final coverage/summary, measured fees/profile and review.
+- PR176/177 are merged into integration;171/173 into this tracker;179/180/181/182
+  are integrated. PR184's offline signer assembler is reviewed/merged, but actual
+  assembly remains NOT_RUN_MISSING_INPUTS and all installation/signing flags false.
+- PR183 qualifies the original candidatec5be269: all four mirror jobs, real systemd,
+  and independent original-asset/source verification PASS. Use its exact release
+  handoff; that frozen candidate predates the offline assembly tool. Host install,
+  actual stage timing/charges/receiver ACK and Keith affordability remain open.
+- Preserve the shared budget ledger, every charge/reservation/UNKNOWN/latch and
+  the fixed unsigned cutoff Oct22 00:00Z. New builds use a separate trial database
+  until reviewed version-switch support exists; a new DB never authorizes a new
+  empty budget ledger or restarted trial window.
+- Signing stays blocked on real router source/review/replay, #27's adopted finite
+  bounds/code/timing, native tracing, measured #44 approval, funding reconciliation
+  and actual signer provisioning/session/host drills. Draft139/172 remain input-gated.
+- S1 core and B6 execution guards are implemented and reviewed (PR131/165).
+  B4 input production, actual B5/session/input qualification, parameters, weights,
+  evaluation, model adoption and rehearsal evidence remain separately tracked.
+- Consumed records include IDEA066/070/075/076/080/081/082/083. Read the current
+  ledger before allocating an ID or duplicating an existing implementation.
 
 ## Rules for all four agents
 
@@ -36,7 +55,7 @@ this brief's checkout may not contain that file. Do not invent owners from a mis
 4. **Before starting any item,** list the open PRs and the recently pushed branches, then read the item's ledger record. If another session already has the item, review or extend its work rather than duplicating it.
 5. **Pre-register:** write the pass criteria in your ledger record and push them before you run anything. Commit and push any code that affects decisions, trades or logging before it runs (AGENTS.md). Report every result as PASS, FAIL, NOT RUN or INCONCLUSIVE, with the commit SHA. Synthetic results are not market evidence.
 6. **Humans only:** credentials, private keys, `AI_SEEDS_*` runs, anything on AWS or the hosts, MetaMask swaps, organiser messages and team decisions. For each, prepare the exact command or decision memo (options, recommendation, evidence), hand it to the checklist line's owner, and record their answer with its date. Never ask anyone to paste a secret into a chat, a commit or a document. Every run with the dev wallet's ai-seeds credentials uploads logs the auditors see, so only committed, manifested code may run with them (never-do #13).
-7. **Ledger IDs:** IDs have collided before (three different IDEA-058s on 2026-10-16). Use only your reserved block: prompt 1 IDEA-065..069, prompt 2 IDEA-070..074, prompt 3 IDEA-075..079 and EXP-008..009, prompt 4 IDEA-080..084. Already used (2026-10-17): IDEA-066 (Gate A inventory, #129), IDEA-070 (swap decoder, #130), IDEA-075 (trading plan, #123), IDEA-076 (S1 build, #131), IDEA-080 (signer access, #149) and IDEA-081 (stage prompts, #158). Before taking one, grep every remote branch's `docs/LEDGER.md` for it. Extend an existing record (IDEA-039/040/041/042/055/057/058/063/070/075/076 …) where the work already has one.
+7. **Ledger IDs:** IDs have collided before (three different IDEA-058s on 2026-10-16). Use only your reserved block: prompt 1 IDEA-065..069, prompt 2 IDEA-070..074, prompt 3 IDEA-075..079 and EXP-008..009, prompt 4 IDEA-080..084. Already used (2026-10-17): IDEA-066 (Gate A inventory, #129), IDEA-070 (swap decoder, #130), IDEA-075 (trading plan, #123), IDEA-076 (S1 build, #131), IDEA-080 (signer access, #149) IDEA-081 (stage prompts, #158), IDEA-082 (backup date fix) and IDEA-083 (assessment budget). Before taking one, grep every remote branch's `docs/LEDGER.md` for it. Extend an existing record (IDEA-039/040/041/042/055/057/058/063/070/075/076 …) where the work already has one.
 8. **Shared files** (`docs/LEDGER.md`, `docs/INCOMPLETE_WORK.md`, `docs/skill/SKILL.md`, the checklist): edit only your own rows and items, and tick a checklist line only when its owner confirms it is done. On a merge conflict keep both sides. Remove an INCOMPLETE_WORK item only when it is fully done and verified, and preserve the evidence first (AGENTS.md checklist rule).
 9. **When you stop:** say which items are PASS, which are blocked, and which checklist line each blocker is waiting on. Follow the AGENTS.md thread-handoff check.
 

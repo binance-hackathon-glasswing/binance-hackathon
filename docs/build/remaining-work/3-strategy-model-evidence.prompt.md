@@ -31,7 +31,7 @@ Use the integration branch `origin/codex/system-testing-20261012` for code. Put 
    - an LLM exposure limiter that can only lower exposure (95 / 60 / 30%), acting only on code-verified evidence;
    - exposure = the lowest of the three levels and the risk ladder;
    - flat by the end of the run.
-   Still open (checklist "Oct 22 cut line" and "Oct 24: S1 build"): freezing the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`); the limiter's input (B4; it stays NORMAL until wired); the trend-guard input from token session bars (DR-08; it stays UP until wired); the session-close job and round-log fields (B5); the per-leg attempt limit and execution-window checks (B6); and the T4 dev-wallet run write-up and its check against what S1 should have done (B8).
+   Still open (checklist "Oct 22 cut line" and "Oct 24: S1 build"): freezing the S1 weights from token session bars up to the Oct 21 close (`python -m larp.strategy.s1 freeze-weights`); the limiter's input (B4; it stays NORMAL until wired); the trend-guard input from token session bars (DR-08; it stays UP until wired); the session-close job and round-log fields (B5); actual host qualification of the per-leg attempt and execution-window guards (B6, already implemented/reviewed in merged PR165); and the T4 dev-wallet run write-up and its check against what S1 should have done (B8).
    - **EXP-007** (the trend-guard test, IDEA-076 says NOT RUN): run it on token session bars, using only data allowed by never-do #8, and report its result honestly, including INCONCLUSIVE.
    - Write each change's criteria first, with a red/green test for every behaviour.
 
@@ -64,10 +64,10 @@ Use the integration branch `origin/codex/system-testing-20261012` for code. Put 
 
 8. **Model choice (DR-11, #97).**
    - The blind independent labels (M9) are due Oct 21. The 3–5-day shadow trial's host steps are a checklist line (prompt 1 prepares them).
-   - Before the trial starts, the ⚠ PROPOSED bars are reviewed and confirmed (checklist "Decisions due Oct 19"); prepare that.
+   - The unsigned v3 protocol/bars are approved (PR168/PC-REL05 and TR-AC2); do not request the same approval again. Keith still supplies the actual qualified unsigned population, independent labels/M9, usage and measured affordability. Preserve cutoff/identities and report insufficient observation honestly.
    - Evaluate the trial against the pre-registered bars and kill criteria, then write the summary for the **Oct 22** decision: adopt the AIand routing, keep the current provider, or declare the deterministic assessor as v1.0.
    - Record the cost per round and that model input and output are complete in the records.
-   - Live or service use needs its own reviewed code change.
+   - Signed/service capability exists in merged PR164 and the IDEA083 parallel implementation; actual provider/rights/B4/host qualification and team adoption remain separate. Capability alone does not approve signed/scored use.
 
 9. **Evidence live settings.**
    - Give the 11 null `live` values in `config/intelligence/intelligence.v1.json` decided values, each with a provenance note: backfill, clock skew, staleness, result TTL, reassess, retry, job validity, job attempts, review attempts, review backoff, statement retention.

@@ -1,0 +1,19 @@
+{
+  "blind_manifest_sha256": null,
+  "eligible_population_count": null,
+  "label_sha256": null,
+  "missing_inputs": [
+    "unsigned window/protocol/build/config/prompt identity and cutoff",
+    "all requested assessment/job/stage records including failures and duplicates",
+    "exact issuer/filing hashes and source bytes",
+    "independent blind annotator/adjudicator assignment"
+  ],
+  "population_sha256": null,
+  "protocol": "KMP-BUD01_APPROVED_BY_YAO_PR168_PC-REL05",
+  "reason": "No immutable eligible v3 trial job/stage export and matching filing artifacts supplied.",
+  "schema": "KMPFrozenSamplingStatus.v1",
+  "seed": "larp-model-trial-20261018-M9-v1",
+  "selection_method": "TR-AC2_UNCHANGED",
+  "selection_sha256": null,
+  "status": "NOT_RUN"
+}

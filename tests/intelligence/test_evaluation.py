@@ -14,11 +14,17 @@ class SyntheticEvaluationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.report = evaluate()
 
-    def test_v1_thresholds_file_is_kept_unchanged_and_v2_is_used(self):
+    def test_historical_thresholds_are_preserved_and_v3_changes_only_the_budget(self):
         v1 = json.loads((CONFIG_DIR / "eval_thresholds.v1.json").read_text(encoding="utf-8"))
         self.assertEqual(v1["agent"]["unsupported_acceptance__max"], [0, 1])
         v2 = json.loads((CONFIG_DIR / "eval_thresholds.v2.json").read_text(encoding="utf-8"))
         self.assertEqual(v2["agent"]["numerical_precision__min"], [1, 1])
+        v3 = json.loads((CONFIG_DIR / "eval_thresholds.v3.json").read_text(encoding="utf-8"))
+        self.assertEqual(v2['agent']['max_elapsed_ms__max'],60000)
+        self.assertEqual(v3['agent']['max_elapsed_ms__max'],180000)
+        v3['agent']['max_elapsed_ms__max']=60000
+        for field in ('agent','baseline','retrieval_ablation','model_vs_deterministic'):
+            self.assertEqual(v3[field],v2[field])
 
     def test_every_preregistered_check_passes(self):
         failed = [c for c in self.report["checks"] if not c["pass"]]

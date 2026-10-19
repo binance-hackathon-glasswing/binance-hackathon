@@ -15,7 +15,7 @@ Read `docs/build/remaining-work/README.md` first; its rules apply here, especial
 - issues #49, #60 and #106
 - PR #125 (branch `claude/d-dn-10-clock-clear`)
 
-Put new records in IDEA-080..084; extend IDEA-042 and IDEA-049-D where the work already lives there.
+IDEA-080/081/082/083 are consumed. Extend IDEA-042/049-D and the relevant existing records; check the current index before allocating any unused ID.
 
 The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that touches AWS or the hosts is a checklist line for the AWS owner: prepare the exact command, hand it over, and record the evidence. You have no AWS access; don't re-plan or re-apply anything.
 
@@ -51,7 +51,7 @@ The AWS hosts are applied (2026-10-16, IDEA-066 PC-AWS02). Every item below that
    - Make every row FINAL by Oct 26, including DEV-18 (standby). `activate_run` refuses a `live` run with an OPEN or DRAFT row.
    - Complete the services list (F-61).
    - **#49:** make the release-integrity step (IDEA-047 R6) something an operator can actually follow.
-   - With prompt 1: an exact-release CI bundle for the frozen commit. Mirror builds are accepted releases (PC-DEC01); organization billing is still unresolved separately (#98).
+   - With prompt 1: use AB-REL01's verified originalc5be269 candidate when applicable; any later frozen source needs its own exact-release CI/bundle evidence. Do not attribute new module contents to an old bundle. Mirror builds are accepted releases (PC-DEC01); organization billing is still unresolved separately (#98).
 
 6. **Final wallet (DR-17, GAP-52, #106 final part).** Who owns the final wallet is settled by the team (2026-10-16); don't chase it. Record each step with its date, as the checklist's "Oct 26–29" lines set it out:
    - The fresh final wallet is generated and registered (F-14).

@@ -1,7 +1,7 @@
 """Prepare Gate A without signing, activation or cloud provisioning (IDEA-058).
 
 capture: two read-only Web3 endpoints, from committed/pushed code; artifacts outside Git.
-prepare: assemble local ignored host inputs using a separately reviewed LIVE rehearsal profile.
+prepare: assemble ignored host inputs; unsigned dev-shadow by default, explicitly reviewed signed/live scope optional.
 Neither command starts a service or uploads ai-seeds logs. See docs/build/GATE_A.md.
 """
 import argparse
@@ -76,6 +76,9 @@ def main(argv=None):
                           'documented GLM/OpenAI/Kimi shadow trial (no credentials)')
     assembly.add_argument('--model-routing-sha256', help='Expected SHA256 of the reviewed routing file; '
                           'required together with --model-routing')
+    assembly.add_argument('--execution', choices=('shadow', 'service'), default='shadow')
+    assembly.add_argument('--runtime-mode', choices=('dev', 'live'), default='dev')
+    assembly.add_argument('--model-adoption-ref', help='Reviewed signed/live model decision; with service execution')
     args = parser.parse_args(argv)
     try:
         if args.command == 'capture':
@@ -115,7 +118,8 @@ def main(argv=None):
                         now=utc(), sec_contact=args.sec_contact,
                         balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id,
                         balance_rpc_providers=rpc_providers(args.balance_rpc_config),
-                        model_routing_raw=routing_raw, model_routing_sha256=args.model_routing_sha256)
+                        model_routing_raw=routing_raw, model_routing_sha256=args.model_routing_sha256,
+                        execution=args.execution, runtime_mode=args.runtime_mode, adoption_ref=args.model_adoption_ref)
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.

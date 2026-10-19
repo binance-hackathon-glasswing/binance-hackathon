@@ -118,8 +118,9 @@ class Signer(unittest.TestCase):  # R7
         self.config = dict(router_evidence_file=str(self.path), router_evidence_sha256=hashlib.sha256(raw).hexdigest())
 
     def test_without_evidence_swaps_stay_refused(self):
-        decoder = signer_service.router_decoder({}, policy())
-        self.assertIsInstance(decoder, UnverifiedRouter)
+        with self.assertRaises(ContractError):
+            signer_service.router_decoder({}, policy())
+        decoder = UnverifiedRouter()  # lower-level unit fallback still refuses swaps
         swap = intent(wallet='0x' + '1' * 40, router=ROUTER)
         with self.assertRaises(Blocked):
             policy().check(swap, 'SWAP', payload(), decoder, swap.wallet)
@@ -165,8 +166,9 @@ class SignerStartup(CommandCase):  # R7, through `python -m larp.signer.service 
 
     def test_start_line_reports_the_decoder(self):
         self.unquarantine()
-        code, out = self.main('run', self.write(), max_cycles=1)
-        self.assertEqual((code, json.loads(out)['swap_decoder']), (0, 'UNVERIFIED'))
+        unpinned = {k: v for k, v in self.config.items() if not k.startswith('router_evidence_')}
+        code, out = self.main('run', self.write(unpinned), max_cycles=1)
+        self.assertEqual((code, json.loads(out)['reason']), (4, 'START_REFUSED'))
         config, sha = self.pinned(FIXTURE_ROUTER)
         code, out = self.main('run', self.write(config), max_cycles=1)
         line = json.loads(out)

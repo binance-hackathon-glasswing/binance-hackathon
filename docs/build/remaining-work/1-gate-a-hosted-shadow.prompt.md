@@ -10,7 +10,7 @@ Put new records in IDEA-065..069 (IDEA-066 is already used, by #129); extend IDE
 
 ## Deliver, in this order
 
-1. **Quote-cost capture (#118, GAP-69). Running; don't touch it.** The real capture has run on Keith's server since 2026-10-16 18:19 UTC and is set to stop at 2026-10-20 00:00 UTC (#132, IDEA-063). That gives the 3 UTC days including a weekend that IDEA-063's summary needs.
+1. **Quote-cost capture (#118, GAP-69). Running; don't touch it.** The capture started on Keith's server Oct16 18:19 UTC, was interrupted by timestamp freshness refusal, and resumed Oct18 06:54 UTC through Oct20 00:00 UTC (IDEA-063 KMP-QUOTE01). Its owner must demonstrate coverage; the schedule alone does not prove three qualifying days.
    - Don't restart, stop or move it, and don't start a second capture.
    - It only calls read-only endpoints (quote, approve-build and gas-estimate), never `quote-and-swap` broadcast, signing or an ai-seeds upload. It uses the Binance Web3 API key, never the wallet key or `AI_SEEDS_SECRET`.
    - Raw artifacts stay outside Git; record their hashes in IDEA-063 when the capture's owner sends them.
@@ -34,7 +34,7 @@ Put new records in IDEA-065..069 (IDEA-066 is already used, by #129); extend IDE
    - Oct 20 steps 5–8 follow the same pattern: configs rendered with `driver.execution = "shadow"`, `preflight --bind`, `service init` and the reviewed `service activate`, evidence, runtime and the uploader started, and `larp-archive.timer` enabled.
    - **`larp-execution` stays stopped.**
 
-6. **Exact-release evidence (GAP-72, #49, #98).** Build each required reviewed release through the accepted mirror (PC-DEC01), including the model changes before that trial; organization billing is a separate unresolved account issue. Record the run ID and the bundle and manifest hashes for the build that runs. A mirror bundle is an accepted release build, while hosted acceptance (#127) still needs its own evidence; a local suite alone is not the CI artifact.
+6. **Exact-release evidence (GAP-72, #49, #98).** PR183 / AB-REL01 already qualifies and publishes original candidatec5be269. Its README/receipt pin the original bytes; do not rebuild that accepted release. Build only a later required reviewed release through the accepted mirror (PC-DEC01), including the model changes before that trial; organization billing is a separate unresolved account issue. Record the run ID and the bundle and manifest hashes for the build that runs. A mirror bundle is an accepted release build, while hosted acceptance (#127) still needs its own evidence; a local suite alone is not the CI artifact.
 
 7. **Gate A host evidence**, recorded in IDEA-058 and reviewed item by item in IDEA-042 by the checklist's Gate A reviewer:
    - one shadow round with a durable per-event and per-chunk ACK from the real receiver (R-01, DR-07);
@@ -42,12 +42,12 @@ Put new records in IDEA-065..069 (IDEA-066 is already used, by #129); extend IDE
    - the automatic restart drill (DR-13 restart part) and the first hourly anchor (DR-15 schedule part);
    - IAM/TLS and routes, `chronyc tracking`, an alarm email received, and RSS per unit for the D-DN-08 memory decision (#60, decided in prompt 4).
 
-8. **Model shadow trial start (#97 hosted part; IDEA-057 "Shadow trial").** These are host steps in the checklist's model-trial section; use its current switch prerequisites and dates. Prepare them:
-   - the runtime secret holding `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` for OpenAI review (the latter is absent only for an intentional external-only trial);
-   - budget `init` with the actual prior OpenAI spend;
+8. **Model shadow trial continuation/redeployment (#97; IDEA-057).** The Oct18 unsigned v3 trial has already started; do not reset its population, budget or fixed Oct22 00:00UTC cutoff. These are host steps in the checklist's model-trial section; use its current switch prerequisites and dates. Prepare them:
+   - the existing runtime secret holding both provider keys, already stored/authenticated in the recorded Oct18 trial; verify the current account/catalogue/rights without replacing keys or inferring new usage/funding;
+   - preserve the existing shared budget ledger and all charges/reservations/UNKNOWN/latches; use the reviewed backup/setup procedure, not `init` on each redeploy or new database;
    - provider check P0;
    - reviewed `prepare --model-routing` plus `--model-routing-sha256`, installation and binding of the generated runtime/routing bytes (merged PR159); no post-prepare hand edits.
-   Then record P1/P2 and the trial start. The adoption decision is prompt 3's.
+   Record current P1/P2, qualified jobs and actual timestamps without relabeling historical start or extending the window. The adoption decision remains prompt 3's. Short windows and signed hours do not supply missing unsigned observation time.
 
 9. **Design option 6 (IDEA-058).** Write a recommendation on whether the evidence poller should read only the bound manifest instead of `runtime.json`. It is on no checklist line, so ask the user who decides it; implement it only if accepted.
 

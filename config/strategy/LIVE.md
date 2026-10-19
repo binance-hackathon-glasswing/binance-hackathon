@@ -11,6 +11,11 @@ The versioned consumer inputs are documented in `larp/strategy/profiles.py`,
 `sessions.py`, `predicates.py`, and `larp/risk/accounting.py`. Producer agreement
 and real captures remain I1/I2/I4/I8 integration gates. Tests are synthetic.
 
+S1 profiles additionally need explicit `s1.execution` delay, close-buffer and
+per-leg attempt values (IDEA-076 EB-01, Isaac B6). Construction, session/attempt
+semantics and the still-proposed example values are in
+[`S1_EXECUTION_BOUNDS.md`](../../docs/build/S1_EXECUTION_BOUNDS.md).
+
 ## B6 algebra (no P&L input)
 
 All money is USDT micro-units; BNB/token quantities retain explicit decimals.
