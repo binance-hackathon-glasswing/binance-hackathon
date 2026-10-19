@@ -157,3 +157,159 @@ Write these review pass criteria before running any tests:
 - Deliver the runtime review in its own PR based on179; leave the implementer
   concrete obligations and record the linkage in PR133. No vendor/teammate
   message, production credential, wallet/API call or AWS action is part of it.
+
+### IR179 findings and implementation obligations
+
+**Disposition:** direction is reviewable, but runtime acceptance is withheld.
+PR179 has no implementation to approve. The following are concrete integration
+requirements against the current source, not claims that a future parallel
+implementation has already failed. Keegan owns fixes and new red-first tests;
+Isaac owns review of their runtime evidence. Yao's B11 choice and the declared
+model efforts remain unchanged.
+
+**IR179-01 / P1 — stage deadlines must not wait for provider cleanup.**
+`routing.py:297–298` uses `EvidenceAssessor.assess(wait_for_worker=True)` on the
+signed lane; `agent.py:230–235` sets cancellation at the stage timeout and then
+joins the actual provider worker without a time bound. Consequently the routing
+caller cannot launch the next stage merely because the primary's allowance
+expired. Existing OpenAI pacing tests explicitly reproduce a held primary lane
+and no reviewer dispatch until it exits. Raising numbers or parallelizing only
+the reviewer loop does not fix this coupling. Separate the immutable stage
+result deadline from ownership/draining of its real worker. Permit independent
+review stages at the primary cutoff within the same bounded owned group, while
+keeping all late workers fenced. Never drain a group or a ThreadPoolExecutor
+context on the safety thread, release its single-flight fence early, or allow
+successive jobs to accumulate orphan workers. If cleanup can exceed the decision
+budget, report it separately instead of asserting decision+cleanup was bounded.
+Acceptance: a blocked primary outlives its share, both reviewers still start in
+time, the combined result is frozen by the original deadline, safety ticks keep
+running, and no second assessment group/ACK/retry occurs until owned writes end.
+
+**IR179-02 / P1 — the deferred audit chain currently has one writer.**
+`deferred_models.py:78–94` reads the current chain head, computes a successor,
+then appends/fsyncs without a lock; its comment explicitly assumes one writer.
+`submit:111` supplies that same callback to all stages; `AuditedModel.step`
+emits request/response events from each provider worker. Two parallel reviewers
+can read the same predecessor and append sibling successors; `_read` then
+rejects the chain during ready/restart. This is a source-proven concurrency
+hazard, not a newly reproduced failure on the existing serial path. Serialize
+the complete head-read/hash/append/fsync transaction or route events through one
+owned writer. Preserve durable request-before-dispatch and response-before-final
+publication; RESULT/ACK cannot race a late callback. Acceptance: barrier-driven
+simultaneous reviewer callbacks, fsync/write failure, two completion orders and
+restart yield one valid chain with all stages, or fail closed without ACK.
+No provider exception/credential text may leak into failure events.
+
+**IR179-03 / P1 — reserve the six tool calls before concurrent use.**
+`routing.py:277–299` computes each stage's allowance from a shared `tools`
+counter and updates it only when that stage returns. Naively running the current
+closure twice concurrently gives each reviewer the same remainder: after three
+primary calls, each can receive three more, exceeding six globally. Specify a
+deterministic partition or a properly synchronized shared dispatch budget with
+defined allocation semantics; primary stays at most three and total at most
+six, including timed-out workers. An output counter after the fact is not an
+enforcement boundary. Freeze allocations before dispatch or explain how race
+order cannot change the permitted evidence budget. Acceptance: simultaneous
+reviewer tool requests at the last token, cancellation and late completion cannot
+overspend/reset the global allowance in either finish order.
+
+**IR179-04 / P1 — clarify AB1 and canonical result identity before coding.**
+AB1 does not state the primary's status, but recreates the hosted ASSESSED
+primary example and expects reviewer-1 to win after reviewer-0 ABSTAINs. Under
+Yao's B11/AB13, an ASSESSED primary plus any reviewer ABSTAIN means DISSENT and
+ABSTAIN. Make the fallback witness explicitly non-ASSESSED at the primary,
+and add a separate observed-case dissent witness; do not override B11 to pass
+AB1. AB2 must similarly distinguish fallback, confirmation and dissent.
+
+AB11/AB12 also require the final primary `result_id` to remain identical.
+Current `_combine` (`routing.py:360–415`) removes that ID, changes router/model/
+assessment-key and I/O metadata, and computes a new result ID. Downstream
+`gate.accept:83–89` deduplicates on result_id or assessment_key. This is an
+identity contract change, not solved by only avoiding `chosen = reviewed`.
+Specify whether primary identity is the root ID or a separately pinned selected
+primary inside a canonical routed envelope, with Yao's clarification if AB12
+must change. Do not claim the present consumer recomputes/checks this digest:
+it does not. Acceptance must test exact unchanged semantic primary fields,
+original artifact/ref, final identity/hash conventions, consumer validation,
+duplicate acceptance/restart and dissent stripping. Wait for all applicable
+reviewer outcomes or their fixed cutoff; first-completion wins is invalid.
+
+**IR179-05 / P1 — propagate absolute budgets through every boundary.**
+The two intelligence configs, `config.py:60`, `schema.py:37`, the agent validator
+and `routing.py:274` must agree. Today an out-of-range routed deadline falls
+back to the routine assessor, so partial updates can silently select a different
+route or refuse the request. Driver request production (`driver.py:878`) also
+uses the configured maximum. Start from one decision deadline; stage allowance
+must be bounded by remaining time and its own cap. At180s, primary is at most60s;
+at120s, B2's one-third rule makes it at most40s. Existing60s inputs must still
+validate; their shares must follow the recorded contract, not a hidden old
+half-budget shortcut. Use monotonic elapsed time for bounds, recheck cancellation/
+remaining time immediately before each new model/tool dispatch, and include
+preparation/accounting/audit overhead instead of gifting it a fresh relative
+HTTP timeout (`providers.py:351–362`). Expired authority must never start a POST.
+Acceptance: all config/request/stage boundaries, exact-equality/above-limit,
+preparation crossing cutoff, clock rollback and late re-quote remain bounded.
+Assessment budget changes do not extend trade/quote/signing windows (#27).
+
+**IR179-06 / P1 — late audit/cost evidence must not revive decision authority.**
+Keep current conservative accounting as the default until any late-cost change
+is separately reviewed. `providers.py:365–370,393–396` treats a complete late
+reply as TIMEOUT while preserving safe raw bytes. `BudgetedOpenAI.step` settles
+non-OK usage conservatively; `model_budget.py:383–390` permits settlement only
+from RESERVED, so an UNKNOWN charge cannot simply be settled again with the
+existing method. Audit/usage capture and policy authority are separate: a late
+answer cannot replace a frozen result, change the limiter, refresh request
+identity/cutoff/expiry, or clear an uncertainty charge. Any proposed late actual-
+usage reconciliation needs an explicit trusted, idempotent same-charge/same-
+dispatch-day transition; absent proof, retain the original maximum and latch.
+Parallel AIand calls still run the real trial/accounting guard at each POST
+boundary. This guard enforces OpenAI-account stop/window/quarantine semantics;
+it is not an AIand-dollar reservation or a proof of AIand affordability. Keith
+retains that cost review. Test midnight, concurrent admission, UNKNOWN/crash,
+settlement failure and a late response while the other reviewer is completing.
+
+**IR179-07 / P1 — retain signed main-thread authority and recovery.**
+Signed runtime already uses `DeferredAssessments` (`service.py:343–350`);
+`driver.py:1006–1060` consumes ready results on the main thread, then runs safety
+planning while the one model lane is busy. Background workers supply evidence,
+not orders, reservations or projection changes. `schema.assessment_result` and
+`gate.accept` still check original run/job/profile/context/cutoff/expiry before
+acceptance. Preserve that architecture; do not move reviewer waits/aggregation
+onto the safety lane or accept an expired/stale result merely because B11 says
+an ASSESSED primary stands. Retain current build/profile/run identity fences,
+no automatic paid replay after restart, complete audit-before-ACK and verified
+result-before-limiter mapping. Acceptance: mandatory reduction/terminal/HALT,
+execution reconciliation, heartbeat and accepted-cut outage behavior continue
+with both reviewers hung; restart replays no paid calls or additional actions.
+
+**IR179-08 / P2 — prove the composite cycle bound, not stage arithmetic.**
+60s plus two parallel90s shares is nominally150s, not evidence that a cycle
+finishes within300s. Unsigned coordinator assessment is synchronous
+(`coordinator.py:149–158`); signed assessment is background work and must not
+be charged as a blocking safety wait. `Service.run:77–86` wraps guard+driver+
+heartbeat in the watchdog, and `RoundDriver.once:970–979` can perform balance/
+market/day-roll work before model handling. Include I/O, audit locks/fsync,
+queue/verification/aggregation, provider cleanup and multiple market refreshes
+in the relevant timing tests. A600s watchdog exits the process; it neither
+cancels a stage nor establishes the300s target. Test both lanes with real-time
+blocking adapters and fake-clock boundary cases; a fast fake clock alone cannot
+prove worker liveness. Yao retains actual host latency/first-triggered-review/
+charge/receiver-ACK evidence after Keegan's exact reviewed release. No watchdog
+increase, model-effort reduction, trial-ledger reset or AWS change is needed to
+write these tests.
+
+### Required evidence before Isaac's runtime acceptance
+
+| Area | Evidence Keegan supplies after implementation |
+|---|---|
+| Deadlines / worker ownership | Updated AB1–AB4/AB6 with real blocked workers; explicit result cutoff versus drain state; bounded owned groups and no post-cutoff dispatch |
+| Concurrent audit / tools | Serialized hash chain and restart/failure cases; globally enforced six-call budget under simultaneous tool attempts |
+| B11 / identity | AB11–AB15 in both completion orders, preserved primary content/selected identity contract, validated canonical output and consumer dedup/recovery |
+| Accounting / late I/O | AB5/AB7 including UTC rollover, UNKNOWN/quarantine, safe late audit and accounting behavior without late trade authority |
+| Signed safety / watchdog | Both reviewers blocked while mandatory planning/heartbeat/execution continue; AB8 full-cycle evidence at current600s watchdog |
+| Scope / release | Existing prompts/efforts/routing hash and caps unchanged; DEV-22/parity updates; full exact-source Linux/PostgreSQL/systemd/release checks under AB9–AB10 |
+
+This completes the static runtime review scope, not implementation acceptance.
+The review does not settle Keith's affordability question or Yao's late-cost/
+identity choices. Keegan implements the recorded contract and addresses these
+findings; Isaac reviews the resulting evidence; Yao deploys/qualifies afterward.
