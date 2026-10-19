@@ -83,3 +83,14 @@ execution. CI/source and test counts below are recorded only after completion;
 old release acceptance is not transferred to new application bytes.
 
 Exact-source approved mirror [39227766192](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39227766192) is all4 PASS at0191633: runtime2119 passed/6 expected skips/3340 subtests; separate real systemd5/5, both Terraform jobs and original host-bundle tests for both roles. [Machine receipt](evidence/pr133-remaining-20261019.json) records scope and log hash. Org CI39228699044 ran zero runtime steps due billing. Independent local Linux/Python3.12.14/PostgreSQL14.24 full suite also PASS:2119 tests/6 expected skips/3340 subtests,809.39s; the receipt records its log hash. Later non-manifested documentation changes do not alter the qualified application/config/tool/test/deploy/workflow bytes.
+
+Independent review PR187-RV1 found and fixed a further expiry bug: durable
+ADVERSE status can mask incomplete or expired underlying reviews. Only a fresh
+complete review (including the view excluding timed Class2 blocks) now permits
+expiry; valid adverse facts remain usable for reductions. RED/GREEN and local
+setup limitations are preserved in IDEA076. New exact-source mirror
+[39231045091](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39231045091)
+is all4 PASS at10a5cf3:2121 tests,6 skips,3342 subtests; real systemd5/5;
+both Terraform jobs, host bundle, restricted workers, demo and Docker pass.
+[Review receipt](evidence/pr187-review-20261019.json). Actual source/input,
+profile, policy, host and adoption gates above remain open.
