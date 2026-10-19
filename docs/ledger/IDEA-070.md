@@ -293,3 +293,46 @@ file. The guarantees it does not have are replaced as follows:
 Out of scope: booking a below-minimum fill (needs Keith's accounting), native-BNB
 swaps (gas top-ups) in untrusted mode, the real policy file's code hashes (to
 be taken by the operator with the new `observe` command), and adoption.
+
+### B02-U results at `b800794` (2026-10-19)
+
+Criteria were pushed first, at `3a179fa`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **U1 PASS.** All 15 recorded quotes decode to their own pay token, receive
+  token, amount and `minReceiveAmount`, with the recipient unverified.
+- **U2 PASS.** All 15 tampered variants of every quote are refused (225 cases).
+  One gap was found and fixed before commit: a blob length one byte longer,
+  borrowing padding, had passed. Inner calls must now be a selector plus whole
+  words.
+- **U3 PASS.** All six refusal cases plus an RPC error are refused, and the
+  correct case passes. Every read is at a numeric block and accepted by the
+  production allowlist. Fixed during self-review: before this execution's own
+  approve, the pay token's allowance is not limited, because our approve
+  overwrites it. Without that, a leftover allowance after a reverted swap would
+  block every later swap of the same token. A leftover on any other token still
+  refuses, so after a reverted swap, sells of other tokens (including the final
+  flatten) wait until an intent re-approves the reverted token. A revoke intent
+  is a recorded follow-up.
+- **U4 PASS.** The `Executor` refuses an unbound untrusted decoder, and preflight
+  runs on swap validation. A verified-mode decoder returning no recipient is
+  refused by both `validate_payload` and `SigningPolicy`.
+- **U5 PASS.** Settings must be set as a pair (both or neither), and router
+  evidence plus a policy together is refused. The signer refuses a router
+  outside `allowed_spenders` and a policy whose hash differs, and loads the
+  policy unbound.
+- **U6 PASS.** On the halt-split service harness with real PostgreSQL,
+  `risk_valid` stays true with no hold and turns false with a hold. The hold
+  covers any terminal execution without its stored fact, which is broader than
+  only swaps.
+- **U7 PASS.** DEV-23 is DRAFT. The register renders and `--check` passes.
+- **U8 PASS.** New tests: 13 passed, 255 subtests, including Gate B DR-02
+  (VALIDATED only with a passing check for this policy, and labelled
+  UNTRUSTED). Full suite at `b800794`: **2130 passed, 10 skipped (environment),
+  3597 subtests**, 422.9 s.
+
+Not done here: the real policy file (operator `observe` on primary, then a
+named reviewer), a `check` on fresh quotes, a live preflight, Isaac's adoption
+with #44 (B09) and B10/#27. The swap's own deadline is about 8 minutes after
+the quote, so it still conflicts with short intent expiries. Signing stays
+disabled; nothing here accepts Gate B.
