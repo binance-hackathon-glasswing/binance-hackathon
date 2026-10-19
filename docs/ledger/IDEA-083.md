@@ -594,3 +594,17 @@ Findings and fixes:
 
 Not changed (noted for owners): the AB-IMPL01/IR179 prose keeps its missing spaces between words and numbers;
 `Deadline.remaining()` takes the larger of fake-clock and real elapsed time, which only matters with fake clocks.
+
+PR179-INT01 result **PASS** at `d26f795` (2026-10-19): full suite **2080 passed, 10 skipped, 3274 subtests, 0 failed**
+(564 s). Same run on PR181 `dfe9f95` for comparison: 2078 passed, 10 skipped, 2 failed (the INT01-4 flakes
+`test_model_timeout_error_and_invalid_output` and `test_external_transport_boundary_refuses_after_request_preparation_crosses_cutoff`).
+Skips: one opt-in external-data check, five disposable-systemd checks, three Linux bubblewrap checks (`bwrap` not
+installed) and one directory-mode check skipped because the runner is root; none is a waiver. Flake check: the four
+touched test files passed 10 consecutive runs together (104 tests, 315 subtests each). Environment: Linux x86-64
+cloud container, Python 3.12, venv from `deploy/requirements-test.lock` (installed without `--require-hashes`,
+because the lock lacks a hash for psycopg 3.3.6), disposable PostgreSQL 16 on 127.0.0.1:55448 (not the pinned 14.24
+image), disposed after the run. Prompts, efforts, budgets, B11 and the routing file `a5fca50a…` are unchanged by
+INT01. GitHub CI not run (#98). Merge order: PR181 → PR180's branch, this branch → PR179's branch (PR180 merged by
+inclusion), PR179 → `codex/system-testing-20261012`. This is a code review and local acceptance only: Linux/systemd/
+restricted-worker/original-bundle release qualification, Keith's protocol/affordability review and host deployment
+remain open as listed in AB-IMPL01.
