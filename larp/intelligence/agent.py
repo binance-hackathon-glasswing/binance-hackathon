@@ -214,7 +214,8 @@ class EvidenceAssessor:
         """
         start = self.clock()
         r = request.read()
-        raw_limit = r.get("budget", {}).get("deadline_ms", 0)
+        budget = r.get('budget')
+        raw_limit = budget.get('deadline_ms', 0) if type(budget) is dict else 0
         if deadline is None and type(raw_limit) is int and raw_limit > 0:
             deadline = Deadline(raw_limit, self.clock)
         try:

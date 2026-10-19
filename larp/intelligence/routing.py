@@ -264,7 +264,7 @@ class RoutedAssessor:
         self.artifacts = artifacts
         self._lane_lock = threading.Lock()
         self._workers = []
-        binding = dict(policy=policy, routine=routine.identity.record(),
+        binding = dict(algorithm='bounded-parallel-b11.v1', policy=policy, routine=routine.identity.record(),
                        external=[m.identity.record() for m in self.external],
                        openai_declared=policy['spec_hash'],
                        account=budget.account, total=budget.total, reserve=budget.reserve)
@@ -291,15 +291,19 @@ class RoutedAssessor:
 
     def _assess(self, request, *, audit_hook=None, wait_for_workers=False):
         # Synchronous callers also retain ownership: another job cannot accumulate hung workers.
-        validator = self.make_assessor(self.routine)
+        start = self.clock()
         r = request.read()
+        budget = r.get('budget')
+        raw_limit = budget.get('deadline_ms', 0) if type(budget) is dict else 0
+        bound = Deadline(raw_limit if type(raw_limit) is int else 0, self.clock, monotonic=self.monotonic)
+        validator = self.make_assessor(self.routine)
         if not self._lane_lock.acquire(blocking=False):
             return validator._rejected(r, 'ASSESSMENT_GROUP_BUSY', self.clock())
         try:
             self._workers = [w for w in self._workers if w.is_alive()]
             if self._workers:
                 return validator._rejected(r, 'ASSESSMENT_GROUP_BUSY', self.clock())
-            return self._assess_group(request, audit_hook=audit_hook)
+            return self._assess_group(request, audit_hook=audit_hook, start=start, bound=bound)
         finally:
             if wait_for_workers:
                 # Deferred caller only. A frozen verdict never releases live provider/audit ownership.
@@ -308,11 +312,8 @@ class RoutedAssessor:
                     worker.join()
             self._lane_lock.release()
 
-    def _assess_group(self, request, *, audit_hook):
+    def _assess_group(self, request, *, audit_hook, start, bound):
         r = request.read()
-        start = self.clock()
-        raw_limit = r.get('budget', {}).get('deadline_ms', 0)
-        bound = Deadline(raw_limit if type(raw_limit) is int else 0, self.clock, monotonic=self.monotonic)
         validator = self.make_assessor(self.routine)
         try:
             validated = validator._validate(r)
