@@ -13,8 +13,9 @@ Because primary writes the intent, the signer also checks every request against 
 (larp/signer/policy.py; `signing_policy` in its config): allowed spenders and tokens, per-token input caps and a fee
 cap, so a compromised primary cannot get an approve to another spender or an unlimited approve signed (WR02, #44).
 A swap needs a decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29),
-loaded from the signer's own pinned copy and for a router in its own `allowed_spenders`. Without it, every swap
-request is refused.
+loaded from the signer's own pinned copy and for a router in its own `allowed_spenders`. Check and run refuse
+missing or invalid evidence before database/key access. Both dev and live refuse the undecided example caps.
+Check verifies local config/release/evidence only; it does not accept Gate B or inspect the run, host or key.
 
 It signs through `LocalSigner`, whose fenced registry keeps at most one signature per attempt. A failed check becomes
 a refusal row for that request; a database outage is not a refusal and stops the cycle.
@@ -159,8 +160,8 @@ def validate_config(value):
             type(value['key_credential']) is str and _CREDENTIAL.fullmatch(value['key_credential'])):
         raise ContractError('Invalid key credential name')
     policy = SigningPolicy.from_config(value.get('signing_policy'))
-    if value['mode'] == 'live' and policy.cap_basis == EXAMPLE_CAP_BASIS:
-        raise ContractError('A live signer needs decided signing caps, not the example values')
+    if policy.cap_basis.strip() == EXAMPLE_CAP_BASIS:
+        raise ContractError('A signer needs decided signing caps, not the example values')
     from larp.execution_live.config import evidence_settings
     evidence_settings(value)
     from larp.runtime.database import check_database_settings
@@ -169,12 +170,16 @@ def validate_config(value):
 
 
 def router_decoder(config, policy):
-    """The signer's own swap decoder (IDEA-070): pinned to router evidence for a router in its `allowed_spenders`,
-    or `UnverifiedRouter`, which refuses every swap."""
+    """Load the production signer's pinned decoder before any database or key access.
+
+    Direct offline unit fixtures can still construct SignerService with an
+    UnverifiedRouter. A production service must not start an approval-only path
+    while its subsequent swap cannot be validated (IDEA-070 SR-01).
+    """
     from larp.execution_live.router import evidence_settings, load_evidence
     settings = evidence_settings(config)
     if settings is None:
-        return UnverifiedRouter()
+        raise ContractError('Signer requires pinned router evidence')
     decoder = load_evidence(*settings)
     if decoder.router not in policy.allowed_spenders:
         raise ContractError('Router evidence is for a router outside signing_policy.allowed_spenders')
@@ -221,8 +226,15 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
     args = parser.parse_args(argv)
     try:
         config, manifest = load_config(args, with_manifest=True)
+        policy = SigningPolicy.from_config(config['signing_policy'])
+        try:
+            decoder = router_decoder(config, policy)
+        except (ContractError, OSError, ValueError):
+            raise StartRefused('router evidence refused') from None
         if args.command == 'check':
-            print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
+            print(json.dumps(dict(configuration_valid=True, signing_enabled=False,
+                                  swap_decoder='VERIFIED', router_evidence_sha256=decoder.evidence_sha256,
+                                  scope='LOCAL_CONFIG_AND_ROUTER_EVIDENCE_ONLY', gate_b_accepted=False)))
             return 0
         from larp.runtime.database import open_service_store
         store = open_service_store(config)
@@ -237,11 +249,6 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         if (type(registered) is not dict or registered.get('build_id') != config['build_id']
                 or registered.get('manifest_sha256') != manifest_sha256):
             raise StartRefused('signer release differs from the registered manifest')
-        policy = SigningPolicy.from_config(config['signing_policy'])
-        try:
-            decoder = router_decoder(config, policy)
-        except (ContractError, OSError):
-            raise StartRefused('router evidence refused') from None
         try:
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],

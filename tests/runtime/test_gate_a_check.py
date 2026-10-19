@@ -179,6 +179,73 @@ class GateAPackageCheck(unittest.TestCase):
         (self.release / 'larp/runtime/operations.py').write_text('# changed\n')
         self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
 
+    def test_pc_mirror01_exact_approved_origin_passes_without_side_effects(self):
+        original = json.loads(self.manifest.read_bytes())
+        for suffix in ('', '.git'):
+            with self.subTest(suffix=suffix):
+                value = dict(original, build_origin='https://github.com/Keegan4/Keegan4-larp-ci-mirror' + suffix)
+                self.manifest.write_bytes(encoded(value))
+                before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+                with ExitStack() as stack:
+                    for target in ('socket.create_connection', 'urllib.request.urlopen', 'subprocess.run',
+                                   'larp.storage.postgres.PostgresStore.transaction',
+                                   'larp.runtime.gate_a.capture_inputs'):
+                        stack.enter_context(patch(target, side_effect=AssertionError('Remote or mutable operation')))
+                    report = self.qualify()
+                self.assertEqual(report['checks']['CI_RELEASE_BYTES'], 'PASS', report)
+                self.assertTrue(report['local_ready'], report)
+                self.assertFalse(report['gate_a_passed'])
+                self.assertFalse(report['remote_ci_verified'])
+                self.assertFalse(report['signing_enabled'])
+                self.assertEqual(set(report['host_checks'].values()), {'NOT_RUN'})
+                self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
+
+    def test_pc_mirror01_origin_approval_is_exact_and_repository_scoped(self):
+        original = json.loads(self.manifest.read_bytes())
+        approved = 'https://github.com/Keegan4/Keegan4-larp-ci-mirror'
+        origins = ('https://github.com/synthetic/mirror', approved + '-other', approved + '/',
+                   approved + '/extra', approved + '?approved=true', approved + '#approved',
+                   approved.replace('https:', 'http:'), approved.replace('github.com', 'github.com.invalid'),
+                   approved.replace('github.com', 'user@github.com'),
+                   approved.replace('github.com', 'github.com@evil.invalid'),
+                   approved.replace('/Keegan4/', '/another-owner/'), None, [], {})
+        for origin in origins:
+            with self.subTest(origin=origin):
+                self.manifest.write_bytes(encoded(dict(original, build_origin=origin)))
+                self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
+        # A self-consistent foreign register/manifest cannot borrow this team's mirror approval.
+        path = self.release / 'config/release/repository.v1.json'
+        register = json.loads(path.read_bytes())
+        register['repository'] = 'https://github.com/synthetic/another-registered-repository'
+        path.write_bytes(encoded(register))
+        self.manifest.write_bytes(release_manifest(self.release, release_files(self.release), 'b' * 40,
+                                                   register['repository'], approved))
+        self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
+
+    def test_pc_mirror01_approved_origin_preserves_every_release_check(self):
+        approved = dict(json.loads(self.manifest.read_bytes()),
+                        build_origin='https://github.com/Keegan4/Keegan4-larp-ci-mirror')
+        defects = (('build_id', 'd' * 40), ('repository', 'https://github.com/synthetic/another-repository'),
+                   ('remote_verified', False), ('runtime_config_sha256', '0' * 64),
+                   ('operations_config_sha256', '0' * 64), ('registration_evidence', {'already': 'bound'}),
+                   ('service_configs_sha256', {'uploader': '0' * 64}),
+                   ('release_register', {'changed': True}))
+        for field, value in defects:
+            with self.subTest(field=field):
+                self.manifest.write_bytes(encoded(dict(approved, **{field: value})))
+                self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
+        self.manifest.write_bytes(encoded(approved))
+        path = self.release / 'larp/runtime/operations.py'
+        path.write_bytes(path.read_bytes() + b'\n# tampered after CI\n')
+        self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
+        # Even self-consistent listed hashes must cover every executable release file.
+        self.write_manifest()
+        value = json.loads(self.manifest.read_bytes())
+        value['build_origin'] = approved['build_origin']
+        del value['files']['larp/runtime/operations.py']
+        self.manifest.write_bytes(encoded(value))
+        self.assertEqual(self.qualify()['checks']['CI_RELEASE_BYTES'], 'FAIL')
+
     def test_terms_metadata_does_not_replace_actual_retained_bytes(self):
         register = json.loads((self.release / 'config/sources/sources.v1.json').read_bytes())
         digest = register['edgar']['rights']['terms_evidence_sha256']
