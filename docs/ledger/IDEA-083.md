@@ -663,3 +663,65 @@ contains PR181 and the INT01 fixes, is merged on top together with the current `
 (`26b93fe`, clean merge). Full suite on that merged tree (`43d3346`, same environment as above): **2087 passed,
 10 skipped (same environment skips), 3324 subtests, 0 failed** (598 s). PR179 is then merged into
 `codex/system-testing-20261012`; PR180 and PR181 are merged by inclusion.
+
+## AB-REL01 — exact merged-release qualification (2026-10-19)
+
+User asks to perform the next deployment step: qualify/package the merged
+IDEA-083 release. Source is integration8c1e6df (PR179 with181/182); no substitute
+implementation is eligible. This criteria-only commit freezes the candidate.
+Pass criteria before execution: approved mirror Runtime acceptance all four
+jobs succeed at this exact candidate; full pinned Linux/PostgreSQL regression,
+actual systemd and restricted-worker checks, Terraform checks, demo/container
+smoke and both-role original host-bundle provisioning pass. Download the
+original CI artifact, verify its API digest and every bundle checksum, compare
+manifested sources with the frozen Git commit, and verify external/embedded
+manifest identity and packaged CA. Record exact hashes/run/source and deliver
+the original bundle as a candidate release; never rebuild/recompress it for
+publication. No host deployment, account/ledger changes, funding or signing.
+Existing source/native/#27/#44/adoption and host acceptance gates stay open.
+
+AB-REL01 declaration correction: services.v1.json and DEV-19 still described
+serial review and loss of primary authority on reviewer failure. Update only
+release declarations to the merged B11/DEV-22 behavior and re-render the plan.
+No prompts, routing bytes, efforts, runtime decisions or adoption scope change.
+Pass criteria: register rendering/schema and release-register tests pass; the
+new corrected candidate, rather than def7700, must pass all exact-source CI jobs.
+
+
+### AB-REL01 result — PASS; original candidate delivered
+
+Frozen candidate `c5be26959a2b99d603c8d548f7c9767c9c2cf1e0` passes
+[acceptance39210402678](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678),
+all four jobs. Linux/Python3.12.15/PostgreSQL14.24 full suite: **2091 passed,
+6 skipped,3324 subtests**,487.03s. The five real systemd tests pass separately
+(5 subtests,17.90s); full-suite skips are those five opt-in systemd cases and
+one external corpus check. Restricted workers, both Terraform directories,
+demo, container build/smoke and both host-bundle provisioning roles pass.
+
+[Published original candidate](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/idea083-c5be269)
+is a prerelease, not signed adoption. Artifact12167516848 ZIP digest is
+`a30e37a7880731613390edc5742b86549820706448ef7931089d1f91753b89fb`.
+The cloud artifact redirect was denied; publication-only workflow
+[39211350217](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39211350217)
+verified that original ZIP inside the approved mirror and uploaded its exact
+bytes without rebuild/recompression. Wrong source, failed run and failed job
+negative controls refuse before release materialization.
+
+Independent local download of the six published assets then PASSed API
+digests/sizes, all237 bundle checksums, all198 manifested files against frozen
+Git, identical external/embedded manifests, provisioner copies and CA identity.
+Bundle SHA256 `02b3aceeaa6b3e88a50b30c793c56ca3984fb97344bb7e21209cbcaa83735067`;
+manifest `9af8a58ef9bf40a99f98c0b0f9fefc860343250215226c101380481966ecaf19`;
+CA `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b`.
+Receipt: [idea083-release-20261019.json](../build/evidence/idea083-release-20261019.json).
+Handoff: [candidate README](../build/releases/idea083-c5be269/README.md).
+
+Keegan's exact-source release qualification/delivery slice is complete.
+Remaining: Keith protocol/affordability and measured profile/fee inputs;
+source/replay/native qualification, adopted/implemented #27 lifetime and exact
+#44 caps; coordinator/operator access, funding/opening reconciliation, preserving
+ledger setup, host install/bind/activation, actual stage timing/charges/ACK and
+signer provisioning/approved key session. Preserve the fixed trial end and all
+UNKNOWN reservations/latches; use another trial DB until version-switch support
+is reviewed. No AWS/host, wallet/key/funding, provider or receiver action occurred.
+The following evidence-only commit changes no manifested candidate file.
