@@ -398,11 +398,11 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 ## Housekeeping
 
 - [ ] **Keith:** confirm A-T15 on #25 (issuer IDs fixed in #78; the proof passes) so it can be closed.
-- [ ] **Keegan:** reconcile #98 with accepted mirror builds (PC-DEC01): organization Actions still fails on billing, so do not call billing fixed. Record whether #98 is retained or retired as not planned, and update trackers #22/#42 with actually completed work. 2026-10-19: current states and options are in [C12 reconciliation](C12_RECONCILIATION_20261019.md) (#22 9/18 closed, #42 17/22 closed, #49 a close candidate); Keegan's dispositions are pending.
+- [x] **Keegan:** reconcile #98 with accepted mirror builds (PC-DEC01). Done 2026-10-19: #98 closed as not planned, #49 closed as completed, current-state comments on #22/#42 ([C12 reconciliation](C12_RECONCILIATION_20261019.md)). Original item: organization Actions still fails on billing, so do not call billing fixed. Record whether #98 is retained or retired as not planned, and update trackers #22/#42 with actually completed work. 2026-10-19: current states and options are in [C12 reconciliation](C12_RECONCILIATION_20261019.md) (#22 9/18 closed, #42 17/22 closed, #49 a close candidate); Keegan's dispositions are pending.
 - [x] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`. Done: closed 2026-10-17.
 - [x] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92. Done: closed 2026-10-17.
 - [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.
-- [ ] **Keegan:** coordinate branch disposition (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them (all seven still exist on 2026-10-19; see [C12 reconciliation](C12_RECONCILIATION_20261019.md)):
+- [ ] **Keith:** decide `codex/pr-review-system-20261012` (keep, reopen or delete). Keegan's 2026-10-19 decision on the other six: the three Claude-session branches are deleted (SHAs in [C12 reconciliation](C12_RECONCILIATION_20261019.md)) and the other three are kept. Original item, Keegan, branch disposition (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them (all seven still exist on 2026-10-19; see [C12 reconciliation](C12_RECONCILIATION_20261019.md)):
 
   | Branch | Last commit by | Earlier PR | Decides |
   |---|---|---|---|

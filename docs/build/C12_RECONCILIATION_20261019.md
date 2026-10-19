@@ -29,7 +29,7 @@ The tracker's own checkboxes are all still unticked.
 | Open child | What remains |
 |---|---|
 | #44 WR02 signer approve caps | Keith B08 measured review, then Isaac B09 exact policy approval |
-| #49 WR07 release integrity | Repository side resolved (IDEA-049-D D-FND-011). Under PC-DEC01 the mirror-CI build is the release build: the `c5be269` bundle and manifest were built in mirror CI, and on 2026-10-19 the host check found runtime/manifest binding consistent (IDEA-055 RPC-H03). **Candidate to close; Keegan decides.** |
+| #49 WR07 release integrity | Repository side resolved (IDEA-049-D D-FND-011). Under PC-DEC01 the mirror-CI build is the release build; the step has been followed end to end. The mirror-built `bb46234` passed the production `bind_manifest` byte check on the host (PC-AWS07), and `c5be269`'s bundle and manifest were built and published in mirror CI. The current host build `ea25b52` is a documented local non-CI exception (PC-DEPLOY02), so the Oct19 binding check (IDEA-055 RPC-H03) is not #49 evidence. The next signed release goes through the CI path (C06). **Closed as completed 2026-10-19 (Keegan).** |
 | #55 WR13 stale marks | Keith decision (C03) |
 | #56 WR14 flatten split / top-up | Keith decision (C03) |
 | #60 WR18 memory limits | Isaac decides from measured routed-service memory (C05) |
@@ -47,19 +47,20 @@ do not describe billing as fixed.
 
 ## Seven retained branches
 
-All seven still exist on origin and have no open PR. Each needs keep, reopen
-or delete. Deleting is irreversible on GitHub, so it is done only after the
-owner's explicit answer.
+All seven existed on origin on 2026-10-19 with no open PR. **Keegan decided
+2026-10-19:** delete the three Claude-session branches whose PRs are closed and
+keep the other four. The full head SHAs of the deleted branches are recorded
+below so they can be restored.
 
 | Branch | Last commit by | Earlier PR | Head |
 |---|---|---|---|
-| `claude/gate-a-inputs` | Claude session | #89 (closed) | `a3f284f` |
-| `claude/issue31-day-roll-tests` | Claude session | #82 (closed) | `09c3ed6` |
-| `claude/issue59-systemd-runtime-dirs` | Claude session | #83 (closed) | `96a474d` |
-| `claude/local-ci-20261015` | Cookiemunchrr | none | `4cf9412` |
-| `docs/idea-052-timesfm-20261015` | Cookiemunchrr | none | `6a3a336` |
-| `codex/pr-review-system-20261012` | wtvlol | none | `3c837f7` |
-| `codex/thin-path` | Keegan | #10 (closed) | `c4a16ec` |
+| `claude/gate-a-inputs` | Claude session | #89 (closed) | `a3f284f139fd6d668b0bcde78014394e1f9db7ac` — **deleted 2026-10-19 (Keegan)** |
+| `claude/issue31-day-roll-tests` | Claude session | #82 (closed) | `09c3ed631310cc363cd5580380c111ccefe5bdeb` — **deleted 2026-10-19 (Keegan)** |
+| `claude/issue59-systemd-runtime-dirs` | Claude session | #83 (closed) | `96a474de20a535c5e6d9100b9fe8b1e108a5c62f` — **deleted 2026-10-19 (Keegan)** |
+| `claude/local-ci-20261015` | Cookiemunchrr | none | `4cf9412` — kept |
+| `docs/idea-052-timesfm-20261015` | Cookiemunchrr | none | `6a3a336` — kept |
+| `codex/pr-review-system-20261012` | wtvlol | none | `3c837f7` — kept; ask Keith |
+| `codex/thin-path` | Keegan | #10 (closed) | `c4a16ec` — kept |
 
 `wtvlol` is the GitHub account that posts Keith's updates on PR133 (for
 example the 2026-10-18 prerequisite comment), so Keith is the likely owner of
@@ -109,10 +110,15 @@ Q-item, GAP-42 and the checklist line in the same change.
 
 ## Decisions requested from Keegan
 
-1. #98: keep open, or close as not planned citing PC-DEC01.
-2. #49: close, citing PC-DEC01, the mirror-built `c5be269` manifest and the
-   Oct19 binding check, or keep open.
-3. Post a short current-state comment on #22 and #42 (counts and open
-   children above), or leave the trackers as they are.
-4. Disposition of each of the seven branches.
-5. Send the organiser message above (Keegan sends it; no agent does).
+Decided 2026-10-19 (Keegan):
+
+1. #98 closed as not planned, with a comment citing PC-DEC01, mirror run
+   39227766192 and the still-blocked billing.
+2. #49 closed as completed, with a comment citing D-FND-011, PC-DEC01,
+   `bb46234`'s host bind PASS (PC-AWS07) and the `c5be269` mirror release.
+   The current host's `ea25b52` is a non-CI exception and not #49 evidence.
+3. Current-state comments posted on #22 (9/18 closed) and #42 (18/22 closed
+   after #49).
+4. Branches as in the table above. Keith decides `codex/pr-review-system-20261012`.
+
+Still open: Keegan sends the organiser message above (no agent sends it).
