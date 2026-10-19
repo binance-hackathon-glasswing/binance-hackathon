@@ -686,3 +686,9 @@ release declarations to the merged B11/DEV-22 behavior and re-render the plan.
 No prompts, routing bytes, efforts, runtime decisions or adoption scope change.
 Pass criteria: register rendering/schema and release-register tests pass; the
 new corrected candidate, rather than def7700, must pass all exact-source CI jobs.
+
+AB-REL01 publication verifier criteria: reject a different source SHA and a
+failed CI job before any release upload. The publication-only branch changes
+no manifested candidate files and must download/check the original artifact
+inside the approved mirror if the cloud artifact redirect is inaccessible.
+A failed local download is not artifact verification or release acceptance.
