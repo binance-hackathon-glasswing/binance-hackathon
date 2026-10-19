@@ -34,10 +34,13 @@ There are two mutually exclusive supported configuration paths:
 | Path | Inputs / limits |
 |---|---|
 | Source-verified router | Complete verified source/ABI/deployment binding, independent source review and pinned RouterEvidence.v1 plus recorded-route checks. Source is still unavailable in the retained packet. |
-| Untrusted router (B02-U / DEV-23) | Explicit Isaac B09/#44 adoption and measured caps; named-reviewed live code/facet/allowance policy and hash; fresh layout/replay/preflight checks. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups; reverted-swap allowances and abnormal-fill accounting can block later work. |
+| Untrusted router (B02-U / DEV-23) | Isaac selected this trust direction in B09-TRUST01 (2026-10-19); measured B09/#44 caps and actual signing-policy acceptance remain; named-reviewed live code/facet/allowance policy and hash; fresh layout/replay/preflight checks. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups; reverted-swap allowances and abnormal-fill accounting can block later work. |
 
-The mode is not selected by this consolidation. Existing checked-in configs
-do not install an untrusted policy. Never label untrusted code source-verified,
+Isaac selected the untrusted-router trust direction after consolidation
+([B09-TRUST01](../ledger/IDEA-070.md#b09-trust01--isaac-selects-the-api-trusted-behavior-path-2026-10-19)).
+Verified source is not a prerequisite for this selected path. Existing checked-in
+configs do not install an untrusted policy; the real policy and numeric signing
+acceptance remain outstanding. Never label untrusted code source-verified,
 substitute a review name for actual acceptance, or turn readiness flags true.
 The old signer.json remains a historical source-path draft with unset bindings
 and pending caps. A selected untrusted configuration uses its own policy-file/hash
@@ -47,7 +50,7 @@ pair instead of router-evidence fields; both cannot be set together.
 
 | Owner | Next accepted result |
 |---|---|
-| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, quote/fee/gas/top-up coverage and #44 policy hashes; explicit untrusted-mode risk decision if selected. Historical fallback estimates do not qualify caps. |
+| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, quote/fee/gas/top-up coverage and #44 policy hashes; actual policy review/acceptance following the B09-TRUST01 trust decision. Historical fallback estimates do not qualify caps. |
 | Keegan + operator | #27 finite authority model, duration/margins and implementation/review using source/provider timing assumptions. The encoded long deadline still conflicts with short existing authority. |
 | Approved provider/operator + Isaac | Qualified canonical/native tracing or a separately reviewed supported scope; current reconciliation and funding/no-further-funding disposition. Balance-provider MATCH is not native settlement qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
