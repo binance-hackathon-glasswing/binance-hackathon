@@ -147,6 +147,15 @@ class RehearsalEvidenceTests(unittest.TestCase):
         self.packet['gates'][0]['artifacts'].append(self.artifact.copy())
         self.assertIn('DUPLICATE_ARTIFACT', self.result()['results'][0]['reasons'])
 
+    def test_input_special_files_and_symlinks_refused_without_blocking(self):
+        import os
+        pipe = self.root/'input-pipe'
+        os.mkfifo(pipe)
+        with self.assertRaises(gates.Refused): gates.load(pipe)
+        link = self.root/'input-link'
+        link.symlink_to(self.file)
+        with self.assertRaises(OSError): gates.load(link)
+
     def test_empty_and_oversized_artifacts_refused(self):
         self.file.write_bytes(b'')
         self.assertFalse(self.result()['packet_complete'])

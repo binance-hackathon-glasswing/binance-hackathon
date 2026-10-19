@@ -40,7 +40,11 @@ def unique(pairs):
 
 
 def load(path):
-    with open(path, 'rb') as stream:
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, 'rb') as stream:
+        metadata = os.fstat(stream.fileno())
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_JSON:
+            raise Refused('INPUT_FILE_REFUSED')
         data = stream.read(MAX_JSON + 1)
     if len(data) > MAX_JSON:
         raise Refused('INPUT_TOO_LARGE')
