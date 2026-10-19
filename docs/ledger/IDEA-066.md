@@ -2127,3 +2127,43 @@ written before validation:
 No AWS, real provider/receiver call, wallet, signing, funding, installation or
 policy acceptance is authorized or needed by this audit. Keegan reviews IQ02;
 account/measurement owners supply remaining facts separately.
+
+
+### IQ02 results — audited metadata source037b632, 2026-10-19
+
+PASS: fifteen discrepancy rows in existing plan.md §6.5 map submitted claims,
+implemented/dated adopted behavior, source links, register disposition and remaining
+owner/evidence. Coverage includes all22 deviation IDs plus service/proposal
+claims without a settled new row. Corrected stale trained-model/planner status,
+G-22/G-29 values, dated S1 versus equal-weight scope, F-124 restart/F-120
+bootstrap descriptions, original60s proposal attribution, AWS Sydney and the
+scope of historical model responses. No pending numeric S1 setting is adopted.
+DEV19 distinguishes implemented/offline-tested caps from new exact-host checks.
+IDEA083 routing is not changed or requalified by this audit.
+
+Metadata was committed/pushed at9f099c5 before its renderer ran; final register
+correction8b739d1 was also pushed before rendering. Canonical output pushed at
+037b632 before final focused tests. `tools/render_deviations.py --check` PASS.
+Existing `tests.runtime.test_release_register` and
+`tests.runtime.test_final_review_d.LiveActivation`: **9 tests PASS, 0 skips**
+(1.287s), Python3.12.14 using pinned test dependencies and disposable loopback
+PostgreSQL14.24 at127.0.0.1:55451/larp_test. This verifies exact proposal quotes,
+ID resolution, services, renderer, manifest hash refusal, version-event replay,
+and live OPEN/DRAFT activation refusal. Local test PostgreSQL removed afterward.
+
+Static checker /private/tmp/verify-larp-iq02-20261019.py PASS: fifteen findings,
+all22 unique rows still DRAFT, only DEV18/20 decision OPEN, all original declared
+quotes/dates/statuses preserved and all service statuses/selection scopes
+preserved. All30 added local links/anchors resolve; application/tests/tools/deploy/
+migrations/workflows/vendor/official/submitted-proposal files unchanged from
+c2839fd. Whitespace and conflict-marker checks PASS. Full-suite CI, new release
+assembly and actual-host acceptance were not run or inferred.
+
+GAP02/GAP62 remain open, narrowed to Keegan review, team/exact-profile decisions,
+new S1 deviation rows upon adoption, operations/planner scope, account rights,
+external measurements/host/rehearsal evidence and final register review. Isaac
+C05 remains a separate ready review, unstarted here. No AWS, wallet/key, funding,
+signing, paid model, actual receiver or installation operation occurred. Both
+register hashes changed: oldc5be269 artifacts/CI/host observations keep only
+their original scope. A future reviewed release/manifest must include accepted
+metadata and receive its own required checks before installation.
