@@ -443,3 +443,15 @@ Prospective acceptance:
   duplicate keys/gates, path escape, symlinks, malformed timestamps and overwrite
   refusal. Commit/push implementation before execution; targeted tests suffice
   for this independent offline utility. Live outcomes remain NOT_RUN.
+
+RG-02 results at `0ca9621262cd32cc405a568c9e70a7303e4749da`: PASS,
+`python -m unittest tests.runtime.test_rehearsal_evidence -q`, Python3.12.14,
+14 tests,0 skips,0.043s. Initial11 tests passed at0628f62; added CLI completeness/
+refusal distinctions and special-file input checks passed at the final source.
+PASS all7 local packet links and `git diff --check`. Source was pushed before
+execution. Tests use synthetic claims/artifacts only and explicitly retain
+host_results_verified=false, gate_c_accepted=false, signing_enabled=false even
+for complete packet indexes. No application path changed and no host/runtime
+suite or new original release qualification was run. All live C09/C10 drill
+results remain NOT_RUN. A01 wording and the handoff now acknowledge the user's
+resolved account-owner details while retaining actual access/evidence requirements.
