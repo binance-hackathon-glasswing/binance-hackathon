@@ -97,3 +97,14 @@ full holdings/top-up/fee quotes, #44 acceptance, #27 finite policy/code/timing,
 and the operator's signed run/release/DB/CA bindings. See the checklist's current
 PC-SIGNER-ASSEMBLY01 owner rows. The old draft stays unchanged/uninstallable;
 all generated reports keep installation/signing/Gate B false. No AWS or keys.
+
+
+PC-CONT01 update (2026-10-19): PR184's offline assembler is independently reviewed
+and merged into PR133 (SA-RV01:194 tests/349 subtests, no skips); real assembly is
+still NOT_RUN_MISSING_INPUTS. PR183 is merged into integration and its evidence
+is reconciled here: original candidatec5be269 is published/qualified under
+AB-REL01. See PRE_TRADING_CHECKLIST.md PC-CONT01 and the candidate release README.
+The frozen release predates the new assembler; run that preparation tool from
+the reviewed checkout when real inputs arrive. Host installation, preserved
+ledger state, actual timing/charges/ACK, numeric/source/native/#27/#44 and the
+approved signer session remain separate. No host or key action occurred.

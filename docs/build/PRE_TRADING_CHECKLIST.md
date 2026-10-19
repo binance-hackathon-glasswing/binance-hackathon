@@ -604,3 +604,26 @@ installation/signing/Gate B flags false. Key placement remains restricted to
 Yao's approved signer session. No AWS, wallet/key, provider/model/receiver live
 action, funding, signing or installation occurred. Details: IDEA-066
 PC-SIGNER-ASSEMBLY01 and IDEA-049-C SA-01 in PR184.
+
+
+### Current completed preparation — PC-CONT01 (2026-10-19)
+
+- [x] PR184 independently reviewed and merged into this tracker at851c251.
+  SA-RV01 source review and PostgreSQL suite:194 tests/349 subtests/0 skips PASS.
+  No code defect found; real assembly remains NOT_RUN_MISSING_INPUTS.
+- [x] PR183 release declarations and evidence reconciled into this tracker.
+  Original candidatec5be269 is published and qualified (AB-REL01): all4 jobs,
+  2091 tests/3324 subtests,6 expected skips, separate real systemd5/5; original
+  assets independently verified. Its exact source predates the offline assembler;
+  do not attribute later combined-tree checks or new files to that frozen release.
+- [ ] Coordinator/operator: install/bind/qualify the approved exact candidate,
+  preserving the ledger/UNKNOWN charges and trial cutoff; record real timing/ACK.
+- [ ] Real signer candidate: obtain the source/native/route evidence, measured
+  profile/fresh full holdings/fees/quotes, exact #44 approval, #27 adopted bounds
+  and implementation/timing, and selected signed run/build/DB/CA/manifest inputs.
+  Assembly and key placement remain gated; no new values are inferred here.
+
+The two reconciliation conflicts were documentation only: retain the tracker’s
+newer strategy/prompt/backup and signer-preparation records, and the release’s
+newer IDEA083 qualification. Full combined-tree acceptance follows under
+IDEA-066 PC-CONT01. Host access/private input handoff remains missing.
