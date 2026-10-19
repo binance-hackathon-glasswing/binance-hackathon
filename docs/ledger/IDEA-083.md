@@ -660,4 +660,6 @@ pushed directly to PR179's branch (`859f097..3dfddde`, Keegan's session, 05:35â€
 conflict. **User decision: land Isaac's PR181.** Keegan's nine commits are reverted in one revert commit (no history
 rewritten; they remain in Git for comparison) and the reverted tree equals `ba5095f`. Then this branch, which
 contains PR181 and the INT01 fixes, is merged on top together with the current `codex/system-testing-20261012`
-(`26b93fe`, clean merge). The full suite is re-run on that merged tree before PR179 is merged; the result follows.
+(`26b93fe`, clean merge). Full suite on that merged tree (`43d3346`, same environment as above): **2087 passed,
+10 skipped (same environment skips), 3324 subtests, 0 failed** (598 s). PR179 is then merged into
+`codex/system-testing-20261012`; PR180 and PR181 are merged by inclusion.
