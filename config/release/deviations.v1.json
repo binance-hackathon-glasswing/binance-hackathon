@@ -288,15 +288,15 @@
    "id": "DEV-20",
    "area": "Event planner",
    "declared": "an event-calendar planner,",
-   "v1_behaviour": "OPEN: the submitted per-class macro/earnings event-calendar planner is not built. Session/execution and terminal schedules do not implement it. PC-OPS01 proposes an explicit omission; IDEA-075 O5 and final scope/declaration acceptance remain pending.",
-   "reason": "The old adopted-planner status was stale. The current omission proposal is not acceptance; keep this row OPEN until the owner decides scope and records the reason.",
+   "v1_behaviour": "Omitted: no per-class macro/earnings event-calendar planner ships. In the existing S1 limiter the SCHEDULED_EVENT evidence class alone cannot cut exposure; IDEA-075 O5 stays a separate decision. The frozen session/execution windows, the terminal schedule and every market, terminal and execution-window safety gate stay in force; they are not presented as a planner.",
+   "reason": "Decided 2026-10-19 by Keegan, accepting the PC-OPS01 recommendation: a planner needs a trusted event source with provenance, per-class action/freshness/window rules, conflict precedence, replay/audit fields and tests, which cannot be built and qualified before the Oct 22 decision cut. Final declaration wording and FINAL status follow at C10 with the other rows.",
    "evidence": [
     "GAP-64",
     "IDEA-018",
     "IDEA-075",
     "IDEA-066"
    ],
-   "decided": "OPEN",
+   "decided": "2026-10-19",
    "status": "DRAFT"
   },
   {

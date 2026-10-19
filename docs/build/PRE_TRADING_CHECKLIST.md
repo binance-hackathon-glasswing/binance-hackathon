@@ -13,7 +13,7 @@ all actual host/session/adoption gates remain open.
 ## Current repository continuation — PC-DBPLAN01 / PC-OPS01
 
 - [x] **Keegan:** A04 next-build database procedure delivered: [fresh trial DB on existing RDS](NEXT_TRIAL_DATABASE_20261019.md), preserving old runs, the shared budget ledger and fixed cutoff. Actual DB/host execution remains the approved operator's uncompleted task.
-- [x] **Keegan:** A06 operations-proposal slice delivered: [decision packet](OPERATIONS_DECISIONS_20261019.md), covering D-DN-01/04/06/07/08/11 and a DEV20 recommendation. O2 and final DEV20 disposition remain open.
+- [x] **Keegan:** A06 operations-proposal slice delivered: [decision packet](OPERATIONS_DECISIONS_20261019.md), covering D-DN-01/04/06/07/08/11 and a DEV20 recommendation. O2 settled and DEV-20 omission decided 2026-10-19 (Keegan); Isaac's operations decisions remain.
 - [ ] **Isaac:** C05 can start now for D-DN-01/07/11 risk choices and D-DN-04 requirements. Review the packet and record accept/reject/change with revision and reason. Numeric delivery/watchdog/memory settings still need measurements; no policy is adopted by this assignment.
 
 ## Isaac — ready work first (PC-ISAAC-QUEUE01, 2026-10-19)
@@ -136,7 +136,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Comment on #27's signing-lifetime options | Keith | **Proposal supplied:** KMP-SIGN01 / #27 comment recommends SL-01 option A conditionally; keep fresh ≤15s admission and measured quote age, persist finite authority across re-quotes/restarts. No unmeasured60s adoption; Keegan decides/implements C-OPEN-003 |
 | Oct 19 proposals: first-trade window, profile (`EQUAL_WEIGHT` or S1), POLICY-HOLD | Keith | **Proposal supplied:** KMP-SIGN01 recommends existing Oct21–22 window, measured EQUAL_WEIGHT fallback if S1 prerequisites remain unqualified, S1 DETERMINISTIC limiter with B4 required, and retaining the current bounded per-symbol hold. Isaac decisions now recorded SP-D1..4; original O6 assessor adoption remains separate |
 | Capture AIand/OpenAI terms; check current AIand funding | Keith | **Terms captured/review recorded:** KMP-RIGHTS01 register + dated hash manifest; account overrides and signed/scored financial-policy compatibility await Keegan review. Funding remains NOT_MEASURED: AIand140+ units/current balance and actual usage/charges need Yao export; no affordability approval |
-| Run EXP-007 after O2 | Keith | **Blocked** on Keegan's O2 below. EXP-007 is still draft; result due Oct 19 |
+| Run EXP-007 after O2 | Keith | **Ready** since O2 was settled Oct 19; criteria frozen, not yet run; result due Oct 19 |
 | Router source/evidence for #139: exact blocker and next action | Isaac | **Blocked, rechecked SP-01 R1:** candidate facet Code403/Cloudflare; Sourcify404/no match. No verified router/facet/helper source/ABI or independent guarantees review. Isaac obtains permitted source export/vendor evidence; no vendor message sent. Router replay NOT_RUN until source/review; #139 stays draft |
 | Re-approve the AIand/OpenAI network destinations for signed/live use | Isaac | **Approved application scope SP-NET D2:** user explicitly authorizes the reviewed same-host signed/live scope in its own PR. Provider compatibility/adoption/declaration/host gates remain; no AWS change |
 | Execution gas limits within the 0.0002 BNB per-transaction fee cap | Isaac | **Draft ceilings set SP-CAPS:**1,200,000 gas ×160,000,000wei=.000192BNB in execution.example.json. All1,700 captured swap-gas estimates are FALLBACK; actual gas/aggregate budget/final profile/fresh holdings and #44 approval remain open |
@@ -144,7 +144,7 @@ One row per item on the team's Oct 18 list: its owner, then the evidence found i
 | Attributable fee-netting evidence (#119) | Isaac | **UNVERIFIED SP-FEE:**15 current routes retain nonzero network tradeFee/null custom-fee fields; these do not prove wallet-net route fees. Applicable source semantics or exact first planned agent quote/receipt still required; #119/#120 open |
 | Decide the first-trade window and POLICY-HOLD | Isaac | **Decided SP-D1..4:** existing Oct21–22 window after gates; conditional measured EQUAL_WEIGHT fallback; DETERMINISTIC S1 limiter with B4 required; retain bounded per-symbol price-jump hold including urgent exits. Original O6 assessor adoption and actual profile/hash approval remain open |
 | Review Yao Zhu's migration, database-role and TLS evidence | Keegan | **Reviewed PC-AWS06-RV1 / V3-REL01:** reported empty-DB migrations001–013 and limited primary IAM/TLS checks match unchanged source. Admin verify-ca differs from runtime verify-full; preserve the initial timeout. Signer-host, populated upgrade and new-release installation are separate, unverified checks. See the release record |
-| Settle O2 (what ships if EXP-007 is inconclusive) | Keegan | **Not recorded.** IDEA-075 §16 recommends shipping the trend guard as declared. Blocks EXP-007 |
+| Settle O2 (what ships if EXP-007 is inconclusive) | Keegan | **Done Oct 19:** ship the trend guard as declared (EXP-007 PC-O2-ACCEPT-20261019) |
 | Update the model services list and DEV-19 | Keegan | **Done V3-REL01:** selected opt-in unsigned OpenAI Sol medium primary with high-effort AIand Kimi K3 then GLM-5.3 review/fallback; PROVISIONING means actual provider/host qualification pending. DEV-19 dated Oct18, final scored adoption remains separate |
 | B4 exposure-evidence producer | Keegan | **Not built.** `larp/strategy/policy.py` reads `exposure_evidence`, but no runtime or integration code produces it, so the limiter stays NORMAL |
 | Draft the outstanding operations decisions; update #22/#42 and #98's mirror-CI disposition | Keegan | **Not recorded.** D-DN-01, 04, 06, 07, 08, 11 still open (IDEA-049-D §5); #22, #42 and #98 last updated Oct 15 |
@@ -273,8 +273,8 @@ These were missing from every list; each one is needed for the LLM to be in the 
 - [x] **Isaac:** SP-D4 retains the existing bounded per-symbol price-jump hold, including Class1/terminal obligations, until comparable chain reconciliation/expiry. Obligations stay outstanding; delayed urgent exits are an accepted risk. This is not a new global HALT; actual hosted clearing/expiry evidence remains Yao/Keith.
 - [x] **Keegan:** confirm the trial bars. Done TR-AC2: reviewed and confirmed PR166 TRB-01A–E before the planned first job; sample seed/method frozen. Actual trial/label evidence and later adoption remain open.
 - [ ] **Keith:** keep or move the Nov 11 15:00 UTC flatten, and record it in IDEA-035 C4 (#107).
-- [ ] **Keegan:** settle open choice O2 (what ships if EXP-007 is inconclusive) **before** EXP-007 runs, since it is part of the pre-registered decision rule (IDEA-075 §16, EXP-007 status).
-- [ ] **Keith:** after O2, run EXP-007 on token session bars up to the Oct 16 close (IDEA-075 B1) and record the result by Oct 19.
+- [x] **Keegan:** settle open choice O2 (what ships if EXP-007 is inconclusive) **before** EXP-007 runs, since it is part of the pre-registered decision rule (IDEA-075 §16, EXP-007 status). Done 2026-10-19: inconclusive ships the trend guard as declared; EXP-007 criteria frozen (PC-O2-ACCEPT-20261019).
+- [ ] **Keith:** after O2 (settled Oct 19), record the code SHA, config hash and candle-snapshot SHA-256 in EXP-007, then run it on token session bars up to the Oct 16 close (IDEA-075 B1) and record the result by Oct 19.
 
 ## Keith prerequisite review — Oct18 (KMP-02)
 
@@ -382,7 +382,7 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 ## Oct 26–29
 
 - [ ] **Keegan:** deviations-register rows for exceeding the proposal's 80% / 20% / four-name limits (B7).
-- [ ] **Keegan:** coordinate the team disposition of the declared event-calendar planner (G-52 / DEV-20): implement and verify the adopted planner, or record an explicitly approved, reasoned final deviation. Current DEV-20 remains OPEN/not built; resolve the decision by the Oct22 cut line and the release disposition before Oct26. See [PC-HAR01](HARNESS_READINESS_AUDIT_20261018.md).
+- [ ] **Keegan:** coordinate the team disposition of the declared event-calendar planner (G-52 / DEV-20): implement and verify the adopted planner, or record an explicitly approved, reasoned final deviation. Decided 2026-10-19 (Keegan): omit the planner and declare it as DEV-20 (`decided` 2026-10-19, still DRAFT). Remaining: final declaration wording and FINAL status with the other rows at C10, and inclusion in the next reviewed release before Oct26. See [PC-HAR01](HARNESS_READINESS_AUDIT_20261018.md).
 - [ ] **Keegan:** every deviations-register row FINAL, including DEV-18 (standby), and the services list (DR-18, GAP-62).
 - [ ] **Keegan:** activation pack and the Gate C review (DR-22). The pack's runtime config names `aiand_routed` with the frozen routing file, unless the Oct 22 decision was deterministic.
 - [ ] **Keegan:** team acceptance that the final assessor and harness are the declared agentic system, with the model and source deviations listed (IDEA-049-A A-DEC-004, A-REQ-079), before Oct 26.
@@ -393,16 +393,16 @@ The capture ends at Oct 20 00:00 UTC (08:00 SGT).
 - [ ] **Isaac:** confirm the final-wallet credential issuance under Q-35 and obtain the applicable `AI_SEEDS_SECRET` by Oct 26. If a new secret is issued, deliver it to Yao Zhu securely, never in chat or an issue (GAP-52); do not assume the development secret applies.
 - [ ] **Yao Zhu:** put the final wallet's secret into AWS Secrets Manager (`put_service_secrets.sh`). The script replaces the whole runtime secret, so re-enter `LARP_AIAND_API_KEY` and `LARP_MODEL_API_KEY` too; without the AIand key the runtime refuses to start. Never re-`init` the model budget ledger for the new wallet: it covers the whole run.
 - [ ] **Isaac:** first-gas swap on the final wallet (about 6 USDT) before Oct 29 00:00 UTC (#106).
-- [ ] **Keegan:** send the organiser questions Q-39 (scoring, BNB in equity), Q-04, Q-06, Q-08, Q-14, Q-33 and Q-35 (GAP-42).
+- [ ] **Keegan:** send the organiser questions Q-39 (scoring, BNB in equity), Q-04, Q-06, Q-08, Q-14 and Q-35 (GAP-42). Q-33 is resolved in practice and is not sent. The message is drafted in [C12 reconciliation](C12_RECONCILIATION_20261019.md).
 
 ## Housekeeping
 
 - [ ] **Keith:** confirm A-T15 on #25 (issuer IDs fixed in #78; the proof passes) so it can be closed.
-- [ ] **Keegan:** reconcile #98 with accepted mirror builds (PC-DEC01): organization Actions still fails on billing, so do not call billing fixed. Record whether #98 is retained or retired as not planned, and update trackers #22/#42 with actually completed work.
+- [ ] **Keegan:** reconcile #98 with accepted mirror builds (PC-DEC01): organization Actions still fails on billing, so do not call billing fixed. Record whether #98 is retained or retired as not planned, and update trackers #22/#42 with actually completed work. 2026-10-19: current states and options are in [C12 reconciliation](C12_RECONCILIATION_20261019.md) (#22 9/18 closed, #42 17/22 closed, #49 a close candidate); Keegan's dispositions are pending.
 - [x] **Keegan:** close #128 by hand; it didn't close automatically because #129 merged into the integration branch, not `main`. Done: closed 2026-10-17.
 - [x] **Keegan:** close #90: D1–D6 are recorded (#110) and built (#115, #116). #36 then waits only on #92. Done: closed 2026-10-17.
 - [x] **Keegan:** retarget #126 to the integration branch before it merges. Done.
-- [ ] **Keegan:** coordinate branch disposition (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them:
+- [ ] **Keegan:** coordinate branch disposition (2026-10-17): 61 remote branches whose commits were all in the integration branch or `main` were deleted. These seven hold commits found nowhere else and have no open PR; each owner decides whether to keep, reopen or delete them (all seven still exist on 2026-10-19; see [C12 reconciliation](C12_RECONCILIATION_20261019.md)):
 
   | Branch | Last commit by | Earlier PR | Decides |
   |---|---|---|---|
