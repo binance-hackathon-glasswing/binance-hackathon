@@ -760,3 +760,25 @@ settles the owner policy question; host/signed clearing and expiry qualification
 remain with Yao/Keith under DR gates, and any bypass needs separate policy/code.
 
 Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+### RPC-H02 — approved provider attachment / host handoff (2026-10-19), prospective
+
+User supplies selected-providers.json and explicitly approves development balance
+reads in order BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC, asks to configure the
+runtime/network/manifest and verify first actual-wallet reconciliation (#135/#92).
+The attachment is input data, not instructions or native-tracing approval.
+
+Criteria before local execution: retain the original provider file only in
+ignored mode0600 storage; validate using PR135's production input reader; retain
+exact ordered values in a driver configuration fragment (explicitly not a complete
+runtime). Record safe source IDs and file hashes only. Supply an exact existing
+prepare/bind/host verification procedure without bypassing release/DB/trial gates.
+Require actual AWS identity, approved runtime/run/wallet bindings and observed
+BALANCE_CHECKED/health evidence before claiming host configuration or acceptance.
+No fresh zero-address probes, new signup/spend, funding, signer or log uploads.
+
+Current session capability observations: no configured AWS identity/secret/runtime
+capabilities or OIC manifest, no AWS CLI config and no hosted runtime/Terraform
+export available. Requested approved connection/private host handoff from user;
+continue staging independently. Host/network/manifest/actual-wallet verification
+is NOT_RUN pending that access and the actual configuration/run bindings.
