@@ -185,6 +185,52 @@ ordered; both added/changed local Markdown links resolve; the ledger and GAP-34 
 acceptance and Keegan's ownership; `git diff --check` passes. Only three documentation files changed; no
 application suite, paid-provider request, deployment or new runtime acceptance was performed for this correction.
 
+
+## IR180-RV01 — Reconcile the runtime review with the current design (2026-10-19)
+
+PR180 was written against `5557824`; PR179 subsequently advanced to `adfa58d`.
+The earlier IR179 review below is retained as a dated review of its stated baseline.
+The current B7/B11 and AB1/AB2/AB7/AB11/AB12 above, corrected in PR179-RV01,
+supersede its requests to resolve those design ambiguities. They do not constitute
+implementation or runtime acceptance.
+
+- IR179-02/04: the design now requires serialized journal writes, retained worker
+  ownership, explicit assessed-primary dissent versus fallback, preserved primary
+  content/provenance and a recomputed outer result ID. Implement and verify these
+  contracts; no further identity-policy decision is required to begin that work.
+- IR179-01/07: freeze the semantic verdict at the stage/decision cutoff, but retain
+  every real worker (including a timed-out primary) through durable late writes.
+  Deferred RESULT/ERROR, readiness, ACK and replacement admission wait for all
+  owned workers. Independent reviewer dispatch must not wait for primary drain.
+  A permanently hung worker can keep the lane unavailable; the safety thread
+  must continue. A bounded verdict is not a bounded drain or a deliverable result.
+- IR179-03/05/06/08 remain implementation obligations: pre-dispatch tool limits,
+  absolute deadlines including overhead, conservative UNKNOWN accounting and
+  composite cycle measurements. Late actual-cost reconciliation remains a
+  separate open policy/implementation question; the current maximum stays charged.
+- Determinism in B4/AB3/AB15 means identical selected semantic content, status,
+  reasons, review outcome and ordered stage identities for the same stage inputs.
+  Compare both arrival orders using fixed per-stage inputs and timestamps. Actual
+  latency, audit arrival order and raw I/O may differ between real executions;
+  preserve that evidence and recompute each full result digest rather than
+  forcing byte-identical telemetry or reusing another execution's result ID.
+
+Prospective document checks: preserve both dated reviews and the current B/AB
+contracts; verify unique B1–B11 and AB1–AB15 rows; confirm the cited worker,
+journal, routing, provider, accounting, consumer and runtime boundaries against
+application `ea25b52`; check the three-file documentation scope, conflict markers,
+whitespace and ledger/backlog consistency. No new application test result is
+claimed. The earlier 129-test result is attributed baseline evidence only.
+
+IR180-RV01 document verification **PASS**: all 11 B rows and 15 AB rows are
+unique and ordered; the corrected base design and both historical review records
+are preserved; source inspection confirms the cited boundaries; the resulting
+change is limited to the three documentation files, with no conflict markers or
+whitespace errors. Ledger/backlog wording now points to the resolved design and
+remaining implementation work. Shell Git network access was unavailable, so the
+exact source/documents were read and the history-preserving merge prepared through
+the GitHub connector. No application suite was rerun for this documentation change.
+
 ## IR179-RV01 — Isaac runtime review: prospective verification (2026-10-19)
 
 Requested scope: Isaac reviews runtime timing/concurrency; Keegan retains
@@ -604,7 +650,14 @@ touched test files passed 10 consecutive runs together (104 tests, 315 subtests 
 cloud container, Python 3.12, venv from `deploy/requirements-test.lock` (installed without `--require-hashes`,
 because the lock lacks a hash for psycopg 3.3.6), disposable PostgreSQL 16 on 127.0.0.1:55448 (not the pinned 14.24
 image), disposed after the run. Prompts, efforts, budgets, B11 and the routing file `a5fca50a…` are unchanged by
-INT01. GitHub CI not run (#98). Merge order: PR181 → PR180's branch, this branch → PR179's branch (PR180 merged by
-inclusion), PR179 → `codex/system-testing-20261012`. This is a code review and local acceptance only: Linux/systemd/
+INT01. GitHub CI not run (#98). This is a code review and local acceptance only: Linux/systemd/
 restricted-worker/original-bundle release qualification, Keith's protocol/affordability review and host deployment
 remain open as listed in AB-IMPL01.
+
+PR179-INT01 merge (2026-10-19, after the PASS above). While this review ran, PR180 was merged into PR179's branch
+(`ba5095f`, adding Keegan's IR180-RV01 notes, kept above) and a second, independent IDEA-083 implementation was
+pushed directly to PR179's branch (`859f097..3dfddde`, Keegan's session, 05:35–05:49 UTC). The two implementations
+conflict. **User decision: land Isaac's PR181.** Keegan's nine commits are reverted in one revert commit (no history
+rewritten; they remain in Git for comparison) and the reverted tree equals `ba5095f`. Then this branch, which
+contains PR181 and the INT01 fixes, is merged on top together with the current `codex/system-testing-20261012`
+(`26b93fe`, clean merge). The full suite is re-run on that merged tree before PR179 is merged; the result follows.
