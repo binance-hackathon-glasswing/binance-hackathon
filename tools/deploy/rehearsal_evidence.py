@@ -48,7 +48,10 @@ def load(path):
         data = stream.read(MAX_JSON + 1)
     if len(data) > MAX_JSON:
         raise Refused('INPUT_TOO_LARGE')
-    return json.loads(data, object_pairs_hook=unique)
+    try:
+        return json.loads(data, object_pairs_hook=unique)
+    except RecursionError:
+        raise Refused('INPUT_NESTING') from None
 
 
 def identity_valid(value):
@@ -110,7 +113,8 @@ def record_reasons(row, expected, root_fd):
     refs = ('operator', 'reviewer', 'procedure_ref', 'approval_ref', 'review_ref')
     if any(type(row[k]) is not str or not row[k].strip() for k in refs):
         reasons.append('ATTRIBUTION_REQUIRED')
-    if row['operator'] == row['reviewer']:
+    if any(type(row[k]) is not str for k in ('operator', 'reviewer')) or (
+            row['operator'].strip().casefold() == row['reviewer'].strip().casefold()):
         reasons.append('INDEPENDENT_REVIEW_REQUIRED')
     try:
         if utc(row['ended_at_utc']) < utc(row['started_at_utc']):
