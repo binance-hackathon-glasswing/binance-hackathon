@@ -732,3 +732,30 @@ selected measured profile/fresh holdings/quotes, exact #44 acceptance, #27
 policy/code/timing and coordinator/operator run/release/DB/CA/session inputs.
 An arbitrary decided cap_basis string is an operator assertion, not proof of
 Isaac's approval. The tool must never manufacture approval or replace these gates.
+
+SA-01 results at pushed runtime **a324fb71bb26fcf863315a4dfb5e9ee7202f530e**:
+
+- Initial RED17bd49e: collection refuses the absent assembly module, as expected.
+  No candidate assembler existed. Log: /private/tmp/larp-signer-assembly-red-20261019.log.
+- Initial GREEN8fe5175:192 tests/349 subtests PASS,0 skips,22.15s with PostgreSQL.
+  Additional filesystem REDa34ccab:1 failed/10 passed/7 subtests; dangling output
+  symlinks were followed before resolution. Fixed before delivery by checking
+  symlink identity before resolving. No runtime signer behavior was changed.
+- Final: **194 passed,349 subtests,0 skipped**,21.66s. Pinned Python3.12.14 and
+  PostgreSQL14.24 disposable loopback container. Suite: tests/signer plus
+  execution tests caps_review, signer_caps_proposal, router_decoder/router_review/
+  router_wiring, section_c_signed_state, signing_request; runtime tests
+  service_configs, signed_models and model_routing_preparation.
+  Log: /private/tmp/larp-signer-assembly-final-20261019.log.
+- Eleven new assembler tests exercise exact bindings/hashes, independent signer
+  role and local validation, numeric/refreshed quote refusals, pending caps,
+  changed CA/router/pins, incomplete source evidence, local DSN and unsafe run
+  refusal, private non-overwrite/symlink/checkout boundaries, partial-write cleanup
+  and private-error redaction. Boundary mocks assert no DB/AWS/key/network calls.
+  Existing policy malicious-intent, epoch/release authority and startup tests pass.
+
+Real candidate assembly **NOT_RUN_MISSING_INPUTS**. No numeric cap approval,
+source provenance/replay, #27 decision/code, host/release or Gate B claim follows
+from these synthetic tests. No AWS, external RPC/model/receiver, wallet-key,
+funding or broadcast operation. The original draft is unchanged; the new command
+and precise owner dependencies are in SIGNER_INSTALLATION_PREPARATION.md.

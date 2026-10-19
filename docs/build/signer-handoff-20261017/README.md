@@ -83,3 +83,12 @@ must not be installed/activated as one. No private key belongs in the handoff.
 The next coordinator/operator supplies run/release/DB/CA assembly values after
 the policy/source decisions; the previously approved key-session gate remains.
 No host, AWS, wallet/key, provider or receiver action occurs in this check.
+
+## Offline assembly follow-through — SA-01 (2026-10-19)
+
+The [installation preparation procedure](../SIGNER_INSTALLATION_PREPARATION.md)
+now supplies `python -m larp.signer.assembly`. Once the real pinned numeric,
+execution/CA/router inputs exist, it builds a new key-free configuration candidate
+and exact-hash report using the production validators. It does not edit this
+historical draft, invent missing inputs or approve installation. All #27/#44,
+source/native/host/release and approved signer-session gates remain explicit.
