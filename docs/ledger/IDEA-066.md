@@ -2100,3 +2100,7 @@ This is not an executed test failure or CI PASS. IQ01 is documentation-only,
 retains its passing static checks and does not claim a new runtime suite,
 mirror release, host acceptance or billing resolution. PR133's description now
 links PR185 as delivered with Keegan review pending and retains IQ02/C05 status.
+
+## IQ01-RV01 — independent review of PR185 (2026-10-19)
+
+Criteria before verification: all22 original DR requirements/gate stages preserved; each mapped control and remaining proof accurately scoped; no circular first-signed-receipt precondition, implicit policy adoption, host readiness or CI transfer; local targets/source references/whitespace valid; runtime/config/tools unchanged. Review accepts the mandatory-component/cut-line inventory as the GAP05 repository deliverable; all actual DR acceptance rows remain open. IQ02 is reviewed separately.

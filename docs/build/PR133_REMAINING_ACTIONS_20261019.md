@@ -19,7 +19,7 @@ Use the [live checklist](PRE_TRADING_CHECKLIST.md),
 
 Isaac delivered **IQ01 activation-blocker matrix** in
 [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19);
-Keegan review/GAP-05 closure remain pending. **IQ02 declaration consistency audit**
+IQ01-RV01 accepts the repository matrix; GAP-05 is closed. **IQ02 declaration consistency audit**
 is the next assigned repository task and remains unstarted. Both use committed
 repository inputs without the blocked execution prerequisites. Exact scope, deliverables
 and Keegan review requirements are in the [ready queue](PRE_TRADING_CHECKLIST.md#isaac--ready-work-first-pc-isaac-queue01-2026-10-19).

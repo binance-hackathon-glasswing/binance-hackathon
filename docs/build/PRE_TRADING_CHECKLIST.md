@@ -18,8 +18,7 @@ If a deliverable already exists, link and review it rather than create a duplica
   [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19)
   maps all22 DR requirements to current controls, evidence and remaining owners;
   mandatory controls, optional scope and staged acceptance are explicit. Static
-  source/link/gate checks pass; results in IDEA-066 IQ01. Keegan reviews before
-  GAP-05 closes. No missing external acceptance or policy decision is inferred.
+  source/link/gate checks pass; results in IDEA-066 IQ01. IQ01-RV01 accepts the repository matrix; GAP-05 is closed. No missing external acceptance or policy decision is inferred.
 - [ ] **Isaac — IQ02, start after IQ01: declaration consistency audit (GAP-02/GAP-62).**
   Cross-check `../proposal/proposal_answers.md`, current adopted plan decisions,
   `../../config/release/deviations.v1.json` and `../../config/release/services.v1.json`.
