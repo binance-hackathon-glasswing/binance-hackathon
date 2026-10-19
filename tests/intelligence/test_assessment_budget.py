@@ -1,13 +1,15 @@
 """IDEA083 AB/IR179 red-first regressions: synthetic workers, no provider network."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+import json
 from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from larp.contracts import Document
-from larp.intelligence.common import IntelligenceError
+from larp.intelligence.common import IntelligenceError, digest
 from larp.intelligence.config import load_config
 from tests.intelligence import test_openai_pacing as preferred
 
@@ -88,6 +90,110 @@ class ParallelRouting(unittest.TestCase):
         self.assertIn(result['routing']['review_outcome'],('CONFIRMED','DISSENT','INCOMPLETE','FALLBACK'))
         self.assertLessEqual(result['budget_used']['tool_calls'],6)
 
+    def test_b11_matrix_both_completion_orders_preserve_artifacts_and_consumer_contract(self):
+        from larp.intelligence.routing import review_outcome
+        from larp.intelligence.roundlog import model_trace
+        from larp.runtime.schema import assessment_result
+        f=self.fx;router=f.build()
+        _,first=f.run_assessment(router)
+        template=json.loads(f.w.artifacts.get(first['routing']['primary_result']['artifact']))
+        make=router.make_assessor
+        kinds=('confirm','different','abstain','timeout','error')
+        for primary_status in ('ASSESSED','ABSTAIN','ERROR','TIMEOUT','NOT_RUN'):
+            for a in kinds:
+                for b in kinds:
+                    outcomes=[]
+                    for first_reviewer in (0,1):
+                        with self.subTest(primary=primary_status,a=a,b=b,first=first_reviewer):
+                            finished=threading.Event();barrier=threading.Barrier(2,timeout=2)
+                            def stage_assessor(model):
+                                assessor=make(model)
+                                def assess(r,start,validated,cancel,io):
+                                    label=assessor.request_namespace.rstrip(':')
+                                    kind=primary_status if label=='openai-primary' else (a,b)[int(label[-1])]
+                                    value=deepcopy(template)
+                                    value.update(job_id=r['job_id'],cutoff_ms=r['cutoff_ms'],started_ms=start,completed_ms=f.w.clock())
+                                    value['model']=model.identity.record()
+                                    value['model_hash']=model.identity.model_hash
+                                    value['model_io']=dict(steps=[],tool_calls=[],cot=[],model_called=False,
+                                                           requests_started=0,no_model_call_reason='SYNTHETIC_MATRIX')
+                                    value['budget_used']=dict(tool_calls=0,model_steps=0,elapsed_ms=0)
+                                    value['status']={'confirm':'ASSESSED','different':'ASSESSED','abstain':'ABSTAIN',
+                                                     'timeout':'UNAVAILABLE','error':'UNAVAILABLE'}.get(kind,kind)
+                                    if value['status'] in ('ERROR','TIMEOUT','NOT_RUN'):value['status']='UNAVAILABLE'
+                                    value['reasons']=[] if value['status']=='ASSESSED' else ['SYNTHETIC_'+kind.upper()]
+                                    if kind=='different':value['findings']=[];value['event_findings']=[];value['falsifiers']=[]
+                                    value.pop('result_id',None)
+                                    value['result_id']='res:'+digest('larp.intel.result.v1',value)
+                                    if label.startswith('external-review'):
+                                        barrier.wait()
+                                        if int(label[-1])!=first_reviewer:self.assertTrue(finished.wait(2))
+                                        else:finished.set()
+                                    return Document.from_dict(value)
+                                assessor._assess=assess
+                                return assessor
+                            router.make_assessor=stage_assessor
+                            saved=router.openai
+                            if primary_status=='NOT_RUN':router.openai=None
+                            req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,
+                                            job_id='matrix',deadline_ms=180000)
+                            try:value=router.assess(req).read()
+                            finally:router.openai=saved
+                            assessment_result(Document.from_dict(value),req,f.w.clock())
+                            records={s['stage']:json.loads(f.w.artifacts.get(s['result_artifact']))
+                                     for s in value['routing']['stages']}
+                            expected,outcome,_=review_outcome(records.get('openai-primary'),
+                                [records['external-review-0'],records['external-review-1']])
+                            self.assertEqual(value['routing']['review_outcome'],outcome)
+                            self.assertEqual(value['status'],expected['status'] if expected else 'UNAVAILABLE')
+                            if value['status']=='ASSESSED':
+                                selected=value['routing']['selected_result']
+                                original=json.loads(f.w.artifacts.get(selected['artifact']))
+                                self.assertEqual(selected['result_id'],original['result_id'])
+                                self.assertNotEqual(value['result_id'],original['result_id'])
+                                for key in ('claims','findings','event_findings','rationale','confidence'):
+                                    self.assertEqual(value[key],original[key])
+                            else:
+                                self.assertFalse(value['claims']);self.assertIsNone(value['proposed_thesis'])
+                            self.assertTrue(all(v['model'] for v in value['routing']['reviewers']))
+                            self.assertEqual(model_trace(value)['routing'],value['routing'])
+                            outcomes.append(Document.from_dict(value).payload)
+                    self.assertEqual(outcomes[0],outcomes[1])
+
+    def test_unsigned_cutoff_fences_late_workers_and_late_usage_stays_unknown(self):
+        import sqlite3
+        from larp.intelligence.roundlog import model_trace
+        f=self.fx;original=f.openai;entered=threading.Event();release=threading.Event()
+        def blocked(*args):
+            entered.set();self.assertTrue(release.wait(4));return original(*args)
+        f.openai=blocked;router=f.build()
+        self.addCleanup(release.set)
+        req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='unsigned-late',deadline_ms=300)
+        first=router.assess(req).read()
+        self.assertTrue(entered.is_set())
+        before=len(f.calls)
+        self.assertEqual(router.assess(req).read()['status'],'UNAVAILABLE')
+        self.assertEqual(len(f.calls),before)
+        release.set()
+        for worker in router._workers:worker.join(2)
+        with sqlite3.connect(f.root/'openai-budget.sqlite') as db:
+            charges=db.execute("SELECT state FROM charges WHERE request_id LIKE 'openai-primary:%'").fetchall()
+        self.assertTrue(charges)
+        self.assertTrue(all(row==('UNKNOWN',) for row in charges))
+        self.assertNotEqual(first['routing']['primary_result']['result_id'],first['result_id'])
+
+    def test_absolute_deadline_includes_payload_preparation(self):
+        f=self.fx;router=f.build();model=router.external[0]
+        keep=model._keep
+        def expire(raw):
+            ref=keep(raw);f.w.clock.advance(181000);return ref
+        with patch.object(model,'_keep',side_effect=expire):
+            router.openai=None
+            _,value=f.run_assessment(router)
+        self.assertFalse(f.calls)
+        self.assertEqual(value['status'],'UNAVAILABLE')
+        self.assertEqual(len(value['routing']['reviewers']),2)
+
     def test_primary_timeout_starts_reviewers_but_retains_owned_lane(self):
         f=self.fx; old_primary=f.openai; old_review=f.aiand
         primary_entered=threading.Event();release=threading.Event();reviewed=threading.Event()
@@ -120,6 +226,10 @@ class ParallelRouting(unittest.TestCase):
         value=q.ready()
         self.assertEqual(value['audit']['events'][-1]['kind'],'RESULT')
         self.assertEqual(len(value['result']['routing']['stages']),3)
+        from larp.intelligence.roundlog import model_trace
+        trace=model_trace(value['result'])
+        self.assertTrue(trace['late_calls'])
+        self.assertIn('Late audit-only reply',trace['cot'])
         q.ack('bounded-primary')
 
 

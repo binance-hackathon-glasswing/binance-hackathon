@@ -54,7 +54,8 @@ def run_case(case: dict, variant: str, model_factory=None) -> dict:
     health = "OK" if case.get("source_health", "ok") == "ok" else \
         {"status": "OK", "last_success_ms": world.clock() - 36_000_000}
     request = world.request(case["refs"], issuer_id=case["issuer"], job_id=f"eval:{case['case_id']}:{variant}",
-                            tool_calls=0 if variant == "baseline" else 6, context=context, source_health=health)
+                            tool_calls=0 if variant == "baseline" else 6, context=context, source_health=health,
+                            deadline_ms=world.config.max_deadline_ms)
     if case["context"] == "mismatched_hash":
         tampered = request.read()
         tampered["context_hash"] = "f" * 64
@@ -71,7 +72,7 @@ def run_case(case: dict, variant: str, model_factory=None) -> dict:
         probes.append(accept(new_state, result_doc, profile_hash=PROFILE, now_ms=world.clock())[0])
         world.clock.advance(1000)
         again = world.request(case["refs"], issuer_id=case["issuer"], job_id="eval:late-old-context",
-                              context=context)
+                              context=context,deadline_ms=world.config.max_deadline_ms)
         late = world.assessor(make_model(world, "rule")).assess(again)
         probes.append(accept(new_state, late, profile_hash=PROFILE, now_ms=world.clock())[0])
         probes.append(accept(state, result_doc, profile_hash=PROFILE, now_ms=result["expiry_ms"])[0])

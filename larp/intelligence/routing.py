@@ -303,10 +303,12 @@ class RoutedAssessor:
             try:validated=validator._validate(r)
             except (IntelligenceError,KeyError,TypeError):return validator.assess(request)
             return validator._abandoned(r,validated,self.clock(),dict(steps=[],tool_calls=[],started=0))
-        responses=[]
+        responses=[];requests={}
         def record(event):
-            if event['kind']=='MODEL_RESPONSE':
-                with self._ownership_lock:responses.append(deepcopy(event))
+            with self._ownership_lock:
+                if event['kind']=='MODEL_REQUEST':requests[event['request']['request_id']]=event['request']
+                elif event['kind']=='MODEL_RESPONSE':
+                    responses.append(dict(deepcopy(event),request=requests[event['response']['request_id']]))
             if audit_hook is not None:audit_hook(event)
         try:
             result=self._assess_owned(request,audit_hook=record if wait_for_workers else audit_hook,
@@ -335,7 +337,8 @@ class RoutedAssessor:
 
     def _assess_owned(self, request, *, audit_hook=None, wait_for_workers=False):
         r = request.read()
-        total = r.get('budget', {}).get('deadline_ms')
+        budget=r.get('budget')
+        total = budget.get('deadline_ms') if type(budget) is dict else None
         overall = Deadline(total if type(total) is int and total>0 else 1,self.clock)
         # Let the normal validator reject malformed requests without any inference or billing.
         validator = self.make_assessor(self.routine)
@@ -367,7 +370,8 @@ class RoutedAssessor:
             hook = audit_hook
             assessor = self.make_assessor(AuditedModel(model, hook, label) if hook is not None else model)
             assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage), worker_owner=self._own_worker).read()
+            result = assessor.assess(Document.from_dict(stage), worker_owner=self._own_worker,
+                                     wait_for_worker=wait_for_workers).read()
             tools += result.get('budget_used', {}).get('tool_calls') or 0
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)

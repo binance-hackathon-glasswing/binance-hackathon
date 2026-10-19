@@ -289,13 +289,15 @@ class Preferred(unittest.TestCase):
         f.openai_error=None; f.calls.clear(); f.run_assessment(f.build())
         self.assertEqual(f.calls[0][0],'openai')
 
-    def test_both_external_failures_strip_required_review_authority(self):
+    def test_both_external_failures_preserve_verified_primary_as_incomplete(self):
         f=self.fx; f.fail_external=True
         _,result=f.run_assessment(f.build())
-        self.assertNotEqual(result['status'],'ASSESSED')
-        self.assertFalse(result['findings'])
-        self.assertFalse(result['event_findings'])
-        self.assertEqual([c[:3] for c in f.calls if c[0]=='aiand'],
+        self.assertEqual(result['status'],'ASSESSED')
+        self.assertEqual(result['routing']['review_outcome'],'INCOMPLETE')
+        primary=json.loads(f.w.artifacts.get(result['routing']['primary_result']['artifact']))
+        for key in ('claims','findings','event_findings','rationale','confidence'):
+            self.assertEqual(result[key],primary[key])
+        self.assertCountEqual([c[:3] for c in f.calls if c[0]=='aiand'],
                          [('aiand','moonshotai/kimi-k3','high'),('aiand','zai-org/glm-5.3','high')])
 
     def test_disagreement_abstains_instead_of_selecting_a_model(self):
@@ -308,7 +310,7 @@ class Preferred(unittest.TestCase):
         f.openai=disagree
         _,result=f.run_assessment(f.build())
         self.assertEqual(result['status'],'ABSTAIN')
-        self.assertIn('ROUTING_FINDING_DISAGREEMENT',result['reasons'])
+        self.assertIn('ROUTING_REVIEW_DISSENT',result['reasons'])
         self.assertFalse(result['findings'])
 
     def test_missing_storage_does_not_recreate_or_dispatch_openai(self):

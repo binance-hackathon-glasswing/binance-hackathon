@@ -58,6 +58,8 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
         raise IntelligenceError("model_trace needs an AssessmentResult.v2 with model_io")
     io = result["model_io"]
     calls = [_call(step, i) for i, step in enumerate(io.get("steps", []))]
+    late_calls = [_call(dict(request=e['request'],response=e['response'],routing_stage=e['stage'],model=e['model']),i)
+                  for i,e in enumerate(io.get('late_responses',[]))]
     called = io.get("model_called", bool(calls))
     reason = io.get("no_model_call_reason") or (None if called else io.get("note") or "NOT_CALLED")
     tools = [{"index": t["index"], "tool": t["tool"], "args": t["args"], "status": t["status"], "error": t["error"],
@@ -77,6 +79,10 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
     for tool in tools:
         lines.append(f"Tool {tool['tool']} {Document.from_dict(tool['args']).payload.decode()} -> {tool['status']}"
                      + (f" ({tool['error']})" if tool["error"] else "") + ".")
+    for call in late_calls:
+        lines.append(f"Late audit-only reply ({call['routing_stage']}, {call['status']}): "
+                     + (call['reasoning_summary'] or 'no reasoning summary returned.')
+                     + ' It cannot change the cutoff assessment.')
     if io.get("requests_started", len(calls)) > len(calls):
         lines.append(f"{io['requests_started'] - len(calls)} model call(s) were in flight at the deadline; "
                      f"their replies are not part of this assessment.")
@@ -94,6 +100,7 @@ def model_trace(result: dict, *, max_cot_chars: int | None = None) -> dict:
     if result.get('routing'):
         trace['routing'] = result['routing']
         trace['in_flight_calls'] = io.get('in_flight_calls', [])
+    if late_calls:trace['late_calls']=late_calls
     return trace
 
 

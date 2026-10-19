@@ -383,8 +383,8 @@ reviewers, never exceeding six including late workers. Propagate an absolute
 worker deadline to provider dispatch after payload/accounting preparation.
 Preserve late cost semantics (TIMEOUT/UNKNOWN, no refund or decision resurrection).
 B11 matrix and original primary semantic content are immutable; root versus
-selected result identity is being clarified with Isaac while independent work
-continues. No unseen answer/approval is inferred.
+selected result identity uses the separate routed envelope and linked unchanged
+primary artifact explicitly selected by Isaac below.
 
 Red witnesses in tests/intelligence/test_assessment_budget.py cover config/stage
 limits, B11 status matrix, real concurrent reviewer dispatch, review dispatch

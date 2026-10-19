@@ -149,7 +149,8 @@ class AssessmentTask:
     def __init__(self, assessor, request, *, worker_owner=None, parent_deadline=None):
         self.assessor, self.r, self.start_ms = assessor, request.read(), assessor.clock()
         self.worker, self.timer, self.immediate = None, None, None
-        allowance=self.r.get('budget',{}).get('deadline_ms')
+        budget=self.r.get('budget')
+        allowance=budget.get('deadline_ms') if type(budget) is dict else None
         self.deadline = Deadline(allowance if type(allowance) is int and allowance>0 else 1,
                                  assessor.clock,parent=parent_deadline)
         try:
