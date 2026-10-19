@@ -11,7 +11,8 @@ PASS /3628 subtests**, separate real-systemd **5/5**, Docker build/offline smoke
 and runtime demo PASS. Two external-fixture tests remain unrun (the full suite
 skipped those plus the five systemd tests tested separately).
 [Consolidation evidence](CONSOLIDATION_20261019.md) / [machine receipt](evidence/consolidation-20261019.json).
-The canonical promotion is effective when PR195 merges; org CI executed zero
+PR195 merged at `dfabdea` on2026-10-19; all six original PRs are MERGED.
+PR133 is the only open PR and remains noticeboard-only. Org CI executed zero
 steps because of account billing/spending limits. No host/deployment/readiness is inferred.
 
 ## Repository scope retained

@@ -2419,3 +2419,15 @@ absorbed after merge. README/AGENTS/CURRENT_STATUS identify one base and backlog
 PR133 keeps only noticeboard status/links and remains OPEN. Original branches
 and local worktrees stay historical, avoiding deletion of other agents' work.
 Final commit/disposition is externally recorded by PR195 and the PR133 board.
+
+
+CONS-01 promotion complete: PR195 merged atdfabdea27b2125daaee23b7a2b997d29adc2171d
+(2026-10-19 14:55:15UTC); GitHub independently reports139/172/191/192/193/194
+MERGED at14:55:17–18UTC. Only PR133 remains OPEN as noticeboard. All frozen heads
+are canonical ancestors; noticeboard-only31182ce is excluded. The shared IDE
+checkout is now codex/system-testing-20261012, fast-forwarded without reading or
+modifying .env/private keys. A final documentation record leaves runtime/config/
+tests/tools/migrations/workflows identical to testedbd4dbee. Docker test
+containers/databases/network and the empty synthetic activation directory have
+been removed. Full external/host/adoption/installation tasks and owners remain
+in CURRENT_STATUS/backlog; historical branches/worktrees are retained.

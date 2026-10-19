@@ -5,13 +5,13 @@ the base for every new implementation PR. PR133 remains open solely as a
 noticeboard. This is repository consolidation, not policy activation, signer
 installation, a new qualified release or an AWS operation.
 
-## Inventory and intended disposition
+## Inventory and final disposition
 
 Canonical starting commit: `eb430b8815029f87a285ab42fea9fa10ed88e94d`.
 Previously reviewed work accumulated on PR133 through `e169fa1`; that history
 is included without merging PR133's new noticeboard-only head `31182ce`.
 
-| PR | Frozen head | Retained work / disposition after validation |
+| PR | Frozen head | Retained work / final disposition |
 |---|---|---|
 | #139 | `757e4f89653510486c9010644a41d617894f6bdc` | Preserve original source-acquisition reports and honest blockers as documentation; retire the separate draft integration lane. Source-based router qualification remains an optional uncompleted path, not verified source. |
 | #172 | `d1682ea0c2d7cbfc64231ed87713fc6f5be1d932` | Preserve historical funding preflight and current reconciliation/funding handoff; retire the separate draft lane. No additional funding or fresh holdings is inferred. |
@@ -101,3 +101,18 @@ is the reviewed promotion vehicle. Its merge establishes the canonical build;
 all six original lanes are then merged/closed as absorbed work. PR133 stays
 OPEN with only its noticeboard file differing from canonical. Branches/worktrees
 are retained as historical references; new work must use the canonical branch.
+
+
+### Final GitHub promotion
+
+PR195 merged2026-10-19 14:55:15UTC at
+`dfabdea27b2125daaee23b7a2b997d29adc2171d`. GitHub marked all six original
+PRs139/172/191/192/193/194 MERGED against the canonical branch at14:55:17–18UTC.
+No source or funding completion is implied by those historical-document merges.
+PR133 remains the only open PR. Its noticeboard history is maintained separately
+and synchronized with canonical without merging it into the build.
+
+The shared IDE checkout is switched/fast-forwarded to the canonical branch.
+This final documentation commit does not change any runtime/config/test/tool
+bytes frombd4dbee. No branch is deleted and no user environment file is read or
+modified. Temporary Docker databases/containers/network are removed.

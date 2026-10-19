@@ -71,5 +71,21 @@
   "ready_to_install": false,
   "runtime_component_git_listing_sha256": "924a0ad67361405586aabaa5b14c6a1182a189579542f690cc70839b6d1d3f19",
   "new_local_links_checked": 361,
-  "final_changes_after_test_source": "DOCUMENTATION_AND_RESULT_EVIDENCE_ONLY"
+  "final_changes_after_test_source": "DOCUMENTATION_AND_RESULT_EVIDENCE_ONLY",
+  "promotion": {
+    "pull_request": 195,
+    "merge_commit": "dfabdea27b2125daaee23b7a2b997d29adc2171d",
+    "merged_at": "2026-10-19T14:55:15Z",
+    "absorbed_prs": {
+      "139": "MERGED",
+      "172": "MERGED",
+      "191": "MERGED",
+      "192": "MERGED",
+      "193": "MERGED",
+      "194": "MERGED"
+    },
+    "only_open_pr": 133,
+    "canonical_workspace_selected": true,
+    "old_branch_deletion_performed": false
+  }
 }
