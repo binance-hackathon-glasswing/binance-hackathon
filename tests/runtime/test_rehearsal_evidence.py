@@ -162,6 +162,21 @@ class RehearsalEvidenceTests(unittest.TestCase):
         with self.file.open('wb') as stream: stream.truncate(gates.MAX_ARTIFACT+1)
         self.assertFalse(self.result()['packet_complete'])
 
+    def test_deeply_nested_input_refused_without_traceback(self):
+        path = self.root/'nested.json'
+        path.write_text('['*100_000 + ']'*100_000)
+        with self.assertRaises(gates.Refused): gates.load(path)
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            code = gates.main(['check', '--packet', str(path), '--identity', str(path),
+                               '--evidence-root', str(self.root)])
+        self.assertEqual(code, 2)
+        self.assertEqual(json.loads(output.getvalue())['error'], 'PACKET_REFUSED')
+
+    def test_reviewer_differing_only_by_case_or_space_is_not_independent(self):
+        row = self.packet['gates'][0]
+        row.update(operator='Isaac', reviewer=' isaac ')
+        self.assertIn('INDEPENDENT_REVIEW_REQUIRED', self.result()['results'][0]['reasons'])
+
 
 if __name__ == '__main__':
     unittest.main()

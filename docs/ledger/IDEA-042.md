@@ -455,3 +455,19 @@ for complete packet indexes. No application path changed and no host/runtime
 suite or new original release qualification was run. All live C09/C10 drill
 results remain NOT_RUN. A01 wording and the handoff now acknowledge the user's
 resolved account-owner details while retaining actual access/evidence requirements.
+
+## RG-02-RV01 — Keegan review of PR188 (2026-10-19), criteria before the fix
+
+Review of `510c3c0` found one defect against RG-02's "malformed inputs fail
+closed without raw input output": a deeply nested JSON packet (well under the
+1MiB bound) raises `RecursionError`, which `main` does not catch, so the CLI
+prints a Python traceback and exits 1 (the "incomplete" code) instead of the
+fixed `PACKET_REFUSED` report with exit 2. Operator/reviewer independence also
+compares raw strings, so `"Isaac"` and `" isaac"` count as different people.
+
+Pass criteria, written before the fix:
+- RV01-1: a nested packet or identity file raises `Refused` from `load`, and
+  the CLI prints only `PACKET_REFUSED` and exits 2 (red test pushed first).
+- RV01-2: operator and reviewer that differ only by case or surrounding
+  whitespace report `INDEPENDENT_REVIEW_REQUIRED`.
+- RV01-3: all existing RG-02 tests still pass; no other behaviour changes.
