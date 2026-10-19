@@ -2027,6 +2027,8 @@ User requests continuing other PR133 tasks while Isaac has his ready queue. Scop
 
 Delivered NEXT_TRIAL_DATABASE_20261019.md: select existing fresh-database procedure rather than add version switching to the critical path; new name must be absent, old databases immutable, ledger preserved, guarded drain/backup/prepare/bind/ACK steps and failure disposition. Delivered OPERATIONS_DECISIONS_20261019.md: D-DN-01/04/06/07/08/11 recommendations and conditional DEV20 proposal. D-DN-01/07/11 are ready for Isaac policy review without credentials; numeric delivery/watchdog/memory and host qualification remain pending. Crash-loop proposal explicitly corrects the inference that backup-rate limits bound incident/log growth. No operational policy is adopted or external action performed.
 
+PC-DBPLAN01/PC-OPS01 verification PASS: only documentation changed; all relative targets exist, no conflict markers/whitespace errors, all30 unique action IDs preserved. Current runtime unit confirms10s/no-limit restart and exit2/3/4 prevention; service confirms changed-build registration refusal; supervision confirms deadline HALT. DEV18/20 stay OPEN/DRAFT and all runtime/config/tool/test bytes are unchanged. No application tests needed for procedure/proposal-only scope. A04 repository procedure and A06 proposal slice complete; actual operator work, policy decisions/measurement/implementation and remaining A06 O2/DEV20 stay open.
+
 ## IQ01 — mandatory activation-blocker matrix (2026-10-19; prospective)
 
 Isaac accepts PC-ISAAC-QUEUE01/IQ01 at the user's request. Source baseline:
