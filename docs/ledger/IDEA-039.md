@@ -471,3 +471,7 @@ NT-Q1 delivery: dedicated [PR173](https://github.com/binance-hackathon-glasswing
 OPEN against PR133's checklist branch. Tool review scope is complete locally;
 actual endpoint/account proof, selection and Yao host acceptance remain open.
 No full-suite/CI pass, provider enablement, account signup or payment is claimed.
+
+## NT-RV02 — receipt gas-price qualification repair (prospective, 2026-10-19)
+
+During remaining-task review, native_credit eagerly evaluates tx[gasPrice] even when effectiveGasPrice exists in the receipt. A valid typed transaction without the legacy field can fail qualification. Add regression before RED; use receipt effective price when present, legacy transaction price only as fallback. Positive canonical native proof, gas arithmetic, privacy and no runtime/provider authority remain required. Run existing native qualification regressions with no external RPC.

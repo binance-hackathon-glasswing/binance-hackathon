@@ -79,6 +79,16 @@ class NativeQualification(unittest.TestCase):
             with self.subTest(bad=bad):
                 self.assertFalse(self.run_probe(rpc_factory=factory)['all_transaction_proofs_passed'])
 
+    def test_effective_receipt_gas_price_does_not_require_legacy_transaction_field(self):
+        rpc, _ = native_fixtures.NativeRPC().rpc()
+        from larp.execution_live.chain import ChainEvidence
+        proof = ChainEvidence(rpc).native_receipt(fixtures.HASH)
+        proof['receipt']['effectiveGasPrice'] = '0x2'
+        proof['transaction'].pop('gasPrice', None)
+        flow, gas = q.native_credit(proof, q.validate_inputs(self.inputs()))
+        self.assertEqual(gas, int(proof['receipt']['gasUsed'], 16) * 2)
+        self.assertGreater(flow, 0)
+
     def test_read_budget_stops_before_extra_transport(self):
         class RPC:
             source_id = 'TEST_NATIVE'
