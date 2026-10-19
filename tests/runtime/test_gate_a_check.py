@@ -208,7 +208,7 @@ class GateAPackageCheck(unittest.TestCase):
                    approved.replace('https:', 'http:'), approved.replace('github.com', 'github.com.invalid'),
                    approved.replace('github.com', 'user@github.com'),
                    approved.replace('github.com', 'github.com@evil.invalid'),
-                   approved.replace('/Keegan4/', '/another-owner/'), None)
+                   approved.replace('/Keegan4/', '/another-owner/'), None, [], {})
         for origin in origins:
             with self.subTest(origin=origin):
                 self.manifest.write_bytes(encoded(dict(original, build_origin=origin)))
