@@ -1,5 +1,5 @@
 {
- "producer_commit": "dd46c8f580b3c651f3d7733990bbf927ab08539c",
+ "producer_commit": "f3cf851fca9dd035e45f0dfac114252967ef461d",
  "request": {
   "allowed_tools": [
    "fetch_document",

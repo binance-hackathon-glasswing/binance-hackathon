@@ -7,7 +7,8 @@ refuses to start while any live parameter is unset, while the prompt file differ
 pinned hash, or while the model/EDGAR environment settings are missing. Secret values are
 returned only inside `LiveModelSettings` and never appear in its repr or in any document.
 """
-from larp.intelligence.deadlines import MAX_ASSESSMENT_MS
+
+from larp.intelligence.time_budget import MAX_ASSESSMENT_MS
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,9 +50,8 @@ class IntelligenceConfig:
 def load_config(mode: str = "development", base: Path = CONFIG_DIR) -> IntelligenceConfig:
     if mode not in MODES:
         raise IntelligenceError("Unknown configuration mode")
-    # Keep the existing development/live configuration bytes and hashes stable.
-    # Shadow is a separately versioned operational choice, not a mutation of the
-    # synthetic evaluation inputs or pending final/live parameters (IDEA-058).
+    # Shadow keeps separate operational parameters (IDEA-058). All modes share the
+    # IDEA-083 ceiling; final/live parameters still require an explicit decision.
     raw, config_hash = _load("intelligence.shadow.v1.json" if mode == "shadow" else "intelligence.v1.json", base)
     if raw.get("schema") != "IntelligenceConfig.v1":
         raise IntelligenceError("Unknown evidence configuration schema")

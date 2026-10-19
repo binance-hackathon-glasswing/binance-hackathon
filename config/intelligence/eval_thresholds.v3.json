@@ -1,0 +1,72 @@
+{
+  "schema": "IntelligenceEvalThresholds.v3",
+  "frozen": "2026-10-19, IDEA-083 AB-IMPL01: same quality thresholds as v2; elapsed ceiling 180000ms matches DEV-22. Committed and pushed before the first v3 evaluation; v1/v2 retained unchanged.",
+  "applies_to": "the synthetic evaluation pack in larp/intelligence/scenarios.py only; precision is computed only on cases whose labels are marked exhaustive; says nothing about real filings, live model quality or trading performance",
+  "agent": {
+    "span_accuracy__min": [
+      19,
+      20
+    ],
+    "numerical_correctness__min": [
+      1,
+      1
+    ],
+    "numerical_precision__min": [
+      1,
+      1
+    ],
+    "event_precision__min": [
+      1,
+      1
+    ],
+    "statement_precision__min": [
+      1,
+      1
+    ],
+    "statement_recall__min": [
+      1,
+      1
+    ],
+    "unsupported_acceptance__max": [
+      0,
+      1
+    ],
+    "event_recall__min": [
+      9,
+      10
+    ],
+    "abstention_recall__min": [
+      1,
+      1
+    ],
+    "false_abstention__max": [
+      1,
+      10
+    ],
+    "stale_rejection__min": [
+      1,
+      1
+    ],
+    "max_tool_calls__max": 6,
+    "max_elapsed_ms__max": 180000
+  },
+  "baseline": {
+    "numerical_correctness__min": [
+      1,
+      1
+    ],
+    "max_tool_calls__max": 0
+  },
+  "retrieval_ablation": {
+    "metric": "comparison_accuracy",
+    "min_gain": [
+      1,
+      4
+    ],
+    "min_expectations": 20,
+    "note": "Same deterministic rule model with 6 tool calls versus 0. Measures retrieval/comparison value on designed fixtures; it is NOT a test of LLM value (IDEA-030 R08)."
+  },
+  "model_vs_deterministic": {
+    "rule": "Both arms see identical inputs and tool budgets. Runs only with an authorised no-additional-cost model adapter; otherwise NOT_RUN. A scripted fake exercises the harness only and is reported as HARNESS_ONLY."
+  }
+}

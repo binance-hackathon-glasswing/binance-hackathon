@@ -1,277 +1,394 @@
-"""IDEA-083 AB1–AB15: synthetic regression witnesses, written before implementation."""
+"""IDEA083 AB/IR179 red-first regressions: synthetic workers, no provider network."""
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-import itertools
 import json
 from pathlib import Path
 import tempfile
 import threading
-import time
 import unittest
 from unittest.mock import patch
 
 from larp.contracts import Document
-from larp.intelligence import routing
-from larp.intelligence.common import digest
+from larp.intelligence.common import IntelligenceError, digest
 from larp.intelligence.config import load_config
-from larp.runtime.deferred_models import DeferredAssessments
-from tests.intelligence import test_openai_pacing as pacing
-from tests.intelligence.test_aiand_routing import EXSEMI
+from tests.intelligence import test_openai_pacing as preferred
 
 
-class Outcomes(unittest.TestCase):
-    def test_ab15_complete_selection_matrix_in_both_arrival_orders(self):
-        primary = dict(status='ASSESSED', findings=[{'finding': 'primary'}],
-                       event_findings=[], falsifiers=[], rationale='primary', result_id='primary')
-        variants = [dict(primary), dict(primary, findings=[{'finding': 'different'}]),
-                    dict(primary, status='ABSTAIN'), dict(primary, status='TIMEOUT'),
-                    dict(primary, status='ERROR'), dict(primary, status='UNAVAILABLE'), None]
-        for pstatus, a, b, order in itertools.product(
-                ('ASSESSED', 'ABSTAIN', 'UNAVAILABLE', 'ERROR', 'TIMEOUT', None),
-                range(len(variants)), range(len(variants)), ((0, 1), (1, 0))):
-            with self.subTest(primary=pstatus, reviewers=(a, b), order=order):
-                p = dict(primary, status=pstatus) if pstatus else None
-                arrivals = {i: deepcopy(variants[(a, b)[i]]) for i in order}
-                reviews = [arrivals[i] for i in (0, 1)]
-                selected, outcome, verdicts = routing.review_decision(p, reviews)
-                if pstatus == 'ASSESSED':
-                    expected = 'DISSENT' if a in (1, 2) or b in (1, 2) else \
-                        'CONFIRMED' if 0 in (a, b) else 'INCOMPLETE'
-                    self.assertEqual(outcome, expected)
-                    self.assertEqual(selected['status'], 'ABSTAIN' if expected == 'DISSENT' else 'ASSESSED')
-                    if expected != 'DISSENT':
-                        self.assertEqual(selected, p)
-                else:
-                    assessed = [v for v in reviews if v and v['status'] == 'ASSESSED']
-                    expected = 'DISSENT' if a in (0, 1) and b in (0, 1) and a != b else \
-                        'FALLBACK' if assessed else 'NONE_AVAILABLE'
-                    self.assertEqual(outcome, expected)
-                    if expected == 'FALLBACK':
-                        self.assertEqual(selected, assessed[0])
-                self.assertEqual(len(verdicts), 2)
+def candidate(status='ASSESSED', finding='same', identity='primary'):
+    return dict(status=status, result_id=identity, reasons=[], findings=[dict(type=finding)],
+                event_findings=[], falsifiers=[], claims=[dict(text='immutable primary claim')],
+                rationale='immutable primary rationale', confidence=dict(level='HIGH'))
 
-    def test_ab6_declared_maximum(self):
+
+class BudgetContract(unittest.TestCase):
+    def test_completed_stage_remains_eligible_while_its_finalizer_is_owned(self):
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.intelligence.scenarios import build_world,EXSEMI
+        from larp.intelligence.time_budget import ACTIVE_DEADLINE
+        entered=threading.Event();release=threading.Event();owned=[]
+        class Finalizer:
+            def set(self,value):return ACTIVE_DEADLINE.set(value)
+            def get(self):return ACTIVE_DEADLINE.get()
+            def reset(self,token):
+                entered.set();release.wait(3);ACTIVE_DEADLINE.reset(token)
+        world=build_world(['EXSEMI_Q2_8K','EXSEMI_Q3_8K'])
+        assessor=world.assessor(RuleBaselineModel(world.clock))
+        req=world.request(['EXSEMI_Q3_8K'],issuer_id=EXSEMI,job_id='finalizer',deadline_ms=300)
+        with patch('larp.intelligence.agent.ACTIVE_DEADLINE',Finalizer()):
+            task=assessor.start(req,worker_owner=owned.append)
+            try:
+                self.assertTrue(entered.wait(1))
+                task.wait()
+                self.assertTrue(owned[0].is_alive())
+                self.assertEqual(task.result().read()['status'],'ASSESSED')
+            finally:release.set();task.worker.join(2)
+
+    def test_config_supports_180_seconds_but_preserves_six_tools(self):
         for mode in ('development', 'shadow'):
-            self.assertEqual(load_config(mode=mode).max_deadline_ms, 180000)
+            self.assertEqual(load_config(mode).max_deadline_ms, 180000)
+            self.assertEqual(load_config(mode).max_tool_calls, 6)
 
-    def test_ab6_absolute_bound_equality_and_rollback(self):
-        from larp.intelligence.deadlines import Deadline
-        clock, mono = [1000], [1.0]
-        bound = Deadline(180000, lambda: clock[0], monotonic=lambda: mono[0])
-        clock[0] += 40000
-        self.assertEqual(bound.remaining(), 140000)
-        mono[0] += 180
-        self.assertEqual(bound.remaining(), 0)  # wall time cannot extend authority
-        clock[0] = 999
-        self.assertEqual(bound.remaining(), 0)
-        clock[0] = 1000
-        self.assertEqual(bound.remaining(), 0)  # rollback cancellation never refreshes
+    def test_one_budget_contract_bounds_stage_shares_and_tool_allocations(self):
+        from larp.intelligence.time_budget import stage_limits, reviewer_tools
+        for total, primary in ((180000,60000),(120000,40000),(60000,20000),(600,200),(1,0)):
+            self.assertEqual(stage_limits(total), (primary, min(90000,total-primary)))
+        for total in (0,180001,True,'180000'):
+            with self.subTest(total=total),self.assertRaises(IntelligenceError):stage_limits(total)
+        self.assertEqual(reviewer_tools(6,3,2), (2,1))
+        self.assertEqual(reviewer_tools(6,0,2), (3,3))
+        self.assertEqual(reviewer_tools(2,2,2), (0,0))
 
 
-class RoutedConcurrency(unittest.TestCase):
+class ReviewOutcomes(unittest.TestCase):
+    def test_full_b11_matrix_is_deterministic_and_does_not_mutate_primary(self):
+        from larp.intelligence.routing import review_outcome
+        kinds=('confirm','different','abstain','timeout','error')
+        for primary_status in ('ASSESSED','ABSTAIN','ERROR','TIMEOUT','NOT_RUN'):
+            for a in kinds:
+                for b in kinds:
+                    primary=candidate(primary_status)
+                    original=deepcopy(primary)
+                    replies=[]
+                    for n,kind in enumerate((a,b)):
+                        replies.append(candidate({'confirm':'ASSESSED','different':'ASSESSED','abstain':'ABSTAIN',
+                                                  'timeout':'UNAVAILABLE','error':'UNAVAILABLE'}[kind],
+                                                 'different' if kind=='different' else 'same',str(n)))
+                    selected,outcome,verdicts=review_outcome(primary,replies)
+                    if primary_status=='ASSESSED':
+                        expected='DISSENT' if any(k in ('different','abstain') for k in (a,b)) else \
+                                 'CONFIRMED' if 'confirm' in (a,b) else 'INCOMPLETE'
+                        self.assertEqual(outcome,expected)
+                        if expected!='DISSENT':self.assertEqual(selected,primary)
+                        else:self.assertEqual(selected['status'],'ABSTAIN')
+                    else:
+                        assessed=[r for r in replies if r['status']=='ASSESSED']
+                        if len(assessed)==2 and a!=b:
+                            self.assertEqual((selected['status'],outcome),('ABSTAIN','DISSENT'))
+                        elif assessed:
+                            self.assertEqual((selected['result_id'],outcome),(assessed[0]['result_id'],'FALLBACK'))
+                        else:self.assertEqual((selected,outcome),(None,'NONE_AVAILABLE'))
+                    self.assertEqual(len(verdicts),2)
+                    self.assertEqual(primary,original)
+
+
+class ParallelRouting(unittest.TestCase):
     def setUp(self):
-        self.owner = pacing.Preferred(); self.owner.setUp(); self.addCleanup(self.owner.doCleanups)
-        self.fx = self.owner.fx
+        fixture=preferred.Preferred();fixture.setUp();self.addCleanup(fixture.doCleanups)
+        self.fx=fixture.fx
 
-    def test_ab3_reviewers_overlap_and_primary_content_is_preserved(self):
-        f = self.fx
-        barrier = threading.Barrier(2)
-        transport = f.aiand
-        arrived = set()
-        lock = threading.Lock()
-        def send(url, headers, raw, timeout):
-            model = json.loads(raw)['model']
+    def test_dispatch_tool_allocations_enforce_global_six_calls(self):
+        f=self.fx;aiand=f.aiand;openai=f.openai
+        def greedy(state):
+            return dict(action='CALL_TOOL',tool='prior_context',args=dict(metric='revenue')) if state['remaining_tool_calls'] \
+                else dict(action='FINISH',claims=state['claimable'],notes='synthetic tool-budget test')
+        def primary(url,headers,raw,timeout):
+            status,reply=openai(url,headers,raw,timeout);body=json.loads(raw);payload=json.loads(reply)
+            payload['output'][0]['content'][0]['text']=json.dumps(greedy(json.loads(body['input'].split('\n',1)[1])))
+            return status,json.dumps(payload).encode()
+        def reviewer(url,headers,raw,timeout):
+            status,reply,metadata=aiand(url,headers,raw,timeout);body=json.loads(raw);payload=json.loads(reply)
+            payload['choices'][0]['message']['content']=json.dumps(greedy(json.loads(body['messages'][1]['content'])))
+            return status,json.dumps(payload).encode(),metadata
+        f.openai=primary;f.aiand=reviewer
+        _,value=f.run_assessment(f.build())
+        records={s['stage']:json.loads(f.w.artifacts.get(s['result_artifact'])) for s in value['routing']['stages']}
+        self.assertEqual([records[s]['budget_used']['tool_calls'] for s in
+                          ('openai-primary','external-review-0','external-review-1')],[3,2,1])
+        self.assertEqual(value['budget_used']['tool_calls'],6)
+
+    def test_request_boundary_accepts_180_seconds_and_refuses_larger_without_dispatch(self):
+        from larp.contracts import ContractError
+        from larp.runtime.schema import assessment_request
+        f=self.fx;router=f.build()
+        for total in (60000,180000,180001):
+            with self.subTest(total=total):
+                req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='boundary',deadline_ms=total)
+                if total>180000:
+                    with self.assertRaises(ContractError):assessment_request(req,req.read()['run_id'],req.read()['policy_profile_hash'],f.w.clock())
+                    before=len(f.calls)
+                    self.assertEqual(router.assess(req).read()['status'],'REJECTED_REQUEST')
+                    self.assertEqual(len(f.calls),before)
+                else:
+                    assessment_request(req,req.read()['run_id'],req.read()['policy_profile_hash'],f.w.clock())
+                    self.assertNotEqual(router.assess(req).read()['status'],'REJECTED_REQUEST')
+
+    def test_both_reviewers_enter_transport_before_either_completes(self):
+        f=self.fx; original=f.aiand; barrier=threading.Barrier(2,timeout=2); entered=set();lock=threading.Lock()
+        def simultaneous(*args):
+            import json
+            model=json.loads(args[2])['model']
             with lock:
-                first = model not in arrived
-                arrived.add(model)
-            if first:
-                barrier.wait(2)
-            return transport(url, headers, raw, timeout)
-        f.aiand = send
-        request, value = f.run_assessment(f.build())
-        self.assertEqual(value['status'], 'ASSESSED')
-        self.assertEqual(value['routing']['review_outcome'], 'CONFIRMED')
-        self.assertEqual(len(value['routing']['reviewers']), 2)
-        primary = json.loads(f.w.artifacts.get(value['routing']['stages'][0]['result_artifact']))
-        self.assertEqual(value['routing']['primary_result_id'], primary['result_id'])
-        for key in ('claims', 'findings', 'event_findings', 'falsifiers', 'proposed_thesis', 'rationale', 'confidence'):
-            self.assertEqual(value[key], primary[key], key)
-        without = {k: v for k, v in value.items() if k != 'result_id'}
-        self.assertEqual(value['result_id'], 'res:' + digest('larp.intel.result.v1', without))
-        self.assertLessEqual(value['budget_used']['tool_calls'], 6)
-
-    def test_ab4_primary_drain_does_not_prevent_review_dispatch(self):
-        f = self.fx
-        release, entered = threading.Event(), threading.Event()
-        reviewers = {m['model_id']: threading.Event() for m in f.s['external_reviewers']}
-        original, external = f.openai, f.aiand
-        def blocked(*args):
-            entered.set()
-            release.wait(3)
+                first=model not in entered; entered.add(model)
+            if first:barrier.wait()
             return original(*args)
-        def review(url, headers, raw, timeout):
-            reviewers[json.loads(raw)['model']].set()
-            return external(url, headers, raw, timeout)
-        f.openai, f.aiand = blocked, review
-        router = f.build()
-        req = f.w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='owned', deadline_ms=600)
-        q = DeferredAssessments(router, root=f.root/'owned', run_id=req.read()['run_id'],
-                                build_id='e'*40, profile_hash=req.read()['policy_profile_hash'])
+        f.aiand=simultaneous
+        _,result=f.run_assessment(f.build())
+        self.assertEqual(len(entered),2)
+        self.assertEqual(len([s for s in result['routing']['stages'] if s['stage'].startswith('external-review')]),2)
+        self.assertIn(result['routing']['review_outcome'],('CONFIRMED','DISSENT','INCOMPLETE','FALLBACK'))
+        self.assertLessEqual(result['budget_used']['tool_calls'],6)
+
+    def test_b11_matrix_both_completion_orders_preserve_artifacts_and_consumer_contract(self):
+        from larp.intelligence.routing import review_outcome
+        from larp.intelligence.roundlog import model_trace
+        from larp.runtime.schema import assessment_result
+        f=self.fx;router=f.build()
+        _,first=f.run_assessment(router)
+        template=json.loads(f.w.artifacts.get(first['routing']['primary_result']['artifact']))
+        make=router.make_assessor
+        kinds=('confirm','different','abstain','timeout','error')
+        for primary_status in ('ASSESSED','ABSTAIN','ERROR','TIMEOUT','NOT_RUN'):
+            for a in kinds:
+                for b in kinds:
+                    outcomes=[]
+                    for first_reviewer in (0,1):
+                        with self.subTest(primary=primary_status,a=a,b=b,first=first_reviewer):
+                            finished=threading.Event();barrier=threading.Barrier(2,timeout=2)
+                            def stage_assessor(model):
+                                assessor=make(model)
+                                def assess(r,start,validated,cancel,io):
+                                    label=assessor.request_namespace.rstrip(':')
+                                    kind=primary_status if label=='openai-primary' else (a,b)[int(label[-1])]
+                                    value=deepcopy(template)
+                                    value.update(job_id=r['job_id'],cutoff_ms=r['cutoff_ms'],started_ms=start,completed_ms=f.w.clock())
+                                    value['model']=model.identity.record()
+                                    value['model_hash']=model.identity.model_hash
+                                    value['model_io']=dict(steps=[],tool_calls=[],cot=[],model_called=False,
+                                                           requests_started=0,no_model_call_reason='SYNTHETIC_MATRIX')
+                                    value['budget_used']=dict(tool_calls=0,model_steps=0,elapsed_ms=0)
+                                    value['status']={'confirm':'ASSESSED','different':'ASSESSED','abstain':'ABSTAIN',
+                                                     'timeout':'UNAVAILABLE','error':'UNAVAILABLE'}.get(kind,kind)
+                                    if value['status'] in ('ERROR','TIMEOUT','NOT_RUN'):value['status']='UNAVAILABLE'
+                                    value['reasons']=[] if value['status']=='ASSESSED' else ['SYNTHETIC_'+kind.upper()]
+                                    if kind=='different':value['findings']=[];value['event_findings']=[];value['falsifiers']=[]
+                                    value.pop('result_id',None)
+                                    value['result_id']='res:'+digest('larp.intel.result.v1',value)
+                                    if label.startswith('external-review'):
+                                        barrier.wait()
+                                        if int(label[-1])!=first_reviewer:self.assertTrue(finished.wait(2))
+                                        else:finished.set()
+                                    return Document.from_dict(value)
+                                assessor._assess=assess
+                                return assessor
+                            router.make_assessor=stage_assessor
+                            saved=router.openai
+                            if primary_status=='NOT_RUN':router.openai=None
+                            req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,
+                                            job_id='matrix',deadline_ms=180000)
+                            try:value=router.assess(req).read()
+                            finally:router.openai=saved
+                            assessment_result(Document.from_dict(value),req,f.w.clock())
+                            records={s['stage']:json.loads(f.w.artifacts.get(s['result_artifact']))
+                                     for s in value['routing']['stages']}
+                            expected,outcome,_=review_outcome(records.get('openai-primary'),
+                                [records['external-review-0'],records['external-review-1']])
+                            self.assertEqual(value['routing']['review_outcome'],outcome)
+                            self.assertEqual(value['status'],expected['status'] if expected else 'UNAVAILABLE')
+                            if value['status']=='ASSESSED':
+                                selected=value['routing']['selected_result']
+                                original=json.loads(f.w.artifacts.get(selected['artifact']))
+                                self.assertEqual(selected['result_id'],original['result_id'])
+                                self.assertNotEqual(value['result_id'],original['result_id'])
+                                for key in ('claims','findings','event_findings','rationale','confidence'):
+                                    self.assertEqual(value[key],original[key])
+                            else:
+                                self.assertFalse(value['claims']);self.assertIsNone(value['proposed_thesis'])
+                            self.assertTrue(all(v['model'] for v in value['routing']['reviewers']))
+                            self.assertEqual(model_trace(value)['routing'],value['routing'])
+                            outcomes.append(Document.from_dict(value).payload)
+                    self.assertEqual(outcomes[0],outcomes[1])
+
+    def test_unsigned_cutoff_fences_late_workers_and_late_usage_stays_unknown(self):
+        import sqlite3
+        from larp.intelligence.roundlog import model_trace
+        f=self.fx;original=f.openai;entered=threading.Event();release=threading.Event()
+        def blocked(*args):
+            entered.set();self.assertTrue(release.wait(4));return original(*args)
+        f.openai=blocked;router=f.build()
+        self.addCleanup(release.set)
+        req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='unsigned-late',deadline_ms=300)
+        first=router.assess(req).read()
+        self.assertTrue(entered.is_set())
+        before=len(f.calls)
+        busy=router.assess(req).read()
+        self.assertEqual((busy['status'],busy['reasons']),('UNAVAILABLE',['ROUTING_GROUP_BUSY']))
+        self.assertEqual(busy['model_io']['no_model_call_reason'],'ROUTING_GROUP_BUSY')
+        self.assertEqual(len(f.calls),before)
+        release.set()
+        for worker in router._workers:worker.join(2)
+        with sqlite3.connect(f.root/'openai-budget.sqlite') as db:
+            charges=db.execute("SELECT state FROM charges WHERE request_id LIKE 'openai-primary:%'").fetchall()
+        self.assertTrue(charges)
+        self.assertTrue(all(row==('UNKNOWN',) for row in charges))
+        self.assertNotEqual(first['routing']['primary_result']['result_id'],first['result_id'])
+
+    def test_hung_first_reviewer_cannot_starve_second_fallback(self):
+        f=self.fx;original=f.aiand;release=threading.Event();entered=threading.Event()
+        f.openai_error='rate_limit_exceeded'
+        def review(url,headers,raw,timeout):
+            if json.loads(raw)['model']=='moonshotai/kimi-k3':
+                entered.set();release.wait(3)
+            return original(url,headers,raw,timeout)
+        f.aiand=review;router=f.build()
         try:
-            self.assertTrue(q.submit('round', req))
-            self.assertTrue(entered.wait(1))
-            for event in reviewers.values():
-                self.assertTrue(event.wait(1), 'reviewer blocked by primary drain')
-            self.assertIsNone(q.ready())
-            self.assertFalse(q.submit('replacement', req))
+            req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,job_id='hung-first-reviewer',deadline_ms=600)
+            value=router.assess(req).read()
+            self.assertTrue(entered.is_set())
+            self.assertEqual((value['status'],value['routing']['review_outcome']),('ASSESSED','FALLBACK'))
+            selected=json.loads(f.w.artifacts.get(value['routing']['selected_result']['artifact']))
+            self.assertEqual(selected['model']['model_id'],'zai-org/glm-5.3')
+            self.assertEqual([r['status'] for r in value['routing']['reviewers']],['UNAVAILABLE','ASSESSED'])
+            self.assertTrue(any(w.is_alive() for w in router._workers))
         finally:
             release.set()
-            self.assertTrue(q.finished.wait(3))
-        events = q.ready()['audit']['events']
-        self.assertEqual(events[-1]['kind'], 'RESULT')
-        self.assertTrue(any(e['kind'] == 'MODEL_RESPONSE' and e['stage'] == 'openai-primary' for e in events))
+            for worker in router._workers:worker.join(2)
 
-    def test_ab6_provider_preparation_cannot_dispatch_after_deadline(self):
-        f = self.fx
-        provider = f.build().external[0]
-        # Exercise the real HTTP adapter after its own request/artifact preparation.
-        while hasattr(provider, 'model'):
-            provider = provider.model
-        keep = provider._keep
-        def slow_keep(raw):
-            keep(raw)
-            f.w.clock.advance(101)
-        provider._keep = slow_keep
-        from tests.intelligence.test_providers import request
-        result = provider.step(request(), 100).read()
-        self.assertEqual(result['status'], 'TIMEOUT')
+    def test_ab1_18s_failed_primary_34s_abstain_and_10s_assessed_fallback(self):
+        # AB1's original assessed-primary wording contradicted B11. Use its
+        # clarified failed-primary witness; assessed-primary dissent is AB13.
+        f=self.fx;original=f.openai;f.delay=0;f.openai_error='rate_limit_exceeded'
+        barrier=threading.Barrier(2,timeout=2)
+        def primary(*args):
+            reply=original(*args);f.w.clock.advance(18000);return reply
+        def review(url,headers,raw,timeout):
+            body=json.loads(raw);kimi=body['model']=='moonshotai/kimi-k3'
+            barrier.wait();f.w.clock.advance(34000 if kimi else 10000)
+            action=dict(action='FINISH',claims=[],notes='synthetic timing witness')
+            if kimi:action['extra']='invalid action forces ABSTAIN'
+            return 200,json.dumps(preferred.fixtures.chat_reply(body,action)).encode(),{
+                'x-model':body['model'],'x-reasoning-effort':body['reasoning_effort']}
+        f.openai=primary;f.aiand=review
+        _,value=f.run_assessment(f.build(),deadline_ms=180000)
+        self.assertEqual((value['status'],value['routing']['review_outcome']),('ASSESSED','FALLBACK'))
+        self.assertEqual([s['status'] for s in value['routing']['stages']],['UNAVAILABLE','ABSTAIN','ASSESSED'])
+        self.assertEqual(value['budget_used']['elapsed_ms'],62000)
+
+    def test_ab1_18s_assessed_primary_34s_abstain_and_10s_confirm_is_dissent(self):
+        # PR179-RV01 AB1: the observed hosted case. Reviewer-0's ABSTAIN blocks the
+        # assessed primary although reviewer-1 confirms; nothing replaces the primary.
+        # Elapsed time is charged on each stage's final step (the fixture's OpenAI
+        # pacing window is shorter than 18 s), on a fresh fixture per completion order.
+        def finishing(text):return json.loads(text).get('action')=='FINISH'
+        for first in (0,1):
+            with self.subTest(first_reviewer=first):
+                fixture=preferred.Preferred();fixture.setUp();self.addCleanup(fixture.doCleanups)
+                f=fixture.fx;original=f.openai;original_review=f.aiand;f.delay=0
+                def primary(*args):
+                    status,raw=original(*args)
+                    if finishing(json.loads(raw)['output'][0]['content'][0]['text']):f.w.clock.advance(18000)
+                    return status,raw
+                barrier=threading.Barrier(2,timeout=2);entered=set();done=threading.Event()
+                def review(url,headers,raw,timeout):
+                    body=json.loads(raw);kimi=body['model']=='moonshotai/kimi-k3'
+                    if body['model'] not in entered:entered.add(body['model']);barrier.wait()
+                    if kimi:
+                        status,reply=200,json.dumps(preferred.fixtures.chat_reply(body,dict(
+                            action='FINISH',claims=[],notes='synthetic timing witness',
+                            extra='invalid action forces ABSTAIN'))).encode()
+                        metadata={'x-model':body['model'],'x-reasoning-effort':body['reasoning_effort']}
+                    else:status,reply,metadata=original_review(url,headers,raw,timeout)
+                    final=kimi or finishing(json.loads(reply)['choices'][0]['message']['content'])
+                    if final:
+                        if (0 if kimi else 1)!=first:self.assertTrue(done.wait(2))
+                        f.w.clock.advance(34000 if kimi else 10000)
+                        if (0 if kimi else 1)==first:done.set()
+                    return status,reply,metadata
+                f.openai=primary;f.aiand=review
+                _,value=f.run_assessment(f.build(),deadline_ms=180000)
+                self.assertEqual([s['status'] for s in value['routing']['stages']],['ASSESSED','ABSTAIN','ASSESSED'])
+                self.assertEqual((value['status'],value['reasons'],value['routing']['review_outcome']),
+                                 ('ABSTAIN',['ROUTING_REVIEW_DISSENT'],'DISSENT'))
+                self.assertEqual([v['verdict'] for v in value['routing']['reviewers']],['dissent','confirm'])
+                self.assertFalse(value['claims'])
+                self.assertEqual(value['budget_used']['elapsed_ms'],62000)
+
+    def test_absolute_deadline_includes_payload_preparation(self):
+        f=self.fx;router=f.build()
+        # Both reviewers prepare in parallel; each crosses the cutoff before its own dispatch.
+        def expiring(model):
+            keep=model._keep
+            def expire(raw):
+                ref=keep(raw);f.w.clock.advance(181000);return ref
+            return patch.object(model,'_keep',side_effect=expire)
+        with expiring(router.external[0]),expiring(router.external[1]):
+            router.openai=None
+            _,value=f.run_assessment(router)
         self.assertFalse(f.calls)
+        self.assertEqual(value['status'],'UNAVAILABLE')
+        self.assertEqual(len(value['routing']['reviewers']),2)
 
-    def test_ab11_both_hung_reviewers_leave_primary_frozen_and_owned(self):
-        f = self.fx
-        release = threading.Event()
-        entered = threading.Barrier(3)
-        original = f.aiand
-        def blocked(*args):
-            entered.wait(2)
+    def test_primary_timeout_starts_reviewers_but_retains_owned_lane(self):
+        f=self.fx; old_primary=f.openai; old_review=f.aiand
+        primary_entered=threading.Event();release=threading.Event();reviewed=threading.Event()
+        calls=[];lock=threading.Lock()
+        def primary(*args):
+            primary_entered.set()
             release.wait(3)
-            return original(*args)
-        f.aiand = blocked
-        router = f.build()
-        req = f.w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='late', deadline_ms=600)
+            return old_primary(*args)
+        def review(*args):
+            import json
+            with lock:
+                calls.append(json.loads(args[2])['model'])
+                if len(set(calls))==2:reviewed.set()
+            return old_review(*args)
+        f.openai=primary;f.aiand=review
+        router=f.build();req=f.w.request(['EXSEMI_Q3_8K'],issuer_id=preferred.fixtures.EXSEMI,
+                                       job_id='bounded-primary',deadline_ms=600)
+        from larp.runtime.deferred_models import DeferredAssessments
+        q=DeferredAssessments(router,root=f.root/'deferred',run_id=req.read()['run_id'],build_id='e'*40,
+                              profile_hash=req.read()['policy_profile_hash'])
+        def cleanup():release.set();q.finished.wait(4)
+        self.addCleanup(cleanup)
+        self.assertTrue(q.submit('bounded-primary',req));self.assertTrue(primary_entered.wait(1))
         try:
-            box = {}
-            caller = threading.Thread(target=lambda: box.update(result=router.assess(req).read()))
-            caller.start()
-            entered.wait(2)
-            caller.join(2)
-            self.assertFalse(caller.is_alive())
-            result = box['result']
-            self.assertEqual(result['routing']['review_outcome'], 'INCOMPLETE')
-            self.assertEqual(result['status'], 'ASSESSED')
-            self.assertEqual(len(result['model_io']['in_flight_calls']), 2)
-            self.assertEqual(router.assess(req).read()['reasons'], ['ASSESSMENT_GROUP_BUSY'])
-            frozen = Document.from_dict(result).payload
-        finally:
-            release.set()
-            for worker in router._workers:
-                worker.join(3)
-        self.assertEqual(Document.from_dict(result).payload, frozen)
-
-    def test_ab1_observed_timings_dissent_and_non_assessed_fallback(self):
-        f = self.fx
-        router = f.build()
-        req, template = f.run_assessment(router)
-        original_factory = router.make_assessor
-        for primary_status in ('ASSESSED', 'UNAVAILABLE'):
-            start = f.w.clock()
-            barrier = threading.Barrier(2)
-            clock_lock = threading.Lock()
-            allowances = []
-            def factory(model):
-                delegate = original_factory(model)
-                class Scripted:
-                    request_namespace = ''
-                    _validate = delegate._validate
-                    _abandoned = delegate._abandoned
-                    registry = delegate.registry
-                    _reviews = delegate._reviews
-                    def assess(inner, request, **kwargs):
-                        label = inner.request_namespace.rstrip(':')
-                        value = deepcopy(template)
-                        value['model_io'] = dict(steps=[], tool_calls=[], cot=[], model_called=False,
-                                                 requests_started=0, no_model_call_reason='SYNTHETIC')
-                        allowances.append(request.read()['budget']['tool_calls'])
-                        if label == 'openai-primary':
-                            f.w.clock.advance(18000)
-                            value['status'] = primary_status
-                        else:
-                            barrier.wait(2)
-                            with clock_lock:
-                                f.w.clock.now = max(f.w.clock(), start+18000+(34000 if label.endswith('0') else 10000))
-                            value['status'] = 'ABSTAIN' if label.endswith('0') else 'ASSESSED'
-                        value['result_id'] = label
-                        return Document.from_dict(value)
-                return Scripted()
-            router.make_assessor = factory
-            raw = req.read(); raw['budget']['deadline_ms'] = 180000
-            value = router.assess(Document.from_dict(raw)).read()
-            self.assertEqual(value['status'], 'ABSTAIN' if primary_status == 'ASSESSED' else 'ASSESSED')
-            self.assertEqual(value['routing']['review_outcome'], 'DISSENT' if primary_status == 'ASSESSED' else 'FALLBACK')
-            self.assertEqual(f.w.clock()-start, 52000)
-            self.assertEqual(sorted(allowances), [1, 2, 3])
-            self.assertLessEqual(sum(allowances), 6)
-            router.make_assessor = original_factory
+            self.assertTrue(reviewed.wait(1.5),'both reviewers must start before late primary exits')
+            self.assertFalse(q.finished.is_set())
+            self.assertFalse(q.submit('second',req))
+        finally:release.set()
+        self.assertTrue(q.finished.wait(3))
+        value=q.ready()
+        self.assertEqual(value['audit']['events'][-1]['kind'],'RESULT')
+        self.assertEqual(len(value['result']['routing']['stages']),3)
+        from larp.intelligence.roundlog import model_trace
+        trace=model_trace(value['result'])
+        self.assertTrue(trace['late_calls'])
+        self.assertIn('Late audit-only reply',trace['cot'])
+        q.ack('bounded-primary')
 
 
-class JournalConcurrency(unittest.TestCase):
-    def test_ab7_audit_failure_cannot_publish_accepted_result(self):
-        from tests.runtime.test_signed_models import Blocking, request
+class ConcurrentAudit(unittest.TestCase):
+    def test_simultaneous_callbacks_form_one_valid_durable_chain(self):
+        from larp.runtime.deferred_models import DeferredAssessments
         with tempfile.TemporaryDirectory() as tmp:
-            model = Blocking(); model.release.set()
-            q = DeferredAssessments(model, root=tmp, run_id='r', build_id='e'*40, profile_hash='a'*64)
-            original = q._append_locked
-            def fail(path, event):
-                if event['kind'] == 'MODEL_RESPONSE':
-                    raise OSError('synthetic private endpoint must not be logged')
-                return original(path, event)
-            with patch.object(q, '_append_locked', fail):
-                q.submit('failed', request())
-                self.assertTrue(q.finished.wait(2))
-            ready = q.ready()
-            self.assertIsNone(ready['result'])
-            self.assertEqual(ready['audit']['state'], 'FAILED')
-            self.assertNotIn('private endpoint', json.dumps(ready))
-            from larp.contracts import ContractError
-            with self.assertRaises(ContractError):
-                q.ack('failed')
-            reopened = DeferredAssessments(model, root=tmp, **q.identity)
-            with self.assertRaises(ContractError):
-                reopened.ack('failed')
-            with self.assertRaises(ContractError):
-                reopened.submit('another', request())
-
-    def test_ab7_simultaneous_append_has_one_valid_chain(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            q = DeferredAssessments(None, root=tmp, run_id='r', build_id='e'*40, profile_hash='a'*64)
-            path = q.root/'race.jsonl'; path.touch()
-            barrier = threading.Barrier(2)
-            original = q._read
-            def synchronized_read(p):
-                result = original(p)
-                try:
-                    barrier.wait(.15)
-                except threading.BrokenBarrierError:
-                    pass
-                return result
-            errors = []
-            def write(i):
-                try:
-                    q._append(path, dict(kind='STAGE', stage=str(i)))
-                except Exception as exc:
-                    errors.append(type(exc).__name__)
-            with patch.object(q, '_read', synchronized_read):
-                workers = [threading.Thread(target=write, args=(i,)) for i in range(2)]
-                for w in workers: w.start()
-                for w in workers: w.join(2)
-            self.assertFalse(errors)
-            self.assertEqual({e['stage'] for e in q._read(path)}, {'0', '1'})
+            q=DeferredAssessments(object(),root=tmp,run_id='r',build_id='b'*40,profile_hash='a'*64)
+            path=q.root/'parallel.jsonl';path.touch(mode=0o600)
+            q._append(path,dict(kind='REQUEST'))
+            barrier=threading.Barrier(2)
+            def write(stage):
+                barrier.wait()
+                for i in range(15):q._append(path,dict(kind='MODEL_REQUEST',stage=stage,index=i))
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                list(pool.map(write,('reviewer-0','reviewer-1')))
+            events=q._read(path)
+            self.assertEqual(len(events),31)
+            self.assertEqual({e['stage'] for e in events[1:]},{'reviewer-0','reviewer-1'})

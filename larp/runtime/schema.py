@@ -1,5 +1,6 @@
 """Versioned observation and assessment boundary validation."""
-from larp.intelligence.deadlines import MAX_ASSESSMENT_MS
+
+from larp.intelligence.time_budget import MAX_ASSESSMENT_MS
 
 import hashlib
 

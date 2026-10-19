@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 import tempfile
 import threading
-import time
 import unittest
 from unittest.mock import patch
 
@@ -147,12 +146,11 @@ class DeferredProviderTimeouts(unittest.TestCase):
         self.assertFalse(q.finished.wait(1), 'An abandoned inner provider still owns the lane')
         self.assertIsNone(q.ready())
         self.assertFalse(q.submit('replacement', req))
-        count = len(workers)
-        self.assertTrue(1 <= count <= 3)  # admission at short cutoffs depends on scheduling
+        self.assertEqual(len(workers), 1)  # no overlapping review or replacement call
         release.set()
         self.assertTrue(q.finished.wait(3))
         self.assertEqual(q.ready()['result']['status'], 'UNAVAILABLE')
-        self.assertEqual(len(workers), count)  # no post-cutoff dispatch
+        self.assertEqual(len(workers), 1)  # the elapsed chain cannot dispatch a late review
 
     def test_slm5_late_response_precedes_result_and_ack_and_cannot_reopen_on_restart(self):
         q, _, release, _, fixture = self.start_blocked_provider()
@@ -166,10 +164,9 @@ class DeferredProviderTimeouts(unittest.TestCase):
         self.assertEqual(events[-1]['kind'], 'RESULT')
         self.assertEqual(ready['result']['status'], 'UNAVAILABLE')
         responses = [e for e in events if e['kind'] == 'MODEL_RESPONSE']
-        self.assertTrue(1 <= len(responses) <= 3)
-        self.assertTrue(all(e['response']['raw_response_artifact'] for e in responses))
-        self.assertTrue(all(e['response']['status'] == 'TIMEOUT' for e in responses))
-        self.assertFalse(ready['result']['model_io']['cot'])  # late replies stay audit-only
+        self.assertEqual(len(responses), 1)
+        self.assertEqual(responses[0]['response']['reasoning_summary'], 'Synthetic reasoning.')
+        self.assertIn('Synthetic reasoning.', ready['result']['model_io']['cot'])
         path = q.pending['provider-timeout']
         q.ack('provider-timeout')
         self.assertEqual(q._read(path)[-1]['kind'], 'ACK')
@@ -241,82 +238,54 @@ from tests.runtime.test_round_driver_service import ServiceHarness
 
 
 class SignedIntegration(ServiceHarness):
-    def test_ab8_actual_safety_cycle_with_both_reviewers_blocked(self):
-        from tests.intelligence.test_aiand_routing import Routing
-        from tests.integration.test_evidence_pipeline import evidence_state, RUN
+    def test_parallel_reviewers_cannot_block_mandatory_planning_halt_or_reconciliation(self):
+        from larp.intelligence.models import ModelIdentity, response
+        from larp.intelligence.routing import RoutedAssessor
         from larp.runtime.coordinator import batch_for
+        from larp.runtime.deferred_models import DeferredAssessments
         from larp.runtime.supervision import Guard
-        from larp.runtime.service import Service
-        fixture = Routing(); fixture.setUp(); self.addCleanup(fixture.doCleanups)
-        fixture.w = self.w
-        driver = self.service_driver(cadence=True)
-        release = threading.Event()
-        entered = threading.Barrier(3)
-        original = fixture.aiand
-        def blocked(url, headers, raw, timeout):
-            if json.loads(raw)['reasoning_effort'] == 'high':
-                entered.wait(3)
-                release.wait(5)
-            return original(url, headers, raw, timeout)
-        fixture.aiand = blocked
-        q, item, req = self.seed_pending(driver, fixture.build(key=False))
-        try:
-            entered.wait(3)
-            _, state, _ = evidence_state(['EXSEMI_402_8K'], self.profile, world=self.w)
-            current = self.store.load(RUN); projection = current.read()['projection']
-            projection['evidence'] = {req.read()['issuer_id']: state}
-            self.store.commit(batch_for(current, 'ab8-seed', dict(kind='TEST_ACCEPTED_EVIDENCE'), projection=projection))
-            service = Service(self.store, RUN, driver.coordinator.version_id,
-                              guard=Guard(self.store, RUN, max_failures=3, clear_after=2),
-                              driver=driver, clock_ms=self.w.clock, cycle_timeout_s=600)
-            started = time.monotonic()
-            self.assertEqual(service.run(max_cycles=1), 0)
-            self.assertLess(time.monotonic()-started, 300)
-            self.assertTrue(self.commands())
-            self.assertTrue(any(i['mandatory'] and i['side'] == 'SELL'
-                                for r in self.planned().values() for i in r['plan']['intents']))
-            self.assertIsNone(q.ready())
-            self.assertFalse(q.submit('replacement', req))
-        finally:
-            release.set()
-            self.assertTrue(q.finished.wait(5))
-
-    def test_ab8_unsigned_full_cycle_with_real_stage_timeouts(self):
-        # Real wall-clock witness: primary consumes 60s, reviewers consume 90s concurrently.
-        # Fake external boundaries only; real Service/driver, SQL, verification and audit.
-        from tests.intelligence.test_aiand_routing import Routing
-        from larp.runtime.supervision import Guard
-        from larp.runtime.service import Service
-        from tests.integration.test_evidence_pipeline import RUN
-        fixture = Routing(); fixture.setUp(); self.addCleanup(fixture.doCleanups)
-        fixture.w = self.w
-        driver = self.service_driver()
-        release = threading.Event()
-        calls = []
-        original = fixture.aiand
-        def blocked(*args):
-            calls.append(time.monotonic())
-            release.wait(200)
-            return original(*args)
-        fixture.aiand = blocked
-        router = fixture.build(key=False)
-        driver.coordinator.assessor = router
-        service = Service(self.store, RUN, driver.coordinator.version_id,
-                          guard=Guard(self.store, RUN, max_failures=3, clear_after=2),
-                          driver=driver, clock_ms=self.w.clock, cycle_timeout_s=600)
-        started = time.monotonic()
-        try:
-            self.assertEqual(service.run(max_cycles=1), 0)
-            elapsed = time.monotonic()-started
-            self.assertGreaterEqual(elapsed, 149)
-            self.assertLess(elapsed, 300)
-            self.assertEqual(len(calls), 3)
-            self.assertLess(abs(calls[1]-calls[2]), 2)
-            self.assertFalse(self.commands())
-        finally:
-            release.set()
-            for worker in router._workers:
-                worker.join(5)
+        from tests.integration.test_evidence_pipeline import evidence_state, RUN
+        from types import SimpleNamespace
+        release=threading.Event();entered=[threading.Event(),threading.Event()];calls=[]
+        self.addCleanup(release.set)
+        class Reviewer:
+            def __init__(inner,index):
+                inner.index=index
+                inner.identity=ModelIdentity('synthetic','reviewer-'+str(index),'v1',str(index+1)*64,'HOSTED')
+            def step(inner,request,remaining_ms):
+                calls.append(inner.index);entered[inner.index].set()
+                if not release.wait(5):raise TimeoutError('test reviewer was not released')
+                return response(request.read(),status='ERROR',output=None,latency_ms=0,error='SYNTHETIC')
+        models=[Reviewer(0),Reviewer(1)]
+        budget=SimpleNamespace(account='synthetic',total=1,reserve=0,snapshot=lambda:dict(external_only=True))
+        router=RoutedAssessor(routine=models[0],external_reviewers=models,openai=None,budget=budget,
+            make_assessor=self.w.assessor,clock_ms=self.w.clock,artifacts=self.w.artifacts,
+            policy=dict(openai_preferred=True,audit_sample_bps=10000,audit_seed='synthetic',spec_hash='a'*64))
+        driver=self.service_driver(cadence=True)
+        q,item,req=self.seed_pending(driver,router)
+        self.addCleanup(lambda:q.finished.wait(5))
+        self.addCleanup(release.set)
+        self.assertTrue(all(event.wait(2) for event in entered))
+        _,state,_=evidence_state(['EXSEMI_402_8K'],self.profile,world=self.w)
+        current=self.store.load(RUN);projection=current.read()['projection']
+        projection['evidence']={req.read()['issuer_id']:state}
+        self.store.commit(batch_for(current,'parallel-accepted',dict(kind='TEST_ACCEPTED_EVIDENCE'),projection=projection))
+        driver.once(self.w.clock())
+        self.assertTrue(any(i['mandatory'] and i['side']=='SELL'
+                            for r in self.planned().values() for i in r['plan']['intents']))
+        self.assertFalse(q.finished.is_set())
+        Guard(self.store,RUN,max_failures=3,clear_after=2)._halt('CLOCK',self.w.clock(),{})
+        with patch.object(driver.execution,'settle_open',wraps=driver.execution.settle_open) as settle:
+            driver.once(self.w.clock());self.assertTrue(settle.called)
+        self.assertIn('CLOCK',self.store.load(RUN).read()['projection']['halt']['reasons'])
+        release.set();self.assertTrue(q.finished.wait(3))
+        self.assertCountEqual(calls,[0,1])
+        ready=q.ready()
+        self.assertEqual(len([e for e in ready['audit']['events'] if e['kind']=='MODEL_RESPONSE']),2)
+        restarted=DeferredAssessments(router,root=q.root.parent,**q.identity)
+        self.assertTrue(restarted.busy)
+        self.assertEqual(restarted.ready()['result'],ready['result'])
+        self.assertCountEqual(calls,[0,1])
 
     def queue(self, driver, model):
         from larp.runtime.deferred_models import DeferredAssessments

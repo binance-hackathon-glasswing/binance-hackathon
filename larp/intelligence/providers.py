@@ -348,9 +348,19 @@ class HostedModel:
         if self._artifacts.put(data) != sha256_hex(data):
             raise IntelligenceError("Artifact store returned a different content address")
 
+    def _late_audit(self, raw, metadata):
+        """Extract audit fields only; a late reply never supplies output or a usage refund."""
+        try:
+            served,_,usage,reasoning=self._parse_reply(json.loads(raw.decode('utf-8')),metadata)
+            if not all(type(usage.get(k)) is int and 0<=usage[k]<=MAX_USAGE_TOKENS
+                       for k in ('input_tokens','output_tokens')):return {}
+            return dict(served_model=served,usage=usage,reasoning=reasoning)
+        except (_ProviderReply,AttributeError,KeyError,IndexError,TypeError,ValueError,UnicodeDecodeError,
+                OverflowError,RecursionError,MemoryError):
+            return {}
+
     def step(self, request, remaining_ms: int, *, before_dispatch=None):
-        from larp.intelligence.deadlines import Deadline, dispatch_remaining
-        bound = Deadline(remaining_ms, self.clock)
+        from larp.intelligence.time_budget import remaining
         r = request.read()
         body = self.request_payload(request)
         record = dict(artifacts=self._artifacts, request_payload=body,
@@ -358,12 +368,14 @@ class HostedModel:
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
         headers = self._headers()
+        remaining_ms = remaining(remaining_ms)
+        if remaining_ms <= 0:
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
         if before_dispatch is not None:
             before_dispatch()  # after preparation, immediately before any network I/O
-        remaining_ms = dispatch_remaining(bound.remaining())
+        remaining_ms = remaining(remaining_ms)
         if remaining_ms <= 0:
-            return response(r, status='TIMEOUT', output=None, latency_ms=self.clock()-bound.started,
-                            error='DEADLINE_EXCEEDED', **record)
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
         try:
             result = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
             status, raw = result[:2]
@@ -397,8 +409,10 @@ class HostedModel:
         self._keep(raw)  # before any parsing
         record["raw"] = raw
         latency = self.clock() - started
-        if latency > remaining_ms or dispatch_remaining(bound.remaining()) <= 0:
-            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
+        if latency > remaining_ms or remaining(remaining_ms) <= 0:
+            audit=self._late_audit(raw,metadata) if status==200 else {}
+            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED",
+                            **audit,**record)
         if status != 200:
             if self.provider == 'openai':
                 try:

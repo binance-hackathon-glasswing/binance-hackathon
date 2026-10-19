@@ -280,7 +280,7 @@ class ModelPreparation(unittest.TestCase):
                 # subsequent assessments use the persisted external-only latch directly.
                 expected = (['openai-primary'] if preferred else ['routine'] + ([] if secondary else ['openai-review'])) \
                     + ['external-review-0']
-                expected += ['external-review-1']  # both reviewers run regardless of arrival order
+                expected += ['external-review-1'] if preferred or secondary else []
                 self.assertEqual([s['stage'] for s in value['routing']['stages']], expected)
                 self.assertEqual(budget.snapshot()['external_only'], not preferred)
                 self.assertLessEqual(value['budget_used']['tool_calls'], 6)

@@ -1,9 +1,8 @@
 # IDEA-083 — Assessment time budget and review outcome rule: per-stage shares, parallel reviewers, longer deadline, reviewers never replace an assessed primary
 
-- Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Implementer: Keegan** (Yao asks him
-  directly). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
-- Status: **proposed, approved in direction by Yao 2026-10-19; not implemented.** The pass criteria below are written
-  before any code exists; the implementer adds red tests against them first.
+- Date / author: 2026-10-19 SGT / Yao Zhu (decision), with Claude (write-up). **Initial implementer: Keegan**; Isaac takes over implementation at the user's request (AB-IMPL01). Reviewers: Keith (model protocol/affordability; B11 changes how the approved PR168 v3 protocol counts reviewed jobs), Isaac (runtime timing).
+- Status: **implemented and locally verified in PR181; independent review/release/host acceptance open.** Yao approved direction on2026-10-19.
+  Pass criteria were preregistered; pushed red witnesses and implementation evidence are recorded in AB-IMPL01.
 - Scope: unsigned and signed routed assessments (`aiand_routed`, OpenAI-preferred routing). **Model effort stays as
   is** (OpenAI medium, AIand reviewers high). Yao: lower reviewer effort only if latency is still a problem after
   this change.
@@ -464,46 +463,203 @@ from this CI blocker. The temporary local PostgreSQL container was stopped and
 disposed. All review changes are documentation only; no app/config/test files
 or model/account state changed.
 
+## AB-IMPL01 — Isaac takes over Keegan implementation (2026-10-19)
 
-## AB-IMPL01 — implementation criteria and initial regression result (2026-10-19)
+User explicitly asks this session to do Keegan's task as well. Implement on a
+separate branch containing179+180; no deployment/AWS/provider calls. Record
+and push new red tests first. Preserve model efforts/prompts/routing bytes,
+transport accounting guards, UNKNOWN charges and signed main-thread authority.
+Fix AB1 by making fallback-primary status explicit; the observed ASSESSED
+primary plus ABSTAIN reviewer remains DISSENT, per Yao's B11. Keep legacy
+AIand-first selection semantics separate and documented; B11 changes the
+OpenAI-preferred path for which it was approved, not historical v1/v2 trial data.
 
-Keegan implementation follows merged PR180 and the explicit user request to fix
-and merge PR179. Use the 180000ms ceiling, primary one-third/60000ms cap,
-90000ms reviewer cap and fixed remaining-tool partition by reviewer precedence.
-Reserve the primary's full allowance while a late worker may still use it; do not
-reclaim allowances based on completion order. Keep conservative UNKNOWN charges.
-Legacy v1/v2 keep their OpenAI review stage and apply B11 to the external pair.
-Historical evaluation files keep their 60000ms inputs and are not new-budget results.
+Implementation criteria: central180000ms ceiling in configs/validators; primary
+min(total/3,60000), each parallel reviewer min(remaining,90000). Independent
+cancellable task handles separate cutoff snapshots from actual worker cleanup;
+one owned assessment group fences timed-out workers through audit completion,
+including unsigned callers. Serialize deferred audit appends. Deterministically
+reserve primary tool allowance and partition only safe remaining calls between
+reviewers, never exceeding six including late workers. Propagate an absolute
+worker deadline to provider dispatch after payload/accounting preparation.
+Preserve late cost semantics (TIMEOUT/UNKNOWN, no refund or decision resurrection).
+B11 matrix and original primary semantic content are immutable; root versus
+selected result identity uses the separate routed envelope and linked unchanged
+primary artifact explicitly selected by Isaac below.
 
-Red tests pushed at859f097 before implementation: 255 failures (250 matrix
-subcases plus five integration/config cases),18 passing existing preferred-route
-tests. They expose the missing B11 selector, old ceiling, serial reviewers,
-primary-drain starvation, preparation-time dispatch and concurrent journal race.
-New code must pass these witnesses and the existing accounting/safety/restart
-suites, then the full pinned Linux/PostgreSQL suite and available systemd checks.
-No golden regeneration, provider call, wallet action or host deployment is part
-of this local verification. AB8's measured cycle evidence and AB10 environment
-limits must be recorded explicitly rather than inferred from stage arithmetic.
+Red witnesses in tests/intelligence/test_assessment_budget.py cover config/stage
+limits, B11 status matrix, real concurrent reviewer dispatch, review dispatch
+after a primary timeout while the actual worker/lane remain owned, and concurrent
+hash-chain callbacks. After pushed implementation, run these plus existing
+routing/accounting/provider/signed/restart/watchdog checks, then the full pinned
+suite with local PostgreSQL. Review any required golden changes explicitly;
+never regenerate blindly. Declare DEV-22 and train/serve budget parity. Full
+Linux/systemd/original release and hosted acceptance stay separate owner gates.
 
-AB-IMPL01 review correction: the first ceiling test used unsupported mode `dev`;
-corrected to `development`. Its initial failure is not a ceiling regression
-witness; the old60000 value is independently source-verified. Existing serial
-review-order assertions now check stable stage precedence with both reviewers;
-B11's both-unavailable case now preserves the primary as INCOMPLETE. Deferred
-late response summaries remain in the durable audit, not the frozen decision.
 
-Golden review: generated candidates outside the repository and recursively
-compared them before updating the two demonstration goldens. The only changes
-are config_sha256 and its dependent assessment/result/review/state/falsifier IDs
-(23 and17 scalar fields). Status, findings, claims, tools, amounts, timestamps,
-features and gate outcomes are unchanged. Explicit historical60000ms requests
-remain valid; the config identity correctly changes for DEV-22. This is reviewed
-identity propagation, not a change to expected economic behavior.
+AB-IMPL01 RED at pushed2ecb3a1: all6 targeted tests failed (3.81s), including
+actual concurrent audit hash mismatch, lack of simultaneous reviewer dispatch,
+and reviewers starved until a blocked primary exits. Other failures demonstrate
+old config ceilings and absent new budget/B11 contract helpers. Log retained at
+/private/tmp/larp-idea083-red.log. The live config remains refused while its
+independent parameters are unset; numeric ceiling tests use development/shadow
+instead of bypassing those existing live gates.
 
-AB-IMPL01 full-suite follow-up: the diagnostic Linux run at3e614d6 found
-2056 passes,6 skips and3261 subtests, with four failures: the already-fixed
-cutoff snapshot race, two checks of the same stale strategy producer fixture,
-and the generated deviation table. Re-capture the strategy fixture only from
-the reviewed golden (config hash and dependent IDs only); render the table from
-the register. Pass criteria: both consumer boundary checks and register checks
-pass, then full exact-source mirror acceptance.
+Isaac explicitly selected the recommended identity contract in this session:
+separate canonical routed-envelope ID, with unchanged primary ID/content linked
+as an original artifact. This clarifies AB11/AB12's wording: semantic primary
+fields and selected-stage identity are preserved, not the envelope ID itself.
+B11 behavior is unchanged. No optional answer or named teammate endorsement is
+inferred. Default late usage remains TIMEOUT/UNKNOWN/conservative, not refunded.
+
+AB-IMPL01 golden review at pushed f3cf851: generated candidates outside Git.
+Structured comparison found exactly23 changed leaves in the thesis-revision
+trace and17 in the abstention trace: config_sha256 and its dependent assessment,
+result, falsifier, review-job, persisted-batch and gate/feature references only.
+Claims, findings, source spans, tools, model I/O, rationale, confidence, timestamps,
+status, gates and thesis semantics are unchanged. Accepted these reviewed bytes;
+no blanket golden regeneration. The deliberately explicit historical60s demo
+fixtures remain comparable; the research evaluation entry point now requests
+config.max_deadline_ms (180s), matching the runtime request builder. The six-call
+cap and provider settings stay unchanged. No research quality/affordability
+claim follows from these synthetic acceptance checks.
+
+AB-IMPL01 initial full regression at3872856:2068 passed,9 expected platform/
+external skips,3265 subtests,7 failures (274.72s). Failures identify old60s
+boundary/reason expectations, serial-review preparation expectations, the copied
+strategy producer fixture, and synthetic evaluation still using v2's frozen60s
+ceiling and70s timeout script. Preserve v1/v2 threshold files unchanged; freeze
+v3 before its first run, copying every quality threshold and changing only the
+elapsed ceiling to180000 under B9/DEV-22. The synthetic timeout witness becomes
+190s so it still exceeds the declared budget. This is a budget-parity change,
+not a relaxation of precision, abstention or quality criteria. Re-capture the
+strategy fixture's request/result from the reviewed golden, binding its producer
+commit to f3cf851; its semantic fields remain unchanged as above. Update exact
+boundary (180001), hard-deadline reason and two-reviewer assertions accordingly.
+
+Additional pushed acceptance at4ad4044:11 assessment tests/257 subtests PASS;
+18 runtime tests/5 subtests PASS, including both real reviewer workers blocked
+while the PostgreSQL-backed mandatory-reduction planner, CLOCK HALT and
+reconciliation continue; restart retains the result without another paid call.
+The composite substitute uses actual stage tasks/transports, SQLite accounting,
+artifact checks, concurrent audit fsync, PostgreSQL guard/heartbeat and the real
+Service watchdog, with 1:100 timing and explicit bounded balance/market/day-roll/
+quote delays. Both unsigned synchronous and signed-background cycles complete
+inside the scaled300s target with a scaled600s watchdog; no watchdog increase.
+This measures the local injected boundary contract, not production I/O maxima
+or actual host latency. Host measurement and exact Linux/release acceptance
+remain Yao/Keegan gates.
+
+AB-IMPL01 finalization race found in source review: a stage may finish its
+verified result before its deadline yet still own its worker during final
+context cleanup. Red witness pushed8e2c989 blocks that finalizer after logical
+completion: the old Task.result incorrectly returns UNAVAILABLE (1 failed,
+0.41s). Completion eligibility must use the saved on-time terminal marker;
+actual worker lifetime still fences new groups/audit ACK. Add this regression
+and the stalled reviewer-0/successful reviewer-1 fallback witness to final
+acceptance. Neither changes timeout accounting or permits late content.
+
+AB-IMPL01 delivery is [PR181](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/181),
+stacked on design179 and runtime-review180. At f92b2a0 the full pinned suite
+passed2077 tests/3272 subtests,9 expected platform/external skips (277.19s).
+The separately reproduced finalizer race is fixed at c8e8150: logical on-time
+completion stays eligible while the real worker remains owned; late completion
+still fails closed. Expanded components at3792b0b pass14 tests/257 subtests
+(3.36s), including the corrected18s failed-primary /34s ABSTAIN /10s ASSESSED
+AB1 witness (conservative shared fake-clock elapsed62s, FALLBACK) and a truly
+stalled reviewer-0 that cannot starve reviewer-1. No runtime/config changes
+follow c8e8150;3792b0b adds only that AB1 test and documentation. Final full-suite
+verification is recorded below when finished.
+
+| Criteria / finding | Repository acceptance evidence |
+|---|---|
+| B1–B3, AB2/4/6, IR179-01/05 | Shared180000ms ceiling; primary min(total//3,60000), reviewer min(remaining,90000); absolute deadline spans validation, payload persistence and dispatch guards. Real blocked-primary dispatch, stalled-reviewer fallback, request/schema180000/180001, payload-crossing-cutoff and completed-finalizer tests. |
+| B4/B11, AB1/3/11–15, IR179-04 | Pure125-case B11 matrix plus250 real task/combiner/consumer cases across both completion orders; original artifacts and primary semantic fields unchanged, own routed ID, explicit reviewer status/reasons/model/outcome. Fallback verdicts carry role=fallback and compare against the fixed-precedence selected candidate. |
+| B5, IR179-03 | Actual greedy transports consume exactly3+2+1 tool calls; at most six globally, including reserved late-primary allowance. Model/effort/prompt files unchanged; trial-routing SHA256 remains a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d. |
+| B6, AB5, IR179-06 | Existing atomic admission/day/total/window/quarantine tests plus unsigned late-worker charge assertion: timeout remains UNKNOWN/full reserved cost, with no refund or restored authority. AIand guards enforce the existing OpenAI trial/accounting boundaries; they do not invent a USD cap for separately funded AIand. |
+| B7, AB7, IR179-02 | Concurrent callback hash-chain test, immutable stage artifacts and deferred audit-before-RESULT/ACK/restart checks. Late reply bytes remain in artifacts; parseable deferred replies preserve safe usage/reasoning and audit-only late_calls in ModelTrace; in-flight cutoff markers remain unchanged. |
+| IR179-07 | Real parallel reviewer workers remain blocked while mandatory planner/CLOCK HALT/reconciliation execute; PostgreSQL-backed restart retains completed audit without paid replay. Existing limiter outage, expired/context rejection, receiver and replay checks remain in the full suite. |
+| B8, AB8, IR179-08 | Measured1:100 composite bounded-boundary substitute executes actual workers, accounting/artifact checks, concurrent fsync, PG guard/heartbeat and Service watchdog. Both unsigned synchronous and signed background lanes remain below scaled300s with scaled600s watchdog; host I/O maxima/latency remain unqualified. |
+| B9/B10, AB9/10 | DEV-22, G-50 and rendered register; research requests configured180s, new v3 elapsed threshold with all frozen v1/v2 quality criteria preserved. Explicit historical60s demo fixtures retained; identity-only goldens and copied producer fixture reviewed. Pinned local full regression; actual Linux/systemd/original host bundle acceptance remains separate. |
+
+CI evidence: PR181 run39192967295 runtime job117869557655 has zero steps.
+GitHub annotation explicitly reports failed account payments/spending-limit;
+this is the existing account-owner #98 blocker, not a source/test assertion.
+No claim of Linux/systemd/mirror/original-bundle qualification or deployment.
+PR133's coordinator handoff says Yao stepped down: exact release/host work is
+with Keegan for release review and the next coordinator/AWS operator for host
+qualification, with Yao/account-owner access handoff if needed. Keith retains
+protocol/affordability, actual AIand usage and trial population/labels. No
+named review/endorsement is inferred, no adoption gate closes, and no AWS,
+private credentials, wallet keys, real provider calls or receiver writes occur.
+
+AB-IMPL01 final local acceptance at pushed runtime c8e8150: **2079 passed,
+9 skipped,3272 subtests passed,0 failures**,290.41s. The9 skips are one opt-in
+external-data check, five disposable-systemd checks and three Linux bubblewrap
+checks; these remain NOT_RUN on macOS, not waived or represented as PASS.
+Environment: macOS ARM64, Python3.12.14, exact deploy/requirements-test.lock
+venv (pip check clean), disposable PostgreSQL14.24 pinned image on local55448.
+Expanded components at3792b0b:14 passed/257 subtests,3.36s, including the added
+AB1 witness. Runtime/config/fixture bytes are unchanged after c8e8150; later
+commits add tests and result documentation only. Register rendering and diff
+whitespace checks PASS. Local test PostgreSQL is disposed after acceptance.
+
+Remaining: **Keegan** independently reviews179/180/181 and supplies exact
+Linux/systemd/restricted-worker/original-bundle release evidence; **account
+owner** resolves #98 or provides the approved CI substitute; **Keith** reviews
+B11 protocol/reporting and measured AIand/OpenAI affordability; **next coordinator
+with approved AWS operator** installs/qualifies the reviewed release, preserves
+ledger state and records real stage timing, charges and receiver ACK. This
+session performs none of those host operations. Signed adoption, source/route,
+profile/holding/caps and approved signer-session/key gates remain unchanged.
+PR133's live checklist/handoff is updated with PR181 and these remaining owners.
+
+## PR179-INT01 — Integration review of PR179/180/181 before merge (2026-10-19)
+
+Requested by the user: review, fix and merge PR179 with its stacked runtime review (PR180) and implementation
+(PR181). GitHub CI is not used (organisation Actions billing, #98); verification is local. Branch
+`claude/funny-shannon-jwaru9` = PR181 head `dfe9f95` + PR179 head `adfa58d` (Keith's PR179-RV01, which PR180/181
+did not contain) + the fixes below.
+
+Pass criteria, written before the final runs:
+- Merge conflicts in this file and `docs/LEDGER.md` resolved without losing PR179-RV01, IR179 or AB-IMPL01 text.
+- The full suite on the integrated branch in a `deploy/requirements-test.lock` venv with disposable local
+  PostgreSQL has no failures; skips are only the platform/external ones already listed in AB-IMPL01.
+- Every test touched here passes 10 repeated runs of its file (flake check), without changing runtime decisions.
+- B11, budgets, prompts, efforts and the routing file `a5fca50a…` are unchanged by these fixes.
+
+Findings and fixes:
+
+| ID | Finding at PR181 `dfe9f95` | Fix |
+|---|---|---|
+| INT01-1 | PR180 conflicted with PR179 (`adfa58d`, PR179-RV01) in this file and the ledger row. | Merged. AB1/AB2/AB11/AB12 take PR179-RV01's wording, which keeps Isaac's AB-IMPL01 clarifications (fallback witness for a non-ASSESSED primary; separate outer routed ID). PR179-RV01's `routing.primary_result_id` is implemented as `routing.primary_result.result_id` (with the primary's `artifact`; `null` when no primary ran). |
+| INT01-2 | PR179-RV01 AB1 (ASSESSED primary at 18 s, reviewer-0 ABSTAIN at 34 s, reviewer-1 confirming at 10 s → ABSTAIN / `ROUTING_REVIEW_DISSENT` / DISSENT) had only the pure matrix witness, no timing witness. | Added `test_ab1_18s_assessed_primary_34s_abstain_and_10s_confirm_is_dissent`, both completion orders: verdicts `[dissent, confirm]`, no claims, elapsed 62 s. |
+| INT01-3 | A routed request refused because the previous group still owns its workers was logged as `ASSESSMENT_DEADLINE_EXCEEDED`, although it never started; trial latency reports would count it as a timeout. | Reason `ROUTING_GROUP_BUSY` (also `no_model_call_reason`). Still UNAVAILABLE with no model call; the default deadline path and its assessment key are byte-identical. |
+| INT01-4 | Four PR181-era tests were flaky (failed 1–4 of 6–10 runs here; the PR181 full run here had 2 failures): `test_agent` first-step timeout reason depends on whether real elapsed time exceeds fake-clock time; two pacing tests and two cutoff tests assumed reviewer-0 dispatches first or only delayed reviewer-0's preparation. | Tests accept either fail-closed timeout reason, assert "an AIand high-effort reviewer first" instead of Kimi first, and delay both reviewers' preparation. No runtime change. |
+| INT01-5 | DEV-22 register text and plan.md G-50 / declared-values cells had missing spaces (`at most180s`, `on2026-10-19`). | Fixed in `deviations.v1.json` and re-rendered plan.md §6.5 from it (register test passes). |
+
+Not changed (noted for owners): the AB-IMPL01/IR179 prose keeps its missing spaces between words and numbers;
+`Deadline.remaining()` takes the larger of fake-clock and real elapsed time, which only matters with fake clocks.
+
+PR179-INT01 result **PASS** at `d26f795` (2026-10-19): full suite **2080 passed, 10 skipped, 3274 subtests, 0 failed**
+(564 s). Same run on PR181 `dfe9f95` for comparison: 2078 passed, 10 skipped, 2 failed (the INT01-4 flakes
+`test_model_timeout_error_and_invalid_output` and `test_external_transport_boundary_refuses_after_request_preparation_crosses_cutoff`).
+Skips: one opt-in external-data check, five disposable-systemd checks, three Linux bubblewrap checks (`bwrap` not
+installed) and one directory-mode check skipped because the runner is root; none is a waiver. Flake check: the four
+touched test files passed 10 consecutive runs together (104 tests, 315 subtests each). Environment: Linux x86-64
+cloud container, Python 3.12, venv from `deploy/requirements-test.lock` (installed without `--require-hashes`,
+because the lock lacks a hash for psycopg 3.3.6), disposable PostgreSQL 16 on 127.0.0.1:55448 (not the pinned 14.24
+image), disposed after the run. Prompts, efforts, budgets, B11 and the routing file `a5fca50a…` are unchanged by
+INT01. GitHub CI not run (#98). This is a code review and local acceptance only: Linux/systemd/
+restricted-worker/original-bundle release qualification, Keith's protocol/affordability review and host deployment
+remain open as listed in AB-IMPL01.
+
+PR179-INT01 merge (2026-10-19, after the PASS above). While this review ran, PR180 was merged into PR179's branch
+(`ba5095f`, adding Keegan's IR180-RV01 notes, kept above) and a second, independent IDEA-083 implementation was
+pushed directly to PR179's branch (`859f097..3dfddde`, Keegan's session, 05:35–05:49 UTC). The two implementations
+conflict. **User decision: land Isaac's PR181.** Keegan's nine commits are reverted in one revert commit (no history
+rewritten; they remain in Git for comparison) and the reverted tree equals `ba5095f`. Then this branch, which
+contains PR181 and the INT01 fixes, is merged on top together with the current `codex/system-testing-20261012`
+(`26b93fe`, clean merge). Full suite on that merged tree (`43d3346`, same environment as above): **2087 passed,
+10 skipped (same environment skips), 3324 subtests, 0 failed** (598 s). PR179 is then merged into
+`codex/system-testing-20261012`; PR180 and PR181 are merged by inclusion.

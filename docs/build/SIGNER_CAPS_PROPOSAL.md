@@ -85,9 +85,10 @@ The committed
 is an offline `SignerCapsProposal.v1` wrapper. It is **not** a
 `SignerService.v1` configuration and says `ready_to_install: false`.
 Both embedded policies retain `EXAMPLE_PENDING_TEAM_DECISION`, which the
-existing live-service validator refuses. Dev mode can accept example labels,
-so the label alone is not a dev-mode installation barrier: do not copy a
-candidate into the running config before approval. No host renderer reads this
+service validator refuses for both development and live signing (SR-01).
+Do not replace the marker or copy a candidate into the running config before
+measured numeric acceptance and the exact owner approval. A changed label alone
+does not prove approval. No host renderer reads this
 proposal automatically.
 
 From a committed/pushed revision, generate into a new file:
