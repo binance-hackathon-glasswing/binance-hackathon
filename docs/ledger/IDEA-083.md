@@ -463,3 +463,24 @@ failed payments/spending-limit (#98). Local129/120 verification is separate
 from this CI blocker. The temporary local PostgreSQL container was stopped and
 disposed. All review changes are documentation only; no app/config/test files
 or model/account state changed.
+
+
+## AB-IMPL01 — implementation criteria and initial regression result (2026-10-19)
+
+Keegan implementation follows merged PR180 and the explicit user request to fix
+and merge PR179. Use the 180000ms ceiling, primary one-third/60000ms cap,
+90000ms reviewer cap and fixed remaining-tool partition by reviewer precedence.
+Reserve the primary's full allowance while a late worker may still use it; do not
+reclaim allowances based on completion order. Keep conservative UNKNOWN charges.
+Legacy v1/v2 keep their OpenAI review stage and apply B11 to the external pair.
+Historical evaluation files keep their 60000ms inputs and are not new-budget results.
+
+Red tests pushed at859f097 before implementation: 255 failures (250 matrix
+subcases plus five integration/config cases),18 passing existing preferred-route
+tests. They expose the missing B11 selector, old ceiling, serial reviewers,
+primary-drain starvation, preparation-time dispatch and concurrent journal race.
+New code must pass these witnesses and the existing accounting/safety/restart
+suites, then the full pinned Linux/PostgreSQL suite and available systemd checks.
+No golden regeneration, provider call, wallet action or host deployment is part
+of this local verification. AB8's measured cycle evidence and AB10 environment
+limits must be recorded explicitly rather than inferred from stage arithmetic.

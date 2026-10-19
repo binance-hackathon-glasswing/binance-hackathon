@@ -1,4 +1,5 @@
 """Versioned observation and assessment boundary validation."""
+from larp.intelligence.deadlines import MAX_ASSESSMENT_MS
 
 import hashlib
 
@@ -34,7 +35,7 @@ def assessment_request(document,run_id,profile_hash,now_ms):
     require_hash(r['context_hash']); require_hash(r['policy_profile_hash'])
     budget=r['budget']
     if (type(budget['tool_calls']) is not int or not 0<=budget['tool_calls']<=6 or
-        type(budget['deadline_ms']) is not int or not 0<budget['deadline_ms']<=60000):
+        type(budget['deadline_ms']) is not int or not 0<budget['deadline_ms']<=MAX_ASSESSMENT_MS):
         raise ContractError('Assessment budget exceeds declaration')
     for reference in r['evidence_refs']:
         fact(Document.from_dict(reference),r['cutoff_ms'])

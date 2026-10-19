@@ -31,6 +31,8 @@ class DeferredAssessments:
         if self.root.is_symlink():
             raise ContractError('Model journal directory cannot be a symlink')
         self.pending, self.active = {}, None
+        self._writer_lock = threading.RLock()
+        self._audit_failed = False
         self.finished = threading.Event()
         for path in sorted(self.root.glob('*.jsonl')):
             events = self._read(path)
@@ -76,7 +78,14 @@ class DeferredAssessments:
         return events
 
     def _append(self, path, event):
-        # Only one writer exists for an active chain. ACK is written after its worker finished.
+        with self._writer_lock:
+            try:
+                self._append_locked(path, event)
+            except BaseException:
+                self._audit_failed = True
+                raise
+
+    def _append_locked(self, path, event):
         events = self._read(path)
         previous = '0' * 64
         if events:
@@ -117,6 +126,8 @@ class DeferredAssessments:
                 else:
                     self.assessor.audit_hook = hook
                     result = self.assessor.assess(request)
+                if self._audit_failed:
+                    raise ContractError('Model audit write failed')
                 self._append(path, dict(kind='RESULT', result=result.read()))
             except Exception as error:
                 # Never persist exception text: provider/OS exceptions can include credentials.

@@ -1,6 +1,6 @@
 """Bounded evidence agent: assess(AssessmentRequest.v1) -> AssessmentResult.v1.
 
-Loop (G-50 budget, at most 6 tool calls and 60 s, <= 3 tool types):
+Loop (G-50 budget, at most 6 tool calls and 180 s, <= 3 tool types):
 1. Validate identities, budget, tool allowlist, context hash and point-in-time evidence refs.
 2. Load the referenced filings' primary documents and 8-K item metadata; extract facts.
 3. The harness computes open gaps (unloaded exhibit, unknown prior comparison point,
@@ -21,6 +21,7 @@ result existed (feature availability); `cutoff_ms` is the evidence observation t
 """
 
 import threading
+from copy import deepcopy
 
 from larp.contracts import Document
 from larp.intelligence.common import (
@@ -33,6 +34,7 @@ from larp.intelligence.tools import (
     STATEMENTS, EvidenceIndex, ToolError, check_allowlist, comparable_pairs, load_document, load_items, run_tool,
 )
 from larp.intelligence.models import parse_output
+from larp.intelligence.deadlines import CURRENT_DEADLINE, Deadline
 from larp.intelligence.redflags import item_predicates, load_predicates, verify_item
 from larp.intelligence.verify import detect_conflicts, fact_as_claim, verify_claim
 
@@ -203,7 +205,7 @@ class EvidenceAssessor:
         return Document.from_dict(result)
 
     # ------------------------------------------------------------------ assess
-    def assess(self, request: Document, *, wait_for_worker=False) -> Document:
+    def assess(self, request: Document, *, wait_for_worker=False, worker_group=None, deadline=None) -> Document:
         """Bound policy authority by the deadline, optionally drain on a deferred caller's thread.
 
         A deferred caller already runs outside the safety loop. It must keep ownership of a timed-out
@@ -216,23 +218,30 @@ class EvidenceAssessor:
             validated = self._validate(r)
         except (IntelligenceError, KeyError, TypeError) as exc:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
-        box, cancel = {}, threading.Event()
+        deadline = deadline or Deadline(validated[3], self.clock)
+        box, cancel = {}, deadline.cancel
         io = {"steps": [], "started": 0, "tool_calls": []}  # completed I/O survives hard abandonment
 
         def work():
+            token = CURRENT_DEADLINE.set(deadline)
             try:
                 box["result"] = self._assess(r, start, validated, cancel, io)
             except BaseException as exc:  # re-raised in the caller's thread
                 box["error"] = exc
+            finally:
+                CURRENT_DEADLINE.reset(token)
 
         worker = threading.Thread(target=work, name=f"larp-assess:{r['job_id']}", daemon=True)
+        if worker_group is not None:
+            worker_group.append(worker)
         worker.start()
-        worker.join(validated[3] / 1000)  # wall-clock hard stop at the request deadline
+        worker.join(deadline.remaining() / 1000)
         if worker.is_alive():
             cancel.set()  # no further model or tool call; whatever the worker returns is discarded
+            frozen = self._abandoned(r, validated, start, deepcopy(io))
             if wait_for_worker:
                 worker.join()  # deferred caller only; never block the runtime safety/execution thread
-            return self._abandoned(r, validated, start, io)
+            return frozen
         if "error" in box:
             raise box["error"]
         return box["result"]
@@ -252,7 +261,7 @@ class EvidenceAssessor:
             if cancel.is_set():
                 status, reasons = "UNAVAILABLE", ["ASSESSMENT_DEADLINE_EXCEEDED"]
                 break
-            remaining = deadline - (self.clock() - start)
+            remaining = min(deadline - (self.clock() - start), CURRENT_DEADLINE.get().remaining())
             if remaining <= 0:
                 status, reasons = "UNAVAILABLE", ["TIME_BUDGET_EXHAUSTED"]
                 break
@@ -266,6 +275,10 @@ class EvidenceAssessor:
             m_request = {"schema": "ModelRequest.v1", "request_id": f"{self.request_namespace}{r['job_id']}:step:{step}",
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
                          "input": model_input}
+            remaining = CURRENT_DEADLINE.get().remaining()
+            if remaining <= 0:
+                status, reasons = 'UNAVAILABLE', ['ASSESSMENT_DEADLINE_EXCEEDED']
+                break
             step += 1
             io["started"] += 1
             io["in_flight"] = m_request  # what an abandoned result records if the deadline passes during this call
@@ -278,7 +291,7 @@ class EvidenceAssessor:
             finally:
                 io["in_flight"] = None
             model_io.append({"request": m_request, "response": m_response})
-            if m_response["status"] == "TIMEOUT" or self.clock() - start > deadline:
+            if m_response["status"] == "TIMEOUT" or CURRENT_DEADLINE.get().remaining() <= 0:
                 status, reasons = "UNAVAILABLE", ["MODEL_TIMEOUT"]
                 break
             if m_response["status"] == "ERROR":
@@ -299,7 +312,7 @@ class EvidenceAssessor:
                 state.missing.append("TOOL_BUDGET_EXHAUSTED")
                 claims_out = None  # harness facts only; the model did not confirm
                 break
-            if cancel.is_set():
+            if cancel.is_set() or CURRENT_DEADLINE.get().remaining() <= 0:
                 continue  # the loop head records the abandonment
             self._call_tool(state, action["tool"], action["args"])
         return self._result(r, state, entry, start, status, reasons, model_io, claims_out, rejected)
