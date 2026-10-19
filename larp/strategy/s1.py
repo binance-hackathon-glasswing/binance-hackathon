@@ -208,7 +208,7 @@ def _cut_clock(prev, cfg):
     return 0, expires - cfg["expiry"] if type(expires) is int else None
 
 
-def limiter_step(previous, *, session, cfg, evidence, assessment):
+def limiter_step(previous, *, session, cfg, evidence, assessment, input_complete=True):
     """One limiter round (IDEA-076 L01-L09). Returns (new state, record). Never raises exposure early.
 
     An accepted cut lapses after `expiry` healthy sessions without renewal (L09). A session is healthy when its
@@ -243,8 +243,10 @@ def limiter_step(previous, *, session, cfg, evidence, assessment):
                 record["capped_by_evidence_class"] = True
     healthy = (type(evidence) is list and len(verified) == len(evidence)
                if cfg["limiter_mode"] == "DETERMINISTIC" else record["rejected"] is None)
+    healthy = healthy and input_complete is True
     if cfg["limiter_mode"] == "DETERMINISTIC" and evidence is not None and not healthy:
-        record["rejected"] = "MALFORMED_OR_UNVERIFIED_EVIDENCE_INPUT"
+        record["rejected"] = ("INCOMPLETE_EVIDENCE_INPUT" if input_complete is not True
+                              else "MALFORMED_OR_UNVERIFIED_EVIDENCE_INPUT")
     record["healthy"] = healthy
     if level != "NORMAL" and healthy and (counted is None or session > counted):
         healthy_sessions, counted = healthy_sessions + 1, session

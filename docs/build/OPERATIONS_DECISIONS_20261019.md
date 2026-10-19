@@ -90,6 +90,10 @@ References for the pending numeric rows:
 
 ## DEV20 disposition proposal, kept separate from scheduled safety windows
 
+**Decided 2026-10-19 (Keegan): accepted.** The planner is omitted and declared
+as DEV-20 in `config/release/deviations.v1.json` (`decided` 2026-10-19, status
+DRAFT until C10). The proposal text below is kept as the reasoning.
+
 Recommend Keegan propose an explicit event-calendar-planner omission deviation
 for the next candidate unless a reviewed planner lands. The implemented frozen
 session/execution windows and scheduled-event evidence class do not constitute

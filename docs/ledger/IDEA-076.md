@@ -1,5 +1,47 @@
 # IDEA-076 — Build the S1 trading plan (trend-guarded volatility-weighted book)
 
+## PR187-RV1 — independent review (2026-10-19, prospective)
+
+User requests review, fixes and merge of PR187 into its existing PR133 parent.
+R1: an ADVERSE latch survives incomplete and expired later reviews. Status and
+availability alone therefore cannot certify a healthy limiter-expiry session.
+Pass: an accepted Class2 fact with an incomplete or expired underlying review
+remains available for reductions, but marks the input incomplete and cannot
+expire a previously accepted CAUTION. Fresh complete Class2-only reviews and
+CLEAR inputs still count healthy. Push criteria/tests before RED and behavior
+before GREEN; run the focused S1/native suite and applicable full regression.
+No profile, experiment result, policy default or live gate is adopted.
+
+R1 RED at pushed d96e1cb: both incomplete-review and expired-review subcases
+incorrectly report complete=True (2 failed / 1 passed). Fix requires the
+consumption-time complete review or complete-review-excluding-Class2 flag;
+ADVERSE alone grants no healthy session. Facts remain independently usable.
+
+R1 GREEN and independent review PASS at pushed `10a5cf3`. Focused local
+S1/native checks:74 passed,1 PostgreSQL skip,38 subtests; separate disposable
+PostgreSQL adapter/scheduler/restart/replay checks:11 passed,2 subtests,0 skips.
+The first macOS full run had2117 passed,9 expected platform/recording skips,
+3342 subtests and1 setup failure: the shell-wrapper subprocess found system
+Python without dotenv because the venv was not on PATH. Correcting PATH makes
+that unchanged test pass (1/1); no wrapper/product fix or single-run local full
+PASS is claimed. The local offline demo refuses because Linux bubblewrap is
+unavailable; its Linux CI counterpart passes. Dependency/deviation/whitespace
+checks pass; the disposable test database was removed.
+
+User explicitly approved the private Keegan4 mirror for this review after the
+initial automatic export rejection. Exact-source mirror
+[39231045091](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39231045091)
+is all4 SUCCESS:Linux/Python3.12.15/PostgreSQL14,2121 passed,6 expected skips,
+3342 subtests in365.19s; separate real systemd5 tests/5 subtests in14.85s;
+Terraform19/19 and1/1, both-role host bundle, restricted workers, demo and
+read-only/no-network Docker checks pass. Organization check39230525522 ran no
+runtime steps because of billing. Later review-record changes are documentation
+only, with qualified application/config/tool/test/deploy/workflow bytes unchanged.
+Evidence/log hashes: [pr187-review-20261019.json](../build/evidence/pr187-review-20261019.json).
+Normal history-preserving merge into PR133's parent is approved by the user's
+request. No EXP007/O2 acceptance, release publication, deployment, signing or
+whole live-input/host/adoption gate is completed by this review.
+
 - Date / author: 2026-10-16 / Claude Code session, at the user's request ("Build the S1 trading plan"). Owners of the plan: Keith (B2, B3) and Yao Zhu (B4); reviewer Isaac.
 - Status: open (S1 core repository review PASS; Isaac B6 full offline verification PASS in PR165 / EB-01 below; owner review, parameter approval, live inputs, B5/B7 and rehearsal remain).
 - What: the code for the team's 2026-10-16 strategy choice, S1 at 95%. The plan is in PR #123 (`claude/sweet-tesla-dx49h0`). It was first numbered IDEA-058 and has been renumbered to IDEA-075 (PR #123), because IDEA-058 is already the Gate A record. This record builds:
@@ -283,3 +325,26 @@ PostgreSQL14.24 verification at pushed61a123a:2029 passed,6 skipped,2981 subtest
 includes the strategy/integration/execution/signer bounds cases. Actual mirror
 push/dispatch are blocked by repository access. See IDEA057 V3-REL01 and
 [release record](../build/LLM_V3_RELEASE_20261018.md); no CI binary accepted yet.
+
+## PC-S1WIRE01 — remaining PR133 repository wiring (prospective, 2026-10-19)
+
+User requests all remaining tasks in one PR. Implement the currently supportable
+S1 evidence producer and session-close scheduler without inventing external
+source/provider/host evidence, approving policy values or enabling signing.
+Criteria: only accepted run/profile/issuer/hash/version contexts and explicitly
+enabled versioned Class2 predicates produce limiter facts. Stable identity and
+original event session prevent re-review/amendment renewal and late relabeling.
+Missing/unverified issuer coverage must never count a healthy expiry session,
+while valid adverse facts remain usable. Unsupported official classes stay absent.
+Freeze close-trigger job identity/due time to calendar/profile, with bounded
+retry and durable scheduler/round behavior; preserve safety priority and existing
+evidence I/O audit/replay. Add regression tests and push before RED; push behavior
+before GREEN. Exercise real local PostgreSQL/replay and full applicable suite.
+No external provider/model call, AWS, funding, key, real wallet or receiver action.
+Parameter/adoption/source/native/#27/#44/host/session/rights gates remain open.
+
+PC-S1WIRE01 progress: original RED at e68b319:5 failed/2 imported fixture tests passed (missing producer and close jobs); fixed test import to avoid collecting the helper class twice. Initial focused61 passed/27 subtests; PostgreSQL/replay/native subset74 passed/36 subtests at b9ea83f. Amendment extension correctly retains an independent original finding while rejecting a new identity from missing amendment origin; test assertion corrected rather than dropping valid adverse evidence. An intermediate full run06a11df was stopped without a result after self-review found unmappable event times could count healthy; fixed and covered at0191633. Final focused17 passed/9 subtests/0 skips,3.13s. Full final0191633 and approved mirror39227766192 are running; no PASS yet claimed. Class2-only/report live qualification false; actual official-event/full-source/profile/host acceptance remains open.
+
+PC-S1WIRE01 exact-source CI at0191633: approved mirror39227766192 all4 jobs SUCCESS. Linux/Python3.12.15/PostgreSQL14 runtime2119 passed/6 expected skips/3340 subtests,372.18s; separate actual systemd5 passed/5 subtests,14.60s. Both Terraform jobs and original host-bundle build/test (both roles), restricted-worker tests, demo and read-only/no-network Docker stages pass. CI logs and job metadata retained outsideGit; SHA256 and scoped results in build/evidence/pr133-remaining-20261019.json. No independent original artifact download/publication, host operation or trading qualification is claimed. Org39228699044 runtime ran zero steps; annotation confirms payments/spending limit. Local final full suite still running. O2 concrete default submitted separately for review before the real experiment; no owner signoff or result inferred.
+
+PC-S1WIRE01 final local full verification: **2119 passed /6 expected platform-or-recording skips /3340 subtests**,809.39s, Linux/Python3.12.14/PostgreSQL14.24. Same application/config/tools/tests/deploy/workflow/proposal bytes as qualified0191633. Actual systemd5/5 and full bundle/infrastructure checks are the separately scoped approved CI results. Final machine receipt retains local and CI log hashes. PR187 is ready for independent review, not merged. No local test duration is a measured real-host timing bound or #27/#60 adoption input. All actual source/provider/profile/policy/funding/host/rehearsal gates remain open.
