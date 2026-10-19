@@ -169,3 +169,49 @@ observations explicitly. Keep the Oct24/25 weekend records identifiable.
 If Gate B misses the existing Oct20 forecast, record the shortfall on that day
 under D-DN02/GAP04 and retain the actual signed start. No retroactive rehearsal
 credit. This packet leaves C09/C10, GAP04/35/36/37/52/62/65 and Gate C open.
+
+
+## Local evidence index checker — RG-02
+
+The offline utility creates a **new** JSON index and checks locally exported,
+sanitized evidence. It never calls cloud services, RPCs, databases or signing.
+Keep the index, identity file and evidence outside Git in approved local storage.
+The output path below must not already exist. These variables are explicit
+operator-supplied local paths, not credentials or live service destinations.
+
+```sh
+python tools/deploy/rehearsal_evidence.py init --out "$LARP_REHEARSAL_INDEX"
+python tools/deploy/rehearsal_evidence.py check \
+  --packet "$LARP_REHEARSAL_INDEX" \
+  --identity "$LARP_REHEARSAL_EXPECTED_IDENTITY" \
+  --evidence-root "$LARP_REHEARSAL_SANITIZED_EXPORT"
+```
+
+`init` writes ten NOT_RUN records. Fill top-level `identity` and each observed
+record's identity with the exact reviewed source commit, bundle/manifest/profile/
+bound-config SHA256 values, run ID and lowercase public wallet address. The
+separate expected-identity file is a JSON object with those same seven keys,
+obtained from the reviewed release/run bindings; do not generate it by copying
+an unverified packet. The index is JSON, distinct from the descriptive YAML
+attempt template above.
+
+Set a gate to REVIEWED only after operator observation and independent review.
+Include UTC start/end (YYYY-MM-DDTHH:MM:SSZ), operator/reviewer, pinned procedure,
+approval and review references, OBSERVED_HOST scope and individual criterion
+results. All required criterion keys are emitted by `init`; do not remove them.
+Every claimed PASS needs actual supporting artifacts; artifact rows have exactly
+`file` (a flat local sanitized export filename) and `sha256` (lowercase hex).
+No directory traversal, nested artifact paths, symlinks or special files are
+accepted. Input JSON is bounded to1MiB and each artifact to16MiB; split large
+sanitized exports into separately hashed files. Private credentials/signed bytes
+and unredacted provider configs are never valid evidence exports.
+
+Exit0 means **index structure and local artifact integrity complete**, exit1
+means incomplete records, exit2 means refused/malformed inputs. Reports contain
+only gate IDs and fixed reason codes, not paths or input contents. Even exit0
+always reports `gate_c_accepted=false`, `signing_enabled=false` and
+`host_results_verified=false`: file hashes and attributed claims cannot establish
+that a drill ran, that a claimed measurement is valid or that a reviewer approved
+activation. Keegan still reviews the original artifacts and criteria, including
+actual duration/weekend coverage or the explicitly reviewed shortfall. The checker
+does not independently compute daily duration or replay/chain correctness.

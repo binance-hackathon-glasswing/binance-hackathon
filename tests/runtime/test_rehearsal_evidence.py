@@ -119,6 +119,34 @@ class RehearsalEvidenceTests(unittest.TestCase):
         for token in ('secret', 'provider.invalid', path.name):
             self.assertNotIn(token, output.getvalue())
 
+    def test_cli_exit_codes_distinguish_complete_incomplete_and_refused(self):
+        packet = self.root/'packet.json'
+        identity = self.root/'identity.json'
+        identity.write_text(json.dumps(self.identity))
+        args = ['check', '--packet', str(packet), '--identity', str(identity), '--evidence-root', str(self.root)]
+        for expected, status in ((0, 'REVIEWED'), (1, 'NOT_RUN')):
+            with self.subTest(status=status):
+                self.packet['gates'][0]['status'] = status
+                packet.write_text(json.dumps(self.packet))
+                with contextlib.redirect_stdout(io.StringIO()) as output:
+                    self.assertEqual(gates.main(args), expected)
+                result = json.loads(output.getvalue())
+                self.assertFalse(result['gate_c_accepted'])
+                self.assertFalse(result['host_results_verified'])
+                self.assertEqual(result['packet_complete'], expected == 0)
+        identity.write_text('{}')
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(gates.main(args), 2)
+        self.assertEqual(json.loads(output.getvalue())['error'], 'PACKET_REFUSED')
+
+    def test_symlink_directory_and_duplicate_artifact_rejected(self):
+        alias = self.root/'alias'
+        alias.symlink_to(self.root, target_is_directory=True)
+        with self.assertRaises(gates.Refused):
+            gates.check(self.packet, self.identity, alias)
+        self.packet['gates'][0]['artifacts'].append(self.artifact.copy())
+        self.assertIn('DUPLICATE_ARTIFACT', self.result()['results'][0]['reasons'])
+
     def test_empty_and_oversized_artifacts_refused(self):
         self.file.write_bytes(b'')
         self.assertFalse(self.result()['packet_complete'])
