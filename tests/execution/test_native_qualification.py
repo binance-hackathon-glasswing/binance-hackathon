@@ -84,7 +84,7 @@ class NativeQualification(unittest.TestCase):
         from larp.execution_live.chain import ChainEvidence
         proof = ChainEvidence(rpc).native_receipt(fixtures.HASH)
         proof['receipt']['effectiveGasPrice'] = '0x2'
-        proof['transaction'].pop('gasPrice', None)
+        proof['tx'].pop('gasPrice', None)
         flow, gas = q.native_credit(proof, q.validate_inputs(self.inputs()))
         self.assertEqual(gas, int(proof['receipt']['gasUsed'], 16) * 2)
         self.assertGreater(flow, 0)
