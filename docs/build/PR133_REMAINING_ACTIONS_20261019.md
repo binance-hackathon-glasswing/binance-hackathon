@@ -17,9 +17,11 @@ Use the [live checklist](PRE_TRADING_CHECKLIST.md),
 
 ## Isaac can start now
 
-The user assigns **IQ01 activation-blocker matrix**, then **IQ02 declaration
-consistency audit**, to Isaac. Both use committed repository inputs and can
-proceed without the blocked execution prerequisites. Exact scope, deliverables
+Isaac delivered **IQ01 activation-blocker matrix** in
+[DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19);
+IQ01-RV01 accepts the repository matrix; GAP-05 is closed. **IQ02 declaration consistency audit**
+is the next assigned repository task and remains unstarted. Both use committed
+repository inputs without the blocked execution prerequisites. Exact scope, deliverables
 and Keegan review requirements are in the [ready queue](PRE_TRADING_CHECKLIST.md#isaac--ready-work-first-pc-isaac-queue01-2026-10-19).
 They are preparation slices of GAP-05 and GAP-02/GAP-62; final acceptance remains
 with Keegan. Missing external facts are recorded, not prerequisites to finishing

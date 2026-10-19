@@ -10,22 +10,15 @@
 
 The user assigns the following repository preparation to Isaac, in this order.
 Both can start from committed files without source export, private RPC access,
-AWS, fresh holdings or a signer session. Assignment does not record Isaac's
-acknowledgment or completion. Keegan retains final acceptance/activation ownership.
+AWS, fresh holdings or a signer session. IQ01 is delivered below; IQ02 remains unstarted.
+Keegan retains final acceptance/activation ownership.
 If a deliverable already exists, link and review it rather than create a duplicate.
 
-- [ ] **Isaac — IQ01, start first: mandatory activation-blocker matrix (GAP-05).**
-  Compare `DEPLOYMENT_BUILD.md` DR-01–DR-22, the current Gate A/B procedures,
-  `../skill/larp/plan.md` §6.2 and the live backlog. Add the missing explicit
-  mandatory-component/cut-line matrix to the existing deployment procedure.
-  Each row must name the requirement, code/config guard or manual acceptance
-  check, existing evidence reference, and exact missing evidence/owner.
-  Distinguish implemented, offline-tested and actually qualified states; retain
-  safety/logging/reconciliation/recovery requirements as activation blockers.
-  List removable optional features separately. Deliver a documentation PR with
-  source references and link checks; Keegan reviews before GAP-05 is closed.
-  No host check or policy adoption is needed to write the matrix. If an external
-  fact is absent, mark that row MISSING and continue the repository audit.
+- [x] **Isaac — IQ01: mandatory activation-blocker matrix delivered (GAP-05 review pending).**
+  [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md#iq01-activation-blocker-matrix-2026-10-19)
+  maps all22 DR requirements to current controls, evidence and remaining owners;
+  mandatory controls, optional scope and staged acceptance are explicit. Static
+  source/link/gate checks pass; results in IDEA-066 IQ01. IQ01-RV01 accepts the repository matrix; GAP-05 is closed. No missing external acceptance or policy decision is inferred.
 - [ ] **Isaac — IQ02, start after IQ01: declaration consistency audit (GAP-02/GAP-62).**
   Cross-check `../proposal/proposal_answers.md`, current adopted plan decisions,
   `../../config/release/deviations.v1.json` and `../../config/release/services.v1.json`.
