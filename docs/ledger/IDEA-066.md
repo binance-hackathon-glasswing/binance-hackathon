@@ -1984,3 +1984,17 @@ remain tracked separately. Actual deployment needs the approved operator/private
 handoff, preserving ledger/UNKNOWN charges and fixed cutoff, then actual host
 and signer/source/caps/session evidence. Temporary review PostgreSQL is disposed
 at session completion; no production database is involved.
+
+## PC-COORD01 — remaining-task coordination requested (2026-10-19)
+
+User asks to coordinate remaining PR133 work and write exact requirements there.
+Added PR133_REMAINING_ACTIONS_20261019.md: named workstreams, missing successor
+operator handoff, parallel code/input tasks, source-review/replay chain, measured
+policy/#27 gates, unsigned continuation versus signed acceptance, trial/strategy/
+rehearsal/final pack and housekeeping. Existing dates are conditional targets;
+no new numeric policy, owner acceptance or authorization is inferred. Operators
+are unassigned until account-owner/team handoff. Each task requires an output,
+dependency and evidence/blocked-input report. Existing completed tasks stay done.
+Document checks: links resolve, IDs unique, current code/release evidence remains
+correct and all changes are non-runtime documentation. No external messages,
+account, host, wallet/key, model/provider/receiver or trading action.

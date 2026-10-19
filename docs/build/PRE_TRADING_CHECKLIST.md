@@ -643,3 +643,10 @@ and whitespace checks PASS. These are completed repository tasks:
 Remaining rows above are unchanged: real assembly/install/trading is not
 accepted, B4 and strategy/input work remain, and external source/native/measured
 policy/operator inputs have not arrived. PR133 remains open.
+
+PC-COORD01: the current [owner/action/dependency plan](PR133_REMAINING_ACTIONS_20261019.md)
+turns the remaining checklist into exact deliverables and completion evidence.
+It names the missing coordinator/operator handoff explicitly and separates
+unsigned continuation from signed readiness. Existing completed checkboxes and
+remaining gates are unchanged; each owner records acceptance/output or the exact
+missing input in PR133. This is coordination, not deployment or policy approval.
