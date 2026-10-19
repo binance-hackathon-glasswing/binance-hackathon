@@ -361,3 +361,36 @@ failed payments/spending-limit (#98). Local129/120 verification is separate
 from this CI blocker. The temporary local PostgreSQL container was stopped and
 disposed. All review changes are documentation only; no app/config/test files
 or model/account state changed.
+
+## AB-IMPL01 — Isaac takes over Keegan implementation (2026-10-19)
+
+User explicitly asks this session to do Keegan's task as well. Implement on a
+separate branch containing179+180; no deployment/AWS/provider calls. Record
+and push new red tests first. Preserve model efforts/prompts/routing bytes,
+transport accounting guards, UNKNOWN charges and signed main-thread authority.
+Fix AB1 by making fallback-primary status explicit; the observed ASSESSED
+primary plus ABSTAIN reviewer remains DISSENT, per Yao's B11. Keep legacy
+AIand-first selection semantics separate and documented; B11 changes the
+OpenAI-preferred path for which it was approved, not historical v1/v2 trial data.
+
+Implementation criteria: central180000ms ceiling in configs/validators; primary
+min(total/3,60000), each parallel reviewer min(remaining,90000). Independent
+cancellable task handles separate cutoff snapshots from actual worker cleanup;
+one owned assessment group fences timed-out workers through audit completion,
+including unsigned callers. Serialize deferred audit appends. Deterministically
+reserve primary tool allowance and partition only safe remaining calls between
+reviewers, never exceeding six including late workers. Propagate an absolute
+worker deadline to provider dispatch after payload/accounting preparation.
+Preserve late cost semantics (TIMEOUT/UNKNOWN, no refund or decision resurrection).
+B11 matrix and original primary semantic content are immutable; root versus
+selected result identity is being clarified with Isaac while independent work
+continues. No unseen answer/approval is inferred.
+
+Red witnesses in tests/intelligence/test_assessment_budget.py cover config/stage
+limits, B11 status matrix, real concurrent reviewer dispatch, review dispatch
+after a primary timeout while the actual worker/lane remain owned, and concurrent
+hash-chain callbacks. After pushed implementation, run these plus existing
+routing/accounting/provider/signed/restart/watchdog checks, then the full pinned
+suite with local PostgreSQL. Review any required golden changes explicitly;
+never regenerate blindly. Declare DEV-22 and train/serve budget parity. Full
+Linux/systemd/original release and hosted acceptance stay separate owner gates.
