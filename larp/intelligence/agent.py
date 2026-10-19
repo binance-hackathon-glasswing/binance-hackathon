@@ -205,7 +205,8 @@ class EvidenceAssessor:
         return Document.from_dict(result)
 
     # ------------------------------------------------------------------ assess
-    def assess(self, request: Document, *, wait_for_worker=False, worker_group=None, deadline=None) -> Document:
+    def assess(self, request: Document, *, wait_for_worker=False, worker_group=None, deadline=None,
+               progress=None) -> Document:
         """Bound policy authority by the deadline, optionally drain on a deferred caller's thread.
 
         A deferred caller already runs outside the safety loop. It must keep ownership of a timed-out
@@ -224,7 +225,10 @@ class EvidenceAssessor:
             return self._rejected(r, str(exc) if isinstance(exc, IntelligenceError) else "MALFORMED", start)
         deadline = deadline or Deadline(validated[3], self.clock)
         box, cancel = {}, deadline.cancel
-        io = {"steps": [], "started": 0, "tool_calls": []}  # completed I/O survives hard abandonment
+        io = {"steps": [], "started": 0, "tool_calls": [], "in_flight": None}
+        if progress is not None:
+            # The router can freeze audit evidence even if this caller is descheduled at the cutoff.
+            progress['snapshot'] = lambda: self._abandoned(r, validated, start, deepcopy(io)).read()
 
         def work():
             token = CURRENT_DEADLINE.set(deadline)

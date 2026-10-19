@@ -325,15 +325,7 @@ class RoutedAssessor:
         original_tools = r['budget']['tool_calls']
         stages = []
 
-        def run(model, label, allowance, tool_allowance, stage_bound):
-            if stage_bound.remaining() <= 0:
-                return None
-            stage = deepcopy(r)
-            stage['budget'] = dict(tool_calls=tool_allowance, deadline_ms=allowance)
-            assessor = self.make_assessor(AuditedModel(model, audit_hook, label) if audit_hook else model)
-            assessor.request_namespace = label + ':'
-            result = assessor.assess(Document.from_dict(stage), worker_group=self._workers,
-                                     deadline=stage_bound).read()
+        def record_stage(model, label, result):
             payload = Document.from_dict(result).payload
             ref = self.artifacts.put(payload)
             if ref != sha256_hex(payload):
@@ -342,6 +334,17 @@ class RoutedAssessor:
             if audit_hook is not None:
                 audit_hook(dict(kind='STAGE', stage=label, result=result, artifact=ref))
             return record
+
+        def run(model, label, allowance, tool_allowance, stage_bound, progress=None):
+            if stage_bound.remaining() <= 0:
+                return None
+            stage = deepcopy(r)
+            stage['budget'] = dict(tool_calls=tool_allowance, deadline_ms=allowance)
+            assessor = self.make_assessor(AuditedModel(model, audit_hook, label) if audit_hook else model)
+            assessor.request_namespace = label + ':'
+            result = assessor.assess(Document.from_dict(stage), worker_group=self._workers,
+                                     deadline=stage_bound, progress=progress).read()
+            return record_stage(model, label, result)
 
         preferred = self.policy.get('openai_preferred')
         primary_model = self.openai if preferred else self.routine
@@ -388,7 +391,8 @@ class RoutedAssessor:
                     stage_bound = Deadline(allowance, self.clock, parent=bound)
                     def work(i=i, model=model, tools=tools, stage_bound=stage_bound):
                         try:
-                            boxes[i]['record'] = run(model, 'external-review-'+str(i), allowance, tools, stage_bound)
+                            boxes[i]['record'] = run(model, 'external-review-'+str(i), allowance, tools,
+                                                     stage_bound, progress=boxes[i])
                         except BaseException as error:
                             boxes[i]['error'] = error
                     worker = threading.Thread(target=work, name='larp-review-'+str(i), daemon=True)
@@ -401,6 +405,8 @@ class RoutedAssessor:
                     if 'error' in box:
                         raise box['error']
                     record = box.get('record')
+                    if record is None and 'snapshot' in box:
+                        record = record_stage(pair[i], 'external-review-'+str(i), box['snapshot']())
                     if record:
                         stages.append(record)
                     reviews.append(record['result'] if record else None)
