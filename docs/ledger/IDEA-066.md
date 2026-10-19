@@ -2185,3 +2185,9 @@ payments/spending limit (#98). This is a CI availability blocker, not an
 executed runtime failure or a PASS. Local focused results above stand; a future
 release still needs its required exact-source qualification. No AWS or billing
 setting was changed. PR133 description update succeeded and links PR186.
+
+## IQ02-RV01 — independent review of PR186 (2026-10-19)
+
+Criteria before verification: preserve submitted quotes/status/dates and OPEN/DRAFT refusal; verify register rendering/version-event/hash-binding and PostgreSQL live-activation checks; validate all local links,22 DR mappings and15 audit findings. Metadata changes require a future qualified release, not transfer of old artifacts.
+
+Found and fixed P2 semantic cross-reference errors: scope table cited swap/gas/hosting rows for evidence tools, gas for post-mortems, signer/settlement for strategy, and final-wallet/schedule rows for round logging; loss-control audit also cited settlement. Corrected to actual matching DR controls. Fixed stale B4 fixture ownership (current A07 Keegan) and Yao-only signer-session wording (accepted approved operator handoff). No register status, decision date, source quote, runtime behavior or readiness gate changed.
