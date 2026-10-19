@@ -283,3 +283,20 @@ PostgreSQL14.24 verification at pushed61a123a:2029 passed,6 skipped,2981 subtest
 includes the strategy/integration/execution/signer bounds cases. Actual mirror
 push/dispatch are blocked by repository access. See IDEA057 V3-REL01 and
 [release record](../build/LLM_V3_RELEASE_20261018.md); no CI binary accepted yet.
+
+## PC-S1WIRE01 — remaining PR133 repository wiring (prospective, 2026-10-19)
+
+User requests all remaining tasks in one PR. Implement the currently supportable
+S1 evidence producer and session-close scheduler without inventing external
+source/provider/host evidence, approving policy values or enabling signing.
+Criteria: only accepted run/profile/issuer/hash/version contexts and explicitly
+enabled versioned Class2 predicates produce limiter facts. Stable identity and
+original event session prevent re-review/amendment renewal and late relabeling.
+Missing/unverified issuer coverage must never count a healthy expiry session,
+while valid adverse facts remain usable. Unsupported official classes stay absent.
+Freeze close-trigger job identity/due time to calendar/profile, with bounded
+retry and durable scheduler/round behavior; preserve safety priority and existing
+evidence I/O audit/replay. Add regression tests and push before RED; push behavior
+before GREEN. Exercise real local PostgreSQL/replay and full applicable suite.
+No external provider/model call, AWS, funding, key, real wallet or receiver action.
+Parameter/adoption/source/native/#27/#44/host/session/rights gates remain open.
