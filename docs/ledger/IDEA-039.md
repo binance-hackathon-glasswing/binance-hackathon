@@ -475,3 +475,5 @@ No full-suite/CI pass, provider enablement, account signup or payment is claimed
 ## NT-RV02 — receipt gas-price qualification repair (prospective, 2026-10-19)
 
 During remaining-task review, native_credit eagerly evaluates tx[gasPrice] even when effectiveGasPrice exists in the receipt. A valid typed transaction without the legacy field can fail qualification. Add regression before RED; use receipt effective price when present, legacy transaction price only as fallback. Positive canonical native proof, gas arithmetic, privacy and no runtime/provider authority remain required. Run existing native qualification regressions with no external RPC.
+
+NT-RV02 RED at e6d8a91 demonstrates eager gasPrice KeyError with a valid effectiveGasPrice receipt. Initial test used incorrect proof key transaction; corrected to actual tx before the genuine RED. GREEN native subset is included in final17 passed/9 subtests at0191633. No private RPC input or positive actual provider qualification supplied; all enabled/selected/signing flags remain false.
