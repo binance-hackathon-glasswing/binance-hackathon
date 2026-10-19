@@ -105,6 +105,13 @@ exact routed configuration. These are actual host tasks, not new code-review tas
 
 ## Rehearsal, adoption and final activation
 
+[RG-01 rehearsal gate packet](REHEARSAL_GATES_20261019.md) prepares C09/C10:
+ordered DR13–22 criteria, DR04/05 crash prerequisites, existing host commands,
+per-attempt evidence and daily records. Preparation is complete; actual drills,
+missing host-specific invocation harnesses and owner reviews remain open.
+Account-owner details are resolved per the user's Oct19 update; actual access
+and qualification still require evidence.
+
 | ID | Owner | Required next output | Dependency / completion evidence |
 |---|---|---|---|
 | C01 | Approved operator | Export immutable actual unsigned job/source/usage populations and qualified-start identity; maintain spend/headroom, memory, ACK/anchors/backups and source monitoring. Remove the two private-RPC-bearing S3 transfer copies after the approved handoff and resolve earlier trial-DB creation history. | A01/A02; hashed exports and sanitized observed reports. Preserve the fixed cutoff and accounting state. |

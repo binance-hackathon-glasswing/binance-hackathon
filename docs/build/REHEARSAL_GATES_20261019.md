@@ -74,7 +74,8 @@ Read-only local config check (does not establish cloud/host readiness):
 python -m larp.runtime.operations check --config /etc/larp/operations.json
 ```
 
-Observed archive health (uses configured host access):
+Observed archive health (uses configured host access and publishes health
+metrics to CloudWatch; it is not a purely local/read-only check):
 
 ```sh
 python -m larp.runtime.operations health --config /etc/larp/operations.json
