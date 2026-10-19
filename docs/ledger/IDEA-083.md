@@ -686,3 +686,42 @@ release declarations to the merged B11/DEV-22 behavior and re-render the plan.
 No prompts, routing bytes, efforts, runtime decisions or adoption scope change.
 Pass criteria: register rendering/schema and release-register tests pass; the
 new corrected candidate, rather than def7700, must pass all exact-source CI jobs.
+
+
+### AB-REL01 result — PASS; original candidate delivered
+
+Frozen candidate `c5be26959a2b99d603c8d548f7c9767c9c2cf1e0` passes
+[acceptance39210402678](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678),
+all four jobs. Linux/Python3.12.15/PostgreSQL14.24 full suite: **2091 passed,
+6 skipped,3324 subtests**,487.03s. The five real systemd tests pass separately
+(5 subtests,17.90s); full-suite skips are those five opt-in systemd cases and
+one external corpus check. Restricted workers, both Terraform directories,
+demo, container build/smoke and both host-bundle provisioning roles pass.
+
+[Published original candidate](https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/idea083-c5be269)
+is a prerelease, not signed adoption. Artifact12167516848 ZIP digest is
+`a30e37a7880731613390edc5742b86549820706448ef7931089d1f91753b89fb`.
+The cloud artifact redirect was denied; publication-only workflow
+[39211350217](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39211350217)
+verified that original ZIP inside the approved mirror and uploaded its exact
+bytes without rebuild/recompression. Wrong source, failed run and failed job
+negative controls refuse before release materialization.
+
+Independent local download of the six published assets then PASSed API
+digests/sizes, all237 bundle checksums, all198 manifested files against frozen
+Git, identical external/embedded manifests, provisioner copies and CA identity.
+Bundle SHA256 `02b3aceeaa6b3e88a50b30c793c56ca3984fb97344bb7e21209cbcaa83735067`;
+manifest `9af8a58ef9bf40a99f98c0b0f9fefc860343250215226c101380481966ecaf19`;
+CA `d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b`.
+Receipt: [idea083-release-20261019.json](../build/evidence/idea083-release-20261019.json).
+Handoff: [candidate README](../build/releases/idea083-c5be269/README.md).
+
+Keegan's exact-source release qualification/delivery slice is complete.
+Remaining: Keith protocol/affordability and measured profile/fee inputs;
+source/replay/native qualification, adopted/implemented #27 lifetime and exact
+#44 caps; coordinator/operator access, funding/opening reconciliation, preserving
+ledger setup, host install/bind/activation, actual stage timing/charges/ACK and
+signer provisioning/approved key session. Preserve the fixed trial end and all
+UNKNOWN reservations/latches; use another trial DB until version-switch support
+is reviewed. No AWS/host, wallet/key/funding, provider or receiver action occurred.
+The following evidence-only commit changes no manifested candidate file.
