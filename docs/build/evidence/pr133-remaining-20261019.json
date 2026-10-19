@@ -49,8 +49,15 @@
     "seconds": 3.13
   },
   "local_full_suite": {
-    "status": "RUNNING",
-    "source": "01916338d30d560892742b8ef3a7a2fa49583cb7"
+    "status": "PASS",
+    "source": "01916338d30d560892742b8ef3a7a2fa49583cb7",
+    "python": "3.12.14",
+    "postgresql": "14.24",
+    "passed": 2119,
+    "skipped": 6,
+    "subtests": 3340,
+    "seconds": 809.39,
+    "log_sha256": "8cfdf21675b75d94884efd5f7732ecebf72ebeaa402cf60a2e21046eea048675"
   },
   "org_ci": {
     "run_id": 39228699044,
@@ -72,6 +79,6 @@
   "original_artifacts_independently_downloaded": false,
   "notes": [
     "CI qualification is for exact repository source, not real host/source/provider/trading acceptance.",
-    "Later changes are non-manifested documentation only; full local run is recorded separately on completion."
+    "Later changes are non-manifested documentation only; exact source also passes the independent local full suite."
   ]
 }
