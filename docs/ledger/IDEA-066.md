@@ -2207,3 +2207,46 @@ User requests tackling remaining work and opening a PR. PR187 implements the cur
 At frozen0191633, approved mirror39227766192 all4 PASS:2119 tests/6 skips/3340 subtests plus actual systemd5/5, infrastructure, restricted worker, demo/Docker and host bundle both roles. Independent local full matches2119/6/3340 in809.39s. Criteria/RED/GREEN in IDEA076 PC-S1WIRE01 and IDEA039 NT-RV02; machine receipt build/evidence/pr133-remaining-20261019.json. Later changes non-manifested docs only. Org39228699044 ran no runtime steps due billing. No original release asset download/publication or host operations claimed. PR187 ready for review and unmerged; parent133 remains open.
 
 No approved source export/private RPC/operator-host/profile-holdings inputs supplied to this session. A07 remains partial: official-event producers, full issuer/source coverage and actual S1 inputs/acceptance; O2 acceptance, DEV20/operations decisions, finite #27 implementation/adoption with actual source/timing, measured #44, funding/opening reconciliation, signer/session and actual rehearsal/DR/final pack remain open. This PR does not fabricate those outputs or owner signoffs. Disposable local PostgreSQL stopped/removed after completion; all changes committed/pushed.
+
+## PC-HOST03 — fresh host health, memory, timing, cost, source and ACK report (2026-10-19 10:46–10:50 UTC)
+
+Direct read-only SSM from a Claude Code session (IAM user `larp-claude-session`;
+each command approved by the user). SQL `READ ONLY`; budget ledger opened
+`mode=ro`; no `model_budget status`/`export` (they advance the ledger clock), no
+service, config, ledger, AWS or wallet change. Host `larp-dev-primary`, build
+`ea25b52`, run `larp-dev-llm-trial-20261018t170339z` (dev/shadow, `aiand_routed`,
+routing `a5fca50a…22d8d`). SSM: `cf8c3327-d7e1-4014-adbe-bc946af41525` (the
+reviewed `ops/llm-trial-20261018/checks/host-health.sh`, unchanged),
+`4f851d18-9fb8-436e-8b01-e86ff9ef04cc` (summary), `727785c7-9ae7-48c5-be2d-9a5d940c2771` (ledger by day).
+
+| Area | Observation |
+|---|---|
+| Services | runtime, evidence, uploader active, 0 restarts since 2026-10-18 17:04Z; execution inactive; archive timer waiting |
+| Operational health | `healthy=true`, `reasons=[]` |
+| Memory | t3.small 1909 MiB, 408 used, 1329 available, no swap; runtime 94 MB, uploader 56 MB, evidence 36 MB; 0 OOM/kill lines in 48 h |
+| Disk / load | `/` 20 GB, 14 % used; load 0.00–0.03; uptime 2 d 17 h |
+| Clock | chrony on Amazon Time Sync (169.254.169.123), offset ≈ 3 µs, NTPSynchronized=yes, leap normal (R-08 tracking evidence; no drift alarm checked) |
+| Journal | 0 error and 0 warning lines in 24 h for runtime/evidence/uploader |
+| Sources | 10/10 latest polls OK or NOT_MODIFIED (SEC press); DOJ and FR-BIS OK but `truncated=true`; 0 corrupt poll lines. Operational health is not source-coverage PASS |
+| Receiver ACK | audit chunks 46/46 ACK, each on attempt 1; 18 hourly anchors ACK (latest slot 10:00Z); 2 daily backups ACK (latest 2026-10-19 00:00Z) |
+| Rounds / timing | 29 rounds; cycle interval 5 s, timeout 600 s. Round start→decision: min 11.5 s, median 40.6 s, max 76.3 s |
+| Assessments | 16 ASSESSED, 13 UNAVAILABLE (11 `ASSESSMENT_DEADLINE_EXCEEDED` at the 60 s budget, 2 `MODEL_ERROR`) |
+| Model latency (ms, median / max) | OpenAI `gpt-6.1-sol` OK n=43: 4253 / 20895. Kimi K3 OK n=21: 4469 / 37042; ERROR n=5: 35025 / 42057. GLM-5.3 OK n=8: 2877 / 11639; ERROR n=2: 13975 / 14640 |
+| Model cost (trial `larp-unsigned-v3-20261018`, caps US$8 total, US$2.50/UTC day, ends 2026-10-22 00:00Z) | Oct 18: SETTLED 17 = US$0.132, UNKNOWN 2 = US$0.205; Oct 19 so far: SETTLED 26 = US$0.233. Trial total incl. UNKNOWN US$0.570. Pre-trial prior charge SETTLED US$2.00. Trial not stopped; no switches |
+
+Findings for owners:
+
+1. **Second UNKNOWN charge.** Besides the known 86b1476 charge (`5dd72471…`,
+   84,764 µUSD, admitted 2026-10-18 16:15:11Z), the ledger holds `1e04f16d…`,
+   119,776 µUSD, admitted 2026-10-18 20:45:15Z, during the current `ea25b52` run.
+   The coordinator handoff lists only one. Account owner/coordinator to reconcile
+   it with the provider (never edit the ledger).
+2. **Assessment deadline.** 11/29 assessments end UNAVAILABLE at the 60 s budget,
+   driven by sequential primary plus high-effort reviews and Kimi K3 errors at
+   23–42 s. This is the timing input for the routing/adoption decision
+   (IDEA-056/057, due Oct 22) and C-OPEN-003; no change made here.
+3. DOJ and FR-BIS polls remain truncated (coverage, not health).
+
+Result: fresh evidence collected; it qualifies nothing by itself. Host
+qualification acceptance stays with Keegan (GAP-72); the routing decision with
+the team; the UNKNOWN reconciliation with the account owner/coordinator.
