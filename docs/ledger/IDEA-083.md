@@ -679,3 +679,10 @@ manifest identity and packaged CA. Record exact hashes/run/source and deliver
 the original bundle as a candidate release; never rebuild/recompress it for
 publication. No host deployment, account/ledger changes, funding or signing.
 Existing source/native/#27/#44/adoption and host acceptance gates stay open.
+
+AB-REL01 declaration correction: services.v1.json and DEV-19 still described
+serial review and loss of primary authority on reviewer failure. Update only
+release declarations to the merged B11/DEV-22 behavior and re-render the plan.
+No prompts, routing bytes, efforts, runtime decisions or adoption scope change.
+Pass criteria: register rendering/schema and release-register tests pass; the
+new corrected candidate, rather than def7700, must pass all exact-source CI jobs.

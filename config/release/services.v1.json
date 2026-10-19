@@ -1,6 +1,6 @@
 {
   "schema": "ServicesList.v1",
-  "updated": "2026-10-18",
+  "updated": "2026-10-19",
   "basis": "F-61: third-party services are declared in the version manifest. Draft (IDEA-042 item 8); final at the Oct 26 freeze.",
   "services": [
     {
@@ -42,12 +42,12 @@
       "scope": "Unsigned v3 trial approved in PR168 / PC-REL05; complete model I/O and reasoning summaries retained. Host/provider qualification pending; signed/scored adoption remains separate.",
       "terms_ref": "docs/build/MODEL_PROVIDER_RIGHTS_20261018.md; docs/build/V3_BUDGET_PROPOSAL_20261018.md; IDEA-057 V3-REL01",
       "status": "PROVISIONING",
-      "fallback": "Independent AIand Kimi K3 high, then GLM-5.3 high; required review failures grant no authority and verified disagreement abstains. Deterministic shadow remains the default until explicit prepared routing.",
+      "fallback": "Independent AIand Kimi K3 high and GLM-5.3 high review concurrently (IDEA-083). An ASSESSED primary is preserved when reviews confirm or are unavailable; any verified disagreement or ABSTAIN blocks it. Without an ASSESSED primary, use an ASSESSED reviewer by fixed precedence, or remain UNAVAILABLE. Deterministic shadow remains the default until explicit prepared routing.",
       "selection_scope": "UNSIGNED_V3_TRIAL"
     },
     {
       "service_id": "assessor-model-aiand",
-      "provider": "AIand inference API (api.aiand.com): moonshotai/kimi-k3 / high, then zai-org/glm-5.3 / high",
+      "provider": "AIand inference API (api.aiand.com): moonshotai/kimi-k3 / high and zai-org/glm-5.3 / high (parallel reviewers, fixed fallback precedence)",
       "purpose": "Independent evidence review and fallback for OpenAI-primary v3; reviewers receive original evidence",
       "scope": "Opt-in unsigned v3 trial only; account funding/identity/network/rights checks pending. No low-effort routine call in v3; legacy v1/v2 configurations retain their own policies.",
       "terms_ref": "docs/build/MODEL_PROVIDER_RIGHTS_20261018.md; IDEA-057; config/intelligence/aiand-routing.openai-preferred.example.json",
