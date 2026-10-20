@@ -1,6 +1,7 @@
 # Remaining gates after PR199, PR200 and PR201
 
-OG-01, 2026-10-20. Base: canonical integration `dd30540`. This is the
+OG-01, 2026-10-20. Started from canonical `dd30540`; current review base is
+`697ff3a` (includes PR202). This is the
 follow-up to the merged gas-scope decision, finite execution authority and
 delivery-age guard. The live backlog remains [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md).
 
@@ -42,3 +43,9 @@ Use the existing [cap reviewer and assembly procedure](GATE_B_REMAINING.md#curre
 
 Nothing here selects a numeric value, enables signing, closes #27/#44/#30,
 finalizes a DRAFT deviation, or claims host or scored-run readiness.
+
+Repository verification at `6ba5dc8`: local native ARM64 Linux/PostgreSQL14.24
+suite **2228 passed / 8 explicit skips / 3681 subtests**; dependency checks,
+deviation rendering and offline demo PASS. The eight skips include the five
+separately opt-in real-systemd cases. These results do not qualify a release
+artifact or any host gate above. Full evidence: IDEA-061 LD08-OG01.

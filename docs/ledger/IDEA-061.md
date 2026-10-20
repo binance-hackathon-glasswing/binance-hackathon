@@ -159,3 +159,15 @@ gates; backlog/Gate B conflicts retain both scopes. Before rerunning, add a
 combined initial-only/untrusted/allowance-recovery assembly case proving both
 gas/host gates remain and a config/policy opt-in mismatch refuses. Any selected
 cleanup steps need their own measured reserve/seeding/timing coverage.
+
+Final combined verification at `6ba5dc8`, including canonical `697ff3a`:
+native ARM64 Linux / Python3.12.15 / disposable PostgreSQL14.24, **2228 passed,
+8 skipped, 3681 subtests**, 236.91 s. The 8 skips are two external/private
+fixtures, one root-only directory-mode check and five separately opt-in real
+systemd checks. Combined initial-only/allowance configuration selection:
+21 tests / 3 subtests PASS. `pip check`, deviation rendering, offline runtime
+demo and whitespace checks PASS; 20 local documentation link targets resolve.
+These are local tests, not hosted CI, an original release artifact or actual
+host/signing acceptance. No gate requiring measurements or a named decision
+is closed. Low-gas incident/alarm work and selected-profile qualification stay
+in the live backlog; legacy top-up capability is not adopted for v1.
