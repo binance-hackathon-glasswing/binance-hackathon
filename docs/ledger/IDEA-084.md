@@ -119,6 +119,9 @@ Accept correlated-basket/staggered-entry risk without demonstrated alpha. Prefer
 S1's bounded same-session sequential opening over adding a new four-session
 build constraint. Economic reports keep their original unsupported/inconclusive
 verdicts; this written risk acceptance is not a result upgrade.
+Choose no additional unbuilt regime/covariance governor beyond S1's trend,
+limiter and declared ladder for v1 (B-DEC04); record that omission. This does
+not remove existing hard constraints or assert a stress detector was built.
 
 ## PF-06 — B-DEC06/08 / #44 / #56 costs, gas and execution
 
@@ -137,6 +140,8 @@ exit reserve. If it cannot fit fee/cash/BNB/equity caps, reduce feasible activit
 or refuse the candidate. Keith supplies measurements; Isaac approves exact
 derived profile/policy/input hashes. **No raw gas limit, gas-price cap, #44 value
 or seeding amount is numerically approved without those inputs.**
+The20% limit headroom is a team engineering choice following the kit demo's
+estimate multiplier, not a proven coverage level or organizer requirement.
 
 Choose LD06 bounded zero-only allowance recovery for the preferred candidate
 after gas/timing review, with both independent opt-ins, original authority,

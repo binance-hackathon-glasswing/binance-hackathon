@@ -67,6 +67,13 @@ with five register checks/three subtests PASS and unchanged execution/test code.
 
 ## What still blocks installation / live acceptance
 
+**PF-01 (2026-10-21 SGT):** Isaac delegated profit-focused policy choices in
+[IDEA084](../ledger/IDEA-084.md). S1/95%, five-name/SKHYB scope, drawdown recovery,
+terminal windows, valuation/cost/model/provider/recovery directions are decided
+for implementation. Measured weights/gas/#44/budgets/ops values, affected code
+and tests, exact declaration/release and actual host/signing acceptance remain.
+This policy record does not change runtime readiness or qualify missing inputs.
+
 | Owner | Next accepted result |
 |---|---|
 | Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, quote/fee/gas/top-up coverage and #44 policy hashes; explicit untrusted-mode risk decision if selected. Historical fallback estimates do not qualify caps. |
