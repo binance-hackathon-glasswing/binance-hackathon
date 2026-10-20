@@ -2525,6 +2525,9 @@ corpus and live qualification remain outstanding; no deployment authorization.
 
 ### PC-AUDIT01-IMPL01 — delivered offline qualification
 
+Delivery: [PR206](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/206),
+draft against codex/system-testing-20261012; no merge or deployment requested.
+
 Final application source98fd293:2237 passed/8 explained skips/3727 subtests on
 Linuxaarch64/Python3.12.15/PostgreSQL14.24. Separate user-authorized actual
 systemd5/5 plus5 subtests, bubblewrap3/3 and nonroot permission1/1 PASS.
