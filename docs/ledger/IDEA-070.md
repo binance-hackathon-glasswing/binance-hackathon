@@ -736,3 +736,52 @@ says account payments failed or the spending limit must be increased. Local
 verification is not called hosted CI. Independent Keegan review/merge and the
 actual acceptance owners listed above remain the explicit handoff. All LD06
 changes are committed/pushed; no production operation is authorized by delivery.
+
+## LD02 — operator execution packet from `primary` (2026-10-20; prospective)
+
+Requested by Keegan to unblock LD03 (policy/hash review) and the #27 L/m choice
+(IDEA-049-C LD04). One read-only script, `docs/build/ops/ld02-20261020/execution-packet.sh`,
+runs on `primary` only (never the signer) and prints one sanitized JSON packet.
+The host release is `ea25b52`, which predates `untrusted_router`, so the script
+carries the canonical module's exact bytes (zlib + base64) and refuses to run if
+their SHA-256 differs from the pinned value; the module is loaded in memory only.
+
+**Pass criteria, written before the script is run (P1–P11):**
+
+- P1. **Sanitized:** the packet contains no `://`, no Web3 key or secret, no
+  wallet address, no DSN or IAM token, and no provider URL. Providers appear only
+  as source ID plus a 16-hex SHA-256 fingerprint of the URL. If the final scan
+  finds any of these, the script prints only a refusal and exits 2.
+- P2. **No host writes:** Web3 and RPC artifacts are kept in memory; SQL runs
+  `READ ONLY`; no file, service, config, ledger or AWS change. Hashes of
+  `runtime.json`, `release.json` and the strategy profile are equal before and after.
+- P3. **Identity:** host, run, build, release-manifest SHA, profile SHA, DB name,
+  run version/epoch/quarantine, and one wallet fingerprint that is consistent
+  across runtime config, `runs.wallet_id` and the ledger.
+- P4. **Holdings:** a fresh finalized ChainBalances.v1 from the approved ordered
+  balance providers, reconciled with the production `compare_balances` against
+  the current ledger; reservations, pending commands, open rounds and the
+  latest/pending nonces. Not a repeat of #92: no earlier check is cited as current.
+- P5. **Router draft:** the canonical `observe()` drafts the policy from live chain
+  state and this run's fresh quotes; the draft keeps `review = REVIEW_REQUIRED`,
+  `signing_enabled=false`. Six-token router allowances are read at one numeric block.
+- P6. **Quotes:** for each of the five bStocks, BUY at the profile's
+  `minimum_trade_units` and `per_trade_cap_units`, and SELL at the minimum
+  BUY's receive size, through the production `MarketPort.quote` with the
+  profile's slippage. Each records request binding (tokens, amount, decimals),
+  router, value, selector, round-trip ms, quoted gas, minimum vs quoted output,
+  and the inner route deadline minus request time. Failures keep their outcome code.
+- P7. **Timings:** RPC round trips per method and provider, quote round trips,
+  and latest-vs-finalized lag (blocks, seconds) at start and end. Signer
+  queue/sign/broadcast timings are recorded as `UNMEASURED` (no signer installed).
+- P8. **Funding input for Isaac:** BNB holdings, gas price, quoted swap gas,
+  indicative swap-only coverage and the exit-reserve comparison. Labelled an
+  input pending LD09's measured approve/swap gas, not a funding decision.
+- P9. **Execution RPC:** what `primary` configures for execution (expected:
+  none) and the candidate source IDs with fingerprints, status
+  `AWAITING_KEEGAN_CONFIRMATION`.
+- P10. **Claims:** the packet states it is not native-trace, signed-path or #92
+  evidence, and enables nothing.
+- P11. **Local:** offline tests cover the sanitizer, the embedded-module hash,
+  deadline extraction, quote binding and refusal paths; focused and full
+  suites pass.
