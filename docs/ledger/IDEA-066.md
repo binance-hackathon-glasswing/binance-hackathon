@@ -1782,6 +1782,15 @@ Remaining: review/merge correction and eventual propagation to future releases;
 Yao actual fresh preparation/preserving host/provider/ledger/first-assessment/ACK;
 all existing source/quality/signed owners. No host/AWS/model/ledger operation.
 
+BKL01 (2026-10-21, backlog prune requested by Keith): the PC-MIRROR01 backlog
+line is complete. Merged PR177 (`5d7c8f0`) and PR176 (`26b93fe`) are ancestors of
+the exact reviewed release `c5be269` (IDEA-083 AB-REL01: all four mirror jobs
+PASS, 237 bundle checksums, identical external/embedded manifests, registered
+repository and mirror build origin recorded in
+../build/evidence/idea083-release-20261019.json). The remaining installation-time
+approved-mirror package check and host `preflight --bind` result moves into the
+AB-REL01 backlog item. No host, AWS, release or checker action was performed.
+
 MERGE-RV20261019 / PR177 malformed metadata negative control: added array/object
 build_origin cases at pushed6e3b148. The existing qualification wrapper catches
 the internal membership TypeError and records CI_RELEASE_BYTES=FAIL;14 tests/
