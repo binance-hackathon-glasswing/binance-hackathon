@@ -791,3 +791,35 @@ its own positive ACK. Reconcile current D-05/DEV-18 status summaries with the
 recorded decision while keeping exact-host and numeric-value gates open.
 Run focused delivery/supervision/replay checks and the combined full Linux
 suite with disposable PostgreSQL before merging.
+
+LD13-RV01 results: `8d9d82e` reproduced the defect: after a fresh Guard saw
+the clock step from t+B back to t+B-1, it returned `CLEAR:DELIVERY_AGE` despite
+an unacknowledged overdue log. `2b60387` fixes this by including the durable
+delivery HALT's `since_ms` in the CLOCK refusal boundary. Restart cannot erase
+that boundary; CLOCK and DELIVERY_AGE remain active, signing stays blocked and
+reconciliation remains available. Multipart out-of-order ACK coverage passes:
+later chunks do not release the first pending chunk or reset its age.
+Current D-05/DEV-18 summaries and the remaining-work text are reconciled with
+the recorded decision; host/numeric/release acceptance is still open.
+
+Verification at `2b60387`, including merged PR199 (`db506bd`) and PR200
+(`c54642c`), on native ARM64 Linux / Python 3.12.15 / disposable PostgreSQL14.24:
+- Delivery/supervision/ACK/register selection: **38 passed, 13 subtests**.
+- Final complete suite: **2194 passed, 8 skipped, 3656 subtests**, 249 s.
+  Skips: two external/private fixtures, one root-only permission case and five
+  separately opt-in real-systemd cases. No systemd or host acceptance inferred.
+- `pip check`, deviation rendering and offline runtime demo PASS; whitespace
+  checks PASS. The checkout remained mounted read-only, with generated activation
+  fixtures on a disposable scratch mount.
+- First full attempt: 2189 passed / 5 failed / 8 skipped. Three failures were
+  read-only activation-fixture writes; two were Docker denying bubblewrap's
+  nested `/proc` mount. Fixing only the disposable runner (scratch mount and
+  Docker system-path/AppArmor settings) made all 55 affected-module tests pass,
+  then the full suite above. No application isolation limit was weakened.
+- Current Actions run `39387539536` has no executed runtime steps: its annotation
+  reports account payment/spending-limit refusal. This is local test evidence,
+  not hosted CI, release qualification or live signing acceptance.
+
+Remaining owners: Isaac chooses B/watchdog/memory after operator measurements
+(LD12/LD14); operator supplies exact-host recovery evidence; Keegan reviews the
+qualified release (LD15). The bound remains unset and disabled by default.
