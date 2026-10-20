@@ -30,6 +30,10 @@ locals {
       service     = "runtime", metric = "Quarantined", comparison = "GreaterThanThreshold", threshold = 0
       description = "The journal failed verification and the run is quarantined: every write and signature is fenced, so the agent has stopped trading. It does not clear during the scored run; a restore and reviewed takeover happen only outside it (runbook section 4)."
     }
+    runtime-low-gas = {
+      service     = "runtime", metric = "GasPairUnaffordable", comparison = "GreaterThanThreshold", threshold = 0
+      description = "Initial-only gas is below the pinned action budget, including an approve+swap pair. LOW_GAS is journaled at a quiet execution boundary. Buys preserve the exit reserve; affordable reductions and exits continue. No top-up or global HALT is triggered. Check gas_health and the measured reserve/seeding acceptance (IDEA-061 LD08)."
+    }
     uploader-overdue = {
       service     = "uploader", metric = "OverdueLogs", comparison = "GreaterThanThreshold", threshold = 0
       description = "A round log has not been acknowledged by the ai-seeds receiver in time. Past the delivery deadline (next UTC midnight + 2 h) the runtime HALTs with DELIVERY_DEADLINE until nothing is overdue. Check larp-uploader and its route to the receiver (runbook section 3)."

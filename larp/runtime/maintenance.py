@@ -186,6 +186,7 @@ class Maintenance:
                         runtime_alive=age is not None and age <= RUNTIME_HEARTBEAT_MS,
                         halt_reasons=sorted((projection.get('halt') or {}).get('reasons', {})),
                         quarantined=bool(run['quarantined']), audit_overdue=overdue,
+                        gas_pair_unaffordable=(projection.get('gas_health') or {}).get('pair_unaffordable', False),
                         signing_unanswered=unanswered,
                         signing_oldest_unanswered_s=None if oldest is None else now_s - oldest,
                         signing_enabled=False))

@@ -25,6 +25,9 @@ def initial_only(p):
         p['provenance'].pop(key)
     p['initial_gas_only'] = True
     p['provenance']['initial_gas_only'] = {'decision_id': 'SYNTHETIC LD07', 'formula': 'initial only'}
+    p['gas_action_budget_units'] = max(r['approve_gas_bnb_units'] + r['swap_gas_bnb_units']
+                                     for r in p['quote_cost_summary']['symbols'].values())
+    p['provenance']['gas_action_budget_units'] = {'decision_id': 'SYNTHETIC LD08', 'formula': 'max pair'}
     return p
 
 

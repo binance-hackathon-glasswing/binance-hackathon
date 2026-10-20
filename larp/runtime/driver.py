@@ -888,10 +888,11 @@ class RoundDriver:
     signing = False
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
-                 max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None):
+                 max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None, gas_check=None):
         self.coordinator, self.work = coordinator, work
         self.assessments = assessments
         self.balance_check = balance_check
+        self.gas_check = gas_check
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
         self.market, self.day_roll = market, day_roll
@@ -969,6 +970,8 @@ class RoundDriver:
             return summary
         if self.balance_check is not None and self.balance_check.due(now_ms, c.store.load(c.run_id).read()['projection']):
             summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
+        if self.gas_check is not None:
+            summary['gas_check'] = self.gas_check(now_ms)
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):

@@ -214,3 +214,9 @@ Pass criteria, before new regressions or implementation run:
   whole-run seeding, exact #44 decisions and actual alarm/host acceptance. Keith
   reviews accounting and Keegan policy/gates; candidate formulas and offline
   tests do not constitute their approval or complete those external gates.
+
+Red evidence: `37a8ad8` had four missing-feature failures and eight fixture
+uniqueness failures (the harness already owns wallet `wallet`). Isolated the
+new fixture's wallet at pushed `4d8a8e8`; all **12 tests fail** on the missing
+budget/monitor/driver support, Linux Python3.12/PostgreSQL14.24, 0.56s. No
+application repair was present in either run.

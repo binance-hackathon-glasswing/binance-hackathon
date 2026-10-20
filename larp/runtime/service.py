@@ -349,9 +349,12 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         from larp.runtime.deferred_models import DeferredAssessments
         deferred = DeferredAssessments(assessor, root=Path(d['market_artifact_root']) / 'model' / 'assessments',
                                        run_id=config['run_id'], build_id=config['build_id'], profile_hash=profile_hash)
+    from larp.strategy.schema import initial_gas_only
+    from larp.runtime.gas import InitialGasCheck
+    gas_check = InitialGasCheck(coordinator, profile) if initial_gas_only(profile) else None
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
-                       assessments=deferred,
+                       assessments=deferred, gas_check=gas_check,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 

@@ -89,7 +89,8 @@ def validate_live(p):
                     "policy_id", "evidence_mode", "falsifier_authority", "statement_authority",
                     "falsifier_ids", "assessment_required", "evidence_max_age_ms", "environment",
                     "expected_equity_units", "impact_median_bps", "series_kind", "red_flag_policy",
-                    "predicate_registry_hash", *(TOP_UP_KEYS if not initial_only else ()), "quote_cost_summary")
+                    "predicate_registry_hash", *(TOP_UP_KEYS if not initial_only else ("gas_action_budget_units",)),
+                    "quote_cost_summary")
         if any(key not in p for key in required):
             raise ContractError("Missing required live value")
         summary = quote_summary(p["quote_cost_summary"])
@@ -130,6 +131,8 @@ def validate_live(p):
         if instant(summary["observed_at"]) > instant(p["trade_after"]):
             raise ContractError("Future quote measurements")
         pair = max(r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in summary["symbols"].values())
+        if initial_only and not pair <= integer(p["gas_action_budget_units"], 1) <= p["exit_gas_reserve_units"]:
+            raise ContractError("Initial-only action gas budget must cover a pair within the exit reserve")
         gas_value = ceil(Fraction(pair * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
         minimum = max(ceil(Fraction(gas_value * 10000,
             50 - row["spread_bps"] - min(50, 2 * row["median_impact_bps"]) - row["fee_bps"]))
@@ -212,6 +215,7 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
         for key in TOP_UP_KEYS:
             base.pop(key)
         base["initial_gas_only"] = True
+        base["gas_action_budget_units"] = pair
     profiles = {}
     for env, window in WINDOWS.items():
         capital = 100_000_000 if env == "REHEARSAL" else 200_000_000
@@ -239,6 +243,7 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
             p["provenance"]["initial_gas_only"] = {"decision_id": "IDEA-061 LD07",
                 "formula": "Initial gas only; no agent top-ups; measured seeding and reserve acceptance pending"}
         formulas = {"minimum_trade_units": "max_symbol ceil(10000*pair_gas_value/(50-spread-min(50,2*median_impact)-fee_bp))",
+            "gas_action_budget_units": "max_symbol(approve_gas_bnb_units+swap_gas_bnb_units); include selected cleanup before acceptance",
             "cost_reserve_units": "ceil(expected_equity_units/1000): 50 bp of 20% position",
             "per_trade_cap_units": ("ceil(expected_equity_units*s1.high*max(s1.weights)) + cost_reserve_units" if cfg
                                     else "expected_equity_units/5 + cost_reserve_units"),
