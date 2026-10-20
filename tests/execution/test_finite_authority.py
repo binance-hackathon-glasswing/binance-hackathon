@@ -20,6 +20,7 @@ from larp.strategy.policy import decide
 from larp.strategy.schema import execution_authority
 from tests.execution_fixtures import (FakeDecoder, FakeGuards, FakeSigner, FakeVenue, SQLiteFixture, finalized,
                                       intent)
+from tests.support import DatabaseCase
 
 NOW = datetime(2026, 10, 10, 14, tzinfo=timezone.utc)
 FINITE = dict(execution_authority_seconds=120, submission_margin_seconds=10)
@@ -236,6 +237,45 @@ class Profile(unittest.TestCase):  # A8
                 execution_authority(dict(base, **values))
         with self.assertRaises(ContractError):  # the full profile validator applies it too
             planned(changes=dict(execution_authority_seconds=120))
+
+
+class ReleaseAuthority(DatabaseCase):
+    def setUp(self):
+        super().setUp()
+        from tests.execution.test_postgres_execution import ExecutionGuards, RegistrySigner
+        from larp.execution_live.store import ExecutionStore
+        self.registry = ExecutionStore(self.store, run_id='run', wallet=intent().wallet)
+        self.guards = ExecutionGuards(self.registry)
+        self.venue = FakeVenue(self.registry)
+        self.engine = Executor(self.registry, self.guards, self.venue, RegistrySigner(self.registry), FakeDecoder())
+        self.i = intent(amount=100 * 10**12, valid_until=100, authority_margin=5)
+        self.engine.create(self.i, 10)
+        self.engine.prepare(self.i.key, 11)
+        self.engine.authorize(self.i.key, 12)
+        self.engine.sign(self.i.key, 13)
+
+    def test_release_rechecks_margin_after_the_durable_possible_send_write(self):
+        from unittest.mock import Mock
+        from larp.execution import Conflict
+        from larp.execution_live.loop import FencedRelease
+        submitter = Mock()
+        self.venue.broadcast = FencedRelease(self.registry, submitter, clock_s=lambda: 95)
+        with self.assertRaises(Conflict):
+            self.engine.broadcast(self.i.key, 14)
+        submitter.send.assert_not_called()
+        state = self.registry.load(self.i.key)
+        self.assertEqual(state.attempts[-1].state, 'BROADCAST_ATTEMPTED')
+        self.assertIsNotNone(self.registry.lookup(state.attempts[-1].attempt_id, state.attempts[-1].payload.hash))
+
+    def test_finite_release_requires_a_current_clock(self):
+        from unittest.mock import Mock
+        from larp.execution import Conflict
+        from larp.execution_live.loop import FencedRelease
+        submitter = Mock()
+        self.venue.broadcast = FencedRelease(self.registry, submitter)
+        with self.assertRaises(Conflict):
+            self.engine.broadcast(self.i.key, 14)
+        submitter.send.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -946,3 +946,11 @@ margin or route-deadline margin calls no transaction signing and stores no
 signature. Run the authority, S1 execution and signer regressions, then the
 full Linux suite with disposable PostgreSQL on the current integration base.
 No numeric L/m or host qualification is adopted by these synthetic checks.
+
+LD04-RV01 finding: the executor checks its supplied tick before the durable
+`BROADCAST_ATTEMPTED` write, but `FencedRelease` checks only the S1 window with
+its fresh clock. A database/scheduling delay can therefore submit bytes after
+the new margin is exhausted. Before the fix, require a regression to refuse
+that send (and any finite-authority release with no current clock), call no
+submitter, and retain possible-send state for reconciliation. The fix must
+also recheck the decoded swap deadline at that boundary with the pinned decoder.
