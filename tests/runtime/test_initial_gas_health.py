@@ -41,6 +41,15 @@ class ProfileBudget(unittest.TestCase):
         with self.assertRaises(ContractError):
             validate_live(p)
 
+    def test_budget_cites_its_own_decision_and_top_up_profiles_refuse_one(self):
+        self.assertEqual(profile()['provenance']['gas_action_budget_units']['decision_id'], 'IDEA-061 LD07/LD08')
+        legacy = build_live_profiles(summary(), registry())['FINAL'].read()
+        validate_live(legacy)
+        legacy['gas_action_budget_units'] = 50_000
+        legacy['provenance']['gas_action_budget_units'] = {'decision_id': 'SYNTHETIC', 'formula': 'stray'}
+        with self.assertRaises(ContractError):
+            validate_live(legacy)
+
     def test_five_name_exit_covers_five_complete_action_budgets(self):
         from tests.strategy.test_s1_core import block
         p = build_live_profiles(summary(), registry(), s1=block(), initial_gas_only=True)['FINAL'].read()
@@ -139,6 +148,24 @@ class GasHealth(DatabaseCase):
         self.assertEqual(self.monitor()(100), 'PAIR_UNAFFORDABLE')
         self.assertEqual(self.state()['projection']['gas_health']['spendable_bnb_units'], 19_999)
 
+    def test_unreadable_ledger_is_skipped_not_raised(self):
+        monitor = self.monitor()
+        monitor.decimals = 9
+        before = self.state()['version']
+        self.assertEqual(monitor(100), 'SKIPPED')
+        self.assertEqual(self.state()['version'], before)
+
+    def test_top_up_profile_clears_an_earlier_alarm_once(self):
+        from larp.runtime.gas import RetiredGasCheck
+        self.monitor()(100)
+        legacy = build_live_profiles(summary(), registry())['FINAL'].read()
+        self.assertEqual(RetiredGasCheck(self.c, legacy)(200), 'NOT_MONITORED')
+        after = self.state()
+        self.assertFalse(after['projection']['gas_health']['pair_unaffordable'])
+        self.assertFalse(Maintenance(self.store, None, backup_interval_ms=24 * HOUR_MS).service_health('gas', 201).read()['gas_pair_unaffordable'])
+        RetiredGasCheck(self.c, legacy)(300)  # a restart does not journal again
+        self.assertEqual(self.state()['version'], after['version'])
+
     def test_pending_execution_is_not_invalidated_by_a_health_commit(self):
         self.update(lambda p: p.update(round_records={'r': {'execution_pending': True}}))
         before = self.state()['version']
@@ -186,6 +213,19 @@ class DriverBoundary(unittest.TestCase):
         driver = RoundDriver(c, work, execution=execution, gas_check=gas)
         self.assertEqual(driver.once(100)['waiting_for_claim'], ['command'])
         gas.assert_not_called()
+
+    def test_gas_check_waits_for_its_interval_without_a_reconciliation(self):
+        c, execution, work, gas = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        execution.settle_open.return_value = []
+        execution.waiting.return_value = []
+        execution.reauthorize.return_value = []
+        work.next.return_value = None
+        gas.due.return_value = False
+        RoundDriver(c, work, execution=execution, gas_check=gas).once(100)
+        gas.assert_not_called()
+        gas.due.return_value = True
+        RoundDriver(c, work, execution=execution, gas_check=gas).once(200)
+        gas.assert_called_once_with(200)
 
     def test_gas_check_runs_after_balance_reconciliation_before_work(self):
         c, execution, work = MagicMock(), MagicMock(), MagicMock()

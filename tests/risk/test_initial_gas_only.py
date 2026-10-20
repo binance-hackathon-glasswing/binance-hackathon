@@ -166,6 +166,13 @@ class InitialCaps(unittest.TestCase):
         self.fixture.save_inputs()
         self.assertIn('FULL_POSITION_USDT', self.fixture.report()['blockers'])
 
+    def test_starting_native_balance_must_cover_the_exit_reserve(self):
+        self.fixture.ledger['bnb_units'] = self.fixture.profile['exit_gas_reserve_units'] - 1
+        self.fixture.save_inputs()
+        r = self.fixture.report()
+        self.assertEqual(r['numeric_status'], 'BLOCKED')
+        self.assertIn('INITIAL_BNB_EXIT_RESERVE', r['blockers'])
+
     def test_native_policy_or_quote_cannot_pass_initial_only_coverage(self):
         self.fixture.policy['allowed_tokens'].append(NATIVE_BNB)
         self.fixture.save_inputs()

@@ -64,6 +64,8 @@ def validate_live(p):
         initial_only = uses_initial_gas(p)
         if initial_only and any(key in p for key in TOP_UP_KEYS):
             raise ContractError("Initial-only profile must not configure gas top-ups")
+        if not initial_only and "gas_action_budget_units" in p:
+            raise ContractError("Top-up profile must not configure an initial-only action budget")
         if p.get("values_origin") != "MEASURED_AND_DECIDED" or p.get("environment") not in WINDOWS:
             raise ContractError("LIVE values must be measured and decided")
         provenance = p.get("provenance")
@@ -133,8 +135,8 @@ def validate_live(p):
         pair = max(r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in summary["symbols"].values())
         if initial_only:
             action = integer(p["gas_action_budget_units"], 1)
-            if action < pair or p["exit_gas_reserve_units"] < (5 if s1 else 4) * action:
-                raise ContractError("Initial-only action budget and full-book exit reserve must cover every pair")
+            if action < pair:
+                raise ContractError("Initial-only action budget must cover every pair")
             pair = action  # supporting cleanup costs belong in minimum-trade feasibility too
         gas_value = ceil(Fraction(pair * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
         minimum = max(ceil(Fraction(gas_value * 10000,
@@ -245,6 +247,8 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
         if initial_gas_only:
             p["provenance"]["initial_gas_only"] = {"decision_id": "IDEA-061 LD07",
                 "formula": "Initial gas only; no agent top-ups; measured seeding and reserve acceptance pending"}
+            p["provenance"]["gas_action_budget_units"] = {"decision_id": "IDEA-061 LD07/LD08",
+                                                           "data_hash": summary.digest("QuoteCostSummary.v1")}
         formulas = {"minimum_trade_units": "max_symbol ceil(10000*pair_gas_value/(50-spread-min(50,2*median_impact)-fee_bp))",
             "gas_action_budget_units": "max_symbol(approve_gas_bnb_units+swap_gas_bnb_units); include selected cleanup before acceptance",
             "cost_reserve_units": "ceil(expected_equity_units/1000): 50 bp of 20% position",

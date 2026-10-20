@@ -15,7 +15,9 @@ from larp.strategy.schema import initial_gas_only, integer
 
 
 class InitialGasCheck:
-    def __init__(self, coordinator, profile):
+    QUIET = 'OK'  # the status an absent gas_health means
+
+    def __init__(self, coordinator, profile, *, interval_ms=60_000):
         validate_live(profile)
         if not initial_gas_only(profile):
             raise ContractError('Initial gas monitor requires initial-only scope')
@@ -24,6 +26,22 @@ class InitialGasCheck:
         self.reserve = profile['exit_gas_reserve_units']
         self.decimals = profile['quote_cost_summary']['bnb_decimals']
         self.profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
+        self.interval, self.next_ms = interval_ms, 0  # the first cycle checks
+
+    def due(self, now_ms):
+        return now_ms >= self.next_ms
+
+    def _state(self, projection, reservations):
+        ledger = ledger_from(projection, reservations)
+        ledger = spendable_view(ledger, (projection.get('balance_check') or {}).get('deficits') or {})
+        if ledger['bnb_decimals'] != self.decimals:
+            raise ContractError('Gas budget and ledger BNB scales differ')
+        available = integer(ledger['bnb_units'])
+        status = ('PAIR_UNAFFORDABLE' if available < self.action_budget else
+                  'BELOW_EXIT_RESERVE' if available < self.reserve else 'OK')
+        return dict(status=status, pair_unaffordable=status == 'PAIR_UNAFFORDABLE',
+                    spendable_bnb_units=available, bnb_decimals=self.decimals,
+                    action_budget_units=self.action_budget, exit_reserve_units=self.reserve)
 
     def __call__(self, now_ms):
         c = self.coordinator
@@ -39,22 +57,33 @@ class InitialGasCheck:
         if (run['reservations'] or c.store.open_rounds(c.run_id)
                 or any(r.get('execution_pending') for r in projection.get('round_records', {}).values())):
             return 'DEFERRED_IN_FLIGHT'
-        ledger = ledger_from(projection, run['reservations'])
-        ledger = spendable_view(ledger, (projection.get('balance_check') or {}).get('deficits') or {})
-        if ledger['bnb_decimals'] != self.decimals:
-            raise ContractError('Gas budget and ledger BNB scales differ')
-        available = integer(ledger['bnb_units'])
-        status = ('PAIR_UNAFFORDABLE' if available < self.action_budget else
-                  'BELOW_EXIT_RESERVE' if available < self.reserve else 'OK')
-        if status == previous.get('status', 'OK') and previous.get('profile_hash', self.profile_hash) == self.profile_hash:
+        self.next_ms = now_ms + self.interval
+        try:
+            state = self._state(projection, run['reservations'])
+        except (ContractError, KeyError, TypeError, ValueError):
+            # Passive monitor: a ledger it cannot read must not stop the round or exits (as BalanceCheck's SKIPPED).
+            return 'SKIPPED'
+        status = state['status']
+        if status == previous.get('status', self.QUIET) and previous.get('profile_hash', self.profile_hash) == self.profile_hash:
             return status
-        state = dict(status=status, pair_unaffordable=status == 'PAIR_UNAFFORDABLE',
-                     spendable_bnb_units=available, bnb_decimals=self.decimals,
-                     action_budget_units=self.action_budget, exit_reserve_units=self.reserve,
-                     profile_hash=self.profile_hash, at_ms=now_ms)
+        state.update(profile_hash=self.profile_hash, at_ms=now_ms)
         changed = deepcopy(projection)
         changed['gas_health'] = state
-        incident = dict(type='LOW_GAS_CLEARED' if status == 'OK' else 'LOW_GAS', **state)
+        incident = dict(type='LOW_GAS_CLEARED' if status in ('OK', 'NOT_MONITORED') else 'LOW_GAS', **state)
         event_id = f"incident:gas:{run['epoch']}:{run['version'] + 1}"
         c.store.commit(batch_for(current, event_id, dict(kind='INCIDENT', incident=incident), projection=changed))
         return status
+
+
+class RetiredGasCheck(InitialGasCheck):
+    """A top-up profile publishes no low-gas signal (INITIAL_GAS_ONLY.md): clear, once and at a quiet boundary, any
+    gas_health an earlier initial-only profile left, so GasPairUnaffordable cannot stay raised."""
+    QUIET = 'NOT_MONITORED'
+
+    def __init__(self, coordinator, profile, *, interval_ms=60_000):
+        self.coordinator = coordinator
+        self.profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
+        self.interval, self.next_ms = interval_ms, 0
+
+    def _state(self, projection, reservations):
+        return dict(status='NOT_MONITORED', pair_unaffordable=False)

@@ -33,8 +33,13 @@ a backward clock cannot clear a warning. No global HALT or automatic funding is
 added. The planner and execution service retain independent per-action gas
 checks, so a warning never grants permission or promises an exit will execute.
 The stored state describes the last transition, not a continuous balance feed.
+The check runs at most once a minute and after every balance reconciliation; a
+ledger it cannot read is `SKIPPED` and never stops the round or exits.
 Historical top-up profiles do not install this monitor and publish zero for its
-signal. No selected production profile or readiness flag is changed.
+signal: their driver journals one `LOW_GAS_CLEARED` (`NOT_MONITORED`) if an
+earlier initial-only profile left the alarm raised. The caps review and Gate B
+DR-06 refuse a starting native balance below the full-exit reserve, since no
+top-up can restore it. No selected production profile or readiness flag is changed.
 
 ## Measured packet still needed
 

@@ -970,8 +970,8 @@ class RoundDriver:
             return summary
         if self.balance_check is not None and self.balance_check.due(now_ms, c.store.load(c.run_id).read()['projection']):
             summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
-        if self.gas_check is not None:
-            summary['gas_check'] = self.gas_check(now_ms)
+        if self.gas_check is not None and ('balance_check' in summary or self.gas_check.due(now_ms)):
+            summary['gas_check'] = self.gas_check(now_ms)  # at its interval, and after every reconciliation
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):

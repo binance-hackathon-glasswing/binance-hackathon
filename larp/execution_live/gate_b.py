@@ -312,6 +312,8 @@ def readiness_report(inputs, *, now, base_dir):
             raise Blocked('initial native funding differs from chain capture')
         if not starting_balances_match(value, chain):
             raise Blocked('initial cash or positions differ from chain capture')
+        if profile is not None and initial_gas_only(profile) and value['bnb_units'] < profile['exit_gas_reserve_units']:
+            raise Blocked('initial native funding is below the exit gas reserve; no top-up can restore it')
         if profile is not None and initial_gas_only(profile):
             checks['DR-06']['detail'] = ('Initial-only funding/18-decimal ledger checked; measured whole-run seeding, '
                 'full-exit reserve, low-gas incident/alarm and full balance reconciliation acceptance still required; '

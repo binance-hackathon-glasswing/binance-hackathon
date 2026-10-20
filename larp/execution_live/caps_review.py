@@ -96,6 +96,9 @@ def review(inputs, *, now, base_dir):
     required_cash = max(p['per_trade_cap_units'], 0 if initial_only else p['gas_top_up_cash_units']) * 10**12
     check('FULL_POSITION_USDT' if initial_only else 'FULL_POSITION_AND_TOPUP_USDT',
           required_cash, policy.max_input_units.get(USDT, 0))
+    if initial_only:
+        # No top-up path: the starting native balance must already cover the full-exit reserve.
+        check('INITIAL_BNB_EXIT_RESERVE', integer(p['exit_gas_reserve_units']), integer(ledger['bnb_units']))
     for symbol, token in sorted(TOKENS.items()):
         holding = ledger['positions'][symbol]
         if type(holding['decimals']) is not int or holding['decimals'] != decimals[symbol]:
