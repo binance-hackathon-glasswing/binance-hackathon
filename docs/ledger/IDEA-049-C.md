@@ -902,3 +902,37 @@ release an uncertain send.
 Out of scope: choosing L/m (after LD02), an UNKNOWN-send release rule (unchanged:
 reconciliation continues and reservations are kept), and gas top-ups (v1 is
 initial-gas-only, LD07).
+
+### LD04 results at `884021f` (2026-10-20)
+
+Criteria were pushed first, at `b72448b`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **A1 PASS.** Without the settings, plans carry no `authority`, and a
+  discretionary intent stays within its proposal. The existing redteam R03
+  still passes.
+- **A2 PASS.** With L=120 and m=10 (test values), `expires_ms` = t0 + 120 s,
+  beyond both the proposal and the planning quote. A discretionary buy 60 s
+  before `new_risk_end` is capped at `new_risk_end`; a mandatory sell after
+  it gets t0 + 120 s.
+- **A3 PASS.** The authority record matches, and replanning is byte-identical.
+- **A4 PASS.** Five malformed or mismatched records are refused. Mapping the
+  same stored command twice gives an identical Intent with the planned end
+  and margin.
+- **A5 PASS.** The margin refuses a deadline inside the margin, a deadline
+  after A and a step with no margin left. With m = 0 the existing rule is
+  unchanged.
+- **A6 PASS.** Approve → finality at +10 s → re-quote (deadline +40 s) → sign
+  succeeds. A finality at +35 s, then a restart, keeps A = t0 + 60; the
+  re-quote with deadline +65 is refused, and at +56 the margin refuses.
+- **A7 PASS.** The signer runs the same `validate_payload` on the stored
+  intent, covered by the A5 cases.
+- **A8 PASS.** Five profile-setting refusals; the full profile validator
+  refuses a lone setting.
+- **A9 PASS.** Full suite: **2168 passed, 11 skipped (environment), 3641
+  subtests**, 411.2 s.
+
+A mutation check confirmed the margin test fails when the margin is removed
+from the deadline comparison. Not done: choosing L and m (LD02 timings),
+review/merge, and release qualification (LD15). No live or signed path is
+enabled by this change.
