@@ -2441,3 +2441,27 @@ checksum, drain/anchor, preserving-stop and stable-accounting criteria are in
 PR133 currently separates LD12 export/accounting/host evidence from Keith's LD11
 population/labels/quality report. Early stop does not satisfy missing unsigned
 hours, blind labels, provider billing/rights or adoption. No criterion weakened.
+
+### PC-STOP01 verified — 2026-10-20 12:38–12:43 UTC
+
+User-authorized retrieval and early shutdown completed. Pre-stop export verified
+before stopping; final 31,701,204-byte private archive has 14,544 matching file
+hashes, valid Backup.v1 digest, three SQLite integrity checks and KMS/COMPLIANCE
+retention through Jan10. All six trial units inactive/disabled/PID0; independent
+recheck finds no additional charges. Runtime session ended cleanly after43.56h;
+70 rounds CLOSED,109 chunks ACK,zero unchunked. New independent Anchor.v2 binds
+final sequence188/head and reads back STORED; hourly outbox unchanged. Original
+EC2/RDS/configs/databases retained. Shared budget backup bytes are identical
+before/after:104 SETTLED/2,880,356microUSD (includes2,000,000initial),3 UNKNOWN/
+337,180microUSD,106 trial attribution rows; no reset/forgiveness.
+
+70 distinct assessor jobs/41 contexts/2 issuers:41 ASSESSED,29 UNAVAILABLE
+(25 deadlines,4 model errors),201 requests started/174 completed step records/
+27 historical deadline-in-flight records;502 model artifact files. Frozen72h
+unsigned observation criterion unmet; no labels/accuracy/adoption pass. Keith
+owns frozen draw/blind labels/quality and measured affordability; Yao/account
+owners actual billing/UNKNOWN/rights and remaining host evidence; Keegan/team
+trial disposition/adoption/signed acceptance. PR133 LD11/LD12 stay partial with
+export/shutdown subtask complete. Full results, hashes and command IDs:
+[report](../build/LLM_TRIAL_STOP_20261020.md),
+[receipt](../build/evidence/llm-trial-stop-20261020.json).
