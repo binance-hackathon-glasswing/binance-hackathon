@@ -26,3 +26,12 @@ Prospective acceptance, recorded before export/shutdown:
 Private exports belong under git-ignored
 `deploy/activation/trial-stop-20261020/`; no raw model/source/label data,
 credentials, private endpoints or presigned URLs go into Git.
+
+Operational addition before execution: the 12:00 UTC scheduled ACK anchor covers
+sequence 187, while the stopped journal is sequence 188. The exact-run retirement
+script [close-and-anchor.sh](ops/trial-stop-20261020/close-and-anchor.sh) uses the
+installed `S3Archive` implementation to preserve a separate on-demand `Anchor.v2`
+under a new namespace, with version read-back, checksum, KMS and compliance
+retention verification. It does not change the journal or scheduled outbox, claim
+a later scheduled-hour ACK, or require another model round. All audit work must
+be drained and the process session closed before this final anchor is written.
