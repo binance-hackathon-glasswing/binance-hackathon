@@ -76,8 +76,7 @@ def claim_schema_error(claim) -> str | None:
             return reason
     if claim.get("range") is not None and (type(claim["range"]) is not list or len(claim["range"]) != 2):
         return "RANGE_MALFORMED"
-    if claim.get("statement") is not None and (type(claim["statement"]) is not dict
-            or set(claim["statement"]) - set(_SEMANTIC_FIELDS) or any(
+    if claim.get("statement") is not None and (type(claim["statement"]) is not dict or any(
             type(claim["statement"].get(k)) not in (str, type(None)) for k in _SEMANTIC_FIELDS)):
         return "STATEMENT_MALFORMED"
     return None

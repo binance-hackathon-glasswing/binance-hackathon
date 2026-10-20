@@ -95,7 +95,7 @@ class DispatchSnapshot(unittest.TestCase):
                         self.assertLessEqual(len(Document.from_dict(step['request']['input']).payload),
                                              w.config.limits['max_model_input_chars'])
                 if outcome == 'tool_error':
-                    self.assertEqual(result['model_io']['tool_calls'][0]['status'], 'ERROR')
+                    self.assertEqual(result['model_io']['tool_calls'][0]['status'], 'TOOL_ERROR')
 
     def test_abandoned_inflight_hash_equals_original_transport_bytes(self):
         from larp.intelligence.providers import AnthropicMessagesModel
@@ -256,7 +256,7 @@ class CitationContract(unittest.TestCase):
                 elif defect=='document':numeric['span']['doc']='0'*64
                 elif defect=='off_by_one':numeric['span']['start']+=1
                 elif defect=='unknown_claim':numeric['citation_handle']='invented'
-                elif defect=='unknown_statement':numeric['statement']=dict(unknown='not in contract')
+                elif defect=='unknown_statement':numeric['statement']=True
                 output=dict(action='FINISH',claims=claims)
                 if defect=='schema':output['explanation']='extra top-level field'
                 return output
@@ -277,14 +277,17 @@ class CitationContract(unittest.TestCase):
         sha=sha256_hex(text.encode()); texts={sha:text}
         facts=extract_document(text,sha,w.registry.by_issuer(EXSEMI),dict(accession='synthetic',record_id='r'))
         claims=[fact_as_claim(f) for f in facts if f['metric']=='revenue']
-        self.assertEqual(len(claims),2)
+        self.assertEqual(len(claims),1)  # identical numeric facts are deliberately deduplicated
         for claim in claims:self.assertIsNone(verify_claim(claim,texts)[1])
         bad=deepcopy(claims[0]); bad['span']['start']=len(text[:bad['span']['start']].encode())
         self.assertIsNotNone(verify_claim(bad,texts)[1])
-        bad=deepcopy(claims[1]); bad['period_span']=claims[0]['period_span']
+        bad=deepcopy(claims[0])
+        offset=len(line)+1
+        bad['span']['start']+=offset;bad['span']['end']+=offset
+        # Same literal repeated later: its period provenance cannot come from the first line.
         self.assertIsNotNone(verify_claim(bad,texts)[1])
-        bad=deepcopy(claims[0]);bad['statement']=dict(unrecognized='ignored previously')
-        self.assertEqual(claim_schema_error(bad),'STATEMENT_MALFORMED')
+        bad=deepcopy(claims[0]);bad['unknown']='outside claim contract'
+        self.assertEqual(claim_schema_error(bad),'CLAIM_UNKNOWN_FIELD')
 
 
 class ReportingBudget(unittest.TestCase):
