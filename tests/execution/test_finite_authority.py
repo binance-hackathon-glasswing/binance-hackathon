@@ -58,6 +58,25 @@ class Planner(unittest.TestCase):  # A1-A3
             self.assertEqual(a, dict(decision_ms=ms(NOW), proposal_expires_ms=ms(proposal.valid_until),
                                      authority_ms=i['expires_ms'], authority_seconds=120, margin_seconds=10))
 
+    def test_signing_end_caps_mandatory_exit_authority(self):
+        end = datetime(2026, 10, 22, tzinfo=timezone.utc)
+        _, _, plan, _ = planned(now=end - timedelta(seconds=60), held={'NVDAB': 15_000}, changes=FINITE)
+        intents = plan.read()['intents']
+        self.assertTrue(intents)
+        self.assertTrue(all(i['mandatory'] and i['side'] == 'SELL' for i in intents))
+        self.assertEqual({i['expires_ms'] for i in intents}, {ms(end)})
+
+    def test_s1_window_caps_finite_authority(self):
+        from tests.strategy.test_execution_bounds import at
+        s = with_quotes(at('2026-10-10T19:44:00Z', profile_changes=FINITE))
+        plan = RuntimePlanner(job_validity_ms=60_000, job_max_attempts=3).plan(s, decide(s, s.policy_state))
+        intents = plan.read()['intents']
+        self.assertTrue(intents)
+        end = ms(NOW.replace(hour=19, minute=45))
+        self.assertEqual({i['expires_ms'] for i in intents}, {end})
+        self.assertTrue(all(i['authority']['authority_ms'] == i['execution_bounds']['valid_until_ms']
+                            for i in intents))
+
     def test_a2_new_risk_end_caps_a_discretionary_buy_but_not_a_mandatory_sell(self):
         end = datetime(2026, 10, 20, tzinfo=timezone.utc)  # the fixture profile's new_risk_end
         buy_time = end - timedelta(seconds=60)
@@ -118,6 +137,22 @@ def fake_swap(i, deadline, nonce=0):
 
 
 class Payloads(unittest.TestCase):  # A5, A7 (the signer runs this same validate_payload on the stored intent)
+    def test_local_signer_refuses_both_margins_before_signing(self):
+        from unittest.mock import Mock
+        from larp.signer.local import LocalSigner
+        from tests.signer.test_local import Registry
+        i = intent(valid_until=1060, authority_margin=5)
+        for now, deadline in ((1055, 1059), (1026, 1030)):
+            with self.subTest(now=now, deadline=deadline):
+                account, registry = Mock(address=i.wallet), Registry()
+                signer = LocalSigner(account=account, expected_address=i.wallet, registry=registry,
+                                     authorization=lambda *args: (i, 'SWAP', gates(now), now, FakeDecoder()),
+                                     signer_host=True)
+                with self.assertRaises(Blocked):
+                    signer.sign('margin-refusal', fake_swap(i, deadline), 1, 1)
+                account.sign_transaction.assert_not_called()
+                self.assertEqual(registry.rows, {})
+
     def test_a5_margin_bounds_steps_and_deadlines(self):
         i = intent(valid_until=1060, authority_margin=5)
         decoder = FakeDecoder()

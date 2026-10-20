@@ -936,3 +936,13 @@ A mutation check confirmed the margin test fails when the margin is removed
 from the deadline comparison. Not done: choosing L and m (LD02 timings),
 review/merge, and release qualification (LD15). No live or signed path is
 enabled by this change.
+
+### LD04-RV01 — PR 200 review criteria (2026-10-20)
+
+Before running added checks: prove A is capped by `signing_end` and the S1
+execution-window end even when L would extend beyond either; exercise
+`LocalSigner.sign` with its independent clock and prove an exhausted authority
+margin or route-deadline margin calls no transaction signing and stores no
+signature. Run the authority, S1 execution and signer regressions, then the
+full Linux suite with disposable PostgreSQL on the current integration base.
+No numeric L/m or host qualification is adopted by these synthetic checks.
