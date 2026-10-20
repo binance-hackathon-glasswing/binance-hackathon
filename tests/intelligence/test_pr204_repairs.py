@@ -89,6 +89,7 @@ class DispatchSnapshot(unittest.TestCase):
                 if outcome == 'provider_error':
                     self.assertEqual(result['status'], 'UNAVAILABLE')
                     self.assertIn('request', result['model_io']['steps'][-1])
+                    self.assertIsNone(result['cost']['amount_micro_usd'])
                 if outcome == 'truncated':
                     self.assertTrue(result['coverage']['model_input_truncated'])
                     for step in result['model_io']['steps']:
@@ -235,6 +236,32 @@ class StageCaps(unittest.TestCase):
             spec['max_output_tokens' if spec['schema'].endswith('v4') else 'openai_max_output_tokens']=4096
             with self.assertRaises(IntelligenceError):validate_routing_spec(spec)
 
+    def test_changed_openai_cap_reserves_before_dispatch_and_rejected_usage_never_refunds(self):
+        import sqlite3
+        from tests.intelligence.test_providers import request, openai_reply
+        for overrun in (False, True):
+            fx=test_openai_pacing.Preferred();fx.setUp();self.addCleanup(fx.doCleanups)
+            f=fx.fx;f.s=v4(f.s);f.s['openai_max_output_tokens']=8000
+            primary=f.build().openai; req=request()
+            maximum=(len(primary.request_payload(req))*2+8192)*2+8000*10
+            def send(url,headers,body,timeout):
+                payload=openai_reply(dict(action='FINISH',claims=[]),status='incomplete')(json.loads(body))
+                payload['incomplete_details']=dict(reason='max_output_tokens')
+                payload['usage']['output_tokens']=8001 if overrun else 7000
+                with sqlite3.connect(primary.budget.path) as db:
+                    reserved=db.execute("SELECT amount,state FROM charges WHERE request_id='r:1'").fetchall()
+                self.assertEqual(reserved,[(maximum,'RESERVED')])
+                self.assertEqual(json.loads(body)['max_output_tokens'],8000)
+                return 200,json.dumps(payload).encode()
+            primary.model._transport=send
+            reply=primary.step(req,1000).read()
+            self.assertEqual(reply['status'],'ERROR')
+            self.assertIsNone(reply['output'])
+            self.assertEqual(primary.budget.snapshot()['charged_micro_usd'],2000000+maximum)
+            with sqlite3.connect(primary.budget.path) as db:
+                self.assertEqual(db.execute("SELECT state FROM charges WHERE request_id='r:1'").fetchone()[0],'UNKNOWN')
+            if overrun:self.assertEqual(primary.budget.snapshot()['reason'],'OPENAI_USAGE_EXCEEDED_BOUND')
+
 
 class CitationContract(unittest.TestCase):
     def test_private_failure_counterparts_abstain_without_dropping_bad_claims(self):
@@ -322,6 +349,14 @@ class ReportingBudget(unittest.TestCase):
         self.assertEqual(report['latency_ms']['usable_within_deadline'],0)
         self.assertEqual(report['timing']['busy_not_started_jobs'],1)
         self.assertIsNone(report['timing']['per_result'][0]['usable_result_delay_ms'])
+
+    def test_usable_availability_is_separate_from_internal_stage_elapsed(self):
+        value=self.result(elapsed=10,bound=60000)
+        metrics=bakeoff.metrics([value],availability=[dict(request_submitted_ms=1000,result_available_ms=121000)])
+        self.assertEqual(metrics['latency_ms']['within_deadline'],1)
+        self.assertEqual(metrics['timing']['per_result'][0]['request_to_usable_result_ms'],120000)
+        self.assertEqual(metrics['timing']['request_to_usable_within_deadline'],0)
+        self.assertEqual(bakeoff.metrics([value])['timing']['unknown_request_to_usable_delay'],1)
 
     def test_raw_recovery_is_additive_preserves_frozen_m5_and_checks_hashes(self):
         from tests.intelligence.test_providers import request

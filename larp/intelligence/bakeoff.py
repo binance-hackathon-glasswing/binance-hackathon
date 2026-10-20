@@ -122,7 +122,7 @@ def _bound(value):
     return type(value) is int and 0 < value <= MAX_ASSESSMENT_MS
 
 
-def _timing(result, request=None, historical_deadline_ms=None):
+def _timing(result, request=None, historical_deadline_ms=None, availability=None):
     allowed = result.get('budget_allowed')
     bound = allowed.get('deadline_ms') if type(allowed) is dict else None
     basis = 'RECORDED_REQUEST'
@@ -147,9 +147,17 @@ def _timing(result, request=None, historical_deadline_ms=None):
     started, completed = result.get('started_ms'), result.get('completed_ms')
     delay = completed-started if (accepted and type(started) is int and
             type(completed) is int and completed >= started) else None
+    availability = availability or {}
+    submitted, available = availability.get('request_submitted_ms'), availability.get('result_available_ms')
+    usable_delay = available-submitted if (result['status'] == 'ASSESSED' and type(submitted) is int
+        and type(available) is int and 0 <= submitted <= available) else None
+    usable_timely = usable_delay <= bound if usable_delay is not None and _bound(bound) else None
+    if result['status'] != 'ASSESSED':
+        usable_timely = False
     return dict(deadline_ms=bound if _bound(bound) else None, basis=basis if _bound(bound) else 'UNKNOWN',
                 elapsed_ms=elapsed, within_deadline=timely, usable_within_deadline=accepted,
-                usable_result_delay_ms=delay, delay_basis='ASSESSOR_START_TO_RESULT')
+                usable_result_delay_ms=delay, delay_basis='ASSESSOR_START_TO_RESULT',
+                request_to_usable_result_ms=usable_delay, request_to_usable_within_deadline=usable_timely)
 
 
 def _reply_diagnostics(reply, provider, artifact_reader):
@@ -194,7 +202,7 @@ def _reply_diagnostics(reply, provider, artifact_reader):
 
 
 def metrics(results: list, baseline: list | None = None, *, requests=None,
-            historical_deadline_ms=None, artifact_reader=None, _stages=True) -> dict:
+            historical_deadline_ms=None, artifact_reader=None, availability=None, _stages=True) -> dict:
     """Frozen M5 denominator plus additive, request-bound diagnostics.
 
     Raw recovery reads hash-checked originals into a separate report, never into
@@ -203,12 +211,15 @@ def metrics(results: list, baseline: list | None = None, *, requests=None,
     """
     if requests is not None and len(requests) != len(results):
         raise IntelligenceError('Report needs one immutable request per result')
+    if availability is not None and len(availability) != len(results):
+        raise IntelligenceError('Report needs one availability record per result')
     value = _frozen_metrics(results, baseline)
     timings, causes, usage, rejected_usage, recovered_usage = [], {}, dict(input_tokens=0, output_tokens=0), 0, 0
     unmetered = late_count = abandoned = reasoning = unknown_prices = unresolved = 0
     stages = {}
     for i, result in enumerate(results):
-        timings.append(_timing(result, None if requests is None else requests[i], historical_deadline_ms))
+        timings.append(_timing(result, None if requests is None else requests[i], historical_deadline_ms,
+                               None if availability is None else availability[i]))
         io = result['model_io']
         inflight = io.get('in_flight_calls') or ([io['in_flight']] if io.get('in_flight') else [])
         abandoned += len({x['request_id'] for x in inflight if x.get('status') == 'IN_FLIGHT_AT_DEADLINE'})
@@ -271,6 +282,8 @@ def metrics(results: list, baseline: list | None = None, *, requests=None,
     delays = [t['usable_result_delay_ms'] for t in timings if t['usable_result_delay_ms'] is not None]
     value['timing'] = dict(per_result=timings, usable_result_delay_ms=dict(
         p50=_quantile(delays, .5), p95=_quantile(delays, .95), max=max(delays, default=None)),
+        request_to_usable_within_deadline=sum(t['request_to_usable_within_deadline'] is True for t in timings),
+        unknown_request_to_usable_delay=sum(t['request_to_usable_result_ms'] is None for t in timings),
         unavailable_jobs=sum(r['status'] == 'UNAVAILABLE' for r in results),
         busy_not_started_jobs=sum('ROUTING_GROUP_BUSY' in r.get('reasons', []) for r in results),
         late_audit_only_replies=late_count)
@@ -309,7 +322,7 @@ def _schema_valid(reply):
 
 
 def report(results: dict, *, baseline_name: str, filings: list, commit: str, generated_ms: int, identities: dict,
-           requests=None, historical_deadline_ms=None, artifact_reader=None) -> dict:
+           requests=None, historical_deadline_ms=None, artifact_reader=None, availability=None) -> dict:
     """AssessorBakeoff.v1. `filings`: [{accession, issuer_id, form, record_id}] in request order."""
     if baseline_name not in results:
         raise IntelligenceError("The bake-off needs the deterministic baseline as a candidate")
@@ -320,7 +333,8 @@ def report(results: dict, *, baseline_name: str, filings: list, commit: str, gen
                                                                                 else baseline,
                                                                                 requests=requests,
                                                                                 historical_deadline_ms=historical_deadline_ms,
-                                                                                artifact_reader=artifact_reader)}
+                                                                                artifact_reader=artifact_reader,
+                                                                                availability=availability)}
                            for name, rs in sorted(results.items())},
             "per_filing": [{"accession": f["accession"],
                             **{name: {"status": rs[i]["status"], "reasons": rs[i]["reasons"],
@@ -331,7 +345,7 @@ def report(results: dict, *, baseline_name: str, filings: list, commit: str, gen
                                       "prompt_hash": rs[i].get("prompt_hash"),
                                       "evidence_used": rs[i].get("evidence_used"),
                                       "timing": _timing(rs[i], None if requests is None else requests[i],
-                                                        historical_deadline_ms)}
+                                                        historical_deadline_ms, None if availability is None else availability[i])}
                                for name, rs in sorted(results.items())}}
                            for i, f in enumerate(filings)],
             "note": "Engineering comparison on real filings; no independent labels (T01 is separate); not a profit "

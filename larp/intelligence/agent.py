@@ -550,7 +550,8 @@ class EvidenceAssessor:
         retained = [self._claim(f, novelty, confirmed, ids) for f in current] if status != "ASSESSED" else []
         reviews = self._reviews(r, entry, status, reasons, missing, key, now,
                                 new_statement=any(lifecycle.needs_review(s["novelty"]) for s in statements))
-        steps_cost = [s["response"]["cost"] for s in model_io if "response" in s]
+        steps_cost = [s["response"]["cost"] if "response" in s else
+                      dict(amount_micro_usd=None, basis="UNKNOWN_ADAPTER_FAILURE") for s in model_io]
         result = {
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"],

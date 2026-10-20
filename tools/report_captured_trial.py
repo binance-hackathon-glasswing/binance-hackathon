@@ -89,7 +89,9 @@ def captured_report(data_dir, *, historical_deadline_ms=None):
             config_sha256=result.get('config_sha256'), prompt_hash=result.get('prompt_hash'),
             model_hash=result.get('model_hash'), sources=request['evidence_refs'],
             stages=result.get('routing', {}).get('stages', [])))
-    statistics = metrics(results, requests=requests, artifact_reader=artifact,
+    availability = [dict(request_submitted_ms=record.get('request_submitted_ms'),
+                         result_available_ms=record.get('decision_ms')) for record in records]
+    statistics = metrics(results, requests=requests, artifact_reader=artifact, availability=availability,
                          historical_deadline_ms=historical_deadline_ms)
     source = Path(__file__).resolve().parents[1]
     return dict(schema='CapturedTrialDiagnostics.v1', export_checksums_sha256=sha256_hex(checksums),
@@ -100,6 +102,7 @@ def captured_report(data_dir, *, historical_deadline_ms=None):
         metrics=statistics,
         reporting=dict(historical_deadline_ms=historical_deadline_ms,
             missing_stage_budgets='UNKNOWN', frozen_m5_denominator='UNCHANGED',
+            missing_request_submission_times='UNKNOWN_NOT_ASSUMED_FROM_EVIDENCE_CUTOFF',
             decisions='ORIGINAL_RESULTS_ONLY', accounting='READ_ONLY_NO_REFUNDS',
             labels='NOT_SUPPLIED', profitability='NOT_ESTABLISHED'))
 
