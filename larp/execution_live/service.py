@@ -10,7 +10,7 @@ from larp.marketdata.port import TOKENS
 
 
 def map_command(command, *, run_id, wallet, version_id, router, token_decimals, limits, now_ms,
-                native_settlement=False):
+                native_settlement=False, initial_gas_only=False):
     """I3 command -> W04 Intent. A GAS_TOP_UP is mapped only when `native_settlement` is True: its fill settles only
     through the transaction-bound native trace (`ChainEvidence.native_receipt`, config `native_trace`), so without it
     the swap's USDT would leave the wallet with no I4 fact to release its reservations (#30, IDEA-061)."""
@@ -26,7 +26,11 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
         if integer(command['expires_ms'], positive=True) <= integer(now_ms):
             raise Blocked('expired execution command')
         kind, symbol, side = p.get('kind', 'BSTOCK_TRADE'), p['symbol'], p['side']
+        if type(initial_gas_only) is not bool:
+            raise Blocked('initial-only gas scope must be a boolean')
         if kind == 'GAS_TOP_UP':
+            if initial_gas_only:
+                raise Blocked('gas top-up refused by initial-only profile')
             if symbol != 'BNB' or side != 'BUY':
                 raise Blocked('gas top-up must buy native BNB')
             if native_settlement is not True:

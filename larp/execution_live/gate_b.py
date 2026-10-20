@@ -312,7 +312,13 @@ def readiness_report(inputs, *, now, base_dir):
             raise Blocked('initial native funding differs from chain capture')
         if not starting_balances_match(value, chain):
             raise Blocked('initial cash or positions differ from chain capture')
-        checks['DR-06']['detail'] = 'Initial native funding/18-decimal ledger checked; C1, full balance reconciliation and logged top-up still required'
+        from larp.strategy.schema import initial_gas_only
+        if profile is not None and initial_gas_only(profile):
+            checks['DR-06']['detail'] = ('Initial-only funding/18-decimal ledger checked; measured whole-run seeding, '
+                'full-exit reserve, low-gas incident/alarm and full balance reconciliation acceptance still required; '
+                'native top-ups are excluded')
+        else:
+            checks['DR-06']['detail'] = 'Initial native funding/18-decimal ledger checked; C1, full balance reconciliation and logged top-up still required'
     except errors:
         checks['DR-06']['detail'] = 'Pinned initial portfolio/funded native chain evidence absent or mismatched; top-up rehearsal still required'
     try:
