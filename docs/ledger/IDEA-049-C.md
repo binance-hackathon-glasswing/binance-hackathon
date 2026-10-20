@@ -973,3 +973,36 @@ state to contain signed bytes; corrected to read the private signature registry.
 Final combined full-suite verification follows with PR 201. Actions billing
 prevents jobs from starting; no hosted CI or host/signing qualification claimed.
 L/m selection and release qualification remain open.
+
+### LD04-V01 — Keegan's L and m choice from LD02 timings (2026-10-20)
+
+**Decision (Keegan): `execution_authority_seconds` L = 660, `submission_margin_seconds` m = 30.**
+
+Inputs, all from the LD02 packet (IDEA-070 LD02, SSM `70965d91…`):
+
+- Route deadline after the request: **499.1–500.1 s** in the 15 fresh quotes of record
+  (the superseded first run agreed; consistent with B02-U's 15). A swap needs `now + m < deadline ≤ A`, so the
+  re-quote must happen no later than `A − 500 s`.
+- Quote round trip 135–253 ms; RPC round trip 412–489 ms per call on both
+  providers; latest-to-finalized lag 0–1 block as measured (biased low by up to
+  about one block).
+- Signer, approve inclusion and executor pickup: **UNMEASURED** (no signer installed).
+
+Why 660: it leaves 160 s from the decision snapshot to the swap's re-quote. The
+measured parts plus a nominal estimate for the unmeasured ones (pickup within a
+5 s cycle, about six RPC calls for the approve, signing, inclusion and finality)
+come to roughly 30–35 s, so 160 s also absorbs one 20 s RPC timeout with
+failover and a slow signer. 600 s would leave only 100 s; 720 s would let a
+decision execute up to 12 minutes after its snapshot without a measured need.
+
+Why 30: no step starts, and no swap is signed, unless 30 s remain before A and
+before the route deadline. That is about 40 BSC blocks for sign, broadcast and
+inclusion. The margin barely affects the usable window, because the deadline is
+about 500 s after the re-quote.
+
+Validity under A8: both integers, m < L, L ≥ `proposal_seconds` (15 in the
+candidate profiles), L ≤ 3600. Not yet in any profile: the LIVE profile entry
+needs this provenance, and both values are re-checked against measured
+signer/approve timings in the signed rehearsal before the Oct 22 cut line. An
+approve that ends after `A − 500 s` still leaves a refused swap and an allowance
+for LD06 recovery; the window is chosen to make that rare, not impossible.

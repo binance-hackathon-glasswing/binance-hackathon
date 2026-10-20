@@ -2445,3 +2445,87 @@ profile/mapping/signer and stock-only cap/assembly/Gate B candidate controls.
 Current status, Gate B instructions and the live backlog are reconciled with
 the merged decisions/code. This is proposed follow-up work, not owner numeric
 adoption, low-gas alarm completion, installed release or host qualification.
+
+## PC-STOP01 — unsigned trial data retrieval and early stop (2026-10-20, prospective)
+
+Yao requests AWS data retrieval, stopping the current run to avoid further model
+spend, and checking the matching PR133 item. Prospective identity, private-export,
+checksum, drain/anchor, preserving-stop and stable-accounting criteria are in
+[LLM_TRIAL_STOP_20261020.md](../build/LLM_TRIAL_STOP_20261020.md).
+PR133 currently separates LD12 export/accounting/host evidence from Keith's LD11
+population/labels/quality report. Early stop does not satisfy missing unsigned
+hours, blind labels, provider billing/rights or adoption. No criterion weakened.
+
+### PC-STOP01 verified — 2026-10-20 12:38–12:43 UTC
+
+User-authorized retrieval and early shutdown completed. Pre-stop export verified
+before stopping; final 31,701,204-byte private archive has 14,544 matching file
+hashes, valid Backup.v1 digest, three SQLite integrity checks and KMS/COMPLIANCE
+retention through Jan10. All six trial units inactive/disabled/PID0; independent
+recheck finds no additional charges. Runtime session ended cleanly after43.56h;
+70 rounds CLOSED,109 chunks ACK,zero unchunked. New independent Anchor.v2 binds
+final sequence188/head and reads back STORED; hourly outbox unchanged. Original
+EC2/RDS/configs/databases retained. Shared budget backup bytes are identical
+before/after:104 SETTLED/2,880,356microUSD (includes2,000,000initial),3 UNKNOWN/
+337,180microUSD,106 trial attribution rows; no reset/forgiveness.
+
+70 distinct assessor jobs/41 contexts/2 issuers:41 ASSESSED,29 UNAVAILABLE
+(25 deadlines,4 model errors),201 requests started/174 completed step records/
+27 historical deadline-in-flight records;502 model artifact files. Frozen72h
+unsigned observation criterion unmet; no labels/accuracy/adoption pass. Keith
+owns frozen draw/blind labels/quality and measured affordability; Yao/account
+owners actual billing/UNKNOWN/rights and remaining host evidence; Keegan/team
+trial disposition/adoption/signed acceptance. PR133 LD11/LD12 stay partial with
+export/shutdown subtask complete. Full results, hashes and command IDs:
+[report](../build/LLM_TRIAL_STOP_20261020.md),
+[receipt](../build/evidence/llm-trial-stop-20261020.json).
+
+## PC-AUDIT01 — retrospective trial/current-code audit (2026-10-20, prospective)
+
+Yao requests analysis and inconsistency/unwanted-behavior verification, excluding
+issues already fixed in newer merged LLM PRs. Criteria A1–A6 are recorded in
+[LLM_TRIAL_AUDIT_20261020.md](../build/LLM_TRIAL_AUDIT_20261020.md), comparing
+private final PC-STOP01 export with canonical697ff3a. Offline reconstruction and
+real-input replay only; no inference/AWS/trading/deployment. Frozen trial criteria
+and independent-label requirements remain unchanged.
+
+
+### PC-AUDIT01 verified — captured trial/current-code audit (2026-10-20)
+
+Canonical697ff3a rechecked unchanged remotely. PC-STOP01 manifest/Backup.v1,
+188 journal hashes/terminal projection, outboxes and109 ACK chunk bytes PASS;
+all70 rounds closed,zero signing/execution/commands;496 artifact refs resolve;
+70 cutoff/tool/accepted-deadline checks PASS.103 settled OpenAI charges match
+recorded costs exactly (880,356microUSD);3 UNKNOWN retained;71 recorded AIand
+model/high-effort metadata pairs match.38 focused existing tests PASS locally
+(Python3.12.14/macOS), synthetic transports only. Credential pattern scan0 hits.
+
+New remaining findings, current-code witnesses: R1/P1 mutable normalized inputs
+(81/174 differ from original wire solely by later tool_results; real-input rule
+witness reproduces);R2/P2 unchanged4096-token cap (11 length errors,9 all reasoning;
+45,056 billed completion tokens recoverable from raw but absent normalized usage);
+R3/P2 citation/schema contract (15/35 Kimi claims rejected;5 unsupported-claim and
+1 schema-abstain stages,all6 current verifier/original-wire replays reproduce);
+R4/P2 stale60000-ms bakeoff deadline against180000-ms current contract (120000-ms
+report-only witness incorrectly late). Already-fixed legacy behavior omitted.
+Owners/repair acceptance in INCOMPLETE_WORK PC-AUDIT01-R1..R4.
+
+Performance scope:70 jobs but2 assessed filing records/2 issuers;35 SK hynix
+outputs empty/UNKNOWN,6 nonempty combined outputs contain repeated item tags;
+all24 emitted claims reverify. Rule baseline70/70 ASSESSED;finding/claim-metric
+sets match on all41 captured ASSESSED jobs.350 KEEP_QUANTITY targets,zeroorders;
+historical EQUAL_WEIGHT/pre-entry/unverified-basis setup,not current S1 economic
+or independent-label qualification. No additional economic fact/alpha shown;
+no current-router live availability projection. Full findings/reproduction/hashes:
+[report](../build/LLM_TRIAL_AUDIT_20261020.md),
+[receipt](../build/evidence/llm-trial-audit-20261020.json).
+No runtime fix,AWS/provider/trading action or restart;raw data remains private.
+
+### PC-AUDIT01-HO01 — complete PR204 repair brief (2026-10-20)
+
+Yao asks for all details/fixes in PR204 and will ask an implementer himself.
+Added LLM_TRIAL_REPAIR_HANDOFF_20261020.md as the PR-body source: exact baseline,
+private data/hash/access/reproduction, R1–R4 causes/locations/required changes,
+per-finding acceptance checks, current38-test command, historical-method and
+safety/accounting preservation, owner/review/delivery requirements. Application
+repairs remain OPEN; no other task was messaged/assigned, no runtime or paid call.
