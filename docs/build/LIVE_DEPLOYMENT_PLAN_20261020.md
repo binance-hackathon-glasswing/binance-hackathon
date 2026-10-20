@@ -17,7 +17,7 @@ branch or certify a deployment. Historical results retain their exact identities
 | LD08 | PR207 contains PR203 and adds durable low-gas/alarm/action-budget controls. Code is merged at91d4b0a; measured inputs and actual alarms/exits remain. |
 | LD09/10/11 | DC01 capture is complete; current-size/full-exit costs, usable gas, actual S1 weights/profile and exact #44 hashes remain. PF-01 settles O1–O6 policy preferences, not implementation/economic proof. |
 | LD11/12 | PR204 audit/43.56h retirement is merged. PR206 implements repository repairs; private replays/labels/billing/rights and acceptance remain. Frozen trial evidence is unchanged. |
-| LD04-P/15 | PR210 profile authority provenance remains under review; regenerate initial-only candidates after PR207+210 integration. [LD15 checklist](LD15_SIGNED_RELEASE_CHECKLIST.md) is prepared; dry-run bundle is not a qualified release. |
+| LD04-P/15 | PR210 profile authority builder/provenance is merged at88c5544; initial-only+L/m candidates reproduce exactly. Actual measured S1/fallback profile/calendar and #120 adoption remain. [LD15 checklist](LD15_SIGNED_RELEASE_CHECKLIST.md) is prepared; dry-run bundle is not a qualified release. |
 | LD14–24 | Numeric ops settings, exact signed release/config/session, first real round/ACK, protected key placement, signed drills and final acceptance remain with existing owners. Draft PR212 supplies partial drill harnesses. |
 
 [PF-01](../ledger/IDEA-084.md) and the [live backlog](../INCOMPLETE_WORK.md)
@@ -114,7 +114,7 @@ and PR133. Remove a whole backlog item only when its complete acceptance passes.
 - [ ] **LD23 — Isaac: complete final-wallet/credential handoff.** With account owner/Yao, confirm the fresh final wallet registration and applicable logging secret privately; arrange only eligible pre-first-trade gas funding under the existing organizer exception, record transactions and capture balances afterward. Do not assume dev credentials/funds transfer, authorize additional funding from an old report, or put keys in config/GitHub. Yao installs secrets/credentials only in separately approved operations. Maps C11, #106, GAP-52, DR-17.
 - [ ] **LD24 — Keegan: assemble final activation acceptance.** After LD22/23, collect Isaac DR-01–06, Keith DR-08–11/14, Yao DR-12/16 and Keegan's remaining reviews; finalize all release registers/services/deviations and bind final wallet/run/config to the exact frozen release. Verify final schedule and automatic terminal behavior, source/account/clock/resource/delivery readiness and complete DR-22 pack before activation. Carry remaining organizer clarifications through the existing C12 reconciliation/owners (Q-04/06/08/14/35/39); do not reopen settled questions. Final environment changes and activation remain the approved operator's separate actions. Maps C12, DR-18/22.
 
-**Start now:** review PR206/210 and draft PR212; PR207/211 are merged; Keith can implement
+**Start now:** review PR206 and draft PR212; PR207/210/211 are merged; Keith can implement
 LD05/PF-01 and analyze LD09/11 with available data. Remaining LD02/12 measurements
 require the approved operator. Retain the merged LD01/04/06/07/13 deliveries. LD03/10/14/15/16 become completable when their named packets
 arrive. Source export is absent from this critical path. For any missing input,

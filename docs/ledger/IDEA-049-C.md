@@ -1107,3 +1107,11 @@ is not an executed test failure or CI PASS. Deviation rendering, whitespace and
 new local documentation references pass. [Machine receipt](../build/evidence/pr210-review-20261021.json).
 Merge receipt follows after exact-head verification. No host/provider/model/key/
 wallet operation, deployment or live profile activation was performed.
+
+LD04-P-RV01 delivery: PR210 approved and exact reviewed head `63471a0` merged
+at `88c55447cd0f93ac9120c018120433ba80b5bdeb` (2026-10-21 SGT;
+2026-10-20 18:02:10 UTC). Normal merge history retains original work and the
+review fix; later receipts change documentation only. The local PG container is
+stopped. PR133/current status/LD ordering now distinguish the merged builder
+and regenerated candidates from actual #120/profile/gas/#44/timing/release/host
+acceptance; no whole parent gate is closed. Remaining code PRs:206 and draft212.

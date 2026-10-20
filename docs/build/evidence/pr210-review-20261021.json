@@ -60,5 +60,13 @@
     "SKIPPED [1] tests/runtime/test_worker_release.py:57: Linux bubblewrap required",
     "SKIPPED [1] tests/runtime/test_worker_release.py:46: Linux bubblewrap required",
     "SKIPPED [1] tests/runtime/test_worker_release.py:62: Linux bubblewrap required"
-  ]
+  ],
+  "delivery": {
+    "pr": 210,
+    "reviewed_head": "63471a04c92dc5655bf85916ffdcf7502f6acfd7",
+    "merge_commit": "88c55447cd0f93ac9120c018120433ba80b5bdeb",
+    "merged_at_utc": "2026-10-20T18:02:10Z",
+    "review_state": "APPROVED",
+    "test_container_stopped": true
+  }
 }

@@ -21,8 +21,12 @@ signed bytes.
 | Model/assessor scope (LD11) | Keith; adoption at LD22 | PF-01 direction selected; PR206 repairs under review, evidence/adoption open |
 | Operations settings (LD13/LD14) | Keegan, Isaac | LD13 merged; LD14 open |
 
-Regenerate the LIVE candidate profiles once after both #207 and #210 land, with `--initial-gas-only` plus the four
-authority flags, and pin the reviewed profile hash.
+2026-10-21 LD04-P-RV01 update: #207 and #210 are merged. Combined initial-only+L/m
+candidates regenerate exactly (20 authority checks and full local suite PASS;
+see IDEA-049-C/PR210 receipt). The table above preserves its dated snapshot.
+Regenerate the actual selected S1 or permitted fallback profile with reviewed
+measurements/calendar and `--initial-gas-only` plus all four authority flags,
+then pin the reviewed profile hash after #120/#44 acceptance.
 
 ## 2. Source identity
 
