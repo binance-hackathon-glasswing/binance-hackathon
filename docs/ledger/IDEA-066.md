@@ -2522,3 +2522,17 @@ PR204 audit history. Prospective criteria, candidate settings and evidence limit
 [implementation record](../build/PR204_REPAIRS_20261020.md). Red/green portable
 regressions precede application changes; commit/push before execution. Private
 corpus and live qualification remain outstanding; no deployment authorization.
+
+### PC-AUDIT01-IMPL01 — delivered offline qualification
+
+Final application source98fd293:2237 passed/8 explained skips/3727 subtests on
+Linuxaarch64/Python3.12.15/PostgreSQL14.24. Separate user-authorized actual
+systemd5/5 plus5 subtests, bubblewrap3/3 and nonroot permission1/1 PASS.
+Host bundle primary/signer double-install, manifest bind/preflight and unchanged
+dependency pins PASS; no hosted CI or AWS inference. Historical PR204 audit,
+stop receipts, original routing and prompt bytes preserved. Full dispositions,
+reviewed synthetic fixture changes and exact hashes:
+[record](../build/PR204_REPAIRS_20261020.md) /
+[receipt](../build/evidence/pr204-repairs-20261020.json).
+Live backlog is narrowed to private replay/reporting, measured affordability and
+quality, independent review and real release/host acceptance. No paid/host action.

@@ -1253,4 +1253,4 @@ bytes and private decision evidence are unchanged. Prospective criteria,
 red/green checks, reviewed synthetic trace differences, qualification and
 remaining owners: [implementation record](../build/PR204_REPAIRS_20261020.md).
 Private replay, measured completion/affordability, labels, independent release
-review and real-systemd/host acceptance remain open. No paid or host action.
+review and exact-host acceptance remain open. Real-systemd5/5 and offline bundle/sandbox checks pass; no paid or actual-host action.

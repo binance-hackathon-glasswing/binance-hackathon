@@ -1,0 +1,88 @@
+{
+  "bubblewrap": {
+    "capabilities": "SYS_ADMIN; seccomp/systempaths unconfined for nested sandbox",
+    "host_cgroup_mount": false,
+    "passed": 3,
+    "privileged_container": false,
+    "status": "PASS"
+  },
+  "candidate_files": {
+    "config/intelligence/aiand-routing.repair.example.json": "ad8745c1878fdfd12f46b3113d02b17c2170cc8452c0f9ff1e42d9114491ed50",
+    "config/intelligence/prompts/routing/review.v2.md": "3078482f728461109b4ceb92f788def91831367a6ee6b7da116477cd063a4579"
+  },
+  "canonical_base": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+  "environment": {
+    "arch": "aarch64",
+    "network": "NONE; PostgreSQL on disposable shared loopback only",
+    "os": "Linux",
+    "pip_check": "PASS",
+    "postgresql": "14.24",
+    "python": "3.12.15"
+  },
+  "focused_final_reporting": {
+    "log_sha256": "25ca30816c3fd81af3d7953149d97b03f19311f77bf993d84fd1990ac75562ef",
+    "passed": 24,
+    "subtests_passed": 42
+  },
+  "full_suite": {
+    "command": "python3 -m pytest -q --tb=short -p no:cacheprovider",
+    "log_sha256": "18f414790b408d7ccad6476fe70f5f368d80c8e33373ef1bb3b4e496c3333d19",
+    "passed": 2237,
+    "seconds": "491.85",
+    "skipped": 8,
+    "skips": [
+      "5 opt-in real-systemd cases exercised separately",
+      "1 root permission case exercised separately as UID65534",
+      "2 unavailable opt-in external fixtures"
+    ],
+    "subtests_passed": 3727
+  },
+  "host_bundle": {
+    "arch": "aarch64",
+    "build_id": "98fd2936d3421160ff4f6fa781d02cb82e7727c7",
+    "dependencies": "Checksum-verified cached Python/wheels/CA; dependency locks unchanged",
+    "log_sha256": "e002c788267550025e2334a64a99b7b90ad0ea23616e8763e8711367a9057248",
+    "manifest_sha256": "2de1ccae71c9a9fe53451a3bfc01aa32a4377f5177d4f905534930b5a0ba2a63",
+    "python_file": "cpython-3.12.15+20261001-aarch64-unknown-linux-gnu-install_only.tar.gz",
+    "python_sha256": "6a1b2e68c6fe749b78bbacb8fa42ff9bc844a72de7ed3ee52428f09a42f2ffc1",
+    "python_tag": "20261001",
+    "python_version": "3.12.15",
+    "qualification": "PASS: primary/signer installed twice; hashes, manifest bind and preflight",
+    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+    "rds_region": "ap-southeast-2",
+    "sha256": "97863f8c3939780bd9e71deadbc72d701af837ea73ea0e6194cb81dd8124b659",
+    "signing_enabled": false
+  },
+  "nonroot_directory_refusal": {
+    "passed": 1,
+    "status": "PASS",
+    "uid": 65534
+  },
+  "outstanding": {
+    "affordability": "Keith + Isaac: measured completion/price/billing/rights and cap/prompt acceptance",
+    "host_acceptance": "Existing release/operator owners; no installation or restart authorized here",
+    "independent_labels": "Separate unclosed gate",
+    "independent_review": "Keegan + Isaac: review exact repair/release",
+    "private_corpus": "Yao: original 11 truncated / six malformed stage replays and diagnostic report"
+  },
+  "preservation": {
+    "ledger_reset": false,
+    "legacy_routing_and_prompts": "UNCHANGED",
+    "original_audit_and_stop_bytes": "UNCHANGED",
+    "original_private_data": "NOT_ACCESSED_OR_REWRITTEN"
+  },
+  "preserved_audit_head": "bd5176e2b0d34817b68f15cabafc0e1870f46cfe",
+  "real_systemd": {
+    "authorization": "User explicitly authorized the previously rejected privileged/shared-cgroup container",
+    "log_sha256": "2b2d14f68824a0f62ccce09acff3590e54526a561d1e25dba3da26576739e95e",
+    "passed": 5,
+    "status": "PASS",
+    "subtests_passed": 5,
+    "version": "249"
+  },
+  "recorded_utc": "2026-10-20T15:28:16.669201+00:00",
+  "red_baseline": "200000e5c6cd8c36b85f5575c154be714003afd9",
+  "repair_id": "PC-AUDIT01-IMPL01",
+  "schema": "PR204RepairVerification.v1",
+  "source_commit": "98fd2936d3421160ff4f6fa781d02cb82e7727c7"
+}
