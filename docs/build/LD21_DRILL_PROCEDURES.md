@@ -1,4 +1,4 @@
-# LD21 drill procedures (RG2–RG6) — operator packet
+# LD21 drill procedures (RG2–RG6, RG8) — operator packet
 
 Status: **PREPARED; every drill NOT_RUN.** This turns the gates in
 [REHEARSAL_GATES_20261019.md](REHEARSAL_GATES_20261019.md) into pinned procedures for the approved operator, run
@@ -93,10 +93,21 @@ database.
 **Fail:** the preflight says ready but the switch refuses (or the reverse), or any write reaches the active
 database.
 
-## Not covered here (remaining LD21 work)
+## D6 — actual-day replay (RG8, DR-19)
 
-- **RG8 actual-day replay:** `larp.integration.replay.replay_live` still needs a pinned invocation harness over an
-  exported day (inputs, assessments, state, calendar, journal). It's not written yet.
+1. Pre-create an **empty, migrated, isolated** drill database (as in D4) and write its DSN to a private file.
+2. `python tools/deploy/drill_replay_day.py --config /etc/larp/runtime.json --target-dsn-file FILE`
+   (add `--through-sequence N` to replay up to the end of one UTC day).
+3. Run it once for a shadow day and once for a signed rehearsal day, each against its own fresh target.
+
+The harness reads the source journal in READ ONLY transactions. It rebuilds the context builder, planner and policy
+from the run's pinned configuration exactly as `build_driver` does, with every live port made to raise, and replays
+into the target with `replay_live`. It refuses a non-empty target, and a target that is the source database.
+
+**Pass:** exit 0. The replayed head equals the source head at that sequence, and no live port was called.
+**Fail:** exit 1 (`LIVE_PORT_CALLED`, a divergence, or a different head), or any write to the source.
+
+## Not covered here (remaining LD21 work)
 - **Boundary crash injection for RG2:** crashes at authorized, signed-durable, send/unknown and receipt boundaries
   need signer-side instrumentation that doesn't exist yet. D1 covers the runtime-process crash only.
 - **RG7 time boundaries and RG9 daily rehearsal records:** these need Keith's adopted profile and the signed days.

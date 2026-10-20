@@ -514,3 +514,11 @@ Two harnesses close RG-01's "pinned invocation harness" blockers for RG4 and RG6
 coverage) and `tools/deploy/drill_wallet_switch.py` (read-only preflight that agrees with `switch_wallet`, and a
 confirmed switch step). PostgreSQL tests: 3 + 6 passed. RG8 replay harness and signer-boundary crash injection
 remain open.
+
+LD21-H addendum (2026-10-20): `tools/deploy/drill_replay_day.py` adds the RG8 harness. It rebuilds the
+builder/planner/policy from the run's pinned configuration with every live port made to raise (calls are counted
+even when the coordinator records them as context failures), reads the source journal read-only, and replays into an
+empty isolated target with `replay_live`. It refuses a non-empty target or the source database. 5 PostgreSQL tests:
+full and prefix replays reach the recorded heads, a forced live-port call fails as `LIVE_PORT_CALLED`, a reused
+target is refused, and the builder matches the pinned config. Procedure D6 is added. Signer-boundary crash injection
+remains open.
