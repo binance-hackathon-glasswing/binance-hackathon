@@ -549,3 +549,8 @@ Isaac's next independent repository lane. Actual policy/holdings/timing/profile
 inputs, gas-scope decision, measured #44 acceptance and release/host/session
 qualification retain PR133's named owners. No real network/provider/model,
 AWS, wallet/key, signing, receiver or installation action was performed.
+
+Delivery: [PR198](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/198)
+targets canonical `codex/system-testing-20261012`. PR133 was read and retained
+unchanged as the noticeboard. All LD01 work is pushed; independent review/merge
+and the open inputs/LD06 ownership above remain explicit handoff items.
