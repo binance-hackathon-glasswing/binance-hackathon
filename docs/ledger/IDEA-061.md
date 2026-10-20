@@ -107,3 +107,216 @@ final-review-D tests **39 passed, 34 subtests**. GitHub Actions did not start
 because of account billing/spending limits; this is local evidence only.
 LD08 implementation, measured LD09 gas/reserve/seeding values and #44/host
 acceptance remain open. This review does not enable signing or top-ups.
+
+## LD08-OG01 — initial-only repository controls (2026-10-20, prospective)
+
+Follow-up requested after PR199–201. Base `dd30540`; gate closure sequence and
+owners: [OG-01](../build/POST_REVIEW_GATES_20261020.md). This slice introduces
+explicit initial-only candidate profiles while retaining historical top-up
+fixtures. No numeric reserve/seeding/cap/L/m/B or installation is adopted.
+
+Pass criteria before running added code:
+- An explicit initial-only profile neither plans nor requests a native top-up,
+  including with low/zero BNB. Affordable mandatory exits still proceed below
+  the reserve; new buys cannot consume it.
+- Mapping refuses a top-up under that profile even if native tracing is on.
+  The independent signer policy excludes native BNB and refuses top-up approve
+  and swap requests before signing.
+- Initial-only LIVE profile validation does not require top-up sizing fields;
+  existing exit-reserve and per-value-provenance checks remain mandatory.
+- Cap coverage requires all stock BUY/SELL pairs and full holdings/fees but no
+  native quote or top-up input. Supplying a native quote or a native-enabled
+  policy for initial-only scope refuses. Assembly retains false readiness and
+  explicit reserve/seeding/route/host acceptance gates.
+- Legacy profile/top-up and current cap/assembly tests remain valid. Run focused
+  regressions and the full disposable Linux/PostgreSQL suite on pushed code.
+
+LD08 low-gas incident/alarm and actual selected-profile/full-exit host acceptance,
+LD09 measurements and #44 decisions remain open unless separately evidenced.
+
+LD08-OG01 implementation at `048e414`: opt-in `initial_gas_only: true`
+candidates have no top-up sizing fields and retain the existing exit reserve.
+The planner emits no native quote/intent; execution mapping binds the pinned
+profile's scope and refuses native top-ups even with tracing enabled. Candidate
+signer policies exclude native BNB. Cap review/assembly require stock-only
+coverage, reject native-enabled policy/quote inputs and retain false readiness.
+Gate B reports measured whole-run seeding/reserve/low-gas acceptance as missing.
+Historical profile/top-up behavior remains available for historical inputs.
+
+Focused native ARM64 Linux/Python3.12.15/disposable PostgreSQL14.24 checks:
+**108 passed, 129 subtests**, zero skips. New checks cover zero/low gas,
+affordable mandatory exits, S1/four-name reserves, contradictory/malformed or
+unsourced scope, native mapping and independent policy refusal, exact cap
+boundaries, assembly and both funded/missing initial-only Gate B reporting.
+No current measurement, numeric adoption, low-gas incident/alarm or hosted
+acceptance is claimed. Full-suite results follow after the pushed-code run.
+
+First full run at `84e6d57`: **2204 passed, 8 skipped, 3656 subtests**, 234.69 s;
+dependency checks, deviations rendering and offline demo PASS. While it ran,
+PR202 merged as canonical `697ff3a`. Merge `993d6b4` retains both initial-only
+coverage and LD06 allowance-recovery opt-in/mismatch checks and acceptance
+gates; backlog/Gate B conflicts retain both scopes. Before rerunning, add a
+combined initial-only/untrusted/allowance-recovery assembly case proving both
+gas/host gates remain and a config/policy opt-in mismatch refuses. Any selected
+cleanup steps need their own measured reserve/seeding/timing coverage.
+
+Final combined verification at `6ba5dc8`, including canonical `697ff3a`:
+native ARM64 Linux / Python3.12.15 / disposable PostgreSQL14.24, **2228 passed,
+8 skipped, 3681 subtests**, 236.91 s. The 8 skips are two external/private
+fixtures, one root-only directory-mode check and five separately opt-in real
+systemd checks. Combined initial-only/allowance configuration selection:
+21 tests / 3 subtests PASS. `pip check`, deviation rendering, offline runtime
+demo and whitespace checks PASS; 20 local documentation link targets resolve.
+These are local tests, not hosted CI, an original release artifact or actual
+host/signing acceptance. No gate requiring measurements or a named decision
+is closed. Low-gas incident/alarm work and selected-profile qualification stay
+in the live backlog; legacy top-up capability is not adopted for v1.
+
+Delivery: [PR203](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/203),
+branch `codex/post-review-gates-20261020` into canonical integration. Opened for
+review at the user's request; no merge, numeric owner acceptance, installation
+or cloud/wallet operation is requested or claimed.
+
+## LD08-IG01 — complete initial-only low-gas controls (Isaac, 2026-10-20; prospective)
+
+User requests LD08 completion. Branch from canonical `697ff3a`, incorporating
+PR203 `a959fe2` by normal merge; PR203's branch is not edited. Scope is repository
+implementation and offline qualification. No host/provider/key/funding action.
+
+Pass criteria, before new regressions or implementation run:
+
+- IG1: initial-only profiles require a positive, sourced `gas_action_budget_units`,
+  at least the summary's worst approve+swap pair and no larger than the full exit
+  reserve. Candidate generation derives the pair budget; additional selected
+  cleanup requires measured coverage in that budget/reserve (LD09/LD10).
+- IG2: after reconciliation and before planning, compare spendable settled BNB
+  against the action budget and exit reserve. Equality funds an action; below the
+  budget records `PAIR_UNAFFORDABLE`; below only the reserve records
+  `BELOW_EXIT_RESERVE`. Existing buy refusal and affordable reductions/exits stay.
+- IG3: journal a transition incident plus durable gas-health state atomically,
+  without changing balances, reservations, authority, quarantine or HALT. Repeated
+  ticks and restart do not duplicate incidents. Recovery is a new recorded fact;
+  backward clocks cannot clear a warning. Journal replay reproduces exact bytes.
+- IG4: do not commit a gas incident over an unclaimed command or any in-flight
+  execution/reservation/open round. Observe at the next quiet driver boundary;
+  prove command version/nonce barriers remain intact.
+- IG5: archive-role service health exposes the durable unaffordable-action signal;
+  publish a dedicated CloudWatch metric and define a missing-data-breaching alarm
+  through the existing authorized destinations. Exercise publisher failure and
+  recovery with synthetic clients; Terraform tests require no AWS apply.
+- IG6: production driver construction wires the monitor from the pinned profile;
+  historical top-up profiles keep their existing behavior and metrics default
+  healthy when this scope is absent. No native route or new spending is enabled.
+- IG7: pushed regressions run red before repair, then focused Linux/PostgreSQL
+  and complete suite plus applicable Terraform/bundle/replay checks pass. Record
+  exact source/results/skips; do not rewrite existing measurements or goldens.
+- IG8: narrow the live backlog to measured gas/cleanup/full-exit reserve, dev/final
+  whole-run seeding, exact #44 decisions and actual alarm/host acceptance. Keith
+  reviews accounting and Keegan policy/gates; candidate formulas and offline
+  tests do not constitute their approval or complete those external gates.
+
+Red evidence: `37a8ad8` had four missing-feature failures and eight fixture
+uniqueness failures (the harness already owns wallet `wallet`). Isolated the
+new fixture's wallet at pushed `4d8a8e8`; all **12 tests fail** on the missing
+budget/monitor/driver support, Linux Python3.12/PostgreSQL14.24, 0.56s. No
+application repair was present in either run.
+
+IG1 full-book refinement before the next run: a larger selected action budget
+(e.g. measured cleanup) must also increase the full-exit reserve to cover four
+actions, or five for S1. A pair-only reserve cannot silently cover a larger
+declared action. Add this refusal to the pushed profile regression before repair.
+
+At `90e825a` the new full-book assertion fails (`ContractError not raised`).
+Repair also applies the larger action budget to the existing minimum-trade
+cost bound; otherwise cleanup could be omitted from that same economic check.
+
+### LD08-IG01 results — source `4044c82` (2026-10-20 UTC)
+
+IG1–IG6 repository behavior is implemented and verified. Initial-only profiles
+carry a positive sourced action budget; full-book reserve and minimum-trade
+cost checks include the whole budget, including reviewed cleanup when selected.
+The monitor runs after balance reconciliation at a quiet driver boundary,
+records atomic `LOW_GAS`/`LOW_GAS_CLEARED` incidents plus durable gas health,
+does not duplicate them after restart, and refuses a backward-clock clear.
+It preserves financial state/HALT/authority and defers for reservations, open
+rounds and pending execution. Planner/executor gas checks remain independent;
+affordable mandatory exits are still exercised by the initial-only regressions.
+The archive health path and CloudWatch publisher expose `GasPairUnaffordable`;
+the existing Terraform notification destinations receive the configured alarm.
+Actual installation/notification delivery is not claimed.
+
+IG7 PASS: pushed application/test source
+`4044c82a3b843d2781f4ac96e29bebf63d7497ac`, Linux Python3.12.15/disposable
+PostgreSQL14.24, **2241 passed, 8 skipped, 3686 subtests**, 133.91s. Full log
+`/private/tmp/larp-ld08-full.log`, SHA-256
+`8b23977b4e4427742f57e27eae7a8e2a8be2b18e41d24eb1606ebe6b8addcfea`.
+Eight skips: two external/private fixtures, five opt-in actual-systemd cases
+(unrun here), and the root directory-permission case. Separately UID1000:
+six startup tests PASS, including that permission case; three PostgreSQL cases
+skipped in that separate command are covered by the full run.
+
+Terraform1.13.5/locked AWS6.61.0: fmt/validate and **19 mocked plan tests PASS**,
+including low-gas metric/threshold and missing-data behavior. No apply. Log
+`/private/tmp/larp-ld08-terraform.log`, SHA-256
+`00cf8b85d2b553be5be9dab454aacf5613b6067f4db0922d4f87de5a8332d9e5`.
+Dependency checks, deviation rendering, full-suite bundle/manifest regressions
+and offline PostgreSQL/bubblewrap demo (six batches/two audit chunks) PASS.
+This does not qualify an original signed release artifact or actual host.
+
+IG8: the live backlog is narrowed, not removed: Keith/operator supplies measured
+gas/cleanup/current quotes/full holdings; Isaac accepts exact action/reserve/
+whole-run dev/final seeding/#44 hashes after Keith/Keegan review; Keegan/operator
+qualifies the exact release and actual alarm/host/selected-profile exits.
+[Acceptance matrix](../build/INITIAL_GAS_ONLY.md) and
+[machine receipt](../build/evidence/ld08-initial-gas-20261020.json) preserve
+criteria, evidence and owners. No secrets, live RPC, funding, key, signing or
+deployment action was performed. No readiness flag is enabled.
+
+Delivery (2026-10-21 SGT / Oct20 UTC):
+[PR207](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/207)
+targets canonical and includes PR203 by normal merge. Independent Keith
+accounting / Keegan policy-and-gates review remains requested by the ownership
+plan; no review or merge is inferred. PR203's author branch is unchanged.
+After documentation changes at `256b08f`, focused gas/operations/signer assembly/
+mode-readiness checks: **44 passed /23 subtests**, zero skips; **27** local
+documentation targets resolve. Application/test/deployment bytes remain exactly
+the full-suite source `4044c82`. Canonical remains `697ff3a`; main and origin/main
+both `fb95114`. All session work is committed/pushed on the task branch; the
+original checkout is untouched. The task's isolated PostgreSQL is removed after
+verification. Numeric/measurement/release/host/independent-review items above
+remain explicitly open; this is a repository delivery, not installed acceptance.
+
+GitHub run [39454047109](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39454047109)
+at `9786bea` executed **zero steps across all four jobs**. Its annotation says
+account payments failed or the spending limit must be increased. This is the
+existing account-owner CI availability blocker, not an executed test failure;
+local verification above is not presented as hosted CI or release acceptance.
+
+### LD08-IG01-RV01 — PR207 code-review fixes (2026-10-20 UTC)
+
+Review of PR207 head `808b531` found nine items. Eight are fixed in `7f004f7`:
+the gas monitor returns `SKIPPED` instead of raising out of the driver tick; top-up
+profiles install `RetiredGasCheck`, which journals one `LOW_GAS_CLEARED`
+(`NOT_MONITORED`) so a stale `GasPairUnaffordable` cannot stay raised; the check
+runs every 60 s and after each balance reconciliation, not every tick; the caps
+review (`INITIAL_BNB_EXIT_RESERVE`) and Gate B DR-06 refuse starting BNB below the
+full-exit reserve; the action-budget provenance cites IDEA-061 LD07/LD08; top-up
+profiles refuse `gas_action_budget_units`; the duplicate reserve comparison is
+removed; signer assembly reuses the review's `gas_scope`.
+
+Not applied: journaling a low-gas transition while a reservation, open round or
+pending execution exists. That would break the quiet-boundary barrier this PR
+keeps on purpose. An alarm during an in-flight attempt needs a signal outside the
+journal; the owner decides (Isaac, with Keegan review).
+
+PR133 PF-06 (PR209, open) chooses a full bounded-action reservation with 20%
+gas-limit headroom, and approves no number without LD09 measurements. PR207 keeps
+`gas_action_budget_units` a sourced input, so that rule is applied when Keith's
+measurements and Isaac's acceptance supply the value; no headroom is hard-coded.
+
+Local verification, source `7f004f7`, Linux/Python 3.13.16/PostgreSQL 16.15:
+**2243 passed /11 skipped /3686 subtests**, no failures. The unchanged PR head
+`808b531` in the same environment: 2238 passed /11 skipped /3686 subtests. The five
+new tests account for the difference. Hosted CI still runs zero steps because of
+the organisation's Actions billing block (PR133); this is local evidence, not
+hosted CI or release acceptance.

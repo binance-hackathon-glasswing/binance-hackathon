@@ -736,3 +736,401 @@ says account payments failed or the spending limit must be increased. Local
 verification is not called hosted CI. Independent Keegan review/merge and the
 actual acceptance owners listed above remain the explicit handoff. All LD06
 changes are committed/pushed; no production operation is authorized by delivery.
+
+## LD02 — operator execution packet from `primary` (2026-10-20; prospective)
+
+Requested by Keegan to unblock LD03 (policy/hash review) and the #27 L/m choice
+(IDEA-049-C LD04). One read-only script, `docs/build/ops/ld02-20261020/execution-packet.sh`,
+runs on `primary` only (never the signer) and prints one sanitized JSON packet.
+The host release is `ea25b52`, which predates `untrusted_router`, so the script
+carries the canonical module's exact bytes (zlib + base64) and refuses to run if
+their SHA-256 differs from the pinned value; the module is loaded in memory only.
+
+**Pass criteria, written before the script is run (P1–P11):**
+
+- P1. **Sanitized:** the packet contains no `://`, no Web3 key or secret, no
+  wallet address, no DSN or IAM token, and no provider URL. Providers appear only
+  as source ID plus a 16-hex SHA-256 fingerprint of the URL. If the final scan
+  finds any of these, the script prints only a refusal and exits 2.
+- P2. **No host writes:** Web3 and RPC artifacts are kept in memory; SQL runs
+  `READ ONLY`; no file, service, config, ledger or AWS change. Hashes of
+  `runtime.json`, `release.json` and the strategy profile are equal before and after.
+- P3. **Identity:** host, run, build, release-manifest SHA, profile SHA, DB name,
+  run version/epoch/quarantine, and one wallet fingerprint that is consistent
+  across runtime config, `runs.wallet_id` and the ledger.
+- P4. **Holdings:** a fresh finalized ChainBalances.v1 from the approved ordered
+  balance providers, reconciled with the production `compare_balances` against
+  the current ledger; reservations, pending commands, open rounds and the
+  latest/pending nonces. Not a repeat of #92: no earlier check is cited as current.
+- P5. **Router draft:** the canonical `observe()` drafts the policy from live chain
+  state and this run's fresh quotes; the draft keeps `review = REVIEW_REQUIRED`,
+  `signing_enabled=false`. Six-token router allowances are read at one numeric block.
+- P6. **Quotes:** for each of the five bStocks, BUY at the profile's
+  `minimum_trade_units` and `per_trade_cap_units`, and SELL at the minimum
+  BUY's receive size, through the production `MarketPort.quote` with the
+  profile's slippage. Each records request binding (tokens, amount, decimals),
+  router, value, selector, round-trip ms, quoted gas, minimum vs quoted output,
+  and the inner route deadline minus request time. Failures keep their outcome code.
+- P7. **Timings:** RPC round trips per method and provider, quote round trips,
+  and latest-vs-finalized lag (blocks, seconds) at start and end. Signer
+  queue/sign/broadcast timings are recorded as `UNMEASURED` (no signer installed).
+- P8. **Funding input for Isaac:** BNB holdings, gas price, quoted swap gas,
+  indicative swap-only coverage and the exit-reserve comparison. Labelled an
+  input pending LD09's measured approve/swap gas, not a funding decision.
+- P9. **Execution RPC:** what `primary` configures for execution (expected:
+  none) and the candidate source IDs with fingerprints, status
+  `AWAITING_KEEGAN_CONFIRMATION`.
+- P10. **Claims:** the packet states it is not native-trace, signed-path or #92
+  evidence, and enables nothing.
+- P11. **Local:** offline tests cover the sanitizer, the embedded-module hash,
+  deadline extraction, quote binding and refusal paths; focused and full
+  suites pass.
+
+### LD02 results — script `2106d6c`, SSM `70965d91-0b91-4436-86f6-c33d8ffc2236` (2026-10-20 12:54 UTC)
+
+Run by a Claude Code session for Keegan, through SSM `AWS-RunShellScript` on `primary` (a root shell; the script
+itself is read-only)
+(IAM user `larp-claude-session`). Packet SHA-256 as printed on the host:
+`f0c7274d11121598fd40d20f12592d593006abc12ad6a465c627a234296dcaa4`. Committed copy
+[ld02-execution-packet-20261020.json](../build/evidence/ld02-execution-packet-20261020.json)
+is the same packet pretty-printed (indent 1) with the private hostname redacted (SHA-256 `ad43b634…c4ced4`),
+so it cannot be re-hashed to the host value; the host bytes are retained privately.
+
+**Superseded first run:** SSM `c89ef2c8-129a-4b46-818a-0a1e7bada96f` at `b70d623`
+(packet `6ebf85a5…71bd3`) compared `exit_gas_reserve_units` with the BNB's USDT
+value and reported `BELOW_EXIT_RESERVE`. The planner compares it with
+`ledger.bnb_units` (wei). Fixed in `2106d6c` with a test that fails on the old
+comparison; the rerun above is the packet of record. All other fields agreed.
+
+- **P1 PASS.** No `://`, wallet, secret, provider URL/host or database host (final
+  scan passed; independently re-checked: the only addresses are the public router and facet
+  and fixed words 2 and 7, which also appear in the committed Oct 18 quotes). Providers appear as source ID plus fingerprint.
+- **P2 PASS.** `configs_unchanged=true`; artifacts in memory; SQL `READ ONLY`; the script writes no
+  file. (The SSM agent itself stores the command and its sanitized output under
+  `/var/lib/amazon/ssm/`, as for every SSM run.)
+- **P3 PASS.** Build `ea25b52`, run `larp-dev-llm-trial-20261018t170339z` (version 188,
+  epoch 2, not quarantined), DB `larp_trial2`, mode dev, execution shadow. Runtime
+  `8cb8fc74…`, release manifest `e592a13e…`, profile `d951207f…`. Wallet fingerprint
+  `72afa2ee745685ab`, consistent across config, run and ledger; registered build and
+  manifest match.
+- **P4 PASS.** Fresh finalized read at block 128749659 by `BSC_BNBCHAIN_PUBLIC`:
+  all seven assets MATCH (USDT 98.000000; BNB 2,694,498,869,362,886 wei; five bStocks 0).
+  Nonce latest = pending = 2. No reservations, commands, pending executions or open
+  rounds (70 rounds CLOSED); `settled_block` null.
+- **P5 PASS.** Draft `346fa80d6bfcca605da2698b5b766eac26495cbcab2a6e27bd2344a991347ee1`
+  at block 128749690 from 15 fresh quotes: router `0xb44446…fdda5`, slot
+  `0x7ddc1c45…c1d7`, facet `0xa9fa1b56…e603`, router codehash `0xb6f35276…96a0`,
+  facet codehash `0x5ae2caa1…8ba0`, fixed words {1: 0, 2: `0x3d90f66b…6be9`,
+  7: `0xd2a27f8f…a271`, 9: `0x140`}, DEV-23, review `REVIEW_REQUIRED`. All six router
+  allowances are 0.
+- **P6 PASS.** 15/15 quotes OK, request-bound, pinned router and selector, zero
+  native value, LiquidMesh. Binding is checked on `routerResult` (tokens, decimals,
+  amount) plus router, selector and value; the fresh calldata itself was not run through
+  `decode`/tamper checks (only the 15 Oct 18 quotes were, in LD03). Profile sizes: minimum 19.443104 USDT, cap 20.100000 USDT,
+  slippage 16 bp (minimum output 16 bp below quoted in every row). Quoted swap gas
+  250,000 everywhere. **Route deadline after request: 499.1–500.1 s** (both runs, 30 quotes).
+- **P7 PASS.** Quote round trip 135–253 ms (median 143). RPC round trip to response
+  headers 412–489 ms per call (medians 415–476) on both providers. Latest-to-finalized
+  lag 0–1 block (0–1 s) at start and end on both; the two reads are about 0.45 s apart and
+  timestamps are whole seconds, so the true lag can be up to about one block more. Signer timings `UNMEASURED`.
+- **P8 PASS (input only).** 0.002694 BNB = 8.63 × the profile's exit reserve
+  (312,320,854,920,000 wei); gas price 0.05 gwei; indicative 215 swaps at the quoted
+  250,000 gas. Approve gas and LD09 measured gas `UNMEASURED`. This is Isaac's input
+  against LD07, not a funding decision.
+- **P9 PASS.** No execution RPC configured on `primary`. Candidates:
+  `BSC_BNBCHAIN_PUBLIC` (`2e478f4aa0413423`), `BSC_NODEREAL_PUBLIC` (`e644968b15032fec`),
+  both approved for development balance reads only. Status `AWAITING_KEEGAN_CONFIRMATION`.
+- **P10 PASS.** The packet states it is not native-trace, signed-path or #92 evidence.
+- **P11:** offline tests 11 passed / 11 subtests; a mutation of the sanitizer's URL
+  refusal and the old reserve comparison each fail a test. Full suite: see below.
+- **P11 full suite** (disposable PostgreSQL 16, Python 3.12): 2225 passed, 11 skipped,
+  3692 subtests on the pre-fix tree, and the same again (442.7 s) at `2106d6c`. After the
+  docs-only LD03/LD04-V01 edits, the 190 tests that read docs, ledger or evidence files pass.
+
+## LD03 — Keegan's review of the observed router policy (2026-10-20)
+
+Keegan **accepts** the LD02 draft as the reviewed untrusted-router policy (DEV-23).
+Review checks, from the LD02 packet and the repository record:
+
+| Check | Result |
+|---|---|
+| Router | `0xb44446…fdda5`, the kit router (module constant, B02-U) |
+| Selector slot | `0x7ddc1c45…c1d7`, as computed in B02-U; it dispatches to facet `0xa9fa1b56…e603`, the same facet B02-U recorded on 2026-10-19 |
+| Code hashes | router `0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0`, facet `0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0`, first pinned here (B02-U noted identical BSC/Ethereum code but recorded no hash) |
+| Fixed words | {1: 0, 2: `0x3d90f66b…6be9`, 7: `0xd2a27f8f…a271`, 9: `0x140`}: identical to all 15 Oct 18 recorded quotes and to the test fixture; no economic word pinned |
+| Fresh quotes | 15/15 bound at `routerResult` level to the request, pinned router and selector, zero native value; route deadline 499.1–500.1 s after request. Fresh calldata not decode/tamper-checked |
+| Allowances | all six router allowances 0 at block 128749690 |
+| Wallet | absent from calldata (B02-U), and the packet's sanitizer confirms the fixed words are not the wallet |
+
+Reviewed file: [untrusted-router-policy-ld03-20261020.json](../build/evidence/untrusted-router-policy-ld03-20261020.json),
+the draft with `review = {reviewed_by: Keegan (Weixuan Keegan Gan), review_ref: IDEA-070 LD03 (2026-10-20)}`,
+written in `observe`'s own format. **SHA-256 `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`.**
+`validate_policy` accepts it, and `untrusted_router check` against the 15 recorded quotes in
+`quotes-interim-20261018/selected-raw` returns PASS (each quote decoded, each tampered copy refused),
+`signing_enabled=false`. That local check is a sanity check, not Isaac's replay or live preflight.
+
+Not claimed: source guarantees, recipient or nested-debit enforcement, on-chain deadline enforcement
+(assumed, B09-TRUST01), or any maximum loss. The diamond owner can replace facets; the live preflight
+re-checks the facet slot and both code hashes before every swap. **Execution RPC: not confirmed.**
+Keegan's reply re-stated the Oct 19 approval of development balance reads only, which the host already
+uses; no RPC is approved for execution. Next: Isaac pins the hash in `execution.json`/`signer.json`,
+replays and runs the live preflight.
+
+### LD02-RV01 — PR205 reviews and fixes (2026-10-20)
+
+Two reviews of `215fc1f`: Keegan's (35 tests / 273 subtests with PostgreSQL; policy hash
+and 15 historical replays confirmed; no host queried) and an independent subagent review
+(23 passed / 1 skipped / 266 subtests; `ea25b52` signatures, embed hash, units and evidence
+re-derived by hand).
+
+Fixed before merge:
+
+- **P2 (both reviews): the refusal output bypassed the final scan.** `code()` accepted
+  hostnames, wallet hex and alphanumeric secrets. The refusal now emits only the exception
+  type, plus one of the script's own codes from an explicit allowlist (`refusal()`). A new
+  test feeds a hostname, the wallet (with and without `0x`), a secret-like value and a URL
+  and checks none survives, and that the allowlist equals exactly the codes the script raises;
+  putting the old `code(error)` back fails 5 cases.
+- **P3 (both): wrong block.** The P5 router read and the LD03 allowance row cited 128749480,
+  from the superseded first run; the packet of record says **128749690**.
+- **Timing ranges:** RPC 412–489 ms (was 413–478); quote 135–253 ms and the 15 deadlines of
+  record (LD04-V01 had cited the uncommitted first run's figures).
+- **Wording:** "bound at `routerResult` level" for the fresh quotes, whose calldata was not
+  decode/tamper-checked; the SSM agent's own files under `/var/lib/amazon/ssm/`; the evidence
+  copy is reformatted as well as redacted; fixed words 2 and 7 are public addresses too;
+  finality lag is biased low by up to about one block.
+- The script's own RPC helper now uses the production `NoRedirect` opener.
+
+The packet of record was produced by `2106d6c`. These fixes change only the refusal output
+and redirect handling, neither of which affects a successful packet, so it is not rerun.
+Offered as a follow-up, not done: decode-and-tamper checks of fresh calldata under the
+reviewed policy in a new packet.
+
+## LD02b — fresh calldata under the reviewed policy, and gas estimates (2026-10-20; prospective)
+
+Follow-up from LD02-RV01 (the fresh quotes' calldata was not decode/tamper-checked) and
+input for Keith's LD09 (all 3,848 DC-01 swap-gas figures are fallback). Same script and
+safety contract as LD02 (P1–P2, P10 still apply), run read-only on `primary` only.
+
+**Pass criteria, written before the script is changed or run (G1–G7):**
+
+- G1. **Policy pinned:** the script carries the reviewed policy's exact bytes, refuses to
+  run unless they hash to `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`,
+  and reports whether this run's live `observe()` draft equals the reviewed policy apart
+  from `review`.
+- G2. **Fresh calldata:** the canonical `check()` runs on this run's 15 fresh quotes under
+  that policy; each row reports `matches_quote` and `tampered_refused`, with an overall
+  PASS/FAIL. A FAIL is reported, not hidden.
+- G3. **Approve gas:** `eth_estimateGas` from the wallet for `approve(router, amount)` on
+  each of the six tokens at the planned size. Only simulations: no transaction, signature
+  or nonce use.
+- G4. **Swap gas:** a USDT allowance state override is used only after the slot layout is
+  proven on chain: the balance slot read at a numeric block equals the observed USDT units,
+  and `allowance()` under the override returns the override value. Then `eth_estimateGas`
+  on each minimum-size BUY's exact fresh calldata under the override. If the provider
+  refuses overrides or the proof fails, the packet says so and no swap gas is reported.
+  SELL swaps are not estimated (no bStocks held).
+- G5. **Allowlist:** new RPC calls are limited to `eth_estimateGas` (from the wallet, value 0;
+  to a pinned token with `approve(router, …)`, or to the router with exactly a fresh quote's
+  calldata), `eth_getStorageAt` on USDT only, and `eth_call` for `allowance` only.
+  Offline tests prove every other shape is refused.
+- G6. **Reporting:** estimates are labelled simulated under the stated override at one
+  block, not measured fills. They are LD09 inputs, not cap or seeding decisions.
+- G7. **Local:** offline tests for G1, G2, G4 and G5 pass; the full suite passes.
+
+### LD02b results — script `663cdf2`, SSM `8cdfb2b6-93d0-44a4-a3cc-70e6fe9943c8` (2026-10-20)
+
+Packet SHA-256 as printed on the host: `18b68438f3ac0b75e7bb2c7dfbeee6c2cada800d47e6738640657c71444c9eec`.
+Committed copy [ld02b-execution-packet-20261020.json](../build/evidence/ld02b-execution-packet-20261020.json)
+is pretty-printed with the private hostname redacted (SHA-256 `f8e6e46b…9400`).
+
+- **G1 PASS.** Embedded policy hash `05759e90…7957c5` verified; this run's live draft
+  (`346fa80d…`, unchanged) equals the reviewed policy apart from `review`.
+- **G2 PASS.** `check()` on this run's 15 fresh quotes under the reviewed policy: 15/15 PASS,
+  each decoded to the quoted pay/receive/amount/minimum and every tampered copy refused.
+  This closes LD02-RV01's open point: the fresh calldata is now decode/tamper-checked.
+- **G3 PASS.** Approve gas (simulated, block 128777572, `BSC_BNBCHAIN_PUBLIC`): USDT 46,588;
+  GOOGLB, MSFTB and TSLAB 55,231; NVDAB and SKHYB 55,243.
+- **G4 PASS.** Slot layout proven: the USDT balance slot read equals the observed 98 USDT,
+  and `allowance()` under the override returns the override. Minimum-size (19.443104 USDT)
+  BUY swap gas under the override: GOOGLB 731,144; NVDAB 731,150; SKHYB 731,134; TSLAB
+  731,976. **MSFTB: the provider refused the simulation** (`RPC_REFUSED`, most likely a
+  revert); its quote itself was OK and request-bound. Not investigated further here.
+- **Finding for LD09/#44:** simulated swap gas is about **731k, nearly 3× the quote API's
+  `tx.gas` of 250,000** (and below the DC-01 fallback limit of 1,116,000). Approve plus
+  swap is about 786k gas per pair. At the observed 0.05 gwei that is about 3.9e13 wei per
+  pair; caps and reserves still need the cap gas price, not today's price.
+- **G5 PASS.** Offline: 12 refused shapes plus the four allowed ones; a mutation that
+  allows any `eth_estimateGas` fails 3 cases. **G6:** the packet labels these as
+  simulations at one block, not fills. **G7:** 15 tests / 36 subtests; full suite in the PR.
+- Unchanged from LD02: holdings MATCH (block 128777532), 15/15 quotes request-bound,
+  deadlines 499.1–499.9 s, RPC 410–488 ms, exit reserve 8.63×, `configs_unchanged=true`.
+
+### LD02b-F1 — why MSFTB's swap simulation was refused (2026-10-20; prospective)
+
+LD02b's MSFTB minimum BUY simulation returned `RPC_REFUSED` while its quote was OK. Same script, safety contract
+and allowlist; the only change is that a refused simulation keeps the provider's error, sanitized.
+
+**Pass criteria, written before the change (F1–F3):**
+
+- F1. A refused `eth_estimateGas` reports the JSON-RPC error code, the error message filtered to a short plain-text
+  phrase, the 4-byte revert selector if the provider returns revert data, and the decoded text when that selector is
+  `Error(string)` (`0x08c379a0`), also filtered. No other revert bytes are emitted; the final scan still applies.
+- F2. A read-only rerun on `primary` reports the MSFTB result with that detail, plus the other four symbols again
+  for comparison. Offline tests cover decoding, filtering and a refusal that carries a URL or value.
+- F3. The finding is recorded as observed. No cause is asserted beyond what the provider returned.
+
+### LD02b-F1 results (2026-10-20)
+
+Three read-only runs on `primary` while the filter was corrected: SSM `3f4360e1…` (`bf69a13`) and `9ff2869a…`
+(`4cde56a`) still filtered the reason; SSM `5f92fd74-844a-4602-9a14-69c811e9b963` at `877a4cc` (packet
+`615e6e79…c240`; committed copy [ld02b-f1-execution-packet-20261020.json](../build/evidence/ld02b-f1-execution-packet-20261020.json),
+hostname redacted) shows it. F1 and F2 PASS (17 offline tests; a URL or wallet in a reason is still dropped or
+refuses the packet).
+
+- **F3, MSFTB:** in all four runs the minimum BUY simulation reverted (`rpc_code` 3, `Error(string)`). The provider
+  message: `execution reverted: adapter:0x7977f3e8e063a4ee95b5f396d63485dbdea4515d:Error(RFQ_OrderExpired …)`.
+  MSFTB's route goes through an **RFQ adapter**, and the signed market-maker order inside it had expired by the time
+  of the simulation, tens of seconds after the quote. Its quotes were OK and request-bound, and the outer route
+  deadline was still about 500 s away.
+- **Implication (observation, not a decision):** for RFQ-routed tokens the outer deadline does not bound execution;
+  the inner RFQ order's validity is much shorter. The quote-to-sign path after the approve's finality must be fast,
+  or the swap reverts and costs gas. That affects LD09 (MSFTB coverage), LD10 (gas budget for reverts) and the
+  #27 margin, which assumed the 500 s deadline. Not yet known: the RFQ order's actual validity, and whether the
+  quote response marks RFQ routes (to be read from the quote record). The untrusted decoder's checks are unchanged.
+- **Swap gas varies by route:** over the four runs, minimum BUY simulations ranged GOOGLB 554k–731k, NVDAB 423k–731k,
+  SKHYB 732k–749k, TSLAB about 731k. The 731k figure in LD02b is an upper observation, not a constant.
+
+### B09-TRUST01 — Isaac selects the API-trusted behavior path (2026-10-19)
+
+**Decision source:** Isaac, in the project conversation after the existing
+checks, recovery behavior and unverified-contract risks were explained:
+"Its ok, we will trust that the contract that binance API retrieves for us is
+what the program requests for".
+
+**Adopted scope:** use the existing B02-U / DEV-23 untrusted-router capability
+as the deployment direction, accepting API-provided router behavior without
+requiring verified router/facet source first. This is the router-behavior trust
+decision, not completed B09/#44 numeric signing-policy acceptance. In code and
+release records the mode remains UNTRUSTED; trust does not establish verified
+recipient, minimum-output or deadline enforcement. Post-transaction detection
+cannot reverse a loss. No unconditional loss bound is established.
+
+Retain the existing pinned router/facet/code and calldata checks, exact approvals,
+independent signer input/fee caps, allowance checks, durable attempts, canonical
+receipt reconciliation and signing hold for an unsettleable fill. An unexpected
+router/code change still needs policy review; this decision does not remove those
+checks or automatically authorize every future API destination.
+
+**Remaining before installation:** operator-observed, named-reviewed real policy
+and its hash; fresh quote replay/preflight; measured profile/holdings and #44
+caps; adopted/implemented #27 authority timing; qualified chain/native tracing
+or explicitly reviewed supported scope; allowance/abnormal-fill disposition;
+exact release/run/wallet/DB/CA bindings and approved host/session rehearsal.
+Native-BNB swaps remain unsupported by this decoder. DEV-23 remains DRAFT until
+its complete release acceptance. No config, readiness flag, wallet key, AWS
+resource or live transaction is changed by this documentation decision.
+
+**Verification:** documentation consistency and whitespace checks only; no
+execution/provider/chain experiment is performed.
+
+
+### LIVE-PLAN01 — API-trusted deployment continuation (2026-10-20 SGT)
+
+Isaac requested a system-adjustment/deployment plan and a replacement checklist
+on PR133 following B09-TRUST01. [The plan](../build/LIVE_DEPLOYMENT_PLAN_20261020.md)
+maps LD01–LD24 to existing GAP/issues/DR gates with one accountable owner,
+dependencies and completion evidence. It separates existing dual-mode capability
+from source-only reporting, #27 authority, abnormal-fill accounting, allowance
+liveness and the gas-scope decision; caps_review still requires BNB:BUY despite
+the untrusted decoder rejecting native routes. No native omission, numeric
+setting, changed readiness flag or deployment is adopted by planning.
+
+PR133's current body/comments and open issues were checked, including the
+retained Oct19 host report (#92 process health, partial snapshot, two UNKNOWN
+charges, no native trace config). This session made no fresh host/chain/provider
+observation. Required owners keep actual policy/profile/caps/source/model/host
+evidence and final acceptance. PR196 carries this documentation continuation;
+PR133 remains noticeboard-only. Validation: exact checklist-ID parity, local
+link/anchor consistency and whitespace checks; no runtime tests or live action.
+
+## LD02b-RV02 — Isaac review of PR211 (2026-10-21 SGT; prospective)
+
+Isaac requests review and merge if possible. Review exact PR head `15fcc3f`
+against canonical `e65f827` in an isolated prospective merge tree. Criteria:
+RV1 inspect the complete diff/callers, reviewed policy/module byte pins and
+state-override/size/block semantics; RV2 prove offline refusal/filter behavior
+for malformed or out-of-scope RPC calls and provider error text, without network,
+AWS, secrets or wallet calls; RV3 preserve observed packets and distinguish
+provider-reported RFQ expiry/simulated gas from actual validity/receipt/cap proof;
+RV4 run focused script/decoder/profile/document checks and record actual skips;
+RV5 merge only an exact reviewed, pushed head with no blocking findings, retain
+all LD09/10/host gates, and update PR133 with source/results. No live packet rerun
+or trading operation is part of this review.
+
+LD02b-RV02 reproduced findings at `15fcc3f`: RV-P2-01, an error with a known
+credential beginning at character145 leaks its first15 characters because
+`plain()` truncates before `sanitize()` sees the complete forbidden value. ASCII
+replacement creates the same gap for Unicode values. RV-P2-02, `override_ok`
+accepts any one USDT storage slot/value, not the declared wallet/router allowance.
+Prospective fixes: scan full message/decoded reason against private forbidden
+values before transformation, retain final scan; bind override to exact allowance
+slot/value and reject malformed containers. New offline regressions precede fixes.
+Original host packets stay unchanged; no live rerun is required for filter/guard
+repairs, and historical results remain tied to their original source.
+
+### LD02b-RV02 results — review fixes and merge qualification
+
+Both findings fixed at pushed executable/test source `7fb82b1`. The regression
+commit `99221e6` fails for the intended defects (five secret cases and two
+arbitrary-override subcases); both pass with the fix. Full raw RPC messages and
+decoded revert text are checked against the runtime's forbidden values before
+truncation/ASCII replacement; final scanning and code-only refusal remain.
+Override equality now binds the exact nested wallet/router USDT allowance slot
+and fixed value, rejecting other storage/value/code/malformed containers.
+
+Focused offline/integration verification on macOS arm64/Python3.12.14 with
+**disposable PostgreSQL14.24: 96 passed /444 subtests /zero skips/failures**.
+Includes19 packet tests, embedded policy/module byte identity,15 historical
+recorded-quote decode/tamper checks, override proof failures, error filtering,
+router decoder/review and real-PostgreSQL settlement/signer startup refusals.
+Initial no-DB run was93 PASS/3 DB skips; all three subsequently passed against
+the disposable database. This is local focused evidence, not a full-suite,
+hosted-CI, fresh-provider or signed-host result.
+
+Bash syntax, deviations rendering, whitespace and both archived packet
+byte-identity/report-consistency checks PASS. Original packet digests remain
+`f8e6e46b…9400` and `3ea88ee8…8fa5`; neither is regenerated or reclassified.
+Provider-reported `RFQ_OrderExpired` supports an expiry failure observation;
+the actual inner validity interval is unmeasured. Current backlog wording now
+makes that distinction rather than treating quote-to-simulation delay as the
+order's proven lifetime. Existing API-trust, LD09/10/#27 coverage, execution
+provider/preflight, numeric policy and actual release/host gates remain open.
+
+[Machine receipt](../build/evidence/pr211-review-20261021.json). Later changes
+are documentation only; no new market/model/chain/AWS/key/wallet operation.
+Merge/delivery receipt follows after checking the exact final PR head.
+
+Concurrent canonical promotion PR207 at `91d4b0a` required a normal merge into
+PR211 (`c7b12d3`); the backlog conflict retains LD08's narrowed measured/host
+work and PR211 RFQ limitations. On that combined pushed source, the focused suite
+plus initial-only gas/health compatibility passes **125 tests /449 subtests /
+zero skips** with the same disposable PostgreSQL14.24. PR211 script/test bytes
+are identical to `7fb82b1`; only surrounding canonical code and docs changed.
+Bash/deviations/whitespace checks pass. No blocking review finding remains.
+
+Actions39466044935 at `c7b12d3` executes zero steps across all four failed jobs;
+the runtime annotation explicitly reports account payments/spending limits.
+This is not an executed test failure or CI qualification. The merge uses local
+focused verification for this operator-script/test change; an exact qualified
+signed release and actual host acceptance remain separate. Local PG container
+is stopped after checks; no hosted operation was performed.
+
+LD02b-RV02 delivery: approved PR211 and merged exact reviewed head `7326223`
+at `0c1c77a4a5751c4b0b95681435c446c01bba78c1` (2026-10-21 SGT,
+2026-10-20 17:27:36 UTC). Original branch advanced normally; no history rewrite.
+Current status/LD plan and PR133 now distinguish merged PR207/211 from remaining
+PR206/210/draft212 work. The review receipt retains original and combined test
+sources/counts, zero-step billing CI and actual gas/RFQ/provider/caps/release/host
+limits. No whole LD09/10/Gate B acceptance item closes. Both session working
+trees remain clean after push; the disposable local PG container is stopped.

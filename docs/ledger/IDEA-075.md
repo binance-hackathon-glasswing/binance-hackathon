@@ -273,3 +273,20 @@ rules or adopt S1 parameters. Acceptance/pinning must precede the real experimen
 Keith's actual run/result, all frozen profile inputs and live acceptance remain
 open. See EXP007 PC-O2-20261019. This entry records the PR candidate and does not
 impersonate an owner signoff or manufacture a retrospective pre-registration.
+
+## PF-01 — delegated final policy choices (2026-10-21 SGT)
+
+Isaac explicitly delegates profit-focused choices accepting higher market risk.
+[IDEA084](IDEA-084.md) is the current decision record, not a new experiment result.
+O1: 8% buy-stop recovery strictly below 5% with fresh reconciled complete marks;
+O2: preserve frozen EXP007 three-outcome rule; O3: five names including SKHYB,
+explicitly accepting asymmetric foreign-filer coverage; O4: Nov 9 21:00 UTC new
+risk end, Nov 10 19:00 UTC flatten start and Nov 11 14:45/15:00 UTC signing/flat-by;
+O5: retain no cut solely for scheduled events; O6: OpenAI-primary LLM assessor
+with verified external review and deterministic reduce-only limiter, with explicit
+short-trial/economic-uncertainty acceptance and separate operational qualification.
+PF01 adopts the existing §12 proposed S1 numeric settings as implementation
+targets; measured weights, current costs/gas, exact profile/release bindings and
+owner implementation/verification remain outstanding. None is activated here.
+SP-D2's qualified measured rehearsal fallback remains; frozen EXP007 history,
+original development evidence and prior dispositions above are preserved.

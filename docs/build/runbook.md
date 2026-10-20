@@ -76,6 +76,17 @@ Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.
 
 **Host drill:** set the guard's clock input behind the last decision on the rehearsal build. Expect `HALT:CLOCK`, rounds still logged, and the signer receiving nothing.
 
+LD08 initial-only gas uses a separate warning, not a HALT. `LOW_GAS` incidents
+record `BELOW_EXIT_RESERVE` or `PAIR_UNAFFORDABLE` in `projection.gas_health`;
+`GasPairUnaffordable` drives the dedicated `runtime-low-gas` alarm. The runtime
+records transitions only at quiet boundaries after reconciliation, preserving
+open rounds, uncertain attempts and reservations. Buys retain the exit reserve;
+an affordable reduction/exit can continue under every other existing check.
+Recovery is recorded automatically from a later valid balance view; the warning
+does not authorize funding or intervention. During an unresolved execution the
+last transition remains visible until the next quiet check. See
+[LD08 scope and actual host acceptance](INITIAL_GAS_ONLY.md).
+
 ## 4. Restore — **host** drill at Gate B
 
 1. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt <pinned backup receipt> --target-dsn-file <empty database DSN>` restores into an empty, migrated database. It verifies the backup checksum and every run's journal, and leaves every run **quarantined** with a new epoch.

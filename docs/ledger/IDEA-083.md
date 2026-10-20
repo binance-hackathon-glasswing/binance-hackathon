@@ -725,3 +725,11 @@ signer provisioning/approved key session. Preserve the fixed trial end and all
 UNKNOWN reservations/latches; use another trial DB until version-switch support
 is reviewed. No AWS/host, wallet/key/funding, provider or receiver action occurred.
 The following evidence-only commit changes no manifested candidate file.
+
+## LD15-P — signed release checklist and canonical bundle dry run (2026-10-20)
+
+Keegan's LD15 preparation: [LD15_SIGNED_RELEASE_CHECKLIST.md](../build/LD15_SIGNED_RELEASE_CHECKLIST.md) lists the
+inputs that must merge first (LD03–LD14), source identity, the exact CI checks, the bindings LD16/LD17 verify, and
+the AB-REL record format. Local dry run on canonical `72bb62c`: bundle build PASS (`3826716816df…9eca`, manifest
+`02b372e5…6d82`, RDS CA `d7389074…` unchanged); host-bundle provisioning NOT_RUN (Docker Hub 429 on the pinned
+Amazon Linux image); Terraform/systemd not run locally. Not a release; no artifact uploaded or installed.
