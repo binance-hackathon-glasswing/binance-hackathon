@@ -1,6 +1,6 @@
 {
  "schema": "DeviationsRegister.v1",
- "updated": "2026-10-19",
+ "updated": "2026-10-20",
  "proposal": "docs/proposal/proposal_answers.md",
  "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 \u00a74.3); details that exist only in owner code not yet integrated are added when it is integrated.",
  "rows": [
@@ -332,7 +332,7 @@
    "id": "DEV-23",
    "area": "Swap router trust",
    "declared": "The order aborts if quoted slippage exceeds its cap.",
-   "v1_behaviour": "The kit router (a diamond proxy) and its swap facet publish no verified source, so the on-chain enforcement of the minimum output, the recipient and the deadline is not proven, and the wallet address is not in the swap calldata. In untrusted-router mode the agent still refuses any quote whose minimum is below the cap, checks the full calldata layout (outer and inner economics agree), and before every swap step re-checks on chain that the facet and code are the pinned ones and that the router's allowance is at most this swap's amount (zero for every other token). A fill below its minimum is never booked; it withholds all further signing.",
+   "v1_behaviour": "The kit router (a diamond proxy) and its swap facet publish no verified source, so the on-chain enforcement of the minimum output, the recipient and the deadline is not proven, and the wallet address is not in the swap calldata. In untrusted-router mode the agent still refuses any quote whose minimum is below the cap, checks the full calldata layout (outer and inner economics agree), and before every swap step re-checks on chain that the facet and code are the pinned ones and that the router's allowance is at most this swap's amount (zero for every other token). A fill below its minimum is never booked; it withholds all further signing. LD06 additionally implements optional zero-only cleanup before the next valid stock intent, at most once per eligible token under original authority and gas budget, with independent execution/signer opt-ins defaulting false. Cleanup hashes are supporting approval audit facts, never swap orders. Independent review, measured gas/reserve/timing and host acceptance are still required; no installed configuration enables it.",
    "reason": "Keegan selected this implementation direction on 2026-10-19 (IDEA-070 B02-U); Isaac accepted API-provided router behavior in B09-TRUST01 (PR196). Source guarantees remain unavailable. Exact approvals, signer input/fee caps and settlement checks constrain submitted authority and detect anomalies, but do not establish a maximum loss or recover lost funds. Actual policy/hash review, measured B09/#44 acceptance, allowance/abnormal-fill disposition and gas scope remain open. This declaration remains DRAFT.",
    "evidence": [
     "IDEA-070",

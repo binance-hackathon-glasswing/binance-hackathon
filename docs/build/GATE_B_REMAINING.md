@@ -57,9 +57,11 @@ Neither proposal approval nor host acceptance is inferred from merging code.
 | Timing and rehearsal | The current rehearsal buy window begins Oct 21 00:00 UTC (08:00 SGT). An earlier dev window requires its recorded decision/version event. Keep the conditional rehearsal-shape decision in IDEA-049-D D-DN-02; record an applicable shortfall when the gate is missed, rather than recording a future shortfall now. |
 
 S1 B6 code is consolidated; actual selected-profile/session/host acceptance stays
-open. This cap review does not qualify that behavior. LD06 allowance recovery
-and LD05 abnormal-fill disposition also remain open, including cross-token and
-final-exit behavior. No sustained-quarantine condition is silently cleared.
+open. This cap review does not qualify that behavior. LD06 supplies
+[opt-in bounded allowance recovery](ALLOWANCE_RECOVERY.md), including cross-token
+and final-exit tests; independent review, actual policy/gas/timing and host
+acceptance remain. LD05 abnormal-fill disposition stays separate. No sustained
+quarantine is silently cleared.
 
 ## Current-input signer-cap review
 

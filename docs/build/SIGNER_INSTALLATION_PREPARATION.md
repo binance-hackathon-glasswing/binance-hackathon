@@ -174,3 +174,20 @@ backlog. Local synthetic acceptance evidence is in IDEA-049-C SA-01.
   was still OPEN when checked in this session. Actual approved assembly remains
   NOT_RUN_MISSING_INPUTS under #44/LD16, with release/host/session/key placement
   separate. No historical draft or review artifact is rewritten or relabeled.
+
+## LD06 allowance-recovery scope
+
+[ALLOWANCE_RECOVERY.md](ALLOWANCE_RECOVERY.md) defines the optional zero-only
+supporting approval policy and bounded state machine. Execution configuration
+and the root-owned signing_policy must both explicitly set allowance_recovery
+true; missing means false, non-booleans refuse, and caps review refuses unequal
+settings. Only the selected untrusted-router path supports it. This PR changes
+no example, private or installed configuration.
+
+Before enabling, accept measured cleanup gas and token/API behavior, full
+parent/exit-reserve coverage, authority timing and real host recovery. Up to six
+cleanup approvals are additional to the usual approve/swap; two-transaction gas
+estimates do not qualify that envelope. Assembly retains all false readiness
+flags and a separate ALLOWANCE_RECOVERY_GAS_AND_HOST_ACCEPTANCE gate. Normal
+positive approvals remain exact; zero-only cleanup cannot authorize a swap,
+change the parent's expiry or turn its transaction hash into an order.
