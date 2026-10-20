@@ -905,3 +905,56 @@ The packet of record was produced by `2106d6c`. These fixes change only the refu
 and redirect handling, neither of which affects a successful packet, so it is not rerun.
 Offered as a follow-up, not done: decode-and-tamper checks of fresh calldata under the
 reviewed policy in a new packet.
+
+### B09-TRUST01 — Isaac selects the API-trusted behavior path (2026-10-19)
+
+**Decision source:** Isaac, in the project conversation after the existing
+checks, recovery behavior and unverified-contract risks were explained:
+"Its ok, we will trust that the contract that binance API retrieves for us is
+what the program requests for".
+
+**Adopted scope:** use the existing B02-U / DEV-23 untrusted-router capability
+as the deployment direction, accepting API-provided router behavior without
+requiring verified router/facet source first. This is the router-behavior trust
+decision, not completed B09/#44 numeric signing-policy acceptance. In code and
+release records the mode remains UNTRUSTED; trust does not establish verified
+recipient, minimum-output or deadline enforcement. Post-transaction detection
+cannot reverse a loss. No unconditional loss bound is established.
+
+Retain the existing pinned router/facet/code and calldata checks, exact approvals,
+independent signer input/fee caps, allowance checks, durable attempts, canonical
+receipt reconciliation and signing hold for an unsettleable fill. An unexpected
+router/code change still needs policy review; this decision does not remove those
+checks or automatically authorize every future API destination.
+
+**Remaining before installation:** operator-observed, named-reviewed real policy
+and its hash; fresh quote replay/preflight; measured profile/holdings and #44
+caps; adopted/implemented #27 authority timing; qualified chain/native tracing
+or explicitly reviewed supported scope; allowance/abnormal-fill disposition;
+exact release/run/wallet/DB/CA bindings and approved host/session rehearsal.
+Native-BNB swaps remain unsupported by this decoder. DEV-23 remains DRAFT until
+its complete release acceptance. No config, readiness flag, wallet key, AWS
+resource or live transaction is changed by this documentation decision.
+
+**Verification:** documentation consistency and whitespace checks only; no
+execution/provider/chain experiment is performed.
+
+
+### LIVE-PLAN01 — API-trusted deployment continuation (2026-10-20 SGT)
+
+Isaac requested a system-adjustment/deployment plan and a replacement checklist
+on PR133 following B09-TRUST01. [The plan](../build/LIVE_DEPLOYMENT_PLAN_20261020.md)
+maps LD01–LD24 to existing GAP/issues/DR gates with one accountable owner,
+dependencies and completion evidence. It separates existing dual-mode capability
+from source-only reporting, #27 authority, abnormal-fill accounting, allowance
+liveness and the gas-scope decision; caps_review still requires BNB:BUY despite
+the untrusted decoder rejecting native routes. No native omission, numeric
+setting, changed readiness flag or deployment is adopted by planning.
+
+PR133's current body/comments and open issues were checked, including the
+retained Oct19 host report (#92 process health, partial snapshot, two UNKNOWN
+charges, no native trace config). This session made no fresh host/chain/provider
+observation. Required owners keep actual policy/profile/caps/source/model/host
+evidence and final acceptance. PR196 carries this documentation continuation;
+PR133 remains noticeboard-only. Validation: exact checklist-ID parity, local
+link/anchor consistency and whitespace checks; no runtime tests or live action.

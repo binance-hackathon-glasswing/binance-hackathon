@@ -62,3 +62,15 @@ def test_q3_cli_needs_all_four_flags_and_hashes_the_evidence(tmp_path):
     p = json.loads((tmp_path / 'out' / 'final-live.json').read_bytes())
     assert execution_authority(p) == (660, 30)
     assert p['provenance']['execution_authority_seconds']['data_hash'] == hashlib.sha256(evidence.read_bytes()).hexdigest()
+
+
+def test_authority_composes_with_initial_gas_only_scope():
+    plain = build_live_profiles(*committed_inputs(), initial_gas_only=True)
+    timed = build_live_profiles(*committed_inputs(), initial_gas_only=True, authority=AUTHORITY)
+    for env in plain:
+        a, b = plain[env].read(), timed[env].read()
+        assert b['initial_gas_only'] is True and not any(k.startswith('gas_top') or k == 'gas_floor_bnb_units' for k in b)
+        assert {k: v for k, v in b.items() if k not in ('provenance', 'execution_authority_seconds',
+                                                         'submission_margin_seconds')} == {k: v for k, v in a.items() if k != 'provenance'}
+        assert execution_authority(b) == (660, 30)
+        validate_live(b)

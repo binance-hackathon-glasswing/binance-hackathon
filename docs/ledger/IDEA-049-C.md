@@ -1045,3 +1045,14 @@ carry them with per-value provenance. Keith owns the profiles (#120) and reviews
 
 Keith reviews and adopts (#120). These candidates still carry the DC-01 top-up fields,
 which LD08's initial-gas-only alignment will change.
+
+### LD04-P after PR207 (2026-10-20)
+
+After PR207 (LD08 initial-only gas) merged into canonical (`91d4b0a`), canonical was merged into PR210. The
+`profiles.py` conflict was resolved by keeping both features: `build_live_profiles(..., initial_gas_only=..., authority=...)`
+and the CLI's `--initial-gas-only` with the four authority flags. A new test checks that the authority keys are the
+only difference between initial-only candidates with and without L/m. The candidates were regenerated with
+`--initial-gas-only` plus L/m: rehearsal file `07130775…a729` / StrategyProfile.v1 `58cb1be9…bdd4`; final file
+`3393ce67…34fd` / StrategyProfile.v1 `70cb0d4f…d862`. No top-up keys; the action budget is still the FALLBACK-based
+DC-01 pair (76,177,634,176,000 wei), pending LD09 measured gas. The earlier non-initial-only candidate hashes in
+LD04-P are superseded.

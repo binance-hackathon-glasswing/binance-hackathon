@@ -93,3 +93,32 @@ stock order is invalid. BNB is excluded from stock slots and turnover, included
 in wallet equity, and reported separately in economic views. No top-up after
 the new-risk cut or during flattening, loss/deep-cut/degraded spending blocks,
 pending wallet intents, integrity or ownership failures.
+
+## Initial-only candidates after LD07 (2026-10-20)
+
+Use `python -m larp.strategy.profiles ... --initial-gas-only` for the decided v1
+gas scope. It emits explicit `initial_gas_only: true` with LD07 provenance and
+no top-up sizing fields. Existing full-exit reserve and provenance checks stay
+mandatory; the builder does not establish measured gas or owner acceptance.
+LD08-IG01 also requires positive, sourced `gas_action_budget_units`. The builder
+sets it to the largest summary approve+swap pair. Selected cleanup requires a
+reviewed larger budget where needed: the reserve must cover four such actions
+(five for S1), and minimum-trade cost feasibility uses that whole action budget.
+This is a candidate formula; FALLBACK measurements do not qualify its value.
+
+At a quiet boundary after balance reconciliation, `InitialGasCheck` journals
+transitions to `BELOW_EXIT_RESERVE`, `PAIR_UNAFFORDABLE`, or recovered `OK` in
+`projection.gas_health`. Exact equality with the action budget remains affordable.
+The monitor preserves unsettled reservations and waits for open rounds/commands;
+it neither HALTs nor changes financial state. Existing planner/executor checks
+still decide each actual action. `GasPairUnaffordable` has a dedicated CloudWatch
+alarm; actual installation and notification delivery remain operator acceptance.
+`tools/deploy/propose_signer_caps.py --initial-gas-only ...` excludes native BNB
+from the independent signer token policy while retaining unapproved example caps.
+Legacy CLI calls/fixtures remain available for historical top-up work and do not
+select v1 scope. Both candidates and any changed profile require fresh review
+and release binding; nothing is installed by construction.
+
+Remaining measurement/decision/release/host gates and owners:
+[OG-01](../../docs/build/POST_REVIEW_GATES_20261020.md).
+Detailed [LD08 acceptance matrix](../../docs/build/INITIAL_GAS_ONLY.md).
