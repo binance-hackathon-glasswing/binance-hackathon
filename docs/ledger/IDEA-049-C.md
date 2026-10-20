@@ -843,3 +843,62 @@ changed. Static checks6 added local links/anchors, JSON/hash/status flags,
 renderer and whitespace PASS. No synthetic installable candidate was created.
 All changes are committed/pushed in the two review branches; no unpushed work,
 wallet/key/provider/receiver access or new artifacts in the IDE checkout.
+
+## C-OPEN-003 / #27 — decision and LD04 criteria (Keegan, 2026-10-20, prospective)
+
+**Decision: Option A** (SL-01, with Keith's conditional review KMP-02). Short
+proposal admission stays. An admitted decision gets a separate, finite,
+immutable execution authority:
+
+    A = min(t0 + L, signing_end, S1 execution-window end if any, new_risk_end for a discretionary BUY)
+
+`t0` is the decision snapshot time; `P` is the proposal expiry. A is computed
+once, when the round is planned. It is journaled in the plan record and carried
+as the command's `expires_ms`, so a re-quote, claim, restart or replay cannot
+extend it. Each swap payload must satisfy `now + m < route_deadline <= A`, and
+no step starts unless `now + m < A`.
+
+**Values are not decided here.** `L` (`execution_authority_seconds`) and `m`
+(`submission_margin_seconds`) are optional profile settings, set together or
+not at all, with no defaults. Without them the planner keeps today's bound
+(proposal and quote expiry), and #27's current refusals stay. A LIVE profile
+that sets them needs per-value provenance like every other live value. The
+numeric choice waits for LD02 host timings. New evidence: in all 15 recorded
+quotes the route's own deadline is about 500 s after the quote (IDEA-070
+B02-U), so a usable L is at least about 9–10 minutes plus the approve and
+re-quote time. 60 s would refuse every swap. API-trust assumption (B09-TRUST01):
+the route deadline is assumed to be enforced on chain. It is never used to
+release an uncertain send.
+
+**Pass criteria, written before any code (A1–A9):**
+
+- A1. Without the two settings, the plan's `expires_ms` is byte-identical to
+  today's: a discretionary intent never outlives its proposal (existing R03).
+- A2. With them, `expires_ms` = A exactly, for a discretionary buy, a mandatory
+  sell and an S1-bounded intent. It is not limited by `P` or the planning
+  quote's expiry. A discretionary buy is capped at `new_risk_end`; a mandatory
+  sell is not.
+- A3. The plan intent records `authority` = {decision_ms, proposal_expires_ms,
+  authority_ms, authority_seconds, margin_seconds}, with `authority_ms ==
+  expires_ms`. Replanning the same snapshot is byte-identical.
+- A4. The command schema refuses an `authority` record whose `authority_ms`
+  differs from `expires_ms`, or whose fields are malformed. `map_command` sets
+  `Intent.valid_until = expires_ms // 1000` and `authority_margin = m`. A
+  restart from the same stored command gives the same Intent.
+- A5. `validate_payload` with margin m refuses a step when `now + m >=
+  valid_until`, and a swap when `now + m >= deadline` or `deadline >
+  valid_until`. With m = 0 every existing check is unchanged.
+- A6. The executor runs, with fake ports and a virtual clock, a 15 s
+  proposal, a decoded deadline 30 s after each quote, and an approval delay.
+  With L = 60, m = 5 the approve → finality → re-quote → sign succeeds. A
+  re-quote whose deadline lands after A is refused. A restart at t = 35
+  keeps A = t0 + 60. A late approval leaving no margin refuses the swap.
+- A7. The signer's own `validate_payload` uses the stored intent's margin, so
+  the signer refuses what the executor refuses.
+- A8. Profile validation refuses: only one setting; m ≥ L; L below
+  `proposal_seconds`; L above 3600; non-integers.
+- A9. Full suite passes with disposable PostgreSQL.
+
+Out of scope: choosing L/m (after LD02), an UNKNOWN-send release rule (unchanged:
+reconciliation continues and reservations are kept), and gas top-ups (v1 is
+initial-gas-only, LD07).
