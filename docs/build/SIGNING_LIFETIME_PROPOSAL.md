@@ -1,6 +1,6 @@
 # Signing lifetime: Isaac's proposal for #27
 
-**SL-01, 2026-10-17. Proposed, not adopted.** Isaac's checklist task5 / #142.
+**SL-01, 2026-10-17. Option A adopted by Keegan on 2026-10-20 and implemented (IDEA-049-C C-OPEN-003 / LD04); L and the margin are still undecided and wait for measured host timings.** Isaac's checklist task5 / #142.
 Keith reviews the profile/quote implications; Keegan decides C-OPEN-003 and
 owns the implementation PR. Baseline: integration `352446b`. No lifetime,
 profile, runtime, signer or validation setting is changed by this document.

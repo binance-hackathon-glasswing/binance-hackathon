@@ -79,6 +79,7 @@ def profile(snapshot):
         raise ContractError("Invalid expiry or declared review horizon")
     if p["per_trade_cap_units"] == 0:
         raise ContractError("Per-trade cap required")
+    execution_authority(p)
     if p["baseline"] == "TREND_GUARDED_VOL":
         # S1 (IDEA-076): its own levels, weights and hard line replace the proposal's 80%/20% caps, which are a
         # recorded deviation (IDEA-075 §14, GAP-62). The other baselines keep every declared cap below.
@@ -101,6 +102,25 @@ def profile(snapshot):
             0 < fraction(p.get("top_up_below_gross_weight")) <= fraction(p["operating_gross_weight"])):
         raise ContractError("Top-up threshold must be positive and within the gross target")
     return _terminal_gates(p)
+
+
+AUTHORITY_KEYS = ("execution_authority_seconds", "submission_margin_seconds")
+MAX_AUTHORITY_SECONDS = 3600
+
+
+def execution_authority(p):
+    """#27 / C-OPEN-003 Option A (IDEA-049-C LD04): `(L, m)` in seconds when the profile sets a finite execution
+    authority and submission margin, else None (the parent stays bounded by the proposal and quote expiry). Both or
+    neither; no defaults. Proposal admission keeps `proposal_seconds`; L only bounds execution after admission."""
+    present = [key for key in AUTHORITY_KEYS if key in p]
+    if not present:
+        return None
+    if len(present) != len(AUTHORITY_KEYS):
+        raise ContractError("Set execution_authority_seconds and submission_margin_seconds together")
+    seconds, margin = (integer(p[key]) for key in AUTHORITY_KEYS)
+    if not (0 < margin < seconds and p["proposal_seconds"] <= seconds <= MAX_AUTHORITY_SECONDS):
+        raise ContractError("Execution authority must exceed its margin and the proposal, within one hour")
+    return seconds, margin
 
 
 def _terminal_gates(p):

@@ -106,6 +106,8 @@ class Intent:
     kind: str = "BSTOCK_TRADE"
     max_cash_units: int | None = None
     max_slippage_bps: int = 50
+    # #27 Option A (IDEA-049-C LD04): seconds that must remain before the authority end and each route deadline.
+    authority_margin: int = 0
 
     @property
     def key(self):
@@ -132,6 +134,7 @@ class Intent:
         integer(self.max_slippage_bps)
         if self.max_slippage_bps >= 10000:
             raise Blocked('invalid slippage authorization')
+        integer(self.authority_margin)
         if self.max_cash_units is not None:
             integer(self.max_cash_units, positive=True)
             if self.pay_token == USDT and self.amount > self.max_cash_units * 10**12:
@@ -297,6 +300,9 @@ class Decoder(Protocol):
 
 def validate_payload(intent, step, payload, gates, now, decoder):
     gates.check(intent, now)
+    margin = intent.authority_margin
+    if now + margin >= intent.valid_until:
+        raise Blocked("no submission margin left inside the execution authority")
     if (payload.chain_id != intent.chain_id or type(payload.chain_id) is not int
             or payload.sender != intent.wallet or payload.nonce != gates.nonce):
         raise Blocked("chain/wallet/nonce mismatch")
@@ -337,7 +343,7 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         if (economics.pay_token != intent.pay_token or economics.receive_token != intent.receive_token
                 or economics.amount != intent.amount or (economics.recipient != intent.wallet and not unverified)
                 or economics.minimum_output < intent.minimum_output
-                or not now < economics.deadline <= intent.valid_until
+                or not now + margin < economics.deadline <= intent.valid_until
                 or economics.native_value != payload.value):
             raise Blocked("encoded swap economics mismatch/expired")
     else:
