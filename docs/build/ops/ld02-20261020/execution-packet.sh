@@ -231,7 +231,7 @@ def allowed_call(method, params, scope):
     return False
 
 
-PHRASE = re.compile(r'[A-Za-z0-9 _:,.()\'-]{1,120}')
+PHRASE = re.compile(r'[ -~]{1,160}')  # printable ASCII; '://' is refused separately in plain()
 ERROR_STRING = '0x08c379a0'
 
 
@@ -246,7 +246,7 @@ class RpcRefused(ValueError):
         e = self.error
         out = dict(rpc_code=e.get('code') if type(e.get('code')) is int else None)
         message = str(e.get('message', ''))
-        out['message'] = message if PHRASE.fullmatch(message) else 'FILTERED'
+        out['message'] = plain(message)
         data = e.get('data')
         if type(data) is str and re.fullmatch(r'0x[0-9a-fA-F]*', data) and len(data) >= 10:
             out['revert_selector'] = data[:10].lower()
@@ -264,7 +264,12 @@ def revert_text(data):
         text = body[offset + 32:offset + 32 + length].decode('utf-8')
     except (ValueError, UnicodeDecodeError):
         return 'FILTERED'
-    return text if PHRASE.fullmatch(text) else 'FILTERED'
+    return plain(text)
+
+
+def plain(text):
+    """A short printable phrase without a URL, else 'FILTERED'. The final scan still refuses secrets and the wallet."""
+    return text if PHRASE.fullmatch(text) and '://' not in text else 'FILTERED'
 
 
 def rpc(url, source_id, method, params, log, scope=None):
