@@ -179,7 +179,11 @@ class Guard:
         active = set(halt_reasons(projection))
         actions = []
         last = projection.get('last_decision_ms')
-        if type(now_ms) is not int or (last is not None and now_ms < last):
+        # An overdue delivery HALT is durable even if no later round was planned. A restart must not turn
+        # its overdue logs young again by evaluating with an earlier clock (LD13-RV01).
+        delivery_since = ((projection.get('halt') or {}).get('reasons', {}).get('DELIVERY_AGE') or {}).get('since_ms')
+        if (type(now_ms) is not int or (last is not None and now_ms < last)
+                or (type(delivery_since) is int and now_ms < delivery_since)):
             self._clock_since = None  # a step behind the last decision restarts the clear window
             self._last_eval = now_ms if type(now_ms) is int else None
             if 'CLOCK' not in active:
