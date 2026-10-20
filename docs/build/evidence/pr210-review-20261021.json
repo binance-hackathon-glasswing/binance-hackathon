@@ -1,0 +1,64 @@
+{
+  "schema": "PR210ReviewReceipt.v1",
+  "review_id": "IDEA-049-C LD04-P-RV01",
+  "date_sgt": "2026-10-21",
+  "original_head": "1a66bf9ab4657dc64607253c4ce870346d2784a6",
+  "canonical_base": "ffe6210c2528705dbeab4566f1edbd8bed83518d",
+  "tested_source": "5400f2c4b88509b57b95a3a64730e5fd591c7154",
+  "environment": {
+    "os": "macOS/Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24 disposable Docker"
+  },
+  "tests": {
+    "passed": 2283,
+    "skipped": 10,
+    "subtests_passed": 3730,
+    "failed": 0,
+    "summary": "2283 passed, 10 skipped, 3730 subtests passed in 344.55s (0:05:44)"
+  },
+  "finding": {
+    "priority": "P2",
+    "status": "FIXED",
+    "description": "Public LIVE validator now enforces the same L/m contract used by the builder and planner schema; eight malformed/partial cases fail before fix and pass afterward."
+  },
+  "checks": {
+    "authority_tests_passed": 20,
+    "legacy_candidates_identical": true,
+    "initial_only_authority_candidates_identical": true,
+    "api_and_cli_reproduction": true,
+    "provenance_hash_verified": true,
+    "generated_candidates_unchanged": true,
+    "deviations_render": "PASS",
+    "whitespace": "PASS"
+  },
+  "ci": {
+    "run_id": 39470347006,
+    "source": "5400f2c",
+    "executed_steps": 0,
+    "status": "ACCOUNT_BILLING_BLOCKED"
+  },
+  "runtime_profile_pinned": false,
+  "host_action": false,
+  "wallet_action": false,
+  "signing_enabled": false,
+  "remaining": [
+    "Keith #120 measured/S1/fallback profile and calendar acceptance",
+    "Non-fallback gas, supporting cleanup/full-exit budget and #44 approval",
+    "Measured signer/approve/RFQ-route timing recheck",
+    "Exact qualified signed release and actual-host acceptance"
+  ],
+  "skip_reasons": [
+    "SKIPPED [1] tests/intelligence/test_source_link_trust.py:115: optional private public-source fixture",
+    "SKIPPED [1] tests/marketdata/test_recorded.py:29: real response artifacts are external; opt-in only",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:81: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:107: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:97: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:244: Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:262: Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:57: Linux bubblewrap required",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:46: Linux bubblewrap required",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:62: Linux bubblewrap required"
+  ]
+}

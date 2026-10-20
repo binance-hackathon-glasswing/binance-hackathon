@@ -1077,3 +1077,33 @@ that validator. Gate A/B, cap review and runtime startup call it directly; schem
 planning checks later are not an equivalent early refusal. Prospective fix: use
 the same existing authority contract in LIVE validation, preserving both-absent
 legacy profiles and unchanged valid candidates. Regressions precede the fix.
+
+### LD04-P-RV01 results — authority contract and candidate reproduction
+
+P2 fixed at pushed application/test source `5400f2c`: `validate_live()` invokes
+existing `execution_authority()` before accepting LIVE values. Eight regression
+cases fail at `c95e4b8` before the fix and pass afterward; both-absent legacy
+profiles retain their original behavior. All20 authority tests PASS.
+
+Full local suite: **2283 passed /3730 subtests /10 skips /zero
+failures**, macOS arm64/Python3.12.14 with disposable PostgreSQL14.24. Skip
+reasons are preserved in the review receipt; these are local results, not Linux,
+real-systemd, mirror-CI or actual-host qualification. Syntax/provenance changes
+do not adopt a numeric gas budget or any missing strategy input.
+
+Both DC01 legacy profiles reproduce byte-for-byte without authority. Both
+committed initial-only+L/m candidates reproduce byte-for-byte through API and
+CLI. File/StrategyProfile hashes match the README (`07130775…a729` /
+`58cb1be9…bdd4`; `3393ce67…34fd` / `70cb0d4f…d862`). Both authority values bind
+the exact committed LD02 packet hash, with the named LD04-V01 decision.
+Candidates remain EQUAL_WEIGHT and FALLBACK-gas-derived, with their historical
+calendar: S1 preference and final calendar were already selected in PF-01;
+actual weights, reconciliation/qualification and #120/#44 acceptance remain.
+No candidate bytes, runtime pin or readiness flag change in this review.
+
+Actions39470347006 at `5400f2c` executes zero steps in all four jobs (one
+cancelled); runtime annotation reports failed payments/spending limits. This
+is not an executed test failure or CI PASS. Deviation rendering, whitespace and
+new local documentation references pass. [Machine receipt](../build/evidence/pr210-review-20261021.json).
+Merge receipt follows after exact-head verification. No host/provider/model/key/
+wallet operation, deployment or live profile activation was performed.

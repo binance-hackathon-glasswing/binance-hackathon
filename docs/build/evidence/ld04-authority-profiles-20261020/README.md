@@ -28,5 +28,5 @@ python -m larp.strategy.profiles \
 Both carry `initial_gas_only`, `gas_action_budget_units` = 76,177,634,176,000 wei and an exit reserve of
 304,710,536,704,000 wei, and no top-up fields. They still lack: the #120 profile review, the #119 fee-inclusion
 evidence, LD09's measured approve/swap gas (the action budget is still the FALLBACK-based DC-01 pair), the #44 caps
-and the S1 choice. Re-check L and m against measured signer and approve timings
+and the measured/qualified S1 or permitted fallback profile. PF-01 already selects the preferred S1 direction and final calendar; these dated EQUAL_WEIGHT candidates retain DC-01 windows and must be reconciled before adoption. Re-check L and m against measured signer and approve timings
 in the signed rehearsal.
