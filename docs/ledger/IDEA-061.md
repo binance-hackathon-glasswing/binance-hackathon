@@ -291,3 +291,32 @@ at `9786bea` executed **zero steps across all four jobs**. Its annotation says
 account payments failed or the spending limit must be increased. This is the
 existing account-owner CI availability blocker, not an executed test failure;
 local verification above is not presented as hosted CI or release acceptance.
+
+### LD08-IG01-RV01 — PR207 code-review fixes (2026-10-20 UTC)
+
+Review of PR207 head `808b531` found nine items. Eight are fixed in `7f004f7`:
+the gas monitor returns `SKIPPED` instead of raising out of the driver tick; top-up
+profiles install `RetiredGasCheck`, which journals one `LOW_GAS_CLEARED`
+(`NOT_MONITORED`) so a stale `GasPairUnaffordable` cannot stay raised; the check
+runs every 60 s and after each balance reconciliation, not every tick; the caps
+review (`INITIAL_BNB_EXIT_RESERVE`) and Gate B DR-06 refuse starting BNB below the
+full-exit reserve; the action-budget provenance cites IDEA-061 LD07/LD08; top-up
+profiles refuse `gas_action_budget_units`; the duplicate reserve comparison is
+removed; signer assembly reuses the review's `gas_scope`.
+
+Not applied: journaling a low-gas transition while a reservation, open round or
+pending execution exists. That would break the quiet-boundary barrier this PR
+keeps on purpose. An alarm during an in-flight attempt needs a signal outside the
+journal; the owner decides (Isaac, with Keegan review).
+
+PR133 PF-06 (PR209, open) chooses a full bounded-action reservation with 20%
+gas-limit headroom, and approves no number without LD09 measurements. PR207 keeps
+`gas_action_budget_units` a sourced input, so that rule is applied when Keith's
+measurements and Isaac's acceptance supply the value; no headroom is hard-coded.
+
+Local verification, source `7f004f7`, Linux/Python 3.13.16/PostgreSQL 16.15:
+**2243 passed /11 skipped /3686 subtests**, no failures. The unchanged PR head
+`808b531` in the same environment: 2238 passed /11 skipped /3686 subtests. The five
+new tests account for the difference. Hosted CI still runs zero steps because of
+the organisation's Actions billing block (PR133); this is local evidence, not
+hosted CI or release acceptance.
