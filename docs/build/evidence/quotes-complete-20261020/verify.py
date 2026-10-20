@@ -140,17 +140,33 @@ def verify(captures):
     check(report == json.loads((HERE / 'quote-cost-summary.report.json').read_bytes()), 'report reproduction')
     profiles = build_live_profiles(Document.from_dict(summary),
                                   Document.from_dict(json.loads((ROOT / 'config/intelligence/red_flags.v1.json').read_bytes())))
+    caps_raw = (ROOT / 'docs/build/evidence/signer-caps-proposal-20261017.json').read_bytes()
+    caps = json.loads(caps_raw)['candidates']
     profile_detail = {}
     for env, doc in profiles.items():
         name = env.lower() + '-live.json'
         raw = (HERE / name).read_bytes()
         check(raw == doc.payload + b'\n', 'candidate profile reproduction')
         p = doc.read()
+        policy = caps['development' if env == 'REHEARSAL' else 'final']['signing_policy']
+        input_cap = int(policy['max_input_units'][USDT.lower()])
         profile_detail[name] = dict(file_sha256=sha(raw), document_sha256=doc.digest('StrategyProfile.v1'),
                                    baseline=p['baseline'], minimum_trade_units=p['minimum_trade_units'],
                                    per_trade_cap_units=p['per_trade_cap_units'], gas_top_up_cash_units=p['gas_top_up_cash_units'],
                                    fits_draft_35_usdt_dev_input_cap=(p['per_trade_cap_units'] <= 35_000_000 and
-                                                                    p['gas_top_up_cash_units'] <= 35_000_000))
+                                                                    p['gas_top_up_cash_units'] <= 35_000_000),
+                                   applicable_draft_usdt_cap_raw=input_cap,
+                                   fits_applicable_draft_cash_cap=max(p['per_trade_cap_units'], p['gas_top_up_cash_units']) * 10**12 <= input_cap)
+    cap_screen = {}
+    for env, candidate in caps.items():
+        policy = candidate['signing_policy']
+        cap_screen[env] = dict(
+            cap_basis=policy['cap_basis'],
+            buy_quotes_exceeding_usdt_cap=sum(r['pay_raw'] > int(policy['max_input_units'][USDT.lower()]) for r in samples),
+            sell_quotes_exceeding_token_cap={s: sum(r['buy_received'] > int(policy['max_input_units'][token.lower()])
+                                                   for r in samples if r['symbol'] == s) for s, token in TOKENS.items()},
+            fallback_swaps_exceeding_fee_cap=sum(g > int(policy['max_fee_wei']) for r in samples for g in r['swap_gas_wei']),
+            sample_max_approvals_exceeding_fee_cap=sum(r['approve_gas_wei'] > int(policy['max_fee_wei']) for r in samples))
     for symbol in TOKENS:
         mine = [r for r in samples if r['symbol'] == symbol]
         token_detail[symbol] = dict(samples=len(mine), max_success_gap=gap(mine),
@@ -173,6 +189,10 @@ def verify(captures):
                 latest_record=max(r['at'] for r in records), failures=[r for r in records if r['kind'] == 'FAILURE'],
                 tokens=token_detail, bnb_max_success_gap=gap(prices), buy_cash_raw=sorted(sizes),
                 swap_gas_methods=dict(Counter(m for r in samples for m in r['gas_methods'])),
+                maximum_sample_approve_wei=max(r['approve_gas_wei'] for r in samples),
+                maximum_fallback_swap_wei=max(g for r in samples for g in r['swap_gas_wei']),
+                historical_caps_screen=dict(proposal_file_sha256=sha(caps_raw), candidates=cap_screen,
+                                            current_holdings_full_exits='NOT_SUPPLIED', approved=False),
                 capture_hash=summary['capture_hash'], profile_candidates=profile_detail,
                 fee_netting='UNVERIFIED', live_profile_acceptance=False, signed_caps_accepted=False,
                 raw_data_committed=False)
