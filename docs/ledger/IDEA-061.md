@@ -285,3 +285,9 @@ both `fb95114`. All session work is committed/pushed on the task branch; the
 original checkout is untouched. The task's isolated PostgreSQL is removed after
 verification. Numeric/measurement/release/host/independent-review items above
 remain explicitly open; this is a repository delivery, not installed acceptance.
+
+GitHub run [39454047109](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39454047109)
+at `9786bea` executed **zero steps across all four jobs**. Its annotation says
+account payments failed or the spending limit must be increased. This is the
+existing account-owner CI availability blocker, not an executed test failure;
+local verification above is not presented as hosted CI or release acceptance.
