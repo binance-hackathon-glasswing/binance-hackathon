@@ -167,6 +167,16 @@ def verify(captures):
                                                    for r in samples if r['symbol'] == s) for s, token in TOKENS.items()},
             fallback_swaps_exceeding_fee_cap=sum(g > int(policy['max_fee_wei']) for r in samples for g in r['swap_gas_wei']),
             sample_max_approvals_exceeding_fee_cap=sum(r['approve_gas_wei'] > int(policy['max_fee_wei']) for r in samples))
+    fee_exceptions = []
+    fee_cap = int(caps['development']['signing_policy']['max_fee_wei'])
+    for r in samples:
+        for leg, g, h in zip(('BUY', 'SELL'), r['swap_gas_wei'], r['artifacts'][:2]):
+            if g > fee_cap:
+                tx = single(artifacts[h])['tx']
+                fee_exceptions.append(dict(at=r['at'], symbol=r['symbol'], leg=leg, quote_artifact_sha256=h,
+                                           fallback_fee_wei=g, quote_gas_limit=int(tx['gas']),
+                                           fallback_gas_limit=max(int(tx['gas']), FALLBACK_GAS_LIMIT),
+                                           gas_price_wei=int(tx['gasPrice']), draft_fee_cap_wei=fee_cap))
     for symbol in TOKENS:
         mine = [r for r in samples if r['symbol'] == symbol]
         token_detail[symbol] = dict(samples=len(mine), max_success_gap=gap(mine),
@@ -192,6 +202,7 @@ def verify(captures):
                 maximum_sample_approve_wei=max(r['approve_gas_wei'] for r in samples),
                 maximum_fallback_swap_wei=max(g for r in samples for g in r['swap_gas_wei']),
                 historical_caps_screen=dict(proposal_file_sha256=sha(caps_raw), candidates=cap_screen,
+                                            fee_cap_exceptions=fee_exceptions,
                                             current_holdings_full_exits='NOT_SUPPLIED', approved=False),
                 capture_hash=summary['capture_hash'], profile_candidates=profile_detail,
                 fee_netting='UNVERIFIED', live_profile_acceptance=False, signed_caps_accepted=False,
