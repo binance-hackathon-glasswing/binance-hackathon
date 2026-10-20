@@ -2431,3 +2431,13 @@ tests/tools/migrations/workflows identical to testedbd4dbee. Docker test
 containers/databases/network and the empty synthetic activation directory have
 been removed. Full external/host/adoption/installation tasks and owners remain
 in CURRENT_STATUS/backlog; historical branches/worktrees are retained.
+
+## PC-STOP01 — unsigned trial data retrieval and early stop (2026-10-20, prospective)
+
+Yao requests AWS data retrieval, stopping the current run to avoid further model
+spend, and checking the matching PR133 item. Prospective identity, private-export,
+checksum, drain/anchor, preserving-stop and stable-accounting criteria are in
+[LLM_TRIAL_STOP_20261020.md](../build/LLM_TRIAL_STOP_20261020.md).
+PR133 currently separates LD12 export/accounting/host evidence from Keith's LD11
+population/labels/quality report. Early stop does not satisfy missing unsigned
+hours, blind labels, provider billing/rights or adoption. No criterion weakened.
