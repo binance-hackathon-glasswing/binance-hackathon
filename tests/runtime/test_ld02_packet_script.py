@@ -229,7 +229,8 @@ class Ld02PacketScriptTests(unittest.TestCase):
     def test_g5_only_read_and_simulation_shapes_are_allowed(self):
         ok, scope, m = self.ns['allowed_call'], self.scope(), self.m
         approve = self.ns['APPROVE_CALL'] + m.ROUTER[2:].rjust(64, '0') + format(5, '064x')
-        override = {USDT: {'stateDiff': {'0x' + '1' * 64: '0x' + '2' * 64}}}
+        slot = self.ns['mapping_slot'](m.ROUTER, self.ns['mapping_slot'](WALLET, 2))
+        override = {USDT: {'stateDiff': {slot: '0x' + format(self.ns['OVERRIDE_ALLOWANCE'], '064x')}}}
         allowed = [('eth_estimateGas', [dict({'from': WALLET, 'to': USDT, 'data': approve, 'value': '0x0'}), '0x1']),
                    ('eth_estimateGas', [{'from': WALLET, 'to': m.ROUTER, 'data': self.calldata()}, '0x1', override]),
                    ('eth_getStorageAt', [USDT, '0x' + '0' * 64, '0x1']),

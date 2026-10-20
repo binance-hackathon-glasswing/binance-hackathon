@@ -211,8 +211,10 @@ def mapping_slot(key, slot):
 def allowed_call(method, params, scope):
     """G5: the only shapes this script may send. `scope` = {wallet, router, usdt, tokens, calldata}."""
     def override_ok(value):
-        return (type(value) is dict and set(value) == {scope['usdt']} and set(value[scope['usdt']]) == {'stateDiff'}
-                and len(value[scope['usdt']]['stateDiff']) == 1)
+        if scope is None or type(value) is not dict:
+            return False
+        slot = mapping_slot(scope['router'], mapping_slot(scope['wallet'], USDT_ALLOWANCE_SLOT))
+        return value == {scope['usdt']: {'stateDiff': {slot: '0x' + word_hex(OVERRIDE_ALLOWANCE)}}}
     if method in ('eth_chainId', 'eth_getBlockByNumber', 'eth_gasPrice'):
         return True
     tx = params[0] if params and type(params[0]) is dict else {}
@@ -242,20 +244,20 @@ class RpcRefused(ValueError):
         super().__init__('RPC_REFUSED')
         self.error = error
 
-    def detail(self):
+    def detail(self, forbidden=()):
         e = self.error
         out = dict(rpc_code=e.get('code') if type(e.get('code')) is int else None)
         message = str(e.get('message', ''))
-        out['message'] = plain(message)
+        out['message'] = plain(message, forbidden)
         data = e.get('data')
         if type(data) is str and re.fullmatch(r'0x[0-9a-fA-F]*', data) and len(data) >= 10:
             out['revert_selector'] = data[:10].lower()
             if data[:10].lower() == ERROR_STRING:
-                out['revert_text'] = revert_text(data)
+                out['revert_text'] = revert_text(data, forbidden)
         return out
 
 
-def revert_text(data):
+def revert_text(data, forbidden=()):
     """The string of an ABI `Error(string)` revert, through `plain()`; 'FILTERED' if it does not decode."""
     try:
         body = bytes.fromhex(data[10:])
@@ -264,14 +266,17 @@ def revert_text(data):
         text = body[offset + 32:offset + 32 + length].decode('utf-8')
     except (ValueError, UnicodeDecodeError):
         return 'FILTERED'
-    return plain(text)
+    return plain(text, forbidden)
 
 
-def plain(text):
+def plain(text, forbidden=()):
     """Printable ASCII (others shown as '?'), at most 160 characters with the full length noted; a URL is
     'FILTERED'. The final scan still refuses secrets and the wallet."""
     if '://' in text:
         return 'FILTERED'
+    # Scan the complete value before truncation or ASCII replacement can hide
+    # part of a known credential/address from the final serialized-packet scan.
+    sanitize(text, forbidden)
     shown = ''.join(c if ' ' <= c <= '~' else '?' for c in text)
     return shown if len(shown) <= 160 else shown[:160] + f'...[{len(shown)} chars]'
 
@@ -387,7 +392,7 @@ def estimate(provider, params, log, scope):
     try:
         return int(rpc(provider['url'], provider['source_id'], 'eth_estimateGas', params, log, scope), 16), None
     except RpcRefused as refusal:
-        return None, dict(code='RPC_REFUSED', **refusal.detail())
+        return None, dict(code='RPC_REFUSED', **refusal.detail((scope or {}).get('forbidden', ())))
     except ValueError as error:
         return None, str(error) if str(error) in OWN_CODES else 'ValueError'
     except Exception as error:
@@ -515,6 +520,7 @@ def collect():
         raise ValueError('NO_BALANCE_PROVIDERS')
     wallet = config['wallet_address'].lower()
     secrets = runtime_secrets(config)
+    forbidden = forbidden_values(config, secrets, providers)
     log, quote_log = [], []
     packet = dict(schema='LD02ExecutionPacket.v1', generated_utc=iso(time.time_ns() // 1000000), claims=CLAIMS,
                   signing_enabled=False, router_module_sha256=ROUTER_MODULE_SHA256)
@@ -605,7 +611,7 @@ def collect():
 
     packet['policy_check'] = policy_check(module, draft)
     scope = dict(wallet=wallet, router=module.ROUTER, usdt=USDT, tokens={USDT, *TOKENS.values()},
-                 calldata=set(calldata.values()))
+                 calldata=set(calldata.values()), forbidden=forbidden)
     sizes = {'USDT': minimum * 10**12 if type(minimum) is int else 1}
     sizes.update({r['symbol']: r['pay_units'] for r in quotes if r.get('side') == 'SELL' and r.get('status') == 'OK'})
     packet['gas_estimates'] = gas_estimates(providers[0], scope, observation, calldata, sizes, log, TOKENS)
@@ -649,7 +655,7 @@ def collect():
         [('BINANCE_WEB3', 'quote-and-swap', r['elapsed_ms']) for r in quotes if r.get('elapsed_ms') is not None]))
     after = read_configs()
     packet['configs_unchanged'] = after == before
-    return packet, forbidden_values(config, secrets, providers)
+    return packet, forbidden
 
 
 def main():
