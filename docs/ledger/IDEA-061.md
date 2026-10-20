@@ -49,3 +49,51 @@ T1–T6 exercise code that already exists. A first draft of them was run once du
 - Native tracing qualified on a real provider (DR02/03, IDEA-039). Until then `native_trace` stays false and every top-up command is refused.
 - Top-up size and BNB floor (G-28); whether BNB counts in equity (Q-39).
 - #56 (no top-up after `new_risk_end`) is handled separately.
+
+## LD07 — gas scope decision for v1 (Keegan, 2026-10-20)
+
+**Decision: initial-gas-only operation for v1.** The agent plans no gas top-up
+rounds. The only BNB source is the F-120 first-gas swap (MetaMask, gas paid in
+USDT), which must happen before each wallet's first agent trade. Native top-ups
+are not adopted.
+
+Why, from the current record:
+- **Native top-ups can't be qualified in time.** The untrusted-router decoder
+  (IDEA-070 B02-U) rejects native-BNB routes. A native route decoder, an
+  approved trace-capable provider and real transaction-bound native proof
+  (#30; checklist B04/B05) don't exist yet.
+- **First gas is already sized for the whole run** (SKILL.md F-120 sizing
+  POLICY, 2026-10-16). Top-ups were only ever a backup.
+- **The planner already protects the exit reserve:** buys that would cut into
+  `exit_gas_reserve_units` are refused, and any unaffordable action is refused
+  (`INSUFFICIENT_GAS`).
+
+**What this gives up:** after a wallet's first agent trade, no human may add
+BNB (F-114, F-120). If gas runs out, the agent can no longer trade at all,
+including exits and the final flatten. The reserve and the seeding size are
+therefore safety values, not cost estimates.
+
+**Acceptance requirements for LD08 (Isaac implements; Keith reviews
+accounting, Keegan reviews policy and gates):**
+1. **No top-ups:** the planner plans no `GAS_TOP_UP` intent in v1, and the
+   mapping and signer refuse one: native BNB is not an allowed receive token.
+   Tests prove both.
+2. **Exit reserve:** `exit_gas_reserve_units` covers a full exit of the
+   largest permitted book (S1: five approve+swap pairs) at the measured gas
+   limit and the cap gas price, from LD09's real approve/swap gas, not the
+   fallback estimates.
+3. **Seeding size:** dev and final first-gas amounts are computed from LD09's
+   measured per-trade gas × the planned whole-run trade count × a reviewed
+   margin, plus the exit reserve. They're recorded in the funding notes before
+   the swap.
+4. **Low-gas behaviour, tested:** below the reserve, no new buys while
+   reductions and exits continue. When even one pair is unaffordable, a
+   journaled incident and an alarm fire. No human top-up is ever expected.
+5. **Gates:** caps (#44), Gate B and the signer assembly stop requiring top-up
+   coverage for v1. #30's native top-up acceptance stays open and unclaimed.
+   DEV-21 declares the scope.
+6. **Final wallet:** its first gas follows the same sizing before Oct 29
+   00:00 UTC (LD23).
+
+Not decided here: the numeric reserve, seeding amounts and alarm threshold.
+They follow LD09's measurements, with Isaac's #44 acceptance (LD10).
