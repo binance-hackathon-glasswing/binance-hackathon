@@ -1,5 +1,7 @@
 # Rehearsal gates — RG-01
 
+**LIVE-PLAN01 (2026-10-20 SGT):** [current API-trusted deployment order](LIVE_DEPLOYMENT_PLAN_20261020.md) supersedes the source-export-first prerequisites below for the selected B02-U path. B09-TRUST01 accepts router behavior; measured caps, actual policy, supported gas scope and host/rehearsal acceptance remain open. Proposed in PR196 until merged; historical procedures/results below retain their original scope.
+
 Status: **PREPARED; all live results NOT_RUN.** This is the C09/C10 operator
 packet for [PR133 remaining actions](PR133_REMAINING_ACTIONS_20261019.md).
 It makes the existing [DR acceptance requirements](DEPLOYMENT_BUILD.md) usable

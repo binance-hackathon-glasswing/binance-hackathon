@@ -1,5 +1,7 @@
 # Pre-trading checklist (2026-10-17)
 
+**LIVE-PLAN01 (2026-10-20 SGT):** [current API-trusted deployment order](LIVE_DEPLOYMENT_PLAN_20261020.md) supersedes the source-export-first prerequisites below for the selected B02-U path. B09-TRUST01 accepts router behavior; measured caps, actual policy, supported gas scope and host/rehearsal acceptance remain open. Proposed in PR196 until merged; historical procedures/results below retain their original scope.
+
 **CONS-01 current source:** build from `codex/system-testing-20261012`; PR133 is noticeboard only. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and the [live backlog](../INCOMPLETE_WORK.md). Dated branch/PR status below is historical where superseded. Source-verified and explicitly adopted untrusted-router paths are separate; neither is activated by consolidation.
 
 ## Remaining-work implementation — PC-S1WIRE01 / NT-RV02

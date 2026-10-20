@@ -1,5 +1,7 @@
 # Signer installation preparation — SA-01 (2026-10-19)
 
+**LIVE-PLAN01 (2026-10-20 SGT):** [current API-trusted deployment order](LIVE_DEPLOYMENT_PLAN_20261020.md) supersedes the source-export-first prerequisites below for the selected B02-U path. B09-TRUST01 accepts router behavior; measured caps, actual policy, supported gas scope and host/rehearsal acceptance remain open. Proposed in PR196 until merged; historical procedures/results below retain their original scope.
+
 **CONS-01:** use the canonical `codex/system-testing-20261012` build and
 [current status](CURRENT_STATUS.md). PR194 adds an optional untrusted-router
 policy path. Isaac selected that trust direction in B09-TRUST01 (PR196);

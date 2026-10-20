@@ -2515,3 +2515,25 @@ private data/hash/access/reproduction, R1–R4 causes/locations/required changes
 per-finding acceptance checks, current38-test command, historical-method and
 safety/accounting preservation, owner/review/delivery requirements. Application
 repairs remain OPEN; no other task was messaged/assigned, no runtime or paid call.
+
+BKL01 (2026-10-21, backlog prune requested by Keith): the PC-MIRROR01 backlog
+line is complete. Merged PR177 (`5d7c8f0`) and PR176 (`26b93fe`) are ancestors of
+the exact reviewed release `c5be269` (IDEA-083 AB-REL01: all four mirror jobs
+PASS, 237 bundle checksums, identical external/embedded manifests, registered
+repository and mirror build origin recorded in
+../build/evidence/idea083-release-20261019.json). The installation-time
+approved-mirror package check and host `preflight --bind` on that release stay
+under the existing IDEA-083/AB-REL01 backlog item ("coordinator ... installs/
+qualifies exact release"). No host, AWS, release or checker action was performed.
+
+## CONS-02 — documentation queue consolidation (2026-10-21 SGT)
+
+Isaac requests consolidation of all documentation PRs into PR133 and pruning.
+[CONS-02](../build/CONSOLIDATION_20261021.md) records prospective DCV1–6 checks,
+all 11 inspected PR heads and retention decisions. Consolidate PR196/208/209/213
+on canonical with no executable changes; keep PR133 noticeboard-only and close
+PR203 only because its complete head is retained by PR207. Keep five unique
+implementation PRs open. Unique policy/plan/release-checklist/BKL01 evidence is
+retained; original experiment/host results are unchanged. Actual code review,
+measured caps/profile/ops/model inputs and signed host/release acceptance retain
+named owners. Validation/promotion/closure results follow in that record.
