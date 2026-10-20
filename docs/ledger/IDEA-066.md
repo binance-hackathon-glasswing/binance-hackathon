@@ -2506,3 +2506,12 @@ no current-router live availability projection. Full findings/reproduction/hashe
 [report](../build/LLM_TRIAL_AUDIT_20261020.md),
 [receipt](../build/evidence/llm-trial-audit-20261020.json).
 No runtime fix,AWS/provider/trading action or restart;raw data remains private.
+
+### PC-AUDIT01-HO01 — complete PR204 repair brief (2026-10-20)
+
+Yao asks for all details/fixes in PR204 and will ask an implementer himself.
+Added LLM_TRIAL_REPAIR_HANDOFF_20261020.md as the PR-body source: exact baseline,
+private data/hash/access/reproduction, R1–R4 causes/locations/required changes,
+per-finding acceptance checks, current38-test command, historical-method and
+safety/accounting preservation, owner/review/delivery requirements. Application
+repairs remain OPEN; no other task was messaged/assigned, no runtime or paid call.
