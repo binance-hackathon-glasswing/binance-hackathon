@@ -34,7 +34,7 @@ registry, database reservations, crash recovery, and temporary signer-access
 Terraform already exist. The missing work is their qualification and the
 specific decisions/evidence below.
 
-## Current dependencies — LD01 update, 2026-10-20
+## Current dependencies — after PR199/200/201, 2026-10-20
 
 Use the current LD01–LD24 owners/order on
 [PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133).
@@ -42,17 +42,20 @@ B09-TRUST01 / [PR196](https://github.com/binance-hackathon-glasswing/binance-hac
 selects API-trusted behavior; named policy/hash review and #44 numeric acceptance
 remain. Earlier inventories and bundle receipts below are historical.
 Neither proposal approval nor host acceptance is inferred from merging code.
+[OG-01](POST_REVIEW_GATES_20261020.md) gives the current closure sequence and
+measurement/decision/release/host owners. LD08-OG01 adds explicit initial-only
+candidates for review; legacy top-up inputs remain historical capabilities.
 
 | Work | Current evidence and next concrete action |
 |---|---|
 | Selected untrusted policy (#33, GAP-29; LD02/03) | Operator supplies current router/facet/code/layout/allowance bindings and fresh quotes; Keegan reviews exact policy/hash; Isaac replays and qualifies live preflight. Source guarantees remain unverified, with no established maximum loss. #138 remains incomplete optional source-path acquisition, not a selected-path prerequisite. |
 | Source-verified path only (#138) | Complete attributable source/ABI/compiler/deployment binding, independent four-guarantee review and RouterEvidence.v1 remain unavailable. Do not fabricate them; no source acceptance is claimed. |
 | Recorded-real route qualification | Verified mode uses `larp.execution_live.router check` after source review. Selected untrusted mode uses `larp.execution_live.untrusted_router check` with the reviewed policy/hash and fresh request-bound quotes, then live preflight. Historical SP-01 hashes do not establish current freshness. Both retain the logged agent round/ACK acceptance. |
-| Signing lifetime (#27) | PR144's Option A is a conditional recommendation; 60 seconds is illustrative. Keith reviews; Keegan decides the model, finite lifetime and margins, records C-OPEN-003, and implements the adopted contract. Do not extend the 15-second admission window or remove the encoded-deadline comparison. The kit's approximate 30-second quote lifetime is not measured encoded expiry. |
+| Signing lifetime (#27) | Option A and the final-release authority/deadline margin checks are merged in PR200 (IDEA-049-C LD04-RV01). Keegan still chooses L/m from operator timings, with Isaac/Keith review and per-value provenance. Recorded routes carry roughly 500-second deadlines; 60s is not an adopted value. Proposal/quote freshness and uncertain-send reconciliation remain unchanged. |
 | Independent signer caps (#44) | PR148 proposes development/final USDT inputs 35/70 and fee 0.0002 BNB. These remain unapproved for installation. Run the current-input review below, review full holdings and adjustment/splitting scenarios, then record the exact policy/profile/metadata evidence and approved hash. Use the router as spender, never the facet. |
 | New release bundle | GB-RW2 mirror [run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352) passed all four jobs on reviewed integration `0672fb8`, including PR130/144/148/149/153/131. Artifact `12099524179` exists; this session's network policy blocks downloading it. Sidecar/manifest verification and the two file hashes remain required before the AWS-owner handoff; see the [build record](evidence/gate-b-mirror-build-20261017.json). Any later adopted source change requires a newer reviewed release. |
 | Signer provisioning | The access choice and Terraform review are complete (IDEA-080 / PR149). After numeric-policy approval, the checklist's AWS owner applies temporary development SSM endpoints, provisions/binds the approved configs, and records SA4/SA9. Isaac places the key on the signer host only; the AWS owner records teardown SA5. This cloud machine has no usable AWS profile or private backend/input files; injected AWS config files contain zero profiles and boto3 resolves ProfileNotFound. |
-| Gas scope, initial funding and native tracing (#30/#106, GAP-49; LD07/08) | Reconcile current full wallet/in-flight state and funding/no-further-funding disposition; historical receipts do not authorize another seed. Choose qualified native top-ups or explicitly reviewed initial-only reserves/exit/low-gas controls. Untrusted native routes currently refuse; existing caps and Gate B require top-up proof. No omission is adopted here. Canonical receipts and ordinary gas accounting remain required. |
+| Gas scope, initial funding and native tracing (#30/#106, GAP-49; LD07/08) | PR199 decides initial gas only. LD08-OG01 introduces explicit initial-only profile/mapping/signer and stock-only cap/assembly controls for review. Complete low-gas incident/alarm, measured reserve/whole-run dev/final seeding and exact #44/host acceptance remain. Legacy top-up mode still needs native qualification; #30 stays open. Current wallet/in-flight and funding/no-further-funding disposition remain mandatory; historical receipts authorize no additional seed. |
 | First signed round and host drills (DR-02..06/19) | After Gate A and every prerequisite above, the agent produces the minimum-size dev approve/swap and ACKed round. Record chain reconciliation, success/revert reservation release, host crashes at each durable boundary and a recorded shadow-day replay. Existing synthetic/real-local-PostgreSQL tests are engineering evidence only. |
 | Timing and rehearsal | The current rehearsal buy window begins Oct 21 00:00 UTC (08:00 SGT). An earlier dev window requires its recorded decision/version event. Keep the conditional rehearsal-shape decision in IDEA-049-D D-DN-02; record an applicable shortfall when the gate is missed, rather than recording a future shortfall now. |
 
@@ -70,13 +73,15 @@ comparisons for #44. It reads only explicitly selected, hash-pinned local files,
 using the real profile, execution-config and signing-policy validators. It checks:
 
 - The profile's complete largest target position plus reserve, per-trade cash
-  cap and gas-top-up input, converting micro-USDT to raw 18-decimal USDT exactly.
+  cap (plus gas-top-up input for legacy top-up profiles), converting micro-USDT to raw 18-decimal USDT exactly.
 - Every current stock holding in its own metadata-checked raw token units,
   without assuming that sell splitting exists.
 - The configured worst-case gas envelope and measured/quoted transaction fees
   against the signer's independent fee ceiling.
 - Successful, fresh wallet/chain/router-bound quote artifacts, including all five
-  BUY/SELL pairs and native top-up, input quantities and execution gas limits.
+  BUY/SELL pairs, input quantities and execution gas limits. Explicit initial-only
+  profiles exclude native BNB from the signer policy and reject native quote
+  artifacts; legacy top-up profiles still require BNB:BUY coverage.
 
 Returned `routerResult` token addresses, decimals and input amount must match the
 request and configured units; quoted output must cover its positive minimum.

@@ -29,6 +29,14 @@ def integer(value, minimum=0):
     return value
 
 
+def initial_gas_only(p):
+    """LD07/LD08: explicit profile scope; absent on historical top-up profiles."""
+    value = p.get("initial_gas_only", False)
+    if type(value) is not bool:
+        raise ContractError("initial_gas_only must be a boolean")
+    return value
+
+
 def fraction(value):
     if type(value) is not list or len(value) != 2:
         raise ContractError("Fraction must be [numerator, denominator]")
@@ -79,6 +87,7 @@ def profile(snapshot):
         raise ContractError("Invalid expiry or declared review horizon")
     if p["per_trade_cap_units"] == 0:
         raise ContractError("Per-trade cap required")
+    initial_gas_only(p)
     execution_authority(p)
     if p["baseline"] == "TREND_GUARDED_VOL":
         # S1 (IDEA-076): its own levels, weights and hard line replace the proposal's 80%/20% caps, which are a

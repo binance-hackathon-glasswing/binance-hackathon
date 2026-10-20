@@ -9,7 +9,7 @@ from larp.contracts import ContractError
 from larp.execution import Blocked, DependencyUnavailable
 from larp.marketdata.web3 import Artifacts, utc
 from larp.strategy.profiles import quote_summary, validate_live
-from larp.strategy.schema import instant
+from larp.strategy.schema import initial_gas_only, instant
 from .chain import ChainEvidence, Rpc, evidence_boundary, hash_value, quantity
 from .main import BUILD_KEYS, validate_config
 
@@ -122,7 +122,7 @@ REQUIREMENTS = {
     3: ('Isaac / Keegan', 'Isolated signer identity, selected router evidence/policy hash and host tests; provider-qualified nonce/finality evidence'),
     4: ('Isaac / Keegan', 'Pinned dev execution configuration and PostgreSQL crash/fencing acceptance on reviewed build'),
     5: ('Keegan / Keith', 'Real-fill/gas/reservation success, revert and replay acceptance on reviewed build'),
-    6: ('Isaac / Keith', 'First BNB, exact native accounting units, C1 and logged automatic top-up'),
+    6: ('Isaac / Keith', 'Initial native funding, exact accounting units and reviewed gas scope'),
     7: ('Keegan', 'Durable receiver per-event/chunk ACK and crash/rejection drills'),
     8: ('Keith / Yao', 'Recorded-real token sessions and total-cost impact inputs'),
     9: ('Keith / Yao', 'Hash-pinned REHEARSAL LIVE profile with sourced, reviewed measurements'),
@@ -312,9 +312,18 @@ def readiness_report(inputs, *, now, base_dir):
             raise Blocked('initial native funding differs from chain capture')
         if not starting_balances_match(value, chain):
             raise Blocked('initial cash or positions differ from chain capture')
-        checks['DR-06']['detail'] = 'Initial native funding/18-decimal ledger checked; C1, full balance reconciliation and logged top-up still required'
+        if profile is not None and initial_gas_only(profile):
+            checks['DR-06']['detail'] = ('Initial-only funding/18-decimal ledger checked; measured whole-run seeding, '
+                'full-exit reserve, low-gas incident/alarm and full balance reconciliation acceptance still required; '
+                'native top-ups are excluded')
+        else:
+            checks['DR-06']['detail'] = 'Initial native funding/18-decimal ledger checked; C1, full balance reconciliation and logged top-up still required'
     except errors:
-        checks['DR-06']['detail'] = 'Pinned initial portfolio/funded native chain evidence absent or mismatched; top-up rehearsal still required'
+        if profile is not None and initial_gas_only(profile):
+            checks['DR-06']['detail'] = ('Pinned initial-only portfolio/funded native chain evidence absent or '
+                'mismatched; measured seeding/reserve and low-gas acceptance still required')
+        else:
+            checks['DR-06']['detail'] = 'Pinned initial portfolio/funded native chain evidence absent or mismatched; top-up rehearsal still required'
     try:
         value = quote_summary(load('quote_costs'))
         if profile is None or value != profile['quote_cost_summary']:

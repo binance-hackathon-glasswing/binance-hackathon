@@ -7,12 +7,12 @@ the same atomic reservation, fencing, signing and audit rules as stock intents.
 from fractions import Fraction
 
 from larp.contracts import ContractError, Document
-from larp.strategy.schema import ceil, instant, integer
+from larp.strategy.schema import ceil, initial_gas_only, instant, integer
 
 
 def plan_top_up(snapshot, p, ledger, result):
     """True when gas needs attention; caller does not allocate stock buys in this round."""
-    if "gas_floor_bnb_units" not in p:
+    if initial_gas_only(p) or "gas_floor_bnb_units" not in p:
         return False
     c, now = snapshot.context.read(), snapshot.observed_at
     if ledger["bnb_units"] >= p["gas_floor_bnb_units"]:

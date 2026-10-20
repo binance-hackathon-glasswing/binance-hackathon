@@ -86,11 +86,13 @@ def _pinned_json(path, sha256, what):
 def execution_mapping(config, profile, decimals, *, wallet):
     """`map_command` settings: profile limits, configured gas limits, and native settlement only when the RPC traces
     native transfers (`native_trace`), the one path that can settle a gas top-up's fill (#30, IDEA-061)."""
+    from larp.strategy.schema import initial_gas_only
     return dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
                 limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
                             max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
                             gas_budget=config['gas_budget']),
-                native_settlement=config.get('native_trace', False) is True)
+                native_settlement=config.get('native_trace', False) is True,
+                initial_gas_only=initial_gas_only(profile))
 
 
 def router_decoder(config, rpc=None):

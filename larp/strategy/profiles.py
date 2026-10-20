@@ -10,7 +10,7 @@ import json
 from larp.intelligence.redflags import CONFIG as PREDICATE_CONFIG
 
 from larp.contracts import ContractError, Document
-from .schema import SYMBOLS, ceil, fraction, instant, integer
+from .schema import SYMBOLS, ceil, fraction, initial_gas_only as uses_initial_gas, instant, integer
 from .predicates import predicate_records
 
 WINDOWS = {
@@ -23,6 +23,8 @@ WINDOWS = {
 
 EQUAL_WEIGHT_KEYS = ("operating_name_weight", "operating_gross_weight", "regime_gross_weight", "rebalance_band",
                      "top_up_below_gross_weight", "hard_name_weight", "hard_gross_weight")
+TOP_UP_KEYS = ("gas_floor_bnb_units", "gas_top_up_cash_units", "gas_top_up_min_receive_units",
+               "gas_top_up_max_gas_bnb_units")
 
 
 def _hash(value):
@@ -59,6 +61,9 @@ def _quote_summary(summary):
 
 def validate_live(p):
     try:
+        initial_only = uses_initial_gas(p)
+        if initial_only and any(key in p for key in TOP_UP_KEYS):
+            raise ContractError("Initial-only profile must not configure gas top-ups")
         if p.get("values_origin") != "MEASURED_AND_DECIDED" or p.get("environment") not in WINDOWS:
             raise ContractError("LIVE values must be measured and decided")
         provenance = p.get("provenance")
@@ -84,13 +89,11 @@ def validate_live(p):
                     "policy_id", "evidence_mode", "falsifier_authority", "statement_authority",
                     "falsifier_ids", "assessment_required", "evidence_max_age_ms", "environment",
                     "expected_equity_units", "impact_median_bps", "series_kind", "red_flag_policy",
-                    "predicate_registry_hash", "gas_floor_bnb_units", "gas_top_up_cash_units",
-                    "gas_top_up_min_receive_units", "gas_top_up_max_gas_bnb_units", "quote_cost_summary")
+                    "predicate_registry_hash", *(TOP_UP_KEYS if not initial_only else ()), "quote_cost_summary")
         if any(key not in p for key in required):
             raise ContractError("Missing required live value")
         summary = quote_summary(p["quote_cost_summary"])
-        for field in ("expected_equity_units", "gas_floor_bnb_units", "gas_top_up_cash_units",
-                      "gas_top_up_min_receive_units", "gas_top_up_max_gas_bnb_units"):
+        for field in ("expected_equity_units", *(TOP_UP_KEYS if not initial_only else ())):
             integer(p[field], 1)
         if (p["baseline"] not in ("EQUAL_WEIGHT", "TREND_GUARDED_VOL") or p["series_kind"] != "TOKEN"
                 or p["red_flag_policy"] != "IDEA-035-B1" or not _hash(p["predicate_registry_hash"])
@@ -136,16 +139,17 @@ def validate_live(p):
             raise ContractError("Live minimum does not satisfy measured costs/full-position feasibility")
         if p["exit_gas_reserve_units"] < (5 if s1 else 4) * pair:
             raise ContractError("Insufficient exit gas reserve for every position")
-        if p["gas_floor_bnb_units"] < pair or p["gas_top_up_min_receive_units"] <= p["gas_floor_bnb_units"]:
+        if not initial_only and (p["gas_floor_bnb_units"] < pair
+                                or p["gas_top_up_min_receive_units"] <= p["gas_floor_bnb_units"]):
             raise ContractError("Insufficient two-transaction gas floor/top-up size")
-        if p["gas_top_up_max_gas_bnb_units"] > p["gas_floor_bnb_units"]:
+        if not initial_only and p["gas_top_up_max_gas_bnb_units"] > p["gas_floor_bnb_units"]:
             raise ContractError("Top-up cannot be paid below trigger floor")
     except (KeyError, TypeError, ValueError) as exc:
         raise ContractError("Malformed or incomplete live profile") from exc
 
 
 def build_live_profiles(summary: Document, registry: Document, *, s1=None,
-                        s1_decision="IDEA-075 S1 plan (PR #123), proposed"):
+                        s1_decision="IDEA-075 S1 plan (PR #123), proposed", initial_gas_only=False):
     """Return rehearsal/final candidate profiles; caller freezes hashes in manifest.
 
     Conservative budgets are algebraic policy choices requiring Yao/team review.
@@ -153,6 +157,8 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
     With `s1` (the profile's `s1` block, weights frozen by `python -m larp.strategy.s1 freeze-weights`), the
     profiles are TREND_GUARDED_VOL (IDEA-076); `s1_decision` names the decision behind those values.
     """
+    if type(initial_gas_only) is not bool:
+        raise ContractError("initial_gas_only must be a boolean")
     s, reg = quote_summary(summary.read()), registry.read()
     published = reg.get("schema") == "RedFlagPredicateSet.v1"
     if published:
@@ -202,6 +208,10 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
         for key in EQUAL_WEIGHT_KEYS:
             base.pop(key)
         base.update(baseline=BASELINE, s1=s1, exit_gas_reserve_units=pair * 5)
+    if initial_gas_only:
+        for key in TOP_UP_KEYS:
+            base.pop(key)
+        base["initial_gas_only"] = True
     profiles = {}
     for env, window in WINDOWS.items():
         capital = 100_000_000 if env == "REHEARSAL" else 200_000_000
@@ -225,6 +235,9 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
             for key in ("baseline", "s1", "policy_id"):
                 p["provenance"][key] = {"decision_id": s1_decision,
                                         "formula": "IDEA-075 §4-§5, §12 values; weights from s1 freeze-weights"}
+        if initial_gas_only:
+            p["provenance"]["initial_gas_only"] = {"decision_id": "IDEA-061 LD07",
+                "formula": "Initial gas only; no agent top-ups; measured seeding and reserve acceptance pending"}
         formulas = {"minimum_trade_units": "max_symbol ceil(10000*pair_gas_value/(50-spread-min(50,2*median_impact)-fee_bp))",
             "cost_reserve_units": "ceil(expected_equity_units/1000): 50 bp of 20% position",
             "per_trade_cap_units": ("ceil(expected_equity_units*s1.high*max(s1.weights)) + cost_reserve_units" if cfg
@@ -241,7 +254,8 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
             "proposal_seconds": "min(15,quote_age_seconds)",
             "feature_age_seconds": "4*86400; calendar adjacency separately required"}
         for key, formula in formulas.items():
-            p["provenance"][key]["formula"] = formula
+            if key in p:
+                p["provenance"][key]["formula"] = formula
         validate_live(p)
         profiles[env] = Document.from_dict(p)
     return profiles
@@ -256,6 +270,7 @@ def main(argv=None):
     parser.add_argument("--summary", required=True)
     parser.add_argument("--predicates", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--initial-gas-only", action="store_true", help="LD07 candidate scope; no agent top-ups")
     parser.add_argument("--s1-config", help="JSON s1 block with reviewed/frozen weights; default is EQUAL_WEIGHT")
     parser.add_argument("--s1-decision", help="decision ID for the supplied S1 block; required with --s1-config")
     args = parser.parse_args(argv)
@@ -269,6 +284,7 @@ def main(argv=None):
         raise ContractError("S1 configuration must be a JSON object")
     profiles = build_live_profiles(Document.from_dict(json.loads(Path(args.summary).read_text())),
                                    Document.from_dict(json.loads(Path(args.predicates).read_text())),
+                                   initial_gas_only=args.initial_gas_only,
                                    **(dict(s1=s1_block, s1_decision=args.s1_decision) if raw_s1 is not None else {}))
     if raw_s1 is not None:
         for env, document in profiles.items():

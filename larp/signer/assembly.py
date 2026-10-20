@@ -24,6 +24,7 @@ from larp.marketdata.web3 import utc
 from larp.runtime.database import IAM_SETTINGS
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
 from larp.signer.service import router_decoder, validate_config
+from larp.strategy.schema import initial_gas_only
 
 ROOT = Path(__file__).resolve().parents[2]
 REMAINING_GATES = [
@@ -49,6 +50,7 @@ def assemble(inputs, *, now, base_dir):
     numeric = review(inputs, now=now, base_dir=base_dir)
     if numeric['numeric_status'] != 'COVERED':
         raise ContractError('Signer numeric coverage is incomplete')
+    profile = pinned(inputs['files']['profile'], base_dir)
     config = pinned(inputs['files']['execution_config'], base_dir)
     policy_value = pinned(inputs['files']['signing_policy'], base_dir)
     policy = SigningPolicy.from_config(policy_value)
@@ -84,8 +86,10 @@ def assemble(inputs, *, now, base_dir):
         router_evidence_sha256=signer.get('router_evidence_sha256'),
         untrusted_router_policy_sha256=signer.get('untrusted_router_policy_sha256'),
         database_ca_sha256=signer['database_ca_sha256'],
-        numeric_review=numeric, allowance_recovery=policy.allowance_recovery,
-        remaining_gates=[*REMAINING_GATES,
+        numeric_review=numeric, allowance_recovery=policy.allowance_recovery, remaining_gates=[
+            *[('INITIAL_GAS_RESERVE_SEEDING_AND_ROUTE_FEE_QUALIFICATION'
+               if gate == 'NATIVE_PROVIDER_AND_ROUTE_FEE_QUALIFICATION' and initial_gas_only(profile) else gate)
+              for gate in REMAINING_GATES],
             ('ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY' if decoder.mode == 'verified' else
              'UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT'),
             *(['ALLOWANCE_RECOVERY_GAS_AND_HOST_ACCEPTANCE'] if policy.allowance_recovery else [])],
