@@ -23,6 +23,7 @@ from larp.contracts import ContractError, Document
 from larp.integration.runtime import INCOMING, iso_ms
 from larp.ports import validate_execution_observation
 from larp.risk.accounting import advance_accounting
+from larp.execution import REVOKE_TOKENS
 
 SCHEMA = "ExecutionState.v1"
 
@@ -47,11 +48,13 @@ class ExecutionBridge:
         if entry["round_id"] != o["round_id"]:
             raise ContractError("Observation names another round for this intent")
         kind = o["kind"]
+        cleanup = o.get('maintenance') == 'ALLOWANCE_REVOKE'
         if kind == "BROADCAST_ATTEMPTED":
-            entry["status"] = "APPROVE_SUBMITTED" if o["step"] == "approve" else "SWAP_SUBMITTED"
+            entry["status"] = ('ALLOWANCE_REVOKE_SUBMITTED' if cleanup else
+                               'APPROVE_SUBMITTED' if o['step'] == 'approve' else 'SWAP_SUBMITTED')
             entry["tx_hashes"] = sorted(set(entry["tx_hashes"]) | {o["tx_hash"].lower()})
         elif kind == "APPROVAL":
-            entry["status"] = "APPROVED"
+            entry["status"] = 'ALLOWANCE_REVOKED' if cleanup else 'APPROVED'
         else:
             entry["status"] = kind if o["intent_terminal"] else entry["status"]
         if kind != "BROADCAST_ATTEMPTED" and o["intent_terminal"]:
@@ -139,11 +142,12 @@ def settle(current, observation):
                 projection["last_discretionary_observed_ms"] = max(
                     observed_ms, projection.get("last_discretionary_observed_ms", observed_ms))
         return Document.from_dict({"projection": projection, "reservation_deltas": []})
-    if o.get("step") == "approve" and kind in ("APPROVAL", "REVERT"):
-        expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ":approve")
+    supporting_approval = o.get('step') in {'approve', *(s.lower() for s in REVOKE_TOKENS)}
+    if supporting_approval and kind in ("APPROVAL", "REVERT"):
+        expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ':' + o['step'])
         if expected != o["tx_hash"].lower():
             raise ContractError("Final approval fact names an unrecorded broadcast")
-    if kind in ("FILL", "REVERT") and o.get("step", "swap") != "approve" and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
+    if kind in ("FILL", "REVERT") and not supporting_approval and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
         raise ContractError("Final swap fact names a hash this round never broadcast")
     if kind != "NOT_SUBMITTED":
         portfolio = deepcopy(projection["portfolio"])
