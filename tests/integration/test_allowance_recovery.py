@@ -41,6 +41,21 @@ class CleanupRound(unittest.TestCase):
         self.assertFalse(any(o.get('tx_hash') == s.TX for o in case.closed_orders('r1')))
         with case.store.transaction() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM swap_owners WHERE run_id=%s', (s.RUN,)).fetchone()[0], 0)
+        # Recompute policy/planning, every maintenance observation and the final audit log
+        # into an empty disposable target; compare the exact journal head, not only balances.
+        from larp.runtime.replay import replay
+        from larp.integration.settlement import ExecutionBridge, settle
+        from larp.integration.runtime import initial_projection
+        from larp.storage.postgres import doc
+        from tests.integration.test_evidence_pipeline import pipeline_ledger
+        journal, expected = case.store.journal(s.RUN), case.store.verify(s.RUN)
+        with case.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        replay(journal, doc(initial_projection(pipeline_ledger())), case.store, run_id=s.RUN,
+               wallet_id='fake-wallet', chain_id=56, version_id='integration-fixture', profile_hash=case.h,
+               address='0x'+'1'*40, policy=c.policy, planner=c.planner, execution=ExecutionBridge(),
+               reducer=settle, context_builder=c.context_builder, initial_policy_state=c.initial_policy_state)
+        self.assertEqual(case.store.verify(s.RUN), expected)
 
     def test_reverted_cleanup_is_not_a_swap_revert_and_releases_parent_reservations(self):
         case, c, i = self.case, self.c, self.i

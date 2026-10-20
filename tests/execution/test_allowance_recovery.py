@@ -322,3 +322,71 @@ class Receipt(unittest.TestCase):
                 validate_execution_observation(dict(value, **change))
         c.proof['receipt']['logs'] = [receipt_fixtures.log(USDT, c.intent.wallet, c.intent.router, 1)]
         with self.assertRaises(Blocked):c.observed()
+
+
+class PostgresRecovery(unittest.TestCase):
+    def setUp(self):
+        from tests.execution import test_postgres_execution as pg
+        self.case = pg.PostgresExecutionTests('test_wallet_barrier_and_stale_cas')
+        self.case.setUp()
+        self.addCleanup(self.case.doCleanups)
+        self.pg = pg
+        self.h = Harness.__new__(Harness)
+        self.h.now = 10
+        self.h.decoder = u.u.UntrustedRouterDecoder(u.policy())
+        self.h.rpc = u.FakeRpc(self.h.decoder, f.WALLET, USDT, 0)
+        self.h.decoder.bind(self.h.rpc)
+        self.restart()
+
+    def restart(self):
+        from larp.execution_live.store import ExecutionStore
+        h = self.h
+        nonce = h.guards.nonce if hasattr(h, 'guards') else 0
+        h.store = ExecutionStore(self.case.store, run_id='run', wallet=f.WALLET)
+        class PgGuards(self.pg.ExecutionGuards):
+            mode = 'live'
+        class PgSigner(self.pg.RegistrySigner):
+            mode = 'live'
+        h.guards = PgGuards(h.store)
+        h.guards.nonce = nonce
+        if not hasattr(h, 'venue'):h.venue = Venue(h.store)
+        h.venue.store = h.store
+        h.executor = Executor(h.store, h.guards, h.venue, PgSigner(h.store), h.decoder, allowance_recovery=True)
+
+    def test_sql_journal_recovers_multiple_cleanup_steps_and_cross_token_swap(self):
+        h = self.h
+        i = h.intent('final-exit', sell=True)
+        h.rpc.allowances = {token: 5 for token in u.u.TOKENS}
+        h.executor.create(i, 10)
+        for token in sorted(u.u.TOKENS):
+            state = h.finish_step(i)
+            self.assertEqual(state.attempts[-1].step, step(token))
+            self.restart()
+            self.assertEqual(h.executor._load(i.key), state)  # hashes/chain checked by real loader
+        h.finish_step(i)
+        state = h.finish_step(i)
+        self.restart()
+        self.assertEqual(h.executor._load(i.key), state)
+        self.assertEqual(state.status, 'COMPLETED')
+        self.assertTrue(all(a.raw_hex is None for a in state.attempts))
+        with self.case.store.transaction() as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_signatures').fetchone()[0], 8)
+        self.assertEqual(len(possible_swap_hashes(state)), 1)
+
+    def test_sql_cleanup_unknown_and_reverted_outcome_retains_then_releases_barrier(self):
+        h = self.h; i = h.intent()
+        h.rpc.allowances[USDT] = 1
+        h.executor.create(i, 10)
+        h.executor.prepare(i.key, 11)
+        h.executor.authorize(i.key, 12)
+        h.executor.sign(i.key, 13)
+        sent = h.executor.broadcast(i.key, 14)
+        self.restart()
+        with self.assertRaises(Conflict):h.executor.create(h.intent('blocked'), 15)
+        h.executor.broadcast(i.key, 16)
+        self.assertEqual(len(h.venue.broadcasts), 1)
+        a = sent.attempts[-1]
+        h.venue.outcomes[a.tx_hash] = f.finalized(a, 'REVERT')
+        self.assertEqual(h.executor.reconcile(i.key, 17).status, 'FAILED')
+        self.restart()
+        self.assertEqual(h.executor.create(h.intent('fresh'), 18).status, 'ACTIVE')
