@@ -162,7 +162,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,
-                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast')), clock_s=clock_s))
+                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast')), clock_s=clock_s,
+                          decoder=decoder))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:

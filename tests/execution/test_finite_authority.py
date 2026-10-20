@@ -277,6 +277,39 @@ class ReleaseAuthority(DatabaseCase):
             self.engine.broadcast(self.i.key, 14)
         submitter.send.assert_not_called()
 
+    def swap_ready(self):
+        sent = self.engine.broadcast(self.i.key, 14)
+        self.venue.outcomes[sent.attempts[-1].tx_hash] = finalized(sent.attempts[-1])
+        self.engine.reconcile(self.i.key, 15)
+        self.guards.nonce = 1
+        self.venue.quote_mutation = lambda payload: fake_swap(self.i, 50, payload.nonce)
+        self.engine.prepare(self.i.key, 16)
+        self.engine.authorize(self.i.key, 17)
+        return self.engine.sign(self.i.key, 18)
+
+    def test_swap_release_checks_decoded_deadline_with_fresh_clock(self):
+        from unittest.mock import Mock
+        from larp.execution import Conflict
+        from larp.execution_live.loop import FencedRelease
+        self.swap_ready()
+        submitter = Mock()
+        self.venue.broadcast = FencedRelease(self.registry, submitter, clock_s=lambda: 45, decoder=FakeDecoder())
+        with self.assertRaisesRegex(Conflict, 'deadline submission margin'):
+            self.engine.broadcast(self.i.key, 19)  # tick fits; fresh release clock exhausts route margin
+        submitter.send.assert_not_called()
+        self.assertEqual(self.registry.load(self.i.key).attempts[-1].state, 'BROADCAST_ATTEMPTED')
+
+    def test_swap_release_inside_both_margins_sends_exact_bytes(self):
+        from unittest.mock import Mock
+        from larp.execution_live.loop import FencedRelease
+        state = self.swap_ready()
+        submitter = Mock()
+        submitter.send.return_value = state.attempts[-1].tx_hash
+        self.venue.broadcast = FencedRelease(self.registry, submitter, clock_s=lambda: 44, decoder=FakeDecoder())
+        result = self.engine.broadcast(self.i.key, 19)
+        self.assertEqual(result.attempts[-1].state, 'PENDING')
+        submitter.send.assert_called_once_with(state.attempts[-1].raw_hex)
+
 
 if __name__ == '__main__':
     unittest.main()
