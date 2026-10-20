@@ -109,5 +109,7 @@ into the target with `replay_live`. It refuses a non-empty target, and a target 
 
 ## Not covered here (remaining LD21 work)
 - **Boundary crash injection for RG2:** crashes at authorized, signed-durable, send/unknown and receipt boundaries
-  need signer-side instrumentation that doesn't exist yet. D1 covers the runtime-process crash only.
+  need signer-side instrumentation that doesn't exist yet. D1 covers the runtime-process crash only. The fault
+  matrix F1–F10 and the proposed instrumentation are in `RG2_CRASH_INJECTION_DESIGN_20261021.md` (IDEA-042
+  RG2-D01, PR215), awaiting Keegan's decisions; those rows stay BLOCKED until it is built.
 - **RG7 time boundaries and RG9 daily rehearsal records:** these need Keith's adopted profile and the signed days.
