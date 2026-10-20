@@ -150,3 +150,12 @@ unsourced scope, native mapping and independent policy refusal, exact cap
 boundaries, assembly and both funded/missing initial-only Gate B reporting.
 No current measurement, numeric adoption, low-gas incident/alarm or hosted
 acceptance is claimed. Full-suite results follow after the pushed-code run.
+
+First full run at `84e6d57`: **2204 passed, 8 skipped, 3656 subtests**, 234.69 s;
+dependency checks, deviations rendering and offline demo PASS. While it ran,
+PR202 merged as canonical `697ff3a`. Merge `993d6b4` retains both initial-only
+coverage and LD06 allowance-recovery opt-in/mismatch checks and acceptance
+gates; backlog/Gate B conflicts retain both scopes. Before rerunning, add a
+combined initial-only/untrusted/allowance-recovery assembly case proving both
+gas/host gates remain and a config/policy opt-in mismatch refuses. Any selected
+cleanup steps need their own measured reserve/seeding/timing coverage.

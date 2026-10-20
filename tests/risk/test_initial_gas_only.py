@@ -187,3 +187,25 @@ class InitialCaps(unittest.TestCase):
         self.assertIn('INITIAL_GAS_RESERVE_SEEDING_AND_ROUTE_FEE_QUALIFICATION', report['remaining_gates'])
         self.assertIn('SIGNING_LIFETIME_27', report['remaining_gates'])
         self.assertIn('REGISTERED_RELEASE_AND_HOST_ACCEPTANCE', report['remaining_gates'])
+
+    def test_initial_only_and_allowance_recovery_keep_both_acceptance_gates(self):
+        from tests.execution.test_mode_readiness import ModeReadiness
+        case = ModeReadiness('test_assembly_untrusted_path_copies_only_policy_pair_and_retains_gates')
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        case.select_untrusted()
+        fixture = case.case.fixture
+        self.configure(fixture)
+        fixture.config['allowance_recovery'] = True
+        fixture.policy['allowance_recovery'] = True
+        fixture.save_inputs()
+        report = case.report()
+        self.assertTrue(report['allowance_recovery'])
+        self.assertEqual(report['numeric_review']['gas_scope'], 'INITIAL_ONLY')
+        self.assertIn('INITIAL_GAS_RESERVE_SEEDING_AND_ROUTE_FEE_QUALIFICATION', report['remaining_gates'])
+        self.assertIn('ALLOWANCE_RECOVERY_GAS_AND_HOST_ACCEPTANCE', report['remaining_gates'])
+        self.assertFalse(report['ready_to_install'])
+        fixture.config['allowance_recovery'] = False
+        fixture.save_inputs()
+        with self.assertRaises(ContractError):
+            case.report()

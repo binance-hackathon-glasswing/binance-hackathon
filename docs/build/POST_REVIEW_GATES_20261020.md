@@ -19,6 +19,11 @@ delivery-age guard. The live backlog remains [INCOMPLETE_WORK.md](../INCOMPLETE_
 Keep raw/private artifacts outside Git. Record public hashes, UTC timestamps,
 environment/run/wallet/build identities, source/method, requested amounts and
 units, remaining uncertainties, and the named supplier/reviewer decision.
+If LD06 allowance recovery is selected, include its bounded zero-approval steps
+in the action/whole-run/full-exit gas and timing evidence; five stock pairs
+alone do not cover additional cleanup. PR202 is merged; its actual policy/gas/
+timing/host acceptance remains separate and is retained alongside initial-only
+gas acceptance in assembly reports.
 Use the existing [cap reviewer and assembly procedure](GATE_B_REMAINING.md#current-input-signer-cap-review),
 [signer preparation](SIGNER_INSTALLATION_PREPARATION.md) and
 [rehearsal gates](REHEARSAL_GATES_20261019.md); no second acceptance system is created.
