@@ -616,3 +616,60 @@ Isaac LD06 allowance work, LD05 abnormal fills, LD07/08 gas scope, #27/#44 and
 release/host/session/real-round acceptance remain with the owners recorded
 above and in the live backlog. PR196 remains a separate OPEN documentation PR;
 PR133 remains the noticeboard. This session does not qualify real router behavior.
+
+## LD06 — bounded leftover-allowance recovery (2026-10-20; prospective)
+
+Owner Isaac; independent review Keegan. Canonical base `06a93f9` includes reviewed
+LD01. Scope: repository code/tests/documentation only, no wallet/provider/host
+operation. LD07/08 gas scope and LD04 authority implementation remain separate.
+
+Design proposed for review: optional pre-approval zero-allowance steps under the
+next valid, risk-approved parent stock intent. Each step targets only USDT or one
+of the five eligible bStocks and only the same pinned router; ERC20 approve amount
+is exactly zero, native value zero. Maximum one step per token per parent, six
+steps total. Every step has immutable identity, normal fresh gates/expiry/nonce,
+fee cap and aggregate parent gas budget, durable signing/send/reconciliation and
+receipt/gas/audit facts. No independent trade or authority extending the expired
+parent is invented. Possible sends retain the wallet barrier. After cleanup,
+re-read allowances, approve the actual pay token exactly, re-quote and swap.
+
+Explicit execution configuration and signer-policy opt-ins default false. Old
+configuration behavior remains fail-closed. A repeated nonzero allowance after a
+confirmed revoke blocks, never loops. If time, gas, market, health, audit or risk
+checks fail, stop/abort only positively unbroadcast work; a later independently
+valid intent may recover the allowance. Cleanup failure does not fabricate a
+fill or remove ordinary settlement quarantine. Actual reserve/gas sizing and
+activation acceptance remain required; this change enables no production flags.
+
+Source check: read `official/source_page.md` Rules & Restrictions and the
+verbatim `official/kit/bstocks-trading-guide.md` approval/logging flow, core
+F-96/99/100/105, G-01/04/18/19 and Q-07/09, plus participant-kit K8. The kit
+specifies exact positive trade approval, not a revoke protocol. The zero-only
+maintenance scope is a proposed team implementation policy supporting that
+flow, not an organiser rule or a source-enforcement guarantee; it needs explicit
+review and exact installed policy acceptance. No arbitrary token/spender/call,
+manual approval or direct-RPC broadcast is introduced.
+
+Pass criteria before execution:
+
+1. Reproduce other-token/final-exit blockage from allowance left by approval
+   without swap, reverted swap, and expired authority; fresh parent cleanup
+   reaches approve/requote/swap with immutable identities across restart.
+2. Both execution and signer independently refuse disabled cleanup, nonzero
+   approval, unknown token/spender/selector/value, duplicate or misplaced cleanup,
+   stale authority/nonces and excess per-step/aggregate gas. Six-token bound and
+   at-most-once signing/send survive failures and uncertain outcomes.
+3. Keep router/facet/code/layout and strict allowance preflight checks; RPC or
+   receipt/reorg uncertainty blocks. Zero/nonzero allowance rechecks determine
+   progress; no timeout or old parent's expiry clears possible-send uncertainty.
+4. Canonical successful cleanup is an approval maintenance fact, not a fill or
+   swap order/hash. Gas is accounted once, reservation retained except spent
+   gas; reverted cleanup accounts gas and terminates the parent. Aborting after
+   cleanup releases unsent swap reservations without pretending allowances reset.
+   Actual PostgreSQL store/remote-signer/outbox/replay tests cover these paths.
+5. Update current state machine/runbooks/backlog and ledger results truthfully;
+   retain other GAP gates, no historical evidence/kit/vendor/secrets changes.
+   Commit/push code before tests; run focused Linux/PostgreSQL and full runtime
+   regressions appropriate to this execution/signing/accounting change.
+
+Results pending; all implementation/configuration acceptance remains unclaimed.
