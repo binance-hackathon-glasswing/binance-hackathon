@@ -310,6 +310,8 @@ class Ld02PacketScriptTests(unittest.TestCase):
         self.assertEqual(refused(dict(code=3, message='reverted', data='0x1234abcd' + '00' * 4)).detail(),
                          dict(rpc_code=3, message='reverted', revert_selector='0x1234abcd'))
         self.assertEqual(self.ns['revert_text']('0x08c379a0' + 'zz'), 'FILTERED')
+        self.assertEqual(self.ns['plain']('caf\u00e9 ' + 'x' * 200)[:6], 'caf? x')
+        self.assertTrue(self.ns['plain']('y' * 200).endswith('...[200 chars]'))
 
     def test_f1_estimate_returns_the_detail_and_the_final_scan_still_applies(self):
         refused = self.ns['RpcRefused']

@@ -231,7 +231,6 @@ def allowed_call(method, params, scope):
     return False
 
 
-PHRASE = re.compile(r'[ -~]{1,160}')  # printable ASCII; '://' is refused separately in plain()
 ERROR_STRING = '0x08c379a0'
 
 
@@ -268,8 +267,12 @@ def revert_text(data):
 
 
 def plain(text):
-    """A short printable phrase without a URL, else 'FILTERED'. The final scan still refuses secrets and the wallet."""
-    return text if PHRASE.fullmatch(text) and '://' not in text else 'FILTERED'
+    """Printable ASCII (others shown as '?'), at most 160 characters with the full length noted; a URL is
+    'FILTERED'. The final scan still refuses secrets and the wallet."""
+    if '://' in text:
+        return 'FILTERED'
+    shown = ''.join(c if ' ' <= c <= '~' else '?' for c in text)
+    return shown if len(shown) <= 160 else shown[:160] + f'...[{len(shown)} chars]'
 
 
 def rpc(url, source_id, method, params, log, scope=None):
