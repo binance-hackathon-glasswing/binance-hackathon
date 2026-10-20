@@ -503,3 +503,14 @@ portability; production path refusal is unchanged. All7 packet local links and
 changed docs; no additional blocker. Application/runtime/config source is
 unchanged from the current checklist base. Hosted CI remains billing-blocked;
 new tools still need future release qualification and all live drills stay open.
+
+## LD21-H — drill harnesses and procedures (2026-10-20)
+
+Prepared for the approved operator (all drills NOT_RUN):
+[LD21_DRILL_PROCEDURES.md](../build/LD21_DRILL_PROCEDURES.md) pins D1 restart, D2 DELIVERY_AGE HALT/clear,
+D3 anchors, D4 restore/alert and D5 throwaway wallet switch, with pass/fail criteria written before any run.
+Two harnesses close RG-01's "pinned invocation harness" blockers for RG4 and RG6:
+`tools/deploy/drill_verify_anchors.py` (read-only `verify_anchors` over downloaded Anchor.v2 files, with hourly
+coverage) and `tools/deploy/drill_wallet_switch.py` (read-only preflight that agrees with `switch_wallet`, and a
+confirmed switch step). PostgreSQL tests: 3 + 6 passed. RG8 replay harness and signer-boundary crash injection
+remain open.
