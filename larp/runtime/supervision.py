@@ -17,7 +17,7 @@ run's owner epoch; epoch takeover stays reserved for standby promotion, which is
 import ctypes
 import ctypes.util
 
-from larp.audit.delivery import deadline_breaches, unlogged_rounds
+from larp.audit.delivery import deadline_breaches, pending_log_times, unlogged_rounds
 from larp.contracts import ContractError, Document
 from larp.runtime.coordinator import batch_for, halt_reasons
 from larp.storage.postgres import IntegrityError
@@ -110,14 +110,20 @@ class Sessions:
 
 
 class Guard:
-    def __init__(self, store, run_id, *, max_failures, clear_after, clock_sync=None, clock_clear_after_ms=None):
+    def __init__(self, store, run_id, *, max_failures, clear_after, clock_sync=None, clock_clear_after_ms=None,
+                 delivery_age_ms=None):
         if type(max_failures) is not int or max_failures < 1 or type(clear_after) is not int or clear_after < 1:
             raise ContractError('Guard thresholds must be positive integers')
+        if delivery_age_ms is not None and (type(delivery_age_ms) is not int or delivery_age_ms < 1):
+            raise ContractError('The delivery-age bound must be a positive integer of milliseconds')
+        # D-DN-04 (IDEA-049-D LD13): an earlier, non-pausing HALT on the oldest log not yet positively ACKed. No
+        # default bound: off until a measured value is decided.
         if clock_sync is not None and (not callable(clock_sync) or type(clock_clear_after_ms) is not int
                                        or clock_clear_after_ms < 1):
             raise ContractError('A clock synchronisation signal needs a positive clear window')
         self.store, self.run_id = store, run_id
         self.max_failures, self.clear_after = max_failures, clear_after
+        self.delivery_age_ms = delivery_age_ms
         # D-DN-10: without a signal a CLOCK HALT never clears. The window is in-process, so a restart starts it again.
         self.clock_sync, self.clock_clear_after_ms = clock_sync, clock_clear_after_ms
         self._clock_since = self._last_eval = None
@@ -173,7 +179,11 @@ class Guard:
         active = set(halt_reasons(projection))
         actions = []
         last = projection.get('last_decision_ms')
-        if type(now_ms) is not int or (last is not None and now_ms < last):
+        # An overdue delivery HALT is durable even if no later round was planned. A restart must not turn
+        # its overdue logs young again by evaluating with an earlier clock (LD13-RV01).
+        delivery_since = ((projection.get('halt') or {}).get('reasons', {}).get('DELIVERY_AGE') or {}).get('since_ms')
+        if (type(now_ms) is not int or (last is not None and now_ms < last)
+                or (type(delivery_since) is int and now_ms < delivery_since)):
             self._clock_since = None  # a step behind the last decision restarts the clear window
             self._last_eval = now_ms if type(now_ms) is int else None
             if 'CLOCK' not in active:
@@ -190,6 +200,7 @@ class Guard:
         self._last_eval = now_ms
         with self.store.transaction() as db:
             overdue = deadline_breaches(db, self.run_id, now_ms)
+            pending = (pending_log_times(db, self.run_id, projection) if self.delivery_age_ms is not None else [])
         overdue = overdue + ['round:' + r for r in unlogged_rounds(projection, now_ms)]
         if overdue and 'DELIVERY_DEADLINE' not in active:
             self._halt('DELIVERY_DEADLINE', now_ms, dict(events=overdue[:20], count=len(overdue)))
@@ -197,6 +208,18 @@ class Guard:
         elif not overdue and 'DELIVERY_DEADLINE' in active:
             self._clear('DELIVERY_DEADLINE', now_ms, dict(overdue=0))
             actions.append('CLEAR:DELIVERY_DEADLINE')
+        if self.delivery_age_ms is not None:
+            # Fail closed: a missing or future timestamp counts as overdue, never as fresh.
+            future = any(type(t) is not int or t > now_ms for t in pending)
+            oldest = min((t for t in pending if type(t) is int), default=None)
+            late = future or (oldest is not None and now_ms - oldest >= self.delivery_age_ms)
+            if late and 'DELIVERY_AGE' not in active:
+                self._halt('DELIVERY_AGE', now_ms, dict(oldest_ms=oldest, future=future, pending=len(pending),
+                                                        bound_ms=self.delivery_age_ms))
+                actions.append('HALT:DELIVERY_AGE')
+            elif not late and 'DELIVERY_AGE' in active:
+                self._clear('DELIVERY_AGE', now_ms, dict(oldest_ms=oldest, pending=len(pending)))
+                actions.append('CLEAR:DELIVERY_AGE')
         health = projection.get('round_health') or {'failures': 0, 'successes': 0}
         if health['failures'] >= self.max_failures and 'REPEATED_FAILURES' not in active:
             self._halt('REPEATED_FAILURES', now_ms, dict(consecutive_failures=health['failures']))

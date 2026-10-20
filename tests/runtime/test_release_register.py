@@ -59,7 +59,8 @@ class Register(unittest.TestCase):
         self.assertTrue({'IDEA-035', 'IDEA-037', 'D-08', 'D-09', 'D-11', 'GAP-51'} <= cited)
         for change, error in ((lambda r: r['rows'][0].update(declared='a decision model we never proposed'), 'quote'),
                               (lambda r: r['rows'][0]['evidence'].append('IDEA-999'), 'evidence'),
-                              (lambda r: next(x for x in r['rows'] if x['decided'] == 'OPEN').update(status='FINAL'), 'open row final')):
+                              # No row need still be OPEN (DEV-18 was the last, LD13): make one in the copy.
+                              (lambda r: r['rows'][0].update(decided='OPEN', status='FINAL'), 'open row final')):
             broken = copy.deepcopy(register)
             change(broken)
             with self.subTest(error), self.assertRaises(ContractError):

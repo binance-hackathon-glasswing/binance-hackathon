@@ -256,8 +256,8 @@
    "id": "DEV-18",
    "area": "Standby",
    "declared": "The deployment is one primary runtime plus a fenced cold standby.",
-   "v1_behaviour": "OPEN: primary supervisor restart is built and historical unsigned primary operation is recorded (IDEA-066 PC-AWS06-08 / PC-DEPLOY02). No fenced cold-standby acceptance is recorded. PC-OPS01 proposes omitting it; that proposal, crash-loop and restore policies still await Isaac C05 and Keegan final acceptance.",
-   "reason": "AWS exploration/provisioning is no longer the pending decision. GAP-02 remains open for the proposed deviation and recovery-policy acceptance; standby promotion remains disabled.",
+   "v1_behaviour": "No fenced cold standby: the deployment is one primary runtime with same-build supervisor restart plus an isolated signer; standby promotion is not built. A primary or availability-zone failure may end trading for the run, and a restored run stays quarantined (D-DN-11). No recovery-time, data-loss or availability guarantee is claimed.",
+   "reason": "Isaac accepted the no-standby scope in C05-RV01 (2026-10-19) and Keegan recorded it on 2026-10-20 (IDEA-049-D LD13): the built topology is primary plus isolated signer, and unbuilt failover is not promised. Exact-host isolation, restart, reboot and backup evidence remain operator tasks.",
    "evidence": [
     "D-05",
     "GAP-02",
@@ -265,7 +265,7 @@
     "IDEA-066",
     "F-124"
    ],
-   "decided": "OPEN",
+   "decided": "2026-10-20",
    "status": "DRAFT"
   },
   {
