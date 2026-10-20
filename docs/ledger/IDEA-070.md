@@ -482,3 +482,35 @@ named reviewer), a `check` on fresh quotes, a live preflight, Isaac's adoption
 with #44 (B09) and B10/#27. The swap's own deadline is about 8 minutes after
 the quote, so it still conflicts with short intent expiries. Signing stays
 disabled; nothing here accepts Gate B.
+
+## LD01 — mode-aware readiness and handoffs (2026-10-20; prospective)
+
+Isaac-owned repository lane from PR133's current checklist, based on canonical
+`2a997f4`. B09-TRUST01 and LIVE-PLAN01 are proposed in PR196; this change
+references that existing direction without merging its branch or accepting a
+real policy. No operator/provider/quote/private-key inputs are needed for this
+reporting slice. Follow-on LD06 covers allowance recovery separately.
+
+Pass criteria, before execution:
+
+1. Signer assembly reports the selected verified/untrusted mode and only its
+   applicable router review/replay gate; exact caps, hashes, named policy review,
+   CA/run/DB binding and installation/signing/Gate B refusals remain intact.
+2. Historical cap proposals can explicitly name either mode, retain all numeric
+   values and pending policy labels, reject unknown modes, and require the
+   applicable source review or untrusted policy review/replay/preflight.
+3. Gate B DR-02/03 inventories and failure details name both supported paths
+   accurately. Valid untrusted replay is never source verification or activation;
+   missing/review-required/altered policy still refuses.
+4. Current Gate B/signer handoffs distinguish the two mutually exclusive file/hash
+   pairs and retain lifetime, caps, gas scope, allowance, abnormal-fill and host
+   gates. Remove unconditional loss-bound claims, leaving DEV-23 DRAFT.
+5. Record #138 as incomplete source-path work, optional for the selected path;
+   #160's delivered technical handoff is distinct from actual approved assembly.
+   Preserve historical artifacts and keep parent #33/#44/GAP-29/47 open.
+6. Run focused offline signer/caps/Gate B/router regressions and documentation /
+   deviation-render checks after committing and pushing code. No AWS, provider,
+   model, wallet, signing, receiver or installation operation.
+
+Results: pending. Review owner: Keegan; real policy/caps/host acceptance stays
+with the owners in PR133. No entire deployment backlog item is completed here.
