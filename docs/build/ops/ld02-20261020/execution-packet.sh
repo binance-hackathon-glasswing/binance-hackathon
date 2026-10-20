@@ -204,7 +204,8 @@ def word_hex(value):
 def mapping_slot(key, slot):
     """Solidity mapping slot keccak256(pad(key) || pad(slot)); `key` is an address or a 0x word."""
     from eth_utils import keccak
-    return '0x' + keccak(bytes.fromhex(str(key)[2:].rjust(64, '0') + word_hex(slot if type(slot) is int else int(slot, 16)))).hex()
+    position = word_hex(slot if type(slot) is int else int(slot, 16))
+    return '0x' + keccak(bytes.fromhex(str(key)[2:].rjust(64, '0') + position)).hex()
 
 
 def allowed_call(method, params, scope):
@@ -255,7 +256,7 @@ class RpcRefused(ValueError):
 
 
 def revert_text(data):
-    """The string of an ABI `Error(string)` revert, filtered to a short phrase; 'FILTERED' otherwise."""
+    """The string of an ABI `Error(string)` revert, through `plain()`; 'FILTERED' if it does not decode."""
     try:
         body = bytes.fromhex(data[10:])
         offset = int.from_bytes(body[:32], 'big')
@@ -382,7 +383,7 @@ def policy_check(module, draft):
 
 
 def estimate(provider, params, log, scope):
-    """(gas, None) or (None, short reason): a simulation only, never a transaction."""
+    """(gas, None) or (None, reason): a code, or the RpcRefused detail. A simulation only, never a transaction."""
     try:
         return int(rpc(provider['url'], provider['source_id'], 'eth_estimateGas', params, log, scope), 16), None
     except RpcRefused as refusal:
