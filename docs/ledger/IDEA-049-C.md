@@ -1006,3 +1006,104 @@ needs this provenance, and both values are re-checked against measured
 signer/approve timings in the signed rehearsal before the Oct 22 cut line. An
 approve that ends after `A − 500 s` still leaves a refused swap and an allowance
 for LD06 recovery; the window is chosen to make that rare, not impossible.
+
+### LD04-P — L/m in the LIVE profile candidates (2026-10-20; prospective)
+
+Puts Keegan's LD04-V01 values into the profile builder so the LIVE candidates can
+carry them with per-value provenance. Keith owns the profiles (#120) and reviews.
+
+**Pass criteria, written before code (Q1–Q5):**
+
+- Q1. Without the new input, `build_live_profiles` output is byte-identical to the
+  committed `quotes-complete-20261020` rehearsal/final candidates (YP-01 unaffected).
+- Q2. With L = 660, m = 30, each candidate gains exactly `execution_authority_seconds`
+  and `submission_margin_seconds`; every other key is unchanged. Provenance for both:
+  `decision_id` = IDEA-049-C LD04-V01 and `data_hash` = SHA-256 of the committed LD02
+  evidence file. `validate_live` and the schema validator accept them, and
+  `execution_authority()` returns (660, 30).
+- Q3. The builder and CLI refuse partial input (any of the four authority inputs
+  missing), m ≥ L, L above 3600 or below `proposal_seconds`, non-integers, and a blank
+  decision ID.
+- Q4. New candidate files go to a new evidence directory with file and
+  StrategyProfile.v1 hashes; no runtime config, manifest pin or readiness flag changes.
+- Q5. Focused strategy tests and the full suite pass.
+
+### LD04-P results (2026-10-20)
+
+- **Q1 PASS.** Without the input, both candidates reproduce byte-for-byte from the
+  committed DC-01 summary and `config/intelligence/red_flags.v1.json`.
+- **Q2 PASS.** With L = 660, m = 30, each candidate gains exactly the two keys; every other
+  key and its provenance are identical; `validate_live` passes and `execution_authority()`
+  = (660, 30). Provenance: decision "IDEA-049-C LD04-V01 (Keegan, 2026-10-20)", data hash
+  `ad43b634…c4ced4` (committed LD02 packet).
+- **Q3 PASS.** Eight builder refusals (m = L, L > 3600, L < `proposal_seconds`, string L,
+  m = 0, blank decision, bad hash, missing margin) and the CLI's all-or-nothing flags.
+- **Q4 PASS.** Candidates in `docs/build/evidence/ld04-authority-profiles-20261020/`:
+  rehearsal file `bb27cbf8…eb5b` / StrategyProfile.v1 `24858d24…10fa`; final file
+  `054ca468…0bc7` / StrategyProfile.v1 `ac764577…50d2`. No runtime config, pin or flag changed.
+- **Q5 PASS.** Strategy tests 183 passed / 80 subtests; full suite 2237 passed, 11 skipped, 3698 subtests.
+
+Keith reviews and adopts (#120). These candidates still carry the DC-01 top-up fields,
+which LD08's initial-gas-only alignment will change.
+
+### LD04-P after PR207 (2026-10-20)
+
+After PR207 (LD08 initial-only gas) merged into canonical (`91d4b0a`), canonical was merged into PR210. The
+`profiles.py` conflict was resolved by keeping both features: `build_live_profiles(..., initial_gas_only=..., authority=...)`
+and the CLI's `--initial-gas-only` with the four authority flags. A new test checks that the authority keys are the
+only difference between initial-only candidates with and without L/m. The candidates were regenerated with
+`--initial-gas-only` plus L/m: rehearsal file `07130775…a729` / StrategyProfile.v1 `58cb1be9…bdd4`; final file
+`3393ce67…34fd` / StrategyProfile.v1 `70cb0d4f…d862`. No top-up keys; the action budget is still the FALLBACK-based
+DC-01 pair (76,177,634,176,000 wei), pending LD09 measured gas. The earlier non-initial-only candidate hashes in
+LD04-P are superseded.
+
+### LD04-P-RV01 — Isaac review of PR210 (2026-10-21 SGT; prospective)
+
+Isaac requests review, fixes as needed and merge. Review head `1a66bf9` against
+canonical `ffe6210` (including merged PR207/211). Criteria: AP1 inspect complete
+builder/CLI diff and validator/caller behavior; AP2 reproduce legacy DC01 and
+initial-only+authority candidates byte-for-byte, verify decision/evidence hashes
+and preserve missing-real-gas/S1/window/host limits; AP3 verify invalid/partial
+L/m/provenance refusals and unchanged output without authority; AP4 verify S1,
+initial-only gas and finite-authority planner/executor/signer integration with
+focused tests, explain all skips and retain CI limits; AP5 merge only a pushed
+exact reviewed head with no blocking defect and reconcile PR133/current records.
+No live profile pin, runtime startup, host/provider, model, key or wallet action.
+
+LD04-P-RV01 P2 finding at `1a66bf9`: the builder validates L/m through
+`execution_authority()`, but public `validate_live()` does not. A valid generated
+profile edited to L=1/3601/bool/string, m=0/L, or a missing authority field passes
+that validator. Gate A/B, cap review and runtime startup call it directly; schema
+planning checks later are not an equivalent early refusal. Prospective fix: use
+the same existing authority contract in LIVE validation, preserving both-absent
+legacy profiles and unchanged valid candidates. Regressions precede the fix.
+
+### LD04-P-RV01 results — authority contract and candidate reproduction
+
+P2 fixed at pushed application/test source `5400f2c`: `validate_live()` invokes
+existing `execution_authority()` before accepting LIVE values. Eight regression
+cases fail at `c95e4b8` before the fix and pass afterward; both-absent legacy
+profiles retain their original behavior. All20 authority tests PASS.
+
+Full local suite: **2283 passed /3730 subtests /10 skips /zero
+failures**, macOS arm64/Python3.12.14 with disposable PostgreSQL14.24. Skip
+reasons are preserved in the review receipt; these are local results, not Linux,
+real-systemd, mirror-CI or actual-host qualification. Syntax/provenance changes
+do not adopt a numeric gas budget or any missing strategy input.
+
+Both DC01 legacy profiles reproduce byte-for-byte without authority. Both
+committed initial-only+L/m candidates reproduce byte-for-byte through API and
+CLI. File/StrategyProfile hashes match the README (`07130775…a729` /
+`58cb1be9…bdd4`; `3393ce67…34fd` / `70cb0d4f…d862`). Both authority values bind
+the exact committed LD02 packet hash, with the named LD04-V01 decision.
+Candidates remain EQUAL_WEIGHT and FALLBACK-gas-derived, with their historical
+calendar: S1 preference and final calendar were already selected in PF-01;
+actual weights, reconciliation/qualification and #120/#44 acceptance remain.
+No candidate bytes, runtime pin or readiness flag change in this review.
+
+Actions39470347006 at `5400f2c` executes zero steps in all four jobs (one
+cancelled); runtime annotation reports failed payments/spending limits. This
+is not an executed test failure or CI PASS. Deviation rendering, whitespace and
+new local documentation references pass. [Machine receipt](../build/evidence/pr210-review-20261021.json).
+Merge receipt follows after exact-head verification. No host/provider/model/key/
+wallet operation, deployment or live profile activation was performed.
