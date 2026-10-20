@@ -1,0 +1,62 @@
+{
+  "schema": "PR211ReviewReceipt.v1",
+  "review_id": "IDEA-070 LD02b-RV02",
+  "date_sgt": "2026-10-21",
+  "original_head": "15fcc3fd8d0b0068593e5fc4ec05e427b0d16ea5",
+  "canonical_base": "e65f8270935b9094dcd7d60ce902d06fbb92fd98",
+  "tested_code": "7fb82b1",
+  "environment": {
+    "os": "macOS/Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24 disposable Docker"
+  },
+  "tests": {
+    "passed": 96,
+    "subtests_passed": 444,
+    "skipped": 0,
+    "failed": 0,
+    "scope": [
+      "tests/runtime/test_ld02_packet_script.py",
+      "tests/execution/test_untrusted_router.py",
+      "tests/execution/test_router_review.py",
+      "tests/execution/test_router_decoder.py",
+      "tests/execution/test_router_wiring.py",
+      "tests/runtime/test_gate_a_check.py"
+    ]
+  },
+  "findings": [
+    {
+      "id": "RV-P2-01",
+      "status": "FIXED",
+      "description": "Full private-value scan before error truncation/ASCII replacement, including decoded revert text; final packet scan retained."
+    },
+    {
+      "id": "RV-P2-02",
+      "status": "FIXED",
+      "description": "State override equals exact wallet/router USDT allowance slot and fixed simulation value; malformed containers refused."
+    }
+  ],
+  "checks": {
+    "policy_and_embedded_module_pins": "PASS",
+    "historical_quote_decode_and_tamper": "PASS_15",
+    "archived_packets_unchanged": true,
+    "packet_reports_consistent": true,
+    "bash_syntax": "PASS",
+    "deviations_render": "PASS",
+    "whitespace": "PASS"
+  },
+  "full_suite_rerun": false,
+  "live_packet_rerun": false,
+  "hosted_ci_qualified": false,
+  "aws_action": false,
+  "wallet_action": false,
+  "signing_enabled": false,
+  "remaining": [
+    "Current execution RPC/bindings and live preflight",
+    "Actual RFQ inner validity/fresh route usability and MSFTB coverage",
+    "SELL/full-exit/cleanup/non-fallback gas and fee coverage",
+    "Measured caps/seeding/profile approval",
+    "Exact qualified signed release and actual host/session/round/ACK/drills"
+  ]
+}

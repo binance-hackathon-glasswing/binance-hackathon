@@ -1078,3 +1078,35 @@ values before transformation, retain final scan; bind override to exact allowanc
 slot/value and reject malformed containers. New offline regressions precede fixes.
 Original host packets stay unchanged; no live rerun is required for filter/guard
 repairs, and historical results remain tied to their original source.
+
+### LD02b-RV02 results — review fixes and merge qualification
+
+Both findings fixed at pushed executable/test source `7fb82b1`. The regression
+commit `99221e6` fails for the intended defects (five secret cases and two
+arbitrary-override subcases); both pass with the fix. Full raw RPC messages and
+decoded revert text are checked against the runtime's forbidden values before
+truncation/ASCII replacement; final scanning and code-only refusal remain.
+Override equality now binds the exact nested wallet/router USDT allowance slot
+and fixed value, rejecting other storage/value/code/malformed containers.
+
+Focused offline/integration verification on macOS arm64/Python3.12.14 with
+**disposable PostgreSQL14.24: 96 passed /444 subtests /zero skips/failures**.
+Includes19 packet tests, embedded policy/module byte identity,15 historical
+recorded-quote decode/tamper checks, override proof failures, error filtering,
+router decoder/review and real-PostgreSQL settlement/signer startup refusals.
+Initial no-DB run was93 PASS/3 DB skips; all three subsequently passed against
+the disposable database. This is local focused evidence, not a full-suite,
+hosted-CI, fresh-provider or signed-host result.
+
+Bash syntax, deviations rendering, whitespace and both archived packet
+byte-identity/report-consistency checks PASS. Original packet digests remain
+`f8e6e46b…9400` and `3ea88ee8…8fa5`; neither is regenerated or reclassified.
+Provider-reported `RFQ_OrderExpired` supports an expiry failure observation;
+the actual inner validity interval is unmeasured. Current backlog wording now
+makes that distinction rather than treating quote-to-simulation delay as the
+order's proven lifetime. Existing API-trust, LD09/10/#27 coverage, execution
+provider/preflight, numeric policy and actual release/host gates remain open.
+
+[Machine receipt](../build/evidence/pr211-review-20261021.json). Later changes
+are documentation only; no new market/model/chain/AWS/key/wallet operation.
+Merge/delivery receipt follows after checking the exact final PR head.
