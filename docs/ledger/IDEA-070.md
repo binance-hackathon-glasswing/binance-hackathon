@@ -1230,3 +1230,39 @@ with a final scan, and an allowlist of RPC call shapes.
 - S5. Overrides are the only state changes, and only on proven slots of the pinned tokens. The allowlist refuses any
   other override target or slot.
 - S6. Offline tests cover the allowlist, slot proof, sweep and reporting; the full suite passes.
+
+### LD02d results — script `99b443c`, SSM `06e58b76-dd41-4ae6-ae90-2f72d25fc0ae` (2026-10-21)
+
+Packet generated 2026-10-20T18:45:56Z; SHA-256 as printed on the host
+`86857178d8f5f7f4d88499d5cf3a8130a3d49420efdfebab7401dec138b567d0`; evidence
+[ld02d-size-sell-20261021.json](../build/evidence/ld02d-size-sell-20261021.json).
+
+- **S2 PASS.** USDT re-proven at balance slot 1 and allowance slot 2. All five bStocks use the OpenZeppelin v5 ERC-20
+  namespace (balances at `0x52c6…ace00`, allowances at `…ace01`), each proven by the exact sentinel.
+- **S1 PASS.** All 40 quotes (5 symbols × 4 sizes × BUY/SELL) returned pinned router calldata with the swap selector.
+  Quoted gas is always 250,000 and is not a usable estimate.
+- **S3 PASS.** Every pinned calldata was simulated. One refusal: MSFTB BUY at 40 USDT reverted with
+  `Min return not reached` (output below the slippage minimum at simulation time).
+- **S4 (inputs for owners, not decisions):**
+
+| Symbol | Max BUY swap gas | Max SELL swap gas | Round-trip quoted cost, bp (10 / 20 / 40 / 100 USDT) |
+|---|---:|---:|---|
+| GOOGLB | 731,192 | 782,156 | −5.83 / −1.23 / 0.05 / 0.43 |
+| MSFTB | 515,483 | 516,912 | 6.70 / 6.70 / 6.72 / 6.65 |
+| NVDAB | 623,697 | 741,350 | −0.03 / 1.69 / −0.93 / −0.93 |
+| SKHYB | 731,134 | **930,548** | −3.59 / −0.41 / −1.44 / 0.68 |
+| TSLAB | **944,814** | 759,857 | −3.57 / −2.56 / −0.11 / 0.48 |
+
+  - **New maximum swap gas is 944,814 (TSLAB BUY at 20 USDT)**, above the 748,525 used in LD09-G1. The largest SELL is
+    930,548. Gas depends on the route chosen at quote time (TSLAB BUY ranged from 423k to 945k), not on size.
+  - With 25 % headroom, 944,814 → 1,181,018, which leaves 1.6 % under the draft `max_gas` 1,200,000. Isaac (LD10)
+    should check whether the cap or the headroom needs to change.
+  - **MSFTB is not permanently RFQ-routed.** This run got AMM-like routes at 10, 20 and 100 USDT (about 515k gas each),
+    unlike LD02c, where it reverted with `RFQ_OrderExpired` at every delay. Routing is chosen per quote, so this
+    corrects LD02c's R4 wording ("cannot be bought through this route at present"): it applies to that run's quotes
+    only. Execution still has no way to tell an RFQ route apart before simulating.
+  - Round-trip costs are quote-to-quote, about 1–2 s apart. The negative values are price drift between the two
+    quotes, not gains. They show no size dependence from 10 to 100 USDT.
+- S5: overrides were limited to proven slots of the pinned tokens by the allowlist (tested). S6: see the PR receipt.
+
+LD09-G1 has been revised with these maxima ([proposal](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md)).
