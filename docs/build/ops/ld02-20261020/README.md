@@ -17,6 +17,9 @@ It collects:
   router allowances at the same block.
 - **Timings:** RPC round trips per provider and method, quote round trips, and the latest-to-finalized lag.
   Signer timings are `UNMEASURED`.
+- **LD02b:** the canonical `check()` on the fresh quotes under the hash-pinned reviewed policy, and
+  `eth_estimateGas` simulations for approve and minimum-size BUY swaps (the swap only after an on-chain proof
+  of the USDT allowance slot used in a state override).
 - **Funding input** for Isaac against LD07, and the **execution RPC candidates**, which await Keegan's
   confirmation.
 
@@ -28,6 +31,9 @@ It collects:
 - **No secrets in the output.** Keys never leave the host. A final scan refuses any output containing `://`,
   a provider URL or hostname, the database host, the wallet address or any runtime secret value. On any failure
   the script prints only `LD02_PACKET_REFUSED` with the exception type, plus one of its own allowlisted codes.
+  Provider messages and decoded revert reasons are scanned against the same forbidden values before
+  truncation or ASCII replacement; the final packet scan remains. Allowance state overrides are restricted
+  to the exact wallet/router allowance slot and fixed simulation value, not another USDT storage slot.
 - **Pinned router code.** The host release (`ea25b52`) predates `untrusted_router`, so the script carries that
   module's exact canonical bytes (`697ff3a`, SHA-256
   `9934f5372f406ad9b9b62e85da93421128d68fdf2722af234f358d6140b0923a`). It refuses to run if the bytes differ.
