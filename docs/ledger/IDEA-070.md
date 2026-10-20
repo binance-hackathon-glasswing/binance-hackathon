@@ -514,3 +514,38 @@ Pass criteria, before execution:
 
 Results: pending. Review owner: Keegan; real policy/caps/host acceptance stays
 with the owners in PR133. No entire deployment backlog item is completed here.
+
+### LD01 results — source `22039ba` (2026-10-20)
+
+Criteria pushed at `7a3e39b`; regressions pushed at `812b363` before execution.
+RED: four reporting failures and one policy-refusal PASS (four subtests) on
+canonical behavior. Implementation pushed at `baee1ee`; compatibility regression
+and synchronized declaration table pushed at `22039ba` before the final tests.
+
+- **Criteria 1–3 PASS:** focused signer, assembly, cap proposal/review, Gate B
+  chain/native inventory, verified decoder and untrusted decoder suites passed
+  **167 tests / 555 subtests / zero failures / zero skips** on Linux,
+  Python3.12.15 and disposable PostgreSQL14.24. Source was mounted read-only;
+  PostgreSQL had no external network and no persistent storage. Includes
+  review-required, missing, altered and mixed-pair policy refusals; existing
+  signing/accounting/recovery tests exercise the unchanged controls.
+- Initial macOS/Python3.13 run: **116 passed / 517 subtests / 51 skipped** for
+  missing PostgreSQL or signer dependencies. Those checks ran in the Linux
+  result above; this is not a full-suite/systemd/CI or host-release claim.
+- **Criteria 4–5 PASS (repository slice):** current GATE_B, GATE_B_REMAINING,
+  SIGNER_CAPS_PROPOSAL and SIGNER_INSTALLATION_PREPARATION now distinguish both
+  modes. Module/DEV-23 reason no longer assert a guaranteed loss bound; DEV-23
+  stays DRAFT. #138 and #160 dispositions are recorded in the signer handoff;
+  issue states were read, not changed. Historical proposal/draft/evidence bytes
+  and pending numeric labels remain unchanged. Generated proposal wrappers now
+  include mode-specific limitations; historical numeric candidates reproduce.
+- **Criterion 6 PASS:** deviation renderer `--check`, whitespace, added local
+  link targets, conflict-marker check, preserved backlog/index IDs and unchanged
+  official-kit/vendor/env/historical evidence checks pass. All reports keep
+  installation/signing/Gate B false. Disposable test DB is removed after use.
+
+Independent Keegan review and canonical merge remain pending. LD06 remains
+Isaac's next independent repository lane. Actual policy/holdings/timing/profile
+inputs, gas-scope decision, measured #44 acceptance and release/host/session
+qualification retain PR133's named owners. No real network/provider/model,
+AWS, wallet/key, signing, receiver or installation action was performed.
