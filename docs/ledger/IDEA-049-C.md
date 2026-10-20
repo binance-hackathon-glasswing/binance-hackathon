@@ -954,3 +954,22 @@ the new margin is exhausted. Before the fix, require a regression to refuse
 that send (and any finite-authority release with no current clock), call no
 submitter, and retain possible-send state for reconciliation. The fix must
 also recheck the decoded swap deadline at that boundary with the pinned decoder.
+
+LD04-RV01 results: both late-release/no-clock regressions failed at `1a3102b`
+because the submitter was reached. Fixed at `49c6bb0`: the final release checks
+the stored authority margin against a fresh clock, refuses clock regression or
+absence, and decodes a swap again using the production-pinned decoder to check
+its route margin. An exhausted margin never reaches the submitter. The durable
+possible-send state/signature remain for reconciliation; no uncertain send is
+released or retried. Positive coverage proves an in-margin swap sends exactly
+the registry's bytes. Added signing-end, S1-window and independent local-signer
+boundary checks pass too.
+
+At `4b121a2`, native Linux Python 3.12.15 / disposable PostgreSQL 14.24:
+**376 passed, 1150 subtests**, covering all execution tests, signer tests and
+strategy/integration execution-window tests. Deviation rendering and whitespace
+checks PASS. The first positive-send assertion incorrectly expected public
+state to contain signed bytes; corrected to read the private signature registry.
+Final combined full-suite verification follows with PR 201. Actions billing
+prevents jobs from starting; no hosted CI or host/signing qualification claimed.
+L/m selection and release qualification remain open.
