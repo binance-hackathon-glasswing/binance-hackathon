@@ -11,6 +11,7 @@
     "config/intelligence/prompts/routing/review.v2.md": "3078482f728461109b4ceb92f788def91831367a6ee6b7da116477cd063a4579"
   },
   "canonical_base": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+  "delivery_pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/206",
   "environment": {
     "arch": "aarch64",
     "network": "NONE; PostgreSQL on disposable shared loopback only",
@@ -52,6 +53,17 @@
     "rds_region": "ap-southeast-2",
     "sha256": "97863f8c3939780bd9e71deadbc72d701af837ea73ea0e6194cb81dd8124b659",
     "signing_enabled": false
+  },
+  "hosted_ci": {
+    "annotation": "Jobs not started because recent account payments failed or spending limit needs to be increased",
+    "cancelled_job": "infrastructure (deploy/bootstrap); dependent strategy cancelled",
+    "executed_steps": 0,
+    "interpretation": "Unavailable hosted infrastructure evidence; not executed code-test failures",
+    "jobs": 4,
+    "observed_head": "b1a5b01330994d13442eccdfedbd94e1adadb093",
+    "run_id": 39448925265,
+    "status": "UNAVAILABLE_BILLING",
+    "url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39448925265"
   },
   "nonroot_directory_refusal": {
     "passed": 1,
