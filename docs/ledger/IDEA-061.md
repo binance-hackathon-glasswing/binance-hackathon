@@ -107,3 +107,29 @@ final-review-D tests **39 passed, 34 subtests**. GitHub Actions did not start
 because of account billing/spending limits; this is local evidence only.
 LD08 implementation, measured LD09 gas/reserve/seeding values and #44/host
 acceptance remain open. This review does not enable signing or top-ups.
+
+## LD08-OG01 — initial-only repository controls (2026-10-20, prospective)
+
+Follow-up requested after PR199–201. Base `dd30540`; gate closure sequence and
+owners: [OG-01](../build/POST_REVIEW_GATES_20261020.md). This slice introduces
+explicit initial-only candidate profiles while retaining historical top-up
+fixtures. No numeric reserve/seeding/cap/L/m/B or installation is adopted.
+
+Pass criteria before running added code:
+- An explicit initial-only profile neither plans nor requests a native top-up,
+  including with low/zero BNB. Affordable mandatory exits still proceed below
+  the reserve; new buys cannot consume it.
+- Mapping refuses a top-up under that profile even if native tracing is on.
+  The independent signer policy excludes native BNB and refuses top-up approve
+  and swap requests before signing.
+- Initial-only LIVE profile validation does not require top-up sizing fields;
+  existing exit-reserve and per-value-provenance checks remain mandatory.
+- Cap coverage requires all stock BUY/SELL pairs and full holdings/fees but no
+  native quote or top-up input. Supplying a native quote or a native-enabled
+  policy for initial-only scope refuses. Assembly retains false readiness and
+  explicit reserve/seeding/route/host acceptance gates.
+- Legacy profile/top-up and current cap/assembly tests remain valid. Run focused
+  regressions and the full disposable Linux/PostgreSQL suite on pushed code.
+
+LD08 low-gas incident/alarm and actual selected-profile/full-exit host acceptance,
+LD09 measurements and #44 decisions remain open unless separately evidenced.
