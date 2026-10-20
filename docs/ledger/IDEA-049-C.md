@@ -1006,3 +1006,24 @@ needs this provenance, and both values are re-checked against measured
 signer/approve timings in the signed rehearsal before the Oct 22 cut line. An
 approve that ends after `A − 500 s` still leaves a refused swap and an allowance
 for LD06 recovery; the window is chosen to make that rare, not impossible.
+
+### LD04-P — L/m in the LIVE profile candidates (2026-10-20; prospective)
+
+Puts Keegan's LD04-V01 values into the profile builder so the LIVE candidates can
+carry them with per-value provenance. Keith owns the profiles (#120) and reviews.
+
+**Pass criteria, written before code (Q1–Q5):**
+
+- Q1. Without the new input, `build_live_profiles` output is byte-identical to the
+  committed `quotes-complete-20261020` rehearsal/final candidates (YP-01 unaffected).
+- Q2. With L = 660, m = 30, each candidate gains exactly `execution_authority_seconds`
+  and `submission_margin_seconds`; every other key is unchanged. Provenance for both:
+  `decision_id` = IDEA-049-C LD04-V01 and `data_hash` = SHA-256 of the committed LD02
+  evidence file. `validate_live` and the schema validator accept them, and
+  `execution_authority()` returns (660, 30).
+- Q3. The builder and CLI refuse partial input (any of the four authority inputs
+  missing), m ≥ L, L above 3600 or below `proposal_seconds`, non-integers, and a blank
+  decision ID.
+- Q4. New candidate files go to a new evidence directory with file and
+  StrategyProfile.v1 hashes; no runtime config, manifest pin or readiness flag changes.
+- Q5. Focused strategy tests and the full suite pass.
