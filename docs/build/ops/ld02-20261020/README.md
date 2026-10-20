@@ -17,6 +17,9 @@ It collects:
   router allowances at the same block.
 - **Timings:** RPC round trips per provider and method, quote round trips, and the latest-to-finalized lag.
   Signer timings are `UNMEASURED`.
+- **LD02b:** the canonical `check()` on the fresh quotes under the hash-pinned reviewed policy, and
+  `eth_estimateGas` simulations for approve and minimum-size BUY swaps (the swap only after an on-chain proof
+  of the USDT allowance slot used in a state override).
 - **Funding input** for Isaac against LD07, and the **execution RPC candidates**, which await Keegan's
   confirmation.
 

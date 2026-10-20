@@ -937,3 +937,31 @@ safety contract as LD02 (P1–P2, P10 still apply), run read-only on `primary` o
 - G6. **Reporting:** estimates are labelled simulated under the stated override at one
   block, not measured fills. They are LD09 inputs, not cap or seeding decisions.
 - G7. **Local:** offline tests for G1, G2, G4 and G5 pass; the full suite passes.
+
+### LD02b results — script `663cdf2`, SSM `8cdfb2b6-93d0-44a4-a3cc-70e6fe9943c8` (2026-10-20)
+
+Packet SHA-256 as printed on the host: `18b68438f3ac0b75e7bb2c7dfbeee6c2cada800d47e6738640657c71444c9eec`.
+Committed copy [ld02b-execution-packet-20261020.json](../build/evidence/ld02b-execution-packet-20261020.json)
+is pretty-printed with the private hostname redacted (SHA-256 `f8e6e46b…9400`).
+
+- **G1 PASS.** Embedded policy hash `05759e90…7957c5` verified; this run's live draft
+  (`346fa80d…`, unchanged) equals the reviewed policy apart from `review`.
+- **G2 PASS.** `check()` on this run's 15 fresh quotes under the reviewed policy: 15/15 PASS,
+  each decoded to the quoted pay/receive/amount/minimum and every tampered copy refused.
+  This closes LD02-RV01's open point: the fresh calldata is now decode/tamper-checked.
+- **G3 PASS.** Approve gas (simulated, block 128777572, `BSC_BNBCHAIN_PUBLIC`): USDT 46,588;
+  GOOGLB, MSFTB and TSLAB 55,231; NVDAB and SKHYB 55,243.
+- **G4 PASS.** Slot layout proven: the USDT balance slot read equals the observed 98 USDT,
+  and `allowance()` under the override returns the override. Minimum-size (19.443104 USDT)
+  BUY swap gas under the override: GOOGLB 731,144; NVDAB 731,150; SKHYB 731,134; TSLAB
+  731,976. **MSFTB: the provider refused the simulation** (`RPC_REFUSED`, most likely a
+  revert); its quote itself was OK and request-bound. Not investigated further here.
+- **Finding for LD09/#44:** simulated swap gas is about **731k, nearly 3× the quote API's
+  `tx.gas` of 250,000** (and below the DC-01 fallback limit of 1,116,000). Approve plus
+  swap is about 786k gas per pair. At the observed 0.05 gwei that is about 3.9e13 wei per
+  pair; caps and reserves still need the cap gas price, not today's price.
+- **G5 PASS.** Offline: 12 refused shapes plus the four allowed ones; a mutation that
+  allows any `eth_estimateGas` fails 3 cases. **G6:** the packet labels these as
+  simulations at one block, not fills. **G7:** 15 tests / 36 subtests; full suite in the PR.
+- Unchanged from LD02: holdings MATCH (block 128777532), 15/15 quotes request-bound,
+  deadlines 499.1–499.9 s, RPC 410–488 ms, exit reserve 8.63×, `configs_unchanged=true`.
