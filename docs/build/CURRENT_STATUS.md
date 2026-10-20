@@ -60,6 +60,10 @@ Final LD06 source913b400: full Linux/Python3.12/PostgreSQL14 **2190 passed /3660
 subtests /eight explained skips**; root-sensitive permission case exercised
 separately. Five real-systemd and two external-fixture cases remain unrun.
 [Verification receipt](evidence/ld06-allowance-recovery-20261020.json).
+LD06 delivery: [PR202](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/202).
+Canonical PR199 now records initial-gas-only scope; LD08 and measured cleanup/exit
+reserves remain open. Its declaration is retained in the normal canonical merge,
+with five register checks/three subtests PASS and unchanged execution/test code.
 
 ## What still blocks installation / live acceptance
 

@@ -720,3 +720,19 @@ organiser fact; DEV-23 remains DRAFT. All installation/signing/Gate B flags stay
 false, no existing configuration opts in, and no real AWS/provider/model/wallet/
 key/signing/receiver/installation operation was performed. PR133 remains a
 noticeboard; parent GAP-29/47/#33/#44 and LD05/07/08 retain their remaining work.
+
+Delivery: [PR202](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/202)
+targets canonical. While it was being prepared, PR199's reviewed LD07 initial-gas-
+only decision merged into canonical at db506bd; ordinary merge1f4b072 retains
+both histories without conflict. Execution/signer/test/tool bytes are identical
+to full-suite source913b400. The combined declarations pass renderer --check
+and five release-register tests/three subtests; actual initial-gas/cleanup reserve
+acceptance and LD08 implementation remain open. No extra full-suite result is
+inferred from this documentation/register merge.
+
+Org Actions [run39387215745](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39387215745)
+on581a70c ran zero steps in all four jobs; the runtime annotation explicitly
+says account payments failed or the spending limit must be increased. Local
+verification is not called hosted CI. Independent Keegan review/merge and the
+actual acceptance owners listed above remain the explicit handoff. All LD06
+changes are committed/pushed; no production operation is authorized by delivery.

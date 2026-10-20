@@ -32,7 +32,14 @@
     "ready_to_install": false,
     "signing_enabled": false
   },
-  "ci": "NOT_CLAIMED",
+  "ci": {
+    "annotation": "Account payments failed or spending limit needs increase",
+    "executed_steps": 0,
+    "jobs": 4,
+    "run_id": 39387215745,
+    "source": "581a70c",
+    "status": "BLOCKED_BEFORE_STEPS"
+  },
   "criteria_commit": "d732a2e",
   "environment": {
     "database": "DISPOSABLE_TMPFS",
@@ -65,6 +72,16 @@
     "postgresql": "14.24",
     "python": "3.12.15",
     "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004"
+  },
+  "post_merge": {
+    "canonical": "db506bd",
+    "deviation_renderer": "PASS",
+    "full_suite_repeated": false,
+    "register_subtests_passed": 3,
+    "register_tests_passed": 5,
+    "runtime_test_tool_bytes_equal_full_suite_source": true,
+    "scope": "PR199 reviewed gas-scope documentation/register only",
+    "source": "1f4b072"
   },
   "preliminary_failures": {
     "aggregate_gas_fixture": "Corrected fixture initially failed quote admission before aggregate-budget check",
