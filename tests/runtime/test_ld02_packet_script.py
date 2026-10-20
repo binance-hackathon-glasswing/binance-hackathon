@@ -294,6 +294,36 @@ class Ld02PacketScriptTests(unittest.TestCase):
                 else:
                     self.assertEqual(out['swap_buy_minimum']['status'], 'NOT_ESTIMATED')
 
+    def error_string(self, text):
+        raw = text.encode()
+        return ('0x08c379a0' + format(32, '064x') + format(len(raw), '064x') + raw.hex().ljust(-(-len(raw) // 32) * 64, '0'))
+
+    def test_f1_refused_simulation_keeps_a_filtered_reason(self):
+        refused = self.ns['RpcRefused']
+        detail = refused(dict(code=3, message='execution reverted: TRANSFER_FROM_FAILED',
+                              data=self.error_string('TRANSFER_FROM_FAILED'))).detail()
+        self.assertEqual(detail, dict(rpc_code=3, message='execution reverted: TRANSFER_FROM_FAILED',
+                                      revert_selector='0x08c379a0', revert_text='TRANSFER_FROM_FAILED'))
+        self.assertEqual(str(refused(dict(code=-32000))), 'RPC_REFUSED')
+        leaky = refused(dict(code=-32000, message='see https://rpc.example/key', data=self.error_string('a/b://c'))).detail()
+        self.assertEqual((leaky['message'], leaky['revert_text']), ('FILTERED', 'FILTERED'))
+        self.assertEqual(refused(dict(code=3, message='reverted', data='0x1234abcd' + '00' * 4)).detail(),
+                         dict(rpc_code=3, message='reverted', revert_selector='0x1234abcd'))
+        self.assertEqual(self.ns['revert_text']('0x08c379a0' + 'zz'), 'FILTERED')
+
+    def test_f1_estimate_returns_the_detail_and_the_final_scan_still_applies(self):
+        refused = self.ns['RpcRefused']
+
+        def rpc(*args, **kwargs):
+            raise refused(dict(code=3, message='execution reverted: owner ' + WALLET[2:]))
+        self.ns['rpc'] = rpc
+        gas, reason = self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], None)
+        self.assertIsNone(gas)
+        self.assertEqual((reason['code'], reason['rpc_code']), ('RPC_REFUSED', 3))
+        forbidden = self.ns['forbidden_values'](dict(wallet_address=WALLET), {}, [])
+        with self.assertRaises(ValueError):  # a reason that echoes the wallet refuses the whole packet
+            self.ns['sanitize'](json.dumps(dict(reason=reason)), forbidden)
+
 
 if __name__ == '__main__':
     unittest.main()

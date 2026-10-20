@@ -231,6 +231,42 @@ def allowed_call(method, params, scope):
     return False
 
 
+PHRASE = re.compile(r'[A-Za-z0-9 _:,.()\'-]{1,120}')
+ERROR_STRING = '0x08c379a0'
+
+
+class RpcRefused(ValueError):
+    """A JSON-RPC error reply. str() stays the plain code; `detail()` is a filtered summary (LD02b-F1)."""
+
+    def __init__(self, error):
+        super().__init__('RPC_REFUSED')
+        self.error = error
+
+    def detail(self):
+        e = self.error
+        out = dict(rpc_code=e.get('code') if type(e.get('code')) is int else None)
+        message = str(e.get('message', ''))
+        out['message'] = message if PHRASE.fullmatch(message) else 'FILTERED'
+        data = e.get('data')
+        if type(data) is str and re.fullmatch(r'0x[0-9a-fA-F]*', data) and len(data) >= 10:
+            out['revert_selector'] = data[:10].lower()
+            if data[:10].lower() == ERROR_STRING:
+                out['revert_text'] = revert_text(data)
+        return out
+
+
+def revert_text(data):
+    """The string of an ABI `Error(string)` revert, filtered to a short phrase; 'FILTERED' otherwise."""
+    try:
+        body = bytes.fromhex(data[10:])
+        offset = int.from_bytes(body[:32], 'big')
+        length = int.from_bytes(body[offset:offset + 32], 'big')
+        text = body[offset + 32:offset + 32 + length].decode('utf-8')
+    except (ValueError, UnicodeDecodeError):
+        return 'FILTERED'
+    return text if PHRASE.fullmatch(text) else 'FILTERED'
+
+
 def rpc(url, source_id, method, params, log, scope=None):
     """One read-only JSON-RPC call outside the production client (allowance, gas, storage, finality)."""
     from urllib.request import Request, build_opener
@@ -245,7 +281,9 @@ def rpc(url, source_id, method, params, log, scope=None):
                                          timeout=20) as response:
         reply = json.loads(response.read(2 * 1024 * 1024))
     log.append((source_id, method, round((time.monotonic() - start) * 1000)))
-    if type(reply) is not dict or 'error' in reply or 'result' not in reply:
+    if type(reply) is dict and type(reply.get('error')) is dict:
+        raise RpcRefused(reply['error'])
+    if type(reply) is not dict or 'result' not in reply:
         raise ValueError('RPC_REFUSED')
     return reply['result']
 
@@ -339,6 +377,8 @@ def estimate(provider, params, log, scope):
     """(gas, None) or (None, short reason): a simulation only, never a transaction."""
     try:
         return int(rpc(provider['url'], provider['source_id'], 'eth_estimateGas', params, log, scope), 16), None
+    except RpcRefused as refusal:
+        return None, dict(code='RPC_REFUSED', **refusal.detail())
     except ValueError as error:
         return None, str(error) if str(error) in OWN_CODES else 'ValueError'
     except Exception as error:
@@ -357,7 +397,7 @@ def gas_estimates(provider, scope, observation, calldata, sizes, log, tokens):
         data = APPROVE_CALL + router[2:].rjust(64, '0') + word_hex(sizes.get(name, 1))
         gas, reason = estimate(provider, [dict({'from': wallet, 'to': token, 'data': data, 'value': '0x0'}), block],
                                log, scope)
-        out['approve'][name] = gas if gas is not None else dict(error=reason)
+        out['approve'][name] = gas if gas is not None else dict(error=reason)  # reason may be a detail dict
     proof = dict(balance_slot_matches=False, override_effective=False)
     try:
         balance = int(rpc(url, sid, 'eth_getStorageAt', [USDT, mapping_slot(wallet, USDT_BALANCE_SLOT), block],
