@@ -131,8 +131,11 @@ def validate_live(p):
         if instant(summary["observed_at"]) > instant(p["trade_after"]):
             raise ContractError("Future quote measurements")
         pair = max(r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in summary["symbols"].values())
-        if initial_only and not pair <= integer(p["gas_action_budget_units"], 1) <= p["exit_gas_reserve_units"]:
-            raise ContractError("Initial-only action gas budget must cover a pair within the exit reserve")
+        if initial_only:
+            action = integer(p["gas_action_budget_units"], 1)
+            if action < pair or p["exit_gas_reserve_units"] < (5 if s1 else 4) * action:
+                raise ContractError("Initial-only action budget and full-book exit reserve must cover every pair")
+            pair = action  # supporting cleanup costs belong in minimum-trade feasibility too
         gas_value = ceil(Fraction(pair * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
         minimum = max(ceil(Fraction(gas_value * 10000,
             50 - row["spread_bps"] - min(50, 2 * row["median_impact_bps"]) - row["fee_bps"]))

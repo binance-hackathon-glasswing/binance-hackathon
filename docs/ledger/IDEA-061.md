@@ -225,3 +225,7 @@ IG1 full-book refinement before the next run: a larger selected action budget
 (e.g. measured cleanup) must also increase the full-exit reserve to cover four
 actions, or five for S1. A pair-only reserve cannot silently cover a larger
 declared action. Add this refusal to the pushed profile regression before repair.
+
+At `90e825a` the new full-book assertion fails (`ContractError not raised`).
+Repair also applies the larger action budget to the existing minimum-trade
+cost bound; otherwise cleanup could be omitted from that same economic check.

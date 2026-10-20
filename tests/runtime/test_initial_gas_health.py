@@ -28,6 +28,9 @@ class ProfileBudget(unittest.TestCase):
         with self.assertRaises(ContractError):
             validate_live(p)  # the full book's reserve must grow with the action budget
         p['exit_gas_reserve_units'] = 4 * 30_000
+        with self.assertRaises(ContractError):
+            validate_live(p)  # the minimum trade must cover the larger action's gas cost too
+        p['minimum_trade_units'] = (p['minimum_trade_units'] * 3 + 1) // 2
         validate_live(p)
         for bad in (None, True, 0, 19_999, p['exit_gas_reserve_units'] + 1):
             broken = deepcopy(p)
@@ -37,6 +40,16 @@ class ProfileBudget(unittest.TestCase):
         del p['gas_action_budget_units']
         with self.assertRaises(ContractError):
             validate_live(p)
+
+    def test_five_name_exit_covers_five_complete_action_budgets(self):
+        from tests.strategy.test_s1_core import block
+        p = build_live_profiles(summary(), registry(), s1=block(), initial_gas_only=True)['FINAL'].read()
+        p['gas_action_budget_units'] = 25_000
+        p['minimum_trade_units'] = (p['minimum_trade_units'] * 5 + 3) // 4
+        with self.assertRaises(ContractError):
+            validate_live(p)
+        p['exit_gas_reserve_units'] = 5 * 25_000
+        validate_live(p)
 
     def test_driver_wires_only_the_pinned_initial_only_profile(self):
         import hashlib
