@@ -906,6 +906,101 @@ and redirect handling, neither of which affects a successful packet, so it is no
 Offered as a follow-up, not done: decode-and-tamper checks of fresh calldata under the
 reviewed policy in a new packet.
 
+## LD02b — fresh calldata under the reviewed policy, and gas estimates (2026-10-20; prospective)
+
+Follow-up from LD02-RV01 (the fresh quotes' calldata was not decode/tamper-checked) and
+input for Keith's LD09 (all 3,848 DC-01 swap-gas figures are fallback). Same script and
+safety contract as LD02 (P1–P2, P10 still apply), run read-only on `primary` only.
+
+**Pass criteria, written before the script is changed or run (G1–G7):**
+
+- G1. **Policy pinned:** the script carries the reviewed policy's exact bytes, refuses to
+  run unless they hash to `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`,
+  and reports whether this run's live `observe()` draft equals the reviewed policy apart
+  from `review`.
+- G2. **Fresh calldata:** the canonical `check()` runs on this run's 15 fresh quotes under
+  that policy; each row reports `matches_quote` and `tampered_refused`, with an overall
+  PASS/FAIL. A FAIL is reported, not hidden.
+- G3. **Approve gas:** `eth_estimateGas` from the wallet for `approve(router, amount)` on
+  each of the six tokens at the planned size. Only simulations: no transaction, signature
+  or nonce use.
+- G4. **Swap gas:** a USDT allowance state override is used only after the slot layout is
+  proven on chain: the balance slot read at a numeric block equals the observed USDT units,
+  and `allowance()` under the override returns the override value. Then `eth_estimateGas`
+  on each minimum-size BUY's exact fresh calldata under the override. If the provider
+  refuses overrides or the proof fails, the packet says so and no swap gas is reported.
+  SELL swaps are not estimated (no bStocks held).
+- G5. **Allowlist:** new RPC calls are limited to `eth_estimateGas` (from the wallet, value 0;
+  to a pinned token with `approve(router, …)`, or to the router with exactly a fresh quote's
+  calldata), `eth_getStorageAt` on USDT only, and `eth_call` for `allowance` only.
+  Offline tests prove every other shape is refused.
+- G6. **Reporting:** estimates are labelled simulated under the stated override at one
+  block, not measured fills. They are LD09 inputs, not cap or seeding decisions.
+- G7. **Local:** offline tests for G1, G2, G4 and G5 pass; the full suite passes.
+
+### LD02b results — script `663cdf2`, SSM `8cdfb2b6-93d0-44a4-a3cc-70e6fe9943c8` (2026-10-20)
+
+Packet SHA-256 as printed on the host: `18b68438f3ac0b75e7bb2c7dfbeee6c2cada800d47e6738640657c71444c9eec`.
+Committed copy [ld02b-execution-packet-20261020.json](../build/evidence/ld02b-execution-packet-20261020.json)
+is pretty-printed with the private hostname redacted (SHA-256 `f8e6e46b…9400`).
+
+- **G1 PASS.** Embedded policy hash `05759e90…7957c5` verified; this run's live draft
+  (`346fa80d…`, unchanged) equals the reviewed policy apart from `review`.
+- **G2 PASS.** `check()` on this run's 15 fresh quotes under the reviewed policy: 15/15 PASS,
+  each decoded to the quoted pay/receive/amount/minimum and every tampered copy refused.
+  This closes LD02-RV01's open point: the fresh calldata is now decode/tamper-checked.
+- **G3 PASS.** Approve gas (simulated, block 128777572, `BSC_BNBCHAIN_PUBLIC`): USDT 46,588;
+  GOOGLB, MSFTB and TSLAB 55,231; NVDAB and SKHYB 55,243.
+- **G4 PASS.** Slot layout proven: the USDT balance slot read equals the observed 98 USDT,
+  and `allowance()` under the override returns the override. Minimum-size (19.443104 USDT)
+  BUY swap gas under the override: GOOGLB 731,144; NVDAB 731,150; SKHYB 731,134; TSLAB
+  731,976. **MSFTB: the provider refused the simulation** (`RPC_REFUSED`, most likely a
+  revert); its quote itself was OK and request-bound. Not investigated further here.
+- **Finding for LD09/#44:** simulated swap gas is about **731k, nearly 3× the quote API's
+  `tx.gas` of 250,000** (and below the DC-01 fallback limit of 1,116,000). Approve plus
+  swap is about 786k gas per pair. At the observed 0.05 gwei that is about 3.9e13 wei per
+  pair; caps and reserves still need the cap gas price, not today's price.
+- **G5 PASS.** Offline: 12 refused shapes plus the four allowed ones; a mutation that
+  allows any `eth_estimateGas` fails 3 cases. **G6:** the packet labels these as
+  simulations at one block, not fills. **G7:** 15 tests / 36 subtests; full suite in the PR.
+- Unchanged from LD02: holdings MATCH (block 128777532), 15/15 quotes request-bound,
+  deadlines 499.1–499.9 s, RPC 410–488 ms, exit reserve 8.63×, `configs_unchanged=true`.
+
+### LD02b-F1 — why MSFTB's swap simulation was refused (2026-10-20; prospective)
+
+LD02b's MSFTB minimum BUY simulation returned `RPC_REFUSED` while its quote was OK. Same script, safety contract
+and allowlist; the only change is that a refused simulation keeps the provider's error, sanitized.
+
+**Pass criteria, written before the change (F1–F3):**
+
+- F1. A refused `eth_estimateGas` reports the JSON-RPC error code, the error message filtered to a short plain-text
+  phrase, the 4-byte revert selector if the provider returns revert data, and the decoded text when that selector is
+  `Error(string)` (`0x08c379a0`), also filtered. No other revert bytes are emitted; the final scan still applies.
+- F2. A read-only rerun on `primary` reports the MSFTB result with that detail, plus the other four symbols again
+  for comparison. Offline tests cover decoding, filtering and a refusal that carries a URL or value.
+- F3. The finding is recorded as observed. No cause is asserted beyond what the provider returned.
+
+### LD02b-F1 results (2026-10-20)
+
+Three read-only runs on `primary` while the filter was corrected: SSM `3f4360e1…` (`bf69a13`) and `9ff2869a…`
+(`4cde56a`) still filtered the reason; SSM `5f92fd74-844a-4602-9a14-69c811e9b963` at `877a4cc` (packet
+`615e6e79…c240`; committed copy [ld02b-f1-execution-packet-20261020.json](../build/evidence/ld02b-f1-execution-packet-20261020.json),
+hostname redacted) shows it. F1 and F2 PASS (17 offline tests; a URL or wallet in a reason is still dropped or
+refuses the packet).
+
+- **F3, MSFTB:** in all four runs the minimum BUY simulation reverted (`rpc_code` 3, `Error(string)`). The provider
+  message: `execution reverted: adapter:0x7977f3e8e063a4ee95b5f396d63485dbdea4515d:Error(RFQ_OrderExpired …)`.
+  MSFTB's route goes through an **RFQ adapter**, and the signed market-maker order inside it had expired by the time
+  of the simulation, tens of seconds after the quote. Its quotes were OK and request-bound, and the outer route
+  deadline was still about 500 s away.
+- **Implication (observation, not a decision):** for RFQ-routed tokens the outer deadline does not bound execution;
+  the inner RFQ order's validity is much shorter. The quote-to-sign path after the approve's finality must be fast,
+  or the swap reverts and costs gas. That affects LD09 (MSFTB coverage), LD10 (gas budget for reverts) and the
+  #27 margin, which assumed the 500 s deadline. Not yet known: the RFQ order's actual validity, and whether the
+  quote response marks RFQ routes (to be read from the quote record). The untrusted decoder's checks are unchanged.
+- **Swap gas varies by route:** over the four runs, minimum BUY simulations ranged GOOGLB 554k–731k, NVDAB 423k–731k,
+  SKHYB 732k–749k, TSLAB about 731k. The 731k figure in LD02b is an upper observation, not a constant.
+
 ### B09-TRUST01 — Isaac selects the API-trusted behavior path (2026-10-19)
 
 **Decision source:** Isaac, in the project conversation after the existing
