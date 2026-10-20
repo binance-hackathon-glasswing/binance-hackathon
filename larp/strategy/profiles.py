@@ -10,7 +10,7 @@ import json
 from larp.intelligence.redflags import CONFIG as PREDICATE_CONFIG
 
 from larp.contracts import ContractError, Document
-from .schema import SYMBOLS, ceil, fraction, instant, integer
+from .schema import AUTHORITY_KEYS, SYMBOLS, ceil, execution_authority, fraction, instant, integer
 from .predicates import predicate_records
 
 WINDOWS = {
@@ -145,14 +145,21 @@ def validate_live(p):
 
 
 def build_live_profiles(summary: Document, registry: Document, *, s1=None,
-                        s1_decision="IDEA-075 S1 plan (PR #123), proposed"):
+                        s1_decision="IDEA-075 S1 plan (PR #123), proposed", authority=None):
     """Return rehearsal/final candidate profiles; caller freezes hashes in manifest.
 
     Conservative budgets are algebraic policy choices requiring Yao/team review.
     This function neither runs a market experiment nor grants signer authority.
     With `s1` (the profile's `s1` block, weights frozen by `python -m larp.strategy.s1 freeze-weights`), the
     profiles are TREND_GUARDED_VOL (IDEA-076); `s1_decision` names the decision behind those values.
+    With `authority` = {seconds, margin, decision_id, data_hash}, both profiles also carry the #27 finite execution
+    authority L and submission margin m (IDEA-049-C LD04-V01/LD04-P); without it the output is unchanged.
     """
+    if authority is not None:
+        if (type(authority) is not dict or set(authority) != {"seconds", "margin", "decision_id", "data_hash"}
+                or type(authority["decision_id"]) is not str or not authority["decision_id"].strip()
+                or not _hash(authority["data_hash"])):
+            raise ContractError("Execution authority needs seconds, margin, a decision ID and an evidence hash")
     s, reg = quote_summary(summary.read()), registry.read()
     published = reg.get("schema") == "RedFlagPredicateSet.v1"
     if published:
@@ -242,6 +249,12 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
             "feature_age_seconds": "4*86400; calendar adjacency separately required"}
         for key, formula in formulas.items():
             p["provenance"][key]["formula"] = formula
+        if authority is not None:
+            p["execution_authority_seconds"], p["submission_margin_seconds"] = authority["seconds"], authority["margin"]
+            for key in AUTHORITY_KEYS:
+                p["provenance"][key] = {"decision_id": authority["decision_id"], "data_hash": authority["data_hash"]}
+            if execution_authority(p) != (authority["seconds"], authority["margin"]):
+                raise ContractError("Execution authority was not adopted as given")
         validate_live(p)
         profiles[env] = Document.from_dict(p)
     return profiles
@@ -258,7 +271,20 @@ def main(argv=None):
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--s1-config", help="JSON s1 block with reviewed/frozen weights; default is EQUAL_WEIGHT")
     parser.add_argument("--s1-decision", help="decision ID for the supplied S1 block; required with --s1-config")
+    parser.add_argument("--execution-authority-seconds", type=int, help="#27 L; all four authority flags together")
+    parser.add_argument("--submission-margin-seconds", type=int, help="#27 m")
+    parser.add_argument("--authority-decision", help="decision ID behind L and m")
+    parser.add_argument("--authority-evidence", help="evidence file whose SHA-256 becomes the provenance data_hash")
     args = parser.parse_args(argv)
+    flags = (args.execution_authority_seconds, args.submission_margin_seconds, args.authority_decision,
+             args.authority_evidence)
+    if any(f is not None for f in flags) and not all(f is not None for f in flags):
+        parser.error("--execution-authority-seconds, --submission-margin-seconds, --authority-decision and "
+                     "--authority-evidence must be supplied together")
+    authority = None if flags[0] is None else dict(
+        seconds=args.execution_authority_seconds, margin=args.submission_margin_seconds,
+        decision_id=args.authority_decision,
+        data_hash=hashlib.sha256(Path(args.authority_evidence).read_bytes()).hexdigest())
     if bool(args.s1_config) != bool(args.s1_decision):
         parser.error("--s1-config and --s1-decision must be supplied together")
     if args.s1_decision is not None and not args.s1_decision.strip():
@@ -269,6 +295,7 @@ def main(argv=None):
         raise ContractError("S1 configuration must be a JSON object")
     profiles = build_live_profiles(Document.from_dict(json.loads(Path(args.summary).read_text())),
                                    Document.from_dict(json.loads(Path(args.predicates).read_text())),
+                                   authority=authority,
                                    **(dict(s1=s1_block, s1_decision=args.s1_decision) if raw_s1 is not None else {}))
     if raw_s1 is not None:
         for env, document in profiles.items():

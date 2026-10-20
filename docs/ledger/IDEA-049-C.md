@@ -1027,3 +1027,21 @@ carry them with per-value provenance. Keith owns the profiles (#120) and reviews
 - Q4. New candidate files go to a new evidence directory with file and
   StrategyProfile.v1 hashes; no runtime config, manifest pin or readiness flag changes.
 - Q5. Focused strategy tests and the full suite pass.
+
+### LD04-P results (2026-10-20)
+
+- **Q1 PASS.** Without the input, both candidates reproduce byte-for-byte from the
+  committed DC-01 summary and `config/intelligence/red_flags.v1.json`.
+- **Q2 PASS.** With L = 660, m = 30, each candidate gains exactly the two keys; every other
+  key and its provenance are identical; `validate_live` passes and `execution_authority()`
+  = (660, 30). Provenance: decision "IDEA-049-C LD04-V01 (Keegan, 2026-10-20)", data hash
+  `ad43b634…c4ced4` (committed LD02 packet).
+- **Q3 PASS.** Eight builder refusals (m = L, L > 3600, L < `proposal_seconds`, string L,
+  m = 0, blank decision, bad hash, missing margin) and the CLI's all-or-nothing flags.
+- **Q4 PASS.** Candidates in `docs/build/evidence/ld04-authority-profiles-20261020/`:
+  rehearsal file `bb27cbf8…eb5b` / StrategyProfile.v1 `24858d24…10fa`; final file
+  `054ca468…0bc7` / StrategyProfile.v1 `ac764577…50d2`. No runtime config, pin or flag changed.
+- **Q5 PASS.** Strategy tests 183 passed / 80 subtests; full suite 2237 passed, 11 skipped, 3698 subtests.
+
+Keith reviews and adopts (#120). These candidates still carry the DC-01 top-up fields,
+which LD08's initial-gas-only alignment will change.
