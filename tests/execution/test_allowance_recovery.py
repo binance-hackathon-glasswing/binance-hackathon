@@ -250,6 +250,11 @@ class Scope(unittest.TestCase):
         disabled = SigningPolicy.from_config({k:v for k,v in self.config.items() if k!='allowance_recovery'})
         with self.assertRaises(Blocked):disabled.check(self.i, step(USDT), self.payload, self.decoder, f.WALLET)
         with self.assertRaises(Blocked):self.policy.check(self.i, 'APPROVE', self.payload, self.decoder, f.WALLET)
+        for i in (replace(self.i, kind='GAS_TOP_UP', receive_token=NATIVE_BNB),
+                  replace(self.i, router='0x'+'ab'*20)):
+            with self.subTest(kind=i.kind, router=i.router):
+                with self.assertRaises(Blocked):validate_payload(i, step(USDT), self.payload, self.gates, 10, self.decoder)
+                with self.assertRaises(Blocked):self.policy.check(i, step(USDT), self.payload, self.decoder, f.WALLET)
         for value in (1, 'true', None):
             with self.subTest(value=value), self.assertRaises(ContractError):
                 SigningPolicy.from_config(dict(self.config, allowance_recovery=value))

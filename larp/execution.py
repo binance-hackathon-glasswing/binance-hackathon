@@ -313,8 +313,9 @@ def validate_payload(intent, step, payload, gates, now, decoder):
     if approval_step(step):
         revoke = step in REVOKE_TOKENS
         token, amount = (REVOKE_TOKENS[step], 0) if revoke else (intent.pay_token, intent.amount)
-        if revoke and getattr(decoder, 'mode', None) != 'untrusted':
-            raise Blocked('allowance recovery requires the selected untrusted router')
+        if revoke and (getattr(decoder, 'mode', None) != 'untrusted'
+                       or getattr(decoder, 'router', None) != intent.router or intent.kind != 'BSTOCK_TRADE'):
+            raise Blocked('allowance recovery requires a stock intent and its selected untrusted router')
         if payload.to != token or payload.value != 0:
             raise Blocked("approve destination/value mismatch")
         if not re.fullmatch(r"0x095ea7b3[0-9a-fA-F]{128}", payload.data):

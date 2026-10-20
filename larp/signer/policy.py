@@ -103,6 +103,7 @@ class SigningPolicy:
                 raise Blocked('signer policy: approve spender not allowed')
             if step in REVOKE_TOKENS:
                 if (not self.allowance_recovery or getattr(decoder, 'mode', None) != 'untrusted'
+                        or getattr(decoder, 'router', None) != intent.router or intent.kind != 'BSTOCK_TRADE'
                         or payload.to != REVOKE_TOKENS[step] or int(data[74:], 16) != 0
                         or '0x' + data[34:74].lower() != intent.router):
                     raise Blocked('signer policy: zero-only allowance recovery not authorized')
