@@ -58,5 +58,26 @@
     "SELL/full-exit/cleanup/non-fallback gas and fee coverage",
     "Measured caps/seeding/profile approval",
     "Exact qualified signed release and actual host/session/round/ACK/drills"
-  ]
+  ],
+  "integrated_verification": {
+    "source": "c7b12d3",
+    "canonical_base": "91d4b0a42b68a425a12dd2a21429821874b03da2",
+    "passed": 125,
+    "subtests_passed": 449,
+    "skipped": 0,
+    "failed": 0,
+    "added_scope": [
+      "tests/risk/test_initial_gas_only.py",
+      "tests/runtime/test_initial_gas_health.py"
+    ],
+    "pr211_executable_test_bytes_unchanged": true
+  },
+  "ci": {
+    "run_id": 39466044935,
+    "source": "c7b12d3",
+    "jobs": 4,
+    "executed_steps": 0,
+    "status": "ACCOUNT_BILLING_BLOCKED",
+    "annotation": "Recent account payments failed or spending limit needs increasing"
+  }
 }

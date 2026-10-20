@@ -1110,3 +1110,18 @@ provider/preflight, numeric policy and actual release/host gates remain open.
 [Machine receipt](../build/evidence/pr211-review-20261021.json). Later changes
 are documentation only; no new market/model/chain/AWS/key/wallet operation.
 Merge/delivery receipt follows after checking the exact final PR head.
+
+Concurrent canonical promotion PR207 at `91d4b0a` required a normal merge into
+PR211 (`c7b12d3`); the backlog conflict retains LD08's narrowed measured/host
+work and PR211 RFQ limitations. On that combined pushed source, the focused suite
+plus initial-only gas/health compatibility passes **125 tests /449 subtests /
+zero skips** with the same disposable PostgreSQL14.24. PR211 script/test bytes
+are identical to `7fb82b1`; only surrounding canonical code and docs changed.
+Bash/deviations/whitespace checks pass. No blocking review finding remains.
+
+Actions39466044935 at `c7b12d3` executes zero steps across all four failed jobs;
+the runtime annotation explicitly reports account payments/spending limits.
+This is not an executed test failure or CI qualification. The merge uses local
+focused verification for this operator-script/test change; an exact qualified
+signed release and actual host acceptance remain separate. Local PG container
+is stopped after checks; no hosted operation was performed.
