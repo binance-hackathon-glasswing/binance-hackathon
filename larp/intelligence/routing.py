@@ -38,19 +38,25 @@ def validate_routing_spec(spec, prompt_dir=None):
     refuses what startup would refuse. V3 additionally freezes OpenAI-primary credit pacing."""
     fields = {'schema', 'provenance', 'routine', 'external_reviewers', 'openai_model', 'openai_effort',
               'max_output_tokens', 'budget_account', 'audit_sample_bps', 'audit_seed'}
-    preferred = type(spec) is dict and spec.get('schema') == 'AIandRouting.v3'
-    staged = type(spec) is dict and spec.get('schema') in ('AIandRouting.v2', 'AIandRouting.v3')
+    per_stage = type(spec) is dict and spec.get('schema') == 'AIandRouting.v4'
+    preferred = type(spec) is dict and spec.get('schema') in ('AIandRouting.v3', 'AIandRouting.v4')
+    staged = type(spec) is dict and spec.get('schema') in ('AIandRouting.v2', 'AIandRouting.v3', 'AIandRouting.v4')
     entry_fields = {'model_id', 'effort', 'catalog'} | ({'prompt'} if staged else set())
+    if per_stage:
+        fields = (fields - {'max_output_tokens'}) | {'openai_max_output_tokens'}
+        entry_fields |= {'max_output_tokens'}
     if staged:
         fields = fields | {'openai_prompt'}
     if preferred:
         fields = fields | {'openai_pacing'}
         if 'openai_trial' in spec:
             fields = fields | {'openai_trial'}
-    if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in ('AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3')
+    if (type(spec) is not dict or set(spec) != fields or spec['schema'] not in (
+            'AIandRouting.v1', 'AIandRouting.v2', 'AIandRouting.v3', 'AIandRouting.v4')
             or spec['openai_model'] != 'gpt-6.1-sol'
             or type(spec['openai_effort']) is not str or spec['openai_effort'] not in ('low', 'medium', 'high')
-            or type(spec['max_output_tokens']) is not int or not 0 < spec['max_output_tokens'] <= 16000
+            or type(spec.get('openai_max_output_tokens' if per_stage else 'max_output_tokens')) is not int
+            or not 0 < spec['openai_max_output_tokens' if per_stage else 'max_output_tokens'] <= 16000
             or type(spec['budget_account']) is not str or not spec['budget_account'].strip()
             or len(spec['budget_account']) > 100
             or type(spec['audit_sample_bps']) is not int or not 0 <= spec['audit_sample_bps'] <= 10000
@@ -70,7 +76,10 @@ def validate_routing_spec(spec, prompt_dir=None):
     for entry in [spec['routine'], *spec['external_reviewers']]:
         if type(entry) is not dict or set(entry) != entry_fields:
             raise IntelligenceError('Invalid AIand routing model entry')
-        validate_settings(entry['model_id'], entry['effort'], entry['catalog'], spec['max_output_tokens'])
+        maximum = entry['max_output_tokens'] if per_stage else spec['max_output_tokens']
+        if type(maximum) is not int or not 0 < maximum <= 16000:
+            raise IntelligenceError('Invalid bounded stage completion limit')
+        validate_settings(entry['model_id'], entry['effort'], entry['catalog'], maximum)
     if preferred and any(entry['effort'] not in ('high', 'max') for entry in spec['external_reviewers']):
         raise IntelligenceError('OpenAI preferred routing requires high-effort external fallback')
     if staged:
@@ -141,13 +150,14 @@ class BudgetedOpenAI:
             reply = self.model.step(request, remaining_ms)
         value = reply.read()
         usage = value.get('usage') or {}
+        usage_known = all(type(usage.get(k)) is int and usage[k] >= 0 for k in ('input_tokens', 'output_tokens'))
         actual = None
-        if value['status'] == 'OK':
+        if value['status'] == 'OK' and usage_known:
             actual = (usage['input_tokens'] * 2_000_000 + usage['output_tokens'] * 10_000_000 + 999999) // 1_000_000
         try:
             self.budget.settle(token, actual)
-            if actual is not None and (actual > maximum or usage['input_tokens'] > input_bound or
-                                        usage['output_tokens'] > self.model.max_output_tokens):
+            if usage_known and ((actual is not None and actual > maximum) or usage['input_tokens'] > input_bound or
+                                usage['output_tokens'] > self.model.max_output_tokens):
                 self.budget.external_only('OPENAI_USAGE_EXCEEDED_BOUND')
                 value.update(status='ERROR', output=None, error='OPENAI_USAGE_EXCEEDED_BOUND')
                 return Document.from_dict(value)
@@ -507,10 +517,20 @@ class RoutedAssessor:
         if not result['model_io']['model_called']:
             result['model_io']['no_model_call_reason'] = selected['model_io'].get('no_model_call_reason')
         result['started_ms'], result['completed_ms'] = start, self.clock()
+        result['request_sha256'] = sha256_hex(Document.from_dict(request).payload)
+        result['budget_allowed'] = dict(request['budget'])
         result['budget_used'] = dict(tool_calls=len(calls), model_steps=len(steps), elapsed_ms=self.clock()-start)
         result['routing'] = dict(reasons=reasons, budget=self._budget_state(),
                                  stages=[dict(stage=s['stage'], model=s['model'], result_id=s['result']['result_id'],
-                                              status=s['result']['status'], result_artifact=s['artifact']) for s in stages])
+                                              status=s['result']['status'], result_artifact=s['artifact'],
+                                              reasons=s['result'].get('reasons', []),
+                                              rejected_claims=s['result'].get('rejected_claims', []),
+                                              cost=s['result']['cost'],
+                                              started_ms=s['result']['started_ms'],
+                                              completed_ms=s['result']['completed_ms'],
+                                              request_sha256=s['result']['request_sha256'],
+                                              budget_allowed=s['result']['budget_allowed'],
+                                              budget_used=s['result']['budget_used']) for s in stages])
         if review:
             result['routing'].update(review_outcome=review['review_outcome'],reviewers=review['verdicts'])
             for key,field in (('selected_stage','selected_result'),('primary_stage','primary_result')):
@@ -579,8 +599,9 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
     AIandRouting.v2 pins one stage prompt per model (`prompt` on each entry, `openai_prompt`);
     v1 sends every stage the core prompt, as before. V3 prefers OpenAI under frozen pacing."""
     validate_routing_spec(spec, prompt_dir=prompt_dir)
-    preferred = spec['schema'] == 'AIandRouting.v3'
-    staged = spec['schema'] in ('AIandRouting.v2', 'AIandRouting.v3')
+    per_stage = spec['schema'] == 'AIandRouting.v4'
+    preferred = spec['schema'] in ('AIandRouting.v3', 'AIandRouting.v4')
+    staged = spec['schema'] in ('AIandRouting.v2', 'AIandRouting.v3', 'AIandRouting.v4')
     configs = {}
 
     def config_for(prompt):
@@ -588,7 +609,7 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
     if not secrets.get('LARP_AIAND_API_KEY'):
         raise IntelligenceError('AIand routing requires LARP_AIAND_API_KEY in the runtime secret')
     transports = transports or {}
-    common = dict(clock_ms=clock_ms, artifacts=artifacts, max_output_tokens=spec['max_output_tokens'])
+    common = dict(clock_ms=clock_ms, artifacts=artifacts)
     openai = None
 
     def primary_accounting_guard():
@@ -602,6 +623,7 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         model = AIandChatModel(model_id=entry['model_id'], effort=entry['effort'],
                                catalog=entry['catalog'], api_key=secrets['LARP_AIAND_API_KEY'],
                                transport=transports.get('aiand'), prompt_text=c.prompt_text,
+                               max_output_tokens=entry['max_output_tokens'] if per_stage else spec['max_output_tokens'],
                                prompt_sha256=c.prompt_sha256, **common)
         if spec.get('openai_trial') is not None:
             model = TrialGuardedExternal(model, budget, accounting_guard=primary_accounting_guard)
@@ -620,6 +642,7 @@ def build_routed_assessor(spec, *, registry, reader, config, clock_ms, artifacts
         openai = BudgetedOpenAI(OpenAIResponsesModel(model_id=spec['openai_model'],
             effort=spec['openai_effort'], api_key=secrets['LARP_MODEL_API_KEY'], price=OPENAI_PRICE,
             transport=transports.get('openai'), prompt_text=openai_config.prompt_text,
+            max_output_tokens=spec['openai_max_output_tokens'] if per_stage else spec['max_output_tokens'],
             prompt_sha256=openai_config.prompt_sha256, **common), budget)
         configs[openai] = openai_config
     def make(model):

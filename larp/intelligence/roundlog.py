@@ -50,6 +50,9 @@ def _call(step: dict, index: int) -> dict:
         value['model'] = request.get('model', {})
     if reply.get('provider_metadata'):
         value['provider_metadata'] = reply['provider_metadata']
+    for key in ('finish_reason', 'usage_known', 'usage_details'):
+        if key in reply:
+            value[key] = reply[key]
     return value
 
 

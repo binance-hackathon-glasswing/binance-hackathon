@@ -251,11 +251,15 @@ def model_routing_report(spec, sha256):
                 external_reviewers=[e['model_id'] for e in spec['external_reviewers']],
                 checks=dict.fromkeys(('AIAND_RUNTIME_SECRET', 'MODEL_BUDGET_INITIALIZATION',
                                       'PROVIDER_IDENTITY', 'SHADOW_TRIAL_EVALUATION'), 'NOT_RUN'))
-    if spec['schema'] == 'AIandRouting.v3':
+    if spec['schema'] in ('AIandRouting.v3', 'AIandRouting.v4'):
         report.update(routine=spec['openai_model'], reviewer=spec['external_reviewers'][0]['model_id'],
                       openai_pacing=spec['openai_pacing'], reserve_micro_usd=0)
         if 'openai_trial' in spec:
             report['openai_trial'] = spec['openai_trial']
+    if spec['schema'] == 'AIandRouting.v4':
+        report['completion_limits'] = dict(openai=spec['openai_max_output_tokens'],
+            routine=spec['routine']['max_output_tokens'],
+            external_reviewers=[e['max_output_tokens'] for e in spec['external_reviewers']])
     return report
 
 
