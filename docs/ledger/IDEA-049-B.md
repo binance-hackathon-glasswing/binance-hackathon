@@ -741,3 +741,19 @@ Branch `claude/d-dn-09-halt-split` from `codex/system-testing-20261012` at `1388
 - **Full suite** (PostgreSQL 16.15, Python 3.12.3): base `1388f80` 1581 passed, 7 skipped. This branch at `b743b64`: **1593 passed, 7 skipped, 2201 subtests, 0 failed** (+12).
 - **Closes:** #34 criterion 1 (decision recorded, and mandatory requirements now execute under pausing HALTs) and #52 criterion 1. #52's criteria 2 and 3 were already met by PR #66.
 - **Not changed:** mirror CI has not run on this branch yet. D-DN-10 (automatic `CLOCK` clear) is decided (PR #113) but not built.
+
+## PF-01 — delegated policy dispositions (2026-10-21 SGT)
+
+[IDEA084](IDEA-084.md) records Isaac's explicit delegated decisions: B-DEC01
+selects preferred qualified S1 and measured numeric-cap construction; B-DEC02
+uses marked NAV with separate liquidation reporting and actual-size cost ranking;
+B-DEC03 accepts concentrated/correlated and unproven-economic-edge risk with
+bounded S1 opening; B-DEC04 omits an additional unbuilt regime governor; B-DEC05
+retains decided DEV20 omission; B-DEC06 keeps measured finite exit slippage/cost
+gates; B-DEC07 confirms existing mandatory minimum/profit/cadence bypasses with
+all integrity/execution controls; B-DEC08 selects full bounded-action gas rather
+than optimistic quote-only reservation. #55 suppresses healthy-name cap sales
+caused solely by another missing mark. Exact numeric inputs/approval, affected
+implementation/tests, cost/coverage reports and actual host qualification remain.
+This accepts named policy risks, not a positive economic experiment verdict.
+Historical proposals, frozen criteria and results above are unchanged.
