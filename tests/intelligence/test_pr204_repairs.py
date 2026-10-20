@@ -6,21 +6,21 @@ import unittest
 from larp.contracts import Document
 from larp.intelligence import bakeoff
 from larp.intelligence.scenarios import EXSEMI, build_world
-from tests.intelligence.test_aiand_routing import AIandWire
-from tests.intelligence.test_roundlog import ModelTraces
+from larp.intelligence.models import RuleBaselineModel
+from tests.intelligence import test_aiand_routing, test_roundlog
 
 
 class DispatchSnapshot(unittest.TestCase):
     def test_earlier_normalized_requests_equal_exact_http_inputs_after_multiple_tools(self):
         w = build_world(['EXSEMI_Q2_8K', 'EXSEMI_Q3_8K'])
-        helper = ModelTraces(); helper.w = w
+        helper = test_roundlog.ModelTraces(); helper.w = w
         def decide(state):
             if state['gaps'] and state['remaining_tool_calls']:
                 gap = state['gaps'][0]
                 return dict(action='CALL_TOOL', tool=gap['tool'], args=gap['args'])
             return dict(action='FINISH', claims=state['claimable'], notes='synthetic')
         result = w.assessor(helper.hosted(decide)).assess(
-            w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI)).read()
+            w.request(['EXSEMI_Q3_8K'], issuer_id=EXSEMI, job_id='snapshot')).read()
         steps = result['model_io']['steps']
         self.assertGreaterEqual(len(steps), 3)
         for step in steps:
@@ -31,7 +31,7 @@ class DispatchSnapshot(unittest.TestCase):
 
 class RejectedUsage(unittest.TestCase):
     def test_length_reply_retains_usage_and_specific_cause_without_output(self):
-        helper = AIandWire(); helper.setUp()
+        helper = test_aiand_routing.AIandWire(); helper.setUp()
         def truncate(payload, headers):
             payload['choices'][0].update(finish_reason='length')
             payload['usage'].update(completion_tokens=4096,
@@ -49,7 +49,8 @@ class RejectedUsage(unittest.TestCase):
 class ReportingBudget(unittest.TestCase):
     def result(self, elapsed=120000, bound=180000):
         w = build_world(['EXSEMI_Q2_8K'])
-        value = w.assessor().assess(w.request(['EXSEMI_Q2_8K'], issuer_id=EXSEMI)).read()
+        value = w.assessor(RuleBaselineModel(w.clock)).assess(
+            w.request(['EXSEMI_Q2_8K'], issuer_id=EXSEMI, job_id='report')).read()
         value['budget_used']['elapsed_ms'] = elapsed
         value['budget_allowed'] = dict(deadline_ms=bound, tool_calls=6)
         return value
