@@ -1125,3 +1125,32 @@ This is not an executed test failure or CI qualification. The merge uses local
 focused verification for this operator-script/test change; an exact qualified
 signed release and actual host acceptance remain separate. Local PG container
 is stopped after checks; no hosted operation was performed.
+
+## LD02c — RFQ order validity and execution-RPC read qualification (2026-10-21; prospective)
+
+Follow-ups to LD02b-F1 (MSFTB's RFQ order expired within tens of seconds) and PF-01 (BNB Chain public, then
+NodeReal public, selected for execution read-side qualification). One read-only script,
+`docs/build/ops/ld02-20261020/rfq-rpc-check.sh`, on `primary` only, with the LD02 safety contract (no host writes,
+SQL not used, sanitized output with a final scan, no transaction or signature).
+
+**Pass criteria, written before the script exists (R1–R4, Q1–Q4):**
+
+- R1. For each bStock, one minimum-size BUY quote through the production `MarketPort.quote`. The packet lists the
+  quote response's field names, and the values of short scalar fields whose names suggest routing, vendor, RFQ,
+  mode, expiry or validity, without calldata or addresses other than public contracts.
+- R2. Each quote's exact calldata is simulated with `eth_estimateGas` under the proven USDT allowance override at
+  fixed delays after the quote: 0, 3, 6, 10, 15, 20, 30, 45, 60 and 90 s. Each result is the gas, or the refusal's
+  code and a short reason (`RFQ_*` or `reverted`).
+- R3. The report gives, per symbol, the last delay that simulated and the first that failed, and states the RFQ
+  validity only as observed bounds (for example "succeeded at 6 s, failed at 10 s").
+- R4. No conclusion beyond the observed bounds. Implications for m, re-quote timing and MSFTB coverage are written
+  as inputs for the owners.
+- Q1. Each provider answers every read method execution uses: `eth_chainId`, `eth_getBlockByNumber` (latest and
+  finalized), `eth_getBalance`, `eth_getTransactionCount` (latest and pending), `eth_getTransactionByHash` and
+  `eth_getTransactionReceipt` for the FG-01 funding transaction, `eth_getCode` (router), `eth_getStorageAt` (facet
+  slot) and the pinned `eth_call` forms (`balanceOf`, `allowance`).
+- Q2. Answers agree across providers: chain 56, the same receipt status, block and gas used, the same router code
+  hash and facet, and finalized blocks within 10 blocks of each other.
+- Q3. Latency per method and provider is recorded. Failover is covered by the production `BalanceProviders` logic
+  and its tests; this check proves each provider individually.
+- Q4. Offline tests cover the new allowlist, the delay schedule and the reporting; the full suite passes.
