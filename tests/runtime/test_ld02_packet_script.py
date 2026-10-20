@@ -326,6 +326,39 @@ class Ld02PacketScriptTests(unittest.TestCase):
         with self.assertRaises(ValueError):  # a reason that echoes the wallet refuses the whole packet
             self.ns['sanitize'](json.dumps(dict(reason=reason)), forbidden)
 
+    def test_error_secrets_are_refused_before_truncation_or_ascii_conversion(self):
+        secret = 'PrivateCredentialValueThatMustNeverAppear1234567890'
+        wallet = WALLET[2:]
+        scope = self.scope() | dict(forbidden=[secret, wallet, 'private-database.example'])
+        for text in ('x' * 145 + secret, 'x' * 150 + wallet,
+                     'x' * 150 + 'private-database.example', 'x' * 145 + 'privateCaf\u00e9Credential'):
+            with self.subTest(text=text[:12]):
+                scope['forbidden'] = [secret, wallet, 'private-database.example', 'privateCaf\u00e9Credential']
+                def rpc(*args, **kwargs):
+                    raise self.ns['RpcRefused'](dict(code=3, message=text))
+                self.ns['rpc'] = rpc
+                with self.assertRaisesRegex(ValueError, 'SANITIZER_FORBIDDEN_VALUE'):
+                    self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], scope)
+        # The decoded ABI text can carry a secret even if the short RPC message does not.
+        def rpc(*args, **kwargs):
+            raise self.ns['RpcRefused'](dict(code=3, message='reverted', data=self.error_string('x' * 145 + secret)))
+        self.ns['rpc'] = rpc
+        with self.assertRaisesRegex(ValueError, 'SANITIZER_FORBIDDEN_VALUE'):
+            self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], scope)
+
+    def test_override_is_exactly_the_wallet_router_allowance(self):
+        scope, ok = self.scope(), self.ns['allowed_call']
+        slot = self.ns['mapping_slot'](scope['router'], self.ns['mapping_slot'](WALLET, 2))
+        value = '0x' + format(self.ns['OVERRIDE_ALLOWANCE'], '064x')
+        tx = dict({'from': WALLET, 'to': scope['router'], 'data': self.calldata()})
+        self.assertTrue(ok('eth_estimateGas', [tx, '0x1', {USDT: {'stateDiff': {slot: value}}}], scope))
+        for override in ({USDT: {'stateDiff': {'0x' + '0' * 64: value}}},
+                         {USDT: {'stateDiff': {slot: '0x' + '0' * 64}}},
+                         {USDT: {'stateDiff': {slot: value}, 'code': '0x00'}},
+                         {USDT: {'stateDiff': 'not a mapping'}}):
+            with self.subTest(override=override):
+                self.assertFalse(ok('eth_estimateGas', [tx, '0x1', override], scope))
+
 
 if __name__ == '__main__':
     unittest.main()

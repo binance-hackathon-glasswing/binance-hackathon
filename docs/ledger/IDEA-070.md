@@ -1067,3 +1067,14 @@ RV4 run focused script/decoder/profile/document checks and record actual skips;
 RV5 merge only an exact reviewed, pushed head with no blocking findings, retain
 all LD09/10/host gates, and update PR133 with source/results. No live packet rerun
 or trading operation is part of this review.
+
+LD02b-RV02 reproduced findings at `15fcc3f`: RV-P2-01, an error with a known
+credential beginning at character145 leaks its first15 characters because
+`plain()` truncates before `sanitize()` sees the complete forbidden value. ASCII
+replacement creates the same gap for Unicode values. RV-P2-02, `override_ok`
+accepts any one USDT storage slot/value, not the declared wallet/router allowance.
+Prospective fixes: scan full message/decoded reason against private forbidden
+values before transformation, retain final scan; bind override to exact allowance
+slot/value and reject malformed containers. New offline regressions precede fixes.
+Original host packets stay unchanged; no live rerun is required for filter/guard
+repairs, and historical results remain tied to their original source.
