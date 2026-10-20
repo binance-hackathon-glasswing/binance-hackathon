@@ -2515,3 +2515,11 @@ private data/hash/access/reproduction, R1–R4 causes/locations/required changes
 per-finding acceptance checks, current38-test command, historical-method and
 safety/accounting preservation, owner/review/delivery requirements. Application
 repairs remain OPEN; no other task was messaged/assigned, no runtime or paid call.
+# PC-AUDIT01-IMPL01 — PR204 repairs (2026-10-20, prospective)
+
+Keith/Codex implements the four handoff repairs on current canonical, retaining
+PR204 audit history. Prospective criteria, candidate settings and evidence limits:
+[implementation record](../build/PR204_REPAIRS_20261020.md). Red/green portable
+regressions precede application changes; commit/push before execution. Private
+corpus and live qualification remain outstanding; no deployment authorization.
+
