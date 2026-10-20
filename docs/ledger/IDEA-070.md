@@ -585,3 +585,34 @@ Acceptance criteria, before this review's test execution:
 
 Results pending. No AWS/provider/model/wallet/key/signing/receiver/installation
 operation is part of this review. Existing user workspace files are preserved.
+
+
+#### LD01-RV01 results — reviewed source `8cea019`
+
+- **Finding fixed:** `8cea019` corrects both unconditional-source sentences in
+  WR-C/#44; the selected pinned evidence/policy and applicable review/replay/
+  preflight are required. The remaining numeric, release, host, session and
+  deployment work stays open with its existing owners. No application code or
+  numeric/config policy changed during this review.
+- **Criterion 1 PASS:** independent focused Linux/Python3.12.15 test run with
+  disposable PostgreSQL14.24: **200 passed / 600 subtests / zero skips**, 16.23s;
+  `pip check` PASS. Suites: all `tests/signer`, plus execution mode_readiness,
+  signer_caps_proposal, caps_review, gate_b_evidence, gate_b_native, router_decoder,
+  router_wiring, router_review and untrusted_router. Source mounted read-only;
+  the database had no external network or persistent storage, and the runner
+  shared only its isolated network namespace. No production credentials supplied.
+- **Criterion 2 PASS:** deviation renderer `--check`, diff whitespace and all
+  eight added local documentation link targets pass. Historical evidence and
+  signer drafts, official kit and vendor files are unchanged. Review fix changes
+  only the live backlog and this record.
+- **Criterion 3:** exact-head review and normal merge follow this results-only
+  commit. The runtime/config/test/tool tree remains identical to `8cea019`.
+  Hosted Actions are still unavailable due billing; this focused run does not
+  claim full-suite/systemd/bundle, signed-release, host or Gate B acceptance.
+
+Assistant review is complete for LD01's repository reporting slice under the
+user's review/fix/merge instruction. Actual Keegan LD03 policy/hash acceptance,
+Isaac LD06 allowance work, LD05 abnormal fills, LD07/08 gas scope, #27/#44 and
+release/host/session/real-round acceptance remain with the owners recorded
+above and in the live backlog. PR196 remains a separate OPEN documentation PR;
+PR133 remains the noticeboard. This session does not qualify real router behavior.
