@@ -67,5 +67,21 @@ and PR133 refresh.
 
 ## Validation and delivery
 
-Prospective DCV checks above are not yet reported as executed. Results and GitHub
-promotion/closure receipts will be appended after verification.
+DCV1–4 PASS on pushed source `1d6f73f`:
+
+- All 11 open PRs inventoried; documentation-only PR196/208/209/213 inspected.
+  PR211 is retained as implementation despite executable files under docs/.
+- Canonical diff changes Markdown documentation only. Five topical ledgers retain
+  their complete canonical prefix; IDEA084 is byte-identical to PR209 head;
+  EXP007 is unchanged. Unique ledger IDs and 35 new local link targets pass.
+- All 24 LD parent rows appear once in the prepared PR133 body; the detailed
+  plan retains every LD ID. Only PC-MIRROR01 is removed; partial GAP39/41/66,
+  PF-IMPL01 and actual profile/host/research gates remain.
+- PR203 head ancestry in PR207 is proven. PR177/176 ancestry in c5be269 and
+  the retained release receipt's all-four-jobs/external-manifest fields pass.
+- `tools/render_deviations.py --check` and `git diff --check` pass.
+
+No runtime tests were needed or run for Markdown-only changes. Imported test,
+dry-run and host evidence retains original scope; this consolidation does not
+claim a new system test, host install, model call, wallet action or readiness.
+DCV5–6 promotion/noticeboard/closure receipts will follow after GitHub actions.
