@@ -229,3 +229,45 @@ declared action. Add this refusal to the pushed profile regression before repair
 At `90e825a` the new full-book assertion fails (`ContractError not raised`).
 Repair also applies the larger action budget to the existing minimum-trade
 cost bound; otherwise cleanup could be omitted from that same economic check.
+
+### LD08-IG01 results — source `4044c82` (2026-10-20 UTC)
+
+IG1–IG6 repository behavior is implemented and verified. Initial-only profiles
+carry a positive sourced action budget; full-book reserve and minimum-trade
+cost checks include the whole budget, including reviewed cleanup when selected.
+The monitor runs after balance reconciliation at a quiet driver boundary,
+records atomic `LOW_GAS`/`LOW_GAS_CLEARED` incidents plus durable gas health,
+does not duplicate them after restart, and refuses a backward-clock clear.
+It preserves financial state/HALT/authority and defers for reservations, open
+rounds and pending execution. Planner/executor gas checks remain independent;
+affordable mandatory exits are still exercised by the initial-only regressions.
+The archive health path and CloudWatch publisher expose `GasPairUnaffordable`;
+the existing Terraform notification destinations receive the configured alarm.
+Actual installation/notification delivery is not claimed.
+
+IG7 PASS: pushed application/test source
+`4044c82a3b843d2781f4ac96e29bebf63d7497ac`, Linux Python3.12.15/disposable
+PostgreSQL14.24, **2241 passed, 8 skipped, 3686 subtests**, 133.91s. Full log
+`/private/tmp/larp-ld08-full.log`, SHA-256
+`8b23977b4e4427742f57e27eae7a8e2a8be2b18e41d24eb1606ebe6b8addcfea`.
+Eight skips: two external/private fixtures, five opt-in actual-systemd cases
+(unrun here), and the root directory-permission case. Separately UID1000:
+six startup tests PASS, including that permission case; three PostgreSQL cases
+skipped in that separate command are covered by the full run.
+
+Terraform1.13.5/locked AWS6.61.0: fmt/validate and **19 mocked plan tests PASS**,
+including low-gas metric/threshold and missing-data behavior. No apply. Log
+`/private/tmp/larp-ld08-terraform.log`, SHA-256
+`00cf8b85d2b553be5be9dab454aacf5613b6067f4db0922d4f87de5a8332d9e5`.
+Dependency checks, deviation rendering, full-suite bundle/manifest regressions
+and offline PostgreSQL/bubblewrap demo (six batches/two audit chunks) PASS.
+This does not qualify an original signed release artifact or actual host.
+
+IG8: the live backlog is narrowed, not removed: Keith/operator supplies measured
+gas/cleanup/current quotes/full holdings; Isaac accepts exact action/reserve/
+whole-run dev/final seeding/#44 hashes after Keith/Keegan review; Keegan/operator
+qualifies the exact release and actual alarm/host/selected-profile exits.
+[Acceptance matrix](../build/INITIAL_GAS_ONLY.md) and
+[machine receipt](../build/evidence/ld08-initial-gas-20261020.json) preserve
+criteria, evidence and owners. No secrets, live RPC, funding, key, signing or
+deployment action was performed. No readiness flag is enabled.

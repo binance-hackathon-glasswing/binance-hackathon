@@ -1,0 +1,60 @@
+{
+  "schema": "LD08RepositoryVerification.v1",
+  "record_id": "IDEA-061 LD08-IG01",
+  "canonical_base": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+  "pr203_incorporated": "a959fe2360ccff23b675c19c21734bbcb5d81eb4",
+  "tested_source": "4044c82a3b843d2781f4ac96e29bebf63d7497ac",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.15",
+    "postgresql": "14.24",
+    "external_network": false,
+    "source_mount": "read-only"
+  },
+  "red": [
+    {"source": "37a8ad8", "failed": 12, "note": "Four feature failures, eight fixture wallet-uniqueness failures; no repair present."},
+    {"source": "4d8a8e8", "failed": 12, "note": "Isolated fixture wallet; all failures expose missing profile/monitor/driver support."},
+    {"source": "90e825a", "failed": 1, "note": "Selected action budget could exceed the full-book reserve coverage."}
+  ],
+  "full_suite": {
+    "command": "python -m pytest -p no:cacheprovider -q -ra",
+    "passed": 2241,
+    "skipped": 8,
+    "subtests_passed": 3686,
+    "elapsed_seconds": 133.91,
+    "log_sha256": "8b23977b4e4427742f57e27eae7a8e2a8be2b18e41d24eb1606ebe6b8addcfea",
+    "skip_disposition": {
+      "external_private_fixtures_unrun": 2,
+      "real_systemd_unrun": 5,
+      "root_directory_permission_exercised_separately": 1
+    }
+  },
+  "nonroot_startup": {"uid": 1000, "passed": 6, "skipped": 3, "note": "Three PostgreSQL cases omitted here passed in the full suite."},
+  "terraform": {
+    "version": "1.13.5",
+    "aws_provider": "6.61.0",
+    "directory": "deploy/aws",
+    "format": "PASS",
+    "validate": "PASS",
+    "mocked_plan_tests_passed": 19,
+    "failed": 0,
+    "log_sha256": "00cf8b85d2b553be5be9dab454aacf5613b6067f4db0922d4f87de5a8332d9e5",
+    "applied": false
+  },
+  "other_checks": {
+    "dependency_locks": "PASS",
+    "deviation_rendering": "PASS",
+    "offline_demo": {"status": "PASS", "journal_batches": 6, "audit_chunks": 2},
+    "packaging_manifest_regressions": "PASS in full suite",
+    "exact_signed_release_bundle": "NOT_QUALIFIED"
+  },
+  "remaining": [
+    {"owner": "Keith / approved operator", "item": "Attributable non-fallback approve/swap/cleanup gas at the cap price, current quotes and complete holdings."},
+    {"owner": "Isaac, reviewed by Keith and Keegan", "item": "Exact action budget, full-exit reserve, dev/final whole-run seeding and #44/profile/input hashes."},
+    {"owner": "Keegan / approved operator", "item": "Independent review, exact signed release/config qualification and installed alarm notification/selected-profile exit evidence."}
+  ],
+  "signing_enabled": false,
+  "ready_to_install": false,
+  "host_results_verified": false,
+  "numeric_policy_accepted": false
+}

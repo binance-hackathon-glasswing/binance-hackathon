@@ -67,11 +67,21 @@ Canonical PR199 now records initial-gas-only scope; LD08 and measured cleanup/ex
 reserves remain open. Its declaration is retained in the normal canonical merge,
 with five register checks/three subtests PASS and unchanged execution/test code.
 
+LD08-IG01 incorporates PR203 and completes the repository low-gas controls:
+sourced action budget, full-book exit reserve/minimum-trade checks, quiet-boundary
+durable incidents, archive health metric and a dedicated Terraform alarm. Source
+`4044c82`: Linux/Python3.12/PostgreSQL14 **2241 passed /3686 subtests**, eight
+explained skips; root-sensitive permission case passes separately. Terraform
+**19/19**, dependency checks, deviation rendering and offline demo PASS.
+[Acceptance matrix](INITIAL_GAS_ONLY.md) / [receipt](evidence/ld08-initial-gas-20261020.json).
+No numeric policy, installed alarm, exact signed release or host is accepted by
+these offline results.
+
 ## What still blocks installation / live acceptance
 
 | Owner | Next accepted result |
 |---|---|
-| Isaac + Keith + approved operator | Exact measured initial-only profile, fresh complete holdings, stock quote/fee/gas coverage, full-exit reserve/whole-run seeding and #44 policy hashes; reviewed selected-router policy. LD08-OG01 adds explicit initial-only candidates and stock-only cap/assembly controls for review; low-gas incident/alarm and measured acceptance remain open. Historical fallback estimates do not qualify caps. |
+| Isaac + Keith + approved operator | Exact measured initial-only profile, fresh complete holdings, stock quote/fee/gas/cleanup coverage, full-exit reserve/whole-run seeding and #44 policy hashes; reviewed selected-router policy. LD08-IG01 implements low-gas incidents/metric/alarm; independent review, measured values and actual host/alarm acceptance remain. Historical fallback estimates do not qualify caps. |
 | Keegan + operator | PR200 implements and reviews #27 Option A, including final-release margins. Operator supplies actual timings; Keegan chooses L/m with Isaac/Keith review and per-value provenance. Without L/m, old short-authority refusals remain. |
 | Approved provider/operator + Isaac | Qualified canonical/native tracing or a separately reviewed supported scope; current reconciliation and funding/no-further-funding disposition. Balance-provider MATCH is not native settlement qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
