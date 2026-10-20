@@ -86,12 +86,13 @@ def assemble(inputs, *, now, base_dir):
         router_evidence_sha256=signer.get('router_evidence_sha256'),
         untrusted_router_policy_sha256=signer.get('untrusted_router_policy_sha256'),
         database_ca_sha256=signer['database_ca_sha256'],
-        numeric_review=numeric, remaining_gates=[
+        numeric_review=numeric, allowance_recovery=policy.allowance_recovery, remaining_gates=[
             *[('INITIAL_GAS_RESERVE_SEEDING_AND_ROUTE_FEE_QUALIFICATION'
                if gate == 'NATIVE_PROVIDER_AND_ROUTE_FEE_QUALIFICATION' and initial_gas_only(profile) else gate)
               for gate in REMAINING_GATES],
             ('ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY' if decoder.mode == 'verified' else
-             'UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT')],
+             'UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT'),
+            *(['ALLOWANCE_RECOVERY_GAS_AND_HOST_ACCEPTANCE'] if policy.allowance_recovery else [])],
     )
     return {'signer.json': raw, 'signer-assembly-report.json': encoded(report)}
 

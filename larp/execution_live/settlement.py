@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fractions import Fraction
 import re
 
-from larp.execution import Blocked, USDT, NATIVE_BNB, integer
+from larp.execution import Blocked, USDT, NATIVE_BNB, integer, approval_step, REVOKE_TOKENS
 from .chain import hash_value, quantity
 
 TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
@@ -58,7 +58,7 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
     status = quantity(receipt['status'])
     if status not in (0, 1):
         raise Blocked('unknown receipt status')
-    kind = 'REVERT' if status == 0 else ('APPROVAL' if attempt.step == 'APPROVE' else 'FILL')
+    kind = 'REVERT' if status == 0 else ('APPROVAL' if approval_step(attempt.step) else 'FILL')
     if not wallet_id or not observed_at:
         raise Blocked('run wallet identity and observation time required')
     result = dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER', kind=kind,
@@ -76,6 +76,13 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                                         finalized_height=proof['finalized_height'], canonical=True,
                                         gas_used=gas_used, effective_gas_price=gas_price,
                                         gas_chain_units=gas, bnb_decimals=bnb_decimals))
+    if attempt.step in REVOKE_TOKENS:
+        # Maintenance cannot masquerade as a fill. Unexpected transfers require the
+        # existing unsettled-outcome quarantine, never a fabricated gas-only fact.
+        if any(_net_transfers(receipt, intent.wallet, token) for token in REVOKE_TOKENS.values()):
+            raise Blocked('allowance cleanup has unexpected token movements')
+        result.update(maintenance='ALLOWANCE_REVOKE', token_contract=REVOKE_TOKENS[attempt.step],
+                      spender=intent.router, approved_amount='0')
     if kind == 'FILL':
         if intent.receive_token == NATIVE_BNB:
             native = proof.get('native_balance')

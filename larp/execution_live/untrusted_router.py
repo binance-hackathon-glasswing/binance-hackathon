@@ -209,15 +209,12 @@ class UntrustedRouterDecoder:
             raise Blocked('malformed RPC word')
         return int(value, 16)
 
-    def preflight(self, intent, payload, *, approved=True):
-        """Raise Blocked unless the live router state still bounds this swap (B02-U U3). Primary only.
-
-        Before this execution's own approve (`approved=False`) the pay token's allowance is not limited: the approve
-        overwrites it. A leftover allowance on any other token (e.g. after a reverted swap) always refuses."""
+    def allowances(self, intent):
+        """Current six-token allowances with router/facet pins checked at one numeric block (LD06)."""
         if self.rpc is None:
             raise Blocked('untrusted-router preflight needs a bound RPC')
-        if intent.router != self.router or payload.to != self.router or payload.value != 0:
-            raise Blocked('swap router or native value differs from the pinned router')
+        if intent.router != self.router:
+            raise Blocked('intent router differs from the pinned router')
         latest = self.rpc.call('eth_getBlockByNumber', ['latest', False])
         if type(latest) is not dict:
             raise Blocked('latest block unavailable')
@@ -228,9 +225,18 @@ class UntrustedRouterDecoder:
                 or self._code_hash(self.facet, block) != self.facet_codehash):
             raise Blocked('router or facet code differs from the pinned code')
         owner, spender = intent.wallet[2:].rjust(64, '0'), self.router[2:].rjust(64, '0')
-        for token in sorted(TOKENS):
-            allowance = self._word(self.rpc.call('eth_call', [dict(to=token, data=ALLOWANCE_CALL + owner + spender),
-                                                              block]))
+        return {token: self._word(self.rpc.call('eth_call', [
+            dict(to=token, data=ALLOWANCE_CALL + owner + spender), block])) for token in sorted(TOKENS)}
+
+    def preflight(self, intent, payload, *, approved=True):
+        """Strict swap allowance check. Cleanup never permits a dirty other-token allowance.
+
+        Before the exact trade approve the pay token may be overwritten. LD06 optionally
+        clears outstanding allowances first, without weakening this check.
+        """
+        if payload.to != self.router or payload.value != 0:
+            raise Blocked('swap router or native value differs from the pinned router')
+        for token, allowance in self.allowances(intent).items():
             if token == intent.pay_token and not approved:
                 continue
             limit = intent.amount if token == intent.pay_token else 0

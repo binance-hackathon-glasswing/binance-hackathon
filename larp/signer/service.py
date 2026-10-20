@@ -191,6 +191,8 @@ def router_decoder(config, policy):
         decoder = load_evidence(*settings)
     if decoder.router not in policy.allowed_spenders:
         raise ContractError('Router evidence is for a router outside signing_policy.allowed_spenders')
+    if policy.allowance_recovery and decoder.mode != 'untrusted':
+        raise ContractError('allowance recovery requires the untrusted router policy')
     return decoder
 
 

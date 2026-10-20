@@ -616,3 +616,123 @@ Isaac LD06 allowance work, LD05 abnormal fills, LD07/08 gas scope, #27/#44 and
 release/host/session/real-round acceptance remain with the owners recorded
 above and in the live backlog. PR196 remains a separate OPEN documentation PR;
 PR133 remains the noticeboard. This session does not qualify real router behavior.
+
+## LD06 — bounded leftover-allowance recovery (2026-10-20; prospective)
+
+Owner Isaac; independent review Keegan. Canonical base `06a93f9` includes reviewed
+LD01. Scope: repository code/tests/documentation only, no wallet/provider/host
+operation. LD07/08 gas scope and LD04 authority implementation remain separate.
+
+Design proposed for review: optional pre-approval zero-allowance steps under the
+next valid, risk-approved parent stock intent. Each step targets only USDT or one
+of the five eligible bStocks and only the same pinned router; ERC20 approve amount
+is exactly zero, native value zero. Maximum one step per token per parent, six
+steps total. Every step has immutable identity, normal fresh gates/expiry/nonce,
+fee cap and aggregate parent gas budget, durable signing/send/reconciliation and
+receipt/gas/audit facts. No independent trade or authority extending the expired
+parent is invented. Possible sends retain the wallet barrier. After cleanup,
+re-read allowances, approve the actual pay token exactly, re-quote and swap.
+
+Explicit execution configuration and signer-policy opt-ins default false. Old
+configuration behavior remains fail-closed. A repeated nonzero allowance after a
+confirmed revoke blocks, never loops. If time, gas, market, health, audit or risk
+checks fail, stop/abort only positively unbroadcast work; a later independently
+valid intent may recover the allowance. Cleanup failure does not fabricate a
+fill or remove ordinary settlement quarantine. Actual reserve/gas sizing and
+activation acceptance remain required; this change enables no production flags.
+
+Source check: read `official/source_page.md` Rules & Restrictions and the
+verbatim `official/kit/bstocks-trading-guide.md` approval/logging flow, core
+F-96/99/100/105, G-01/04/18/19 and Q-07/09, plus participant-kit K8. The kit
+specifies exact positive trade approval, not a revoke protocol. The zero-only
+maintenance scope is a proposed team implementation policy supporting that
+flow, not an organiser rule or a source-enforcement guarantee; it needs explicit
+review and exact installed policy acceptance. No arbitrary token/spender/call,
+manual approval or direct-RPC broadcast is introduced.
+
+Pass criteria before execution:
+
+1. Reproduce other-token/final-exit blockage from allowance left by approval
+   without swap, reverted swap, and expired authority; fresh parent cleanup
+   reaches approve/requote/swap with immutable identities across restart.
+2. Both execution and signer independently refuse disabled cleanup, nonzero
+   approval, unknown token/spender/selector/value, duplicate or misplaced cleanup,
+   stale authority/nonces and excess per-step/aggregate gas. Six-token bound and
+   at-most-once signing/send survive failures and uncertain outcomes.
+3. Keep router/facet/code/layout and strict allowance preflight checks; RPC or
+   receipt/reorg uncertainty blocks. Zero/nonzero allowance rechecks determine
+   progress; no timeout or old parent's expiry clears possible-send uncertainty.
+4. Canonical successful cleanup is an approval maintenance fact, not a fill or
+   swap order/hash. Gas is accounted once, reservation retained except spent
+   gas; reverted cleanup accounts gas and terminates the parent. Aborting after
+   cleanup releases unsent swap reservations without pretending allowances reset.
+   Actual PostgreSQL store/remote-signer/outbox/replay tests cover these paths.
+5. Update current state machine/runbooks/backlog and ledger results truthfully;
+   retain other GAP gates, no historical evidence/kit/vendor/secrets changes.
+   Commit/push code before tests; run focused Linux/PostgreSQL and full runtime
+   regressions appropriate to this execution/signing/accounting change.
+
+Results pending; all implementation/configuration acceptance remains unclaimed.
+
+### LD06 results — source `913b400` (2026-10-20)
+
+Criteria pushed at `d732a2e`; implementation/tests pushed at `9a95363` before
+execution. `8ee1b90` corrects an aggregate-gas fixture that originally hit the
+earlier quote-gas admission guard; no gas limit was widened in product code.
+`fad55e5` adds PostgreSQL recovery/configuration/exact-replay coverage.
+`8a69f84` independently restricts cleanup to a stock parent and its exact selected
+router. `913b400` adds malformed-step refusal and labels a confirmed cleanup
+transaction without claiming its allowance has already been observed at zero.
+
+**Criteria 1–4 PASS (offline implementation):** 23 new tests cover the original
+other-token/final-exit blockage and recovery after no swap/revert/expiry; six-token
+bounds and no repeat authority; original gas/nonce/expiry barriers; changed-code
+and RPC refusal; PostgreSQL journal/registry restart; ephemeral-key isolated
+signer policy/nonce/nonzero refusals; accurate canonical gas-only facts; audit
+order/hash exclusion, reservation release and exact empty-target journal replay.
+A final zero receipt is followed by a fresh allowance read; residual allowance
+never causes repeated cleanup within the same parent. Defaults remain false.
+
+**Criterion 5 PASS:** final full Linux/Python3.12.15/PostgreSQL14.24 run at
+`913b400f7b0e2a9d5a6abfc97f6338d8a462c987`: **2190 passed / 3660 subtests /
+zero failures / eight skips**, 138.73 seconds. Five skips are real-systemd tests
+not enabled, two external fixtures unavailable, and one permission case skipped
+under root. A separate unprivileged startup module run passed six checks,
+including that permission case; its three PostgreSQL skips were covered in the
+full run. No systemd or host-release qualification is inferred.
+
+The initial full run had six environment failures (missing Git metadata, ignored
+writable scratch output and bubblewrap namespace/proc permissions). Corrected
+container mounts/permissions resolved them; no product bypass or test exclusion
+was added. Source and Git metadata were read-only; test output used a separate
+ignored scratch mount. PostgreSQL was disposable tmpfs with no external network.
+Dependency check, sandbox tests, offline runtime demo (six journal batches/two
+audit chunks), deviation rendering, whitespace, links/anchors, preserved backlog/
+index IDs and unchanged historical evidence/default configs/kit/vendor/env pass.
+Full machine receipt: [LD06 verification](../build/evidence/ld06-allowance-recovery-20261020.json).
+
+**Not accepted here:** Keegan independent review of the zero-only supporting
+policy/code; Isaac/Keith actual token/API behavior, measured cleanup/parent/exit
+reserve and fee caps; LD02/04 timing/authority; LD15–21 release/host/session/real
+agent-round and recovery acceptance. See [state machine and handoff](../build/ALLOWANCE_RECOVERY.md).
+The core G-01 note is explicitly a proposed implementation exception, not an
+organiser fact; DEV-23 remains DRAFT. All installation/signing/Gate B flags stay
+false, no existing configuration opts in, and no real AWS/provider/model/wallet/
+key/signing/receiver/installation operation was performed. PR133 remains a
+noticeboard; parent GAP-29/47/#33/#44 and LD05/07/08 retain their remaining work.
+
+Delivery: [PR202](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/202)
+targets canonical. While it was being prepared, PR199's reviewed LD07 initial-gas-
+only decision merged into canonical at db506bd; ordinary merge1f4b072 retains
+both histories without conflict. Execution/signer/test/tool bytes are identical
+to full-suite source913b400. The combined declarations pass renderer --check
+and five release-register tests/three subtests; actual initial-gas/cleanup reserve
+acceptance and LD08 implementation remain open. No extra full-suite result is
+inferred from this documentation/register merge.
+
+Org Actions [run39387215745](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39387215745)
+on581a70c ran zero steps in all four jobs; the runtime annotation explicitly
+says account payments failed or the spending limit must be increased. Local
+verification is not called hosted CI. Independent Keegan review/merge and the
+actual acceptance owners listed above remain the explicit handoff. All LD06
+changes are committed/pushed; no production operation is authorized by delivery.

@@ -165,8 +165,21 @@ def validate_execution_observation(observation: dict) -> dict:
     if kind not in OBSERVATION_KINDS:
         raise ContractError("Unknown execution observation kind")
     _instant(o.get("observed_at"), "observed_at")
+    from larp.execution import REVOKE_TOKENS
+    cleanup = {step.lower(): token for step, token in REVOKE_TOKENS.items()}
+    step = o.get('step')
+    if step is not None and type(step) is not str:
+        raise ContractError('Execution step must be text')
+    if o.get('maintenance') == 'ALLOWANCE_REVOKE' and step not in cleanup:
+        raise ContractError('Allowance maintenance needs its exact cleanup step')
+    if type(step) is str and step.startswith('revoke:'):
+        if (step not in cleanup or kind not in ('BROADCAST_ATTEMPTED', 'APPROVAL', 'REVERT')
+                or o.get('maintenance') != 'ALLOWANCE_REVOKE' or o.get('token_contract') != cleanup[step]
+                or o.get('approved_amount') != '0' or type(o.get('spender')) is not str
+                or not re.fullmatch(r'0x[0-9a-f]{40}', o['spender'])):
+            raise ContractError('Invalid zero-only allowance maintenance fact')
     if kind == "BROADCAST_ATTEMPTED":
-        if o.get("step") not in ("approve", "swap") or not TX_HASH.fullmatch(o.get("tx_hash") or ""):
+        if o.get("step") not in ('approve', 'swap', *cleanup) or not TX_HASH.fullmatch(o.get("tx_hash") or ""):
             raise ContractError("A broadcast attempt names its step and transaction hash")
         if any(key in o for key in ACCOUNTING_FIELDS + ("settlement",)):
             raise ContractError("A broadcast attempt cannot carry settlement or accounting facts")

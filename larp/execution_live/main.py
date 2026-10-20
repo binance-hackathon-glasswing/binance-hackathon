@@ -49,6 +49,12 @@ def validate_config(value):
         raise ContractError('The execution service runs only for dev or live runs')
     if type(value.get('native_trace', False)) is not bool:
         raise ContractError('native_trace must explicitly enable a qualified provider')
+    if type(value.get('allowance_recovery', False)) is not bool:
+        raise ContractError('allowance_recovery must be an explicit boolean')
+    if value.get('allowance_recovery', False):
+        from larp.execution_live.config import untrusted_router_settings
+        if untrusted_router_settings(value) is None:
+            raise ContractError('allowance recovery requires pinned untrusted router policy')
     if type(value['wallet_address']) is not str or not _ADDRESS.fullmatch(value['wallet_address']):
         raise ContractError('Invalid wallet address')
     for key, default in (('interval_seconds', None), ('signer_timeout_seconds', 20)):
@@ -169,7 +175,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
-        executor = Executor(registry, guards, venue, signer, decoder)
+        executor = Executor(registry, guards, venue, signer, decoder,
+                            allowance_recovery=config.get('allowance_recovery', False))
     except Blocked:
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)

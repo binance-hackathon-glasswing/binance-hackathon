@@ -36,7 +36,7 @@ There are two mutually exclusive supported configuration paths:
 | Path | Inputs / limits |
 |---|---|
 | Source-verified router | Complete verified source/ABI/deployment binding, independent source review and pinned RouterEvidence.v1 plus recorded-route checks. Source is still unavailable in the retained packet. |
-| Untrusted router (B02-U / DEV-23) | Isaac selected the trust direction in B09-TRUST01 (PR196); actual measured #44 acceptance and named-reviewed live code/facet/allowance policy/hash remain. Fresh layout/replay/preflight checks are required. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups; reverted-swap allowances and abnormal-fill accounting can block later work. |
+| Untrusted router (B02-U / DEV-23) | Isaac selected the trust direction in B09-TRUST01 (PR196); actual measured #44 acceptance and named-reviewed live code/facet/allowance policy/hash remain. Fresh layout/replay/preflight checks are required. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups. LD06 adds disabled-by-default bounded allowance cleanup; actual policy/gas/timing/host acceptance remains. Abnormal-fill accounting still blocks unresolved outcomes. |
 
 The consolidation did not select a mode; B09-TRUST01 subsequently selected the
 API-trusted direction. Verified source is required only for the source-verified
@@ -51,6 +51,21 @@ paths, retaining policy/hash/review and false readiness flags. At `22039ba`,
 focused Linux/Python3.12.15/PostgreSQL14.24 verification passed **167 tests /
 555 subtests / zero skips**. This is reporting/tooling acceptance, not a full
 suite, signed release or host qualification. See [IDEA-070 LD01](../ledger/IDEA-070.md#ld01--mode-aware-readiness-and-handoffs-2026-10-20-prospective).
+
+LD06 adds [bounded allowance recovery](ALLOWANCE_RECOVERY.md) before the next
+valid stock intent, independently gated by execution and signer opt-ins. At most
+one zero-only approval per eligible token is allowed under the parent's original
+authority, gas budget and wallet barrier. Supporting receipt gas is journaled and
+replayed without creating a swap order. No configuration enables the feature;
+independent review and actual policy/reserve/timing/host acceptance remain.
+Final LD06 source913b400: full Linux/Python3.12/PostgreSQL14 **2190 passed /3660
+subtests /eight explained skips**; root-sensitive permission case exercised
+separately. Five real-systemd and two external-fixture cases remain unrun.
+[Verification receipt](evidence/ld06-allowance-recovery-20261020.json).
+LD06 delivery: [PR202](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/202).
+Canonical PR199 now records initial-gas-only scope; LD08 and measured cleanup/exit
+reserves remain open. Its declaration is retained in the normal canonical merge,
+with five register checks/three subtests PASS and unchanged execution/test code.
 
 ## What still blocks installation / live acceptance
 
