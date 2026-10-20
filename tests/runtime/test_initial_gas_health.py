@@ -60,7 +60,7 @@ class GasHealth(DatabaseCase):
         book = live_snapshot().context.read()['portfolio']
         book['bnb_units'] = 19_999
         self.initial = Document.from_dict(initial_projection(book))
-        self.store.initialize('gas', 'wallet', 56, self.initial)
+        self.store.initialize('gas', 'gas-wallet', 56, self.initial)
         self.store.takeover('gas', 1, offline=True)
         self.c = SimpleNamespace(store=self.store, run_id='gas')
 
@@ -154,7 +154,7 @@ class GasHealth(DatabaseCase):
         other.setUp()
         self.addCleanup(other.doCleanups)
         batches = self.store.journal('gas')
-        replay(batches, self.initial, other.store, run_id='gas', wallet_id='wallet', chain_id=56,
+        replay(batches, self.initial, other.store, run_id='gas', wallet_id='gas-wallet', chain_id=56,
                version_id='synthetic', profile_hash='a' * 64, address=None,
                policy=None, planner=None, execution=None, reducer=None)
         self.assertEqual(other.store.load('gas').read()['projection'], self.state()['projection'])
