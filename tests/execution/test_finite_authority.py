@@ -308,7 +308,9 @@ class ReleaseAuthority(DatabaseCase):
         self.venue.broadcast = FencedRelease(self.registry, submitter, clock_s=lambda: 44, decoder=FakeDecoder())
         result = self.engine.broadcast(self.i.key, 19)
         self.assertEqual(result.attempts[-1].state, 'PENDING')
-        submitter.send.assert_called_once_with(state.attempts[-1].raw_hex)
+        attempt = state.attempts[-1]
+        signed = self.registry.lookup(attempt.attempt_id, attempt.payload.hash)
+        submitter.send.assert_called_once_with(signed.raw_hex)
 
 
 if __name__ == '__main__':
