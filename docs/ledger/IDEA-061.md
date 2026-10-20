@@ -171,3 +171,8 @@ These are local tests, not hosted CI, an original release artifact or actual
 host/signing acceptance. No gate requiring measurements or a named decision
 is closed. Low-gas incident/alarm work and selected-profile qualification stay
 in the live backlog; legacy top-up capability is not adopted for v1.
+
+Delivery: [PR203](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/203),
+branch `codex/post-review-gates-20261020` into canonical integration. Opened for
+review at the user's request; no merge, numeric owner acceptance, installation
+or cloud/wallet operation is requested or claimed.
