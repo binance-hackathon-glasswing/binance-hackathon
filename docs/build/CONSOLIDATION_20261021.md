@@ -84,7 +84,7 @@ DCV1–4 PASS on pushed source `1d6f73f`:
 No runtime tests were needed or run for Markdown-only changes. Imported test,
 dry-run and host evidence retains original scope; this consolidation does not
 claim a new system test, host install, model call, wallet action or readiness.
-DCV5–6 promotion/noticeboard/closure receipts will follow after GitHub actions.
+DCV5–6 completed; see delivery receipts below.
 
 Promotion PR: [214](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/214).
 At head `b6fa3b1`, [Actions39462120790](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39462120790)
@@ -93,3 +93,27 @@ recent account payments failed or the spending limit needs increasing. This is
 billing-blocked CI, not an executed test failure or CI PASS. Markdown-specific
 local checks above are the validation for this documentation-only promotion.
 All 11 original PR heads were unchanged at the pre-promotion recheck.
+
+## Delivery receipts — CONS-02 closeout
+
+PR214 merged into canonical at `61c7e13dd433b7ec9db97f8fdbb23660f7edb60d`
+(2026-10-21 SGT; GitHub timestamp 2026-10-20 16:59:39 UTC), before any source
+PR closed. PR133's body was checked for concurrent changes, then replaced with
+the consolidated decisions, canonical references, five implementation reviews
+and all 24 LD parent owners/remaining gates. Readback matches the prepared body;
+all 15 original comments and original noticeboard branch head are preserved.
+
+| Closed PR | Retention/closure receipt |
+|---|---|
+| 196 | [CLOSED; retained head `6ce2fa0`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/196#issuecomment-6296447230) |
+| 208 | [CLOSED; retained head `e4b32c3`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/208#issuecomment-6296449917) |
+| 209 | [CLOSED; retained head `01e18c6`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/209#issuecomment-6296452859) |
+| 213 | [CLOSED; retained head `73f69b4`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/213#issuecomment-6296454977) |
+| 203 | [CLOSED; retained head `a959fe2`](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/203#issuecomment-6296457691) |
+
+Final GitHub inventory verified: only PR133 (noticeboard) and implementation
+PR206/207/210/211/draft212 remain open. No implementation PR was merged by this
+cleanup; no branch was deleted. Missing code/measurements/host acceptance remain
+with the owners in the live backlog and LD plan. The final receipt is a
+Markdown-only follow-up to the merged consolidation; canonical promotion uses
+normal forward history without rewriting any branch.

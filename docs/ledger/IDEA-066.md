@@ -2537,3 +2537,10 @@ implementation PRs open. Unique policy/plan/release-checklist/BKL01 evidence is
 retained; original experiment/host results are unchanged. Actual code review,
 measured caps/profile/ops/model inputs and signed host/release acceptance retain
 named owners. Validation/promotion/closure results follow in that record.
+
+CONS-02 closeout: PR214 merged at `61c7e13`; PR133 body/24 LD rows and all old
+comments read back. PR196/208/209/213 CLOSED with canonical retention links;
+PR203 CLOSED because its head is contained in retained PR207. Only PR133 and
+five distinct implementation PR206/207/210/211/draft212 remain OPEN. Complete
+closure-comment URLs and checks are in the CONS-02 retention record. No branch
+deleted or implementation/host/signing gate closed by this documentation cleanup.
