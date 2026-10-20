@@ -176,3 +176,41 @@ Delivery: [PR203](https://github.com/binance-hackathon-glasswing/binance-hackath
 branch `codex/post-review-gates-20261020` into canonical integration. Opened for
 review at the user's request; no merge, numeric owner acceptance, installation
 or cloud/wallet operation is requested or claimed.
+
+## LD08-IG01 — complete initial-only low-gas controls (Isaac, 2026-10-20; prospective)
+
+User requests LD08 completion. Branch from canonical `697ff3a`, incorporating
+PR203 `a959fe2` by normal merge; PR203's branch is not edited. Scope is repository
+implementation and offline qualification. No host/provider/key/funding action.
+
+Pass criteria, before new regressions or implementation run:
+
+- IG1: initial-only profiles require a positive, sourced `gas_action_budget_units`,
+  at least the summary's worst approve+swap pair and no larger than the full exit
+  reserve. Candidate generation derives the pair budget; additional selected
+  cleanup requires measured coverage in that budget/reserve (LD09/LD10).
+- IG2: after reconciliation and before planning, compare spendable settled BNB
+  against the action budget and exit reserve. Equality funds an action; below the
+  budget records `PAIR_UNAFFORDABLE`; below only the reserve records
+  `BELOW_EXIT_RESERVE`. Existing buy refusal and affordable reductions/exits stay.
+- IG3: journal a transition incident plus durable gas-health state atomically,
+  without changing balances, reservations, authority, quarantine or HALT. Repeated
+  ticks and restart do not duplicate incidents. Recovery is a new recorded fact;
+  backward clocks cannot clear a warning. Journal replay reproduces exact bytes.
+- IG4: do not commit a gas incident over an unclaimed command or any in-flight
+  execution/reservation/open round. Observe at the next quiet driver boundary;
+  prove command version/nonce barriers remain intact.
+- IG5: archive-role service health exposes the durable unaffordable-action signal;
+  publish a dedicated CloudWatch metric and define a missing-data-breaching alarm
+  through the existing authorized destinations. Exercise publisher failure and
+  recovery with synthetic clients; Terraform tests require no AWS apply.
+- IG6: production driver construction wires the monitor from the pinned profile;
+  historical top-up profiles keep their existing behavior and metrics default
+  healthy when this scope is absent. No native route or new spending is enabled.
+- IG7: pushed regressions run red before repair, then focused Linux/PostgreSQL
+  and complete suite plus applicable Terraform/bundle/replay checks pass. Record
+  exact source/results/skips; do not rewrite existing measurements or goldens.
+- IG8: narrow the live backlog to measured gas/cleanup/full-exit reserve, dev/final
+  whole-run seeding, exact #44 decisions and actual alarm/host acceptance. Keith
+  reviews accounting and Keegan policy/gates; candidate formulas and offline
+  tests do not constitute their approval or complete those external gates.
