@@ -345,3 +345,40 @@ class ReportingBudget(unittest.TestCase):
         self.assertEqual(value,original)
         with self.assertRaises(IntelligenceError):
             bakeoff.metrics([value],artifact_reader=lambda ref:b'wrong')
+
+    def test_request_binding_and_separate_stage_diagnostics(self):
+        fx=test_openai_pacing.Preferred();fx.setUp();self.addCleanup(fx.doCleanups)
+        f=fx.fx; request,result=f.run_assessment(f.build())
+        metrics=bakeoff.metrics([result],requests=[request],artifact_reader=f.w.artifacts.get)
+        self.assertEqual(set(metrics['by_stage']),set(s['stage'] for s in result['routing']['stages']))
+        for stage in metrics['by_stage'].values():
+            self.assertGreater(stage['schema_valid_denominator'],0)
+            self.assertIsNotNone(stage['timing']['per_result'][0]['deadline_ms'])
+        request=request.read();request['budget']['deadline_ms']=180000
+        with self.assertRaises(IntelligenceError):bakeoff.metrics([result],requests=[request])
+
+    def test_private_report_command_validates_an_immutable_synthetic_export(self):
+        import base64
+        from tools.report_captured_trial import captured_report, _canonical, main
+        w=build_world(['EXSEMI_Q2_8K'])
+        request=w.request(['EXSEMI_Q2_8K'],issuer_id=EXSEMI,job_id='private-report')
+        result=w.assessor(RuleBaselineModel(w.clock)).assess(request).read()
+        event=dict(record=dict(request=request.read(),assessment=result))
+        raw=_canonical(dict(event=event)); batch_hash=sha256_hex(raw)
+        previous='0'*64;head=sha256_hex(bytes.fromhex(previous)+bytes.fromhex(batch_hash))
+        columns=['sequence','batch','batch_hash','event_hash','previous_hash','head']
+        rows=[[1,dict(bytes=base64.b64encode(raw).decode()),batch_hash,sha256_hex(_canonical(event)),previous,head]]
+        tables=dict(events=dict(columns=columns,rows=rows))
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);data=root/'input';data.mkdir()
+            backup=_canonical(dict(tables=tables,sha256=sha256_hex(_canonical(tables))))
+            (data/'postgres-backup.json').write_bytes(backup)
+            (data/'SHA256SUMS').write_text(sha256_hex(backup)+'  postgres-backup.json\n')
+            before={p.name:p.read_bytes() for p in data.iterdir()}
+            report=captured_report(data)
+            self.assertEqual(report['event_head'],head)
+            self.assertEqual(report['metrics']['assessments'],1)
+            self.assertEqual(main(['--data-dir',str(data),'--output-dir',str(root/'out')]),0)
+            self.assertEqual({p.name:p.read_bytes() for p in data.iterdir()},before)
+            (data/'postgres-backup.json').write_bytes(backup+b' ')
+            with self.assertRaises(IntelligenceError):captured_report(data)
