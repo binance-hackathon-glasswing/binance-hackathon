@@ -291,3 +291,36 @@ all860 swap-gas estimates FALLBACK; final defaults correctly refuse. Raw API
 responses were not reverified. Final capture/profile, #119/#120/#44 acceptance
 and full-holdings/gas inputs remain open with Keith/Isaac. Results and reproducible
 verifier are in the linked directory; no new market/host/wallet operation.
+
+## DC-01 — completed Desktop capture analysis (2026-10-20, prospective)
+
+Keith requests continued development using the completed Desktop capture and a
+completion update on PR133. Use canonical `codex/system-testing-20261012` at
+`928b8a8`; PR133 remains an open noticeboard. Scope is the independently
+completable LD09 capture-analysis/profile-construction slice, not installation
+or acceptance of the whole measured execution packet.
+
+Pass criteria, committed before analysis:
+
+1. Verify every payload against the export's SHA256SUMS, all JSONL records and
+   their raw-artifact references; retain the manifest/daily-file hashes and
+   capture-source identity. Do not commit raw captures, API responses or logs.
+2. Run the existing offline summary with unchanged defaults: three UTC dates,
+   weekend coverage and ten samples per token per regime. Preserve failures,
+   interruptions, fallback gas and UNVERIFIED fee-netting labels. Any refusal
+   remains a refusal; do not tune thresholds or remove observations.
+3. Reproduce the delivered YP-01 interim provenance independently. Keep its
+   original two-day/nine-sample provenance separate from this completed export.
+4. Run existing profile construction against the completed summary and the
+   published predicate set. Generated EQUAL_WEIGHT profiles are review candidates
+   only. Do not invent S1 weights, adopt example parameters/windows, approve
+   fallback gas, or enable signing. Record exact file and document-domain hashes,
+   minimum size, amounts/reserves and comparison to the draft 35-USDT dev cap.
+5. Retain a reproducible verification receipt, complete summary/report and
+   candidate profiles with explicit limits. Enumerate unsupported sizes/full
+   exits, gas/fee evidence and remaining owner reviews. Run the existing
+   marketdata/strategy tests; distinguish local verification from hosted CI.
+6. Update the canonical backlog to remove only completed work and link a focused
+   PR. On PR133, check off this completed analysis slice and keep LD09's missing
+   current measurements and #119/#120/#44 acceptance open. No host, provider,
+   model, wallet, signing, spending or deployment operation is in scope.
