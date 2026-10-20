@@ -168,11 +168,13 @@ class FencedRelease:
     send of an active attempt under this epoch and authority (`ExecutionStore.check_broadcast`), submits them through
     the Web3 Open API (`Web3Broadcaster`), and accepts only the transaction's own hash back."""
 
-    def __init__(self, registry, submitter, *, clock_s=None):
-        self.registry, self.submitter, self.clock = registry, submitter, clock_s
+    def __init__(self, registry, submitter, *, clock_s=None, decoder=None):
+        self.registry, self.submitter, self.clock, self.decoder = registry, submitter, clock_s, decoder
 
     def __call__(self, signed, epoch, guard_version):
         options = {} if self.clock is None else {'now_ms': self.clock() * 1000}
+        if self.decoder is not None:
+            options['decoder'] = self.decoder
         self.registry.check_broadcast(signed, epoch, guard_version, **options)
         tx_hash = self.submitter.send(signed.raw_hex)
         if type(tx_hash) is not str or tx_hash.lower() != signed.tx_hash.lower():
