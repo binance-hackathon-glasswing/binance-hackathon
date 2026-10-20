@@ -1,0 +1,227 @@
+{
+  "accounting": {
+    "charges_by_state": [
+      [
+        "SETTLED",
+        104,
+        2880356
+      ],
+      [
+        "UNKNOWN",
+        3,
+        337180
+      ]
+    ],
+    "initial_charge_micro_usd": 2000000,
+    "ledger_reset_or_stop_latch_mutation": false,
+    "pre_and_final_ledger_backup_identical": true,
+    "provider_invoice_reconciliation": "PENDING; UNKNOWN retained, totals include pre-existing/shared charges",
+    "shared_ledger_backup_sha256": "8fd2dea191da24eb664c1c8eb7b44eb444315aad7c9b8fb38e1fdf1837c73e4b",
+    "trial_charges": 106
+  },
+  "audit": {
+    "anchor_retention_days": 82,
+    "anchor_sha256": "2f9c8452f798f792e52a1d8bbc4fa3528ebfd686608b75a9d420cf116d327642",
+    "anchor_status": "STORED with installed S3Archive exact-version readback; separate on-demand namespace, scheduled outbox unchanged",
+    "chunk_statuses": {
+      "ACK": 109
+    },
+    "chunks": 109,
+    "events": 70,
+    "stopped_journal_anchor": {
+      "captured_ms": 1792500091892,
+      "head": "dfe16fab634154c3934cd51bf6a899538a57cf3f1feba19ba836b67c090b19a5",
+      "owner_epoch": 2,
+      "run_id": "larp-dev-llm-trial-20261018t170339z",
+      "schema": "Anchor.v2",
+      "sequence": 188,
+      "slot_ms": 1792497600000
+    },
+    "unchunked_after_stop": 0
+  },
+  "build_id": "ea25b52325656a19b29e8ddb07b94dd792be6e18",
+  "database_name": "larp_trial2",
+  "date_sgt": "2026-10-20",
+  "execution": "shadow",
+  "exports": {
+    "final": {
+      "archive_bytes": 31701204,
+      "archive_sha256": "587aeb67bafde94061889eeff55bf57a91811e64864e998e20d20f87dbe398d0",
+      "backup_payload_sha256": "d153526cd702bf29597cca4128007bec06cf4b77ac23511e3caf78238f19734d",
+      "encryption": "aws:kms",
+      "object_lock_mode": "COMPLIANCE",
+      "phase": "final",
+      "retain_until": "2027-01-10T12:42:19.588000+00:00",
+      "sqlite_integrity": "3/3 ok",
+      "table_counts": {
+        "audit_chunks": 109,
+        "audit_events": 70,
+        "command_checks": 0,
+        "commands": 0,
+        "events": 188,
+        "execution_journal": 0,
+        "execution_observations": 0,
+        "execution_records": 0,
+        "execution_signatures": 0,
+        "jobs": 0,
+        "process_sessions": 1,
+        "reservations": 0,
+        "rounds": 70,
+        "runs": 1,
+        "signing_attempts": 0,
+        "signing_refusals": 0,
+        "signing_requests": 0,
+        "swap_owners": 0
+      },
+      "verified_files": 14544
+    },
+    "pre": {
+      "archive_bytes": 31700792,
+      "archive_sha256": "b82612251cc257331b3ee02aa0ce46479a1e2f561786289f4936a006ff87a258",
+      "backup_payload_sha256": "f3f87f9195383cd018e991512c390ca5de8d19865db262c5aea070af4fa2a1a3",
+      "phase": "pre",
+      "sqlite_integrity": "3/3 ok",
+      "table_counts": {
+        "audit_chunks": 109,
+        "audit_events": 70,
+        "command_checks": 0,
+        "commands": 0,
+        "events": 188,
+        "execution_journal": 0,
+        "execution_observations": 0,
+        "execution_records": 0,
+        "execution_signatures": 0,
+        "jobs": 0,
+        "process_sessions": 1,
+        "reservations": 0,
+        "rounds": 70,
+        "runs": 1,
+        "signing_attempts": 0,
+        "signing_refusals": 0,
+        "signing_requests": 0,
+        "swap_owners": 0
+      },
+      "verified_files": 14542
+    },
+    "private_local_directory": "deploy/activation/trial-stop-20261020/",
+    "raw_data_committed": false
+  },
+  "population": {
+    "assessment_elapsed_ms": {
+      "max": 60026,
+      "median": 18135.5,
+      "min": 3118
+    },
+    "assessments": 70,
+    "in_flight_call_records_at_assessment_deadlines": 27,
+    "interpretation": "Outcome counts are harness results, not blind labels or accuracy; repeated issuer/context population is not an independent sample.",
+    "model_artifact_files": 502,
+    "reasons": {
+      "ASSESSMENT_DEADLINE_EXCEEDED": 25,
+      "MODEL_ERROR": 4
+    },
+    "recorded_steps": 174,
+    "requests_started": 201,
+    "round_statuses": {
+      "CLOSED": 70
+    },
+    "rounds": 70,
+    "sql_jobs_rows": 0,
+    "statuses": {
+      "ASSESSED": 41,
+      "UNAVAILABLE": 29
+    },
+    "step_statuses": {
+      "ERROR": 11,
+      "OK": 163
+    },
+    "unique_assessor_job_ids": 70,
+    "unique_context_hashes": 41,
+    "unique_issuers": 2
+  },
+  "record_id": "PC-STOP01",
+  "remaining_owners": {
+    "Keegan and team": "Unsigned-trial/inconclusive disposition, adoption and exact signed release/host gates; stopped 43.56h run does not supply 72h.",
+    "Keith": "Frozen sample/draw, blind labels, model/route quality, latency/cost/affordability report; source/strategy acceptance.",
+    "Yao and account owners": "Reconcile 3 UNKNOWN charges and actual provider invoices/AIand usage/expiry/funding/rights; broader host evidence."
+  },
+  "run_id": "larp-dev-llm-trial-20261018t170339z",
+  "scope": "User-authorized early stop of existing unsigned trial; no adoption or quality pass",
+  "session": {
+    "duration_ms": 156828688,
+    "ended_ms": 1792499912166,
+    "qualified_72h_observation_pass": false,
+    "started_ms": 1792343083478
+  },
+  "ssm_command_ids": {
+    "close-and-anchor": "325e160e-2223-4957-aa94-e12187a87765",
+    "inventory": "5a6a2f4f-d248-4294-8c24-8c1d24d9ef58",
+    "snapshot": "9299e550-7ed5-4cd2-b100-b5ce3a58ff04",
+    "snapshot-final": "e42cc73e-13dc-4380-815b-72553858406a",
+    "stop-producers": "1bb5f14c-8cc8-494a-8e58-2cdb8e149171",
+    "verify-stopped": "7f1f2c2b-a6b6-4fb4-b6d9-98d88367b7e6"
+  },
+  "stop": {
+    "charges": [
+      [
+        "SETTLED",
+        104,
+        2880356
+      ],
+      [
+        "UNKNOWN",
+        3,
+        337180
+      ]
+    ],
+    "clock_pacing": [
+      [
+        1792497617569
+      ]
+    ],
+    "clock_trial": [
+      [
+        1792497617569
+      ]
+    ],
+    "observed_ms": 1792500180265,
+    "trial": [
+      [
+        0,
+        ""
+      ]
+    ],
+    "trial_charges": 106,
+    "units": {
+      "larp-archive.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0",
+        "UnitFileState": "disabled"
+      },
+      "larp-archive.timer": {
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      },
+      "larp-evidence": {
+        "ActiveState": "inactive",
+        "MainPID": "0",
+        "UnitFileState": "disabled"
+      },
+      "larp-execution": {
+        "ActiveState": "inactive",
+        "MainPID": "0",
+        "UnitFileState": "disabled"
+      },
+      "larp-runtime": {
+        "ActiveState": "inactive",
+        "MainPID": "0",
+        "UnitFileState": "disabled"
+      },
+      "larp-uploader": {
+        "ActiveState": "inactive",
+        "MainPID": "0",
+        "UnitFileState": "disabled"
+      }
+    }
+  }
+}

@@ -1211,3 +1211,35 @@ and first assessment/receiver ACK. Keith retains actual usage/labels; team
 retains adoption. PC-GAP02-RV1 review is complete on retained metadata: original
 raw FAIL remains; DOJ96 actual errors cannot be waived and no new host coverage
 is claimed. These result-only records change no manifested runtime file.
+
+## PC-STOP01 — actual unsigned trial exported and stopped (2026-10-20)
+
+Yao requested an early stop to avoid further API spend. The actual ea25b52
+unsigned session lasted43.56h;70 assessments (41 ASSESSED/29 UNAVAILABLE) and all
+original model/source/round artifacts were exported privately. Final archive:
+14,544 file hashes, valid PostgreSQL payload and3 SQLite integrity checks; final
+sequence188 on-demand anchor reads back STORED. All six trial units are
+inactive/disabled. Shared budget backup bytes are identical before/after, with
+three UNKNOWN reservations retained (337,180microUSD). Full prospective criteria,
+verified results and remaining named owners:
+[PC-STOP01 report](../build/LLM_TRIAL_STOP_20261020.md),
+[machine receipt](../build/evidence/llm-trial-stop-20261020.json), IDEA-066 PC-STOP01.
+
+Frozen72h observation, blind labels, route/omission accuracy, actual provider
+billing/rights and team adoption remain unmet/pending. Stopping does not promote
+harness verdicts into labels or merge unsigned and signed observation windows.
+
+
+## PC-AUDIT01 — current-code findings from the actual trial (2026-10-20)
+
+Audit complete with four remaining findings verified against canonical697ff3a;
+resolved legacy LLM changes are excluded. R1/P1 normalized-input mutation81/174,
+R2/P2 unchanged completion cap11 truncations,R3/P2 citation/schema replays6/6,
+R4/P2 budget-unaware bakeoff reporting. All188 journal hashes/109 ACK chunks,
+103 settled charge matches and38 focused tests PASS. No extra economic fact
+versus rule baseline established from the two repeatedly assessed filings;
+independent quality/current live performance remain unmeasured. Owners and
+acceptance: INCOMPLETE_WORK PC-AUDIT01-R1..R4. Full evidence/reproduction:
+[report](../build/LLM_TRIAL_AUDIT_20261020.md),
+[receipt](../build/evidence/llm-trial-audit-20261020.json).
+Raw model/source data stays private;no provider call,application fix or restart.
