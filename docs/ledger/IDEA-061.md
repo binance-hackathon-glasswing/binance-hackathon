@@ -271,3 +271,17 @@ qualifies the exact release and actual alarm/host/selected-profile exits.
 [machine receipt](../build/evidence/ld08-initial-gas-20261020.json) preserve
 criteria, evidence and owners. No secrets, live RPC, funding, key, signing or
 deployment action was performed. No readiness flag is enabled.
+
+Delivery (2026-10-21 SGT / Oct20 UTC):
+[PR207](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/207)
+targets canonical and includes PR203 by normal merge. Independent Keith
+accounting / Keegan policy-and-gates review remains requested by the ownership
+plan; no review or merge is inferred. PR203's author branch is unchanged.
+After documentation changes at `256b08f`, focused gas/operations/signer assembly/
+mode-readiness checks: **44 passed /23 subtests**, zero skips; **27** local
+documentation targets resolve. Application/test/deployment bytes remain exactly
+the full-suite source `4044c82`. Canonical remains `697ff3a`; main and origin/main
+both `fb95114`. All session work is committed/pushed on the task branch; the
+original checkout is untouched. The task's isolated PostgreSQL is removed after
+verification. Numeric/measurement/release/host/independent-review items above
+remain explicitly open; this is a repository delivery, not installed acceptance.

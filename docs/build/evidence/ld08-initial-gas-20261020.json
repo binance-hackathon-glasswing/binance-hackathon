@@ -48,6 +48,14 @@
     "packaging_manifest_regressions": "PASS in full suite",
     "exact_signed_release_bundle": "NOT_QUALIFIED"
   },
+  "final_documentation_tree": {
+    "source": "256b08f",
+    "targeted_tests_passed": 44,
+    "subtests_passed": 23,
+    "local_link_targets_resolve": 27,
+    "application_test_deployment_bytes_match_full_suite": true
+  },
+  "pull_request": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/207",
   "remaining": [
     {"owner": "Keith / approved operator", "item": "Attributable non-fallback approve/swap/cleanup gas at the cap price, current quotes and complete holdings."},
     {"owner": "Isaac, reviewed by Keith and Keegan", "item": "Exact action budget, full-exit reserve, dev/final whole-run seeding and #44/profile/input hashes."},
