@@ -92,6 +92,41 @@ class DeliveryAge(sv.Supervision):
         self.assertEqual(self.age_guard().evaluate(NOW + B - 1), [])
         self.assertEqual(self.age_guard().evaluate(NOW + B), ['HALT:DELIVERY_AGE'])
 
+    def test_clock_rollback_after_restart_cannot_clear_an_overdue_log(self):
+        self.logged('r1', NOW)
+        self.assertEqual(self.age_guard().evaluate(NOW + B), ['HALT:DELIVERY_AGE'])
+        self.assertGreater(self.pending(), 0)
+        self.assertEqual(self.age_guard().evaluate(NOW + B - 1), ['HALT:CLOCK'])
+        self.assertIn('DELIVERY_AGE', self.projection()['halt']['reasons'])
+        self.assertIn('CLOCK', self.projection()['halt']['reasons'])
+        self.assertEqual(self.age_guard().evaluate(NOW + B), [])
+        self.assertIn('DELIVERY_AGE', self.projection()['halt']['reasons'])
+
+    def test_multipart_out_of_order_acks_keep_the_original_pending_age(self):
+        from tests.audit.test_protocol import event
+        audit = event(text='x' * 160000)
+        self.assertGreater(len(audit.read()['chunks']), 1)
+        self.store.commit(self.batch(audit=[audit]))
+        self.assertEqual(self.age_guard().evaluate(NOW + B), ['HALT:DELIVERY_AGE'])
+
+        class DelayFirst(FakeReceiver):
+            first = True
+
+            def deliver(self, value):
+                if self.first:
+                    self.first = False
+                    return doc(dict(status_code=0, body={}))
+                return super().deliver(value)
+
+        worker = DeliveryWorker(self.store, DelayFirst(), retry_ms=100, max_backoff_ms=100)
+        while worker.once('run', self.epoch, NOW + B + 1):
+            pass
+        self.assertEqual(self.pending(), 1)  # later chunks ACKed, first chunk's retry is still waiting
+        self.assertEqual(self.age_guard().evaluate(NOW + B + 2), [])
+        self.assertTrue(worker.once('run', self.epoch, NOW + B + 101))
+        self.assertEqual(self.pending(), 0)
+        self.assertEqual(self.age_guard().evaluate(NOW + B + 102), ['CLEAR:DELIVERY_AGE'])
+
     def test_g9_config_and_service_wiring(self):
         base = dict(schema='RuntimeService.v1', run_id='run', build_id='b', max_failures=3, clear_after=2,
                     interval_seconds=1, database_dsn_file='/dev/null')

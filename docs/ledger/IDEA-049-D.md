@@ -779,3 +779,15 @@ disposable PostgreSQL 16.
 Not done: Isaac sets B, the watchdog and memory values after the operator's
 measurements (LD12/LD14), and host qualification. With no B configured, the
 deployed behaviour is unchanged.
+
+### LD13-RV01 — PR 201 review criteria (2026-10-20)
+
+Before running new checks: with an unacknowledged log already overdue, a clock
+step back from t+B to t+B-1 must not clear DELIVERY_AGE, including through a
+fresh Guard after restart. It must fail closed through CLOCK while retaining
+the delivery halt and reconciliation. Verify a multipart log whose later
+chunks are ACKed first stays pending until the missing first chunk receives
+its own positive ACK. Reconcile current D-05/DEV-18 status summaries with the
+recorded decision while keeping exact-host and numeric-value gates open.
+Run focused delivery/supervision/replay checks and the combined full Linux
+suite with disposable PostgreSQL before merging.
