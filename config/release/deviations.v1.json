@@ -303,16 +303,17 @@
    "id": "DEV-21",
    "area": "Gas reserve",
    "declared": "A gas-reserve floor keeps enough gas for exits.",
-   "v1_behaviour": "The floor is kept by gas top-up rounds: when BNB falls below the floor, one USDT \u2192 BNB swap runs as its own logged round (order symbol BNB, a cot saying it is a gas top-up). BNB is a resource, not a position. First gas follows F-120: pre-first-agent-trade MetaMask USDT to BNB seeding, gas paid in USDT, recorded as a funding note rather than an ai-seeds round; never after the scored run starts. This is an answered bootstrap procedure, not proof that funding occurred. Native-route qualification and measured reserve/top-up values remain pending.",
-   "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled.",
+   "v1_behaviour": "Initial gas only (LD07, 2026-10-20): v1 plans no gas top-up rounds. The only BNB is the F-120 first-gas swap: pre-first-agent-trade MetaMask USDT to BNB seeding, gas paid in USDT, recorded as a funding note rather than an ai-seeds round and sized for the whole run. The floor is kept by refusing new buys that would cut into the exit gas reserve; reductions and exits continue. If gas is exhausted the agent cannot trade, so the reserve and the seeding size must cover the full final exit. Measured reserve and seeding values remain pending (LD08/LD09).",
+   "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled. Native top-up routes cannot be decoded or proven in time (#30), so Keegan chose initial-gas-only operation on 2026-10-20 (IDEA-061 LD07).",
    "evidence": [
     "IDEA-035",
     "GAP-49",
     "Q-03",
     "F-120",
-    "IDEA-055"
+    "IDEA-055",
+    "IDEA-061"
    ],
-   "decided": "2026-10-11",
+   "decided": "2026-10-20",
    "status": "DRAFT"
   },
   {
@@ -333,7 +334,7 @@
    "area": "Swap router trust",
    "declared": "The order aborts if quoted slippage exceeds its cap.",
    "v1_behaviour": "The kit router (a diamond proxy) and its swap facet publish no verified source, so the on-chain enforcement of the minimum output, the recipient and the deadline is not proven, and the wallet address is not in the swap calldata. In untrusted-router mode the agent still refuses any quote whose minimum is below the cap, checks the full calldata layout (outer and inner economics agree), and before every swap step re-checks on chain that the facet and code are the pinned ones and that the router's allowance is at most this swap's amount (zero for every other token). A fill below its minimum is never booked; it withholds all further signing.",
-   "reason": "Decided 2026-10-19 by Keegan (IDEA-070 B02-U) after BscScan and Etherscan showed no source for either contract. A misbehaving router or inner call can cost up to one trade's input, bounded by the per-trade cap and the signer's per-token caps. Signing-policy adoption is Isaac's (B09).",
+   "reason": "Keegan selected this implementation direction on 2026-10-19 (IDEA-070 B02-U); Isaac accepted API-provided router behavior in B09-TRUST01 (PR196). Source guarantees remain unavailable. Exact approvals, signer input/fee caps and settlement checks constrain submitted authority and detect anomalies, but do not establish a maximum loss or recover lost funds. Actual policy/hash review, measured B09/#44 acceptance, allowance/abnormal-fill disposition and gas scope remain open. This declaration remains DRAFT.",
    "evidence": [
     "IDEA-070",
     "GAP-29"

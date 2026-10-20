@@ -118,8 +118,8 @@ def starting_balances_match(state, chain):
 
 REQUIREMENTS = {
     1: ('Isaac / Keith', 'Three days including weekend of hash-verified five-name captures and measured cost summary'),
-    2: ('Isaac / Keegan', 'Verified router/proxy/nested ABI and deadline evidence; recorded-real responses and logged dev approve/swap'),
-    3: ('Isaac / Keegan', 'Isolated signer identity and host tests; provider-qualified nonce/finality evidence'),
+    2: ('Isaac / Keegan', 'Verified source/evidence or named-reviewed untrusted policy, applicable recorded-route replay/preflight and logged dev approve/swap'),
+    3: ('Isaac / Keegan', 'Isolated signer identity, selected router evidence/policy hash and host tests; provider-qualified nonce/finality evidence'),
     4: ('Isaac / Keegan', 'Pinned dev execution configuration and PostgreSQL crash/fencing acceptance on reviewed build'),
     5: ('Keegan / Keith', 'Real-fill/gas/reservation success, revert and replay acceptance on reviewed build'),
     6: ('Isaac / Keith', 'First BNB, exact native accounting units, C1 and logged automatic top-up'),
@@ -173,7 +173,7 @@ def readiness_report(inputs, *, now, base_dir):
                                detail='Owner acceptance evidence still required')
               for i, (owner, requirement) in REQUIREMENTS.items()}
     result = dict(schema='GateBReport.v1', observed_at=now, status='BLOCKED', signing_enabled=False,
-                  acceptance='OWNER_REVIEW_REQUIRED', checks=checks, evidence_hashes={})
+                  acceptance='OWNER_REVIEW_REQUIRED', router_mode='unconfigured', checks=checks, evidence_hashes={})
     instant(now)
     if inputs is None:
         result['detail'] = 'No GateBInputs.v1 supplied; this is the required evidence inventory'
@@ -219,6 +219,9 @@ def readiness_report(inputs, *, now, base_dir):
         settings = None if config is None else evidence_settings(config)
         untrusted = None if config is None else untrusted_router_settings(config)
         if untrusted is not None:
+            result['router_mode'] = 'untrusted'
+            checks['DR-02']['required'] = ('Named-reviewed untrusted router/code/facet/allowance policy and hash; '
+                'fresh recorded-quote replay/live preflight, residual-risk acceptance and logged dev approve/swap')
             # IDEA-070 B02-U: no source guarantees; DEV-23 records the residual risk owners must accept.
             from .untrusted_router import UntrustedRouterDecoder
             decoder = UntrustedRouterDecoder(pinned(dict(path=untrusted[0], sha256=untrusted[1]), base_dir),
@@ -237,6 +240,9 @@ def readiness_report(inputs, *, now, base_dir):
         else:
             if settings is None:
                 raise Blocked('router evidence not configured')
+            result['router_mode'] = 'verified'
+            checks['DR-02']['required'] = ('Verified router/proxy/nested ABI and deadline evidence; '
+                'independent source review, recorded-real responses and logged dev approve/swap')
             decoder = PinnedRouterDecoder(pinned(dict(path=settings[0], sha256=settings[1]), base_dir),
                                           evidence_sha256=settings[1])
             if decoder.router != address(config['router']):
@@ -247,8 +253,15 @@ def readiness_report(inputs, *, now, base_dir):
             checks['DR-02'].update(status='VALIDATED', detail='Pinned router evidence and a passing recorded-route check '
                                    'only; owner review of the verified source and a logged dev approve + swap still required')
     except errors:
-        checks['DR-02']['detail'] = ('Pinned router evidence or a passing recorded-route check absent or mismatched; '
-                                     'the swap decoder stays unverified')
+        if result['router_mode'] == 'untrusted':
+            checks['DR-02']['detail'] = ('Pinned named-reviewed untrusted policy or matching recorded-quote check '
+                'absent, invalid or mismatched; live preflight and owner acceptance remain required')
+        elif result['router_mode'] == 'verified':
+            checks['DR-02']['detail'] = ('Pinned router evidence or a passing recorded-route check absent or '
+                'mismatched; independent source review remains required')
+        else:
+            checks['DR-02']['detail'] = ('Select exactly one complete pinned router evidence or untrusted policy '
+                'pair in a valid execution configuration; applicable review/replay remains required')
     try:
         if config is None:
             raise Blocked('valid execution config required')

@@ -2,7 +2,12 @@
 
 Written 2026-10-16. Gate B turns the signer on for the **dev wallet** at minimum size. It starts the signed rehearsal, and is planned for review on **Oct 20** with the rehearsal from Oct 21 (DEPLOYMENT_BUILD.md). The dev wallet is not scored (F-122). This page is the order of work.
 
-The repository side of the swap decoder is built (IDEA-070). Everything below needs a person, a host, the router's verified source, or a team decision.
+Updated for LD01, 2026-10-20: use canonical `codex/system-testing-20261012`.
+Isaac selected API-provided router behavior in B09-TRUST01 ([PR196](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/196)).
+The selected path is UNTRUSTED; verified source is required only for the separate
+source-verified path. Actual policy/hash review, numeric #44 acceptance and
+release/host acceptance remain open. This procedure grants no installation or
+wallet-operation authority. Current owners/order are on [PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133).
 
 Current PR reconciliation, lifecycle evidence and the offline current-input
 signer-cap checker are in [Gate B remaining work](GATE_B_REMAINING.md)
@@ -12,20 +17,30 @@ remain explicit; numeric cap coverage never enables signing.
 ## What changed in the code (IDEA-070)
 
 - `larp/execution_live/router.py`: `RouterEvidence.v1`, `PinnedRouterDecoder` and the `selector` / `check` command line.
-- The `Executor` now accepts live ports only together with a `PinnedRouterDecoder` built from hash-pinned evidence. Without it, nothing changes:
+- The `Executor` accepts live ports with a pinned `PinnedRouterDecoder` or a qualified, RPC-bound `UntrustedRouterDecoder`. Without an applicable decoder:
   - `larp-execution` exits 2 `EXECUTOR_CAPABILITY_GATE`;
   - the signer refuses `check` and `run` before database/key access (SR-01); it cannot start an approval-only path without its pinned decoder.
-- New settings in `execution.json` and `signer.json`: `router_evidence_file` and `router_evidence_sha256`. The execution configuration accepts both or neither; the production signer requires both before check/run can pass.
+- Select exactly one complete pair in both `execution.json` and `signer.json`: `router_evidence_file` / `router_evidence_sha256` for verified mode, or `untrusted_router_policy_file` / `untrusted_router_policy_sha256` for untrusted mode. Partial or mixed pairs refuse; the production signer requires a pinned decoder before check/run can pass.
   - The execution service refuses evidence for another router than its `router`.
   - The signer refuses evidence for a router outside its own `signing_policy.allowed_spenders`.
-- The Gate B report (`python -m larp.execution_live.gate_b report`) accepts a pinned `router_check` file. DR-02 shows VALIDATED only for pinned evidence plus a passing recorded-route check, and still says the source review and a logged dev approve + swap are required.
+- The Gate B report (`python -m larp.execution_live.gate_b report`) accepts a pinned `router_check` file. DR-02 distinguishes source evidence/review from named-reviewed untrusted policy/replay/live preflight. VALIDATED is a limited local input check; both modes still require owner acceptance and a logged dev approve + swap. DR-03 retains selected policy/evidence identity and isolated-host/provider qualification.
 
 ## Two blockers besides the evidence
 
 1. **#27 (team decision, C-OPEN-003). Resolve the signing-authority/deadline relationship and qualify real timing.** The planner caps an intent's life at the profile's 15 s; the kit states an approximate 30 s quote lifetime, but the real router's encoded deadline is not yet independently verified. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). Any encoded deadline beyond the parent expiry remains refused; the actual router timing still needs qualification. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
 2. **A profile window that allows a buy before Oct 21.** The rehearsal profile opens new risk on Oct 21 00:00 UTC, so a Gate B trade on Oct 19–20 needs a team-approved dev window, registered as a version event. Otherwise Gate B proof moves to Oct 21. The trade must still be the agent's own decision: people never choose trades (never-do #1).
 
-## Order of work
+## Source-verified path and shared steps
+
+Steps 1–5 and the evidence template apply only to verified mode. For the selected
+untrusted path, use U-a–U-d below, then shared steps 6–12 with that policy pair
+and the UNTRUSTED startup label. The signer remains offline from RPC. Neither
+mode removes #27/#44, fresh full holdings, fee/gas, host or ACK requirements.
+LD06 must disposition leftover allowances across tokens/final exits; LD05 must
+disposition anomalous fills. LD07/08 must choose and qualify native top-ups or
+reviewed initial-only gas controls: the untrusted decoder currently rejects
+native routes, while existing numeric/Gate B gates still require top-up coverage.
+Setting `native_trace=false` alone does not resolve this mismatch.
 
 | # | Who | Step | Done when |
 |---|---|---|---|
@@ -35,19 +50,21 @@ remain explicit; numeric cap coverage never enables signing.
 | 4 | Isaac | Fill in `config/execution/router-evidence.v1.json` (template below; public data only) and commit it through a reviewed PR. | Merged; file SHA-256 noted |
 | 5 | Isaac | Run the recorded-route check on the IDEA-063 capture artifacts (prompt 1): `python -m larp.execution_live.router check --evidence config/execution/router-evidence.v1.json --sha256 <file sha256> --artifacts <capture>/artifacts --out <outside repo>/router-check.json`. It must report `PASS`, which needs both directions. Add the report's hash to IDEA-070. | `PASS` |
 | 6 | Team | Decide #27 (above), and the signer's per-token caps and fee cap (#44 WR-C). Use the approved policy and exact hash; do not install the unapproved example caps. `allowed_spenders` must name the router. | Decisions recorded with dates |
-| 7 | Isaac | MetaMask USDT → BNB first-gas swap on the **dev** wallet: about 4 USDT **total**, gas paid in USDT, before any agent trade (#106, F-120). Record each funding note. Yao Zhu then re-takes the opening balance capture (GATE_A.md) and `gate_b probe-chain` with the `finalized` RPC (#92) on the host. | Funded native balance in the chain capture |
+| 7 | Isaac / approved operator | Reconcile current wallet/in-flight state and funding/no-further-funding disposition (#106) before any eligible remaining first-gas step under the existing F-120 procedure. Retain funding notes and capture full holdings after the last funding. An old 4-USDT target or historical receipt does not authorize another seed. | Fresh funded balance and disposition retained |
 | 8 | Yao Zhu | Configs on the hosts: `router`, `router_evidence_file` (`/etc/larp/router-evidence.json`) and `router_evidence_sha256` in both `execution.json` and `signer.json`; `allowed_spenders` and the decided caps in `signer.json`. Rebind the manifest (`preflight --bind ... --service-config`). | `check` passes for both services; signer check reports local config/evidence scope only, signing disabled and no Gate B acceptance |
-| 9 | Isaac | Put the key at `/etc/larp/signer/wallet.key` (root, `0600`) on the signer host only. Start the signer. Expect `"swap_decoder": "VERIFIED"` with the evidence hash. | Start line shows VERIFIED |
+| 9 | Isaac / approved operator | Only after release/config/host acceptance and the separately approved signer session, place the protected key through the existing loader procedure. Expect `"swap_decoder": "VERIFIED"` with evidence hash, or `"swap_decoder": "UNTRUSTED"` with policy hash and DEV-23. | Exact mode/hash and loader ownership/release identity checked |
 | 10 | Yao Zhu | Start `larp-execution`. Expect no exit 2. | Service running |
 | 11 | Agent, watched by all | The first approve and swap come from the agent's own round, at minimum size, each with its decision record and an ACKed round log. Then run the crash tests at each execution step on the host (DR-04), the reservation checks (DR-05), and a shadow-day replay (DR-19). | DR-02..06 and DR-19 evidence in IDEA-039/042 |
-| 12 | Keegan | Run `gate_b report` with inputs including `router_check`. Review Gate B item by item in IDEA-042. **If Oct 20 slips, record the rehearsal shortfall as a deviation that day (GAP-04).** | Gate B reviewed |
+| 12 | Keegan | Run `gate_b report` with inputs including `router_check`. Review Gate B item by item in IDEA-042. Apply the existing D-DN-02 conditional Oct21 rehearsal decision; record any actual shorter signed rehearsal as a deviation (GAP-04). | Gate B reviewed |
 
-## Untrusted-router alternative to steps 1–5 (IDEA-070 B02-U, DEV-23)
+## Selected untrusted-router path replacing steps 1–5 (IDEA-070 B02-U, DEV-23)
 
-Step 1 stopped on 2026-10-19: neither the router nor its swap facet `0xa9fa1b56…e603` has verified source on BscScan
-or Etherscan. Keegan chose to treat the router as untrusted rather than wait. This replaces steps 1–5 and the
-`router_evidence_*` settings in step 8. It does **not** replace step 6 (#27, caps): adoption is Isaac's, together
-with the #44 caps, and #27 is still required, because the swap's deadline is about 8 minutes after the quote.
+The retained acquisition packet has no verified source for the router or swap
+facet. This path replaces source steps 1–5 and the `router_evidence_*` pair in
+step 8. B09-TRUST01 accepts the trust direction; actual reviewed policy/hash and
+measured #44 limits remain open. The observed long encoded deadline still
+conflicts with short authority (#27); trusted deadline behavior is an assumption,
+and timeout never releases a possibly sent transaction's uncertainty.
 
 | # | Who | Step | Done when |
 |---|---|---|---|
@@ -60,8 +77,11 @@ Before every swap step, primary re-checks at the latest block that the facet slo
 that the router's allowance is zero for every other token (and at most the amount for the pay token, after the approve).
 Any change refuses the swap. A fill whose settlement is refused (paying anything but the exact amount, or receiving
 less than the minimum) withholds all further signing until it is resolved.
+These controls do not establish a maximum loss or recover funds. Recipient,
+nested-call debit and actual on-chain deadline enforcement remain unverified;
+DEV-23 remains DRAFT until its scoped acceptance is complete.
 
-## Evidence template
+## Source-verified evidence template
 
 The values in angle brackets are placeholders, and the validator refuses them as written. Every value must come from the verified source; none may be guessed.
 
