@@ -17,7 +17,7 @@ The deterministic baseline replayed the same 70 immutable requests/source bytes/
 
 ## R1 / P1 — freeze model input records at dispatch
 
-**Evidence:** 81/174 normalized completed-step inputs differ from the original saved HTTP inputs: OpenAI35, Kimi34, GLM12. Every difference is `input.tool_results`: a later tool append appears in an earlier call's normalized input. Original HTTP artifacts are intact. The current-code real-input deterministic witness reproduces the mismatch on its first of two model steps.
+**Evidence:** 81/174 normalized completed-step inputs differ from the original saved HTTP inputs: OpenAI 35, Kimi 34, GLM 12. Every difference is `input.tool_results`: a later tool append appears in an earlier call's normalized input. Original HTTP artifacts are intact. The current-code real-input deterministic witness reproduces the mismatch on its first of two model steps.
 
 **Root cause and starting locations:** [`_State._view`, agent.py:143](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/697ff3a9e4f310aae7980dc61f0fedc376d148a7/larp/intelligence/agent.py#L143) returns the mutable `self.tool_results` list. [`_assess`, agent.py:306–320](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/697ff3a9e4f310aae7980dc61f0fedc376d148a7/larp/intelligence/agent.py#L306) retains that mutable request dictionary, although the separate `Document` dispatched to the model is frozen.
 
@@ -35,9 +35,9 @@ Acceptance:
 
 ## R2 / P2 — address reviewer completion exhaustion and retain rejected usage
 
-**Evidence:** all eleven recorded external codec errors are single-choice `finish_reason=length` replies at exactly4,096 completion tokens: Kimi7, GLM4. In nine, reasoning consumes all4,096. Current codec reproduces all11 refusals. The current checked-in trial routing spec is byte-identical to the captured one, including the4,096 shared cap.
+**Evidence:** all eleven recorded external codec errors are single-choice `finish_reason=length` replies at exactly 4,096 completion tokens: Kimi 7, GLM 4. In nine, reasoning consumes all 4,096. Current codec reproduces all 11 refusals. The current checked-in trial routing spec is byte-identical to the captured one, including the 4,096 shared cap.
 
-Known raw AIand replies contain **336,797 input /71,194 completion tokens**, versus **273,288 /26,138** normalized. The45,056 missing completion tokens are11×4,096. Raw reasoning breakdown totals62,141 tokens. The25 historical external calls without a completed-step record are not zero-cost calls; invoices are still needed.
+Known raw AIand replies contain **336,797 input /71,194 completion tokens**, versus **273,288 /26,138** normalized. The 45,056 missing completion tokens are 11 × 4,096. Raw reasoning breakdown totals 62,141 tokens. The 25 historical external calls without a completed-step record are not zero-cost calls; invoices are still needed.
 
 **Starting locations:** `config/intelligence/aiand-routing.openai-trial.example.json`; `routing.py::validate_routing_spec` / `build_routed_assessor` (shared `max_output_tokens`); `aiand.py::_body` / `_parse_reply` (lines54–86); `providers.py::HostedModel.step`; `models.py::response`; `routing.py::BudgetedOpenAI` (maximum reservations).
 
@@ -45,7 +45,7 @@ Known raw AIand replies contain **336,797 input /71,194 completion tokens**, ver
 
 Acceptance:
 
-- [ ] R2-T1: all11 old truncated replies remain ERROR/UNAVAILABLE; they must not become valid decisions after the repair. Report `length` separately from multiple choices and transport failures.
+- [ ] R2-T1: all 11 old truncated replies remain ERROR/UNAVAILABLE; they must not become valid decisions after the repair. Report `length` separately from multiple choices and transport failures.
 - [ ] R2-T2: raw-vs-normalized known usage reconciles for successful, incomplete, malformed-output and provider-error replies with usable usage. Missing/untrustworthy usage remains unknown; no invented invoice or refund.
 - [ ] R2-T3: if caps differ by stage, prove that each provider request gets exactly its pinned cap; preserve legacy-spec behavior and refusal of invalid/unbounded settings.
 - [ ] R2-T4: any OpenAI cap change updates conservative maximum reservations before dispatch. Recheck concurrent reservations, UNKNOWN retention, UTC-day/total caps, clock quarantine and actual-usage-over-bound behavior. Do not globally raise the shared cap just to help external reviewers.
@@ -53,7 +53,7 @@ Acceptance:
 
 ## R3 / P2 — improve reviewer citation/schema reliability
 
-**Evidence:** 15/35 Kimi proposed claims were rejected: **six SPAN_TEXT_MISMATCH, seven METRIC_NOT_IN_SPAN, two ITEM_NOT_IN_RECORD**. Five stages abstained for unsupported claims and one for MODEL_OUTPUT_SCHEMA. Recorded claim-verification rate20/35=57.14% is a contract statistic, not independent accuracy. All six current-assessor replays, using identical original HTTP inputs and pinned prompts with a180s ceiling, retain the same abstentions. Current adopted review selection correctly yields DISSENT/ABSTAIN with the recorded assessed primary.
+**Evidence:** 15/35 Kimi proposed claims were rejected: **six SPAN_TEXT_MISMATCH, seven METRIC_NOT_IN_SPAN, two ITEM_NOT_IN_RECORD**. Five stages abstained for unsupported claims and one for MODEL_OUTPUT_SCHEMA. Recorded claim-verification rate 20/35=57.14% is a contract statistic, not independent accuracy. All six current-assessor replays, using identical original HTTP inputs and pinned prompts with a 180s ceiling, retain the same abstentions. Current adopted review selection correctly yields DISSENT/ABSTAIN with the recorded assessed primary.
 
 **Starting locations:** `config/intelligence/prompts/routing/review.md`; `routing.py::stage_config`; `models.py::parse_output`; `agent.py::_verify_claims` / `_bind_source`; `verify.py::verify_claim`; `tools.py` document/span tool output. Existing predicates, issuer identity and metric allowlists still govern.
 
@@ -69,17 +69,17 @@ Acceptance:
 
 ## R4 / P2 — make reporting budget-aware and expose failure causes
 
-**Evidence:** `bakeoff.py:27` sets `DEADLINE_MS=60000`; line106 uses it for `within_deadline`, versus current `time_budget.py::MAX_ASSESSMENT_MS=180000`. The reporting-only120,000ms witness is incorrectly late under a180,000ms request. The helper also folds the11 token-limit completions into schema-invalid counts while reporting zero provider errors, hiding their cause.
+**Evidence:** `bakeoff.py:27` sets `DEADLINE_MS=60000`; line106 uses it for `within_deadline`, versus current `time_budget.py::MAX_ASSESSMENT_MS=180000`. The reporting-only 120,000ms witness is incorrectly late under a 180,000ms request. The helper also folds the 11 token-limit completions into schema-invalid counts while reporting zero provider errors, hiding their cause.
 
-**Required change:** Keith/LLM tooling owner binds metrics to actual immutable request/stage allowances, retaining explicitly selected historical protocol budgets. Do not replace every60s threshold with180s: historical requests and individual stages can have different bounds. Keep the frozen M5 denominator; add cause-specific diagnostics and known rejected-response usage without retrospectively improving a frozen result.
+**Required change:** Keith/LLM tooling owner binds metrics to actual immutable request/stage allowances, retaining explicitly selected historical protocol budgets. Do not replace every 60s threshold with 180s: historical requests and individual stages can have different bounds. Keep the frozen M5 denominator; add cause-specific diagnostics and known rejected-response usage without retrospectively improving a frozen result.
 
 Acceptance:
 
 - [ ] R4-T1:120,000ms is timely under180,000ms and late under60,000ms or90,000ms; mixed-budget batches use each result's actual bound. Cover exact equality, overrun and invalid/missing bounds.
-- [ ] R4-T2: preserve explicit historical60s reporting; missing metadata remains unqualified/unknown, not silently valid under the largest configured limit.
+- [ ] R4-T2: preserve explicit historical 60s reporting; missing metadata remains unqualified/unknown, not silently valid under the largest configured limit.
 - [ ] R4-T3: distinguish request-to-usable-result delay, internal stage elapsed time, late audit-only replies, unavailable jobs and busy/not-started jobs. Never count late/unavailable content as timely accepted evidence.
 - [ ] R4-T4: separately report token-limit completions, schema errors, unsupported claims, transport/provider errors and deadline failures, while preserving the frozen schema denominator and historical counts.
-- [ ] R4-T5: recover the45,056 known rejected-completion tokens from raw evidence in the report; preserve lower-bound/unknown flags for unresolved calls and prices. Recompute a report with exact request/config/prompt/source/result identities.
+- [ ] R4-T5: recover the 45,056 known rejected-completion tokens from raw evidence in the report; preserve lower-bound/unknown flags for unresolved calls and prices. Recompute a report with exact request/config/prompt/source/result identities.
 
 ## Private data and reproducible evidence
 
@@ -91,7 +91,7 @@ Yao holds the private data. On the collecting Mac:
 - Final private audit outputs: `deploy/activation/trial-stop-20261020/audit/final/`, including `per-job.json`, `baseline-results.json`, `input-mismatches.json`, `private-witness-cases.json`, `summary.json`, `witnesses.json`.
 - Provider test log: `deploy/activation/trial-stop-20261020/audit/focused-checks-final.log`.
 
-An implementer on another machine needs an approved private transfer from Yao; these paths are not a public downloadable dataset. No credentials, raw source/model I/O, labels, private endpoints or `.env` belong in Git/PR comments. The immutable AWS copy is retained through2027-01-10. Keep original artifacts/logs unchanged.
+An implementer on another machine needs an approved private transfer from Yao; these paths are not a public downloadable dataset. No credentials, raw source/model I/O, labels, private endpoints or `.env` belong in Git/PR comments. The immutable AWS copy is retained through 2027-01-10. Keep original artifacts/logs unchanged.
 
 From the repo root, with private data present:
 
@@ -105,7 +105,7 @@ The reproduction checks intelligence working files against the canonical ref and
 
 ## Completed checks and implementation delivery
 
-Already verified:14,544 export file hashes/Backup.v1/three SQLite integrity checks;188 journal batch/event/head hashes and terminal projection; exact outboxes/109 ACK chunk bytes;496 referenced artifacts;70 point-in-time/tool/accepted-deadline checks;zero signing/execution/command rows. All103 settled OpenAI costs match recorded usage ($0.880356); three UNKNOWN reservations remain$0.337180 including shared/prior usage. All71 recorded AIand model/high-effort metadata pairs match. No credential-pattern candidate found, within the documented scan limits.
+Already verified: 14,544 export file hashes/Backup.v1/three SQLite integrity checks ; 188 journal batch/event/head hashes and terminal projection; exact outboxes / 109 ACK chunk bytes ; 496 referenced artifacts ; 70 point-in-time/tool/accepted-deadline checks ; zero signing/execution/command rows. All 103 settled OpenAI costs match recorded usage ($0.880356); three UNKNOWN reservations remain $0.337180 including shared/prior usage. All 71 recorded AIand model/high-effort metadata pairs match. No credential-pattern candidate found, within the documented scan limits.
 
 **38 focused existing tests PASS**, Python3.12.14/macOS, synthetic transports; two tests use localhost HTTP. Reproduce the focused set with:
 
@@ -118,10 +118,10 @@ python3.12 -m unittest \
 ```
 
 - [ ] Implement in reviewable commits/PRs against current canonical, with red-before/green-after evidence for actual code defects; follow repository commit/push-before-execution and no-history-rewrite rules. Scope changes need recorded rationale, not new retrospective pass criteria.
-- [ ] Run focused and change-appropriate broader checks. Changes to routed/deferred I/O need relevant concurrency/ownership/audit regressions and applicable Linux/PostgreSQL/systemd/sandbox qualification; the existing38 macOS checks are not a substitute. Run bundle/manifest/hash checks where changed files affect release identity.
+- [ ] Run focused and change-appropriate broader checks. Changes to routed/deferred I/O need relevant concurrency/ownership/audit regressions and applicable Linux/PostgreSQL/systemd/sandbox qualification; the existing 38 macOS checks are not a substitute. Run bundle/manifest/hash checks where changed files affect release identity.
 - [ ] Publish exact commits, reproduction commands, results/skips, per-finding disposition and any private corpus hashes. Do not blindly regenerate decision goldens; explain every semantic change.
 - [ ] Preserve immutable originals and shared accounting: never reset the ledger, erase UNKNOWNs, relax verification to pass, manufacture labels, or reinterpret old trial hours/thresholds.
 - [ ] Once each repair is fully verified, remove its entire `PC-AUDIT01-Rn` backlog line and retain completion evidence in the ledger; partially completed items remain narrowed. Update PR133's noticeboard and PR204's repair status.
-- [ ] Obtain independent review and new exact-release/host acceptance through the existing owners before any installation. No repair completion, live quality pass, restart, paid inference, wallet operation or deployment is authorized by this handoff.
+- [ ] Obtain independent review and new exact-release/host acceptance through the existing owners before any installation. Do not infer repair completion or a live quality pass from this brief. Installation, restart, paid inference, wallet operations and deployment remain outside this repair handoff and require their existing accepted gates.
 
 The trial remains retired: all six trial services/timers were verified inactive/disabled, final sequence188 anchored, original EC2/RDS/configs/databases retained. Independent labels, provider billing/rights, selected profile, model adoption and signed/final-host gates remain with their existing owners. PR133 remains noticeboard-only.
