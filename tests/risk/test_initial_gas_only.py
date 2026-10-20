@@ -2,6 +2,7 @@
 from copy import deepcopy
 from dataclasses import replace
 import json
+import hashlib
 import unittest
 
 import pytest
@@ -99,6 +100,41 @@ def test_independent_signer_refuses_native_approve_and_swap_with_initial_policy(
     for step in ('APPROVE', 'SWAP'):
         with pytest.raises(Blocked, match='intent token not allowed'):
             policy.check(i, step, Payload(56, i.wallet, i.router, 0, 0, 1, 1, '0x00'), FakeDecoder(), i.wallet)
+
+
+def test_gate_b_initial_scope_keeps_missing_funding_and_measurement_gates_visible():
+    from larp.research.fixtures import snapshot
+    from tests.execution.test_gate_b_evidence import ReportTests, ChainEvidenceTests, ChainOpener, WALLET
+    case = ReportTests('test_gb_report_uses_real_profile_validator_and_never_authorizes_signing')
+    case.setUp()
+    try:
+        config = json.loads((case.root / 'execution.json').read_bytes())
+        raw = json.dumps(build_live_profiles(summary(), registry(), initial_gas_only=True)['REHEARSAL'].read()).encode()
+        (case.root / 'profile.json').write_bytes(raw)
+        config['strategy_profile_sha256'] = hashlib.sha256(raw).hexdigest()
+        raw = json.dumps(config).encode()
+        (case.root / 'execution.json').write_bytes(raw)
+        case.inputs['files']['execution_config']['sha256'] = hashlib.sha256(raw).hexdigest()
+        missing = case.report()
+        assert missing['checks']['DR-09']['status'] == 'VALIDATED'
+        assert 'initial-only' in missing['checks']['DR-06']['detail']
+        capture = ChainEvidenceTests().probe(case.root / 'chain-artifacts', ChainOpener())
+        capture['source_id'] = 'fixture-rpc'
+        ledger = snapshot().context.read()['portfolio']
+        ledger.update(mode='dev', run_id='run', wallet_id=WALLET, bnb_decimals=18, bnb_units=10**18)
+        for name, value in (('chain', capture), ('initial_state', ledger)):
+            raw = json.dumps(value).encode()
+            path = case.root / (name + '.json')
+            path.write_bytes(raw)
+            case.inputs['files'][name] = {'path': str(path), 'sha256': hashlib.sha256(raw).hexdigest()}
+        present = case.report()
+        detail = present['checks']['DR-06']['detail']
+        assert 'Initial-only funding/18-decimal ledger checked' in detail
+        assert 'whole-run seeding' in detail and 'low-gas incident/alarm' in detail
+        assert 'top-up still required' not in detail
+        assert present['status'] == 'BLOCKED' and present['signing_enabled'] is False
+    finally:
+        case.doCleanups()
 
 
 class InitialCaps(unittest.TestCase):
