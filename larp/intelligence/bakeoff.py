@@ -270,6 +270,7 @@ def metrics(results: list, baseline: list | None = None, *, requests=None,
                             raise IntelligenceError('Reporting stage identity mismatch')
                 if record is None:
                     record = dict(stage, reasons=stage.get('reasons', []),
+                        _claim_verification_unknown='rejected_claims' not in stage,
                         model_io=dict(steps=[s for s in io.get('steps', []) if s.get('routing_stage') == stage['stage']],
                                       tool_calls=[]),
                         budget_used=stage.get('budget_used', dict(elapsed_ms=0, tool_calls=0)))
@@ -297,6 +298,11 @@ def metrics(results: list, baseline: list | None = None, *, requests=None,
     value['schema_valid_denominator'] = value['model_replies']
     value['claim_verification_numerator'] = value['claims_proposed'] - value['claims_rejected']
     value['claim_verification_denominator'] = value['claims_proposed']
+    if any(r.get('_claim_verification_unknown') for r in results):
+        # Legacy stage summaries omit rejected claims. Without the original
+        # stage artifact they cannot establish a verification numerator.
+        value.update(claims_rejected=None, claim_verification_numerator=None,
+                     claim_verification_pass_rate=None)
     value['usage'] = dict(known=usage, known_reasoning_tokens=reasoning,
         rejected_or_late_output_tokens=rejected_usage, recovered_output_tokens=recovered_usage,
         calls_without_trustworthy_usage=unmetered + unresolved, unrecorded_calls=unresolved,

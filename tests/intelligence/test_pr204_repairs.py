@@ -392,6 +392,16 @@ class ReportingBudget(unittest.TestCase):
         request=request.read();request['budget']['deadline_ms']=180000
         with self.assertRaises(IntelligenceError):bakeoff.metrics([result],requests=[request])
 
+    def test_missing_legacy_stage_artifact_cannot_invent_a_claim_pass_rate(self):
+        fx=test_openai_pacing.Preferred();fx.setUp();self.addCleanup(fx.doCleanups)
+        f=fx.fx;_,result=f.run_assessment(f.build())
+        for stage in result['routing']['stages']:
+            stage.pop('rejected_claims')
+        report=bakeoff.metrics([result],artifact_reader=lambda ref:None)
+        for stage in report['by_stage'].values():
+            self.assertIsNone(stage['claim_verification_numerator'])
+            self.assertIsNone(stage['claim_verification_pass_rate'])
+
     def test_private_report_command_validates_an_immutable_synthetic_export(self):
         import base64
         from tools.report_captured_trial import captured_report, _canonical, main

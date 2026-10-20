@@ -1243,3 +1243,14 @@ acceptance: INCOMPLETE_WORK PC-AUDIT01-R1..R4. Full evidence/reproduction:
 [report](../build/LLM_TRIAL_AUDIT_20261020.md),
 [receipt](../build/evidence/llm-trial-audit-20261020.json).
 Raw model/source data stays private;no provider call,application fix or restart.
+# PC-AUDIT01-IMPL01 — repository repair candidate (2026-10-20)
+
+Keith/Codex implements the PR204 handoff on a new current-canonical branch,
+retaining its audit and retirement history. Immutable dispatch records, validated
+rejected usage, a separately pinned v4 cap/reviewer-prompt candidate and
+request-bound diagnostics are implemented. The original v1-v3 routing/prompt
+bytes and private decision evidence are unchanged. Prospective criteria,
+red/green checks, reviewed synthetic trace differences, qualification and
+remaining owners: [implementation record](../build/PR204_REPAIRS_20261020.md).
+Private replay, measured completion/affordability, labels, independent release
+review and real-systemd/host acceptance remain open. No paid or host action.

@@ -2522,4 +2522,3 @@ PR204 audit history. Prospective criteria, candidate settings and evidence limit
 [implementation record](../build/PR204_REPAIRS_20261020.md). Red/green portable
 regressions precede application changes; commit/push before execution. Private
 corpus and live qualification remain outstanding; no deployment authorization.
-
