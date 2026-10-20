@@ -554,3 +554,34 @@ Delivery: [PR198](https://github.com/binance-hackathon-glasswing/binance-hackath
 targets canonical `codex/system-testing-20261012`. PR133 was read and retained
 unchanged as the noticeboard. All LD01 work is pushed; independent review/merge
 and the open inputs/LD06 ownership above remain explicit handoff items.
+
+
+### LD01-RV01 — PR198 independent review (2026-10-20; prospective)
+
+Review requested with authority to fix findings and merge PR198 into canonical
+`codex/system-testing-20261012`; reviewed source starts at `52c2349`. PR196 is
+still OPEN; its B09-TRUST01 direction is independently confirmed in PR133's
+current noticeboard. This review does not approve real policy/caps or installation.
+
+Finding (P2): the active WR-C/#44 backlog entry still requires verified source
+evidence for every production signer startup. That contradicts the dual-mode
+loader and LD01's updated signer handoff, and sends the selected untrusted lane
+back to the unavailable-source prerequisite. Correct the live entry to require
+the selected pinned evidence/policy and applicable review/replay/preflight,
+retaining numeric, host and key-session gates. No entire GAP is complete.
+
+Acceptance criteria, before this review's test execution:
+
+1. Rerun all signer tests plus mode-readiness, cap proposal/review, Gate B
+   chain/native evidence, verified decoder/wiring/review and untrusted-router
+   suites on Linux/Python3.12.15 with disposable PostgreSQL14.24. Both modes must
+   retain policy/hash/refusal checks and false readiness/signing/acceptance flags.
+2. Check deviation rendering, whitespace and changed documentation links; verify
+   historical evidence, kit/vendor/env and runtime policy/config bytes are untouched
+   by this review fix. Confirm remaining deployment owners/gates stay open.
+3. Refresh head/base, reviews and mergeability before normal merge. Hosted run
+   `39377020450` executed no steps: GitHub's annotation reports failed payments
+   or spending limits. Local test results do not establish hosted CI or readiness.
+
+Results pending. No AWS/provider/model/wallet/key/signing/receiver/installation
+operation is part of this review. Existing user workspace files are preserved.
