@@ -4,6 +4,8 @@ Canonical integration branch: **`codex/system-testing-20261012`**.
 All new implementation branches and PRs start from this branch. PR133 is an
 open noticeboard for links/status/owners only. Its branch is not a build base.
 The one live backlog is [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md).
+The post-PR199/200/201 closure sequence and evidence owners are in
+[OG-01](POST_REVIEW_GATES_20261020.md).
 
 CONS-01 combines all six retained PR heads through [PR195](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/195).
 Validated runtime source `bd4dbee`: Linux/Python3.12.15/PostgreSQL14.24 **2162 tests
@@ -76,6 +78,16 @@ Canonical PR199 now records initial-gas-only scope; LD08 and measured cleanup/ex
 reserves remain open. Its declaration is retained in the normal canonical merge,
 with five register checks/three subtests PASS and unchanged execution/test code.
 
+LD08-IG01 incorporates PR203 and completes the repository low-gas controls:
+sourced action budget, full-book exit reserve/minimum-trade checks, quiet-boundary
+durable incidents, archive health metric and a dedicated Terraform alarm. Source
+`4044c82`: Linux/Python3.12/PostgreSQL14 **2241 passed /3686 subtests**, eight
+explained skips; root-sensitive permission case passes separately. Terraform
+**19/19**, dependency checks, deviation rendering and offline demo PASS.
+[Acceptance matrix](INITIAL_GAS_ONLY.md) / [receipt](evidence/ld08-initial-gas-20261020.json).
+No numeric policy, installed alarm, exact signed release or host is accepted by
+these offline results.
+
 ## What still blocks installation / live acceptance
 
 **PF-01 (2026-10-21 SGT):** Isaac delegated profit-focused policy choices in
@@ -87,9 +99,9 @@ This policy record does not change runtime readiness or qualify missing inputs.
 
 | Owner | Next accepted result |
 |---|---|
-| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, selected initial-only whole-run/exit gas coverage and #44 policy hashes; B09/PF-01 scope is decided. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
+| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, selected initial-only whole-run/exit gas coverage and #44 policy hashes; B09/PF-01 scope is decided. PR207 (LD08-IG01) adds low-gas incidents/metric/alarm; measured values and actual alarm acceptance remain. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
 | Keegan + operator | #27 Option A is implemented by PR200 and L=660s/m=30s selected in the retained LD04-V01 record. PR210 profile provenance/candidate review is open; combine with PR207 and regenerate initial-only candidates before adoption and actual-host timing checks. |
-| Approved provider/operator + Isaac | Qualify the PF-01 execution read-side provider direction and current reconciliation/funding disposition. Initial-gas-only scope is selected (PR199); PR207 controls remain under review. Native top-ups are outside the selected scope and are not declared qualified. Balance-provider MATCH is not execution/finality qualification. |
+| Approved provider/operator + Isaac | Qualify the PF-01 execution read-side provider direction and current reconciliation/funding disposition. Initial-gas-only scope is selected (PR199); PR207 controls are merged; independent Keith/Keegan review remains. Native top-ups are outside the selected scope and are not declared qualified. Balance-provider MATCH is not execution/finality qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
 | Operator + reviewers | Real logged agent approve/swap, canonical reconciliation/ACK, resource/clock/delivery measurements, restart/restore/HALT/anchor/final-wallet drills and actual rehearsal evidence. |
 | Keith + account owners + Keegan | PF-01 fixes policy direction; actual S1 weights/data/parameters and code qualification, model trial/rights/usage/accounting evidence, source coverage and final declarations remain. PR206 repairs are under review. PR201 delivery-age implementation is merged; C05 numeric settings require measurements. |

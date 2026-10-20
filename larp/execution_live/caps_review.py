@@ -17,7 +17,7 @@ from larp.marketdata.port import TOKENS
 from larp.marketdata.web3 import utc
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
 from larp.strategy.profiles import validate_live
-from larp.strategy.schema import instant, integer
+from larp.strategy.schema import initial_gas_only, instant, integer
 
 FILES = {'profile', 'signing_policy', 'execution_config', 'initial_state'}
 KEYS = {'schema', 'wallet', 'run_id', 'build_id', 'environment', 'max_age_seconds', 'files', 'quote_artifacts'}
@@ -56,6 +56,7 @@ def review(inputs, *, now, base_dir):
     p, policy_value, config, ledger = (values[name] for name in
                                      ('profile', 'signing_policy', 'execution_config', 'initial_state'))
     validate_live(p)
+    initial_only = initial_gas_only(p)
     policy = SigningPolicy.from_config(policy_value)
     validate_config(config)
     mode = 'dev' if inputs['environment'] == 'REHEARSAL' else 'live'
@@ -86,13 +87,18 @@ def review(inputs, *, now, base_dir):
         if not covered:
             blockers.append(name)
 
-    if policy.allowed_spenders != {router} or policy.allowed_tokens != {USDT, NATIVE_BNB, *TOKENS.values()}:
+    expected_tokens = {USDT, *TOKENS.values()} | (set() if initial_only else {NATIVE_BNB})
+    if policy.allowed_spenders != {router} or policy.allowed_tokens != expected_tokens:
         blockers.append('TOKEN_OR_SPENDER_SCOPE')
     if ledger.get('reservations') != {}:
         blockers.append('IN_FLIGHT_PORTFOLIO_REVIEW')
     # Portfolio cash is micro-USDT; the signer's USDT inputs are raw 18-decimal units.
-    required_cash = max(p['per_trade_cap_units'], p['gas_top_up_cash_units']) * 10**12
-    check('FULL_POSITION_AND_TOPUP_USDT', required_cash, policy.max_input_units.get(USDT, 0))
+    required_cash = max(p['per_trade_cap_units'], 0 if initial_only else p['gas_top_up_cash_units']) * 10**12
+    check('FULL_POSITION_USDT' if initial_only else 'FULL_POSITION_AND_TOPUP_USDT',
+          required_cash, policy.max_input_units.get(USDT, 0))
+    if initial_only:
+        # No top-up path: the starting native balance must already cover the full-exit reserve.
+        check('INITIAL_BNB_EXIT_RESERVE', integer(p['exit_gas_reserve_units']), integer(ledger['bnb_units']))
     for symbol, token in sorted(TOKENS.items()):
         holding = ledger['positions'][symbol]
         if type(holding['decimals']) is not int or holding['decimals'] != decimals[symbol]:
@@ -143,7 +149,7 @@ def review(inputs, *, now, base_dir):
                 pair = by_address[receive] + ':BUY'
             elif receive == USDT and pay in by_address:
                 pair = by_address[pay] + ':SELL'
-            elif pay == USDT and receive == NATIVE_BNB:
+            elif pay == USDT and receive == NATIVE_BNB and not initial_only:
                 pair = 'BNB:BUY'
             else:
                 raise ContractError('Unsupported quote pair')
@@ -169,7 +175,10 @@ def review(inputs, *, now, base_dir):
             coverage.add(pair)
         except ERRORS:
             blockers.append('QUOTE_ARTIFACT_REFUSED')
-    missing = sorted(({s + ':' + side for s in TOKENS for side in ('BUY', 'SELL')} | {'BNB:BUY'}) - coverage)
+    required_pairs = {s + ':' + side for s in TOKENS for side in ('BUY', 'SELL')}
+    if not initial_only:
+        required_pairs.add('BNB:BUY')
+    missing = sorted(required_pairs - coverage)
     if missing:
         blockers.append('QUOTE_COVERAGE_INCOMPLETE')
     numeric_status = 'BLOCKED' if blockers else 'COVERED'
@@ -178,6 +187,7 @@ def review(inputs, *, now, base_dir):
     blockers.append('OWNER_REVIEW_REQUIRED')
     return dict(schema='GateBSignerCapsReview.v1', status='BLOCKED', numeric_status=numeric_status,
                 signing_enabled=False, ready_to_install=False, build_id=inputs['build_id'],
+                gas_scope='INITIAL_ONLY' if initial_only else 'LEGACY_TOP_UP',
                 run_id=inputs['run_id'], wallet=wallet, environment=inputs['environment'],
                 blockers=sorted(set(blockers)), missing_quote_coverage=missing, checks=checks,
                 evidence_hashes={name: refs[name]['sha256'] for name in sorted(FILES)},

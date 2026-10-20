@@ -65,9 +65,11 @@ def reference(value):
     return value
 
 
-def build(value, *, router_mode='verified'):
+def build(value, *, router_mode='verified', initial_gas_only=False):
     if router_mode not in ('verified', 'untrusted'):
         raise ContractError('Supported router mode required')
+    if type(initial_gas_only) is not bool:
+        raise ContractError('initial_gas_only must be a boolean')
     value = reference(value)
     candidates = {}
     for mode, cash in (('development', 35), ('final', 70)):
@@ -81,7 +83,8 @@ def build(value, *, router_mode='verified'):
                 floor_price_ratio=[str(floor.numerator), str(floor.denominator)],
                 max_input_units=str(rounded))
         policy = dict(cap_basis=EXAMPLE_CAP_BASIS, allowed_spenders=[ROUTER],
-            allowed_tokens=[USDT, *[TOKENS[s] for s in sorted(TOKENS)], NATIVE_BNB],
+            allowed_tokens=[USDT, *[TOKENS[s] for s in sorted(TOKENS)],
+                            *([] if initial_gas_only else [NATIVE_BNB])],
             max_input_units=caps, max_fee_wei=str(FEE_WEI))
         SigningPolicy.from_config(policy)  # actual consumer: universe, finite caps, types and units
         candidates[mode] = dict(usdt_input_cap=str(cash), signing_policy=policy, calculation=calculation)
@@ -100,10 +103,12 @@ def main(argv=None):
     parser.add_argument('--reference', required=True, type=Path)
     parser.add_argument('--router-mode', choices=('verified', 'untrusted'), default='verified',
                         help='reporting scope only; does not select or approve a live policy')
+    parser.add_argument('--initial-gas-only', action='store_true', help='exclude native BNB from signer policy')
     parser.add_argument('--output', required=True, type=Path, help='new file; never overwrites')
     args = parser.parse_args(argv)
     try:
-        report = build(json.loads(args.reference.read_bytes()), router_mode=args.router_mode)
+        report = build(json.loads(args.reference.read_bytes()), router_mode=args.router_mode,
+                       initial_gas_only=args.initial_gas_only)
         raw = (json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n').encode('utf-8')
         fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, 'wb') as stream:
