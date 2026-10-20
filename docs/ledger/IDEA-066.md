@@ -2465,3 +2465,12 @@ trial disposition/adoption/signed acceptance. PR133 LD11/LD12 stay partial with
 export/shutdown subtask complete. Full results, hashes and command IDs:
 [report](../build/LLM_TRIAL_STOP_20261020.md),
 [receipt](../build/evidence/llm-trial-stop-20261020.json).
+
+## PC-AUDIT01 — retrospective trial/current-code audit (2026-10-20, prospective)
+
+Yao requests analysis and inconsistency/unwanted-behavior verification, excluding
+issues already fixed in newer merged LLM PRs. Criteria A1–A6 are recorded in
+[LLM_TRIAL_AUDIT_20261020.md](../build/LLM_TRIAL_AUDIT_20261020.md), comparing
+private final PC-STOP01 export with canonical697ff3a. Offline reconstruction and
+real-input replay only; no inference/AWS/trading/deployment. Frozen trial criteria
+and independent-label requirements remain unchanged.
