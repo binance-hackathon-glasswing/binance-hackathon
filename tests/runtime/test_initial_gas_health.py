@@ -25,6 +25,9 @@ class ProfileBudget(unittest.TestCase):
         self.assertEqual(p['gas_action_budget_units'], 20_000)
         self.assertIn('gas_action_budget_units', p['provenance'])
         p['gas_action_budget_units'] = 30_000  # a reviewed larger action can include supporting cleanup
+        with self.assertRaises(ContractError):
+            validate_live(p)  # the full book's reserve must grow with the action budget
+        p['exit_gas_reserve_units'] = 4 * 30_000
         validate_live(p)
         for bad in (None, True, 0, 19_999, p['exit_gas_reserve_units'] + 1):
             broken = deepcopy(p)

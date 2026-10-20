@@ -220,3 +220,8 @@ uniqueness failures (the harness already owns wallet `wallet`). Isolated the
 new fixture's wallet at pushed `4d8a8e8`; all **12 tests fail** on the missing
 budget/monitor/driver support, Linux Python3.12/PostgreSQL14.24, 0.56s. No
 application repair was present in either run.
+
+IG1 full-book refinement before the next run: a larger selected action budget
+(e.g. measured cleanup) must also increase the full-exit reserve to cover four
+actions, or five for S1. A pair-only reserve cannot silently cover a larger
+declared action. Add this refusal to the pushed profile regression before repair.
