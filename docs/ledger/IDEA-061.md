@@ -320,3 +320,13 @@ Local verification, source `7f004f7`, Linux/Python 3.13.16/PostgreSQL 16.15:
 new tests account for the difference. Hosted CI still runs zero steps because of
 the organisation's Actions billing block (PR133); this is local evidence, not
 hosted CI or release acceptance.
+
+## LD09-G1 — measured gas budget proposal (2026-10-21, proposal only)
+
+[LD09_GAS_BUDGET_PROPOSAL_20261021.md](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md) computes the initial-only gas
+values from simulated gas (IDEA-070 LD02b/F1/LD02c): pair gas 803,768 (approve 55,243 + BUY swap 748,525), 25 %
+headroom. At the draft cap price (0.16 gwei) G = 160,753,600,000,000 wei and the EW/S1 exit reserves are
+6.43e14 / 8.04e14 wei, but the profile's shared use of G for minimum-trade economics raises the minimum trade to
+37.45 USDT (27.00 without MSFTB), which refuses the 100-USDT rehearsal profile. Options A (one lower price, about
+0.08 gwei), B (decouple reserve price from sizing price; recommended) and C (exclude MSFTB, currently unexecutable)
+are laid out with a seeding table. No profile, cap or config changed; Keith, Isaac and Keegan decide.
