@@ -65,7 +65,9 @@ def reference(value):
     return value
 
 
-def build(value):
+def build(value, *, router_mode='verified'):
+    if router_mode not in ('verified', 'untrusted'):
+        raise ContractError('Supported router mode required')
     value = reference(value)
     candidates = {}
     for mode, cash in (('development', 35), ('final', 70)):
@@ -84,20 +86,24 @@ def build(value):
         SigningPolicy.from_config(policy)  # actual consumer: universe, finite caps, types and units
         candidates[mode] = dict(usdt_input_cap=str(cash), signing_policy=policy, calculation=calculation)
     return dict(schema='SignerCapsProposal.v1', status='UNAPPROVED_HISTORICAL_CANDIDATES',
-        ready_to_install=False, decision_ref='IDEA-049-C CP-01 / #44',
+        ready_to_install=False, router_mode=router_mode, decision_ref='IDEA-049-C CP-01 / #44',
         source_reference=value, floor_fraction=[1, 2], max_fee_bnb='0.0002',
         limitations=['CURRENT_PROFILE_AND_HOLDINGS_REVIEW_REQUIRED', 'PRICE_FLOOR_NOT_GUARANTEED',
                      'SPLIT_AND_ADJUSTMENT_REVIEW_REQUIRED', 'PER_TRANSACTION_NOT_CUMULATIVE_CAP',
-                     'ROUTER_SOURCE_AND_OWNER_APPROVAL_REQUIRED'], candidates=candidates)
+                     'EXACT_POLICY_OWNER_APPROVAL',
+                     ('ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY' if router_mode == 'verified' else
+                      'UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT')], candidates=candidates)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--reference', required=True, type=Path)
+    parser.add_argument('--router-mode', choices=('verified', 'untrusted'), default='verified',
+                        help='reporting scope only; does not select or approve a live policy')
     parser.add_argument('--output', required=True, type=Path, help='new file; never overwrites')
     args = parser.parse_args(argv)
     try:
-        report = build(json.loads(args.reference.read_bytes()))
+        report = build(json.loads(args.reference.read_bytes()), router_mode=args.router_mode)
         raw = (json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n').encode('utf-8')
         fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, 'wb') as stream:

@@ -4,7 +4,7 @@
 
 Offline only. The existing GateBCapsInputs.v1 reviewer rechecks the pinned live
 profile, full holdings, policy, execution settings and fresh quotes. All referenced
-files, including the CA and router evidence at their configured paths, must be
+files, including the CA and selected router evidence/policy at their configured paths, must be
 locally available. Success creates an installation candidate, never approval.
 The selected run/release/database must be supplied explicitly; no unsigned run
 or historical caps are chosen here. No database, AWS, network or wallet key access.
@@ -28,7 +28,6 @@ from larp.signer.service import router_decoder, validate_config
 ROOT = Path(__file__).resolve().parents[2]
 REMAINING_GATES = [
     'EXACT_POLICY_OWNER_APPROVAL',
-    'ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY',
     'SIGNING_LIFETIME_27',
     'NATIVE_PROVIDER_AND_ROUTE_FEE_QUALIFICATION',
     'REGISTERED_RELEASE_AND_HOST_ACCEPTANCE',
@@ -81,10 +80,13 @@ def assemble(inputs, *, now, base_dir):
         scope='OFFLINE_NUMERIC_AND_LOCAL_CONFIGURATION_ONLY', checked_at=now,
         signer_config_sha256=hashlib.sha256(raw).hexdigest(),
         input_hashes={name: ref['sha256'] for name, ref in inputs['files'].items()},
+        router_mode=decoder.mode,
         router_evidence_sha256=signer.get('router_evidence_sha256'),
         untrusted_router_policy_sha256=signer.get('untrusted_router_policy_sha256'),
         database_ca_sha256=signer['database_ca_sha256'],
-        numeric_review=numeric, remaining_gates=REMAINING_GATES,
+        numeric_review=numeric, remaining_gates=[*REMAINING_GATES,
+            ('ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY' if decoder.mode == 'verified' else
+             'UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT')],
     )
     return {'signer.json': raw, 'signer-assembly-report.json': encoded(report)}
 

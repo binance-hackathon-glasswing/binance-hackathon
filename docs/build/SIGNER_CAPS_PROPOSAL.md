@@ -16,13 +16,15 @@ No host config, runtime limit, default signing policy or key is changed here.
 | Maximum fee per transaction (`gas * gasPrice`) | 0.0002 BNB | 0.0002 BNB |
 | Payable tokens | USDT + the five pinned bStocks | Same |
 | Native BNB | Receive-only for gas; no BNB-input permission | Same |
-| Allowed spender | Only `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5` | Same, subject to final router evidence |
+| Allowed spender | Only `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5` | Same, subject to reviewed router evidence/policy |
 
 The spender is the **router named by quote `tx.to` and approve
 `dexContractAddress`**, not candidate implementation facet
 `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`. The existing router observation
-comes from EXP-005. Verified source/decoder evidence is still outstanding;
-proposing this spender does not qualify its code or authorize a swap.
+comes from EXP-005. Source review is required for verified mode. The selected
+API-trusted direction (B09-TRUST01, PR196) instead requires a named-reviewed
+untrusted policy/hash, fresh replay and live preflight. Neither is supplied by
+this historical proposal; proposing a spender does not authorize a swap.
 
 Rationale for USDT limits: current equal-weight profiles permit a full position
 plus reserve of20.10/40.20 USDT for100/200 expected equity. Pending S1 code at
@@ -96,8 +98,14 @@ From a committed/pushed revision, generate into a new file:
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 tools/deploy/propose_signer_caps.py \
   --reference docs/build/evidence/signer-caps-reference-20261010.json \
+  --router-mode untrusted \
   --output /private/tmp/signer-caps-new-proposal.json
 ```
+
+LD01 adds `--router-mode verified|untrusted` (default verified for compatibility).
+This changes report limitations only; both modes retain identical numeric
+candidates and pending policy labels. It does not select or approve a live mode.
+Old checked-in proposal bytes stay historical.
 
 The builder has no network/key/service API. It strictly validates public
 reference fields, chain/token identities, decimals and provenance, calculates
@@ -134,7 +142,7 @@ in `cap_basis`, binds the full config to the release manifest and completes
 IDEA-080 provisioning/access checks. The final-wallet candidate requires its
 own final-profile/fresh-wallet review; development approval does not approve it.
 
-Router evidence, signing-lifetime #27, key placement, actual-host tests and
+Mode-appropriate router evidence/policy review, signing-lifetime #27, key placement, actual-host tests and
 Gate B execution remain separate. #44 stays open for these numeric approval /
 configuration requirements even after the proposal/tool slice #146 merges.
 

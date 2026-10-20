@@ -12,7 +12,7 @@ and runtime demo PASS. Two external-fixture tests remain unrun (the full suite
 skipped those plus the five systemd tests tested separately).
 [Consolidation evidence](CONSOLIDATION_20261019.md) / [machine receipt](evidence/consolidation-20261019.json).
 PR195 merged at `dfabdea` on2026-10-19; all six original PRs are MERGED.
-PR133 is the only open PR and remains noticeboard-only. Org CI executed zero
+At that promotion PR133 was the only open PR and remains noticeboard-only. Org CI executed zero
 steps because of account billing/spending limits. No host/deployment/readiness is inferred.
 
 ## Repository scope retained
@@ -34,14 +34,21 @@ There are two mutually exclusive supported configuration paths:
 | Path | Inputs / limits |
 |---|---|
 | Source-verified router | Complete verified source/ABI/deployment binding, independent source review and pinned RouterEvidence.v1 plus recorded-route checks. Source is still unavailable in the retained packet. |
-| Untrusted router (B02-U / DEV-23) | Explicit Isaac B09/#44 adoption and measured caps; named-reviewed live code/facet/allowance policy and hash; fresh layout/replay/preflight checks. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups; reverted-swap allowances and abnormal-fill accounting can block later work. |
+| Untrusted router (B02-U / DEV-23) | Isaac selected the trust direction in B09-TRUST01 (PR196); actual measured #44 acceptance and named-reviewed live code/facet/allowance policy/hash remain. Fresh layout/replay/preflight checks are required. Recipient and actual contract enforcement remain unverified. This mode does not support native-BNB gas top-ups; reverted-swap allowances and abnormal-fill accounting can block later work. |
 
-The mode is not selected by this consolidation. Existing checked-in configs
-do not install an untrusted policy. Never label untrusted code source-verified,
+The consolidation did not select a mode; B09-TRUST01 subsequently selected the
+API-trusted direction. Verified source is required only for the source-verified
+path. Existing checked-in configs do not install an untrusted policy. Never label untrusted code source-verified,
 substitute a review name for actual acceptance, or turn readiness flags true.
 The old signer.json remains a historical source-path draft with unset bindings
 and pending caps. A selected untrusted configuration uses its own policy-file/hash
 pair instead of router-evidence fields; both cannot be set together.
+
+LD01 aligns assembly/proposal/Gate B reports and current handoffs with both
+paths, retaining policy/hash/review and false readiness flags. At `22039ba`,
+focused Linux/Python3.12.15/PostgreSQL14.24 verification passed **167 tests /
+555 subtests / zero skips**. This is reporting/tooling acceptance, not a full
+suite, signed release or host qualification. See [IDEA-070 LD01](../ledger/IDEA-070.md#ld01--mode-aware-readiness-and-handoffs-2026-10-20-prospective).
 
 ## What still blocks installation / live acceptance
 

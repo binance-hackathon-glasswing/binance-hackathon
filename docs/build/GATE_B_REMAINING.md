@@ -34,29 +34,32 @@ registry, database reservations, crash recovery, and temporary signer-access
 Terraform already exist. The missing work is their qualification and the
 specific decisions/evidence below.
 
-## Remaining dependencies, in order
+## Current dependencies — LD01 update, 2026-10-20
 
-Use the owners on the corresponding **Gate B setup** and **Oct 20/21** lines of
-[PR133's pre-trading checklist](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133),
-and [PR126's Gate B brief](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/126).
+Use the current LD01–LD24 owners/order on
+[PR133](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133).
+B09-TRUST01 / [PR196](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/196)
+selects API-trusted behavior; named policy/hash review and #44 numeric acceptance
+remain. Earlier inventories and bundle receipts below are historical.
 Neither proposal approval nor host acceptance is inferred from merging code.
 
 | Work | Current evidence and next concrete action |
 |---|---|
-| Router source/ABI and all four guarantees (#33/#138, GAP-29) | PR139 found an unverified router, unusable explorer ABI and no Sourcify match. Its finalized selector lookup identifies candidate facet `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`; that is not verified source, dispatch/upgrade proof or an allowed spender. Obtain complete attributable router/facet/helper source and ABI, bind to deployed code, and perform the independent source review. Keep signing blocked if unavailable. |
-| Recorded-real route qualification | After source review, run the existing `larp.execution_live.router check` against Keith's retained quote artifacts. Require both stock directions, exact wallet/economic binding and the mutation checks. Keith's KMP-QUOTE01 artifacts are now present in PR133; all29 file hashes verify (SP-01). Route replay still waits on source/review. |
+| Selected untrusted policy (#33, GAP-29; LD02/03) | Operator supplies current router/facet/code/layout/allowance bindings and fresh quotes; Keegan reviews exact policy/hash; Isaac replays and qualifies live preflight. Source guarantees remain unverified, with no established maximum loss. #138 remains incomplete optional source-path acquisition, not a selected-path prerequisite. |
+| Source-verified path only (#138) | Complete attributable source/ABI/compiler/deployment binding, independent four-guarantee review and RouterEvidence.v1 remain unavailable. Do not fabricate them; no source acceptance is claimed. |
+| Recorded-real route qualification | Verified mode uses `larp.execution_live.router check` after source review. Selected untrusted mode uses `larp.execution_live.untrusted_router check` with the reviewed policy/hash and fresh request-bound quotes, then live preflight. Historical SP-01 hashes do not establish current freshness. Both retain the logged agent round/ACK acceptance. |
 | Signing lifetime (#27) | PR144's Option A is a conditional recommendation; 60 seconds is illustrative. Keith reviews; Keegan decides the model, finite lifetime and margins, records C-OPEN-003, and implements the adopted contract. Do not extend the 15-second admission window or remove the encoded-deadline comparison. The kit's approximate 30-second quote lifetime is not measured encoded expiry. |
 | Independent signer caps (#44) | PR148 proposes development/final USDT inputs 35/70 and fee 0.0002 BNB. These remain unapproved for installation. Run the current-input review below, review full holdings and adjustment/splitting scenarios, then record the exact policy/profile/metadata evidence and approved hash. Use the router as spender, never the facet. |
 | New release bundle | GB-RW2 mirror [run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352) passed all four jobs on reviewed integration `0672fb8`, including PR130/144/148/149/153/131. Artifact `12099524179` exists; this session's network policy blocks downloading it. Sidecar/manifest verification and the two file hashes remain required before the AWS-owner handoff; see the [build record](evidence/gate-b-mirror-build-20261017.json). Any later adopted source change requires a newer reviewed release. |
 | Signer provisioning | The access choice and Terraform review are complete (IDEA-080 / PR149). After numeric-policy approval, the checklist's AWS owner applies temporary development SSM endpoints, provisions/binds the approved configs, and records SA4/SA9. Isaac places the key on the signer host only; the AWS owner records teardown SA5. This cloud machine has no usable AWS profile or private backend/input files; injected AWS config files contain zero profiles and boto3 resolves ProfileNotFound. |
-| First gas, floor and native tracing (#30/#106, GAP-49) | PR151 completes the historical 2-USDT funding-note slice, including source-attributed BNB credit. The planned remaining dev funding and fresh opening capture are still outstanding. Qualify transaction-bound native tracing on the actual execution provider, then review measured floor/top-up amounts. Balance-provider selection alone does not qualify tracing. |
+| Gas scope, initial funding and native tracing (#30/#106, GAP-49; LD07/08) | Reconcile current full wallet/in-flight state and funding/no-further-funding disposition; historical receipts do not authorize another seed. Choose qualified native top-ups or explicitly reviewed initial-only reserves/exit/low-gas controls. Untrusted native routes currently refuse; existing caps and Gate B require top-up proof. No omission is adopted here. Canonical receipts and ordinary gas accounting remain required. |
 | First signed round and host drills (DR-02..06/19) | After Gate A and every prerequisite above, the agent produces the minimum-size dev approve/swap and ACKed round. Record chain reconciliation, success/revert reservation release, host crashes at each durable boundary and a recorded shadow-day replay. Existing synthetic/real-local-PostgreSQL tests are engineering evidence only. |
 | Timing and rehearsal | The current rehearsal buy window begins Oct 21 00:00 UTC (08:00 SGT). An earlier dev window requires its recorded decision/version event. Keep the conditional rehearsal-shape decision in IDEA-049-D D-DN-02; record an applicable shortfall when the gate is missed, rather than recording a future shortfall now. |
 
-S1 B6's per-leg attempt and actual execution-session/window enforcement remains
-an explicit later S1 delivery item (IDEA-076), distinct from its existing
-planning-session broadcast counter. It is not established by the W04 prepare
-probe budget, nor by this cap review. Proposed S1 values remain unadopted.
+S1 B6 code is consolidated; actual selected-profile/session/host acceptance stays
+open. This cap review does not qualify that behavior. LD06 allowance recovery
+and LD05 abnormal-fill disposition also remain open, including cross-token and
+final-exit behavior. No sustained-quarantine condition is silently cleared.
 
 ## Current-input signer-cap review
 
@@ -136,12 +139,12 @@ source/owner approval, #27, release or host acceptance.
 | Approve/swap identity (GAP-30) | `Intent.key` binds run/chain/wallet/economic intent; round/decision/version/reservation IDs are retained. Each step has its own attempt, payload and transaction hash. PostgreSQL primary keys pin attempt signatures and observation IDs; its wallet barrier spans runs. Integration maps only swap hashes to round orders. | Definition/uniqueness specification is complete; real signed-pair/ACK acceptance remains DR-02, not an undefined-identifier task. |
 | Nonce, timeout, reorg (GAP-31) | Signed attempts persist exact nonce and bytes. Pending/unknown outcomes retain the barrier across the 120-second timeout, probe exhaustion, restart and reorg; a definitely rejected broadcast needs positive nonce/timeout checks before NOT_SUBMITTED. Same-nonce replacement is disabled. | Actual provider qualification and hosted recovery remain. Timeout/absence/deadline alone never proves a dropped transaction. |
 | Reservations and accounting (GAP-32) | Real planner I3 output and finalized I4 facts exercise actual accounting and PostgreSQL. Success/revert/NOT_SUBMITTED release appropriate resources once; approval releases only its gas. Broadcast never settles balances. | Hosted signed success/revert/crash/replay evidence remains DR-04/05. |
-| Kit adapter (GAP-47) | Live adapter, isolated signer, canonical receipts, Web3 market gates and exact raw-unit mapping are implemented and tested through fake external boundaries. | Real source/route, current metadata, qualified provider and host/signed acceptance remain; local fixtures do not authorize activation. |
+| Kit adapter (GAP-47) | Live adapter, isolated signer, canonical receipts, Web3 market gates and exact raw-unit mapping are implemented and tested through fake external boundaries. | Mode-appropriate router policy/evidence review/replay, current metadata, qualified provider and host/signed acceptance remain; local fixtures do not authorize activation. |
 
 Exact commands, tested commits and outcome counts are recorded in IDEA-039 GB-RW1.
 No complete Gate B or real trade acceptance is claimed here.
 
-## Mirror artifact handoff still pending
+## Historical Oct17 mirror artifact handoff
 
 The successful CI release is the reviewed integration baseline, not unmerged
 [PR155](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/155).

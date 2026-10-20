@@ -102,7 +102,7 @@ class ExecutionStore:
         with self.store.transaction() as db:
             return self._attempt(db, attempt_id)
 
-    def check_broadcast(self, signed, epoch, version, *, now_ms=None):
+    def check_broadcast(self, signed, epoch, version, *, now_ms=None, decoder=None):
         with self.store.transaction() as db:
             run = self._release_authority(db, epoch, version)
             keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
@@ -114,6 +114,20 @@ class ExecutionStore:
                             and self._signature(db, attempt.attempt_id, attempt.payload.hash) == signed
                             and attempt.epoch == epoch
                             and attempt.guard_version == version):
+                        if state.intent.authority_margin:
+                            # The executor's tick predates the durable possible-send write. Recheck finite
+                            # authority with the release clock immediately before bytes reach the submitter.
+                            margin_ms = state.intent.authority_margin * 1000
+                            if (type(now_ms) is not int or now_ms < state.last_observed_at * 1000
+                                    or now_ms + margin_ms >= state.intent.valid_until * 1000):
+                                raise Conflict('execution authority submission margin exhausted or clock unavailable')
+                            if attempt.step == 'SWAP':
+                                if decoder is None:
+                                    raise Conflict('finite swap release needs the pinned decoder')
+                                deadline = decoder.decode(attempt.payload).deadline
+                                if (type(deadline) is not int
+                                        or not now_ms + margin_ms < deadline * 1000 <= state.intent.valid_until * 1000):
+                                    raise Conflict('swap deadline submission margin exhausted')
                         if now_ms is not None:
                             from larp.strategy.execution_bounds import permitted
                             if not permitted(Document(bytes(run['projection'])).read(), state.intent, now_ms):

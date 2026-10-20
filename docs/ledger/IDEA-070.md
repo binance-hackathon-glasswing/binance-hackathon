@@ -482,3 +482,137 @@ named reviewer), a `check` on fresh quotes, a live preflight, Isaac's adoption
 with #44 (B09) and B10/#27. The swap's own deadline is about 8 minutes after
 the quote, so it still conflicts with short intent expiries. Signing stays
 disabled; nothing here accepts Gate B.
+
+## LD01 — mode-aware readiness and handoffs (2026-10-20; prospective)
+
+Isaac-owned repository lane from PR133's current checklist, based on canonical
+`2a997f4`. B09-TRUST01 and LIVE-PLAN01 are proposed in PR196; this change
+references that existing direction without merging its branch or accepting a
+real policy. No operator/provider/quote/private-key inputs are needed for this
+reporting slice. Follow-on LD06 covers allowance recovery separately.
+
+Pass criteria, before execution:
+
+1. Signer assembly reports the selected verified/untrusted mode and only its
+   applicable router review/replay gate; exact caps, hashes, named policy review,
+   CA/run/DB binding and installation/signing/Gate B refusals remain intact.
+2. Historical cap proposals can explicitly name either mode, retain all numeric
+   values and pending policy labels, reject unknown modes, and require the
+   applicable source review or untrusted policy review/replay/preflight.
+3. Gate B DR-02/03 inventories and failure details name both supported paths
+   accurately. Valid untrusted replay is never source verification or activation;
+   missing/review-required/altered policy still refuses.
+4. Current Gate B/signer handoffs distinguish the two mutually exclusive file/hash
+   pairs and retain lifetime, caps, gas scope, allowance, abnormal-fill and host
+   gates. Remove unconditional loss-bound claims, leaving DEV-23 DRAFT.
+5. Record #138 as incomplete source-path work, optional for the selected path;
+   #160's delivered technical handoff is distinct from actual approved assembly.
+   Preserve historical artifacts and keep parent #33/#44/GAP-29/47 open.
+6. Run focused offline signer/caps/Gate B/router regressions and documentation /
+   deviation-render checks after committing and pushing code. No AWS, provider,
+   model, wallet, signing, receiver or installation operation.
+
+Results: pending. Review owner: Keegan; real policy/caps/host acceptance stays
+with the owners in PR133. No entire deployment backlog item is completed here.
+
+### LD01 results — source `22039ba` (2026-10-20)
+
+Criteria pushed at `7a3e39b`; regressions pushed at `812b363` before execution.
+RED: four reporting failures and one policy-refusal PASS (four subtests) on
+canonical behavior. Implementation pushed at `baee1ee`; compatibility regression
+and synchronized declaration table pushed at `22039ba` before the final tests.
+
+- **Criteria 1–3 PASS:** focused signer, assembly, cap proposal/review, Gate B
+  chain/native inventory, verified decoder and untrusted decoder suites passed
+  **167 tests / 555 subtests / zero failures / zero skips** on Linux,
+  Python3.12.15 and disposable PostgreSQL14.24. Source was mounted read-only;
+  PostgreSQL had no external network and no persistent storage. Includes
+  review-required, missing, altered and mixed-pair policy refusals; existing
+  signing/accounting/recovery tests exercise the unchanged controls.
+- Initial macOS/Python3.13 run: **116 passed / 517 subtests / 51 skipped** for
+  missing PostgreSQL or signer dependencies. Those checks ran in the Linux
+  result above; this is not a full-suite/systemd/CI or host-release claim.
+- **Criteria 4–5 PASS (repository slice):** current GATE_B, GATE_B_REMAINING,
+  SIGNER_CAPS_PROPOSAL and SIGNER_INSTALLATION_PREPARATION now distinguish both
+  modes. Module/DEV-23 reason no longer assert a guaranteed loss bound; DEV-23
+  stays DRAFT. #138 and #160 dispositions are recorded in the signer handoff;
+  issue states were read, not changed. Historical proposal/draft/evidence bytes
+  and pending numeric labels remain unchanged. Generated proposal wrappers now
+  include mode-specific limitations; historical numeric candidates reproduce.
+- **Criterion 6 PASS:** deviation renderer `--check`, whitespace, added local
+  link targets, conflict-marker check, preserved backlog/index IDs and unchanged
+  official-kit/vendor/env/historical evidence checks pass. All reports keep
+  installation/signing/Gate B false. Disposable test DB is removed after use.
+
+Independent Keegan review and canonical merge remain pending. LD06 remains
+Isaac's next independent repository lane. Actual policy/holdings/timing/profile
+inputs, gas-scope decision, measured #44 acceptance and release/host/session
+qualification retain PR133's named owners. No real network/provider/model,
+AWS, wallet/key, signing, receiver or installation action was performed.
+
+Delivery: [PR198](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/198)
+targets canonical `codex/system-testing-20261012`. PR133 was read and retained
+unchanged as the noticeboard. All LD01 work is pushed; independent review/merge
+and the open inputs/LD06 ownership above remain explicit handoff items.
+
+
+### LD01-RV01 — PR198 independent review (2026-10-20; prospective)
+
+Review requested with authority to fix findings and merge PR198 into canonical
+`codex/system-testing-20261012`; reviewed source starts at `52c2349`. PR196 is
+still OPEN; its B09-TRUST01 direction is independently confirmed in PR133's
+current noticeboard. This review does not approve real policy/caps or installation.
+
+Finding (P2): the active WR-C/#44 backlog entry still requires verified source
+evidence for every production signer startup. That contradicts the dual-mode
+loader and LD01's updated signer handoff, and sends the selected untrusted lane
+back to the unavailable-source prerequisite. Correct the live entry to require
+the selected pinned evidence/policy and applicable review/replay/preflight,
+retaining numeric, host and key-session gates. No entire GAP is complete.
+
+Acceptance criteria, before this review's test execution:
+
+1. Rerun all signer tests plus mode-readiness, cap proposal/review, Gate B
+   chain/native evidence, verified decoder/wiring/review and untrusted-router
+   suites on Linux/Python3.12.15 with disposable PostgreSQL14.24. Both modes must
+   retain policy/hash/refusal checks and false readiness/signing/acceptance flags.
+2. Check deviation rendering, whitespace and changed documentation links; verify
+   historical evidence, kit/vendor/env and runtime policy/config bytes are untouched
+   by this review fix. Confirm remaining deployment owners/gates stay open.
+3. Refresh head/base, reviews and mergeability before normal merge. Hosted run
+   `39377020450` executed no steps: GitHub's annotation reports failed payments
+   or spending limits. Local test results do not establish hosted CI or readiness.
+
+Results pending. No AWS/provider/model/wallet/key/signing/receiver/installation
+operation is part of this review. Existing user workspace files are preserved.
+
+
+#### LD01-RV01 results — reviewed source `8cea019`
+
+- **Finding fixed:** `8cea019` corrects both unconditional-source sentences in
+  WR-C/#44; the selected pinned evidence/policy and applicable review/replay/
+  preflight are required. The remaining numeric, release, host, session and
+  deployment work stays open with its existing owners. No application code or
+  numeric/config policy changed during this review.
+- **Criterion 1 PASS:** independent focused Linux/Python3.12.15 test run with
+  disposable PostgreSQL14.24: **200 passed / 600 subtests / zero skips**, 16.23s;
+  `pip check` PASS. Suites: all `tests/signer`, plus execution mode_readiness,
+  signer_caps_proposal, caps_review, gate_b_evidence, gate_b_native, router_decoder,
+  router_wiring, router_review and untrusted_router. Source mounted read-only;
+  the database had no external network or persistent storage, and the runner
+  shared only its isolated network namespace. No production credentials supplied.
+- **Criterion 2 PASS:** deviation renderer `--check`, diff whitespace and all
+  eight added local documentation link targets pass. Historical evidence and
+  signer drafts, official kit and vendor files are unchanged. Review fix changes
+  only the live backlog and this record.
+- **Criterion 3:** exact-head review and normal merge follow this results-only
+  commit. The runtime/config/test/tool tree remains identical to `8cea019`.
+  Hosted Actions are still unavailable due billing; this focused run does not
+  claim full-suite/systemd/bundle, signed-release, host or Gate B acceptance.
+
+Assistant review is complete for LD01's repository reporting slice under the
+user's review/fix/merge instruction. Actual Keegan LD03 policy/hash acceptance,
+Isaac LD06 allowance work, LD05 abnormal fills, LD07/08 gas scope, #27/#44 and
+release/host/session/real-round acceptance remain with the owners recorded
+above and in the live backlog. PR196 remains a separate OPEN documentation PR;
+PR133 remains the noticeboard. This session does not qualify real router behavior.

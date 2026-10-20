@@ -35,7 +35,7 @@ from larp.ports import decimal_string as decimal_amount  # exact decimal of base
 from larp.risk.planner import plan as risk_plan
 from larp.risk.reconcile import spendable_view
 from larp.strategy.policy import decide
-from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
+from larp.strategy.schema import MONEY_SCALE, SYMBOLS, execution_authority, market_view, profile
 
 ADAPTER = "RuntimePlan.v1"
 SETTLED = ("USDT", "BNB")
@@ -295,12 +295,26 @@ class RuntimePlanner:
         valid_until = (int(proposal_or_none.valid_until.timestamp() * 1000) if proposal_or_none is not None
                        else None)
         intents, deltas = [], []
+        # #27 / C-OPEN-003 Option A (IDEA-049-C LD04): with a finite authority L configured, an admitted decision may
+        # execute until A = min(t0 + L, signing_end, its execution window, new_risk_end for a discretionary buy),
+        # fixed here and journaled with the plan. Without it, the parent stays bounded by the quote and proposal.
+        p = profile(snapshot) if raw["intents"] else None
+        finite = execution_authority(p) if p is not None else None
         for intent in raw["intents"]:
-            expires = iso_ms(intent["quote_expiry"])
+            if finite is None:
+                expires = iso_ms(intent["quote_expiry"])
+            else:
+                expires = min(now_ms + finite[0] * 1000, iso_ms(p["signing_end"]))
+                if not intent["mandatory"] and intent["side"] == "BUY":
+                    expires = min(expires, iso_ms(p["new_risk_end"]))
             if 'execution_bounds' in intent:
                 expires = min(expires, intent['execution_bounds']['valid_until_ms'])
-            if valid_until is not None and not intent["mandatory"]:
+            if finite is None and valid_until is not None and not intent["mandatory"]:
                 expires = min(expires, valid_until)  # a discretionary intent never outlives its proposal
+            if finite is not None:
+                intent = dict(intent, authority=dict(decision_ms=now_ms, proposal_expires_ms=valid_until,
+                                                     authority_ms=expires, authority_seconds=finite[0],
+                                                     margin_seconds=finite[1]))
             decision_id = "decision:" + digest("larp.decision.v1", {"snapshot_id": snapshot.snapshot_id,
                                                                      "intent_id": intent["intent_id"]})
             # The organiser's order amount is USDT spent for BUY, token quantity for SELL.

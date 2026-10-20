@@ -109,16 +109,35 @@ class CapsProposal(unittest.TestCase):
             self.assertEqual(main(args), 4)
             self.assertEqual(before, dst.read_bytes())
 
-    def test_cli_reproduces_committed_utf8_lf_proposal_bytes(self):
+    def test_cli_preserves_historical_candidates_and_explicit_utf8_lf_report(self):
         root = Path(__file__).resolve().parents[2]
         evidence = root / 'docs' / 'build' / 'evidence'
         reference = evidence / 'signer-caps-reference-20261010.json'
         # Universal-newline reading recovers the committed LF bytes even from a CRLF checkout.
-        expected = (evidence / 'signer-caps-proposal-20261017.json').read_text(encoding='utf-8').encode('utf-8')
+        historical = json.loads((evidence / 'signer-caps-proposal-20261017.json').read_text(encoding='utf-8'))
+        expected = deepcopy(historical)
+        expected.update(router_mode='verified')
+        expected['limitations'][-1:] = ['EXACT_POLICY_OWNER_APPROVAL',
+                                       'ROUTER_SOURCE_REVIEW_AND_REAL_ROUTE_REPLAY']
         with tempfile.TemporaryDirectory() as directory, redirect_stdout(StringIO()):
             output = Path(directory) / 'proposal.json'
             self.assertEqual(main(['--reference', str(reference), '--output', str(output)]), 0)
-            self.assertEqual(output.read_bytes(), expected)
+            raw = output.read_bytes()
+            self.assertEqual(json.loads(raw), expected)
+            self.assertEqual(raw, (json.dumps(expected, sort_keys=True, indent=2, allow_nan=False) + '\n').encode('utf-8'))
+            self.assertEqual(json.loads(raw)['candidates'], historical['candidates'])
+
+    def test_cli_explicit_untrusted_mode_retains_historical_caps(self):
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(StringIO()):
+            reference, output = Path(directory) / 'reference.json', Path(directory) / 'proposal.json'
+            reference.write_text(json.dumps(inputs()))
+            self.assertEqual(main(['--reference', str(reference), '--output', str(output),
+                                   '--router-mode', 'untrusted']), 0)
+            report = json.loads(output.read_bytes())
+        self.assertEqual(report['router_mode'], 'untrusted')
+        self.assertEqual(report['candidates'], build(inputs())['candidates'])
+        self.assertIn('UNTRUSTED_POLICY_REVIEW_REPLAY_AND_LIVE_PREFLIGHT', report['limitations'])
+        self.assertFalse(report['ready_to_install'])
 
     def test_invalid_reference_cannot_create_output_or_echo_unknown_fields(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -843,3 +843,133 @@ changed. Static checks6 added local links/anchors, JSON/hash/status flags,
 renderer and whitespace PASS. No synthetic installable candidate was created.
 All changes are committed/pushed in the two review branches; no unpushed work,
 wallet/key/provider/receiver access or new artifacts in the IDE checkout.
+
+## C-OPEN-003 / #27 — decision and LD04 criteria (Keegan, 2026-10-20, prospective)
+
+**Decision: Option A** (SL-01, with Keith's conditional review KMP-02). Short
+proposal admission stays. An admitted decision gets a separate, finite,
+immutable execution authority:
+
+    A = min(t0 + L, signing_end, S1 execution-window end if any, new_risk_end for a discretionary BUY)
+
+`t0` is the decision snapshot time; `P` is the proposal expiry. A is computed
+once, when the round is planned. It is journaled in the plan record and carried
+as the command's `expires_ms`, so a re-quote, claim, restart or replay cannot
+extend it. Each swap payload must satisfy `now + m < route_deadline <= A`, and
+no step starts unless `now + m < A`.
+
+**Values are not decided here.** `L` (`execution_authority_seconds`) and `m`
+(`submission_margin_seconds`) are optional profile settings, set together or
+not at all, with no defaults. Without them the planner keeps today's bound
+(proposal and quote expiry), and #27's current refusals stay. A LIVE profile
+that sets them needs per-value provenance like every other live value. The
+numeric choice waits for LD02 host timings. New evidence: in all 15 recorded
+quotes the route's own deadline is about 500 s after the quote (IDEA-070
+B02-U), so a usable L is at least about 9–10 minutes plus the approve and
+re-quote time. 60 s would refuse every swap. API-trust assumption (B09-TRUST01):
+the route deadline is assumed to be enforced on chain. It is never used to
+release an uncertain send.
+
+**Pass criteria, written before any code (A1–A9):**
+
+- A1. Without the two settings, the plan's `expires_ms` is byte-identical to
+  today's: a discretionary intent never outlives its proposal (existing R03).
+- A2. With them, `expires_ms` = A exactly, for a discretionary buy, a mandatory
+  sell and an S1-bounded intent. It is not limited by `P` or the planning
+  quote's expiry. A discretionary buy is capped at `new_risk_end`; a mandatory
+  sell is not.
+- A3. The plan intent records `authority` = {decision_ms, proposal_expires_ms,
+  authority_ms, authority_seconds, margin_seconds}, with `authority_ms ==
+  expires_ms`. Replanning the same snapshot is byte-identical.
+- A4. The command schema refuses an `authority` record whose `authority_ms`
+  differs from `expires_ms`, or whose fields are malformed. `map_command` sets
+  `Intent.valid_until = expires_ms // 1000` and `authority_margin = m`. A
+  restart from the same stored command gives the same Intent.
+- A5. `validate_payload` with margin m refuses a step when `now + m >=
+  valid_until`, and a swap when `now + m >= deadline` or `deadline >
+  valid_until`. With m = 0 every existing check is unchanged.
+- A6. The executor runs, with fake ports and a virtual clock, a 15 s
+  proposal, a decoded deadline 30 s after each quote, and an approval delay.
+  With L = 60, m = 5 the approve → finality → re-quote → sign succeeds. A
+  re-quote whose deadline lands after A is refused. A restart at t = 35
+  keeps A = t0 + 60. A late approval leaving no margin refuses the swap.
+- A7. The signer's own `validate_payload` uses the stored intent's margin, so
+  the signer refuses what the executor refuses.
+- A8. Profile validation refuses: only one setting; m ≥ L; L below
+  `proposal_seconds`; L above 3600; non-integers.
+- A9. Full suite passes with disposable PostgreSQL.
+
+Out of scope: choosing L/m (after LD02), an UNKNOWN-send release rule (unchanged:
+reconciliation continues and reservations are kept), and gas top-ups (v1 is
+initial-gas-only, LD07).
+
+### LD04 results at `884021f` (2026-10-20)
+
+Criteria were pushed first, at `b72448b`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **A1 PASS.** Without the settings, plans carry no `authority`, and a
+  discretionary intent stays within its proposal. The existing redteam R03
+  still passes.
+- **A2 PASS.** With L=120 and m=10 (test values), `expires_ms` = t0 + 120 s,
+  beyond both the proposal and the planning quote. A discretionary buy 60 s
+  before `new_risk_end` is capped at `new_risk_end`; a mandatory sell after
+  it gets t0 + 120 s.
+- **A3 PASS.** The authority record matches, and replanning is byte-identical.
+- **A4 PASS.** Five malformed or mismatched records are refused. Mapping the
+  same stored command twice gives an identical Intent with the planned end
+  and margin.
+- **A5 PASS.** The margin refuses a deadline inside the margin, a deadline
+  after A and a step with no margin left. With m = 0 the existing rule is
+  unchanged.
+- **A6 PASS.** Approve → finality at +10 s → re-quote (deadline +40 s) → sign
+  succeeds. A finality at +35 s, then a restart, keeps A = t0 + 60; the
+  re-quote with deadline +65 is refused, and at +56 the margin refuses.
+- **A7 PASS.** The signer runs the same `validate_payload` on the stored
+  intent, covered by the A5 cases.
+- **A8 PASS.** Five profile-setting refusals; the full profile validator
+  refuses a lone setting.
+- **A9 PASS.** Full suite: **2168 passed, 11 skipped (environment), 3641
+  subtests**, 411.2 s.
+
+A mutation check confirmed the margin test fails when the margin is removed
+from the deadline comparison. Not done: choosing L and m (LD02 timings),
+review/merge, and release qualification (LD15). No live or signed path is
+enabled by this change.
+
+### LD04-RV01 — PR 200 review criteria (2026-10-20)
+
+Before running added checks: prove A is capped by `signing_end` and the S1
+execution-window end even when L would extend beyond either; exercise
+`LocalSigner.sign` with its independent clock and prove an exhausted authority
+margin or route-deadline margin calls no transaction signing and stores no
+signature. Run the authority, S1 execution and signer regressions, then the
+full Linux suite with disposable PostgreSQL on the current integration base.
+No numeric L/m or host qualification is adopted by these synthetic checks.
+
+LD04-RV01 finding: the executor checks its supplied tick before the durable
+`BROADCAST_ATTEMPTED` write, but `FencedRelease` checks only the S1 window with
+its fresh clock. A database/scheduling delay can therefore submit bytes after
+the new margin is exhausted. Before the fix, require a regression to refuse
+that send (and any finite-authority release with no current clock), call no
+submitter, and retain possible-send state for reconciliation. The fix must
+also recheck the decoded swap deadline at that boundary with the pinned decoder.
+
+LD04-RV01 results: both late-release/no-clock regressions failed at `1a3102b`
+because the submitter was reached. Fixed at `49c6bb0`: the final release checks
+the stored authority margin against a fresh clock, refuses clock regression or
+absence, and decodes a swap again using the production-pinned decoder to check
+its route margin. An exhausted margin never reaches the submitter. The durable
+possible-send state/signature remain for reconciliation; no uncertain send is
+released or retried. Positive coverage proves an in-margin swap sends exactly
+the registry's bytes. Added signing-end, S1-window and independent local-signer
+boundary checks pass too.
+
+At `4b121a2`, native Linux Python 3.12.15 / disposable PostgreSQL 14.24:
+**376 passed, 1150 subtests**, covering all execution tests, signer tests and
+strategy/integration execution-window tests. Deviation rendering and whitespace
+checks PASS. The first positive-send assertion incorrectly expected public
+state to contain signed bytes; corrected to read the private signature registry.
+Final combined full-suite verification follows with PR 201. Actions billing
+prevents jobs from starting; no hosted CI or host/signing qualification claimed.
+L/m selection and release qualification remain open.

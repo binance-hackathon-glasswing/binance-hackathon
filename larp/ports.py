@@ -107,6 +107,18 @@ def validate_execution_request(command: dict) -> dict:
         raise ContractError("Command identity differs from its intent")
     if _int(command.get("expires_ms"), "expires_ms", 1) != p.get("expires_ms"):
         raise ContractError("Command expiry differs from its intent")
+    if "authority" in p:  # #27 Option A (IDEA-049-C LD04): the finite authority fixed when the round was planned
+        a = p["authority"]
+        if type(a) is not dict or set(a) != {"decision_ms", "proposal_expires_ms", "authority_ms",
+                                             "authority_seconds", "margin_seconds"}:
+            raise ContractError("Malformed execution authority")
+        for key in ("decision_ms", "authority_ms", "authority_seconds", "margin_seconds"):
+            _int(a[key], "authority." + key, 1)
+        if a["proposal_expires_ms"] is not None:
+            _int(a["proposal_expires_ms"], "authority.proposal_expires_ms", 1)
+        if (a["authority_ms"] != p["expires_ms"] or a["margin_seconds"] >= a["authority_seconds"]
+                or not a["decision_ms"] < a["authority_ms"] <= a["decision_ms"] + a["authority_seconds"] * 1000):
+            raise ContractError("Execution authority differs from the command expiry or its own bounds")
     kind = p.get("kind", "BSTOCK_TRADE")
     if kind not in INTENT_KINDS or "purpose" in p:
         raise ContractError("Unknown intent kind")
