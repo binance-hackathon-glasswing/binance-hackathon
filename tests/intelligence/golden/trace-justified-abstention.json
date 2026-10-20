@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": false,
-  "assessment_key": "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b",
+  "assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "UNKNOWN",
@@ -32,7 +32,7 @@
   "impact_ordinal": null,
   "issuer_id": "FIXTURE-CIK-9900001",
   "missing_codes": [],
-  "model_hash": "13122a97fc376d36a354a8a234adfc4333641926b8554332c9067ef23a610958",
+  "model_hash": "86970e0633c94dc57ec8e15083201ade72ec720a2c073b4db8720863b90c1e4d",
   "n_changed": 1,
   "n_conflicts": 1,
   "n_falsifiers_fired": 0,
@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:605038933df556934e5a9e3de8e01f7381e18ea1bf0218d21cf2c83452bedf54",
+  "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -57,10 +57,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b"
+    "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac"
    ],
    "accepted_result_ids": [
-    "res:605038933df556934e5a9e3de8e01f7381e18ea1bf0218d21cf2c83452bedf54"
+    "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,19 +141,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:b432268e8cdab064fc35996e72ee6b8051af50033b0cc88d1a12de800f843835",
+   "batch_id": "state:287946bc41d3e225ac84e07c8c061a0580934b6f06d883a9df309493b53f47ae",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:da0978301b9b2f74eb2b4328c0007afea71bd93a216348fcfc9cb6f78af90f6a",
+     "job_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b",
+      "after_assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:605038933df556934e5a9e3de8e01f7381e18ea1bf0218d21cf2c83452bedf54",
+   "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b"
+     "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac"
     ],
     "accepted_result_ids": [
-     "res:605038933df556934e5a9e3de8e01f7381e18ea1bf0218d21cf2c83452bedf54"
+     "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:b432268e8cdab064fc35996e72ee6b8051af50033b0cc88d1a12de800f843835",
+   "batch_id": "state:287946bc41d3e225ac84e07c8c061a0580934b6f06d883a9df309493b53f47ae",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -391,7 +391,11 @@
   }
  },
  "result": {
-  "assessment_key": "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b",
+  "assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
+  "budget_allowed": {
+   "deadline_ms": 60000,
+   "tool_calls": 6
+  },
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 4,
@@ -531,13 +535,13 @@
   "job_id": "demo:justified-abstention",
   "missingness": [],
   "model": {
-   "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+   "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "13122a97fc376d36a354a8a234adfc4333641926b8554332c9067ef23a610958",
+  "model_hash": "86970e0633c94dc57ec8e15083201ade72ec720a2c073b4db8720863b90c1e4d",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -688,87 +692,10 @@
        },
        "prior_facts": [],
        "remaining_tool_calls": 6,
-       "tool_results": [
-        {
-         "accession": "0009900001-26-000190",
-         "chars": 244,
-         "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp corrected third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $34.2 billion.\n\n(in millions)\nQ3 FY27\nRevenue | $34,201",
-         "name": "exsm-ex991-q3a.htm",
-         "new_fact_ids": [
-          "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7"
-         ],
-         "status": "OK",
-         "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
-         "tool": "fetch_document",
-         "truncated": false
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [
-          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
-         ],
-         "metric": "revenue",
-         "periods": [
-          "FY2027-Q2",
-          "FY2027-Q3",
-          "FY2027-Q4"
-         ],
-         "status": "OK",
-         "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -900000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -882000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
-        }
-       ]
+       "tool_results": []
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1041,74 +968,11 @@
          "text_sha256": "e4777325fb97ed6e9aeaf62bda4b6e0fc1588e9b5a20ec89e1db763d03b27162",
          "tool": "fetch_document",
          "truncated": false
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [
-          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
-         ],
-         "metric": "revenue",
-         "periods": [
-          "FY2027-Q2",
-          "FY2027-Q3",
-          "FY2027-Q4"
-         ],
-         "status": "OK",
-         "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -900000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -882000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
         }
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1710,54 +1574,11 @@
          ],
          "status": "OK",
          "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -900000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            -882000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "relation": "LOWER"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            1700000000,
-            1
-           ],
-           "new_fact_id": "fact:c7e1e316f592add5a8b425a9ef4302e238413c53d8de205a162e9c208122d3d7",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
         }
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2398,7 +2219,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2590,7 +2411,8 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:605038933df556934e5a9e3de8e01f7381e18ea1bf0218d21cf2c83452bedf54",
+  "request_sha256": "20f76f262b4090d48a69bdbea3482c51dc49f2bac3d36c28a1d78d4ffc4e44dc",
+  "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",
@@ -2696,12 +2518,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:da0978301b9b2f74eb2b4328c0007afea71bd93a216348fcfc9cb6f78af90f6a",
+     "job_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "717a7012b6cbcfec515bda5613905682c55a7189bf4f2607125ccb0f74a43c7b",
+      "after_assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -2712,7 +2534,7 @@
     },
     "kind": "REASSESS",
     "reason": "CONFLICT_RESOLUTION",
-    "request_id": "evidence:da0978301b9b2f74eb2b4328c0007afea71bd93a216348fcfc9cb6f78af90f6a"
+    "request_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29"
    }
   ],
   "review_scope": null,
