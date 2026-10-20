@@ -2,7 +2,7 @@
 
 The kit's router (`0xb44446…fdda5`, a diamond proxy) and its swap facet publish no verified source, so
 `RouterEvidence.v1` cannot be written and `PinnedRouterDecoder` cannot be built. The team decided on 2026-10-19 to
-treat the router as untrusted and bound what it can take instead of trusting what it does. This module supplies:
+treat the router as untrusted, retaining input checks while accepting unverified contract behavior. This module supplies:
 
 - `UntrustedRouterDecoder.decode`: a byte-exact check of the calldata layout every recorded quote has used (IDEA-070
   B02-U), returning the pay token, receive token, amount, minimum output and inner deadline that the layout carries.
@@ -12,8 +12,9 @@ treat the router as untrusted and bound what it can take instead of trusting wha
   selector holds the pinned facet, the router's and facet's code hashes equal the pinned ones, the router's
   allowance from the wallet is at most the amount for the pay token and zero for every other pinned token.
 
-With the existing exact approve, the per-token signer caps and settlement's exact-input check, a misbehaving router
-can cost at most one capped trade's input, which is the residual risk DEV-23 records.
+Exact approves, signer input/fee caps and settlement checks constrain submitted authority and detect anomalous
+outcomes. They do not prove a maximum loss or recover lost funds: recipient, nested-call debit and on-chain
+deadline enforcement remain unverified. An anomalous unsettled fill withholds further signing (DEV-23).
 
     python -m larp.execution_live.untrusted_router observe --rpc-url URL --artifacts DIR --out NEW_FILE
     python -m larp.execution_live.untrusted_router check --policy FILE --sha256 HEX --artifacts DIR
