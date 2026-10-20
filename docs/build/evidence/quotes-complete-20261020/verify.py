@@ -47,7 +47,7 @@ def verify(captures):
     captures = Path(captures).resolve()
     manifest = (captures / 'SHA256SUMS').read_bytes()
     inventory, artifacts = {}, {}
-    outcomes, endpoints, methods = Counter(), Counter(), Counter()
+    outcomes, endpoints, methods, raw_missing = Counter(), Counter(), Counter(), Counter()
     timings = defaultdict(list)
     for line in manifest.decode().splitlines():
         expected, name = line.split(maxsplit=1)
@@ -67,7 +67,9 @@ def verify(captures):
                 check(sha(body) == a['response_sha256'], 'response bytes hash')
                 check(json.loads(body) == a['response'], 'parsed response equality')
             else:
-                raise ValueError('Raw response bytes missing; report partial verification explicitly')
+                # The transport hashes non-JSON replies but retains no reversible
+                # body. Keep that gap visible; never call it byte verification.
+                raw_missing[a['outcome']] += 1
             artifacts[expected] = a
             outcomes[a['outcome']] += 1
             endpoints[a['endpoint']] += 1
@@ -86,6 +88,7 @@ def verify(captures):
         a = artifacts[h]
         references[h] += 1
         check(a['endpoint'] == endpoint and a['outcome'] == 'ok' and a['http_status'] == 200, 'successful reference')
+        check('response_body_base64' in a, 'referenced response bytes retained')
         return a
 
     def quote(h, pay, receive, amount):
@@ -159,7 +162,8 @@ def verify(captures):
                 capture_source_commit=metadata['capture_source_commit'], source_identity='EXPORT_METADATA_NOT_HOST_ATTESTATION',
                 manifest_sha256=sha(manifest), verified_payload_files=len(inventory),
                 daily_files={n: d for n, d in inventory.items() if n.startswith('capture-')},
-                raw_artifacts=len(artifacts), raw_response_hashes_verified=len(artifacts),
+                raw_artifacts=len(artifacts), raw_response_hashes_verified=len(artifacts) - sum(raw_missing.values()),
+                response_bytes_unavailable=dict(raw_missing),
                 referenced_artifacts=len(references), reference_occurrences=sum(references.values()),
                 unreferenced_artifacts=len(artifacts.keys() - references.keys()),
                 endpoints=dict(endpoints), artifact_outcomes=dict(outcomes), methods=dict(methods),
