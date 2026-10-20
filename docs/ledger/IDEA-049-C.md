@@ -1056,3 +1056,16 @@ only difference between initial-only candidates with and without L/m. The candid
 `3393ce67…34fd` / StrategyProfile.v1 `70cb0d4f…d862`. No top-up keys; the action budget is still the FALLBACK-based
 DC-01 pair (76,177,634,176,000 wei), pending LD09 measured gas. The earlier non-initial-only candidate hashes in
 LD04-P are superseded.
+
+### LD04-P-RV01 — Isaac review of PR210 (2026-10-21 SGT; prospective)
+
+Isaac requests review, fixes as needed and merge. Review head `1a66bf9` against
+canonical `ffe6210` (including merged PR207/211). Criteria: AP1 inspect complete
+builder/CLI diff and validator/caller behavior; AP2 reproduce legacy DC01 and
+initial-only+authority candidates byte-for-byte, verify decision/evidence hashes
+and preserve missing-real-gas/S1/window/host limits; AP3 verify invalid/partial
+L/m/provenance refusals and unchanged output without authority; AP4 verify S1,
+initial-only gas and finite-authority planner/executor/signer integration with
+focused tests, explain all skips and retain CI limits; AP5 merge only a pushed
+exact reviewed head with no blocking defect and reconcile PR133/current records.
+No live profile pin, runtime startup, host/provider, model, key or wallet action.
