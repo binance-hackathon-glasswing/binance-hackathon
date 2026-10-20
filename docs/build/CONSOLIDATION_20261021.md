@@ -85,3 +85,11 @@ No runtime tests were needed or run for Markdown-only changes. Imported test,
 dry-run and host evidence retains original scope; this consolidation does not
 claim a new system test, host install, model call, wallet action or readiness.
 DCV5–6 promotion/noticeboard/closure receipts will follow after GitHub actions.
+
+Promotion PR: [214](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/214).
+At head `b6fa3b1`, [Actions39462120790](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39462120790)
+executed zero steps in all four jobs (one cancelled). The runtime annotation says
+recent account payments failed or the spending limit needs increasing. This is
+billing-blocked CI, not an executed test failure or CI PASS. Markdown-specific
+local checks above are the validation for this documentation-only promotion.
+All 11 original PR heads were unchanged at the pre-promotion recheck.
