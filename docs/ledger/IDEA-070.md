@@ -1125,3 +1125,12 @@ This is not an executed test failure or CI qualification. The merge uses local
 focused verification for this operator-script/test change; an exact qualified
 signed release and actual host acceptance remain separate. Local PG container
 is stopped after checks; no hosted operation was performed.
+
+LD02b-RV02 delivery: approved PR211 and merged exact reviewed head `7326223`
+at `0c1c77a4a5751c4b0b95681435c446c01bba78c1` (2026-10-21 SGT,
+2026-10-20 17:27:36 UTC). Original branch advanced normally; no history rewrite.
+Current status/LD plan and PR133 now distinguish merged PR207/211 from remaining
+PR206/210/draft212 work. The review receipt retains original and combined test
+sources/counts, zero-step billing CI and actual gas/RFQ/provider/caps/release/host
+limits. No whole LD09/10/Gate B acceptance item closes. Both session working
+trees remain clean after push; the disposable local PG container is stopped.

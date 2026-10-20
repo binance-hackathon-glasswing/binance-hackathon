@@ -25,7 +25,7 @@ separate review queues. [Retention/evidence](CONSOLIDATION_20261021.md),
 [delegated policy](../ledger/IDEA-084.md) and
 [signed release procedure](LD15_SIGNED_RELEASE_CHECKLIST.md).
 PR203 is superseded by PR207, whose history contains its exact head.
-Active code reviews: PR206/207/210/211 and draft PR212. Their checks apply only
+Active code reviews: PR206/210 and draft PR212. PR207 and PR211 are merged. Their checks apply only
 to their recorded sources; no combined release or hosted acceptance is implied.
 
 ## Repository scope retained
@@ -87,6 +87,15 @@ explained skips; root-sensitive permission case passes separately. Terraform
 [Acceptance matrix](INITIAL_GAS_ONLY.md) / [receipt](evidence/ld08-initial-gas-20261020.json).
 No numeric policy, installed alarm, exact signed release or host is accepted by
 these offline results.
+
+
+PR211 merged at `0c1c77a` after LD02b-RV02 review and two P2 repairs: full
+private-value filtering before error formatting and exact simulated allowance
+overrides. Combined with canonical PR207:125 local tests/449 subtests/zero
+skips using disposable PostgreSQL14.24. [Review receipt](evidence/pr211-review-20261021.json).
+Archived fresh-calldata/gas packets remain unchanged; provider-reported RFQ
+expiry does not establish the inner validity interval. Real gas/caps/provider/
+preflight/release/host acceptance remains open; hosted CI is billing-blocked.
 
 ## What still blocks installation / live acceptance
 
