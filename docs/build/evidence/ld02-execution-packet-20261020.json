@@ -1,0 +1,561 @@
+{
+ "claims": "LD02 operator packet. Not native-trace, signed-path or #92 evidence; the router draft stays REVIEW_REQUIRED and nothing is enabled.",
+ "configs_unchanged": true,
+ "execution_rpc": {
+  "candidates": [
+   {
+    "approved_for": "development balance reads",
+    "source_id": "BSC_BNBCHAIN_PUBLIC",
+    "url_fingerprint": "2e478f4aa0413423"
+   },
+   {
+    "approved_for": "development balance reads",
+    "source_id": "BSC_NODEREAL_PUBLIC",
+    "url_fingerprint": "e644968b15032fec"
+   }
+  ],
+  "configured_on_primary": [],
+  "status": "AWAITING_KEEGAN_CONFIRMATION"
+ },
+ "finality_end": [
+  {
+   "finalized": 128749700,
+   "lag_blocks": 1,
+   "lag_seconds": 1,
+   "latest": 128749701,
+   "source_id": "BSC_BNBCHAIN_PUBLIC"
+  },
+  {
+   "finalized": 128749702,
+   "lag_blocks": 1,
+   "lag_seconds": 1,
+   "latest": 128749703,
+   "source_id": "BSC_NODEREAL_PUBLIC"
+  }
+ ],
+ "finality_start": [
+  {
+   "finalized": 128749655,
+   "lag_blocks": 1,
+   "lag_seconds": 1,
+   "latest": 128749656,
+   "source_id": "BSC_BNBCHAIN_PUBLIC"
+  },
+  {
+   "finalized": 128749658,
+   "lag_blocks": 0,
+   "lag_seconds": 0,
+   "latest": 128749658,
+   "source_id": "BSC_NODEREAL_PUBLIC"
+  }
+ ],
+ "funding_input": {
+  "approve_gas": "UNMEASURED",
+  "bnb_value_units": 1945785,
+  "exit_gas_reserve_wei": 312320854920000,
+  "gas_price_wei": 50000000,
+  "indicative_swaps_affordable": 215,
+  "ld09_measured_gas": "UNMEASURED",
+  "median_quoted_swap_gas": 250000,
+  "native_wei": 2694498869362886,
+  "note": "Input for Isaac against LD07 (initial gas only); seeding needs LD09 measured gas x planned trades x margin.",
+  "reserve_multiple": 8.63,
+  "versus_exit_reserve": "AT_OR_ABOVE_EXIT_RESERVE"
+ },
+ "generated_utc": "2026-10-20T12:54:29.728Z",
+ "holdings": {
+  "assets": {
+   "BNB": {
+    "chain": 2694498869362886,
+    "cls": "MATCH",
+    "ledger": 2694498869362886
+   },
+   "GOOGLB": {
+    "chain": 0,
+    "cls": "MATCH",
+    "ledger": 0
+   },
+   "MSFTB": {
+    "chain": 0,
+    "cls": "MATCH",
+    "ledger": 0
+   },
+   "NVDAB": {
+    "chain": 0,
+    "cls": "MATCH",
+    "ledger": 0
+   },
+   "SKHYB": {
+    "chain": 0,
+    "cls": "MATCH",
+    "ledger": 0
+   },
+   "TSLAB": {
+    "chain": 0,
+    "cls": "MATCH",
+    "ledger": 0
+   },
+   "USDT": {
+    "chain": 98000000,
+    "cls": "MATCH",
+    "ledger": 98000000
+   }
+  },
+  "block": 128749659,
+  "block_hash": "0xa698f0f34c968a5f83d92c1e37c99dd80ab7b45d8edcb78088aa1ebb03ad5acb",
+  "latest_nonce": 2,
+  "native_wei": 2694498869362886,
+  "note": "fresh read in this run, not a #92 citation",
+  "observation_sha256": "a911e6ceb9f759ea3e72511a1319886c37c74bdfece218d04750f06841b91a16",
+  "observed_utc": "2026-10-20T12:54:32.143Z",
+  "pending_nonce": 2,
+  "served_by": "BSC_BNBCHAIN_PUBLIC",
+  "status": "MATCH"
+ },
+ "identity": {
+  "build_id": "ea25b52325656a19b29e8ddb07b94dd792be6e18",
+  "config_sha256": {
+   "release_manifest": "e592a13e4859cc155702b9dbd64016acd1597903db38d0bb907b6144ad056573",
+   "runtime": "8cb8fc74d54c70b30880afa882a1a9465fb76b26b7b1dadf57eb4b52a61cb119",
+   "strategy_profile": "d951207f432879eda6b349ae334104e47803f809eb5e94aef422c2e31cab4542"
+  },
+  "database_name": "larp_trial2",
+  "execution": "shadow",
+  "host": "larp-dev-primary (private hostname redacted)",
+  "mode": "dev",
+  "registered_build_matches": true,
+  "registered_manifest_matches": true,
+  "run": {
+   "epoch": 2,
+   "quarantined": false,
+   "version": 188
+  },
+  "run_id": "larp-dev-llm-trial-20261018t170339z",
+  "wallet_consistent": true,
+  "wallet_fingerprint": "72afa2ee745685ab"
+ },
+ "in_flight": {
+  "commands": {},
+  "execution_pending": [],
+  "reservations": {},
+  "rounds": {
+   "CLOSED": 70
+  },
+  "settled_block": null
+ },
+ "quotes": {
+  "rows": [
+   {
+    "artifact": "c1904d2d51dbcc23",
+    "calldata": "5316aea598c158bb",
+    "deadline_after_request_s": 499.6,
+    "elapsed_ms": 253,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 89661889562647927,
+    "native_value_zero": true,
+    "pay_units": 19443104,
+    "quoted_gas": 250000,
+    "receive_units": 89805578488229094,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "NVDAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "85fffb012893f135",
+    "calldata": "787e0361d8f2a6d6",
+    "deadline_after_request_s": 499.3,
+    "elapsed_ms": 149,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 92691165989197164,
+    "native_value_zero": true,
+    "pay_units": 20100000,
+    "quoted_gas": 250000,
+    "receive_units": 92839709524436263,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "NVDAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "fcb438d3e86cc465",
+    "calldata": "e080bbca95ad71c4",
+    "deadline_after_request_s": 499.9,
+    "elapsed_ms": 140,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 19411217392164298868,
+    "native_value_zero": true,
+    "pay_units": 89805578488229094,
+    "quoted_gas": 250000,
+    "receive_units": 19442325112344049347,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "SELL",
+    "status": "OK",
+    "symbol": "NVDAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "8c8b8f3a625f8ce4",
+    "calldata": "c58fb856c9e2ad00",
+    "deadline_after_request_s": 499.6,
+    "elapsed_ms": 137,
+    "impact_percent": "0.0005329595",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 56398971693695063,
+    "native_value_zero": true,
+    "pay_units": 19443104,
+    "quoted_gas": 250000,
+    "receive_units": 56489354661152908,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "GOOGLB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "4b6c599ffc029033",
+    "calldata": "c6ce8fb690b349d6",
+    "deadline_after_request_s": 499.2,
+    "elapsed_ms": 146,
+    "impact_percent": "0.0005340730",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 58304377123479513,
+    "native_value_zero": true,
+    "pay_units": 20100000,
+    "quoted_gas": 250000,
+    "receive_units": 58397813625279961,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "GOOGLB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "6df637050998c0cc",
+    "calldata": "2229c08ec5a25896",
+    "deadline_after_request_s": 499.9,
+    "elapsed_ms": 148,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 19415210146149189726,
+    "native_value_zero": true,
+    "pay_units": 56489354661152908,
+    "quoted_gas": 250000,
+    "receive_units": 19446324264973146761,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "SELL",
+    "status": "OK",
+    "symbol": "GOOGLB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "7ecb5b1cfc257872",
+    "calldata": "544397b7e636fb3d",
+    "deadline_after_request_s": 499.5,
+    "elapsed_ms": 143,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 141364656393449174,
+    "native_value_zero": true,
+    "pay_units": 19443104,
+    "quoted_gas": 250000,
+    "receive_units": 141591202317156625,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "SKHYB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "3a37ec97a386e1b9",
+    "calldata": "50ea273a03141fb8",
+    "deadline_after_request_s": 499.2,
+    "elapsed_ms": 135,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 146140739334024464,
+    "native_value_zero": true,
+    "pay_units": 20100000,
+    "quoted_gas": 250000,
+    "receive_units": 146374939236803350,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "SKHYB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "d370adf2930a39f7",
+    "calldata": "192ce8a2085ceb5d",
+    "deadline_after_request_s": 499.8,
+    "elapsed_ms": 138,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 19408792140880481393,
+    "native_value_zero": true,
+    "pay_units": 141591202317156625,
+    "quoted_gas": 250000,
+    "receive_units": 19439895974439584729,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "SELL",
+    "status": "OK",
+    "symbol": "SKHYB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "3738597a57110a95",
+    "calldata": "28aa8d5ffb265153",
+    "deadline_after_request_s": 499.5,
+    "elapsed_ms": 140,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 52621820590679622,
+    "native_value_zero": true,
+    "pay_units": 19443104,
+    "quoted_gas": 250000,
+    "receive_units": 52706150431369814,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "TSLAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "d4a1c9061a95eec9",
+    "calldata": "6208031c180a56c0",
+    "deadline_after_request_s": 499.1,
+    "elapsed_ms": 140,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 54399677843242539,
+    "native_value_zero": true,
+    "pay_units": 20100000,
+    "quoted_gas": 250000,
+    "receive_units": 54486856814145172,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "TSLAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "846c8eca41b1cd49",
+    "calldata": "af90e0c3fffedcb8",
+    "deadline_after_request_s": 499.8,
+    "elapsed_ms": 135,
+    "impact_percent": "0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 19410675040377974553,
+    "native_value_zero": true,
+    "pay_units": 52706150431369814,
+    "quoted_gas": 250000,
+    "receive_units": 19441781891404221308,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "SELL",
+    "status": "OK",
+    "symbol": "TSLAB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "3920c6154b098ef1",
+    "calldata": "30ba41a4c35efd6a",
+    "deadline_after_request_s": 499.4,
+    "elapsed_ms": 162,
+    "impact_percent": "-0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 36166029039368837,
+    "native_value_zero": true,
+    "pay_units": 19443104,
+    "quoted_gas": 250000,
+    "receive_units": 36223987419239621,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "MSFTB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "8df9f1e88ee66715",
+    "calldata": "88d8de6a5b31a7c9",
+    "deadline_after_request_s": 500.1,
+    "elapsed_ms": 171,
+    "impact_percent": "-0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 37387918291817689,
+    "native_value_zero": true,
+    "pay_units": 20100000,
+    "quoted_gas": 250000,
+    "receive_units": 37447834827541756,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "BUY",
+    "status": "OK",
+    "symbol": "MSFTB",
+    "vendor": "LiquidMesh"
+   },
+   {
+    "artifact": "216506833cbf31e9",
+    "calldata": "efdd77546e539210",
+    "deadline_after_request_s": 499.7,
+    "elapsed_ms": 163,
+    "impact_percent": "-0.0000000000",
+    "minimum_below_quote_bps": 16,
+    "minimum_receive": 19386659686726939981,
+    "native_value_zero": true,
+    "pay_units": 36223987419239621,
+    "quoted_gas": 250000,
+    "receive_units": 19417728051609515206,
+    "request_bound": true,
+    "router_pinned": true,
+    "selector_pinned": true,
+    "side": "SELL",
+    "status": "OK",
+    "symbol": "MSFTB",
+    "vendor": "LiquidMesh"
+   }
+  ],
+  "sizes": {
+   "minimum_trade_units": 19443104,
+   "per_trade_cap_units": 20100000,
+   "slippage_bps": 16
+  }
+ },
+ "router": {
+  "allowances_to_router": {
+   "GOOGLB": 0,
+   "MSFTB": 0,
+   "NVDAB": 0,
+   "SKHYB": 0,
+   "TSLAB": 0,
+   "USDT": 0
+  },
+  "block": 128749690,
+  "draft": {
+   "chain_id": 56,
+   "deviation": "DEV-23",
+   "diamond_storage_base": "0x5e12654f390e4153c4f63b3dfcc122cf7876a5cdfb496dccf7284c10517a35c5",
+   "facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+   "facet_codehash": "0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0",
+   "facet_slot": "0x7ddc1c45a5ae31800e181de98e8cb97525e9b89f99e5829d49f25a8ca4bac1d7",
+   "fixed_words": {
+    "1": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "2": "0x0000000000000000000000003d90f66b534dd8482b181e24655a9e8265316be9",
+    "7": "0x000000000000000000000000d2a27f8fdbaaec431d59046a8bce4e5db665a271",
+    "9": "0x0000000000000000000000000000000000000000000000000000000000000140"
+   },
+   "inner_selector": "0x47ee97ff",
+   "review": {
+    "review_ref": "REVIEW_REQUIRED",
+    "reviewed_by": "REVIEW_REQUIRED"
+   },
+   "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+   "router_codehash": "0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0",
+   "schema": "UntrustedRouterPolicy.v1",
+   "selector": "0xad43f73d"
+  },
+  "draft_sha256": "346fa80d6bfcca605da2698b5b766eac26495cbcab2a6e27bd2344a991347ee1",
+  "quotes_used": 15,
+  "served_by": "BSC_BNBCHAIN_PUBLIC",
+  "status": "DRAFT_REVIEW_REQUIRED"
+ },
+ "router_module_sha256": "9934f5372f406ad9b9b62e85da93421128d68fdf2722af234f358d6140b0923a",
+ "schema": "LD02ExecutionPacket.v1",
+ "signer_timings": {
+  "fields": [
+   "queue_ms",
+   "sign_ms",
+   "broadcast_ms",
+   "receipt_ms",
+   "finality_ms"
+  ],
+  "reason": "no signer installed; the signer host was not queried",
+  "status": "UNMEASURED"
+ },
+ "signing_enabled": false,
+ "timings": {
+  "quote_ms": {
+   "BINANCE_WEB3:quote-and-swap": {
+    "max": 253,
+    "median": 143,
+    "min": 135,
+    "n": 15
+   }
+  },
+  "rpc_ms": {
+   "BSC_BNBCHAIN_PUBLIC:eth_call": {
+    "max": 478,
+    "median": 462.0,
+    "min": 412,
+    "n": 18
+   },
+   "BSC_BNBCHAIN_PUBLIC:eth_chainId": {
+    "max": 415,
+    "median": 415,
+    "min": 415,
+    "n": 1
+   },
+   "BSC_BNBCHAIN_PUBLIC:eth_gasPrice": {
+    "max": 460,
+    "median": 460,
+    "min": 460,
+    "n": 1
+   },
+   "BSC_BNBCHAIN_PUBLIC:eth_getBalance": {
+    "max": 476,
+    "median": 476,
+    "min": 476,
+    "n": 1
+   },
+   "BSC_BNBCHAIN_PUBLIC:eth_getBlockByNumber": {
+    "max": 473,
+    "median": 468.5,
+    "min": 429,
+    "n": 6
+   },
+   "BSC_BNBCHAIN_PUBLIC:eth_getTransactionCount": {
+    "max": 473,
+    "median": 473.0,
+    "min": 473,
+    "n": 2
+   },
+   "BSC_NODEREAL_PUBLIC:eth_getBlockByNumber": {
+    "max": 489,
+    "median": 468.0,
+    "min": 414,
+    "n": 4
+   }
+  }
+ }
+}

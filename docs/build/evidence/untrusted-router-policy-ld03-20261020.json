@@ -1,0 +1,23 @@
+{
+  "chain_id": 56,
+  "deviation": "DEV-23",
+  "diamond_storage_base": "0x5e12654f390e4153c4f63b3dfcc122cf7876a5cdfb496dccf7284c10517a35c5",
+  "facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+  "facet_codehash": "0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0",
+  "facet_slot": "0x7ddc1c45a5ae31800e181de98e8cb97525e9b89f99e5829d49f25a8ca4bac1d7",
+  "fixed_words": {
+    "1": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "2": "0x0000000000000000000000003d90f66b534dd8482b181e24655a9e8265316be9",
+    "7": "0x000000000000000000000000d2a27f8fdbaaec431d59046a8bce4e5db665a271",
+    "9": "0x0000000000000000000000000000000000000000000000000000000000000140"
+  },
+  "inner_selector": "0x47ee97ff",
+  "review": {
+    "review_ref": "IDEA-070 LD03 (2026-10-20)",
+    "reviewed_by": "Keegan (Weixuan Keegan Gan)"
+  },
+  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+  "router_codehash": "0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0",
+  "schema": "UntrustedRouterPolicy.v1",
+  "selector": "0xad43f73d"
+}

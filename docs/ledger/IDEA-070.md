@@ -785,3 +785,86 @@ their SHA-256 differs from the pinned value; the module is loaded in memory only
 - P11. **Local:** offline tests cover the sanitizer, the embedded-module hash,
   deadline extraction, quote binding and refusal paths; focused and full
   suites pass.
+
+### LD02 results — script `2106d6c`, SSM `70965d91-0b91-4436-86f6-c33d8ffc2236` (2026-10-20 12:54 UTC)
+
+Run by a Claude Code session for Keegan, with direct read-only SSM on `primary`
+(IAM user `larp-claude-session`). Packet SHA-256 as printed on the host:
+`f0c7274d11121598fd40d20f12592d593006abc12ad6a465c627a234296dcaa4`. Committed copy
+[ld02-execution-packet-20261020.json](../build/evidence/ld02-execution-packet-20261020.json)
+differs only by the redacted private hostname (SHA-256 `ad43b634…c4ced4`).
+
+**Superseded first run:** SSM `c89ef2c8-129a-4b46-818a-0a1e7bada96f` at `b70d623`
+(packet `6ebf85a5…71bd3`) compared `exit_gas_reserve_units` with the BNB's USDT
+value and reported `BELOW_EXIT_RESERVE`. The planner compares it with
+`ledger.bnb_units` (wei). Fixed in `2106d6c` with a test that fails on the old
+comparison; the rerun above is the packet of record. All other fields agreed.
+
+- **P1 PASS.** No `://`, wallet, secret, provider URL/host or database host (final
+  scan passed; independently re-checked: the only 40-hex addresses are the public
+  router and facet). Providers appear as source ID plus fingerprint.
+- **P2 PASS.** `configs_unchanged=true`; artifacts in memory; SQL `READ ONLY`; no file written.
+- **P3 PASS.** Build `ea25b52`, run `larp-dev-llm-trial-20261018t170339z` (version 188,
+  epoch 2, not quarantined), DB `larp_trial2`, mode dev, execution shadow. Runtime
+  `8cb8fc74…`, release manifest `e592a13e…`, profile `d951207f…`. Wallet fingerprint
+  `72afa2ee745685ab`, consistent across config, run and ledger; registered build and
+  manifest match.
+- **P4 PASS.** Fresh finalized read at block 128749659 by `BSC_BNBCHAIN_PUBLIC`:
+  all seven assets MATCH (USDT 98.000000; BNB 2,694,498,869,362,886 wei; five bStocks 0).
+  Nonce latest = pending = 2. No reservations, commands, pending executions or open
+  rounds (70 rounds CLOSED); `settled_block` null.
+- **P5 PASS.** Draft `346fa80d6bfcca605da2698b5b766eac26495cbcab2a6e27bd2344a991347ee1`
+  at block 128749480 from 15 fresh quotes: router `0xb44446…fdda5`, slot
+  `0x7ddc1c45…c1d7`, facet `0xa9fa1b56…e603`, router codehash `0xb6f35276…96a0`,
+  facet codehash `0x5ae2caa1…8ba0`, fixed words {1: 0, 2: `0x3d90f66b…6be9`,
+  7: `0xd2a27f8f…a271`, 9: `0x140`}, DEV-23, review `REVIEW_REQUIRED`. All six router
+  allowances are 0.
+- **P6 PASS.** 15/15 quotes OK, request-bound, pinned router and selector, zero
+  native value, LiquidMesh. Profile sizes: minimum 19.443104 USDT, cap 20.100000 USDT,
+  slippage 16 bp (minimum output 16 bp below quoted in every row). Quoted swap gas
+  250,000 everywhere. **Route deadline after request: 499.1–500.1 s** (both runs, 30 quotes).
+- **P7 PASS.** Quote round trip 135–253 ms (median 143). RPC round trip to response
+  headers 413–478 ms per call (medians 415–476) on both providers. Latest-to-finalized
+  lag 0–1 block (0–1 s) at start and end on both. Signer timings `UNMEASURED`.
+- **P8 PASS (input only).** 0.002694 BNB = 8.63 × the profile's exit reserve
+  (312,320,854,920,000 wei); gas price 0.05 gwei; indicative 215 swaps at the quoted
+  250,000 gas. Approve gas and LD09 measured gas `UNMEASURED`. This is Isaac's input
+  against LD07, not a funding decision.
+- **P9 PASS.** No execution RPC configured on `primary`. Candidates:
+  `BSC_BNBCHAIN_PUBLIC` (`2e478f4aa0413423`), `BSC_NODEREAL_PUBLIC` (`e644968b15032fec`),
+  both approved for development balance reads only. Status `AWAITING_KEEGAN_CONFIRMATION`.
+- **P10 PASS.** The packet states it is not native-trace, signed-path or #92 evidence.
+- **P11:** offline tests 11 passed / 11 subtests; a mutation of the sanitizer's URL
+  refusal and the old reserve comparison each fail a test. Full suite: see below.
+- **P11 full suite** (disposable PostgreSQL 16, Python 3.12): 2225 passed, 11 skipped,
+  3692 subtests on the pre-fix tree, and the same again (442.7 s) at `2106d6c`. After the
+  docs-only LD03/LD04-V01 edits, the 190 tests that read docs, ledger or evidence files pass.
+
+## LD03 — Keegan's review of the observed router policy (2026-10-20)
+
+Keegan **accepts** the LD02 draft as the reviewed untrusted-router policy (DEV-23).
+Review checks, from the LD02 packet and the repository record:
+
+| Check | Result |
+|---|---|
+| Router | `0xb44446…fdda5`, the kit router (module constant, B02-U) |
+| Selector slot | `0x7ddc1c45…c1d7`, as computed in B02-U; it dispatches to facet `0xa9fa1b56…e603`, the same facet B02-U recorded on 2026-10-19 |
+| Code hashes | router `0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0`, facet `0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0`, first pinned here (B02-U noted identical BSC/Ethereum code but recorded no hash) |
+| Fixed words | {1: 0, 2: `0x3d90f66b…6be9`, 7: `0xd2a27f8f…a271`, 9: `0x140`}: identical to all 15 Oct 18 recorded quotes and to the test fixture; no economic word pinned |
+| Fresh quotes | 15/15 request-bound to the pinned router and selector, zero native value; route deadline 499.1–500.1 s after request |
+| Allowances | all six router allowances 0 at block 128749480 |
+| Wallet | absent from calldata (B02-U), and the packet's sanitizer confirms the fixed words are not the wallet |
+
+Reviewed file: [untrusted-router-policy-ld03-20261020.json](../build/evidence/untrusted-router-policy-ld03-20261020.json),
+the draft with `review = {reviewed_by: Keegan (Weixuan Keegan Gan), review_ref: IDEA-070 LD03 (2026-10-20)}`,
+written in `observe`'s own format. **SHA-256 `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`.**
+`validate_policy` accepts it, and `untrusted_router check` against the 15 recorded quotes in
+`quotes-interim-20261018/selected-raw` returns PASS (each quote decoded, each tampered copy refused),
+`signing_enabled=false`. That local check is a sanity check, not Isaac's replay or live preflight.
+
+Not claimed: source guarantees, recipient or nested-debit enforcement, on-chain deadline enforcement
+(assumed, B09-TRUST01), or any maximum loss. The diamond owner can replace facets; the live preflight
+re-checks the facet slot and both code hashes before every swap. **Execution RPC: not confirmed.**
+Keegan's reply re-stated the Oct 19 approval of development balance reads only, which the host already
+uses; no RPC is approved for execution. Next: Isaac pins the hash in `execution.json`/`signer.json`,
+replays and runs the live preflight.
