@@ -196,15 +196,14 @@ class AllowanceRecovery(unittest.TestCase):
         self.assertEqual(sent.attempts[-1].step, step(USDT))
 
     def test_cleanup_uses_parent_gas_budget_and_expiry_never_renews_it(self):
-        h = self.harness(); i = h.intent(gas_budget=150000)
+        h = self.harness(); i = h.intent(gas_budget=270000)
+        h.venue.estimate = 200000
         h.rpc.allowances[USDT] = 1
         h.executor.create(i, h.now)
         h.finish_step(i)
-        state = h.executor.prepare(i.key, h.now + 1)  # 50k spent + 120k next > 150k
+        state = h.executor.prepare(i.key, h.now + 1)  # 50k spent + 240k next > 270k
         self.assertIn('parent gas budget', state.blocked_reason)
         self.assertEqual(len(state.attempts), 1)
-        service = ExecutionService(store=None, executor=h.executor, mapping={}, observe=lambda _: None,
-            wallet_id=f.WALLET, epoch=1, authority_version=1)
         # Pure Executor expiry guard independently refuses fresh cleanup/approval.
         state = h.executor.prepare(i.key, i.valid_until)
         self.assertIn('expired', state.blocked_reason)
