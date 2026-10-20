@@ -9,6 +9,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'docs/build/ops/ld02-20261020/execution-packet.sh'
 MODULE = ROOT / 'larp/execution_live/untrusted_router.py'
+POLICY = ROOT / 'docs/build/evidence/untrusted-router-policy-ld03-20261020.json'
+RECORDED = ROOT / 'docs/build/evidence/quotes-interim-20261018/selected-raw'
 USDT = '0x55d398326f99059ff775485246999027b3197955'
 TOKENS = dict(NVDAB='0x' + '1' * 40)
 WALLET = '0x' + 'ab' * 20
@@ -168,9 +170,12 @@ class Ld02PacketScriptTests(unittest.TestCase):
             port.client.artifacts.put(r)  # as Web3Client.request stores every response
             return r
 
-        def rpc(url, source, method, params, log):
+        def rpc(url, source, method, params, log, scope=None):
             log.append((source, method, 3))
-            return {'eth_gasPrice': hex(10**8), 'eth_call': '0x0'}[method]
+            if method == 'eth_call' and len(params) == 3:
+                return hex(2**255)
+            return {'eth_gasPrice': hex(10**8), 'eth_call': '0x0', 'eth_getBlockByNumber': dict(number='0x10'),
+                    'eth_getStorageAt': hex(10**12), 'eth_estimateGas': hex(60_000)}[method]
 
         module = ns['load_router_module']()
         with patch.dict(ns, read_configs=lambda: dict(raw), database=lambda c: (run, [], [('DONE', 2)], [('CLOSED', 3)]),
@@ -197,6 +202,11 @@ class Ld02PacketScriptTests(unittest.TestCase):
         self.assertEqual(packet['funding_input']['reserve_multiple'], 3.0)
         self.assertEqual(packet['funding_input']['indicative_swaps_affordable'], 3 * 10**15 // (250000 * 10**8))
         self.assertFalse(packet['signing_enabled'])
+        gas = packet['gas_estimates']
+        self.assertEqual(gas['allowance_override_proof'], dict(balance_slot_matches=True, override_effective=True))
+        self.assertEqual(set(gas['approve']), {'USDT', *REAL_TOKENS})
+        self.assertEqual(set(gas['swap_buy_minimum']), set(REAL_TOKENS))
+        self.assertEqual(packet['policy_check']['policy_sha256'], hashlib.sha256(POLICY.read_bytes()).hexdigest())
 
     def test_refusal_output_carries_only_type_and_own_codes(self):
         refusal = self.ns['refusal']
@@ -211,6 +221,144 @@ class Ld02PacketScriptTests(unittest.TestCase):
         own = {c for c in self.ns['OWN_CODES']}
         raised = set(__import__('re').findall(r"raise ValueError\('([A-Z_]+)'\)", SCRIPT.read_text()))
         self.assertEqual(raised, own)  # every code the script raises is allowlisted, and nothing else
+
+    def scope(self):
+        return dict(wallet=WALLET, router=self.m.ROUTER, usdt=USDT, tokens={USDT, TOKENS['NVDAB']},
+                    calldata={self.calldata()})
+
+    def test_g5_only_read_and_simulation_shapes_are_allowed(self):
+        ok, scope, m = self.ns['allowed_call'], self.scope(), self.m
+        approve = self.ns['APPROVE_CALL'] + m.ROUTER[2:].rjust(64, '0') + format(5, '064x')
+        slot = self.ns['mapping_slot'](m.ROUTER, self.ns['mapping_slot'](WALLET, 2))
+        override = {USDT: {'stateDiff': {slot: '0x' + format(self.ns['OVERRIDE_ALLOWANCE'], '064x')}}}
+        allowed = [('eth_estimateGas', [dict({'from': WALLET, 'to': USDT, 'data': approve, 'value': '0x0'}), '0x1']),
+                   ('eth_estimateGas', [{'from': WALLET, 'to': m.ROUTER, 'data': self.calldata()}, '0x1', override]),
+                   ('eth_getStorageAt', [USDT, '0x' + '0' * 64, '0x1']),
+                   ('eth_call', [dict(to=USDT, data='0xdd62ed3e' + '0' * 128), '0x1', override])]
+        for method, params in allowed:
+            with self.subTest(allowed=method):
+                self.assertTrue(ok(method, params, scope))
+        other_spender = self.ns['APPROVE_CALL'] + ('9' * 40).rjust(64, '0') + format(5, '064x')
+        refused = [('eth_sendRawTransaction', ['0x00']),
+                   ('eth_estimateGas', [dict({'from': '0x' + 'cd' * 20, 'to': USDT, 'data': approve}), '0x1']),
+                   ('eth_estimateGas', [dict({'from': WALLET, 'to': USDT, 'data': approve, 'value': '0x1'}), '0x1']),
+                   ('eth_estimateGas', [dict({'from': WALLET, 'to': USDT, 'data': other_spender}), '0x1']),
+                   ('eth_estimateGas', [dict({'from': WALLET, 'to': m.ROUTER, 'data': self.calldata(deadline=7)}), '0x1']),
+                   ('eth_estimateGas', [dict({'from': WALLET, 'to': '0x' + '9' * 40, 'data': approve}), '0x1']),
+                   ('eth_estimateGas', [dict({'from': WALLET, 'to': USDT, 'data': approve, 'gas': '0x1'}), '0x1']),
+                   ('eth_getStorageAt', [TOKENS['NVDAB'], '0x' + '0' * 64, '0x1']),
+                   ('eth_call', [dict(to=USDT, data='0xa9059cbb' + '0' * 128), '0x1']),
+                   ('eth_call', [dict(to=USDT, data='0xdd62ed3e' + '0' * 128), '0x1',
+                                 {TOKENS['NVDAB']: {'stateDiff': {'0x1': '0x2'}}}]),
+                   ('eth_call', [dict(to=USDT, data='0xdd62ed3e' + '0' * 128), '0x1',
+                                 {USDT: {'stateDiff': {'0x1': '0x2', '0x3': '0x4'}}}]),
+                   ('eth_call', [dict(to=USDT, data='0xdd62ed3e' + '0' * 128), '0x1', {USDT: {'code': '0x00'}}])]
+        for method, params in refused:
+            with self.subTest(refused=method, params=str(params)[:60]):
+                self.assertFalse(ok(method, params, scope))
+                with self.assertRaisesRegex(ValueError, 'RPC_(CALL|METHOD)_REFUSED'):
+                    self.ns['rpc']('https://a.b', 'P', method, params, [], scope)
+
+    def test_g1_g2_reviewed_policy_is_pinned_and_passes_recorded_quotes(self):
+        self.assertEqual(self.ns['POLICY_JSON'].encode(), POLICY.read_bytes())
+        self.assertEqual(self.ns['POLICY_SHA256'], hashlib.sha256(POLICY.read_bytes()).hexdigest())
+        files = list(self.ns['load_router_module']()._quotes(RECORDED))  # the module's own file reader
+        self.m._quotes = lambda _d: iter(files)
+        policy = json.loads(POLICY.read_bytes())
+        report = self.ns['policy_check'](self.m, {k: v for k, v in policy.items() if k != 'review'} | dict(review={}))
+        self.assertEqual((report['status'], report['quotes'], report['matches_live_draft']), ('PASS', 15, True))
+        self.assertTrue(all(r['matches_quote'] and r['tampered_refused'] for r in report['rows']))
+        changed = dict(policy, facet='0x' + '7' * 40)
+        self.assertFalse(self.ns['policy_check'](self.m, changed)['matches_live_draft'])
+        self.ns['POLICY_JSON'] = self.ns['POLICY_JSON'].replace('DEV-23', 'DEV-24')
+        with self.assertRaisesRegex(ValueError, 'POLICY_HASH'):
+            self.ns['policy_check'](self.m, None)
+
+    def test_g4_swap_gas_is_withheld_unless_the_override_is_proven(self):
+        def fake(balance, effective):
+            def rpc(url, source, method, params, log, scope=None):
+                if method == 'eth_call':
+                    return hex(2**255 if effective else 0)
+                return {'eth_getBlockByNumber': dict(number='0x10'), 'eth_getStorageAt': hex(balance),
+                        'eth_estimateGas': hex(55_000)}[method]
+            return rpc
+        observation = dict(tokens=dict(USDT=dict(units=10**12)))
+        args = (dict(url='https://p', source_id='P'), self.scope(), observation, {'NVDAB': self.calldata()},
+                {'USDT': 5}, [], TOKENS)
+        for balance, effective, estimated in ((10**12, True, True), (10**12 + 1, True, False), (10**12, False, False)):
+            with self.subTest(balance=balance, effective=effective):
+                self.ns['rpc'] = fake(balance, effective)
+                out = self.ns['gas_estimates'](*args)
+                self.assertEqual(out['approve']['USDT'], 55_000)
+                if estimated:
+                    self.assertEqual(out['swap_buy_minimum'], {'NVDAB': 55_000})
+                else:
+                    self.assertEqual(out['swap_buy_minimum']['status'], 'NOT_ESTIMATED')
+
+    def error_string(self, text):
+        raw = text.encode()
+        return ('0x08c379a0' + format(32, '064x') + format(len(raw), '064x') + raw.hex().ljust(-(-len(raw) // 32) * 64, '0'))
+
+    def test_f1_refused_simulation_keeps_a_filtered_reason(self):
+        refused = self.ns['RpcRefused']
+        detail = refused(dict(code=3, message='execution reverted: TRANSFER_FROM_FAILED',
+                              data=self.error_string('TRANSFER_FROM_FAILED'))).detail()
+        self.assertEqual(detail, dict(rpc_code=3, message='execution reverted: TRANSFER_FROM_FAILED',
+                                      revert_selector='0x08c379a0', revert_text='TRANSFER_FROM_FAILED'))
+        self.assertEqual(str(refused(dict(code=-32000))), 'RPC_REFUSED')
+        leaky = refused(dict(code=-32000, message='see https://rpc.example/key', data=self.error_string('a/b://c'))).detail()
+        self.assertEqual((leaky['message'], leaky['revert_text']), ('FILTERED', 'FILTERED'))
+        self.assertEqual(refused(dict(code=3, message='reverted', data='0x1234abcd' + '00' * 4)).detail(),
+                         dict(rpc_code=3, message='reverted', revert_selector='0x1234abcd'))
+        self.assertEqual(self.ns['revert_text']('0x08c379a0' + 'zz'), 'FILTERED')
+        self.assertEqual(self.ns['plain']('caf\u00e9 ' + 'x' * 200)[:6], 'caf? x')
+        self.assertTrue(self.ns['plain']('y' * 200).endswith('...[200 chars]'))
+
+    def test_f1_estimate_returns_the_detail_and_the_final_scan_still_applies(self):
+        refused = self.ns['RpcRefused']
+
+        def rpc(*args, **kwargs):
+            raise refused(dict(code=3, message='execution reverted: owner ' + WALLET[2:]))
+        self.ns['rpc'] = rpc
+        gas, reason = self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], None)
+        self.assertIsNone(gas)
+        self.assertEqual((reason['code'], reason['rpc_code']), ('RPC_REFUSED', 3))
+        forbidden = self.ns['forbidden_values'](dict(wallet_address=WALLET), {}, [])
+        with self.assertRaises(ValueError):  # a reason that echoes the wallet refuses the whole packet
+            self.ns['sanitize'](json.dumps(dict(reason=reason)), forbidden)
+
+    def test_error_secrets_are_refused_before_truncation_or_ascii_conversion(self):
+        secret = 'PrivateCredentialValueThatMustNeverAppear1234567890'
+        wallet = WALLET[2:]
+        scope = self.scope() | dict(forbidden=[secret, wallet, 'private-database.example'])
+        for text in ('x' * 145 + secret, 'x' * 150 + wallet,
+                     'x' * 150 + 'private-database.example', 'x' * 145 + 'privateCaf\u00e9Credential'):
+            with self.subTest(text=text[:12]):
+                scope['forbidden'] = [secret, wallet, 'private-database.example', 'privateCaf\u00e9Credential']
+                def rpc(*args, **kwargs):
+                    raise self.ns['RpcRefused'](dict(code=3, message=text))
+                self.ns['rpc'] = rpc
+                with self.assertRaisesRegex(ValueError, 'SANITIZER_FORBIDDEN_VALUE'):
+                    self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], scope)
+        # The decoded ABI text can carry a secret even if the short RPC message does not.
+        def rpc(*args, **kwargs):
+            raise self.ns['RpcRefused'](dict(code=3, message='reverted', data=self.error_string('x' * 145 + secret)))
+        self.ns['rpc'] = rpc
+        with self.assertRaisesRegex(ValueError, 'SANITIZER_FORBIDDEN_VALUE'):
+            self.ns['estimate'](dict(url='https://p', source_id='P'), [{}], [], scope)
+
+    def test_override_is_exactly_the_wallet_router_allowance(self):
+        scope, ok = self.scope(), self.ns['allowed_call']
+        slot = self.ns['mapping_slot'](scope['router'], self.ns['mapping_slot'](WALLET, 2))
+        value = '0x' + format(self.ns['OVERRIDE_ALLOWANCE'], '064x')
+        tx = dict({'from': WALLET, 'to': scope['router'], 'data': self.calldata()})
+        self.assertTrue(ok('eth_estimateGas', [tx, '0x1', {USDT: {'stateDiff': {slot: value}}}], scope))
+        for override in ({USDT: {'stateDiff': {'0x' + '0' * 64: value}}},
+                         {USDT: {'stateDiff': {slot: '0x' + '0' * 64}}},
+                         {USDT: {'stateDiff': {slot: value}, 'code': '0x00'}},
+                         {USDT: {'stateDiff': 'not a mapping'}}):
+            with self.subTest(override=override):
+                self.assertFalse(ok('eth_estimateGas', [tx, '0x1', override], scope))
 
 
 if __name__ == '__main__':

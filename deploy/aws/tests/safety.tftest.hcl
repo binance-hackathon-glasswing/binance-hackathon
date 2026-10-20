@@ -221,7 +221,7 @@ run "service_alarms_follow_the_hosts" {
   }
   assert {
     condition = toset(keys(aws_cloudwatch_metric_alarm.service)) == toset(
-    ["runtime-heartbeat", "runtime-halted", "runtime-quarantined", "uploader-overdue", "signer-unanswered"])
+    ["runtime-heartbeat", "runtime-halted", "runtime-quarantined", "runtime-low-gas", "uploader-overdue", "signer-unanswered"])
     error_message = "IDEA-047 R5: one alarm per service signal while hosts run."
   }
   assert {
@@ -231,6 +231,10 @@ run "service_alarms_follow_the_hosts" {
   assert {
     condition     = aws_cloudwatch_metric_alarm.service["runtime-heartbeat"].comparison_operator == "LessThanThreshold" && aws_cloudwatch_metric_alarm.service["signer-unanswered"].threshold == 0
     error_message = "Heartbeat alarms below 1; counts alarm above 0."
+  }
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.service["runtime-low-gas"].metric_name == "GasPairUnaffordable" && aws_cloudwatch_metric_alarm.service["runtime-low-gas"].threshold == 0 && aws_cloudwatch_metric_alarm.service["runtime-low-gas"].comparison_operator == "GreaterThanThreshold"
+    error_message = "LD08: unaffordable initial-only action gas must have a dedicated alarm."
   }
   assert {
     condition     = length(aws_sns_topic.alarms) == 0 && length(aws_sns_topic_subscription.alarm_email) == 0

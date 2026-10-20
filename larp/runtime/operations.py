@@ -65,6 +65,7 @@ def publish_health(client, deployment, healthy, services=None):
         data += [_metric(deployment, 'runtime', 'Heartbeat', int(services['runtime_alive'])),
                  _metric(deployment, 'runtime', 'Halted', len(services['halt_reasons'])),
                  _metric(deployment, 'runtime', 'Quarantined', int(services['quarantined'])),
+                 _metric(deployment, 'runtime', 'GasPairUnaffordable', int(services.get('gas_pair_unaffordable', False))),
                  _metric(deployment, 'uploader', 'OverdueLogs', services['audit_overdue']),
                  _metric(deployment, 'signer', 'UnansweredRequests', services['signing_unanswered'])]
     client.put_metric_data(Namespace='LARP/Runtime', MetricData=data)
