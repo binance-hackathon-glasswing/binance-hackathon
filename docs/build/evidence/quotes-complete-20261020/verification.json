@@ -1,0 +1,256 @@
+{
+  "api_elapsed_ms": {
+    "aggregator/approve-transaction": {
+      "maximum": 1951,
+      "p90": 141,
+      "samples": 3852
+    },
+    "aggregator/quote-and-swap": {
+      "maximum": 5104,
+      "p90": 173,
+      "samples": 6168
+    },
+    "market/rwa/tokens": {
+      "maximum": 1904,
+      "p90": 277,
+      "samples": 386
+    },
+    "pre-transaction/gas-limit": {
+      "maximum": 1585,
+      "p90": 158,
+      "samples": 3852
+    }
+  },
+  "artifact_outcomes": {
+    "api_or_http_error": 3852,
+    "authentication_error": 1,
+    "non_json_response": 1,
+    "ok": 10404
+  },
+  "bnb_max_success_gap": {
+    "end": "2026-10-18T06:56:06.986Z",
+    "milliseconds": 15884160,
+    "start": "2026-10-18T02:31:22.826Z"
+  },
+  "buy_cash_raw": [
+    40000000000000000000
+  ],
+  "capture_hash": "407a08e744aaaaf95e30f006deb56a59b220a2bb2fe1f8b9b21b4fc118986ecd",
+  "capture_source_commit": "eda2ed2ab1ab4b72f220eb6b92e882737d950825",
+  "coverage": {
+    "bnb_quotes": 385,
+    "failures": 2,
+    "samples": 1924,
+    "utc_days": [
+      "2026-10-16",
+      "2026-10-17",
+      "2026-10-18",
+      "2026-10-19"
+    ],
+    "weekend_days": [
+      "2026-10-17",
+      "2026-10-18"
+    ]
+  },
+  "daily_files": {
+    "capture-2026-10-16.jsonl": {
+      "bytes": 140585,
+      "sha256": "a125d2a400c1a5375d609dfdd24200aead10099aa23376ac29b9a4f6fbaa3379"
+    },
+    "capture-2026-10-17.jsonl": {
+      "bytes": 585327,
+      "sha256": "a07a128bf34cde047e2985ae9657379672ad0e6dcfc2ed44e55e81a634b8e3b6"
+    },
+    "capture-2026-10-18.jsonl": {
+      "bytes": 487513,
+      "sha256": "286c8a287f721c6a8b93dfa4534acd0906c47ad746c449418493abfe8d681f86"
+    },
+    "capture-2026-10-19.jsonl": {
+      "bytes": 588529,
+      "sha256": "9e49d8879cb18eede6b9873fb7d39d2eed60ed05ca683d5a4e2947951a0201e4"
+    }
+  },
+  "endpoints": {
+    "aggregator/approve-transaction": 3852,
+    "aggregator/quote-and-swap": 6168,
+    "market/rwa/tokens": 386,
+    "pre-transaction/gas-limit": 3852
+  },
+  "failures": [
+    {
+      "at": "2026-10-18T02:41:22.837Z",
+      "kind": "FAILURE",
+      "reason": "authentication_error",
+      "stage": "ROUND",
+      "symbol": null
+    },
+    {
+      "at": "2026-10-19T14:24:49.757Z",
+      "kind": "FAILURE",
+      "reason": "api_or_http_error",
+      "stage": "SELL_QUOTE",
+      "symbol": "MSFTB"
+    }
+  ],
+  "fee_netting": "UNVERIFIED",
+  "first_record": "2026-10-16T18:19:09.205Z",
+  "historical_caps_screen": {
+    "approved": false,
+    "candidates": {
+      "development": {
+        "buy_quotes_exceeding_usdt_cap": 1924,
+        "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
+        "fallback_swaps_exceeding_fee_cap": 1,
+        "sample_max_approvals_exceeding_fee_cap": 0,
+        "sell_quotes_exceeding_token_cap": {
+          "GOOGLB": 0,
+          "MSFTB": 0,
+          "NVDAB": 0,
+          "SKHYB": 0,
+          "TSLAB": 0
+        }
+      },
+      "final": {
+        "buy_quotes_exceeding_usdt_cap": 0,
+        "cap_basis": "EXAMPLE_PENDING_TEAM_DECISION",
+        "fallback_swaps_exceeding_fee_cap": 1,
+        "sample_max_approvals_exceeding_fee_cap": 0,
+        "sell_quotes_exceeding_token_cap": {
+          "GOOGLB": 0,
+          "MSFTB": 0,
+          "NVDAB": 0,
+          "SKHYB": 0,
+          "TSLAB": 0
+        }
+      }
+    },
+    "current_holdings_full_exits": "NOT_SUPPLIED",
+    "fee_cap_exceptions": [
+      {
+        "at": "2026-10-19T19:20:59.049Z",
+        "draft_fee_cap_wei": 200000000000000,
+        "fallback_fee_wei": 202073877828000,
+        "fallback_gas_limit": 1116000,
+        "gas_price_wei": 181069783,
+        "leg": "BUY",
+        "quote_artifact_sha256": "07f43952ccbb347b7327a45a9decec2949cfa1f32d4a781a1f4a86be310f12b2",
+        "quote_gas_limit": 250000,
+        "symbol": "NVDAB"
+      }
+    ],
+    "proposal_file_sha256": "2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a"
+  },
+  "latest_record": "2026-10-19T23:57:06.600Z",
+  "live_profile_acceptance": false,
+  "manifest_sha256": "b17002b02570332b40cbcb68fe072c9afffe4dfda19c0f2c0b6118c07c5ffc01",
+  "maximum_fallback_swap_wei": 202073877828000,
+  "maximum_sample_approve_wei": 7870378320000,
+  "methods": {
+    "GET": 10406,
+    "POST": 3852
+  },
+  "profile_candidates": {
+    "final-live.json": {
+      "applicable_draft_usdt_cap_raw": 70000000000000000000,
+      "baseline": "EQUAL_WEIGHT",
+      "document_sha256": "adcf1032beb17569a792db7ee39a9bef37d84d799c3f7f13e487ee0541e24d9d",
+      "file_sha256": "7151a55d145d64d17c9cec880442027a947bb05f58c7af11cf1426eab3f61bae",
+      "fits_applicable_draft_cash_cap": true,
+      "fits_draft_35_usdt_dev_input_cap": false,
+      "gas_top_up_cash_units": 663460,
+      "minimum_trade_units": 17745807,
+      "per_trade_cap_units": 40200000
+    },
+    "rehearsal-live.json": {
+      "applicable_draft_usdt_cap_raw": 35000000000000000000,
+      "baseline": "EQUAL_WEIGHT",
+      "document_sha256": "ed67dfca62750b898aad2f6e932c626bb00a5b72c40f57d827d96af7f1487039",
+      "file_sha256": "401739f5dfdcbbd38e26a58c66fa76855e5377427234ca60fb0b7a8395d4060f",
+      "fits_applicable_draft_cash_cap": true,
+      "fits_draft_35_usdt_dev_input_cap": true,
+      "gas_top_up_cash_units": 663460,
+      "minimum_trade_units": 17745807,
+      "per_trade_cap_units": 20100000
+    }
+  },
+  "raw_artifacts": 14258,
+  "raw_data_committed": false,
+  "raw_response_hashes_verified": 14257,
+  "record_id": "DC-01",
+  "reference_occurrences": 11929,
+  "referenced_artifacts": 10390,
+  "response_bytes_unavailable": {
+    "non_json_response": 1
+  },
+  "result": "PASS",
+  "schema": "CompletedQuoteCaptureVerification.v1",
+  "signed_caps_accepted": false,
+  "source_identity": "EXPORT_METADATA_NOT_HOST_ATTESTATION",
+  "swap_gas_methods": {
+    "FALLBACK": 3848
+  },
+  "tokens": {
+    "GOOGLB": {
+      "max_success_gap": {
+        "end": "2026-10-18T06:54:57.968Z",
+        "milliseconds": 15884114,
+        "start": "2026-10-18T02:30:13.854Z"
+      },
+      "samples": 385,
+      "sell_token_units_range": [
+        115336674787558320,
+        118160539292310203
+      ]
+    },
+    "MSFTB": {
+      "max_success_gap": {
+        "end": "2026-10-18T06:55:49.750Z",
+        "milliseconds": 15884161,
+        "start": "2026-10-18T02:31:05.589Z"
+      },
+      "samples": 384,
+      "sell_token_units_range": [
+        74558073959674162,
+        75976854251500039
+      ]
+    },
+    "NVDAB": {
+      "max_success_gap": {
+        "end": "2026-10-18T06:54:40.727Z",
+        "milliseconds": 15884110,
+        "start": "2026-10-18T02:29:56.617Z"
+      },
+      "samples": 385,
+      "sell_token_units_range": [
+        182081193386910497,
+        188922172324518573
+      ]
+    },
+    "SKHYB": {
+      "max_success_gap": {
+        "end": "2026-10-18T06:55:15.237Z",
+        "milliseconds": 15884140,
+        "start": "2026-10-18T02:30:31.097Z"
+      },
+      "samples": 385,
+      "sell_token_units_range": [
+        274043139167900122,
+        312721594900356286
+      ]
+    },
+    "TSLAB": {
+      "max_success_gap": {
+        "end": "2026-10-18T06:55:32.483Z",
+        "milliseconds": 15884152,
+        "start": "2026-10-18T02:30:48.331Z"
+      },
+      "samples": 385,
+      "sell_token_units_range": [
+        108292857236520080,
+        115079643210177040
+      ]
+    }
+  },
+  "unreferenced_artifacts": 3868,
+  "verified_payload_files": 14268
+}

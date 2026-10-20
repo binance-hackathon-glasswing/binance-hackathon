@@ -3,7 +3,7 @@
 - 2026-10-16 renumbered (Claude Code session, at Keegan's request, PR #88 review): this entry was first written as IDEA-057, which #85 (merged to `main`) uses for AIand evidence routing. The quote record and its references are now IDEA-063 so both records survive the merge. Commit messages before the rename still say IDEA-057.
 
 - Date / owner: 2026-10-15 SGT / built with Claude Code at the user's request ("create the summary tool"). Runs with real quotes belong to Isaac or Keith (dev-wallet Web3 API key); the summary and profiles need Isaac's and Keith's review before they are pinned.
-- Status: real capture running (started 2026-10-16 18:19:07 UTC on Keith's Linux server; first round: 5 samples, 1 BNB price quote, 0 failures; summary, fee-netting check and owner review open)
+- Status (2026-10-20): completed capture/export independently verified; default summary and candidate profiles reproduced (DC-01). Selected-profile, fee-netting and measured signer-cap acceptance remain open.
 - Links: DEPLOYMENT_DAY.md "Inputs the shadow run still needs" item 1; `larp/strategy/profiles.py` (`quote_summary`, `build_live_profiles`); `config/strategy/LIVE.md`; `larp/execution_live/gate_b.py` DR-01 ("raw capture attribution and three-day/weekend coverage still required"); participant-kit.md K4, K8 (quote-and-swap, approve-transaction, gas-limit); ledger rule 4.
 
 ## What and why
@@ -291,3 +291,95 @@ all860 swap-gas estimates FALLBACK; final defaults correctly refuse. Raw API
 responses were not reverified. Final capture/profile, #119/#120/#44 acceptance
 and full-holdings/gas inputs remain open with Keith/Isaac. Results and reproducible
 verifier are in the linked directory; no new market/host/wallet operation.
+
+## DC-01 — completed Desktop capture analysis (2026-10-20, prospective)
+
+Keith requests continued development using the completed Desktop capture and a
+completion update on PR133. Use canonical `codex/system-testing-20261012` at
+`928b8a8`; PR133 remains an open noticeboard. Scope is the independently
+completable LD09 capture-analysis/profile-construction slice, not installation
+or acceptance of the whole measured execution packet.
+
+Pass criteria, committed before analysis:
+
+1. Verify every payload against the export's SHA256SUMS, all JSONL records and
+   their raw-artifact references; retain the manifest/daily-file hashes and
+   capture-source identity. Do not commit raw captures, API responses or logs.
+2. Run the existing offline summary with unchanged defaults: three UTC dates,
+   weekend coverage and ten samples per token per regime. Preserve failures,
+   interruptions, fallback gas and UNVERIFIED fee-netting labels. Any refusal
+   remains a refusal; do not tune thresholds or remove observations.
+3. Reproduce the delivered YP-01 interim provenance independently. Keep its
+   original two-day/nine-sample provenance separate from this completed export.
+4. Run existing profile construction against the completed summary and the
+   published predicate set. Generated EQUAL_WEIGHT profiles are review candidates
+   only. Do not invent S1 weights, adopt example parameters/windows, approve
+   fallback gas, or enable signing. Record exact file and document-domain hashes,
+   minimum size, amounts/reserves and comparison to the draft 35-USDT dev cap.
+5. Retain a reproducible verification receipt, complete summary/report and
+   candidate profiles with explicit limits. Enumerate unsupported sizes/full
+   exits, gas/fee evidence and remaining owner reviews. Run the existing
+   marketdata/strategy tests; distinguish local verification from hosted CI.
+6. Update the canonical backlog to remove only completed work and link a focused
+   PR. On PR133, check off this completed analysis slice and keep LD09's missing
+   current measurements and #119/#120/#44 acceptance open. No host, provider,
+   model, wallet, signing, spending or deployment operation is in scope.
+
+### DC-01 results — 2026-10-20
+
+**Capture/summary/candidate-construction slice complete; acceptance remains
+open.** Detailed findings, exact hashes, commands, owner handoffs and the
+reproducible verifier/receipts are in
+[quotes-complete-20261020](../build/evidence/quotes-complete-20261020/README.md).
+
+- Criteria pushed at `4035d93`; unchanged canonical producer/builder exercised
+  at `4a496a0`. Final verifier pushed at `85adb01` before execution. Verified
+  all14,268 export payload checksums/14,258 artifact addresses;14,257 reversible
+  HTTP bodies rehash exactly. One unreferenced non-JSON HTTP502 has no retained
+  body; only its transport hash exists. Every successful sample/BNB record's
+  referenced artifacts and request/response amounts, chain, tokens and vendor
+  bind; approve/fallback gas products and openState metadata reproduce.
+- Unchanged defaults PASS:1,924 samples,385BNB quotes,four UTC dates/both weekend
+  dates,42–43 US-session and342 off-session samples/token. Two failures and
+  largest BNB success gap4h24m44.160s retained. All3,848 swap-gas estimates are
+  FALLBACK. All successful token-open observations are true; no continuity or
+  future-open guarantee follows. Fee inclusion remains UNVERIFIED (#119).
+- Summary capture hash
+  `407a08e744aaaaf95e30f006deb56a59b220a2bb2fe1f8b9b21b4fc118986ecd`;
+  summary file `9d4479e3b02e0aceb2c739e7292b8ca80043972b5c258734c7439a979ef1946a`.
+  Rehearsal candidate file
+  `401739f5dfdcbbd38e26a58c66fa76855e5377427234ca60fb0b7a8395d4060f`;
+  final file `7151a55d145d64d17c9cec880442027a947bb05f58c7af11cf1426eab3f61bae`.
+  Both summary/report objects and both candidate file bytes reproduce exactly.
+  Existing EQUAL_WEIGHT policy/windows preserved, no S1 values invented/adopted.
+- Minimum17.745807USDT; rehearsal/final cash caps20.10/40.20USDT; top-up
+  cash0.663460USDT. These cash amounts fit the respective draft35/70 caps.
+  Historical buys are all40USDT (all exceed the dev35 input cap); sampled sells
+  fit draft stock-quantity caps but are not actual full holdings. One NVDAB BUY
+  fallback gas product202,073,877,828,000wei exceeds draft200,000,000,000,000wei.
+  This exception is identified by exact timestamp/quote hash in the receipt;
+  p90 values below the cap do not establish worst-case coverage. No cap changed.
+- Keith independently replays YP-01: original interim summary object, report
+  coverage/symbols and original516-record byte prefixes match. Its original
+  two-day/nine-US-session coverage still refuses final defaults. That older
+  provenance remains distinct and is no longer waiting on Keith's replay.
+- Local macOS arm64/Python3.12.14 regression: marketdata+strategy **249 passed,
+  1 external-corpus skip,161 subtests**,16.96s. No application module/config
+  changed. No full suite, Linux/host/release or hosted-CI acceptance claimed.
+- Remaining owners: Isaac/Keith #120 exact selected profile/size/hash review;
+  Isaac #119 attributable fee evidence; approved operator/Isaac fresh holdings,
+  requested-size/full-exit quotes and actual usable gas; Keegan/Isaac LD07/08
+  gas-scope decision/qualification; Keith/Keegan LD11 selected strategy values;
+  Isaac LD10/#44 final measured caps decision. No live pin/readiness flag,
+  signing, provider, spending, host or deployment action. LD09 stays partial.
+
+### DC-01 delivery — 2026-10-20
+
+[PR197](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/197)
+targets canonical `codex/system-testing-20261012`; review/merge remain pending.
+PR133's noticeboard now checks **LD09-DC01** complete and links this delivery;
+LD09 retains its current-data/#119/#120/#44 prerequisites. PR197 identifies
+#118's completed construction deliverable for closure on merge, without closing
+the separate review gates. Final audit replay is byte-identical to the retained
+receipt and all eight derived-file checksums pass. Original user checkout and
+Desktop export remain untouched; no deployment or readiness change.
