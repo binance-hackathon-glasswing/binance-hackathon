@@ -1069,3 +1069,11 @@ initial-only gas and finite-authority planner/executor/signer integration with
 focused tests, explain all skips and retain CI limits; AP5 merge only a pushed
 exact reviewed head with no blocking defect and reconcile PR133/current records.
 No live profile pin, runtime startup, host/provider, model, key or wallet action.
+
+LD04-P-RV01 P2 finding at `1a66bf9`: the builder validates L/m through
+`execution_authority()`, but public `validate_live()` does not. A valid generated
+profile edited to L=1/3601/bool/string, m=0/L, or a missing authority field passes
+that validator. Gate A/B, cap review and runtime startup call it directly; schema
+planning checks later are not an equivalent early refusal. Prospective fix: use
+the same existing authority contract in LIVE validation, preserving both-absent
+legacy profiles and unchanged valid candidates. Regressions precede the fix.

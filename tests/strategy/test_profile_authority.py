@@ -74,3 +74,20 @@ def test_authority_composes_with_initial_gas_only_scope():
                                                          'submission_margin_seconds')} == {k: v for k, v in a.items() if k != 'provenance'}
         assert execution_authority(b) == (660, 30)
         validate_live(b)
+
+
+@pytest.mark.parametrize('change', [
+    dict(execution_authority_seconds=1), dict(execution_authority_seconds=3601),
+    dict(execution_authority_seconds=True), dict(execution_authority_seconds='660'),
+    dict(submission_margin_seconds=0), dict(submission_margin_seconds=660),
+    'missing_margin', 'missing_seconds'])
+def test_live_validator_refuses_invalid_or_partial_authority(change):
+    p = build_live_profiles(summary(), registry(), authority=AUTHORITY)['FINAL'].read()
+    if change == 'missing_margin':
+        p.pop('submission_margin_seconds')
+    elif change == 'missing_seconds':
+        p.pop('execution_authority_seconds')
+    else:
+        p.update(change)
+    with pytest.raises(ContractError):
+        validate_live(p)
