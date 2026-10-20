@@ -117,8 +117,15 @@ CLAIMS = ('LD02 operator packet. Not native-trace, signed-path or #92 evidence; 
           'REVIEW_REQUIRED and nothing is enabled.')
 CONFIGS = {'runtime': '/etc/larp/runtime.json', 'release_manifest': '/etc/larp/release.json',
            'strategy_profile': '/etc/larp/strategy-profile.json'}
-ALLOWANCE_CALL = '0xdd62ed3e'
-RPC_METHODS = frozenset(('eth_chainId', 'eth_getBlockByNumber', 'eth_gasPrice', 'eth_call'))
+ALLOWANCE_CALL, APPROVE_CALL = '0xdd62ed3e', '0x095ea7b3'
+RPC_METHODS = frozenset(('eth_chainId', 'eth_getBlockByNumber', 'eth_gasPrice', 'eth_call', 'eth_estimateGas',
+                         'eth_getStorageAt'))
+# LD03's reviewed policy (IDEA-070 LD03), exact file bytes; LD02b decodes this run's fresh quotes under it.
+POLICY_SHA256 = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'
+POLICY_JSON = '{\n  "chain_id": 56,\n  "deviation": "DEV-23",\n  "diamond_storage_base": "0x5e12654f390e4153c4f63b3dfcc122cf7876a5cdfb496dccf7284c10517a35c5",\n  "facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",\n  "facet_codehash": "0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0",\n  "facet_slot": "0x7ddc1c45a5ae31800e181de98e8cb97525e9b89f99e5829d49f25a8ca4bac1d7",\n  "fixed_words": {\n    "1": "0x0000000000000000000000000000000000000000000000000000000000000000",\n    "2": "0x0000000000000000000000003d90f66b534dd8482b181e24655a9e8265316be9",\n    "7": "0x000000000000000000000000d2a27f8fdbaaec431d59046a8bce4e5db665a271",\n    "9": "0x0000000000000000000000000000000000000000000000000000000000000140"\n  },\n  "inner_selector": "0x47ee97ff",\n  "review": {\n    "review_ref": "IDEA-070 LD03 (2026-10-20)",\n    "reviewed_by": "Keegan (Weixuan Keegan Gan)"\n  },\n  "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",\n  "router_codehash": "0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0",\n  "schema": "UntrustedRouterPolicy.v1",\n  "selector": "0xad43f73d"\n}\n'
+# Binance-Peg BSC-USD (BEP20Token): _balances at slot 1 and _allowances at slot 2, proven on chain before use (G4).
+USDT_BALANCE_SLOT, USDT_ALLOWANCE_SLOT = 1, 2
+OVERRIDE_ALLOWANCE = 2**255
 SIGNER_TIMINGS = ('queue_ms', 'sign_ms', 'broadcast_ms', 'receipt_ms', 'finality_ms')
 
 
@@ -136,7 +143,7 @@ def epoch_s(stamp):
 
 OWN_CODES = frozenset(('CALLDATA_LAYOUT', 'CALLDATA_SELECTOR', 'NO_BALANCE_PROVIDERS', 'ROUTER_MODULE_HASH',
                        'RPC_CALL_REFUSED', 'RPC_METHOD_REFUSED', 'RPC_REFUSED', 'SANITIZER_FORBIDDEN_VALUE',
-                       'SANITIZER_URL'))
+                       'SANITIZER_URL', 'POLICY_HASH'))
 
 
 def refusal(error):
@@ -171,7 +178,7 @@ class MemoryArtifacts:
 
     def put(self, observation):
         raw = json.dumps(observation, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
-        self.records.append(observation)
+        self.records.append(json.loads(raw))  # a copy: the client later adds artifact_sha256 to its own dict
         return hashlib.sha256(raw).hexdigest()
 
 
@@ -190,13 +197,47 @@ class TimedOpener:
             self.log.append((self.source_id, method, round((time.monotonic() - start) * 1000)))
 
 
-def rpc(url, source_id, method, params, log):
-    """One read-only JSON-RPC call outside the production client (allowance, gas price, finality)."""
+def word_hex(value):
+    return format(value, '064x')
+
+
+def mapping_slot(key, slot):
+    """Solidity mapping slot keccak256(pad(key) || pad(slot)); `key` is an address or a 0x word."""
+    from eth_utils import keccak
+    return '0x' + keccak(bytes.fromhex(str(key)[2:].rjust(64, '0') + word_hex(slot if type(slot) is int else int(slot, 16)))).hex()
+
+
+def allowed_call(method, params, scope):
+    """G5: the only shapes this script may send. `scope` = {wallet, router, usdt, tokens, calldata}."""
+    def override_ok(value):
+        return (type(value) is dict and set(value) == {scope['usdt']} and set(value[scope['usdt']]) == {'stateDiff'}
+                and len(value[scope['usdt']]['stateDiff']) == 1)
+    if method in ('eth_chainId', 'eth_getBlockByNumber', 'eth_gasPrice'):
+        return True
+    tx = params[0] if params and type(params[0]) is dict else {}
+    data = str(tx.get('data', ''))
+    if method == 'eth_call':
+        return data[:10] == ALLOWANCE_CALL and (len(params) == 2 or (len(params) == 3 and override_ok(params[2])))
+    if method == 'eth_getStorageAt':
+        return scope is not None and params[0] == scope['usdt'] and len(params) == 3
+    if method == 'eth_estimateGas' and scope is not None:
+        if set(tx) - {'from', 'to', 'data', 'value'} or tx.get('from') != scope['wallet'] or tx.get('value', '0x0') != '0x0':
+            return False
+        if len(params) == 3 and not override_ok(params[2]) or len(params) not in (2, 3):
+            return False
+        approve = (tx.get('to') in scope['tokens'] and data[:10] == APPROVE_CALL and len(data) == 138
+                   and data[10:74] == scope['router'][2:].rjust(64, '0'))
+        return approve or (tx.get('to') == scope['router'] and data in scope['calldata'])
+    return False
+
+
+def rpc(url, source_id, method, params, log, scope=None):
+    """One read-only JSON-RPC call outside the production client (allowance, gas, storage, finality)."""
     from urllib.request import Request, build_opener
     from larp.marketdata.web3 import NoRedirect
     if method not in RPC_METHODS or not url.startswith('https://'):
         raise ValueError('RPC_METHOD_REFUSED')
-    if method == 'eth_call' and str(params[0].get('data', ''))[:10] != ALLOWANCE_CALL:
+    if not allowed_call(method, params, scope):
         raise ValueError('RPC_CALL_REFUSED')
     body = json.dumps(dict(jsonrpc='2.0', id=1, method=method, params=params)).encode()
     start = time.monotonic()
@@ -272,6 +313,72 @@ def memory_quotes(records):
         if type(tx) is dict and str(tx.get('data', '')).startswith('0x'):
             raw = json.dumps(value, sort_keys=True, separators=(',', ':')).encode()
             yield hashlib.sha256(raw).hexdigest(), value['params'], tx
+
+
+def policy_check(module, draft):
+    """G1/G2: the reviewed policy, hash-pinned, against this run's live draft and fresh calldata."""
+    raw = POLICY_JSON.encode()
+    if hashlib.sha256(raw).hexdigest() != POLICY_SHA256:
+        raise ValueError('POLICY_HASH')
+    policy = json.loads(raw)
+    unreviewed = {k: v for k, v in policy.items() if k != 'review'}
+    try:
+        report = module.check(module.UntrustedRouterDecoder(policy, policy_sha256=POLICY_SHA256), None)
+    except Exception as error:
+        return dict(policy_sha256=POLICY_SHA256, status='REFUSED', error=code(error))
+    rows = [dict(artifact=r['artifact_sha256'][:16], status=r['status'], matches_quote=r.get('matches_quote'),
+                 tampered_refused=r.get('tampered_refused'),
+                 **({'refused': r['refused']} if re.fullmatch(r'[A-Za-z ,.-]{3,100}', str(r.get('refused', ''))) else {}))
+            for r in report['rows']]
+    return dict(policy_sha256=POLICY_SHA256, status=report['status'], quotes=report['quotes'], rows=rows,
+                matches_live_draft=None if draft is None else unreviewed == {k: v for k, v in draft.items() if k != 'review'},
+                signing_enabled=False)
+
+
+def estimate(provider, params, log, scope):
+    """(gas, None) or (None, short reason): a simulation only, never a transaction."""
+    try:
+        return int(rpc(provider['url'], provider['source_id'], 'eth_estimateGas', params, log, scope), 16), None
+    except ValueError as error:
+        return None, str(error) if str(error) in OWN_CODES else 'ValueError'
+    except Exception as error:
+        return None, type(error).__name__
+
+
+def gas_estimates(provider, scope, observation, calldata, sizes, log, tokens):
+    """G3/G4: approve gas per token, and BUY swap gas under a proven USDT allowance override, at one block."""
+    from larp.execution import USDT
+    url, sid = provider['url'], provider['source_id']
+    block = rpc(url, sid, 'eth_getBlockByNumber', ['latest', False], log, scope)['number']
+    wallet, router = scope['wallet'], scope['router']
+    out = dict(block=int(block, 16), served_by=sid, approve={}, swap_buy_minimum={},
+               note='eth_estimateGas simulations at one block; not measured fills. LD09 inputs only.')
+    for name, token in (('USDT', USDT), *tokens.items()):
+        data = APPROVE_CALL + router[2:].rjust(64, '0') + word_hex(sizes.get(name, 1))
+        gas, reason = estimate(provider, [dict({'from': wallet, 'to': token, 'data': data, 'value': '0x0'}), block],
+                               log, scope)
+        out['approve'][name] = gas if gas is not None else dict(error=reason)
+    proof = dict(balance_slot_matches=False, override_effective=False)
+    try:
+        balance = int(rpc(url, sid, 'eth_getStorageAt', [USDT, mapping_slot(wallet, USDT_BALANCE_SLOT), block],
+                          log, scope), 16)
+        proof['balance_slot_matches'] = balance == observation['tokens']['USDT']['units']
+        slot = mapping_slot(router, mapping_slot(wallet, USDT_ALLOWANCE_SLOT))
+        override = {USDT: {'stateDiff': {slot: '0x' + word_hex(OVERRIDE_ALLOWANCE)}}}
+        seen = rpc(url, sid, 'eth_call', [dict(to=USDT, data=ALLOWANCE_CALL + wallet[2:].rjust(64, '0')
+                                               + router[2:].rjust(64, '0')), block, override], log, scope)
+        proof['override_effective'] = int(seen, 16) == OVERRIDE_ALLOWANCE
+    except Exception as error:
+        proof['error'] = code(error) if isinstance(error, ValueError) else type(error).__name__
+    out['allowance_override_proof'] = proof
+    if not (proof['balance_slot_matches'] and proof['override_effective']):
+        out['swap_buy_minimum'] = dict(status='NOT_ESTIMATED', reason='allowance override not proven')
+        return out
+    for symbol, data in sorted(calldata.items()):
+        gas, reason = estimate(provider, [{'from': wallet, 'to': router, 'data': data, 'value': '0x0'}, block, override],
+                               log, scope)
+        out['swap_buy_minimum'][symbol] = gas if gas is not None else dict(error=reason)
+    return out
 
 
 def finality(providers, log):
@@ -405,7 +512,7 @@ def collect():
     port = MarketPort(Web3Client(secrets['BINANCE_API_KEY'], secrets['BINANCE_SECRET_KEY'], artifacts=web3), wallet,
                       quote_limits=profile)
     minimum, cap = profile.get('minimum_trade_units'), profile.get('per_trade_cap_units')
-    quotes = []
+    quotes, calldata = [], {}
     for symbol in TOKENS:
         decimals = observation['tokens'][symbol]['decimals']
         sell_units = None
@@ -421,6 +528,8 @@ def collect():
                 row = quote_row(symbol, side, units, amount, decimals, record, module, TOKENS, USDT)
                 if side == 'BUY' and units == minimum:
                     sell_units = row['receive_units']
+                    data = record['response']['data']
+                    calldata[symbol] = (data[0] if isinstance(data, list) else data)['tx']['data']
             except Exception as error:
                 row = dict(symbol=symbol, side=side, pay_units=units, status='REFUSED', error=code(error))
             quotes.append(row)
@@ -443,6 +552,14 @@ def collect():
                                 allowances_to_router=allowances, served_by=providers[0]['source_id'])
     except Exception as error:
         packet['router'] = dict(status='REFUSED', error=code(error))
+        draft = None
+
+    packet['policy_check'] = policy_check(module, draft)
+    scope = dict(wallet=wallet, router=module.ROUTER, usdt=USDT, tokens={USDT, *TOKENS.values()},
+                 calldata=set(calldata.values()))
+    sizes = {'USDT': minimum * 10**12 if type(minimum) is int else 1}
+    sizes.update({r['symbol']: r['pay_units'] for r in quotes if r.get('side') == 'SELL' and r.get('status') == 'OK'})
+    packet['gas_estimates'] = gas_estimates(providers[0], scope, observation, calldata, sizes, log, TOKENS)
 
     # Funding input for Isaac (LD07: initial gas only). Not a decision: LD09's measured gas is still missing.
     gas_price = int(rpc(providers[0]['url'], providers[0]['source_id'], 'eth_gasPrice', [], log), 16)
