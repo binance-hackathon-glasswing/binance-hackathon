@@ -62,6 +62,7 @@ def _quote_summary(summary):
 
 def validate_live(p):
     try:
+        execution_authority(p)
         initial_only = uses_initial_gas(p)
         if initial_only and any(key in p for key in TOP_UP_KEYS):
             raise ContractError("Initial-only profile must not configure gas top-ups")
