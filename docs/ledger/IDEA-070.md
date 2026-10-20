@@ -1053,3 +1053,17 @@ observation. Required owners keep actual policy/profile/caps/source/model/host
 evidence and final acceptance. PR196 carries this documentation continuation;
 PR133 remains noticeboard-only. Validation: exact checklist-ID parity, local
 link/anchor consistency and whitespace checks; no runtime tests or live action.
+
+## LD02b-RV02 — Isaac review of PR211 (2026-10-21 SGT; prospective)
+
+Isaac requests review and merge if possible. Review exact PR head `15fcc3f`
+against canonical `e65f827` in an isolated prospective merge tree. Criteria:
+RV1 inspect the complete diff/callers, reviewed policy/module byte pins and
+state-override/size/block semantics; RV2 prove offline refusal/filter behavior
+for malformed or out-of-scope RPC calls and provider error text, without network,
+AWS, secrets or wallet calls; RV3 preserve observed packets and distinguish
+provider-reported RFQ expiry/simulated gas from actual validity/receipt/cap proof;
+RV4 run focused script/decoder/profile/document checks and record actual skips;
+RV5 merge only an exact reviewed, pushed head with no blocking findings, retain
+all LD09/10/host gates, and update PR133 with source/results. No live packet rerun
+or trading operation is part of this review.
