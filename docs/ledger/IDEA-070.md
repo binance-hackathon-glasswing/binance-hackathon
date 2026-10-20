@@ -1204,3 +1204,29 @@ delay through 90 s. Evidence (pretty-printed; no hostname or wallet in either pa
 method execution uses, agree with each other, and respond in about 0.42–0.51 s. This is read-side evidence only:
 broadcasting goes through the Web3 API, native tracing stays unqualified (B04), and approving the RPC for execution
 remains an owner decision.
+
+## LD02d — SELL-side gas and quote-size sweep (2026-10-21; prospective)
+
+Fills the gaps LD09-G1 recorded: SELL swap gas was never simulated (the wallet holds no bStocks), and quote costs
+were only measured at the minimum size. One read-only script, `docs/build/ops/ld02-20261020/size-sell-check.sh`, on
+`primary` only, with the LD02 safety contract: no host writes, no SQL, no transaction or signature, sanitized output
+with a final scan, and an allowlist of RPC call shapes.
+
+**Pass criteria, written before the script exists (S1–S6):**
+
+- S1. For each bStock and each size in 10, 20, 40 and 100 USDT: one BUY quote through the production
+  `MarketPort.quote`, then one SELL quote of exactly the BUY quote's output amount. The packet records the amounts,
+  quoted gas, whether `tx.to` is the pinned router with the swap selector, and the quoted round-trip cost in bp
+  (`(pay − sell output) / pay`). A refused quote is recorded with a short reason.
+- S2. Before any SELL simulation, each bStock's balance and allowance storage slots are proven by override: for a
+  candidate base slot, `balanceOf(wallet)` (and `allowance(wallet, router)`) under a one-slot override must return the
+  exact sentinel. Candidates: plain slots 0–12 and the OpenZeppelin v5 ERC-20 namespace. A token with no proven slot
+  gets no SELL simulation and is reported `NOT_PROVEN`.
+- S3. Each pinned quote's exact calldata is simulated once with `eth_estimateGas`, immediately after its quote: BUY
+  under the proven USDT balance and allowance overrides (as in LD02b/LD02c), SELL under the proven bStock overrides.
+  Each result is the gas or a short refusal reason.
+- S4. The report gives, per symbol, the maximum simulated BUY and SELL gas and the round-trip cost per size. These are
+  inputs for Keith (LD09) and Isaac (LD10); no profile, cap or decision follows from the packet.
+- S5. Overrides are the only state changes, and only on proven slots of the pinned tokens. The allowlist refuses any
+  other override target or slot.
+- S6. Offline tests cover the allowlist, slot proof, sweep and reporting; the full suite passes.
