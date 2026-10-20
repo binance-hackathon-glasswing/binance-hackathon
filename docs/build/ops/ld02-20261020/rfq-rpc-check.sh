@@ -215,6 +215,7 @@ def rpc_check(providers, scope, wallet):
             latency_ms={m: [ms for mm, ms in log if mm == m] for m in READ_METHODS})
         rows[p['source_id']] = summary
     values = list(rows.values())
+    concurrent = finalized_pairs(providers, scope)
     agree = dict(
         chain_56=all(s['chain_id'] == 56 for s in values),
         receipt=len({json.dumps(s['receipt'], sort_keys=True) for s in values}) == 1 and values[0]['receipt'] is not None,
@@ -223,7 +224,24 @@ def rpc_check(providers, scope, wallet):
         finalized_within_10=(None not in [s['finalized_block'] for s in values]
                              and max(s['finalized_block'] for s in values) - min(s['finalized_block'] for s in values) <= 10),
         every_method_ok_everywhere=all(all(s['methods_ok'].values()) for s in values))
-    return dict(providers=rows, agreement=agree, status='PASS' if all(agree.values()) else 'FAIL')
+    agree_q2b = dict(agree, finalized_within_10=concurrent['within_10'])
+    return dict(providers=rows, agreement=agree, status='PASS' if all(agree.values()) else 'FAIL',
+                finalized_concurrent=concurrent, status_q2b='PASS' if all(agree_q2b.values()) else 'FAIL')
+
+
+def finalized_pairs(providers, scope, rounds=3):
+    """Q2b: `finalized` from every provider at the same moment (threads started together), `rounds` times."""
+    from concurrent.futures import ThreadPoolExecutor
+    pairs = []
+    with ThreadPoolExecutor(max_workers=len(providers)) as pool:
+        for _ in range(rounds):
+            futures = [pool.submit(rpc, p['url'], 'eth_getBlockByNumber', ['finalized', False], scope) for p in providers]
+            try:
+                pairs.append([int(f.result()['number'], 16) for f in futures])
+            except Exception as error:
+                pairs.append(type(error).__name__)
+    ok = [p for p in pairs if isinstance(p, list)]
+    return dict(pairs=pairs, within_10=bool(ok) and len(ok) == len(pairs) and all(max(p) - min(p) <= 10 for p in ok))
 
 
 def sanitize(text, forbidden):

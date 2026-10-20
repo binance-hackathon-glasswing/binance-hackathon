@@ -97,6 +97,8 @@ class Ld02cScriptTests(unittest.TestCase):
         self.assertEqual(out['status'], 'PASS')
         self.assertEqual(out['providers']['A']['receipt'], dict(status=1, block=5, gas_used=16))
         self.assertTrue(all(out['providers']['B']['methods_ok'].values()))
+        self.assertEqual(out['finalized_concurrent']['pairs'], [[100, 96]] * 3)
+        self.assertEqual(out['status_q2b'], 'PASS')
 
     def test_refusal_and_sanitizer(self):
         self.assertEqual(self.ns['refusal'](RuntimeError('rpc.example.org')),

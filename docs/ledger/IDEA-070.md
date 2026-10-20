@@ -1154,3 +1154,31 @@ SQL not used, sanitized output with a final scan, no transaction or signature).
 - Q3. Latency per method and provider is recorded. Failover is covered by the production `BalanceProviders` logic
   and its tests; this check proves each provider individually.
 - Q4. Offline tests cover the new allowlist, the delay schedule and the reporting; the full suite passes.
+
+### LD02c results — script `82f86cb`, SSM `24379b0e-62d8-48c2-8bad-981965967f6a` (2026-10-21)
+
+Packet SHA-256 as printed on the host: `688b89efb35257d5b089469fd373b3545ef3539de460db32976a2cb9d94b93bb`.
+
+- **R1 PASS.** Every quote response has the same shape: top level `executionMode`, `rfq`, `routerResult`, `tx`;
+  `executionMode = SWAP`, `rfq = null`, vendor LiquidMesh, quoted gas 250,000. **Nothing in the response marks
+  MSFTB's route as RFQ**: its single-hop `dexRouterList` looks like the others.
+- **R2/R3 PASS.** Allowance-override proof held. Observed bounds:
+  - **MSFTB: `RFQ_OrderExpired` at every delay, including 0 s.** The route is not executable as quoted; this is not a
+    short validity window.
+  - GOOGLB, NVDAB, SKHYB, TSLAB: simulated successfully at every delay through 90 s (no failure observed). Gas was
+    stable per symbol: about 718.5k for GOOGLB, 547k–554k for the others.
+- **R4 (inputs for owners, not decisions):** MSFTB cannot be bought through this route at present, so LD09/#120
+  coverage and any S1/equal-weight allocation to MSFTB need a decision. RFQ routes are only detectable by simulating
+  the exact calldata, so a pre-sign simulation of the swap would catch them before gas is spent; that is a design
+  question for Isaac/Keegan (execution currently does not simulate). For the four AMM routes, 90 s of quote age did
+  not break the swap, so m = 30 s is not limited by route validity there.
+- **Q1 PASS.** Both providers answered every execution read method (chain ID, latest and finalized block, balance,
+  latest/pending nonce, the FG-01 transaction and receipt, router code, facet slot, `balanceOf`, `allowance`).
+- **Q2 FAIL as written.** Chain 56, receipt (status 1, block 127,946,341, gas used 188,294), router code hash and facet
+  agree, but the finalized blocks differed by 12 (limit 10). The providers were read one after the other several
+  seconds apart (about 12 blocks at about 0.45 s per block), so this measures read spacing, not disagreement. The
+  criterion stays failed; amendment Q2b below re-measures it.
+- **Q3 PASS.** Latency per call 421–505 ms (BNB Chain) and 424–491 ms (NodeReal).
+
+**Amendment Q2b (written before the rerun):** read `finalized` from both providers concurrently (two threads started
+together) three times, and pass if every pair is within 10 blocks. Nothing else changes.
