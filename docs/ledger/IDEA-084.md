@@ -16,9 +16,9 @@ secondary objective. Report model/hosting costs separately; never double-count
 settled fees/gas. More variance, turnover or model spend is not itself a benefit.
 
 There is no calibrated distribution or held-out result proving an optimum for
-this14-day window. The choices accept market/concentration/coverage risk while
+this 14-day window. The choices accept market/concentration/coverage risk while
 preferring the existing S1 design and avoiding unnecessary turnover or unreliable
-execution. They are not a claim that95% exposure has a higher probability of
+execution. They are not a claim that 95% exposure has a higher probability of
 profit than every lower-exposure policy. No development/scored PnL is used to
 tune these settings.
 
@@ -27,7 +27,7 @@ PR133, PR204/206 audit/repairs, PR205/207 and the completed quote-capture receip
 The trial's two assessed filing records establish no economic uplift; DC01's
 3,848 swap gas figures remain FALLBACK. No return forecast is invented.
 
-External primary sources checked Oct21 SGT: SEC Investor.gov
+External primary sources checked Oct 21 SGT: SEC Investor.gov
 [allocation](https://www.investor.gov/introduction-investing/getting-started/asset-allocation)
 explains willingness to bear loss for potential return and limited diversification
 from narrow-sector holdings; its
@@ -43,26 +43,26 @@ as the implementation target, without claiming statistical optimality:
 
 | Setting | Decision |
 |---|---|
-| Trend / verified-evidence levels | 95% /60% /30%; target is min(trend, deterministic limiter, risk cap) |
+| Trend / verified-evidence levels | 95% / 60% / 30%; target is min(trend, deterministic limiter, risk cap) |
 | Trend | Five sessions, ±1% hysteresis; session-close+15min evaluation |
-| Weights | Inverse token-session volatility over60 sessions, minimum20, through Oct21 close; existing median-of-qualified-names rule for a missing name; freeze exact weights/data hashes once |
-| Weight cap / hard name line | Weight≤0.30 (target≤28.5% equity at95% gross); hard line35%, trim to target |
+| Weights | Inverse token-session volatility over 60 sessions, minimum 20, through Oct 21 close; existing median-of-qualified-names rule for a missing name; freeze exact weights/data hashes once |
+| Weight cap / hard name line | Weight ≤ 0.30 (target ≤ 28.5% equity at 95% gross); hard line 35%, trim to target |
 | Turnover | No drift sales; replenish below target−5 percentage points; required sells before buys; sequential execution, no trade-count quota |
-| Execution | Regular-session open+30min to close−15min for discretionary legs; at most3 attempts/name/leg/session; existing mandatory windows and all integrity/quote checks |
-| Loss ladder | Keep3% daily buy stop,8% drawdown buy stop,12% deep cut to40%; only PF02 changes recovery |
+| Execution | Regular-session open+30min to close−15min for discretionary legs; at most 3 attempts/name/leg/session; existing mandatory windows and all integrity/quote checks |
+| Loss ladder | Keep 3% daily buy stop, 8% drawdown buy stop, 12% deep cut to 40%; only PF02 changes recovery |
 
 Honor EXP007's frozen three-outcome rule: SUPPORTED/INCONCLUSIVE retains the
-declared guard; NOT_SUPPORTED fixes trend at95%, retaining limiter/ladder.
+declared guard; NOT_SUPPORTED fixes trend at 95%, retaining limiter/ladder.
 The real experiment remains NOT_RUN. No retrospective cutoff/threshold change.
 Prefer qualified S1; preserve SP-D2's measured EQUAL_WEIGHT rehearsal fallback
-if S1 inputs/wiring fail qualification. That fallback is not five-name95% S1.
+if S1 inputs/wiring fail qualification. That fallback is not five-name 95% S1.
 
 ## PF-02 — O1 recovery
 
-After the8% buy stop, clear that block only when complete, fresh, reconciled
-valuation shows drawdown **strictly below5%** from the persisted run peak.
-At5% it stays blocked; never lower the peak to manufacture recovery. This does
-not clear a12% deep cut, daily stop, adverse-event latch, HALT, quarantine or
+After the 8% buy stop, clear that block only when complete, fresh, reconciled
+valuation shows drawdown **strictly below 5%** from the persisted run peak.
+At 5% it stays blocked; never lower the peak to manufacture recovery. This does
+not clear a 12% deep cut, daily stop, adverse-event latch, HALT, quarantine or
 pending nonce. Accept possible repeated drawdowns to participate in a recovery.
 Keith implements and tests threshold/restart/replay behavior; current no-reset
 code is not silently changed by this document.
@@ -72,8 +72,8 @@ code is not silently changed by this document.
 Keep all five names including SKHYB, subject to fresh basis/metadata/quote/cost/
 liquidity/gas checks. Do not force an expensive entry or automatically redistribute
 a blocked name's weight. **Accept SKHYB's asymmetric foreign-filer adverse-event
-coverage** and common technology exposure. Never invent domestic8-K authority
-from6-K text or promote SHADOW statements. This is opportunity/coverage-risk
+coverage** and common technology exposure. Never invent domestic 8-K authority
+from 6-K text or promote SHADOW statements. This is opportunity/coverage-risk
 acceptance, not a forecast of outperformance or broad diversification. Yao/Keith
 record the deviation and verify manifested scope/tests before closing #39.
 
@@ -83,14 +83,14 @@ Adopt one final calendar, **all UTC**:
 
 | Gate | Target |
 |---|---|
-| First final buy eligibility | Oct29 14:00 |
-| New risk ends | Nov9 21:00 |
-| Flatten starts | Nov10 19:00 |
-| Signing ends | Nov11 14:45 |
-| Flat-by target | Nov11 15:00 |
+| First final buy eligibility | Oct 29 14:00 |
+| New risk ends | Nov 9 21:00 |
+| Flatten starts | Nov 10 19:00 |
+| Signing ends | Nov 11 14:45 |
+| Flat-by target | Nov 11 15:00 |
 
-Choose the later S1 Nov9 cutoff to preserve recovery-buy opportunities. Keep
-Nov11's flat-by target; do not extend to Nov12 on an unconfirmed end instant.
+Choose the later S1 Nov 9 cutoff to preserve recovery-buy opportunities. Keep
+Nov 11's flat-by target; do not extend to Nov 12 on an unconfirmed end instant.
 Extra time exposed does not automatically improve profit probability. Accept
 terminal opportunity loss to limit failure-to-flatten/valuation uncertainty.
 Keegan/Keith reconcile current generator midnight gates, S1 windows, calendar
@@ -104,13 +104,13 @@ Use fresh token-mark NAV for ordinary risk/weight triggers; report executable
 liquidation NAV and complete costs separately when attributable quotes exist.
 Do not turn liquidation spreads into a new underlying price crash or charge
 settled fees twice. Rank eligible discretionary entries by **current intended
-size's all-in round-trip cost**, not an old static sample; missing cost is not0.
+size's all-in round-trip cost**, not an old static sample; missing cost is not 0.
 
 Block buys under incomplete valuation. Suppress discretionary healthy-name
-cap trims caused solely by another missing mark being counted as0. Use a last
+cap trims caused solely by another missing mark being counted as 0. Use a last
 usable mark only within its existing approved freshness bound; after expiry
 retain unknown valuation, not an extended timestamp. Preserve independent
-Class1/terminal/deep-cut requirements and trims proven by complete valid marks;
+Class 1/terminal/deep-cut requirements and trims proven by complete valid marks;
 incomplete data cannot clear risk latches or peaks. Accept temporary concentration
 uncertainty rather than unnecessary sales. Keith implements/tests #55's stale-
 name/near-cap case. Preserve the already-decided bounded price-jump hold.
@@ -125,14 +125,14 @@ not remove existing hard constraints or assert a stress detector was built.
 
 ## PF-06 — B-DEC06/08 / #44 / #56 costs, gas and execution
 
-Retain measured entry-cost/impact gates and finite slippage≤50bp; do not widen
+Retain measured entry-cost/impact gates and finite slippage ≤ 50 bp; do not widen
 slippage automatically on retry. Required safety sales retain existing minimum/
 profit/cadence bypasses, never quote/payload/fee/nonce bypasses. Reserve all
 actual required exit children, including appreciated/capped positions and
 selected cleanup; five nominal pairs alone are not full-exit proof.
 
 Choose full bounded-action gas reservation, not an optimistic quote alone:
-attributable qualified step estimate/observed bound with20% gas-limit headroom,
+attributable qualified step estimate/observed bound with 20% gas-limit headroom,
 multiplied by the selected gas-price cap and rounded up. Include approve/swap,
 all selected zero-approval steps and bounded retries. FALLBACK gas is ineligible.
 Whole-run seeding covers reviewed non-terminal actions/margin plus the complete
@@ -140,7 +140,7 @@ exit reserve. If it cannot fit fee/cash/BNB/equity caps, reduce feasible activit
 or refuse the candidate. Keith supplies measurements; Isaac approves exact
 derived profile/policy/input hashes. **No raw gas limit, gas-price cap, #44 value
 or seeding amount is numerically approved without those inputs.**
-The20% limit headroom is a team engineering choice following the kit demo's
+The 20% limit headroom is a team engineering choice following the kit demo's
 estimate multiplier, not a proven coverage level or organizer requirement.
 
 Choose LD06 bounded zero-only allowance recovery for the preferred candidate
@@ -150,7 +150,7 @@ API-trusted pinned router, exact approvals, L=660s/m=30s and PR205's reviewed
 policy SHA256 `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`.
 Signer/approve timing and live preflight still need qualification.
 
-Select BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC for ordinary chain56 execution
+Select BSC_BNBCHAIN_PUBLIC then BSC_NODEREAL_PUBLIC for ordinary chain 56 execution
 **read-side qualification**, expanding the previous balance-only policy scope.
 Exact endpoints and nonce/finality/code/storage/allowance/failover capability
 must pass before activation. No URLs are published, RPC send path enabled,
@@ -162,11 +162,11 @@ Choose the **OpenAI-primary LLM assessor** direction with independently verified
 external review and the **deterministic reduce-only exposure limiter**; no extra
 model call solely for exposure. Prefer PR206's detached-input/usage/reporting
 repairs and pinned review prompt. Select its v4 stage-cap direction for
-qualification:4096 primary/routine and16000 external-review tokens, retaining
+qualification: 4096 primary/routine and 16000 external-review tokens, retaining
 existing model/effort choices. These are ceilings, not spending targets.
 
 Accept **unproven economic uplift** after operational/veracity/rights/budget/audit
-qualification. Record43.56h versus the frozen72h criterion and the two-filing
+qualification. Record 43.56h versus the frozen 72h criterion and the two-filing
 population as explicit adoption shortfalls; never call them a pass, fabricate
 labels or restart the retired trial under expired authorization. Private replay
 and independent labels remain owed reports; unchanged frozen metrics remain.
@@ -190,7 +190,7 @@ including the selected token ceilings. Do not restart healthy bounded work
 merely to shorten a timer.
 
 Exact B/watchdog/memory values are **MISSING_MEASUREMENT**, not an open preference
-or adoption of historical2h/600s examples. Yao/operator supplies the packet;
+or adoption of historical 2h/600s examples. Yao/operator supplies the packet;
 Isaac freezes tested numbers with Keith/Keegan analysis. A measured capacity
 failure needs scoped-work reduction or separate cost/resize review before install.
 
@@ -203,7 +203,7 @@ Bounded allowance cleanup cannot recover a bad fill or authorize unknown assets.
 Keith implements/tests LD05 and Keegan reviews.
 
 Keep D-DN02's conditional shorter-rehearsal disposition if signed gates miss
-Oct21; record actual intervals/deviation without manufacturing duration. Retain
+Oct 21; record actual intervals/deviation without manufacturing duration. Retain
 exact signed release, protected signer session, identity/nonce/audit, gas/policy
 acceptance and real approve/swap/ACK/recovery evidence. Risk delegation is not
 technical proof or independent owner signoff. Keegan finalizes declarations and
@@ -220,3 +220,24 @@ without replacing concurrent work. No runtime experiment is part of this change.
 Rules checked: verbatim source-page rules/scoring/trace; kit trading-guide flow,
 quotes/gas; SKILL §0.2/0.3, F95/F105/F114/F117/F119–124 and Q06/Q39/Q40 including
 settled notes. Choices above are team policy, not new organizer rules/answers.
+
+## PFV results and delivery (2026-10-21 SGT)
+
+- PFV1–2 PASS: PF00–09 records the delegated choices, named owners and factual
+  gates. EXP007 is unchanged; IDEA049-B and IDEA075 historical contents are
+  preserved with appended dispositions. No missing result is labeled a pass.
+- PFV3 PASS: the canonical-base diff contains documentation only; no app,
+  config, test, release, official-kit or vendored bytes change.
+- PFV4 PASS: deviations rendering (`tools/render_deviations.py --check`), seven
+  new local link targets, unique ledger IDs and `git diff --check` pass. Link
+  validation covers new targets rather than unrelated historical links.
+- PFV5 delivered: authoritative [PR209](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/209),
+  based on canonical `31bd06d`, and the requested
+  [PR133 noticeboard decision comment](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/133#issuecomment-6295753635).
+  The published comment was read back. PR133's branch and concurrent body were
+  untouched. Decision commits `86731df` and `7a13fc1` were pushed before delivery.
+
+No runtime test, financial experiment, market/model/chain/AWS/key/wallet action
+was performed. Remaining implementation, numeric approval and qualification
+owners are recorded above and in INCOMPLETE_WORK PF-IMPL01; this closes policy
+selection and noticeboard delivery only.

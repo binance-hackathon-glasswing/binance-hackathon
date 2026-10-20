@@ -278,10 +278,10 @@ impersonate an owner signoff or manufacture a retrospective pre-registration.
 
 Isaac explicitly delegates profit-focused choices accepting higher market risk.
 [IDEA084](IDEA-084.md) is the current decision record, not a new experiment result.
-O1:8% buy-stop recovery strictly below5% with fresh reconciled complete marks;
+O1: 8% buy-stop recovery strictly below 5% with fresh reconciled complete marks;
 O2: preserve frozen EXP007 three-outcome rule; O3: five names including SKHYB,
-explicitly accepting asymmetric foreign-filer coverage; O4: Nov9 21:00UTC new
-risk end, Nov10 19:00UTC flatten start and Nov11 14:45/15:00UTC signing/flat-by;
+explicitly accepting asymmetric foreign-filer coverage; O4: Nov 9 21:00 UTC new
+risk end, Nov 10 19:00 UTC flatten start and Nov 11 14:45/15:00 UTC signing/flat-by;
 O5: retain no cut solely for scheduled events; O6: OpenAI-primary LLM assessor
 with verified external review and deterministic reduce-only limiter, with explicit
 short-trial/economic-uncertainty acceptance and separate operational qualification.
