@@ -705,3 +705,121 @@ final numeric decisions remain open. Original dated findings above are retained;
 the old incident-backup rate limit does not bound all restart/journal/disk growth.
 DEV18 remains OPEN/DRAFT pending Keegan's scope decision. Criteria/results:
 IDEA-066 C05-RV01. C05 is partial, not wholly complete.
+
+## LD13 — Keegan's operations review and the D-DN-04 guard (2026-10-20, prospective)
+
+**Keegan's review of Isaac's C05-RV01 dispositions (2026-10-20): all three accepted as decided.**
+- **D-DN-01 / D-05 / DEV-18:** no fenced standby. The candidate is primary
+  plus an isolated signer; a primary or availability-zone failure may end
+  trading for the run. DEV-18 is recorded as a decided omission (still DRAFT
+  until C10).
+- **D-DN-07:** keep the current supervision (`Restart=always`, `RestartSec=10`,
+  no start limit, restart suppressed on exits 2/3/4), accepting the residual
+  exit-1 crash-loop and resource-growth risk. The operator still measures it.
+- **D-DN-11:** a restored run stays quarantined for the rest of the scored run;
+  availability is lost rather than reactivating restored state.
+
+No numeric value is adopted by these reviews. D-DN-06 (watchdog) and D-DN-08
+(memory) stay measurement-blocked.
+
+**D-DN-04 guard design (implements Isaac's accepted requirements):**
+- **The bound B is optional.** It is `delivery_age_halt_seconds` in the runtime
+  config, with no default. The guard is off until Isaac sets B after the
+  operator's dispatch/ACK measurements. 2 h is not adopted.
+- **Pending**, re-derived from the database at every evaluation: any audit
+  event not positively ACKed (`status='ACK'` with a stored acknowledgement)
+  on every chunk, plus any open round with no log yet (age from its
+  `started_ms`). There is no in-memory first-seen time, so a restart cannot
+  reset an age.
+- **HALT `DELIVERY_AGE`** (not pausing, so it blocks all signing;
+  reconciliation continues) when the oldest pending age ≥ B, or when any
+  pending timestamp is in the future.
+- **Clear** only when no pending timestamp is in the future and the oldest
+  pending age is < B. Every log that was overdue must therefore have been
+  positively ACKed.
+- The hard `DELIVERY_DEADLINE` rule is unchanged, and the CLOCK checks run
+  first, as before.
+
+**Pass criteria, written before any code (G1–G9):**
+- G1. Without B, no `DELIVERY_AGE` is ever raised, and all existing supervision
+  tests pass unchanged.
+- G2. Boundary: one log at t; with B = 1000 ms, nothing at t + 999 and a HALT
+  at t + 1000.
+- G3. The HALT blocks a command claim, i.e. a signature, like any non-pausing
+  HALT.
+- G4. A 200 reply without `STORED` leaves the log pending, and the HALT stays.
+- G5. With two overdue logs, delivering one keeps the HALT. It clears only when
+  every overdue log is ACKed and the oldest remaining is younger than B.
+- G6. A fresh `Guard` (a restart) reaches the same decision from the same
+  database.
+- G7. A pending log timestamped in the future HALTs, and does not clear while
+  it remains.
+- G8. An open round with no log yet counts from its `started_ms`.
+- G9. The runtime config refuses a non-positive or non-integer
+  `delivery_age_halt_seconds`, and the service passes B to its guard.
+
+### LD13 results at `3959a4d` (2026-10-20)
+
+Criteria were pushed first, at `05f7305`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **G1–G9 PASS:** 9 new tests in `tests/runtime/test_delivery_age.py`. The
+  existing 14 supervision tests are unchanged and pass.
+- **G7 note:** a future timestamp is tested with the pending-times query
+  patched. Rewriting a stored log trips the journal integrity check (the run
+  is quarantined), and a log made under a later clock trips the CLOCK HALT
+  first, so the guard's own fail-closed branch can't be reached honestly
+  through the database.
+- **Register:** DEV-18 is now decided, so no row remains `OPEN`. The
+  register test that checks "an OPEN row cannot be FINAL" now makes its own
+  OPEN row in the test copy; the validator rule is unchanged.
+- **Full suite: 2166 passed, 11 skipped (environment), 3634 subtests**,
+  438.4 s.
+
+Not done: Isaac sets B, the watchdog and memory values after the operator's
+measurements (LD12/LD14), and host qualification. With no B configured, the
+deployed behaviour is unchanged.
+
+### LD13-RV01 — PR 201 review criteria (2026-10-20)
+
+Before running new checks: with an unacknowledged log already overdue, a clock
+step back from t+B to t+B-1 must not clear DELIVERY_AGE, including through a
+fresh Guard after restart. It must fail closed through CLOCK while retaining
+the delivery halt and reconciliation. Verify a multipart log whose later
+chunks are ACKed first stays pending until the missing first chunk receives
+its own positive ACK. Reconcile current D-05/DEV-18 status summaries with the
+recorded decision while keeping exact-host and numeric-value gates open.
+Run focused delivery/supervision/replay checks and the combined full Linux
+suite with disposable PostgreSQL before merging.
+
+LD13-RV01 results: `8d9d82e` reproduced the defect: after a fresh Guard saw
+the clock step from t+B back to t+B-1, it returned `CLEAR:DELIVERY_AGE` despite
+an unacknowledged overdue log. `2b60387` fixes this by including the durable
+delivery HALT's `since_ms` in the CLOCK refusal boundary. Restart cannot erase
+that boundary; CLOCK and DELIVERY_AGE remain active, signing stays blocked and
+reconciliation remains available. Multipart out-of-order ACK coverage passes:
+later chunks do not release the first pending chunk or reset its age.
+Current D-05/DEV-18 summaries and the remaining-work text are reconciled with
+the recorded decision; host/numeric/release acceptance is still open.
+
+Verification at `2b60387`, including merged PR199 (`db506bd`) and PR200
+(`c54642c`), on native ARM64 Linux / Python 3.12.15 / disposable PostgreSQL14.24:
+- Delivery/supervision/ACK/register selection: **38 passed, 13 subtests**.
+- Final complete suite: **2194 passed, 8 skipped, 3656 subtests**, 249 s.
+  Skips: two external/private fixtures, one root-only permission case and five
+  separately opt-in real-systemd cases. No systemd or host acceptance inferred.
+- `pip check`, deviation rendering and offline runtime demo PASS; whitespace
+  checks PASS. The checkout remained mounted read-only, with generated activation
+  fixtures on a disposable scratch mount.
+- First full attempt: 2189 passed / 5 failed / 8 skipped. Three failures were
+  read-only activation-fixture writes; two were Docker denying bubblewrap's
+  nested `/proc` mount. Fixing only the disposable runner (scratch mount and
+  Docker system-path/AppArmor settings) made all 55 affected-module tests pass,
+  then the full suite above. No application isolation limit was weakened.
+- Current Actions run `39387539536` has no executed runtime steps: its annotation
+  reports account payment/spending-limit refusal. This is local test evidence,
+  not hosted CI, release qualification or live signing acceptance.
+
+Remaining owners: Isaac chooses B/watchdog/memory after operator measurements
+(LD12/LD14); operator supplies exact-host recovery evidence; Keegan reviews the
+qualified release (LD15). The bound remains unset and disabled by default.

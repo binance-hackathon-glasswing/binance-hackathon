@@ -22,6 +22,19 @@ def deadline_breaches(db,run_id,now_ms):
         (run_id,breach_cutoff_ms(now_ms)))]
 
 
+def pending_log_times(db,run_id,projection):
+    """Timestamps of every log not yet positively ACKed (D-DN-04, IDEA-049-D LD13): events with any chunk lacking a
+    stored STORED acknowledgement, plus open rounds whose log does not exist yet (their `started_ms`). Derived from
+    durable state each call, so a restart never resets an age."""
+    times=[r[0] for r in db.execute(
+        "SELECT a.timestamp_ms FROM audit_events a WHERE a.run_id=%s AND (NOT EXISTS "
+        "(SELECT 1 FROM audit_chunks c WHERE c.run_id=a.run_id AND c.event_id=a.event_id) OR EXISTS "
+        "(SELECT 1 FROM audit_chunks c WHERE c.run_id=a.run_id AND c.event_id=a.event_id "
+        "AND (c.status<>'ACK' OR c.acknowledgement IS NULL)))",(run_id,))]
+    return times+[rec.get('started_ms') for rec in (projection.get('round_records') or {}).values()
+                  if not rec.get('logged')]
+
+
 def unlogged_rounds(projection,now_ms):
     """Open rounds with planned orders and no round log yet, started before the current upload deadline.
 
