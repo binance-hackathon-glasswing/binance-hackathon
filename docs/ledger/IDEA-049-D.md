@@ -757,3 +757,25 @@ No numeric value is adopted by these reviews. D-DN-06 (watchdog) and D-DN-08
 - G8. An open round with no log yet counts from its `started_ms`.
 - G9. The runtime config refuses a non-positive or non-integer
   `delivery_age_halt_seconds`, and the service passes B to its guard.
+
+### LD13 results at `3959a4d` (2026-10-20)
+
+Criteria were pushed first, at `05f7305`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **G1–G9 PASS:** 9 new tests in `tests/runtime/test_delivery_age.py`. The
+  existing 14 supervision tests are unchanged and pass.
+- **G7 note:** a future timestamp is tested with the pending-times query
+  patched. Rewriting a stored log trips the journal integrity check (the run
+  is quarantined), and a log made under a later clock trips the CLOCK HALT
+  first, so the guard's own fail-closed branch can't be reached honestly
+  through the database.
+- **Register:** DEV-18 is now decided, so no row remains `OPEN`. The
+  register test that checks "an OPEN row cannot be FINAL" now makes its own
+  OPEN row in the test copy; the validator rule is unchanged.
+- **Full suite: 2166 passed, 11 skipped (environment), 3634 subtests**,
+  438.4 s.
+
+Not done: Isaac sets B, the watchdog and memory values after the operator's
+measurements (LD12/LD14), and host qualification. With no B configured, the
+deployed behaviour is unchanged.
