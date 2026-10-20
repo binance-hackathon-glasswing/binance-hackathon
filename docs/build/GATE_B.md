@@ -27,7 +27,7 @@ remain explicit; numeric cap coverage never enables signing.
 
 ## Two blockers besides the evidence
 
-1. **#27 (team decision, C-OPEN-003). Resolve the signing-authority/deadline relationship and qualify real timing.** The planner caps an intent's life at the profile's 15 s; the kit states an approximate 30 s quote lifetime, but the real router's encoded deadline is not yet independently verified. `validate_payload` requires deadline ≤ intent expiry and refuses anything later (`encoded swap economics mismatch/expired`). Any encoded deadline beyond the parent expiry remains refused; the actual router timing still needs qualification. Options recorded in IDEA-049-C: (a) a measured, bounded signing lifetime; (b) a shorter, independently qualified router deadline. Keep the deadline check; don't remove it.
+1. **#27 (C-OPEN-003): choose measured finite authority values.** PR200 implements and reviews Option A: short proposal admission followed by immutable A, with final-release authority and decoded-deadline margins. Keegan chooses L/m from operator timings with Isaac/Keith review and profile provenance. Without the settings, the prior short-authority refusals remain. Recorded routes carry roughly 500-second deadlines; neither the kit's approximate quote TTL nor the illustrative 60s value selects L. Keep `now+m < route_deadline <= A` and uncertain-send reconciliation. See [OG-01](POST_REVIEW_GATES_20261020.md).
 2. **A profile window that allows a buy before Oct 21.** The rehearsal profile opens new risk on Oct 21 00:00 UTC, so a Gate B trade on Oct 19–20 needs a team-approved dev window, registered as a version event. Otherwise Gate B proof moves to Oct 21. The trade must still be the agent's own decision: people never choose trades (never-do #1).
 
 ## Source-verified path and shared steps
@@ -37,10 +37,11 @@ untrusted path, use U-a–U-d below, then shared steps 6–12 with that policy p
 and the UNTRUSTED startup label. The signer remains offline from RPC. Neither
 mode removes #27/#44, fresh full holdings, fee/gas, host or ACK requirements.
 LD06 must disposition leftover allowances across tokens/final exits; LD05 must
-disposition anomalous fills. LD07/08 must choose and qualify native top-ups or
-reviewed initial-only gas controls: the untrusted decoder currently rejects
-native routes, while existing numeric/Gate B gates still require top-up coverage.
-Setting `native_trace=false` alone does not resolve this mismatch.
+disposition anomalous fills. LD07/PR199 chooses initial gas only. LD08-OG01 adds explicit initial-only
+profile/mapping/signer candidates and stock-only cap/assembly coverage for review.
+Measured whole-run seeding/full-exit reserve, low-gas incident/alarm and actual
+profile/host acceptance remain open. Legacy top-up profiles still require native
+qualification. Setting `native_trace=false` alone does not select initial-only scope.
 
 | # | Who | Step | Done when |
 |---|---|---|---|
@@ -62,8 +63,8 @@ Setting `native_trace=false` alone does not resolve this mismatch.
 The retained acquisition packet has no verified source for the router or swap
 facet. This path replaces source steps 1–5 and the `router_evidence_*` pair in
 step 8. B09-TRUST01 accepts the trust direction; actual reviewed policy/hash and
-measured #44 limits remain open. The observed long encoded deadline still
-conflicts with short authority (#27); trusted deadline behavior is an assumption,
+measured #44 limits remain open. PR200 provides finite authority; until measured L/m are set, the observed long
+encoded deadline still conflicts with short authority (#27). Trusted deadline behavior is an assumption,
 and timeout never releases a possibly sent transaction's uncertainty.
 
 | # | Who | Step | Done when |

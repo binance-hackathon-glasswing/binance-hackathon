@@ -2431,3 +2431,17 @@ tests/tools/migrations/workflows identical to testedbd4dbee. Docker test
 containers/databases/network and the empty synthetic activation directory have
 been removed. Full external/host/adoption/installation tasks and owners remain
 in CURRENT_STATUS/backlog; historical branches/worktrees are retained.
+
+## OG-01 — post-review gates follow-up (2026-10-20)
+
+User requested a PR for the numeric and host gates left after PR199–201.
+[OG-01](../build/POST_REVIEW_GATES_20261020.md) records owners, exact required
+inputs, acceptance evidence and sequencing for gas/caps, L/m, B/resource values,
+release, host/recovery and Actions availability. It reuses existing review and
+rehearsal procedures and leaves missing evidence open.
+
+The related repository slice is IDEA-061 LD08-OG01: explicit initial-only
+profile/mapping/signer and stock-only cap/assembly/Gate B candidate controls.
+Current status, Gate B instructions and the live backlog are reconciled with
+the merged decisions/code. This is proposed follow-up work, not owner numeric
+adoption, low-gas alarm completion, installed release or host qualification.

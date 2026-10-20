@@ -93,3 +93,18 @@ stock order is invalid. BNB is excluded from stock slots and turnover, included
 in wallet equity, and reported separately in economic views. No top-up after
 the new-risk cut or during flattening, loss/deep-cut/degraded spending blocks,
 pending wallet intents, integrity or ownership failures.
+
+## Initial-only candidates after LD07 (2026-10-20)
+
+Use `python -m larp.strategy.profiles ... --initial-gas-only` for the decided v1
+gas scope. It emits explicit `initial_gas_only: true` with LD07 provenance and
+no top-up sizing fields. Existing full-exit reserve and provenance checks stay
+mandatory; the builder does not establish measured gas or owner acceptance.
+`tools/deploy/propose_signer_caps.py --initial-gas-only ...` excludes native BNB
+from the independent signer token policy while retaining unapproved example caps.
+Legacy CLI calls/fixtures remain available for historical top-up work and do not
+select v1 scope. Both candidates and any changed profile require fresh review
+and release binding; nothing is installed by construction.
+
+Remaining measurement/decision/release/host gates and owners:
+[OG-01](../../docs/build/POST_REVIEW_GATES_20261020.md).

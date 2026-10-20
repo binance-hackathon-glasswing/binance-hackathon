@@ -4,6 +4,8 @@ Canonical integration branch: **`codex/system-testing-20261012`**.
 All new implementation branches and PRs start from this branch. PR133 is an
 open noticeboard for links/status/owners only. Its branch is not a build base.
 The one live backlog is [INCOMPLETE_WORK.md](../INCOMPLETE_WORK.md).
+The post-PR199/200/201 closure sequence and evidence owners are in
+[OG-01](POST_REVIEW_GATES_20261020.md).
 
 CONS-01 combines all six retained PR heads through [PR195](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/195).
 Validated runtime source `bd4dbee`: Linux/Python3.12.15/PostgreSQL14.24 **2162 tests
@@ -54,12 +56,12 @@ suite, signed release or host qualification. See [IDEA-070 LD01](../ledger/IDEA-
 
 | Owner | Next accepted result |
 |---|---|
-| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, quote/fee/gas/top-up coverage and #44 policy hashes; explicit untrusted-mode risk decision if selected. Historical fallback estimates do not qualify caps. |
-| Keegan + operator | #27 finite authority model, duration/margins and implementation/review using source/provider timing assumptions. The encoded long deadline still conflicts with short existing authority. |
+| Isaac + Keith + approved operator | Exact measured initial-only profile, fresh complete holdings, stock quote/fee/gas coverage, full-exit reserve/whole-run seeding and #44 policy hashes; reviewed selected-router policy. LD08-OG01 adds explicit initial-only candidates and stock-only cap/assembly controls for review; low-gas incident/alarm and measured acceptance remain open. Historical fallback estimates do not qualify caps. |
+| Keegan + operator | PR200 implements and reviews #27 Option A, including final-release margins. Operator supplies actual timings; Keegan chooses L/m with Isaac/Keith review and per-value provenance. Without L/m, old short-authority refusals remain. |
 | Approved provider/operator + Isaac | Qualified canonical/native tracing or a separately reviewed supported scope; current reconciliation and funding/no-further-funding disposition. Balance-provider MATCH is not native settlement qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
 | Operator + reviewers | Real logged agent approve/swap, canonical reconciliation/ACK, resource/clock/delivery measurements, restart/restore/HALT/anchor/final-wallet drills and actual rehearsal evidence. |
-| Keith + account owners + Keegan | Final S1 inputs/experiments/parameters, model trial/rights/usage/accounting decisions, missing source/evidence coverage and final declarations. C05 numeric settings and delivery-age implementation remain open. |
+| Keith + account owners + Keegan | Final S1 inputs/experiments/parameters, model trial/rights/usage/accounting decisions, missing source/evidence coverage and final declarations. C05 numeric settings remain open; PR201 implements the delivery-age guard, disabled until B is decided. |
 
 The full details/acceptance IDs remain in the backlog and topical records.
 Older checklist/handoff documents are dated evidence; this page and the latest

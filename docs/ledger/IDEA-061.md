@@ -133,3 +133,20 @@ Pass criteria before running added code:
 
 LD08 low-gas incident/alarm and actual selected-profile/full-exit host acceptance,
 LD09 measurements and #44 decisions remain open unless separately evidenced.
+
+LD08-OG01 implementation at `048e414`: opt-in `initial_gas_only: true`
+candidates have no top-up sizing fields and retain the existing exit reserve.
+The planner emits no native quote/intent; execution mapping binds the pinned
+profile's scope and refuses native top-ups even with tracing enabled. Candidate
+signer policies exclude native BNB. Cap review/assembly require stock-only
+coverage, reject native-enabled policy/quote inputs and retain false readiness.
+Gate B reports measured whole-run seeding/reserve/low-gas acceptance as missing.
+Historical profile/top-up behavior remains available for historical inputs.
+
+Focused native ARM64 Linux/Python3.12.15/disposable PostgreSQL14.24 checks:
+**108 passed, 129 subtests**, zero skips. New checks cover zero/low gas,
+affordable mandatory exits, S1/four-name reserves, contradictory/malformed or
+unsourced scope, native mapping and independent policy refusal, exact cap
+boundaries, assembly and both funded/missing initial-only Gate B reporting.
+No current measurement, numeric adoption, low-gas incident/alarm or hosted
+acceptance is claimed. Full-suite results follow after the pushed-code run.
