@@ -439,9 +439,10 @@ def collect():
         native_wei=observation['native_wei'], bnb_value_units=bnb_value, gas_price_wei=gas_price,
         median_quoted_swap_gas=median_gas,
         indicative_swaps_affordable=observation['native_wei'] // (median_gas * gas_price) if median_gas and gas_price else None,
-        exit_gas_reserve_units=reserve,
-        versus_exit_reserve=None if reserve is None or bnb_value is None else
-        ('BELOW_EXIT_RESERVE' if bnb_value < reserve else 'AT_OR_ABOVE_EXIT_RESERVE'),
+        exit_gas_reserve_wei=reserve,  # the planner compares it with ledger bnb_units (wei), not USDT value
+        versus_exit_reserve=None if type(reserve) is not int else
+        ('BELOW_EXIT_RESERVE' if observation['native_wei'] < reserve else 'AT_OR_ABOVE_EXIT_RESERVE'),
+        reserve_multiple=round(observation['native_wei'] / reserve, 2) if type(reserve) is int and reserve > 0 else None,
         approve_gas='UNMEASURED', ld09_measured_gas='UNMEASURED',
         note='Input for Isaac against LD07 (initial gas only); seeding needs LD09 measured gas x planned trades x margin.')
 

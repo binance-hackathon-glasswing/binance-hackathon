@@ -140,8 +140,10 @@ class Ld02PacketScriptTests(unittest.TestCase):
                       driver=dict(execution='shadow', balance_rpc_providers=[
                           dict(source_id='PRIMARY', url='https://primary.example/k'),
                           dict(source_id='BACKUP', url='https://backup.example/k')]))
+        # The reserve is in BNB wei (planner: ledger bnb_units). 3e15 wei held covers a 1e15 reserve, although
+        # the BNB's USDT value (2.1e6 units) is numerically below it: comparing value would wrongly say BELOW.
         profile = dict(minimum_trade_units=5_000_000, per_trade_cap_units=20_000_000, slippage_bps=100,
-                       exit_gas_reserve_units=50_000)
+                       exit_gas_reserve_units=10**15)
         raw = {'runtime': json.dumps(config).encode(), 'release_manifest': b'{}', 'strategy_profile': json.dumps(profile).encode()}
         portfolio = dict(wallet_id=wallet, cash_units=1, bnb_units=0, bnb_decimals=18, bnb_price_units=700_000_000, positions={})
         projection = dict(portfolio=portfolio, registered_version=dict(build_id='b', manifest_sha256=hashlib.sha256(b'{}').hexdigest()))
@@ -192,6 +194,7 @@ class Ld02PacketScriptTests(unittest.TestCase):
         self.assertEqual(len(packet['quotes']['rows']), 15)
         self.assertTrue(all(r['status'] == 'OK' and r['request_bound'] for r in packet['quotes']['rows']))
         self.assertEqual(packet['funding_input']['versus_exit_reserve'], 'AT_OR_ABOVE_EXIT_RESERVE')
+        self.assertEqual(packet['funding_input']['reserve_multiple'], 3.0)
         self.assertEqual(packet['funding_input']['indicative_swaps_affordable'], 3 * 10**15 // (250000 * 10**8))
         self.assertFalse(packet['signing_enabled'])
 
