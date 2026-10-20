@@ -156,6 +156,8 @@ def validate_execution_observation(observation: dict) -> dict:
     from larp.execution import REVOKE_TOKENS
     cleanup = {step.lower(): token for step, token in REVOKE_TOKENS.items()}
     step = o.get('step')
+    if step is not None and type(step) is not str:
+        raise ContractError('Execution step must be text')
     if o.get('maintenance') == 'ALLOWANCE_REVOKE' and step not in cleanup:
         raise ContractError('Allowance maintenance needs its exact cleanup step')
     if type(step) is str and step.startswith('revoke:'):

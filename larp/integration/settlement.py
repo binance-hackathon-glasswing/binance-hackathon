@@ -54,7 +54,7 @@ class ExecutionBridge:
                                'APPROVE_SUBMITTED' if o['step'] == 'approve' else 'SWAP_SUBMITTED')
             entry["tx_hashes"] = sorted(set(entry["tx_hashes"]) | {o["tx_hash"].lower()})
         elif kind == "APPROVAL":
-            entry["status"] = 'ALLOWANCE_REVOKED' if cleanup else 'APPROVED'
+            entry["status"] = 'ALLOWANCE_REVOKE_CONFIRMED' if cleanup else 'APPROVED'
         else:
             entry["status"] = kind if o["intent_terminal"] else entry["status"]
         if kind != "BROADCAST_ATTEMPTED" and o["intent_terminal"]:

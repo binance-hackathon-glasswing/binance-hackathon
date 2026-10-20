@@ -322,7 +322,8 @@ class Receipt(unittest.TestCase):
     def test_unexpected_token_movement_or_fake_nonzero_maintenance_fact_refuses(self):
         c = self.case
         value = c.observed().read()
-        for change in (dict(approved_amount='1'), dict(token_contract=NATIVE_BNB), dict(kind='FILL')):
+        for change in (dict(approved_amount='1'), dict(token_contract=NATIVE_BNB), dict(kind='FILL'),
+                       dict(step=[]), dict(step={}), dict(step=1)):
             with self.subTest(change=change), self.assertRaises(ContractError):
                 validate_execution_observation(dict(value, **change))
         c.proof['receipt']['logs'] = [receipt_fixtures.log(USDT, c.intent.wallet, c.intent.router, 1)]
