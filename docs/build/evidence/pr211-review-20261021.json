@@ -79,5 +79,13 @@
     "executed_steps": 0,
     "status": "ACCOUNT_BILLING_BLOCKED",
     "annotation": "Recent account payments failed or spending limit needs increasing"
+  },
+  "delivery": {
+    "pr": 211,
+    "reviewed_head": "73262238a9bcf7191dd87d98274e2244af685cce",
+    "merge_commit": "0c1c77a4a5751c4b0b95681435c446c01bba78c1",
+    "merged_at_utc": "2026-10-20T17:27:36Z",
+    "review_state": "APPROVED",
+    "test_container_stopped": true
   }
 }

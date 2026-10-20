@@ -25,7 +25,7 @@ separate review queues. [Retention/evidence](CONSOLIDATION_20261021.md),
 [delegated policy](../ledger/IDEA-084.md) and
 [signed release procedure](LD15_SIGNED_RELEASE_CHECKLIST.md).
 PR203 is superseded by PR207, whose history contains its exact head.
-Active code reviews: PR206/207/210/211 and draft PR212. Their checks apply only
+Active code reviews: PR206 and draft PR212. PR207, PR210 and PR211 are merged. Their checks apply only
 to their recorded sources; no combined release or hosted acceptance is implied.
 
 ## Repository scope retained
@@ -88,6 +88,22 @@ explained skips; root-sensitive permission case passes separately. Terraform
 No numeric policy, installed alarm, exact signed release or host is accepted by
 these offline results.
 
+
+PR211 merged at `0c1c77a` after LD02b-RV02 review and two P2 repairs: full
+private-value filtering before error formatting and exact simulated allowance
+overrides. Combined with canonical PR207:125 local tests/449 subtests/zero
+skips using disposable PostgreSQL14.24. [Review receipt](evidence/pr211-review-20261021.json).
+Archived fresh-calldata/gas packets remain unchanged; provider-reported RFQ
+expiry does not establish the inner validity interval. Real gas/caps/provider/
+preflight/release/host acceptance remains open; hosted CI is billing-blocked.
+
+PR210 merged at `88c5544` after LD04-P-RV01 repaired missing authority checks
+in public LIVE validation. Both-absent legacy output and initial-only+authority
+candidate hashes are unchanged. Full local macOS/Python3.12/PostgreSQL14.24:
+2283 tests/3730 subtests PASS,10 explained external/platform skips.
+[Review receipt](evidence/pr210-review-20261021.json). This is not signed release,
+measured gas/S1/profile adoption, Linux/systemd or host qualification.
+
 ## What still blocks installation / live acceptance
 
 **PF-01 (2026-10-21 SGT):** Isaac delegated profit-focused policy choices in
@@ -100,7 +116,7 @@ This policy record does not change runtime readiness or qualify missing inputs.
 | Owner | Next accepted result |
 |---|---|
 | Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, selected initial-only whole-run/exit gas coverage and #44 policy hashes; B09/PF-01 scope is decided. PR207 (LD08-IG01) adds low-gas incidents/metric/alarm; measured values and actual alarm acceptance remain. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
-| Keegan + operator | #27 Option A is implemented by PR200 and L=660s/m=30s selected in the retained LD04-V01 record. PR210 profile provenance/candidate review is open; combine with PR207 and regenerate initial-only candidates before adoption and actual-host timing checks. |
+| Keegan + operator | #27 Option A is implemented by PR200 and L=660s/m=30s selected in the retained LD04-V01 record. PR210 authority provenance/builder is merged and initial-only+L/m candidates regenerate exactly. Keith #120 actual profile/weights/calendar/gas review and adopted-source/actual-host timing checks remain. |
 | Approved provider/operator + Isaac | Qualify the PF-01 execution read-side provider direction and current reconciliation/funding disposition. Initial-gas-only scope is selected (PR199); PR207 controls are merged; independent Keith/Keegan review remains. Native top-ups are outside the selected scope and are not declared qualified. Balance-provider MATCH is not execution/finality qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
 | Operator + reviewers | Real logged agent approve/swap, canonical reconciliation/ACK, resource/clock/delivery measurements, restart/restore/HALT/anchor/final-wallet drills and actual rehearsal evidence. |
