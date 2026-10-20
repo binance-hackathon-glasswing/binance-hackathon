@@ -99,3 +99,15 @@ closed, gas/time is insufficient, the API refuses a zero approval, or a send is
 unresolved. Residual allowance remains during such a hold. No maximum-loss bound,
 source guarantee or recovery of lost assets is established. No host, wallet/key,
 paid provider, signing, receiver or installation operation is part of this PR.
+
+## Offline verification
+
+Source913b400: Linux/Python3.12.15/PostgreSQL14.24 full suite **2190 passed /
+3660 subtests /zero failures /eight skips**. The root-sensitive permission skip
+was exercised in a separate unprivileged startup run; five real-systemd and two
+external-fixture cases remain unrun. Twenty-three new tests cover this feature,
+including actual PostgreSQL restart/registry and exact journal replay. Dependency
+check, sandbox checks, offline demo and declaration/documentation checks pass.
+[Exact-source receipt](evidence/ld06-allowance-recovery-20261020.json) /
+[criteria and results](../ledger/IDEA-070.md#ld06-results--source-913b400-2026-10-20).
+No full CI, release bundle, real systemd or host qualification is claimed.

@@ -673,3 +673,50 @@ Pass criteria before execution:
    regressions appropriate to this execution/signing/accounting change.
 
 Results pending; all implementation/configuration acceptance remains unclaimed.
+
+### LD06 results — source `913b400` (2026-10-20)
+
+Criteria pushed at `d732a2e`; implementation/tests pushed at `9a95363` before
+execution. `8ee1b90` corrects an aggregate-gas fixture that originally hit the
+earlier quote-gas admission guard; no gas limit was widened in product code.
+`fad55e5` adds PostgreSQL recovery/configuration/exact-replay coverage.
+`8a69f84` independently restricts cleanup to a stock parent and its exact selected
+router. `913b400` adds malformed-step refusal and labels a confirmed cleanup
+transaction without claiming its allowance has already been observed at zero.
+
+**Criteria 1–4 PASS (offline implementation):** 23 new tests cover the original
+other-token/final-exit blockage and recovery after no swap/revert/expiry; six-token
+bounds and no repeat authority; original gas/nonce/expiry barriers; changed-code
+and RPC refusal; PostgreSQL journal/registry restart; ephemeral-key isolated
+signer policy/nonce/nonzero refusals; accurate canonical gas-only facts; audit
+order/hash exclusion, reservation release and exact empty-target journal replay.
+A final zero receipt is followed by a fresh allowance read; residual allowance
+never causes repeated cleanup within the same parent. Defaults remain false.
+
+**Criterion 5 PASS:** final full Linux/Python3.12.15/PostgreSQL14.24 run at
+`913b400f7b0e2a9d5a6abfc97f6338d8a462c987`: **2190 passed / 3660 subtests /
+zero failures / eight skips**, 138.73 seconds. Five skips are real-systemd tests
+not enabled, two external fixtures unavailable, and one permission case skipped
+under root. A separate unprivileged startup module run passed six checks,
+including that permission case; its three PostgreSQL skips were covered in the
+full run. No systemd or host-release qualification is inferred.
+
+The initial full run had six environment failures (missing Git metadata, ignored
+writable scratch output and bubblewrap namespace/proc permissions). Corrected
+container mounts/permissions resolved them; no product bypass or test exclusion
+was added. Source and Git metadata were read-only; test output used a separate
+ignored scratch mount. PostgreSQL was disposable tmpfs with no external network.
+Dependency check, sandbox tests, offline runtime demo (six journal batches/two
+audit chunks), deviation rendering, whitespace, links/anchors, preserved backlog/
+index IDs and unchanged historical evidence/default configs/kit/vendor/env pass.
+Full machine receipt: [LD06 verification](../build/evidence/ld06-allowance-recovery-20261020.json).
+
+**Not accepted here:** Keegan independent review of the zero-only supporting
+policy/code; Isaac/Keith actual token/API behavior, measured cleanup/parent/exit
+reserve and fee caps; LD02/04 timing/authority; LD15–21 release/host/session/real
+agent-round and recovery acceptance. See [state machine and handoff](../build/ALLOWANCE_RECOVERY.md).
+The core G-01 note is explicitly a proposed implementation exception, not an
+organiser fact; DEV-23 remains DRAFT. All installation/signing/Gate B flags stay
+false, no existing configuration opts in, and no real AWS/provider/model/wallet/
+key/signing/receiver/installation operation was performed. PR133 remains a
+noticeboard; parent GAP-29/47/#33/#44 and LD05/07/08 retain their remaining work.

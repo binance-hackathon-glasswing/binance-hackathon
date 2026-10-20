@@ -56,6 +56,10 @@ one zero-only approval per eligible token is allowed under the parent's original
 authority, gas budget and wallet barrier. Supporting receipt gas is journaled and
 replayed without creating a swap order. No configuration enables the feature;
 independent review and actual policy/reserve/timing/host acceptance remain.
+Final LD06 source913b400: full Linux/Python3.12/PostgreSQL14 **2190 passed /3660
+subtests /eight explained skips**; root-sensitive permission case exercised
+separately. Five real-systemd and two external-fixture cases remain unrun.
+[Verification receipt](evidence/ld06-allowance-recovery-20261020.json).
 
 ## What still blocks installation / live acceptance
 
