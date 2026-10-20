@@ -134,8 +134,21 @@ def epoch_s(stamp):
     return datetime.fromisoformat(stamp.replace('Z', '+00:00')).timestamp()
 
 
+OWN_CODES = frozenset(('CALLDATA_LAYOUT', 'CALLDATA_SELECTOR', 'NO_BALANCE_PROVIDERS', 'ROUTER_MODULE_HASH',
+                       'RPC_CALL_REFUSED', 'RPC_METHOD_REFUSED', 'RPC_REFUSED', 'SANITIZER_FORBIDDEN_VALUE',
+                       'SANITIZER_URL'))
+
+
+def refusal(error):
+    """The only output when the packet is refused. It bypasses the final scan, so it carries the exception type and
+    nothing else, except one of this script's own codes from the explicit allowlist (PR205 review P2)."""
+    text = str(error)
+    return dict(error='LD02_PACKET_REFUSED', signing_enabled=False,
+                reason=type(error).__name__ + (':' + text if text in OWN_CODES else ''))
+
+
 def code(error):
-    """An error's type, plus its text only when it is a short code or fixed phrase (no URL, path or value)."""
+    """An error's type, plus a short code or fixed phrase, for fields inside the packet; the final scan still applies."""
     text = str(error)
     return type(error).__name__ + (':' + text if re.fullmatch(r'[A-Za-z0-9_ ,.-]{3,100}', text) else '')
 
@@ -179,14 +192,16 @@ class TimedOpener:
 
 def rpc(url, source_id, method, params, log):
     """One read-only JSON-RPC call outside the production client (allowance, gas price, finality)."""
-    from urllib.request import Request, urlopen
+    from urllib.request import Request, build_opener
+    from larp.marketdata.web3 import NoRedirect
     if method not in RPC_METHODS or not url.startswith('https://'):
         raise ValueError('RPC_METHOD_REFUSED')
     if method == 'eth_call' and str(params[0].get('data', ''))[:10] != ALLOWANCE_CALL:
         raise ValueError('RPC_CALL_REFUSED')
     body = json.dumps(dict(jsonrpc='2.0', id=1, method=method, params=params)).encode()
     start = time.monotonic()
-    with urlopen(Request(url, data=body, headers={'Content-Type': 'application/json'}), timeout=20) as response:
+    with build_opener(NoRedirect()).open(Request(url, data=body, headers={'Content-Type': 'application/json'}),
+                                         timeout=20) as response:
         reply = json.loads(response.read(2 * 1024 * 1024))
     log.append((source_id, method, round((time.monotonic() - start) * 1000)))
     if type(reply) is not dict or 'error' in reply or 'result' not in reply:
@@ -483,6 +498,6 @@ if __name__ == '__main__':
         main()
     except Exception as error:
         # Neither config content nor provider/database text is emitted; only this script's own codes.
-        print(json.dumps(dict(error='LD02_PACKET_REFUSED', reason=code(error), signing_enabled=False)))
+        print(json.dumps(refusal(error)))
         raise SystemExit(2)
 PY

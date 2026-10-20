@@ -198,6 +198,20 @@ class Ld02PacketScriptTests(unittest.TestCase):
         self.assertEqual(packet['funding_input']['indicative_swaps_affordable'], 3 * 10**15 // (250000 * 10**8))
         self.assertFalse(packet['signing_enabled'])
 
+    def test_refusal_output_carries_only_type_and_own_codes(self):
+        refusal = self.ns['refusal']
+        self.assertEqual(refusal(ValueError('RPC_REFUSED'))['reason'], 'ValueError:RPC_REFUSED')
+        for leak in ('rpc.example.org', WALLET, WALLET[2:], 'AbCdEf0123456789secretvalue', 'rate_limited',
+                     'https://host/key'):
+            with self.subTest(leak=leak):
+                out = json.dumps(refusal(RuntimeError(leak)))
+                self.assertNotIn(leak.lower(), out.lower())
+                self.assertEqual(json.loads(out), dict(error='LD02_PACKET_REFUSED', signing_enabled=False,
+                                                       reason='RuntimeError'))
+        own = {c for c in self.ns['OWN_CODES']}
+        raised = set(__import__('re').findall(r"raise ValueError\('([A-Z_]+)'\)", SCRIPT.read_text()))
+        self.assertEqual(raised, own)  # every code the script raises is allowlisted, and nothing else
+
 
 if __name__ == '__main__':
     unittest.main()

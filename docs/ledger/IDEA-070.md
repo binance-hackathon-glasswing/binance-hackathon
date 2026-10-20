@@ -788,11 +788,13 @@ their SHA-256 differs from the pinned value; the module is loaded in memory only
 
 ### LD02 results — script `2106d6c`, SSM `70965d91-0b91-4436-86f6-c33d8ffc2236` (2026-10-20 12:54 UTC)
 
-Run by a Claude Code session for Keegan, with direct read-only SSM on `primary`
+Run by a Claude Code session for Keegan, through SSM `AWS-RunShellScript` on `primary` (a root shell; the script
+itself is read-only)
 (IAM user `larp-claude-session`). Packet SHA-256 as printed on the host:
 `f0c7274d11121598fd40d20f12592d593006abc12ad6a465c627a234296dcaa4`. Committed copy
 [ld02-execution-packet-20261020.json](../build/evidence/ld02-execution-packet-20261020.json)
-differs only by the redacted private hostname (SHA-256 `ad43b634…c4ced4`).
+is the same packet pretty-printed (indent 1) with the private hostname redacted (SHA-256 `ad43b634…c4ced4`),
+so it cannot be re-hashed to the host value; the host bytes are retained privately.
 
 **Superseded first run:** SSM `c89ef2c8-129a-4b46-818a-0a1e7bada96f` at `b70d623`
 (packet `6ebf85a5…71bd3`) compared `exit_gas_reserve_units` with the BNB's USDT
@@ -801,9 +803,11 @@ value and reported `BELOW_EXIT_RESERVE`. The planner compares it with
 comparison; the rerun above is the packet of record. All other fields agreed.
 
 - **P1 PASS.** No `://`, wallet, secret, provider URL/host or database host (final
-  scan passed; independently re-checked: the only 40-hex addresses are the public
-  router and facet). Providers appear as source ID plus fingerprint.
-- **P2 PASS.** `configs_unchanged=true`; artifacts in memory; SQL `READ ONLY`; no file written.
+  scan passed; independently re-checked: the only addresses are the public router and facet
+  and fixed words 2 and 7, which also appear in the committed Oct 18 quotes). Providers appear as source ID plus fingerprint.
+- **P2 PASS.** `configs_unchanged=true`; artifacts in memory; SQL `READ ONLY`; the script writes no
+  file. (The SSM agent itself stores the command and its sanitized output under
+  `/var/lib/amazon/ssm/`, as for every SSM run.)
 - **P3 PASS.** Build `ea25b52`, run `larp-dev-llm-trial-20261018t170339z` (version 188,
   epoch 2, not quarantined), DB `larp_trial2`, mode dev, execution shadow. Runtime
   `8cb8fc74…`, release manifest `e592a13e…`, profile `d951207f…`. Wallet fingerprint
@@ -814,18 +818,21 @@ comparison; the rerun above is the packet of record. All other fields agreed.
   Nonce latest = pending = 2. No reservations, commands, pending executions or open
   rounds (70 rounds CLOSED); `settled_block` null.
 - **P5 PASS.** Draft `346fa80d6bfcca605da2698b5b766eac26495cbcab2a6e27bd2344a991347ee1`
-  at block 128749480 from 15 fresh quotes: router `0xb44446…fdda5`, slot
+  at block 128749690 from 15 fresh quotes: router `0xb44446…fdda5`, slot
   `0x7ddc1c45…c1d7`, facet `0xa9fa1b56…e603`, router codehash `0xb6f35276…96a0`,
   facet codehash `0x5ae2caa1…8ba0`, fixed words {1: 0, 2: `0x3d90f66b…6be9`,
   7: `0xd2a27f8f…a271`, 9: `0x140`}, DEV-23, review `REVIEW_REQUIRED`. All six router
   allowances are 0.
 - **P6 PASS.** 15/15 quotes OK, request-bound, pinned router and selector, zero
-  native value, LiquidMesh. Profile sizes: minimum 19.443104 USDT, cap 20.100000 USDT,
+  native value, LiquidMesh. Binding is checked on `routerResult` (tokens, decimals,
+  amount) plus router, selector and value; the fresh calldata itself was not run through
+  `decode`/tamper checks (only the 15 Oct 18 quotes were, in LD03). Profile sizes: minimum 19.443104 USDT, cap 20.100000 USDT,
   slippage 16 bp (minimum output 16 bp below quoted in every row). Quoted swap gas
   250,000 everywhere. **Route deadline after request: 499.1–500.1 s** (both runs, 30 quotes).
 - **P7 PASS.** Quote round trip 135–253 ms (median 143). RPC round trip to response
-  headers 413–478 ms per call (medians 415–476) on both providers. Latest-to-finalized
-  lag 0–1 block (0–1 s) at start and end on both. Signer timings `UNMEASURED`.
+  headers 412–489 ms per call (medians 415–476) on both providers. Latest-to-finalized
+  lag 0–1 block (0–1 s) at start and end on both; the two reads are about 0.45 s apart and
+  timestamps are whole seconds, so the true lag can be up to about one block more. Signer timings `UNMEASURED`.
 - **P8 PASS (input only).** 0.002694 BNB = 8.63 × the profile's exit reserve
   (312,320,854,920,000 wei); gas price 0.05 gwei; indicative 215 swaps at the quoted
   250,000 gas. Approve gas and LD09 measured gas `UNMEASURED`. This is Isaac's input
@@ -851,8 +858,8 @@ Review checks, from the LD02 packet and the repository record:
 | Selector slot | `0x7ddc1c45…c1d7`, as computed in B02-U; it dispatches to facet `0xa9fa1b56…e603`, the same facet B02-U recorded on 2026-10-19 |
 | Code hashes | router `0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0`, facet `0x5ae2caa18a9d1d2dc528e6a1e9edf284883c023a617cc269b96620e4712d8ba0`, first pinned here (B02-U noted identical BSC/Ethereum code but recorded no hash) |
 | Fixed words | {1: 0, 2: `0x3d90f66b…6be9`, 7: `0xd2a27f8f…a271`, 9: `0x140`}: identical to all 15 Oct 18 recorded quotes and to the test fixture; no economic word pinned |
-| Fresh quotes | 15/15 request-bound to the pinned router and selector, zero native value; route deadline 499.1–500.1 s after request |
-| Allowances | all six router allowances 0 at block 128749480 |
+| Fresh quotes | 15/15 bound at `routerResult` level to the request, pinned router and selector, zero native value; route deadline 499.1–500.1 s after request. Fresh calldata not decode/tamper-checked |
+| Allowances | all six router allowances 0 at block 128749690 |
 | Wallet | absent from calldata (B02-U), and the packet's sanitizer confirms the fixed words are not the wallet |
 
 Reviewed file: [untrusted-router-policy-ld03-20261020.json](../build/evidence/untrusted-router-policy-ld03-20261020.json),
@@ -868,3 +875,33 @@ re-checks the facet slot and both code hashes before every swap. **Execution RPC
 Keegan's reply re-stated the Oct 19 approval of development balance reads only, which the host already
 uses; no RPC is approved for execution. Next: Isaac pins the hash in `execution.json`/`signer.json`,
 replays and runs the live preflight.
+
+### LD02-RV01 — PR205 reviews and fixes (2026-10-20)
+
+Two reviews of `215fc1f`: Keegan's (35 tests / 273 subtests with PostgreSQL; policy hash
+and 15 historical replays confirmed; no host queried) and an independent subagent review
+(23 passed / 1 skipped / 266 subtests; `ea25b52` signatures, embed hash, units and evidence
+re-derived by hand).
+
+Fixed before merge:
+
+- **P2 (both reviews): the refusal output bypassed the final scan.** `code()` accepted
+  hostnames, wallet hex and alphanumeric secrets. The refusal now emits only the exception
+  type, plus one of the script's own codes from an explicit allowlist (`refusal()`). A new
+  test feeds a hostname, the wallet (with and without `0x`), a secret-like value and a URL
+  and checks none survives, and that the allowlist equals exactly the codes the script raises;
+  putting the old `code(error)` back fails 5 cases.
+- **P3 (both): wrong block.** The P5 router read and the LD03 allowance row cited 128749480,
+  from the superseded first run; the packet of record says **128749690**.
+- **Timing ranges:** RPC 412–489 ms (was 413–478); quote 135–253 ms and the 15 deadlines of
+  record (LD04-V01 had cited the uncommitted first run's figures).
+- **Wording:** "bound at `routerResult` level" for the fresh quotes, whose calldata was not
+  decode/tamper-checked; the SSM agent's own files under `/var/lib/amazon/ssm/`; the evidence
+  copy is reformatted as well as redacted; fixed words 2 and 7 are public addresses too;
+  finality lag is biased low by up to about one block.
+- The script's own RPC helper now uses the production `NoRedirect` opener.
+
+The packet of record was produced by `2106d6c`. These fixes change only the refusal output
+and redirect handling, neither of which affects a successful packet, so it is not rerun.
+Offered as a follow-up, not done: decode-and-tamper checks of fresh calldata under the
+reviewed policy in a new packet.

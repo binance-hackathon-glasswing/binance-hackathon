@@ -980,11 +980,12 @@ L/m selection and release qualification remain open.
 
 Inputs, all from the LD02 packet (IDEA-070 LD02, SSM `70965d91…`):
 
-- Route deadline after the request: **499.1–500.1 s** in 30 fresh quotes over two runs
-  (consistent with B02-U's 15). A swap needs `now + m < deadline ≤ A`, so the
+- Route deadline after the request: **499.1–500.1 s** in the 15 fresh quotes of record
+  (the superseded first run agreed; consistent with B02-U's 15). A swap needs `now + m < deadline ≤ A`, so the
   re-quote must happen no later than `A − 500 s`.
-- Quote round trip 135–271 ms; RPC round trip about 0.41–0.48 s per call on both
-  providers; latest-to-finalized lag 0–1 block (≤ 1 s).
+- Quote round trip 135–253 ms; RPC round trip 412–489 ms per call on both
+  providers; latest-to-finalized lag 0–1 block as measured (biased low by up to
+  about one block).
 - Signer, approve inclusion and executor pickup: **UNMEASURED** (no signer installed).
 
 Why 660: it leaves 160 s from the decision snapshot to the swap's re-quote. The

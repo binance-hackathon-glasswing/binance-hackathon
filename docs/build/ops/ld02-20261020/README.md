@@ -22,12 +22,12 @@ It collects:
 
 ## Safety
 
-- **No host writes.** Web3 and RPC artifacts stay in memory. SQL runs `READ ONLY`. No file, service, config,
-  ledger or AWS change is made, and the command below passes the script through `bash -c`, so it isn't written
-  to disk either.
+- **No host writes.** Web3 and RPC artifacts stay in memory. SQL runs `READ ONLY`. The script makes no file, service, config,
+  ledger or AWS change, and the command below passes it through `bash -c`. The SSM agent still stores the
+  command and its sanitized output under `/var/lib/amazon/ssm/`, as it does for every run.
 - **No secrets in the output.** Keys never leave the host. A final scan refuses any output containing `://`,
   a provider URL or hostname, the database host, the wallet address or any runtime secret value. On any failure
-  the script prints only `LD02_PACKET_REFUSED` with a short error code.
+  the script prints only `LD02_PACKET_REFUSED` with the exception type, plus one of its own allowlisted codes.
 - **Pinned router code.** The host release (`ea25b52`) predates `untrusted_router`, so the script carries that
   module's exact canonical bytes (`697ff3a`, SHA-256
   `9934f5372f406ad9b9b62e85da93421128d68fdf2722af234f358d6140b0923a`). It refuses to run if the bytes differ.
