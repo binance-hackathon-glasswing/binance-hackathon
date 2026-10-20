@@ -97,3 +97,13 @@ accounting, Keegan reviews policy and gates):**
 
 Not decided here: the numeric reserve, seeding amounts and alarm threshold.
 They follow LD09's measurements, with Isaac's #44 acceptance (LD10).
+
+### LD07-RV01 — PR 199 review (2026-10-20)
+
+Reviewed `2723b5e` against integration `06a93f9`: no blocking defect in this
+decision/register slice. `render_deviations --check` and whitespace checks PASS;
+Linux Python 3.12.15 with disposable PostgreSQL 14.24: release-register and
+final-review-D tests **39 passed, 34 subtests**. GitHub Actions did not start
+because of account billing/spending limits; this is local evidence only.
+LD08 implementation, measured LD09 gas/reserve/seeding values and #44/host
+acceptance remain open. This review does not enable signing or top-ups.
