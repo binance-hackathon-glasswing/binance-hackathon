@@ -965,3 +965,17 @@ is pretty-printed with the private hostname redacted (SHA-256 `f8e6e46b…9400`)
   simulations at one block, not fills. **G7:** 15 tests / 36 subtests; full suite in the PR.
 - Unchanged from LD02: holdings MATCH (block 128777532), 15/15 quotes request-bound,
   deadlines 499.1–499.9 s, RPC 410–488 ms, exit reserve 8.63×, `configs_unchanged=true`.
+
+### LD02b-F1 — why MSFTB's swap simulation was refused (2026-10-20; prospective)
+
+LD02b's MSFTB minimum BUY simulation returned `RPC_REFUSED` while its quote was OK. Same script, safety contract
+and allowlist; the only change is that a refused simulation keeps the provider's error, sanitized.
+
+**Pass criteria, written before the change (F1–F3):**
+
+- F1. A refused `eth_estimateGas` reports the JSON-RPC error code, the error message filtered to a short plain-text
+  phrase, the 4-byte revert selector if the provider returns revert data, and the decoded text when that selector is
+  `Error(string)` (`0x08c379a0`), also filtered. No other revert bytes are emitted; the final scan still applies.
+- F2. A read-only rerun on `primary` reports the MSFTB result with that detail, plus the other four symbols again
+  for comparison. Offline tests cover decoding, filtering and a refusal that carries a URL or value.
+- F3. The finding is recorded as observed. No cause is asserted beyond what the provider returned.
