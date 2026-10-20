@@ -372,3 +372,14 @@ reproducible verifier/receipts are in
   gas-scope decision/qualification; Keith/Keegan LD11 selected strategy values;
   Isaac LD10/#44 final measured caps decision. No live pin/readiness flag,
   signing, provider, spending, host or deployment action. LD09 stays partial.
+
+### DC-01 delivery — 2026-10-20
+
+[PR197](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/197)
+targets canonical `codex/system-testing-20261012`; review/merge remain pending.
+PR133's noticeboard now checks **LD09-DC01** complete and links this delivery;
+LD09 retains its current-data/#119/#120/#44 prerequisites. PR197 identifies
+#118's completed construction deliverable for closure on merge, without closing
+the separate review gates. Final audit replay is byte-identical to the retained
+receipt and all eight derived-file checksums pass. Original user checkout and
+Desktop export remain untouched; no deployment or readiness change.
