@@ -36,7 +36,8 @@ Steps 1–5 and the evidence template apply only to verified mode. For the selec
 untrusted path, use U-a–U-d below, then shared steps 6–12 with that policy pair
 and the UNTRUSTED startup label. The signer remains offline from RPC. Neither
 mode removes #27/#44, fresh full holdings, fee/gas, host or ACK requirements.
-LD06 must disposition leftover allowances across tokens/final exits; LD05 must
+LD06 adds [opt-in zero-only allowance recovery](ALLOWANCE_RECOVERY.md) across
+tokens/final exits, with policy/gas/timing/host acceptance still required. LD05 must
 disposition anomalous fills. LD07/08 must choose and qualify native top-ups or
 reviewed initial-only gas controls: the untrusted decoder currently rejects
 native routes, while existing numeric/Gate B gates still require top-up coverage.

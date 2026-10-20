@@ -1,6 +1,6 @@
 """Read/build venue adapter. Broadcast capability remains separately gated by runtime readiness."""
 from functools import wraps
-from larp.execution import Blocked, DependencyUnavailable, Payload
+from larp.execution import Blocked, DependencyUnavailable, Payload, REVOKE_TOKENS
 from larp.marketdata.web3 import single, Unavailable
 from larp.marketdata.port import integer, slippage_percent
 
@@ -54,6 +54,17 @@ class LiveVenue:
         d=single(r)
         if str(d['dexContractAddress']).lower()!=intent.router:raise Blocked('approve spender mismatch')
         return Payload(56,intent.wallet,intent.pay_token,0,nonce,integer(d['gasLimit']),integer(d['gasPrice']),d['data'])
+    @boundary
+    def revoke(self, intent, token, nonce):
+        """Zero-only supporting approval via the same Web3 API; validated independently before signing."""
+        if token not in REVOKE_TOKENS.values() or intent.key not in self.vendors:
+            raise Blocked('eligible token and fresh quote required before cleanup')
+        r = self.client.request('GET', 'aggregator/approve-transaction', dict(binanceChainId='56',
+            tokenContractAddress=token, approveAmount='0', vendor=self.vendors[intent.key]))
+        d = single(r)
+        if str(d['dexContractAddress']).lower() != intent.router:
+            raise Blocked('cleanup spender mismatch')
+        return Payload(56, intent.wallet, token, 0, nonce, integer(d['gasLimit']), integer(d['gasPrice']), d['data'])
     @boundary
     def estimate_gas(self,payload):
         r=self.client.request('POST','pre-transaction/gas-limit',dict(binanceChainId='56',evmTx=dict(

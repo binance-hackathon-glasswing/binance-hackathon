@@ -5,7 +5,7 @@ bundles pending verified decoder, production store, manifest and logging integra
 """
 from datetime import datetime, timezone
 
-from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_submitted
+from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_submitted, REVOKE_TOKENS
 from larp.marketdata.port import TOKENS
 
 
@@ -73,11 +73,15 @@ def broadcast_observation(state,attempt,*,wallet_id):
     if not wallet_id:raise Blocked('configured wallet identity required')
     if not attempt.tx_hash or attempt.broadcast_at is None:raise Blocked('no durable broadcast attempt')
     intent=state.intent
-    return dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',
+    result = dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',
                 run_id=intent.run_id,wallet_id=wallet_id,round_id=intent.round_id,intent_id=intent.intent_id,
                 event_id=attempt.attempt_id+':broadcast',attempt_id=attempt.attempt_id,tx_hash=attempt.tx_hash,
                 decision_id=intent.decision_id,version_id=intent.version_id,step=attempt.step.lower(),
                 observed_at=datetime.fromtimestamp(attempt.broadcast_at, timezone.utc).isoformat())
+    if attempt.step in REVOKE_TOKENS:
+        result.update(maintenance='ALLOWANCE_REVOKE', token_contract=REVOKE_TOKENS[attempt.step],
+                      spender=intent.router, approved_amount='0')
+    return result
 
 
 class ExecutionService:

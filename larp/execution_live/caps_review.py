@@ -77,6 +77,8 @@ def review(inputs, *, now, base_dir):
     for field in ('cash_units', 'bnb_units'):
         integer(ledger[field])
     blockers, checks = [], []
+    if policy.allowance_recovery != config.get('allowance_recovery', False):
+        blockers.append('ALLOWANCE_RECOVERY_SCOPE_MISMATCH')
 
     def check(name, required, cap):
         covered = required <= cap
