@@ -905,3 +905,35 @@ The packet of record was produced by `2106d6c`. These fixes change only the refu
 and redirect handling, neither of which affects a successful packet, so it is not rerun.
 Offered as a follow-up, not done: decode-and-tamper checks of fresh calldata under the
 reviewed policy in a new packet.
+
+## LD02b — fresh calldata under the reviewed policy, and gas estimates (2026-10-20; prospective)
+
+Follow-up from LD02-RV01 (the fresh quotes' calldata was not decode/tamper-checked) and
+input for Keith's LD09 (all 3,848 DC-01 swap-gas figures are fallback). Same script and
+safety contract as LD02 (P1–P2, P10 still apply), run read-only on `primary` only.
+
+**Pass criteria, written before the script is changed or run (G1–G7):**
+
+- G1. **Policy pinned:** the script carries the reviewed policy's exact bytes, refuses to
+  run unless they hash to `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`,
+  and reports whether this run's live `observe()` draft equals the reviewed policy apart
+  from `review`.
+- G2. **Fresh calldata:** the canonical `check()` runs on this run's 15 fresh quotes under
+  that policy; each row reports `matches_quote` and `tampered_refused`, with an overall
+  PASS/FAIL. A FAIL is reported, not hidden.
+- G3. **Approve gas:** `eth_estimateGas` from the wallet for `approve(router, amount)` on
+  each of the six tokens at the planned size. Only simulations: no transaction, signature
+  or nonce use.
+- G4. **Swap gas:** a USDT allowance state override is used only after the slot layout is
+  proven on chain: the balance slot read at a numeric block equals the observed USDT units,
+  and `allowance()` under the override returns the override value. Then `eth_estimateGas`
+  on each minimum-size BUY's exact fresh calldata under the override. If the provider
+  refuses overrides or the proof fails, the packet says so and no swap gas is reported.
+  SELL swaps are not estimated (no bStocks held).
+- G5. **Allowlist:** new RPC calls are limited to `eth_estimateGas` (from the wallet, value 0;
+  to a pinned token with `approve(router, …)`, or to the router with exactly a fresh quote's
+  calldata), `eth_getStorageAt` on USDT only, and `eth_call` for `allowance` only.
+  Offline tests prove every other shape is refused.
+- G6. **Reporting:** estimates are labelled simulated under the stated override at one
+  block, not measured fills. They are LD09 inputs, not cap or seeding decisions.
+- G7. **Local:** offline tests for G1, G2, G4 and G5 pass; the full suite passes.
