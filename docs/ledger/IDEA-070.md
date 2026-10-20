@@ -979,3 +979,24 @@ and allowlist; the only change is that a refused simulation keeps the provider's
 - F2. A read-only rerun on `primary` reports the MSFTB result with that detail, plus the other four symbols again
   for comparison. Offline tests cover decoding, filtering and a refusal that carries a URL or value.
 - F3. The finding is recorded as observed. No cause is asserted beyond what the provider returned.
+
+### LD02b-F1 results (2026-10-20)
+
+Three read-only runs on `primary` while the filter was corrected: SSM `3f4360e1…` (`bf69a13`) and `9ff2869a…`
+(`4cde56a`) still filtered the reason; SSM `5f92fd74-844a-4602-9a14-69c811e9b963` at `877a4cc` (packet
+`615e6e79…c240`; committed copy [ld02b-f1-execution-packet-20261020.json](../build/evidence/ld02b-f1-execution-packet-20261020.json),
+hostname redacted) shows it. F1 and F2 PASS (17 offline tests; a URL or wallet in a reason is still dropped or
+refuses the packet).
+
+- **F3, MSFTB:** in all four runs the minimum BUY simulation reverted (`rpc_code` 3, `Error(string)`). The provider
+  message: `execution reverted: adapter:0x7977f3e8e063a4ee95b5f396d63485dbdea4515d:Error(RFQ_OrderExpired …)`.
+  MSFTB's route goes through an **RFQ adapter**, and the signed market-maker order inside it had expired by the time
+  of the simulation, tens of seconds after the quote. Its quotes were OK and request-bound, and the outer route
+  deadline was still about 500 s away.
+- **Implication (observation, not a decision):** for RFQ-routed tokens the outer deadline does not bound execution;
+  the inner RFQ order's validity is much shorter. The quote-to-sign path after the approve's finality must be fast,
+  or the swap reverts and costs gas. That affects LD09 (MSFTB coverage), LD10 (gas budget for reverts) and the
+  #27 margin, which assumed the 500 s deadline. Not yet known: the RFQ order's actual validity, and whether the
+  quote response marks RFQ routes (to be read from the quote record). The untrusted decoder's checks are unchanged.
+- **Swap gas varies by route:** over the four runs, minimum BUY simulations ranged GOOGLB 554k–731k, NVDAB 423k–731k,
+  SKHYB 732k–749k, TSLAB about 731k. The 731k figure in LD02b is an upper observation, not a constant.
