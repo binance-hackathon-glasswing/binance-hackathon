@@ -104,6 +104,10 @@ def validate_config(value):
     for key in ('max_failures', 'clear_after'):
         if type(value[key]) is not int or value[key] < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    # D-DN-04 (IDEA-049-D LD13): optional, no default; Isaac decides the value from measured dispatch/ACK delays.
+    age = value.get('delivery_age_halt_seconds')
+    if age is not None and (type(age) is not int or age < 1):
+        raise ContractError('Invalid positive integer setting: delivery_age_halt_seconds')
     interval = value['interval_seconds']
     if type(interval) not in (int, float) or not math.isfinite(interval) or interval <= 0:
         raise ContractError('Invalid runtime interval')
@@ -447,8 +451,10 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
 def runtime_guard(store, c):
     """The supervised runtime's HALT guard, with the kernel clock signal for the D-DN-10 automatic CLOCK clear."""
     from larp.runtime.supervision import CLOCK_CLEAR_AFTER_MS, kernel_clock_synchronized
+    age = c.get('delivery_age_halt_seconds')
     return Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after'],
-                 clock_sync=kernel_clock_synchronized, clock_clear_after_ms=CLOCK_CLEAR_AFTER_MS)
+                 clock_sync=kernel_clock_synchronized, clock_clear_after_ms=CLOCK_CLEAR_AFTER_MS,
+                 delivery_age_ms=None if age is None else age * 1000)
 
 
 def main(argv=None):

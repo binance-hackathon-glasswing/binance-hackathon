@@ -10,6 +10,7 @@ Shared by the coordinator, the command store, the driver, the execution guards a
 rule has one definition. No runtime imports: the signer host loads this module too.
 """
 
+# DELIVERY_AGE (D-DN-04) is deliberately not pausing: the accepted guard halts all signing (IDEA-049-D LD13).
 PAUSING = frozenset(('DELIVERY_DEADLINE', 'REPEATED_FAILURES'))
 
 
