@@ -705,3 +705,55 @@ final numeric decisions remain open. Original dated findings above are retained;
 the old incident-backup rate limit does not bound all restart/journal/disk growth.
 DEV18 remains OPEN/DRAFT pending Keegan's scope decision. Criteria/results:
 IDEA-066 C05-RV01. C05 is partial, not wholly complete.
+
+## LD13 — Keegan's operations review and the D-DN-04 guard (2026-10-20, prospective)
+
+**Keegan's review of Isaac's C05-RV01 dispositions (2026-10-20): all three accepted as decided.**
+- **D-DN-01 / D-05 / DEV-18:** no fenced standby. The candidate is primary
+  plus an isolated signer; a primary or availability-zone failure may end
+  trading for the run. DEV-18 is recorded as a decided omission (still DRAFT
+  until C10).
+- **D-DN-07:** keep the current supervision (`Restart=always`, `RestartSec=10`,
+  no start limit, restart suppressed on exits 2/3/4), accepting the residual
+  exit-1 crash-loop and resource-growth risk. The operator still measures it.
+- **D-DN-11:** a restored run stays quarantined for the rest of the scored run;
+  availability is lost rather than reactivating restored state.
+
+No numeric value is adopted by these reviews. D-DN-06 (watchdog) and D-DN-08
+(memory) stay measurement-blocked.
+
+**D-DN-04 guard design (implements Isaac's accepted requirements):**
+- **The bound B is optional.** It is `delivery_age_halt_seconds` in the runtime
+  config, with no default. The guard is off until Isaac sets B after the
+  operator's dispatch/ACK measurements. 2 h is not adopted.
+- **Pending**, re-derived from the database at every evaluation: any audit
+  event not positively ACKed (`status='ACK'` with a stored acknowledgement)
+  on every chunk, plus any open round with no log yet (age from its
+  `started_ms`). There is no in-memory first-seen time, so a restart cannot
+  reset an age.
+- **HALT `DELIVERY_AGE`** (not pausing, so it blocks all signing;
+  reconciliation continues) when the oldest pending age ≥ B, or when any
+  pending timestamp is in the future.
+- **Clear** only when no pending timestamp is in the future and the oldest
+  pending age is < B. Every log that was overdue must therefore have been
+  positively ACKed.
+- The hard `DELIVERY_DEADLINE` rule is unchanged, and the CLOCK checks run
+  first, as before.
+
+**Pass criteria, written before any code (G1–G9):**
+- G1. Without B, no `DELIVERY_AGE` is ever raised, and all existing supervision
+  tests pass unchanged.
+- G2. Boundary: one log at t; with B = 1000 ms, nothing at t + 999 and a HALT
+  at t + 1000.
+- G3. The HALT blocks a command claim, i.e. a signature, like any non-pausing
+  HALT.
+- G4. A 200 reply without `STORED` leaves the log pending, and the HALT stays.
+- G5. With two overdue logs, delivering one keeps the HALT. It clears only when
+  every overdue log is ACKed and the oldest remaining is younger than B.
+- G6. A fresh `Guard` (a restart) reaches the same decision from the same
+  database.
+- G7. A pending log timestamped in the future HALTs, and does not clear while
+  it remains.
+- G8. An open round with no log yet counts from its `started_ms`.
+- G9. The runtime config refuses a non-positive or non-integer
+  `delivery_age_halt_seconds`, and the service passes B to its guard.
