@@ -1182,3 +1182,16 @@ Packet SHA-256 as printed on the host: `688b89efb35257d5b089469fd373b3545ef3539d
 
 **Amendment Q2b (written before the rerun):** read `finalized` from both providers concurrently (two threads started
 together) three times, and pass if every pair is within 10 blocks. Nothing else changes.
+
+### LD02c rerun with Q2b — script `a48d669`, SSM `e32d4608-56fa-494c-ba9b-34d21d4d0fe4` (2026-10-21)
+
+Packet `c8373e73…3978`. **Q2b PASS:** three concurrent reads returned identical finalized blocks on both providers
+(128,789,466 / 467 / 468). All other Q results as before (Q2-as-written again FAIL from sequential reads). **R2/R3
+replicated:** MSFTB `RFQ_OrderExpired` at every delay including 0 s; GOOGLB, NVDAB, SKHYB and TSLAB simulate at every
+delay through 90 s. Evidence (pretty-printed; no hostname or wallet in either packet):
+[run 1](../build/evidence/ld02c-rfq-rpc-run1-20261021.json), [run 2](../build/evidence/ld02c-rfq-rpc-run2-20261021.json).
+
+**Execution read-side qualification (PF-01 order):** BNB Chain public and NodeReal public both answer every read
+method execution uses, agree with each other, and respond in about 0.42–0.51 s. This is read-side evidence only:
+broadcasting goes through the Web3 API, native tracing stays unqualified (B04), and approving the RPC for execution
+remains an owner decision.
