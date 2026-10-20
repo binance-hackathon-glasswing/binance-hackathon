@@ -2474,3 +2474,35 @@ issues already fixed in newer merged LLM PRs. Criteria A1–A6 are recorded in
 private final PC-STOP01 export with canonical697ff3a. Offline reconstruction and
 real-input replay only; no inference/AWS/trading/deployment. Frozen trial criteria
 and independent-label requirements remain unchanged.
+
+
+### PC-AUDIT01 verified — captured trial/current-code audit (2026-10-20)
+
+Canonical697ff3a rechecked unchanged remotely. PC-STOP01 manifest/Backup.v1,
+188 journal hashes/terminal projection, outboxes and109 ACK chunk bytes PASS;
+all70 rounds closed,zero signing/execution/commands;496 artifact refs resolve;
+70 cutoff/tool/accepted-deadline checks PASS.103 settled OpenAI charges match
+recorded costs exactly (880,356microUSD);3 UNKNOWN retained;71 recorded AIand
+model/high-effort metadata pairs match.38 focused existing tests PASS locally
+(Python3.12.14/macOS), synthetic transports only. Credential pattern scan0 hits.
+
+New remaining findings, current-code witnesses: R1/P1 mutable normalized inputs
+(81/174 differ from original wire solely by later tool_results; real-input rule
+witness reproduces);R2/P2 unchanged4096-token cap (11 length errors,9 all reasoning;
+45,056 billed completion tokens recoverable from raw but absent normalized usage);
+R3/P2 citation/schema contract (15/35 Kimi claims rejected;5 unsupported-claim and
+1 schema-abstain stages,all6 current verifier/original-wire replays reproduce);
+R4/P2 stale60000-ms bakeoff deadline against180000-ms current contract (120000-ms
+report-only witness incorrectly late). Already-fixed legacy behavior omitted.
+Owners/repair acceptance in INCOMPLETE_WORK PC-AUDIT01-R1..R4.
+
+Performance scope:70 jobs but2 assessed filing records/2 issuers;35 SK hynix
+outputs empty/UNKNOWN,6 nonempty combined outputs contain repeated item tags;
+all24 emitted claims reverify. Rule baseline70/70 ASSESSED;finding/claim-metric
+sets match on all41 captured ASSESSED jobs.350 KEEP_QUANTITY targets,zeroorders;
+historical EQUAL_WEIGHT/pre-entry/unverified-basis setup,not current S1 economic
+or independent-label qualification. No additional economic fact/alpha shown;
+no current-router live availability projection. Full findings/reproduction/hashes:
+[report](../build/LLM_TRIAL_AUDIT_20261020.md),
+[receipt](../build/evidence/llm-trial-audit-20261020.json).
+No runtime fix,AWS/provider/trading action or restart;raw data remains private.

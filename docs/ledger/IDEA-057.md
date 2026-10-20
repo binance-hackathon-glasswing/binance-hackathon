@@ -1228,3 +1228,18 @@ verified results and remaining named owners:
 Frozen72h observation, blind labels, route/omission accuracy, actual provider
 billing/rights and team adoption remain unmet/pending. Stopping does not promote
 harness verdicts into labels or merge unsigned and signed observation windows.
+
+
+## PC-AUDIT01 — current-code findings from the actual trial (2026-10-20)
+
+Audit complete with four remaining findings verified against canonical697ff3a;
+resolved legacy LLM changes are excluded. R1/P1 normalized-input mutation81/174,
+R2/P2 unchanged completion cap11 truncations,R3/P2 citation/schema replays6/6,
+R4/P2 budget-unaware bakeoff reporting. All188 journal hashes/109 ACK chunks,
+103 settled charge matches and38 focused tests PASS. No extra economic fact
+versus rule baseline established from the two repeatedly assessed filings;
+independent quality/current live performance remain unmeasured. Owners and
+acceptance: INCOMPLETE_WORK PC-AUDIT01-R1..R4. Full evidence/reproduction:
+[report](../build/LLM_TRIAL_AUDIT_20261020.md),
+[receipt](../build/evidence/llm-trial-audit-20261020.json).
+Raw model/source data stays private;no provider call,application fix or restart.
