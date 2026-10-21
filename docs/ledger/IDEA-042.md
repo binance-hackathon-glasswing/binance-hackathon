@@ -621,3 +621,22 @@ This builds the hook accepted in RG2-D02, as specified in RG2-D01. Criteria are 
 
 RG2 is no longer blocked on instrumentation. The signed-host F1–F10 runs remain under LD21, after LD20, with
 approval for each run.
+
+## GAP62-F01 — deviations register: complete-row review and finalisation (2026-10-21; prospective)
+
+Keegan delegated the GAP-62 review as "follow the recommended option" (2026-10-21). Criteria, written before any
+register edit (V1–V5):
+
+- V1. Every row is re-read against current canonical. A row becomes FINAL only if three things hold: its decision is
+  recorded with a date, its v1 wording describes the behaviour the final build will have (no "pending" placeholder
+  for a value or decision that would change the wording), and no open owner decision can change it.
+- V2. Rows that depend on an open decision stay DRAFT. Their `reason` names the decision and owner that would
+  finalise them. These are the S1 profile and exits (Keith, #120/LD09/LD11), model adoption (LD11/LD22), and the
+  router safeguards still being built or decided (KG-DEC-01 pre-sign simulation, LD05 abnormal fills, LD06 cleanup
+  enablement).
+- V3. Declared quotes are unchanged and remain verbatim; evidence IDs resolve; `validate_deviations` passes; plan.md
+  §6.5 is re-rendered with `tools/render_deviations.py --write`, and `--check` passes.
+- V4. Services: `bsc-rpc` records the KG-DEC-01 execution read approval and stays PROVISIONING until the signed
+  config binds it. The assessor services stay PROVISIONING pending LD11.
+- V5. The release-register tests and the full suite pass. The runtime's refusal of OPEN/DRAFT rows at final
+  activation is unchanged; with any DRAFT row left, final activation is still refused.
