@@ -105,6 +105,12 @@ sets it to the largest summary approve+swap pair. Selected cleanup requires a
 reviewed larger budget where needed: the reserve must cover four such actions
 (five for S1), and minimum-trade cost feasibility uses that whole action budget.
 This is a candidate formula; FALLBACK measurements do not qualify its value.
+LD09-B (IDEA-061, decided 2026-10-21) adds an optional sourced
+`gas_sizing_budget_units` for initial-only profiles: the action budget is set at
+the signer's cap gas price and keeps the reserve and `InitialGasCheck`; the
+sizing budget (expected gas price, between the summary pair and the action
+budget) sets minimum-trade feasibility. Builder: `--gas-action-budget-units`,
+`--gas-sizing-budget-units`, `--gas-budget-decision`, `--gas-budget-evidence`.
 
 At a quiet boundary after balance reconciliation, `InitialGasCheck` journals
 transitions to `BELOW_EXIT_RESERVE`, `PAIR_UNAFFORDABLE`, or recovered `OK` in

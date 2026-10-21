@@ -1,0 +1,497 @@
+{
+ "claims": "Simulations and reads only; observed bounds, not guarantees. Not signed-path evidence.",
+ "generated_utc": "2026-10-20T17:51:58.315Z",
+ "provider_fingerprints": {
+  "BSC_BNBCHAIN_PUBLIC": "2e478f4aa0413423",
+  "BSC_NODEREAL_PUBLIC": "e644968b15032fec"
+ },
+ "quote_size_units": 19443104,
+ "rfq": {
+  "delays_s": [
+   0,
+   3,
+   6,
+   10,
+   15,
+   20,
+   30,
+   45,
+   60,
+   90
+  ],
+  "proof": {
+   "balance_slot_matches": true,
+   "override_effective": true
+  },
+  "status": "DONE",
+  "symbols": {
+   "GOOGLB": {
+    "failures_after_success": false,
+    "first_failure_s": null,
+    "last_success_s": 90,
+    "results": {
+     "0": 731120,
+     "10": 731120,
+     "15": 731120,
+     "20": 731120,
+     "3": 731120,
+     "30": 731120,
+     "45": 731120,
+     "6": 731120,
+     "60": 731120,
+     "90": 731120
+    }
+   },
+   "MSFTB": {
+    "failures_after_success": false,
+    "first_failure_s": 0,
+    "last_success_s": null,
+    "results": {
+     "0": "RFQ_OrderExpired",
+     "10": "RFQ_OrderExpired",
+     "15": "RFQ_OrderExpired",
+     "20": "RFQ_OrderExpired",
+     "3": "RFQ_OrderExpired",
+     "30": "RFQ_OrderExpired",
+     "45": "RFQ_OrderExpired",
+     "6": "RFQ_OrderExpired",
+     "60": "RFQ_OrderExpired",
+     "90": "RFQ_OrderExpired"
+    }
+   },
+   "NVDAB": {
+    "failures_after_success": false,
+    "first_failure_s": null,
+    "last_success_s": 90,
+    "results": {
+     "0": 466708,
+     "10": 466708,
+     "15": 466708,
+     "20": 509365,
+     "3": 466708,
+     "30": 509365,
+     "45": 509365,
+     "6": 466708,
+     "60": 509365,
+     "90": 509365
+    }
+   },
+   "SKHYB": {
+    "failures_after_success": false,
+    "first_failure_s": null,
+    "last_success_s": 90,
+    "results": {
+     "0": 554343,
+     "10": 554441,
+     "15": 554283,
+     "20": 554283,
+     "3": 554441,
+     "30": 554432,
+     "45": 554186,
+     "6": 554283,
+     "60": 554343,
+     "90": 554195
+    }
+   },
+   "TSLAB": {
+    "failures_after_success": false,
+    "first_failure_s": null,
+    "last_success_s": 90,
+    "results": {
+     "0": 731086,
+     "10": 731086,
+     "15": 731086,
+     "20": 731086,
+     "3": 731086,
+     "30": 731086,
+     "45": 731086,
+     "6": 731086,
+     "60": 731086,
+     "90": 731086
+    }
+   }
+  }
+ },
+ "route_markers": {
+  "GOOGLB": {
+   "calldata": "3e05ba1d0bc0dd1f",
+   "elapsed_ms": 155,
+   "quoted_gas": 250000,
+   "router_result": {
+    "router": "0x55d398326f99059ff775485246999027b3197955--0x3f53de71c126bdabae20f9cd64848d317f",
+    "vendorName": "LiquidMesh"
+   },
+   "router_result_keys": [
+    "actualSwapAmount",
+    "binanceChainId",
+    "dexRouterList",
+    "estimateGasFee",
+    "feeAmount",
+    "feeToken",
+    "fromToken",
+    "fromTokenAmount",
+    "priceImpactPercent",
+    "router",
+    "toToken",
+    "toTokenAmount",
+    "tradeFee",
+    "vendorName"
+   ],
+   "router_result_lists": {
+    "dexRouterList": [
+     {
+      "fromTokenIndex": "0",
+      "toTokenIndex": "1"
+     }
+    ]
+   },
+   "top_level": {
+    "executionMode": "SWAP",
+    "rfq": null
+   },
+   "top_level_keys": [
+    "executionMode",
+    "rfq",
+    "routerResult",
+    "tx"
+   ]
+  },
+  "MSFTB": {
+   "calldata": "f428208bd2b76935",
+   "elapsed_ms": 168,
+   "quoted_gas": 250000,
+   "router_result": {
+    "router": "0x55d398326f99059ff775485246999027b3197955--0x80106cb3ead06659a5ad19df39d9b47338",
+    "vendorName": "LiquidMesh"
+   },
+   "router_result_keys": [
+    "actualSwapAmount",
+    "binanceChainId",
+    "dexRouterList",
+    "estimateGasFee",
+    "feeAmount",
+    "feeToken",
+    "fromToken",
+    "fromTokenAmount",
+    "priceImpactPercent",
+    "router",
+    "toToken",
+    "toTokenAmount",
+    "tradeFee",
+    "vendorName"
+   ],
+   "router_result_lists": {
+    "dexRouterList": [
+     {
+      "fromTokenIndex": "0",
+      "toTokenIndex": "1"
+     }
+    ]
+   },
+   "top_level": {
+    "executionMode": "SWAP",
+    "rfq": null
+   },
+   "top_level_keys": [
+    "executionMode",
+    "rfq",
+    "routerResult",
+    "tx"
+   ]
+  },
+  "NVDAB": {
+   "calldata": "d55f780eb1bb5168",
+   "elapsed_ms": 285,
+   "quoted_gas": 250000,
+   "router_result": {
+    "router": "0x55d398326f99059ff775485246999027b3197955--0x02fca66c1d1afb4e2a7884261eb00f6359",
+    "vendorName": "LiquidMesh"
+   },
+   "router_result_keys": [
+    "actualSwapAmount",
+    "binanceChainId",
+    "dexRouterList",
+    "estimateGasFee",
+    "feeAmount",
+    "feeToken",
+    "fromToken",
+    "fromTokenAmount",
+    "priceImpactPercent",
+    "router",
+    "toToken",
+    "toTokenAmount",
+    "tradeFee",
+    "vendorName"
+   ],
+   "router_result_lists": {
+    "dexRouterList": [
+     {
+      "fromTokenIndex": "0",
+      "toTokenIndex": "1"
+     }
+    ]
+   },
+   "top_level": {
+    "executionMode": "SWAP",
+    "rfq": null
+   },
+   "top_level_keys": [
+    "executionMode",
+    "rfq",
+    "routerResult",
+    "tx"
+   ]
+  },
+  "SKHYB": {
+   "calldata": "ec45e925315320db",
+   "elapsed_ms": 147,
+   "quoted_gas": 250000,
+   "router_result": {
+    "router": "0x55d398326f99059ff775485246999027b3197955--0xca750ef65f295bbecd685abf54e82caf29",
+    "vendorName": "LiquidMesh"
+   },
+   "router_result_keys": [
+    "actualSwapAmount",
+    "binanceChainId",
+    "dexRouterList",
+    "estimateGasFee",
+    "feeAmount",
+    "feeToken",
+    "fromToken",
+    "fromTokenAmount",
+    "priceImpactPercent",
+    "router",
+    "toToken",
+    "toTokenAmount",
+    "tradeFee",
+    "vendorName"
+   ],
+   "router_result_lists": {
+    "dexRouterList": [
+     {
+      "fromTokenIndex": "0",
+      "toTokenIndex": "1"
+     }
+    ]
+   },
+   "top_level": {
+    "executionMode": "SWAP",
+    "rfq": null
+   },
+   "top_level_keys": [
+    "executionMode",
+    "rfq",
+    "routerResult",
+    "tx"
+   ]
+  },
+  "TSLAB": {
+   "calldata": "c390391f725c2eda",
+   "elapsed_ms": 149,
+   "quoted_gas": 250000,
+   "router_result": {
+    "router": "0x55d398326f99059ff775485246999027b3197955--0x5b1910eaad6450e50f816082aa078c41f1",
+    "vendorName": "LiquidMesh"
+   },
+   "router_result_keys": [
+    "actualSwapAmount",
+    "binanceChainId",
+    "dexRouterList",
+    "estimateGasFee",
+    "feeAmount",
+    "feeToken",
+    "fromToken",
+    "fromTokenAmount",
+    "priceImpactPercent",
+    "router",
+    "toToken",
+    "toTokenAmount",
+    "tradeFee",
+    "vendorName"
+   ],
+   "router_result_lists": {
+    "dexRouterList": [
+     {
+      "fromTokenIndex": "0",
+      "toTokenIndex": "1"
+     }
+    ]
+   },
+   "top_level": {
+    "executionMode": "SWAP",
+    "rfq": null
+   },
+   "top_level_keys": [
+    "executionMode",
+    "rfq",
+    "routerResult",
+    "tx"
+   ]
+  }
+ },
+ "rpc": {
+  "agreement": {
+   "chain_56": true,
+   "every_method_ok_everywhere": true,
+   "facet": true,
+   "finalized_within_10": false,
+   "receipt": true,
+   "router_codehash": true
+  },
+  "finalized_concurrent": {
+   "pairs": [
+    [
+     128789466,
+     128789466
+    ],
+    [
+     128789467,
+     128789467
+    ],
+    [
+     128789468,
+     128789468
+    ]
+   ],
+   "within_10": true
+  },
+  "providers": {
+   "BSC_BNBCHAIN_PUBLIC": {
+    "chain_id": 56,
+    "errors": {},
+    "facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+    "finalized_block": 128789444,
+    "latency_ms": {
+     "eth_call": [
+      471,
+      500
+     ],
+     "eth_chainId": [
+      426
+     ],
+     "eth_getBalance": [
+      425
+     ],
+     "eth_getBlockByNumber": [
+      474,
+      480
+     ],
+     "eth_getCode": [
+      423
+     ],
+     "eth_getStorageAt": [
+      423
+     ],
+     "eth_getTransactionByHash": [
+      429
+     ],
+     "eth_getTransactionCount": [
+      427,
+      432
+     ],
+     "eth_getTransactionReceipt": [
+      481
+     ]
+    },
+    "latest_block": 128789445,
+    "methods_ok": {
+     "balance": true,
+     "chain_id": true,
+     "facet_slot": true,
+     "finalized": true,
+     "latest": true,
+     "nonce_latest": true,
+     "nonce_pending": true,
+     "receipt": true,
+     "router_code": true,
+     "tx": true,
+     "usdt_allowance": true,
+     "usdt_balance_of": true
+    },
+    "nonce": [
+     2,
+     2
+    ],
+    "receipt": {
+     "block": 127946341,
+     "gas_used": 188294,
+     "status": 1
+    },
+    "router_codehash": "0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0",
+    "tx_found": true,
+    "usdt_allowance": 0,
+    "usdt_units": 98000000000000000000
+   },
+   "BSC_NODEREAL_PUBLIC": {
+    "chain_id": 56,
+    "errors": {},
+    "facet": "0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603",
+    "finalized_block": 128789455,
+    "latency_ms": {
+     "eth_call": [
+      478,
+      481
+     ],
+     "eth_chainId": [
+      426
+     ],
+     "eth_getBalance": [
+      470
+     ],
+     "eth_getBlockByNumber": [
+      422,
+      421
+     ],
+     "eth_getCode": [
+      483
+     ],
+     "eth_getStorageAt": [
+      422
+     ],
+     "eth_getTransactionByHash": [
+      476
+     ],
+     "eth_getTransactionCount": [
+      424,
+      473
+     ],
+     "eth_getTransactionReceipt": [
+      448
+     ]
+    },
+    "latest_block": 128789456,
+    "methods_ok": {
+     "balance": true,
+     "chain_id": true,
+     "facet_slot": true,
+     "finalized": true,
+     "latest": true,
+     "nonce_latest": true,
+     "nonce_pending": true,
+     "receipt": true,
+     "router_code": true,
+     "tx": true,
+     "usdt_allowance": true,
+     "usdt_balance_of": true
+    },
+    "nonce": [
+     2,
+     2
+    ],
+    "receipt": {
+     "block": 127946341,
+     "gas_used": 188294,
+     "status": 1
+    },
+    "router_codehash": "0xb6f35276cf3608595df59a3cfa5fb06a3309e64e387b0ea4f60875fdc4c696a0",
+    "tx_found": true,
+    "usdt_allowance": 0,
+    "usdt_units": 98000000000000000000
+   }
+  },
+  "status": "FAIL",
+  "status_q2b": "PASS"
+ },
+ "schema": "LD02cCheck.v1",
+ "signing_enabled": false
+}
