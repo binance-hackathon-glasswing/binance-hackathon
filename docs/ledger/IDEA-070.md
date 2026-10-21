@@ -1363,6 +1363,39 @@ Keegan delegated the pending decisions as "use the recommended option" (2026-10-
     refusal, not a pass.
   - Until it is built, those reverts can still cost gas up to the point of revert.
 
+## PS-01 — duplicate gate prototype STOPPED (2026-10-21; historical preregistration)
+
+Isaac asks for the next independently completable task. User steering: check
+other PRs for missing LD10 inputs; if those belong to Keith, abort cleanly and
+work on something assigned purely to Isaac. PR218 is historical DC-01 replay;
+#119/#120 remain open without new selected-profile/N acceptance. GE-01 gas
+prototype was fully reverted (normal commits) and pushed on its isolated
+codex/ld08-ld10-gas-envelope-20261021 branch; no gas PR/canonical change. Its
+preregistration/diagnostics remain in that branch's IDEA-061 GE-01 record.
+
+Implement the adopted KG-DEC-01 task owned by Isaac, Keegan review. Base146a751.
+Pass criteria before executing code:
+- PS1 require a latest-state, no-override eth_call of the exact authorized swap
+  payload through the pinned execution RPC/router before submitting a new remote
+  signing request. Balance-call/general RPC allowlists remain closed.
+- PS2 refuse RFQ_OrderExpired, Min-return errors, RPC unavailable, missing or
+  malformed simulation; never quote-fallback or expose provider text. Approve
+  and zero-cleanup steps do not simulate swaps. Successful EVM simulation is
+  engineering evidence, not future execution/revert protection.
+- PS3 check fresh epoch/authority/nonce/time gates after RPC I/O; never extend
+  #27 or mutate authorized payload bytes/amount/gas. Simulation failure aborts
+  only positively unbroadcast authority through the existing atomic fence,
+  preserving prior approval gas and releasing through normal NOT_SUBMITTED.
+- PS4 existing durable signature recovery and possible-send reconciliation do
+  not depend on a new simulation; pending request races cannot bypass aborts.
+  No RPC reaches the offline signer host, and no signing-policy cap is relaxed.
+- PS5 red/green scoped RPC and real PostgreSQL remote-signing/abort/recovery
+  tests; production wiring, fencing/nonce/expiry/restart and full local suite on
+  pushed source. Record limits and actual results; no real RPC/model/key/wallet,
+  host/SSM/funding or activation operation.
+- PS6 remove the KG-DEC-01 implementation backlog item only after verified,
+  retain live host/route/caps/release gates, update status/PR133 and prepare a
+  reviewable PR on canonical. No duplicated Keith profile/economic work.
 ### KG-DEC-01-C1 — pre-sign simulation already enforced (2026-10-21)
 
 Correction to KG-DEC-01. `Executor.prepare` already simulates every step's exact payload before any attempt exists.
@@ -1421,3 +1454,72 @@ Limits:
 - a valid swap's positive estimate from a funded wallet is first exercised at LD19.
 
 KG-DEC-01 is complete pending Isaac's review.
+
+### PS-01 disposition / KG-DEC-01-RV01 — Isaac review (2026-10-21)
+
+Canonical advanced to6746ef0 while PS-01 was in progress: PR223 added
+KG-DEC-01-C1 and PR224 added the read-only KG-DEC-01-H receipt. These establish
+the existing mandatory exact-calldata gas-limit gate; a second execution-RPC
+gate is unnecessary for the adopted task. All PS-01 application/test changes
+were reverted with normal pushed commits through03850ee. Net change against
+canonical is documentation only. The prototype's 25 tests/9 subtests PASS at
+2cc6f70 is historical prototype evidence, not validation of deployed code.
+
+Isaac now reviews the existing implementation and PR223/224 records. Criteria
+before running checks:
+- RV1 trace the live exact from/to/data/value estimate through prepare refusal,
+  confirm no quote-gas fallback or newly signable attempt after failure, and
+  keep the original authority/nonce/fencing checks unchanged.
+- RV2 reproduce the checked-in host packet SHA-256 excluding _receipt, review
+  preconditions/control/target pinning and sanitizer. Accept only the observed
+  API-refusal claim: generic api_or_http_error does not establish EVM revert
+  reasons, positive funded-swap behavior, or future execution success.
+- RV3 run the existing simulation, host-script and real PostgreSQL signing/
+  execution regression tests on committed pushed source, without calling any
+  live endpoint, host, signer or wallet. Record failures and limits honestly.
+- RV4 close the Isaac review line only on PASS, retain timing/positive funded
+  LD19 and real deployment/profile/gas gates; update current status/index and
+  PR133. No new runtime capability or team policy is adopted by this review.
+
+#### KG-DEC-01-RV01 results — PASS within recorded scope
+
+Isaac accepts KG-DEC-01-C1 and the KG-DEC-01-H receipt for their stated scope.
+Reviewed canonical6746ef0 (PR223/224); test checkout0c3c179 has identical
+application/test bytes. The exact from/to/data/value goes to the mandatory
+Web3 gas-limit estimate after approval finality. Missing/nonpositive estimates
+and failures cannot create a SWAP attempt or reach signing. The final gas field
+may increase to the existing 120% estimate margin; the API estimate does not
+simulate the final transaction's nonce/gas-price/gas-limit envelope. Existing
+authorize/sign/broadcast checks retain authority, nonce and fencing; no new
+capability or authority extension is required or added.
+
+On macOS/Python3.12.14/PostgreSQL14.24, the five scoped test files passed:
+**62 tests /47 subtests /zero skips**,16.07s. Files: execution/test_presign_simulation.py,
+runtime/test_presign_check_script.py, execution/test_finite_authority.py,
+execution/test_postgres_execution.py and signer/test_service.py under tests/.
+No full-suite run was needed for this documentation-only acceptance. See the
+machine-readable [receipt](../build/evidence/kgdec01-isaac-review-20261021.json).
+
+Recomputed canonical compact JSON SHA-256 excluding _receipt matches
+`d0c077ca8949ea6e076b83d8f979586553cde0a3f876a5e86d56578306bc95e6`.
+Reviewed precondition zeros, pinned targets, positive approve control46588,
+both generic API refusals, and full-text sanitization before shortening.
+This independently verifies the stored packet's consistency, not a repeat host
+observation. Provider error causes are unproven; no claim that RFQ expiry or a
+minimum-output condition caused these two generic refusals. A successful
+prepare-time estimate cannot guarantee later execution, prevent route expiry,
+or guarantee router economics. The first funded positive swap estimate and
+actual transaction/receipt/ACK remain LD19/LD20 with Keegan's approved operator
+and Isaac's receipt review. Signed RPC/config binding remains LD16/LD17.
+
+The standalone KG-DEC-01 review backlog line is removed; these remaining live
+checks stay under GAP-29 and LD19/20. LD08/10 remain dependent on Keith's
+selected measured profile/full-exit/fee/whole-run N inputs; no missing input was
+invented or installed. No live RPC/model, host, AWS, signer, key, funding,
+transaction or activation action occurred in this review.
+
+Delivery: documentation-only PR225. At review headbe0c5ca, hosted Actions
+39588503286 had four failed jobs with zero executed steps; runtime annotation
+reports failed account payments/spending-limit startup refusal. This is a CI
+infrastructure block, not a passing run. Local results above are scoped;
+application/config/test diff against reviewed canonical is empty.

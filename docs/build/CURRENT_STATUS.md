@@ -189,3 +189,23 @@ Older checklist/handoff documents are dated evidence; this page and the latest
 backlog resolve current status. No old CI/artifact/host result qualifies changed
 code or a new release. Org Actions availability is separate from local tests and
 the approved mirror route. A source merge is not an installed release.
+
+
+## KG-DEC-01-RV01 — Isaac's pre-sign simulation review (2026-10-21)
+
+PR223/224 corrected the implementation status: `Executor.prepare` already
+requires a positive exact-calldata Web3 gas-limit estimate before a swap attempt
+exists. Isaac accepts that gate and the stored KG-DEC-01-H host-refusal receipt
+within their scope. Canonical6746ef0, independent local PostgreSQL regressions:
+**62 tests /47 subtests /zero skips**; packet SHA-256 reproduced. No application,
+configuration or test change is introduced by this review; the duplicate PS-01
+prototype was reverted and pushed without merging. LD08/10 gas work was also
+stopped cleanly pending Keith's selected-profile/full-exit/fee/N packet.
+
+The API's generic refusal does not establish a particular EVM revert cause.
+Prepare-time estimation does not guarantee later execution or prevent expiry.
+First funded positive swap estimate/transaction/receipt/ACK remain LD19/20;
+config/release/host and exact gas/caps acceptance remain open. No live call,
+host operation, key action or activation occurred. Full record:
+[IDEA-070 KG-DEC-01-RV01](../ledger/IDEA-070.md#kg-dec-01-rv01-results--pass-within-recorded-scope)
+and [verification receipt](evidence/kgdec01-isaac-review-20261021.json).
