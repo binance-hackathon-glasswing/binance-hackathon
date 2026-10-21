@@ -151,6 +151,12 @@ class InitialCaps(unittest.TestCase):
     @staticmethod
     def configure(fixture):
         fixture.profile = initial_only(fixture.profile)
+        old_pair = fixture.profile['gas_action_budget_units']
+        fixture.profile['gas_sizing_budget_units'] = old_pair
+        fixture.profile['provenance']['gas_sizing_budget_units'] = {'decision_id': 'SYNTHETIC LD10', 'formula': 'expected pair'}
+        fixture.profile['gas_action_budget_units'] = fixture.config['gas_budget']
+        fixture.profile['exit_gas_reserve_units'] = 4 * fixture.config['gas_budget']
+        fixture.ledger['bnb_units'] = 3 * 10**15
         fixture.policy['allowed_tokens'].remove(NATIVE_BNB)
         fixture.inputs['quote_artifacts'] = [r for r in fixture.inputs['quote_artifacts'] if r['path'] != 'BNB.json']
         fixture.save_inputs()
@@ -165,6 +171,15 @@ class InitialCaps(unittest.TestCase):
         self.fixture.policy['max_input_units'][USDT] = str(self.fixture.profile['per_trade_cap_units'] * 10**12 - 1)
         self.fixture.save_inputs()
         self.assertIn('FULL_POSITION_USDT', self.fixture.report()['blockers'])
+
+    def test_signed_child_envelope_and_profile_reservation_must_cover_the_configuration(self):
+        original = self.fixture.config['gas_budget']
+        self.fixture.config['gas_budget'] = original - 1
+        self.fixture.save_inputs()
+        self.assertIn('INITIAL_SIGNED_CHILD_GAS_ENVELOPE', self.fixture.report()['blockers'])
+        self.fixture.config['gas_budget'] = original + 1
+        self.fixture.save_inputs()
+        self.assertIn('INITIAL_PROFILE_ACTION_BUDGET', self.fixture.report()['blockers'])
 
     def test_starting_native_balance_must_cover_the_exit_reserve(self):
         self.fixture.ledger['bnb_units'] = self.fixture.profile['exit_gas_reserve_units'] - 1
@@ -208,6 +223,10 @@ class InitialCaps(unittest.TestCase):
         self.configure(fixture)
         fixture.config['allowance_recovery'] = True
         fixture.policy['allowance_recovery'] = True
+        fixture.config['gas_budget'] *= 4
+        fixture.profile['gas_action_budget_units'] *= 4
+        fixture.profile['exit_gas_reserve_units'] *= 4
+        fixture.ledger['bnb_units'] *= 4
         fixture.save_inputs()
         report = case.report()
         self.assertTrue(report['allowance_recovery'])

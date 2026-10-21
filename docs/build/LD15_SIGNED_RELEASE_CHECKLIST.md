@@ -1,6 +1,8 @@
 # LD15 — signed release qualification checklist (Keegan)
 
-Status: **PREPARED.** Nothing here is a release. It lists what must be true before Keegan cuts the exact signed
+Status: **RC2 CANONICAL CANDIDATE QUALIFIED; actual signed-release/configuration and host bindings OPEN.**
+The latest receipt below records canonical `b22207e` and original artifact12352993133.
+It lists what must be true before Keegan cuts the exact signed
 development release that LD16–LD21 install and drill. The same procedure, re-run on the frozen commit, produces the
 final activation release (LD24). Owners and gates come from the #133 noticeboard (LD01–LD24) and
 [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md) DR-18/DR-20. Old unsigned bundles (`ea25b52`, `c5be269`) do not qualify
@@ -117,3 +119,81 @@ qualifies nothing: §1 inputs are still open.
 - **Not the release.** §1 still lacks Keith's #120/DEV-24 window and rebuilt profile, LD05, the LD11 scope, LD10
   coverage, PS-01 if adopted, and the DRAFT deviation decisions. Any of these that changes a tracked file needs a new
   candidate and run.
+
+## RC2 inputs — scoped rehearsal (2026-10-21; canonical candidate qualified)
+
+[Exact input/coverage packet](evidence/rehearsal-qualified-inputs-20261021/README.md).
+LD05-Q01 implements raw abnormal receipt/gas accounting and sustained quarantine;
+LD11-RH01 selects the user-confirmed deterministic EQUAL_WEIGHT rehearsal, model
+claims SHADOW and no hosted calls. Gate A scope checks restrict that exception to dev
+REHEARSAL. LD10-Q01 supplies fresh holdings/nonce/zero allowances and all15 request-bound
+minimum/max BUY and max-position SELL quotes; real numeric reviewer50/50 COVERED.
+The selected profile is41332056… / StrategyProfileeb61ca86…, signer policy3241abd3… and router
+05759e90… . Its complete pair gas envelope is384000000000000wei, four exits1536000000000000wei;
+conservative N=15 seed target0.007296BNB, funding still separate.
+
+The numeric tool retains OWNER_REVIEW_REQUIRED; this is delegated technical coverage,
+not a forged Keith/Isaac attestation or an installed configuration. Their exact#120 /
+LD16 owner bindings plus actual final release/run/DB/RPC/CA configuration remain.
+#119 actual fee confirmation follows LD19/20; optional extra PS-01 RPC eth_call is
+not adopted for this scope (merged exact-calldata prepare gas simulation retained).
+Final S1/model/deviation/final-wallet scope remains before LD24. No signing is enabled.
+Canonical CI/original artifact identities are recorded as AB-REL-RC2 below.
+Release-code PASS on any previous commit does not qualify this candidate.
+
+
+2026-10-21 LD10-Q01-R1 / LD11-RH01 final scope binding: selected file
+`rehearsal-deterministic.json`, file SHA-25641332056bf18e9f07a35f0d4446e2fb02a3d7ebbddabd25b054e03203c3a0a7a,
+StrategyProfile.v1 eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4.
+Both evidence_mode and effective falsifier_authority are SHADOW. Fresh primary-only
+packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes;
+50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
+binding is historical and superseded. Selected public coverage/scope files use the
+`-deterministic` name (see packet README); private packet/review remain outside Git.
+
+
+### RC2 branch outcome — commands pass; explicit merge exception
+
+[Public receipt](evidence/ab-rel-rc2-20261021.json) records exact source a8bdaf7,
+mirror39614839775 and verified original artifact12352148043. All required commands
+pass (2416 runtime tests,5 systemd tests,demo,Docker; all244 original bundle file
+checksums). Runtime job/run metadata remains in_progress, so this is not a finalized
+four-job PASS. Auto-review refused merging PR231 on that unresolved prerequisite.
+Keegan then explicitly replied "Approve merge despite pending status"; PR231 was
+merged at `b22207e050ea50338d48cf7129378caf480ef290`. The exception covers the
+repository merge only. Canonical mirror run39617977531 and its original artifact
+pass qualification below; no installation is approved.
+
+### RC2 installation inputs that remain separate
+
+The selected profile is `rehearsal-deterministic.json` (file41332056…,
+StrategyProfile.v1 eb61ca86…), not the earlier superseded bad7f160… candidate.
+Before LD17, the approved database-role application must include the merged
+`deploy/postgres/roles.sql` column grant: `SELECT (run_id,observation)` on
+`execution_observations` for `larp_signer`. It enables the independent durable
+abnormal-outcome fence. Actual-role qualification passed in CI; production grants
+have not been changed. Apply and verify only within the separately approved host/
+database installation. LD16 final run/release/DB/RPC/CA and owner bindings, LD17
+per-host approval, LD18 key placement and funding remain open.
+
+### RC2 canonical outcome — PASS (candidate only)
+
+Canonical `b22207e050ea50338d48cf7129378caf480ef290` is CI-qualified by mirror
+[39617977531](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39617977531),
+completed/success at2026-10-21T14:43:58Z. All four jobs SUCCESS. Runtime2416 passed,
+7 skips,3808 subtests (496.41s); real-systemd5/5 plus5 subtests; demo/Docker and
+offline both-role bundle provisioning PASS. The five systemd tests skipped in the
+ordinary run pass separately; two external/private-fixture tests remain opt-in.
+
+Original artifact12352993133 was downloaded and verified without rebuilding:
+ZIP307d4c4b…8657, bundleecc589a5…ba2a, manifest427a8cc6…f8b0;244 bundle checksums
+and205 manifest source/config hashes PASS. BUNDLE.env identifies canonical b22207e,
+x86_64, Python3.12.15 and unchanged pinned CA. Full identities and retained original
+paths are in [the public receipt](evidence/ab-rel-rc2-20261021.json).
+
+This completes the requested canonical candidate requalification. LD16 owner/config
+acceptance and actual registration/runtime/operations binding remain; the artifact
+manifest is intentionally unbound. Production roles.sql, host writes/session, key,
+funding and the bounded round remain separate. No code changed in this result-only
+documentation update, so the receipt continues to identify the immutable b22207e
+artifact rather than implying a new bundle at the later documentation commit.

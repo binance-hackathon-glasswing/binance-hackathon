@@ -1,0 +1,34 @@
+{
+  "decision_id": "IDEA-083 LD11-RH01",
+  "deterministic_controls": [
+    "EQUAL_WEIGHT 80% gross / 20% per name",
+    "published deterministic Class1/Class2 predicate rules",
+    "price-impact/cost, gas, loss, trim, window and terminal controls",
+    "unresolved abnormal outcome sustained quarantine"
+  ],
+  "driver_overrides": {
+    "assessor": "deterministic",
+    "execution": "service",
+    "intelligence_mode": "live",
+    "model_adoption_ref": "IDEA-083 LD11-RH01 (Keegan delegated scoped rehearsal, 2026-10-21)"
+  },
+  "environment": "REHEARSAL",
+  "exceptions": [
+    "No S1 adoption or model economic/quality/rights/budget qualification claimed.",
+    "Original 43.56h/72h and sparse filing/label shortfalls retained for later LD22/LD24 disposition."
+  ],
+  "final_model_adoption": false,
+  "hosted_model_calls": false,
+  "model_evidence_mode": "SHADOW",
+  "profile_document_sha256": "43f956afe7a832e06146bdcdd8e3e725b7b6032541bec5aaab578cd5bb530258",
+  "profile_file_sha256": "bad7f160bd55c0d40736ee434e7c253ff9d85d7706ac85addfe738659e7a9934",
+  "prohibited_driver_fields": [
+    "model_routing_file",
+    "model_routing_sha256",
+    "model_budget_root"
+  ],
+  "ready_to_install": false,
+  "runtime_mode": "dev",
+  "schema": "RehearsalScope.v1",
+  "signing_enabled": false
+}

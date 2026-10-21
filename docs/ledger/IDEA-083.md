@@ -780,3 +780,139 @@ needed once any of these lands (see the LD15 checklist §1 state):
 - the DRAFT deviation decisions.
 
 The final LD14 values only gate LD24; the interim values are config, not code.
+
+## AB-REL-RC2 — rehearsal scope and dependent qualification (2026-10-21; prospective)
+
+Keegan requests steps 2–4. Explicit selection: measured EQUAL_WEIGHT fallback with
+deterministic controls; defer hosted-model adoption and calls until credits/ledger/
+rights/day-run budgets are verified. LD11 rehearsal scope only, no final adoption.
+
+Pass criteria before checks: R1 integrate LD05 and exact LD10 coverage/scope records,
+selected rehearsal profile and gas-envelope corrections; R2 push canonical source then
+fast-forward mirror and pass all four runtime.yml jobs; R3 download original artifact
+and verify zip/bundle/manifest hashes and source identity, retain original bytes;
+R4 bind profile/policy/scope evidence and enumerate unresolved actual release inputs.
+Missing evidence keeps full LD15 open; CI-qualified candidate is not install approval.
+
+### LD11-RH01 — explicit scoped rehearsal selection (2026-10-21)
+
+Keegan explicitly selected "Use the scoped fallback rehearsal": EQUAL_WEIGHT,
+deterministic assessor and verified deterministic Class1/Class2/risk controls,
+model evidence SHADOW, no hosted model calls or discretionary model exits. No routing
+file/budget/credit permission is inferred. Gate A preparation/checker now admits only
+this explicit dev/REHEARSAL EQUAL_WEIGHT SHADOW scope with an adoption reference;
+it does not extend to FINAL or unreviewed bounded-falsifier authority. Runtime uses
+live deterministic settings while the profile shadows model-derived authority.
+The new profile/scoped settings/hashes are in the rehearsal packet. Final S1/model
+adoption, original 43.56h/72h shortfall, sparse labels, rights and account-budget
+reconciliation remain at LD22/LD24. No paid provider call or ledger reset occurred.
+
+LD11-RH01 authority correction before merge: integration.contract.authority reads the
+explicit falsifier_authority ahead of evidence_mode. Merely changing evidence_mode
+left the prior discretionary authority in the first candidate. Restrict the validator
+exception to REHEARSAL/EQUAL_WEIGHT/SHADOW, set falsifier_authority=SHADOW explicitly,
+and require it in Gate A scope validation. Retain the earlier frozen candidate; new
+selected file is rehearsal-deterministic.json. Add a direct effective-authority check.
+Numeric policy/gas/holdings fields are identical; rebind coverage to the new exact hash.
+
+
+2026-10-21 LD10-Q01-R1 / LD11-RH01 final scope binding: selected file
+`rehearsal-deterministic.json`, file SHA-25641332056bf18e9f07a35f0d4446e2fb02a3d7ebbddabd25b054e03203c3a0a7a,
+StrategyProfile.v1 eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4.
+Both evidence_mode and effective falsifier_authority are SHADOW. Fresh primary-only
+packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes;
+50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
+binding is historical and superseded. Selected public coverage/scope files use the
+`-deterministic` name (see packet README); private packet/review remain outside Git.
+
+
+### AB-REL-RC2 exact-source command/artifact receipt (2026-10-21)
+
+Source a8bdaf7c1440137beb9bd0be56c4052e01cc7342, PR231, mirror39614839775.
+Runtime logs:2416 passed/7 skips/3808 subtests/0 failures; real-systemd5 passed/5
+subtests; demo/Docker build/run SUCCESS; all16 runtime steps completed/success.
+The other three jobs have SUCCESS conclusions. GitHub still reports runtime/run
+in_progress after its final log14:22:47Z; this is explicitly NOT a finalized four-job
+PASS. Automatic approval review rejected merging because that required conclusion
+is unresolved. No merge or canonical qualification was performed; canonical is f10d9ad.
+
+Original artifact12352148043 downloaded through GitHub connector, retained locally
+at /workspace/scratch/rehearsal-pr231-artifact.zip and extracted original files at
+/workspace/scratch/rehearsal-pr231-original. ZIP fe40e82d…d57, bundle4695dd39…e773,
+manifest11eedfbd…ed49; original zip digest matches GitHub, all244 bundle file hashes
+PASS, inner manifest equals published file, BUNDLE.env identifies a8bdaf7/x86_64/
+Python3.12.15 and unchanged CA d7389074… . No local rebuild for installation.
+Complete public identities/results/limitations: [AB-REL-RC2 receipt](../build/evidence/ab-rel-rc2-20261021.json).
+
+Local full run:2414 passed/7 skips/3808 subtests,2 sandbox failures caused by this
+container's read-only uid-map restriction (direct bwrap reproduction). Do not call
+it a full pass. The corresponding tests pass in mirror logs. Final scoped DB/profile/
+permission/restart/replay tests105 passed/259 subtests; earlier real-role set53/241.
+The disposable local PostgreSQL container is removed; private captures/review remain
+under /workspace/scratch/ld10-final-private.json and /workspace/scratch/ld10-final-review,
+with private data kept outside Git. Final Git/metadata/CI result records are doc-only.
+
+LD15 remains OPEN: finalized CI conclusion, merge and original canonical artifact
+qualification; then actual LD16 owner/configuration bindings and LD17 host approval.
+No host write, key, wallet operation or paid-model call occurred. Conservative N=15
+seed target is0.007296BNB, additional0.004601501130637114BNB at the captured balance.
+
+### AB-REL-RC2 merge exception and canonical original artifact (2026-10-21)
+
+After automatic review rejected the repository merge for the unresolved branch
+runtime conclusion, Keegan explicitly replied **"Approve merge despite pending
+status"**. PR231 merged with a merge commit at14:33:59Z:
+`b22207e050ea50338d48cf7129378caf480ef290`, expected PR head
+`0374cb477b46cafea24c1b4fb05b704d7fe307b4`. This exception covers only that repository
+merge; it neither asserts a finalized branch CI PASS nor authorizes installation,
+signer access, keys, wallet operations or trading. Canonical code/config/tests equal
+the branch-tested a8bdaf7 tree; only five documentation files differ.
+
+Canonical mirror run39617977531 produced original artifact12352993133, retained at
+`/workspace/scratch/rehearsal-rc2-canonical-artifact.zip`; original files are in
+`/workspace/scratch/rehearsal-rc2-canonical-original`. Verification PASS:
+
+- ZIP307d4c4bf1a07d75fb66afd5dd56f076f6a631ecfcd9dea9420b1713ce568657 matches
+  GitHub's artifact digest;
+- `larp-b22207e050ea-x86_64.tar.gz`
+  ecc589a5ecd1e4d66027fb67d3daf88f00257a92a7fdc58b63bd87d46e05ba2a;
+- published manifest427a8cc61737c80a7d575c9e014020c886921f8f58e0e87b9bb47296aef5f8b0
+  equals the inner manifest;244 SHA256SUMS entries and205 manifested source/config
+  files match;
+- BUNDLE.env names canonical b22207e, x86_64, Python3.12.15/tag20261001,
+  Python0e56475e…6260 and RDS CAd7389074…398b; registered repository is the challenge
+  repo, build origin the accepted mirror, remote_verified=true.
+
+The original manifest intentionally has null registration/runtime/operations bindings:
+this is an unbound candidate, with actual bindings at LD16/17. The selected profile,
+scope, coverage and router/signer policy hashes remain those in the public receipt.
+No local artifact rebuild or production write occurred. The merged column-level
+signer SELECT grant in roles.sql must be applied and independently checked during
+approved LD17 database/host installation; real-role CI does not apply production SQL.
+Canonical runtime/four-job conclusion is recorded separately below when finalized.
+
+### AB-REL-RC2 canonical result — PASS (CI-qualified rehearsal candidate)
+
+Canonical mirror39617977531 at b22207e completed/success at2026-10-21T14:43:58Z.
+All four jobs have finalized SUCCESS conclusions: runtime119283748651,
+bootstrap119283749063, AWS119283749217 and host-bundle119283749074.
+Runtime2416 passed/7 skips/3808 subtests/0 failures in496.41s. Separate real-systemd
+5 passed/5 subtests in17.83s; demo, Docker build and offline read-only Docker run PASS.
+Both-role offline host provisioning PASS. Five opt-in systemd skips are covered by
+the separate run; the two remaining opt-in fixtures are LARP_RECORDED_MARKET_ROOT
+and LARP_INJ01_SOURCE_FILE. No changed code is excluded from the canonical run.
+
+The original artifact and exact identities verified above are the accepted candidate
+bytes. Selected profile41332056… / documenteb61ca86…, both effective model authorities
+SHADOW; policy3241abd3… and router05759e90… are unchanged. This satisfies the requested
+step4 canonical candidate requalification; the pending branch metadata does not
+qualify as PASS and is superseded for candidate qualification by this new green run.
+
+Actual signed release/host acceptance stays OPEN: Keith/Isaac exact#120/personal
+deployment acceptance; LD16 actual run/release/DB/RPC/CA and owner bindings; LD17
+per-host installation/session and narrow roles grant; LD18 key; separate funding and
+fresh reconciliation; LD19 first bounded round and LD20 actual fee netting. Final
+S1/model/rights/budgets/deviation/final-wallet adoption remains LD22–24. No host write,
+signer-host access, key, funding, wallet operation or paid model call occurred.
+Result documentation changes no release code/config/test bytes and does not rebuild
+the immutable canonical artifact. Public machine record: ab-rel-rc2-20261021.json.

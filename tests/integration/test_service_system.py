@@ -30,6 +30,12 @@ class TinyVenue(FakeVenue):
 
 class ServiceSystem(pipeline.PipelineHarness):
     def test_command_to_actual_service_receipt_audit_restart_and_replay(self):
+        self.exercise_service(False)
+
+    def test_abnormal_finalized_sell_is_quarantined_after_restart_and_exact_replay(self):
+        self.exercise_service(True)
+
+    def exercise_service(self, abnormal):
         ledger=pipeline.pipeline_ledger()
         ledger.update(bnb_units=10**15,bnb_decimals=18,bnb_price_units=700000000)
         initial=doc(initial_projection(ledger))
@@ -53,7 +59,7 @@ class ServiceSystem(pipeline.PipelineHarness):
                 state=registry.load(key)
                 a=next(a for a in state.attempts if a.tx_hash==tx_hash)
                 logs=[] if a.step=='APPROVE' else [log(TOKEN,WALLET,ROUTER,state.intent.amount),
-                                                     log(USDT,ROUTER,WALLET,state.intent.minimum_output)]
+                                                     log(USDT,ROUTER,WALLET,0 if abnormal else state.intent.minimum_output)]
                 return dict(finality_verified=True,block_hash=BLOCK,block_number=10,finalized_height=12,
                     tx=dict(hash=tx_hash,nonce=hex(a.payload.nonce),to=a.payload.to,input=a.payload.data,
                             value=hex(a.payload.value),chainId='0x38',gas=hex(a.payload.gas),
@@ -85,7 +91,16 @@ class ServiceSystem(pipeline.PipelineHarness):
         self.assertEqual(len(venue.broadcasts),2)
         current=self.store.load(pipeline.RUN).read()
         self.assertFalse(current['reservations'])
-        self.assertEqual(current['projection']['portfolio']['positions']['NVDAB']['units'],0)
+        if abnormal:
+            from larp.runtime.halts import permits
+            projection = current['projection']
+            self.assertTrue(projection['abnormal_outcomes'])
+            self.assertTrue(projection['portfolio']['unreconciled_outcomes'])
+            self.assertFalse(permits(projection, 'r-service', planned['intent_id']))
+            self.assertEqual(projection['portfolio']['positions']['NVDAB']['units'],
+                             ledger['positions']['NVDAB']['units'])
+        else:
+            self.assertEqual(current['projection']['portfolio']['positions']['NVDAB']['units'],0)
         runtime.close('r-service',self.w.clock(),'COMPLETE')
         uploader=DeliveryWorker(self.store,FakeReceiver(),retry_ms=1)
         while uploader.once(pipeline.RUN,self.epoch,self.w.clock()): pass

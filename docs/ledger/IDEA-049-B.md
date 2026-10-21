@@ -757,3 +757,62 @@ caused solely by another missing mark. Exact numeric inputs/approval, affected
 implementation/tests, cost/coverage reports and actual host qualification remain.
 This accepts named policy risks, not a positive economic experiment verdict.
 Historical proposals, frozen criteria and results above are unchanged.
+
+## LD05-Q01 — abnormal finalized outcomes, sustained quarantine (2026-10-21; prospective)
+
+Keegan requests steps 2–4 using recommended decisions. PF-09 selects sustained
+quarantine: no automatic continuation from uncertain ownership. Implement explicit
+ABNORMAL observations for finalized bStock transfers violating the exact input/minimum
+output contract. Persist raw signed token deltas and actual gas separately from normal
+fills, immutable incidents and accounting uncertainty; no invented received assets or
+normal realized P&L. Receipt identity/finality/malformed evidence still fail closed.
+
+Pass criteria before execution: Q1 zero/short output, wrong input and unrelated supported
+token movement become abnormal facts with exact deltas/gas; Q2 reducer charges actual
+gas once and records raw outcomes without fabricating normal fill accounting; Q3 all
+signing remains withheld from durable abnormal outbox publication through replay/restart,
+including mandatory sells; Q4 incident/quarantine never automatically clears, normal
+approval/revert/fill behavior remains; Q5 targeted and mirror full suite pass.
+
+### LD05-Q01 implementation / local verification (2026-10-21)
+
+Explicit ABNORMAL I4 facts retain canonical identity, raw signed token deltas and gas;
+normal exact-input/minimum-output constraints remain. Accounting charges actual gas
+once and stores unreconciled asset movements without a fabricated normal fill, basis
+or P&L. A durable outbox fence independently blocks signer persistence and broadcast
+before projection ingestion; the journaled incident blocks runtime planning/signing
+and survives replay. No automatic clear or continuation. Reconciliation/publication
+remains possible; unsupported native/malformed proofs keep existing refusal behavior.
+Local component checks: 245 passed / 9 environment skips / 142 subtests (risk, Gate A,
+models, signer assembly/mode and receipt paths). PostgreSQL service/replay acceptance
+runs on mirror CI. The first mirror run 39610340438 was cancelled after identifying a
+nested locked read in the new regression test; 122d04b moves that read outside the
+transaction. This is a test repair, not a claimed full-suite PASS.
+
+### LD05-Q01 full-run findings / correction (2026-10-21)
+
+Run39611819368 at122d04b completed with 11 failures,2408 passes,7 skips,3786 subtests.
+The signer-role cases expose missing SELECT privileges on execution_observations for
+its new independent fence. a208c10 grants only(run_id,observation) SELECT; full-table
+SELECT and all writes remain refused. Real-role/registry/policy tests now53 passed,
+241 subtests on disposable PostgreSQL14.24. The two new abnormal fence/service replay
+cases and the original service/replay test pass locally (3/3). The broader local DB
+run before the grant had536 passes/10 related failures/1178 subtests, consistent with
+that permission defect. No production role or host was changed.
+
+Correction to the earlier suspected nested-lock explanation: local reproduction of
+both new tests completes normally. The longer full run disclosed the role permission
+defect above; it was not evidence of a production deadlock. The nested test read was
+still simplified in122d04b. Do not describe either failed/cancelled run as PASS.
+
+### LD05-Q01 canonical acceptance — PASS (2026-10-21)
+
+PR231 merged at b22207e under Keegan's explicit repository-merge exception for the
+pending branch CI conclusion. The new canonical mirror39617977531 finalized all
+four jobs SUCCESS:2416 tests/3808 subtests, separate real-systemd5/5, Docker/demo and
+both-role bundle qualification. This includes real signer-role privileges, independent
+outbox fencing, service/restart/replay and exact abnormal gas/accounting cases. The
+verified original artifact is12352993133; [full receipt](../build/evidence/ab-rel-rc2-20261021.json).
+LD05 repository implementation/qualification is complete. Production role grant,
+actual host/drill acceptance and human recovery after quarantine remain separate;
+no production SQL or host was changed and no automatic resume is introduced.

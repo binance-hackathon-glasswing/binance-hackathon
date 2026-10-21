@@ -161,3 +161,17 @@ def test_split_budget_does_not_spend_the_cap_price_exit_reserve_on_entries():
                 policy_profile_hash=Document.from_dict(p).digest('StrategyProfile.v1'))
     result = plan(s, decide(s, s.policy_state)).read()
     assert not result['intents']
+
+
+def test_scoped_rehearsal_candidate_reproduces_and_covers_two_signed_children():
+    from tools.deploy.build_rehearsal_candidate import build
+    doc = build()
+    assert doc.payload + b'\n' == (ROOT / 'docs/build/evidence/rehearsal-qualified-inputs-20261021/rehearsal-deterministic.json').read_bytes()
+    p = doc.read()
+    assert p['gas_action_budget_units'] == 2 * 1200000 * 160000000
+    assert p['exit_gas_reserve_units'] == 4 * p['gas_action_budget_units']
+    assert p['gas_sizing_budget_units'] == 80004608000000
+    assert p['evidence_mode'] == 'SHADOW' and p['baseline'] == 'EQUAL_WEIGHT'
+    from larp.integration.contract import authority
+    assert authority(p)['falsifier'] == 'SHADOW'
+    validate_live(p)

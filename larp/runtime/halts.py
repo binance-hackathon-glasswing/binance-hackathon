@@ -34,6 +34,8 @@ def permits(projection, round_id, intent_id):
     """May this planned intent proceed under the run's current HALT? True when the run is not halted (other gates
     decide); under a HALT, only a mandatory bStock SELL that the open round itself planned, and only for pausing
     reasons."""
+    if projection.get("abnormal_outcomes"):
+        return False
     if not reasons(projection):
         return True
     if not pausing_only(projection):
