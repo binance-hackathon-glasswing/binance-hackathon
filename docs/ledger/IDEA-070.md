@@ -1517,3 +1517,9 @@ checks stay under GAP-29 and LD19/20. LD08/10 remain dependent on Keith's
 selected measured profile/full-exit/fee/whole-run N inputs; no missing input was
 invented or installed. No live RPC/model, host, AWS, signer, key, funding,
 transaction or activation action occurred in this review.
+
+Delivery: documentation-only PR225. At review headbe0c5ca, hosted Actions
+39588503286 had four failed jobs with zero executed steps; runtime annotation
+reports failed account payments/spending-limit startup refusal. This is a CI
+infrastructure block, not a passing run. Local results above are scoped;
+application/config/test diff against reviewed canonical is empty.

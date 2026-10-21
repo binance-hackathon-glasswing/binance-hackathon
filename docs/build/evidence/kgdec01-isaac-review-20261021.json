@@ -36,5 +36,13 @@
     "LD08/10 actual selected profile/full-exit/fee/N coverage",
     "LD16/17 signed configuration and host acceptance"
   ],
-  "no_live_rpc_host_key_wallet_or_activation_action": true
+  "no_live_rpc_host_key_wallet_or_activation_action": true,
+  "hosted_ci": {
+    "run_id": 39588503286,
+    "head": "be0c5ca0e38d6eb5cf60bb1d280973870b005392",
+    "jobs": 4,
+    "executed_steps": 0,
+    "result": "BILLING_STARTUP_BLOCKED",
+    "passing_ci_claim": false
+  }
 }
