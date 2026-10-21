@@ -48,6 +48,17 @@ holdings/configuration, strategy action count and host acceptance are not assume
    coverage, source verification, production host binding or GateB acceptance.
 5. Run focused decoder/preflight/privacy/read-only boundary tests; commit and
    push any new probe code before running. Missing real prerequisites are
-   reported BLOCKED rather than supplied by synthetic fixtures.
+   reported BLOCKED rather than supplied by synthetic fixtures. A blocked
+   preflight report must also return a nonzero CLI exit (prospective follow-up).
 
-Results will be recorded with the relevant ledger IDs and exact artifact hashes.
+## Results
+
+LD08-GC01 offline bound/candidate verification PASS at pushed sourcefe91326;
+[budget report and remaining deployment inputs](evidence/gc01-bounded-profiles-20261021/README.md).
+No whole-run N, funding amount, actual selected profile or installation is accepted.
+
+LD03-RP01 fresh local replay/preflight PASS on10 quotes through both selected
+providers at2026-10-21 14:25–14:27UTC;
+[sanitized receipt and scope](evidence/rp01-router-readonly-20261021/README.md).
+No production-host, actual full-holdings, signed-path or router-enforcement
+guarantee is inferred. LD08/LD10/LD15–24 keep their separately named inputs/gates.

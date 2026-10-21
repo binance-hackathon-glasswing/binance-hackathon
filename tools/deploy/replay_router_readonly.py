@@ -144,6 +144,7 @@ def run(args):
         stream.write(raw)
     print(json.dumps(dict(status=report['status'], quotes=replay['quotes'], policy_sha256=POLICY_SHA,
                           report_sha256=hashlib.sha256(raw).hexdigest(), signing_enabled=False)))
+    return passed
 
 
 def main():
@@ -152,11 +153,11 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
     try:
-        run(args)
+        passed = run(args)
     except Exception as error:
         print(json.dumps(dict(status='PROBE_REFUSED', error_type=type(error).__name__, signing_enabled=False)))
         return 4
-    return 0
+    return 0 if passed else 2
 
 
 if __name__ == '__main__':

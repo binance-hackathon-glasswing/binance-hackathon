@@ -40,3 +40,12 @@ def test_public_report_refuses_literal_case_changed_and_json_escaped_private_val
 def test_public_summary_never_adds_private_input_fields():
     raw = public_bytes(dict(status='PASS_LOCAL_READONLY', signing_enabled=False), ['synthetic-secret'])
     assert json.loads(raw) == dict(status='PASS_LOCAL_READONLY', signing_enabled=False)
+
+
+def test_blocked_preflight_report_has_nonzero_cli_exit(monkeypatch):
+    import sys
+    from tools.deploy import replay_router_readonly as probe
+    monkeypatch.setattr(sys, 'argv', ['probe', '--out', '/unused', '--profile', '/unused',
+                                    '--providers', '/unused', '--env-file', '/unused'])
+    monkeypatch.setattr(probe, 'run', lambda args: False)
+    assert probe.main() == 2
