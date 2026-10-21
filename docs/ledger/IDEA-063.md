@@ -506,3 +506,24 @@ hashes and outstanding acceptance are in the packet and backlog. PR #229 targets
 canonical integration branch. This qualification covers this profile rebuild only;
 it is not the later LD15 release candidate or permission for host writes/trading.
 The following result-record commit changes documentation only.
+
+
+## RV120-RV01 — Keith inline-review corrections (2026-10-21; prospective)
+
+Source: Keith (wtvlol), PR226 review5602037122 and inline findings
+[4338622249](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622249) /
+[4338622255](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622255),
+submitted2026-10-21T15:23:22Z, anchored to3bd8a388a66ab74d5ff8f1a003ee859c0c98dcc6.
+Keith confirms original raw distributions reproduce and supports the17bp MSFTB
+off-session spread. Review state COMMENTED; it requests two corrections, without
+an explicit acceptance of the current exact profile/gas/model/funding bindings.
+
+Pass criteria before new analysis: R1 preserve original distributions/script and
+raw ZIP bytes; verify original capture archive/daily/calendar hashes; R2 report
+two-sided absolute, adverse BUY-output and favourable exceedances of8bp separately
+using exact integer comparisons, retaining sample denominators; R3 independently
+match Keith's adverse counts1/42 MSFTB US,2/43 SKHYB US and10/342 SKHYB off-session;
+R4 remove unsupported fill/minimum-output guarantees and simulated/actual revert
+frequency claims, while retaining the observed LD02d simulation as dated evidence;
+R5 selected profile/policy/runtime bytes stay unchanged, actual fee/owner/config/
+host/revert acceptance remains open. No live call, host, key, funding or trade.
