@@ -112,3 +112,16 @@ including the changed exit sizes and current reconciled gas balance. **Then
 Isaac:** numeric rerun and exact-input owner acceptance. The old gas snapshot
 is not represented as current. No capture, funding, signer assembly or installation
 has been performed. Task1/LD10 remains OPEN; tasks2–4 are unchanged.
+
+## Concurrent PR236 — prospective receipt review
+
+PR236 merged at `fa1b6c9` during SJ-01 and supersedes the missing-primary-packet
+and new-release prerequisites above. It preserves the existing two-child profile.
+Before verification: compare its public LD10-P04 receipt with the selected
+profile/CAP-02/router and this independently generated probe hash; check all
+published child cash proceeds, counts, reserve and gas-shortfall arithmetic;
+read GitHub's RC3 job/artifact metadata; verify runtime/config/test bytes have
+not changed after qualified `5bee006`. Public receipt consistency is not replay
+of the private input packet; keep full owner/install/signing flags false.
+Do not ask the operator to duplicate the pre-funding capture already delivered
+by PR236. Remaining state work is a fresh post-funding reconciliation/review.
