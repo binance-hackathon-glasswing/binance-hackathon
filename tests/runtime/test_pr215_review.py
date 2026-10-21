@@ -118,7 +118,7 @@ def test_size_sweep_refuses_response_amounts_from_another_request(wrong_side):
     ns['simulate'] = lambda *a: simulations.append(a) or 500_000
     def quote(symbol, side, units):
         return dict(response=dict(data=dict(tx=dict(to=ns['ROUTER'], data='0xad43f73d00'),
-                    routerResult=dict(fromTokenAmount=str(units + (side == wrong_side)), toTokenAmount='100')))))
+                    routerResult=dict(fromTokenAmount=str(units + (side == wrong_side)), toTokenAmount='100'))))
     out = ns['sweep']('https://p', s, quote, {}, {}, sizes=(10,))
     for book in out.values():
         row = book['sizes']['10']
