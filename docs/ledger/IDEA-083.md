@@ -733,3 +733,23 @@ inputs that must merge first (LD03–LD14), source identity, the exact CI checks
 the AB-REL record format. Local dry run on canonical `72bb62c`: bundle build PASS (`3826716816df…9eca`, manifest
 `02b372e5…6d82`, RDS CA `d7389074…` unchanged); host-bundle provisioning NOT_RUN (Docker Hub 429 on the pinned
 Amazon Linux image); Terraform/systemd not run locally. Not a release; no artifact uploaded or installed.
+
+## AB-REL-RC1 — signed-rehearsal release candidate CI on canonical (2026-10-21)
+
+Keegan's request: complete LD15. LD15 cannot fully complete today, because its §1 inputs are not all accepted: Keith's
+#120 confirmation and the new rehearsal window (DEV-24), LD05, the LD11 scope, Isaac's PS-01, the final LD14 values
+and the LD10 caps. This entry qualifies the **candidate** commit by CI so that only those inputs remain.
+
+Pass criteria, written before run 31's result is read:
+- R1. The candidate is the pushed head of `codex/system-testing-20261012`, reached by merge commits only, and the
+  mirror branch is a fast-forward to exactly that SHA.
+- R2. Mirror `Runtime acceptance` on that exact SHA passes all four jobs: `infrastructure (deploy/aws)`,
+  `infrastructure (deploy/bootstrap)`, `runtime` and `host-bundle`.
+- R3. `host-bundle` uploads an artifact. Record its ID, size and digest. The bundle and manifest SHA-256 come from
+  the job output where the API exposes them, otherwise NOT_RECORDED with the reason.
+- R4. `tools/render_deviations.py --check` passes on the candidate. DRAFT rows are listed as open exceptions, not
+  hidden.
+- R5. Nothing is published as a release, installed, bound or activated. No host, wallet, key or funding action.
+
+Disclosure: mirror run 39599459074 on the previous head `e7e25c2` (#226) was dispatched and passed before these
+criteria were written. It is recorded only as context; it does not qualify the candidate.
