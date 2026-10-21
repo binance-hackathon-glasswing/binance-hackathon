@@ -804,3 +804,15 @@ Correction to the earlier suspected nested-lock explanation: local reproduction 
 both new tests completes normally. The longer full run disclosed the role permission
 defect above; it was not evidence of a production deadlock. The nested test read was
 still simplified in122d04b. Do not describe either failed/cancelled run as PASS.
+
+### LD05-Q01 canonical acceptance — PASS (2026-10-21)
+
+PR231 merged at b22207e under Keegan's explicit repository-merge exception for the
+pending branch CI conclusion. The new canonical mirror39617977531 finalized all
+four jobs SUCCESS:2416 tests/3808 subtests, separate real-systemd5/5, Docker/demo and
+both-role bundle qualification. This includes real signer-role privileges, independent
+outbox fencing, service/restart/replay and exact abnormal gas/accounting cases. The
+verified original artifact is12352993133; [full receipt](../build/evidence/ab-rel-rc2-20261021.json).
+LD05 repository implementation/qualification is complete. Production role grant,
+actual host/drill acceptance and human recovery after quarantine remain separate;
+no production SQL or host was changed and no automatic resume is introduced.

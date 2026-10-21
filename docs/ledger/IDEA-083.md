@@ -856,3 +856,63 @@ LD15 remains OPEN: finalized CI conclusion, merge and original canonical artifac
 qualification; then actual LD16 owner/configuration bindings and LD17 host approval.
 No host write, key, wallet operation or paid-model call occurred. Conservative N=15
 seed target is0.007296BNB, additional0.004601501130637114BNB at the captured balance.
+
+### AB-REL-RC2 merge exception and canonical original artifact (2026-10-21)
+
+After automatic review rejected the repository merge for the unresolved branch
+runtime conclusion, Keegan explicitly replied **"Approve merge despite pending
+status"**. PR231 merged with a merge commit at14:33:59Z:
+`b22207e050ea50338d48cf7129378caf480ef290`, expected PR head
+`0374cb477b46cafea24c1b4fb05b704d7fe307b4`. This exception covers only that repository
+merge; it neither asserts a finalized branch CI PASS nor authorizes installation,
+signer access, keys, wallet operations or trading. Canonical code/config/tests equal
+the branch-tested a8bdaf7 tree; only five documentation files differ.
+
+Canonical mirror run39617977531 produced original artifact12352993133, retained at
+`/workspace/scratch/rehearsal-rc2-canonical-artifact.zip`; original files are in
+`/workspace/scratch/rehearsal-rc2-canonical-original`. Verification PASS:
+
+- ZIP307d4c4bf1a07d75fb66afd5dd56f076f6a631ecfcd9dea9420b1713ce568657 matches
+  GitHub's artifact digest;
+- `larp-b22207e050ea-x86_64.tar.gz`
+  ecc589a5ecd1e4d66027fb67d3daf88f00257a92a7fdc58b63bd87d46e05ba2a;
+- published manifest427a8cc61737c80a7d575c9e014020c886921f8f58e0e87b9bb47296aef5f8b0
+  equals the inner manifest;244 SHA256SUMS entries and205 manifested source/config
+  files match;
+- BUNDLE.env names canonical b22207e, x86_64, Python3.12.15/tag20261001,
+  Python0e56475e…6260 and RDS CAd7389074…398b; registered repository is the challenge
+  repo, build origin the accepted mirror, remote_verified=true.
+
+The original manifest intentionally has null registration/runtime/operations bindings:
+this is an unbound candidate, with actual bindings at LD16/17. The selected profile,
+scope, coverage and router/signer policy hashes remain those in the public receipt.
+No local artifact rebuild or production write occurred. The merged column-level
+signer SELECT grant in roles.sql must be applied and independently checked during
+approved LD17 database/host installation; real-role CI does not apply production SQL.
+Canonical runtime/four-job conclusion is recorded separately below when finalized.
+
+### AB-REL-RC2 canonical result — PASS (CI-qualified rehearsal candidate)
+
+Canonical mirror39617977531 at b22207e completed/success at2026-10-21T14:43:58Z.
+All four jobs have finalized SUCCESS conclusions: runtime119283748651,
+bootstrap119283749063, AWS119283749217 and host-bundle119283749074.
+Runtime2416 passed/7 skips/3808 subtests/0 failures in496.41s. Separate real-systemd
+5 passed/5 subtests in17.83s; demo, Docker build and offline read-only Docker run PASS.
+Both-role offline host provisioning PASS. Five opt-in systemd skips are covered by
+the separate run; the two remaining opt-in fixtures are LARP_RECORDED_MARKET_ROOT
+and LARP_INJ01_SOURCE_FILE. No changed code is excluded from the canonical run.
+
+The original artifact and exact identities verified above are the accepted candidate
+bytes. Selected profile41332056… / documenteb61ca86…, both effective model authorities
+SHADOW; policy3241abd3… and router05759e90… are unchanged. This satisfies the requested
+step4 canonical candidate requalification; the pending branch metadata does not
+qualify as PASS and is superseded for candidate qualification by this new green run.
+
+Actual signed release/host acceptance stays OPEN: Keith/Isaac exact#120/personal
+deployment acceptance; LD16 actual run/release/DB/RPC/CA and owner bindings; LD17
+per-host installation/session and narrow roles grant; LD18 key; separate funding and
+fresh reconciliation; LD19 first bounded round and LD20 actual fee netting. Final
+S1/model/rights/budgets/deviation/final-wallet adoption remains LD22–24. No host write,
+signer-host access, key, funding, wallet operation or paid model call occurred.
+Result documentation changes no release code/config/test bytes and does not rebuild
+the immutable canonical artifact. Public machine record: ab-rel-rc2-20261021.json.

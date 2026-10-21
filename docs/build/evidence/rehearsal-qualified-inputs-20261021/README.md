@@ -51,6 +51,10 @@ python -m tools.deploy.build_rehearsal_candidate --output /tmp/rehearsal-profile
 `review_rehearsal_caps.py` creates private pinned numeric inputs and report, never
 signer.json. Keep private packets/review files outside Git; public hashes above bind them.
 Pre-install checks must use fresh state and the final release/run/DB/RPC/CA identity.
+The LD05 independent signer fence also requires the merged `roles.sql` column grant
+`SELECT (run_id,observation)` on `execution_observations` for `larp_signer`, applied
+and verified during the separately approved database/host installation. It has not
+been applied to production by this work.
 
 Remaining: Keith/Isaac exact #120 confirmation/personal deployment coverage acceptance,
 #119 actual receipt fee check at LD19/20; LD16 private config bindings and owner check;

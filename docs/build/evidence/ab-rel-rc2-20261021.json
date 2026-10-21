@@ -1,23 +1,85 @@
 {
   "auto_review": {
     "merge_rejected": true,
-    "reason": "Required runtime workflow conclusion remains unresolved; do not merge before finalized green run without explicit exception."
+    "reason": "Required runtime workflow conclusion remains unresolved; do not merge before finalized green run without explicit exception.",
+    "resolved_by": "Keegan explicitly approved repository merge despite pending CI status."
+  },
+  "branch_qualification_before_merge": {
+    "bundle_identity": {
+      "arch": "x86_64",
+      "build_id": "a8bdaf7c1440137beb9bd0be56c4052e01cc7342",
+      "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+      "python_version": "3.12.15",
+      "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+    },
+    "jobs": {
+      "host-bundle": "success",
+      "infrastructure (deploy/aws)": "success",
+      "infrastructure (deploy/bootstrap)": "success",
+      "runtime": "in_progress"
+    },
+    "limitation": "Branch runtime metadata unresolved after every required command passed; this is not a finalized four-job PASS.",
+    "mirror_run_id": 39614839775,
+    "mirror_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39614839775",
+    "original_artifact": {
+      "bundle_sha256": "4695dd3936e358227bcf2d02177221b1a61fc5ea314b7e8773c4df3899b7e773",
+      "checksummed_files": 244,
+      "id": 12352148043,
+      "locally_rebuilt": false,
+      "manifest_sha256": "11eedfbd1cc6836b81cf346dd1914dd22306ba3edb79860ab7ecfde13cfeed49",
+      "verified": true,
+      "zip_sha256": "fe40e82d4fa83e193c8aa6ecfa1c9bc206b15e50446f4fe82625a75547594d57"
+    },
+    "runtime_command_results": {
+      "all_16_steps": "completed/success",
+      "demo": "success",
+      "docker_build": "success",
+      "docker_run": "success",
+      "pytest": {
+        "failed": 0,
+        "passed": 2416,
+        "skipped": 7,
+        "subtests": 3808
+      },
+      "real_systemd": {
+        "passed": 5,
+        "subtests": 5
+      }
+    },
+    "source_commit": "a8bdaf7c1440137beb9bd0be56c4052e01cc7342",
+    "status": "CHECK_COMMANDS_PASSED_CI_CONCLUSION_AND_CANONICAL_QUALIFICATION_PENDING"
   },
   "bundle_identity": {
     "arch": "x86_64",
-    "build_id": "a8bdaf7c1440137beb9bd0be56c4052e01cc7342",
+    "build_id": "b22207e050ea50338d48cf7129378caf480ef290",
     "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
     "python_version": "3.12.15",
     "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
   },
   "canonical_base": "f10d9ad85eee68af08e69e5f5c5b56f9354d7fd7",
-  "canonical_release_qualified": false,
+  "canonical_release_qualified": true,
+  "ci_completed_at": "2026-10-21T14:43:58Z",
+  "ci_conclusion": "success",
   "decision_id": "IDEA-083 AB-REL-RC2",
+  "funding": {
+    "additional_bnb_wei": 4601501130637114,
+    "captured_balance_bnb_wei": 2694498869362886,
+    "conservative_target_bnb_wei": 7296000000000000,
+    "owner": "Funding owner; separate eligible funding action and fresh reconciliation.",
+    "performed": false
+  },
+  "installation_bindings": {
+    "operations_config_sha256": null,
+    "registration_evidence": null,
+    "remaining": "Actual release/run/DB/RPC/CA/config and registration binding at LD16/LD17; do not install or sign from this unbound candidate record.",
+    "runtime_config_sha256": null,
+    "status": "UNBOUND_CANDIDATE"
+  },
   "jobs": {
     "host-bundle": "success",
     "infrastructure (deploy/aws)": "success",
     "infrastructure (deploy/bootstrap)": "success",
-    "runtime": "in_progress"
+    "runtime": "success"
   },
   "local_full_suite": {
     "failed": 2,
@@ -26,23 +88,43 @@
     "skipped": 7,
     "subtests": 3808
   },
-  "mirror_run_id": 39614839775,
-  "mirror_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39614839775",
+  "merge": {
+    "head_sha": "0374cb477b46cafea24c1b4fb05b704d7fe307b4",
+    "merge_commit": "b22207e050ea50338d48cf7129378caf480ef290",
+    "merged_at": "2026-10-21T14:33:59Z",
+    "method": "merge",
+    "pr_number": 231,
+    "scope": "Repository merge only; host writes, signer session, keys, funding and trading remain separate.",
+    "user_exception": "Approve merge despite pending status"
+  },
+  "mirror_run_id": 39617977531,
+  "mirror_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39617977531",
   "original_artifact": {
-    "bundle_sha256": "4695dd3936e358227bcf2d02177221b1a61fc5ea314b7e8773c4df3899b7e773",
+    "bundle_file": "larp-b22207e050ea-x86_64.tar.gz",
+    "bundle_sha256": "ecc589a5ecd1e4d66027fb67d3daf88f00257a92a7fdc58b63bd87d46e05ba2a",
     "checksummed_files": 244,
-    "id": 12352148043,
+    "id": 12352993133,
+    "inner_manifest_matches_published": true,
     "locally_rebuilt": false,
-    "manifest_sha256": "11eedfbd1cc6836b81cf346dd1914dd22306ba3edb79860ab7ecfde13cfeed49",
+    "manifest_files": 205,
+    "manifest_sha256": "427a8cc61737c80a7d575c9e014020c886921f8f58e0e87b9bb47296aef5f8b0",
+    "original_files_path": "/workspace/scratch/rehearsal-rc2-canonical-original",
+    "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
     "verified": true,
-    "zip_sha256": "fe40e82d4fa83e193c8aa6ecfa1c9bc206b15e50446f4fe82625a75547594d57"
+    "zip_path": "/workspace/scratch/rehearsal-rc2-canonical-artifact.zip",
+    "zip_sha256": "307d4c4bf1a07d75fb66afd5dd56f076f6a631ecfcd9dea9420b1713ce568657"
   },
   "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/231",
+  "production_role_change": {
+    "applied": false,
+    "file": "deploy/postgres/roles.sql",
+    "grant": "SELECT (run_id,observation) ON execution_observations TO larp_signer",
+    "next_step": "Apply and verify during separately approved LD17 database/host installation."
+  },
   "profile_document_sha256": "eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4",
+  "qualification_scope": "CI-qualified canonical development rehearsal candidate only; actual signed release/configuration and host acceptance remain at LD16/17.",
   "ready_to_install": false,
   "remaining": [
-    "Finalized green status for exact-source mirror run, or explicit user exception for merge.",
-    "Merge PR231, run canonical mirror qualification and verify its original artifact for LD15.",
     "Keith/Isaac exact #120/personal deployment acceptance and LD16 final run/release/DB/RPC/CA configuration binding.",
     "LD17 separately approved per-host installation/session, LD18 key placement, funding and first bounded round.",
     "Actual fee netting check at LD19/20; final scored S1/model/deviations/final-wallet adoption remain separate."
@@ -50,20 +132,23 @@
   "reviewer": "Codex under Keegan explicit task delegation; no forged personal owner attestation",
   "router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
   "runtime_command_results": {
-    "all_16_steps": "completed/success",
+    "all_required_steps": "completed/success",
     "demo": "success",
     "docker_build": "success",
     "docker_run": "success",
     "pytest": {
+      "duration_seconds": 496.41,
       "failed": 0,
       "passed": 2416,
       "skipped": 7,
       "subtests": 3808
     },
     "real_systemd": {
+      "duration_seconds": 17.83,
       "passed": 5,
       "subtests": 5
-    }
+    },
+    "skip_explanation": "Five opt-in real-systemd tests run separately and pass; two external/private-fixture tests remain opt-in (LARP_RECORDED_MARKET_ROOT and LARP_INJ01_SOURCE_FILE)."
   },
   "schema": "RehearsalReleaseCandidateRecord.v1",
   "selected_inputs": {
@@ -73,6 +158,6 @@
   },
   "signing_enabled": false,
   "signing_policy_sha256": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
-  "source_commit": "a8bdaf7c1440137beb9bd0be56c4052e01cc7342",
-  "status": "CHECK_COMMANDS_PASSED_CI_CONCLUSION_AND_CANONICAL_QUALIFICATION_PENDING"
+  "source_commit": "b22207e050ea50338d48cf7129378caf480ef290",
+  "status": "PASS_CANONICAL_CI_AND_ORIGINAL_ARTIFACT_CANDIDATE_ONLY"
 }
