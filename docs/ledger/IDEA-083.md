@@ -733,3 +733,50 @@ inputs that must merge first (LD03–LD14), source identity, the exact CI checks
 the AB-REL record format. Local dry run on canonical `72bb62c`: bundle build PASS (`3826716816df…9eca`, manifest
 `02b372e5…6d82`, RDS CA `d7389074…` unchanged); host-bundle provisioning NOT_RUN (Docker Hub 429 on the pinned
 Amazon Linux image); Terraform/systemd not run locally. Not a release; no artifact uploaded or installed.
+
+## AB-REL-RC1 — signed-rehearsal release candidate CI on canonical (2026-10-21)
+
+Keegan's request: complete LD15. LD15 cannot fully complete today, because its §1 inputs are not all accepted: Keith's
+#120 confirmation and the new rehearsal window (DEV-24), LD05, the LD11 scope, Isaac's PS-01, the final LD14 values
+and the LD10 caps. This entry qualifies the **candidate** commit by CI so that only those inputs remain.
+
+Pass criteria, written before run 31's result is read:
+- R1. The candidate is the pushed head of `codex/system-testing-20261012`, reached by merge commits only, and the
+  mirror branch is a fast-forward to exactly that SHA.
+- R2. Mirror `Runtime acceptance` on that exact SHA passes all four jobs: `infrastructure (deploy/aws)`,
+  `infrastructure (deploy/bootstrap)`, `runtime` and `host-bundle`.
+- R3. `host-bundle` uploads an artifact. Record its ID, size and digest. The bundle and manifest SHA-256 come from
+  the job output where the API exposes them, otherwise NOT_RECORDED with the reason.
+- R4. `tools/render_deviations.py --check` passes on the candidate. DRAFT rows are listed as open exceptions, not
+  hidden.
+- R5. Nothing is published as a release, installed, bound or activated. No host, wallet, key or funding action.
+
+Disclosure: mirror run 39599459074 on the previous head `e7e25c2` (#226) was dispatched and passed before these
+criteria were written. It is recorded only as context; it does not qualify the candidate.
+
+### AB-REL-RC1 result — PASS (CI-qualified candidate; LD15 stays open on §1 inputs)
+
+| Item | Result |
+|---|---|
+| R1 source | `0ba4f441f16ae9ccc49af23cceeaa065f016dc3a` = canonical head after #227 (merge commits only). The mirror branch was fast-forwarded `e7e25c2..0ba4f44`. Its tree equals the #227 head `8df14b0`. |
+| R2 CI | Mirror [run 39601143671](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39601143671) (push-triggered; duplicate dispatch 39601150005 cancelled), **all four jobs success**. Infrastructure `deploy/aws` and `deploy/bootstrap`: fmt, init, validate and test. Runtime: bubblewrap, pinned install, `pip check`, full pytest on PostgreSQL 14.24 (8 m 4 s), real systemd, demo, container build and `--network none --read-only --cap-drop ALL` smoke. Host-bundle: both roles provisioned twice and `release_verified: true`, `signing_enabled: false`. Pytest counts NOT_RECORDED: the API log tail holds only the Postgres service log (expected negative-test errors). The local full suite on the identical tree passed 2403, 11 skipped (IDEA-049-D). |
+| R3 artifact | `larp-bundle-x86_64`, ID 12345743795, 98,464,608 bytes, zip `sha256:83addcc6bd9ce011b3c74c4150a5254e7138e9b8059fe611149291dd68c9e1b3`, expires 2027-01-19. Bundle `larp-0ba4f441f16a-x86_64.tar.gz` `b3b4fad3c94225d8828f19ffbd1011b51990d2bc02794745dfe7648c716a2414`. Manifest `9e7bb0df8eab0c34dbaeefa365d62724c569293708eb7af46fe3ce1ec51e68fe`. Python 3.12.15 `0e56475e…`. RDS CA `d73890748b5a…398b` (unchanged). |
+| R4 register | `render_deviations.py --check` PASS. Open exceptions: DRAFT DEV-01–04, 07, 19, 22, 23, 24. |
+| R5 scope | Nothing published, installed, bound or activated. No host, AWS, wallet, key or funding action. |
+
+- A local dry-run build of the same commit gave a different tarball hash (`a4e68d18…`). The builder isn't
+  byte-reproducible across environments, so only the CI artifact above is the candidate.
+- The artifact must be downloaded and verified (API digest, bundle checksums, manifest against Git) before LD16/LD17
+  installs it, as in AB-REL01. The cloud artifact redirect was denied in AB-REL01, so the operator downloads it.
+- Context only: run 39599459074 on `e7e25c2` also passed all four jobs.
+
+**LD15 stays open.** RC1 is a CI-qualified candidate, not the signed rehearsal release. A new candidate and run are
+needed once any of these lands (see the LD15 checklist §1 state):
+- Keith confirms #120 and the DEV-24 window and rebuilds the profiles;
+- LD05;
+- the LD11 scope;
+- LD10 coverage;
+- PS-01, if adopted;
+- the DRAFT deviation decisions.
+
+The final LD14 values only gate LD24; the interim values are config, not code.
