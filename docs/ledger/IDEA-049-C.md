@@ -1161,3 +1161,37 @@ there is no outstanding request for permission to select these exact bounds.
 #44/LD10 stays open only for actual deployment-input coverage and environment
 configuration binding. All remaining work is recorded in the live backlog,
 CAP-02 artifact and PR216 receipt; no host/key/activation operation occurred.
+
+## LD10-P01 — selected-profile and holdings coverage review (2026-10-21, prospective)
+
+Isaac requested priority 1 only, stopping before the separately listed gas-budget,
+router replay and signer-assembly tasks. Base: canonical `f10d9ad`. Review the
+existing RV120-02 candidates and CAP-02 policies without changing strategy,
+numeric ceilings, runtime pins or historical evidence. No AWS, credential, key,
+funding, paid service, signing or broadcast operation is in this review.
+
+Pass criteria, recorded before executing verification:
+
+1. Reproduce both RV120-02 candidate files byte for byte from the committed DC-01
+   summary, predicate registry, authority evidence and LD09-B inputs using the
+   existing builder; independently verify file/document and CAP-02 policy hashes.
+2. Validate each candidate with the production LIVE profile validator; compare
+   full-position cash plus reserve with its environment's approved USDT cap and
+   the configured transaction ceiling with the independent fee ceiling. Historical
+   sample checks are labelled historical; they cannot stand in for fresh holdings.
+3. Compare rehearsal/final terminal windows with the latest selected policies;
+   retain every mismatch as an adoption blocker rather than silently changing
+   or accepting a historical candidate. Preserve the conditional #119 fee status.
+4. Inventory the actual required `GateBCapsInputs.v1` packet: selected profile,
+   signing policy, execution config, complete reconciled `PortfolioState.v1`,
+   request-bound fresh BUY/SELL artifacts for all five names, metadata and reviewed
+   freshness budget. If available, run the existing real caps reviewer on those
+   bytes at the current clock, retaining its private report. Do not invent data,
+   use an unsigned run's bindings, widen freshness or use `--now` to pass stale data.
+5. Accept deployment coverage only when those actual inputs pass the production
+   reviewer and named scope/funding/profile reviews exist. Otherwise report
+   `BLOCKED_MISSING_ACTUAL_INPUTS`, preserve false readiness/signing flags and keep
+   the live backlog open with exact owners/artifacts. Gas/cleanup/exit-envelope
+   repair and router replay remain the later user-requested priorities.
+
+Verification results and their exact artifact hashes will be appended below.
