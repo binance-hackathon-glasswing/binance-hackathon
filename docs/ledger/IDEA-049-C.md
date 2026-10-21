@@ -1175,3 +1175,10 @@ and exact CAP-02 limits checked by caps reviewer; C3 correct independently round
 child gas budgets/reserve and document seeding counts; C4 approve coverage only if all
 required facts exist and checks pass, otherwise record exact blocked supplier/input;
 C5 retain private artifacts privately, public output sanitized, and qualify final source.
+
+LD10-Q01 envelope choice before build: retain CAP-02 max_gas 1,200,000 and max price
+160,000,000 wei, cleanup disabled. Cover two maximum signed children: action budget
+384,000,000,000,000 wei, four-exit reserve 1,536,000,000,000,000 wei. Expected-price
+sizing budget 80,004,608,000,000 wei corrects independent child rounding while retaining
+0.064 gwei sizing. N=15 whole-run planning plus reserve is 0.007296 BNB. This replaces
+0.0046 BNB as the conservative funding target for this envelope; no funding action.
