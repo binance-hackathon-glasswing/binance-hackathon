@@ -434,3 +434,49 @@ tested source3e73086. Actions39558766897 executed zero steps because account
 payments/spending limits blocked startup. Canonical status/plan, #44 and PR133
 record CAP-02 approved numeric ceilings plus remaining deployment coverage;
 local test container stopped. No installed release or signed-host acceptance.
+
+## LD08-GC01 — bounded action/exit coverage (2026-10-21, prospective)
+
+Isaac requests priority2, then priority3. Criteria GC1–GC5 and scope are recorded
+before execution in [gas/router coverage](../build/GAS_ROUTER_COVERAGE_20261021.md).
+Derive two-child and optional eight-child envelopes from the approved execution
+ceilings; preserve cleanup-disabled policy, independent sizing and historical
+candidates. Produce new non-adopted candidates with the existing builder and
+verify real reservation/sequence consumers. Whole-run counts and current
+holdings/configuration remain required for deployment/funding acceptance.
+
+### LD08-GC01 results — offline bounded candidates PASS
+
+Final pushed sourceffe91d9, macOS arm64/Python3.12.14:68 focused tests/280 subtests
+PASS,3 PostgreSQL-backed skips; all16 new tests pass. Real existing initial-only,
+profile, sequence, allowance and decoder consumers are covered offline; no
+full-suite/CI/host claim. New candidate/report files reproduce byte-identically.
+[Full record/hashes](../build/evidence/gc01-bounded-profiles-20261021/README.md).
+
+Ordinary two-max-child envelope384,000,000,000,000wei; EW4-exit reserve
+1,536,000,000,000,000wei; S1 five-exit bound1,920,000,000,000,000wei (no invented
+weights/profile). Optional eight-child cleanup scenario1,536,000,000,000,000wei
+per parent is not adopted; CAP-02 cleanup stays disabled. Existing builder
+produces new EW candidates with the bounded action/reserve and unchanged
+80,004,560,000,000wei sizing budget/minimum18.637420USDT. Historical files and
+runtime configs remain unchanged. Parent gas_budget and each actual command
+reservation must be aligned, or independent RunAuthorization refuses.
+
+GC01 separates non-terminal N from the terminal reserve. Historical N15/30
+including exits cannot silently be used as non-terminal counts. Keith/Isaac
+still accept actual selected profile/counts/fees; operator supplies current
+complete holdings/config/funding and host/low-gas alarm evidence. Offline
+priority2 work is delivered; LD08/LD10 deployment acceptance remains open.
+
+PR232-RV01 (2026-10-21): Keegan reviews/fixes/merges GC01 and RP01 under the
+prospective criteria in IDEA-070 PR232-RV01. Preserve these frozen non-adopted
+candidates and their original sizing/count definitions; the selected deterministic
+rehearsal and corrected sizing in LD10-Q01-R1 remain distinct. No new seeding
+margin or funding action is adopted by this review.
+
+PR232-RV01 results:130 tests/334 subtests/zero skips pass on Linux/Python3.12.14/
+PostgreSQL14.24 at pushed9221277. Frozen GC01 candidates/report reproduce exactly;
+new source adds no runtime release-file change (205 original manifest hashes match).
+Selected LD10-Q01-R1 sizing/count definitions remain distinct from GC01's historical
+non-adopted candidates and illustrative margin. Full review and limits: IDEA-070
+PR232-RV01 / [machine receipt](../build/evidence/pr232-review-20261021.json).

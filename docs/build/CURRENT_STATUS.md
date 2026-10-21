@@ -227,6 +227,38 @@ host operation, key action or activation occurred. Full record:
 [IDEA-070 KG-DEC-01-RV01](../ledger/IDEA-070.md#kg-dec-01-rv01-results--pass-within-recorded-scope)
 and [verification receipt](evidence/kgdec01-isaac-review-20261021.json).
 
+## GC01 / RP01 — gas candidates and fresh local router checks (2026-10-21)
+
+[GC01](evidence/gc01-bounded-profiles-20261021/README.md) supplies reproducible
+conservative initial-only EQUAL_WEIGHT candidates: 0.000384 BNB per two-child
+action, 0.001536 BNB for four exits. Expected-cost sizing remains separate.
+Cleanup stays disabled; the eight-child calculation is a non-adopted scenario.
+Keith's selected profile/whole-run counts/fee acceptance and actual holdings,
+execution-budget/reservation, funding disposition and host/alarm coverage remain.
+No runtime pin, deployment or funding amount is adopted.
+
+[RP01](evidence/rp01-router-readonly-20261021/README.md) passes fresh local
+production replay/tamper checks on ten 20 USDT BUY/hypothetical-output SELL quotes
+and production code/facet/dispatch/allowance preflight through both selected
+RPC providers. 2026-10-21 14:25–14:27 UTC; worst quote-to-preflight completion
+6.711 s, policy05759e90… unchanged. This closes Isaac's local replay slice;
+actual selected profile/full holdings and production host/release binding,
+runtime per-attempt preflight and signed-round/finality/gas/fee/ACK acceptance
+remain open. The signer stays offline from RPC. Neither report enables signing.
+
+Final pushed source ffe91d9: macOS/Python3.12.14 focused suite 68 tests/280 subtests
+PASS, three disposable-PostgreSQL skips; no full-suite/CI or signed-host claim.
+
+GC01/RP01 are independent dated technical evidence. The selected deterministic
+profile and completed coverage/qualification below take precedence for this rehearsal;
+GC01 candidates and its illustrative count margin are not adopted.
+
+PR232-RV01 independent review:130 tests/334 subtests/zero skips PASS on Linux/
+Python3.12.14/PostgreSQL14.24 at9221277. Frozen candidates/public bindings reproduce;
+all205 runtime release files match the original qualified b22207e manifest.
+Actual CLI/report refusal/staleness/tamper cases are covered. No fresh live call or
+private-original re-verification is claimed. [Receipt](evidence/pr232-review-20261021.json).
+
 
 ## 2026-10-21 scoped rehearsal qualification (LD05-Q01 / LD10-Q01 / LD11-RH01)
 
