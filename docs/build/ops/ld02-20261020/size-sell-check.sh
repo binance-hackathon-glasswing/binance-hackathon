@@ -21,7 +21,7 @@ SIZES_USDT = (10, 20, 40, 100)
 SENTINEL = 10**30 + 7
 PLENTY = 10**36
 OWN_CODES = frozenset(('RPC_CALL_REFUSED', 'RPC_METHOD_REFUSED', 'RPC_REFUSED', 'SANITIZER_URL',
-                       'SANITIZER_FORBIDDEN_VALUE', 'NO_PROVIDERS'))
+                       'SANITIZER_FORBIDDEN_VALUE', 'NO_PROVIDERS', 'QUOTE_AMOUNT_MISMATCH'))
 
 
 def fingerprint(value):
@@ -208,6 +208,8 @@ def sweep(url, scope, quote, usdt_override, token_overrides, sizes=SIZES_USDT):
             row = dict()
             try:
                 buy = quote_row(quote(symbol, 'BUY', pay))
+                if buy['from_amount'] != pay:
+                    raise ValueError('QUOTE_AMOUNT_MISMATCH')
             except Exception as error:
                 rows[str(size)] = dict(buy_error=plain(type(error).__name__ + ':' + str(error), scope.get('forbidden', ()))[:80])
                 continue
@@ -217,6 +219,8 @@ def sweep(url, scope, quote, usdt_override, token_overrides, sizes=SIZES_USDT):
                               gas=simulate(url, scope, buy['calldata'], usdt_override) if buy['pinned'] else None)
             try:
                 sell = quote_row(quote(symbol, 'SELL', buy['to_amount']))
+                if sell['from_amount'] != buy['to_amount']:
+                    raise ValueError('QUOTE_AMOUNT_MISMATCH')
             except Exception as error:
                 row['sell_error'] = plain(type(error).__name__ + ':' + str(error), scope.get('forbidden', ()))[:80]
                 rows[str(size)] = row

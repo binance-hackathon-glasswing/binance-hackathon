@@ -40,6 +40,14 @@ class Ld02dScriptTests(unittest.TestCase):
         self.assertEqual((usdt['proven'], usdt['balance_base'], usdt['allowance_base']), (True, '0x1', '0x2'))
         token = self.ns['prove_slots']('https://p', self.scope, NVDAB)
         self.assertEqual((token['proven'], int(token['balance_base'], 16)), (True, oz))
+        proof = self.scope['proven_slots'][NVDAB]
+        self.assertEqual(proof, dict(balance=token['balance_slot'], allowance=token['allowance_slot']))
+        sim = {'from': WALLET, 'to': self.ns['ROUTER'], 'data': '0xad43f73d00'}
+        diff = {s: '0x' + self.ns['word_hex'](self.ns['PLENTY']) for s in proof.values()}
+        self.assertTrue(self.ns['allowed_call']('eth_estimateGas', [sim, 'latest', {NVDAB: {'stateDiff': diff}}], self.scope))
+        for bad in ({self.ns['mapping_slot'](WALLET, 0): '0x1'},
+                    {s: '0x1' for s in proof.values()}):
+            self.assertFalse(self.ns['allowed_call']('eth_estimateGas', [sim, 'latest', {NVDAB: {'stateDiff': bad}}], self.scope))
 
     def test_s2_unknown_layout_is_not_proven(self):
         self.fake_chain({NVDAB: (99, 100)})
