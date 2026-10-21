@@ -1115,3 +1115,32 @@ review fix; later receipts change documentation only. The local PG container is
 stopped. PR133/current status/LD ordering now distinguish the merged builder
 and regenerated candidates from actual #120/profile/gas/#44/timing/release/host
 acceptance; no whole parent gate is closed. Remaining code PRs:206 and draft212.
+
+## CAP-02 — delegated numeric ceiling approval (2026-10-21; prospective checks)
+
+Isaac asks to approve #44 where feasible rather than waiting for another
+permission round. Approve the finite CP-01 raw input ceilings as explicit risk
+choices: development USDT35/final70, unchanged six raw token limits, router-only
+spender, no native-BNB permission, fee ceiling200,000,000,000,000wei per
+transaction. Use the selected API-trusted path, with allowance recovery disabled
+until its actual cleanup coverage is accepted. Approval is represented by exact
+policy bytes/hashes in [CAP-02](../build/evidence/signer-numeric-ceilings-20261021.json),
+not by changing the historical examples or claiming source verification.
+
+Acceptance checks before executing: load both policies through real SigningPolicy;
+exercise each token at cap/+1 for approve/swap, fee cap/+1, wrong spender/native
+input/value; compare retained LD02d20/40 raw BUY-output/SELL-input samples with
+respective limits; compare LD09-B20.10/40.20 profile cash ceilings and
+1,200,000*160,000,000wei with the independent fee cap; verify immutable source
+hashes. Preserve MSFTB40 BUY refusal. This tests ceiling coverage of known
+samples, not live full holdings or route execution.
+
+This closes the numeric policy-choice/Isaac-permission slice only if checks
+pass. Actual selected S1/fallback profile/calendar, fresh complete holdings and
+quote/metadata coverage, signed child gas/cleanup/full-exit/seeding envelope and
+exact environment configuration/release/host qualification remain. In particular,
+the proposed pair gas budget is not two times the maximum per-transaction fee,
+and separate child gas-limit rounding must be covered by the actual action
+envelope. No action-budget/exit-coverage approval is manufactured from this
+ceiling decision. #44 remains open for deployment-specific coverage/binding;
+ready_to_install/signing_enabled stay false.
