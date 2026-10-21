@@ -223,6 +223,10 @@ class InitialCaps(unittest.TestCase):
         self.configure(fixture)
         fixture.config['allowance_recovery'] = True
         fixture.policy['allowance_recovery'] = True
+        fixture.config['gas_budget'] *= 4
+        fixture.profile['gas_action_budget_units'] *= 4
+        fixture.profile['exit_gas_reserve_units'] *= 4
+        fixture.ledger['bnb_units'] *= 4
         fixture.save_inputs()
         report = case.report()
         self.assertTrue(report['allowance_recovery'])

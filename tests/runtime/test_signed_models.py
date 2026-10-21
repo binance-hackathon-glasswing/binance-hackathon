@@ -454,7 +454,7 @@ class ScopedDeterministicRehearsal(unittest.TestCase):
     def test_scoped_fallback_prepares_without_models_and_checker_refuses_scope_escape(self):
         p = profile()
         p['evidence_mode'] = 'SHADOW'
-        p['provenance']['evidence_mode'] = {'decision_id': 'SYNTHETIC LD11-RH01'}
+        p['provenance']['evidence_mode'] = {'decision_id': 'SYNTHETIC LD11-RH01', 'formula': 'explicit scoped rehearsal'}
         with patch('socket.create_connection', side_effect=AssertionError('no model/network')):
             files = assembled(profile_raw=json.dumps(p).encode(), execution='service',
                               adoption_ref='SYNTHETIC LD11-RH01')
