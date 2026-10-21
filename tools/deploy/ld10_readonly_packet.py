@@ -16,7 +16,7 @@ def script(profile_bytes):
     source = 'SELECTED_PROFILE_B64 = ' + repr(base64.b64encode(profile_bytes).decode()) + '\n' + source
     needle = "    driver = config['driver']\n"
     source = source.replace(needle, "    selected_raw = base64.b64decode(SELECTED_PROFILE_B64)\n    profile = json.loads(selected_raw)\n" + needle, 1)
-    source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if v not in (wallet, wallet[2:])]\n", 1)
+    source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if not isinstance(v, str) or v.lower() not in (wallet, wallet[2:])]\n", 1)
     source = source.replace("    return packet, forbidden\n", """    packet['selected_profile_sha256'] = hashlib.sha256(selected_raw).hexdigest()
     packet['private_caps_inputs'] = dict(wallet=wallet, portfolio=portfolio,
         token_decimals={s: observation['tokens'][s]['decimals'] for s in TOKENS},
