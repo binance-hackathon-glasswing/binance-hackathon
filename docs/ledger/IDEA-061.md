@@ -434,3 +434,34 @@ tested source3e73086. Actions39558766897 executed zero steps because account
 payments/spending limits blocked startup. Canonical status/plan, #44 and PR133
 record CAP-02 approved numeric ceilings plus remaining deployment coverage;
 local test container stopped. No installed release or signed-host acceptance.
+
+## GE-01 — LD08/LD10 exact configured gas-envelope coverage (2026-10-21; prospective)
+
+Isaac requests completion of the next LD08/LD10 work. Canonical146a751 includes
+PR216 sizing split, CAP-02 ceilings and PR222 fault hooks. No implementation PR
+is open. Selected actual profile/fresh holdings/quotes/whole-run N are not in
+the retained packet; request local paths while completing repository checks.
+
+Pass criteria before execution:
+- GE1 compute an integer wei bound for every allowed action: approve+swap,
+  plus all six possible zero-approval cleanup steps when explicitly enabled;
+  no transaction is assumed to get the observed mean/quoted gas rather than its
+  configured maximum. Independently rounded measured limits remain diagnostics.
+- GE2 initial-only caps coverage rejects execution parent budgets below this
+  envelope, profile action budgets below the configured parent and nominal
+  position reserves below the larger action budget. Expected sizing cannot mask
+  a deficit. Keep top-up behavior unchanged, exact wei/scales and false readiness.
+- GE3 an offline non-overwriting proposal tool emits input hashes, concrete
+  recommended action/reserve values and optional explicit N/margin seeding math;
+  no private raw fields, host/key/network/signing/funding side effects or invented
+  action count. It is a proposal, not a deployment acceptance or selected profile.
+- GE4 exact/+1, per-child rounding, disabled/enabled cleanup, S1/four-name,
+  action/profile mismatches, scale/type and output privacy/non-overwrite tests;
+  exercise existing actual caps-review/assembler boundaries, then appropriate
+  broader checks on pushed code. Preserve historical candidate bytes.
+- GE5 retain measured results, reduce live checklist to actual remaining inputs,
+  commit/push, prepare a reviewable canonical-based PR and update PR133.
+
+Numeric CAP-02 policy approval remains in force, with cleanup disabled. This
+change never installs policies, approves current holdings or substitutes a local
+scenario for Keith's selected S1/fallback/exit-child counts and whole-run N.
