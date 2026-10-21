@@ -806,3 +806,11 @@ live deterministic settings while the profile shadows model-derived authority.
 The new profile/scoped settings/hashes are in the rehearsal packet. Final S1/model
 adoption, original 43.56h/72h shortfall, sparse labels, rights and account-budget
 reconciliation remain at LD22/LD24. No paid provider call or ledger reset occurred.
+
+LD11-RH01 authority correction before merge: integration.contract.authority reads the
+explicit falsifier_authority ahead of evidence_mode. Merely changing evidence_mode
+left the prior discretionary authority in the first candidate. Restrict the validator
+exception to REHEARSAL/EQUAL_WEIGHT/SHADOW, set falsifier_authority=SHADOW explicitly,
+and require it in Gate A scope validation. Retain the earlier frozen candidate; new
+selected file is rehearsal-deterministic.json. Add a direct effective-authority check.
+Numeric policy/gas/holdings fields are identical; rebind coverage to the new exact hash.

@@ -25,8 +25,10 @@ def build():
     p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
     p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
     p['evidence_mode'] = 'SHADOW'
+    p['falsifier_authority'] = 'SHADOW'
     p['provenance']['evidence_mode'] = dict(decision_id='IDEA-083 LD11-RH01 (Keegan, 2026-10-21)',
         formula='Scoped EQUAL_WEIGHT rehearsal; deterministic assessor, hosted models and discretionary model exits deferred')
+    p['provenance']['falsifier_authority'] = dict(p['provenance']['evidence_mode'])
     validate_live(p)
     return Document.from_dict(p)
 

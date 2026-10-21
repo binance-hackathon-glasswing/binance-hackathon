@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def collect(packet, output, build_id):
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     private = packet['private_caps_inputs']
-    profile_path = ROOT / 'docs/build/evidence/rehearsal-qualified-inputs-20261021/rehearsal-live.json'
+    profile_path = ROOT / 'docs/build/evidence/rehearsal-qualified-inputs-20261021/rehearsal-deterministic.json'
     profile = json.loads(profile_path.read_bytes())
     assert hashlib.sha256(profile_path.read_bytes()).hexdigest() == packet['selected_profile_sha256']
     assert packet['holdings']['status'] == 'MATCH' and packet['configs_unchanged']

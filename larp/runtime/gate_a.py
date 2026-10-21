@@ -267,7 +267,7 @@ def scoped_rehearsal(profile, mode):
     """LD11-RH01: deterministic, model-shadow rehearsal only; never scored adoption."""
     return (mode == 'dev' and profile.get('environment') == 'REHEARSAL'
             and profile.get('baseline') == 'EQUAL_WEIGHT' and profile.get('evidence_mode') == 'SHADOW'
-            and profile.get('assessment_required') is False)
+            and profile.get('falsifier_authority') == 'SHADOW' and profile.get('assessment_required') is False)
 
 
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,

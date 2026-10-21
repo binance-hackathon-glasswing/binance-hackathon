@@ -108,7 +108,9 @@ def validate_live(p):
         if (p["baseline"] not in ("EQUAL_WEIGHT", "TREND_GUARDED_VOL") or p["series_kind"] != "TOKEN"
                 or p["red_flag_policy"] != "IDEA-035-B1" or not _hash(p["predicate_registry_hash"])
                 or p["statement_authority"] != "SHADOW"
-                or p["falsifier_authority"] != "DISCRETIONARY_EXIT"
+                or (p["falsifier_authority"] != "DISCRETIONARY_EXIT" and not (
+                    p["environment"] == "REHEARSAL" and p["baseline"] == "EQUAL_WEIGHT"
+                    and p["evidence_mode"] == "SHADOW" and p["falsifier_authority"] == "SHADOW"))
                 or p["assessment_required"] is not False):
             raise ContractError("Live profile differs from decided v1 scope")
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.
