@@ -1280,3 +1280,13 @@ proposal/design caveats and live-backlog scope; CR6 run meaningful offline and
 integration checks on pushed source, preserve historical packets and original
 FAIL/amendment records, merge only exact accepted head and update PR133.
 No live collector, provider/model/host/key/wallet operation is part of this review.
+
+LD02cd-RV01 reproduced review gaps: CR-P2-01 both new scripts shorten/ASCII-
+convert/extract provider or quote text before private-value scanning, repeating
+PR211's fixed leak pattern (including RFQ_ extraction and route-marker scalars).
+CR-P2-02 RFQ accepts any one USDT override; size-sweep discovery candidates remain
+permitted for swap simulation before proof and accept arbitrary values.
+CR-P2-03 RFQ output labels nominal schedule delays as observed age bounds; prior
+network/proof/sequential-call delay makes even a scheduled0s probe older than0s.
+New offline regressions precede fixes; archived packets remain immutable and
+missing actual timing cannot be reconstructed by changing old labels.
