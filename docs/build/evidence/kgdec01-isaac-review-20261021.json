@@ -1,0 +1,40 @@
+{
+  "schema": "ReviewReceipt.v1",
+  "review_id": "KG-DEC-01-RV01",
+  "date": "2026-10-21",
+  "reviewer": "Isaac (delegated agent)",
+  "canonical_commit": "6746ef0c8397fad3a1b2d628eaade7745a120f8e",
+  "tested_checkout": "0c3c179",
+  "application_test_diff_from_canonical": false,
+  "environment": {
+    "os": "macOS arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24",
+    "database": "disposable local test database"
+  },
+  "tests": {
+    "passed": 62,
+    "subtests_passed": 47,
+    "skipped": 0,
+    "duration_seconds": 16.07,
+    "files": [
+      "tests/execution/test_presign_simulation.py",
+      "tests/runtime/test_presign_check_script.py",
+      "tests/execution/test_finite_authority.py",
+      "tests/execution/test_postgres_execution.py",
+      "tests/signer/test_service.py"
+    ]
+  },
+  "stored_host_packet_sha256": "d0c077ca8949ea6e076b83d8f979586553cde0a3f876a5e86d56578306bc95e6",
+  "stored_packet_digest_reproduced": true,
+  "host_rerun": false,
+  "full_suite_run": false,
+  "result": "PASS_SCOPED_REVIEW",
+  "remaining": [
+    "LD19 funded positive swap estimate and actual agent transaction",
+    "LD20 receipt/accounting/ACK review",
+    "LD08/10 actual selected profile/full-exit/fee/N coverage",
+    "LD16/17 signed configuration and host acceptance"
+  ],
+  "no_live_rpc_host_key_wallet_or_activation_action": true
+}
