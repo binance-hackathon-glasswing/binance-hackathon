@@ -1,5 +1,9 @@
 # LD09/LD10 — measured gas budget proposal (2026-10-21)
 
+**Decision 2026-10-21 (Keegan): option B**, implemented as IDEA-061 LD09-B with candidates in
+[`ld09b-gas-budget-profiles-20261021`](evidence/ld09b-gas-budget-profiles-20261021/README.md). The expected price is
+0.064 gwei, pending Keith's #120 review. The rest of this document is the proposal as written.
+
 Status: **PROPOSAL for Keith (LD09, #120), Isaac (LD10, #44) and Keegan (LD07 policy).** Nothing here changes a
 profile, cap or config. It replaces the FALLBACK-based DC-01 action budget with figures computed from simulated gas,
 and shows a coupling that blocks the rehearsal profile at the draft cap gas price.
@@ -103,3 +107,15 @@ option-B implementation; Keith #120 and Isaac #44 acceptance still remain.
 Historical LD02c packets store nominal delay labels, not actual probe ages; do
 not infer a zero-second RFQ lifetime. Future collectors now record actual ages.
 Original packet bytes and the Q2 FAIL/Q2b amended PASS remain unchanged.
+
+## CAP-02 scope and exact-action rounding
+
+CAP-02 approves finite signer input/fee ceilings, not these deployment action
+budgets. The recorded formula rounds a fractional total fee; independently
+rounding gas limits gives ceil(55,243*1.25)+ceil(944,814*1.25)=1,250,072gas,
+which costs200,011,520,000,000wei at0.16gwei (120,000,000wei above the recorded
+pair budget). The exact selected signed child limits, any cleanup/retries and
+number of exit children must be summed before deployment acceptance. Two
+transactions each at max_gas1,200,000 cost384,000,000,000,000wei at the cap,
+also above this proposed pair budget. The builder accepts a sourced larger
+action budget; these historical candidates are retained unchanged.

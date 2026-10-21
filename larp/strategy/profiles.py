@@ -66,7 +66,7 @@ def validate_live(p):
         initial_only = uses_initial_gas(p)
         if initial_only and any(key in p for key in TOP_UP_KEYS):
             raise ContractError("Initial-only profile must not configure gas top-ups")
-        if not initial_only and "gas_action_budget_units" in p:
+        if not initial_only and ("gas_action_budget_units" in p or "gas_sizing_budget_units" in p):
             raise ContractError("Top-up profile must not configure an initial-only action budget")
         if p.get("values_origin") != "MEASURED_AND_DECIDED" or p.get("environment") not in WINDOWS:
             raise ContractError("LIVE values must be measured and decided")
@@ -135,12 +135,18 @@ def validate_live(p):
         if instant(summary["observed_at"]) > instant(p["trade_after"]):
             raise ContractError("Future quote measurements")
         pair = max(r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in summary["symbols"].values())
+        sizing = pair
         if initial_only:
             action = integer(p["gas_action_budget_units"], 1)
             if action < pair:
                 raise ContractError("Initial-only action budget must cover every pair")
-            pair = action  # supporting cleanup costs belong in minimum-trade feasibility too
-        gas_value = ceil(Fraction(pair * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
+            # LD09-B: the reserve stays at the cap-price action budget; an optional expected-price
+            # budget sizes the minimum trade. Supporting cleanup costs belong in both.
+            sizing = integer(p.get("gas_sizing_budget_units", action), 1)
+            if not pair <= sizing <= action:
+                raise ContractError("Gas sizing budget must lie between the measured pair and the action budget")
+            pair = action
+        gas_value = ceil(Fraction(sizing * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
         minimum = max(ceil(Fraction(gas_value * 10000,
             50 - row["spread_bps"] - min(50, 2 * row["median_impact_bps"]) - row["fee_bps"]))
             for row in summary["symbols"].values())
@@ -159,7 +165,8 @@ def validate_live(p):
 
 
 def build_live_profiles(summary: Document, registry: Document, *, s1=None,
-                        s1_decision="IDEA-075 S1 plan (PR #123), proposed", initial_gas_only=False, authority=None):
+                        s1_decision="IDEA-075 S1 plan (PR #123), proposed", initial_gas_only=False, authority=None,
+                        gas_budget=None):
     """Return rehearsal/final candidate profiles; caller freezes hashes in manifest.
 
     Conservative budgets are algebraic policy choices requiring Yao/team review.
@@ -168,6 +175,9 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
     profiles are TREND_GUARDED_VOL (IDEA-076); `s1_decision` names the decision behind those values.
     With `authority` = {seconds, margin, decision_id, data_hash}, both profiles also carry the #27 finite execution
     authority L and submission margin m (IDEA-049-C LD04-V01/LD04-P); without it the output is unchanged.
+    With `gas_budget` = {action_units, sizing_units, decision_id, data_hash} (initial-only scope, IDEA-061 LD09-B),
+    the action budget and exit reserve use `action_units` (cap gas price) and the minimum trade uses `sizing_units`
+    (expected gas price); without it both come from the summary's measured pair.
     """
     if type(initial_gas_only) is not bool:
         raise ContractError("initial_gas_only must be a boolean")
@@ -176,6 +186,14 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
                 or type(authority["decision_id"]) is not str or not authority["decision_id"].strip()
                 or not _hash(authority["data_hash"])):
             raise ContractError("Execution authority needs seconds, margin, a decision ID and an evidence hash")
+    if gas_budget is not None:
+        if (not initial_gas_only or type(gas_budget) is not dict
+                or set(gas_budget) != {"action_units", "sizing_units", "decision_id", "data_hash"}
+                or type(gas_budget["decision_id"]) is not str or not gas_budget["decision_id"].strip()
+                or not _hash(gas_budget["data_hash"])):
+            raise ContractError("Gas budget needs initial-only scope, both budgets, a decision ID and an evidence hash")
+        integer(gas_budget["action_units"], 1)
+        integer(gas_budget["sizing_units"], 1)
     s, reg = quote_summary(summary.read()), registry.read()
     published = reg.get("schema") == "RedFlagPredicateSet.v1"
     if published:
@@ -186,8 +204,12 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
     else:
         records = predicate_records(reg)
     pairs = [r["approve_gas_bnb_units"] + r["swap_gas_bnb_units"] for r in s["symbols"].values()]
-    pair = max(pairs)
-    gas_value = ceil(Fraction(pair * s["bnb_price_units"], 10**s["bnb_decimals"]))
+    pair = sizing = max(pairs)
+    if gas_budget is not None:
+        if not pair <= gas_budget["sizing_units"] <= gas_budget["action_units"]:
+            raise ContractError("Gas sizing budget must lie between the measured pair and the action budget")
+        pair, sizing = gas_budget["action_units"], gas_budget["sizing_units"]
+    gas_value = ceil(Fraction(sizing * s["bnb_price_units"], 10**s["bnb_decimals"]))
     impact = {name: r["median_impact_bps"] for name, r in s["symbols"].items()}
     minimum = max(ceil(Fraction(gas_value * 10000,
         50 - r["spread_bps"] - min(50, 2 * r["median_impact_bps"]) - r["fee_bps"]))
@@ -230,6 +252,8 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
             base.pop(key)
         base["initial_gas_only"] = True
         base["gas_action_budget_units"] = pair
+        if gas_budget is not None:
+            base["gas_sizing_budget_units"] = sizing
     profiles = {}
     for env, window in WINDOWS.items():
         capital = 100_000_000 if env == "REHEARSAL" else 200_000_000
@@ -277,6 +301,15 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
         for key, formula in formulas.items():
             if key in p:
                 p["provenance"][key]["formula"] = formula
+        if gas_budget is not None:
+            source = {"decision_id": gas_budget["decision_id"], "data_hash": gas_budget["data_hash"]}
+            n = "5" if cfg else "4"
+            p["provenance"].update(
+                gas_action_budget_units=dict(source, formula="ceil(max pair gas*5/4*cap gas price)"),
+                gas_sizing_budget_units=dict(source, formula="ceil(max pair gas*5/4*expected gas price)"),
+                exit_gas_reserve_units=dict(source, formula=n + "*gas_action_budget_units"),
+                minimum_trade_units=dict(source, formula="max_symbol ceil(10000*sizing_gas_value/"
+                                                          "(50-spread-min(50,2*median_impact)-fee_bp))"))
         if authority is not None:
             p["execution_authority_seconds"], p["submission_margin_seconds"] = authority["seconds"], authority["margin"]
             for key in AUTHORITY_KEYS:
@@ -304,6 +337,10 @@ def main(argv=None):
     parser.add_argument("--submission-margin-seconds", type=int, help="#27 m")
     parser.add_argument("--authority-decision", help="decision ID behind L and m")
     parser.add_argument("--authority-evidence", help="evidence file whose SHA-256 becomes the provenance data_hash")
+    parser.add_argument("--gas-action-budget-units", type=int, help="LD09-B pair budget at the cap gas price (wei)")
+    parser.add_argument("--gas-sizing-budget-units", type=int, help="LD09-B pair budget at the expected gas price")
+    parser.add_argument("--gas-budget-decision", help="decision ID behind both gas budgets")
+    parser.add_argument("--gas-budget-evidence", help="evidence file whose SHA-256 becomes the gas provenance data_hash")
     args = parser.parse_args(argv)
     flags = (args.execution_authority_seconds, args.submission_margin_seconds, args.authority_decision,
              args.authority_evidence)
@@ -314,6 +351,15 @@ def main(argv=None):
         seconds=args.execution_authority_seconds, margin=args.submission_margin_seconds,
         decision_id=args.authority_decision,
         data_hash=hashlib.sha256(Path(args.authority_evidence).read_bytes()).hexdigest())
+    gas_flags = (args.gas_action_budget_units, args.gas_sizing_budget_units, args.gas_budget_decision,
+                 args.gas_budget_evidence)
+    if any(f is not None for f in gas_flags) and not all(f is not None for f in gas_flags):
+        parser.error("--gas-action-budget-units, --gas-sizing-budget-units, --gas-budget-decision and "
+                     "--gas-budget-evidence must be supplied together")
+    gas_budget = None if gas_flags[0] is None else dict(
+        action_units=args.gas_action_budget_units, sizing_units=args.gas_sizing_budget_units,
+        decision_id=args.gas_budget_decision,
+        data_hash=hashlib.sha256(Path(args.gas_budget_evidence).read_bytes()).hexdigest())
     if bool(args.s1_config) != bool(args.s1_decision):
         parser.error("--s1-config and --s1-decision must be supplied together")
     if args.s1_decision is not None and not args.s1_decision.strip():
@@ -324,7 +370,7 @@ def main(argv=None):
         raise ContractError("S1 configuration must be a JSON object")
     profiles = build_live_profiles(Document.from_dict(json.loads(Path(args.summary).read_text())),
                                    Document.from_dict(json.loads(Path(args.predicates).read_text())),
-                                   initial_gas_only=args.initial_gas_only, authority=authority,
+                                   initial_gas_only=args.initial_gas_only, authority=authority, gas_budget=gas_budget,
                                    **(dict(s1=s1_block, s1_decision=args.s1_decision) if raw_s1 is not None else {}))
     if raw_s1 is not None:
         for env, document in profiles.items():
