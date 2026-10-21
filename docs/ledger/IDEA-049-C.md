@@ -1161,3 +1161,17 @@ there is no outstanding request for permission to select these exact bounds.
 #44/LD10 stays open only for actual deployment-input coverage and environment
 configuration binding. All remaining work is recorded in the live backlog,
 CAP-02 artifact and PR216 receipt; no host/key/activation operation occurred.
+
+## LD10-Q01 — rehearsal caps coverage (2026-10-21; prospective)
+
+Keegan requests steps 2–4 using recommended decisions. CAP-02 numeric caps are retained;
+collect current read-only primary-host holdings/nonce/allowance/config evidence and
+request-bound quotes where available. No host writes, signer-host access, keys, funding,
+allowance transactions or activation. Preserve historical evidence and missing inputs.
+
+Pass criteria before collection: C1 bind timestamps/build/run/wallet and all six token
+scales/holdings plus BNB and reservations; C2 ten current BUY/SELL request-bound quotes
+and exact CAP-02 limits checked by caps reviewer; C3 correct independently rounded
+child gas budgets/reserve and document seeding counts; C4 approve coverage only if all
+required facts exist and checks pass, otherwise record exact blocked supplier/input;
+C5 retain private artifacts privately, public output sanitized, and qualify final source.

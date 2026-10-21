@@ -780,3 +780,16 @@ needed once any of these lands (see the LD15 checklist §1 state):
 - the DRAFT deviation decisions.
 
 The final LD14 values only gate LD24; the interim values are config, not code.
+
+## AB-REL-RC2 — rehearsal scope and dependent qualification (2026-10-21; prospective)
+
+Keegan requests steps 2–4. Explicit selection: measured EQUAL_WEIGHT fallback with
+deterministic controls; defer hosted-model adoption and calls until credits/ledger/
+rights/day-run budgets are verified. LD11 rehearsal scope only, no final adoption.
+
+Pass criteria before checks: R1 integrate LD05 and exact LD10 coverage/scope records,
+selected rehearsal profile and gas-envelope corrections; R2 push canonical source then
+fast-forward mirror and pass all four runtime.yml jobs; R3 download original artifact
+and verify zip/bundle/manifest hashes and source identity, retain original bytes;
+R4 bind profile/policy/scope evidence and enumerate unresolved actual release inputs.
+Missing evidence keeps full LD15 open; CI-qualified candidate is not install approval.

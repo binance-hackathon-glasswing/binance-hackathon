@@ -757,3 +757,19 @@ caused solely by another missing mark. Exact numeric inputs/approval, affected
 implementation/tests, cost/coverage reports and actual host qualification remain.
 This accepts named policy risks, not a positive economic experiment verdict.
 Historical proposals, frozen criteria and results above are unchanged.
+
+## LD05-Q01 — abnormal finalized outcomes, sustained quarantine (2026-10-21; prospective)
+
+Keegan requests steps 2–4 using recommended decisions. PF-09 selects sustained
+quarantine: no automatic continuation from uncertain ownership. Implement explicit
+ABNORMAL observations for finalized bStock transfers violating the exact input/minimum
+output contract. Persist raw signed token deltas and actual gas separately from normal
+fills, immutable incidents and accounting uncertainty; no invented received assets or
+normal realized P&L. Receipt identity/finality/malformed evidence still fail closed.
+
+Pass criteria before execution: Q1 zero/short output, wrong input and unrelated supported
+token movement become abnormal facts with exact deltas/gas; Q2 reducer charges actual
+gas once and records raw outcomes without fabricating normal fill accounting; Q3 all
+signing remains withheld from durable abnormal outbox publication through replay/restart,
+including mandatory sells; Q4 incident/quarantine never automatically clears, normal
+approval/revert/fill behavior remains; Q5 targeted and mirror full suite pass.
