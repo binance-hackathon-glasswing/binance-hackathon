@@ -196,7 +196,16 @@ try:
             for child in value: private_values(child)
     private_values(c)
     private_values(runtime)
-    for text in (host, db):
+    def strings(value):
+        if isinstance(value, str):
+            yield value
+        elif isinstance(value, dict):
+            for key, child in value.items():
+                yield str(key)
+                yield from strings(child)
+        elif isinstance(value, list):
+            for child in value: yield from strings(child)
+    for text in (host, db, *strings(h), *strings(d)):
         if '://' in text or any(f and f.lower() in text.lower() for f in forbidden):
             refuse('SANITIZER')
     if any(type(row[-1]) is not bool for row in d.get('archive', [])):
