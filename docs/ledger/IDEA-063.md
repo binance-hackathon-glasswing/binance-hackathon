@@ -383,3 +383,19 @@ LD09 retains its current-data/#119/#120/#44 prerequisites. PR197 identifies
 the separate review gates. Final audit replay is byte-identical to the retained
 receipt and all eight derived-file checksums pass. Original user checkout and
 Desktop export remain untouched; no deployment or readiness change.
+
+## DC-01-R1 — independent reproduction from the raw daily files (2026-10-21, Keegan session)
+
+Keegan uploaded the DC-01 raw export subset to the root of `main` (`8c393d3`, "Add files via upload"): the four
+daily JSONL files, `SHA256SUMS`, export metadata, run notes and logs. The API-response artifacts aren't included.
+Its `SHA256SUMS` hashes to `b17002b0…ffc01`, the DC-01 manifest, so this is the same capture as Keith's archived
+ZIP on the `capture` branch (ZIP-01), not a new one.
+
+Check, written before running it: canonical `9c1cb84` `cost_summary summarize` with default settings, run on the
+four uploaded daily files, must reproduce the committed `quote-cost-summary.json` and `.report.json` byte for byte.
+
+Result: **PASS.** Both files are identical; the summary is `QuoteCostSummary.v1` `407a08e7…6ecd`. No network was
+used. A secret scan of the uploaded text files (credential, key and authorization patterns, URLs, long tokens) found
+nothing. The only address is the public development wallet, which is already in canonical docs. The upload isn't on
+canonical, and no history was rewritten. Whether to keep those root files on `main` or remove them with a normal
+revert commit is Keegan's choice; the ZIP on `capture` is the archival copy.
