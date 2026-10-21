@@ -532,3 +532,22 @@ point that is inert by default, consumes a one-shot token and is refused in fina
 cover duplicate execution, UNKNOWN fencing, reservation release, restart, recovery time and chain agreement. Nothing is
 built and no host is touched. Keegan decides on the matrix, the hook and the signer-host rows. Until then RG2 stays
 BLOCKED on instrumentation.
+
+## RG2-D02 — decision on the RG2 design (Keegan, 2026-10-21)
+
+Keegan delegated the pending decisions as "use the recommended option" (2026-10-21). For RG2-D01:
+
+1. The fault matrix F1–F10 is accepted as written and frozen for the RG-01 attempt template.
+2. The fault-point hook is accepted as specified, and ships in the release build:
+   - it sits at five sites;
+   - it is inert unless both `LARP_FAULT_POINT` names the site and a one-shot token is consumed;
+   - it uses SIGKILL;
+   - preflight and `check_signing_run` refuse a final-mode run while it is armed.
+3. Keegan approves each signer-host run (F3/F4) individually; the operator (Keegan's team since LD12-M01) runs it.
+
+Still to do:
+- build the hook with its tests and the extended local crash worker (F3/F5/F7a/F7b/F8 via the real
+  `RemoteSigner`/`SignerService` on PostgreSQL), reviewed before any host use;
+- run F1–F10 on the signed development hosts after LD20, under LD21.
+
+RG2 stays BLOCKED until the hook exists.

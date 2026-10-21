@@ -1,5 +1,9 @@
 # RG2 — boundary crash injection: design note (2026-10-21)
 
+**Decided 2026-10-21 (Keegan, IDEA-042 RG2-D02):** all three recommendations below are accepted: the F1–F10 matrix
+is frozen, the fault-point hook is to be built as specified, and Keegan approves each signer-host F3/F4 run, which
+the operator (Keegan's team) carries out. The hook isn't built yet.
+
 Status: **DESIGN for Keegan's review. No code, config or host change.** RG2 in
 [REHEARSAL_GATES_20261019.md](REHEARSAL_GATES_20261019.md) needs a frozen fault matrix at the authorized,
 signed-durable, send/unknown, receipt/settlement and round/ACK boundaries, using approved instrumentation. It says
