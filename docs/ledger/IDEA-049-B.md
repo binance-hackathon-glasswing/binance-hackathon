@@ -788,3 +788,19 @@ models, signer assembly/mode and receipt paths). PostgreSQL service/replay accep
 runs on mirror CI. The first mirror run 39610340438 was cancelled after identifying a
 nested locked read in the new regression test; 122d04b moves that read outside the
 transaction. This is a test repair, not a claimed full-suite PASS.
+
+### LD05-Q01 full-run findings / correction (2026-10-21)
+
+Run39611819368 at122d04b completed with 11 failures,2408 passes,7 skips,3786 subtests.
+The signer-role cases expose missing SELECT privileges on execution_observations for
+its new independent fence. a208c10 grants only(run_id,observation) SELECT; full-table
+SELECT and all writes remain refused. Real-role/registry/policy tests now53 passed,
+241 subtests on disposable PostgreSQL14.24. The two new abnormal fence/service replay
+cases and the original service/replay test pass locally (3/3). The broader local DB
+run before the grant had536 passes/10 related failures/1178 subtests, consistent with
+that permission defect. No production role or host was changed.
+
+Correction to the earlier suspected nested-lock explanation: local reproduction of
+both new tests completes normally. The longer full run disclosed the role permission
+defect above; it was not evidence of a production deadlock. The nested test read was
+still simplified in122d04b. Do not describe either failed/cancelled run as PASS.

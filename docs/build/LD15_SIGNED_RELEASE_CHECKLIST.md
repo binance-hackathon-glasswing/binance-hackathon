@@ -117,3 +117,24 @@ qualifies nothing: §1 inputs are still open.
 - **Not the release.** §1 still lacks Keith's #120/DEV-24 window and rebuilt profile, LD05, the LD11 scope, LD10
   coverage, PS-01 if adopted, and the DRAFT deviation decisions. Any of these that changes a tracked file needs a new
   candidate and run.
+
+## RC2 inputs — scoped rehearsal (2026-10-21; qualification pending)
+
+[Exact input/coverage packet](evidence/rehearsal-qualified-inputs-20261021/README.md).
+LD05-Q01 implements raw abnormal receipt/gas accounting and sustained quarantine;
+LD11-RH01 selects the user-confirmed deterministic EQUAL_WEIGHT rehearsal, model
+claims SHADOW and no hosted calls. Gate A scope checks restrict that exception to dev
+REHEARSAL. LD10-Q01 supplies fresh holdings/nonce/zero allowances and all15 request-bound
+minimum/max BUY and max-position SELL quotes; real numeric reviewer50/50 COVERED.
+The profile is bad7f160… / StrategyProfile43f956af…, signer policy3241abd3… and router
+05759e90… . Its complete pair gas envelope is384000000000000wei, four exits1536000000000000wei;
+conservative N=15 seed target0.007296BNB, funding still separate.
+
+The numeric tool retains OWNER_REVIEW_REQUIRED; this is delegated technical coverage,
+not a forged Keith/Isaac attestation or an installed configuration. Their exact#120 /
+LD16 owner bindings plus actual final release/run/DB/RPC/CA configuration remain.
+#119 actual fee confirmation follows LD19/20; optional extra PS-01 RPC eth_call is
+not adopted for this scope (merged exact-calldata prepare gas simulation retained).
+Final S1/model/deviation/final-wallet scope remains before LD24. No signing is enabled.
+Canonical CI/original artifact identities will be appended as AB-REL-RC2 after all jobs
+pass. Release-code PASS on any previous commit does not qualify this candidate.
