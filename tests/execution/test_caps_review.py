@@ -177,6 +177,52 @@ class CapsReview(unittest.TestCase):
         with self.assertRaisesRegex(Blocked, 'execution cash cap'):
             venue.quote(i, 0)
 
+    def set_sell(self, symbol, amount, proceeds, name=None):
+        name = name or symbol + 'SELL'
+        index = next((i for i, r in enumerate(self.inputs['quote_artifacts']) if r['path'] == name + '.json'), None)
+        if index is None:
+            self.add_quote(name, TOKENS[symbol], USDT, amount)
+            index = len(self.inputs['quote_artifacts']) - 1
+        record = json.loads((self.root / self.inputs['quote_artifacts'][index]['path']).read_bytes())
+        rr = record['response']['data']['routerResult']
+        record['params']['amount'] = rr['fromTokenAmount'] = str(amount)
+        rr['toTokenAmount'] = str(proceeds)
+        ref = self.inputs['quote_artifacts'][index] = self.pin(name + '.json', record)
+        return ref
+
+    def test_p02_full_sell_is_sizing_only_and_needs_two_covered_children(self):
+        # LD10-P03 D1/D5: the retained P02 proceeds split into two balanced children.
+        self.profile['exit_gas_reserve_units'] = 8 * 8 * 10**12
+        self.save_inputs()
+        whole, proceeds = 10**16, 20_106_983_099_120_719_276
+        full = self.set_sell('NVDAB', whole, proceeds)
+        result = self.report()
+        self.assertEqual(result['numeric_status'], 'BLOCKED')
+        self.assertIn('FULL_EXIT_CHILD_QUOTE_MISSING_NVDAB', result['blockers'])
+        self.assertNotIn('QUOTE_CASH_CAP_' + full['sha256'], result['blockers'])
+        half = whole // 2
+        self.set_sell('NVDAB', half, proceeds // 2, 'NVDABSELL1')
+        result = self.report()
+        self.assertEqual(result['numeric_status'], 'COVERED')
+        checks = {c['check']: c for c in result['checks']}
+        self.assertEqual(checks['FULL_EXIT_CHILDREN_NVDAB']['required'], '2')
+        self.assertEqual(checks['FULL_EXIT_CHILDREN_NVDAB']['cap'], '2')
+        self.assertEqual(checks['EXIT_SIZING_ONLY_' + full['sha256']]['covered'], True)
+        self.assertEqual(checks['FULL_BOOK_EXIT_RESERVE']['required'], str(8 * 8 * 10**12))
+        # One covered child cannot stand in for the other or a cap-ratio residual.
+        child = self.set_sell('NVDAB', half, self.profile['per_trade_cap_units'] * 10**12 + 1, 'NVDABSELL1')
+        self.assertIn('QUOTE_CASH_CAP_' + child['sha256'], self.report()['blockers'])
+        self.set_sell('NVDAB', half + 1, proceeds // 2, 'NVDABSELL1')
+        self.assertIn('FULL_EXIT_CHILD_QUOTE_MISSING_NVDAB', self.report()['blockers'])
+
+    def test_full_book_reserve_counts_every_exit_child(self):
+        self.profile['exit_gas_reserve_units'] = 8 * 8 * 10**12 - 1
+        self.save_inputs()
+        result = self.report()
+        self.assertIn('FULL_BOOK_EXIT_RESERVE', result['blockers'])
+        check = next(c for c in result['checks'] if c['check'] == 'FULL_BOOK_EXIT_RESERVE')
+        self.assertEqual((check['required'], check['cap']), (str(8 * 8 * 10**12), str(8 * 8 * 10**12 - 1)))
+
     def test_s1_full_position_cap_includes_largest_frozen_weight_and_reserve(self):
         from tests.strategy.test_s1_core import block
         costs = self.profile['quote_cost_summary']
