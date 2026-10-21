@@ -33,8 +33,7 @@ def collect(packet, output, build_id):
     # Proposed numeric execution scope only; actual DB/RPC/CA/run/release configuration
     # is a separate LD16/17 binding. This file is never installed by this tool.
     def pin(name, value):
-        raw = (json.dumps(value, sort_keys=True, indent=2).encode() if name == 'signing-policy.json'
-               else json.dumps(value, sort_keys=True, separators=(',', ':')).encode()) + b'\n'
+        raw = json.dumps(value, sort_keys=True, separators=(',', ':')).encode() + b'\n'
         with (output / name).open('xb') as stream:
             stream.write(raw)
         (output / name).chmod(0o600)
