@@ -366,3 +366,24 @@ LD09-G1 revision 2 inputs (IDEA-070 LD02d maximum, pair gas 1,000,057, 25 % head
   800,045,600,000,000 wei. Their hashes are recorded, and they are evidence candidates only.
 - B5. Tests cover B1–B3: refusals, unchanged behaviour without the key, and the reserve still using the action budget.
 - B6. The full suite passes.
+
+### LD09-B results — implementation `f4fde3a` (2026-10-21)
+
+- **B1 PASS.** `validate_live` accepts `gas_sizing_budget_units` only on initial-only profiles, sourced, with
+  summary pair ≤ sizing ≤ action. Top-up profiles, out-of-range values, zero and unsourced values are refused.
+- **B2 PASS.** The minimum trade uses the sizing budget. The reserve check still uses the action budget
+  (4 × action − 1 is refused). Removing the sizing key restores the coupled check, which then refuses the 20-USDT
+  rehearsal minimum. The committed DC-01 and LD04-P candidates reproduce byte for byte. `InitialGasCheck` and the
+  planner are unchanged: they read the action budget and the reserve.
+- **B3 PASS.** `build_live_profiles(gas_budget=...)` and the four CLI flags. They need initial-only scope and must
+  all be supplied together; provenance carries the decision and the evidence hash.
+- **B4 PASS.** [Candidates](../build/evidence/ld09b-gas-budget-profiles-20261021/README.md): rehearsal
+  `54eb6fba…6f2ea4` and final `07e8e8c9…a542` (StrategyProfile.v1). Minimum trade 18,637,420 (18.64 USDT), reserve
+  800,045,600,000,000 wei, action 200,011,400,000,000 wei, sizing 80,004,560,000,000 wei. They reproduce byte for
+  byte in tests. These are evidence candidates only.
+- **B5 PASS.** `tests/strategy/test_gas_budget_b.py`: 11 tests.
+- **B6 PASS.** Full suite on Linux, Python 3.12, local PostgreSQL 16: 2304 passed, 11 skipped, 3748 subtests passed.
+
+Still open: Keith's #120 review (the expected price of 0.064 gwei, a refreshed MSFTB spread, the S1 or fallback
+profile and calendar), the #119 fee evidence, Isaac's #44 caps (including the 1.6 % `max_gas` margin), seeding N
+and selected cleanup gas.
