@@ -399,3 +399,59 @@ used. A secret scan of the uploaded text files (credential, key and authorizatio
 nothing. The only address is the public development wallet, which is already in canonical docs. The upload isn't on
 canonical, and no history was rewritten. Whether to keep those root files on `main` or remove them with a normal
 revert commit is Keegan's choice; the ZIP on `capture` is the archival copy.
+
+## RV120-01 — #120 owners' review of the DC-01 quote-cost summary (2026-10-21; prospective)
+
+This review was prepared in Keegan's session under his delegation ("follow the recommended option"), from the
+DC-01 capture contents: the four daily JSONL files, manifest `b17002b0…ffc01`, the same capture as ZIP-01 and
+DC-01-R1. **Isaac and Keith remain the #120 owners and confirm or amend.** Criteria, written before the analysis
+(C1–C7):
+
+- C1. Coverage from the raw files: samples per token and regime, UTC days, weekend days, failures, fallback gas
+  estimates and `openState` counts per regime. These must match the committed report.
+- C2. Quote size against the per-trade caps: the 40 USDT quote compared with the final (40.2 USDT) and rehearsal
+  (20.1 USDT) caps, with LD02d's size sweep as the evidence for using the 40 USDT figures at other sizes.
+- C3. Distributions behind each rounded summary value, per token and regime: round trip, spread residual, impact
+  and 15 s requote drift (p10/median/p90/max). Each worse-of-regime value must be explained, MSFTB's 17 bp included.
+- C4. The 50 bp entry-cost cap checked per token with the profile formula
+  (`spread + min(50, 2 × impact) + fee + gas/size`). This uses the LD09-B sizing gas (0.064 gwei) and the cap gas
+  (0.16 gwei), at 18.64, 20 and 40 USDT, plus a tail check with the off-session p90 round trip.
+- C5. Slippage: the 8 bp setting compared with the drift distribution, and the expected revert rate stated.
+- C6. Fee (#119) and gas: state what the capture can and can't show; the gas figures come from LD02b–d via LD09-B.
+- C7. Recommendations as proposals for the owners: profile choice for the rehearsal, rehearsal window dates and
+  seeding N, each with its derivation. Nothing is pinned, released or approved by this record.
+
+### RV120-01 results (2026-10-21)
+
+Review: [QUOTE_COST_REVIEW_120_20261021.md](../build/QUOTE_COST_REVIEW_120_20261021.md); analysis and output in
+`docs/build/evidence/rv120-quote-review-20261021/`. Disclosure: an exploratory run of the same distribution
+script came before C1–C7 were written. It showed the MSFTB regime split, so C3 was written knowing that one fact.
+
+- **C1 PASS.** The raw files match the committed report: 1,924 samples and 385 BNB quotes; 42–43 US-session and 342
+  off-session samples per token; 4 UTC days including both weekend days; 2 failures; 3,848 FALLBACK gas estimates;
+  `openState=true` on every sample.
+- **C2 PASS.** Every sample is 40 USDT, the final full position (cap 40.2 USDT). LD02d shows no size dependence from
+  10 to 100 USDT, so the figures apply to the 20 USDT rehearsal size.
+- **C3 PASS.** Every worse-of-regime spread is the off-session median. **MSFTB's 17 bp is its off-session median
+  (16.99)**, against 6.99 in US hours, which is where LD02d's 6.7 bp was measured. The LD09-G1 "refresh MSFTB to
+  about 7 bp" suggestion is withdrawn. MSFTB's tails are fat: US p90 32.7 bp, maximum 50.3 bp. Impact is ≈ 0 bp at
+  40 USDT.
+- **C4 PASS at the sizing price.**
+  - At 0.064 gwei: 33–48 bp at 20 USDT and 18–33 bp at 40 USDT. MSFTB is exactly 50.0 bp at the 18.64 USDT minimum,
+    by construction.
+  - Pair gas is about 29 bp of a 20 USDT trade. This corrects an earlier session estimate of 2.9 bp.
+  - At the 0.16 gwei cap, 20 USDT entries cost 76–91 bp and the gate refuses them, which is the intended outcome.
+- **C5.** The 8 bp slippage is exceeded by 0–9.5 % of 15 s requotes per token and regime (worst: MSFTB US 9.5 %,
+  SKHYB US 9.3 %), as the p90 design implies. Recommendation: keep it, and measure the revert rate at LD19/LD20.
+- **C6.** Fee: the netting assumption remains UNVERIFIED (#119, LD19/LD20). Gas: FALLBACK is not used; LD09-B
+  supplies the budgets.
+- **C7 proposals for Keith and Isaac:**
+  1. accept DC-01 as the input;
+  2. use the measured EQUAL_WEIGHT fallback for the rehearsal unless S1 weights are frozen (they need price series,
+     which the capture doesn't have);
+  3. set a new rehearsal window: trade from 2026-10-23T00:00Z, new risk until 2026-10-25T00:00Z, flatten from
+     2026-10-26T00:00Z, signing end 2026-10-26T14:45Z;
+  4. seeding N ≈ 15 for the rehearsal (≈ 0.0046 BNB; the dev wallet holds about 0.0027) and N ≈ 30 for the final
+     run (≈ 0.0083 BNB).
+
+**#120 is not closed by this record:** Isaac and Keith confirm or amend.
