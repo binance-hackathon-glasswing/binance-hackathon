@@ -20,7 +20,11 @@ def committed_inputs():
             Document.from_dict(json.loads((ROOT / 'config/intelligence/red_flags.v1.json').read_bytes())))
 
 
-def test_q1_without_authority_the_committed_candidates_reproduce_byte_for_byte():
+def test_q1_without_authority_the_committed_candidates_reproduce_byte_for_byte(monkeypatch):
+    # Historical artifacts retain the window under which they were frozen.
+    from larp.strategy.profiles import WINDOWS
+    monkeypatch.setitem(WINDOWS, "REHEARSAL", ("2026-10-21T00:00:00Z", "2026-10-22T00:00:00Z",
+                                             "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"))
     for env, doc in build_live_profiles(*committed_inputs()).items():
         assert doc.payload + b'\n' == (CAPTURE / (env.lower() + '-live.json')).read_bytes()
 

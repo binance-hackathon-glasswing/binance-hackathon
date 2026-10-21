@@ -36,7 +36,11 @@ def candidates(**options):
                                                                   authority=AUTHORITY, **options).items()}
 
 
-def test_b2_without_a_sizing_budget_the_ld04_candidates_reproduce_byte_for_byte():
+def test_b2_without_a_sizing_budget_the_ld04_candidates_reproduce_byte_for_byte(monkeypatch):
+    # Historical artifacts retain the window under which they were frozen.
+    from larp.strategy.profiles import WINDOWS
+    monkeypatch.setitem(WINDOWS, "REHEARSAL", ("2026-10-21T00:00:00Z", "2026-10-22T00:00:00Z",
+                                             "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"))
     for env, doc in build_live_profiles(*inputs(), initial_gas_only=True, authority=AUTHORITY).items():
         assert doc.payload + b'\n' == (LD04 / (env.lower() + '-live.json')).read_bytes()
 
@@ -107,8 +111,14 @@ def test_b3_cli_flags_together(tmp_path, capsys):
     assert p['provenance']['gas_sizing_budget_units']['data_hash'] == hashlib.sha256(evidence.read_bytes()).hexdigest()
 
 
-def test_b4_committed_ld09b_candidates_reproduce_byte_for_byte():
-    folder = ROOT / 'docs/build/evidence/ld09b-gas-budget-profiles-20261021'
+@pytest.mark.parametrize('candidate_dir', ['ld09b-gas-budget-profiles-20261021', 'rv120-profiles-20261021'])
+def test_b4_committed_ld09b_candidates_reproduce_byte_for_byte(monkeypatch, candidate_dir):
+    from larp.strategy.profiles import WINDOWS
+    if candidate_dir.startswith('ld09b-'):
+        # Historical artifacts retain the window under which they were frozen.
+        monkeypatch.setitem(WINDOWS, "REHEARSAL", ("2026-10-21T00:00:00Z", "2026-10-22T00:00:00Z",
+                                                 "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"))
+    folder = ROOT / 'docs/build/evidence' / candidate_dir
     evidence = ROOT / 'docs/build/evidence/ld02d-size-sell-20261021.json'
     budget = dict(BUDGET, decision_id='IDEA-061 LD09-B (Keegan, 2026-10-21)',
                   data_hash=hashlib.sha256(evidence.read_bytes()).hexdigest())
