@@ -320,3 +320,20 @@ Local verification, source `7f004f7`, Linux/Python 3.13.16/PostgreSQL 16.15:
 new tests account for the difference. Hosted CI still runs zero steps because of
 the organisation's Actions billing block (PR133); this is local evidence, not
 hosted CI or release acceptance.
+
+## LD09-G1 — measured gas budget proposal (2026-10-21, proposal only)
+
+[LD09_GAS_BUDGET_PROPOSAL_20261021.md](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md) computes the initial-only gas
+values from simulated gas (IDEA-070 LD02b/F1/LD02c): pair gas 803,768 (approve 55,243 + BUY swap 748,525), 25 %
+headroom. At the draft cap price (0.16 gwei) G = 160,753,600,000,000 wei and the EW/S1 exit reserves are
+6.43e14 / 8.04e14 wei, but the profile's shared use of G for minimum-trade economics raises the minimum trade to
+37.45 USDT (27.00 without MSFTB), which refuses the 100-USDT rehearsal profile. Options A (one lower price, about
+0.08 gwei), B (decouple reserve price from sizing price; recommended) and C (exclude MSFTB, currently unexecutable)
+are laid out with a seeding table. No profile, cap or config changed; Keith, Isaac and Keegan decide.
+
+LD09-G1 revision 2 (2026-10-21, after IDEA-070 LD02d): the maximum swap gas is now 944,814 (TSLAB BUY; SELL max
+930,548), so pair gas is 1,000,057. At 0.16 gwei G = 200,011,400,000,000 wei, the reserves are 8.00e14 / 1.00e15 wei,
+and the minimum trade is 46.60 USDT (33.60 without MSFTB). That refuses both the rehearsal (20 USDT) and the final
+(40 USDT) positions. Option A now needs a budget price of at most about 0.064 gwei. Option B (decouple) stays
+recommended. The 1.25× headroom swap limit (1,181,018) is 1.6 % under the draft `max_gas`; this is flagged for
+Isaac (LD10).
