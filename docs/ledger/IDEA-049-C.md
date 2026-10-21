@@ -1324,3 +1324,19 @@ Before verification:
    preserve historical bytes, update live backlog/current status and PR230's
    description, then mark the resulting concrete review ready. No merge or
    signer installation is authorized by this review.
+
+### LD10-P02-R1 — prospective cash-cap consistency regression
+
+Static comparison identifies Q01's full-size NVDAB SELL return
+20,106,983,099,120,719,276 rawUSDT above the selected execution cash cap
+20,100,000,000,000,000,000. The independent signer input cap can still pass.
+Before changing code: add tests that the real numeric reviewer refuses a SELL
+whose quoted USDT proceeds exceed the same profile cap already enforced by
+LiveVenue, including exact-cap/plus-one cases; reproduce LiveVenue's refusal
+using the public numeric row with synthetic calldata/ports explicitly labelled
+as such. The original private calldata/observations are not available locally
+and will not be fabricated. Run tests RED on the pushed base, then add only the
+missing numeric-check parity and run GREEN plus focused existing coverage tests.
+Do not loosen runtime limits, change the selected profile or increase reserves
+without a reviewed complete exit-child plan. If the supplied packet remains
+incompatible, record its exact blocker and keep full LD10 acceptance open.
