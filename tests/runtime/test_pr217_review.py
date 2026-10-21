@@ -21,7 +21,7 @@ def guarded(host, db):
     source = (FOLDER / 'ops-collect.sh').read_text().split("<<'PY'\n")[3].rsplit('\nPY', 1)[0]
     configs = {'operations.json': dict(host['operations'], database_host='private-db.example'),
                'runtime.json': dict(host['runtime'], wallet_address='0x' + 'ab' * 20,
-                                    driver=dict(balance_rpc_providers=[dict(url='https://private-rpc.example/token')]))}
+                                    driver=dict(execution=host['runtime']['execution'], balance_rpc_providers=[dict(url='https://private-rpc.example/token')]))}
     def read_bytes(path):
         return json.dumps(configs[path.name]).encode()
     with patch('pathlib.Path.read_bytes', read_bytes), patch.dict('os.environ',
@@ -81,10 +81,22 @@ def test_delivery_reports_attempt_clock_and_unknown_actual_ack_latency():
     out = analyse.summary(h, d)['delivery']
     assert out['actual_dispatch_to_ack_s'] == 'NOT_MEASURED'
     assert 'upper bound' not in out['note'].lower()
-    assert out['dispatch_to_final_attempt_clock_s']['max'] == 5.387
+    assert out['dispatch_to_latest_attempt_clock_s']['max'] == 5.387
 
 
 def test_distinct_events_with_identical_timestamps_do_not_merge():
     rows = [[1000, 0, 1, 32000, 'ACK', '200', True, 1],
             [1000, 0, 1, 34000, 'ACK', '200', True, 2]]
     assert analyse.delivery(rows, 30000, 300000)['logs'] == 2
+
+
+def test_absent_signer_is_distinct_from_a_failed_host_read():
+    first = (FOLDER / 'ops-collect.sh').read_text().split("<<'PY'\n")[1].split('\nPY', 1)[0]
+    node = next(n for n in ast.parse(first).body if isinstance(n, ast.FunctionDef) and n.name == 'run')
+    import subprocess
+    ns = dict(subprocess=subprocess)
+    exec(compile(ast.Module(body=[node], type_ignores=[]), 'host_read', 'exec'), ns)
+    with patch('subprocess.run', return_value=SimpleNamespace(returncode=1,
+               stdout='LoadState=not-found\nActiveState=inactive\n', stderr='')):
+        assert 'not-found' in ns['run']('systemctl', 'show', 'larp-signer')
+        with pytest.raises(ValueError): ns['run']('systemctl', 'show', 'larp-runtime')
