@@ -15,10 +15,15 @@ from .schema import (AUTHORITY_KEYS, SYMBOLS, ceil, execution_authority, fractio
 from .predicates import predicate_records
 
 WINDOWS = {
-    "REHEARSAL": ("2026-10-21T00:00:00Z", "2026-10-22T00:00:00Z",
-                  "2026-10-23T00:00:00Z", "2026-10-26T14:45:00Z"),
+    "REHEARSAL": ("2026-10-23T00:00:00Z", "2026-10-25T00:00:00Z",
+                  "2026-10-26T00:00:00Z", "2026-10-26T14:45:00Z"),
     "FINAL": ("2026-10-29T00:00:00Z", "2026-11-09T00:00:00Z",
               "2026-11-10T00:00:00Z", "2026-11-11T14:45:00Z"),
+}
+
+
+WINDOW_DECISIONS = {
+    WINDOWS["REHEARSAL"]: "IDEA-063 RV120-02 (Keegan delegation, 2026-10-21)",
 }
 
 
@@ -316,6 +321,10 @@ def build_live_profiles(summary: Document, registry: Document, *, s1=None,
                 p["provenance"][key] = {"decision_id": authority["decision_id"], "data_hash": authority["data_hash"]}
             if execution_authority(p) != (authority["seconds"], authority["margin"]):
                 raise ContractError("Execution authority was not adopted as given")
+        if window in WINDOW_DECISIONS:
+            for key in ("trade_after", "new_risk_end", "flatten_start", "signing_end"):
+                p["provenance"][key] = {"decision_id": WINDOW_DECISIONS[window],
+                                        "formula": "RV120-01 recommended rehearsal window; RV120-02 rebuild"}
         validate_live(p)
         profiles[env] = Document.from_dict(p)
     return profiles

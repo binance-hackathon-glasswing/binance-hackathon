@@ -455,3 +455,31 @@ script came before C1–C7 were written. It showed the MSFTB regime split, so C3
      run (≈ 0.0083 BNB).
 
 **#120 is not closed by this record:** Isaac and Keith confirm or amend.
+
+
+## RV120-02 — delegated rehearsal window and profile rebuild (2026-10-21)
+
+Authority: Keegan's session requests the remaining mechanical part of step 1 and recommended
+choices for decisions; Keith retains the profile confirmation. Issue #120 had only RV120-01
+when checked; this record does not impersonate Keith or Isaac or close their sign-off.
+
+Selected for this rebuild: DC-01 summary, measured EQUAL_WEIGHT rehearsal fallback, MSFTB
+spread 17 bp, impact 2 bp, slippage 8 bp, quote age 30 s, fee 0 conditional on #119,
+LD09-B action/sizing budgets unchanged. Recommended seeding plans: N=15 rehearsal and
+N=30 final (approximately 0.0046/0.0083 BNB); funding remains a separate owner action.
+Rehearsal UTC window: trade_after October 23 00:00; new_risk_end October 25 00:00;
+flatten_start October 26 00:00; signing_end October 26 14:45. Final dates remain unchanged.
+This selects candidate inputs only: LD10 signed-child/holdings envelope acceptance remains
+open, including independently rounded pair gas exceeding the historical nominal budget.
+
+Prospective pass criteria (before running the changed builder or tests):
+- P1: generate both profiles offline from the exact LD09-B command into a new evidence directory;
+  repeated builds must match byte for byte and validate as StrategyProfile.v1.
+- P2: rehearsal has the four UTC dates above and RV120-02 window provenance; all other values
+  match LD09-B. Final candidate is byte-identical to LD09-B. Retain historical artifacts.
+- P3: strategy tests pass, including historical artifact reproduction under historical windows;
+  mirror runtime.yml passes infrastructure aws/bootstrap, runtime and host-bundle.
+- P4: record exact file and document hashes; narrow GAP-50/GAP-69/KMP-QUOTE01 to remaining
+  acceptance/measurement work without claiming fee, caps, signer, deployment or trade readiness.
+
+Results: pending execution after this pre-registration and implementation are committed and pushed.
