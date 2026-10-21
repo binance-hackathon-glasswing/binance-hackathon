@@ -3,6 +3,7 @@
 from datetime import datetime,timezone
 import json
 import secrets
+import time
 import urllib.error
 import urllib.request
 
@@ -101,7 +102,7 @@ class HttpReceiver:
 
 
 class DeliveryWorker:
-    def __init__(self,store,receiver,*,retry_ms=30000,max_backoff_ms=300000):
+    def __init__(self,store,receiver,*,retry_ms=30000,max_backoff_ms=300000,observe=None):
         # Transient failures are retried until acknowledged, never exhausted: a chunk given up on stays overdue and
         # latches the guard's DELIVERY_DEADLINE HALT for the rest of the run (IDEA-047 R1). The kit SDK likewise
         # re-sends its spool without an attempt cap (F-101).
@@ -109,6 +110,9 @@ class DeliveryWorker:
             raise ValueError('Invalid delivery budget')
         self.store,self.receiver=store,receiver
         self.retry_ms,self.max_backoff_ms=retry_ms,max_backoff_ms
+        # LD14-I01: optional per-attempt timing (event, chunk, attempt, code, outcome, duration). It never sees the
+        # payload or secret, and a failing observer cannot change delivery.
+        self.observe=observe
 
     def backoff_ms(self,attempts):
         """Delay after the `attempts`-th send: retry_ms doubling per attempt, capped at max_backoff_ms."""
@@ -130,11 +134,13 @@ class DeliveryWorker:
             attempts+=1
             db.execute('UPDATE audit_chunks SET attempts=%s,next_ms=%s WHERE run_id=%s AND event_id=%s AND chunk_index=%s',
                        (attempts,now_ms+self.backoff_ms(attempts),run_id,event_id,index))
+        started=time.monotonic()
         try:
             response=self.receiver.deliver(doc(dict(event_id=event_id,chunk_index=index,body=bytes(raw).decode('utf-8'))))
             result=response.read()
         except Exception:
             result=dict(status_code=0,body={})
+        duration_ms=round((time.monotonic()-started)*1000)
         code,body=result.get('status_code',0),result.get('body',{})
         if type(body) is not dict:
             body={}
@@ -158,6 +164,12 @@ class DeliveryWorker:
                        "WHERE run_id=%s AND event_id=%s AND chunk_index=%s AND status<>'ACK' "
                        "AND (attempts=%s OR %s)",
                        (status,str(code),doc(body).payload if ack else None,run_id,event_id,index,attempts,ack))
+        if self.observe is not None:
+            try:
+                self.observe(dict(event_id=event_id,chunk_index=index,attempt=attempts,code=code,status=status,
+                                  duration_ms=duration_ms,attempt_clock_ms=now_ms,wall_ms=time.time_ns()//1_000_000))
+            except Exception:
+                pass
         return True
 
     def status(self,run_id):
