@@ -823,3 +823,28 @@ Verification at `2b60387`, including merged PR199 (`db506bd`) and PR200
 Remaining owners: Isaac chooses B/watchdog/memory after operator measurements
 (LD12/LD14); operator supplies exact-host recovery evidence; Keegan reviews the
 qualified release (LD15). The bound remains unset and disabled by default.
+
+## LD14-I01 — interim rehearsal operations values and measurement plan (2026-10-21; prospective)
+
+Keegan asked for LD14 to be completed under "follow the recommended option" (2026-10-21). The recorded policy
+(PF-08, C05-RV01) holds that exact watchdog, memory and delivery-age values are MISSING_MEASUREMENT until the
+operator measures them and Isaac decides; the 600 s, 2 h and sum-of-`MemoryMax` examples are not adopted. Real ACK
+latency and per-unit RSS are unmeasured (LD12-M01-RV01). The runtime still requires `cycle_timeout_seconds` for any
+dev or live run, so the rehearsal can't be installed without one.
+
+Scope: **interim values for the signed development rehearsal only**, each derived from a measured or declared
+bound, plus the measurement plan that replaces them. Final LD14 values (LD24) remain Isaac's decision after
+measurement. Criteria, written before the derivation (I1–I5):
+
+- I1. Each value is a formula over named measured or declared inputs, with the inputs cited. None is copied from the
+  historical examples.
+- I2. Watchdog: `cycle_timeout_seconds` must exceed the worst legitimate cycle, which is the DEV-22 assessment bound
+  plus the measured non-assessment part of a cycle, with a stated margin.
+- I3. Delivery age: `delivery_age_halt_seconds` must cover the normal positive-ACK path (uploader interval, request
+  time and one transient retry) plus one complete-cycle allowance, and stay far below the hard daily upload
+  deadline.
+- I4. Memory: no change to `MemoryMax` without measurement. Keep the existing unit limits for the rehearsal, citing
+  the 43.6 h trial (no OOM or watchdog lines with these limits), and state the capacity risk (the sum of unit limits
+  exceeds host RAM; no swap).
+- I5. The measurement plan names read-only collectors, when they run during the rehearsal (LD19/LD21), the decision
+  rule Isaac applies (PF-08), and what would change each value. No config or host change is made by this record.
