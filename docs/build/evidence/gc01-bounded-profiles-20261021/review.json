@@ -1,0 +1,58 @@
+{
+  "cleanup_action_wei": 1536000000000000,
+  "cleanup_children": 8,
+  "cleanup_enabled": false,
+  "cleanup_policy_approved": false,
+  "decision_id": "IDEA-061 LD08-GC01",
+  "ew_exit_reserve_wei": 1536000000000000,
+  "execution_ceilings": {
+    "max_gas": 1200000,
+    "max_gas_price_wei": 160000000,
+    "max_transaction_fee_wei": 192000000000000
+  },
+  "normal_action_wei": 384000000000000,
+  "normal_children": 2,
+  "policy_evidence_sha256": "049d98337019d6579162504067fdf26e33a65e57bc7710add98797b6bd8e18ef",
+  "profiles": {
+    "FINAL": {
+      "baseline": "EQUAL_WEIGHT",
+      "document_sha256": "a796e49ab38860aa91846a4d207ded190d2e25208442989e9eef8eaea8ba2e18",
+      "exit_gas_reserve_units": 1536000000000000,
+      "file_sha256": "7a0176871c8f19316b45988d2764b62d8f0b1c3a08487a0ae0b2d5362811bf26",
+      "gas_action_budget_units": 384000000000000,
+      "gas_sizing_budget_units": 80004560000000,
+      "minimum_trade_units": 18637420
+    },
+    "REHEARSAL": {
+      "baseline": "EQUAL_WEIGHT",
+      "document_sha256": "6b5b41480d5c5fb099b09394ad2fdff36882036184649d4042d911e36bc763ad",
+      "exit_gas_reserve_units": 1536000000000000,
+      "file_sha256": "c2a6936739a336c1df55e7e3579a6e9b922df4dd085b29f70ff3c1b9ea912f0e",
+      "gas_action_budget_units": 384000000000000,
+      "gas_sizing_budget_units": 80004560000000,
+      "minimum_trade_units": 18637420
+    }
+  },
+  "ready_to_install": false,
+  "remaining": [
+    "Keith selected-profile/whole-run count and fee acceptance",
+    "current execution gas_budget <= funded action budget; actual per-action reservations",
+    "fresh full holdings and one-exit-per-position cap coverage",
+    "cleanup disabled unless separately approved and covered",
+    "final PF-04 calendar; actual qualified release/config/alarm/host acceptance"
+  ],
+  "rounded_observed_20_percent_pair_wei": 192011040000000,
+  "rounded_observed_25_percent_pair_wei": 200011520000000,
+  "s1_five_exit_bound_wei": 1920000000000000,
+  "schema": "InitialGasBoundedCandidateReview.v1",
+  "seeding_count_definition": "N excludes terminal exits; margin applies to N; exit reserve added once",
+  "seeding_sensitivity_not_approved": {
+    "0": 1536000000000000,
+    "10": 6336000000000000,
+    "15": 8736000000000000,
+    "30": 15936000000000000,
+    "5": 3936000000000000
+  },
+  "signing_enabled": false,
+  "status": "OFFLINE_BOUND_CANDIDATES_NOT_DEPLOYMENT_ACCEPTANCE"
+}

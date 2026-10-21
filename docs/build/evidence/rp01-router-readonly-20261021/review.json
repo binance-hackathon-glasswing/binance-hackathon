@@ -1,0 +1,216 @@
+{
+  "buy_size_usdt": 20,
+  "canonical_replay": {
+    "policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+    "quotes": 10,
+    "rows": [
+      {
+        "artifact_sha256": "6aa7511c45de53c69949de74c2817febb49ca1128bf7f456ca9a073dcc922f3c",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "6ce8bd9cba0775bf8f7814f898149d068d729c65d69d162c80250bb009e15a72",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "6f902c68cdd898725cf003813e284ee73b2820fea9a668a29b9ad93350d47579",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "81e7746f5145abceb4d2f65ed8959bca9cb571151a62133ef1686961c5580d50",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "a006348addd61aaffe7c6bee2f2da89e78ad37c7d528990036fe0c03cfb9d834",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "c4066c4e55ea8b12b93960ca084924e8ba2622e6e1bdc73efd4eecef741bf0ed",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "e7907c3d711dcacb962c2900db21af28a935393b046d47e48085cb4aaee97bc0",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "eacd9488ec8c7ca0b2c9b264e8c044b0fe4e511f05d33be845606b1d9e19ed41",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "f14d21d0f4b4b78c8761da1718c0ae5484d9c6320b905ed26eed5b5ff57c29a5",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact_sha256": "f3aa21b594fde65575d387bddc75eb01005a2bd33ef15d327ba9c0602f939778",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      }
+    ],
+    "schema": "UntrustedRouteCheck.v1",
+    "signing_enabled": false,
+    "status": "PASS"
+  },
+  "completed_at": "2026-10-21T14:27:01.682Z",
+  "current_full_holdings_checked": false,
+  "decision_id": "IDEA-070 LD03-RP01",
+  "host_binding_accepted": false,
+  "policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+  "profile_sha256": "c2a6936739a336c1df55e7e3579a6e9b922df4dd085b29f70ff3c1b9ea912f0e",
+  "provider_reads": {
+    "BSC_BNBCHAIN_PUBLIC": 101,
+    "BSC_NODEREAL_PUBLIC": 101
+  },
+  "ready_to_install": false,
+  "remaining": [
+    "actual selected profile/current full holdings/execution config",
+    "production host/release binding and runtime preflight on every real attempt",
+    "RFQ usability, actual gas/receipt/fee/round ACK at LD19/20"
+  ],
+  "rows": [
+    {
+      "observation_sha256": "e7907c3d711dcacb962c2900db21af28a935393b046d47e48085cb4aaee97bc0",
+      "observed_at": "2026-10-21T14:25:56.636Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6556,
+      "side": "BUY",
+      "symbol": "GOOGLB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "f14d21d0f4b4b78c8761da1718c0ae5484d9c6320b905ed26eed5b5ff57c29a5",
+      "observed_at": "2026-10-21T14:26:03.125Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6434,
+      "side": "SELL",
+      "symbol": "GOOGLB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "81e7746f5145abceb4d2f65ed8959bca9cb571151a62133ef1686961c5580d50",
+      "observed_at": "2026-10-21T14:26:09.578Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6569,
+      "side": "BUY",
+      "symbol": "MSFTB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "6aa7511c45de53c69949de74c2817febb49ca1128bf7f456ca9a073dcc922f3c",
+      "observed_at": "2026-10-21T14:26:16.165Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6594,
+      "side": "SELL",
+      "symbol": "MSFTB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "f3aa21b594fde65575d387bddc75eb01005a2bd33ef15d327ba9c0602f939778",
+      "observed_at": "2026-10-21T14:26:22.731Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6561,
+      "side": "BUY",
+      "symbol": "NVDAB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "eacd9488ec8c7ca0b2c9b264e8c044b0fe4e511f05d33be845606b1d9e19ed41",
+      "observed_at": "2026-10-21T14:26:29.291Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6547,
+      "side": "SELL",
+      "symbol": "NVDAB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "6f902c68cdd898725cf003813e284ee73b2820fea9a668a29b9ad93350d47579",
+      "observed_at": "2026-10-21T14:26:35.834Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6444,
+      "side": "BUY",
+      "symbol": "SKHYB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "c4066c4e55ea8b12b93960ca084924e8ba2622e6e1bdc73efd4eecef741bf0ed",
+      "observed_at": "2026-10-21T14:26:42.273Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6390,
+      "side": "SELL",
+      "symbol": "SKHYB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "6ce8bd9cba0775bf8f7814f898149d068d729c65d69d162c80250bb009e15a72",
+      "observed_at": "2026-10-21T14:26:48.663Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6711,
+      "side": "BUY",
+      "symbol": "TSLAB",
+      "within_profile_quote_age": true
+    },
+    {
+      "observation_sha256": "a006348addd61aaffe7c6bee2f2da89e78ad37c7d528990036fe0c03cfb9d834",
+      "observed_at": "2026-10-21T14:26:55.373Z",
+      "preflight": {
+        "BSC_BNBCHAIN_PUBLIC": "PASS",
+        "BSC_NODEREAL_PUBLIC": "PASS"
+      },
+      "preflight_end_age_ms": 6419,
+      "side": "SELL",
+      "symbol": "TSLAB",
+      "within_profile_quote_age": true
+    }
+  ],
+  "schema": "LocalRouterReadOnlyReview.v1",
+  "sell_size_basis": "hypothetical BUY output, not reconciled actual holdings",
+  "signing_enabled": false,
+  "started_at": "2026-10-21T14:25:56.153Z",
+  "status": "PASS_LOCAL_READONLY",
+  "wallet_fingerprint": "72afa2ee745685abe52a0515894e3af33f3cf274f767f095f18ed15fa4ef31d3"
+}

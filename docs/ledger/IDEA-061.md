@@ -444,3 +444,26 @@ ceilings; preserve cleanup-disabled policy, independent sizing and historical
 candidates. Produce new non-adopted candidates with the existing builder and
 verify real reservation/sequence consumers. Whole-run counts and current
 holdings/configuration remain required for deployment/funding acceptance.
+
+### LD08-GC01 results — offline bounded candidates PASS
+
+Final pushed sourceffe91d9, macOS arm64/Python3.12.14:68 focused tests/280 subtests
+PASS,3 PostgreSQL-backed skips; all16 new tests pass. Real existing initial-only,
+profile, sequence, allowance and decoder consumers are covered offline; no
+full-suite/CI/host claim. New candidate/report files reproduce byte-identically.
+[Full record/hashes](../build/evidence/gc01-bounded-profiles-20261021/README.md).
+
+Ordinary two-max-child envelope384,000,000,000,000wei; EW4-exit reserve
+1,536,000,000,000,000wei; S1 five-exit bound1,920,000,000,000,000wei (no invented
+weights/profile). Optional eight-child cleanup scenario1,536,000,000,000,000wei
+per parent is not adopted; CAP-02 cleanup stays disabled. Existing builder
+produces new EW candidates with the bounded action/reserve and unchanged
+80,004,560,000,000wei sizing budget/minimum18.637420USDT. Historical files and
+runtime configs remain unchanged. Parent gas_budget and each actual command
+reservation must be aligned, or independent RunAuthorization refuses.
+
+GC01 separates non-terminal N from the terminal reserve. Historical N15/30
+including exits cannot silently be used as non-terminal counts. Keith/Isaac
+still accept actual selected profile/counts/fees; operator supplies current
+complete holdings/config/funding and host/low-gas alarm evidence. Offline
+priority2 work is delivered; LD08/LD10 deployment acceptance remains open.

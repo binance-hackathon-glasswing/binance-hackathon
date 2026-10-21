@@ -1532,3 +1532,31 @@ named-reviewed LD03 hash, production read-only clients and retained approved
 provider settings; private artifacts stay external. Any fresh local result is
 distinct from signed-host binding, complete-holdings coverage and router/source
 guarantees. No AWS/session/key/signing/broadcast action is authorized here.
+
+### LD03-RP01 results — fresh local replay/preflight PASS
+
+Pushed sourcefe91326,2026-10-21 14:25:56–14:27:01UTC (22:25:56–22:27:01SGT),
+macOS arm64/Python3.12.14. Named policy05759e90…; canonical decoder checks10/10
+fresh20USDT BUY/hypothetical-output SELL quotes and refuses every built-in
+tamper mutation. Both selected public providers pass production code/facet/
+dispatch/allowance preflight10/10;101 read-only calls each, chain56. Worst
+quote-to-preflight completion6.711s within candidate30s. Web3:one metadata GET,
+ten quote GETs, no approval/estimate/submission endpoint. The read-only parser
+loads no signing key or ai-seeds secret; signer/host/AWS/DB/funding untouched.
+
+[Sanitized receipt](../build/evidence/rp01-router-readonly-20261021/README.md),
+public report SHA2569eaad5d29797d3057b74e7544a369fd8970b0d3fcaf5d9c76788fffec7b3ff02.
+213 private content-addressed observations verified and retained outside Git.
+Measured GC01 rehearsal candidatec2a69367… is not an adopted #120 profile.
+SELL sizes are hypothetical, not current full holdings. This closes Isaac's
+fresh local replay/preflight slice only; actual selected input/config/release/
+host binding, runtime rechecks, canonical/finality qualification and first
+agent round/receipt/fees/ACK/drills remain. No source/enforcement/RFQ usability
+or gas-execution guarantee is inferred; all signing/readiness flags stay false.
+
+Final CLI follow-up atffe91d9 returns exit2 when a generated local report is
+BLOCKED, rather than exit0. Its regression and the final focused suite pass:
+68 tests/280 subtests,3 explicitly skipped disposable-PostgreSQL tests. The
+original live receipt remains sourcefe91326; no repeated network run is claimed.
+Public report privacy,213 original hashes, report-to-candidate binding and
+new local links/whitespace checks pass.
