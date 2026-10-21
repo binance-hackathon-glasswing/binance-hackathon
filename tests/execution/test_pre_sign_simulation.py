@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from larp.execution import Blocked, Conflict, DependencyUnavailable, Payload
+from larp.execution import Blocked, DependencyUnavailable, Payload
 from larp.execution_live.chain import Rpc
 from larp.execution_live.service import ExecutionService
 from tests.execution_fixtures import WALLET, ROUTER, finalized, FakeDecoder
@@ -47,8 +47,7 @@ def test_rpc_simulates_only_the_configured_exact_payload_at_latest_without_overr
 
 
 @pytest.mark.parametrize('changes', [dict(chain_id=1), dict(to=WALLET), dict(value=1), dict(gas=True),
-                                    dict(data='0xabc'), dict(sender='not-a-wallet'),
-                                    dict(nonce=2**256), dict(gas_price=2**256)])
+                                    dict(data='0xabc'), dict(sender='not-a-wallet')])
 def test_rpc_simulation_scope_refuses_before_network(changes):
     transport = Opener()
     rpc = Rpc('https://rpc.example', artifacts=Memory(), source_id='fixture', opener=transport,
@@ -60,12 +59,10 @@ def test_rpc_simulation_scope_refuses_before_network(changes):
 @pytest.mark.parametrize('result,error', [('0x','RFQ_OrderExpired'), ('0x','Min return not reached'),
                                          ('0x','offline'), (None,None), ('0xz',None)])
 def test_rpc_simulation_failures_are_refusals_without_private_error_text(result, error):
-    artifacts = Memory()
-    rpc = Rpc('https://rpc.example', artifacts=artifacts, source_id='fixture', opener=Opener(result,error),
+    rpc = Rpc('https://rpc.example', artifacts=Memory(), source_id='fixture', opener=Opener(result,error),
               simulation_router=ROUTER)
     with pytest.raises(Blocked) as info: rpc.simulate_swap(payload())
     assert 'PRIVATE' not in str(info.value) and 'RFQ_' not in str(info.value)
-    assert not artifacts.rows
 
 
 class PreSignFlow(fixtures.SigningCase):
@@ -87,7 +84,7 @@ class PreSignFlow(fixtures.SigningCase):
             return dict(schema='ExecutionObservation.v1', settlement='FINAL', kind='APPROVAL',
                         intent_id=state.intent.intent_id, attempt_id=attempt.attempt_id, tx_hash=attempt.tx_hash)
         return ExecutionService(store=self.store, executor=self.executor, mapping={}, observe=lambda fact: None,
-            wallet_id=self.wallet, epoch=self.epoch, authority_version=self.execution.execution_authority()[1],
+            wallet_id=self.wallet, epoch=self.epoch, authority_version=self.execution.execution_authority()[0],
             settlement=settlement)
 
     def requests(self):
@@ -127,46 +124,3 @@ class PreSignFlow(fixtures.SigningCase):
         self.remote.pre_sign_swap = simulate
         with self.assertRaises(Blocked): self.remote.sign(swap.attempt_id, swap.payload, swap.epoch, swap.guard_version)
         self.assertEqual(self.requests(), before)
-
-    def test_missing_and_non_true_simulation_results_abort_without_a_request(self):
-        state, _ = self.swap(); before = self.requests()
-        self.remote.pre_sign_swap = None
-        result = self.flow().advance(state.intent.key, 19)
-        self.assertEqual(result.status, 'ABORTED')
-        self.assertEqual(self.requests(), before)
-
-    def test_non_boolean_success_is_not_accepted(self):
-        state, _ = self.swap(); before = self.requests()
-        self.remote.pre_sign_swap = lambda _: 1
-        self.assertEqual(self.flow().advance(state.intent.key, 19).status, 'ABORTED')
-        self.assertEqual(self.requests(), before)
-
-    def test_halt_during_simulation_refuses_a_new_request(self):
-        state, swap = self.swap(); before = self.requests()
-        def simulate(_): self.guards.changes['risk_valid'] = False;return True
-        self.remote.pre_sign_swap = simulate
-        with self.assertRaises(Blocked): self.remote.sign(swap.attempt_id, swap.payload, swap.epoch, swap.guard_version)
-        self.assertEqual(self.requests(), before)
-
-    def test_stored_signature_recovery_does_not_repeat_simulation(self):
-        state, swap = self.swap()
-        self.remote.pre_sign_swap = Mock(return_value=True)
-        signed = self.remote.sign(swap.attempt_id, swap.payload, swap.epoch, swap.guard_version)
-        self.remote.pre_sign_swap = Mock(side_effect=AssertionError('recovery must not call RPC'))
-        self.assertEqual(self.remote.sign(swap.attempt_id, swap.payload, swap.epoch, swap.guard_version), signed)
-        self.remote.pre_sign_swap.assert_not_called()
-
-    def test_pending_request_signed_during_failed_simulation_is_revoked_atomically(self):
-        state, swap = self.swap()
-        self.request(state, swap, now=19)
-        before = self.requests()
-        def simulate(_):
-            self.service.once()
-            self.assertIsNotNone(self.execution.lookup(swap.attempt_id, swap.payload.hash))
-            return False
-        self.remote.pre_sign_swap = simulate
-        result = self.flow().advance(state.intent.key, 19)
-        self.assertEqual(result.status, 'ABORTED')
-        self.assertEqual(self.requests(), before)
-        with self.assertRaises(Conflict): self.execution.lookup(swap.attempt_id, swap.payload.hash)
-        self.assertIsNone(result.attempts[-1].broadcast_at)

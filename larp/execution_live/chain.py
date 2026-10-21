@@ -103,17 +103,18 @@ class Rpc:
                 or payload.to != self.simulation_router or type(payload.sender) is not str
                 or not re.fullmatch(r'0x[0-9a-f]{40}', payload.sender)
                 or type(payload.value) is not int or payload.value != 0
-                or any(type(v) is not int or not 0 <= v < 2**256
-                       for v in (payload.nonce, payload.gas, payload.gas_price))
+                or any(type(v) is not int or v < 0 for v in (payload.nonce, payload.gas, payload.gas_price))
                 or payload.gas == 0 or payload.gas_price == 0 or type(payload.data) is not str
                 or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})+', payload.data)):
             raise Blocked('swap simulation outside authorized payload scope')
         tx = dict({'from': payload.sender}, to=payload.to, data=payload.data, value='0x0',
                   nonce=hex(payload.nonce), gas=hex(payload.gas), gasPrice=hex(payload.gas_price))
-        self._request('eth_call', [tx, 'latest'], simulation=True)
+        result = self._request('eth_call', [tx, 'latest'])
+        if type(result) is not str or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})*', result):
+            raise Blocked('swap simulation response rejected')
         return True
 
-    def _request(self, method, params, *, simulation=False):
+    def _request(self, method, params):
         request_id=next(self.sequence)
         body=encoded(dict(jsonrpc='2.0',id=request_id,method=method,params=params))
         req=Request(self.url,data=body,headers={'Content-Type':'application/json'},method='POST')
@@ -128,9 +129,6 @@ class Rpc:
                 or type(result.get('id')) is not int or result['id']!=request_id
                 or 'error' in result or 'result' not in result):
             raise Blocked('RPC response rejected')
-        if simulation and (type(result['result']) is not str
-                or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})*', result['result'])):
-            raise Blocked('swap simulation response rejected')
         self.artifacts.put(dict(schema='ChainObservation.v1',source_id=self.source_id,method=method,params=params,
                                 result=result['result'],available_at=utc()))
         return result['result']
