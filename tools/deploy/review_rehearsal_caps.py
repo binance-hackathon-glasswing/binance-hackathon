@@ -33,17 +33,20 @@ def collect(packet, output, build_id):
     # Proposed numeric execution scope only; actual DB/RPC/CA/run/release configuration
     # is a separate LD16/17 binding. This file is never installed by this tool.
     def pin(name, value):
-        raw = json.dumps(value, sort_keys=True, separators=(',', ':')).encode() + b'\n'
+        raw = (json.dumps(value, sort_keys=True, indent=2).encode() if name == 'signing-policy.json'
+               else json.dumps(value, sort_keys=True, separators=(',', ':')).encode()) + b'\n'
         with (output / name).open('xb') as stream:
             stream.write(raw)
         (output / name).chmod(0o600)
         return dict(path=name, sha256=hashlib.sha256(raw).hexdigest())
+    policy_ref = pin('signing-policy.json', policy)
+    assert policy_ref['sha256'] == decision['policies']['development']['sha256_canonical_json_lf']
     profile_ref = pin('profile.json', profile)
     # The canonical JSON encoder above is byte-identical to this profile's file format.
     assert profile_ref['sha256'] == config['strategy_profile_sha256']
     inputs = dict(schema='GateBCapsInputs.v1', wallet=private['wallet'], run_id=config['run_id'],
         build_id=build_id, environment='REHEARSAL', max_age_seconds=300,
-        files=dict(profile=profile_ref, signing_policy=pin('signing-policy.json', policy),
+        files=dict(profile=profile_ref, signing_policy=policy_ref,
             execution_config=pin('execution-numeric-scope.json', config),
             initial_state=pin('current-holdings.json', private['portfolio'])),
         quote_artifacts=[pin('quote-%02d.json' % n, r) for n, r in enumerate(private['quote_artifacts'])])

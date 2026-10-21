@@ -291,7 +291,6 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
             or (signed and ((routing is None and not deterministic_rehearsal)
                             or type(adoption_ref) is not str or not adoption_ref.strip()))):
         raise ContractError('Signed preparation needs reviewed routing or scoped deterministic rehearsal and an adoption reference')
-    profile, capture = json.loads(profile_raw), json.loads(capture_raw)
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('A separately reviewed LIVE profile is required')
     validate_live(profile)
