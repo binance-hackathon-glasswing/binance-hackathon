@@ -1517,6 +1517,13 @@ Technical coverage only: Isaac's personal acceptance, funding to the reserve,
 and LD16 bindings for the installed build ID remain. The review binds build
 5bee006; a fresh pre-install check must bind the actual installed release.
 
+LD15 follow-up (AB-REL-RC3a, 2026-10-21): the PR236 evidence merge `fa1b6c9` is
+the installable candidate. Its runtime files are identical to `5bee006`. Mirror run
+39640064251 passes all four jobs (2452 passed/7 skipped/3859 subtests, systemd 5/5),
+and original artifact 12365166625 is verified with no local rebuild
+([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
+`5bee006`, so the LD16 recheck binds `fa1b6c9`.
+
 ## SJ-01 — signer-only handoff and PR235 input coverage (2026-10-22, prospective)
 
 Isaac requests the four signer.json preparation tasks/owners in PR133 and work

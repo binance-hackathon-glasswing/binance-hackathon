@@ -36,6 +36,9 @@ pre-registered `INITIAL_BNB_EXIT_RESERVE` funding gap remains
 ([record](evidence/rehearsal-exit-split-20261021/ld10-p04-coverage.json)). AB-REL-RC3:
 canonical `5bee006` passes all four mirror jobs (2452 passed, 7 skipped, systemd 5/5);
 original artifact 12363800624 verified ([receipt](evidence/ab-rel-rc3-20261021.json)).
+Installable candidate is `fa1b6c9` (RC3a): same runtime files, mirror run
+39640064251 all four jobs PASS, artifact 12365166625 verified
+([receipt](evidence/ab-rel-rc3a-20261021.json)); LD16 rechecks must bind it.
 Remaining: funding, Isaac acceptance, LD16 bindings, LD17 installation.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements

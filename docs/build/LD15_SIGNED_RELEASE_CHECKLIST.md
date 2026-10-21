@@ -147,6 +147,14 @@ checksums, inner manifest `847dc027…` byte-identical to the published one, and
 [Receipt](evidence/ab-rel-rc3-20261021.json). LD10-P04 fresh coverage binds this
 build. Unbound candidate: LD16/LD17 bindings, funding and acceptance remain.
 
+**RC3a — installable candidate `fa1b6c9`** (PR236 docs/evidence merge). Mirror
+[run 39640064251](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39640064251):
+all four jobs PASS, 2452 passed / 7 skipped / 3859 subtests, systemd 5/5. Original artifact
+12365166625 zip `55e08862…` matches GitHub; bundle `2200737a…`, 244/244 checksums, inner
+manifest `9d309d71…` matches published; its 205 files equal `fa1b6c9` and are identical to
+RC3's; only `build_id` differs. [Receipt](evidence/ab-rel-rc3a-20261021.json). The LD16
+pre-install recheck must bind `fa1b6c9`; this receipt's own commit is result-only.
+
 The numeric tool retains OWNER_REVIEW_REQUIRED; this is delegated technical coverage,
 not a forged Keith/Isaac attestation or an installed configuration. Their exact#120 /
 LD16 owner bindings plus actual final release/run/DB/RPC/CA configuration remain.
