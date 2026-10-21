@@ -4,17 +4,15 @@ Scope requested by Isaac, 2026-10-22 SGT: update PR133 with only the work needed
 to prepare the development signer configuration; then finish input coverage.
 The partner owns installation. Base: canonical `5bee006` (PR235).
 
-**Current after concurrent PR236 (`fa1b6c9`):** the fresh LD10-P04 packet and
-RC3 qualification of `5bee006` are delivered. The quote work is not missing:
-22/22 request-bound quotes, including child exits;91/92 numeric checks covered.
-Only the BNB exit-reserve check fails. Recorded balance0.002694498869362886BNB
-is **0.000377501130637114BNB below** the0.003072BNB floor. Task1 remains open
-for eligible funding disposition, a fresh reconciled post-funding numeric
-review and exact private input acceptance. Task2 release qualification is
-recorded delivered by PR236; tasks3/4 still need actual private config bindings
-then assembly/local check. No duplicate pre-funding capture or new code feature
-is requested. The dated archive audit below remains evidence of what `capture`
-contains, not the current absence of an LD10 packet.
+**Current after SJ-03 (2026-10-22 SGT):** Isaac's additional2USDT dev seed
+is verified. Public finalized balance96USDT/0.005325625054330011BNB covers the
+0.003072BNB signer exit floor. **The user's dev gas-seeding step is complete;
+no further swap is requested for this minimum.** Remaining task1 is the actual
+operator post-funding reconciliation/private current packet and exact input
+review; task3 is the intended signed run/DB/CA/config bindings; task4 is offline
+assembly/local release check. RC3a/PR238 records qualification of fa1b6c9.
+The separate live-challenge wallet remains excluded. Dated pre-funding sections
+below preserve original findings and do not re-open the completed user seed.
 
 ## Four deliverables and owners
 
@@ -220,3 +218,42 @@ made since the recorded trial. He has a separate live-challenge wallet and
 explicitly says it is **not to be used yet**. Current work is restricted to
 the dev wallet; no live-wallet address, key, balance read, funding, registration
 or activation is requested or performed. Its future handoff stays outside SJ02.
+
+## SJ-03 result — dev gas seed verified; signer exit floor covered
+
+Isaac completed additional dev seed
+`0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d`.
+Production receipt verification confirms chain56, registered dev sender, nonce3,
+success and canonical finalized inclusion at **2026-10-21 17:27:41UTC /
+2026-10-22 01:27:41SGT**. Transfer logs show exactly2USDT net debit, no USDT
+incoming; both dev seeds now total4USDT. Receipt gas is194643×50000000wei =
+0.00000973215BNB; this does not independently classify MetaMask fee-token economics.
+Displayed native credit0.00264317BNB is attributed rounded MetaMask evidence,
+not a transaction-local native RPC trace or a whole-block balance difference.
+
+At17:31:04.217UTC (Oct22 01:31:04.217SGT), the finalized public snapshot is
+**96USDT**, **0.005325625054330011BNB**, all five stocks zero, nonces4/4/4.
+The **0.003072BNB signer exit reserve is covered** with
+0.002253625054330011BNB headroom. **No further swap is requested for this
+signer minimum.** The separate whole-rehearsal target is not relabeled fully
+funded and is not a request for another user transaction in this preparation.
+The separate live-challenge wallet remains untouched.
+
+[New receipt and public snapshot](evidence/dev-gas-funding-20261022.json),
+SHA-256`e4d54fb62e641c185808bf48880a80ab5818bd5c845de7fa64e841a70619ea83`.29 successful observations /30 read attempts within the40
+budget. A local quantity decoder first rejected a padded ABI allowance value;
+the production word decoder corrected that processing. The original29 reads
+were reused; one additional token-allowance call was refused by the provider,
+not retried. Complete current allowances remain part of the actual operator
+packet. None of this is a failed wallet transaction or a full numeric pass.
+Raw public observations remain privately under
+`/private/tmp/larp-sj03-seed-verification-20261022/observations/`.
+
+**Current remaining work:** operator reconciles the actual hosted post-funding
+state and supplies the fresh private LD10 packet/quotes plus actual intended
+signed run/release/DB/IAM/CA/profile/router/execution bindings. Assistant reruns
+the real current-clock numeric review, records exact input acceptance and
+assembles/locally checks the key-free signer.json. Old91/92 rows and old
+PortfolioState/quote timestamps are not edited to invent92/92. Source contains
+no application/config/policy change, so RC3/RC3a runtime qualification is not
+replaced by an unrelated test run. Installation/key/activation stay outside.

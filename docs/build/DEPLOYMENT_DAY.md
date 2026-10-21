@@ -85,6 +85,7 @@ context; no hosted run or Gate A pass is established by this update.
   | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
   |---|---|---|---|---|---|
   | dev | 2026-10-16 08:27:44 UTC | `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` | 2 (verified wallet net USDT debit) | 0.002684720969362886 (BscScan transfer relayed by Isaac) | Isaac identifies this as the MetaMask trial. Chain56 success, dev-wallet sender, canonical/finalized inclusion and USDT debit verified (IDEA-039 FG-01). BNB amount is attributed explorer evidence, not independently RPC-verified; additional planned dev funding and fresh opening balance remain #106. |
+  | dev | 2026-10-21 17:27:41 UTC | `0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d` | 2 (receipt Transfer-log net debit verified) | 0.00264317 (rounded MetaMask display supplied by Isaac; transaction-local RPC credit not verified) | Additional dev gas seed, SJ-03. Successful canonical/finalized receipt; fresh public balance96USDT/0.005325625054330011BNB and nonce4. Total verified dev USDT debit across both seeds4USDT. Hosted post-last-seed opening/reconciliation remains with the operator. |
   | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
 
   FG-01 evidence: [dev-gas-funding-20261016.json](evidence/dev-gas-funding-20261016.json).
@@ -102,6 +103,8 @@ context; no hosted run or Gate A pass is established by this update.
   funding note is complete with that source attribution (IDEA-039 FG-01 U1);
   it does not qualify production native tracing or complete #106.
   No new swap, hosted capture, agent round or final-wallet action occurred.
+
+  **SJ-03 subsequent update (2026-10-22 SGT):** the additional dev seed above is now verified; [receipt/current public balance](evidence/dev-gas-funding-20261022.json). The0.003072BNB signer exit floor is covered. This does not create the hosted PortfolioState or qualify all fresh quote/configuration inputs. No further wallet swap is requested to satisfy that minimum. The separate live-challenge wallet is excluded from this task.
 
   Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 

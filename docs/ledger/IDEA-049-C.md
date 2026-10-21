@@ -1625,3 +1625,23 @@ Record actual funding note and clear only the completed dev seed/snapshot
 slice; hosted post-funding reconciliation/private current quotes/owner and
 run/config bindings remain until actually supplied. No historical quote date,
 portfolio identity or 92-check result is rewritten to claim a new full pass.
+
+### SJ-03 results — new dev seed succeeds and exit-floor gap is closed
+
+New hashab19e680…57a168d: nonce3,chain56,success/canonical/finalized at
+2026-10-21T17:27:41Z. Exactly2USDT net debit by Transfer logs; both seeds4USDT.
+Snapshot17:31:04.217Z:96USDT,5325625054330011weiBNB,zero stocks,nonces4/4/4;
+selected3072000000000000wei floor covered with2253625054330011wei headroom.
+MetaMask displayed0.00264317BNB credit is rounded attributed UI evidence,not
+transaction-local native RPC proof. Receipt gas9732150000000wei verified.
+29 successful observations/30 attempts; quantity-to-word allowance decoder
+correction reused original reads; one additional allowance RPC refusal,not
+retried. No assistant signing/key/transaction/host/live-wallet action.
+[Receipt and precise remaining owner handoff](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-03-result--dev-gas-seed-verified-signer-exit-floor-covered).
+Dev seed/floor slice complete; GAP49 now retains actual operator opening,
+future final-wallet work outside this task and other unqualified native scope.
+Current hosted reconciliation/private quotes/owner acceptance/run/config
+bindings and actual assembly remain open; no old91/92 report is relabeled.
+No further seed requested for signer minimum. Original user live-wallet
+restriction remains. RC3a/PR238 adds qualification for fa1b6c9 as recorded in
+canonical; no runtime bytes changed by this documentation/evidence branch.
