@@ -1433,3 +1433,33 @@ Pass criteria before running anything:
 - New rehearsal profile and scope are written to a new evidence directory; the
   selected P02/Q01/RC2 files stay byte-identical. No fresh quotes, owner
   acceptance, release qualification, host, key, funding or trade is claimed.
+
+### LD10-P03 results — exit design resolved; fresh child-quote coverage pending
+
+RED at 887c882 on the pushed criteria (a)–(e): 11 failures, each for the
+predicted reason (cap-sized first child 4020 of 6030 instead of 3015; cap-ratio
+requote 3898 instead of 1949; `quote fails consumer validator` for a mandatory
+high-impact exit; full SELL blocked only by its own cash cap; old reserve).
+Implementation f671aad: `exit_parts`/balanced mandatory SELL sizing and requote,
+port mandatory parity, `caps_review` exit replay (`EXIT_SIZING_ONLY`,
+`FULL_EXIT_CHILDREN_*`, `FULL_EXIT_CHILD_QUOTE_MISSING_*`, `FULL_BOOK_EXIT_RESERVE`),
+probe child requests, and the explicit `--exit-children 2` rehearsal builder.
+
+Changed fixtures, each because they encoded the replaced behaviour: caps-review and
+initial-only fixtures now carry a two-child reserve; one initial-only planner case
+quotes its own profile's sizes; the better-price requote case uses a quote 3% above
+the mark (the 1% headroom absorbs the old 7 bp) and asserts a balanced half.
+
+Full local suite at f671aad plus the new evidence: **2448 passed, 3859 subtests,
+11 skipped** (private/external fixtures 2, root mode 1, systemd 5, bubblewrap 3),
+Linux x86_64, Python 3.12.3, disposable PostgreSQL **16.15** (not the 14.24 used
+earlier). Historical P02 `verify.py` still reproduces `BLOCKED_EXECUTION_CASH_CAP`;
+`build()` still reproduces the Q01 bytes `41332056…`.
+
+New selected profile `e95d5842…` / StrategyProfile `ddb82813…` differs only in
+`exit_gas_reserve_units` 3,072,000,000,000,000 wei and provenance. Target 0.008832 BNB;
+additional 0.006137501130637114 BNB at the dated balance. [Packet](../build/evidence/rehearsal-exit-split-20261021/README.md).
+
+Not done here: fresh operator holdings/child quotes, Isaac's rerun and owner
+acceptance (full_ld10_owner_acceptance stays false), funding, LD15 qualification
+of the new source (RC2 does not cover it), any host, key or trade.
