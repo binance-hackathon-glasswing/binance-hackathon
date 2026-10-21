@@ -1454,3 +1454,29 @@ Limits:
 - a valid swap's positive estimate from a funded wallet is first exercised at LD19.
 
 KG-DEC-01 is complete pending Isaac's review.
+
+### PS-01 disposition / KG-DEC-01-RV01 — Isaac review (2026-10-21; prospective)
+
+Canonical advanced to6746ef0 while PS-01 was in progress: PR223 added
+KG-DEC-01-C1 and PR224 added the read-only KG-DEC-01-H receipt. These establish
+the existing mandatory exact-calldata gas-limit gate; a second execution-RPC
+gate is unnecessary for the adopted task. All PS-01 application/test changes
+were reverted with normal pushed commits through03850ee. Net change against
+canonical is documentation only. The prototype's 25 tests/9 subtests PASS at
+2cc6f70 is historical prototype evidence, not validation of deployed code.
+
+Isaac now reviews the existing implementation and PR223/224 records. Criteria
+before running checks:
+- RV1 trace the live exact from/to/data/value estimate through prepare refusal,
+  confirm no quote-gas fallback or newly signable attempt after failure, and
+  keep the original authority/nonce/fencing checks unchanged.
+- RV2 reproduce the checked-in host packet SHA-256 excluding _receipt, review
+  preconditions/control/target pinning and sanitizer. Accept only the observed
+  API-refusal claim: generic api_or_http_error does not establish EVM revert
+  reasons, positive funded-swap behavior, or future execution success.
+- RV3 run the existing simulation, host-script and real PostgreSQL signing/
+  execution regression tests on committed pushed source, without calling any
+  live endpoint, host, signer or wallet. Record failures and limits honestly.
+- RV4 close the Isaac review line only on PASS, retain timing/positive funded
+  LD19 and real deployment/profile/gas gates; update current status/index and
+  PR133. No new runtime capability or team policy is adopted by this review.
