@@ -1,0 +1,386 @@
+{
+ "archive": {
+  "anchor_stored_offset_within_hour_s": {
+   "max": null,
+   "min": null,
+   "n": 0,
+   "p50": null,
+   "p95": null,
+   "p99": null
+  },
+  "anchors": 0,
+  "outbox": {
+   "anchor": {
+    "attempts": {
+     "1": 44
+    },
+    "errors": 0,
+    "status": {
+     "ACK": 44
+    }
+   },
+   "backup": {
+    "attempts": {
+     "1": 3
+    },
+    "errors": 0,
+    "status": {
+     "ACK": 3
+    }
+   }
+  },
+  "slot_to_store_lag_s": "NOT_MEASURED"
+ },
+ "clock": {
+  "Last offset": "-0.000004268 seconds",
+  "Leap status": "Normal",
+  "RMS offset": "0.000004742 seconds",
+  "Skew": "0.118 ppm",
+  "Stratum": "4",
+  "System time": "0.000001046 seconds slow of NTP time",
+  "Update interval": "16.1 seconds"
+ },
+ "collection_errors": {
+  "anchors": "Unavailable"
+ },
+ "cycle": {
+  "assessment_s": {
+   "max": 60.026,
+   "min": 3.118,
+   "n": 70,
+   "p50": 10.536,
+   "p95": 60.022,
+   "p99": 60.026
+  },
+  "decision_to_log_s": {
+   "max": 0.0,
+   "min": 0.0,
+   "n": 70,
+   "p50": 0.0,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "kinds": {
+   "ROUND_PLANNED": 70
+  },
+  "missing": {
+   "assessment_completed_ms": 0,
+   "decision_ms": 0,
+   "log_ms": 0
+  },
+  "rounds": 70,
+  "start_to_decision_s": {
+   "max": 76.309,
+   "min": 11.514,
+   "n": 70,
+   "p50": 18.707,
+   "p95": 69.19,
+   "p99": 76.309
+  },
+  "start_to_log_s": {
+   "max": 76.309,
+   "min": 11.514,
+   "n": 70,
+   "p50": 18.707,
+   "p95": 69.19,
+   "p99": 76.309
+  },
+  "with_start": 70
+ },
+ "delivery": {
+  "acked_logs": 70,
+  "actual_dispatch_to_ack_s": "NOT_MEASURED",
+  "attempts": {
+   "1": 109
+  },
+  "chunk_status": {
+   "ACK": 109
+  },
+  "configured_socket_timeout_s": 15,
+  "dispatch_to_latest_attempt_clock_s": {
+   "max": 5.387,
+   "min": 0.64,
+   "n": 70,
+   "p50": 2.561,
+   "p95": 5.116,
+   "p99": 5.387
+  },
+  "grouping": "legacy_timestamp",
+  "interval_seconds": 5,
+  "last_code": {
+   "200": 109
+  },
+  "logs": 70,
+  "max_backoff_ms": 300000,
+  "note": "Stored attempt clocks precede DB/network work; no send or positive-ACK timestamps. A stored ACK may belong to an earlier concurrent attempt. Socket timeout is not a whole-request deadline. Legacy timestamp groups may merge events; chunk rows alone do not prove expected-chunk completeness.",
+  "retry_ms": 30000,
+  "unacked_logs": 0
+ },
+ "event_kinds": {
+  "BALANCE_CHECKED": 44,
+  "DAY_ROLLED": 2,
+  "ROUND_CLOSED": 70,
+  "ROUND_PLANNED": 70,
+  "RUN_ACTIVATED": 1,
+  "VERSION_REGISTERED": 1
+ },
+ "identity": {
+  "database_name": "larp_trial2",
+  "operations": {
+   "backup_interval_hours": 24,
+   "build_id": null,
+   "database_name": "larp_trial2",
+   "max_attempts": 3,
+   "retry_seconds": 60,
+   "run_id": "larp-dev-llm-trial-20261018t170339z"
+  },
+  "run": [
+   [
+    188,
+    false,
+    2,
+    1792499906601
+   ]
+  ],
+  "run_id": "larp-dev-llm-trial-20261018t170339z",
+  "runtime": {
+   "build_id": "ea25b52325656a19b29e8ddb07b94dd792be6e18",
+   "execution": "shadow",
+   "mode": "dev",
+   "run_id": "larp-dev-llm-trial-20261018t170339z"
+  }
+ },
+ "missing_measurement": [
+  "actual network-send and positive-ACK timings; hard delivery bound",
+  "anchor slot-to-store lag",
+  "signed execution/finality/worker-drain timings",
+  "stalled-call behaviour on the signed path",
+  "memory history (only the current/peak values systemd reports)"
+ ],
+ "resources": {
+  "db_size": 29322587,
+  "disk": {
+   "/var/lib/larp-evidence": 54935790,
+   "/var/lib/larp-runtime": 49737465,
+   "/var/lib/larp-trial-stop-20261020-final": 151354152,
+   "/var/lib/larp-trial-stop-20261020-final-upload.json": 356,
+   "/var/lib/larp-trial-stop-20261020-final.tar.gz": 31701204,
+   "/var/lib/larp-trial-stop-20261020-pre": 151353293,
+   "/var/lib/larp-trial-stop-20261020-pre-upload.json": 222,
+   "/var/lib/larp-trial-stop-20261020-pre.tar.gz": 31700792,
+   "/var/lib/larp-trial-stop-records-20261020": 626,
+   "/var/log/journal": 92291118,
+   "root_fs": {
+    "avail": 18021498880,
+    "size": 21395124224,
+    "used": 3373625344
+   }
+  },
+  "jobs": [],
+  "journal": {
+   "disk_usage": "Archived and active journals take up 77.0M in the file system.",
+   "kernel": {
+    "lines": 21,
+    "oom": 0
+   },
+   "larp-archive.service": {
+    "failed": 0,
+    "lines": 13067,
+    "main_exit": 0,
+    "oom": 0,
+    "scheduled_restart": 0,
+    "started": 0,
+    "watchdog": 0
+   },
+   "larp-evidence": {
+    "failed": 0,
+    "lines": 24,
+    "main_exit": 0,
+    "oom": 0,
+    "scheduled_restart": 1,
+    "started": 3,
+    "watchdog": 0
+   },
+   "larp-execution": {
+    "failed": 0,
+    "lines": 0,
+    "main_exit": 0,
+    "oom": 0,
+    "scheduled_restart": 0,
+    "started": 0,
+    "watchdog": 0
+   },
+   "larp-runtime": {
+    "failed": 0,
+    "lines": 12,
+    "main_exit": 0,
+    "oom": 0,
+    "scheduled_restart": 0,
+    "started": 2,
+    "watchdog": 0
+   },
+   "larp-uploader": {
+    "failed": 0,
+    "lines": 18,
+    "main_exit": 0,
+    "oom": 0,
+    "scheduled_restart": 0,
+    "started": 2,
+    "watchdog": 0
+   },
+   "oldest_entry": "2026-10-16T17:27:26+0000 "
+  },
+  "largest_tables": [
+   [
+    "events",
+    10838016
+   ],
+   [
+    "audit_events",
+    4546560
+   ],
+   [
+    "audit_chunks",
+    2416640
+   ],
+   [
+    "runs",
+    704512
+   ],
+   [
+    "archive_outbox",
+    450560
+   ],
+   [
+    "rounds",
+    319488
+   ],
+   [
+    "archive_clock",
+    65536
+   ],
+   [
+    "schema_migrations",
+    32768
+   ],
+   [
+    "process_sessions",
+    32768
+   ],
+   [
+    "signing_requests",
+    24576
+   ],
+   [
+    "jobs",
+    24576
+   ],
+   [
+    "signing_attempts",
+    24576
+   ]
+  ],
+  "memory": {
+   "available": 1447317504,
+   "total": 2002350080,
+   "used": 362090496
+  },
+  "nproc": "2",
+  "rounds_by_status": [
+   [
+    "CLOSED",
+    70
+   ]
+  ],
+  "swap_total": 0,
+  "systemd": "systemd 252 (252.23-15.amzn2023)",
+  "units": {
+   "larp-archive.service": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "536870912",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": "disabled"
+   },
+   "larp-archive.timer": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": null,
+    "MemoryHigh": null,
+    "MemoryMax": null,
+    "MemoryPeak": null,
+    "NRestarts": null,
+    "UnitFileState": "disabled"
+   },
+   "larp-evidence": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "536870912",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": "disabled"
+   },
+   "larp-execution": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "536870912",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": "disabled"
+   },
+   "larp-runtime": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "1073741824",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": "disabled"
+   },
+   "larp-signer": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "infinity",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": ""
+   },
+   "larp-uploader": {
+    "ActiveState": "inactive",
+    "MemoryCurrent": "[not set]",
+    "MemoryHigh": "infinity",
+    "MemoryMax": "536870912",
+    "MemoryPeak": null,
+    "NRestarts": "0",
+    "UnitFileState": "disabled"
+   }
+  }
+ },
+ "schema": "LD12OpsSummary.v2",
+ "sessions": {
+  "builds": [
+   "ea25b52325656a19b29e8ddb07b94dd792be6e18"
+  ],
+  "count": 1,
+  "length_h": {
+   "max": 43.56352444444445,
+   "min": 43.56352444444445,
+   "n": 1,
+   "p50": 43.56352444444445,
+   "p95": 43.56352444444445,
+   "p99": 43.56352444444445
+  },
+  "restart_gap_s": {
+   "max": null,
+   "min": null,
+   "n": 0,
+   "p50": null,
+   "p95": null,
+   "p99": null
+  }
+ }
+}

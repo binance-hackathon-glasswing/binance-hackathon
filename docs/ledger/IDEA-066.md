@@ -2652,3 +2652,35 @@ ActiveState=active, permitting activating/unknown states and runtime/uploader
 identity or execution-mode mismatches. Archive last_error is truncated before
 privacy scanning; failed subprocesses become empty measurements with no error.
 These require collector/analysis repairs and append-only interpretation fixes.
+
+### LD12-M01-RV01 corrections and verified result
+
+Original M2's20.4s hard positive-ACK bound is WITHDRAWN, not a measured bound.
+`next_ms-backoff` recovers the supplied attempt clock before DB/network work,
+not a send timestamp. A stored ACK may belong to an earlier overlapping attempt;
+the socket timeout15s is not a whole-request deadline. Actual ACK latency is
+NOT_MEASURED. Original summary/packet bytes stay unchanged;
+[reviewed summary and reproduction](../build/evidence/ld12-ops-measure-20261021/README.md)
+carry the correction. Future rows include event ordinals to avoid merging distinct
+logs with equal timestamps; historical chunk identity/completeness is limited
+to the retained fields. Anchor time-of-hour offsets do not establish slot lag.
+
+Collector now pins the exact retired run/build/database/dev-shadow identity,
+requires all observed units inactive and refuses failed host reads (explicit
+absent-signer handling remains). It emits archive error booleans rather than
+truncated error text; scans full fields against private host/URL/wallet/config
+values, and limits ACK key names. These are four repaired P2 finding families.
+Thirteen regressions failed before repair; final pushed source677edbe passes
+**39 tests /10 subtests /zero skips** on macOS arm64/Python3.12.14 and disposable
+PostgreSQL14.24, including every collector SELECT, actual database-enforced
+read-only write refusal, delivery and delivery-age integration. Syntax,
+whitespace, deviation rendering and immutable source hashes pass. Original
+summary reproduces semantically except two receipt/explanation annotations.
+No repaired-source full-suite run is claimed: production application code is
+unchanged from canonical9c1cb84 (PR216's full suite remains source-specific).
+[Machine receipt](../build/evidence/pr217-review-20261021.json).
+
+Keegan's operator role transfer is retained for LD12/17/19/21/23. It grants
+no actual host-write or signer-session approval. Per-unit RSS, actual ACK timing,
+signed execution/finality/drain/stall/recovery and exact LD14 values remain
+operator/Keith/Keegan evidence inputs for Isaac; source merge is not acceptance.
