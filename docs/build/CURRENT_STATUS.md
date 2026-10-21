@@ -8,8 +8,8 @@ This is a CI-qualified development rehearsal candidate; actual owner/configurati
 and host acceptance remain open. Earlier records below retain their dated scope.
 
 LD10-P02 independent owner review (PR230): the selected profile/policy/scope
-hashes and50 original numeric rows are consistent, but the recorded maximum
-NVDAB SELL returns20.106983USDT above execution's20.10USDT cash cap. The updated
+hashes and 50 original numeric rows are consistent, but the recorded maximum
+NVDAB SELL returns 20.106983 USDT above execution's 20.10 USDT cash cap. The updated
 coverage reviewer now catches this existing runtime refusal on BUY and SELL;
 assembly also refuses the incompatible input. [Finding and next owners](evidence/ld10-owner-review-20261021/README.md).
 Full LD10 owner acceptance remains blocked on a complete exit-sizing/child-count/

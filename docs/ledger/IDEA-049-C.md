@@ -1199,7 +1199,7 @@ Pass criteria, recorded before executing verification:
 Executed pushed verification source `7e371d8` on macOS arm64/Python3.13.3.
 Both RV120-02 candidates reproduce byte for byte and pass the production LIVE
 validator; CAP-02 policy/evidence hashes and real policy loading pass. Rehearsal
-20.10USDT fits35; final40.20 fits70. Retained execution ceiling
+20.10 USDT fits 35; final 40.20 fits 70. Retained execution ceiling
 1,200,000*160,000,000=192,000,000,000,000wei fits the independent
 200,000,000,000,000wei transaction cap. These are public candidate comparisons,
 not current complete holdings or a new execution config. Full results and exact
@@ -1210,9 +1210,9 @@ checks pass. Report SHA-256
 `3bf41478138a53f9185f3f296759773c63f6b084a40894f92c2d8476bf4b749b`.
 
 The final candidate still uses midnight first-buy/new-risk/flatten gates rather
-than selected PF-04 Oct29 14:00/Nov9 21:00/Nov10 19:00UTC. Keith/Keegan must
+than selected PF-04 Oct 29 14:00/Nov 9 21:00/Nov 10 19:00UTC. Keith/Keegan must
 reconcile and regenerate before final-profile acceptance; the rehearsal's
-separate October23/25/26 window is not changed. Fee netting remains unverified.
+separate October 23/25/26 window is not changed. Fee netting remains unverified.
 No full profile or deployment approval is inferred from successful reproduction.
 
 Isaac asked to search other PRs for the private packet, then assume it missing
@@ -1295,7 +1295,7 @@ signer.json assembly is fabricated. Fresh pre-install/per-action checks still ap
 ## LD10-P02 — Isaac-delegated review of merged Q01 inputs (2026-10-21, prospective)
 
 Isaac asks whether PR231 now permits completion of PR230. PR230 normally merges
-canonical6ec07ba at32691c4, retaining the exact P01/Q01 historical artifacts and
+canonical 6ec07ba at 32691c4, retaining the exact P01/Q01 historical artifacts and
 both ledger records. This is delegated technical review under Isaac's request,
 not a claim that Isaac/Keith personally signed the packet. No installation,
 funding, host/DB operation, key access, trade or new network call is in scope.
@@ -1305,11 +1305,11 @@ Before verification:
 1. Verify selected profile/scope/coverage hashes against canonical RC2 receipt;
    reproduce the deterministic rehearsal profile with the production builder,
    validate LIVE/SHADOW authority and load the exact CAP-02 development policy.
-2. Independently cross-check all50 published numeric rows against profile,
+2. Independently cross-check all 50 published numeric rows against profile,
    policy, complete recorded holdings and quoted quantities. Identify reliance
    on the operator's signed-off private projections; do not fabricate original
    observations or call a historical replay a current-clock caps review.
-3. Check all15 min/max BUY/full-size SELL rows, units, request/route pins,
+3. Check all 15 min/max BUY/full-size SELL rows, units, request/route pins,
    slippage bounds and exact original/projection hashes. Compare them with the
    actual execution cash/amount limits as well as independent signer ceilings;
    numeric coverage is not proof the full action passes runtime admission.
@@ -1346,14 +1346,14 @@ incompatible, record its exact blocker and keep full LD10 acceptance open.
 ### LD10-P02 results — recorded inputs verified; full acceptance blocked
 
 Selected profile/scope/coverage and canonical RC2 hashes reproduce, production
-builder/LIVE/SHADOW authority and exact CAP-02 policy checks pass; all50 original
-public numeric rows are internally consistent. Of15 additional execution-cash
-checks,14 pass. The max-position NVDAB SELL returns20.106983099120719276USDT
-above the existing20.10USDT execution cap. Current stock holdings were zero in
-the14:10UTC packet; this is a hypothetical full-size exit qualification gap,
+builder/LIVE/SHADOW authority and exact CAP-02 policy checks pass; all 50 original
+public numeric rows are internally consistent. Of 15 additional execution-cash
+checks,14 pass. The max-position NVDAB SELL returns 20.106983099120719276 USDT
+above the existing 20.10 USDT execution cap. Current stock holdings were zero in
+the 14:10 UTC packet; this is a hypothetical full-size exit qualification gap,
 not an observed trapped position or on-chain loss.
 
-R1 tests86e8b74 RED: four above-cap BUY/SELL subcases were incorrectly COVERED;
+R1 tests 86e8b74 RED: four above-cap BUY/SELL subcases were incorrectly COVERED;
 exact-cap cases and real LiveVenue's SELL refusal pass. Fixe8cd3b6 adds only
 missing execution-cap parity to numeric coverage. Final sourcef816e28 passes
 87 focused tests/103 subtests/zero skips on macOS/Python3.12.14, including a

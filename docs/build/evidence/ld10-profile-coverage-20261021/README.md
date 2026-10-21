@@ -52,7 +52,7 @@ Its generator's midnight gates have not been reconciled with selected PF-04:
 Keith/Keegan own the already-recorded generator/S1/calendar/DR14 reconciliation.
 Retain historical files; regenerate and qualify the selected final profile
 before accepting its hash. This is not a new preference question or a defect in
-the rehearsal's separately reviewed October23/25/26 window. Qualified S1 remains
+the rehearsal's separately reviewed October 23/25/26 window. Qualified S1 remains
 preferred; a reproduced EQUAL_WEIGHT candidate does not establish its adoption.
 
 ## Packet search and missing inputs
@@ -67,7 +67,7 @@ temporary locations contain no identified current manifest/config/holdings packe
 - [PR193](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/193)
   inventories missing inputs; it does not supply them.
 - [PR205](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/205)
-  contains an October20 sanitized operator snapshot with reconciled holdings and
+  contains an October 20 sanitized operator snapshot with reconciled holdings and
   request-bound quotes. It is historical evidence, not the current signed-run
   execution.json, original fresh quote artifacts or four-file manifest.
 - [PR216](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/216)

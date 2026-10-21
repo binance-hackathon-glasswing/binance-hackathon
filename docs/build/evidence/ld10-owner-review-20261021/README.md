@@ -5,8 +5,8 @@ missing recorded inputs, but the independent review finds one execution-limit
 mismatch. PR230's updated review and checker fix are ready for independent review;
 full LD10 owner/deployment acceptance is not complete.
 
-Criteria75a453c/R1 tests6671132 and86e8b74 were pushed before verification.
-Normal merge32691c4 incorporates canonical6ec07ba. Original P01, Q01 and RC2
+Criteria 75a453c/R1 tests 6671132 and 86e8b74 were pushed before verification.
+Normal merge 32691c4 incorporates canonical 6ec07ba. Original P01, Q01 and RC2
 evidence stays unchanged; no historical PASS is rewritten as a new test result.
 
 ## What passed
@@ -16,14 +16,14 @@ evidence stays unchanged; no historical PASS is rewritten as a new test result.
   document `eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4`.
 - Production LIVE validation, real effective SHADOW authority and CAP-02 policy
   loading/hash/scope pass. Cleanup remains disabled and no hosted model is adopted.
-- All50 published numeric rows agree with the policy/profile/recorded holdings
-  and quantities. The operator recorded MATCH, nonce2/2, zero allowances and no
-  inflight state at14:10:31UTC. This is a dated observation, not current state.
-- The new15 execution-cash comparisons pass for14 quotes; the remaining one is
+- All 50 published numeric rows agree with the policy/profile/recorded holdings
+  and quantities. The operator recorded MATCH, nonce 2/2, zero allowances and no
+  inflight state at 14:10:31 UTC. This is a dated observation, not current state.
+- The new 15 execution-cash comparisons pass for 14 quotes; the remaining one is
   the NVDAB max-position SELL below.
-- Two-child budget0.000384BNB, four-exit reserve0.001536BNB and sizing budget
+- Two-child budget 0.000384 BNB, four-exit reserve 0.001536 BNB and sizing budget
  80,004,608,000,000wei reproduce. Reported N15-plus-four-exits planning target
-  0.007296BNB and additional0.004601501130637114BNB are arithmetically consistent.
+  0.007296 BNB and additional 0.004601501130637114 BNB are arithmetically consistent.
   They do not prove a maximum action count or authorize funding.
 
 The public report verifies the committed operator projections and reported
@@ -34,7 +34,7 @@ to the actual LD19/20 receipt comparison.
 
 ## P02-R1 — signer coverage omitted the existing execution cash cap
 
-| Recorded Q01 max-position NVDAB SELL | Raw18-decimal USDT | USDT |
+| Recorded Q01 max-position NVDAB SELL | Raw 18-decimal USDT | USDT |
 |---|---:|---:|
 | Quoted proceeds |20,106,983,099,120,719,276|20.106983099120719276|
 | Profile execution cash cap |20,100,000,000,000,000,000|20.10|
@@ -76,7 +76,7 @@ claim four one-action exits are fully qualified.
 
 ## Verification
 
-- RED at86e8b74: four over-cap BUY/SELL subcases incorrectly reported COVERED;
+- RED at 86e8b74: four over-cap BUY/SELL subcases incorrectly reported COVERED;
   exact-cap cases passed. Real LiveVenue refusal of the retained SELL numbers
   reproduced using explicitly synthetic wire shape/ports.
 - Fixe8cd3b6; final executable/test sourcef816e28: **87 tests/103 subtests PASS,
@@ -85,7 +85,7 @@ claim four one-action exits are fully qualified.
 - New assembler regression proves over-cap cash quotes cannot generate a
   configuration. No full-suite, new CI or signed-host acceptance is claimed.
 - [Machine review](review.json) records exact input hashes,15 cash comparisons
-  and false acceptance/readiness/signing flags. The original50-row result and
+  and false acceptance/readiness/signing flags. The original 50-row result and
   original RC2 CI/artifact bytes remain historical evidence for their commits.
 - Repeat output is byte-identical; selected input hashes match canonical and
   original P01 JSON bytes are unchanged. New local links/whitespace pass. Report
