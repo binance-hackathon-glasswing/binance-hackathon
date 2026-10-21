@@ -131,6 +131,10 @@ minimum/max BUY and max-position SELL quotes; real numeric reviewer50/50 COVERED
 The selected profile is41332056… / StrategyProfileeb61ca86…, signer policy3241abd3… and router
 05759e90… . Its complete pair gas envelope is384000000000000wei, four exits1536000000000000wei;
 conservative N=15 seed target0.007296BNB, funding still separate.
+**Superseded by LD10-P03** ([exit split](evidence/rehearsal-exit-split-20261021/README.md)):
+balanced exit children and an eight-action reserve 3072000000000000wei, profile
+e95d5842… / ddb82813…, target 0.008832BNB. That changes runtime code, so RC2 does
+not qualify it; a new candidate, run and fresh child-quote coverage are required.
 
 The numeric tool retains OWNER_REVIEW_REQUIRED; this is delegated technical coverage,
 not a forged Keith/Isaac attestation or an installed configuration. Their exact#120 /

@@ -4,6 +4,7 @@ Pins establish which local bytes were reviewed, not their provenance or truth.
 Owner approval, decoder qualification and all Gate B host checks remain separate.
 """
 import argparse
+from fractions import Fraction
 import json
 import os
 from pathlib import Path
@@ -15,9 +16,11 @@ from larp.execution_live.gate_b import address, pinned, read_json
 from larp.execution_live.main import validate_config
 from larp.marketdata.port import TOKENS
 from larp.marketdata.web3 import utc
+from larp.risk.planner import exit_parts
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
 from larp.strategy.profiles import validate_live
-from larp.strategy.schema import initial_gas_only, instant, integer
+from larp.strategy import s1 as s1_plan
+from larp.strategy.schema import ceil, fraction, initial_gas_only, instant, integer
 
 FILES = {'profile', 'signing_policy', 'execution_config', 'initial_state'}
 KEYS = {'schema', 'wallet', 'run_id', 'build_id', 'environment', 'max_age_seconds', 'files', 'quote_artifacts'}
@@ -124,7 +127,16 @@ def review(inputs, *, now, base_dir):
             check('MEASURED_' + step.upper() + '_FEE_' + symbol,
                   _scaled_up(row[step + '_gas_bnb_units'], scale), policy.max_fee_wei)
 
-    coverage, hashes = set(), []
+    # LD10-P03 D3: every held position may need balanced exit children; reserve all of them.
+    cap_raw = p['per_trade_cap_units'] * 10**12
+    s1 = s1_plan.config(p) if p['baseline'] == s1_plan.BASELINE else None
+    positions, hard = (len(TOKENS), s1['hard']) if s1 else (4, fraction(p['hard_name_weight']))
+    max_children = exit_parts(ceil(hard * p['expected_equity_units']), p['per_trade_cap_units'])
+    action = integer(p['gas_action_budget_units'], 1) if initial_only else max(
+        r['approve_gas_bnb_units'] + r['swap_gas_bnb_units'] for r in summary['symbols'].values())
+    check('FULL_BOOK_EXIT_RESERVE', positions * max_children * action, integer(p['exit_gas_reserve_units']))
+
+    coverage, hashes, sells = set(), [], {}
     by_address = {token: symbol for symbol, token in TOKENS.items()}
     for ref in artifacts:
         try:
@@ -178,13 +190,17 @@ def review(inputs, *, now, base_dir):
             check('QUOTE_FEE_' + sha, fee, policy.max_fee_wei)
             # Match LiveVenue's existing cash boundary: a signer-token cap alone
             # does not prove this BUY input or SELL proceeds fit execution.
-            cash = amount if pay == USDT else quantity(rr['toTokenAmount'], 1)
-            check('QUOTE_CASH_CAP_' + sha, cash, p['per_trade_cap_units'] * 10**12)
+            if pay == USDT:
+                check('QUOTE_CASH_CAP_' + sha, amount, cap_raw)
+            else:
+                sells.setdefault(by_address[pay], []).append((amount, quantity(rr['toTokenAmount'], 1), sha))
             if quantity(tx['gas'], 1) > gas or quantity(tx['gasPrice'], 1) > price:
                 blockers.append('QUOTE_EXCEEDS_EXECUTION_GAS_LIMITS')
             coverage.add(pair)
         except ERRORS:
             blockers.append('QUOTE_ARTIFACT_REFUSED')
+    for symbol, rows in sorted(sells.items()):
+        _exit_plan(symbol, rows, cap_raw, max_children, check, checks, blockers)
     required_pairs = {s + ':' + side for s in TOKENS for side in ('BUY', 'SELL')}
     if not initial_only:
         required_pairs.add('BNB:BUY')
@@ -203,6 +219,43 @@ def review(inputs, *, now, base_dir):
                 evidence_hashes={name: refs[name]['sha256'] for name in sorted(FILES)},
                 quote_artifact_hashes=hashes,
                 scope='LOCAL_NUMERIC_COVERAGE_ONLY_NOT_SOURCE_OR_HOST_QUALIFICATION')
+
+
+def exit_children(whole, proceeds, cap_raw, limit):
+    """Planner child sizes for a full exit, valuing the remainder pro rata to quoted proceeds.
+
+    Stops after `limit` children; a remainder then makes the count exceed the reviewed bound."""
+    children, remaining = [], whole
+    while remaining and len(children) < limit:
+        parts = exit_parts(Fraction(proceeds * remaining, whole), cap_raw)
+        children.append(remaining if parts == 1 else remaining // parts)
+        remaining -= children[-1]
+    return children + ([remaining] if remaining else [])
+
+
+def _exit_plan(symbol, rows, cap_raw, max_children, check, checks, blockers):
+    """Replay the planner's balanced exit split on the largest recorded SELL (LD10-P03 D5).
+
+    Quoted proceeds stand in for the runtime mark. A split full-size quote is sizing
+    evidence only; each planned child needs its own covered quote, never a cap-ratio residual."""
+    by_amount = {}
+    for amount, cash, sha in rows:
+        if amount in by_amount:
+            blockers.append('AMBIGUOUS_SELL_QUOTE_' + symbol)
+        by_amount[amount] = (cash, sha)
+    whole = max(by_amount)
+    proceeds, whole_sha = by_amount[whole]
+    children = exit_children(whole, proceeds, cap_raw, max_children + 1)
+    check('FULL_EXIT_CHILDREN_' + symbol, len(children), max_children)
+    planned = set(children)
+    if children != [whole]:
+        checks.append(dict(check='EXIT_SIZING_ONLY_' + whole_sha, required=str(proceeds), cap='SPLIT',
+                           covered=True))
+        if any(child not in by_amount for child in planned):
+            blockers.append('FULL_EXIT_CHILD_QUOTE_MISSING_' + symbol)
+    for amount, (cash, sha) in sorted(by_amount.items()):
+        if amount in planned or amount != whole:
+            check('QUOTE_CASH_CAP_' + sha, cash, cap_raw)
 
 
 def _scaled_up(units, scale):

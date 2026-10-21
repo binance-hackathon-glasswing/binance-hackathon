@@ -175,3 +175,16 @@ def test_scoped_rehearsal_candidate_reproduces_and_covers_two_signed_children():
     from larp.integration.contract import authority
     assert authority(p)['falsifier'] == 'SHADOW'
     validate_live(p)
+
+
+def test_exit_split_rehearsal_candidate_reserves_two_children_per_position():
+    # LD10-P03 D3: four positions x two balanced exit children x the signed-child action budget.
+    from tools.deploy.build_rehearsal_candidate import build
+    doc = build(exit_children=2)
+    assert doc.payload + b'\n' == (ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/rehearsal-deterministic.json').read_bytes()
+    p = doc.read()
+    assert p['exit_gas_reserve_units'] == 8 * p['gas_action_budget_units'] == 3_072_000_000_000_000
+    assert 'LD10-P03' in p['provenance']['exit_gas_reserve_units']['decision_id']
+    previous = build().read()
+    assert {k for k in p if p[k] != previous[k]} == {'exit_gas_reserve_units', 'provenance'}
+    validate_live(p)

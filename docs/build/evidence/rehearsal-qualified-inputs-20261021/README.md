@@ -69,3 +69,9 @@ selected deterministic files named above. The explicit falsifier_authority field
 has precedence over evidence_mode; both are now SHADOW and tested through the actual
 authority resolver. The final numeric/quote packet was freshly recollected against
 the corrected profile; no stale timestamp or old profile acceptance was relabeled.
+
+LD10-P03 note (2026-10-21): the builder CLI now requires `--exit-children`; use
+`--exit-children 1` to reproduce this packet's profile. The exit reserve here is
+superseded by the two-child selection in
+[rehearsal-exit-split-20261021](../rehearsal-exit-split-20261021/README.md). This
+packet's bytes and results are unchanged.

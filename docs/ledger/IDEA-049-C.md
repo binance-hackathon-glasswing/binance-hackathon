@@ -1373,3 +1373,103 @@ explicit blocker; neither #44 nor #120 is closed.
 P02 report SHA-2569f535602ff0d8543c6d8ad15c35052d0842c19418abe5be5128873197b6a27f0;
 repeat bytes, canonical input hashes, original P01 JSON, false flags and new
 local links/whitespace checks PASS. The updated PR230 preserves full history.
+
+## LD10-P03 — complete-position exit sizing, count and reserve (2026-10-21, prospective)
+
+Keegan asks for a reviewed complete-exit disposition for LD10-P02 under his
+delegation. Inspection of the actual path before any change:
+
+- Planner mandatory SELL sizing caps a child at `per_trade_cap_units` at the mark,
+  leaving `quantity - q` for later rounds; `_quote_at_cap` then shrinks an over-cap
+  quote to the exact cap ratio. Either step can leave an arbitrarily small residual
+  (for the P02 NVDAB numbers about 0.035% of the position, ~0.007 USDT). Its quote
+  may be unroutable or zero-output, and its gas exceeds its value.
+- `MarketPort._executable_quote` validates every quote with `_quote_at_cap` as a
+  non-mandatory consumer. An over-cap SELL is therefore refused before the planner
+  can request a smaller size; the next round re-requests the same size. A
+  mandatory exit whose impact exceeds the 2 bp profile impact limit is likewise
+  refused although the planner accepts mandatory impact. Both are liveness holds,
+  not signed over-cap trades (service and LiveVenue still refuse over-cap).
+- The selected reserve assumes one approve+swap action per exited position.
+
+Decision (recommended, adopted under delegation; limits unchanged):
+
+1. D1 balanced exit children. A mandatory SELL of remaining quantity R with mark
+   value V uses k = ceil(V × 10100 / (10000 × cap)) children and sizes this child
+   floor(R / k). The 100 bp headroom keeps a child's mark value at most cap/1.01;
+   every child of a split position is above cap/2.02 (≈9.95 USDT). Unsplit
+   positions (V ≤ cap/1.01) exit in one child. Discretionary SELL/BUY sizing is
+   unchanged. An over-cap mandatory SELL quote is resized to floor(pay / k') with
+   k' = ceil((cash + fee) / cap), never to a cap-ratio residual.
+2. D2 consumer parity in MarketPort: validate with the request's own `mandatory`
+   flag. Cash cap, slippage, freshness and route checks are unchanged; a quote
+   above the cap is still refused and retried at the next fresh mark.
+3. D3 count/reserve: at most four EQUAL_WEIGHT positions; hard-name trims bound a
+   pre-flatten position at 1/4 of safe equity, so k ≤ 2 while V ≤ 39.80 USDT
+   (safe equity below about 159 USDT). Selected rehearsal reserve becomes
+   4 × 2 × 384,000,000,000,000 = 3,072,000,000,000,000 wei. Planning target for N=15
+   whole-run pairs plus the reserve: 23 × 0.000384 = 0.008832 BNB; additional
+   against the dated 14:10Z balance 0.006137501130637114 BNB. Not funded here.
+4. D4 timing: each child is its own command with the unchanged 660 s authority;
+   one child per 15-minute cadence round means at most eight sequential exit
+   rounds (≥2 h) inside the 14.75 h flatten window. No authority change.
+5. D5 review/probe: `caps_review` replays D1 on the largest recorded SELL per name
+   and requires covered child quotes (≤ cap) that sum to the full position, with
+   child count ≤ the reserve's per-position bound; the full-size quote is sizing
+   evidence only. The read-only probe requests those child sizes.
+
+Pass criteria before running anything:
+
+- RED first on the pushed base: (a) a mandatory exit worth 1.5 × cap leaves a
+  residual below half the position, (b) a terminal exit whose quote is slightly
+  over cap requests a cap-ratio residual, (c) MarketPort refuses a mandatory
+  high-impact exit quote, (d) caps_review blocks the P02-shaped full SELL even
+  with covered children, (e) the rehearsal reserve is 4 × action.
+- GREEN: all five pass; children sum exactly to the position; no child or
+  quote above cap is ever planned, validated or reviewed as covered; discretionary
+  behaviour, BUY sizing and existing cap/slippage refusals are unchanged; focused
+  planner/port/caps/profile/assembly suites and the full local suite pass with
+  explicit skip accounting.
+- New rehearsal profile and scope are written to a new evidence directory; the
+  selected P02/Q01/RC2 files stay byte-identical. No fresh quotes, owner
+  acceptance, release qualification, host, key, funding or trade is claimed.
+
+### LD10-P03 results — exit design resolved; fresh child-quote coverage pending
+
+RED at 887c882 on the pushed criteria (a)–(e): 11 failures, each for the
+predicted reason (cap-sized first child 4020 of 6030 instead of 3015; cap-ratio
+requote 3898 instead of 1949; `quote fails consumer validator` for a mandatory
+high-impact exit; full SELL blocked only by its own cash cap; old reserve).
+Implementation f671aad: `exit_parts`/balanced mandatory SELL sizing and requote,
+port mandatory parity, `caps_review` exit replay (`EXIT_SIZING_ONLY`,
+`FULL_EXIT_CHILDREN_*`, `FULL_EXIT_CHILD_QUOTE_MISSING_*`, `FULL_BOOK_EXIT_RESERVE`),
+probe child requests, and the explicit `--exit-children 2` rehearsal builder.
+
+Changed fixtures, each because they encoded the replaced behaviour: caps-review and
+initial-only fixtures now carry a two-child reserve; one initial-only planner case
+quotes its own profile's sizes; the better-price requote case uses a quote 3% above
+the mark (the 1% headroom absorbs the old 7 bp) and asserts a balanced half.
+
+Full local suite at f671aad plus the new evidence: **2448 passed, 3859 subtests,
+11 skipped** (private/external fixtures 2, root mode 1, systemd 5, bubblewrap 3),
+Linux x86_64, Python 3.12.3, disposable PostgreSQL **16.15** (not the 14.24 used
+earlier). Historical P02 `verify.py` still reproduces `BLOCKED_EXECUTION_CASH_CAP`;
+`build()` still reproduces the Q01 bytes `41332056…`.
+
+New selected profile `e95d5842…` / StrategyProfile `ddb82813…` differs only in
+`exit_gas_reserve_units` 3,072,000,000,000,000 wei and provenance. Target 0.008832 BNB;
+additional 0.006137501130637114 BNB at the dated balance. [Packet](../build/evidence/rehearsal-exit-split-20261021/README.md).
+
+Not done here: fresh operator holdings/child quotes, Isaac's rerun and owner
+acceptance (full_ld10_owner_acceptance stays false), funding, LD15 qualification
+of the new source (RC2 does not cover it), any host, key or trade.
+
+LD10-P03 independent review (delegated subagent, read-only, 2026-10-21): no
+blocking finding. 1333 passed/10 skipped across the touched suites; it checked
+cap enforcement, port parity, the three split implementations, caps_review
+blockers, the probe patching and all reserve/funding arithmetic. Medium: the
+general profile builder/validator keep the 4×/5× reserve, so other generated
+profiles fail the new coverage check. This is deferred to LD24 as LD10-P03-R1 in
+the backlog. Lows: a third child beyond 2·cap/1.01 is accepted residual risk
+(recorded); positions=4 matches the planner's four-position limit; the probe's
+fixed limit of 2 is harmless because the reviewer blocks over-count.

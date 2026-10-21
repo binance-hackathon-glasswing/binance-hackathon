@@ -19,10 +19,20 @@ hashes and 50 original numeric rows are consistent, but the recorded maximum
 NVDAB SELL returns 20.106983 USDT above execution's 20.10 USDT cash cap. The updated
 coverage reviewer now catches this existing runtime refusal on BUY and SELL;
 assembly also refuses the incompatible input. [Finding and next owners](evidence/ld10-owner-review-20261021/README.md).
-Full LD10 owner acceptance remains blocked on a complete exit-sizing/child-count/
-reserve disposition and applicable fresh evidence, then LD16 actual bindings.
 The original canonical RC2 qualification is unchanged and does not qualify the
 new PR230 coverage-check source or grant installation approval.
+
+LD10-P03 resolves the exit design under the unchanged limits. Before it, the
+planner could leave a tiny cap-ratio residual, and `MarketPort` refused over-cap or
+high-impact mandatory exit quotes as if they were discretionary, so a complete
+exit could stall. Now mandatory SELLs use balanced children with 1% headroom, the
+port validates with the request's mandatory flag, the coverage reviewer requires
+covered child quotes, and the rehearsal reserve covers four positions × two
+children (0.003072BNB; N=15 target 0.008832BNB, about 0.006138BNB additional at the
+dated balance). [Exit split packet](evidence/rehearsal-exit-split-20261021/README.md) /
+[IDEA-049-C LD10-P03](../ledger/IDEA-049-C.md). Remaining: a fresh operator
+child-quote packet, Isaac's coverage rerun, funding, and LD15 requalification of
+the new source.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
 dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer

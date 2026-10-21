@@ -1,0 +1,39 @@
+{
+ "coverage_status": "FRESH_CHILD_QUOTE_COVERAGE_REQUIRED",
+ "decision_id": "IDEA-083 LD11-RH01; IDEA-049-C LD10-P03 exit split/reserve",
+ "deterministic_controls": [
+  "EQUAL_WEIGHT 80% gross / 20% per name",
+  "published deterministic Class1/Class2 predicate rules",
+  "price-impact/cost, gas, loss, trim, window and terminal controls",
+  "unresolved abnormal outcome sustained quarantine"
+ ],
+ "driver_overrides": {
+  "assessor": "deterministic",
+  "execution": "service",
+  "intelligence_mode": "live",
+  "model_adoption_ref": "IDEA-083 LD11-RH01 (Keegan delegated scoped rehearsal, 2026-10-21)"
+ },
+ "effective_falsifier_authority": "SHADOW",
+ "environment": "REHEARSAL",
+ "exceptions": [
+  "No S1 adoption or model economic/quality/rights/budget qualification claimed.",
+  "Original 43.56h/72h and sparse filing/label shortfalls retained for later LD22/LD24 disposition.",
+  "Supersedes the LD10-Q01 selected profile only in exit_gas_reserve_units and its provenance."
+ ],
+ "final_model_adoption": false,
+ "hosted_model_calls": false,
+ "model_evidence_mode": "SHADOW",
+ "profile_document_sha256": "ddb8281374239cd5626f0b8432e7913ab44ea30ea2f2165fbbf176e47a7d8b17",
+ "profile_file_sha256": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250",
+ "prohibited_driver_fields": [
+  "model_routing_file",
+  "model_routing_sha256",
+  "model_budget_root"
+ ],
+ "ready_to_install": false,
+ "runtime_mode": "dev",
+ "schema": "RehearsalScope.v1",
+ "selected_coverage_file": null,
+ "selected_profile_file": "rehearsal-deterministic.json",
+ "signing_enabled": false
+}

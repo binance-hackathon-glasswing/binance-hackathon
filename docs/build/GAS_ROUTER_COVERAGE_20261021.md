@@ -74,7 +74,9 @@ All205 runtime release files match qualified b22207e's original artifact manifes
 [Review receipt](evidence/pr232-review-20261021.json).
 
 The selected deterministic profile and corrected sizing in LD10-Q01-R1, including
-its conservative0.007296BNB target, remain the rehearsal decision. GC01's candidates,
+its conservative0.007296BNB target, remained the rehearsal decision until LD10-P03
+replaced the reserve with four positions × two exit children (0.008832BNB target;
+[exit split](evidence/rehearsal-exit-split-20261021/README.md)). GC01's candidates,
 old expected-cost sizing and illustrative5/4 non-terminal margin stay non-adopted;
 the independent local RP01 quote packet does not replace fresh actual host checks.
 Actual LD16 configuration/owner and LD17 production installation remain open.

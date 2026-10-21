@@ -11,7 +11,10 @@ ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / 'docs/build/evidence'
 
 
-def build():
+def build(exit_children=1):
+    """`exit_children=1` reproduces the historical LD10-Q01 bytes; LD10-P03 selects 2."""
+    if exit_children not in (1, 2):
+        raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
     def document(path):
         return Document.from_dict(json.loads(path.read_bytes()))
     authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
@@ -24,6 +27,11 @@ def build():
         authority=authority, gas_budget=budget)['REHEARSAL'].read()
     p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
     p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
+    if exit_children == 2:
+        p['exit_gas_reserve_units'] = 4 * 2 * p['gas_action_budget_units']
+        p['provenance']['exit_gas_reserve_units'] = dict(p['provenance']['exit_gas_reserve_units'],
+            decision_id='IDEA-049-C LD10-P03 (Keegan delegation, 2026-10-21)',
+            formula='4 positions*2 balanced exit children*gas_action_budget_units; cleanup disabled')
     p['evidence_mode'] = 'SHADOW'
     p['falsifier_authority'] = 'SHADOW'
     p['provenance']['evidence_mode'] = dict(decision_id='IDEA-083 LD11-RH01 (Keegan, 2026-10-21)',
@@ -36,8 +44,10 @@ def build():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--exit-children', type=int, choices=(1, 2), required=True,
+                        help='1 reproduces historical LD10-Q01; 2 is the LD10-P03 selection')
     args = parser.parse_args()
-    p = build()
+    p = build(args.exit_children)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))
