@@ -383,3 +383,22 @@ LD09 retains its current-data/#119/#120/#44 prerequisites. PR197 identifies
 the separate review gates. Final audit replay is byte-identical to the retained
 receipt and all eight derived-file checksums pass. Original user checkout and
 Desktop export remain untouched; no deployment or readiness change.
+
+## ZIP-01 — Private capture-branch archive delivery (2026-10-21)
+
+At Keith's explicit request, retain the original completed-capture ZIP on the
+dedicated `capture` branch of the same private repository. The archive is
+`captures/LARP-capture-complete-20261020T031658Z.zip`, 49,009,956 bytes,
+SHA-256 `2dcb92c67c4e041019aeba759518e1aeb699182a59e4cb5016db2937be6f4755`.
+The Downloads original is unchanged. This requested archival delivery is
+separate from DC-01's derived-evidence-only analysis change below.
+
+ZIP CRC, all 14,268 payload checksums and 14,257 retained decoded HTTP-body
+hashes verified. Raw members, parsed JSON/JSONL values and decoded bodies
+were scanned against the stored Web3 key pair and credential patterns/fields;
+no credential findings. No `.env`, wallet key or private label file is included.
+Public development-wallet addresses remain in the original quote requests
+and operational notes. Provenance and the non-secret receipt are in
+[`captures/README.md`](../../captures/README.md) and
+`captures/archive-verification.json`. No runtime/config change, whole GAP
+closure, fee/gas approval, profile selection, deployment or trading follows.

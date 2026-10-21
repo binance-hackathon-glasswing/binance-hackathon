@@ -1,0 +1,10 @@
+{
+  "archive": "LARP-capture-complete-20261020T031658Z.zip",
+  "archive_bytes": 49009956,
+  "archive_sha256": "2dcb92c67c4e041019aeba759518e1aeb699182a59e4cb5016db2937be6f4755",
+  "zip_crc_valid": true,
+  "manifest_payload_files_verified": 14268,
+  "decoded_response_bodies_verified": 14257,
+  "known_web3_key_pair_checked": true,
+  "credential_findings": []
+}
