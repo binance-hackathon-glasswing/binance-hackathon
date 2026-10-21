@@ -8,6 +8,23 @@ Keith reviews the actual profile, current quoted input quantities and holdings;
 Isaac confirms the resulting policy. Yao installs/binds only an approved policy.
 No host config, runtime limit, default signing policy or key is changed here.
 
+## Current numeric decision — CAP-02, 2026-10-21
+
+Isaac has delegated and authorized approval of the finite numeric ceilings.
+[CAP-02 exact policies/hashes](evidence/signer-numeric-ceilings-20261021.json)
+approves the retained35/70USDT and raw stock limits, router-only spender and
+0.0002BNB per-transaction fee ceiling for initial-gas-only scope; native BNB is
+excluded and allowance recovery remains disabled. Real policy boundaries and
+retained20/40USDT quantity/profile/fee samples are checked. This is an explicit
+ceiling choice, not a guaranteed price floor, current-holdings or installation
+approval. Historical candidate bytes below remain unchanged.
+
+The remaining #44/LD10 work is deployment-specific coverage: actual selected
+S1/fallback profile/calendar, fresh complete holdings/metadata/quotes, exact
+signed child-gas/cleanup/full-exit/seeding budgets and environment/release
+bindings. No additional permission round is needed for these exact numeric
+ceilings; changed limits or uncovered inputs require a new recorded review.
+
 ## Proposed limits
 
 | Setting | Development candidate | Final-wallet candidate |

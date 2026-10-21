@@ -42,3 +42,11 @@ Still open before adoption:
   candidates on DC-01 windows.
 - Keith's whole-run seeding input N.
 - Selected cleanup gas, if LD06 cleanup is enabled.
+
+Review clarification (LD09-B-RV01 / CAP-02): the numeric signer ceilings are
+approved separately in [CAP-02](../signer-numeric-ceilings-20261021.json). These
+profiles remain dated candidates, not accepted deployment inputs. Their nominal
+pair formula does not cover independently rounded child gas limits (at least
+200,011,520,000,000wei for the observed maxima plus25% at0.16gwei), arbitrary
+two-max-gas actions or cleanup. Retain these byte-identical profile JSONs and
+rebuild with the actual selected signed-action envelope before adoption.

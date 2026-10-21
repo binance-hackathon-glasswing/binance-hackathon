@@ -408,3 +408,22 @@ decision where supported, preserving missing actual selected-profile/current-
 holdings/config/release/host facts. Numeric ceiling approval is not a claim
 that every future holding can exit in one capped action, installation or
 authorization to trade. No live/provider/model/host/key/funding action.
+
+### LD09-B-RV01 verified result
+
+Pushed executable/test source3e73086 passes full macOS arm64/Python3.12.14 /
+disposable PostgreSQL14.24: **2323 tests /3748 subtests /10 explained skips**,
+zero failures,355.52s. Skips:2 external fixtures,5 systemd,3 Linux bubblewrap.
+Focused split-budget/policy/caps/monitor/planner suite:70 tests/44 subtests/
+zero skips. Deviation rendering and whitespace pass. No blocking feature-code
+defect found; added consumer tests cover S1's five-action reserve/monitor and
+the actual planner's funded-reserve barrier. DC01/LD04/LD09-B candidate JSONs
+reproduce byte-identically. [Receipt](../build/evidence/pr216-review-20261021.json).
+
+The proposal's action budget remains unapproved for deployment: separately
+rounded observed child gas limits plus25% cost200,011,520,000,000wei at0.16gwei,
+120,000,000wei above its recorded fractional-pair budget; two max-gas children
+cost384,000,000,000,000wei. Caller-supplied budgets support larger values, but
+exact selected signed children/cleanup/exit count and whole-run N require real
+coverage before adoption. Numeric signer ceilings are approved under CAP-02,
+not a claim of actual profile/complete-holdings/gas coverage or installation.

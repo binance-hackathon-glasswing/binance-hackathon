@@ -1144,3 +1144,20 @@ and separate child gas-limit rounding must be covered by the actual action
 envelope. No action-budget/exit-coverage approval is manufactured from this
 ceiling decision. #44 remains open for deployment-specific coverage/binding;
 ready_to_install/signing_enabled stay false.
+
+CAP-02 checks PASS on source3e73086: five dedicated decision tests plus the
+consumer/caps/policy focused suite70 tests/44 subtests/zero skips. Full local
+PostgreSQL verification2323 tests/3748 subtests/10 platform/external skips
+includes the real larp_execution malicious-intent refusal tests. Both policies
+load and enforce raw cap/+1 approve/swap boundaries, fee/spender/native checks;
+retained20/40USDT output/input samples and20.10/40.20USDT profile cash caps fit.
+1,200,000*160,000,000=192,000,000,000,000wei fits the200,000,000,000,000wei
+independent transaction fee ceiling. Exact policy canonical-JSON-plus-LF hashes:
+development3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61;
+final717879d24ef6fb7154e7b2c32c77394924b8f560842909438266af00ecd161c7.
+
+Numeric ceiling approval is now complete under Isaac's explicit delegation;
+there is no outstanding request for permission to select these exact bounds.
+#44/LD10 stays open only for actual deployment-input coverage and environment
+configuration binding. All remaining work is recorded in the live backlog,
+CAP-02 artifact and PR216 receipt; no host/key/activation operation occurred.

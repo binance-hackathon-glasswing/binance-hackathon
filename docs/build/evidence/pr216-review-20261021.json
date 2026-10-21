@@ -1,0 +1,73 @@
+{
+  "schema": "PR216ReviewReceipt.v1",
+  "review_id": "IDEA-061 LD09-B-RV01 / IDEA-049-C CAP-02",
+  "date_sgt": "2026-10-21",
+  "original_head": "6c04f1b8c367044b51bc6167c0a7a21f0c4e1538",
+  "canonical_base": "2cd1551",
+  "tested_source": "3e730869f710a2701e61f08fa33c48d6d7185d84",
+  "environment": {
+    "os": "macOS/Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24 disposable loopback Docker"
+  },
+  "tests": {
+    "full_passed": 2323,
+    "subtests_passed": 3748,
+    "skipped": 10,
+    "failed": 0,
+    "duration_seconds": 355.52,
+    "focused_passed": 70,
+    "focused_subtests_passed": 44,
+    "focused_skipped": 0
+  },
+  "skip_reasons": [
+    "SKIPPED [1] tests/intelligence/test_source_link_trust.py:115: optional private public-source fixture",
+    "SKIPPED [1] tests/marketdata/test_recorded.py:29: real response artifacts are external; opt-in only",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:81: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:107: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:97: Disposable systemd test runner not enabled",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:244: Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+    "SKIPPED [1] tests/runtime/test_systemd_conditions.py:262: Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:57: Linux bubblewrap required",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:46: Linux bubblewrap required",
+    "SKIPPED [1] tests/runtime/test_worker_release.py:62: Linux bubblewrap required"
+  ],
+  "checks": {
+    "blocking_feature_code_findings": 0,
+    "canonical_merge_conflict": "RESOLVED_PRESERVING_PR215_CAVEATS",
+    "s1_monitor_and_planner_split_budget_barriers": "PASS",
+    "dc01_ld04_ld09b_candidate_reproduction": "BYTE_IDENTICAL",
+    "real_postgresql_malicious_intent_refusal": "PASS",
+    "deviations_render": "PASS",
+    "whitespace": "PASS"
+  },
+  "numeric_decision": {
+    "id": "CAP-02",
+    "status": "APPROVED_NUMERIC_CEILINGS_ONLY",
+    "policies": {
+      "development": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+      "final": "717879d24ef6fb7154e7b2c32c77394924b8f560842909438266af00ecd161c7"
+    },
+    "selected_profile_approved": false,
+    "current_complete_holdings_covered": false,
+    "action_exit_cleanup_budget_approved": false
+  },
+  "proposal_limits": {
+    "recorded_pair_budget_wei": 200011400000000,
+    "independently_rounded_observed_children_plus_25pct_wei": 200011520000000,
+    "two_max_gas_children_wei": 384000000000000,
+    "gas_price_wei": 160000000,
+    "original_candidates_preserved": true,
+    "actual_signed_action_coverage_required": true
+  },
+  "host_action": false,
+  "live_provider_model_action": false,
+  "wallet_action": false,
+  "signing_enabled": false,
+  "remaining": [
+    "Keith/Isaac: actual #120 selected S1/fallback profile/calendar, fresh complete holdings/metadata/request-bound quotes and #119 fees",
+    "Keith/Isaac: exact signed child-gas/cleanup/full-exit/whole-run N and environment configuration coverage",
+    "Keegan/operator: qualified release/run/DB/CA/manifest/router preflight/host/session bindings and signed acceptance"
+  ]
+}
