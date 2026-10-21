@@ -50,8 +50,12 @@ class Ld02dScriptTests(unittest.TestCase):
         ok = self.ns['allowed_call']
         self.ns['permit_slots'](self.scope, NVDAB, 0)
         good = self.ns['mapping_slot'](WALLET, 0)
+        allowance = self.ns['allowance_slot'](WALLET, 1)
+        self.scope['proven_slots'] = {NVDAB: dict(balance=good, allowance=allowance)}
         sim = {'from': WALLET, 'to': self.ns['ROUTER'], 'data': '0xad43f73d00', 'value': '0x0'}
-        self.assertTrue(ok('eth_estimateGas', [sim, 'latest', {NVDAB: {'stateDiff': {good: '0x1'}}}], self.scope))
+        self.assertTrue(ok('eth_estimateGas', [sim, 'latest', {NVDAB: {'stateDiff': {
+            good: '0x' + self.ns['word_hex'](self.ns['PLENTY']),
+            allowance: '0x' + self.ns['word_hex'](self.ns['PLENTY'])}}}], self.scope))
         for method, params in [
                 ('eth_sendRawTransaction', ['0x00']),
                 ('eth_getLogs', [{}]),
@@ -86,8 +90,13 @@ class Ld02dScriptTests(unittest.TestCase):
         self.ns['rpc'] = rpc
         token = {'NVDAB': {NVDAB: {'stateDiff': {}}}}
         self.ns['permit_slots'](self.scope, USDT, 1)
-        usdt = {USDT: {'stateDiff': {self.ns['mapping_slot'](WALLET, 1): '0x1'}}}
-        token['NVDAB'][NVDAB]['stateDiff'][self.ns['mapping_slot'](WALLET, 0)] = '0x1'
+        self.scope['proven_slots'] = {
+            USDT: dict(balance=self.ns['mapping_slot'](WALLET, 1), allowance=self.ns['allowance_slot'](WALLET, 2)),
+            NVDAB: dict(balance=self.ns['mapping_slot'](WALLET, 0), allowance=self.ns['allowance_slot'](WALLET, 1))}
+        usdt = {USDT: {'stateDiff': {s: '0x' + self.ns['word_hex'](self.ns['PLENTY'])
+                                   for s in self.scope['proven_slots'][USDT].values()}}}
+        token['NVDAB'][NVDAB]['stateDiff'] = {s: '0x' + self.ns['word_hex'](self.ns['PLENTY'])
+                                            for s in self.scope['proven_slots'][NVDAB].values()}
         self.ns['permit_slots'](self.scope, NVDAB, 0)
         out = self.ns['sweep']('https://p', self.scope, quote, usdt, token, sizes=(10, 20))
         nvda = out['NVDAB']

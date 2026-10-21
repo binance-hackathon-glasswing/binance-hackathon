@@ -32,11 +32,12 @@ def iso(ms):
     return datetime.fromtimestamp(ms / 1000, timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
-def plain(text):
+def plain(text, forbidden=()):
     """Printable ASCII (others as '?'), at most 160 characters; anything with a URL is 'FILTERED'."""
     text = str(text)
     if '://' in text:
         return 'FILTERED'
+    sanitize(text, forbidden)
     shown = ''.join(c if ' ' <= c <= '~' else '?' for c in text)
     return shown if len(shown) <= 160 else shown[:160] + f'...[{len(shown)} chars]'
 
@@ -52,10 +53,11 @@ class RpcRefused(ValueError):
         super().__init__('RPC_REFUSED')
         self.error = error
 
-    def reason(self):
+    def reason(self, forbidden=()):
         message = str(self.error.get('message', ''))
+        sanitize(message, forbidden)
         found = re.search(r'RFQ_[A-Za-z]+', message)
-        return found.group(0) if found else plain(message)[:80]
+        return found.group(0) if found else plain(message, forbidden)[:80]
 
 
 def word_hex(value):
@@ -74,19 +76,27 @@ def allowance_slot(wallet, base):
 
 def allowed_call(method, params, scope):
     """Reads, slot-proof calls and swap simulations of exact fresh calldata; overrides only on permitted slots."""
+    if type(params) is not list:
+        return False
     tx = params[0] if params and type(params[0]) is dict else {}
     data = str(tx.get('data', ''))
 
-    def override_ok(value):
+    def override_ok(value, simulation=False):
         if type(value) is not dict or not value or not set(value) <= scope['tokens']:
             return False
         for token, diff in value.items():
             if type(diff) is not dict or set(diff) != {'stateDiff'} or type(diff['stateDiff']) is not dict:
                 return False
-            if not diff['stateDiff'] or len(diff['stateDiff']) > 2:
+            if simulation:
+                proof = scope.get('proven_slots', {}).get(token)
+                if not proof or diff['stateDiff'] != {slot: '0x' + word_hex(PLENTY) for slot in proof.values()}:
+                    return False
+            elif (token != tx.get('to') or len(diff['stateDiff']) != 1
+                  or not set(diff['stateDiff']) <= scope['slots'].get(token, set())
+                  or any(v != '0x' + word_hex(SENTINEL) for v in diff['stateDiff'].values())):
                 return False
-            if not set(diff['stateDiff']) <= scope['slots'].get(token, set()):
-                return False
+        if len(value) != 1:
+            return False
         return True
     if method in ('eth_chainId', 'eth_getBlockByNumber', 'eth_getStorageAt'):
         return True
@@ -96,7 +106,7 @@ def allowed_call(method, params, scope):
     if method == 'eth_estimateGas':
         return (set(tx) <= {'from', 'to', 'data', 'value'} and tx.get('from') == scope['wallet']
                 and tx.get('value', '0x0') == '0x0' and tx.get('to') == ROUTER and data in scope['calldata']
-                and len(params) == 3 and override_ok(params[2]))
+                and len(params) == 3 and override_ok(params[2], simulation=True))
     return False
 
 
@@ -119,8 +129,8 @@ def rpc(url, method, params, scope):
 
 
 def permit_slots(scope, token, base):
-    scope['slots'].setdefault(token, set()).update({mapping_slot(scope['wallet'], base)}
-                                                    | {allowance_slot(scope['wallet'], b) for b in (base, base + 1)})
+    scope['slots'][token] = ({mapping_slot(scope['wallet'], base)}
+                            | {allowance_slot(scope['wallet'], b) for b in (base, base + 1)})
 
 
 def read_call(url, scope, token, data, override=None):
@@ -132,6 +142,7 @@ def prove_slots(url, scope, token):
     """S2: the balance base whose one-slot override makes balanceOf(wallet) return the sentinel, then the allowance
     base (base+1 first, then base) whose override makes allowance(wallet, router) return it."""
     wallet = scope['wallet']
+    scope.setdefault('proven_slots', {}).pop(token, None)
     balance_call = BALANCE_OF_CALL + wallet[2:].rjust(64, '0')
     allowance_call = ALLOWANCE_CALL + wallet[2:].rjust(64, '0') + ROUTER[2:].rjust(64, '0')
     for base in CANDIDATES:
@@ -151,6 +162,8 @@ def prove_slots(url, scope, token):
             except RpcRefused:
                 continue
             if a_seen == SENTINEL:
+                scope['proven_slots'][token] = dict(balance=slot, allowance=a_slot)
+                scope['slots'][token] = {slot, a_slot}
                 return dict(proven=True, balance_base=hex(base), allowance_base=hex(allowance_base),
                             balance_slot=slot, allowance_slot=a_slot)
         return dict(proven=False, balance_base=hex(base), reason='allowance slot not found')
@@ -162,7 +175,7 @@ def simulate(url, scope, data, override):
         return int(rpc(url, 'eth_estimateGas', [{'from': scope['wallet'], 'to': ROUTER, 'data': data, 'value': '0x0'},
                                                 'latest', override], scope), 16)
     except RpcRefused as error:
-        return error.reason()
+        return error.reason(scope.get('forbidden', ()))
     except Exception as error:
         return type(error).__name__
 
@@ -196,7 +209,7 @@ def sweep(url, scope, quote, usdt_override, token_overrides, sizes=SIZES_USDT):
             try:
                 buy = quote_row(quote(symbol, 'BUY', pay))
             except Exception as error:
-                rows[str(size)] = dict(buy_error=plain(type(error).__name__ + ':' + str(error))[:80])
+                rows[str(size)] = dict(buy_error=plain(type(error).__name__ + ':' + str(error), scope.get('forbidden', ()))[:80])
                 continue
             scope['calldata'].add(buy['calldata'] or '')
             row['buy'] = dict(out_units=buy['to_amount'], quoted_gas=buy['quoted_gas'], pinned=buy['pinned'],
@@ -205,7 +218,7 @@ def sweep(url, scope, quote, usdt_override, token_overrides, sizes=SIZES_USDT):
             try:
                 sell = quote_row(quote(symbol, 'SELL', buy['to_amount']))
             except Exception as error:
-                row['sell_error'] = plain(type(error).__name__ + ':' + str(error))[:80]
+                row['sell_error'] = plain(type(error).__name__ + ':' + str(error), scope.get('forbidden', ()))[:80]
                 rows[str(size)] = row
                 continue
             scope['calldata'].add(sell['calldata'] or '')
@@ -249,13 +262,15 @@ def collect():
     url = providers[0]['url']
     wallet = config['wallet_address'].lower()
     secrets = runtime_secrets(config)
+    forbidden = [wallet, wallet[2:], config.get('database_host'), url, urlsplit(url).hostname]
+    forbidden += [v for v in secrets.values() if isinstance(v, str)]
 
     class Memory:
         def put(self, observation):
             return hashlib.sha256(json.dumps(observation, sort_keys=True).encode()).hexdigest()
     port = MarketPort(Web3Client(secrets['BINANCE_API_KEY'], secrets['BINANCE_SECRET_KEY'], artifacts=Memory()),
                       wallet, quote_limits=profile)
-    scope = dict(wallet=wallet, usdt=USDT, tokens={USDT, *TOKENS.values()}, calldata=set(), slots={})
+    scope = dict(wallet=wallet, usdt=USDT, tokens={USDT, *TOKENS.values()}, calldata=set(), slots={}, forbidden=forbidden)
     # USDT: the LD02b-proven layout, re-proven here with the same sentinel test.
     usdt_proof = prove_slots(url, scope, USDT)
     usdt_ok = (usdt_proof.get('proven') and int(usdt_proof['balance_base'], 16) == USDT_BALANCE_SLOT
@@ -275,8 +290,6 @@ def collect():
                   minimum_trade_units=profile.get('minimum_trade_units'), sizes_usdt=list(SIZES_USDT),
                   slot_proofs={k: {kk: vv for kk, vv in v.items() if not kk.endswith('_slot')} for k, v in proofs.items()},
                   sweep=sweep_out, provider_fingerprint=fingerprint(url))
-    forbidden = [wallet, wallet[2:], config.get('database_host'), url, urlsplit(url).hostname]
-    forbidden += [v for v in secrets.values() if isinstance(v, str)]
     return packet, forbidden
 
 

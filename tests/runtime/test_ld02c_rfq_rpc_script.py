@@ -18,7 +18,8 @@ class Ld02cScriptTests(unittest.TestCase):
 
     def test_q1_only_reads_and_exact_simulations_are_allowed(self):
         ok, s = self.ns['allowed_call'], self.scope
-        override = {USDT: {'stateDiff': {'0x1': '0x2'}}}
+        slot = self.ns['mapping_slot'](self.ns['ROUTER'], self.ns['mapping_slot'](WALLET, 2))
+        override = {USDT: {'stateDiff': {slot: '0x' + self.ns['word_hex'](self.ns['OVERRIDE_ALLOWANCE'])}}}
         sim = {'from': WALLET, 'to': self.ns['ROUTER'], 'data': '0xad43f73d00', 'value': '0x0'}
         self.assertTrue(ok('eth_estimateGas', [sim, 'latest', override], s))
         self.assertTrue(ok('eth_getTransactionReceipt', ['0x' + '2' * 64], s))

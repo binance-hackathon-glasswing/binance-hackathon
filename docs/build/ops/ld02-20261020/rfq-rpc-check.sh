@@ -32,11 +32,12 @@ def iso(ms):
     return datetime.fromtimestamp(ms / 1000, timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
-def plain(text):
+def plain(text, forbidden=()):
     """Printable ASCII (others as '?'), at most 160 characters; anything with a URL is 'FILTERED'."""
     text = str(text)
     if '://' in text:
         return 'FILTERED'
+    sanitize(text, forbidden)
     shown = ''.join(c if ' ' <= c <= '~' else '?' for c in text)
     return shown if len(shown) <= 160 else shown[:160] + f'...[{len(shown)} chars]'
 
@@ -52,10 +53,11 @@ class RpcRefused(ValueError):
         super().__init__('RPC_REFUSED')
         self.error = error
 
-    def reason(self):
+    def reason(self, forbidden=()):
         message = str(self.error.get('message', ''))
+        sanitize(message, forbidden)  # before extraction, conversion or truncation
         found = re.search(r'RFQ_[A-Za-z]+', message)
-        return found.group(0) if found else ('reverted' if 'revert' in message.lower() else plain(message)[:60])
+        return found.group(0) if found else ('reverted' if 'revert' in message.lower() else plain(message, forbidden)[:60])
 
 
 def word_hex(value):
@@ -70,12 +72,15 @@ def mapping_slot(key, slot):
 
 def allowed_call(method, params, scope):
     """The only call shapes sent: execution's read methods, and swap simulations of exact fresh calldata."""
+    if type(params) is not list:
+        return False
     tx = params[0] if params and type(params[0]) is dict else {}
     data = str(tx.get('data', ''))
 
     def override_ok(value):
-        return (type(value) is dict and set(value) == {scope['usdt']} and set(value[scope['usdt']]) == {'stateDiff'}
-                and len(value[scope['usdt']]['stateDiff']) == 1)
+        slot = mapping_slot(ROUTER, mapping_slot(scope['wallet'], USDT_ALLOWANCE_SLOT))
+        return type(value) is dict and value == {scope['usdt']: {
+            'stateDiff': {slot: '0x' + word_hex(OVERRIDE_ALLOWANCE)}}}
     if method in ('eth_chainId', 'eth_getBlockByNumber', 'eth_getBalance', 'eth_getTransactionCount',
                   'eth_getTransactionByHash', 'eth_getTransactionReceipt', 'eth_getCode', 'eth_getStorageAt'):
         return True
@@ -110,18 +115,20 @@ def rpc(url, method, params, scope, log=None):
     return reply['result']
 
 
-def route_markers(record):
+def route_markers(record, forbidden=()):
     """R1: field names of the quote response and short scalar values of routing-like fields."""
     data = record['response']['data']
     q = data[0] if isinstance(data, list) and len(data) == 1 else data
     rr = q.get('routerResult') or {}
+    for key in (*q, *rr):
+        sanitize(str(key), forbidden)
     def scalars(d):
-        return {k: (v if isinstance(v, (bool, int, float)) or v is None else plain(v)[:80]) for k, v in d.items()
+        return {k: (v if isinstance(v, (bool, int, float)) or v is None else plain(v, forbidden)[:80]) for k, v in d.items()
                 if ROUTE_KEY.search(k) and (isinstance(v, (bool, int, float, str)) or v is None)}
     lists = {}
     for k, v in rr.items():
         if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
-            lists[k] = [{kk: (plain(vv)[:60] if isinstance(vv, str) else vv) for kk, vv in x.items()
+            lists[k] = [{kk: (plain(vv, forbidden)[:60] if isinstance(vv, str) else vv) for kk, vv in x.items()
                          if ROUTE_KEY.search(kk) and isinstance(vv, (str, int, float, bool))} for x in v[:6]]
     return dict(top_level_keys=sorted(q), router_result_keys=sorted(rr), top_level=scalars(q), router_result=scalars(rr),
                 router_result_lists=lists)
@@ -149,22 +156,26 @@ def rfq_check(url, scope, quotes, sleep=time.sleep, clock=time.monotonic):
     out = dict(proof=proof, delays_s=list(DELAYS), symbols={})
     if not all(proof.values()):
         return dict(out, status='NOT_RUN', reason='allowance override not proven')
-    results = {s: [] for s in quotes}
+    results, ages = {s: [] for s in quotes}, {s: {} for s in quotes}
     for delay in DELAYS:
         for symbol, q in quotes.items():
             wait = q['t0'] + delay - clock()
             if wait > 0:
                 sleep(wait)
+            ages[symbol][str(delay)] = round(clock() - q['t0'], 3)
             try:
                 gas = int(rpc(url, 'eth_estimateGas', [{'from': scope['wallet'], 'to': ROUTER, 'data': q['data'],
                                                         'value': '0x0'}, 'latest', override], scope), 16)
                 results[symbol].append((delay, gas))
             except RpcRefused as error:
-                results[symbol].append((delay, error.reason()))
+                results[symbol].append((delay, error.reason(scope.get('forbidden', ()))))
             except Exception as error:
                 results[symbol].append((delay, type(error).__name__))
     for symbol, rows in results.items():
-        out['symbols'][symbol] = dict(results={str(d): r for d, r in rows}, **timeline(rows))
+        actual = [(ages[symbol][str(d)], r) for d, r in rows]
+        out['symbols'][symbol] = dict(results={str(d): r for d, r in rows},
+                                     elapsed_since_quote_response_s=ages[symbol], **timeline(actual))
+    out['timing_note'] = 'Result keys are nominal delays; bounds use observed probe-start ages after quote response.'
     return dict(out, status='DONE')
 
 
@@ -179,7 +190,7 @@ def rpc_check(providers, scope, wallet):
             try:
                 r[name] = dict(ok=True, value=rpc(p['url'], method, params, scope, log))
             except RpcRefused as error:
-                r[name] = dict(ok=False, error=error.reason())
+                r[name] = dict(ok=False, error=error.reason(scope.get('forbidden', ())))
             except Exception as error:
                 r[name] = dict(ok=False, error=type(error).__name__)
         call('chain_id', 'eth_chainId', [])
@@ -269,6 +280,10 @@ def collect():
         raise ValueError('NO_PROVIDERS')
     wallet = config['wallet_address'].lower()
     secrets = runtime_secrets(config)
+    forbidden = [wallet, wallet[2:], config.get('database_host')]
+    for p in providers:
+        forbidden += [p['url'], urlsplit(p['url']).hostname]
+    forbidden += [v for v in secrets.values() if isinstance(v, str)]
 
     class Memory:
         def put(self, observation):
@@ -277,7 +292,7 @@ def collect():
                       wallet, quote_limits=profile)
     pay = profile['minimum_trade_units']
     quotes, markers = {}, {}
-    scope = dict(wallet=wallet, usdt=USDT, tokens={USDT, *TOKENS.values()}, calldata=set())
+    scope = dict(wallet=wallet, usdt=USDT, tokens={USDT, *TOKENS.values()}, calldata=set(), forbidden=forbidden)
     for symbol in TOKENS:
         record = port.quote(symbol, 'BUY', pay * 10**12, 18)
         data = record['response']['data']
@@ -288,7 +303,7 @@ def collect():
             continue
         quotes[symbol] = dict(t0=time.monotonic(), data=tx['data'])
         scope['calldata'].add(tx['data'])
-        markers[symbol] = dict(route_markers(record), quoted_gas=int(tx['gas']) if tx.get('gas') else None,
+        markers[symbol] = dict(route_markers(record, forbidden), quoted_gas=int(tx['gas']) if tx.get('gas') else None,
                                elapsed_ms=record.get('elapsed_ms'), calldata=fingerprint(tx['data']))
     usdt_units = int(rpc(providers[0]['url'], 'eth_call', [dict(to=USDT, data=BALANCE_OF_CALL + wallet[2:].rjust(64, '0')),
                                                            'latest'], scope), 16)
@@ -299,10 +314,6 @@ def collect():
                   rfq=rfq_check(providers[0]['url'], scope, quotes),
                   rpc=rpc_check(providers, scope, wallet),
                   provider_fingerprints={p['source_id']: fingerprint(p['url']) for p in providers})
-    forbidden = [wallet, wallet[2:], config.get('database_host')]
-    for p in providers:
-        forbidden += [p['url'], urlsplit(p['url']).hostname]
-    forbidden += [v for v in secrets.values() if isinstance(v, str)]
     return packet, forbidden
 
 
