@@ -493,3 +493,16 @@ window values/provenance; final is byte-identical. Exact hashes and reproduction
 Strategy suite: 205 passed / 80 subtests passed (6.41 s). Add the new packet to the existing
 artifact-reproduction parametrization before mirror qualification. P3 mirror result pending.
 P4 backlog updated; owner confirmation, fee netting and LD10 coverage retained.
+
+### RV120-02 qualification result (2026-10-21)
+
+P3 PASS: implementation/candidate head `b0da2ca7e8886ac159a564f2b0e1bb16c9324857`,
+[mirror run 39606912446](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39606912446),
+all four jobs SUCCESS: infrastructure deploy/aws, infrastructure deploy/bootstrap,
+runtime, host-bundle. Runtime: 2408 passed / 7 skipped / 3801 subtests; separate
+real-systemd check: 5 passed / 5 subtests; offline demo and Docker build/run PASS.
+Updated local strategy suite: 206 passed / 80 subtests. P4 PASS: exact file/document
+hashes and outstanding acceptance are in the packet and backlog. PR #229 targets the
+canonical integration branch. This qualification covers this profile rebuild only;
+it is not the later LD15 release candidate or permission for host writes/trading.
+The following result-record commit changes documentation only.

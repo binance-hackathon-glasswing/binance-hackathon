@@ -48,4 +48,11 @@ python -m larp.strategy.profiles \
   --gas-budget-evidence docs/build/evidence/ld02d-size-sell-20261021.json
 ```
 
+P3 mirror PASS at `b0da2ca7e8886ac159a564f2b0e1bb16c9324857`:
+[run 39606912446](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39606912446),
+all four jobs SUCCESS. Runtime 2408 passed / 7 skipped / 3801 subtests; separate
+systemd 5 passed / 5 subtests; demo and Docker smoke PASS. Local strategy suite
+206 passed / 80 subtests. The subsequent result-record commit is documentation only.
+This is profile-rebuild qualification, not the later LD15 release qualification.
+
 Full decision, prospective criteria and verification: [IDEA-063 RV120-02](../../../ledger/IDEA-063.md).
