@@ -1134,3 +1134,211 @@ PR206/210/draft212 work. The review receipt retains original and combined test
 sources/counts, zero-step billing CI and actual gas/RFQ/provider/caps/release/host
 limits. No whole LD09/10/Gate B acceptance item closes. Both session working
 trees remain clean after push; the disposable local PG container is stopped.
+
+## LD02c — RFQ order validity and execution-RPC read qualification (2026-10-21; prospective)
+
+Follow-ups to LD02b-F1 (MSFTB's RFQ order expired within tens of seconds) and PF-01 (BNB Chain public, then
+NodeReal public, selected for execution read-side qualification). One read-only script,
+`docs/build/ops/ld02-20261020/rfq-rpc-check.sh`, on `primary` only, with the LD02 safety contract (no host writes,
+SQL not used, sanitized output with a final scan, no transaction or signature).
+
+**Pass criteria, written before the script exists (R1–R4, Q1–Q4):**
+
+- R1. For each bStock, one minimum-size BUY quote through the production `MarketPort.quote`. The packet lists the
+  quote response's field names, and the values of short scalar fields whose names suggest routing, vendor, RFQ,
+  mode, expiry or validity, without calldata or addresses other than public contracts.
+- R2. Each quote's exact calldata is simulated with `eth_estimateGas` under the proven USDT allowance override at
+  fixed delays after the quote: 0, 3, 6, 10, 15, 20, 30, 45, 60 and 90 s. Each result is the gas, or the refusal's
+  code and a short reason (`RFQ_*` or `reverted`).
+- R3. The report gives, per symbol, the last delay that simulated and the first that failed, and states the RFQ
+  validity only as observed bounds (for example "succeeded at 6 s, failed at 10 s").
+- R4. No conclusion beyond the observed bounds. Implications for m, re-quote timing and MSFTB coverage are written
+  as inputs for the owners.
+- Q1. Each provider answers every read method execution uses: `eth_chainId`, `eth_getBlockByNumber` (latest and
+  finalized), `eth_getBalance`, `eth_getTransactionCount` (latest and pending), `eth_getTransactionByHash` and
+  `eth_getTransactionReceipt` for the FG-01 funding transaction, `eth_getCode` (router), `eth_getStorageAt` (facet
+  slot) and the pinned `eth_call` forms (`balanceOf`, `allowance`).
+- Q2. Answers agree across providers: chain 56, the same receipt status, block and gas used, the same router code
+  hash and facet, and finalized blocks within 10 blocks of each other.
+- Q3. Latency per method and provider is recorded. Failover is covered by the production `BalanceProviders` logic
+  and its tests; this check proves each provider individually.
+- Q4. Offline tests cover the new allowlist, the delay schedule and the reporting; the full suite passes.
+
+### LD02c results — script `82f86cb`, SSM `24379b0e-62d8-48c2-8bad-981965967f6a` (2026-10-21)
+
+Packet SHA-256 as printed on the host: `688b89efb35257d5b089469fd373b3545ef3539de460db32976a2cb9d94b93bb`.
+
+- **R1 PASS.** Every quote response has the same shape: top level `executionMode`, `rfq`, `routerResult`, `tx`;
+  `executionMode = SWAP`, `rfq = null`, vendor LiquidMesh, quoted gas 250,000. **Nothing in the response marks
+  MSFTB's route as RFQ**: its single-hop `dexRouterList` looks like the others.
+- **R2/R3 PASS.** Allowance-override proof held. Observed bounds:
+  - **MSFTB: `RFQ_OrderExpired` at every delay, including 0 s.** The route is not executable as quoted; this is not a
+    short validity window.
+  - GOOGLB, NVDAB, SKHYB, TSLAB: simulated successfully at every delay through 90 s (no failure observed). Gas was
+    stable per symbol: about 718.5k for GOOGLB, 547k–554k for the others.
+- **R4 (inputs for owners, not decisions):** MSFTB cannot be bought through this route at present, so LD09/#120
+  coverage and any S1/equal-weight allocation to MSFTB need a decision. RFQ routes are only detectable by simulating
+  the exact calldata, so a pre-sign simulation of the swap would catch them before gas is spent; that is a design
+  question for Isaac/Keegan (execution currently does not simulate). For the four AMM routes, 90 s of quote age did
+  not break the swap, so m = 30 s is not limited by route validity there.
+- **Q1 PASS.** Both providers answered every execution read method (chain ID, latest and finalized block, balance,
+  latest/pending nonce, the FG-01 transaction and receipt, router code, facet slot, `balanceOf`, `allowance`).
+- **Q2 FAIL as written.** Chain 56, receipt (status 1, block 127,946,341, gas used 188,294), router code hash and facet
+  agree, but the finalized blocks differed by 12 (limit 10). The providers were read one after the other several
+  seconds apart (about 12 blocks at about 0.45 s per block), so this measures read spacing, not disagreement. The
+  criterion stays failed; amendment Q2b below re-measures it.
+- **Q3 PASS.** Latency per call 421–505 ms (BNB Chain) and 424–491 ms (NodeReal).
+
+**Amendment Q2b (written before the rerun):** read `finalized` from both providers concurrently (two threads started
+together) three times, and pass if every pair is within 10 blocks. Nothing else changes.
+
+### LD02c rerun with Q2b — script `a48d669`, SSM `e32d4608-56fa-494c-ba9b-34d21d4d0fe4` (2026-10-21)
+
+Packet `c8373e73…3978`. **Q2b PASS:** three concurrent reads returned identical finalized blocks on both providers
+(128,789,466 / 467 / 468). All other Q results as before (Q2-as-written again FAIL from sequential reads). **R2/R3
+replicated:** MSFTB `RFQ_OrderExpired` at every delay including 0 s; GOOGLB, NVDAB, SKHYB and TSLAB simulate at every
+delay through 90 s. Evidence (pretty-printed; no hostname or wallet in either packet):
+[run 1](../build/evidence/ld02c-rfq-rpc-run1-20261021.json), [run 2](../build/evidence/ld02c-rfq-rpc-run2-20261021.json).
+
+**Execution read-side qualification (PF-01 order):** BNB Chain public and NodeReal public both answer every read
+method execution uses, agree with each other, and respond in about 0.42–0.51 s. This is read-side evidence only:
+broadcasting goes through the Web3 API, native tracing stays unqualified (B04), and approving the RPC for execution
+remains an owner decision.
+
+## LD02d — SELL-side gas and quote-size sweep (2026-10-21; prospective)
+
+Fills the gaps LD09-G1 recorded: SELL swap gas was never simulated (the wallet holds no bStocks), and quote costs
+were only measured at the minimum size. One read-only script, `docs/build/ops/ld02-20261020/size-sell-check.sh`, on
+`primary` only, with the LD02 safety contract: no host writes, no SQL, no transaction or signature, sanitized output
+with a final scan, and an allowlist of RPC call shapes.
+
+**Pass criteria, written before the script exists (S1–S6):**
+
+- S1. For each bStock and each size in 10, 20, 40 and 100 USDT: one BUY quote through the production
+  `MarketPort.quote`, then one SELL quote of exactly the BUY quote's output amount. The packet records the amounts,
+  quoted gas, whether `tx.to` is the pinned router with the swap selector, and the quoted round-trip cost in bp
+  (`(pay − sell output) / pay`). A refused quote is recorded with a short reason.
+- S2. Before any SELL simulation, each bStock's balance and allowance storage slots are proven by override: for a
+  candidate base slot, `balanceOf(wallet)` (and `allowance(wallet, router)`) under a one-slot override must return the
+  exact sentinel. Candidates: plain slots 0–12 and the OpenZeppelin v5 ERC-20 namespace. A token with no proven slot
+  gets no SELL simulation and is reported `NOT_PROVEN`.
+- S3. Each pinned quote's exact calldata is simulated once with `eth_estimateGas`, immediately after its quote: BUY
+  under the proven USDT balance and allowance overrides (as in LD02b/LD02c), SELL under the proven bStock overrides.
+  Each result is the gas or a short refusal reason.
+- S4. The report gives, per symbol, the maximum simulated BUY and SELL gas and the round-trip cost per size. These are
+  inputs for Keith (LD09) and Isaac (LD10); no profile, cap or decision follows from the packet.
+- S5. Overrides are the only state changes, and only on proven slots of the pinned tokens. The allowlist refuses any
+  other override target or slot.
+- S6. Offline tests cover the allowlist, slot proof, sweep and reporting; the full suite passes.
+
+### LD02d results — script `99b443c`, SSM `06e58b76-dd41-4ae6-ae90-2f72d25fc0ae` (2026-10-21)
+
+Packet generated 2026-10-20T18:45:56Z; SHA-256 as printed on the host
+`86857178d8f5f7f4d88499d5cf3a8130a3d49420efdfebab7401dec138b567d0`; evidence
+[ld02d-size-sell-20261021.json](../build/evidence/ld02d-size-sell-20261021.json).
+
+- **S2 PASS.** USDT re-proven at balance slot 1 and allowance slot 2. All five bStocks use the OpenZeppelin v5 ERC-20
+  namespace (balances at `0x52c6…ace00`, allowances at `…ace01`), each proven by the exact sentinel.
+- **S1 PASS.** All 40 quotes (5 symbols × 4 sizes × BUY/SELL) returned pinned router calldata with the swap selector.
+  Quoted gas is always 250,000 and is not a usable estimate.
+- **S3 PASS.** Every pinned calldata was simulated. One refusal: MSFTB BUY at 40 USDT reverted with
+  `Min return not reached` (output below the slippage minimum at simulation time).
+- **S4 (inputs for owners, not decisions):**
+
+| Symbol | Max BUY swap gas | Max SELL swap gas | Round-trip quoted cost, bp (10 / 20 / 40 / 100 USDT) |
+|---|---:|---:|---|
+| GOOGLB | 731,192 | 782,156 | −5.83 / −1.23 / 0.05 / 0.43 |
+| MSFTB | 515,483 | 516,912 | 6.70 / 6.70 / 6.72 / 6.65 |
+| NVDAB | 623,697 | 741,350 | −0.03 / 1.69 / −0.93 / −0.93 |
+| SKHYB | 731,134 | **930,548** | −3.59 / −0.41 / −1.44 / 0.68 |
+| TSLAB | **944,814** | 759,857 | −3.57 / −2.56 / −0.11 / 0.48 |
+
+  - **New maximum swap gas is 944,814 (TSLAB BUY at 20 USDT)**, above the 748,525 used in LD09-G1. The largest SELL is
+    930,548. Gas depends on the route chosen at quote time (TSLAB BUY ranged from 423k to 945k), not on size.
+  - With 25 % headroom, 944,814 → 1,181,018, which leaves 1.6 % under the draft `max_gas` 1,200,000. Isaac (LD10)
+    should check whether the cap or the headroom needs to change.
+  - **MSFTB is not permanently RFQ-routed.** This run got AMM-like routes at 10, 20 and 100 USDT (about 515k gas each),
+    unlike LD02c, where it reverted with `RFQ_OrderExpired` at every delay. Routing is chosen per quote, so this
+    corrects LD02c's R4 wording ("cannot be bought through this route at present"): it applies to that run's quotes
+    only. Execution still has no way to tell an RFQ route apart before simulating.
+  - Round-trip costs are quote-to-quote, about 1–2 s apart. The negative values are price drift between the two
+    quotes, not gains. They show no size dependence from 10 to 100 USDT.
+- S5: overrides were limited to proven slots of the pinned tokens by the allowlist (tested). S6: see the PR receipt.
+
+LD09-G1 has been revised with these maxima ([proposal](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md)).
+
+## LD02cd-RV01 — Isaac review of PR215 (2026-10-21 SGT; prospective)
+
+Isaac requests complete review, fixes and merge. Original head1451264 on
+canonical5943e1c. Criteria: CR1 inspect both collectors, RPC/override/proof and
+output paths; CR2 reproduce and fix private-value leaks before truncation,
+ASCII conversion or reason extraction; CR3 restrict simulations to exact proven
+slots/values, separating sentinel discovery from simulation authority; CR4
+record actual RFQ probe ages rather than treating nominal schedule labels as
+measured lifetime; CR5 independently check immutable packet summaries/gas math,
+proposal/design caveats and live-backlog scope; CR6 run meaningful offline and
+integration checks on pushed source, preserve historical packets and original
+FAIL/amendment records, merge only exact accepted head and update PR133.
+No live collector, provider/model/host/key/wallet operation is part of this review.
+
+LD02cd-RV01 reproduced review gaps: CR-P2-01 both new scripts shorten/ASCII-
+convert/extract provider or quote text before private-value scanning, repeating
+PR211's fixed leak pattern (including RFQ_ extraction and route-marker scalars).
+CR-P2-02 RFQ accepts any one USDT override; size-sweep discovery candidates remain
+permitted for swap simulation before proof and accept arbitrary values.
+CR-P2-03 RFQ output labels nominal schedule delays as observed age bounds; prior
+network/proof/sequential-call delay makes even a scheduled0s probe older than0s.
+New offline regressions precede fixes; archived packets remain immutable and
+missing actual timing cannot be reconstructed by changing old labels.
+
+CR-P2-04: size-sweep reads the response's fromTokenAmount but never checks it
+against the requested BUY size or SELL-of-BUY-output size before simulating and
+computing round-trip cost. A mismatched response produces a misleading cost at
+the requested denominator. Add explicit amount binding/refusal and regressions;
+original packet claims remain limited to the fields actually retained.
+
+### LD02cd-RV01 results and interpretation correction
+
+All four P2 findings are fixed in pushed source `21b8e88`. Nine regressions
+reproduced CR-P2-01–03 before repair; two amount-binding cases reproduced
+CR-P2-04. The final offline collector suite passes **41 tests /62 subtests /
+zero skips** on macOS arm64/Python3.12.14. Tests exercise the embedded collectors
+with fake external boundaries, including successful slot proof followed by
+exact-value simulation and rejection of stale/unproven candidates. Shell syntax,
+deviation rendering, whitespace and independent packet/gas arithmetic checks
+pass. This review does not rerun the author's full Linux/PostgreSQL suite on
+the repaired source. [Machine receipt](../build/evidence/pr215-review-20261021.json).
+
+**Correction to the historical R2/R3/S4/S5 interpretation above:** LD02c's keys
+0–90 are nominal schedule labels. Actual probe-start ages were not retained;
+zero-age RFQ failure, an exact TTL, and exactly-90-second usability are therefore
+NOT_MEASURED. Provider-reported expiry at each scheduled probe remains observed.
+Future collectors record actual ages since quote response, including proof and
+sequential-call delay; these are observed probe outcomes, not a guaranteed TTL.
+The three archived packet files remain byte-identical to original head1451264.
+Original Q2 FAIL remains FAIL; separately preregistered concurrent Q2b remains
+PASS. LD02d records 40 simulation attempts, 39 successful gas values and one
+MSFTB40 BUY minimum-return refusal. Its small sequential sample does not isolate
+size, route or time effects; negative quote-to-quote costs do not prove profit.
+The original guards did not enforce S5 as strongly as claimed; repaired guards
+now separate exact sentinel discovery from exact proven-slot/value simulation.
+Response amount binding is now checked, but these research packets are not
+complete production calldata/economic proof or #44 acceptance.
+
+Observed maxima remain BUY944,814 /SELL930,548, conservative pair1,000,057;
+25% margin at draft0.16gwei gives200,011,400,000,000wei. Those are proposal
+inputs, not numeric approval, receipt gas or full selected-exit/cleanup coverage.
+Keegan's separate PR216 records option B and still needs review; Keith owns
+#119/#120 and whole-run N/cleanup inputs, Isaac owns exact #44 hashes/acceptance.
+RG2-D01 remains an unbuilt proposal for Keegan's matrix/hook review; actual
+signed development-host drills and operator authorization remain separate.
+No live collector, provider/model, AWS, signer, key, funding or wallet action
+was performed during this review.
+
+LD02cd-RV01 delivery: PR215 APPROVED and MERGED at `c854c82` on
+2026-10-21T06:39:33Z, exact reviewed head `36d4c1a` (executable/test source
+`21b8e88`; later changes docs only). Actions39556642979 ran zero steps because
+account payments/spending limits blocked startup, not a passing CI run.
+Stacked PR216 is retargeted to canonical for its own independent review;
+PR217 operator/measurement record remains pending. Canonical status/plan and
+PR133 noticeboard retain these scoped results and the remaining owner gates.

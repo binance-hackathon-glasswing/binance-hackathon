@@ -503,3 +503,32 @@ portability; production path refusal is unchanged. All7 packet local links and
 changed docs; no additional blocker. Application/runtime/config source is
 unchanged from the current checklist base. Hosted CI remains billing-blocked;
 new tools still need future release qualification and all live drills stay open.
+
+## LD21-H — drill harnesses and procedures (2026-10-20)
+
+Prepared for the approved operator (all drills NOT_RUN):
+[LD21_DRILL_PROCEDURES.md](../build/LD21_DRILL_PROCEDURES.md) pins D1 restart, D2 DELIVERY_AGE HALT/clear,
+D3 anchors, D4 restore/alert and D5 throwaway wallet switch, with pass/fail criteria written before any run.
+Two harnesses close RG-01's "pinned invocation harness" blockers for RG4 and RG6:
+`tools/deploy/drill_verify_anchors.py` (read-only `verify_anchors` over downloaded Anchor.v2 files, with hourly
+coverage) and `tools/deploy/drill_wallet_switch.py` (read-only preflight that agrees with `switch_wallet`, and a
+confirmed switch step). PostgreSQL tests: 3 + 6 passed. RG8 replay harness and signer-boundary crash injection
+remain open.
+
+LD21-H addendum (2026-10-20): `tools/deploy/drill_replay_day.py` adds the RG8 harness. It rebuilds the
+builder/planner/policy from the run's pinned configuration with every live port made to raise (calls are counted
+even when the coordinator records them as context failures), reads the source journal read-only, and replays into an
+empty isolated target with `replay_live`. It refuses a non-empty target or the source database. 5 PostgreSQL tests:
+full and prefix replays reach the recorded heads, a forced live-port call fails as `LIVE_PORT_CALLED`, a reused
+target is refused, and the builder matches the pinned config. Procedure D6 is added. Signer-boundary crash injection
+remains open.
+
+## RG2-D01 — boundary crash injection design (2026-10-21, design only)
+
+[RG2_CRASH_INJECTION_DESIGN_20261021.md](../build/RG2_CRASH_INJECTION_DESIGN_20261021.md) proposes the RG2 fault
+matrix F1–F10 over the authorized, signed-durable, send/unknown, receipt/settlement and round/ACK boundaries. Wide
+gaps use an external SIGKILL on a durable marker. Narrow gaps (F3, F5, F7a, F7b, F8) use a proposed same-build fault
+point that is inert by default, consumes a one-shot token and is refused in final mode. Six read-only pass checks
+cover duplicate execution, UNKNOWN fencing, reservation release, restart, recovery time and chain agreement. Nothing is
+built and no host is touched. Keegan decides on the matrix, the hook and the signer-host rows. Until then RG2 stays
+BLOCKED on instrumentation.

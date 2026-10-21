@@ -413,15 +413,15 @@ def main(argv=None):
     parser.add_argument('--path', required=True)
     parser.add_argument('--account', required=True)
     parser.add_argument('--initial-spent-micro-usd', type=int)
-    parser.add_argument('--routing-file', help='Reviewed v3 routing JSON; required for paced ledgers')
+    parser.add_argument('--routing-file', help='Reviewed v3/v4 routing JSON; required for paced ledgers')
     args = parser.parse_args(argv)
     options = {}
     if args.routing_file:
         from larp.intelligence.routing import validate_routing_spec
         spec = json.loads(Path(args.routing_file).read_bytes())
         validate_routing_spec(spec)
-        if spec['schema'] != 'AIandRouting.v3' or spec['budget_account'] != args.account:
-            parser.error('A matching reviewed v3 routing file is required')
+        if spec['schema'] not in ('AIandRouting.v3', 'AIandRouting.v4') or spec['budget_account'] != args.account:
+            parser.error('A matching reviewed v3/v4 routing file is required')
         options = dict(pacing=spec['openai_pacing'], total=spec['openai_pacing']['total_micro_usd'], reserve=0)
         if spec.get('openai_trial') is not None:
             options['trial'] = spec['openai_trial']

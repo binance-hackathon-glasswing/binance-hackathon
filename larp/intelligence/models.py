@@ -76,7 +76,7 @@ def _store(artifacts, data: bytes | None) -> str | None:
 def response(request: dict, *, status: str, output, latency_ms: int, usage=None, cost=None,
              raw: bytes | None = None, reasoning: str | None = None, error: str | None = None,
              artifacts=None, request_payload: bytes | None = None, served_model: str | None = None,
-             provider_metadata=None) -> Document:
+             provider_metadata=None, finish_reason=None, usage_details=None, usage_known=None) -> Document:
     """ModelResponse.v1. `raw` is None when no reply arrived (timeout, connection error); with an
     artifact sink, the request payload and any reply bytes are stored before anything is parsed."""
     request_ref, raw_ref = _store(artifacts, request_payload), _store(artifacts, raw)
@@ -95,6 +95,12 @@ def response(request: dict, *, status: str, output, latency_ms: int, usage=None,
         "reasoning_summary": reasoning, "error": error}
     if provider_metadata is not None:
         value["provider_metadata"] = provider_metadata
+    if finish_reason is not None:
+        value["finish_reason"] = finish_reason
+    if usage_details is not None:
+        value["usage_details"] = usage_details
+    if usage_known is not None:
+        value["usage_known"] = usage_known
     return Document.from_dict(value)
 
 

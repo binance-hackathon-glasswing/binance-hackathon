@@ -70,8 +70,12 @@ class AIandChatModel(HostedModel):
         if metadata.get('x-reasoning-effort') != self.effort:
             raise _ProviderReply('AIAND_APPLIED_EFFORT_MISMATCH', served)
         choices = payload['choices']
-        if type(choices) is not list or len(choices) != 1 or choices[0].get('finish_reason') != 'stop':
-            raise _ProviderReply('AIAND_INCOMPLETE_OR_MULTIPLE_CHOICES', served)
+        if type(choices) is not list or len(choices) != 1:
+            raise _ProviderReply('AIAND_MULTIPLE_OR_MISSING_CHOICES', served)
+        if choices[0].get('finish_reason') == 'length':
+            raise _ProviderReply('AIAND_TOKEN_LIMIT', served)
+        if choices[0].get('finish_reason') != 'stop':
+            raise _ProviderReply('AIAND_INCOMPLETE', served)
         message = choices[0]['message']
         if message.get('refusal') or message.get('tool_calls'):
             raise _ProviderReply('AIAND_REFUSAL_OR_NATIVE_TOOL_CALL', served)

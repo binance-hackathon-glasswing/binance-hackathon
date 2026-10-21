@@ -2529,6 +2529,30 @@ private data/hash/access/reproduction, R1–R4 causes/locations/required changes
 per-finding acceptance checks, current38-test command, historical-method and
 safety/accounting preservation, owner/review/delivery requirements. Application
 repairs remain OPEN; no other task was messaged/assigned, no runtime or paid call.
+# PC-AUDIT01-IMPL01 — PR204 repairs (2026-10-20, prospective)
+
+Keith/Codex implements the four handoff repairs on current canonical, retaining
+PR204 audit history. Prospective criteria, candidate settings and evidence limits:
+[implementation record](../build/PR204_REPAIRS_20261020.md). Red/green portable
+regressions precede application changes; commit/push before execution. Private
+corpus and live qualification remain outstanding; no deployment authorization.
+
+### PC-AUDIT01-IMPL01 — delivered offline qualification
+
+Delivery: [PR206](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/206),
+draft against codex/system-testing-20261012; no merge or deployment requested.
+
+Final application source98fd293:2237 passed/8 explained skips/3727 subtests on
+Linuxaarch64/Python3.12.15/PostgreSQL14.24. Separate user-authorized actual
+systemd5/5 plus5 subtests, bubblewrap3/3 and nonroot permission1/1 PASS.
+Host bundle primary/signer double-install, manifest bind/preflight and unchanged
+dependency pins PASS; no hosted CI or AWS inference. Historical PR204 audit,
+stop receipts, original routing and prompt bytes preserved. Full dispositions,
+reviewed synthetic fixture changes and exact hashes:
+[record](../build/PR204_REPAIRS_20261020.md) /
+[receipt](../build/evidence/pr204-repairs-20261020.json).
+Live backlog is narrowed to private replay/reporting, measured affordability and
+quality, independent review and real release/host acceptance. No paid/host action.
 
 BKL01 (2026-10-21, backlog prune requested by Keith): the PC-MIRROR01 backlog
 line is complete. Merged PR177 (`5d7c8f0`) and PR176 (`26b93fe`) are ancestors of

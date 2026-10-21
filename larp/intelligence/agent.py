@@ -306,13 +306,18 @@ class EvidenceAssessor:
             m_request = {"schema": "ModelRequest.v1", "request_id": f"{self.request_namespace}{r['job_id']}:step:{step}",
                          "model": self.model.identity.record(), "prompt_sha256": self.config.prompt_sha256,
                          "input": model_input}
+            # One canonical dispatch snapshot, before either audit publication. Reading it
+            # detaches every nested value from state (not just the tool_results list).
+            dispatch = Document.from_dict(m_request)
+            m_request = dispatch.read()
             step += 1
             io["started"] += 1
             io["in_flight"] = m_request  # what an abandoned result records if the deadline passes during this call
             try:
-                m_response = self.model.step(Document.from_dict(m_request), remaining).read()
+                m_response = self.model.step(dispatch, remaining).read()
             except Exception as exc:  # adapter defect: unavailable, never a silent success
-                model_io.append({"request_id": m_request["request_id"], "error": type(exc).__name__})
+                model_io.append({"request": m_request, "request_id": m_request["request_id"],
+                                 "error": type(exc).__name__})
                 status, reasons = "UNAVAILABLE", ["MODEL_ERROR"]
                 break
             finally:
@@ -545,7 +550,8 @@ class EvidenceAssessor:
         retained = [self._claim(f, novelty, confirmed, ids) for f in current] if status != "ASSESSED" else []
         reviews = self._reviews(r, entry, status, reasons, missing, key, now,
                                 new_statement=any(lifecycle.needs_review(s["novelty"]) for s in statements))
-        steps_cost = [s["response"]["cost"] for s in model_io if "response" in s]
+        steps_cost = [s["response"]["cost"] if "response" in s else
+                      dict(amount_micro_usd=None, basis="UNKNOWN_ADAPTER_FAILURE") for s in model_io]
         result = {
             "schema": RESULT_SCHEMA, "job_id": r["job_id"], "run_id": r["run_id"], "issuer_id": entry.issuer_id,
             "context_hash": r["context_hash"], "policy_profile_hash": r["policy_profile_hash"],
@@ -576,6 +582,8 @@ class EvidenceAssessor:
             "missingness": missing, "confidence": confidence, "freshness": freshness,
             "falsifiers": falsifiers, "proposed_thesis": thesis if status == "ASSESSED" else None,
             "expiry_ms": now + config.p("result_ttl_ms"), "review_requests": reviews,
+            "request_sha256": sha256_hex(Document.from_dict(r).payload),
+            "budget_allowed": dict(r["budget"]),
             "budget_used": {"tool_calls": len(state.tool_calls), "model_steps": len(model_io),
                             "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": (sum(c["amount_micro_usd"] for c in steps_cost)
@@ -629,6 +637,8 @@ class EvidenceAssessor:
             "freshness": None, "falsifiers": [], "proposed_thesis": None,
             "expiry_ms": now + self.config.p("result_ttl_ms"),
             "review_requests": self._reviews(r, entry, "UNAVAILABLE", reasons, reasons, key, now),
+            "request_sha256": sha256_hex(Document.from_dict(r).payload),
+            "budget_allowed": dict(r["budget"]),
             "budget_used": {"tool_calls": len(tool_calls), "model_steps": None, "elapsed_ms": now - start},
             "cost": {"amount_micro_usd": None, "basis": ["UNKNOWN_ABANDONED_AT_DEADLINE"]},
             "model_io": {"steps": steps, "tool_calls": tool_calls,

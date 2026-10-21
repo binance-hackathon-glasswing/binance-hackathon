@@ -1,5 +1,58 @@
 # Experimental AIand model routing (IDEA-057)
 
+PR204 implementation adds an **offline v4 repair candidate** at
+`config/intelligence/aiand-routing.repair.example.json`. It is not an installed
+or adopted configuration. Historical v1-v3 bytes, prompts, trial windows and
+budgets retain their original meaning. See
+[PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) for verification and remaining gates.
+
+V4 keeps v3 OpenAI-first pacing, review selection and ledger identity. It replaces
+the shared `max_output_tokens` with mandatory `openai_max_output_tokens` plus
+`max_output_tokens` on the routine and every reviewer entry. Every cap is an
+integer in 1..16000 and each external cap must also fit its pinned catalog.
+Mixed legacy/v4 keys refuse. Preparation, budget CLI and startup use the same
+validator. Changing any cap/prompt changes the pinned routing file, provider
+identity and release manifest; prepare and bind a new reviewed release.
+
+The candidate keeps Sol medium at4096, the dormant GLM routine low at4096,
+and Kimi/GLM reviewers high at16000 with a new pinned `review.v2.md`.
+The original `review.md` is unchanged. The new addendum requires exact copying
+of supported claims, Unicode character offsets and source/document identities
+under the existing contract; no handle resolver or verifier fallback is added.
+Under the maximum3/2/1 tool split, primary/reviewer stages can make4/3/2
+calls: OpenAI's16384-token output maximum is unchanged; external output ceiling
+becomes80000 instead of20480. This is a bounded completion candidate, not measured
+affordability. Actual prices, reasoning consumption, completion success and
+end-charge forecasts need a separately authorized prospective qualification.
+The copied trial window is historical/expired and grants no new paid window.
+Never initialize a new ledger to apply a cap or prompt change.
+
+Every hosted reply now records validated usage and finish reason independently
+of content validity. Length completions remain ERROR and cannot supply claims;
+missing/malformed usage is unknown. Rejected/late usage never refunds an UNKNOWN
+OpenAI reservation. Over-bound usage still quarantines dispatch, even on an
+unusable reply. Original wire bytes and historical mismatch evidence stay intact.
+
+For a **new private diagnostic report**, run from the repaired, pushed checkout:
+
+```sh
+python3.12 -m tools.report_captured_trial \
+  --data-dir /approved/private/final-data \
+  --output-dir /approved/private/new-diagnostics
+```
+
+The output directory must not exist or overlap the input directory. The command
+checks export/table/journal/artifact hashes and records exact request/result,
+source/config/prompt/model identities and reporter source hashes. It never calls
+a provider, rewrites a decision, or changes the ledger. Missing original stage
+budgets and request-submission times stay UNKNOWN. Internal elapsed time,
+request-to-usable availability (when supplied), busy jobs, unavailable results and
+late audit-only replies are separate. Frozen M5 numerator/denominator stay
+unchanged; token-limit/schema/unsupported-claim/provider/deadline diagnostics and
+recoverable rejected tokens are additive. An explicit historical reporting budget
+can be selected with `--historical-deadline-ms 60000`; it is labelled as such.
+Private outputs must remain outside Git and PR comments.
+
 For the next unsigned v3 run, PC-FIX01 adds opt-in
 `config/intelligence/aiand-routing.openai-trial.example.json` with ledger-enforced
 US$8 total/US$2.50 UTC-day limits and unsigned-only preparation/runtime guards.
