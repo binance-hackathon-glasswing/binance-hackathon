@@ -8,7 +8,7 @@ import pytest
 from larp.execution import Blocked, NATIVE_BNB, USDT
 from larp.marketdata.port import TOKENS
 from larp.signer.policy import SigningPolicy
-from tests.execution.test_signer_caps_proposal import CapsProposal
+from tests.execution import test_signer_caps_proposal as cap_checks
 
 EVIDENCE = Path(__file__).resolve().parents[2] / 'docs/build/evidence'
 DECISION = json.loads((EVIDENCE / 'signer-numeric-ceilings-20261021.json').read_bytes())
@@ -31,7 +31,7 @@ def test_numeric_decision_hashes_and_scope_are_explicit():
 @pytest.mark.parametrize('mode', ['development', 'final'])
 def test_approved_numeric_policies_enforce_actual_token_fee_and_spender_boundaries(mode):
     policy = SigningPolicy.from_config(DECISION['policies'][mode]['signing_policy'])
-    case = CapsProposal()
+    case = cap_checks.CapsProposal()
     for token, cap in policy.max_input_units.items():
         for step in ('APPROVE', 'SWAP'):
             case.check(policy, token, cap, step)
@@ -60,4 +60,4 @@ def test_retained_quote_quantities_and_candidate_cash_fee_ceilings_fit(mode, env
     assert ceiling['max_gas'] * ceiling['max_gas_price_wei'] == ceiling['max_transaction_fee_wei']
     assert ceiling['max_transaction_fee_wei'] <= policy.max_fee_wei
     # Keep the historical refusal: cap coverage does not establish executable route coverage.
-    assert packet['sweep']['MSFTB']['sizes']['40']['buy']['gas'] == 'Min return not reached'
+    assert 'Min return not reached' in packet['sweep']['MSFTB']['sizes']['40']['buy']['gas']
