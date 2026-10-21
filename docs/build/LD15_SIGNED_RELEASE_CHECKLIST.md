@@ -138,3 +138,13 @@ not adopted for this scope (merged exact-calldata prepare gas simulation retaine
 Final S1/model/deviation/final-wallet scope remains before LD24. No signing is enabled.
 Canonical CI/original artifact identities will be appended as AB-REL-RC2 after all jobs
 pass. Release-code PASS on any previous commit does not qualify this candidate.
+
+
+2026-10-21 LD10-Q01-R1 / LD11-RH01 final scope binding: selected file
+`rehearsal-deterministic.json`, file SHA-25641332056bf18e9f07a35f0d4446e2fb02a3d7ebbddabd25b054e03203c3a0a7a,
+StrategyProfile.v1 eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4.
+Both evidence_mode and effective falsifier_authority are SHADOW. Fresh primary-only
+packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes;
+50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
+binding is historical and superseded. Selected public coverage/scope files use the
+`-deterministic` name (see packet README); private packet/review remain outside Git.

@@ -215,8 +215,8 @@ and [verification receipt](evidence/kgdec01-isaac-review-20261021.json).
 
 Keegan selected the deterministic EQUAL_WEIGHT fallback with model evidence SHADOW;
 no hosted-model calls/adoption. [Exact inputs/technical coverage](evidence/rehearsal-qualified-inputs-20261021/README.md):
-profile bad7f160…, document43f956af…, CAP-02 policy3241abd3…, router05759e90… .
-Fresh primary read-only holdings at13:51Z MATCH (98USDT,0.002694498869362886BNB, stocks0,
+profile41332056…, documenteb61ca86…, CAP-02 policy3241abd3…, router05759e90… .
+Fresh primary read-only holdings at14:10Z MATCH (98USDT,0.002694498869362886BNB, stocks0,
 nonce2/2, allowances0, no inflight state). 15/15 request-bound quotes/decode/tamper checks;
 50/50 numeric caps checks COVERED. Owner review/final configuration binding remain.
 The complete two-child action budget is384000000000000wei and four-exit reserve
