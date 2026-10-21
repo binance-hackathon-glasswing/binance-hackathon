@@ -28,6 +28,28 @@ Regenerate the actual selected S1 or permitted fallback profile with reviewed
 measurements/calendar and `--initial-gas-only` plus all four authority flags,
 then pin the reviewed profile hash after #120/#44 acceptance.
 
+### §1 state on 2026-10-21 (RC1, IDEA-083 AB-REL-RC1)
+
+| Input | State | Remaining owner action |
+|---|---|---|
+| LD02b fresh calldata / gas | merged (#211); LD02c/LD02d measured | none |
+| LD03 untrusted router `05759e90…` | merged (#205) | none |
+| LD04 / LD04-P (#27, L 660, m 30) | merged (#200, #210) | none |
+| LD06 allowance recovery | merged (#202) | numeric/host acceptance at LD20/LD21 |
+| LD07/LD08 initial-only gas | merged (#199, #207) | none |
+| LD09 gas budget (option B) | merged (#216); candidates `54eb6fba…` (rehearsal), `07e8e8c9…` (final) | Keith: confirm #120 ([RV120-01](QUOTE_COST_REVIEW_120_20261021.md)), set the new rehearsal `WINDOWS` (DEV-24) and rebuild the candidates, pin the hash |
+| LD05 abnormal-fill disposition | open | Keith |
+| LD10 #44 caps and holdings coverage | CAP-02 numeric signer ceilings set; coverage open | Isaac |
+| LD11 model/assessor scope | #206 repairs merged; adoption at LD22 | Keith |
+| LD12/LD13 operations | merged (#217, #221; LD13) | none |
+| LD14 operations values | interim rehearsal values merged (#227, LD14-I01): watchdog 300 s, delivery-age 600 s, MemoryMax unchanged | Isaac: final values from rehearsal measurements before LD24 |
+| KG-DEC-01 pre-sign simulation | exact-payload gas-limit check in `Executor.prepare` merged (#223) and host-checked (#224) | Isaac: PS-01 RPC `eth_call` (separate branch) if adopted |
+| RG2 fault hook | merged (#222) | drills at LD21 |
+| Deviations register | `--check` PASS; 15 FINAL, 9 DRAFT (DEV-01–04/07/19/22/23/24) | DRAFT rows decided before LD24 (live refuses DRAFT) |
+
+**RC1** is canonical `0ba4f44`. It is CI-qualified on the mirror (see the RC1 section below). A rebuilt profile or
+any further release-code change makes a new candidate that needs its own run; a PASS doesn't carry over.
+
 ## 2. Source identity
 
 - [ ] The release commit is the pushed head of `codex/system-testing-20261012` (or the challenge branch), with no
