@@ -109,3 +109,19 @@ def test_rfq_bounds_use_actual_probe_start_age_not_requested_delay():
     row = out['symbols']['NVDAB']
     assert row['elapsed_since_quote_response_s']['0'] >= 11
     assert row['last_success_s'] == row['elapsed_since_quote_response_s']['3'] > 3
+
+
+@pytest.mark.parametrize('wrong_side', ['BUY', 'SELL'])
+def test_size_sweep_refuses_response_amounts_from_another_request(wrong_side):
+    ns, s = load('size-sell-check.sh'), scope()
+    simulations = []
+    ns['simulate'] = lambda *a: simulations.append(a) or 500_000
+    def quote(symbol, side, units):
+        return dict(response=dict(data=dict(tx=dict(to=ns['ROUTER'], data='0xad43f73d00'),
+                    routerResult=dict(fromTokenAmount=str(units + (side == wrong_side)), toTokenAmount='100')))))
+    out = ns['sweep']('https://p', s, quote, {}, {}, sizes=(10,))
+    for book in out.values():
+        row = book['sizes']['10']
+        assert 'error' in ' '.join(row) and 'round_trip_bp' not in row
+        if wrong_side == 'BUY': assert 'buy' not in row
+        else: assert 'sell' not in row

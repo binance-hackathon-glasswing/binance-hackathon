@@ -1290,3 +1290,9 @@ CR-P2-03 RFQ output labels nominal schedule delays as observed age bounds; prior
 network/proof/sequential-call delay makes even a scheduled0s probe older than0s.
 New offline regressions precede fixes; archived packets remain immutable and
 missing actual timing cannot be reconstructed by changing old labels.
+
+CR-P2-04: size-sweep reads the response's fromTokenAmount but never checks it
+against the requested BUY size or SELL-of-BUY-output size before simulating and
+computing round-trip cost. A mismatched response produces a misleading cost at
+the requested denominator. Add explicit amount binding/refusal and regressions;
+original packet claims remain limited to the fields actually retained.
