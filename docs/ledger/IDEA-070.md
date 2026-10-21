@@ -1523,3 +1523,12 @@ Delivery: documentation-only PR225. At review headbe0c5ca, hosted Actions
 reports failed account payments/spending-limit startup refusal. This is a CI
 infrastructure block, not a passing run. Local results above are scoped;
 application/config/test diff against reviewed canonical is empty.
+
+## LD03-RP01 — fresh local read-only router replay (2026-10-21, prospective)
+
+Isaac requests priority3 alongside priority2 when useful. Criteria RP1–RP5 are
+in [gas/router coverage](../build/GAS_ROUTER_COVERAGE_20261021.md). Use only the
+named-reviewed LD03 hash, production read-only clients and retained approved
+provider settings; private artifacts stay external. Any fresh local result is
+distinct from signed-host binding, complete-holdings coverage and router/source
+guarantees. No AWS/session/key/signing/broadcast action is authorized here.

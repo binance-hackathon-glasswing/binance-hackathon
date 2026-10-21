@@ -434,3 +434,13 @@ tested source3e73086. Actions39558766897 executed zero steps because account
 payments/spending limits blocked startup. Canonical status/plan, #44 and PR133
 record CAP-02 approved numeric ceilings plus remaining deployment coverage;
 local test container stopped. No installed release or signed-host acceptance.
+
+## LD08-GC01 — bounded action/exit coverage (2026-10-21, prospective)
+
+Isaac requests priority2, then priority3. Criteria GC1–GC5 and scope are recorded
+before execution in [gas/router coverage](../build/GAS_ROUTER_COVERAGE_20261021.md).
+Derive two-child and optional eight-child envelopes from the approved execution
+ceilings; preserve cleanup-disabled policy, independent sizing and historical
+candidates. Produce new non-adopted candidates with the existing builder and
+verify real reservation/sequence consumers. Whole-run counts and current
+holdings/configuration remain required for deployment/funding acceptance.
