@@ -1473,3 +1473,14 @@ profiles fail the new coverage check. This is deferred to LD24 as LD10-P03-R1 in
 the backlog. Lows: a third child beyond 2·cap/1.01 is accepted residual risk
 (recorded); positions=4 matches the planner's four-position limit; the probe's
 fixed limit of 2 is harmless because the reviewer blocks over-count.
+
+## SJ-01 — signer-only handoff and PR235 input coverage (2026-10-22, prospective)
+
+Isaac requests the four signer.json preparation tasks/owners in PR133 and work
+on task1. Scope, S1–S5 criteria before verification, sources and access boundary:
+[Signer input coverage](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+The PR133 body and comment6321601733 now carry that narrow allocation;
+installation/key/first-round/final-adoption remain outside it. Isaac identifies
+branch `capture`; audit its actual archive dates/sizes/checksums without
+claiming a fresh reconciled primary packet. The selected PR235 profile and
+approved caps/policy are unchanged. No new runtime feature or policy is adopted.
