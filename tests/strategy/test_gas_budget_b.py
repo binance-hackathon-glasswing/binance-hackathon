@@ -115,3 +115,39 @@ def test_b4_committed_ld09b_candidates_reproduce_byte_for_byte():
     built = build_live_profiles(*inputs(), initial_gas_only=True, authority=AUTHORITY, gas_budget=budget)
     for env, doc in built.items():
         assert doc.payload + b'\n' == (folder / (env.lower() + '-live.json')).read_bytes()
+
+
+def test_split_budget_keeps_s1_five_action_reserve_and_monitor_thresholds():
+    from larp.runtime.gas import InitialGasCheck
+    from tests.strategy.live_fixtures import summary, registry, live_snapshot
+    from tests.strategy.test_s1_core import block
+    from larp.integration.runtime import initial_projection
+    from types import SimpleNamespace
+    budget = dict(action_units=50_000, sizing_units=25_000, decision_id='SYNTHETIC RV01', data_hash='c' * 64)
+    p = build_live_profiles(summary(), registry(), s1=block(), initial_gas_only=True, gas_budget=budget)['FINAL'].read()
+    assert p['exit_gas_reserve_units'] == 250_000
+    monitor = InitialGasCheck(SimpleNamespace(), p)
+    book = live_snapshot().context.read()['portfolio']
+    for bnb, expected in [(25_000, 'PAIR_UNAFFORDABLE'), (50_000, 'BELOW_EXIT_RESERVE'), (250_000, 'OK')]:
+        book['bnb_units'] = bnb
+        assert monitor._state(initial_projection(book), [])['status'] == expected
+    p['exit_gas_reserve_units'] = 5 * budget['sizing_units']
+    refused(p, 'exit gas reserve')
+
+
+def test_split_budget_does_not_spend_the_cap_price_exit_reserve_on_entries():
+    from dataclasses import replace
+    from larp.research.fixtures import changed
+    from larp.risk.planner import plan
+    from larp.strategy.policy import decide
+    from tests.strategy.live_fixtures import live_snapshot, summary, registry
+    budget = dict(action_units=50_000, sizing_units=25_000, decision_id='SYNTHETIC RV01', data_hash='c' * 64)
+    p = build_live_profiles(summary(), registry(), initial_gas_only=True, gas_budget=budget)['FINAL'].read()
+    s = live_snapshot(quoted=True)
+    c = s.context.read()
+    # Enough for four sizing budgets plus the fixture quote, insufficient to retain the cap-price reserve.
+    c['portfolio']['bnb_units'] = 150_000
+    s = replace(changed(s, profile=p, portfolio=c['portfolio']),
+                policy_profile_hash=Document.from_dict(p).digest('StrategyProfile.v1'))
+    result = plan(s, decide(s, s.policy_state)).read()
+    assert not result['intents']
