@@ -1194,4 +1194,35 @@ Pass criteria, recorded before executing verification:
    the live backlog open with exact owners/artifacts. Gas/cleanup/exit-envelope
    repair and router replay remain the later user-requested priorities.
 
-Verification results and their exact artifact hashes will be appended below.
+### LD10-P01 results — offline PASS, actual coverage BLOCKED
+
+Executed pushed verification source `7e371d8` on macOS arm64/Python3.13.3.
+Both RV120-02 candidates reproduce byte for byte and pass the production LIVE
+validator; CAP-02 policy/evidence hashes and real policy loading pass. Rehearsal
+20.10USDT fits35; final40.20 fits70. Retained execution ceiling
+1,200,000*160,000,000=192,000,000,000,000wei fits the independent
+200,000,000,000,000wei transaction cap. These are public candidate comparisons,
+not current complete holdings or a new execution config. Full results and exact
+hashes: [LD10-P01 inventory](../build/evidence/ld10-profile-coverage-20261021/README.md)
+and [machine report](../build/evidence/ld10-profile-coverage-20261021/review.json).
+Repeat execution is byte-identical; source hashes/local links/false flags/whitespace
+checks pass. Report SHA-256
+`3bf41478138a53f9185f3f296759773c63f6b084a40894f92c2d8476bf4b749b`.
+
+The final candidate still uses midnight first-buy/new-risk/flatten gates rather
+than selected PF-04 Oct29 14:00/Nov9 21:00/Nov10 19:00UTC. Keith/Keegan must
+reconcile and regenerate before final-profile acceptance; the rehearsal's
+separate October23/25/26 window is not changed. Fee netting remains unverified.
+No full profile or deployment approval is inferred from successful reproduction.
+
+Isaac asked to search other PRs for the private packet, then assume it missing
+if none is identified. All-state searches and the relevant #184/#193/#205/#210/
+#211/#216/#228/#229 handoffs found tooling, missing-input inventories, historical
+operator snapshots and candidates, but no current usable four-file
+GateBCapsInputs.v1 packet. Actual caps review remains NOT_RUN_MISSING_INPUTS.
+Keith/Isaac supply selected-profile/#120 acceptance; Keegan's approved operator
+supplies fresh full holdings/metadata/reservations/nonces/original quote artifacts;
+release/operator supplies intended execution/run/build/environment/CA bindings.
+The existing caps reviewer is ready when those inputs arrive. Separate priorities
+2–4 are not started; no AWS/key/funding/signing/activation action occurred. LD10
+and #44/#120 remain open for their explicit remaining coverage/adoption work.
