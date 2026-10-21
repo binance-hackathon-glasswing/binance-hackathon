@@ -47,8 +47,8 @@ class Receiver(Protocol):
 
 DECIMAL = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$")
 INTENT_KINDS = ("BSTOCK_TRADE", "GAS_TOP_UP")  # I7: a gas top-up is its own round with exactly one USDT -> BNB intent
-OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
-FINAL_KINDS = ("APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
+OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED", "ABNORMAL")
+FINAL_KINDS = ("APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED", "ABNORMAL")
 # Accounting fields: a broadcast attempt must not carry them (I4 boundary 1).
 ACCOUNTING_FIELDS = ("token_units", "cash_units", "fee_units", "gas_bnb_units", "gas_value_units")
 ORIGINS = ("SCRIPTED_FAKE", "EXECUTION_RECONCILER")
@@ -200,6 +200,18 @@ def validate_execution_observation(observation: dict) -> dict:
             or o.get("canonical") is not True:
         raise ContractError("Final facts need the tx hash and canonical receipt evidence")
     _int(o.get("gas_bnb_units"), "gas_bnb_units"); _int(o.get("gas_value_units"), "gas_value_units")
+    if kind == "ABNORMAL":
+        if (o.get("origin") != "EXECUTION_RECONCILER" or o.get("step") != "swap"
+                or not o["intent_terminal"] or o.get("disposition") != "SUSTAINED_QUARANTINE"
+                or o.get("accounting_status") != "UNRECONCILED_ASSET_MOVEMENTS"
+                or o.get("reason") != "FINALIZED_TRANSFER_CONTRACT_VIOLATION"
+                or any(k in o for k in ("token_units", "cash_units", "fee_units"))):
+            raise ContractError("Abnormal receipt requires explicit quarantine without normal fill amounts")
+        deltas = o.get("raw_token_deltas")
+        if (type(deltas) is not dict or len(deltas) > 256
+                or any(not re.fullmatch(r"0x[0-9a-f]{40}", k) or type(v) is not int
+                       or not -2**256 < v < 2**256 for k, v in deltas.items())):
+            raise ContractError("Abnormal receipt requires bounded exact signed token deltas")
     if kind == "APPROVAL" and o["intent_terminal"]:
         raise ContractError("An approval never ends its intent")
     if kind == "FILL":

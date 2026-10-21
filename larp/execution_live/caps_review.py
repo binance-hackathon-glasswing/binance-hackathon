@@ -107,7 +107,13 @@ def review(inputs, *, now, base_dir):
     gas = integer(config['max_gas'], 1)
     price = integer(config['max_gas_price'], 1)
     check('CONFIGURED_FEE_ENVELOPE_WEI', gas * price, policy.max_fee_wei)
-    integer(config['gas_budget'], 1)
+    budget = integer(config['gas_budget'], 1)
+    if initial_only:
+        # Cleanup is independently scoped. Two child maxima are the configured
+        # envelope until narrower per-step caps are enforced, not just measured averages.
+        children = 8 if policy.allowance_recovery else 2
+        check('INITIAL_SIGNED_CHILD_GAS_ENVELOPE', children * gas * price, budget)
+        check('INITIAL_PROFILE_ACTION_BUDGET', budget, integer(p['gas_action_budget_units'], 1))
     # The profile validator proves that per_trade_cap includes a full target position plus reserve.
     summary = p['quote_cost_summary']
     if summary['bnb_decimals'] != ledger['bnb_decimals']:

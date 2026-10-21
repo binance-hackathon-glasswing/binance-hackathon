@@ -1161,3 +1161,58 @@ there is no outstanding request for permission to select these exact bounds.
 #44/LD10 stays open only for actual deployment-input coverage and environment
 configuration binding. All remaining work is recorded in the live backlog,
 CAP-02 artifact and PR216 receipt; no host/key/activation operation occurred.
+
+## LD10-Q01 — rehearsal caps coverage (2026-10-21; prospective)
+
+Keegan requests steps 2–4 using recommended decisions. CAP-02 numeric caps are retained;
+collect current read-only primary-host holdings/nonce/allowance/config evidence and
+request-bound quotes where available. No host writes, signer-host access, keys, funding,
+allowance transactions or activation. Preserve historical evidence and missing inputs.
+
+Pass criteria before collection: C1 bind timestamps/build/run/wallet and all six token
+scales/holdings plus BNB and reservations; C2 ten current BUY/SELL request-bound quotes
+and exact CAP-02 limits checked by caps reviewer; C3 correct independently rounded
+child gas budgets/reserve and document seeding counts; C4 approve coverage only if all
+required facts exist and checks pass, otherwise record exact blocked supplier/input;
+C5 retain private artifacts privately, public output sanitized, and qualify final source.
+
+LD10-Q01 envelope choice before build: retain CAP-02 max_gas 1,200,000 and max price
+160,000,000 wei, cleanup disabled. Cover two maximum signed children: action budget
+384,000,000,000,000 wei, four-exit reserve 1,536,000,000,000,000 wei. Expected-price
+sizing budget 80,004,608,000,000 wei corrects independent child rounding while retaining
+0.064 gwei sizing. N=15 whole-run planning plus reserve is 0.007296 BNB. This replaces
+0.0046 BNB as the conservative funding target for this envelope; no funding action.
+
+### LD10-Q01 observed coverage (2026-10-21)
+
+Primary-only read-only packet at 13:51 UTC, SSM `6ee9cf70-01f8-47cb-b456-e03823d666fc`:
+98 USDT, 0.002694498869362886 BNB, all five stock balances zero; all assets MATCH;
+nonce latest/pending 2/2; no reservations, execution commands or pending executions;
+all six router allowances zero, all token scales 18. The old shadow deployment remains
+ea25b52. No host/config/service or signer-host change. Exact selected-profile bytes
+travel in memory. 15/15 minimum/max BUY and full max-position SELL quotes succeed;
+15/15 reviewed-router decode/tamper checks PASS under 05759e90… .
+
+At 13:52 UTC the real caps reviewer reports COVERED, all 50 numeric checks covered,
+no missing pairs, development policy bytes exactly CAP-02 3241abd3…ea61. Technical
+coverage is accepted under Keegan's explicit task delegation, not a forged Isaac
+attestation. Tool status still BLOCKED/OWNER_REVIEW_REQUIRED by design. Private
+numeric config is an envelope proposal, not installed identity. Exact hashes and
+limits: [rehearsal packet](../build/evidence/rehearsal-qualified-inputs-20261021/README.md).
+Current BNB covers the four-action exit reserve, but N=15 conservative full-run seed
+0.007296 BNB remains unfunded (additional 0.004601501130637114 BNB at this snapshot).
+LD16 must rebind actual final release/run/DB/RPC/CA and obtain owner acceptance; LD17
+requires separate per-host write approval. Fresh state/quotes are required then;
+this snapshot is dated evidence, not timeless trade authorization. #119 actual fee
+confirmation remains LD19/LD20; optional extra PS-01 eth_call is deferred, retaining
+the merged mandatory prepare-time exact-calldata gas simulation.
+
+
+2026-10-21 LD10-Q01-R1 / LD11-RH01 final scope binding: selected file
+`rehearsal-deterministic.json`, file SHA-25641332056bf18e9f07a35f0d4446e2fb02a3d7ebbddabd25b054e03203c3a0a7a,
+StrategyProfile.v1 eb61ca8646a42cfb59816888576555d10e8aef3502d973ae06e00daacc6670a4.
+Both evidence_mode and effective falsifier_authority are SHADOW. Fresh primary-only
+packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes;
+50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
+binding is historical and superseded. Selected public coverage/scope files use the
+`-deterministic` name (see packet README); private packet/review remain outside Git.

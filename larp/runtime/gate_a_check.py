@@ -66,11 +66,13 @@ def check_scope(values, report):
     if (mode not in ('dev', 'live') or (not signed and mode != 'dev')
             or any(v.get('mode') != mode for v in (runtime, uploader, state))
             or driver.get('execution') != ('service' if signed else 'shadow')
-            or driver.get('assessor') not in (('aiand_routed',) if signed else ('deterministic', 'aiand_routed'))
+            or driver.get('assessor') not in (('aiand_routed', 'deterministic') if signed else ('deterministic', 'aiand_routed'))
             or driver.get('intelligence_mode') != ('live' if signed else 'shadow') or 'signing' in driver
             or driver.get('cadence_ms') != gate_a.CADENCE_MS or driver.get('day_roll_window_ms') != gate_a.DAY_ROLL_MS
             or report.get('execution') not in ('shadow', 'service')):
         raise ContractError('Preparation scope differs')
+    if signed and driver.get('assessor') == 'deterministic' and not gate_a.scoped_rehearsal(values['strategy-profile.json'], mode):
+        raise ContractError('Deterministic signed scope is limited to the scoped rehearsal')
     ref = driver.get('model_adoption_ref')
     if signed and (type(ref) is not str or not ref.strip() or report.get('model_adoption_ref') != ref):
         raise ContractError('Signed scope requires the reviewed adoption reference')

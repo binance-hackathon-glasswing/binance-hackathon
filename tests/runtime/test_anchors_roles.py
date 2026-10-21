@@ -159,6 +159,7 @@ class Roles(Rounds):
             self.assertEqual(db.execute('SELECT count(*) FROM execution_records').fetchone()[0], 1)
             self.assertEqual(db.execute('SELECT count(*) FROM execution_journal').fetchone()[0], 1)
             db.execute('SELECT revision FROM execution_records FOR UPDATE')
+            db.execute('SELECT run_id,observation FROM execution_observations')
         self.refused('larp_signer', 'SELECT * FROM execution_observations', 'SELECT * FROM commands',
                      "UPDATE execution_records SET state='\\x00'::bytea",
                      "UPDATE execution_records SET state_hash='x'", "UPDATE execution_records SET terminal=true",
@@ -310,3 +311,21 @@ class Roles(Rounds):
         self.refused('larp_archive', 'SELECT signed FROM execution_signatures', 'SELECT * FROM execution_signatures',
                      "UPDATE execution_records SET terminal=true", 'DELETE FROM execution_signatures',
                      "INSERT INTO execution_observations VALUES('x','run','\\x00','o')")
+
+
+    def test_ld05_signer_role_independently_fences_abnormal_outbox_without_observation_write_access(self):
+        from larp.execution import Conflict
+        from larp.execution_live.store import ExecutionStore
+        from tests.execution_fixtures import WALLET, intent
+        execution = ExecutionStore(self.as_role['larp_execution'], run_id='run', wallet=WALLET)
+        signer = ExecutionStore(self.as_role['larp_signer'], run_id='run', wallet=WALLET)
+        epoch, version = execution.execution_authority()
+        execution.put_observation(dict(event_id='abnormal', run_id='run', kind='ABNORMAL'), epoch, version)
+        with self.as_role['larp_signer'].transaction() as db:
+            run = signer._release_authority(db, epoch, version)
+            self.assertTrue(run['abnormal_outcome'])
+            with self.assertRaisesRegex(Conflict, 'quarantined'):
+                signer.check_signing_run(run, intent())
+        self.refused('larp_signer', 'SELECT observation_hash FROM execution_observations',
+                     "UPDATE execution_observations SET observation_hash='changed'",
+                     'DELETE FROM execution_observations')
