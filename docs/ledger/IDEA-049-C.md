@@ -1542,3 +1542,22 @@ actual capture is NOT_RUN (no local AWS credentials; Chrome access denied).
 [Exact report, hashes, operator command and remaining owner input](../build/SIGNER_INPUT_COVERAGE_20261022.md).
 No altered cap/profile/balance/timestamp, wallet key, funding, installation,
 actual signer assembly or signing. Task1 remains open pending the real packet.
+
+### SJ-01 concurrent PR236 review — fresh quote work and RC3 delivered
+
+PR236 mergedfa1b6c9 while this task was in progress. Normal merge retains both
+its full LD10-P04 history and the dated archive audit. The new packet is22/22
+request-bound quotes,91/92 covered checks; only INITIAL_BNB_EXIT_RESERVE fails.
+Independent public receipt consistency PASS: selected profile/document/CAP02/
+router/probe hashes, counts, every published child cash amount and gas arithmetic.
+Floor3072000000000000wei minus held2694498869362886wei leaves377501130637114wei
+(0.000377501130637114BNB). Actual private packet was not replayed; no new current-
+clock pass or full/personal owner acceptance is asserted. Private input review
+and a fresh reconciled post-funding rerun remain before assembly.
+RC3 source5bee006/original artifact12363800624 is recorded qualified by PR236;
+all runtime/config/test bytes here remain identical. Current account gets404
+for mirror metadata; no independent artifact download/CI rerun is claimed.
+[Review and current scope](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+Task2 qualification is delivered; no duplicate pre-funding primary capture is
+requested. Task1 reserve/review and LD16 private bindings/assembly remain;
+installation/key/first-round tasks stay outside the user's preparation scope.

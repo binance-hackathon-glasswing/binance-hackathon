@@ -4,6 +4,18 @@ Scope requested by Isaac, 2026-10-22 SGT: update PR133 with only the work needed
 to prepare the development signer configuration; then finish input coverage.
 The partner owns installation. Base: canonical `5bee006` (PR235).
 
+**Current after concurrent PR236 (`fa1b6c9`):** the fresh LD10-P04 packet and
+RC3 qualification of `5bee006` are delivered. The quote work is not missing:
+22/22 request-bound quotes, including child exits;91/92 numeric checks covered.
+Only the BNB exit-reserve check fails. Recorded balance0.002694498869362886BNB
+is **0.000377501130637114BNB below** the0.003072BNB floor. Task1 remains open
+for eligible funding disposition, a fresh reconciled post-funding numeric
+review and exact private input acceptance. Task2 release qualification is
+recorded delivered by PR236; tasks3/4 still need actual private config bindings
+then assembly/local check. No duplicate pre-funding capture or new code feature
+is requested. The dated archive audit below remains evidence of what `capture`
+contains, not the current absence of an LD10 packet.
+
 ## Four deliverables and owners
 
 1. **Isaac / approved primary operator / funding owner:** fresh PR235 input
@@ -63,7 +75,7 @@ Verification script and result will be retained in
 `evidence/signer-input-coverage-20261022/`. Missing host evidence remains an
 explicit operator input, not an additional signer implementation feature.
 
-## Verified results — task 1 remains blocked on a new primary packet
+## Initial archive-only results — before concurrent PR236
 
 Pushed audit source `777d80e` verifies capture head `e26c96f` without extraction:
 archive SHA-256/CRC PASS, **14,268 payload checksums** and **14,257 decoded
@@ -125,3 +137,32 @@ not changed after qualified `5bee006`. Public receipt consistency is not replay
 of the private input packet; keep full owner/install/signing flags false.
 Do not ask the operator to duplicate the pre-funding capture already delivered
 by PR236. Remaining state work is a fresh post-funding reconciliation/review.
+
+## SJ-01 review of PR236 — public consistency PASS; reserve remains blocked
+
+The new canonical coverage/profile/scope/approved-policy bindings agree. Its
+probe hash exactly matches the independently generated SJ-01 capture payload.
+All published child proceeds stay within20.10USDT;22 total quote artifacts
+match15 base quotes plus7 distinct child sizes. The recorded full-book reserve
+matches4×2×384000000000000wei. NVDAB/MSFTB full-size quotes remain above the
+cap only as sizing evidence; no over-cap child is admitted.
+
+[Public receipt review](evidence/signer-input-coverage-20261022/pr236-review.json)
+checks the exact profile document, policy/router/probe hashes, published balances,
+counts and integer gas arithmetic. It does **not** replay unavailable private
+original quotes/requested child amounts, assert new current-clock freshness,
+forge personal owner approval or clear `OWNER_REVIEW_REQUIRED`.
+
+PR236's RC3 receipt records all four jobs PASS and verified original artifact
+12363800624 for source5bee006. Runtime/config/deploy/tool/test/vendor bytes in
+this docs-only branch still exactly match that source. Independent mirror
+metadata queries returnedHTTP404 for the current account; the original
+artifact/CI were not independently downloaded or rerun by SJ-01. This access
+limitation does not relabel PR236's recorded qualification as missing.
+
+**Next operator/funding input:** resolve the reserve shortfall and supply the
+actual reconciled post-funding private packet. **Then Isaac:** rerun the real
+numeric reviewer within300s at the current clock and record exact input
+acceptance. The larger whole-run target remains0.008832BNB (recorded shortfall
+0.006137501130637114BNB), separate from the minimal exit-floor blocker. No
+funding, live call, host write, key or signer assembly was performed by SJ-01.
