@@ -1484,3 +1484,18 @@ installation/key/first-round/final-adoption remain outside it. Isaac identifies
 branch `capture`; audit its actual archive dates/sizes/checksums without
 claiming a fresh reconciled primary packet. The selected PR235 profile and
 approved caps/policy are unchanged. No new runtime feature or policy is adopted.
+
+### SJ-01 results — archive verified; actual coverage still needs primary data
+
+PR133 task section/comment6321601733 published. At pushed777d80e, capture archive
+identity/CRC/14,268 payloads/14,257 response bodies PASS;3,855 BUY requests are
+40USDT, zero selected18.637420/20.10USDT size matches. Newest quote Oct19
+23:57:06.475Z, not current300s evidence. All artifacts are Web3Observation.v1;
+no actual reconciled holdings/nonce/allowance/reservation/PR235 child packet.
+Existing canonical focused collector/caps/assembly:47 tests/141 subtests PASS,
+zero skips, macOS/Python3.12.14; no network/DB/host/full-release claim.
+Generated private checksummed primary-only capture package and compiled payload;
+actual capture is NOT_RUN (no local AWS credentials; Chrome access denied).
+[Exact report, hashes, operator command and remaining owner input](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+No altered cap/profile/balance/timestamp, wallet key, funding, installation,
+actual signer assembly or signing. Task1 remains open pending the real packet.
