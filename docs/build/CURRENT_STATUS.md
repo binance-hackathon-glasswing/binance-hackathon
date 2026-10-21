@@ -7,6 +7,13 @@ Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verifie
 This is a CI-qualified development rehearsal candidate; actual owner/configuration
 and host acceptance remain open. Earlier records below retain their dated scope.
 
+Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
+and supports the17bp MSFTB spread. RV120-RV01 addresses both findings: separate
+two-sided drift from adverse BUY-output moves and actual reverts; remove the
+unsupported fill-safety guarantee. [Corrected review](QUOTE_COST_REVIEW_120_20261021.md).
+His COMMENTED review does not explicitly adopt the current exact profile/gas/model/
+configuration. The selected profile, gas target and qualified runtime artifact are unchanged.
+
 LD10-P02 independent owner review (PR230): the selected profile/policy/scope
 hashes and 50 original numeric rows are consistent, but the recorded maximum
 NVDAB SELL returns 20.106983 USDT above execution's 20.10 USDT cash cap. The updated

@@ -506,3 +506,60 @@ hashes and outstanding acceptance are in the packet and backlog. PR #229 targets
 canonical integration branch. This qualification covers this profile rebuild only;
 it is not the later LD15 release candidate or permission for host writes/trading.
 The following result-record commit changes documentation only.
+
+
+## RV120-RV01 — Keith inline-review corrections (2026-10-21; prospective)
+
+Source: Keith (wtvlol), PR226 review5602037122 and inline findings
+[4338622249](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622249) /
+[4338622255](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622255),
+submitted2026-10-21T15:23:22Z, anchored to3bd8a388a66ab74d5ff8f1a003ee859c0c98dcc6.
+Keith confirms original raw distributions reproduce and supports the17bp MSFTB
+off-session spread. Review state COMMENTED; it requests two corrections, without
+an explicit acceptance of the current exact profile/gas/model/funding bindings.
+
+Pass criteria before new analysis: R1 preserve original distributions/script and
+raw ZIP bytes; verify original capture archive/daily/calendar hashes; R2 report
+two-sided absolute, adverse BUY-output and favourable exceedances of8bp separately
+using exact integer comparisons, retaining sample denominators; R3 independently
+match Keith's adverse counts1/42 MSFTB US,2/43 SKHYB US and10/342 SKHYB off-session;
+R4 remove unsupported fill/minimum-output guarantees and simulated/actual revert
+frequency claims, while retaining the observed LD02d simulation as dated evidence;
+R5 selected profile/policy/runtime bytes stay unchanged, actual fee/owner/config/
+host/revert acceptance remains open. No live call, host, key, funding or trade.
+
+### RV120-RV01 results — both inline findings addressed
+
+Pushed analysis source2efffcf,1924 samples from the original capture branch ZIP
+2dcb92c67c4e041019aeba759518e1aeb699182a59e4cb5016db2937be6f4755.
+Original payload manifest b17002b0…ffc01 and all four daily-file hashes verify.
+Original analyse.py reproduces distributions.json byte-for-byte. New directional
+report a1d98b74c2a78e479de999d5de9ca84e107163899ee82a313616e1220f2d4ed5
+partitions all10 token/regime absolute counts into adverse/favourable subsets.
+Keith's adverse counts match exactly: MSFTB US1/42(2.4%), SKHYB US2/43(4.7%),
+SKHYB off-session10/342(2.9%). Those are counterfactual quote-output movements,
+not an actual or simulated transaction revert frequency. RV120-01 C5's old
+revert-frequency interpretation is withdrawn; its absolute-drift values remain.
+
+QUOTE_COST_REVIEW_120 now removes the unsupported fill-safety guarantee and states
+accepted unverified minimum-output/recipient enforcement, possible abnormal fills,
+prepare-time simulation mitigation and post-execution LD05 detection/quarantine.
+Actual LD19/20 outcomes/reverts remain unmeasured. Historical distributions, raw
+source and selected profile/policies are unchanged; all205 runtime release files
+are unchanged. This is analysis/documentation validation, no new full-suite/CI.
+Raw four-file extraction remains private at /workspace/scratch/rv120-inline-raw.
+
+Keith's COMMENTED review confirms reproducibility and supports the17bp spread;
+it is not an exact current-profile/gas/model/configuration adoption attestation.
+Fee netting, final scored adoption and actual LD16/17/19/20 owner/configuration/
+host/fill acceptance remain separate. No live/host/key/funding/trading operation.
+
+RV120-RV01 canonical sync: PR230 merged while this correction was being prepared
+(canonical57af68a). Preserve LD10-P02's new BLOCKED_EXECUTION_CASH_CAP finding:
+the hypothetical maximum NVDAB SELL returns20.106983099120719276USDT above20.10.
+Actual stock holdings in the dated packet are zero; this is a full-exit coverage
+gap requiring a reviewed complete-position disposition/count/reserve and fresh
+evidence, not a trapped actual position or a reason to loosen limits silently.
+Keith's data review does not settle that gate. PR230 changes coverage-check code;
+the older b22207e artifact does not qualify that new source. This review's own
+delta remains analysis/documentation only with no runtime/profile/policy change.
