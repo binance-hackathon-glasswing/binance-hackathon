@@ -1396,3 +1396,61 @@ Pass criteria before executing code:
 - PS6 remove the KG-DEC-01 implementation backlog item only after verified,
   retain live host/route/caps/release gates, update status/PR133 and prepare a
   reviewable PR on canonical. No duplicated Keith profile/economic work.
+### KG-DEC-01-C1 — pre-sign simulation already enforced (2026-10-21)
+
+Correction to KG-DEC-01. `Executor.prepare` already simulates every step's exact payload before any attempt exists.
+It calls `venue.estimate_gas`, which on the live venue is the Web3 API `pre-transaction/gas-limit` for the exact
+`from`/`to`/`data`/`value`. There is no quote-gas fallback: `integer(estimate, positive=True)`. A revert, an
+unavailable dependency or a non-positive estimate leaves the intent `PREPARE_BLOCKED`, with no PREPARED attempt, so
+nothing can be authorized, offered to the signer or broadcast. For a SWAP, the estimate runs after the approval is
+final, so the wallet's real allowance is in place. The DC-01 capture's all-FALLBACK swap estimates are consistent
+with this endpoint refusing payloads that can't execute, since that capture wallet held no balance or allowance.
+
+New regressions in `tests/execution/test_presign_simulation.py` (5 tests):
+- `RFQ_OrderExpired` and `Min return not reached` reverts, an unavailable dependency and a timeout each leave only
+  the APPROVE attempt, with the signer untouched and no swap broadcast;
+- a missing estimate never falls back to the quote's gas;
+- `LiveVenue.estimate_gas` turns an API failure into `DependencyUnavailable` and a non-positive gas limit into
+  `Blocked`.
+
+No code change was needed. Remaining risk:
+- the simulation runs at prepare time, so a route that expires between prepare and broadcast can still revert on
+  chain, though only after a fresh sign within the #27 authority;
+- the live endpoint's refusal of a reverting payload is inferred, not directly observed. A read-only host check is
+  open: call the gas-limit endpoint with a known-reverting payload. Isaac reviews.
+
+## KG-DEC-01-H — host check: does the live gas-limit endpoint refuse reverting payloads? (2026-10-21; prospective)
+
+This is a read-only check on `primary` with the deployed client: no transaction, signature, file or config change.
+The script is `docs/build/ops/ld02-20261020/presign-check.sh`. Criteria, written before the script (P1–P4):
+
+- P1. Preconditions, read on chain through the first balance provider: the wallet's `balanceOf` for the chosen
+  bStock is 0, and its USDT `allowance` to the pinned router is 0. If either is non-zero the check is NOT_RUN.
+- P2. Control: the Web3 API USDT approve payload for 20 USDT, sent to `pre-transaction/gas-limit` with the wallet as
+  `from`, returns a positive gas limit.
+- P3. Two payloads that must revert, each from a fresh quote pinned to the router with the swap selector:
+  - a SELL of 1 token of the bStock the wallet doesn't hold;
+  - a BUY of 20 USDT with no USDT allowance to the router.
+
+  Each must be refused by the endpoint: an error or a non-positive gas limit, which `LiveVenue.estimate_gas` turns
+  into a block. A positive gas limit for either is a FAIL. In that case KG-DEC-01 would need a real RPC simulation
+  before signing.
+- P4. The output is sanitized and keeps only the refusal kind and a short reason, with no wallet, URL or key.
+
+### KG-DEC-01-H results — script `14d6ece`, SSM `0ba2a472-b754-4e07-9ff0-2c0ed4722213` (2026-10-21)
+
+Packet SHA-256 `d0c077ca…95e6`; evidence `docs/build/evidence/kgdec01-presign-check-20261021.json`.
+**Status PASS.**
+- P1: bStock (MSFTB) balance 0, and USDT allowance to the router 0.
+- P2: the control USDT approve payload got a positive estimate of 46,588 gas, the same as LD02b.
+- P3: SELL of 1 MSFTB with no balance → REFUSED; BUY of 20 USDT with no allowance → REFUSED. Both quotes were pinned
+  to the router with the swap selector. `LiveVenue.estimate_gas` turns these refusals into a block before any
+  attempt exists.
+- P4: the output is sanitized and provider text is scanned before shortening.
+
+Limits:
+- the refusal code is the API's generic `api_or_http_error`, so the endpoint's refusal shows the swap would be
+  blocked, not the revert reason;
+- a valid swap's positive estimate from a funded wallet is first exercised at LD19.
+
+KG-DEC-01 is complete pending Isaac's review.
