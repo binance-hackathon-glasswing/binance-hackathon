@@ -71,13 +71,17 @@ def evidence_boundary(fn):
 
 class Rpc:
     mode='live'
-    def __init__(self,url,*,artifacts,source_id,opener=None,native_trace=False):
+    def __init__(self,url,*,artifacts,source_id,opener=None,native_trace=False,simulation_router=None):
         parsed=urlsplit(url)
         if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment or not source_id:
             raise Blocked('manifested HTTPS RPC endpoint required')
         self.url,self.artifacts,self.source_id=url,artifacts,source_id
         if type(native_trace) is not bool:
             raise Blocked('explicit native tracing capability required')
+        if simulation_router is not None and (type(simulation_router) is not str
+                or not re.fullmatch(r'0x[0-9a-f]{40}', simulation_router)):
+            raise Blocked('pinned simulation router required')
+        self.simulation_router = simulation_router
         self.native_trace = native_trace
         self.opener=opener or build_opener(NoRedirect())
         self.sequence=count(1)
@@ -91,6 +95,26 @@ class Rpc:
             raise Blocked('RPC method outside read-only allowlist')
         if trace:
             hash_value(params[0])
+        return self._request(method, params)
+
+    def simulate_swap(self, payload):
+        # Dedicated capability: callers cannot supply methods, arbitrary targets, block tags or state overrides.
+        if (self.simulation_router is None or payload.chain_id != 56 or type(payload.chain_id) is not int
+                or payload.to != self.simulation_router or type(payload.sender) is not str
+                or not re.fullmatch(r'0x[0-9a-f]{40}', payload.sender)
+                or type(payload.value) is not int or payload.value != 0
+                or any(type(v) is not int or v < 0 for v in (payload.nonce, payload.gas, payload.gas_price))
+                or payload.gas == 0 or payload.gas_price == 0 or type(payload.data) is not str
+                or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})+', payload.data)):
+            raise Blocked('swap simulation outside authorized payload scope')
+        tx = dict({'from': payload.sender}, to=payload.to, data=payload.data, value='0x0',
+                  nonce=hex(payload.nonce), gas=hex(payload.gas), gasPrice=hex(payload.gas_price))
+        result = self._request('eth_call', [tx, 'latest'])
+        if type(result) is not str or not re.fullmatch(r'0x(?:[0-9a-fA-F]{2})*', result):
+            raise Blocked('swap simulation response rejected')
+        return True
+
+    def _request(self, method, params):
         request_id=next(self.sequence)
         body=encoded(dict(jsonrpc='2.0',id=request_id,method=method,params=params))
         req=Request(self.url,data=body,headers={'Content-Type':'application/json'},method='POST')
@@ -113,6 +137,9 @@ class Rpc:
 class ChainEvidence:
     mode='live'
     def __init__(self,rpc):self.rpc=rpc
+    def simulate_swap(self, payload):
+        self.check_chain()
+        return self.rpc.simulate_swap(payload)
     def check_chain(self):
         if quantity(self.rpc.call('eth_chainId',[]))!=56:raise Blocked('wrong RPC chain')
     @evidence_boundary

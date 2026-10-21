@@ -53,7 +53,7 @@ class SigningCase(DatabaseCase):
         self.now, self.signer_now, self.ticks = 12, None, 0
         self.service = self.signer()
         self.remote = RemoteFixture(execution=self.execution, guards=self.guards, clock_s=lambda: self.now,
-                                 sleep=self.pump, monotonic=self.tick, timeout_s=5, poll_s=1)
+                                 sleep=self.pump, monotonic=self.tick, timeout_s=5, poll_s=1, pre_sign_swap=lambda payload: True)
         self.executor = Executor(self.execution, self.guards, self.venue, self.remote, FakeDecoder())
 
     def signer(self, **kwargs):
@@ -464,7 +464,7 @@ class RolesCase(SigningCase):
         self.guards = ExecutionGuards(self.execution)
         self.venue = FakeVenue(self.execution)
         self.remote = RemoteFixture(execution=self.execution, guards=self.guards, clock_s=lambda: self.now,
-                                    sleep=self.pump, monotonic=self.tick, timeout_s=5, poll_s=1)
+                                    sleep=self.pump, monotonic=self.tick, timeout_s=5, poll_s=1, pre_sign_swap=lambda payload: True)
         self.executor = Executor(self.execution, self.guards, self.venue, self.remote, FakeDecoder())
         from larp.signer.service import SignerService
         self.service = SignerService(store=self.as_role['larp_signer'], run_id='run', wallet=self.wallet,

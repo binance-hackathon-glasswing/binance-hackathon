@@ -153,7 +153,7 @@ class Execution:
             ticks = iter(range(10**6))
             signer = RemoteFixture(execution=self.registry, guards=self.guards, clock_s=lambda: case.w.clock() // SECOND,
                                    sleep=lambda s: self.signer_host.once(), monotonic=lambda: next(ticks),
-                                   timeout_s=5, poll_s=1)
+                                   timeout_s=5, poll_s=1, pre_sign_swap=lambda payload: True)
         else:
             signer = RegistrySigner(self.registry)
         self.executor = Executor(self.registry, self.guards, self.venue, signer, FakeDecoder())

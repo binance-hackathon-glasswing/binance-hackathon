@@ -666,7 +666,7 @@ class Executor:
                           raw_hex=signed.raw_hex if signed else None, tx_hash=signed.tx_hash if signed else None)
         return self._update_attempt(state, updated, 'REAUTHORIZED_UNBROADCAST', gates, last_observed_at=now)
 
-    def abort_unbroadcast(self, key, now):
+    def abort_unbroadcast(self, key, now, *, reason=None):
         state = self._load(key)
         if state.status in TERMINAL:
             return state
@@ -678,8 +678,13 @@ class Executor:
         gates = self.guards.snapshot(state.intent, now)
         if now < state.last_observed_at:
             raise Blocked('clock regression')
+        changes = dict(status='ABORTED', last_observed_at=now)
+        if reason is not None:
+            if reason != 'PRE_SIGN_SWAP_SIMULATION_REFUSED':
+                raise Blocked('unknown pre-sign refusal reason')
+            changes['blocked_reason'] = reason
         return self._update_attempt(state, replace(attempt, state='ABORTED'), 'ABORTED_UNBROADCAST', gates,
-                                    status='ABORTED', last_observed_at=now)
+                                    **changes)
 
     def recover_signature(self, key, now):
         state = self._load(key)
