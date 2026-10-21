@@ -9,7 +9,7 @@ import json
 import sys
 
 HOUR_MS = 3_600_000
-HTTP_TIMEOUT_S = 15  # larp.audit.delivery receiver timeout: an ACK arrives at most this long after its final send
+HTTP_TIMEOUT_S = 15  # socket timeout only; not a whole-request or positive-ACK deadline
 
 
 def percentile(values, q):
@@ -33,24 +33,29 @@ def backoff_ms(attempts, retry_ms, max_backoff_ms):
 
 
 def delivery(chunks, retry_ms, max_backoff_ms):
-    """M2: per round log, round-log time to the final send of its last ACKed chunk."""
+    """M2 correction: stored attempt clocks only; actual network send and ACK times are absent."""
     logs, statuses, codes, attempts = {}, {}, {}, {}
-    for timestamp_ms, _index, tries, next_ms, status, code, acked in chunks:
+    for row in chunks:
+        timestamp_ms, _index, tries, next_ms, status, code, acked = row[:7]
+        identity = ('event', row[7]) if len(row) == 8 else ('legacy_timestamp', timestamp_ms)
         statuses[status] = statuses.get(status, 0) + 1
         codes[str(code)] = codes.get(str(code), 0) + 1
         attempts[str(tries)] = attempts.get(str(tries), 0) + 1
-        log = logs.setdefault(timestamp_ms, dict(acked=True, send_ms=None))
+        log = logs.setdefault(identity, dict(acked=True, send_ms=None, timestamp_ms=timestamp_ms))
         if status != 'ACK' or not acked or tries < 1:
             log['acked'] = False
             continue
         send = next_ms - backoff_ms(tries, retry_ms, max_backoff_ms)
         log['send_ms'] = send if log['send_ms'] is None else max(log['send_ms'], send)
-    delays = [(v['send_ms'] - t) / 1000 for t, v in logs.items() if v['acked'] and v['send_ms'] is not None]
+    delays = [(v['send_ms'] - v['timestamp_ms']) / 1000 for v in logs.values() if v['acked'] and v['send_ms'] is not None]
     return dict(logs=len(logs), acked_logs=len(delays), unacked_logs=sum(not v['acked'] for v in logs.values()),
                 chunk_status=statuses, last_code=codes, attempts=attempts,
-                dispatch_to_final_send_s=spread(delays),
-                note=f'ACK arrives within {HTTP_TIMEOUT_S} s after the final send (receiver HTTP timeout); '
-                     'add it for an upper bound on dispatch-to-ACK')
+                dispatch_to_latest_attempt_clock_s=spread(delays),
+                actual_dispatch_to_ack_s='NOT_MEASURED', configured_socket_timeout_s=HTTP_TIMEOUT_S,
+                grouping=('event_ordinal' if all(len(row) == 8 for row in chunks) else 'legacy_timestamp'),
+                note='Stored attempt clocks precede DB/network work; no send or positive-ACK timestamps. '
+                     'A stored ACK may belong to an earlier concurrent attempt. Socket timeout is not a whole-request deadline. '
+                     'Legacy timestamp groups may merge events; chunk rows alone do not prove expected-chunk completeness.')
 
 
 def cycle(rounds):
@@ -68,15 +73,15 @@ def cycle(rounds):
 
 
 def archive(anchors, outbox):
-    """M4: minutes after the hour each anchor was stored; outbox status/attempts per kind."""
+    """M4: time-of-hour offsets only, not slot-to-store lag; actual slot bindings are absent."""
     kinds = {}
     for kind, _slot, status, tries, _next, error in outbox:
         k = kinds.setdefault(kind, dict(status={}, attempts={}, errors=0))
         k['status'][status] = k['status'].get(status, 0) + 1
         k['attempts'][str(tries)] = k['attempts'].get(str(tries), 0) + 1
         k['errors'] += bool(error)
-    return dict(anchors=len(anchors), anchor_store_lag_after_hour_s=spread([(ms % HOUR_MS) / 1000 for _, ms in anchors]),
-                outbox=kinds)
+    return dict(anchors=len(anchors), anchor_stored_offset_within_hour_s=spread([(ms % HOUR_MS) / 1000 for _, ms in anchors]),
+                outbox=kinds, slot_to_store_lag_s='NOT_MEASURED')
 
 
 def sessions(rows):
@@ -94,7 +99,7 @@ def summary(host, db):
     units = {u: {k: v.get(k) for k in ('ActiveState', 'UnitFileState', 'NRestarts', 'MemoryCurrent', 'MemoryPeak',
                                        'MemoryMax', 'MemoryHigh')} for u, v in (host.get('units') or {}).items()}
     return dict(
-        schema='LD12OpsSummary.v1',
+        schema='LD12OpsSummary.v2',
         identity=dict(run_id=db.get('run_id'), database_name=db.get('database_name'),
                       runtime=host.get('runtime'), operations=host.get('operations'), run=db.get('run')),
         delivery=dict(delivery(db.get('chunks') or [], retry, cap), retry_ms=retry, max_backoff_ms=cap,
@@ -108,7 +113,7 @@ def summary(host, db):
                        rounds_by_status=db.get('rounds'), systemd=host.get('systemd_version')),
         clock=host.get('chrony'),
         collection_errors=db.get('errors'),
-        missing_measurement=['signed execution/finality/worker-drain timings', 'stalled-call behaviour on the signed '
+        missing_measurement=['actual network-send and positive-ACK timings; hard delivery bound', 'anchor slot-to-store lag', 'signed execution/finality/worker-drain timings', 'stalled-call behaviour on the signed '
                              'path', 'memory history (only the current/peak values systemd reports)'])
 
 

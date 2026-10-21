@@ -11,7 +11,7 @@ from pathlib import Path
 
 UNITS = ('larp-runtime', 'larp-evidence', 'larp-uploader', 'larp-execution', 'larp-archive.service',
          'larp-archive.timer', 'larp-signer')
-PROPS = ('ActiveState', 'SubState', 'UnitFileState', 'NRestarts', 'MemoryCurrent', 'MemoryPeak', 'MemoryMax',
+PROPS = ('LoadState', 'ActiveState', 'SubState', 'UnitFileState', 'NRestarts', 'MemoryCurrent', 'MemoryPeak', 'MemoryMax',
          'MemoryHigh', 'MemorySwapMax', 'CPUUsageNSec', 'ExecMainStartTimestamp', 'WatchdogUSec', 'Restart',
          'RestartUSec')
 SINCE = '2026-10-18 16:00:00 UTC'
@@ -21,50 +21,65 @@ PATTERNS = dict(oom=r'out of memory|oom-kill|oom_reaper|killed process', watchdo
 
 
 def run(*args):
-    return subprocess.run(args, capture_output=True, text=True, timeout=120).stdout
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        raise ValueError('HOST_READ_FAILED') from None
+    if result.returncode != 0:
+        absent_signer = (args[:3] == ('systemctl', 'show', 'larp-signer')
+                         and 'LoadState=not-found' in result.stdout.splitlines()
+                         and 'ActiveState=inactive' in result.stdout.splitlines())
+        if not absent_signer:
+            raise ValueError('HOST_READ_FAILED')
+    return result.stdout
 
 
-x = dict(section='host', checked_at_ms=time.time_ns() // 1000000, units={}, journal={})
-for unit in UNITS:
-    out = run('systemctl', 'show', unit, *[f'-p{p}' for p in PROPS])
-    x['units'][unit] = dict(line.split('=', 1) for line in out.splitlines() if '=' in line)
-for unit in UNITS[:5]:
-    text = run('journalctl', '-u', unit, '--since', SINCE, '--no-pager', '-o', 'cat').lower().splitlines()
-    x['journal'][unit] = dict(lines=len(text), **{k: sum(bool(re.search(p, line)) for line in text)
-                                                 for k, p in PATTERNS.items()})
-kernel = run('journalctl', '-k', '--since', SINCE, '--no-pager', '-o', 'cat').lower().splitlines()
-x['journal']['kernel'] = dict(lines=len(kernel), oom=sum(bool(re.search(PATTERNS['oom'], l)) for l in kernel))
-with subprocess.Popen(['journalctl', '--no-pager', '-q', '-o', 'short-iso'], stdout=subprocess.PIPE, text=True) as p:
-    x['journal']['oldest_entry'] = (p.stdout.readline().strip()[:25])
-    p.kill()
-x['journal']['disk_usage'] = run('journalctl', '--disk-usage').strip()[-80:]
-x['disk'] = {}
-for d in sorted(Path('/var/lib').glob('larp*')) + [Path('/var/log/journal')]:
-    out = run('du', '-sb', str(d)).split()
-    x['disk'][str(d)] = int(out[0]) if out and out[0].isdigit() else None
-df = run('df', '-B1', '--output=size,used,avail', '/').split()
-x['disk']['root_fs'] = dict(zip(('size', 'used', 'avail'), map(int, df[3:6]))) if len(df) >= 6 else None
-mem = run('free', '-b').split()
-x['memory'] = dict(total=int(mem[7]), used=int(mem[8]), available=int(mem[12])) if len(mem) > 12 else None
-swap = [l.split() for l in run('free', '-b').splitlines() if l.lower().startswith('swap')]
-x['memory_swap_total'] = int(swap[0][1]) if swap else None
-x['nproc'] = run('nproc').strip()
-x['boot'] = run('uptime', '-s').strip()
-x['systemd_version'] = run('systemctl', '--version').splitlines()[0][:40] if run('systemctl', '--version') else None
-tracking = run('chronyc', 'tracking')
-keep = ('Stratum', 'System time', 'Last offset', 'RMS offset', 'Leap status', 'Skew', 'Update interval')
-x['chrony'] = {k.strip(): v.strip()[:60] for k, v in (l.split(':', 1) for l in tracking.splitlines() if ':' in l)
-               if k.strip() in keep}
-uploader = json.loads(Path('/etc/larp/uploader.json').read_bytes())
-x['uploader'] = {k: uploader.get(k) for k in ('retry_ms', 'max_backoff_ms', 'interval_seconds', 'batch', 'run_id',
-                                              'build_id', 'mode')}
-operations = json.loads(Path('/etc/larp/operations.json').read_bytes())
-x['operations'] = {k: operations.get(k) for k in ('run_id', 'build_id', 'database_name', 'backup_interval_hours',
-                                                  'retry_seconds', 'max_attempts')}
-runtime = json.loads(Path('/etc/larp/runtime.json').read_bytes())
-x['runtime'] = {k: runtime.get(k) for k in ('run_id', 'build_id', 'mode')}
-x['runtime']['execution'] = (runtime.get('driver') or {}).get('execution')
-print(json.dumps(x, sort_keys=True))
+try:
+    x = dict(section='host', checked_at_ms=time.time_ns() // 1000000, units={}, journal={})
+    for unit in UNITS:
+        out = run('systemctl', 'show', unit, *[f'-p{p}' for p in PROPS])
+        x['units'][unit] = dict(line.split('=', 1) for line in out.splitlines() if '=' in line)
+    for unit in UNITS[:5]:
+        text = run('journalctl', '-u', unit, '--since', SINCE, '--no-pager', '-o', 'cat').lower().splitlines()
+        x['journal'][unit] = dict(lines=len(text), **{k: sum(bool(re.search(p, line)) for line in text)
+                                                     for k, p in PATTERNS.items()})
+    kernel = run('journalctl', '-k', '--since', SINCE, '--no-pager', '-o', 'cat').lower().splitlines()
+    x['journal']['kernel'] = dict(lines=len(kernel), oom=sum(bool(re.search(PATTERNS['oom'], l)) for l in kernel))
+    with subprocess.Popen(['journalctl', '--no-pager', '-q', '-o', 'short-iso'], stdout=subprocess.PIPE, text=True) as p:
+        x['journal']['oldest_entry'] = (re.match(r'^\d{4}-\d{2}-\d{2}T[0-9:.+-]+', p.stdout.readline()) or [''])[0]
+        p.kill()
+    x['journal']['disk_usage'] = run('journalctl', '--disk-usage').strip()
+    x['disk'] = {}
+    for d in sorted(Path('/var/lib').glob('larp*')) + [Path('/var/log/journal')]:
+        out = run('du', '-sb', str(d)).split()
+        x['disk'][str(d)] = int(out[0]) if out and out[0].isdigit() else None
+    df = run('df', '-B1', '--output=size,used,avail', '/').split()
+    x['disk']['root_fs'] = dict(zip(('size', 'used', 'avail'), map(int, df[3:6]))) if len(df) >= 6 else None
+    mem = run('free', '-b').split()
+    x['memory'] = dict(total=int(mem[7]), used=int(mem[8]), available=int(mem[12])) if len(mem) > 12 else None
+    swap = [l.split() for l in run('free', '-b').splitlines() if l.lower().startswith('swap')]
+    x['memory_swap_total'] = int(swap[0][1]) if swap else None
+    x['nproc'] = run('nproc').strip()
+    x['boot'] = run('uptime', '-s').strip()
+    x['systemd_version'] = run('systemctl', '--version').splitlines()[0] if run('systemctl', '--version') else None
+    tracking = run('chronyc', 'tracking')
+    keep = ('Stratum', 'System time', 'Last offset', 'RMS offset', 'Leap status', 'Skew', 'Update interval')
+    x['chrony'] = {k.strip(): v.strip() for k, v in (l.split(':', 1) for l in tracking.splitlines() if ':' in l)
+                   if k.strip() in keep}
+    uploader = json.loads(Path('/etc/larp/uploader.json').read_bytes())
+    x['uploader'] = {k: uploader.get(k) for k in ('retry_ms', 'max_backoff_ms', 'interval_seconds', 'batch', 'run_id',
+                                                  'build_id', 'mode')}
+    operations = json.loads(Path('/etc/larp/operations.json').read_bytes())
+    x['operations'] = {k: operations.get(k) for k in ('run_id', 'build_id', 'database_name', 'backup_interval_hours',
+                                                      'retry_seconds', 'max_attempts')}
+    runtime = json.loads(Path('/etc/larp/runtime.json').read_bytes())
+    x['runtime'] = {k: runtime.get(k) for k in ('run_id', 'build_id', 'mode')}
+    x['runtime']['execution'] = (runtime.get('driver') or {}).get('execution')
+    print(json.dumps(x, sort_keys=True))
+except Exception:
+    print(json.dumps(dict(error='LD12_REFUSED', reason='HOST_READ_FAILED')))
+    raise SystemExit(2)
+
 PY
 )
 DB_JSON=$(sudo -u larp-archive env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B - <<'PY'
@@ -100,12 +115,12 @@ q('run', 'SELECT version, quarantined, epoch, clock_ms FROM runs WHERE run_id=%s
 q('sessions', 'SELECT started_ms, heartbeat_ms, ended_ms, build_id FROM process_sessions WHERE run_id=%s '
               'ORDER BY started_ms')
 q('chunks', 'SELECT a.timestamp_ms, c.chunk_index, c.attempts, c.next_ms, c.status, c.last_code, '
-            'c.acknowledgement IS NOT NULL FROM audit_chunks c JOIN audit_events a USING (run_id, event_id) '
+            'c.acknowledgement IS NOT NULL, dense_rank() OVER (ORDER BY a.event_id) FROM audit_chunks c JOIN audit_events a USING (run_id, event_id) '
             'WHERE c.run_id=%s ORDER BY a.timestamp_ms, c.chunk_index')
 q('ack_body_keys', 'SELECT acknowledgement FROM audit_chunks WHERE run_id=%s AND acknowledgement IS NOT NULL LIMIT 1',
-  shape=lambda rows: sorted(json.loads(bytes(rows[0][0]))) if rows else [])
+  shape=lambda rows: sorted(set(json.loads(bytes(rows[0][0]))) & {'status', 'eventId', 'chunkIndex'}) if rows else [])
 q('anchors', 'SELECT sequence, stored_ms FROM anchors WHERE run_id=%s ORDER BY sequence')
-q('archive', 'SELECT kind, slot_ms, status, attempts, next_ms, left(coalesce(last_error, \'\'), 60) '
+q('archive', 'SELECT kind, slot_ms, status, attempts, next_ms, (last_error IS NOT NULL AND last_error <> \'\') '
              'FROM archive_outbox WHERE run_id=%s ORDER BY kind, slot_ms')
 q('jobs', 'SELECT lane, status, attempts, count(*) FROM jobs WHERE run_id=%s GROUP BY 1, 2, 3 ORDER BY 1, 2, 3')
 q('rounds', 'SELECT status, count(*) FROM rounds WHERE run_id=%s GROUP BY 1')
@@ -151,23 +166,69 @@ print(json.dumps(x, sort_keys=True, default=str))
 PY
 )
 HOST_JSON="$HOST_JSON" DB_JSON="$DB_JSON" env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B - <<'PY'
-import base64, gzip, hashlib, json, os
+import base64, gzip, hashlib, json, os, re
 from pathlib import Path
-host, db = os.environ['HOST_JSON'].strip(), os.environ['DB_JSON'].strip()
-h, d = json.loads(host), json.loads(db)
-c = json.loads(Path('/etc/larp/operations.json').read_bytes())
-runtime = json.loads(Path('/etc/larp/runtime.json').read_bytes())
-forbidden = [str(c.get('database_host') or ''), str(runtime.get('wallet_address') or '').lower()]
-forbidden += [p.get('url', '') for p in (runtime.get('driver') or {}).get('balance_rpc_providers') or []]
-for text in (host, db):
-    if '://' in text or any(f and len(f) >= 6 and f.lower() in text.lower() for f in forbidden):
-        print(json.dumps(dict(error='LD12_REFUSED', reason='SANITIZER')))
-        raise SystemExit(2)
-active = [u for u in ('larp-runtime', 'larp-execution', 'larp-signer') if h['units'][u].get('ActiveState') == 'active']
-if active or h['operations']['run_id'] != d['run_id']:
-    print(json.dumps(dict(error='LD12_REFUSED', reason='UNEXPECTED_STATE', active=active)))
-    raise SystemExit(3)
-packet = (host + '\n' + db).encode()
-print(json.dumps(dict(packet_gzip_b64=base64.b64encode(gzip.compress(packet, mtime=0)).decode(),
-                      packet_sha256=hashlib.sha256(packet).hexdigest(), bytes=len(packet))))
+from urllib.parse import urlsplit
+
+
+def refuse(reason):
+    print(json.dumps(dict(error='LD12_REFUSED', reason=reason)))
+    raise SystemExit(2)
+
+
+try:
+    host, db = os.environ['HOST_JSON'].strip(), os.environ['DB_JSON'].strip()
+    h, d = json.loads(host), json.loads(db)
+    c = json.loads(Path('/etc/larp/operations.json').read_bytes())
+    runtime = json.loads(Path('/etc/larp/runtime.json').read_bytes())
+    forbidden = []
+    def private_values(value):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if isinstance(child, str) and re.search(r'host|wallet|url|dsn|secret|password|credential|api_key|authorization', key, re.I):
+                    if child:
+                        forbidden.append(child)
+                        if child.startswith('0x'): forbidden.append(child[2:])
+                        if '://' in child:
+                            forbidden.append(urlsplit(child).hostname or '')
+                private_values(child)
+        elif isinstance(value, list):
+            for child in value: private_values(child)
+    private_values(c)
+    private_values(runtime)
+    def strings(value):
+        if isinstance(value, str):
+            yield value
+        elif isinstance(value, dict):
+            for key, child in value.items():
+                yield str(key)
+                yield from strings(child)
+        elif isinstance(value, list):
+            for child in value: yield from strings(child)
+    for text in (host, db, *strings(h), *strings(d)):
+        if '://' in text or any(f and f.lower() in text.lower() for f in forbidden):
+            refuse('SANITIZER')
+    if any(type(row[-1]) is not bool for row in d.get('archive', [])):
+        refuse('FREE_FORM_ERROR')
+    expected_run = 'larp-dev-llm-trial-20261018t170339z'
+    expected_build = 'ea25b52325656a19b29e8ddb07b94dd792be6e18'
+    expected_db = 'larp_trial2'
+    if (any(h['units'].get(u, {}).get('ActiveState') != 'inactive' for u in
+            ('larp-runtime', 'larp-evidence', 'larp-uploader', 'larp-execution', 'larp-archive.service',
+             'larp-archive.timer', 'larp-signer'))
+            or any(v.get('run_id') != expected_run for v in
+                   (h['runtime'], h['uploader'], h['operations'], d, runtime, c))
+            or any(v.get('build_id') != expected_build or v.get('mode') != 'dev'
+                   for v in (h['runtime'], h['uploader'], runtime))
+            or h['runtime'].get('execution') != 'shadow'
+            or (runtime.get('driver') or {}).get('execution') != 'shadow'
+            or h['operations'].get('database_name') != expected_db
+            or d.get('database_name') != expected_db or c.get('database_name') != expected_db
+            or len(d.get('run', [])) != 1):
+        refuse('UNEXPECTED_STATE')
+    packet = (host + '\n' + db).encode()
+    print(json.dumps(dict(packet_gzip_b64=base64.b64encode(gzip.compress(packet, mtime=0)).decode(),
+                         packet_sha256=hashlib.sha256(packet).hexdigest(), bytes=len(packet))))
+except Exception:
+    refuse('INVALID_PACKET')
 PY

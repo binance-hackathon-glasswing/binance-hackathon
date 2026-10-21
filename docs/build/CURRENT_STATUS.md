@@ -33,8 +33,9 @@ separate review queues. [Retention/evidence](CONSOLIDATION_20261021.md),
 [delegated policy](../ledger/IDEA-084.md) and
 [signed release procedure](LD15_SIGNED_RELEASE_CHECKLIST.md).
 PR203 is superseded by PR207, whose history contains its exact head.
-Active reviews: draft PR206, draft PR212 and PR217.
-PR207, PR210, PR211, PR215 and PR216 are merged. Their checks apply only
+No implementation PR remains open at RV01 closeout; PR133 stays noticeboard-only.
+PR206/212/217/218/219 and PR217 repair follow-up221 are merged, alongside
+PR207/210/211/215/216. Their checks apply only
 to their recorded sources; no combined release or hosted acceptance is implied.
 
 ## Repository scope retained
@@ -124,7 +125,7 @@ refusal from 40 attempts, with max BUY944,814/SELL930,548. These do not establis
 size independence, profit, numeric caps or full exit coverage. Gas-budget
 proposal and RG2 crash design remain proposals. Actions39556642979 executed
 zero steps due account billing/spending limits. PR217's operator/measurement
-record is pending review, not accepted signer/host access or timing qualification.
+record is now retained with the RV01 correction below; it does not qualify signer/host timing.
 
 PR216 merged at `657efd3` after LD09-B-RV01 review. The optional sizing budget
 reduces minimum-trade cost assumptions while the action/exit budget remains
@@ -146,6 +147,25 @@ remain unverified. The old pair formula is below separately rounded child gas
 limits, so its candidate action/reserve values are not approved execution
 envelopes. Historical drafts/examples remain unchanged; nothing is installed.
 
+PR217 originally merged at3b83114 during Isaac's review. RV01 fixes landed in
+PR221 at23a98b3: exact retired-run/dev-shadow/inactive-state guards, failed-read
+refusal, privacy filtering before/after JSON encoding and error flags, per-event
+grouping, and corrected attempt-clock/anchor semantics. Original evidence files
+are unchanged; [reviewed summary](evidence/ld12-ops-measure-20261021/README.md)
+withdraws the20.4s hard ACK bound. Actual send/ACK timestamps were not captured;
+5.387s is a log-to-latest-attempt-clock gap. Source09d5938:40 tests/10 subtests/
+zero skips, including real PostgreSQL collector SELECT/write-refusal and
+delivery-age integration. [Receipt](evidence/pr217-review-20261021.json).
+CI39576593343 ran zero steps due billing limits; no full-suite/host claim.
+
+Keegan's team owns operator LD12/17/19/21/23. Host writes and signer sessions
+still need Keegan's separately recorded authorization. Per-unit RSS, actual ACK
+timing, signed execution/finality/drain/stall/recovery and Isaac's exact LD14
+values remain open. Concurrent PR206 model repairs and PR212 drill harnesses
+are merged with private/real quality, affordability, actual drills and host
+acceptance still open. PR219 records RG2 and read-side/pre-sign simulation
+directions; their acceptance is not created by this collector review.
+
 ## What still blocks installation / live acceptance
 
 **PF-01 (2026-10-21 SGT):** Isaac delegated profit-focused policy choices in
@@ -160,9 +180,9 @@ This policy record does not change runtime readiness or qualify missing inputs.
 | Isaac + Keith + approved operator | CAP-02 numeric signer policy hashes are approved. Verify their deployment coverage against the actual selected measured profile, fresh complete holdings and exact initial-only whole-run/exit signed-child gas; B09/PF-01 scope is decided. PR207 (LD08-IG01) adds low-gas incidents/metric/alarm; measured values and actual alarm acceptance remain. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
 | Keegan + operator | #27 Option A is implemented by PR200 and L=660s/m=30s selected in the retained LD04-V01 record. PR210 authority provenance/builder is merged and initial-only+L/m candidates regenerate exactly. Keith #120 actual profile/weights/calendar/gas review and adopted-source/actual-host timing checks remain. |
 | Approved provider/operator + Isaac | Qualify the PF-01 execution read-side provider direction and current reconciliation/funding disposition. Initial-gas-only scope is selected (PR199); PR207 controls are merged; independent Keith/Keegan review remains. Native top-ups are outside the selected scope and are not declared qualified. Balance-provider MATCH is not execution/finality qualification. |
-| Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
+| Keegan + approved team operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |
 | Operator + reviewers | Real logged agent approve/swap, canonical reconciliation/ACK, resource/clock/delivery measurements, restart/restore/HALT/anchor/final-wallet drills and actual rehearsal evidence. |
-| Keith + account owners + Keegan | PF-01 fixes policy direction; actual S1 weights/data/parameters and code qualification, model trial/rights/usage/accounting evidence, source coverage and final declarations remain. PR206 repairs are under review. PR201 delivery-age implementation is merged; C05 numeric settings require measurements. |
+| Keith + account owners + Keegan | PF-01 fixes policy direction; actual S1 weights/data/parameters and code qualification, model trial/rights/usage/accounting evidence, source coverage and final declarations remain. PR206 repairs are merged; private/real-input acceptance remains. PR201 delivery-age implementation is merged; C05 numeric settings require measurements. |
 
 The full details/acceptance IDs remain in the backlog and topical records.
 Older checklist/handoff documents are dated evidence; this page and the latest
