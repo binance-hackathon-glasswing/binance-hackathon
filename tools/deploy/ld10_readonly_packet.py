@@ -18,7 +18,10 @@ def script(profile_bytes):
     source = source.replace(needle, "    selected_raw = base64.b64decode(SELECTED_PROFILE_B64)\n    profile = json.loads(selected_raw)\n" + needle, 1)
     source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if not isinstance(v, str) or v.lower() not in (wallet, wallet[2:])]\n", 1)
     source = source.replace("    return packet, forbidden\n", """    packet['selected_profile_sha256'] = hashlib.sha256(selected_raw).hexdigest()
-    packet['private_caps_inputs'] = dict(wallet=wallet, portfolio=portfolio,
+    packet['portfolio_source_sha256'] = Document.from_dict(portfolio).digest('PortfolioState.v1')
+    caps_portfolio = {k: portfolio[k] for k in ('schema', 'wallet_id', 'run_id', 'mode', 'cash_units',
+                                               'bnb_units', 'bnb_decimals', 'positions', 'reservations')}
+    packet['private_caps_inputs'] = dict(wallet=wallet, portfolio=caps_portfolio,
         token_decimals={s: observation['tokens'][s]['decimals'] for s in TOKENS},
         quote_artifacts=web3.records)
     # Private review needs the public wallet address. Continue refusing secrets,
@@ -26,6 +29,7 @@ def script(profile_bytes):
     for record in packet['private_caps_inputs']['quote_artifacts']:
         record['original_record_sha256'] = hashlib.sha256(
             json.dumps(record, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        record.pop('response_body_base64', None)  # exact upstream response_sha256 is retained
         response_data = record.get('response', {}).get('data')
         rows = response_data if isinstance(response_data, list) else [response_data]
         projected = []
