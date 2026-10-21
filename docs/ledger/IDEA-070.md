@@ -1523,3 +1523,79 @@ Delivery: documentation-only PR225. At review headbe0c5ca, hosted Actions
 reports failed account payments/spending-limit startup refusal. This is a CI
 infrastructure block, not a passing run. Local results above are scoped;
 application/config/test diff against reviewed canonical is empty.
+
+## LD03-RP01 — fresh local read-only router replay (2026-10-21, prospective)
+
+Isaac requests priority3 alongside priority2 when useful. Criteria RP1–RP5 are
+in [gas/router coverage](../build/GAS_ROUTER_COVERAGE_20261021.md). Use only the
+named-reviewed LD03 hash, production read-only clients and retained approved
+provider settings; private artifacts stay external. Any fresh local result is
+distinct from signed-host binding, complete-holdings coverage and router/source
+guarantees. No AWS/session/key/signing/broadcast action is authorized here.
+
+### LD03-RP01 results — fresh local replay/preflight PASS
+
+Pushed sourcefe91326,2026-10-21 14:25:56–14:27:01UTC (22:25:56–22:27:01SGT),
+macOS arm64/Python3.12.14. Named policy05759e90…; canonical decoder checks10/10
+fresh20USDT BUY/hypothetical-output SELL quotes and refuses every built-in
+tamper mutation. Both selected public providers pass production code/facet/
+dispatch/allowance preflight10/10;101 read-only calls each, chain56. Worst
+quote-to-preflight completion6.711s within candidate30s. Web3:one metadata GET,
+ten quote GETs, no approval/estimate/submission endpoint. The read-only parser
+loads no signing key or ai-seeds secret; signer/host/AWS/DB/funding untouched.
+
+[Sanitized receipt](../build/evidence/rp01-router-readonly-20261021/README.md),
+public report SHA2569eaad5d29797d3057b74e7544a369fd8970b0d3fcaf5d9c76788fffec7b3ff02.
+213 private content-addressed observations verified and retained outside Git.
+Measured GC01 rehearsal candidatec2a69367… is not an adopted #120 profile.
+SELL sizes are hypothetical, not current full holdings. This closes Isaac's
+fresh local replay/preflight slice only; actual selected input/config/release/
+host binding, runtime rechecks, canonical/finality qualification and first
+agent round/receipt/fees/ACK/drills remain. No source/enforcement/RFQ usability
+or gas-execution guarantee is inferred; all signing/readiness flags stay false.
+
+Final CLI follow-up atffe91d9 returns exit2 when a generated local report is
+BLOCKED, rather than exit0. Its regression and the final focused suite pass:
+68 tests/280 subtests,3 explicitly skipped disposable-PostgreSQL tests. The
+original live receipt remains sourcefe91326; no repeated network run is claimed.
+Public report privacy,213 original hashes, report-to-candidate binding and
+new local links/whitespace checks pass.
+
+## PR232-RV01 — Keegan review and integration (2026-10-21; prospective)
+
+Keegan requests review, fixes and merge of PR232. Review original head5b3892d,
+merge canonical6ec07ba without rewriting either history, preserve both independent
+GC01/RP01 evidence and selected LD10-Q01-R1/LD11-RH01/AB-REL-RC2 identities.
+
+Pass criteria before execution: RV1 audit arithmetic, exact profile/policy binding,
+quote-only endpoint/RPC allowlists and private-output/public-summary handling;
+RV2 reproduce frozen GC01 candidates/report byte-for-byte and verify stored
+RP01 quote counts/hash bindings without repeating live calls or pretending to
+possess Isaac's original private files; RV3 exercise actual probe report/CLI
+paths with fake network ports for successful, refused and stale preflight;
+RV4 run focused gas/profile/initial-only/allowance/decoder/chain regressions on
+committed pushed code; RV5 prove runtime release files unchanged from qualified
+canonical b22207e, update review results/backlog and merge only the reviewed head.
+No live RPC/Web3 calls, AWS, host, signer, wallet, funding or paid-model operation.
+
+### PR232-RV01 result — PASS within stated scope
+
+Reviewed/pushed source922127712bc7964a8854a8d38fedb615966e93a3, Linux x86_64/
+Python3.12.14/disposable PostgreSQL14.24: **130 passed,334 subtests,zero skips or
+failures** (9.23s). Real gas/profile/initial-only/allowance/decoder/chain/caps
+consumers and actual CLI/report refusal/freshness/tamper paths pass. The disposable
+database is removed. Deviation rendering and whitespace PASS.
+
+Resolved both canonical merge conflicts, retaining the selected LD10/LD11 and
+AB-REL-RC2 records alongside independent GC01/RP01 evidence. Corrected live backlog
+wording that would reintroduce completed LD05 and numeric coverage as missing.
+GC01's frozen candidates/report reproduce byte-for-byte; historical source hashes
+and RP01 public report/profile/quote/preflight bindings match. Isaac's213 private
+original observations are not available here; their earlier owner verification is
+retained, not claimed as independently repeated. No new live measurement occurred.
+
+All205 runtime/config/deployment release files match the exact original manifest
+of qualified b22207e/artifact12352993133. PR232 changes offline tools, tests and
+documentation only; no new full-suite/CI or signed-release qualification is claimed.
+The qualified artifact remains immutable; actual LD16/17 owner/config/host bindings,
+keys, funding and real rounds stay separate. [Review receipt](../build/evidence/pr232-review-20261021.json).
