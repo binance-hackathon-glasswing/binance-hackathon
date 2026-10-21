@@ -68,6 +68,9 @@ GRANT SELECT,INSERT ON execution_signatures TO larp_signer;
 -- cannot authorize bytes because _load also checks the serialized revision and state/journal hashes.
 -- Do not grant UPDATE on state, state_hash, terminal or the immutable journal/signature tables.
 GRANT SELECT ON execution_records,execution_journal TO larp_signer;
+-- LD05-Q01: signer independently reads only public outcome kind/run to enforce the
+-- durable abnormal-outcome fence before runtime ingestion. No observation writes.
+GRANT SELECT (run_id,observation) ON execution_observations TO larp_signer;
 GRANT UPDATE (revision) ON execution_records TO larp_signer;
 
 -- IDEA-047 S01: signing requests (migration 009). The execution service asks; the signer answers with a signature
