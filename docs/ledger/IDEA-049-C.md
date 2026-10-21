@@ -1216,3 +1216,13 @@ packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes
 50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
 binding is historical and superseded. Selected public coverage/scope files use the
 `-deterministic` name (see packet README); private packet/review remain outside Git.
+
+### LD10-Q01-R1 integrated candidate receipt (2026-10-21)
+
+PR231 is merged at canonical b22207e. New mirror39617977531 finalized all four jobs
+SUCCESS, with original artifact12352993133 verified (see IDEA-083 AB-REL-RC2 and the
+public release receipt). The unchanged selected exact profile/policy/scope bindings
+and50/50 technical coverage are now integrated in the qualified candidate. LD10's
+remaining deployment owner acceptance and actual final environment/configuration
+bindings are LD16 inputs; no personal Isaac attestation, host/session approval or
+signer.json assembly is fabricated. Fresh pre-install/per-action checks still apply.
