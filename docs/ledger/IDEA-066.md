@@ -2724,3 +2724,11 @@ envelope encoding. Final pushed source09d5938:40 tests/10 subtests/zero skips,
 5.32s with disposable PostgreSQL14.24;14 total red regressions before repair.
 The repaired-source full suite remains intentionally unclaimed. Follow-up PR221
 contains the fixes because original PR217 already merged concurrently.
+
+RV01 delivery: original PR217 merged3b83114 concurrently; all review fixes
+merged via PR221 at23a98b3, exact headde545a5,2026-10-21T09:24:11Z. Tested
+source09d5938; later changes documentation only. Actions39576593343 executed
+zero steps due account payment/spending limits. This self-authored follow-up
+received local review; no GitHub self-approval is claimed. PR133/current status
+record corrections, current merged queue and Keegan team operator ownership.
+Disposable test database stopped; no live host/key/signing action.

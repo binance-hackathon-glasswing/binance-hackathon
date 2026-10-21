@@ -69,5 +69,24 @@
     "canonical_model_drill_decisions_preserved": true,
     "delivery": "FOLLOW_UP_PR221"
   },
-  "intermediate_tested_source": "cefd652"
+  "intermediate_tested_source": "cefd652",
+  "ci": {
+    "run_id": 39576593343,
+    "source": "de545a5814497530f026198a7f08d598411dac59",
+    "executed_steps": 0,
+    "annotations": [
+      "The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings"
+    ],
+    "status": "ACCOUNT_BILLING_BLOCKED"
+  },
+  "delivery": {
+    "original_pr": 217,
+    "original_merge": "3b8311498a4d9decc7756ad0fafd05b6c1fa7d20",
+    "repair_pr": 221,
+    "reviewed_head": "de545a5814497530f026198a7f08d598411dac59",
+    "repair_merge": "23a98b395ffa8de79ddd4a7d4f8c384f1e86eba9",
+    "merged_at_utc": "2026-10-21T09:24:11Z",
+    "review_state": "LOCAL_REVIEW_COMPLETE_SELF_AUTHORED_FOLLOWUP",
+    "test_container_stopped": true
+  }
 }
