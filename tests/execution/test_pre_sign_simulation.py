@@ -8,7 +8,7 @@ import pytest
 from larp.execution import Blocked, DependencyUnavailable, Payload
 from larp.execution_live.chain import Rpc
 from larp.execution_live.service import ExecutionService
-from tests.execution_fixtures import WALLET, ROUTER, finalized
+from tests.execution_fixtures import WALLET, ROUTER, finalized, FakeDecoder
 from tests.marketdata.test_transport import Response
 from tests.signer import test_service as fixtures
 
@@ -67,6 +67,7 @@ def test_rpc_simulation_failures_are_refusals_without_private_error_text(result,
 
 class PreSignFlow(fixtures.SigningCase):
     def swap(self):
+        self.service = self.signer(decoder=FakeDecoder())
         state, _ = self.authorized()
         self.executor.sign(state.intent.key, 12)
         sent = self.executor.broadcast(state.intent.key, 13).attempts[-1]
