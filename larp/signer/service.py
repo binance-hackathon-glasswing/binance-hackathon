@@ -39,6 +39,7 @@ from larp.execution import Blocked, Gates, address, validate_sequence
 from larp.execution_live import signing
 from larp.execution_live.store import ExecutionStore
 from larp.execution_live.venue import UnverifiedRouter
+from larp.runtime import faults
 from larp.signer.keyfile import load_key_file
 from larp.signer.local import LocalSigner
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
@@ -127,7 +128,10 @@ class SignerService:
         self._current = (attempt.attempt_id, state.intent, attempt.step, gates, max(now, gates.observed_at),
                          self.decoder)
         try:
-            return self.signer.sign(attempt.attempt_id, attempt.payload, *authority)
+            faults.point('F3')
+            signed = self.signer.sign(attempt.attempt_id, attempt.payload, *authority)
+            faults.point('F4')
+            return signed
         finally:
             self._current = None
 
@@ -262,6 +266,10 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         run = run_state(store, config['run_id'])
         if run['mode'] != config['mode'] or str(run['wallet_id']).lower() != config['wallet_address']:
             raise StartRefused('run differs from the signer configuration')
+        try:
+            faults.check(run['mode'])
+        except ContractError:
+            raise StartRefused('fault injection refused') from None
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED

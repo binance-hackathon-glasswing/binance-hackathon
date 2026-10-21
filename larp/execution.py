@@ -12,6 +12,8 @@ import json
 import re
 from typing import Protocol
 
+from larp.runtime import faults
+
 USDT = "0x55d398326f99059ff775485246999027b3197955"
 NATIVE_BNB = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 BSTOCKS = frozenset({
@@ -521,6 +523,7 @@ class Executor:
         signed = self.signer.sign(attempt.attempt_id, attempt.payload, attempt.epoch, attempt.guard_version)
         if not self.signer.verify(attempt.payload, signed):
             raise Blocked("signed bytes/hash do not bind authorized payload")
+        faults.point("F5")
         return self._update_attempt(state, replace(attempt, state="SIGNED_DURABLE",
                                    raw_hex=signed.raw_hex, tx_hash=signed.tx_hash), "SIGNED_DURABLE", gates, last_observed_at=now)
 
@@ -546,8 +549,10 @@ class Executor:
         attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now,
                           probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
+        faults.point("F7a")
         try:
             tx_hash = self.venue.broadcast(signed, attempt.epoch, attempt.guard_version)
+            faults.point("F7b")
             phase = "PENDING" if tx_hash == attempt.tx_hash else "UNKNOWN"
         except Rejected as rejection:
             # Still non-terminal: reconcile ends it only after the timeout and a nonce check.
@@ -588,6 +593,7 @@ class Executor:
         except Blocked:
             return self._update_attempt(state, attempt, 'RECOVERY_BLOCKED', gates,
                                         blocked_reason='receipt evidence rejected; wallet barrier retained')
+        faults.point("F8")
         absent = outcome.status == 'UNKNOWN' and outcome.sender is None and outcome.nonce is None
         if absent:
             outcome = replace(outcome, sender=state.intent.wallet, nonce=attempt.payload.nonce)

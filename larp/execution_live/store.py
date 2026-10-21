@@ -12,8 +12,8 @@ from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signe
                             TERMINAL, canonical, digest)
 from larp.storage.backup import without_signed_bytes
 from larp.storage.postgres import IntegrityError
-from larp.contracts import Document
-from larp.runtime import halts
+from larp.contracts import ContractError, Document
+from larp.runtime import faults, halts
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS execution_records (
@@ -268,6 +268,10 @@ class ExecutionStore:
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
+        try:
+            faults.check(run['mode'])  # RG2-H01: no new signature in a final run while a drill point is armed
+        except ContractError as refused:
+            raise Conflict(str(refused)) from None
         if now_ms is not None:
             from larp.strategy.execution_bounds import permitted
             if not permitted(projection, intent, now_ms):
