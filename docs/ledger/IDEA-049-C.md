@@ -1463,3 +1463,13 @@ additional 0.006137501130637114 BNB at the dated balance. [Packet](../build/evid
 Not done here: fresh operator holdings/child quotes, Isaac's rerun and owner
 acceptance (full_ld10_owner_acceptance stays false), funding, LD15 qualification
 of the new source (RC2 does not cover it), any host, key or trade.
+
+LD10-P03 independent review (delegated subagent, read-only, 2026-10-21): no
+blocking finding. 1333 passed/10 skipped across the touched suites; it checked
+cap enforcement, port parity, the three split implementations, caps_review
+blockers, the probe patching and all reserve/funding arithmetic. Medium: the
+general profile builder/validator keep the 4×/5× reserve, so other generated
+profiles fail the new coverage check. This is deferred to LD24 as LD10-P03-R1 in
+the backlog. Lows: a third child beyond 2·cap/1.01 is accepted residual risk
+(recorded); positions=4 matches the planner's four-position limit; the probe's
+fixed limit of 2 is harmless because the reviewer blocks over-count.
