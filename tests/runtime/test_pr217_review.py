@@ -100,3 +100,41 @@ def test_absent_signer_is_distinct_from_a_failed_host_read():
                stdout='LoadState=not-found\nActiveState=inactive\n', stderr='')):
         assert 'not-found' in ns['run']('systemctl', 'show', 'larp-signer')
         with pytest.raises(ValueError): ns['run']('systemctl', 'show', 'larp-runtime')
+
+
+from contextlib import contextmanager
+from tests.support import DatabaseCase
+
+
+class CollectorDatabaseChecks(DatabaseCase):
+    def test_every_supported_collector_query_parses_on_current_postgres_schema(self):
+        import psycopg
+        source = (FOLDER / 'ops-collect.sh').read_text().split("<<'PY'\n")[2].split('\nPY', 1)[0]
+        queries = [n for n in ast.parse(source).body if isinstance(n, ast.Expr)
+                   and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name)
+                   and n.value.func.id == 'q']
+        assert len(queries) == 12
+        for node in queries:
+            name, sql = (ast.literal_eval(arg) for arg in node.value.args[:2])
+            params = () if any(k.arg == 'params' for k in node.value.keywords) else ('run',)
+            if name == 'anchors':
+                with pytest.raises(psycopg.errors.UndefinedTable), self.store.transaction() as db:
+                    db.execute(sql, params).fetchall()
+            else:
+                with self.store.transaction() as db:
+                    db.execute('SET TRANSACTION READ ONLY')
+                    db.execute(sql, params).fetchall()
+
+    def test_collector_transaction_rejects_writes_at_the_database(self):
+        import psycopg
+        source = (FOLDER / 'ops-collect.sh').read_text().split("<<'PY'\n")[2].split('\nPY', 1)[0]
+        node = next(n for n in ast.parse(source).body if isinstance(n, ast.ClassDef) and n.name == 'RO')
+        store = self.store
+        class Base:
+            def transaction(self): return store.transaction()
+        ns = dict(IamPostgresStore=Base, contextmanager=contextmanager)
+        exec(compile(ast.Module(body=[node], type_ignores=[]), 'collector_ro', 'exec'), ns)
+        with ns['RO']().transaction() as db:
+            assert db.execute('SHOW transaction_read_only').fetchone()[0] == 'on'
+        with pytest.raises(psycopg.errors.ReadOnlySqlTransaction), ns['RO']().transaction() as db:
+            db.execute("INSERT INTO runs(run_id) VALUES ('refused')")

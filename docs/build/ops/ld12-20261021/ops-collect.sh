@@ -118,7 +118,7 @@ q('chunks', 'SELECT a.timestamp_ms, c.chunk_index, c.attempts, c.next_ms, c.stat
             'c.acknowledgement IS NOT NULL, dense_rank() OVER (ORDER BY a.event_id) FROM audit_chunks c JOIN audit_events a USING (run_id, event_id) '
             'WHERE c.run_id=%s ORDER BY a.timestamp_ms, c.chunk_index')
 q('ack_body_keys', 'SELECT acknowledgement FROM audit_chunks WHERE run_id=%s AND acknowledgement IS NOT NULL LIMIT 1',
-  shape=lambda rows: sorted(json.loads(bytes(rows[0][0]))) if rows else [])
+  shape=lambda rows: sorted(set(json.loads(bytes(rows[0][0]))) & {'status', 'eventId', 'chunkIndex'}) if rows else [])
 q('anchors', 'SELECT sequence, stored_ms FROM anchors WHERE run_id=%s ORDER BY sequence')
 q('archive', 'SELECT kind, slot_ms, status, attempts, next_ms, (last_error IS NOT NULL AND last_error <> \'\') '
              'FROM archive_outbox WHERE run_id=%s ORDER BY kind, slot_ms')
