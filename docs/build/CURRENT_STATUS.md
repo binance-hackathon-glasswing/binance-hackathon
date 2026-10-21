@@ -1,5 +1,13 @@
 # Current shared build and remaining work
 
+PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
+dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer
+prompt and request-budget reporting on a new branch from canonical697ff3a.
+The full audit/shutdown history is retained. This is an unmerged repository repair
+candidate, not an installed build or a new model-quality/affordability acceptance.
+Private corpus reporting, independent review/labels and exact-host
+acceptance remain with the owners in the live backlog. The retired trial stays stopped.
+
 Canonical integration branch: **`codex/system-testing-20261012`**.
 All new implementation branches and PRs start from this branch. PR133 is an
 open noticeboard for links/status/owners only. Its branch is not a build base.
