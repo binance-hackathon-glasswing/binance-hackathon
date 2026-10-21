@@ -25,9 +25,8 @@ separate review queues. [Retention/evidence](CONSOLIDATION_20261021.md),
 [delegated policy](../ledger/IDEA-084.md) and
 [signed release procedure](LD15_SIGNED_RELEASE_CHECKLIST.md).
 PR203 is superseded by PR207, whose history contains its exact head.
-Active reviews: draft PR206, draft PR212, PR216 and PR217. PR216 was retargeted
-from merged PR215 to canonical; its implementation is not accepted by PR215.
-PR207, PR210, PR211 and PR215 are merged. Their checks apply only
+Active reviews: draft PR206, draft PR212 and PR217.
+PR207, PR210, PR211, PR215 and PR216 are merged. Their checks apply only
 to their recorded sources; no combined release or hosted acceptance is implied.
 
 ## Repository scope retained
@@ -119,6 +118,26 @@ proposal and RG2 crash design remain proposals. Actions39556642979 executed
 zero steps due account billing/spending limits. PR217's operator/measurement
 record is pending review, not accepted signer/host access or timing qualification.
 
+PR216 merged at `657efd3` after LD09-B-RV01 review. The optional sizing budget
+reduces minimum-trade cost assumptions while the action/exit budget remains
+separate; added tests exercise S1 monitoring and the actual planner reserve
+barrier. Source `3e73086`: full local macOS/Python3.12.14/PostgreSQL14.24
+**2323 passed /3748 subtests /10 explained external/platform skips**; focused
+70 tests/44 subtests/zero skips. [Receipt](evidence/pr216-review-20261021.json).
+Actions39558766897 ran zero steps due account billing/spending limits.
+
+**CAP-02: #44 numeric ceilings are APPROVED under Isaac's explicit delegation.**
+[Exact policies/hashes](evidence/signer-numeric-ceilings-20261021.json): USDT35
+development/70 final, retained finite raw stock caps, pinned router-only spender,
+no native-BNB input, cleanup disabled, fee ceiling0.0002BNB. Real policy boundaries
+and archived20/40USDT quantities/profile/fee envelope checks pass. No further
+permission round is needed for these exact ceiling choices. Current complete
+holdings and the actual selected S1/fallback profile, request-bound quotes,
+signed child-gas/cleanup/full-exit/seeding and environment configuration coverage
+remain unverified. The old pair formula is below separately rounded child gas
+limits, so its candidate action/reserve values are not approved execution
+envelopes. Historical drafts/examples remain unchanged; nothing is installed.
+
 ## What still blocks installation / live acceptance
 
 **PF-01 (2026-10-21 SGT):** Isaac delegated profit-focused policy choices in
@@ -130,7 +149,7 @@ This policy record does not change runtime readiness or qualify missing inputs.
 
 | Owner | Next accepted result |
 |---|---|
-| Isaac + Keith + approved operator | Exact measured profile, fresh complete holdings, selected initial-only whole-run/exit gas coverage and #44 policy hashes; B09/PF-01 scope is decided. PR207 (LD08-IG01) adds low-gas incidents/metric/alarm; measured values and actual alarm acceptance remain. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
+| Isaac + Keith + approved operator | CAP-02 numeric signer policy hashes are approved. Verify their deployment coverage against the actual selected measured profile, fresh complete holdings and exact initial-only whole-run/exit signed-child gas; B09/PF-01 scope is decided. PR207 (LD08-IG01) adds low-gas incidents/metric/alarm; measured values and actual alarm acceptance remain. PR205 reviewed the router policy; fresh replay/preflight and actual configuration/host acceptance remain. Historical fallback estimates do not qualify caps. |
 | Keegan + operator | #27 Option A is implemented by PR200 and L=660s/m=30s selected in the retained LD04-V01 record. PR210 authority provenance/builder is merged and initial-only+L/m candidates regenerate exactly. Keith #120 actual profile/weights/calendar/gas review and adopted-source/actual-host timing checks remain. |
 | Approved provider/operator + Isaac | Qualify the PF-01 execution read-side provider direction and current reconciliation/funding disposition. Initial-gas-only scope is selected (PR199); PR207 controls are merged; independent Keith/Keegan review remains. Native top-ups are outside the selected scope and are not declared qualified. Balance-provider MATCH is not execution/finality qualification. |
 | Keegan + Yao/approved operator | Exact qualified signed release and run/wallet/DB/CA/selected-router-policy bindings, isolation/time/IAM/TLS/routes and approved session. Isaac places the key only in that session. |

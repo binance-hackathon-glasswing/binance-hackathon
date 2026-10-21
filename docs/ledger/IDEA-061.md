@@ -427,3 +427,10 @@ cost384,000,000,000,000wei. Caller-supplied budgets support larger values, but
 exact selected signed children/cleanup/exit count and whole-run N require real
 coverage before adoption. Numeric signer ceilings are approved under CAP-02,
 not a claim of actual profile/complete-holdings/gas coverage or installation.
+
+LD09-B-RV01 delivery: PR216 APPROVED/MERGED at657efd3 on
+2026-10-21T06:59:09Z, exact reviewed head6367a15. Only docs changed after
+tested source3e73086. Actions39558766897 executed zero steps because account
+payments/spending limits blocked startup. Canonical status/plan, #44 and PR133
+record CAP-02 approved numeric ceilings plus remaining deployment coverage;
+local test container stopped. No installed release or signed-host acceptance.

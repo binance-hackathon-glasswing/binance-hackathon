@@ -69,5 +69,19 @@
     "Keith/Isaac: actual #120 selected S1/fallback profile/calendar, fresh complete holdings/metadata/request-bound quotes and #119 fees",
     "Keith/Isaac: exact signed child-gas/cleanup/full-exit/whole-run N and environment configuration coverage",
     "Keegan/operator: qualified release/run/DB/CA/manifest/router preflight/host/session bindings and signed acceptance"
-  ]
+  ],
+  "delivery": {
+    "pr": 216,
+    "reviewed_head": "6367a152823a57da6563db79b378ed9cab5c2745",
+    "merge_commit": "657efd3784100d7b6bee8982b16066786c6ed0a3",
+    "merged_at_utc": "2026-10-21T06:59:09Z",
+    "review_state": "APPROVED",
+    "test_container_stopped": true
+  },
+  "ci": {
+    "run_id": 39558766897,
+    "source": "6367a152823a57da6563db79b378ed9cab5c2745",
+    "executed_steps": 0,
+    "status": "ACCOUNT_BILLING_BLOCKED"
+  }
 }
