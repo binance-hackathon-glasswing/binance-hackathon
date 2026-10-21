@@ -119,8 +119,23 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
         token_delta = _net_transfers(receipt, intent.wallet, token)
         cash_delta = _net_transfers(receipt, intent.wallet, USDT)
         pay, received = (-cash_delta, token_delta) if side == 'BUY' else (-token_delta, cash_delta)
-        if pay != intent.amount or received < intent.minimum_output:
-            raise Blocked('actual transfers violate exact input or minimum receive')
+        # LD05-Q01: a finalized anomalous swap is an observed loss/ownership incident,
+        # never a normal fill. Keep raw signed deltas; do not invent accounting-scale output.
+        tokens = {USDT, *TOKENS.values()}
+        tokens.update(str(log.get('address', '')).lower() for log in receipt['logs']
+                      if log.get('topics') and str(log['topics'][0]).lower() == TRANSFER)
+        deltas = {t: _net_transfers(receipt, intent.wallet, t) for t in sorted(tokens)}
+        deltas = {t: v for t, v in deltas.items() if v}
+        extra = any(v for t, v in deltas.items() if t not in (intent.pay_token, intent.receive_token))
+        if pay != intent.amount or received < intent.minimum_output or extra:
+            result.update(kind='ABNORMAL', intent_terminal=True, round_terminal=False,
+                          disposition='SUSTAINED_QUARANTINE',
+                          reason='FINALIZED_TRANSFER_CONTRACT_VIOLATION',
+                          raw_token_deltas=deltas,
+                          expected_pay_token=intent.pay_token, expected_receive_token=intent.receive_token,
+                          expected_pay_units=intent.amount, expected_min_receive_units=intent.minimum_output,
+                          accounting_status='UNRECONCILED_ASSET_MOVEMENTS')
+            return result
         cash_raw = -cash_delta if side == 'BUY' else cash_delta
         if cash_raw <= 0 or (side == 'BUY' and cash_raw % 10**12):
             raise Blocked('actual cash cannot be represented exactly in accounting scale')

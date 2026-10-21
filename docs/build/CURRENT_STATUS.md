@@ -1,5 +1,12 @@
 # Current shared build and remaining work
 
+Latest qualification (2026-10-21, AB-REL-RC2): PR231 is merged at canonical
+`b22207e`; all four mirror jobs PASS (2416 tests/3808 subtests, real-systemd5/5,
+Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verified.
+[Receipt](evidence/ab-rel-rc2-20261021.json) / [remaining LD16/17 bindings](LD15_SIGNED_RELEASE_CHECKLIST.md).
+This is a CI-qualified development rehearsal candidate; actual owner/configuration
+and host acceptance remain open. Earlier records below retain their dated scope.
+
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
 dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer
 prompt and request-budget reporting on a new branch from canonical697ff3a.
@@ -231,3 +238,40 @@ remain open. The signer stays offline from RPC. Neither report enables signing.
 
 Final pushed source ffe91d9: macOS/Python3.12.14 focused suite 68 tests/280 subtests
 PASS, three disposable-PostgreSQL skips; no full-suite/CI or signed-host claim.
+
+GC01/RP01 are independent dated technical evidence. The selected deterministic
+profile and completed coverage/qualification below take precedence for this rehearsal;
+GC01 candidates and its illustrative count margin are not adopted.
+
+
+## 2026-10-21 scoped rehearsal qualification (LD05-Q01 / LD10-Q01 / LD11-RH01)
+
+Keegan selected the deterministic EQUAL_WEIGHT fallback with model evidence SHADOW;
+no hosted-model calls/adoption. [Exact inputs/technical coverage](evidence/rehearsal-qualified-inputs-20261021/README.md):
+profile41332056…, documenteb61ca86…, CAP-02 policy3241abd3…, router05759e90… .
+Fresh primary read-only holdings at14:10Z MATCH (98USDT,0.002694498869362886BNB, stocks0,
+nonce2/2, allowances0, no inflight state). 15/15 request-bound quotes/decode/tamper checks;
+50/50 numeric caps checks COVERED. Owner review/final configuration binding remain.
+The complete two-child action budget is384000000000000wei and four-exit reserve
+1536000000000000wei. N=15 seed target0.007296BNB replaces the old approximate target;
+additional0.004601501130637114BNB is a separate funding-owner action.
+LD05 abnormal raw-outcome/gas accounting and durable signing quarantine are merged in
+PR231 at canonical `b22207e050ea50338d48cf7129378caf480ef290`;
+canonical CI and original-artifact verification PASS in AB-REL-RC2 (candidate only).
+No host write, signer-host/key access, wallet operation or paid model call occurred.
+
+
+2026-10-21 AB-REL-RC2 latest: Keegan explicitly approved the repository merge despite
+the pending branch CI conclusion, resolving the automatic-review block for this merge.
+PR231 is merged at `b22207e`; canonical mirror run39617977531 is completed/success
+on all four jobs:2416 passed,7 explained skips,3808 subtests; real-systemd5/5,
+demo/Docker and both-role host-bundle qualification PASS.
+[Receipt](evidence/ab-rel-rc2-20261021.json): branch commands passed2416 tests plus
+systemd/Docker; original branch artifact12352148043 ZIP/bundle/manifest and244 checksums
+verified. Branch runtime metadata remains in_progress; it is not a finalized PASS.
+Canonical original artifact12352993133 is verified: ZIP307d4c4b…8657,
+bundleecc589a5…ba2a, manifest427a8cc6…f8b0;244 file checksums and205 manifested
+source/config files match. LD15 has a CI-qualified canonical rehearsal candidate.
+Actual signed-release/configuration/owner binding and installation acceptance remain
+at LD16/17; registration/runtime/operations manifest bindings are still null.
+Selected inputs are the three `-deterministic` files; older candidates are historical.

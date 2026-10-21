@@ -467,3 +467,9 @@ including exits cannot silently be used as non-terminal counts. Keith/Isaac
 still accept actual selected profile/counts/fees; operator supplies current
 complete holdings/config/funding and host/low-gas alarm evidence. Offline
 priority2 work is delivered; LD08/LD10 deployment acceptance remains open.
+
+PR232-RV01 (2026-10-21): Keegan reviews/fixes/merges GC01 and RP01 under the
+prospective criteria in IDEA-070 PR232-RV01. Preserve these frozen non-adopted
+candidates and their original sizing/count definitions; the selected deterministic
+rehearsal and corrected sizing in LD10-Q01-R1 remain distinct. No new seeding
+margin or funding action is adopted by this review.

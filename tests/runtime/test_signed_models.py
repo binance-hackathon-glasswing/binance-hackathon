@@ -448,3 +448,24 @@ class SignedComposition(unittest.TestCase):
                 self.assertFalse(runtime.signing)
                 missing=deepcopy(cfg);missing['driver'].pop('model_adoption_ref')
                 with self.assertRaises(ContractError):build_driver(missing,Store(),secrets)
+
+
+class ScopedDeterministicRehearsal(unittest.TestCase):
+    def test_scoped_fallback_prepares_without_models_and_checker_refuses_scope_escape(self):
+        p = profile()
+        p['evidence_mode'] = 'SHADOW'
+        p['falsifier_authority'] = 'SHADOW'
+        p['provenance']['evidence_mode'] = {'decision_id': 'SYNTHETIC LD11-RH01', 'formula': 'explicit scoped rehearsal'}
+        with patch('socket.create_connection', side_effect=AssertionError('no model/network')):
+            files = assembled(profile_raw=json.dumps(p).encode(), execution='service',
+                              adoption_ref='SYNTHETIC LD11-RH01')
+        values = {n: json.loads(raw) for n, raw in files.items() if n.endswith('.json')}
+        report = values['preparation-report.json']
+        gate_a_check.check_scope(values, report)
+        self.assertEqual(values['runtime.json']['driver']['assessor'], 'deterministic')
+        self.assertNotIn('model-routing.json', files)
+        for env, evidence in [('FINAL', 'SHADOW'), ('REHEARSAL', 'BOUNDED_FALSIFIER')]:
+            modified = deepcopy(values)
+            modified['strategy-profile.json'].update(environment=env, evidence_mode=evidence)
+            with self.assertRaises(ContractError):
+                gate_a_check.check_scope(modified, report)

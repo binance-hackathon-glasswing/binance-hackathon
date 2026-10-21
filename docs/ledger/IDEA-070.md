@@ -1560,3 +1560,20 @@ BLOCKED, rather than exit0. Its regression and the final focused suite pass:
 original live receipt remains sourcefe91326; no repeated network run is claimed.
 Public report privacy,213 original hashes, report-to-candidate binding and
 new local links/whitespace checks pass.
+
+## PR232-RV01 — Keegan review and integration (2026-10-21; prospective)
+
+Keegan requests review, fixes and merge of PR232. Review original head5b3892d,
+merge canonical6ec07ba without rewriting either history, preserve both independent
+GC01/RP01 evidence and selected LD10-Q01-R1/LD11-RH01/AB-REL-RC2 identities.
+
+Pass criteria before execution: RV1 audit arithmetic, exact profile/policy binding,
+quote-only endpoint/RPC allowlists and private-output/public-summary handling;
+RV2 reproduce frozen GC01 candidates/report byte-for-byte and verify stored
+RP01 quote counts/hash bindings without repeating live calls or pretending to
+possess Isaac's original private files; RV3 exercise actual probe report/CLI
+paths with fake network ports for successful, refused and stale preflight;
+RV4 run focused gas/profile/initial-only/allowance/decoder/chain regressions on
+committed pushed code; RV5 prove runtime release files unchanged from qualified
+canonical b22207e, update review results/backlog and merge only the reviewed head.
+No live RPC/Web3 calls, AWS, host, signer, wallet, funding or paid-model operation.

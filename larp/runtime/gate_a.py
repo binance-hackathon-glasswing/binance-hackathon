@@ -263,6 +263,13 @@ def model_routing_report(spec, sha256):
     return report
 
 
+def scoped_rehearsal(profile, mode):
+    """LD11-RH01: deterministic, model-shadow rehearsal only; never scored adoption."""
+    return (mode == 'dev' and profile.get('environment') == 'REHEARSAL'
+            and profile.get('baseline') == 'EQUAL_WEIGHT' and profile.get('evidence_mode') == 'SHADOW'
+            and profile.get('falsifier_authority') == 'SHADOW' and profile.get('assessment_required') is False)
+
+
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
             model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
@@ -277,11 +284,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     signed = execution == 'service'
     if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
         raise ContractError('Unsigned trial routing requires dev/shadow preparation')
+    profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+    deterministic_rehearsal = routing is None and scoped_rehearsal(profile, runtime_mode)
     if (execution not in ('shadow', 'service') or runtime_mode not in ('dev', 'live')
             or (not signed and (runtime_mode != 'dev' or adoption_ref is not None))
-            or (signed and (routing is None or type(adoption_ref) is not str or not adoption_ref.strip()))):
-        raise ContractError('Signed preparation needs reviewed routing and an explicit adoption reference')
-    profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+            or (signed and ((routing is None and not deterministic_rehearsal)
+                            or type(adoption_ref) is not str or not adoption_ref.strip()))):
+        raise ContractError('Signed preparation needs reviewed routing or scoped deterministic rehearsal and an adoption reference')
     if profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('A separately reviewed LIVE profile is required')
     validate_live(profile)
