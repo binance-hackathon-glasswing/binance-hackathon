@@ -1577,3 +1577,25 @@ RV4 run focused gas/profile/initial-only/allowance/decoder/chain regressions on
 committed pushed code; RV5 prove runtime release files unchanged from qualified
 canonical b22207e, update review results/backlog and merge only the reviewed head.
 No live RPC/Web3 calls, AWS, host, signer, wallet, funding or paid-model operation.
+
+### PR232-RV01 result — PASS within stated scope
+
+Reviewed/pushed source922127712bc7964a8854a8d38fedb615966e93a3, Linux x86_64/
+Python3.12.14/disposable PostgreSQL14.24: **130 passed,334 subtests,zero skips or
+failures** (9.23s). Real gas/profile/initial-only/allowance/decoder/chain/caps
+consumers and actual CLI/report refusal/freshness/tamper paths pass. The disposable
+database is removed. Deviation rendering and whitespace PASS.
+
+Resolved both canonical merge conflicts, retaining the selected LD10/LD11 and
+AB-REL-RC2 records alongside independent GC01/RP01 evidence. Corrected live backlog
+wording that would reintroduce completed LD05 and numeric coverage as missing.
+GC01's frozen candidates/report reproduce byte-for-byte; historical source hashes
+and RP01 public report/profile/quote/preflight bindings match. Isaac's213 private
+original observations are not available here; their earlier owner verification is
+retained, not claimed as independently repeated. No new live measurement occurred.
+
+All205 runtime/config/deployment release files match the exact original manifest
+of qualified b22207e/artifact12352993133. PR232 changes offline tools, tests and
+documentation only; no new full-suite/CI or signed-release qualification is claimed.
+The qualified artifact remains immutable; actual LD16/17 owner/config/host bindings,
+keys, funding and real rounds stay separate. [Review receipt](../build/evidence/pr232-review-20261021.json).

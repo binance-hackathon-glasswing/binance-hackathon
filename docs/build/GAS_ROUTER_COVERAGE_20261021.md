@@ -62,3 +62,19 @@ providers at2026-10-21 14:25–14:27UTC;
 [sanitized receipt and scope](evidence/rp01-router-readonly-20261021/README.md).
 No production-host, actual full-holdings, signed-path or router-enforcement
 guarantee is inferred. LD08/LD10/LD15–24 keep their separately named inputs/gates.
+
+## Independent integration review — PR232-RV01
+
+Reviewed source9221277 merges canonical6ec07ba and preserves this original dated
+record. Linux/Python3.12.14/PostgreSQL14.24:130 focused tests/334 subtests PASS,
+zero skips; added actual CLI/report cases cover successful, refused, stale and
+tampered results. Frozen candidate/report bytes and public receipt bindings match.
+Isaac retains the private originals; this reviewer did not independently fetch them.
+All205 runtime release files match qualified b22207e's original artifact manifest.
+[Review receipt](evidence/pr232-review-20261021.json).
+
+The selected deterministic profile and corrected sizing in LD10-Q01-R1, including
+its conservative0.007296BNB target, remain the rehearsal decision. GC01's candidates,
+old expected-cost sizing and illustrative5/4 non-terminal margin stay non-adopted;
+the independent local RP01 quote packet does not replace fresh actual host checks.
+Actual LD16 configuration/owner and LD17 production installation remain open.

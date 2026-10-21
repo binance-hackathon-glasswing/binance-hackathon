@@ -1,0 +1,66 @@
+{
+  "canonical_base": "6ec07bad8beadebe65f6b24f6b31d8fe1159ca54",
+  "changes": [
+    "Merged current canonical and resolved both documentation conflicts without rewriting history.",
+    "Corrected backlog claims that reintroduced completed LD05 and numeric holdings/caps work.",
+    "Added actual probe CLI/report coverage for pass, provider refusal, stale quotes and failed tamper replay; public summaries exclude private inputs."
+  ],
+  "decision_id": "IDEA-070 PR232-RV01",
+  "evidence_verification": {
+    "gc01_candidates_and_report_byte_identical": true,
+    "historical_executable_and_test_source_hashes_verified": 4,
+    "limitation": "Isaac retains 213 private original observations. This review verifies the committed public receipt and hash bindings; it does not claim independent access to those private bytes.",
+    "original_private_observations_independently_verified": false,
+    "rp01_preflight_reads_each_provider": 101,
+    "rp01_public_report_and_profile_hashes_match": true,
+    "rp01_quote_rows": 10
+  },
+  "host_or_wallet_operations_performed": false,
+  "live_network_calls_performed": false,
+  "original_pr_head": "5b3892d46dcd573b430db2a9b059564811e6f8a5",
+  "ready_to_install": false,
+  "release_verification": {
+    "all_exact_original_manifest_hashes_match": true,
+    "artifact_id": 12352993133,
+    "new_full_suite_or_ci_claimed": false,
+    "qualified_build": "b22207e050ea50338d48cf7129378caf480ef290",
+    "reason": "Only offline tools, tests and documentation change; all 205 runtime/config/deployment release files match the original qualified artifact. Scoped regressions cover the changed tools and production consumers.",
+    "runtime_release_files": 205
+  },
+  "remaining": [
+    "LD16 actual owner/configuration bindings and fresh state rechecks.",
+    "LD17 separately approved production roles/host/session installation, LD18 key and eligible funding.",
+    "LD19/20 bounded agent round and actual receipts/fees/ACK; final adoption remains separate."
+  ],
+  "reviewed_source": "922127712bc7964a8854a8d38fedb615966e93a3",
+  "schema": "PR232Review.v1",
+  "signing_enabled": false,
+  "status": "PASS_WITHIN_OFFLINE_TOOL_AND_DATED_EVIDENCE_SCOPE",
+  "tests": {
+    "disposable_database_removed": true,
+    "duration_seconds": 9.23,
+    "failed": 0,
+    "files": [
+      "tests/execution/test_initial_gas_bounds.py",
+      "tests/execution/test_router_readonly_probe.py",
+      "tests/execution/test_untrusted_router.py",
+      "tests/execution/test_chain_rpc.py",
+      "tests/execution/test_caps_review.py",
+      "tests/execution/test_allowance_recovery.py",
+      "tests/execution/test_allowance_recovery_configuration.py",
+      "tests/signer/test_allowance_recovery.py",
+      "tests/integration/test_allowance_recovery.py",
+      "tests/strategy/test_gas_budget_b.py",
+      "tests/strategy/test_live_profiles.py",
+      "tests/risk/test_initial_gas_only.py",
+      "tests/runtime/test_initial_gas_health.py"
+    ],
+    "log_path": "/workspace/scratch/pr232-review-focused.log",
+    "passed": 130,
+    "platform": "Linux x86_64",
+    "postgresql": "14.24",
+    "python": "3.12.14",
+    "skipped": 0,
+    "subtests": 334
+  }
+}

@@ -473,3 +473,10 @@ prospective criteria in IDEA-070 PR232-RV01. Preserve these frozen non-adopted
 candidates and their original sizing/count definitions; the selected deterministic
 rehearsal and corrected sizing in LD10-Q01-R1 remain distinct. No new seeding
 margin or funding action is adopted by this review.
+
+PR232-RV01 results:130 tests/334 subtests/zero skips pass on Linux/Python3.12.14/
+PostgreSQL14.24 at pushed9221277. Frozen GC01 candidates/report reproduce exactly;
+new source adds no runtime release-file change (205 original manifest hashes match).
+Selected LD10-Q01-R1 sizing/count definitions remain distinct from GC01's historical
+non-adopted candidates and illustrative margin. Full review and limits: IDEA-070
+PR232-RV01 / [machine receipt](../build/evidence/pr232-review-20261021.json).

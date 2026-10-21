@@ -243,6 +243,12 @@ GC01/RP01 are independent dated technical evidence. The selected deterministic
 profile and completed coverage/qualification below take precedence for this rehearsal;
 GC01 candidates and its illustrative count margin are not adopted.
 
+PR232-RV01 independent review:130 tests/334 subtests/zero skips PASS on Linux/
+Python3.12.14/PostgreSQL14.24 at9221277. Frozen candidates/public bindings reproduce;
+all205 runtime release files match the original qualified b22207e manifest.
+Actual CLI/report refusal/staleness/tamper cases are covered. No fresh live call or
+private-original re-verification is claimed. [Receipt](evidence/pr232-review-20261021.json).
+
 
 ## 2026-10-21 scoped rehearsal qualification (LD05-Q01 / LD10-Q01 / LD11-RH01)
 
