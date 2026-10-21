@@ -2558,3 +2558,40 @@ PR203 CLOSED because its head is contained in retained PR207. Only PR133 and
 five distinct implementation PR206/207/210/211/draft212 remain OPEN. Complete
 closure-comment URLs and checks are in the CONS-02 retention record. No branch
 deleted or implementation/host/signing gate closed by this documentation cleanup.
+
+## LD12-M01 — operations measurement packet for LD14 (2026-10-21; prospective)
+
+**Operator change (Keegan, 2026-10-21):** Keegan's team takes over Yao Zhu's operator role for LD12/LD17/LD19/
+LD21/LD23. Standing limits are unchanged:
+- read-only commands on `primary` may run without further approval;
+- every host write needs Keegan's approval each time;
+- nothing touches the signer host without Keegan's explicit approval;
+- no wallet, key, signing, funding or AWS-resource change.
+
+**Scope:** the measurements PF-08 and OG-01 ask the operator for (dispatch-to-positive-ACK tails, cycle and drain
+delays, RSS, disk and restart growth), taken from the preserved unsigned trial run (PC-DEPLOY02, retired under
+PC-STOP01) and the current state of `primary`. This happens in two steps:
+1. `docs/build/ops/ld12-20261021/ops-collect.sh` collects raw numbers read-only: SQL `READ ONLY` transactions and
+   `systemctl show`, `journalctl`, `du`, `df` and `chronyc` reads. It changes no unit, file or config.
+2. `docs/build/ops/ld12-20261021/analyse.py` turns the packet into the summary offline, with tests.
+
+**Pass criteria, written before the scripts exist (M1–M8):**
+
+- M1. The packet records the identity it measured (run, build, mode, database name, unit states) and shows that no
+  runtime or execution unit is running a round. A different run or an active signing unit stops the collection.
+- M2. Delivery: for every audit chunk, the round-log time, attempts, status, last code and next retry time. The
+  final send time is reconstructed as `next_ms − backoff(attempts)` using the uploader's configured `retry_ms` and
+  `max_backoff_ms`. The analysis reports dispatch-to-final-send for ACKed logs as p50/p95/p99/max, plus the attempt
+  histogram, and says that the ACK lands within the 15 s HTTP timeout after that send.
+- M3. Cycle: per round, start → decision → log, plus the assessment's own start/complete, as p50/p95/max. A missing
+  field is counted, not guessed.
+- M4. Archive: the lag from each hourly anchor slot to `stored_ms`; backup and anchor outbox statuses and attempts.
+- M5. Restarts: process sessions (count, duration, gap between one session's last heartbeat and the next start)
+  and the current `NRestarts` per unit.
+- M6. Resources: memory per unit now (current, peak if systemd reports it, configured max/high); counts of OOM,
+  watchdog and restart lines in the journal since the trial started; disk use of the LARP data directories, the root
+  filesystem, the journal and the database (largest tables).
+- M7. Clock: `chronyc tracking` offset, stratum and leap status.
+- M8. Limits are stated, not filled in. The trial was unsigned, so execution, finality and worker-drain timings and
+  stalled-call behaviour on the signed path are MISSING_MEASUREMENT. Memory history isn't kept unless a metrics agent
+  recorded it. Isaac decides the LD14 values; the packet adopts none.
