@@ -133,22 +133,28 @@ class CapsReview(unittest.TestCase):
         self.save_inputs()
         self.assertIn('FULL_HOLDING_NVDAB', self.report()['blockers'])
 
-    def test_sell_cash_output_must_fit_same_profile_cap_as_execution(self):
-        index = next(i for i, r in enumerate(self.inputs['quote_artifacts']) if r['path'] == 'NVDABSELL.json')
-        original = json.loads((self.root / self.inputs['quote_artifacts'][index]['path']).read_bytes())
+    def test_quote_cash_must_fit_same_profile_cap_as_execution(self):
         cap = self.profile['per_trade_cap_units'] * 10**12
         # The final value is Q01's published NVDAB proceeds. These are explicitly
         # synthetic observations testing the real reviewer, not the private originals.
-        for proceeds in (cap, cap + 1, 20_106_983_099_120_719_276):
-            with self.subTest(proceeds=proceeds):
-                record = deepcopy(original)
-                record['response']['data']['routerResult']['toTokenAmount'] = str(proceeds)
-                ref = self.pin('NVDABSELL.json', record)
-                self.inputs['quote_artifacts'][index] = ref
-                result = self.report()
-                self.assertEqual(result['numeric_status'], 'COVERED' if proceeds <= cap else 'BLOCKED')
-                if proceeds > cap:
-                    self.assertIn('QUOTE_CASH_CAP_' + ref['sha256'], result['blockers'])
+        for side in ('BUY', 'SELL'):
+            index = next(i for i, r in enumerate(self.inputs['quote_artifacts']) if r['path'] == 'NVDAB' + side + '.json')
+            original = json.loads((self.root / self.inputs['quote_artifacts'][index]['path']).read_bytes())
+            for cash in (cap, cap + 1, 20_106_983_099_120_719_276):
+                with self.subTest(side=side, cash=cash):
+                    record = deepcopy(original)
+                    rr = record['response']['data']['routerResult']
+                    if side == 'BUY':
+                        record['params']['amount'] = rr['fromTokenAmount'] = str(cash)
+                    else:
+                        rr['toTokenAmount'] = str(cash)
+                    ref = self.pin('NVDAB' + side + '.json', record)
+                    self.inputs['quote_artifacts'][index] = ref
+                    result = self.report()
+                    self.assertEqual(result['numeric_status'], 'COVERED' if cash <= cap else 'BLOCKED')
+                    if cash > cap:
+                        self.assertIn('QUOTE_CASH_CAP_' + ref['sha256'], result['blockers'])
+            self.inputs['quote_artifacts'][index] = self.pin('NVDAB' + side + '.json', original)
 
     def test_retained_nvdab_sell_proceeds_are_refused_by_real_execution_boundary(self):
         from types import SimpleNamespace

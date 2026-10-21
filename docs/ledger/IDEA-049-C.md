@@ -1337,6 +1337,8 @@ using the public numeric row with synthetic calldata/ports explicitly labelled
 as such. The original private calldata/observations are not available locally
 and will not be fabricated. Run tests RED on the pushed base, then add only the
 missing numeric-check parity and run GREEN plus focused existing coverage tests.
+The same parity applies to BUY USDT input as well as SELL USDT proceeds; include
+both sides at the inclusive boundary before fixing the shared check.
 Do not loosen runtime limits, change the selected profile or increase reserves
 without a reviewed complete exit-child plan. If the supplied packet remains
 incompatible, record its exact blocker and keep full LD10 acceptance open.
