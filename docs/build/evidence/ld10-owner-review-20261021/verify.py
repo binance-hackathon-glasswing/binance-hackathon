@@ -9,6 +9,7 @@ from pathlib import Path
 
 from larp.contracts import Document
 from larp.execution import USDT
+from larp.execution_live.untrusted_router import load_policy
 from larp.integration.contract import authority
 from larp.marketdata.port import TOKENS
 from larp.signer.policy import SigningPolicy
@@ -55,7 +56,9 @@ def verify():
     assert policy_sha == c['signer_policy_sha256'] == rc['signing_policy_sha256']
     assert not policy.allowance_recovery and not c['cleanup_enabled'] and p['initial_gas_only']
     assert policy.allowed_tokens == {USDT, *TOKENS.values()}
-    assert policy.allowed_spenders == {read(EVIDENCE / 'untrusted-router-policy-ld03-20261020.json')['router']}
+    router_path = EVIDENCE / 'untrusted-router-policy-ld03-20261020.json'
+    router = load_policy(router_path, rc['router_policy_sha256'])
+    assert policy.allowed_spenders == {router.router}
     assert c['policy_check']['status'] == 'PASS' and c['policy_check']['quotes'] == 15
     assert c['policy_check']['policy_sha256'] == rc['router_policy_sha256']
     assert all(r['status'] == 'PASS' and r['matches_quote'] and r['tampered_refused']
@@ -134,7 +137,7 @@ def verify():
                 seeding_target_funded=False, seed_target_wei=c['conservative_seed_target_wei'],
                 seeding_scope='reported planning count plus four exits; not a proven maximum strategy count',
                 source_hashes={str(x.relative_to(ROOT)): sha(x) for x in
-                    (profile_path, coverage_path, scope_path, caps_path, rc_path)},
+                    (profile_path, coverage_path, scope_path, caps_path, router_path, rc_path)},
                 remaining=['Keith/Keegan resolve full-size exit cash-cap/requote and complete exit-child reserve coverage',
                            'operator recollect applicable quotes/state against the reviewed exit plan',
                            'Isaac finish deployment review against corrected evidence',
