@@ -1594,3 +1594,7 @@ note, hosted post-funding reconciliation/private inputs and current-clock caps
 review remain incomplete; no completion line is removed. Balance/nonce reads
 do not stand in for that host or signing-authority check. Public snapshot exact
 integer/identity/false-flag checks PASS; no unrelated test rerun or release claim.
+
+SJ-02-U1 user confirmation (2026-10-22SGT): no additional dev seed; separate
+live-challenge wallet must not be used yet. Restrict current work to dev;
+no live-wallet input/access/funding/registration/activation is authorized here.

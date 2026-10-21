@@ -212,3 +212,11 @@ Sources checked: verbatim `official/source_page.md` dedicated-wallet text;
 verbatim `official/kit/bstocks-trading-guide.md` gas/wallet text; SKILLF120/G13/Q03;
 existing FG02 handoff and approved PR235/236 reserve/profile receipts. No new
 organizer question, policy, approval or completed wallet action is asserted.
+
+### SJ-02-U1 — wallet scope confirmed by Isaac
+
+Isaac confirms on2026-10-22SGT that no additional dev-wallet gas swap has been
+made since the recorded trial. He has a separate live-challenge wallet and
+explicitly says it is **not to be used yet**. Current work is restricted to
+the dev wallet; no live-wallet address, key, balance read, funding, registration
+or activation is requested or performed. Its future handoff stays outside SJ02.
