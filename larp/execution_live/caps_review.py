@@ -13,6 +13,7 @@ from larp.contracts import ContractError
 from larp.execution import Blocked, NATIVE_BNB, USDT
 from larp.execution_live.gate_b import address, pinned, read_json
 from larp.execution_live.main import validate_config
+from larp.execution_live.gas_envelope import configured_envelope, units_to_wei_floor
 from larp.marketdata.port import TOKENS
 from larp.marketdata.web3 import utc
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
@@ -108,6 +109,20 @@ def review(inputs, *, now, base_dir):
     price = integer(config['max_gas_price'], 1)
     check('CONFIGURED_FEE_ENVELOPE_WEI', gas * price, policy.max_fee_wei)
     integer(config['gas_budget'], 1)
+    gas_envelope = None
+    if initial_only:
+        gas_envelope = configured_envelope(config)
+        check('CONFIGURED_ACTION_ENVELOPE_WEI', gas_envelope['required_action_wei'],
+              gas_envelope['configured_action_wei'])
+        scale = p['quote_cost_summary']['bnb_decimals']
+        action_wei = units_to_wei_floor(p['gas_action_budget_units'], scale)
+        reserve_wei = units_to_wei_floor(p['exit_gas_reserve_units'], scale)
+        check('INITIAL_PROFILE_ACTION_ENVELOPE_WEI', gas_envelope['configured_action_wei'], action_wei)
+        positions = 5 if p['baseline'] == 'TREND_GUARDED_VOL' else 4
+        check('INITIAL_POSITION_ACTION_RESERVE_WEI', positions * gas_envelope['configured_action_wei'], reserve_wei)
+        gas_envelope.update(profile_action_wei=action_wei, profile_reserve_wei=reserve_wei,
+                            minimum_position_actions=positions,
+                            actual_exit_children='REQUIRES_SELECTED_PROFILE_AND_HOLDINGS_REVIEW')
     # The profile validator proves that per_trade_cap includes a full target position plus reserve.
     summary = p['quote_cost_summary']
     if summary['bnb_decimals'] != ledger['bnb_decimals']:
@@ -187,7 +202,7 @@ def review(inputs, *, now, base_dir):
     blockers.append('OWNER_REVIEW_REQUIRED')
     return dict(schema='GateBSignerCapsReview.v1', status='BLOCKED', numeric_status=numeric_status,
                 signing_enabled=False, ready_to_install=False, build_id=inputs['build_id'],
-                gas_scope='INITIAL_ONLY' if initial_only else 'LEGACY_TOP_UP',
+                gas_scope='INITIAL_ONLY' if initial_only else 'LEGACY_TOP_UP', gas_envelope=gas_envelope,
                 run_id=inputs['run_id'], wallet=wallet, environment=inputs['environment'],
                 blockers=sorted(set(blockers)), missing_quote_coverage=missing, checks=checks,
                 evidence_hashes={name: refs[name]['sha256'] for name in sorted(FILES)},

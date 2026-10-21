@@ -49,6 +49,7 @@ def test_configured_parent_covers_two_independently_bounded_transactions(case):
 
 def test_cleanup_scope_budgets_every_allowed_supporting_step(case):
     set_action(case, 2 * 10**15)
+    case.config.update(untrusted_router_policy_file='/not-read', untrusted_router_policy_sha256='a' * 64)
     case.config['allowance_recovery'] = True
     case.policy['allowance_recovery'] = True
     case.save_inputs()

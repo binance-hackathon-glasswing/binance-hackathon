@@ -151,6 +151,15 @@ class InitialCaps(unittest.TestCase):
     @staticmethod
     def configure(fixture):
         fixture.profile = initial_only(fixture.profile)
+        measured = fixture.profile['gas_action_budget_units']
+        fixture.profile['gas_sizing_budget_units'] = measured
+        fixture.profile['provenance']['gas_sizing_budget_units'] = {'decision_id': 'SYNTHETIC GE01', 'formula': 'measured sizing'}
+        multiplier = 2 + (6 if fixture.config.get('allowance_recovery', False) else 0)
+        budget = max(fixture.config['gas_budget'], multiplier * fixture.config['max_gas'] * fixture.config['max_gas_price'])
+        fixture.config['gas_budget'] = budget
+        fixture.profile['gas_action_budget_units'] = budget
+        fixture.profile['exit_gas_reserve_units'] = 4 * budget
+        fixture.ledger['bnb_units'] = max(fixture.ledger['bnb_units'], 5 * budget)
         fixture.policy['allowed_tokens'].remove(NATIVE_BNB)
         fixture.inputs['quote_artifacts'] = [r for r in fixture.inputs['quote_artifacts'] if r['path'] != 'BNB.json']
         fixture.save_inputs()
