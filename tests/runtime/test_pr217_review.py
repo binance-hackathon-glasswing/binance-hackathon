@@ -17,11 +17,13 @@ def packet():
     return tuple(json.loads(line) for line in PACKET.read_text().splitlines())
 
 
-def guarded(host, db):
+def guarded(host, db, private_secret=None):
     source = (FOLDER / 'ops-collect.sh').read_text().split("<<'PY'\n")[3].rsplit('\nPY', 1)[0]
     configs = {'operations.json': dict(host['operations'], database_host='private-db.example'),
                'runtime.json': dict(host['runtime'], wallet_address='0x' + 'ab' * 20,
                                     driver=dict(execution=host['runtime']['execution'], balance_rpc_providers=[dict(url='https://private-rpc.example/token')]))}
+    if private_secret is not None:
+        configs['runtime.json']['password'] = private_secret
     def read_bytes(path):
         return json.dumps(configs[path.name]).encode()
     with patch('pathlib.Path.read_bytes', read_bytes), patch.dict('os.environ',
@@ -142,3 +144,11 @@ class CollectorDatabaseChecks(DatabaseCase):
             with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
                 db.execute("INSERT INTO runs(run_id) VALUES ('refused')")
             db.rollback()
+
+
+def test_private_values_are_checked_after_json_escape_decoding():
+    h, d = packet()
+    for row in d['archive']: row[-1] = bool(row[-1])
+    secret = 'PrivéCredentialThatMustRemainPrivate'
+    h['journal']['disk_usage'] = secret
+    assert not guarded(h, d, private_secret=secret)
