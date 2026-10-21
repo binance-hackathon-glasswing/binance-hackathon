@@ -1342,3 +1342,23 @@ account payments/spending limits blocked startup, not a passing CI run.
 Stacked PR216 is retargeted to canonical for its own independent review;
 PR217 operator/measurement record remains pending. Canonical status/plan and
 PR133 noticeboard retain these scoped results and the remaining owner gates.
+
+## KG-DEC-01 — execution RPC and pre-sign simulation decisions (Keegan, 2026-10-21)
+
+Keegan delegated the pending decisions as "use the recommended option" (2026-10-21):
+
+- **Execution RPC (read-side) approved:** BNB Chain public as primary and NodeReal public as backup, the PF-01
+  order. This covers the reads execution relies on: chain ID, latest and finalized blocks, balance, nonces,
+  transaction and receipt lookups, router code and facet slot, and the pinned `balanceOf`/`allowance` calls.
+  - Evidence: LD02c Q1/Q3 and the Q2b rerun.
+  - Broadcasting is unchanged.
+  - Native tracing stays unqualified; the initial-gas-only scope doesn't need it.
+  - Binding the URLs into the signed `runtime.json` is part of LD16/LD17, and the URLs stay out of Git.
+- **Pre-sign swap simulation adopted.** Before a swap is signed, execution simulates the exact authorized calldata
+  from the wallet at `latest` (`eth_call` or `eth_estimateGas`, with no state override). If it reverts, the attempt
+  is refused before signing and the next round re-quotes. That stops RFQ-route and `Min return not reached` reverts
+  from spending gas (LD02c R2, LD02d S3).
+  - Owner: Isaac (execution); Keegan reviews the gate and integration.
+  - It must keep the existing fencing, never extend authority (#27), and treat a simulation that can't be run as a
+    refusal, not a pass.
+  - Until it is built, those reverts can still cost gas up to the point of revert.
