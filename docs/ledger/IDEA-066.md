@@ -2732,3 +2732,47 @@ zero steps due account payment/spending limits. This self-authored follow-up
 received local review; no GitHub self-approval is claimed. PR133/current status
 record corrections, current merged queue and Keegan team operator ownership.
 Disposable test database stopped; no live host/key/signing action.
+
+## KG-REV01 — Keegan's outstanding reviews under delegation (2026-10-21)
+
+Keegan delegated these reviews as "follow the recommended option" (2026-10-21). Each was checked on current
+canonical `146a751`.
+
+- **GAP-72, PR178 / local build `ea25b52`: ACCEPTED.** The only runtime change since the CI release `86b1476` is
+  `OpenAIResponsesModel._body`: a one-line JSON label before the unchanged `json.dumps` input, plus
+  `input=json-labelled` in the revision string. This fixes the PC-DEPLOY01 HTTP 400 (`json_object` needs "json" in
+  the input; `instructions` don't count). It came with red/green tests (`0e45096` → `470814c` → `5317b18`), and the
+  fakes parse the input after the label. Two points are recorded but don't block:
+  - the change is carried in canonical, and every later full suite passed;
+  - the build was local, not CI (PC-BUILD01), so it qualifies nothing for the next release.
+
+  The hosted Gate A evidence (PC-AWS03–08, PC-DEPLOY01/02, PC-STOP01, PC-AUDIT01) is accepted as **historical
+  unsigned** evidence, with the PC-AUDIT01 findings repaired in PR206. It doesn't qualify the next build. Remaining:
+  next-build host qualification (LD15/LD17) and Org CI (#98).
+- **PC-LABEL02-INJ01, Yao's source-link trust review: ACCEPTED, conservative disposition.** A benign "visit
+  https://" in evidence keeps `UNTRUSTED_INSTRUCTIONS_IN_EVIDENCE` and incomplete coverage; there is no URL or domain
+  exemption, tools take only pinned record IDs, and claim authority is unchanged. I re-ran the regressions:
+  `tests/intelligence/test_source_link_trust.py` 4 passed / 13 subtests, with the optional private-source case
+  skipped because its file isn't in this checkout. The coverage cost of this false positive is accepted.
+- **KMP-RIGHTS01, provider terms: PARTIAL.**
+  - AIand inference terms (effective 2026-07-06) and usage policy (revised 2026-08-21), reopened 2026-10-21:
+    - no restriction on financial or trading use;
+    - the high-risk human-oversight clause (1.6) covers decisions about identified individuals, not a team trading
+      its own funds;
+    - no training on customer content (B.2); retention of up to 30 days (C.3);
+    - the customer must judge when outputs need human review (D.3). Deterministic verification and code-only
+      trade authority meet this: the model can't place orders.
+
+    AIand is **compatible** on its public terms. Its hosted-model provider terms (Kimi K3 and GLM-5.3 licences,
+    captured in KMP-RIGHTS01) were not reread.
+  - The OpenAI usage policy page returned HTTP 403 from this environment, so its compatibility isn't re-verified
+    here. KMP-RV168 reopened it on 2026-10-18 without deciding.
+  - Remaining: an account holder confirms the OpenAI policy text, account and order-form terms, and data settings.
+    This only matters if LD11/LD22 adopts a hosted model for the scored run; without adoption it's moot.
+- **GAP-04, rehearsal requirement: RESOLVED by the recorded rule.** D-DN-02 (Keegan, 2026-10-17, conditional) said
+  the rehearsal is signed from Oct 21–26 only if Gate B passes by Oct 21. It didn't (LD10 coverage and LD15–LD18 are
+  open), so the fallback applies: shadow operation plus a shorter signed window, recorded the same day as **DEV-24**
+  (DRAFT until the actual signed window is known). Two consequences:
+  - the rehearsal profile's buy window (Oct 21 00:00–Oct 22 00:00 UTC) has passed, so a dated window update is
+    needed (#120, Keith) before any signed buy;
+  - the daily rehearsal log stays required as DR-21 evidence.
