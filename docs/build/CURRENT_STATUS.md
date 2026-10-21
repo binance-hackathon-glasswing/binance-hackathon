@@ -209,3 +209,19 @@ config/release/host and exact gas/caps acceptance remain open. No live call,
 host operation, key action or activation occurred. Full record:
 [IDEA-070 KG-DEC-01-RV01](../ledger/IDEA-070.md#kg-dec-01-rv01-results--pass-within-recorded-scope)
 and [verification receipt](evidence/kgdec01-isaac-review-20261021.json).
+
+
+## 2026-10-21 scoped rehearsal qualification (LD05-Q01 / LD10-Q01 / LD11-RH01)
+
+Keegan selected the deterministic EQUAL_WEIGHT fallback with model evidence SHADOW;
+no hosted-model calls/adoption. [Exact inputs/technical coverage](evidence/rehearsal-qualified-inputs-20261021/README.md):
+profile bad7f160…, document43f956af…, CAP-02 policy3241abd3…, router05759e90… .
+Fresh primary read-only holdings at13:51Z MATCH (98USDT,0.002694498869362886BNB, stocks0,
+nonce2/2, allowances0, no inflight state). 15/15 request-bound quotes/decode/tamper checks;
+50/50 numeric caps checks COVERED. Owner review/final configuration binding remain.
+The complete two-child action budget is384000000000000wei and four-exit reserve
+1536000000000000wei. N=15 seed target0.007296BNB replaces the old approximate target;
+additional0.004601501130637114BNB is a separate funding-owner action.
+LD05 abnormal raw-outcome/gas accounting and durable signing quarantine are implemented;
+current exact-source mirror qualification and LD15 artifact record are in progress.
+No host write, signer-host/key access, wallet operation or paid model call occurred.

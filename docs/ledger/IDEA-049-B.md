@@ -773,3 +773,18 @@ gas once and records raw outcomes without fabricating normal fill accounting; Q3
 signing remains withheld from durable abnormal outbox publication through replay/restart,
 including mandatory sells; Q4 incident/quarantine never automatically clears, normal
 approval/revert/fill behavior remains; Q5 targeted and mirror full suite pass.
+
+### LD05-Q01 implementation / local verification (2026-10-21)
+
+Explicit ABNORMAL I4 facts retain canonical identity, raw signed token deltas and gas;
+normal exact-input/minimum-output constraints remain. Accounting charges actual gas
+once and stores unreconciled asset movements without a fabricated normal fill, basis
+or P&L. A durable outbox fence independently blocks signer persistence and broadcast
+before projection ingestion; the journaled incident blocks runtime planning/signing
+and survives replay. No automatic clear or continuation. Reconciliation/publication
+remains possible; unsupported native/malformed proofs keep existing refusal behavior.
+Local component checks: 245 passed / 9 environment skips / 142 subtests (risk, Gate A,
+models, signer assembly/mode and receipt paths). PostgreSQL service/replay acceptance
+runs on mirror CI. The first mirror run 39610340438 was cancelled after identifying a
+nested locked read in the new regression test; 122d04b moves that read outside the
+transaction. This is a test repair, not a claimed full-suite PASS.

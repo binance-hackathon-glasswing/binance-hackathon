@@ -24,6 +24,17 @@ branch or certify a deployment. Historical results retain their exact identities
 resolve current policy and remaining work. [CONS-02](CONSOLIDATION_20261021.md)
 records the PR inventory and preservation; PR133 is the compact noticeboard.
 
+### 2026-10-21 scoped rehearsal update (LD05-Q01 / LD10-Q01 / LD11-RH01)
+
+Keegan selected a deterministic EQUAL_WEIGHT rehearsal, model evidence SHADOW and
+hosted-model adoption deferred. The [exact packet](evidence/rehearsal-qualified-inputs-20261021/README.md)
+contains the new profile and complete signed-child gas envelope. LD05 records abnormal
+raw movements/gas and sustained quarantine, with PostgreSQL CI qualification pending.
+LD10 fresh holdings/nonce/allowance/full-position quote coverage is numerically COVERED
+(50/50 checks); personal owner acceptance/final LD16 configuration binding remain.
+The old per-step checklist below is historical allocation; this update records current delivery.
+No installed release, host/session/key operation or funding is approved by these records.
+
 ## Accepted direction and boundaries
 
 Isaac accepts that the contract returned by the Binance API performs the

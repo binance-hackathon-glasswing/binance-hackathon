@@ -793,3 +793,16 @@ fast-forward mirror and pass all four runtime.yml jobs; R3 download original art
 and verify zip/bundle/manifest hashes and source identity, retain original bytes;
 R4 bind profile/policy/scope evidence and enumerate unresolved actual release inputs.
 Missing evidence keeps full LD15 open; CI-qualified candidate is not install approval.
+
+### LD11-RH01 — explicit scoped rehearsal selection (2026-10-21)
+
+Keegan explicitly selected "Use the scoped fallback rehearsal": EQUAL_WEIGHT,
+deterministic assessor and verified deterministic Class1/Class2/risk controls,
+model evidence SHADOW, no hosted model calls or discretionary model exits. No routing
+file/budget/credit permission is inferred. Gate A preparation/checker now admits only
+this explicit dev/REHEARSAL EQUAL_WEIGHT SHADOW scope with an adoption reference;
+it does not extend to FINAL or unreviewed bounded-falsifier authority. Runtime uses
+live deterministic settings while the profile shadows model-derived authority.
+The new profile/scoped settings/hashes are in the rehearsal packet. Final S1/model
+adoption, original 43.56h/72h shortfall, sparse labels, rights and account-budget
+reconciliation remain at LD22/LD24. No paid provider call or ledger reset occurred.
