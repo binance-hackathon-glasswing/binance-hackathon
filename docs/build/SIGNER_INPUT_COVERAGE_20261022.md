@@ -166,3 +166,49 @@ numeric reviewer within300s at the current clock and record exact input
 acceptance. The larger whole-run target remains0.008832BNB (recorded shortfall
 0.006137501130637114BNB), separate from the minimal exit-floor blocker. No
 funding, live call, host write, key or signer assembly was performed by SJ-01.
+
+## SJ-02 — current pre-funding check and Isaac's exact next action
+
+At **2026-10-22 01:14:47 SGT** (2026-10-21 17:14:47.127UTC), the production
+read-only chain reader captured finalized block128976212 on chain56 and
+rechecked its hash. BNB is0.002694498869362886, USDT98 (18decimals), all five
+stock holdings zero; finalized/latest/pending nonces2/2/2. **21 read-only calls**
+within the25-call bound. No credential, .env, wallet key, approval, broadcast,
+paid quote, AWS or host access. Existing funding gap remains unchanged.
+
+[Public snapshot](evidence/dev-funding-preflight-20261022.json), SHA-256
+`29d534bccc7ff907bb5f74ff79fa1022a9af646c1fb157a06ac81df6844789e1`. Original chain observations remain privately at
+`/private/tmp/larp-sj02-funding-preflight-20261022/observations/`.
+This is not the actual hosted run's PortfolioState/reconciliation, a wallet
+activity lock, proof about unused signing authority, or a funding authorization.
+
+For **only the signer reserve gate**, balance after the seed/fees must cover
+**0.003072BNB**. The measured shortfall is **0.000377501130637114BNB**;
+it is not an exact swap-output instruction because fees and quote economics
+still affect the actual post-transaction balance. The separate whole-run
+planning target remains0.008832BNB; neither target is a new permission to spend
+or add capital. Do not automatically repeat the stale about2USDT handoff amount.
+
+Isaac's remaining wallet step, following the existing FG02 handoff:
+
+1. Approved operator confirms current eligibility: before this wallet's first
+   agent trade and no in-flight work/unused authority. The local nonce/balance
+   read alone cannot establish that host precondition.
+2. If still needed under the agreed funding disposition, **Isaac himself**
+   performs the MetaMask USDT-to-BNB gas seed from this dedicated dev wallet on
+   BNB Smart Chain, using the existing organizer-provided USDT and the agreed
+   USDT fee-token mechanism. No own/external funds, transfer or key export.
+   The assistant does not sign/submit/confirm the swap.
+3. Return only the public tx hash and displayed amounts/time. The assistant
+   independently verifies canonical receipt, net USDT debit and attributable
+   native evidence, and writes the actual funding note. Missing native trace
+   evidence stays explicit; a current balance difference is not transaction-local
+   proof of BNB received. No new hash has been supplied to SJ02 yet.
+4. Operator captures fresh reconciled post-last-seed state/private LD10 inputs;
+   assistant reruns current-clock numeric coverage and completes assembly once
+   the separately required actual run/DB/CA/config bindings are supplied.
+
+Sources checked: verbatim `official/source_page.md` dedicated-wallet text;
+verbatim `official/kit/bstocks-trading-guide.md` gas/wallet text; SKILLF120/G13/Q03;
+existing FG02 handoff and approved PR235/236 reserve/profile receipts. No new
+organizer question, policy, approval or completed wallet action is asserted.

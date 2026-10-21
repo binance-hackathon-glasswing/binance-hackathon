@@ -1580,3 +1580,17 @@ SKILL F120/G13/Q03 and the FG02 handoff. The operator eligibility confirmation
 and any wallet swap remain with their human owners; never mark them complete
 from this read-only preflight. If an additional funding hash exists, verify it
 separately rather than assume another swap is needed.
+
+### SJ-02 results — current gas gap confirmed; human wallet step remains
+
+At2026-10-21T17:14:47.127Z (Oct22 01:14:47SGT), chain56 finalized128976212
+rechecked;21read-only calls. BNB2694498869362886wei,98USDT/18decimals,zero stocks,
+finalized/latest/pending nonce2/2/2. Exit-floor gap377501130637114wei unchanged;
+whole-rehearsal gap6137501130637114wei is separate. [Snapshot/human step and
+review sources](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-02--current-pre-funding-check-and-isaacs-exact-next-action).
+No new hash supplied; no wallet/host/official log action or key access. Actual
+operator pre-first-trade/in-flight confirmation, eligible human seed, receipt
+note, hosted post-funding reconciliation/private inputs and current-clock caps
+review remain incomplete; no completion line is removed. Balance/nonce reads
+do not stand in for that host or signing-authority check. Public snapshot exact
+integer/identity/false-flag checks PASS; no unrelated test rerun or release claim.
