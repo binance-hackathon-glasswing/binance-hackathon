@@ -527,3 +527,29 @@ R4 remove unsupported fill/minimum-output guarantees and simulated/actual revert
 frequency claims, while retaining the observed LD02d simulation as dated evidence;
 R5 selected profile/policy/runtime bytes stay unchanged, actual fee/owner/config/
 host/revert acceptance remains open. No live call, host, key, funding or trade.
+
+### RV120-RV01 results — both inline findings addressed
+
+Pushed analysis source2efffcf,1924 samples from the original capture branch ZIP
+2dcb92c67c4e041019aeba759518e1aeb699182a59e4cb5016db2937be6f4755.
+Original payload manifest b17002b0…ffc01 and all four daily-file hashes verify.
+Original analyse.py reproduces distributions.json byte-for-byte. New directional
+report a1d98b74c2a78e479de999d5de9ca84e107163899ee82a313616e1220f2d4ed5
+partitions all10 token/regime absolute counts into adverse/favourable subsets.
+Keith's adverse counts match exactly: MSFTB US1/42(2.4%), SKHYB US2/43(4.7%),
+SKHYB off-session10/342(2.9%). Those are counterfactual quote-output movements,
+not an actual or simulated transaction revert frequency. RV120-01 C5's old
+revert-frequency interpretation is withdrawn; its absolute-drift values remain.
+
+QUOTE_COST_REVIEW_120 now removes the unsupported fill-safety guarantee and states
+accepted unverified minimum-output/recipient enforcement, possible abnormal fills,
+prepare-time simulation mitigation and post-execution LD05 detection/quarantine.
+Actual LD19/20 outcomes/reverts remain unmeasured. Historical distributions, raw
+source and selected profile/policies are unchanged; all205 runtime release files
+are unchanged. This is analysis/documentation validation, no new full-suite/CI.
+Raw four-file extraction remains private at /workspace/scratch/rv120-inline-raw.
+
+Keith's COMMENTED review confirms reproducibility and supports the17bp spread;
+it is not an exact current-profile/gas/model/configuration adoption attestation.
+Fee netting, final scored adoption and actual LD16/17/19/20 owner/configuration/
+host/fill acceptance remain separate. No live/host/key/funding/trading operation.

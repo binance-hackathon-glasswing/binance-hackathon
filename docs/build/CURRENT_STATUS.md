@@ -7,6 +7,13 @@ Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verifie
 This is a CI-qualified development rehearsal candidate; actual owner/configuration
 and host acceptance remain open. Earlier records below retain their dated scope.
 
+Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
+and supports the17bp MSFTB spread. RV120-RV01 addresses both findings: separate
+two-sided drift from adverse BUY-output moves and actual reverts; remove the
+unsupported fill-safety guarantee. [Corrected review](QUOTE_COST_REVIEW_120_20261021.md).
+His COMMENTED review does not explicitly adopt the current exact profile/gas/model/
+configuration. The selected profile, gas target and qualified runtime artifact are unchanged.
+
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
 dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer
 prompt and request-budget reporting on a new branch from canonical697ff3a.

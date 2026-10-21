@@ -1,6 +1,8 @@
 # #120 — owners' review of the DC-01 quote-cost summary (RV120-01, 2026-10-21)
 
-Status: **prepared in Keegan's session under his delegation; Isaac and Keith (the #120 owners) confirm or amend.**
+Status: **prepared in Keegan's session; Keith independently reproduces the distributions and supports the 17 bp
+MSFTB spread (PR226 review5602037122). His two interpretation corrections are applied below as RV120-RV01.
+Exact selected-profile/owner acceptance remains separate.**
 Nothing here pins a profile, changes a config, approves a cap or starts trading.
 
 - Input: the DC-01 capture. That is four daily JSONL files (Oct 16–19 UTC) with manifest `b17002b0…ffc01`, the same
@@ -72,13 +74,30 @@ Entry cost uses the profile formula `spread + min(50, 2 × impact) + fee + pair 
 
 ## 5. Slippage, fee and gas
 
-- **Slippage 8 bp** is the worst token's p90 of the 15 s requote drift (the decided formula). As designed, about 1
-  in 10 quotes in the worst cases moves further than that before execution. The rates are MSFTB US 9.5 %, SKHYB US
-  9.3 %, SKHYB off-session 6.7 %, TSLAB US 4.7 %, and ≤ 2.3 % elsewhere. Such a swap reverts with
-  `Min return not reached`, as one did in LD02d. That costs gas but never gives a bad fill.
-  - Prepare-time simulation (KG-DEC-01-C1) refuses one with no gas spent.
-  - Only drift between prepare and broadcast can still revert on chain.
-  - **Keep 8 bp** and record the actual revert rate at LD19/LD20.
+- **Slippage 8 bp** follows the worst token/regime's rounded p90 of **two-sided absolute** 15 s requote drift.
+  That statistic includes favourable moves that increase the quoted BUY output. For an adverse comparison,
+  count only `(initial BUY output - later BUY output) / initial BUY output > 8 bp`, using exact integer arithmetic.
+
+  | Token | US absolute | US adverse | Off-session absolute | Off-session adverse |
+  |---|---|---|---|---|
+  | GOOGLB | 0/43 | 0/43 | 0/342 | 0/342 |
+  | MSFTB | 4/42 (9.5%) | **1/42 (2.4%)** | 4/342 (1.2%) | 1/342 (0.3%) |
+  | NVDAB | 1/43 (2.3%) | 0/43 | 1/342 (0.3%) | 1/342 (0.3%) |
+  | SKHYB | 4/43 (9.3%) | **2/43 (4.7%)** | 23/342 (6.7%) | **10/342 (2.9%)** |
+  | TSLAB | 2/43 (4.7%) | 2/43 (4.7%) | 3/342 (0.9%) | 2/342 (0.6%) |
+
+  These are counterfactual quote-output comparisons, including the adverse subset; they are neither executed
+  reverts nor a measured transaction revert frequency. [Directional counts and input hashes](evidence/rv120-quote-review-20261021/directional-drift.json)
+  reproduce Keith's correction. The original absolute-drift distributions remain unchanged.
+  - LD02d observed a `Min return not reached` simulation refusal. Mandatory exact-calldata prepare-time gas
+    estimation (KG-DEC-01-C1) can refuse that payload before signing/broadcast; no transaction gas is spent then.
+    A successful simulation does not guarantee the later execution or its economics.
+  - **Minimum-output and recipient enforcement remain accepted, unverified router assumptions** in the selected
+    API-trusted/untrusted mode (`larp/execution_live/untrusted_router.py`). An abnormal fill remains possible.
+    Canonical settlement detects supported abnormal movements after execution, records raw deltas/actual gas and
+    sustains signing quarantine (LD05-Q01); it cannot prevent or reverse that fill or prove a maximum loss bound.
+  - **Keep the selected 8 bp setting**; measure actual simulation refusals, on-chain outcomes and revert frequency
+    separately at LD19/LD20. Neither directional quote count changes that policy or establishes future frequency.
 - **Fee (#119):** the quoted round trip comes from actual quoted amounts, so any route fee netted into those
   amounts is already inside the spread. `fee_bps = 0` is valid **only if** fees are netted (UNVERIFIED);
   `tradeFee` is network-fee metadata. The capture can't settle this. The first agent quote-versus-receipt
@@ -115,3 +134,10 @@ Entry cost uses the profile formula `spread + min(50, 2 × impact) + fee + pair 
 
 Not covered by this review: S1 weights and parameters; actual fills; the final-run calendar; holdings coverage for
 #44 (Isaac, LD10).
+
+RV120-RV01 sources: [Keith's P1](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622249),
+[P2](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#discussion_r4338622255) and
+[review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/226#pullrequestreview-5602037122).
+The original proposals and gas/seeding numbers above retain RV120-01's dated context; the selected deterministic
+profile, corrected signed-child envelope and conservative0.007296BNB target are recorded in
+[LD10-Q01-R1](evidence/rehearsal-qualified-inputs-20261021/README.md). No current profile or funding amount changes here.

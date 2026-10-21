@@ -197,3 +197,13 @@ manifest is intentionally unbound. Production roles.sql, host writes/session, ke
 funding and the bounded round remain separate. No code changed in this result-only
 documentation update, so the receipt continues to identify the immutable b22207e
 artifact rather than implying a new bundle at the later documentation commit.
+
+### #120 owner evidence update — RV120-RV01
+
+Keith's PR226 review5602037122 (2026-10-21T15:23:22Z) confirms original distributions
+reproduce and supports17bp MSFTB. Both inline documentation findings are addressed in
+[the corrected review](QUOTE_COST_REVIEW_120_20261021.md): directional quote movement
+is separate from actual reverts, and router minimum-output/recipient enforcement
+remains an accepted unverified assumption. Review state COMMENTED; no explicit exact
+current-profile/gas/model/config adoption is inferred. This update changes no profile,
+policy or runtime bytes and needs no replacement of the original qualified artifact.
