@@ -4,7 +4,7 @@
   "date_sgt": "2026-10-21",
   "original_head": "a9062da32a757afb0858f286f79583266e7f7891",
   "canonical_base": "9c1cb84",
-  "tested_source": "cefd652",
+  "tested_source": "09d5938",
   "environment": {
     "os": "macOS/Darwin",
     "architecture": "arm64",
@@ -12,12 +12,12 @@
     "postgresql": "14.24 disposable loopback Docker"
   },
   "tests": {
-    "passed": 39,
+    "passed": 40,
     "subtests_passed": 10,
     "skipped": 0,
     "failed": 0,
-    "duration_seconds": 5.51,
-    "regressions_red_before_fixes": 13,
+    "duration_seconds": 5.32,
+    "regressions_red_before_fixes": 14,
     "full_suite_rerun": false
   },
   "findings_fixed": [
@@ -67,6 +67,7 @@
     "original_pr217_merged_by_other_reviewer": "3b8311498a4d9decc7756ad0fafd05b6c1fa7d20",
     "author_updated_head": "cc23894",
     "canonical_model_drill_decisions_preserved": true,
-    "delivery": "FOLLOW_UP_PR_REQUIRED"
-  }
+    "delivery": "FOLLOW_UP_PR221"
+  },
+  "intermediate_tested_source": "cefd652"
 }

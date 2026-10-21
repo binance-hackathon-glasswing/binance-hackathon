@@ -2717,3 +2717,10 @@ status and RV01 timing corrections. Pushed integrationcefd652 again passes
 39 tests/10 subtests/zero skips (5.51s); syntax/render/whitespace PASS. Production
 application code in the follow-up diff is unchanged relative to this new
 canonical base. RV01 fixes will therefore land as a separate follow-up PR.
+
+Final privacy audit also reproduced JSON-escaped Unicode private-value leakage:
+fa35f54 RED1, fixed09d5938 scans decoded fields as well as raw JSON before
+envelope encoding. Final pushed source09d5938:40 tests/10 subtests/zero skips,
+5.32s with disposable PostgreSQL14.24;14 total red regressions before repair.
+The repaired-source full suite remains intentionally unclaimed. Follow-up PR221
+contains the fixes because original PR217 already merged concurrently.
