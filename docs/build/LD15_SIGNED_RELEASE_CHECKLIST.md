@@ -136,6 +136,17 @@ balanced exit children and an eight-action reserve 3072000000000000wei, profile
 e95d5842… / ddb82813…, target 0.008832BNB. That changes runtime code, so RC2 does
 not qualify it; a new candidate, run and fresh child-quote coverage are required.
 
+## RC3 — canonical `5bee006` (2026-10-21, LD10-P03 source)
+
+Mirror [run 39637679504](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39637679504):
+all four jobs PASS; runtime 2452 passed / 7 explained skips / 3859 subtests on
+PostgreSQL 14.24, real-systemd 5/5, demo and Docker PASS. Original artifact
+12363800624 zip `fa446a15…` matches GitHub's digest; bundle `749e2fc2…`, 244/244
+checksums, inner manifest `847dc027…` byte-identical to the published one, and all
+205 manifested files match `5bee006`. Not rebuilt locally.
+[Receipt](evidence/ab-rel-rc3-20261021.json). LD10-P04 fresh coverage binds this
+build. Unbound candidate: LD16/LD17 bindings, funding and acceptance remain.
+
 The numeric tool retains OWNER_REVIEW_REQUIRED; this is delegated technical coverage,
 not a forged Keith/Isaac attestation or an installed configuration. Their exact#120 /
 LD16 owner bindings plus actual final release/run/DB/RPC/CA configuration remain.

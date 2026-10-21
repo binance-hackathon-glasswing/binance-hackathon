@@ -84,7 +84,7 @@ reviewer. `review_rehearsal_caps.py` now reads this profile.
 
 ## Remaining (owners)
 
-1. Approved operator: a fresh read-only primary-host packet built from this
+1. Done in LD10-P04 ([record](ld10-p04-coverage.json)): a fresh read-only primary-host packet built from this
    profile (`ld10_readonly_packet.py --profile …/rehearsal-deterministic.json`):
    holdings, nonce, allowances, minimum/max BUY, full-size SELL and child SELL
    quotes. Isaac reruns `review_rehearsal_caps.py` on the qualified build. The
@@ -92,7 +92,7 @@ reviewer. `review_rehearsal_caps.py` now reads this profile.
    funding.
 2. Funding owner: confirm or revise the 0.008832 BNB target and fund through the
    approved process; then fresh reconciliation.
-3. LD15: requalify the new canonical source and keep its original artifact. RC2
+3. Done as AB-REL-RC3 ([receipt](../ab-rel-rc3-20261021.json)): requalified the new canonical source and kept its original artifact. RC2
    does not qualify this code.
 4. Residual risk, accepted for the rehearsal: a fresh quote more than 1% above
    the mark is still refused (safely) and retried at the next round's mark. A
