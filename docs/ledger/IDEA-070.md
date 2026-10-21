@@ -1362,3 +1362,21 @@ Keegan delegated the pending decisions as "use the recommended option" (2026-10-
   - It must keep the existing fencing, never extend authority (#27), and treat a simulation that can't be run as a
     refusal, not a pass.
   - Until it is built, those reverts can still cost gas up to the point of revert.
+
+## KG-DEC-01-H — host check: does the live gas-limit endpoint refuse reverting payloads? (2026-10-21; prospective)
+
+This is a read-only check on `primary` with the deployed client: no transaction, signature, file or config change.
+The script is `docs/build/ops/ld02-20261020/presign-check.sh`. Criteria, written before the script (P1–P4):
+
+- P1. Preconditions, read on chain through the first balance provider: the wallet's `balanceOf` for the chosen
+  bStock is 0, and its USDT `allowance` to the pinned router is 0. If either is non-zero the check is NOT_RUN.
+- P2. Control: the Web3 API USDT approve payload for 20 USDT, sent to `pre-transaction/gas-limit` with the wallet as
+  `from`, returns a positive gas limit.
+- P3. Two payloads that must revert, each from a fresh quote pinned to the router with the swap selector:
+  - a SELL of 1 token of the bStock the wallet doesn't hold;
+  - a BUY of 20 USDT with no USDT allowance to the router.
+
+  Each must be refused by the endpoint: an error or a non-positive gas limit, which `LiveVenue.estimate_gas` turns
+  into a block. A positive gas limit for either is a FAIL. In that case KG-DEC-01 would need a real RPC simulation
+  before signing.
+- P4. The output is sanitized and keeps only the refusal kind and a short reason, with no wallet, URL or key.
