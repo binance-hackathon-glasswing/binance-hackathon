@@ -1,6 +1,6 @@
 {
  "schema": "DeviationsRegister.v1",
- "updated": "2026-10-20",
+ "updated": "2026-10-21",
  "proposal": "docs/proposal/proposal_answers.md",
  "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 \u00a74.3); details that exist only in owner code not yet integrated are added when it is integrated.",
  "rows": [
@@ -9,7 +9,7 @@
    "area": "Model layer",
    "declared": "It is a bidirectional encoder with a typed decision head, which we fine-tune on our own point-in-time labels and calibrate on validation data.",
    "v1_behaviour": "No trained decision model ships; H-02/EXP-001 remain NOT RUN. The October 11 rule-based EQUAL_WEIGHT baseline is retained as a conditional measured rehearsal fallback. The October 16 team choice is S1 at up to 95% gross (IDEA-075); its exact profile/parameters and qualification remain pending.",
-   "reason": "Training and evaluation data are on hold, so H-02 cannot be run; the proposal's own fallback (a pre-registered default) applies.",
+   "reason": "Training and evaluation data are on hold, so H-02 cannot be run; the proposal's own fallback (a pre-registered default) applies. Stays DRAFT until Keith freezes the S1 profile/parameters for #120 (LD09/LD11) or the measured fallback is chosen.",
    "evidence": [
     "D-08",
     "H-02",
@@ -26,7 +26,7 @@
    "area": "Entry rule",
    "declared": "P(UP) and the margin P(UP) \u2212 P(DOWN) clear thresholds fit on validation data.",
    "v1_behaviour": "Entries follow the equal-weight book: the time window, a fresh review, no unresolved red flag, the price-impact and entry-cost gates, and the 75% top-up threshold. There are no probability thresholds. This describes the October 11 EQUAL_WEIGHT baseline, not a frozen S1 entry profile. IDEA-075 selects the S1 strategy family at up to 95% gross; its trend inputs, weights, parameters, O1-O6 decisions and qualification remain separate.",
-   "reason": "No decision model (DEV-01); the team set an 80% invested target (B5) after F-115 made a mostly-cash default unsuitable. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update.",
+   "reason": "No decision model (DEV-01); the team set an 80% invested target (B5) after F-115 made a mostly-cash default unsuitable. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update. Stays DRAFT until the S1 entry profile is frozen (Keith, #120/LD11).",
    "evidence": [
     "IDEA-035",
     "IDEA-037",
@@ -42,7 +42,7 @@
    "area": "Sizing",
    "declared": "Position size = 1% of equity \u00f7 (2 \u00d7 expected 5-session volatility).",
    "v1_behaviour": "Equal weight: four names at 20% of equity each (80% gross); topped up while gross is below 75%; never resized on drift. This is the retained EQUAL_WEIGHT baseline. The October 16 S1 family choice uses volatility-weighted sizing at up to 95% gross; name count, weights, caps and remaining parameters are not finalized (IDEA-075 sections 12/16).",
-   "reason": "Team decision B5 (Option 1); equal weight needs no estimate and fits the declared caps. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update.",
+   "reason": "Team decision B5 (Option 1); equal weight needs no estimate and fits the declared caps. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update. Stays DRAFT until S1 names, weights and caps are frozen (Keith, #120/LD11).",
    "evidence": [
     "IDEA-035",
     "IDEA-037",
@@ -58,7 +58,7 @@
    "area": "Cash floor",
    "declared": "\u2264 80% gross exposure, so at least 20% stays in cash.",
    "v1_behaviour": "80% gross is a buy-time ceiling. Price drift may take gross above it; forced trims start only above 25% per name or 90% gross. This is the EQUAL_WEIGHT baseline. The October 16 S1 choice permits up to 95% target gross, changing the submitted cash floor further; its exact name/position/drift limits remain proposals until adopted (IDEA-075 sections 12/14/16).",
-   "reason": "Avoids cap-trim micro-trades that would sell on every small rally (IDEA-017); decided with the B5 rebalance rule. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update.",
+   "reason": "Avoids cap-trim micro-trades that would sell on every small rally (IDEA-017); decided with the B5 rebalance rule. IQ02 distinguishes this dated decision from the later S1 choice; no new profile is adopted by this draft update. Stays DRAFT until the S1 gross/name/drift limits are frozen (Keith, #120/LD11).",
    "evidence": [
     "IDEA-037",
     "G-21",
@@ -81,7 +81,7 @@
     "F-96"
    ],
    "decided": "2026-10-11",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-06",
@@ -95,14 +95,14 @@
     "IDEA-035"
    ],
    "decided": "2026-10-10",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-07",
    "area": "Exit triggers",
    "declared": "a confident DOWN signal on a held name,",
    "v1_behaviour": "Exits: red-flag Class 1 (verified 8-K Item 4.02) sells; Class 2 (Items 1.05, 2.06) blocks new buys for 5 sessions without a forced sale; risk-limit triggers; and the end-of-run flatten finished by 2026-11-11 15:00 UTC. A name may be bought again once its finding is corrected or withdrawn at the source.",
-   "reason": "No decision model to give a DOWN signal (DEV-01); the LLM only assesses evidence (D-11); flat at the end so both scoring readings agree (C4).",
+   "reason": "No decision model to give a DOWN signal (DEV-01); the LLM only assesses evidence (D-11); flat at the end so both scoring readings agree (C4). Stays DRAFT until the S1 exit rules (8% stop recovery, stale marks; IDEA-084 PF-IMPL01) are implemented and frozen (Keith).",
    "evidence": [
     "D-11",
     "IDEA-035",
@@ -124,7 +124,7 @@
     "D-11"
    ],
    "decided": "2026-10-11",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-09",
@@ -139,7 +139,7 @@
     "GAP-23"
    ],
    "decided": "2026-10-10",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-10",
@@ -153,7 +153,7 @@
     "D-08"
    ],
    "decided": "2026-10-10",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-11",
@@ -167,7 +167,7 @@
     "GAP-23"
    ],
    "decided": "2026-10-10",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-12",
@@ -180,7 +180,7 @@
     "GAP-57"
    ],
    "decided": "2026-10-10",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-13",
@@ -194,14 +194,14 @@
     "IDEA-009"
    ],
    "decided": "2026-10-08",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-14",
    "area": "Human halt",
    "declared": "Humans can halt the agent but never trade.",
    "v1_behaviour": "No human action during the run. HALT is autonomous code (clock, delivery deadline, repeated failures; integrity quarantines), and a supervisor restarts the same build after a crash, each logged as an incident.",
-   "reason": "F-117 freezes the scored build; F-124 confirms automatic engineering restarts of that same version and forbids manual restarts. Standby, crash-loop and restore policy acceptance remains separate (DEV-18 / IDEA-066).",
+   "reason": "F-117 freezes the scored build; F-124 confirms automatic engineering restarts of that same version and forbids manual restarts. Standby, crash-loop and restore policy is decided in DEV-18; host evidence is an operator task (IDEA-066).",
    "evidence": [
     "F-114",
     "Q-40",
@@ -210,7 +210,7 @@
     "F-124"
    ],
    "decided": "2026-10-11",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-15",
@@ -223,7 +223,7 @@
     "IDEA-042"
    ],
    "decided": "2026-10-11",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-16",
@@ -237,7 +237,7 @@
     "F-97"
    ],
    "decided": "2026-10-05",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-17",
@@ -250,7 +250,7 @@
     "F-61"
    ],
    "decided": "2026-10-03",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-18",
@@ -266,14 +266,14 @@
     "F-124"
    ],
    "decided": "2026-10-20",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-19",
    "area": "Assessor model",
    "declared": "**Hosted reasoning LLM for the evidence step:**",
    "v1_behaviour": "Opt-in unsigned AIandRouting.v3 trial: OpenAI gpt-6.1-sol medium primary; independent high-effort AIand Kimi K3 and GLM-5.3 review/fallback. IDEA-083 / DEV-22 runs external reviewers concurrently: an ASSESSED primary stands unless a reviewer dissents; without one, fallback uses fixed reviewer precedence. All claims remain deterministically verified. Default remains deterministic shadow until prepared routing is installed. Signed/scored adoption is pending.",
-   "reason": "User selects OpenAI-primary v3 and Yao approved Keith's PR168 trial protocol (PC-REL05). V3 paces the full US$50 allocation including US$2 owner-reported prior spend, with no permanent reserve; legacy v2 limits remain separate. Budget/stop-cap enforcement is implemented and offline-tested (IDEA-066); actual account/rights reconciliation, new exact-host enforcement checks, route measurements and final adoption remain pending.",
+   "reason": "User selects OpenAI-primary v3 and Yao approved Keith's PR168 trial protocol (PC-REL05). V3 paces the full US$50 allocation including US$2 owner-reported prior spend, with no permanent reserve; legacy v2 limits remain separate. Budget/stop-cap enforcement is implemented and offline-tested (IDEA-066); actual account/rights reconciliation, new exact-host enforcement checks, route measurements and final adoption remain pending. Stays DRAFT until the LD11 model qualification and the LD22 adoption decision (Keith/Keegan) fix the final assessor.",
    "evidence": [
     "IDEA-035",
     "IDEA-057",
@@ -289,7 +289,7 @@
    "area": "Event planner",
    "declared": "an event-calendar planner,",
    "v1_behaviour": "Omitted: no per-class macro/earnings event-calendar planner ships. In the existing S1 limiter the SCHEDULED_EVENT evidence class alone cannot cut exposure; IDEA-075 O5 stays a separate decision. The frozen session/execution windows, the terminal schedule and every market, terminal and execution-window safety gate stay in force; they are not presented as a planner.",
-   "reason": "Decided 2026-10-19 by Keegan, accepting the PC-OPS01 recommendation: a planner needs a trusted event source with provenance, per-class action/freshness/window rules, conflict precedence, replay/audit fields and tests, which cannot be built and qualified before the Oct 22 decision cut. Final declaration wording and FINAL status follow at C10 with the other rows.",
+   "reason": "Decided 2026-10-19 by Keegan, accepting the PC-OPS01 recommendation: a planner needs a trusted event source with provenance, per-class action/freshness/window rules, conflict precedence, replay/audit fields and tests, which cannot be built and qualified before the Oct 22 decision cut. Finalised in the GAP-62 review (IDEA-042 GAP62-F01, 2026-10-21).",
    "evidence": [
     "GAP-64",
     "IDEA-018",
@@ -297,13 +297,13 @@
     "IDEA-066"
    ],
    "decided": "2026-10-19",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-21",
    "area": "Gas reserve",
    "declared": "A gas-reserve floor keeps enough gas for exits.",
-   "v1_behaviour": "Initial gas only (LD07, 2026-10-20): v1 plans no gas top-up rounds. The only BNB is the F-120 first-gas swap: pre-first-agent-trade MetaMask USDT to BNB seeding, gas paid in USDT, recorded as a funding note rather than an ai-seeds round and sized for the whole run. The floor is kept by refusing new buys that would cut into the exit gas reserve; reductions and exits continue. If gas is exhausted the agent cannot trade, so the reserve and the seeding size must cover the full final exit. Measured reserve and seeding values remain pending (LD08/LD09).",
+   "v1_behaviour": "Initial gas only (LD07, 2026-10-20): v1 plans no gas top-up rounds. The only BNB is the F-120 first-gas swap: pre-first-agent-trade MetaMask USDT to BNB seeding, gas paid in USDT, recorded as a funding note rather than an ai-seeds round and sized for the whole run. The floor is kept by refusing new buys that would cut into the exit gas reserve; reductions and exits continue. If gas is exhausted the agent cannot trade, so the reserve and the seeding size must cover the full final exit. The reserve is sized at the signer's cap gas price and minimum-trade sizing at an expected gas price (LD09-B, 2026-10-21); exact reserve and seeding values are pinned in the selected profile.",
    "reason": "Funding is USDT only and gas is BNB only; the proposal did not say how the floor is refilled. Native top-up routes cannot be decoded or proven in time (#30), so Keegan chose initial-gas-only operation on 2026-10-20 (IDEA-061 LD07).",
    "evidence": [
     "IDEA-035",
@@ -314,14 +314,14 @@
     "IDEA-061"
    ],
    "decided": "2026-10-20",
-   "status": "DRAFT"
+   "status": "FINAL"
   },
   {
    "id": "DEV-22",
    "area": "Evidence loop time budget",
    "declared": "The loop is capped at 6 calls and 60 s per decision.",
    "v1_behaviour": "Evidence assessments accept at most 180 s; OpenAI-preferred routing gives its primary at most 60 s and one third of the decision budget, then runs two independent reviewers concurrently with at most 90 s each. One global six-tool-call allowance is deterministically partitioned. Stage deadline results are separate from actual worker cleanup; late replies never restore authority. B11 preserves selected primary content in an immutable linked result under a canonical routed envelope.",
-   "reason": "IDEA-083: hosted high-effort review exhausted the previous 60 s serial budget despite an assessed primary. Yao approved longer budgets/parallel review/B11; Isaac approved separate routed identity with unchanged primary identity/content on 2026-10-19. Legacy AIand-first selection remains historical, without B11 changes.",
+   "reason": "IDEA-083: hosted high-effort review exhausted the previous 60 s serial budget despite an assessed primary. Yao approved longer budgets/parallel review/B11; Isaac approved separate routed identity with unchanged primary identity/content on 2026-10-19. Legacy AIand-first selection remains historical, without B11 changes. Stays DRAFT until the final assessor and its budgets are adopted (LD11/LD22).",
    "evidence": [
     "IDEA-083",
     "IDEA-066"
@@ -329,17 +329,32 @@
    "decided": "2026-10-19",
    "status": "DRAFT"
   },
- {
+  {
    "id": "DEV-23",
    "area": "Swap router trust",
    "declared": "The order aborts if quoted slippage exceeds its cap.",
    "v1_behaviour": "The kit router (a diamond proxy) and its swap facet publish no verified source, so the on-chain enforcement of the minimum output, the recipient and the deadline is not proven, and the wallet address is not in the swap calldata. In untrusted-router mode the agent still refuses any quote whose minimum is below the cap, checks the full calldata layout (outer and inner economics agree), and before every swap step re-checks on chain that the facet and code are the pinned ones and that the router's allowance is at most this swap's amount (zero for every other token). A fill below its minimum is never booked; it withholds all further signing. LD06 additionally implements optional zero-only cleanup before the next valid stock intent, at most once per eligible token under original authority and gas budget, with independent execution/signer opt-ins defaulting false. Cleanup hashes are supporting approval audit facts, never swap orders. Independent review, measured gas/reserve/timing and host acceptance are still required; no installed configuration enables it.",
-   "reason": "Keegan selected this implementation direction on 2026-10-19 (IDEA-070 B02-U); Isaac accepted API-provided router behavior in B09-TRUST01 (PR196). Source guarantees remain unavailable. Exact approvals, signer input/fee caps and settlement checks constrain submitted authority and detect anomalies, but do not establish a maximum loss or recover lost funds. Actual policy/hash review, measured B09/#44 acceptance, allowance/abnormal-fill disposition and gas scope remain open. This declaration remains DRAFT.",
+   "reason": "Keegan selected this implementation direction on 2026-10-19 (IDEA-070 B02-U); Isaac accepted API-provided router behavior in B09-TRUST01 (PR196). Source guarantees remain unavailable. Exact approvals, signer input/fee caps and settlement checks constrain submitted authority and detect anomalies, but do not establish a maximum loss or recover lost funds. Actual policy/hash review, measured B09/#44 acceptance, allowance/abnormal-fill disposition and gas scope remain open. Stays DRAFT until LD05 abnormal-fill disposition (Keith) and the LD06 cleanup enablement decision are final; KG-DEC-01 (pre-sign refusal of a reverting swap) is recorded separately.",
    "evidence": [
     "IDEA-070",
     "GAP-29"
    ],
    "decided": "2026-10-19",
+   "status": "DRAFT"
+  },
+  {
+   "id": "DEV-24",
+   "area": "Rehearsal",
+   "declared": "full pipeline for 5+ days including a weekend, at minimum size",
+   "v1_behaviour": "Gate B did not pass by 2026-10-21, so the D-DN-02 condition applies: the rehearsal is shadow operation plus a shorter signed window at minimum size on the development wallet, starting after the first signed agent round (LD19). The signed window may not include a weekend. Its actual start, duration and daily log are recorded as rehearsal evidence (DR-21), and the rehearsal profile's buy window needs a dated update (#120) before any signed buy.",
+   "reason": "The signed-path prerequisites (signer caps coverage, release, signer configuration, installation and key placement: LD10, LD15-LD18) were not complete by 2026-10-21. Keegan decided this fallback conditionally on 2026-10-17 (D-DN-02) and it is recorded the day Gate B was missed (GAP-04). Stays DRAFT until the actual signed window is known.",
+   "evidence": [
+    "GAP-04",
+    "GAP-62",
+    "IDEA-042",
+    "IDEA-066"
+   ],
+   "decided": "2026-10-21",
    "status": "DRAFT"
   }
  ]

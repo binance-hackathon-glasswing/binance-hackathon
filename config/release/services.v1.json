@@ -1,6 +1,6 @@
 {
   "schema": "ServicesList.v1",
-  "updated": "2026-10-19",
+  "updated": "2026-10-21",
   "basis": "F-61: third-party services are declared in the version manifest. Draft (IDEA-042 item 8); final at the Oct 26 freeze.",
   "services": [
     {
@@ -56,7 +56,7 @@
     },
     {
       "service_id": "bsc-rpc",
-      "provider": "Development balance reads: BNB Chain public primary, NodeReal public backup (Isaac, 2026-10-17; IDEA-055 RPC-Q01 D1); execution provider qualification remains separate",
+      "provider": "Development balance reads: BNB Chain public primary, NodeReal public backup (Isaac, 2026-10-17; IDEA-055 RPC-Q01 D1); the same order is approved for execution reads (Keegan, KG-DEC-01, 2026-10-21) and is bound into the signed config at LD16/LD17",
       "purpose": "finalized-block wallet balance reads for the chain-balance check (IDEA-055) and the execution service's chain reads and receipts",
       "scope": "read-only allowlisted methods (larp/execution_live/chain.py); eth_call only for decimals() and balanceOf(wallet) on the six pinned contracts",
       "terms_ref": "#92; docs/build/RPC_QUALIFICATION.md; IDEA-055 RPC-Q01 D1; docs/build/architecture-deployment.md Approved network destinations (IDEA-062)",

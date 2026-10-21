@@ -1363,6 +1363,29 @@ Keegan delegated the pending decisions as "use the recommended option" (2026-10-
     refusal, not a pass.
   - Until it is built, those reverts can still cost gas up to the point of revert.
 
+### KG-DEC-01-C1 — pre-sign simulation already enforced (2026-10-21)
+
+Correction to KG-DEC-01. `Executor.prepare` already simulates every step's exact payload before any attempt exists.
+It calls `venue.estimate_gas`, which on the live venue is the Web3 API `pre-transaction/gas-limit` for the exact
+`from`/`to`/`data`/`value`. There is no quote-gas fallback: `integer(estimate, positive=True)`. A revert, an
+unavailable dependency or a non-positive estimate leaves the intent `PREPARE_BLOCKED`, with no PREPARED attempt, so
+nothing can be authorized, offered to the signer or broadcast. For a SWAP, the estimate runs after the approval is
+final, so the wallet's real allowance is in place. The DC-01 capture's all-FALLBACK swap estimates are consistent
+with this endpoint refusing payloads that can't execute, since that capture wallet held no balance or allowance.
+
+New regressions in `tests/execution/test_presign_simulation.py` (5 tests):
+- `RFQ_OrderExpired` and `Min return not reached` reverts, an unavailable dependency and a timeout each leave only
+  the APPROVE attempt, with the signer untouched and no swap broadcast;
+- a missing estimate never falls back to the quote's gas;
+- `LiveVenue.estimate_gas` turns an API failure into `DependencyUnavailable` and a non-positive gas limit into
+  `Blocked`.
+
+No code change was needed. Remaining risk:
+- the simulation runs at prepare time, so a route that expires between prepare and broadcast can still revert on
+  chain, though only after a fresh sign within the #27 authority;
+- the live endpoint's refusal of a reverting payload is inferred, not directly observed. A read-only host check is
+  open: call the gas-limit endpoint with a known-reverting payload. Isaac reviews.
+
 ## KG-DEC-01-H — host check: does the live gas-limit endpoint refuse reverting payloads? (2026-10-21; prospective)
 
 This is a read-only check on `primary` with the deployed client: no transaction, signature, file or config change.
