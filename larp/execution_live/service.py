@@ -119,11 +119,13 @@ class ExecutionService:
                     raise Blocked('final receipt observation adapter required before advancing')
                 fact=self.settlement(state,attempt)
                 if (fact.get('schema')!='ExecutionObservation.v1' or fact.get('settlement')!='FINAL'
-                        or fact.get('kind') not in ('APPROVAL','FILL','REVERT')
+                        or fact.get('kind') not in ('APPROVAL','FILL','REVERT','ABNORMAL')
                         or fact.get('intent_id')!=state.intent.intent_id
                         or fact.get('attempt_id')!=attempt.attempt_id or fact.get('tx_hash')!=attempt.tx_hash):
                     raise Blocked('settlement fact identity mismatch')
                 self.observe(fact)
+                if fact['kind'] == 'ABNORMAL':
+                    return state  # no later stage or automatic recovery after the incident
         if state.status == 'ABORTED' and not any(a.step == 'SWAP' and possibly_submitted(a)
                                                  for a in state.attempts):
             identity = state.intent.key+':not-submitted'

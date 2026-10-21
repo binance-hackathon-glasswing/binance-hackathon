@@ -147,7 +147,7 @@ def settle(current, observation):
         expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ':' + o['step'])
         if expected != o["tx_hash"].lower():
             raise ContractError("Final approval fact names an unrecorded broadcast")
-    if kind in ("FILL", "REVERT") and not supporting_approval and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
+    if kind in ("FILL", "REVERT", "ABNORMAL") and not supporting_approval and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
         raise ContractError("Final swap fact names a hash this round never broadcast")
     if kind != "NOT_SUBMITTED":
         portfolio = deepcopy(projection["portfolio"])
@@ -169,6 +169,11 @@ def settle(current, observation):
         record.setdefault("aborted", []).append({"intent_id": o["intent_id"], "symbol": order["symbol"],
                                                  "side": order["side"], "amount": order["amount"],
                                                  "reason": o.get("reason", "NOT_SUBMITTED")})
+    if kind == "ABNORMAL":
+        # Immutable observation bytes are also journaled by Coordinator.observe. Keep
+        # a durable incident/latch in the projection so replay and every signing gate agree.
+        projection.setdefault("abnormal_outcomes", {})[o["event_id"]] = deepcopy(o)
+        record.setdefault("abnormal_outcomes", []).append(o["event_id"])
     if o["intent_terminal"]:
         final.append(o["intent_id"])
         deltas = [{"intent_id": o["intent_id"], "asset": asset, "units": -units}

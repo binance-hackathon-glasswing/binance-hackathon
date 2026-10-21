@@ -82,6 +82,12 @@ class ExecutionStore:
         self.store._owned(run, epoch)
         if version != epoch or run['chain_id'] != 56:
             raise Conflict('execution release authority changed')
+        # Same locked-run transaction as signing/broadcast and observation publication:
+        # no crash gap between the durable incident and runtime projection ingestion.
+        run['abnormal_outcome'] = db.execute(
+            "SELECT EXISTS (SELECT 1 FROM execution_observations WHERE run_id=%s "
+            "AND convert_from(observation, 'UTF8')::jsonb->>'kind'='ABNORMAL')",
+            (self.run_id,)).fetchone()[0]
         return run
 
     def execution_authority(self):
@@ -105,6 +111,8 @@ class ExecutionStore:
     def check_broadcast(self, signed, epoch, version, *, now_ms=None, decoder=None):
         with self.store.transaction() as db:
             run = self._release_authority(db, epoch, version)
+            if run.get('abnormal_outcome'):
+                raise Conflict('abnormal finalized outcome; broadcast quarantined')
             keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
             for key, in keys:
                 state = self._load(db, key)
@@ -268,6 +276,8 @@ class ExecutionStore:
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
+        if run.get('abnormal_outcome') or projection.get('abnormal_outcomes'):
+            raise Conflict('abnormal finalized outcome; signing quarantined')
         try:
             faults.check(run['mode'])  # RG2-H01: no new signature in a final run while a drill point is armed
         except ContractError as refused:

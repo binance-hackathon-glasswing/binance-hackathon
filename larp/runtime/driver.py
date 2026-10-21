@@ -117,7 +117,7 @@ class RuntimeHealth:
             journal = False
         projection = current['projection']
         # The guard latches a CLOCK HALT when decision time runs behind the last decision (supervision.py).
-        gates = dict(integrity_ok=not current['quarantined'], journal_ok=journal,
+        gates = dict(integrity_ok=not current['quarantined'] and not projection.get('abnormal_outcomes'), journal_ok=journal,
                      ownership_ok=current['epoch'] == self.epoch,
                      clock_ok='CLOCK' not in halt_reasons(projection))
         if self.balances is not None:
