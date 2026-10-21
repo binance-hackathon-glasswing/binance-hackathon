@@ -465,3 +465,18 @@ Pass criteria before execution:
 Numeric CAP-02 policy approval remains in force, with cleanup disabled. This
 change never installs policies, approves current holdings or substitutes a local
 scenario for Keith's selected S1/fallback/exit-child counts and whole-run N.
+
+GE-01 STOPPED at Isaac's explicit direction (2026-10-21): the missing actual
+selected-profile/full-exit/fee/N work belongs to Keith under LD09/#119/#120.
+PR218 only supplies historical DC-01 reproduction, not those current inputs;
+#119/#120 remain open without newer acceptance comments. Do not complete another
+owner's packet or keep pursuing this dependency-bound task.
+
+The unmerged prototype reproduced action/profile envelope false positives in
+the numeric reviewer. Initial subset:26 passed/39 subtests,1 cleanup-fixture
+failure (cleanup enabled after the fixture's budget was set). Prototype is NOT
+accepted or released. Normal revert commits remove all GE-01 application/test
+changes; no canonical/runtime/config/host change occurred and no PR was opened.
+Keep the audit trail on codex/ld08-ld10-gas-envelope-20261021 for later review
+when real inputs arrive. Isaac's next independent task is IDEA-070 KG-DEC-01
+pre-sign swap simulation, based on fresh canonical rather than this worktree.
