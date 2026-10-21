@@ -2653,3 +2653,74 @@ Packet SHA-256 `812c4308…74aab60` (verified locally after transfer); evidence
   stalled-call behaviour on the signed path, and per-unit RSS stay MISSING_MEASUREMENT. They need a running signed
   rehearsal (LD19/LD21). These are observations only; Isaac decides the LD14 values (delivery-age bound, watchdog,
   memory).
+
+## LD12-M01-RV01 — Isaac review of PR217 (2026-10-21; prospective)
+
+User requests complete review/fixes/merge. Original a9062da; canonical9c1cb84.
+Criteria before execution: RV1 inspect read-only SQL/subprocess/output and identity
+boundaries; RV2 reproduce refusal gaps for non-inactive units, mismatched run/build
+or non-shadow mode, failed commands and private-value/error output; RV3 bind
+attempt-clock/ACK claims to actual DeliveryWorker/HttpReceiver semantics and
+prevent timestamp collisions from merging distinct logs; RV4 reproduce original
+packet/summary without rewriting their bytes, produce a corrected analysis and
+state missing actual ACK/network/anchor timing; RV5 run focused offline and
+appropriate integrated checks on pushed source; RV6 merge exact reviewed head,
+record operator ownership without granting host access, and update PR133/status.
+No live collector, host/SSM/AWS, provider/model, signer/key/wallet/funding action.
+
+Initial P2 findings: reconstructed next_ms-backoff is the uploader's supplied
+attempt clock, before transaction/network work, not a measured send timestamp;
+HttpReceiver's socket timeout is not a whole-request/positive-ACK upper bound.
+The final guard only compares operations/database run IDs and only refuses
+ActiveState=active, permitting activating/unknown states and runtime/uploader
+identity or execution-mode mismatches. Archive last_error is truncated before
+privacy scanning; failed subprocesses become empty measurements with no error.
+These require collector/analysis repairs and append-only interpretation fixes.
+
+### LD12-M01-RV01 corrections and verified result
+
+Original M2's20.4s hard positive-ACK bound is WITHDRAWN, not a measured bound.
+`next_ms-backoff` recovers the supplied attempt clock before DB/network work,
+not a send timestamp. A stored ACK may belong to an earlier overlapping attempt;
+the socket timeout15s is not a whole-request deadline. Actual ACK latency is
+NOT_MEASURED. Original summary/packet bytes stay unchanged;
+[reviewed summary and reproduction](../build/evidence/ld12-ops-measure-20261021/README.md)
+carry the correction. Future rows include event ordinals to avoid merging distinct
+logs with equal timestamps; historical chunk identity/completeness is limited
+to the retained fields. Anchor time-of-hour offsets do not establish slot lag.
+
+Collector now pins the exact retired run/build/database/dev-shadow identity,
+requires all observed units inactive and refuses failed host reads (explicit
+absent-signer handling remains). It emits archive error booleans rather than
+truncated error text; scans full fields against private host/URL/wallet/config
+values, and limits ACK key names. These are four repaired P2 finding families.
+Thirteen regressions failed before repair; final pushed source677edbe passes
+**39 tests /10 subtests /zero skips** on macOS arm64/Python3.12.14 and disposable
+PostgreSQL14.24, including every collector SELECT, actual database-enforced
+read-only write refusal, delivery and delivery-age integration. Syntax,
+whitespace, deviation rendering and immutable source hashes pass. Original
+summary reproduces semantically except two receipt/explanation annotations.
+No repaired-source full-suite run is claimed: production application code is
+unchanged from canonical9c1cb84 (PR216's full suite remains source-specific).
+[Machine receipt](../build/evidence/pr217-review-20261021.json).
+
+Keegan's operator role transfer is retained for LD12/17/19/21/23. It grants
+no actual host-write or signer-session approval. Per-unit RSS, actual ACK timing,
+signed execution/finality/drain/stall/recovery and exact LD14 values remain
+operator/Keith/Keegan evidence inputs for Isaac; source merge is not acceptance.
+
+Concurrent integration: another reviewer merged original PR217 at3b83114 while
+RV01 repairs were being prepared; the original branch advanced tocc23894. No
+force push was used. Normal merges preserve PR206/212/218 and PR219 decisions
+through canonicalf1667b2. Ledger conflict retains both the new PR204 repair
+status and RV01 timing corrections. Pushed integrationcefd652 again passes
+39 tests/10 subtests/zero skips (5.51s); syntax/render/whitespace PASS. Production
+application code in the follow-up diff is unchanged relative to this new
+canonical base. RV01 fixes will therefore land as a separate follow-up PR.
+
+Final privacy audit also reproduced JSON-escaped Unicode private-value leakage:
+fa35f54 RED1, fixed09d5938 scans decoded fields as well as raw JSON before
+envelope encoding. Final pushed source09d5938:40 tests/10 subtests/zero skips,
+5.32s with disposable PostgreSQL14.24;14 total red regressions before repair.
+The repaired-source full suite remains intentionally unclaimed. Follow-up PR221
+contains the fixes because original PR217 already merged concurrently.

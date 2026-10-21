@@ -1,0 +1,73 @@
+{
+  "schema": "PR217ReviewReceipt.v1",
+  "review_id": "IDEA-066 LD12-M01-RV01",
+  "date_sgt": "2026-10-21",
+  "original_head": "a9062da32a757afb0858f286f79583266e7f7891",
+  "canonical_base": "9c1cb84",
+  "tested_source": "09d5938",
+  "environment": {
+    "os": "macOS/Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24 disposable loopback Docker"
+  },
+  "tests": {
+    "passed": 40,
+    "subtests_passed": 10,
+    "skipped": 0,
+    "failed": 0,
+    "duration_seconds": 5.32,
+    "regressions_red_before_fixes": 14,
+    "full_suite_rerun": false
+  },
+  "findings_fixed": [
+    "P2 measurement claims: supplied attempt clock is not network send time; socket timeout is not an ACK deadline",
+    "P2 collector state/read boundaries: exact retired identity, dev/shadow, inactive units, failed reads distinguished from absence",
+    "P2 output privacy: no free-form/truncated archive errors; scan full output for private URLs/hosts/wallets/config values; no arbitrary ACK keys",
+    "P2 grouping/anchor interpretation: future event ordinals avoid equal-timestamp merging; stored time-of-hour is not anchor slot lag"
+  ],
+  "checks": {
+    "real_postgresql_collector_selects": "PASS; removed anchors table explicitly unavailable",
+    "real_postgresql_write_refusal": "PASS",
+    "shell_and_embedded_python_syntax": "PASS",
+    "whitespace": "PASS",
+    "deviations_render": "PASS",
+    "original_packet_and_summary_bytes_unchanged": true,
+    "original_summary_semantic_reproduction": "PASS excluding two documented receipt/explanation annotations",
+    "no_production_application_code_changed": true
+  },
+  "evidence_sha256": {
+    "packet.jsonl": "812c43086f94908f0ebb35235402ea2ce11ea200c870fdb3bd661c06b74aab60",
+    "summary.json": "44a40dcaf4baa78fd0ac8452f54ed4fed482bada49a851764467ab5cfd72a52e",
+    "reviewed-summary.json": "4debf46b16bf54552249931d2d7d9ef0ea40e2bfacf883afc83a078b07f04a71"
+  },
+  "observed": {
+    "chunk_rows": 109,
+    "legacy_timestamp_groups": 70,
+    "ack_chunk_rows": 109,
+    "max_log_to_latest_attempt_clock_s": 5.387,
+    "max_start_to_decision_s": 76.309
+  },
+  "withdrawn_claim": "20.4-second hard positive-ACK bound is not established",
+  "missing": [
+    "Actual network-send/positive-ACK timing and hard delivery bound",
+    "Expected-chunk completeness and event identity in the historical chunk extract",
+    "Anchor slot-to-storage lag",
+    "Per-unit RSS/history",
+    "Signed execution/finality/drain and stalled-call timings",
+    "Exact-host recovery and adopted LD14 configuration"
+  ],
+  "operator_record": "Keegan team assumes LD12/LD17/LD19/LD21/LD23; no host-write or signer session authorization granted by merge",
+  "host_or_cloud_action": false,
+  "wallet_action": false,
+  "signing_enabled": false,
+  "initial_tested_source": "677edbe253e52c39dc891a111e6fc0542d170cb4",
+  "current_canonical_base": "f1667b2",
+  "concurrency": {
+    "original_pr217_merged_by_other_reviewer": "3b8311498a4d9decc7756ad0fafd05b6c1fa7d20",
+    "author_updated_head": "cc23894",
+    "canonical_model_drill_decisions_preserved": true,
+    "delivery": "FOLLOW_UP_PR221"
+  },
+  "intermediate_tested_source": "cefd652"
+}

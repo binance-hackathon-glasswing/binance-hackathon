@@ -28,8 +28,8 @@ def test_delivery_reconstructs_the_final_send_of_each_log():
     ]
     out = analyse.delivery(chunks, 30000, 300000)
     assert (out['logs'], out['acked_logs'], out['unacked_logs']) == (3, 2, 1)
-    assert out['dispatch_to_final_send_s']['max'] == 95.0  # the slower chunk of the first log
-    assert out['dispatch_to_final_send_s']['min'] == 65.0
+    assert out['dispatch_to_latest_attempt_clock_s']['max'] == 95.0  # the slower chunk of the first log
+    assert out['dispatch_to_latest_attempt_clock_s']['min'] == 65.0
     assert out['chunk_status'] == {'ACK': 3, 'PENDING': 1}
     assert out['attempts'] == {'1': 1, '3': 1, '2': 1, '4': 1}
 
@@ -52,7 +52,7 @@ def test_sessions_and_archive():
     assert out['count'] == 2 and out['restart_gap_s']['max'] == 10.0 and out['length_h']['max'] == 1.0
     arch = analyse.archive([[1, h + 90_000], [2, 2 * h + 30_000]],
                            [['anchor', h, 'ACK', 1, 0, ''], ['backup', h, 'PENDING', 2, 0, 'Timeout']])
-    assert arch['anchor_store_lag_after_hour_s']['max'] == 90.0
+    assert arch['anchor_stored_offset_within_hour_s']['max'] == 90.0
     assert arch['outbox']['backup'] == dict(status={'PENDING': 1}, attempts={'2': 1}, errors=1)
 
 
