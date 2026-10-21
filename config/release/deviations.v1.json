@@ -341,6 +341,21 @@
    ],
    "decided": "2026-10-19",
    "status": "DRAFT"
+  },
+  {
+   "id": "DEV-24",
+   "area": "Rehearsal",
+   "declared": "full pipeline for 5+ days including a weekend, at minimum size",
+   "v1_behaviour": "Gate B did not pass by 2026-10-21, so the D-DN-02 condition applies: the rehearsal is shadow operation plus a shorter signed window at minimum size on the development wallet, starting after the first signed agent round (LD19). The signed window may not include a weekend. Its actual start, duration and daily log are recorded as rehearsal evidence (DR-21), and the rehearsal profile's buy window needs a dated update (#120) before any signed buy.",
+   "reason": "The signed-path prerequisites (signer caps coverage, release, signer configuration, installation and key placement: LD10, LD15-LD18) were not complete by 2026-10-21. Keegan decided this fallback conditionally on 2026-10-17 (D-DN-02) and it is recorded the day Gate B was missed (GAP-04). Stays DRAFT until the actual signed window is known.",
+   "evidence": [
+    "GAP-04",
+    "GAP-62",
+    "IDEA-042",
+    "IDEA-066"
+   ],
+   "decided": "2026-10-21",
+   "status": "DRAFT"
   }
  ]
 }

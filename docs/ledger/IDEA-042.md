@@ -640,3 +640,29 @@ register edit (V1–V5):
   config binds it. The assessor services stay PROVISIONING pending LD11.
 - V5. The release-register tests and the full suite pass. The runtime's refusal of OPEN/DRAFT rows at final
   activation is unchanged; with any DRAFT row left, final activation is still refused.
+
+### GAP62-F01 results (2026-10-21)
+
+- **V1/V2.** I re-read all 23 rows on canonical `146a751` and added DEV-24 (below).
+  - **FINAL (15):** DEV-05, 06, 08–18, 20 and 21.
+    - DEV-14's reason now points at the decided DEV-18.
+    - DEV-20's reason records its finalisation.
+    - DEV-21's v1 text replaces "measured reserve and seeding values remain pending" with the LD09-B rule (reserve
+      at the cap gas price, sizing at an expected gas price, exact values pinned in the selected profile).
+  - **DRAFT (9),** each with its finalising decision in `reason`:
+    - DEV-01–04 and DEV-07: the S1 profile and exits (Keith, #120/LD11);
+    - DEV-19 and DEV-22: model adoption (LD11/LD22);
+    - DEV-23: LD05 abnormal fills and LD06 cleanup enablement;
+    - **DEV-24 (new, "Rehearsal"):** recorded today under D-DN-02 because Gate B was missed (KG-REV01), DRAFT until
+      the actual signed window is known.
+  - A side finding for KG-DEC-01: `Executor.prepare` already requires the venue's exact-payload gas estimate (the
+    Web3 API's `pre-transaction/gas-limit`) before any attempt exists, and a missing or failed estimate blocks with
+    no fallback. That is a pre-sign simulation; KG-DEC-01 is corrected separately.
+- **V3.** Declared quotes are verbatim, including DEV-24's "full pipeline for 5+ days including a weekend, at
+  minimum size". Evidence IDs resolve, `tools/render_deviations.py --write` re-rendered plan.md §6.5, and `--check`
+  passes. The JSON keeps its original formatting; one stray-indent line was normalised.
+- **V4.** `bsc-rpc` records the KG-DEC-01 execution-read approval and stays PROVISIONING. The assessor services
+  are unchanged (PROVISIONING pending LD11).
+- **V5.** Release-register tests pass; the full-suite result is in the PR. Final activation is still refused while
+  any DRAFT row remains (9 now). The final register needs the S1 profile (#120), model adoption (LD11/LD22), the
+  LD05/LD06 decisions and the actual rehearsal window before final activation (LD24).
