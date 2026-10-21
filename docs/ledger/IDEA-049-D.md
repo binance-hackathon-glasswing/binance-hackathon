@@ -823,3 +823,46 @@ Verification at `2b60387`, including merged PR199 (`db506bd`) and PR200
 Remaining owners: Isaac chooses B/watchdog/memory after operator measurements
 (LD12/LD14); operator supplies exact-host recovery evidence; Keegan reviews the
 qualified release (LD15). The bound remains unset and disabled by default.
+
+## LD14-I01 — interim rehearsal operations values and measurement plan (2026-10-21; prospective)
+
+Keegan asked for LD14 to be completed under "follow the recommended option" (2026-10-21). The recorded policy
+(PF-08, C05-RV01) holds that exact watchdog, memory and delivery-age values are MISSING_MEASUREMENT until the
+operator measures them and Isaac decides; the 600 s, 2 h and sum-of-`MemoryMax` examples are not adopted. Real ACK
+latency and per-unit RSS are unmeasured (LD12-M01-RV01). The runtime still requires `cycle_timeout_seconds` for any
+dev or live run, so the rehearsal can't be installed without one.
+
+Scope: **interim values for the signed development rehearsal only**, each derived from a measured or declared
+bound, plus the measurement plan that replaces them. Final LD14 values (LD24) remain Isaac's decision after
+measurement. Criteria, written before the derivation (I1–I5):
+
+- I1. Each value is a formula over named measured or declared inputs, with the inputs cited. None is copied from the
+  historical examples.
+- I2. Watchdog: `cycle_timeout_seconds` must exceed the worst legitimate cycle, which is the DEV-22 assessment bound
+  plus the measured non-assessment part of a cycle, with a stated margin.
+- I3. Delivery age: `delivery_age_halt_seconds` must cover the normal positive-ACK path (uploader interval, request
+  time and one transient retry) plus one complete-cycle allowance, and stay far below the hard daily upload
+  deadline.
+- I4. Memory: no change to `MemoryMax` without measurement. Keep the existing unit limits for the rehearsal, citing
+  the 43.6 h trial (no OOM or watchdog lines with these limits), and state the capacity risk (the sum of unit limits
+  exceeds host RAM; no swap).
+- I5. The measurement plan names read-only collectors, when they run during the rehearsal (LD19/LD21), the decision
+  rule Isaac applies (PF-08), and what would change each value. No config or host change is made by this record.
+
+### LD14-I01 results (2026-10-21)
+
+[LD14_INTERIM_OPERATIONS_VALUES_20261021.md](../build/LD14_INTERIM_OPERATIONS_VALUES_20261021.md):
+
+- **I1/I2.** `cycle_timeout_seconds` **300** = (DEV-22 180 s + measured non-assessment max 16.3 s) × 1.5, rounded up.
+- **I1/I3.** `delivery_age_halt_seconds` **600** = (5 s poll + 15 s request + 30 s retry + 15 s request + 300 s
+  cycle allowance) × 1.5 ≈ 548 s, rounded up. That is about 1/12 of the shortest 2 h hard-deadline window. The
+  request-time term is an assumption, measured in the rehearsal.
+- **I4.** `MemoryMax` is unchanged. The 43.6 h trial shows no OOM or watchdog lines. The capacity risk is stated:
+  the unit limits add up to 3 GiB on 2 GiB, and `larp-execution` will be added.
+- **I5.** Measurement plan. Code change: `DeliveryWorker(observe=...)`, which the uploader service journals as
+  `delivery_attempt` lines (event, chunk, attempt, code, outcome, `duration_ms`, wall time; no payload or secret). A
+  failing observer can't change delivery. `tests/audit/test_delivery_timing.py` (3 tests) passes, and the related
+  delivery, delivery-age, supervision and Gate A suites pass (112 tests).
+
+Interim values apply to the development rehearsal only. Isaac makes the final LD14 decision after the rehearsal
+measurements (PF-08).
