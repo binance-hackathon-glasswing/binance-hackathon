@@ -269,11 +269,12 @@ class PostgresExecutionTests(DatabaseCase):
         self.restart()
         with self.assertRaisesRegex(Conflict, 'quarantined'):
             self.executor.sign(key, 13)
+        economic_intent = self.executor._load(key).intent
         with self.store.transaction() as db:
             run = self.execution_store._release_authority(db, epoch, version)
             self.assertTrue(run['abnormal_outcome'])
             with self.assertRaisesRegex(Conflict, 'quarantined'):
-                self.execution_store.check_signing_run(run, self.executor._load(key).intent)
+                self.execution_store.check_signing_run(run, economic_intent)
         # Receipt publication is still possible; quarantine never hides chain facts.
         self.execution_store.put_observation(dict(event_id='later-receipt', run_id='run',
             kind='REVERT'), epoch, version)
