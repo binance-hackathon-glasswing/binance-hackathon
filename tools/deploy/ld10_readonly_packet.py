@@ -24,16 +24,27 @@ def script(profile_bytes):
     # Private review needs the public wallet address. Continue refusing secrets,
     # provider URLs and database endpoints; omit only public token image metadata.
     for record in packet['private_caps_inputs']['quote_artifacts']:
+        record['original_record_sha256'] = hashlib.sha256(
+            json.dumps(record, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         response_data = record.get('response', {}).get('data')
         rows = response_data if isinstance(response_data, list) else [response_data]
+        projected = []
         for row in rows:
             if isinstance(row, dict):
-                rr = row.get('routerResult', {})
-                for side in ('fromToken', 'toToken'):
-                    if isinstance(rr.get(side), dict):
-                        rr[side] = {k: v for k, v in rr[side].items()
-                                    if k in ('tokenContractAddress', 'decimal')}
-
+                rr, tx = row.get('routerResult', {}), row.get('tx', {})
+                projected.append(dict(executionMode=row.get('executionMode'), rfq=row.get('rfq'),
+                    routerResult=dict(fromToken={k: v for k, v in rr.get('fromToken', {}).items()
+                                                 if k in ('tokenContractAddress', 'decimal')},
+                                      toToken={k: v for k, v in rr.get('toToken', {}).items()
+                                               if k in ('tokenContractAddress', 'decimal')},
+                                      fromTokenAmount=rr.get('fromTokenAmount'),
+                                      toTokenAmount=rr.get('toTokenAmount')),
+                    tx={k: v for k, v in tx.items() if k in ('to', 'from', 'chainId', 'value', 'gas',
+                                                           'gasPrice', 'minReceiveAmount')},
+                    calldata_sha256=hashlib.sha256(str(tx.get('data', '')).encode()).hexdigest()))
+        if isinstance(record.get('response'), dict):
+            record['response'] = dict(code=record['response'].get('code'),
+                                      data=projected if isinstance(response_data, list) else projected[0])
     return packet, forbidden
 """, 1)
     source = source.replace('    print(text)\n', "    print(base64.b64encode(zlib.compress(text.encode(), 9)).decode())\n", 1)
