@@ -127,23 +127,15 @@ def refusal(store, request_id):
     return None if row is None else row[0]
 
 
-class SwapSimulationRefused(Blocked):
-    """A pre-request refusal; provider messages never enter the execution journal."""
-    def __init__(self, observed_at):
-        super().__init__('pre-sign swap simulation refused')
-        self.observed_at = observed_at
-
-
 class RemoteSigner:
     """The execution service's Signer port: asks the signer host through the database and waits a bounded time."""
     mode = 'live'
 
     def __init__(self, *, execution, guards, clock_s, timeout_s=20.0, poll_s=0.5, sleep=time.sleep,
-                 monotonic=time.monotonic, pre_sign_swap=None):
+                 monotonic=time.monotonic):
         if not timeout_s > 0 or not poll_s > 0:
             raise ValueError('Invalid signer wait budget')
         self.execution, self.guards, self.clock = execution, guards, clock_s
-        self.pre_sign_swap = pre_sign_swap
         self.timeout, self.poll, self.sleep, self.monotonic = timeout_s, poll_s, sleep, monotonic
 
     def sign(self, attempt_id, payload, epoch, guard_version):
@@ -158,29 +150,6 @@ class RemoteSigner:
         gates = self.guards.snapshot(state.intent, self.clock())
         if (gates.epoch, gates.authority_version) != (epoch, guard_version):
             raise Blocked('authorization invalidated before signing')
-        if attempt.step == 'SWAP':
-            now = self.clock()
-            gates.check(state.intent, now)
-            if gates.nonce != payload.nonce:
-                raise Blocked('wallet nonce changed before simulation')
-            if not callable(self.pre_sign_swap):
-                raise SwapSimulationRefused(now)
-            try:
-                simulated = self.pre_sign_swap(payload)
-            except Conflict:
-                raise
-            except (Blocked, OSError, KeyError, TypeError, ValueError, AttributeError):
-                raise SwapSimulationRefused(self.clock()) from None
-            if simulated is not True:
-                raise SwapSimulationRefused(self.clock())
-            # RPC I/O can consume authority time or race a HALT/nonce/owner change. Never extend #27.
-            now = self.clock()
-            gates = self.guards.snapshot(state.intent, now)
-            gates.check(state.intent, now)
-            if (gates.epoch, gates.authority_version) != (epoch, guard_version):
-                raise Blocked('authorization invalidated after simulation')
-            if gates.nonce != payload.nonce:
-                raise Blocked('wallet nonce changed after simulation')
         request_id = submit(self.execution.store, request_document(state, attempt, gates, gates.observed_at))
         deadline = self.monotonic() + self.timeout
         while True:

@@ -160,7 +160,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     epoch, _ = registry.execution_authority()
     client = Web3Client(key, secret, artifacts=Artifacts(config['market_artifact_root']))
     chain = ChainEvidence(Rpc(config['rpc_url'], artifacts=Artifacts(config['chain_artifact_root']),
-                              source_id=config['rpc_source_id'], native_trace=config.get('native_trace', False), simulation_router=config['router']))
+                              source_id=config['rpc_source_id'], native_trace=config.get('native_trace', False)))
     market = MarketPort(client, wallet, quote_limits=profile)
     decoder = router_decoder(config, rpc=chain.rpc)
     # Untrusted router (IDEA-070 B02-U): an unsettled terminal execution withholds risk authority from every intent.
@@ -174,7 +174,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
                           artifacts=str(Path(config['market_artifact_root']) / 'broadcast')), clock_s=clock_s,
                           decoder=decoder))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
-                          timeout_s=config.get('signer_timeout_seconds', 20), pre_sign_swap=venue.simulate_swap)
+                          timeout_s=config.get('signer_timeout_seconds', 20))
     try:
         executor = Executor(registry, guards, venue, signer, decoder,
                             allowance_recovery=config.get('allowance_recovery', False))

@@ -174,13 +174,7 @@ class ExecutionService:
                 recovered = self.executor.recover_signature(key, now)
                 if recovered.attempts[-1].state == 'SIGNED_DURABLE':
                     return recovered
-                from larp.execution_live.signing import SwapSimulationRefused
-                try:
-                    return self.executor.sign(key, now)
-                except SwapSimulationRefused as refused:
-                    # The existing atomic fence revokes pending requests/signatures before releasing this intent.
-                    return self.executor.abort_unbroadcast(key, max(now, refused.observed_at),
-                        reason='PRE_SIGN_SWAP_SIMULATION_REFUSED')
+                return self.executor.sign(key, now)
         if stage=='SIGNED_DURABLE':
             state=self.executor.broadcast(key,now)
             if state.attempts[-1].broadcast_at is not None and state.attempts[-1].state != 'REJECTED':

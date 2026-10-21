@@ -72,10 +72,6 @@ class LiveVenue:
         estimate=integer(single(r)['gasLimit'])
         if estimate<=0:raise Blocked('missing positive exact-payload gas estimate')
         return estimate
-    def simulate_swap(self, payload):
-        # Decode the same immutable bytes that the remote signing request binds. No quote/gas fallback.
-        self.decoder.decode(payload)
-        return self.chain.simulate_swap(payload)
     def broadcast(self,signed,epoch,guard_version):
         # The read/build client deliberately has no submission endpoint. Runtime must install a fenced
         # release boundary with durable write-ahead/round mapping after all capability gates pass.
