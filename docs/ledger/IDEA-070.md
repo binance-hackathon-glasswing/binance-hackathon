@@ -1296,3 +1296,41 @@ against the requested BUY size or SELL-of-BUY-output size before simulating and
 computing round-trip cost. A mismatched response produces a misleading cost at
 the requested denominator. Add explicit amount binding/refusal and regressions;
 original packet claims remain limited to the fields actually retained.
+
+### LD02cd-RV01 results and interpretation correction
+
+All four P2 findings are fixed in pushed source `21b8e88`. Nine regressions
+reproduced CR-P2-01–03 before repair; two amount-binding cases reproduced
+CR-P2-04. The final offline collector suite passes **41 tests /62 subtests /
+zero skips** on macOS arm64/Python3.12.14. Tests exercise the embedded collectors
+with fake external boundaries, including successful slot proof followed by
+exact-value simulation and rejection of stale/unproven candidates. Shell syntax,
+deviation rendering, whitespace and independent packet/gas arithmetic checks
+pass. This review does not rerun the author's full Linux/PostgreSQL suite on
+the repaired source. [Machine receipt](../build/evidence/pr215-review-20261021.json).
+
+**Correction to the historical R2/R3/S4/S5 interpretation above:** LD02c's keys
+0–90 are nominal schedule labels. Actual probe-start ages were not retained;
+zero-age RFQ failure, an exact TTL, and exactly-90-second usability are therefore
+NOT_MEASURED. Provider-reported expiry at each scheduled probe remains observed.
+Future collectors record actual ages since quote response, including proof and
+sequential-call delay; these are observed probe outcomes, not a guaranteed TTL.
+The three archived packet files remain byte-identical to original head1451264.
+Original Q2 FAIL remains FAIL; separately preregistered concurrent Q2b remains
+PASS. LD02d records 40 simulation attempts, 39 successful gas values and one
+MSFTB40 BUY minimum-return refusal. Its small sequential sample does not isolate
+size, route or time effects; negative quote-to-quote costs do not prove profit.
+The original guards did not enforce S5 as strongly as claimed; repaired guards
+now separate exact sentinel discovery from exact proven-slot/value simulation.
+Response amount binding is now checked, but these research packets are not
+complete production calldata/economic proof or #44 acceptance.
+
+Observed maxima remain BUY944,814 /SELL930,548, conservative pair1,000,057;
+25% margin at draft0.16gwei gives200,011,400,000,000wei. Those are proposal
+inputs, not numeric approval, receipt gas or full selected-exit/cleanup coverage.
+Keegan's separate PR216 records option B and still needs review; Keith owns
+#119/#120 and whole-run N/cleanup inputs, Isaac owns exact #44 hashes/acceptance.
+RG2-D01 remains an unbuilt proposal for Keegan's matrix/hook review; actual
+signed development-host drills and operator authorization remain separate.
+No live collector, provider/model, AWS, signer, key, funding or wallet action
+was performed during this review.

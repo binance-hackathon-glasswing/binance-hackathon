@@ -13,15 +13,15 @@ simulations at one size. LD02d added SELL simulations and four sizes and found a
 | Input | Value | Source |
 |---|---|---|
 | Approve gas (max) | 55,243 (bStocks); USDT 46,588 | LD02b/LD02b-F1/LD02c simulations, IDEA-070 |
-| Swap gas (max, BUY or SELL) | **944,814** (TSLAB BUY, 20 USDT); SELL max 930,548 (SKHYB, 10/20 USDT) | LD02d, 40 simulations, 10–100 USDT |
+| Swap gas (max, BUY or SELL) | **944,814** (TSLAB BUY, 20 USDT); SELL max 930,548 (SKHYB, 10/20 USDT) | LD02d, 40 simulation attempts (39 successful), 10–100 USDT |
 | Earlier swap observations | 423k–749k (LD02b/F1/LD02c BUY, minimum size) | IDEA-070 |
-| MSFTB | routed per quote: RFQ that reverts at 0 s in LD02c; AMM-like (about 515k) in LD02d | LD02c, LD02d |
+| MSFTB | routed per quote: RFQ refused at the first scheduled probe in LD02c (actual probe age not recorded); AMM-like (about 515k) in LD02d | LD02c, LD02d |
 | Draft signer ceilings | `max_gas` 1,200,000; `max_gas_price` 160,000,000 wei (0.16 gwei) | SP-CAPS, #44 draft |
 | Observed gas price | 0.05 gwei now; 0.053–0.062 gwei in the interim capture | LD02 packets, SP-CAPS |
 | BNB price | 722.150988 USDT | DC-01 summary |
 
-Pair gas = 55,243 + 944,814 = **1,000,057**. Swap gas depends on the route picked at quote time (TSLAB BUY ranged from
-423k to 945k), not on trade size. So the budget has to cover the worst observed route, not a typical one. With 25 %
+Pair gas = 55,243 + 944,814 = **1,000,057**. Swap gas varied across the sampled routes and sizes (TSLAB BUY ranged from
+423k to 945k). This small sequential sample does not isolate the effects of size, route or time. So the budget has to cover the worst observed route, not a typical one. With 25 %
 headroom the per-pair budget at gas price p is `G = ceil(1,000,057 × 5/4 × p)`.
 
 **Cap margin (for Isaac, LD10):** 944,814 × 1.25 = 1,181,018, which is 1.6 % under `max_gas` 1,200,000. A route about
@@ -58,11 +58,14 @@ about 6.7 bp, so Keith may want to refresh that spread input.
   0.08 gwei fits (16.80). The signer cap stays 0.16 gwei either way. No code change.
 - **B. Decouple (recommended):** keep the exit reserve at the cap price (4G/5G at 0.16 gwei = 8.00e14 / 1.00e15 wei),
   and base the minimum-trade economics on a separate, sourced "expected" pair cost (for example 0.064–0.08 gwei). The
-  exit guarantee then holds at the signer's worst case, and trade sizing reflects realistic cost. This needs a small
+  reserve then covers the declared action-count/gas-price assumptions; it does not guarantee execution or full
+  exit coverage. Actual child actions, cleanup, retries and unseen heavier routes still require review. Trade
+  sizing uses an expected cost assumption rather than the reserve cap. This needs a small
   reviewed change in `validate_live`/`build_live_profiles` (a second sourced profile value) before the cut line.
 - **C. Refresh or exclude MSFTB:** a refreshed MSFTB spread (LD02d suggests about 7 bp round trip, versus 17 bp in
-  DC-01) or excluding MSFTB lowers the worst-case minimum to 33.60 USDT at the cap. That alone still doesn't fit
-  either profile at 0.16 gwei. It combines with A or B.
+  DC-01) or excluding MSFTB lowers the worst-case minimum to 33.60 USDT at the cap. That remains too large for the 20-USDT rehearsal position, while it is below the 40-USDT final EW position.
+  Exclusion would require a separate universe/weight decision: PF-01 currently selects all five names. It is not
+  adopted here.
 
 ## Seeding (LD07 criterion 3), at the cap price with margin 5/4
 
@@ -76,13 +79,27 @@ about 6.7 bp, so Keith may want to refresh that spread input.
 | 100 | 25,801,470,600,000,000 | 0.02580 | 18.63 |
 
 N (whole-run approve+swap pairs, including exits and expected failures) is Keith's strategy input. The development
-wallet's current 0.0027 BNB covers 13 pairs at the cap price, or 43 at 0.05 gwei.
+wallet's recorded approximately 0.0027 BNB covers about 13 gross nominal pairs at the cap price, or 43 at
+0.05 gwei, before retaining the separate exit reserve or adding cleanup/retry costs. Those are not spendable-action
+counts or a seeding approval. Four/five nominal pairs do not prove exit-child coverage under appreciated holdings
+and per-action caps; Keith/Isaac must enumerate the complete selected action set.
 
 ## Still not covered
 
 - Simulated gas is not receipt gas. The first signed round (LD19/LD20) gives the first receipts to compare against.
-- Reverts: a swap that reverts on chain still spends gas up to the revert. LD02c's RFQ routes reverted even at 0 s,
+- Reverts: a swap that reverts on chain still spends gas up to the revert. LD02c's RFQ routes were refused at the first scheduled probe (actual zero-age usability is unmeasured),
   and LD02d's MSFTB 40-USDT BUY reverted on its minimum return. A pre-sign simulation of the exact calldata (not
-  implemented) would avoid paying for those.
+  implemented) can detect some failures at the checked state; later state changes, timing and routing still permit
+  on-chain reverts and gas costs.
 - LD06 cleanup approvals (zero allowance) cost about one approve each; add them to N if cleanup is enabled.
 - Five symbols × four sizes is still a small sample of routes. A heavier route than 944,814 may exist.
+
+## Review clarification — LD02cd-RV01
+
+This is a proposal using observed simulated gas, not an approved numeric policy.
+Its 25% headroom is proposed here; PF-01's earlier 20% direction does not itself
+approve these new budgets or signer caps. PR216 separately records Keegan's
+option-B implementation; Keith #120 and Isaac #44 acceptance still remain.
+Historical LD02c packets store nominal delay labels, not actual probe ages; do
+not infer a zero-second RFQ lifetime. Future collectors now record actual ages.
+Original packet bytes and the Q2 FAIL/Q2b amended PASS remain unchanged.
