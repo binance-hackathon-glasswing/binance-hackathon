@@ -1373,3 +1373,63 @@ explicit blocker; neither #44 nor #120 is closed.
 P02 report SHA-2569f535602ff0d8543c6d8ad15c35052d0842c19418abe5be5128873197b6a27f0;
 repeat bytes, canonical input hashes, original P01 JSON, false flags and new
 local links/whitespace checks PASS. The updated PR230 preserves full history.
+
+## LD10-P03 — complete-position exit sizing, count and reserve (2026-10-21, prospective)
+
+Keegan asks for a reviewed complete-exit disposition for LD10-P02 under his
+delegation. Inspection of the actual path before any change:
+
+- Planner mandatory SELL sizing caps a child at `per_trade_cap_units` at the mark,
+  leaving `quantity - q` for later rounds; `_quote_at_cap` then shrinks an over-cap
+  quote to the exact cap ratio. Either step can leave an arbitrarily small residual
+  (for the P02 NVDAB numbers about 0.035% of the position, ~0.007 USDT). Its quote
+  may be unroutable or zero-output, and its gas exceeds its value.
+- `MarketPort._executable_quote` validates every quote with `_quote_at_cap` as a
+  non-mandatory consumer. An over-cap SELL is therefore refused before the planner
+  can request a smaller size; the next round re-requests the same size. A
+  mandatory exit whose impact exceeds the 2 bp profile impact limit is likewise
+  refused although the planner accepts mandatory impact. Both are liveness holds,
+  not signed over-cap trades (service and LiveVenue still refuse over-cap).
+- The selected reserve assumes one approve+swap action per exited position.
+
+Decision (recommended, adopted under delegation; limits unchanged):
+
+1. D1 balanced exit children. A mandatory SELL of remaining quantity R with mark
+   value V uses k = ceil(V × 10100 / (10000 × cap)) children and sizes this child
+   floor(R / k). The 100 bp headroom keeps a child's mark value at most cap/1.01;
+   every child of a split position is above cap/2.02 (≈9.95 USDT). Unsplit
+   positions (V ≤ cap/1.01) exit in one child. Discretionary SELL/BUY sizing is
+   unchanged. An over-cap mandatory SELL quote is resized to floor(pay / k') with
+   k' = ceil((cash + fee) / cap), never to a cap-ratio residual.
+2. D2 consumer parity in MarketPort: validate with the request's own `mandatory`
+   flag. Cash cap, slippage, freshness and route checks are unchanged; a quote
+   above the cap is still refused and retried at the next fresh mark.
+3. D3 count/reserve: at most four EQUAL_WEIGHT positions; hard-name trims bound a
+   pre-flatten position at 1/4 of safe equity, so k ≤ 2 while V ≤ 39.80 USDT
+   (safe equity below about 159 USDT). Selected rehearsal reserve becomes
+   4 × 2 × 384,000,000,000,000 = 3,072,000,000,000,000 wei. Planning target for N=15
+   whole-run pairs plus the reserve: 23 × 0.000384 = 0.008832 BNB; additional
+   against the dated 14:10Z balance 0.006137501130637114 BNB. Not funded here.
+4. D4 timing: each child is its own command with the unchanged 660 s authority;
+   one child per 15-minute cadence round means at most eight sequential exit
+   rounds (≥2 h) inside the 14.75 h flatten window. No authority change.
+5. D5 review/probe: `caps_review` replays D1 on the largest recorded SELL per name
+   and requires covered child quotes (≤ cap) that sum to the full position, with
+   child count ≤ the reserve's per-position bound; the full-size quote is sizing
+   evidence only. The read-only probe requests those child sizes.
+
+Pass criteria before running anything:
+
+- RED first on the pushed base: (a) a mandatory exit worth 1.5 × cap leaves a
+  residual below half the position, (b) a terminal exit whose quote is slightly
+  over cap requests a cap-ratio residual, (c) MarketPort refuses a mandatory
+  high-impact exit quote, (d) caps_review blocks the P02-shaped full SELL even
+  with covered children, (e) the rehearsal reserve is 4 × action.
+- GREEN: all five pass; children sum exactly to the position; no child or
+  quote above cap is ever planned, validated or reviewed as covered; discretionary
+  behaviour, BUY sizing and existing cap/slippage refusals are unchanged; focused
+  planner/port/caps/profile/assembly suites and the full local suite pass with
+  explicit skip accounting.
+- New rehearsal profile and scope are written to a new evidence directory; the
+  selected P02/Q01/RC2 files stay byte-identical. No fresh quotes, owner
+  acceptance, release qualification, host, key, funding or trade is claimed.
