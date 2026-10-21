@@ -12,13 +12,13 @@ branch or certify a deployment. Historical results retain their exact identities
 | Lane | Retained state / next action |
 |---|---|
 | LD01/04/06/07/13 | PR198 mode-aware reports, PR200 finite authority, PR202 cleanup, PR199 initial-only scope and PR201 delivery-age controls are merged. Measured settings and applicable host acceptance remain. |
-| LD02/03 | PR205 retains observed packet and named router policy review (`05759e90…`). PR211 fresh-calldata/gas follow-up merged at0c1c77a after LD02b-RV02 fixes; gas simulations are not fills or complete full-exit coverage. |
+| LD02/03 | PR205 retains observed packet and named router policy review (`05759e90…`). PR211 merged at0c1c77a; PR215 merged atc854c82 after four collector repairs (LD02cd-RV01). Read-side Q2 FAIL/Q2b amended PASS; historical actual RFQ ages unmeasured. Simulations are not fills or complete execution/finality/full-exit qualification. |
 | LD05 | PF-01 selects accurate anomalous accounting plus sustained quarantine; Keith implements/tests, Keegan reviews. |
 | LD08 | PR207 contains PR203 and adds durable low-gas/alarm/action-budget controls. Code is merged at91d4b0a; measured inputs and actual alarms/exits remain. |
-| LD09/10/11 | DC01 capture is complete; current-size/full-exit costs, usable gas, actual S1 weights/profile and exact #44 hashes remain. PF-01 settles O1–O6 policy preferences, not implementation/economic proof. |
+| LD09/10/11 | DC01 capture complete; PR215 adds 39 successful gas values/one refusal from 40 attempts, max BUY944,814/SELL930,548. Current full-exit/cleanup costs, actual S1/profile and #44 remain. PR216 option-B implementation is retargeted to canonical for review; proposal inputs do not approve numeric budgets. PF-01 settles O1–O6 preferences, not economic proof. |
 | LD11/12 | PR204 audit/43.56h retirement is merged. PR206 implements repository repairs; private replays/labels/billing/rights and acceptance remain. Frozen trial evidence is unchanged. |
 | LD04-P/15 | PR210 profile authority builder/provenance is merged at88c5544; initial-only+L/m candidates reproduce exactly. Actual measured S1/fallback profile/calendar and #120 adoption remain. [LD15 checklist](LD15_SIGNED_RELEASE_CHECKLIST.md) is prepared; dry-run bundle is not a qualified release. |
-| LD14–24 | Numeric ops settings, exact signed release/config/session, first real round/ACK, protected key placement, signed drills and final acceptance remain with existing owners. Draft PR212 supplies partial drill harnesses. |
+| LD14–24 | Numeric ops settings, exact signed release/config/session, first real round/ACK, protected key placement, signed drills and final acceptance remain. Draft PR212 supplies partial harnesses; PR215 RG2 is design only. PR217 proposes operator/measurement updates, pending review rather than accepted signer/host authority. |
 
 [PF-01](../ledger/IDEA-084.md) and the [live backlog](../INCOMPLETE_WORK.md)
 resolve current policy and remaining work. [CONS-02](CONSOLIDATION_20261021.md)

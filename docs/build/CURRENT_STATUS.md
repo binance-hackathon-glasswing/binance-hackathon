@@ -25,7 +25,9 @@ separate review queues. [Retention/evidence](CONSOLIDATION_20261021.md),
 [delegated policy](../ledger/IDEA-084.md) and
 [signed release procedure](LD15_SIGNED_RELEASE_CHECKLIST.md).
 PR203 is superseded by PR207, whose history contains its exact head.
-Active code reviews: PR206 and draft PR212. PR207, PR210 and PR211 are merged. Their checks apply only
+Active reviews: draft PR206, draft PR212, PR216 and PR217. PR216 was retargeted
+from merged PR215 to canonical; its implementation is not accepted by PR215.
+PR207, PR210, PR211 and PR215 are merged. Their checks apply only
 to their recorded sources; no combined release or hosted acceptance is implied.
 
 ## Repository scope retained
@@ -103,6 +105,19 @@ candidate hashes are unchanged. Full local macOS/Python3.12/PostgreSQL14.24:
 2283 tests/3730 subtests PASS,10 explained external/platform skips.
 [Review receipt](evidence/pr210-review-20261021.json). This is not signed release,
 measured gas/S1/profile adoption, Linux/systemd or host qualification.
+
+PR215 merged at `c854c82` after LD02cd-RV01 repaired four P2 collector issues:
+pre-format privacy filtering, exact proven-slot/value overrides, actual RFQ
+probe-age reporting and response amount binding. Pushed source `21b8e88`:
+41 offline tests/62 subtests/zero skips on macOS arm64/Python3.12.14; no repaired-
+source full-suite claim. [Review receipt](evidence/pr215-review-20261021.json).
+Archived packets are unchanged: Q2 FAIL/Q2b amended PASS; historical actual
+RFQ ages remain unmeasured. LD02d contributes 39 successful gas values plus one
+refusal from 40 attempts, with max BUY944,814/SELL930,548. These do not establish
+size independence, profit, numeric caps or full exit coverage. Gas-budget
+proposal and RG2 crash design remain proposals. Actions39556642979 executed
+zero steps due account billing/spending limits. PR217's operator/measurement
+record is pending review, not accepted signer/host access or timing qualification.
 
 ## What still blocks installation / live acceptance
 

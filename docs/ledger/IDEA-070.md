@@ -1334,3 +1334,11 @@ RG2-D01 remains an unbuilt proposal for Keegan's matrix/hook review; actual
 signed development-host drills and operator authorization remain separate.
 No live collector, provider/model, AWS, signer, key, funding or wallet action
 was performed during this review.
+
+LD02cd-RV01 delivery: PR215 APPROVED and MERGED at `c854c82` on
+2026-10-21T06:39:33Z, exact reviewed head `36d4c1a` (executable/test source
+`21b8e88`; later changes docs only). Actions39556642979 ran zero steps because
+account payments/spending limits blocked startup, not a passing CI run.
+Stacked PR216 is retargeted to canonical for its own independent review;
+PR217 operator/measurement record remains pending. Canonical status/plan and
+PR133 noticeboard retain these scoped results and the remaining owner gates.
