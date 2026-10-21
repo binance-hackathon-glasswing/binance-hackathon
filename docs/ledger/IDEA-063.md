@@ -399,3 +399,24 @@ used. A secret scan of the uploaded text files (credential, key and authorizatio
 nothing. The only address is the public development wallet, which is already in canonical docs. The upload isn't on
 canonical, and no history was rewritten. Whether to keep those root files on `main` or remove them with a normal
 revert commit is Keegan's choice; the ZIP on `capture` is the archival copy.
+
+## RV120-01 — #120 owners' review of the DC-01 quote-cost summary (2026-10-21; prospective)
+
+This review was prepared in Keegan's session under his delegation ("follow the recommended option"), from the
+DC-01 capture contents: the four daily JSONL files, manifest `b17002b0…ffc01`, the same capture as ZIP-01 and
+DC-01-R1. **Isaac and Keith remain the #120 owners and confirm or amend.** Criteria, written before the analysis
+(C1–C7):
+
+- C1. Coverage from the raw files: samples per token and regime, UTC days, weekend days, failures, fallback gas
+  estimates and `openState` counts per regime. These must match the committed report.
+- C2. Quote size against the per-trade caps: the 40 USDT quote compared with the final (40.2 USDT) and rehearsal
+  (20.1 USDT) caps, with LD02d's size sweep as the evidence for using the 40 USDT figures at other sizes.
+- C3. Distributions behind each rounded summary value, per token and regime: round trip, spread residual, impact
+  and 15 s requote drift (p10/median/p90/max). Each worse-of-regime value must be explained, MSFTB's 17 bp included.
+- C4. The 50 bp entry-cost cap checked per token with the profile formula
+  (`spread + min(50, 2 × impact) + fee + gas/size`). This uses the LD09-B sizing gas (0.064 gwei) and the cap gas
+  (0.16 gwei), at 18.64, 20 and 40 USDT, plus a tail check with the off-session p90 round trip.
+- C5. Slippage: the 8 bp setting compared with the drift distribution, and the expected revert rate stated.
+- C6. Fee (#119) and gas: state what the capture can and can't show; the gas figures come from LD02b–d via LD09-B.
+- C7. Recommendations as proposals for the owners: profile choice for the rehearsal, rehearsal window dates and
+  seeding N, each with its derivation. Nothing is pinned, released or approved by this record.
