@@ -337,3 +337,32 @@ and the minimum trade is 46.60 USDT (33.60 without MSFTB). That refuses both the
 (40 USDT) positions. Option A now needs a budget price of at most about 0.064 gwei. Option B (decouple) stays
 recommended. The 1.25× headroom swap limit (1,181,018) is 1.6 % under the draft `max_gas`; this is flagged for
 Isaac (LD10).
+
+## LD09-B — decision B adopted and its implementation (2026-10-21; prospective)
+
+**Decision (Keegan, 2026-10-21):** LD09-G1 option B. The exit reserve and the action budget stay at the signer's cap
+gas price. Minimum-trade sizing uses a separate, sourced pair budget at an expected gas price. Values from the
+LD09-G1 revision 2 inputs (IDEA-070 LD02d maximum, pair gas 1,000,057, 25 % headroom):
+
+- action budget at 0.16 gwei (draft `max_gas_price`): `gas_action_budget_units` = 200,011,400,000,000 wei;
+- sizing budget at 0.064 gwei: `gas_sizing_budget_units` = 80,004,560,000,000 wei. 0.064 gwei is the observed
+  0.05 gwei rounded above the interim capture's 0.053–0.062 gwei range. It is also the highest price at which the
+  20-USDT rehearsal position fits with DC-01's MSFTB spread. Keith can replace it with a measured value for #120.
+
+**Pass criteria, written before the code (B1–B6):**
+
+- B1. `validate_live` accepts an optional `gas_sizing_budget_units` only on initial-only profiles. It must be a
+  positive integer with provenance, at least the quote summary's measured pair and at most `gas_action_budget_units`.
+  Otherwise the profile is refused.
+- B2. With the sizing budget present, minimum-trade feasibility uses it. The exit-reserve check (4×, S1 5×) still
+  uses `gas_action_budget_units`, and so do `InitialGasCheck` and the planner's reserve. Without it, behaviour is
+  unchanged: the existing tests pass and the committed DC-01 and LD04-P candidates reproduce byte for byte.
+- B3. `build_live_profiles(..., gas_budget={action_units, sizing_units, decision_id, data_hash})` is allowed only
+  with `initial_gas_only`. It sets both budgets and a reserve of 4× (S1 5×) the action budget, and computes the
+  minimum trade from the sizing budget. The CLI flags `--gas-action-budget-units`, `--gas-sizing-budget-units`,
+  `--gas-budget-decision` and `--gas-budget-evidence` must be supplied together.
+- B4. Candidates rebuilt from the committed DC-01 summary with initial-only scope, L = 660 / m = 30 and the B values
+  build and validate for both environments. Expected values: minimum trade about 18.64 USDT, EW reserve
+  800,045,600,000,000 wei. Their hashes are recorded, and they are evidence candidates only.
+- B5. Tests cover B1–B3: refusals, unchanged behaviour without the key, and the reserve still using the action budget.
+- B6. The full suite passes.
