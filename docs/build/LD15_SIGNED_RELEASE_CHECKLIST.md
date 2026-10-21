@@ -106,3 +106,14 @@ does not carry over.
 
 The dry run shows the builder works on current canonical and that the CA and Python pins are unchanged. It
 qualifies nothing: §1 inputs are still open.
+
+## RC1 — canonical `0ba4f44` (2026-10-21, mirror CI, candidate only)
+
+- Mirror [run 39601143671](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39601143671): all four §3
+  jobs passed.
+- Artifact 12345743795: zip `83addcc6…e1b3`, bundle `b3b4fad3…2414`, manifest `9e7bb0df…68fe`, CA `d7389074…`
+  (unchanged).
+- Record: IDEA-083 AB-REL-RC1.
+- **Not the release.** §1 still lacks Keith's #120/DEV-24 window and rebuilt profile, LD05, the LD11 scope, LD10
+  coverage, PS-01 if adopted, and the DRAFT deviation decisions. Any of these that changes a tracked file needs a new
+  candidate and run.
