@@ -23,6 +23,20 @@ def _request(symbol, side, pay_units, m, mandatory):
             "mandatory": mandatory}
 
 
+EXIT_SPLIT_HEADROOM_BPS = 100
+
+
+def exit_parts(value_units, cap_units):
+    """Balanced child count for a mandatory exit worth `value_units` (LD10-P03 D1).
+
+    Each child stays at most cap/1.01 at the valuation used, so a quote slightly above
+    the mark still fits the cap; a split never leaves a residual below cap/2.02."""
+    if (type(value_units) not in (int, Fraction) or value_units < 0
+            or type(cap_units) is not int or cap_units <= 0):
+        raise ValueError("Exit split needs a non-negative value and a positive cap")
+    return max(1, ceil(Fraction(value_units) * (10000 + EXIT_SPLIT_HEADROOM_BPS) / (10000 * cap_units)))
+
+
 def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
     """Walk observed smaller exact-in quotes; otherwise request the next size."""
     rejections = []
@@ -63,6 +77,10 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
             rejections.append("BUY_RECEIVE_TARGET_REQUOTE")
         elif cash + fee <= p["per_trade_cap_units"]:
             return quote, None, rejections, "PENDING"
+        elif side == "SELL" and mandatory:
+            # A cap-ratio resize would leave an arbitrarily small, possibly unroutable residual.
+            smaller = min(pay_units - 1, pay_units // exit_parts(cash + fee, p["per_trade_cap_units"]))
+            rejections.append("EXECUTABLE_TRADE_CAP")
         else:
             smaller = min(pay_units - 1, floor(Fraction(pay_units * p["per_trade_cap_units"], cash + fee)))
             rejections.append("EXECUTABLE_TRADE_CAP")
@@ -382,7 +400,11 @@ def plan(snapshot, proposal_or_none):
         if m is None:
             continue
         notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
-        q = min(quantity, floor(Fraction(notional_cap) * 10**m["decimals"] / m["price_units"]))
+        if side == "SELL" and mandatory:
+            # LD10-P03: balanced children; every child of a split exit stays economically executable.
+            q = quantity // exit_parts(value(quantity, m), p["per_trade_cap_units"])
+        else:
+            q = min(quantity, floor(Fraction(notional_cap) * 10**m["decimals"] / m["price_units"]))
         req = next((r for r in result["requirements"] if r["symbol"] == symbol), None)
         if q <= p["dust_units"] or q <= 0:
             if req is not None:

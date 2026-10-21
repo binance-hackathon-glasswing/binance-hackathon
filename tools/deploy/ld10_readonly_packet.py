@@ -9,6 +9,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# LD10-P03 D5: the installed host build predates the balanced exit split, so the probe
+# carries this self-contained copy; tests pin it to caps_review.exit_children.
+EXIT_CHILDREN = """
+def exit_children(whole, proceeds, cap_raw, limit):
+    children, remaining = [], whole
+    while remaining and len(children) < limit:
+        value = proceeds * remaining
+        parts = max(1, -(-value * 10100 // (whole * 10000 * cap_raw)))
+        children.append(remaining if parts == 1 else remaining // parts)
+        remaining -= children[-1]
+    return children + ([remaining] if remaining else [])
+"""
+
 
 def script(profile_bytes):
     source = (ROOT / 'docs/build/ops/ld02-20261020/execution-packet.sh').read_text()
@@ -17,6 +30,20 @@ def script(profile_bytes):
     needle = "    driver = config['driver']\n"
     source = source.replace(needle, "    selected_raw = base64.b64decode(SELECTED_PROFILE_B64)\n    profile = json.loads(selected_raw)\n" + needle, 1)
     source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if not isinstance(v, str) or v.lower() not in (wallet, wallet[2:])]\n", 1)
+    loop = ("        for side, units in (('BUY', minimum), ('BUY', cap), ('SELL', None)):\n"
+            "            if side == 'SELL':\n                units = sell_units\n")
+    assert source.count(loop) == 1
+    source = source.replace(loop, "        steps = [('BUY', minimum), ('BUY', cap), ('SELL', None)]\n"
+        "        for side, units in steps:\n            if side == 'SELL' and units is None:\n"
+        "                units = sell_units\n", 1)
+    # Request every planned balanced child of the full-size exit after its sizing quote.
+    child = "                row = quote_row(symbol, side, units, amount, decimals, record, module, TOKENS, USDT)\n"
+    assert source.count(child) == 1
+    source = source.replace(child, child +
+        "                if side == 'SELL' and len(steps) == 3:\n"
+        "                    steps.extend(('SELL', c) for c in sorted(set(exit_children(\n"
+        "                        units, row['receive_units'], cap * 10**12, 2))) if c != units)\n", 1)
+    source = EXIT_CHILDREN + source
     source = source.replace("                if side == 'BUY' and units == minimum:\n",
         "                if side == 'BUY':\n                    sell_units = max(sell_units or 0, row['receive_units'])\n"
         "                if side == 'BUY' and units == minimum:\n", 1)

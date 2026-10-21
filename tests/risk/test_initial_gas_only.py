@@ -10,7 +10,7 @@ import pytest
 from larp.contracts import ContractError, Document
 from larp.execution import Blocked, NATIVE_BNB, Payload, USDT
 from larp.execution_live.service import map_command
-from larp.research.fixtures import changed
+from larp.research.fixtures import changed, with_quotes
 from larp.risk.planner import plan
 from larp.signer.policy import SigningPolicy
 from larp.strategy.policy import decide
@@ -38,6 +38,13 @@ def result(*, bnb, held=None):
     c['portfolio']['bnb_units'] = bnb
     s = replace(changed(s, profile=p, portfolio=c['portfolio']),
                 policy_profile_hash=Document.from_dict(p).digest('StrategyProfile.v1'))
+    # Quote this profile's own planned sizes; mandatory exit children follow the remaining quantity.
+    s = with_quotes(s)
+    c = s.context.read()
+    for m in c['markets']:
+        for q in m['quotes']:
+            q['origin'] = 'WEB3_OPEN_API'
+    s = changed(s, markets=c['markets'])
     return plan(s, decide(s, s.policy_state)).read()
 
 
@@ -155,8 +162,9 @@ class InitialCaps(unittest.TestCase):
         fixture.profile['gas_sizing_budget_units'] = old_pair
         fixture.profile['provenance']['gas_sizing_budget_units'] = {'decision_id': 'SYNTHETIC LD10', 'formula': 'expected pair'}
         fixture.profile['gas_action_budget_units'] = fixture.config['gas_budget']
-        fixture.profile['exit_gas_reserve_units'] = 4 * fixture.config['gas_budget']
-        fixture.ledger['bnb_units'] = 3 * 10**15
+        # LD10-P03: four positions x two balanced exit children per signed-child action.
+        fixture.profile['exit_gas_reserve_units'] = 8 * fixture.config['gas_budget']
+        fixture.ledger['bnb_units'] = 4 * 10**15
         fixture.policy['allowed_tokens'].remove(NATIVE_BNB)
         fixture.inputs['quote_artifacts'] = [r for r in fixture.inputs['quote_artifacts'] if r['path'] != 'BNB.json']
         fixture.save_inputs()

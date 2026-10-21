@@ -276,15 +276,20 @@ class RiskTests(unittest.TestCase):
         self.assertFalse(r["intents"])
 
     def test_better_sell_price_requests_smaller_quote_and_can_progress(self):
+        # LD10-P03: balanced children keep 1% mark headroom, so only a quote more than 1% above
+        # the mark exceeds the cap; it is resized to a balanced part, never a cap-ratio residual.
+        first = plan(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}),
+                     None).read()["quote_requests"][0]["pay_units"]
         s = with_quotes(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}),
-                        policy=False, spread_bps=-7)
+                        policy=False, spread_bps=-300)
         r = plan(s, None).read()
         self.assertFalse(r["intents"])
         q = next(q for q in r["quote_requests"] if q["symbol"] == "NVDAB")
         self.assertLess(q["pay_units"], 1500)
+        self.assertEqual(q["pay_units"], first // 2)
         self.assertEqual(r["requirements"][0]["status"], "REQUOTE_REQUIRED")
         # New observed exact-size quote, not a fabricated proportional fill.
-        following = with_quotes(s, policy=False, spread_bps=-7)
+        following = with_quotes(s, policy=False, spread_bps=-300)
         r = plan(following, None).read()
         self.assertTrue(r["intents"])
         self.assertLessEqual(r["intents"][0]["cash_units"] + r["intents"][0]["fee_units"], 15_000_000)

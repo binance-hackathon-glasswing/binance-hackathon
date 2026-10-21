@@ -281,7 +281,7 @@ class MarketPort:
             raise Unavailable('independent policy quote limits required')
         test = _quote_at_cap(dict(observation, quotes=[quote]), side, request['pay_units'],
                             self.quote_limits,
-                            now, quote['token_units'])
+                            now, quote['token_units'], request.get('mandatory') is True)
         if test[0] is None:
             raise Unavailable('quote fails consumer validator')
         observation.update(quotes=[quote], quote_status='VERIFIED_EXECUTABLE')
