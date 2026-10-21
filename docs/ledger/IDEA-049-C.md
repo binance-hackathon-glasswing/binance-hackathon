@@ -1598,3 +1598,23 @@ integer/identity/false-flag checks PASS; no unrelated test rerun or release clai
 SJ-02-U1 user confirmation (2026-10-22SGT): no additional dev seed; separate
 live-challenge wallet must not be used yet. Restrict current work to dev;
 no live-wallet input/access/funding/registration/activation is authorized here.
+
+## SJ-03 — verify completed additional dev gas seed (2026-10-22, prospective)
+
+Isaac supplies new hash0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d,
+reports96USDT remaining and a MetaMask confirmed screenshot:2USDT sent,
+0.00264317BNB displayed received,Oct22 01:27SGT,BNB Chain/dev account.
+Before verification: at most40 read-only calls to existing public BNB Chain
+primary,20s/no retries/redirects/credentials. Use pushed production ChainEvidence
+receipt and read_balances: require chain56, exact tx/sender/hash, successful
+canonical finalized inclusion, immutable block recheck, exact USDT Transfer-log
+net debit, actual current finalized all-asset balances/nonces, six router
+allowances and selected-profile exit-reserve comparison. Distinguish receipt
+network gas from UI fee-token economics. Treat displayed native output as
+attributed rounded UI evidence; do not infer transaction-local native credit
+from whole-block or current balance differences. No tracing qualification,
+wallet signing/key access, funding action, AWS/host/ledger or live-wallet access.
+Record actual funding note and clear only the completed dev seed/snapshot
+slice; hosted post-funding reconciliation/private current quotes/owner and
+run/config bindings remain until actually supplied. No historical quote date,
+portfolio identity or 92-check result is rewritten to claim a new full pass.
