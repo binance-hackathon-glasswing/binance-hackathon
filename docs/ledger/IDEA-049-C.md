@@ -1561,3 +1561,22 @@ for mirror metadata; no independent artifact download/CI rerun is claimed.
 Task2 qualification is delivered; no duplicate pre-funding primary capture is
 requested. Task1 reserve/review and LD16 private bindings/assembly remain;
 installation/key/first-round tasks stay outside the user's preparation scope.
+
+## SJ-02 — Isaac's remaining signer funding work (2026-10-22, prospective)
+
+Isaac asks the assistant to help with his remaining signer-preparation tasks.
+Before new reads: use only pushed production read_balances/Rpc code against
+the existing public BNB Chain primary and registered development public wallet;
+at most25 read-only calls,20s per call,no retries/redirects/credentials/signing.
+Require chain56, finalized block/hash recheck, all six token balances/decimals
+and latest/pending nonce; compare the actual BNB balance with selected PR235
+exit reserve and the separately recorded whole-rehearsal target. Preserve public
+observations privately and report source/block/time/hash. Do not infer actual
+host reservations, unused signing authority or first-trade eligibility from
+nonce/balance reads alone. No wallet transaction, key, funding, host change,
+new paid quote or official ai-seeds log. No new trading policy or gas cap.
+Checked source_page dedicated-wallet text, verbatim kit trading guide gas text,
+SKILL F120/G13/Q03 and the FG02 handoff. The operator eligibility confirmation
+and any wallet swap remain with their human owners; never mark them complete
+from this read-only preflight. If an additional funding hash exists, verify it
+separately rather than assume another swap is needed.
