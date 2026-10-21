@@ -225,3 +225,11 @@ additional0.004601501130637114BNB is a separate funding-owner action.
 LD05 abnormal raw-outcome/gas accounting and durable signing quarantine are implemented;
 current exact-source mirror qualification and LD15 artifact record are in progress.
 No host write, signer-host/key access, wallet operation or paid model call occurred.
+
+
+2026-10-21 AB-REL-RC2 latest: PR231 source a8bdaf7 remains unmerged (canonical f10d9ad).
+[Receipt](evidence/ab-rel-rc2-20261021.json): all required commands pass,2416 tests plus
+systemd/Docker; original artifact12352148043 ZIP/bundle/manifest and244 checksums verified.
+GitHub runtime status remains in_progress; auto-review rejected merging before its
+final green conclusion. LD15 canonical qualification therefore remains OPEN.
+Selected inputs are the three `-deterministic` files; older candidates are historical.

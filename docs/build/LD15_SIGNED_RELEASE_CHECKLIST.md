@@ -148,3 +148,14 @@ packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes
 50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
 binding is historical and superseded. Selected public coverage/scope files use the
 `-deterministic` name (see packet README); private packet/review remain outside Git.
+
+
+### RC2 current outcome — merge blocked on CI conclusion
+
+[Public receipt](evidence/ab-rel-rc2-20261021.json) records exact source a8bdaf7,
+mirror39614839775 and verified original artifact12352148043. All required commands
+pass (2416 runtime tests,5 systemd tests,demo,Docker; all244 original bundle file
+checksums). Runtime job/run metadata remains in_progress, so this is not a finalized
+four-job PASS. Auto-review refused merging PR231 on that unresolved prerequisite.
+LD15 remains OPEN on finalized green status/approved merge and canonical artifact
+qualification, then the separate owner/config/install gates. No installation approved.

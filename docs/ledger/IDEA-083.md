@@ -824,3 +824,35 @@ packet at14:10Z rechecks all holdings/nonce/allowances and15 max-position quotes
 50/50 numeric checks COVERED under exact CAP-02 policy. Earlier bad7f160 profile
 binding is historical and superseded. Selected public coverage/scope files use the
 `-deterministic` name (see packet README); private packet/review remain outside Git.
+
+
+### AB-REL-RC2 exact-source command/artifact receipt (2026-10-21)
+
+Source a8bdaf7c1440137beb9bd0be56c4052e01cc7342, PR231, mirror39614839775.
+Runtime logs:2416 passed/7 skips/3808 subtests/0 failures; real-systemd5 passed/5
+subtests; demo/Docker build/run SUCCESS; all16 runtime steps completed/success.
+The other three jobs have SUCCESS conclusions. GitHub still reports runtime/run
+in_progress after its final log14:22:47Z; this is explicitly NOT a finalized four-job
+PASS. Automatic approval review rejected merging because that required conclusion
+is unresolved. No merge or canonical qualification was performed; canonical is f10d9ad.
+
+Original artifact12352148043 downloaded through GitHub connector, retained locally
+at /workspace/scratch/rehearsal-pr231-artifact.zip and extracted original files at
+/workspace/scratch/rehearsal-pr231-original. ZIP fe40e82d…d57, bundle4695dd39…e773,
+manifest11eedfbd…ed49; original zip digest matches GitHub, all244 bundle file hashes
+PASS, inner manifest equals published file, BUNDLE.env identifies a8bdaf7/x86_64/
+Python3.12.15 and unchanged CA d7389074… . No local rebuild for installation.
+Complete public identities/results/limitations: [AB-REL-RC2 receipt](../build/evidence/ab-rel-rc2-20261021.json).
+
+Local full run:2414 passed/7 skips/3808 subtests,2 sandbox failures caused by this
+container's read-only uid-map restriction (direct bwrap reproduction). Do not call
+it a full pass. The corresponding tests pass in mirror logs. Final scoped DB/profile/
+permission/restart/replay tests105 passed/259 subtests; earlier real-role set53/241.
+The disposable local PostgreSQL container is removed; private captures/review remain
+under /workspace/scratch/ld10-final-private.json and /workspace/scratch/ld10-final-review,
+with private data kept outside Git. Final Git/metadata/CI result records are doc-only.
+
+LD15 remains OPEN: finalized CI conclusion, merge and original canonical artifact
+qualification; then actual LD16 owner/configuration bindings and LD17 host approval.
+No host write, key, wallet operation or paid-model call occurred. Conservative N=15
+seed target is0.007296BNB, additional0.004601501130637114BNB at the captured balance.
