@@ -118,8 +118,10 @@ class CollectorDatabaseChecks(DatabaseCase):
             name, sql = (ast.literal_eval(arg) for arg in node.value.args[:2])
             params = () if any(k.arg == 'params' for k in node.value.keywords) else ('run',)
             if name == 'anchors':
-                with pytest.raises(psycopg.errors.UndefinedTable), self.store.transaction() as db:
-                    db.execute(sql, params).fetchall()
+                with self.store.transaction() as db:
+                    with pytest.raises(psycopg.errors.UndefinedTable):
+                        db.execute(sql, params).fetchall()
+                    db.rollback()
             else:
                 with self.store.transaction() as db:
                     db.execute('SET TRANSACTION READ ONLY')
@@ -136,5 +138,7 @@ class CollectorDatabaseChecks(DatabaseCase):
         exec(compile(ast.Module(body=[node], type_ignores=[]), 'collector_ro', 'exec'), ns)
         with ns['RO']().transaction() as db:
             assert db.execute('SHOW transaction_read_only').fetchone()[0] == 'on'
-        with pytest.raises(psycopg.errors.ReadOnlySqlTransaction), ns['RO']().transaction() as db:
-            db.execute("INSERT INTO runs(run_id) VALUES ('refused')")
+        with ns['RO']().transaction() as db:
+            with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
+                db.execute("INSERT INTO runs(run_id) VALUES ('refused')")
+            db.rollback()
