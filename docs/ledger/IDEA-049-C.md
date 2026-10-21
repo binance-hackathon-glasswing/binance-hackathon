@@ -1498,3 +1498,21 @@ Pass criteria, before running:
    `OWNER_REVIEW_REQUIRED` stays; `signing_enabled`/`ready_to_install` stay false.
 4. No output contains a URL, provider host, DB host or secret; output truncation
    (SSM 24,000-character limit) is a refusal, not a partial packet.
+
+### LD10-P04 results — fresh split-exit coverage PASS except expected funding gap
+
+One read-only SSM command `9b30395c…` on primary at 16:55:45Z (probe `692787e4…` from
+merged 5bee006; no host file written). Criteria 1–4 PASS: profile `e95d5842…`;
+holdings MATCH, nonce 2/2, 98 USDT, 0.002694498869362886 BNB, all stocks zero, no
+reservations/pending, all six allowances zero; 22/22 quotes OK and request-bound.
+Every full-size SELL is above cap/1.01 and NVDAB/MSFTB are above the 20.10 cap
+again (20.1086/20.1099 USDT), so each name plans two children; all child quotes
+are about 10.05 USDT. Review at build 5bee006: 91/92 checks covered, the one
+exception `INITIAL_BNB_EXIT_RESERVE` 3,072,000,000,000,000 > 2,694,498,869,362,886
+wei, as pre-registered; `FULL_BOOK_EXIT_RESERVE` covered; blockers otherwise only
+`OWNER_REVIEW_REQUIRED`. Private packet sha `f08a901c…` and review stay in the
+session scratchpad. [Public record](../build/evidence/rehearsal-exit-split-20261021/ld10-p04-coverage.json).
+
+Technical coverage only: Isaac's personal acceptance, funding to the reserve,
+and LD16 bindings for the installed build ID remain. The review binds build
+5bee006; a fresh pre-install check must bind the actual installed release.

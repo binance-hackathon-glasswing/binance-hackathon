@@ -30,9 +30,13 @@ port validates with the request's mandatory flag, the coverage reviewer requires
 covered child quotes, and the rehearsal reserve covers four positions × two
 children (0.003072BNB; N=15 target 0.008832BNB, about 0.006138BNB additional at the
 dated balance). [Exit split packet](evidence/rehearsal-exit-split-20261021/README.md) /
-[IDEA-049-C LD10-P03](../ledger/IDEA-049-C.md). Remaining: a fresh operator
-child-quote packet, Isaac's coverage rerun, funding, and LD15 requalification of
-the new source.
+[IDEA-049-C LD10-P03](../ledger/IDEA-049-C.md). LD10-P04: the fresh read-only
+packet has 22/22 request-bound quotes; the review covers 91/92 checks, and only the
+pre-registered `INITIAL_BNB_EXIT_RESERVE` funding gap remains
+([record](evidence/rehearsal-exit-split-20261021/ld10-p04-coverage.json)). AB-REL-RC3:
+canonical `5bee006` passes all four mirror jobs (2452 passed, 7 skipped, systemd 5/5);
+original artifact 12363800624 verified ([receipt](evidence/ab-rel-rc3-20261021.json)).
+Remaining: funding, Isaac acceptance, LD16 bindings, LD17 installation.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
 dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer
