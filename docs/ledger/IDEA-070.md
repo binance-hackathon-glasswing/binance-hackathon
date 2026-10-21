@@ -1362,3 +1362,37 @@ Keegan delegated the pending decisions as "use the recommended option" (2026-10-
   - It must keep the existing fencing, never extend authority (#27), and treat a simulation that can't be run as a
     refusal, not a pass.
   - Until it is built, those reverts can still cost gas up to the point of revert.
+
+## PS-01 — KG-DEC-01 pre-sign swap simulation (2026-10-21; prospective)
+
+Isaac asks for the next independently completable task. User steering: check
+other PRs for missing LD10 inputs; if those belong to Keith, abort cleanly and
+work on something assigned purely to Isaac. PR218 is historical DC-01 replay;
+#119/#120 remain open without new selected-profile/N acceptance. GE-01 gas
+prototype was fully reverted (normal commits) and pushed on its isolated
+codex/ld08-ld10-gas-envelope-20261021 branch; no gas PR/canonical change. Its
+preregistration/diagnostics remain in that branch's IDEA-061 GE-01 record.
+
+Implement the adopted KG-DEC-01 task owned by Isaac, Keegan review. Base146a751.
+Pass criteria before executing code:
+- PS1 require a latest-state, no-override eth_call of the exact authorized swap
+  payload through the pinned execution RPC/router before submitting a new remote
+  signing request. Balance-call/general RPC allowlists remain closed.
+- PS2 refuse RFQ_OrderExpired, Min-return errors, RPC unavailable, missing or
+  malformed simulation; never quote-fallback or expose provider text. Approve
+  and zero-cleanup steps do not simulate swaps. Successful EVM simulation is
+  engineering evidence, not future execution/revert protection.
+- PS3 check fresh epoch/authority/nonce/time gates after RPC I/O; never extend
+  #27 or mutate authorized payload bytes/amount/gas. Simulation failure aborts
+  only positively unbroadcast authority through the existing atomic fence,
+  preserving prior approval gas and releasing through normal NOT_SUBMITTED.
+- PS4 existing durable signature recovery and possible-send reconciliation do
+  not depend on a new simulation; pending request races cannot bypass aborts.
+  No RPC reaches the offline signer host, and no signing-policy cap is relaxed.
+- PS5 red/green scoped RPC and real PostgreSQL remote-signing/abort/recovery
+  tests; production wiring, fencing/nonce/expiry/restart and full local suite on
+  pushed source. Record limits and actual results; no real RPC/model/key/wallet,
+  host/SSM/funding or activation operation.
+- PS6 remove the KG-DEC-01 implementation backlog item only after verified,
+  retain live host/route/caps/release gates, update status/PR133 and prepare a
+  reviewable PR on canonical. No duplicated Keith profile/economic work.
