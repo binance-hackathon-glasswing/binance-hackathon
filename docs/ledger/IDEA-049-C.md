@@ -1342,3 +1342,34 @@ both sides at the inclusive boundary before fixing the shared check.
 Do not loosen runtime limits, change the selected profile or increase reserves
 without a reviewed complete exit-child plan. If the supplied packet remains
 incompatible, record its exact blocker and keep full LD10 acceptance open.
+
+### LD10-P02 results — recorded inputs verified; full acceptance blocked
+
+Selected profile/scope/coverage and canonical RC2 hashes reproduce, production
+builder/LIVE/SHADOW authority and exact CAP-02 policy checks pass; all50 original
+public numeric rows are internally consistent. Of15 additional execution-cash
+checks,14 pass. The max-position NVDAB SELL returns20.106983099120719276USDT
+above the existing20.10USDT execution cap. Current stock holdings were zero in
+the14:10UTC packet; this is a hypothetical full-size exit qualification gap,
+not an observed trapped position or on-chain loss.
+
+R1 tests86e8b74 RED: four above-cap BUY/SELL subcases were incorrectly COVERED;
+exact-cap cases and real LiveVenue's SELL refusal pass. Fixe8cd3b6 adds only
+missing execution-cap parity to numeric coverage. Final sourcef816e28 passes
+87 focused tests/103 subtests/zero skips on macOS/Python3.12.14, including a
+real assembler refusal regression. No trading policy or historical packet is
+changed; new exact-source release qualification is not inferred from RC2.
+
+[Full review/owners](../build/evidence/ld10-owner-review-20261021/README.md) /
+[machine report](../build/evidence/ld10-owner-review-20261021/review.json).
+No private originals/current-clock run, network, host/DB/key/funding/installation
+or actual signer assembly is claimed. Isaac-delegated review is delivered;
+full_ld10_owner_acceptance remains false. Keith/Keegan must supply a complete
+exit-sizing/child-count/residual/reserve disposition and operator fresh quotes;
+Isaac then repeats coverage. LD16 actual config/release/state binding, LD17 host
+approval, funding and later actual fee/ACK remain. PR230 is reviewable with this
+explicit blocker; neither #44 nor #120 is closed.
+
+P02 report SHA-2569f535602ff0d8543c6d8ad15c35052d0842c19418abe5be5128873197b6a27f0;
+repeat bytes, canonical input hashes, original P01 JSON, false flags and new
+local links/whitespace checks PASS. The updated PR230 preserves full history.

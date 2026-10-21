@@ -1,5 +1,11 @@
 # LD10-P01 — Isaac's priority-1 coverage review, 2026-10-21
 
+**Later update — LD10-P02:** PR231 supplies the previously missing recorded
+rehearsal packet. [Independent review](../ld10-owner-review-20261021/README.md)
+verifies its hashes/numeric rows but finds an execution cash-cap mismatch in
+the full-size NVDAB SELL sample. The dated P01 inventory/results below are
+preserved; they do not describe the current missing-input situation.
+
 **Offline candidate verification PASS; actual LD10 coverage BLOCKED.** Review
 base canonical `f10d9ad`; prospective criteria `e3b82e5`, verification code
 `7e371d8`, both pushed before verification. This review stops before the user's
