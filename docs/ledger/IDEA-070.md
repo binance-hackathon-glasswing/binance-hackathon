@@ -1266,3 +1266,17 @@ Packet generated 2026-10-20T18:45:56Z; SHA-256 as printed on the host
 - S5: overrides were limited to proven slots of the pinned tokens by the allowlist (tested). S6: see the PR receipt.
 
 LD09-G1 has been revised with these maxima ([proposal](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md)).
+
+## LD02cd-RV01 — Isaac review of PR215 (2026-10-21 SGT; prospective)
+
+Isaac requests complete review, fixes and merge. Original head1451264 on
+canonical5943e1c. Criteria: CR1 inspect both collectors, RPC/override/proof and
+output paths; CR2 reproduce and fix private-value leaks before truncation,
+ASCII conversion or reason extraction; CR3 restrict simulations to exact proven
+slots/values, separating sentinel discovery from simulation authority; CR4
+record actual RFQ probe ages rather than treating nominal schedule labels as
+measured lifetime; CR5 independently check immutable packet summaries/gas math,
+proposal/design caveats and live-backlog scope; CR6 run meaningful offline and
+integration checks on pushed source, preserve historical packets and original
+FAIL/amendment records, merge only exact accepted head and update PR133.
+No live collector, provider/model/host/key/wallet operation is part of this review.
