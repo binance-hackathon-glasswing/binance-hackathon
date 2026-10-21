@@ -1291,3 +1291,36 @@ and50/50 technical coverage are now integrated in the qualified candidate. LD10'
 remaining deployment owner acceptance and actual final environment/configuration
 bindings are LD16 inputs; no personal Isaac attestation, host/session approval or
 signer.json assembly is fabricated. Fresh pre-install/per-action checks still apply.
+
+## LD10-P02 — Isaac-delegated review of merged Q01 inputs (2026-10-21, prospective)
+
+Isaac asks whether PR231 now permits completion of PR230. PR230 normally merges
+canonical6ec07ba at32691c4, retaining the exact P01/Q01 historical artifacts and
+both ledger records. This is delegated technical review under Isaac's request,
+not a claim that Isaac/Keith personally signed the packet. No installation,
+funding, host/DB operation, key access, trade or new network call is in scope.
+
+Before verification:
+
+1. Verify selected profile/scope/coverage hashes against canonical RC2 receipt;
+   reproduce the deterministic rehearsal profile with the production builder,
+   validate LIVE/SHADOW authority and load the exact CAP-02 development policy.
+2. Independently cross-check all50 published numeric rows against profile,
+   policy, complete recorded holdings and quoted quantities. Identify reliance
+   on the operator's signed-off private projections; do not fabricate original
+   observations or call a historical replay a current-clock caps review.
+3. Check all15 min/max BUY/full-size SELL rows, units, request/route pins,
+   slippage bounds and exact original/projection hashes. Compare them with the
+   actual execution cash/amount limits as well as independent signer ceilings;
+   numeric coverage is not proof the full action passes runtime admission.
+4. Recompute two-child/four-exit budgets and N15-plus-reserve seeding arithmetic;
+   preserve disabled cleanup, initial-only scope, fee-netting uncertainty and
+   unfunded target. Do not treat planning N as a worst-case strategy bound.
+5. Record acceptance only to the supported scope, with exact hashes and every
+   refusal/remaining owner. Fresh final release/run/DB/RPC/CA/state/quote and
+   command-budget/reservation bindings remain LD16 inputs. Full exit or actual
+   deployment acceptance must stay false if a required execution check fails.
+6. Run focused existing caps/profile/authority tests and new verification,
+   preserve historical bytes, update live backlog/current status and PR230's
+   description, then mark the resulting concrete review ready. No merge or
+   signer installation is authorized by this review.
