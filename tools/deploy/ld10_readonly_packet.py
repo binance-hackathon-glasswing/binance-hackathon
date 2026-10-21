@@ -16,10 +16,24 @@ def script(profile_bytes):
     source = 'SELECTED_PROFILE_B64 = ' + repr(base64.b64encode(profile_bytes).decode()) + '\n' + source
     needle = "    driver = config['driver']\n"
     source = source.replace(needle, "    selected_raw = base64.b64decode(SELECTED_PROFILE_B64)\n    profile = json.loads(selected_raw)\n" + needle, 1)
+    source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if v not in (wallet, wallet[2:])]\n", 1)
     source = source.replace("    return packet, forbidden\n", """    packet['selected_profile_sha256'] = hashlib.sha256(selected_raw).hexdigest()
     packet['private_caps_inputs'] = dict(wallet=wallet, portfolio=portfolio,
         token_decimals={s: observation['tokens'][s]['decimals'] for s in TOKENS},
         quote_artifacts=web3.records)
+    # Private review needs the public wallet address. Continue refusing secrets,
+    # provider URLs and database endpoints; omit only public token image metadata.
+    for record in packet['private_caps_inputs']['quote_artifacts']:
+        response_data = record.get('response', {}).get('data')
+        rows = response_data if isinstance(response_data, list) else [response_data]
+        for row in rows:
+            if isinstance(row, dict):
+                rr = row.get('routerResult', {})
+                for side in ('fromToken', 'toToken'):
+                    if isinstance(rr.get(side), dict):
+                        rr[side] = {k: v for k, v in rr[side].items()
+                                    if k in ('tokenContractAddress', 'decimal')}
+
     return packet, forbidden
 """, 1)
     source = source.replace('    print(text)\n', "    print(base64.b64encode(zlib.compress(text.encode(), 9)).decode())\n", 1)

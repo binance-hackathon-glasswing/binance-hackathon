@@ -261,7 +261,6 @@ class PostgresExecutionTests(DatabaseCase):
         self.assertEqual(signed,signer.lookup(a.attempt_id,a.payload.hash))
 
 
-class AbnormalSigningFenceTests(PostgresExecutionTests):
     def test_durable_abnormal_outbox_fences_signer_before_runtime_ingestion_and_after_restart(self):
         key = self.prepared()
         epoch, version = self.execution_store.execution_authority()

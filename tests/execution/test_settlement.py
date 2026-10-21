@@ -135,7 +135,6 @@ class SettlementTests(unittest.TestCase):
         with self.assertRaises(Blocked):facts(self.state,replace(self.attempt,finalized_at=1791734400))
 
 
-class AbnormalOutcomeTests(SettlementTests):
     def test_zero_short_extra_debit_and_unrelated_token_preserve_raw_truth_and_gas(self):
         from copy import deepcopy
         from larp.marketdata.port import TOKENS
