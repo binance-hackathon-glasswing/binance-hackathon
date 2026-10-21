@@ -1,5 +1,9 @@
 # LD09/LD10 — measured gas budget proposal (2026-10-21)
 
+**Decision 2026-10-21 (Keegan): option B**, implemented as IDEA-061 LD09-B with candidates in
+[`ld09b-gas-budget-profiles-20261021`](evidence/ld09b-gas-budget-profiles-20261021/README.md). The expected price is
+0.064 gwei, pending Keith's #120 review. The rest of this document is the proposal as written.
+
 Status: **PROPOSAL for Keith (LD09, #120), Isaac (LD10, #44) and Keegan (LD07 policy).** Nothing here changes a
 profile, cap or config. It replaces the FALLBACK-based DC-01 action budget with figures computed from simulated gas,
 and shows a coupling that blocks the rehearsal profile at the draft cap gas price.
