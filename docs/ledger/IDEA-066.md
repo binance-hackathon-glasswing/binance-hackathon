@@ -2708,3 +2708,12 @@ Keegan's operator role transfer is retained for LD12/17/19/21/23. It grants
 no actual host-write or signer-session approval. Per-unit RSS, actual ACK timing,
 signed execution/finality/drain/stall/recovery and exact LD14 values remain
 operator/Keith/Keegan evidence inputs for Isaac; source merge is not acceptance.
+
+Concurrent integration: another reviewer merged original PR217 at3b83114 while
+RV01 repairs were being prepared; the original branch advanced tocc23894. No
+force push was used. Normal merges preserve PR206/212/218 and PR219 decisions
+through canonicalf1667b2. Ledger conflict retains both the new PR204 repair
+status and RV01 timing corrections. Pushed integrationcefd652 again passes
+39 tests/10 subtests/zero skips (5.51s); syntax/render/whitespace PASS. Production
+application code in the follow-up diff is unchanged relative to this new
+canonical base. RV01 fixes will therefore land as a separate follow-up PR.

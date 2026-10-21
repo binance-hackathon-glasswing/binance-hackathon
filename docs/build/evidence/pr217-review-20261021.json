@@ -4,7 +4,7 @@
   "date_sgt": "2026-10-21",
   "original_head": "a9062da32a757afb0858f286f79583266e7f7891",
   "canonical_base": "9c1cb84",
-  "tested_source": "677edbe253e52c39dc891a111e6fc0542d170cb4",
+  "tested_source": "cefd652",
   "environment": {
     "os": "macOS/Darwin",
     "architecture": "arm64",
@@ -16,7 +16,7 @@
     "subtests_passed": 10,
     "skipped": 0,
     "failed": 0,
-    "duration_seconds": 5.12,
+    "duration_seconds": 5.51,
     "regressions_red_before_fixes": 13,
     "full_suite_rerun": false
   },
@@ -60,5 +60,13 @@
   "operator_record": "Keegan team assumes LD12/LD17/LD19/LD21/LD23; no host-write or signer session authorization granted by merge",
   "host_or_cloud_action": false,
   "wallet_action": false,
-  "signing_enabled": false
+  "signing_enabled": false,
+  "initial_tested_source": "677edbe253e52c39dc891a111e6fc0542d170cb4",
+  "current_canonical_base": "f1667b2",
+  "concurrency": {
+    "original_pr217_merged_by_other_reviewer": "3b8311498a4d9decc7756ad0fafd05b6c1fa7d20",
+    "author_updated_head": "cc23894",
+    "canonical_model_drill_decisions_preserved": true,
+    "delivery": "FOLLOW_UP_PR_REQUIRED"
+  }
 }
