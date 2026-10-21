@@ -133,6 +133,50 @@ class CapsReview(unittest.TestCase):
         self.save_inputs()
         self.assertIn('FULL_HOLDING_NVDAB', self.report()['blockers'])
 
+    def test_quote_cash_must_fit_same_profile_cap_as_execution(self):
+        cap = self.profile['per_trade_cap_units'] * 10**12
+        # The final value is Q01's published NVDAB proceeds. These are explicitly
+        # synthetic observations testing the real reviewer, not the private originals.
+        for side in ('BUY', 'SELL'):
+            index = next(i for i, r in enumerate(self.inputs['quote_artifacts']) if r['path'] == 'NVDAB' + side + '.json')
+            original = json.loads((self.root / self.inputs['quote_artifacts'][index]['path']).read_bytes())
+            for cash in (cap, cap + 1, 20_106_983_099_120_719_276):
+                with self.subTest(side=side, cash=cash):
+                    record = deepcopy(original)
+                    rr = record['response']['data']['routerResult']
+                    if side == 'BUY':
+                        record['params']['amount'] = rr['fromTokenAmount'] = str(cash)
+                    else:
+                        rr['toTokenAmount'] = str(cash)
+                    ref = self.pin('NVDAB' + side + '.json', record)
+                    self.inputs['quote_artifacts'][index] = ref
+                    result = self.report()
+                    self.assertEqual(result['numeric_status'], 'COVERED' if cash <= cap else 'BLOCKED')
+                    if cash > cap:
+                        self.assertIn('QUOTE_CASH_CAP_' + ref['sha256'], result['blockers'])
+            self.inputs['quote_artifacts'][index] = self.pin('NVDAB' + side + '.json', original)
+
+    def test_retained_nvdab_sell_proceeds_are_refused_by_real_execution_boundary(self):
+        from types import SimpleNamespace
+        from larp.execution_live.venue import LiveVenue
+        from tests.execution_fixtures import intent
+        packet = json.loads((Path(__file__).resolve().parents[2] /
+            'docs/build/evidence/rehearsal-qualified-inputs-20261021/coverage-decision-deterministic.json').read_bytes())
+        row = next(r for r in packet['quote_rows'] if r['symbol'] == 'NVDAB' and r['side'] == 'SELL')
+        class Client:
+            def request(client, method, endpoint, params):
+                assert (method, endpoint) == ('GET', 'aggregator/quote-and-swap')
+                # Synthetic wire shape; only the retained public numeric fields are reused.
+                return dict(response=dict(data=dict(executionMode='SWAP',
+                    routerResult=dict(vendorName='LiquidMesh', toTokenAmount=str(row['receive_units'])),
+                    tx=dict(minReceiveAmount=str(row['minimum_receive']), to=ROUTER, value='0',
+                            gas='250000', gasPrice='1', data='0x00'))))
+        venue = LiveVenue(Client(), None, decoder=SimpleNamespace(decode=lambda payload: None))
+        i = intent(pay_token=TOKENS['NVDAB'], receive_token=USDT, amount=row['pay_units'],
+                   max_cash_units=self.profile['per_trade_cap_units'])
+        with self.assertRaisesRegex(Blocked, 'execution cash cap'):
+            venue.quote(i, 0)
+
     def test_s1_full_position_cap_includes_largest_frozen_weight_and_reserve(self):
         from tests.strategy.test_s1_core import block
         costs = self.profile['quote_cost_summary']

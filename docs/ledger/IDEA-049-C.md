@@ -1162,6 +1162,71 @@ there is no outstanding request for permission to select these exact bounds.
 configuration binding. All remaining work is recorded in the live backlog,
 CAP-02 artifact and PR216 receipt; no host/key/activation operation occurred.
 
+## LD10-P01 — selected-profile and holdings coverage review (2026-10-21, prospective)
+
+Isaac requested priority 1 only, stopping before the separately listed gas-budget,
+router replay and signer-assembly tasks. Base: canonical `f10d9ad`. Review the
+existing RV120-02 candidates and CAP-02 policies without changing strategy,
+numeric ceilings, runtime pins or historical evidence. No AWS, credential, key,
+funding, paid service, signing or broadcast operation is in this review.
+
+Pass criteria, recorded before executing verification:
+
+1. Reproduce both RV120-02 candidate files byte for byte from the committed DC-01
+   summary, predicate registry, authority evidence and LD09-B inputs using the
+   existing builder; independently verify file/document and CAP-02 policy hashes.
+2. Validate each candidate with the production LIVE profile validator; compare
+   full-position cash plus reserve with its environment's approved USDT cap and
+   the configured transaction ceiling with the independent fee ceiling. Historical
+   sample checks are labelled historical; they cannot stand in for fresh holdings.
+3. Compare rehearsal/final terminal windows with the latest selected policies;
+   retain every mismatch as an adoption blocker rather than silently changing
+   or accepting a historical candidate. Preserve the conditional #119 fee status.
+4. Inventory the actual required `GateBCapsInputs.v1` packet: selected profile,
+   signing policy, execution config, complete reconciled `PortfolioState.v1`,
+   request-bound fresh BUY/SELL artifacts for all five names, metadata and reviewed
+   freshness budget. If available, run the existing real caps reviewer on those
+   bytes at the current clock, retaining its private report. Do not invent data,
+   use an unsigned run's bindings, widen freshness or use `--now` to pass stale data.
+5. Accept deployment coverage only when those actual inputs pass the production
+   reviewer and named scope/funding/profile reviews exist. Otherwise report
+   `BLOCKED_MISSING_ACTUAL_INPUTS`, preserve false readiness/signing flags and keep
+   the live backlog open with exact owners/artifacts. Gas/cleanup/exit-envelope
+   repair and router replay remain the later user-requested priorities.
+
+### LD10-P01 results — offline PASS, actual coverage BLOCKED
+
+Executed pushed verification source `7e371d8` on macOS arm64/Python3.13.3.
+Both RV120-02 candidates reproduce byte for byte and pass the production LIVE
+validator; CAP-02 policy/evidence hashes and real policy loading pass. Rehearsal
+20.10 USDT fits 35; final 40.20 fits 70. Retained execution ceiling
+1,200,000*160,000,000=192,000,000,000,000wei fits the independent
+200,000,000,000,000wei transaction cap. These are public candidate comparisons,
+not current complete holdings or a new execution config. Full results and exact
+hashes: [LD10-P01 inventory](../build/evidence/ld10-profile-coverage-20261021/README.md)
+and [machine report](../build/evidence/ld10-profile-coverage-20261021/review.json).
+Repeat execution is byte-identical; source hashes/local links/false flags/whitespace
+checks pass. Report SHA-256
+`3bf41478138a53f9185f3f296759773c63f6b084a40894f92c2d8476bf4b749b`.
+
+The final candidate still uses midnight first-buy/new-risk/flatten gates rather
+than selected PF-04 Oct 29 14:00/Nov 9 21:00/Nov 10 19:00UTC. Keith/Keegan must
+reconcile and regenerate before final-profile acceptance; the rehearsal's
+separate October 23/25/26 window is not changed. Fee netting remains unverified.
+No full profile or deployment approval is inferred from successful reproduction.
+
+Isaac asked to search other PRs for the private packet, then assume it missing
+if none is identified. All-state searches and the relevant #184/#193/#205/#210/
+#211/#216/#228/#229 handoffs found tooling, missing-input inventories, historical
+operator snapshots and candidates, but no current usable four-file
+GateBCapsInputs.v1 packet. Actual caps review remains NOT_RUN_MISSING_INPUTS.
+Keith/Isaac supply selected-profile/#120 acceptance; Keegan's approved operator
+supplies fresh full holdings/metadata/reservations/nonces/original quote artifacts;
+release/operator supplies intended execution/run/build/environment/CA bindings.
+The existing caps reviewer is ready when those inputs arrive. Separate priorities
+2–4 are not started; no AWS/key/funding/signing/activation action occurred. LD10
+and #44/#120 remain open for their explicit remaining coverage/adoption work.
+
 ## LD10-Q01 — rehearsal caps coverage (2026-10-21; prospective)
 
 Keegan requests steps 2–4 using recommended decisions. CAP-02 numeric caps are retained;
@@ -1226,3 +1291,85 @@ and50/50 technical coverage are now integrated in the qualified candidate. LD10'
 remaining deployment owner acceptance and actual final environment/configuration
 bindings are LD16 inputs; no personal Isaac attestation, host/session approval or
 signer.json assembly is fabricated. Fresh pre-install/per-action checks still apply.
+
+## LD10-P02 — Isaac-delegated review of merged Q01 inputs (2026-10-21, prospective)
+
+Isaac asks whether PR231 now permits completion of PR230. PR230 normally merges
+canonical 6ec07ba at 32691c4, retaining the exact P01/Q01 historical artifacts and
+both ledger records. This is delegated technical review under Isaac's request,
+not a claim that Isaac/Keith personally signed the packet. No installation,
+funding, host/DB operation, key access, trade or new network call is in scope.
+
+Before verification:
+
+1. Verify selected profile/scope/coverage hashes against canonical RC2 receipt;
+   reproduce the deterministic rehearsal profile with the production builder,
+   validate LIVE/SHADOW authority and load the exact CAP-02 development policy.
+2. Independently cross-check all 50 published numeric rows against profile,
+   policy, complete recorded holdings and quoted quantities. Identify reliance
+   on the operator's signed-off private projections; do not fabricate original
+   observations or call a historical replay a current-clock caps review.
+3. Check all 15 min/max BUY/full-size SELL rows, units, request/route pins,
+   slippage bounds and exact original/projection hashes. Compare them with the
+   actual execution cash/amount limits as well as independent signer ceilings;
+   numeric coverage is not proof the full action passes runtime admission.
+4. Recompute two-child/four-exit budgets and N15-plus-reserve seeding arithmetic;
+   preserve disabled cleanup, initial-only scope, fee-netting uncertainty and
+   unfunded target. Do not treat planning N as a worst-case strategy bound.
+5. Record acceptance only to the supported scope, with exact hashes and every
+   refusal/remaining owner. Fresh final release/run/DB/RPC/CA/state/quote and
+   command-budget/reservation bindings remain LD16 inputs. Full exit or actual
+   deployment acceptance must stay false if a required execution check fails.
+6. Run focused existing caps/profile/authority tests and new verification,
+   preserve historical bytes, update live backlog/current status and PR230's
+   description, then mark the resulting concrete review ready. No merge or
+   signer installation is authorized by this review.
+
+### LD10-P02-R1 — prospective cash-cap consistency regression
+
+Static comparison identifies Q01's full-size NVDAB SELL return
+20,106,983,099,120,719,276 rawUSDT above the selected execution cash cap
+20,100,000,000,000,000,000. The independent signer input cap can still pass.
+Before changing code: add tests that the real numeric reviewer refuses a SELL
+whose quoted USDT proceeds exceed the same profile cap already enforced by
+LiveVenue, including exact-cap/plus-one cases; reproduce LiveVenue's refusal
+using the public numeric row with synthetic calldata/ports explicitly labelled
+as such. The original private calldata/observations are not available locally
+and will not be fabricated. Run tests RED on the pushed base, then add only the
+missing numeric-check parity and run GREEN plus focused existing coverage tests.
+The same parity applies to BUY USDT input as well as SELL USDT proceeds; include
+both sides at the inclusive boundary before fixing the shared check.
+Do not loosen runtime limits, change the selected profile or increase reserves
+without a reviewed complete exit-child plan. If the supplied packet remains
+incompatible, record its exact blocker and keep full LD10 acceptance open.
+
+### LD10-P02 results — recorded inputs verified; full acceptance blocked
+
+Selected profile/scope/coverage and canonical RC2 hashes reproduce, production
+builder/LIVE/SHADOW authority and exact CAP-02 policy checks pass; all 50 original
+public numeric rows are internally consistent. Of 15 additional execution-cash
+checks,14 pass. The max-position NVDAB SELL returns 20.106983099120719276 USDT
+above the existing 20.10 USDT execution cap. Current stock holdings were zero in
+the 14:10 UTC packet; this is a hypothetical full-size exit qualification gap,
+not an observed trapped position or on-chain loss.
+
+R1 tests 86e8b74 RED: four above-cap BUY/SELL subcases were incorrectly COVERED;
+exact-cap cases and real LiveVenue's SELL refusal pass. Fixe8cd3b6 adds only
+missing execution-cap parity to numeric coverage. Final sourcef816e28 passes
+87 focused tests/103 subtests/zero skips on macOS/Python3.12.14, including a
+real assembler refusal regression. No trading policy or historical packet is
+changed; new exact-source release qualification is not inferred from RC2.
+
+[Full review/owners](../build/evidence/ld10-owner-review-20261021/README.md) /
+[machine report](../build/evidence/ld10-owner-review-20261021/review.json).
+No private originals/current-clock run, network, host/DB/key/funding/installation
+or actual signer assembly is claimed. Isaac-delegated review is delivered;
+full_ld10_owner_acceptance remains false. Keith/Keegan must supply a complete
+exit-sizing/child-count/residual/reserve disposition and operator fresh quotes;
+Isaac then repeats coverage. LD16 actual config/release/state binding, LD17 host
+approval, funding and later actual fee/ACK remain. PR230 is reviewable with this
+explicit blocker; neither #44 nor #120 is closed.
+
+P02 report SHA-2569f535602ff0d8543c6d8ad15c35052d0842c19418abe5be5128873197b6a27f0;
+repeat bytes, canonical input hashes, original P01 JSON, false flags and new
+local links/whitespace checks PASS. The updated PR230 preserves full history.
