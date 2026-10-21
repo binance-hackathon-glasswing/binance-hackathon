@@ -1,0 +1,100 @@
+{
+  "schema": "PR215ReviewReceipt.v1",
+  "review_id": "IDEA-070 LD02cd-RV01",
+  "date_sgt": "2026-10-21",
+  "original_head": "145126412e9f0ebf10dae4ce4563933b01e42529",
+  "canonical_base": "5943e1c2845291e19aceee01b918dc7d0c424e9b",
+  "tested_source": "21b8e887b0325500d550197d369a30627b427118",
+  "environment": {
+    "os": "macOS/Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "external_boundaries": "mocked; no database required"
+  },
+  "tests": {
+    "passed": 41,
+    "subtests_passed": 62,
+    "failed": 0,
+    "skipped": 0,
+    "full_suite_rerun": false
+  },
+  "test_files": [
+    "tests/runtime/test_pr215_review.py",
+    "tests/runtime/test_ld02c_rfq_rpc_script.py",
+    "tests/runtime/test_ld02d_size_sell_script.py",
+    "tests/runtime/test_ld02_packet_script.py"
+  ],
+  "findings": [
+    {
+      "id": "CR-P2-01",
+      "status": "FIXED",
+      "description": "Scan complete private error/marker values before truncation, ASCII conversion or RFQ extraction; wire forbidden context from collectors."
+    },
+    {
+      "id": "CR-P2-02",
+      "status": "FIXED",
+      "description": "RFQ override is exact allowance slot/value; sweep sentinel discovery never authorizes simulation until exact balance/allowance slots are proven."
+    },
+    {
+      "id": "CR-P2-03",
+      "status": "FIXED",
+      "description": "Future RFQ packets distinguish nominal delays from measured probe-start ages. Historical actual ages remain NOT_MEASURED."
+    },
+    {
+      "id": "CR-P2-04",
+      "status": "FIXED",
+      "description": "Bind BUY response input to requested pay and SELL response input to BUY output before simulation and cost reporting."
+    }
+  ],
+  "checks": {
+    "regressions_red_before_fixes": 11,
+    "shell_syntax": "PASS",
+    "deviation_render": "PASS",
+    "whitespace": "PASS",
+    "independent_packet_and_gas_arithmetic": "PASS",
+    "archived_packet_bytes_unchanged": true
+  },
+  "archived_sha256": {
+    "ld02c-rfq-rpc-run1-20261021.json": "2971a194dab5493334aa0d822374680cf66e7c7fa041186992b135792b6d9bfb",
+    "ld02c-rfq-rpc-run2-20261021.json": "26fba21fac554c8c790319b2d8e9af2b73d7c9a29503852203d261922b6bea35",
+    "ld02d-size-sell-20261021.json": "0acea18fc87890cb5a19a96e00ca6dbadcc2a260991ca9d595951a13a02511a6"
+  },
+  "evidence_limits": {
+    "q2_original": "FAIL",
+    "q2b_concurrent_amendment": "PASS",
+    "historical_actual_rfq_ages": "NOT_MEASURED",
+    "simulation_attempts": 40,
+    "successful_gas_values": 39,
+    "preserved_refusal": "MSFTB 40-USDT BUY: Min return not reached",
+    "max_buy_gas": 944814,
+    "max_sell_gas": 930548,
+    "conservative_pair_gas": 1000057,
+    "proposal_cap_budget_wei": 200011400000000,
+    "size_independence_or_profit_demonstrated": false,
+    "receipt_gas_or_complete_execution_qualification": false
+  },
+  "host_action": false,
+  "wallet_action": false,
+  "signing_enabled": false,
+  "remaining": [
+    "Keegan: independent PR216 option-B implementation/assumption review and RG2 design/instrumentation",
+    "Keith: #119/#120 selected profile, full exit/cleanup coverage and whole-run seeding N",
+    "Isaac: exact measured #44 policy/profile/hash acceptance and fresh replay/preflight",
+    "Approved operator and reviewers: exact release, execution/finality, signed receipts and real host/rehearsal acceptance"
+  ],
+  "ci": {
+    "run_id": 39556642979,
+    "source": "36d4c1a467d36ec7aa45a83529f2d66dab6f3ee0",
+    "executed_steps": 0,
+    "status": "ACCOUNT_BILLING_BLOCKED",
+    "annotation": "Job not started: recent account payments failed or spending limit needs increasing."
+  },
+  "delivery": {
+    "pr": 215,
+    "reviewed_head": "36d4c1a467d36ec7aa45a83529f2d66dab6f3ee0",
+    "merge_commit": "c854c822bd5c8084b2dea9f90595844fa6f22e3d",
+    "merged_at_utc": "2026-10-21T06:39:33Z",
+    "review_state": "APPROVED",
+    "pr216_retargeted_to_canonical": true
+  }
+}

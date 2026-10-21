@@ -320,3 +320,117 @@ Local verification, source `7f004f7`, Linux/Python 3.13.16/PostgreSQL 16.15:
 new tests account for the difference. Hosted CI still runs zero steps because of
 the organisation's Actions billing block (PR133); this is local evidence, not
 hosted CI or release acceptance.
+
+## LD09-G1 — measured gas budget proposal (2026-10-21, proposal only)
+
+[LD09_GAS_BUDGET_PROPOSAL_20261021.md](../build/LD09_GAS_BUDGET_PROPOSAL_20261021.md) computes the initial-only gas
+values from simulated gas (IDEA-070 LD02b/F1/LD02c): pair gas 803,768 (approve 55,243 + BUY swap 748,525), 25 %
+headroom. At the draft cap price (0.16 gwei) G = 160,753,600,000,000 wei and the EW/S1 exit reserves are
+6.43e14 / 8.04e14 wei, but the profile's shared use of G for minimum-trade economics raises the minimum trade to
+37.45 USDT (27.00 without MSFTB), which refuses the 100-USDT rehearsal profile. Options A (one lower price, about
+0.08 gwei), B (decouple reserve price from sizing price; recommended) and C (exclude MSFTB, currently unexecutable)
+are laid out with a seeding table. No profile, cap or config changed; Keith, Isaac and Keegan decide.
+
+LD09-G1 revision 2 (2026-10-21, after IDEA-070 LD02d): the maximum swap gas is now 944,814 (TSLAB BUY; SELL max
+930,548), so pair gas is 1,000,057. At 0.16 gwei G = 200,011,400,000,000 wei, the reserves are 8.00e14 / 1.00e15 wei,
+and the minimum trade is 46.60 USDT (33.60 without MSFTB). That refuses both the rehearsal (20 USDT) and the final
+(40 USDT) positions. Option A now needs a budget price of at most about 0.064 gwei. Option B (decouple) stays
+recommended. The 1.25× headroom swap limit (1,181,018) is 1.6 % under the draft `max_gas`; this is flagged for
+Isaac (LD10).
+
+## LD09-B — decision B adopted and its implementation (2026-10-21; prospective)
+
+**Decision (Keegan, 2026-10-21):** LD09-G1 option B. The exit reserve and the action budget stay at the signer's cap
+gas price. Minimum-trade sizing uses a separate, sourced pair budget at an expected gas price. Values from the
+LD09-G1 revision 2 inputs (IDEA-070 LD02d maximum, pair gas 1,000,057, 25 % headroom):
+
+- action budget at 0.16 gwei (draft `max_gas_price`): `gas_action_budget_units` = 200,011,400,000,000 wei;
+- sizing budget at 0.064 gwei: `gas_sizing_budget_units` = 80,004,560,000,000 wei. 0.064 gwei is the observed
+  0.05 gwei rounded above the interim capture's 0.053–0.062 gwei range. It is also the highest price at which the
+  20-USDT rehearsal position fits with DC-01's MSFTB spread. Keith can replace it with a measured value for #120.
+
+**Pass criteria, written before the code (B1–B6):**
+
+- B1. `validate_live` accepts an optional `gas_sizing_budget_units` only on initial-only profiles. It must be a
+  positive integer with provenance, at least the quote summary's measured pair and at most `gas_action_budget_units`.
+  Otherwise the profile is refused.
+- B2. With the sizing budget present, minimum-trade feasibility uses it. The exit-reserve check (4×, S1 5×) still
+  uses `gas_action_budget_units`, and so do `InitialGasCheck` and the planner's reserve. Without it, behaviour is
+  unchanged: the existing tests pass and the committed DC-01 and LD04-P candidates reproduce byte for byte.
+- B3. `build_live_profiles(..., gas_budget={action_units, sizing_units, decision_id, data_hash})` is allowed only
+  with `initial_gas_only`. It sets both budgets and a reserve of 4× (S1 5×) the action budget, and computes the
+  minimum trade from the sizing budget. The CLI flags `--gas-action-budget-units`, `--gas-sizing-budget-units`,
+  `--gas-budget-decision` and `--gas-budget-evidence` must be supplied together.
+- B4. Candidates rebuilt from the committed DC-01 summary with initial-only scope, L = 660 / m = 30 and the B values
+  build and validate for both environments. Expected values: minimum trade about 18.64 USDT, EW reserve
+  800,045,600,000,000 wei. Their hashes are recorded, and they are evidence candidates only.
+- B5. Tests cover B1–B3: refusals, unchanged behaviour without the key, and the reserve still using the action budget.
+- B6. The full suite passes.
+
+### LD09-B results — implementation `f4fde3a` (2026-10-21)
+
+- **B1 PASS.** `validate_live` accepts `gas_sizing_budget_units` only on initial-only profiles, sourced, with
+  summary pair ≤ sizing ≤ action. Top-up profiles, out-of-range values, zero and unsourced values are refused.
+- **B2 PASS.** The minimum trade uses the sizing budget. The reserve check still uses the action budget
+  (4 × action − 1 is refused). Removing the sizing key restores the coupled check, which then refuses the 20-USDT
+  rehearsal minimum. The committed DC-01 and LD04-P candidates reproduce byte for byte. `InitialGasCheck` and the
+  planner are unchanged: they read the action budget and the reserve.
+- **B3 PASS.** `build_live_profiles(gas_budget=...)` and the four CLI flags. They need initial-only scope and must
+  all be supplied together; provenance carries the decision and the evidence hash.
+- **B4 PASS.** [Candidates](../build/evidence/ld09b-gas-budget-profiles-20261021/README.md): rehearsal
+  `54eb6fba…6f2ea4` and final `07e8e8c9…a542` (StrategyProfile.v1). Minimum trade 18,637,420 (18.64 USDT), reserve
+  800,045,600,000,000 wei, action 200,011,400,000,000 wei, sizing 80,004,560,000,000 wei. They reproduce byte for
+  byte in tests. These are evidence candidates only.
+- **B5 PASS.** `tests/strategy/test_gas_budget_b.py`: 11 tests.
+- **B6 PASS.** Full suite on Linux, Python 3.12, local PostgreSQL 16: 2304 passed, 11 skipped, 3748 subtests passed.
+
+Still open: Keith's #120 review (the expected price of 0.064 gwei, a refreshed MSFTB spread, the S1 or fallback
+profile and calendar), the #119 fee evidence, Isaac's #44 caps (including the 1.6 % `max_gas` margin), seeding N
+and selected cleanup gas.
+
+## LD09-B-RV01 — Isaac review of PR216 (2026-10-21; prospective)
+
+User requests review/fixes/merge of PR216 and delegates #44 approval wherever
+the evidence supports it. Original head6c04f1b; canonical2cd1551. Normal merge
+resolves the backlog conflict by preserving both the B candidates and PR215's
+measurement caveats; no historical evidence bytes are changed.
+
+Pass criteria before execution: RV1 inspect validator/builder/CLI and consumers
+of action, sizing and reserve values; RV2 verify missing/partial/invalid budgets,
+provenance, legacy reproduction and S1 reserve behavior; RV3 exercise actual gas
+monitor/planner/caps contracts so the smaller sizing budget cannot lower funded
+action/exit requirements; RV4 independently reproduce archived candidates and
+check measured gas/raw quote amounts against proposed #44 limits; RV5 run
+focused checks and full local suite on pushed source with real disposable
+PostgreSQL and mocked external boundaries; RV6 approve only exact reviewed
+head, merge and update canonical/PR133; RV7 record a separate exact-policy #44
+decision where supported, preserving missing actual selected-profile/current-
+holdings/config/release/host facts. Numeric ceiling approval is not a claim
+that every future holding can exit in one capped action, installation or
+authorization to trade. No live/provider/model/host/key/funding action.
+
+### LD09-B-RV01 verified result
+
+Pushed executable/test source3e73086 passes full macOS arm64/Python3.12.14 /
+disposable PostgreSQL14.24: **2323 tests /3748 subtests /10 explained skips**,
+zero failures,355.52s. Skips:2 external fixtures,5 systemd,3 Linux bubblewrap.
+Focused split-budget/policy/caps/monitor/planner suite:70 tests/44 subtests/
+zero skips. Deviation rendering and whitespace pass. No blocking feature-code
+defect found; added consumer tests cover S1's five-action reserve/monitor and
+the actual planner's funded-reserve barrier. DC01/LD04/LD09-B candidate JSONs
+reproduce byte-identically. [Receipt](../build/evidence/pr216-review-20261021.json).
+
+The proposal's action budget remains unapproved for deployment: separately
+rounded observed child gas limits plus25% cost200,011,520,000,000wei at0.16gwei,
+120,000,000wei above its recorded fractional-pair budget; two max-gas children
+cost384,000,000,000,000wei. Caller-supplied budgets support larger values, but
+exact selected signed children/cleanup/exit count and whole-run N require real
+coverage before adoption. Numeric signer ceilings are approved under CAP-02,
+not a claim of actual profile/complete-holdings/gas coverage or installation.
+
+LD09-B-RV01 delivery: PR216 APPROVED/MERGED at657efd3 on
+2026-10-21T06:59:09Z, exact reviewed head6367a15. Only docs changed after
+tested source3e73086. Actions39558766897 executed zero steps because account
+payments/spending limits blocked startup. Canonical status/plan, #44 and PR133
+record CAP-02 approved numeric ceilings plus remaining deployment coverage;
+local test container stopped. No installed release or signed-host acceptance.
