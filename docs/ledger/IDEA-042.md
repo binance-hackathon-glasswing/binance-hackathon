@@ -551,3 +551,73 @@ Still to do:
 - run F1–F10 on the signed development hosts after LD20, under LD21.
 
 RG2 stays BLOCKED until the hook exists.
+
+## RG2-H01 — fault-point hook implementation (2026-10-21; prospective)
+
+This builds the hook accepted in RG2-D02, as specified in RG2-D01. Criteria are written before any code (H1–H7):
+
+- H1. `larp/runtime/faults.py` uses the standard library only. `point(name)` returns after a single environment
+  lookup unless `LARP_FAULT_POINT` equals `name`. When it does, it fires only if the absolute path in
+  `LARP_FAULT_TOKEN` can be renamed atomically to `<token>.consumed`; then it sends SIGKILL to its own process. A
+  missing or relative token, or a lost rename race, never fires. An unknown point name passed in code is a
+  programming error and raises.
+- H2. The sites, which change nothing else in behaviour, are:
+  - `SignerService._sign`: F3 just before `signer.sign`, F4 just after it returns;
+  - `Executor.sign`: F5 after the signature is verified, before the SIGNED_DURABLE commit;
+  - `Executor.broadcast`: F7a after the BROADCAST_ATTEMPTED commit, before `venue.broadcast`, and F7b after
+    `venue.broadcast` returns, before the phase commit;
+  - `Executor.reconcile`: F8 after `venue.outcome` returns, before the phase commit.
+- H3. Refusals:
+  - `faults.check(mode)` refuses an unknown `LARP_FAULT_POINT` value, or an armed point with no absolute token
+    path, in any mode;
+  - it refuses any armed point when `mode == 'live'` (final);
+  - preflight applies it to the runtime and service configs it verifies, the execution and signer services apply it
+    to the run's mode at start, and `check_signing_run` applies it on every new signature.
+- H4. Unit tests cover:
+  - inert with no environment variable (no file-system call is made);
+  - inert for another point's name, a missing token or a relative token;
+  - fires exactly once with SIGKILL, and the token is consumed;
+  - every H3 refusal.
+- H5. A subprocess crash test on real PostgreSQL arms F5, F7a, F7b and F8 in turn in a child process that runs the
+  existing executor with the fake venue. Each child must die by SIGKILL (return code −9). Then a restarted executor
+  must recover:
+  - F5: `SIGNATURE_RECOVERED`, with the same bytes;
+  - F7a and F7b: no second broadcast of different bytes, and the attempt stays a possible send;
+  - F8: FINAL once.
+  In every case there is exactly one signature row per attempt.
+- H6. A test drives F3 and F4 through `SignerService._sign` with the local signer: F3 dies before the signature row
+  exists and the request is served again; F4 dies after the row exists and the request is never signed twice.
+- H7. The full suite passes. Nothing is deployed, armed on a host, or run against a wallet.
+
+### RG2-H01 results — `01d651b` + docs `1a9ceb1` (2026-10-21)
+
+- **H1 PASS.** `larp/runtime/faults.py` (stdlib only). Inert with no environment variable, verified with patched
+  `os.rename`/`isabs` that fail if touched. Inert for another point's name, a missing or relative token, or no
+  token. Fires exactly once with SIGKILL and consumes the token; a second call doesn't fire. An unknown name in
+  code raises.
+- **H2 PASS.** Sites: F3 and F4 in `SignerService._sign`, F5 in `Executor.sign`, F7a and F7b in
+  `Executor.broadcast`, F8 in `Executor.reconcile`. The existing execution, signer and preflight suites are
+  unchanged (619 passed before the new tests).
+- **H3 PASS (with one gap):**
+  - `faults.check` refuses an unknown point or a non-absolute token in any mode, and any armed point in `live`.
+  - `check_signing_run` raises `Conflict` before any other check (tested).
+  - Preflight refuses an armed `live` service config, an unknown point and a relative token, and allows an armed
+    `dev` config (tested on a synthetic release).
+  - The execution and signer service-start refusals are wired, but those start paths have no dedicated tests.
+- **H4 PASS.** `tests/runtime/test_faults.py`: 5 tests, 4 subtests.
+- **H5 PASS.** `tests/execution/test_fault_points.py`: 4 tests on real PostgreSQL. Each child exits by SIGKILL
+  (−9) and its token is consumed. After restart:
+  - F5: `AUTHORIZED`, with one signature row, and `recover_signature` gives `SIGNED_DURABLE` with the same hash;
+  - F7a: `BROADCAST_ATTEMPTED` with no resend;
+  - F7b: no resend, then `FINAL_SUCCESS` from the receipt;
+  - F8: the probe stayed durable, the phase didn't, and FINAL is reached once and stays unchanged on the next
+    reconcile.
+  In every case there is exactly one signature row.
+- **H6 PASS.** `tests/signer/test_fault_points.py`. F3 dies with no signature row, and the restarted signer serves
+  the same request once. F4 dies after the row; the restarted signer handles 0 requests and the executor recovers
+  the signature.
+- **H7 PASS.** Full suite on Linux, Python 3.12, local PostgreSQL 16: 2375 passed, 11 skipped, 3801 subtests
+  passed. Nothing is deployed or armed on a host.
+
+RG2 is no longer blocked on instrumentation. The signed-host F1–F10 runs remain under LD21, after LD20, with
+approval for each run.

@@ -22,6 +22,7 @@ import signal
 import time
 
 from larp.contracts import ContractError, Document
+from larp.runtime import faults
 
 EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 SCHEMA = 'ExecutionService.v1'
@@ -226,6 +227,10 @@ def main(argv=None):
             run = PostgresStore._run(db, config['run_id'], lock=False)
         if run['mode'] != config['mode'] or str(run['wallet_id']).lower() != config['wallet_address']:
             raise StartRefused('run differs from the execution configuration')
+        try:
+            faults.check(run['mode'])
+        except ContractError:
+            raise StartRefused('fault injection refused') from None
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED

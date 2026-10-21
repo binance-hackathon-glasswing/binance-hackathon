@@ -2,7 +2,8 @@
 
 **Decided 2026-10-21 (Keegan, IDEA-042 RG2-D02):** all three recommendations below are accepted: the F1–F10 matrix
 is frozen, the fault-point hook is to be built as specified, and Keegan approves each signer-host F3/F4 run, which
-the operator (Keegan's team) carries out. The hook isn't built yet.
+the operator (Keegan's team) carries out. **Built 2026-10-21 (RG2-H01):** `larp/runtime/faults.py`, the five
+sites below and the refusals; see "Arming a drill" at the end.
 
 Status: **DESIGN for Keegan's review. No code, config or host change.** RG2 in
 [REHEARSAL_GATES_20261019.md](REHEARSAL_GATES_20261019.md) needs a frozen fault matrix at the authorized,
@@ -135,3 +136,26 @@ Run once the unit is active again and the attempt has reached a terminal or a st
 2. Accept the fault-point hook in the release build, inert by default, with a final-mode refusal. The alternative is
    to run only the external-kill rows and record F3/F5/F7a/F7b/F8 as BLOCKED.
 3. Approve, or name someone to approve, the signer-host rows F3/F4.
+
+## Arming a drill (RG2-H01, built 2026-10-21)
+
+Run this only on the signed development hosts, after LD20, with Keegan's approval for each run.
+
+1. Pick one point: `F3`/`F4` (signer host only, and only with Keegan's explicit approval), or `F5`, `F7a`, `F7b` or
+   `F8` (`larp-execution` on `primary`).
+2. As root, create a token in the unit's runtime directory, for example
+   `install -o larp-execution -m 0600 /dev/null /run/larp-execution/drill.token`. The rename that consumes it needs
+   the service user to be able to write that directory.
+3. Add a systemd drop-in with `Environment=LARP_FAULT_POINT=F7b` and
+   `Environment=LARP_FAULT_TOKEN=/run/larp-execution/drill.token`, then run `daemon-reload` and restart the unit.
+   Preflight refuses the start if the run is `live`, the point name is unknown or the token path isn't absolute.
+4. Let a round reach the point. The process dies by SIGKILL and systemd restarts it. The token is now
+   `drill.token.consumed`, so the restarted process runs normally.
+5. Apply the six read-only pass checks above. Then remove the drop-in, run `daemon-reload`, and delete the
+   consumed token.
+
+Local evidence:
+- `tests/execution/test_fault_points.py`: F5, F7a, F7b and F8 each kill a real child process, and a restarted
+  executor recovers;
+- `tests/signer/test_fault_points.py`: F3/F4 through `SignerService`, plus the refusals at signing and preflight;
+- `tests/runtime/test_faults.py`: the hook is inert by default, fires once, and validates its configuration.
