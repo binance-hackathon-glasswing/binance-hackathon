@@ -483,3 +483,13 @@ Prospective pass criteria (before running the changed builder or tests):
   acceptance/measurement work without claiming fee, caps, signer, deployment or trade readiness.
 
 Results: pending execution after this pre-registration and implementation are committed and pushed.
+
+### RV120-02 local verification (2026-10-21)
+
+P1/P2 PASS at pushed source `839658d`: repeated construction matches every byte; both
+StrategyProfile.v1 documents validate; rehearsal differs from LD09-B only in the four
+window values/provenance; final is byte-identical. Exact hashes and reproduction command:
+[RV120-02 packet](../build/evidence/rv120-profiles-20261021/README.md).
+Strategy suite: 205 passed / 80 subtests passed (6.41 s). Add the new packet to the existing
+artifact-reproduction parametrization before mirror qualification. P3 mirror result pending.
+P4 backlog updated; owner confirmation, fee netting and LD10 coverage retained.
