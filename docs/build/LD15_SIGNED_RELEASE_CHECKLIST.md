@@ -207,3 +207,9 @@ is separate from actual reverts, and router minimum-output/recipient enforcement
 remains an accepted unverified assumption. Review state COMMENTED; no explicit exact
 current-profile/gas/model/config adoption is inferred. This update changes no profile,
 policy or runtime bytes and needs no replacement of the original qualified artifact.
+
+PR230/LD10-P02 remains BLOCKED_EXECUTION_CASH_CAP: the retained hypothetical
+max-position NVDAB SELL exceeds20.10USDT. Full exit-sizing/count/reserve and fresh
+coverage acceptance precede LD16. Original RC2 qualifies only b22207e; PR230's
+changed checker needs the subsequent applicable source qualification. RV120-RV01
+does not replace that requirement or change any limits/profile.

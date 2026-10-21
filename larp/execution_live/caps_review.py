@@ -176,6 +176,10 @@ def review(inputs, *, now, base_dir):
             fee = quantity(tx['gas'], 1) * quantity(tx['gasPrice'], 1)
             check('QUOTE_INPUT_' + sha, amount, policy.max_input_units.get(pay, 0))
             check('QUOTE_FEE_' + sha, fee, policy.max_fee_wei)
+            # Match LiveVenue's existing cash boundary: a signer-token cap alone
+            # does not prove this BUY input or SELL proceeds fit execution.
+            cash = amount if pay == USDT else quantity(rr['toTokenAmount'], 1)
+            check('QUOTE_CASH_CAP_' + sha, cash, p['per_trade_cap_units'] * 10**12)
             if quantity(tx['gas'], 1) > gas or quantity(tx['gasPrice'], 1) > price:
                 blockers.append('QUOTE_EXCEEDS_EXECUTION_GAS_LIMITS')
             coverage.add(pair)

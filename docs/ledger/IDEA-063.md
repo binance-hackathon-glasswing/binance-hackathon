@@ -553,3 +553,13 @@ Keith's COMMENTED review confirms reproducibility and supports the17bp spread;
 it is not an exact current-profile/gas/model/configuration adoption attestation.
 Fee netting, final scored adoption and actual LD16/17/19/20 owner/configuration/
 host/fill acceptance remain separate. No live/host/key/funding/trading operation.
+
+RV120-RV01 canonical sync: PR230 merged while this correction was being prepared
+(canonical57af68a). Preserve LD10-P02's new BLOCKED_EXECUTION_CASH_CAP finding:
+the hypothetical maximum NVDAB SELL returns20.106983099120719276USDT above20.10.
+Actual stock holdings in the dated packet are zero; this is a full-exit coverage
+gap requiring a reviewed complete-position disposition/count/reserve and fresh
+evidence, not a trapped actual position or a reason to loosen limits silently.
+Keith's data review does not settle that gate. PR230 changes coverage-check code;
+the older b22207e artifact does not qualify that new source. This review's own
+delta remains analysis/documentation only with no runtime/profile/policy change.

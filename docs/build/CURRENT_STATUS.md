@@ -14,6 +14,16 @@ unsupported fill-safety guarantee. [Corrected review](QUOTE_COST_REVIEW_120_2026
 His COMMENTED review does not explicitly adopt the current exact profile/gas/model/
 configuration. The selected profile, gas target and qualified runtime artifact are unchanged.
 
+LD10-P02 independent owner review (PR230): the selected profile/policy/scope
+hashes and 50 original numeric rows are consistent, but the recorded maximum
+NVDAB SELL returns 20.106983 USDT above execution's 20.10 USDT cash cap. The updated
+coverage reviewer now catches this existing runtime refusal on BUY and SELL;
+assembly also refuses the incompatible input. [Finding and next owners](evidence/ld10-owner-review-20261021/README.md).
+Full LD10 owner acceptance remains blocked on a complete exit-sizing/child-count/
+reserve disposition and applicable fresh evidence, then LD16 actual bindings.
+The original canonical RC2 qualification is unchanged and does not qualify the
+new PR230 coverage-check source or grant installation approval.
+
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
 dispatch snapshots, rejected usage/per-stage caps, a separately pinned reviewer
 prompt and request-budget reporting on a new branch from canonical697ff3a.

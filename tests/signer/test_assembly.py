@@ -108,6 +108,16 @@ class SignerAssembly(unittest.TestCase):
                 self.fixture.config, self.fixture.ledger, self.fixture.inputs = config, ledger, inputs
                 self.fixture.save_inputs()
 
+    def test_quote_above_execution_cash_cap_cannot_be_assembled(self):
+        index = next(i for i, ref in enumerate(self.fixture.inputs['quote_artifacts'])
+                     if ref['path'] == 'NVDABSELL.json')
+        record = json.loads((self.root / 'NVDABSELL.json').read_bytes())
+        record['response']['data']['routerResult']['toTokenAmount'] = str(
+            self.fixture.profile['per_trade_cap_units'] * 10**12 + 1)
+        self.fixture.inputs['quote_artifacts'][index] = self.fixture.pin('NVDABSELL.json', record)
+        with self.assertRaises(ContractError):
+            self.build()
+
     def test_missing_changed_and_wrong_router_evidence_refuse(self):
         for value in (None, evidence(router='0x' + 'cd' * 20), {'schema': 'invalid'}):
             with self.subTest(value=value):
