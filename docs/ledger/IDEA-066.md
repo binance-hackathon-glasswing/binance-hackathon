@@ -2595,3 +2595,37 @@ PC-STOP01) and the current state of `primary`. This happens in two steps:
 - M8. Limits are stated, not filled in. The trial was unsigned, so execution, finality and worker-drain timings and
   stalled-call behaviour on the signed path are MISSING_MEASUREMENT. Memory history isn't kept unless a metrics agent
   recorded it. Isaac decides the LD14 values; the packet adopts none.
+
+### LD12-M01 results — collector `d184b2b`, SSM `b37fabc0-2571-4513-ab05-88f0181ab335` (2026-10-21)
+
+Packet SHA-256 `812c4308…74aab60` (verified locally after transfer); evidence
+[`ld12-ops-measure-20261021/`](../build/evidence/ld12-ops-measure-20261021/) (`packet.jsonl` and `summary.json`).
+
+- **M1 PASS.** The run measured was `larp-dev-llm-trial-20261018t170339z` on build `ea25b52`, mode `dev`, shadow
+  execution, database `larp_trial2`: 188 events, not quarantined, epoch 2. Every LARP unit is inactive and disabled,
+  as PC-STOP01 left them; the signer unit doesn't exist on `primary`.
+- **M2 PASS.** 70 round logs in 109 chunks, all ACKed on the first attempt (code 200), none pending. Round-log time to
+  final send: p50 2.56 s, p95 5.12 s, max 5.39 s (uploader interval 5 s). The ACK follows within the 15 s HTTP
+  timeout, so the observed dispatch-to-ACK bound is at most 20.4 s.
+- **M3 PASS.** 70 rounds, all `ROUND_PLANNED` without intents, so the log is written at decision time
+  (decision-to-log 0 s). Start-to-decision: p50 18.7 s, p95 69.2 s, max 76.3 s. Assessment: p50 10.5 s, p95 60.0 s,
+  max 60.03 s, at the 60 s assessment budget. No field was missing.
+- **M4 PARTIAL.** The `anchors` table no longer exists (migration 006 drops it). `archive_outbox` shows 44 hourly
+  anchors and 3 backups, all ACKed on the first attempt with no errors. The anchor storage lag isn't derivable
+  read-only.
+- **M5 PASS.** One process session of 43.56 h on one build: no runtime restart. The journal since 2026-10-18 16:00
+  shows one scheduled restart of `larp-evidence`, and no `main process exited` or failure lines for any unit.
+- **M6 PARTIAL.**
+  - Host: 2 vCPU, 2.0 GB RAM, no swap, systemd 252.
+  - Configured `MemoryMax`: runtime 1 GiB; evidence, uploader, execution and archive 512 MiB each.
+  - The journal has no OOM or watchdog lines, kernel included.
+  - **Per-unit RSS is MISSING_MEASUREMENT.** Every unit is stopped, systemd 252 records no memory peak, and this
+    session's IAM user can't read CloudWatch metrics.
+  - Disk: database 29.3 MB after 43.6 h (`events` 10.8 MB, `audit_events` 4.5 MB). `/var/lib/larp-runtime` 50 MB,
+    `/var/lib/larp-evidence` 55 MB, journal 92 MB, and 366 MB of PC-STOP01 export copies in `/var/lib`. Root
+    filesystem 3.4 of 21.4 GB used.
+- **M7 PASS.** `chronyc`: stratum 4, leap status normal, last offset −4.3 µs, RMS 4.7 µs.
+- **M8 (limits).** The trial was unsigned with shadow execution. Execution, finality and worker-drain timings,
+  stalled-call behaviour on the signed path, and per-unit RSS stay MISSING_MEASUREMENT. They need a running signed
+  rehearsal (LD19/LD21). These are observations only; Isaac decides the LD14 values (delivery-age bound, watchdog,
+  memory).
