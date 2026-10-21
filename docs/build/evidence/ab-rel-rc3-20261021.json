@@ -1,0 +1,115 @@
+{
+ "bundle_identity": {
+  "arch": "x86_64",
+  "build_id": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+  "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+  "python_version": "3.12.15",
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+ },
+ "canonical_base": "cfde60f1c4bcd9611271af22c2f2856ea9ac13cb",
+ "ci_completed_at": "2026-10-21T16:55:53Z",
+ "ci_conclusion": "success",
+ "decision_id": "IDEA-083 AB-REL-RC3 / IDEA-049-C LD10-P03",
+ "funding": {
+  "additional_bnb_wei": 6137501130637114,
+  "captured_balance_bnb_wei": 2694498869362886,
+  "conservative_target_bnb_wei": 8832000000000000,
+  "owner": "Funding owner; separate eligible funding action and fresh reconciliation.",
+  "performed": false
+ },
+ "installation_bindings": {
+  "operations_config_sha256": null,
+  "registration_evidence": null,
+  "remaining": "Actual release/run/DB/RPC/CA/config and registration binding at LD16/LD17; do not install or sign from this unbound candidate record.",
+  "runtime_config_sha256": null,
+  "status": "UNBOUND_CANDIDATE"
+ },
+ "jobs": {
+  "host-bundle": "success",
+  "infrastructure (deploy/aws)": "success",
+  "infrastructure (deploy/bootstrap)": "success",
+  "runtime": "success"
+ },
+ "local_full_suite": {
+  "failed": 0,
+  "limitations": "Local skips add three bubblewrap and one root-mode case unavailable in this container.",
+  "passed": 2448,
+  "postgresql": "16.15",
+  "skipped": 11,
+  "subtests": 3859
+ },
+ "merge": {
+  "head_sha": "d706afeed9b168180a9dbdf15c0f63aaec089ac8",
+  "merge_commit": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+  "method": "merge",
+  "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/235",
+  "pr_number": 235,
+  "scope": "Repository merge only; host writes, signer session, keys, funding and trading remain separate."
+ },
+ "mirror_push": "fast-forward b22207e..5bee006 on codex/system-testing-20261012; no force",
+ "mirror_run_id": 39637679504,
+ "mirror_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39637679504",
+ "original_artifact": {
+  "bundle_file": "larp-5bee00600ae3-x86_64.tar.gz",
+  "bundle_sha256": "749e2fc2197c3b72fde4be7700f94b8865544b0f6d8466678e947cd8d5910446",
+  "bundle_sha256_file_matches": true,
+  "checksummed_files": 244,
+  "id": 12363800624,
+  "inner_manifest_matches_published": true,
+  "locally_rebuilt": false,
+  "manifest_files": 205,
+  "manifest_files_match_source_commit": true,
+  "manifest_sha256": "847dc027b124cc82287e99a01b43e4c6ab9d637a6b55e7de401cb56475958ca2",
+  "name": "larp-bundle-x86_64",
+  "original_files_path": "session scratchpad ld15/original (private session copy; not committed)",
+  "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+  "verified": true,
+  "zip_matches_github_digest": true,
+  "zip_sha256": "fa446a15eb5d8ba937914d3c655875f758857c7e131be9b3a82e0a2dcd26a20d"
+ },
+ "production_role_change": {
+  "applied": false,
+  "file": "deploy/postgres/roles.sql",
+  "grant": "SELECT (run_id,observation) ON execution_observations TO larp_signer",
+  "next_step": "Apply and verify during separately approved LD17 database/host installation."
+ },
+ "profile_document_sha256": "ddb8281374239cd5626f0b8432e7913ab44ea30ea2f2165fbbf176e47a7d8b17",
+ "qualification_scope": "CI-qualified canonical development rehearsal candidate only; supersedes RC2 for the LD10-P03 source.",
+ "ready_to_install": false,
+ "remaining": [
+  "Isaac LD10 acceptance and LD16 final run/release/DB/RPC/CA configuration binding.",
+  "Funding to at least the 3,072,000,000,000,000 wei exit reserve (target 0.008832 BNB) and fresh reconciliation.",
+  "LD17 separately approved per-host installation/session, LD18 key placement and the first bounded round.",
+  "Actual fee netting at LD19/20; final S1/model/deviations/final-wallet adoption remain separate."
+ ],
+ "reviewer": "Claude under Keegan explicit task delegation; no forged personal owner attestation",
+ "router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+ "runtime_command_results": {
+  "all_required_steps": "completed/success",
+  "demo": "success",
+  "docker_build": "success",
+  "docker_run": "success",
+  "pytest": {
+   "duration_seconds": 517.61,
+   "failed": 0,
+   "passed": 2452,
+   "postgresql": "14.24",
+   "skipped": 7,
+   "subtests": 3859
+  },
+  "real_systemd": {
+   "duration_seconds": 16.61,
+   "passed": 5,
+   "subtests": 5
+  },
+  "skip_explanation": "Five opt-in real-systemd tests run separately and pass; two external/private-fixture tests remain opt-in."
+ },
+ "schema": "RehearsalReleaseCandidateRecord.v1",
+ "selected_inputs": {
+  "rehearsal-deterministic.json": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250"
+ },
+ "signing_enabled": false,
+ "signing_policy_sha256": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+ "source_commit": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+ "status": "PASS_CANONICAL_CI_AND_ORIGINAL_ARTIFACT_CANDIDATE_ONLY"
+}
