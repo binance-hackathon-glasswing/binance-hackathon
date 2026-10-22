@@ -104,3 +104,14 @@ teardown; Isaac owns key placement after the existing numeric-policy approval.
 The cap/lifetime proposals remain unadopted. Combined final-branch Python
 verification and the remaining PR merge SHAs will be recorded in IDEA-058
 GA15c. Full CI and all hosted/live gates remain open.
+
+### SA5 record — signed dev rehearsal teardown (2026-10-22)
+
+T1 was applied for IDEA-049-C SJ-06 at about 11:20Z. It added the 8 IDEA-080 resources and the LD08 low-gas alarm.
+SA4 and SA9 passed (SJ-06 J5). The bundle, `signer.json` and key were then placed: S1, K1 by Keegan, S1b and S2. Yao
+applied T2 between about 14:19Z and 14:23Z (`0 to add, 0 to change, 8 to destroy`). **At 14:23Z**,
+`aws ec2 describe-vpc-endpoints` for `ssm`, `ssmmessages` and `ec2messages` returned none, and primary's SSM still
+worked (SA9). The access window was therefore about 3 hours on the dev rehearsal, well before final activation
+(SA7). Next window: the SJ-09 S1 swap (Oct 24), then the final-wallet key (Oct 26–29), torn down before
+Oct 29 00:00 UTC.
+

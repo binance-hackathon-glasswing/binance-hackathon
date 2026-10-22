@@ -2284,3 +2284,32 @@ Signer `i-0f8fe5d5fe5ccba36`, SSM command `a1d6f8e9…`, exit 0, about 90 s afte
 
 This closes the RV01 item "run `checks/signer-status.sh` before T2". Next: T2 (Yao: tear down signer access, SA5) and
 M9.
+
+#### SJ-06 T2, SA5, SA9 and M9 — PASS; the install run sheet is complete (2026-10-22 14:18–14:23Z, Yao ran them)
+
+- **T2 plan:** saved plan `signer-access-off.tfplan`, with `enable_signer_provisioning = false` in the git-ignored
+  `development.tfvars`. It shows **0 to add, 0 to change, 8 to destroy**, exactly T1's IDEA-080 resources: the
+  endpoint security group, its ingress rules from primary and from the signer, the signer egress rule, endpoints
+  `ssm` / `ssmmessages` / `ec2messages`, and the signer role's SSM attachment. The LD08 low-gas alarm stays. Yao
+  applied it. Deleting the endpoints took several minutes, which is normal for interface endpoints.
+- **SA5:** at 14:23Z, `aws ec2 describe-vpc-endpoints` filtered on the three SSM service names returns nothing.
+  Signer access is off, and the signer is again reachable only from the database side.
+- **SA9:** `checks/primary-status.sh` over SSM (command `1681a6c0…`, 14:23:13Z, exit 0), so primary's SSM works on
+  its own route. Evidence, uploader, runtime and **execution** are all active with 0 restarts, and the archive timer
+  is active. Runtime and execution each print `release_verified: true` and nothing else. Archive health is
+  `healthy: true`, and the anchor and backup are `ACK`.
+- **M9:** both S3 transfer packages are gone. `releases/rehearsal-20261022t111137z/` (installed RC4) and
+  `releases/rehearsal-20261022t105623z/` (superseded earlier package) each had 12 object versions deleted. Errors
+  were `null`, and each ended with `M9_DONE`, so no version or delete marker remains under either prefix.
+
+**SJ-06 pass criteria:** J1–J6 PASS.
+- **J7:** execution and SA5 PASS. The signer can't be checked directly after T2. Its last direct check was 14:15Z,
+  active with 0 restarts. Its first signature at J8 will show that it stayed active.
+- **J8:** open. It needs the first agent round after 2026-10-23T00:00Z, with approve, swap, receipts, accounting
+  and STORED ACK. Watch it with `checks/trading-status.sh` and `chain-monitor.py` (SJ-08).
+
+Still open from SJ-06-RV01 and not gating:
+- `--region` on the hosts' `aws s3 cp`;
+- the mid-run dev-wallet top-up decision (Keegan/Isaac).
+
+To change anything on the signer again (the SJ-09 swap on Oct 24), T1 has to be applied again.
