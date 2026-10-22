@@ -1899,6 +1899,160 @@ hashes (just before installation, because quotes go stale), partner installation
 and host acceptance (LD17), key placement (LD18), the optional top-up toward
 0.008832 BNB (Isaac, funding), #27, and gas/route-fee qualification.
 
+### SJ-06 — signed dev rehearsal installation on the LV-01 build (preregistered 2026-10-22)
+
+**Decisions (Yao Zhu, in chat, 2026-10-22):** go ahead to trading on the dev wallet. Rebuild with LV-01
+(IDEA-049-A amendment 32), reassemble `signer.json` for that build, and install. Isaac places the key, and Yao
+runs every host command and the Terraform signer-access change. Yao approves the reassembled candidate
+**provided only `build_id` differs**: same CAP-02 policy `3241abd3…`, router policy `05759e90…`, profile
+`e95d5842…` / `ddb82813…`, run `larp-dev-rehearsal-20261022`, database `larp_rehearsal1`, untrusted mode, all
+checks COVERED. Any other difference needs a new decision. This extends SJ-04-OA01's scope to the new build
+only. Why a rebuild: at `fa1b6c9` a signed run cannot start (LV-01).
+
+Run sheet and scripts: [docs/build/ops/rehearsal-install-20261022/](../build/ops/rehearsal-install-20261022/README.md).
+
+**Pass criteria (each recorded with its `results/` output; hashes only):**
+- **J1 build:** mirror CI on the merged canonical commit is green on all four jobs. M1 verifies the bundle, its
+  sidecar, `SHA256SUMS`, build ID and published manifest.
+- **J2 recapture:** M3's probe hash is `692787e4…`. Review/assembly report `ASSEMBLED_REQUIRES_APPROVAL`,
+  `numeric_status: COVERED`, with no blocker other than the approvals named above. The new `signer.json` differs
+  from `f632bbcb…` only in `build_id` (checked by a field-by-field diff).
+- **J3 package:** M4's prepare gives `dev` / `service` / `deterministic` / `live`, profile `e95d5842…`. Execution
+  and runtime identity fields agree. One bound `release.json` carries runtime, uploader, operations, execution and
+  signer hashes, and the local signer `check` passes against it.
+- **J4 primary:** P3's preflight, `service check`, execution `check` and routes all PASS. P4 initializes and
+  activates the run (`signing_enabled: false` in its output), and evidence, uploader and runtime are active.
+- **J5 signer:** T1 applies only the IDEA-080 resources, and SA9 passes. S1's preflight, signer `check`
+  (UNTRUSTED, `05759e90…`, DEV-23) and SA4 routes all PASS.
+- **J6 key:** S2 prints `key_loader: PASS`, `wallet_matches: true`, and the signer start line `started: true`,
+  `swap_decoder: UNTRUSTED`. The key never appears in any output (SA6).
+- **J7 execution:** P5 leaves `larp-execution` active with no exit 2/3/4. T2 removes the endpoints (SA5), and the
+  signer stays active.
+- **J8 first round (LD19/LD20):** after 2026-10-23 00:00 UTC the agent's own round produces an approve and a swap,
+  with canonical receipts, accounting and a STORED ACK. Every failure or abort is recorded as it happened.
+
+Any refusal stops the sheet at that step. What the refusal says is recorded here, and nothing is widened to get
+past it.
+
+#### SJ-06-A1 — local build instead of mirror CI (preregistered 2026-10-22)
+
+**Decision (Yao Zhu, in chat):** "ignore the mirror ci keep going". J1 changes to a local bundle built
+from the pushed canonical merge `d03bbb1` (PR243) with `tools/build_release_bundle.py`. This follows PC-BUILD01
+(IDEA-066), the route the 43 h trial used. The bundle has no CI test provenance. The local full suite is the only
+test record: LV-01 2140/0/502, plus Yao's review commit `d6197c7b` at 1975/0/502.
+
+**J1′ pass criteria** (`mac/m1-local-bundle.sh`):
+- The builder accepts the clean worktree on `codex/system-testing-20261012` at `d03bbb1`.
+- The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- Compared file by file with the CI-built RC3a bundle `2200737a…` (artifact 12365166625):
+  - the only differences are release files that `fa1b6c9..d03bbb1` changed (expected:
+    `release/config/intelligence/intelligence.v1.json` and `release/larp/sources/live.py`, a docstring);
+  - the CPython archive, every wheel, `rds-ca.pem` and `provision.sh` are byte-identical;
+  - `BUNDLE.env` differs only in `build_id`.
+
+Anything else stops the sheet.
+
+#### SJ-06-A1 results — J1′ PASS (2026-10-22, local)
+
+- **Build:** `mac/m1-local-bundle.sh`, from the clean worktree on `codex/system-testing-20261012` at `d03bbb1` (the
+  pushed head), macOS arm64 with a `requirements.lock` venv. The result is `larp-d03bbb16cf51-x86_64.tar.gz`, sha256
+  `0286e727838796dac9b71a90f76fc0ec6bb80da883c5db67c7faab8392f216f8`, manifest `339de5e6…` (205 files).
+- **Integrity:** the sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- **Against CI RC3a `2200737a…`:** only `release/config/intelligence/intelligence.v1.json` and
+  `release/larp/sources/live.py` differ, exactly the release files `fa1b6c9..d03bbb1` changed. Unchanged: CPython
+  `0e56475e…`, every wheel, `rds-ca.pem` `d7389074…`, `provision.sh` `d7905de4…`, and `BUNDLE.env` apart from
+  `build_id`. The manifest differs only in `build_id`, `build_origin` (the registered origin, not a mirror) and
+  those two file hashes.
+- **Limit:** no CI test run on this commit. Linux, PostgreSQL and systemd jobs did not run; local suites only.
+
+#### SJ-06 J2 — PASS (recapture 2026-10-22 10:51:53Z, Yao ran M2 and M3)
+
+- **Probe:** regenerated from the release checkout `d03bbb1`, hash `692787e4…` as reviewed. The read-only SSM
+  capture on primary exited cleanly (empty stderr).
+- **Review at 10:52:35Z:** `numeric_status: COVERED`, **98/98 checks covered**, 24 quotes, no missing quote coverage.
+- **Holdings at block 129117132:** USDT 96 (DEFICIT of exactly the accepted 2 USDT against the retired ledger),
+  BNB 5,325,625,054,330,011 wei (SURPLUS), all five stocks 0 (MATCH). Unchanged since SJ-04.
+- **Candidate:** `signer.json` `cd0b38b8287ef89a7e7e891ac8e3b5c157f24e3c0e3c957130713b655e4d3f96`, status
+  `ASSEMBLED_REQUIRES_APPROVAL`, only blocker `OWNER_REVIEW_REQUIRED`. A field-by-field diff against SJ-04's
+  `f632bbcb…` changes `build_id` alone (`fa1b6c9` → `d03bbb1`). That meets SJ-06's approval condition, so Yao's
+  in-chat approval covers this candidate. `ready_to_install`, `signing_enabled` and `gate_b_accepted` stay false in
+  the report.
+- **M2:** Yao reports the bundle upload done. P2 re-checks the bundle hash on each host.
+
+#### SJ-06 J3 — PASS (M4 package 2026-10-22 10:56:23Z, Yao ran P1, P2 and M4)
+
+- **P1:** the retired trial's 10 configs moved to `/etc/larp-history/ea25b52-larp-dev-llm-trial-20261018t170339z/`
+  with their hashes printed (for example `release.json` `e592a13e…`). Nothing was deleted, and no service was active.
+- **P2 (primary):** build `d03bbb1` installed from bundle `0286e727…`; installed manifest `339de5e6…`, CA `d7389074…`.
+  `larp-execution` is disabled.
+- **M4, first run:** refused at `prepare` (output folder not git-ignored in the release checkout) after a read-only
+  capture. Nothing was written or uploaded. Fixed in `4ead926b`.
+- **M4, re-run:** fresh capture, then prepare `dev` / `service` / `deterministic` / `live` for run
+  `larp-dev-rehearsal-20261022` in `larp_rehearsal1`, profile `e95d5842…`. The initial state is 96 USDT, BNB
+  5,325,625,054,330,011 wei and zero stocks, pinned by `runtime.json`.
+  - **Package check:** M4 ran `gate_a_check` after adding the host files, so it reported
+    `PACKAGE_INTEGRITY: FAIL` (unexpected files; a script ordering bug, now fixed). Re-run on exactly `prepare`'s
+    own files, it gives **7/7 PASS**, `local_ready: true` (CI_RELEASE_BYTES, PACKAGE_INTEGRITY, PACKAGE_JSON,
+    PINNED_INPUTS, SERVICE_CONFIGS, SIGNED_IDENTITIES, SOURCE_TERMS).
+  - **Bound `release.json` `aab80bb7…`:** CI manifest `339de5e6…`, 205 files. Its runtime, operations, uploader,
+    execution (`96435836…`) and signer (`cd0b38b8…`) hashes all equal the package files, and the registration
+    evidence names the same build.
+  - **Local signer `check`:** `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - **Execution RPC:** `BSC_BNBCHAIN_PUBLIC`. The package is uploaded under `releases/rehearsal-20261022t105623z/`.
+
+#### SJ-06-A2 — back to the original CI artifact (Keegan's PR244 review, 2026-10-22)
+
+Keegan's review on `4ead926` (CHANGES_REQUESTED), as release owner: the project's release rule (LD15; RC2, RC3 and
+RC3a) installs the original qualified CI artifact, never a local rebuild. A local bundle has no Linux, PostgreSQL or
+systemd test run, and its manifest differs in `build_origin`, which is the manifest P4 registers for the whole run.
+Keegan pushed `d03bbb1` to `Keegan4/Keegan4-larp-ci-mirror` (run 39766825984) and records it as **RC4**.
+
+**What changes**
+- **SJ-06-A1 is superseded.** The local bundle `0286e727…` (also uploaded to S3) must never be installed. Its J1′
+  comparison stays as a reproducibility record only.
+- **J1 is the RC4 artifact again.** `mac/m1-fetch-bundle.sh` defaults to Keegan's mirror and requires the zip to
+  match GitHub's recorded artifact digest.
+- **Fail-closed M4.** It now stops unless `gate_a_check` is 7/7 PASS with `local_ready: true`, and uses
+  `require()` instead of `assert`, so `python -O` cannot strip a check.
+- **The approval needs Isaac's confirmation.** Keegan asks Isaac, as owner of the SJ-04-OA01 policy approval, to
+  confirm that the build-only extension covers `cd0b38b8…`. P4 waits for that confirmation and for RC4.
+
+**State at the switch.** P1, P2 and P3 ran with the local bundle. P3 passed on primary at 11:0xZ: package hashes
+match, `release_verified`, runtime and execution `check`s valid, routes PASS (`a6fc1164…`, 13 destinations), and
+chrony in sync. **P4 did not run, so no run is registered.** The new step `host/p0-supersede-local-bundle.sh` checks
+that the run does not exist, then moves the local release and P3's configs aside (moves only). Then P2, M4 and P3
+are re-run with the RC4 artifact. The M3 candidate `cd0b38b8…` binds `build_id` only and stays valid.
+
+#### SJ-06 J1 — PASS on RC4, the original CI artifact (2026-10-22)
+
+- **CI:** `Keegan4/Keegan4-larp-ci-mirror` run 39766825984 on `d03bbb1`, all four jobs green (bootstrap,
+  AWS infrastructure, runtime, host-bundle).
+- **Artifact** 12419733594 `larp-bundle-x86_64`: the zip sha256 `efe06485…` matches GitHub's recorded digest.
+  Bundle `larp-d03bbb16cf51-x86_64.tar.gz` `270fe81f345a4d5f7aad1e47deda7cdfd54b786380e0fe85b9f5a2e8f3b96dc3`,
+  manifest `5ea11a84287e790e8d2246c76203e5f1040f6c8fd90f627e9363eaecbaa95b6a` (205 files), `provision.sh`
+  `d7905de4…`, CA `d73890748…`.
+- **Against the superseded local bundle:** the manifests differ only in `build_origin` (Keegan's mirror), and the
+  bundles only in `release-manifest.json` and `SHA256SUMS`, as expected.
+- **Next:** M2 uploads RC4 (same S3 key; the bucket is versioned). P0 sets the local install aside on primary.
+  Then P2, M4 and P3 on RC4.
+
+#### SJ-06 RC4 switch — P0, P2 and J3 PASS (2026-10-22 ~11:12Z, Yao ran M2, P0, P2 and M4)
+
+- **P0:** `run_exists: false`. Moved aside, by moving only: the local release `d03bbb1`, its downloaded bundle, and
+  P3's 11 configs (local `release.json` `aab80bb7…`). They are in
+  `/etc/larp-history/superseded-local-d03bbb1-*` and `/root/superseded/`.
+- **P2:** RC4 installed on primary; manifest `5ea11a84…`, CA `d7389074…`. `larp-execution` is disabled.
+- **M4 (package `20261022T111137Z`):** `gate_a_check` **7/7 PASS** with `local_ready: true`, now part of the
+  fail-closed path. The bind gives `release.json` `1db4571d73e49a81e4e4ce1008f49b26353103cbb0aa80708cd90f3b7cd4ab42`:
+  CI manifest `5ea11a84…`, 205 files, `build_origin` Keegan's mirror.
+  - It pins runtime, operations, uploader, execution (`96435836…`) and signer (`cd0b38b8…`), all equal to the
+    package files.
+  - The registration evidence names RC4 artifact 12419733594.
+  - Initial state: 96 USDT, BNB 5,325,625,054,330,011 wei, zero stocks.
+  - Local signer `check`: UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - Uploaded under `releases/rehearsal-20261022t111137z/`.
+- **Still before P4:** Isaac's confirmation of the build-only approval extension (SJ-06-A2).
+
 #### LD10-P03-T1 — full-portfolio flatten test for #56 / WR14 (2026-10-22)
 
 `tests/risk/test_exit_children.py::test_full_portfolio_flatten_completes_on_the_bnb_held_at_new_risk_end`
@@ -1920,3 +2074,55 @@ against RC3a. [Receipt](../build/evidence/ab-rel-rc4-20261022.json). The SJ-06-A
 a different artifact with no CI test provenance. Per the release rule, SJ-06 installs `270fe81f…`: re-run M1
 (from the Keegan4 mirror) and M2, and bind `release.json` from manifest `5ea11a84…` at M4. Signer candidate
 `cd0b38b8…` binds `build_id` only and is unaffected.
+
+#### SJ-06 J4 (primary install) — P3 PASS on RC4 (2026-10-22 11:13:45Z)
+
+- **P3:** installed package `releases/rehearsal-20261022t111137z/`. All 11 files match M4's hashes (`release.json`
+  `1db4571d…`, `execution.json` `96435836…`, `registration-evidence.json` `9585e477…`).
+- **Checks:** `preflight --profile host` gives `release_verified: true`. Runtime `service check` and execution
+  `check` are `configuration_valid`. Routes PASS (`52803bf7…`, 13 destinations); chrony in sync (Normal, 4e-7 s).
+  stderr is empty.
+- **Keegan's follow-up on PR244 (11:14Z):** RC4 receipt PR246 merged (2470 passed / 7 skipped, systemd 5/5,
+  artifact 12419733594 verified). That is the same bundle (`270fe81f…`) and manifest (`5ea11a84…`) that M1 checked
+  and P2 installed.
+- **Waiting before P4 (init/activate):** Isaac's confirmation of the build-only approval extension, and Keegan's
+  re-review of PR244, which is still CHANGES_REQUESTED.
+
+#### SJ-06 T1 plan — 9 to add, accepted (2026-10-22 ~11:20Z)
+
+The saved plan `signer-access-on.tfplan` (enable_signer_provisioning = true) creates the 8 IDEA-080 resources
+expected:
+- the endpoint security group;
+- ingress rules from primary and from the signer;
+- the signer egress rule;
+- endpoints `ssm`, `ssmmessages` and `ec2messages`;
+- `AmazonSSMManagedInstanceCore` on the signer role.
+
+It also creates **`aws_cloudwatch_metric_alarm.service["runtime-low-gas"]`**: the LD08 initial-only gas alarm
+from merged `1073db69` (2026-10-20), never applied before. It fires on `LARP/Runtime GasPairUnaffordable` > 0 for
+2×300 s, treats missing data as breaching like the other service alarms, and goes to the existing alarm topic.
+
+Nothing changes or is destroyed. Yao accepted all 9 in chat ("the low-gas alarm is fine") and runs the apply.
+Expect one ALARM email from the new alarm until the runtime publishes the metric after P4.
+
+#### SJ-06 J5 (access) — T1 applied; signer SSM Online after one reboot (2026-10-22)
+
+- **T1:** the endpoints `ssm`, `ec2messages` and `ssmmessages` are `available` with private DNS from
+  11:20:45Z, and `AmazonSSMManagedInstanceCore` is attached to `larp-dev-signer`.
+- **First P2s (~11:25Z):** refused by SSM itself (`InvalidInstanceId … not in a valid state`). The signer's agent
+  was not registered after six days with no route, so nothing ran on the host.
+- **Fix:** Yao rebooted the signer once. At 11:29:35Z both hosts are `Online` (agent 3.3.5390.0): signer last ping
+  11:27:23Z, and primary still Online, which is **SA9 PASS**. EC2 status checks are ok/ok.
+- **Next:** re-run P2s, then S1 (with SA4 routes).
+
+#### SJ-06 J5 — PASS: signer installed on RC4 (2026-10-22 11:31–11:32Z)
+
+- **P2s:** RC4 installed on the signer; manifest `5ea11a84…`, CA `d7389074…`. `larp-signer` is disabled.
+- **S1:** files installed with matching hashes (`release.json` `1db4571d…`, the same bytes as primary;
+  `signer.json` `cd0b38b8…`; router policy `05759e90…`). `/etc/larp/signer` is `700 root:root`.
+  - `preflight --profile host`: `release_verified: true`.
+  - Signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - **SA4 routes PASS** (`cb298b10…`, 6 destinations): no internet route while the endpoints are up.
+  - Chrony in sync; stderr empty.
+- **Left before the first agent round:** Isaac's confirmation (SJ-06-A2) and Keegan's re-review of PR244, then P4,
+  K1 (Isaac), S2, P5, T2 (SA5) and M9.
