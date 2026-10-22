@@ -9,8 +9,8 @@ holdings, gas and alerts still work and price_error is set.
 Every poll: finalized block, nonce, on-chain holdings, router allowances and Web3 token prices. When the nonce
 moves, it finds the wallet's new transactions in the blocks since the last poll and decodes each receipt's
 Approval/Transfer logs into fills. It keeps average cost per token, realized and unrealized PnL in USDT, and gas
-spent in BNB, and it flags anything that looks like an error. Appends to monitor/{snapshots,transactions,alerts}.jsonl
-next to this folder and prints one summary line per poll. Public chain data plus the team's read-only Web3 key
+spent in BNB, and it flags anything that looks like an error. Appends to {snapshots,transactions,alerts}.jsonl in the
+output folder above and prints one summary line per poll. Public chain data plus the team's read-only Web3 key
 (prices only). Nothing is signed or sent.
 """
 import argparse, json, os, sys, time, urllib.request
@@ -177,15 +177,15 @@ def poll(s):
     nonce = int(rpc('eth_getTransactionCount', [WALLET, tag]), 16)
     if nonce > s['nonce']:
         start = s['block'] + 1 if s['block'] else block - 1200
-        txs = sorted(wallet_txs(start, block), key=lambda t: int(t['nonce'], 16))
-        seen = {int(t['nonce'], 16) for t in txs}
-        missing = [n for n in range(s['nonce'], nonce) if n not in seen]
+        txs = {int(t['nonce'], 16): t for t in wallet_txs(start, block)}
+        missing = [n for n in range(s['nonce'], nonce) if n not in txs]
         if missing:
             alerts.append(dict(kind='NONCES_NOT_FOUND_IN_SCAN', nonces=missing, scanned=[start, block]))
-        for tx in txs:
-            if int(tx['nonce'], 16) < s['nonce']:
-                continue
-            d = decode(tx)
+        # Book only consecutive nonces from s['nonce'] and advance it per transaction. A gap, or a read error part-way,
+        # then leaves the rest for the next poll's rescan of the same blocks without booking anything twice or out of
+        # order (a sell before its buy).
+        while s['nonce'] < nonce and s['nonce'] in txs:
+            d = decode(txs[s['nonce']])
             s['gas'] += d['gas_bnb_wei']
             if d['status'] != 1:
                 s['failed'] += 1
@@ -199,11 +199,9 @@ def poll(s):
                 s['trades'] += 1
                 apply_fill(s, d, alerts)
             append('transactions.jsonl', d)
-        if missing:
-            # Keep the scan start, so the next poll searches these blocks again.
-            hold_scan = True
-        else:
-            s['nonce'] = nonce
+            s['nonce'] += 1
+        # Keep the scan start while any nonce is still unbooked, so the next poll searches these blocks again.
+        hold_scan = s['nonce'] < nonce
     held, allowance = balances(tag)
     px = prices()
     for sym in STOCKS:

@@ -2179,8 +2179,8 @@ read-only and change nothing the agent does.
 **1. `mac/chain-monitor.py` (Mac; public BNB Chain RPC plus the read-only Web3 key for prices).** Each poll (60 s)
 reads the finalized block, nonce, holdings, router allowances and token prices. When the nonce moves, it decodes the
 wallet's new transactions from their receipts' Transfer and Approval logs into fills, and keeps an average-cost book:
-realized and unrealized PnL in USDT, equity excluding BNB, and gas in BNB. Output goes to
-`monitor/{snapshots,transactions,alerts}.jsonl`.
+realized and unrealized PnL in USDT, equity excluding BNB, and gas in BNB. Output goes to the git-ignored
+`deploy/activation/rehearsal-monitor/{snapshots,transactions,alerts}.jsonl` (`LARP_MONITOR_DIR` changes it).
 
 It raises an alert on any of these:
 - a failed transaction;
@@ -2201,6 +2201,14 @@ Checked before use:
 - **Synthetic book:** buying 0.1 NVDAB for 20 USDT, then selling half for 11 USDT, gives a realized +1.0 USDT and
   a remaining basis of 10.0.
 - **A bug the tests caught:** a mistyped Transfer topic, fixed before any live use.
+- **PR249 review fix (offline, before any live fill):** a poll that found the nonces with a gap (a block the
+  public RPC did not return), or that hit a receipt error part-way, booked the transactions it had and then booked
+  them again on the next poll's rescan (trades, gas and fills counted twice), and could book a sell before its buy.
+  The monitor now books only consecutive nonces and advances its nonce per transaction. An offline harness with a
+  stubbed RPC (clean scan; a missing nonce 4 or 5 on the first poll; a balance-read error; a receipt error) gives 2
+  trades, 0.05 NVDAB, realized +1 USDT and the gas of 2 transactions in every case; before the fix 3 of the 5 cases
+  were wrong. Still open: if the monitor first starts more than 1,200 blocks after a fill, it never finds that nonce
+  and alerts `NONCES_NOT_FOUND_IN_SCAN` on every poll, so start it before `trade_after` and keep its `state.json`.
 
 **2. `checks/trading-status.sh` (primary, run by Yao).** One READ ONLY transaction as `larp_execution`, the role
 with SELECT on every table read. It prints the run state and portfolio; rounds by status; event kinds and the
