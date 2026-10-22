@@ -1898,3 +1898,38 @@ Still open (not assistant actions): a fresh pre-install recapture with the same
 hashes (just before installation, because quotes go stale), partner installation
 and host acceptance (LD17), key placement (LD18), the optional top-up toward
 0.008832 BNB (Isaac, funding), #27, and gas/route-fee qualification.
+
+### SJ-06 — signed dev rehearsal installation on the LV-01 build (preregistered 2026-10-22)
+
+**Decisions (Yao Zhu, in chat, 2026-10-22):** go ahead to trading on the dev wallet. Rebuild with LV-01
+(IDEA-049-A amendment 32), reassemble `signer.json` for that build, and install. Isaac places the key, and Yao
+runs every host command and the Terraform signer-access change. Yao approves the reassembled candidate
+**provided only `build_id` differs**: same CAP-02 policy `3241abd3…`, router policy `05759e90…`, profile
+`e95d5842…` / `ddb82813…`, run `larp-dev-rehearsal-20261022`, database `larp_rehearsal1`, untrusted mode, all
+checks COVERED. Any other difference needs a new decision. This extends SJ-04-OA01's scope to the new build
+only. Why a rebuild: at `fa1b6c9` a signed run cannot start (LV-01).
+
+Run sheet and scripts: [docs/build/ops/rehearsal-install-20261022/](../build/ops/rehearsal-install-20261022/README.md).
+
+**Pass criteria (each recorded with its `results/` output; hashes only):**
+- **J1 build:** mirror CI on the merged canonical commit is green on all four jobs. M1 verifies the bundle, its
+  sidecar, `SHA256SUMS`, build ID and published manifest.
+- **J2 recapture:** M3's probe hash is `692787e4…`. Review/assembly report `ASSEMBLED_REQUIRES_APPROVAL`,
+  `numeric_status: COVERED`, with no blocker other than the approvals named above. The new `signer.json` differs
+  from `f632bbcb…` only in `build_id` (checked by a field-by-field diff).
+- **J3 package:** M4's prepare gives `dev` / `service` / `deterministic` / `live`, profile `e95d5842…`. Execution
+  and runtime identity fields agree. One bound `release.json` carries runtime, uploader, operations, execution and
+  signer hashes, and the local signer `check` passes against it.
+- **J4 primary:** P3's preflight, `service check`, execution `check` and routes all PASS. P4 initializes and
+  activates the run (`signing_enabled: false` in its output), and evidence, uploader and runtime are active.
+- **J5 signer:** T1 applies only the IDEA-080 resources, and SA9 passes. S1's preflight, signer `check`
+  (UNTRUSTED, `05759e90…`, DEV-23) and SA4 routes all PASS.
+- **J6 key:** S2 prints `key_loader: PASS`, `wallet_matches: true`, and the signer start line `started: true`,
+  `swap_decoder: UNTRUSTED`. The key never appears in any output (SA6).
+- **J7 execution:** P5 leaves `larp-execution` active with no exit 2/3/4. T2 removes the endpoints (SA5), and the
+  signer stays active.
+- **J8 first round (LD19/LD20):** after 2026-10-23 00:00 UTC the agent's own round produces an approve and a swap,
+  with canonical receipts, accounting and a STORED ACK. Every failure or abort is recorded as it happened.
+
+Any refusal stops the sheet at that step. What the refusal says is recorded here, and nothing is widened to get
+past it.
