@@ -2246,7 +2246,7 @@ Signer `i-0f8fe5d5fe5ccba36`, SSM command `d6547f26…`, exit 0, 14:10:18–14:1
 **Signing is now on for the dev wallet.** No transaction can be sent until P5 starts `larp-execution`, and the
 profile allows no buy before 2026-10-23T00:00Z. Next: the send-RPC decision (SJ-06-RV01), then P5.
 
-#### SJ-06-RV01-D1 — send RPC accepted for the dev rehearsal only (Yao, 2026-10-22 ~14:20Z)
+#### SJ-06-RV01-D1 — send RPC accepted for the dev rehearsal only (Yao, 2026-10-22 ~14:12Z)
 
 **Decision (Yao, in chat):** "I accept BSC_BNBCHAIN_PUBLIC as the execution (send) RPC for the dev rehearsal
 larp-dev-rehearsal-20261022 only; GAP-29 stays open for the final contest."
