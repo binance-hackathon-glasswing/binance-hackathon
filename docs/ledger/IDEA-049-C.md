@@ -2273,3 +2273,14 @@ Primary `i-040fc5fea8b700e9a`, SSM command `934177ee…`, exit 0, 14:14:00–14:
 
 **The signed dev rehearsal is now fully running:** runtime, execution and signer are all up. The profile allows no buy
 before 2026-10-23T00:00Z. Next: `checks/signer-status.sh` while signer access is still on, then T2 and M9.
+
+#### SJ-06 signer-status before T2 — PASS (2026-10-22 14:15Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `a1d6f8e9…`, exit 0, about 90 s after P5 started execution.
+- `larp-signer` active with 0 restarts.
+- Its last lines: `release_verified: true`, then one start line (`"started": true`, `"signing_enabled": true`,
+  UNTRUSTED, policy `05759e90…`, DEV-23, CAP-02). No refusal or restart line follows it.
+- `/etc/larp/signer` is `700 root:root`, and `wallet.key` is `600 root:root` with one link.
+
+This closes the RV01 item "run `checks/signer-status.sh` before T2". Next: T2 (Yao: tear down signer access, SA5) and
+M9.
