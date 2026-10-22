@@ -19,7 +19,13 @@ sleep 5
 systemctl start larp-uploader larp-runtime
 systemctl start larp-archive.timer
 sleep 30
+bad=0
 for u in larp-evidence larp-uploader larp-runtime larp-execution larp-archive.timer; do
-  echo "$u $(systemctl is-active $u || true) restarts=$(systemctl show $u -p NRestarts --value)"
+  state=$(systemctl is-active $u || true); restarts=$(systemctl show $u -p NRestarts --value)
+  echo "$u $state restarts=$restarts"
+  # SJ-06-RV01: fail closed. Execution must still be off; every other unit active with no restarts.
+  if [[ $u == larp-execution ]]; then [[ $state != active ]] || bad=1
+  else [[ $state == active && $restarts == 0 ]] || bad=1; fi
 done
+[[ $bad == 0 ]] || { echo "a unit is not in its expected state; stop here (no P4_DONE)"; exit 5; }
 echo P4_DONE
