@@ -120,7 +120,8 @@
    "host_bindings": "all null",
    "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
-   "log_sha256": "49dcb082a4cb627574ec33919b11f8c20a0487ba1d34afa12ea1a05450591f57"
+   "log_sha256": "49dcb082a4cb627574ec33919b11f8c20a0487ba1d34afa12ea1a05450591f57",
+   "reproducibility": "bundle and manifest bytes equal SJ-06-A1 independent local build (0286e727.../339de5e6..., recorded in ab-rel-rc4-20261022.json); installable artifact remains RC4 CI bundle 270fe81f..."
   },
   {
    "name": "host_bundle_provision_both_roles",
@@ -173,8 +174,9 @@
   },
   {
    "name": "mirror_ci_run",
-   "status": "NOT_VISIBLE",
-   "detail": "Keegan4/Keegan4-larp-ci-mirror returns HTTP 404 to this account; no run recorded for this commit"
+   "status": "RECORDED_BY_RELEASE_OWNER",
+   "detail": "AB-REL-RC4 (PR246, merged after this run): all four jobs PASS, 2470 passed / 7 skipped / 3882 subtests, equal to this local run; mirror returns HTTP 404 to this account, not independently re-read",
+   "run_id": 39766825984
   },
   {
    "name": "signed_rehearsal_start_path",
@@ -196,7 +198,21 @@
     "larp/intelligence/config.py:75",
     "larp/runtime/service.py:249",
     "larp/signer/service.py:233"
-   ]
+   ],
+   "status_update": {
+    "read_utc": "2026-10-22T11:25Z",
+    "canonical": "887dab39",
+    "done": [
+     "RC4 mirror qualification and original artifact (PR246)",
+     "signer.json cd0b38b8... build-only reassembly, 98/98 covered (PR244 SJ-06 J2)",
+     "local signer check on RC4-bound package (PR244 M4)"
+    ],
+    "remaining": [
+     "Isaac confirms build-only extension of SJ-04-OA01 for cd0b38b8...",
+     "PR244 review (CHANGES_REQUESTED) and merge",
+     "then P4 init/activate"
+    ]
+   }
   },
   {
    "id": "SC-01-F2",
@@ -205,10 +221,14 @@
    "summary": "prepare_trial_db.py asserts a larp_trial* name; the rehearsal DB larp_rehearsal1 has no tracked override, and the guard is an assert.",
    "refs": [
     "docs/build/ops/llm-trial-20261018/mac/prepare_trial_db.py:13"
-   ]
+   ],
+   "status_update": {
+    "addressed_by": "PR244 prepare_rehearsal_db.py (fixed target, explicit refusal)",
+    "remaining": "PR244 merge"
+   }
   }
  ],
- "status": "ENGINEERING_CHECKS_PASS_DEPLOYMENT_BLOCKED",
+ "status": "ENGINEERING_CHECKS_PASS; F1 OPEN (approval/merge pending); F2 OPEN (merge pending)",
  "readiness_flags": {
   "ready_to_install": false,
   "signing_enabled": false,

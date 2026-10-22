@@ -17,12 +17,13 @@ Remaining: pre-install recapture with the same hashes, then LD17 installation
 (host bind and `check`), LD18 key placement and LD19 first round. All readiness
 flags stay false.
 
-**Systems check SC-01 (2026-10-22, canonical `d03bbb1`): the paragraph above is superseded
-for installation.** Every local check passes: 2470 tests, 0 failures; systemd 5/5; demo,
-Docker, Terraform 19/19 + 1/1; both host-bundle roles. But RC3a cannot start the LV-01
-signed run, and the approved `signer.json` binds RC3a. RC4 mirror qualification and a
-new signer hash and decision are needed before LD16/LD17.
-[Report](SYSTEMS_CHECK_20261022.md) / backlog SC-01-F1, F2. Local evidence only.
+**Systems check SC-01 (2026-10-22, `d03bbb1`): the paragraph above is superseded for
+installation.** Every local check passes, matching mirror RC4: 2470 passed / 7 skipped /
+3882 subtests; systemd 5/5; demo, Docker, Terraform 19/19 + 1/1; both host-bundle roles.
+RC3a cannot start the LV-01 signed run, so `f632bbcb…` can no longer be installed. RC4
+(PR246) and the build-only `signer.json` `cd0b38b8…` (open PR244) replace it. Remaining
+(SC-01-F1): Isaac confirms the build-only extension, and PR244 merges, before P4.
+[Report](SYSTEMS_CHECK_20261022.md). Local evidence only.
 
 Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
 and supports the17bp MSFTB spread. RV120-RV01 addresses both findings: separate

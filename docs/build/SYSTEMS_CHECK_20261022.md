@@ -1,7 +1,9 @@
 # Pre-deployment systems check: canonical `d03bbb1` (IDEA-043 SC-01, 2026-10-22)
 
-**Result: every runnable engineering check PASSES locally. Deployment is BLOCKED by one binding
-finding (SC-01-F1): no approved build and signer configuration currently start together.**
+**Result: every runnable engineering check PASSES locally. One binding finding (SC-01-F1) blocked
+installation at `d03bbb1`: the approved signer configuration bound RC3a, which cannot start the signed run.
+By ~11:20Z, RC4 (PR246, merged) and the build-only `signer.json` `cd0b38b8…` (PR244, open) had
+replaced RC3a. Isaac's confirmation and the PR244 merge remain before P4 (see the status update below).**
 
 Tested commit: `d03bbb16cf51277c73d7f381b08f9551d0c10415`, the pushed head of
 `codex/system-testing-20261012` (PR243 merge), fetched 2026-10-22 ~11:00Z. Machine receipt:
@@ -32,11 +34,13 @@ signer build binding must agree on one installable build.
 | Secrets/key hygiene (tracked files) | `git grep` | **PASS**: no private-key blocks, AWS key IDs, provider tokens or filled `.env` values; `.env.example` has no values |
 | History | `git merge-base` | **PASS**: RC2 `b22207e`, RC3 `5bee006` and RC3a `fa1b6c9` are ancestors of the head |
 | Org GitHub Actions run 39764684229 for `d03bbb1` | GitHub | **UNAVAILABLE**: all four jobs ran zero steps (billing/spending limit). Not a code result |
-| Mirror CI for `d03bbb1` | `Keegan4/Keegan4-larp-ci-mirror` | **NOT VISIBLE** to this account (HTTP 404); no run is recorded in the repository for this commit |
+| Mirror CI for `d03bbb1` | `Keegan4/Keegan4-larp-ci-mirror` | Recorded after this run by AB-REL-RC4 (PR246): run 39766825984, all four jobs PASS, **2470 passed / 7 skipped / 3882 subtests**, the same counts as this local run. The mirror returns HTTP 404 to this account, so it is not independently re-read here |
 
 The dry-run bundle is `larp-d03bbb16cf51-x86_64.tar.gz` `0286e727…f216f8`, release manifest `339de5e6…a8f621`
 (205 files, host bindings null), Python `0e56475e…` and RDS CA `d7389074…`, both unchanged. **Do not install it.**
-LD15 §3 requires the original CI artifact; a local build is a dry run only.
+LD15 §3 requires the original CI artifact; a local build is a dry run only. These bytes equal SJ-06-A1's
+independent local build on another Mac (`0286e727…` / `339de5e6…`, recorded in AB-REL-RC4), so the local builder
+is reproducible. The installable artifact is still RC4's CI bundle `270fe81f…` (manifest `5ea11a84…`).
 
 ## Findings
 
@@ -55,20 +59,27 @@ LD15 §3 requires the original CI artifact; a local build is a dry run only.
    SJ-05 `check` bind `build_id` `fa1b6c9`. `larp.signer.service` refuses a configured build that differs from the
    verified release (`larp/signer/service.py:233`, tested in `tests/signer/test_service.py`). SJ-04-OA01 says any
    different hash needs a new decision.
-4. **No qualified artifact exists for the head.** LV-01's LV5 criterion (mirror CI on the merged commit, all four
-   jobs, new bundle) is still pending. Org CI is billing-blocked, and no mirror run for `d03bbb1` is recorded.
-5. **Status pages still point at RC3a.** [CURRENT_STATUS](CURRENT_STATUS.md) still calls `fa1b6c9` the installable
-   candidate, with "pre-install recapture with the same hashes" remaining. LD15 says the LD16 recheck "must bind
-   `fa1b6c9`". The backlog SA-01 line says the same, and the LV-01 line lists only the final-run confirmation.
+4. **At `d03bbb1`, no qualified artifact existed for the head.** LV-01's LV5 criterion (mirror CI on the merged
+   commit, all four jobs, new bundle) was still pending, and org CI is billing-blocked.
+5. **At `d03bbb1`, the status pages pointed at RC3a.** [CURRENT_STATUS](CURRENT_STATUS.md) called `fa1b6c9` the
+   installable candidate, with "pre-install recapture with the same hashes" remaining. LD15 said the LD16 recheck
+   "must bind `fa1b6c9`". The backlog SA-01 line said the same, and the LV-01 line listed only the final-run
+   confirmation. PR246 has since added the RC4 notes; this PR updates SA-01.
 
-**Required before LD16/LD17 (owners as in the backlog):**
-- Keegan: cut RC4 from `d03bbb1` or later on the mirror. All four jobs must pass; download and verify the original
-  artifact.
-- Yao/coordinator: re-run SJ-04 hosted assembly with the RC4 `build_id`. This gives a new `signer.json` hash.
-- Isaac: a new owner decision for that hash, plus a fresh coverage capture.
-- Re-run SJ-05 `check` against the original RC4 artifact.
-- Only then do the LD16 bindings and LD17 installation.
+**Required before installation:** a CI-qualified LV-01 build, a `signer.json` bound to it, an owner decision for the
+new hash, and a signer `check` against that artifact.
 
+**Status update (canonical `887dab3` and open PR244, read ~11:25Z):**
+
+| Step | State |
+|---|---|
+| RC4 qualification | **Done.** AB-REL-RC4 (PR246, merged): `d03bbb1` mirror run 39766825984 PASS; original artifact 12419733594 verified (bundle `270fe81f…`, manifest `5ea11a84…`) |
+| Signer reassembly | **Done (in PR244, unmerged).** SJ-06 J2: recapture 98/98 covered; `signer.json` `cd0b38b8…` differs from `f632bbcb…` only in `build_id` |
+| Owner decision | **Open.** Yao approved a build-only extension in chat, and PR244 waits for Isaac, as owner of SJ-04-OA01, to confirm it covers `cd0b38b8…` |
+| Signer `check` against RC4 | **Done locally (in PR244).** M4: `gate_a_check` 7/7, local signer `check` on the RC4-bound package; P3 primary install on RC4 with `release_verified: true` |
+| PR244 review | **Open:** CHANGES_REQUESTED by Keegan at the time of reading |
+
+So F1 stays open until Isaac confirms and PR244 merges. Neither this check nor PR244 approves P4.
 The `larp_rehearsal1` schema check (SJ-04-DB01) compared migrations, which have not changed since `fa1b6c9`.
 
 ### SC-01-F2 (P3, tracking): the rehearsal database name has no supported activation path in the repository
@@ -79,6 +90,10 @@ For `larp_rehearsal1` it stops with an `AssertionError`, and under `python -O` t
 (the same failure class as SJ-04-RV01). SJ-04-DB01 notes that activation needs a renderer override for this name,
 but no backlog line tracks it. The fix: track it, and implement the override with an explicit refusal rather than
 an `assert` before activation.
+
+**Status update:** open PR244 adds `docs/build/ops/rehearsal-install-20261022/mac/prepare_rehearsal_db.py`, which
+hard-codes `TARGET = 'larp_rehearsal1'` and refuses an unexpected rendered name explicitly. It keeps one `assert`, an
+identity check on the renderer module. F2 closes when PR244 merges.
 
 ## Observations (no change needed)
 
