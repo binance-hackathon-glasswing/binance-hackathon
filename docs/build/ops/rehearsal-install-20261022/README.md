@@ -41,6 +41,7 @@ Stop at the first step that does not end with its `*_DONE` line, and keep its `r
 | P2s | signer | `python3.12 -I ssm_run.py --signer host/p2-provision.sh signer @artifact_bucket $BUNDLE $BUNDLE_SHA256 $PROVISION_SHA256` | `P2_DONE` |
 | S1 | signer | the S1 command M4 printed, with `--signer` | preflight, signer `check` (UNTRUSTED `05759e90…`), routes PASS (SA4), `S1_DONE` |
 | K1 | **Isaac**, interactive SSM | key placement (below) | `/etc/larp/signer/wallet.key` exists, root `0600` |
+| S1b | signer | `python3.12 -I ssm_run.py --signer host/s1b-credential-mode-test.sh` (after K1; SJ-06-RV01) | `key_loader: PASS` on systemd's `LoadCredential` copy, `S1B_DONE` |
 | S2 | signer | `python3.12 -I ssm_run.py --signer host/s2-key-check-start-signer.sh` | `wallet_matches: true`, signer `started: true`, `swap_decoder: UNTRUSTED` |
 | P5 | primary | `python3.12 -I ssm_run.py host/p5-start-execution.sh` | `larp-execution active`, no exit 2/4 |
 | T2 | Yao, Mac | Terraform: `enable_signer_provisioning = false` (below) | no signer endpoints left (SA5); signer keeps running (it reaches only the database) |

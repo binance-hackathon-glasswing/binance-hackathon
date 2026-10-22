@@ -2241,6 +2241,47 @@ Still open from the review, owner Yao unless noted:
 Checks run: `bash -n` on the four scripts, and an offline test of M9's version filter (a version plus a delete marker
 gives 2 deletions; an empty listing gives 0). No host, AWS or key action.
 
+#### SJ-06 K1 — dev wallet key placed on the signer (2026-10-22 13:07Z, Keegan)
+
+Keegan placed the **development** wallet key himself, in an interactive AWS CloudShell SSM session on the signer
+(`i-0f8fe5d5fe5ccba36`, host `ip-10-80-14-215`). K1 was assigned to Isaac (LD18); Keegan did it with the key he
+also holds, and told Isaac and Yao. He used the README K1 procedure: `set +o history`, `umask 077`, `read -rs`.
+The directory was empty first. The file is `/etc/larp/signer/wallet.key`: root:root, `0600`, one link, 65 bytes
+(64 hex characters and a newline, without `0x`; the loader accepts both forms).
+
+A first attempt wrote a 43-byte file, a wallet address rather than a key. It was deleted before the correct
+paste; no secret was exposed. No key material appears in any chat, GitHub or log. The assistant did not handle
+the key or run any host command.
+
+Not yet verified: that the key derives the configured dev wallet. S2 checks this after P4 (`key_loader: PASS`,
+`wallet_matches: true`). If it reports false, delete the file and stop. Next: Isaac's SJ-06-A2 confirmation, then
+P4, the `LoadCredential` mode test, S2, the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
+
+#### SJ-06-A2 — Isaac confirms OA01 covers the RC4 signer candidate (2026-10-22, relayed by Keegan)
+
+Keegan reports that he spoke with Isaac, and that Isaac confirms his SJ-04-OA01 approval covers the reassembled
+`signer.json` `cd0b38b8287ef89a7e7e891ac8e3b5c157f24e3c0e3c957130713b655e4d3f96`. This is recorded as relayed, not
+as Isaac's own GitHub attestation.
+
+The candidate differs from `f632bbcb…` only in `build_id` (`fa1b6c9` → RC4 `d03bbb1`). Everything else is the same:
+- CAP-02 policy `3241abd3…` and router policy `05759e90…`;
+- profile `e95d5842…` / `ddb82813…`;
+- run `larp-dev-rehearsal-20261022`, database `larp_rehearsal1`, untrusted mode;
+- J2 98/98 COVERED.
+
+This clears the last approval gate before P4. Install, signing and Gate B flags in the assembly report stay false;
+the run is activated only through the SJ-06 steps. Next: P4, the `LoadCredential` mode test, S2 (which must print
+`wallet_matches: true`), the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
+
+#### SJ-06-RV01-S1b — `LoadCredential` key-copy test script (2026-10-22)
+
+New `host/s1b-credential-mode-test.sh` closes the RV01 open item "test the LoadCredential key-copy mode before S2". It
+runs a transient `systemd-run` unit as `larp-signer` with the same `LoadCredential=wallet.key:/etc/larp/signer/wallet.key`
+as `larp-signer.service`, and calls the real `larp.signer.keyfile.load_key_file` on systemd's copy. It prints only the
+copy's mode, owner match and loader verdict, and fails closed without `S1B_DONE`. It starts no service. Offline check
+with a random throwaway key: a 0600 copy gives PASS (`WALLET_PRIVATE_KEY`); a 0640 copy gives REFUSED, "key file mode
+allows group or other access". The README order adds S1b after K1 and before S2. Not yet run on the host.
+
 ### SJ-09 — plan: prepare S1 on Oct 23, swap equal weight for S1 from Oct 24 (Yao, 2026-10-22; not started)
 
 **Decision (Yao, in chat):** run the installed equal-weight rehearsal now (LD11-RH01). Prepare the real strategy, S1
