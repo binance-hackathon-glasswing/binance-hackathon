@@ -2227,4 +2227,7 @@ JSON lines and archive health. Whether to accept P4 on that evidence and continu
 same unit states 8 minutes later. Evidence, uploader and runtime are active with 0 restarts, execution is inactive, and
 the archive timer is active. `larp-runtime`'s only JSON line is `release_verified: true`, with no `started: false`
 refusal. Archive health is `healthy: true` with no reasons, and the anchor and backup tasks are both `ACK`. This
-matches every condition `P4_DONE` stands for. Pending: Yao's decision to accept P4 on this evidence.
+matches every condition `P4_DONE` stands for.
+
+**Decision (Yao, in chat, 2026-10-22 ~14:12Z):** "I accept P4 on the primary-status evidence (SJ-06 P4)." P4 counts as
+done; it is not re-run. Next: S2.
