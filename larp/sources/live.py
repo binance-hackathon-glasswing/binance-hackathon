@@ -387,7 +387,7 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
 
 # ------------------------------------------------------------------------------------------------ wiring
 def preflight(env, config_mode: str = "live") -> list:
-    """Source preflight plus the evidence path's own live parameters (null until the team sets them)."""
+    """Source preflight plus the evidence path's own live parameters (any unset one refuses)."""
     from larp.intelligence.config import load_config
     from larp.sources.register import load_register, live_preflight
     reasons = live_preflight(load_register()[0], env)

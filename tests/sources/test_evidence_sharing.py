@@ -15,7 +15,7 @@ from larp.sources import live
 from larp.sources.store import FileArtifacts, SQLiteEvidenceStore, StoreConflict
 from tests.host_support import synthetic_release
 from tests.runtime.test_host_units import directives, value
-from tests.sources.test_live import AGENT
+from tests.sources.test_live import AGENT, unset_live_parameter
 
 
 def state_batch(batch_id, version):
@@ -158,11 +158,12 @@ class RefusedStart(unittest.TestCase):
         return code, err.getvalue()
 
     def test_r4_live_preflight_refusal_exits_4_with_its_reasons(self):
-        # The committed live configuration still has null live parameters and terms hashes (DR-12, GAP-23).
+        # LV-01 committed the live values; one unset live parameter must still refuse the start (DR-12).
         env = {"LARP_SEC_USER_AGENT": AGENT, "LARP_ARTIFACT_ROOT": str(self.tmp / "artifacts")}
-        self.assertTrue(live.preflight(env))
-        code, err = self.run_cli(["run", "--hours", "0", "--release-manifest", str(self.manifest),
-                                  "--release-root", str(self.root)], env)
+        with unset_live_parameter():
+            self.assertTrue(live.preflight(env))
+            code, err = self.run_cli(["run", "--hours", "0", "--release-manifest", str(self.manifest),
+                                      "--release-root", str(self.root)], env)
         self.assertEqual(code, 4)
         self.assertIn("Live preflight refused", err)
         self.assertIn("INTELLIGENCE_CONFIG_REFUSED:live", err)

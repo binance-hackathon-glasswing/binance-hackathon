@@ -2,6 +2,7 @@
 store. Fake transports and clocks only; the 24-hour live run itself is NOT RUN here (it needs the host, the SEC
 contact identity and the terms captures)."""
 
+from contextlib import contextmanager
 from dataclasses import replace
 import json
 import os
@@ -9,6 +10,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from larp.contracts import Document
 from larp.intelligence.common import IntelligenceError
@@ -23,6 +25,21 @@ from larp.sources.register import CONFIG as REGISTER, live_preflight, load_regis
 from larp.sources.store import FileArtifacts, SQLiteEvidenceStore, SQLiteSourceStore
 from larp.sources.transport import AllowlistedClient
 from tests.sources.test_sources import FakeNet, doj
+
+
+@contextmanager
+def unset_live_parameter(name="reassess_delay_ms"):
+    """LV-01 committed the live values; a copy with one unset keeps the live refusal under test."""
+    from larp.intelligence import config
+    original = config.load_config
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp) / "intelligence"
+        shutil.copytree(config.CONFIG_DIR, base)
+        raw = json.loads((base / "intelligence.v1.json").read_text("utf-8"))
+        raw["parameters"][name]["live"] = None
+        (base / "intelligence.v1.json").write_text(json.dumps(raw), "utf-8")
+        with patch.object(config, "load_config", lambda mode="development", base=base: original(mode, base)):
+            yield
 
 AGENT = "LARP test runner ops@larp-test.invalid"  # reserved .invalid domain: never a real contact
 HOUR = 3_600_000
@@ -92,8 +109,11 @@ class Preflight(unittest.TestCase):
 
     def test_cli_preflight_refuses_and_reports_unset_live_parameters(self):
         self.assertEqual(live.main(["preflight"], env={}), 1)
-        self.assertTrue(any(r.startswith("INTELLIGENCE_CONFIG_REFUSED:live")
-                            for r in live.preflight({"LARP_SEC_USER_AGENT": AGENT})))
+        self.assertFalse(any(r.startswith("INTELLIGENCE_CONFIG_REFUSED")
+                             for r in live.preflight({"LARP_SEC_USER_AGENT": AGENT})))
+        with unset_live_parameter():
+            self.assertTrue(any(r.startswith("INTELLIGENCE_CONFIG_REFUSED:live")
+                                for r in live.preflight({"LARP_SEC_USER_AGENT": AGENT})))
 
     def test_malformed_terms_hash_is_refused_by_the_loader(self):
         path = Path(self.tmp.name) / "sources.json"
