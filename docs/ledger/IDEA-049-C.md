@@ -2245,3 +2245,20 @@ Signer `i-0f8fe5d5fe5ccba36`, SSM command `d6547f26…`, exit 0, 14:10:18–14:1
 
 **Signing is now on for the dev wallet.** No transaction can be sent until P5 starts `larp-execution`, and the
 profile allows no buy before 2026-10-23T00:00Z. Next: the send-RPC decision (SJ-06-RV01), then P5.
+
+#### SJ-06-RV01-D1 — send RPC accepted for the dev rehearsal only (Yao, 2026-10-22 ~14:20Z)
+
+**Decision (Yao, in chat):** "I accept BSC_BNBCHAIN_PUBLIC as the execution (send) RPC for the dev rehearsal
+larp-dev-rehearsal-20261022 only; GAP-29 stays open for the final contest."
+
+This closes the RV01 open item "record the execution (send) RPC qualification or its explicit acceptance before P5" by
+acceptance, not qualification. Basis: Isaac selected `BSC_BNBCHAIN_PUBLIC` on 2026-10-17 after it passed all 19
+balance reads (IDEA-055 RPC-Q01 D1). Sending (`eth_sendRawTransaction`) and finality on it were never tested. The
+accepted risk is that a public endpoint can rate-limit or drop a send, which wastes a round. Limits on that risk:
+- submission is never retried;
+- an unexplained nonce holds the wallet barrier at the next reconciliation;
+- the wallet holds about 96 USDT.
+
+The rehearsal's own sends are GAP-29's first send measurement. **Fail signal for the final:** repeated send refusals or
+timeouts in `checks/trading-status.sh`, or alerts from `chain-monitor.py`. If that happens, switch providers for the
+final. Next: P5.
