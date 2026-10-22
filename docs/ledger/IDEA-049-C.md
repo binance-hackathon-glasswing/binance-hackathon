@@ -2074,3 +2074,16 @@ against RC3a. [Receipt](../build/evidence/ab-rel-rc4-20261022.json). The SJ-06-A
 a different artifact with no CI test provenance. Per the release rule, SJ-06 installs `270fe81f…`: re-run M1
 (from the Keegan4 mirror) and M2, and bind `release.json` from manifest `5ea11a84…` at M4. Signer candidate
 `cd0b38b8…` binds `build_id` only and is unaffected.
+
+#### SJ-06 J4 (primary install) — P3 PASS on RC4 (2026-10-22 11:13:45Z)
+
+- **P3:** installed package `releases/rehearsal-20261022t111137z/`. All 11 files match M4's hashes (`release.json`
+  `1db4571d…`, `execution.json` `96435836…`, `registration-evidence.json` `9585e477…`).
+- **Checks:** `preflight --profile host` gives `release_verified: true`. Runtime `service check` and execution
+  `check` are `configuration_valid`. Routes PASS (`52803bf7…`, 13 destinations); chrony in sync (Normal, 4e-7 s).
+  stderr is empty.
+- **Keegan's follow-up on PR244 (11:14Z):** RC4 receipt PR246 merged (2470 passed / 7 skipped, systemd 5/5,
+  artifact 12419733594 verified). That is the same bundle (`270fe81f…`) and manifest (`5ea11a84…`) that M1 checked
+  and P2 installed.
+- **Waiting before P4 (init/activate):** Isaac's confirmation of the build-only approval extension, and Keegan's
+  re-review of PR244, which is still CHANGES_REQUESTED.
