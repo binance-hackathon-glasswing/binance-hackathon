@@ -2149,3 +2149,24 @@ both hosts, and Isaac approving the new profile hash. `signer.json` `cd0b38b8…
 unaffected. No change is made here. The decision is with Yao (the team must cut the rehearsal by Oct 27). The
 assistant's local validation of a changed profile was refused by the auto-mode classifier as weakening a
 safety gate.
+
+#### SJ-07 correction — the market gate is the live `openState`, which is open off-hours (2026-10-22 11:58Z)
+
+The SJ-07 finding above is **withdrawn**. The planner and execution gates block only when the live `openState`
+flags from `rwa/tokens` and `rwa/underlying-market` are not both true (`MarketPort.observation`, planner
+`MARKET_CLOSED_OR_UNKNOWN`, F-95). The NYSE session calendar only counts sessions; it does not gate trades. That
+matches the organisers' F-119 ("Orders can be placed 24/7").
+
+Observed, all read-only:
+- **M4's capture at 11:11:39Z** (07:11 New York, pre-market): `rwa/tokens` `openState: true`,
+  `reasonCode: TRADING` for all 46 bStocks.
+- **Underlying-market check at 11:58:39Z** (07:58 New York): `rwa/underlying-market` `openState: true`,
+  `reasonCode: TRADING` for all five rehearsal tokens (`marketStatus` and `nextOpenTime` null). This used one
+  call per token from Yao's Mac with the Web3 API key; only the status fields were printed.
+- **Quote capture `quotes-complete-20261020`:** token `openState` true in all 342 off-session samples, both weekend
+  dates included.
+
+So with the approved profile, buys can start at `trade_after` 2026-10-23T00:00Z, not at Friday's NYSE open.
+Exits can run from `flatten_start` 2026-10-26T00:00Z for the full 14.75 h, as LD10-P03 assumed. Limit: underlying
+`openState` at weekends is a single class of samples not yet measured (GAP-44). The guard stays and will skip
+rounds if it reports false.
