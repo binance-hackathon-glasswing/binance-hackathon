@@ -42,7 +42,8 @@ assert changed == ['build_id'] and new_value['build_id'] == BUILD, 'signer.json 
 print(json.dumps(dict(signer_diff_vs_f632bbcb=changed)))
 reviewed = json.loads((private / f'review-{STAMP}' / 'execution-config.json').read_text())
 results = here / 'results'; results.mkdir(exist_ok=True)
-out = private / ('package-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
+# prepare_shadow writes only inside the release checkout's git-ignored deploy/activation/ (as the trial's r6 did).
+out = wt / 'deploy/activation' / ('package-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
 capture = Path('/private/tmp') / ('larp-rehearsal-capture-' + out.name[8:]); capture.mkdir(mode=0o700)
 step = [0]
 
@@ -94,7 +95,7 @@ assert execution['strategy_profile_sha256'] == PROFILE_SHA and execution['databa
 (out / 'registration-evidence.json').write_text(json.dumps(dict(
     schema='RegistrationEvidence.v1', build_id=BUILD, repository='https://github.com/binance-hackathon-glasswing/binance-hackathon',
     evidence_ref=('Existing team registration (GAP-41/F-113, issued ai-seeds secret) unchanged; no new organiser registration. '
-                  f'Build {BUILD} = canonical after PR243 (LV-01), mirror CI run {env["MIRROR_RUN"]}. Dev signed rehearsal '
+                  f'Build {BUILD} = canonical after PR243 (LV-01); bundle provenance {env["MIRROR_RUN"]}. Dev signed rehearsal '
                   f'{RUN}, database {DB} (IDEA-049-C SJ-06).'))) + '\n')
 call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(out), '--ci-manifest', str(release / 'release-manifest.json'),
       '--release-root', str(release / 'release'), '--rds-ca', str(release / 'rds-ca.pem'),
