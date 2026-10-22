@@ -1792,3 +1792,109 @@ decision. Not approved here: `larp.signer.service check` against RC3a, host
 installation and signer session (LD17), key placement (LD18), signing lifetime
 #27, initial gas/route-fee qualification, untrusted-policy live preflight,
 activation and the first round (LD19).
+
+#### SJ-05 — local signer `check` against the original RC3a bundle, and other-spender allowances (preregistered 2026-10-22)
+
+Two of the items SJ-04-OA01 leaves open, done read-only from Yao's Mac. No host,
+AWS, database, key, signing or wallet action. Criteria are fixed before any run.
+
+**Part A — `larp.signer.service check` against the original RC3a artifact.**
+Inputs: artifact `12365166625` (`larp-bundle-x86_64`, Keegan's mirror run
+`39640064251`), the key-free candidate `signer.json` `f632bbcb…`, and the
+Mac's copies `/etc/larp/rds-ca.pem` `d7389074…` and
+`/etc/larp/untrusted-router-policy.json` `05759e90…`. The CI manifest carries no
+host bindings, so `check` cannot pass against it directly: `verify_service_config`
+needs the signer's hash in `service_configs_sha256`. The procedure is the host's
+own (DEPLOYMENT_DAY step 7): `preflight --bind` the unchanged CI manifest with
+`--service-config signer=…` into a scratch output, then `check` against that.
+- **A1 integrity:** the downloaded zip's sha256 is `55e08862…`; the bundle is
+  `larp-fa1b6c966f18-x86_64.tar.gz` with sha256 `2200737a…`; its
+  `release-manifest.json` has sha256 `9d309d71…`, build_id `fa1b6c96…` and 205 files.
+- **A2 negative control:** `check` with the unbound CI manifest exits 4
+  (`START_REFUSED`).
+- **A3 bind:** `preflight --bind` succeeds (`manifest_bound: true`) and the output's
+  `ci_manifest_sha256` is `9d309d71…`. The registration evidence used is a
+  local-check file whose `evidence_ref` says it is not the host's registration.
+  The bound manifest stays in the session scratchpad; it is not the host's
+  `release.json`.
+- **A4 check:** `check` against the bound manifest exits 0 with
+  `configuration_valid: true`, `swap_decoder: UNTRUSTED`,
+  `untrusted_router_policy_sha256: 05759e90…`, `signing_enabled: false` and
+  `gate_b_accepted: false`.
+- **A5 tamper control:** the same check with a one-byte-changed copy of
+  `signer.json` exits 4.
+
+PASS needs A1–A5. Limits fixed in advance: the bundle's own `larp/` source runs
+under the Mac's Python 3.12, not the host's x86_64 interpreter and venv; `check`
+never opens the database or the key. This is not host installation (LD17).
+
+**Part B — no leftover allowance to another spender.** The dev wallet
+`0x62b8ed6c…d479` has nonce 4, so it has sent exactly four transactions (two
+MetaMask seed swaps). Using public BNB Chain RPC reads only:
+- **B1:** get the receipts of the two known seed swaps (`0x24683de2…`, `0xab19e680…`)
+  and every `Approval(owner = wallet)` log on any contract in a block window around
+  each, until all four nonces are accounted for or the window is exhausted.
+- **B2:** at one finalized block, read `allowance(wallet, spender)` for every
+  (token, spender) pair found, plus our pinned router for USDT and the five bStocks.
+- **PASS:** every allowance read is zero. **FINDING:** any non-zero allowance is
+  recorded with token, spender and amount; removing it needs the wallet owner's own
+  transaction. **INCOMPLETE:** any refused read, or a nonce not accounted for.
+
+#### SJ-05 results — Part A PASS, Part B PASS (2026-10-22 ~10:10Z)
+
+Evidence: [result.json and scripts](../build/evidence/sj05-signer-check-allowances-20261022/result.json).
+
+**Part A: PASS (A1–A5).** The downloaded artifact matches the RC3a record: zip
+`55e08862…`, bundle `2200737a…`, CI manifest `9d309d71…`, build `fa1b6c96…`, 205
+files, no host bindings. The bundle's `release/` source ran under a fresh venv
+installed from its own three lock files (macOS arm64, Python 3.12.14).
+- A2: `check` with the unbound CI manifest exits 4, `START_REFUSED`.
+- A3: `preflight --bind` gives `manifest_bound: true`, `ci_manifest_sha256`
+  `9d309d71…` and `service_configs_sha256.signer` `f632bbcb…`. The bound manifest
+  (`1fde291a…`, local only) uses a local-check registration file. Also,
+  `preflight --manifest … --profile host --service-config signer=…` gives
+  `release_verified: true`, so the venv matches the lock pins.
+- A4: `check` exits 0 with `configuration_valid: true`, `swap_decoder: UNTRUSTED`,
+  `untrusted_router_policy_sha256` `05759e90…`, `deviation: DEV-23`,
+  `signing_enabled: false` and `gate_b_accepted: false`.
+- A5: the same check with one byte appended to `signer.json` exits 4.
+
+So the candidate is consistent with the original RC3a release. On the host, the
+same bind step adds the real registration evidence and the runtime, uploader,
+operations and execution config hashes, so the host's `release.json` gets a
+different hash from this local one. That bind, and `check` with the host's own
+interpreter, belong to LD17 installation.
+
+**Part B: PASS.** `eth_getLogs` was refused on every window (14), so, as B1
+allows, the nonces were found by scanning full blocks for the wallet's
+transactions. All four are accounted for:
+
+| Nonce | Tx | Block | What |
+|---|---|---|---|
+| 0 | `0x3288d4ea…3ca0` | 127946341 | USDT `approve(MetaMask router 0x1a1ec25d…, 2 USDT)` |
+| 1 | `0x24683de2…5c55` | 127946341 | MetaMask swap (seed 1) |
+| 2 | `0x2acb339f…dcd5` | 128977934 | USDT `approve(MetaMask router, 2 USDT)` |
+| 3 | `0xab19e680…a168d` | 128977934 | MetaMask swap (seed 2) |
+
+Each swap receipt emits USDT `Approval(wallet, MetaMask router, 0)`, so each
+exact approval was fully used in the same block. At finalized block 129111365
+(10:08:46Z, nonce 4), every allowance read is 0: USDT and the five bStocks
+to our pinned router `0xb44446b0…`, the MetaMask router and Permit2. That is 18
+pairs. USDT reverts `DOMAIN_SEPARATOR()` and `nonces()`, so it has no EIP-2612
+permit, and a USDT allowance needs an on-chain approve, all of which are listed
+above. Reads: 12 OK / 14 refused (getLogs) in the first pass, 36/0 in the second.
+
+**Funding note, seed 2 (F-120).** Network gas paid in BNB by the wallet:
+approve 2,309,700,000,000 wei and swap 9,732,150,000,000 wei (50,000,000 wei/gas).
+Balances were 2,694,498,869,362,886 wei at block 128976212 (SJ-02) and
+5,325,625,054,330,011 wei at block 128978382 (SJ-03), with nonce 2 → 4, so the
+implied native credit is **2,643,168,034,967,125 wei (0.002643168034967125 BNB)**.
+This assumes no other native transfer between those blocks; there is no trace RPC.
+It agrees with MetaMask's rounded 0.00264317. Seed 1's approve (nonce 0) also paid
+2,771,640,000,000 wei of gas, which the FG-01 note did not list. Both rows are in
+DEPLOYMENT_DAY §5.
+
+Still open (not assistant actions): a fresh pre-install recapture with the same
+hashes (just before installation, because quotes go stale), partner installation
+and host acceptance (LD17), key placement (LD18), the optional top-up toward
+0.008832 BNB (Isaac, funding), #27, and gas/route-fee qualification.
