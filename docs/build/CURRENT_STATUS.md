@@ -56,6 +56,9 @@ original artifact 12363800624 verified ([receipt](evidence/ab-rel-rc3-20261021.j
 Installable candidate is `fa1b6c9` (RC3a): same runtime files, mirror run
 39640064251 all four jobs PASS, artifact 12365166625 verified
 ([receipt](evidence/ab-rel-rc3a-20261021.json)); LD16 rechecks must bind it.
+**RC4 (2026-10-22): `d03bbb1` (LV-01) supersedes it for the signed dev rehearsal.** Mirror run 39766825984
+passes all four jobs (2470 passed/7 skipped), and original artifact 12419733594 (bundle `270fe81f…`) is verified
+([receipt](evidence/ab-rel-rc4-20261022.json)). Install that artifact, not SJ-06-A1's local bundle.
 Remaining: funding, Isaac acceptance, LD16 bindings, LD17 installation.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
