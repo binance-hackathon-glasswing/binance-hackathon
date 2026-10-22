@@ -1523,3 +1523,45 @@ the installable candidate. Its runtime files are identical to `5bee006`. Mirror 
 and original artifact 12365166625 is verified with no local rebuild
 ([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
 `5bee006`, so the LD16 recheck binds `fa1b6c9`.
+
+### SJ-04 — hosted signer assembly from one fresh capture (preregistered 2026-10-22)
+
+Yao Zhu, acting as approved primary operator and partner, selected run ID
+`larp-dev-rehearsal-20261022` and new database `larp_rehearsal1` for the signed
+rehearsal; build `fa1b6c966f186103c8dfaee5438e0d00e4edec9a` (RC3a). No existing tool
+turned a capture packet plus hosted bindings into `GateBCapsInputs.v1`:
+`review_rehearsal_caps.py` pins a DSN stub, which the assembler refuses by design.
+The quote age limit (300 s) applies again at assembly, so review and assembly must
+use one clock right after the capture.
+
+Change: `review_rehearsal_caps.py` gains a hosted mode (`--bindings`, `--signer-out`)
+that reads the raw two-line capture output (verifying `packet_sha256`), replaces the
+DSN stub with exact IAM database settings for `larp_execution` plus the untrusted
+router policy pair, rebinds the reconciled wallet holdings to the new run ID
+(recording the source run and `PortfolioState` digest), and calls the existing
+`larp.signer.assembly.assemble`/`write_new` at the review's timestamp. No numeric
+check, cap, policy or flag changes. The packet's portfolio run ID is the retired
+unsigned run; rebinding is declared, not hidden, and requires MATCH holdings, equal
+latest/pending nonce, zero allowances and no reservations/pending execution.
+
+Pass criteria, before running:
+
+1. **T1 (tests):** hosted mode writes `signer.json` whose run/build/wallet/database/
+   region/CA/policy fields equal the bindings, `database_user` = `larp_signer`, no
+   DSN; and refuses (no signer output, no private value echoed) on: missing or extra
+   binding key, packet hash mismatch, CA or policy hash mismatch, unsafe run ID,
+   holdings not MATCH, non-zero allowance, and numeric review not COVERED.
+2. **T2:** existing caps-review, assembly and collector tests still pass, zero
+   unexpected failures.
+3. **R1 (real run, operator):** one fresh read-only capture (`692787e4…` payload)
+   from primary; holdings MATCH, nonce latest = pending, zero allowances, no
+   reservations; all required quotes request-bound.
+4. **R2:** hosted mode run within 300 s of the newest quote: numeric status COVERED
+   with `INITIAL_BNB_EXIT_RESERVE` covered; the only remaining blocker is
+   `OWNER_REVIEW_REQUIRED`. Any other blocker is reported as is; nothing is widened.
+5. **R3:** assembly status `ASSEMBLED_REQUIRES_APPROVAL`; `ready_to_install`,
+   `signing_enabled`, `gate_b_accepted` all false. Publish only hashes and counts.
+
+Out of scope: creating `larp_rehearsal1`, `larp.signer.service check` against the
+original RC3a manifest (artifact not available locally), installation, key
+placement, activation and owner acceptance.
