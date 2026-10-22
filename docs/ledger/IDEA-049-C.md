@@ -1666,3 +1666,19 @@ acceptance, approved signer session and key placement, untrusted-policy replay a
 live preflight. Also open: create `larp_rehearsal1`, run `larp.signer.service check`
 against the original RC3a manifest, installation by the partner. The candidate's
 quotes go stale within minutes; a pre-install recheck must recapture.
+
+#### SJ-04-DB01 — `larp_rehearsal1` created (2026-10-22 ~02:35Z)
+
+Yao ran a copy of the PC-DB02 setup (from `redeploy-20261018/db/setup_trial_db.py`,
+adapted only to a fixed name, build `fa1b6c9` and a release-migration check) through
+an SSM port-forward via primary. TLSv1.2. The databases before were `larp`,
+`larp_trial`, `larp_trial2`; the new database did not exist before. All 13 migrations
+applied, equal to fa1b6c9's migration files and to `larp`. 21 tables, 0 runs. All five
+service roles can connect (archive, execution, runtime, signer, uploader). Runtime can
+insert runs and cannot insert execution records. `roles.sql` sha256 `18b4a364…`
+(rewritten for the new name: `0acd9dab…`); compared with PC-DB02's ea25b52 copy, it
+adds only `GRANT SELECT (run_id,observation) ON execution_observations TO larp_signer`.
+The tunnel was closed afterwards. Existing databases were only read (`larp`) or not
+touched. **PASS.** No run was activated and no service or config changed.
+Activation will need a renderer override for this name: `prepare_trial_db.py` accepts
+only `larp_trial*`.
