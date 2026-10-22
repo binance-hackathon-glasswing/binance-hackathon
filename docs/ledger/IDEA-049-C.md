@@ -1951,3 +1951,16 @@ test record: LV-01 2140/0/502, plus Yao's review commit `d6197c7b` at 1975/0/502
   - `BUNDLE.env` differs only in `build_id`.
 
 Anything else stops the sheet.
+
+#### SJ-06-A1 results — J1′ PASS (2026-10-22, local)
+
+- **Build:** `mac/m1-local-bundle.sh`, from the clean worktree on `codex/system-testing-20261012` at `d03bbb1` (the
+  pushed head), macOS arm64 with a `requirements.lock` venv. The result is `larp-d03bbb16cf51-x86_64.tar.gz`, sha256
+  `0286e727838796dac9b71a90f76fc0ec6bb80da883c5db67c7faab8392f216f8`, manifest `339de5e6…` (205 files).
+- **Integrity:** the sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- **Against CI RC3a `2200737a…`:** only `release/config/intelligence/intelligence.v1.json` and
+  `release/larp/sources/live.py` differ, exactly the release files `fa1b6c9..d03bbb1` changed. Unchanged: CPython
+  `0e56475e…`, every wheel, `rds-ca.pem` `d7389074…`, `provision.sh` `d7905de4…`, and `BUNDLE.env` apart from
+  `build_id`. The manifest differs only in `build_id`, `build_origin` (the registered origin, not a mirror) and
+  those two file hashes.
+- **Limit:** no CI test run on this commit. Linux, PostgreSQL and systemd jobs did not run; local suites only.
