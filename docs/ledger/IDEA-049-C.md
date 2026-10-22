@@ -2114,3 +2114,15 @@ Expect one ALARM email from the new alarm until the runtime publishes the metric
 - **Fix:** Yao rebooted the signer once. At 11:29:35Z both hosts are `Online` (agent 3.3.5390.0): signer last ping
   11:27:23Z, and primary still Online, which is **SA9 PASS**. EC2 status checks are ok/ok.
 - **Next:** re-run P2s, then S1 (with SA4 routes).
+
+#### SJ-06 J5 — PASS: signer installed on RC4 (2026-10-22 11:31–11:32Z)
+
+- **P2s:** RC4 installed on the signer; manifest `5ea11a84…`, CA `d7389074…`. `larp-signer` is disabled.
+- **S1:** files installed with matching hashes (`release.json` `1db4571d…`, the same bytes as primary;
+  `signer.json` `cd0b38b8…`; router policy `05759e90…`). `/etc/larp/signer` is `700 root:root`.
+  - `preflight --profile host`: `release_verified: true`.
+  - Signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - **SA4 routes PASS** (`cb298b10…`, 6 destinations): no internet route while the endpoints are up.
+  - Chrony in sync; stderr empty.
+- **Left before the first agent round:** Isaac's confirmation (SJ-06-A2) and Keegan's re-review of PR244, then P4,
+  K1 (Isaac), S2, P5, T2 (SA5) and M9.
