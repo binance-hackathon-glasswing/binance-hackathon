@@ -236,3 +236,13 @@ max-position NVDAB SELL exceeds20.10USDT. Full exit-sizing/count/reserve and fre
 coverage acceptance precede LD16. Original RC2 qualifies only b22207e; PR230's
 changed checker needs the subsequent applicable source qualification. RV120-RV01
 does not replace that requirement or change any limits/profile.
+
+## RC4 — canonical `d03bbb1` (2026-10-22, LV-01 build for the signed dev rehearsal)
+
+Mirror [run 39766825984](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39766825984): all
+four jobs PASS. Runtime: 2470 passed / 7 skipped / 3882 subtests on PostgreSQL 14.24, real-systemd 5/5, demo and
+Docker PASS. Original artifact 12419733594: zip `efe06485…` matches GitHub, bundle `270fe81f…` matches its
+.sha256, 244/244 checksums, inner manifest `5ea11a84…` equals the published one, and all 205 files match
+`d03bbb1`. Against RC3a it changes only `config/intelligence/intelligence.v1.json`, `larp/sources/live.py` and
+`build_id`. Not rebuilt locally. [Receipt](evidence/ab-rel-rc4-20261022.json). This supersedes RC3a for the
+SJ-06 install. SJ-06-A1's local bundle `0286e727…` is not qualified; install `270fe81f…`.
