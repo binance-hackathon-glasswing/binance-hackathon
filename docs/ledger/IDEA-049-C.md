@@ -2155,3 +2155,19 @@ Still open from the review, owner Yao unless noted:
 
 Checks run: `bash -n` on the four scripts, and an offline test of M9's version filter (a version plus a delete marker
 gives 2 deletions; an empty listing gives 0). No host, AWS or key action.
+
+#### SJ-06 K1 — dev wallet key placed on the signer (2026-10-22 13:07Z, Keegan)
+
+Keegan placed the **development** wallet key himself, in an interactive AWS CloudShell SSM session on the signer
+(`i-0f8fe5d5fe5ccba36`, host `ip-10-80-14-215`). K1 was assigned to Isaac (LD18); Keegan did it with the key he
+also holds, and told Isaac and Yao. He used the README K1 procedure: `set +o history`, `umask 077`, `read -rs`.
+The directory was empty first. The file is `/etc/larp/signer/wallet.key`: root:root, `0600`, one link, 65 bytes
+(64 hex characters and a newline, without `0x`; the loader accepts both forms).
+
+A first attempt wrote a 43-byte file, a wallet address rather than a key. It was deleted before the correct
+paste; no secret was exposed. No key material appears in any chat, GitHub or log. The assistant did not handle
+the key or run any host command.
+
+Not yet verified: that the key derives the configured dev wallet. S2 checks this after P4 (`key_loader: PASS`,
+`wallet_matches: true`). If it reports false, delete the file and stop. Next: Isaac's SJ-06-A2 confirmation, then
+P4, the `LoadCredential` mode test, S2, the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
