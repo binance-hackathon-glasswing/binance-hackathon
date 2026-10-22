@@ -2171,3 +2171,19 @@ the key or run any host command.
 Not yet verified: that the key derives the configured dev wallet. S2 checks this after P4 (`key_loader: PASS`,
 `wallet_matches: true`). If it reports false, delete the file and stop. Next: Isaac's SJ-06-A2 confirmation, then
 P4, the `LoadCredential` mode test, S2, the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
+
+#### SJ-06-A2 — Isaac confirms OA01 covers the RC4 signer candidate (2026-10-22, relayed by Keegan)
+
+Keegan reports that he spoke with Isaac, and that Isaac confirms his SJ-04-OA01 approval covers the reassembled
+`signer.json` `cd0b38b8287ef89a7e7e891ac8e3b5c157f24e3c0e3c957130713b655e4d3f96`. This is recorded as relayed, not
+as Isaac's own GitHub attestation.
+
+The candidate differs from `f632bbcb…` only in `build_id` (`fa1b6c9` → RC4 `d03bbb1`). Everything else is the same:
+- CAP-02 policy `3241abd3…` and router policy `05759e90…`;
+- profile `e95d5842…` / `ddb82813…`;
+- run `larp-dev-rehearsal-20261022`, database `larp_rehearsal1`, untrusted mode;
+- J2 98/98 COVERED.
+
+This clears the last approval gate before P4. Install, signing and Gate B flags in the assembly report stay false;
+the run is activated only through the SJ-06 steps. Next: P4, the `LoadCredential` mode test, S2 (which must print
+`wallet_matches: true`), the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
