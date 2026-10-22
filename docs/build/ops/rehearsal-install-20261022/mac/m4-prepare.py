@@ -71,6 +71,11 @@ call([py, str(here / 'mac/prepare_rehearsal_db.py'), str(wt), 'prepare', '--terr
       '--profile', str(PROFILE), '--capture', str(capture / 'inputs.json'), '--run-id', RUN, '--build-id', BUILD,
       '--rds-ca-sha256', env['CA_SHA256'], '--sec-contact', contact, '--balance-rpc-config', str(rpc),
       '--execution', 'service', '--runtime-mode', 'dev', '--model-adoption-ref', ADOPTION, '--out', str(out)])
+# gate_a_check reads only prepare's own files, so it runs before the extra host files are added (SJ-06 J3).
+q = json.loads(call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(out), '--ci-manifest', str(release / 'release-manifest.json'),
+                     '--release-root', str(release / 'release'), '--rds-ca', str(release / 'rds-ca.pem'),
+                     '--artifact-root', '/Users/songyaozhu/larp-artifacts'], allow_fail=True))
+assert all(v == 'PASS' for v in q['checks'].values()) and q['local_ready'] is True, 'package check failed'
 rt = json.loads((out / 'runtime.json').read_text())
 assert (rt['run_id'], rt['build_id'], rt['mode'], rt['database_name']) == (RUN, BUILD, 'dev', DB)
 assert (rt['driver']['execution'], rt['driver']['assessor'], rt['driver']['intelligence_mode']) == ('service', 'deterministic', 'live')
@@ -97,9 +102,6 @@ assert execution['strategy_profile_sha256'] == PROFILE_SHA and execution['databa
     evidence_ref=('Existing team registration (GAP-41/F-113, issued ai-seeds secret) unchanged; no new organiser registration. '
                   f'Build {BUILD} = canonical after PR243 (LV-01); bundle provenance {env["MIRROR_RUN"]}. Dev signed rehearsal '
                   f'{RUN}, database {DB} (IDEA-049-C SJ-06).'))) + '\n')
-call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(out), '--ci-manifest', str(release / 'release-manifest.json'),
-      '--release-root', str(release / 'release'), '--rds-ca', str(release / 'rds-ca.pem'),
-      '--artifact-root', '/Users/songyaozhu/larp-artifacts'], allow_fail=True)
 call([py, '-m', 'larp.runtime.preflight', '--bind', str(release / 'release-manifest.json'), '--root', str(release / 'release'),
       '--output', str(out / 'release.json'), '--registration-evidence', str(out / 'registration-evidence.json'),
       '--config', str(out / 'operations.json'), '--runtime-config', str(out / 'runtime.json'),

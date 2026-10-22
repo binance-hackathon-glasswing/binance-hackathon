@@ -1978,3 +1978,24 @@ Anything else stops the sheet.
   in-chat approval covers this candidate. `ready_to_install`, `signing_enabled` and `gate_b_accepted` stay false in
   the report.
 - **M2:** Yao reports the bundle upload done. P2 re-checks the bundle hash on each host.
+
+#### SJ-06 J3 — PASS (M4 package 2026-10-22 10:56:23Z, Yao ran P1, P2 and M4)
+
+- **P1:** the retired trial's 10 configs moved to `/etc/larp-history/ea25b52-larp-dev-llm-trial-20261018t170339z/`
+  with their hashes printed (for example `release.json` `e592a13e…`). Nothing was deleted, and no service was active.
+- **P2 (primary):** build `d03bbb1` installed from bundle `0286e727…`; installed manifest `339de5e6…`, CA `d7389074…`.
+  `larp-execution` is disabled.
+- **M4, first run:** refused at `prepare` (output folder not git-ignored in the release checkout) after a read-only
+  capture. Nothing was written or uploaded. Fixed in `4ead926b`.
+- **M4, re-run:** fresh capture, then prepare `dev` / `service` / `deterministic` / `live` for run
+  `larp-dev-rehearsal-20261022` in `larp_rehearsal1`, profile `e95d5842…`. The initial state is 96 USDT, BNB
+  5,325,625,054,330,011 wei and zero stocks, pinned by `runtime.json`.
+  - **Package check:** M4 ran `gate_a_check` after adding the host files, so it reported
+    `PACKAGE_INTEGRITY: FAIL` (unexpected files; a script ordering bug, now fixed). Re-run on exactly `prepare`'s
+    own files, it gives **7/7 PASS**, `local_ready: true` (CI_RELEASE_BYTES, PACKAGE_INTEGRITY, PACKAGE_JSON,
+    PINNED_INPUTS, SERVICE_CONFIGS, SIGNED_IDENTITIES, SOURCE_TERMS).
+  - **Bound `release.json` `aab80bb7…`:** CI manifest `339de5e6…`, 205 files. Its runtime, operations, uploader,
+    execution (`96435836…`) and signer (`cd0b38b8…`) hashes all equal the package files, and the registration
+    evidence names the same build.
+  - **Local signer `check`:** `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - **Execution RPC:** `BSC_BNBCHAIN_PUBLIC`. The package is uploaded under `releases/rehearsal-20261022t105623z/`.
