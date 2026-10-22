@@ -2126,3 +2126,26 @@ Expect one ALARM email from the new alarm until the runtime publishes the metric
   - Chrony in sync; stderr empty.
 - **Left before the first agent round:** Isaac's confirmation (SJ-06-A2) and Keegan's re-review of PR244, then P4,
   K1 (Isaac), S2, P5, T2 (SA5) and M9.
+
+#### SJ-07 finding — the rehearsal window leaves too little open-market time to flatten (2026-10-22)
+
+The approved profile `e95d5842…` (RV120-02 window): `trade_after` 2026-10-23T00:00Z, `new_risk_end` 2026-10-25T00:00Z,
+`flatten_start` 2026-10-26T00:00Z, `signing_end` 2026-10-26T14:45Z.
+
+Buys and sells both need the token **and** the underlying market open (`execution.py` gates; planner
+`MARKET_CLOSED_OR_UNKNOWN`). The calendar is XNYS 09:30–16:00 New York (13:30–20:00Z), with no October holidays.
+
+- **Buys:** only one session, Fri 2026-10-23 13:30–20:00Z. Oct 23 00:00Z is before that day's open, and the window
+  closes on a Saturday.
+- **Exits:** only **Mon 2026-10-26 13:30–14:45Z**, which is 75 min or 5 rounds at the 900 s cadence. LD10-P03's
+  timing note counts the 14.75 h from 00:00Z, but most of that is before the open. Eight balanced exit children
+  at one per wallet per round need at least 8 rounds (2 h). **A full four-position flatten cannot complete before
+  `signing_end`.** About 3 children's worth would stay in the dev wallet.
+
+The final calendar does not have this problem as recorded: flatten starts Nov 10 19:00Z, inside a session.
+
+Any fix changes the profile hash. That means repeating M3 (coverage), M4 (package, `release.json`) and P3/S1 on
+both hosts, and Isaac approving the new profile hash. `signer.json` `cd0b38b8…` has no profile field and is
+unaffected. No change is made here. The decision is with Yao (the team must cut the rehearsal by Oct 27). The
+assistant's local validation of a changed profile was refused by the auto-mode classifier as weakening a
+safety gate.
