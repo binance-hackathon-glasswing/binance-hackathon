@@ -1933,3 +1933,21 @@ Run sheet and scripts: [docs/build/ops/rehearsal-install-20261022/](../build/ops
 
 Any refusal stops the sheet at that step. What the refusal says is recorded here, and nothing is widened to get
 past it.
+
+#### SJ-06-A1 — local build instead of mirror CI (preregistered 2026-10-22)
+
+**Decision (Yao Zhu, in chat):** "ignore the mirror ci keep going". J1 changes to a local bundle built
+from the pushed canonical merge `d03bbb1` (PR243) with `tools/build_release_bundle.py`. This follows PC-BUILD01
+(IDEA-066), the route the 43 h trial used. The bundle has no CI test provenance. The local full suite is the only
+test record: LV-01 2140/0/502, plus Yao's review commit `d6197c7b` at 1975/0/502.
+
+**J1′ pass criteria** (`mac/m1-local-bundle.sh`):
+- The builder accepts the clean worktree on `codex/system-testing-20261012` at `d03bbb1`.
+- The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- Compared file by file with the CI-built RC3a bundle `2200737a…` (artifact 12365166625):
+  - the only differences are release files that `fa1b6c9..d03bbb1` changed (expected:
+    `release/config/intelligence/intelligence.v1.json` and `release/larp/sources/live.py`, a docstring);
+  - the CPython archive, every wheel, `rds-ca.pem` and `provision.sh` are byte-identical;
+  - `BUNDLE.env` differs only in `build_id`.
+
+Anything else stops the sheet.
