@@ -2196,3 +2196,29 @@ as `larp-signer.service`, and calls the real `larp.signer.keyfile.load_key_file`
 copy's mode, owner match and loader verdict, and fails closed without `S1B_DONE`. It starts no service. Offline check
 with a random throwaway key: a 0600 copy gives PASS (`WALLET_PRIVATE_KEY`); a 0640 copy gives REFUSED, "key file mode
 allows group or other access". The README order adds S1b after K1 and before S2. Not yet run on the host.
+
+#### SJ-06 S1b — PASS: the `LoadCredential` key copy passes the signer's loader (2026-10-22 13:58Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `96912c19…`, exit 0. Output: `copy_mode` `0o400`, `copy_owner_is_me: true`,
+`credential: WALLET_PRIVATE_KEY`, `key_loader: PASS`, then `S1B_DONE`. No key material was printed. A first attempt at
+13:55Z did not reach AWS (expired `aws login`, no command ID), so nothing ran. Still not verified: that the key derives
+the configured dev wallet. S2 checks this (`wallet_matches: true`).
+
+#### SJ-06 P4 — run registered and activated; the unit check stopped on a script bug (2026-10-22 14:00–14:01Z)
+
+Primary `i-040fc5fea8b700e9a`, SSM command `141d7c8c…`, exit 5, and no `P4_DONE`. What ran:
+- `init`: `initialized: true`, run `larp-dev-rehearsal-20261022`, mode `dev`, quarantined.
+- `activate`: `activated: true`, epoch 2, `signing_enabled: false`. The runtime always reports false; the signer
+  signs. **The run is now registered and activated in `larp_rehearsal1` on build `d03bbb1`.**
+- Units 30 s later: `larp-evidence`, `larp-uploader` and `larp-runtime` all active with 0 restarts;
+  `larp-execution` inactive (expected); `larp-archive.timer` active with `restarts=` empty.
+
+The stop was a false negative from the SJ-06-RV01 fail-closed check. That check requires `NRestarts == 0` for every
+unit except execution, but a systemd timer has no `NRestarts` property, so the value is empty and the comparison fails
+even though the timer is active. S2 and P5 check only service units, so they are not affected. The fix: a `.timer`
+unit only has to be `active`. An offline test with a stubbed `systemctl` gives `P4_DONE` for the observed states, and
+still stops when a service shows a restart or is `activating`.
+
+P4 must **not** be re-run, because the run already exists and is activated. To replace the missing `P4_DONE`, the
+plan is a read-only `checks/primary-status.sh` on primary, confirming the same unit states, healthy `larp-runtime`
+JSON lines and archive health. Whether to accept P4 on that evidence and continue to S2 is Yao's decision.
