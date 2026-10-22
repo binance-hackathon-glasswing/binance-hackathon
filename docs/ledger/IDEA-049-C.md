@@ -2104,3 +2104,13 @@ from merged `1073db69` (2026-10-20), never applied before. It fires on `LARP/Run
 
 Nothing changes or is destroyed. Yao accepted all 9 in chat ("the low-gas alarm is fine") and runs the apply.
 Expect one ALARM email from the new alarm until the runtime publishes the metric after P4.
+
+#### SJ-06 J5 (access) — T1 applied; signer SSM Online after one reboot (2026-10-22)
+
+- **T1:** the endpoints `ssm`, `ec2messages` and `ssmmessages` are `available` with private DNS from
+  11:20:45Z, and `AmazonSSMManagedInstanceCore` is attached to `larp-dev-signer`.
+- **First P2s (~11:25Z):** refused by SSM itself (`InvalidInstanceId … not in a valid state`). The signer's agent
+  was not registered after six days with no route, so nothing ran on the host.
+- **Fix:** Yao rebooted the signer once. At 11:29:35Z both hosts are `Online` (agent 3.3.5390.0): signer last ping
+  11:27:23Z, and primary still Online, which is **SA9 PASS**. EC2 status checks are ok/ok.
+- **Next:** re-run P2s, then S1 (with SA4 routes).
