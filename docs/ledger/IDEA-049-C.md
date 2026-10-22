@@ -2222,3 +2222,9 @@ still stops when a service shows a restart or is `activating`.
 P4 must **not** be re-run, because the run already exists and is activated. To replace the missing `P4_DONE`, the
 plan is a read-only `checks/primary-status.sh` on primary, confirming the same unit states, healthy `larp-runtime`
 JSON lines and archive health. Whether to accept P4 on that evidence and continue to S2 is Yao's decision.
+
+**Read-only check (2026-10-22 14:09Z, Yao ran `checks/primary-status.sh`, SSM `8b5ea22e…`, exit 0).** It shows the
+same unit states 8 minutes later. Evidence, uploader and runtime are active with 0 restarts, execution is inactive, and
+the archive timer is active. `larp-runtime`'s only JSON line is `release_verified: true`, with no `started: false`
+refusal. Archive health is `healthy: true` with no reasons, and the anchor and backup tasks are both `ACK`. This
+matches every condition `P4_DONE` stands for. Pending: Yao's decision to accept P4 on this evidence.
