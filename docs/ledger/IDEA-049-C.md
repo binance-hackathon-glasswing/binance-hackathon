@@ -1524,6 +1524,40 @@ and original artifact 12365166625 is verified with no local rebuild
 ([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
 `5bee006`, so the LD16 recheck binds `fa1b6c9`.
 
+## LD10-P05 — post-funding readiness check (2026-10-22, prospective)
+
+A public BSC RPC read shows the wallet changed since P04: native 5,325,625,054,330,011
+wei, USDT 96, nonce 4 (P04: 2,694,498,869,362,886 wei, 98 USDT, nonce 2). This is
+consistent with a two-transaction seeding swap. It is not yet recorded here as a
+funding note. Repeat the P04 read-only primary probe (same scope and criteria 1–4)
+to see whether the ledger reconciled. Expected outcomes, recorded either way:
+(a) holdings MATCH at the new balances: the review should then report COVERED,
+blocked only by OWNER_REVIEW_REQUIRED; (b) MISMATCH or unchanged ledger: record
+that reconciliation is pending and do not review. No reconciliation, write or
+signer assembly is attempted. The assembler also needs the LD16 hosted bindings,
+which are absent.
+
+### LD10-P05 results — funded on chain, ledger not reconciled (outcome b)
+
+Read-only SSM command `cbb7adba…` on primary at 2026-10-22 02:37:29Z, same probe
+`692787e4…`. Holdings **DEFICIT**: the ledger is still 98 USDT / 2,694,498,869,362,886 wei;
+the chain has 96 USDT (DEFICIT) / 5,325,625,054,330,011 wei (SURPLUS). Nonce 4/4, configs
+unchanged, no commands, reservations or pending executions, our router's allowances all
+zero, 22/22 quotes OK. Per the criteria, no coverage review was run; packet sha
+`e0d70f0f…` is kept privately in the session scratchpad.
+
+Readiness: not ready to assemble. Remaining:
+1. Funding owner records the seeding swap as a deployment funding note (F-120).
+2. Approved operator reconciles/adopts the new balances through the existing
+   balance-adoption path, so holdings MATCH.
+3. Isaac supplies the LD16 hosted bindings: DB host/user/name/region, CA file and
+   pinned hash, run ID, build fa1b6c9, router policy file/hash.
+4. Then a fresh probe, review and assembly run within 300 s.
+
+The chain balance covers the 0.003072 BNB exit reserve but is 0.003506374945669989 BNB
+short of the 0.008832 BNB planning target. Nonce 2→4 implies two wallet transactions
+outside the agent. Allowances to other spenders, such as a MetaMask router, are not
+checked by this probe.
 ### SJ-04 — hosted signer assembly from one fresh capture (preregistered 2026-10-22)
 
 Yao Zhu, acting as approved primary operator and partner, selected run ID
@@ -1682,3 +1716,18 @@ The tunnel was closed afterwards. Existing databases were only read (`larp`) or 
 touched. **PASS.** No run was activated and no service or config changed.
 Activation will need a renderer override for this name: `prepare_trial_db.py` accepts
 only `larp_trial*`.
+
+#### SJ-04 and LD10-P05 — same post-funding state, two concurrent sessions
+
+LD10-P05 (Keegan's session, probe `cbb7adba…` at 02:37:29Z) and SJ-04 R1/R1′ (Yao's
+probes `b4f92f03…` at 02:11Z and `e43c6173…` at 02:28Z) observed the same wallet
+state: 96 USDT DEFICIT / 0.005325625054330011 BNB SURPLUS against the retired
+trial ledger, nonce 4/4, nothing in flight. They ran independently. For the new
+signed run, P05's step 2 (reconcile the old ledger to MATCH) is replaced by Yao's
+SJ-04-A1 decision: start from the finalized chain holdings with exactly the 2 USDT
+seed deficit accepted. P05's step 3 (hosted bindings) was supplied by Yao, and
+step 4 ran at 02:29Z (SJ-04 R1′–R3). P05 steps 1 (funding note F-120) and the
+unchecked allowances to other spenders, such as a MetaMask router, remain open,
+as does the optional top-up toward 0.008832 BNB. The retired run's ledger was not
+reconciled or written.
+
