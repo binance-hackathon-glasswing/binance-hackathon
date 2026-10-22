@@ -1964,3 +1964,17 @@ Anything else stops the sheet.
   `build_id`. The manifest differs only in `build_id`, `build_origin` (the registered origin, not a mirror) and
   those two file hashes.
 - **Limit:** no CI test run on this commit. Linux, PostgreSQL and systemd jobs did not run; local suites only.
+
+#### SJ-06 J2 — PASS (recapture 2026-10-22 10:51:53Z, Yao ran M2 and M3)
+
+- **Probe:** regenerated from the release checkout `d03bbb1`, hash `692787e4…` as reviewed. The read-only SSM
+  capture on primary exited cleanly (empty stderr).
+- **Review at 10:52:35Z:** `numeric_status: COVERED`, **98/98 checks covered**, 24 quotes, no missing quote coverage.
+- **Holdings at block 129117132:** USDT 96 (DEFICIT of exactly the accepted 2 USDT against the retired ledger),
+  BNB 5,325,625,054,330,011 wei (SURPLUS), all five stocks 0 (MATCH). Unchanged since SJ-04.
+- **Candidate:** `signer.json` `cd0b38b8287ef89a7e7e891ac8e3b5c157f24e3c0e3c957130713b655e4d3f96`, status
+  `ASSEMBLED_REQUIRES_APPROVAL`, only blocker `OWNER_REVIEW_REQUIRED`. A field-by-field diff against SJ-04's
+  `f632bbcb…` changes `build_id` alone (`fa1b6c9` → `d03bbb1`). That meets SJ-06's approval condition, so Yao's
+  in-chat approval covers this candidate. `ready_to_install`, `signing_enabled` and `gate_b_accepted` stay false in
+  the report.
+- **M2:** Yao reports the bundle upload done. P2 re-checks the bundle hash on each host.
