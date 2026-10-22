@@ -1631,3 +1631,38 @@ MATCH. Full local suite: **1970 passed, 502 environmental skips, 0 failed**. A d
 check of `chain_start` on the first real packet's holdings accepts exactly
 2,000,000 micro-USDT (cash 96,000,000) and refuses 1,999,999, 2,000,001 and 0. No
 review or assembly ran on that packet; a fresh capture is required (R1′).
+
+#### SJ-04 R1′–R3 results — fresh capture COVERED; key-free candidate ASSEMBLED_REQUIRES_APPROVAL
+
+Yao ran the updated run sheet at 2026-10-22 02:28Z from pushed head `f545c2a`.
+SSM command `e43c6173-bfc2-4b34-9d5b-b1525d77635a` returned Success, 12,595 bytes,
+`692787e4…` payload, packet sha256 `62835d52…`, generated 02:28:50.035Z.
+
+- **R1′ PASS.** Finalized block 129050075, nonce 4/4, zero allowances, no
+  reservations/commands/pending executions. All stocks 0/0 MATCH; USDT DEFICIT
+  of exactly 2,000,000 (chain 96,000,000 vs retired ledger 98,000,000); BNB
+  SURPLUS (chain 5,325,625,054,330,011 vs ledger 2,694,498,869,362,886). Overall
+  status DEFICIT, consistent. Source run `larp-dev-llm-trial-20261018t170339z`,
+  rebound to `larp-dev-rehearsal-20261022`.
+- **R2 PASS.** 23 request-bound quotes, 02:29:00.471Z–02:29:08.175Z; reviewed at
+  02:29:23.564Z (oldest quote 23.1 s). Build `fa1b6c9`, REHEARSAL, gas scope
+  INITIAL_ONLY. **95/95 checks covered**, including `INITIAL_BNB_EXIT_RESERVE`
+  (5,325,625,054,330,011 ≥ 3,072,000,000,000,000 wei) and `FULL_BOOK_EXIT_RESERVE`.
+  Numeric status COVERED; the only blocker is `OWNER_REVIEW_REQUIRED`; nothing missing.
+- **R3 PASS.** `ASSEMBLED_REQUIRES_APPROVAL`; `ready_to_install`, `signing_enabled`,
+  `gate_b_accepted` false; router mode untrusted. `signer.json` sha256
+  `f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b`, report
+  `4f1ee8f2…`. The signer config's identity, database and policy fields equal the
+  bindings; `database_user` larp_signer, `key_credential` wallet.key, no key material.
+  Input hashes: profile `e95d5842…`, signing policy `3241abd3…`, execution config
+  `656e4626…`, initial state `c6455fda…`; CA `d7389074…` (RC3a bundle), router policy
+  `05759e90…`.
+
+The candidate, the inputs and the private packet stay in Yao's session folder
+(mode 0700). The signer config names the private DB host and is not committed.
+Remaining gates, as the report lists them: exact policy owner approval, signing
+lifetime #27, initial gas/route-fee qualification, registered release and host
+acceptance, approved signer session and key placement, untrusted-policy replay and
+live preflight. Also open: create `larp_rehearsal1`, run `larp.signer.service check`
+against the original RC3a manifest, installation by the partner. The candidate's
+quotes go stale within minutes; a pre-install recheck must recapture.
