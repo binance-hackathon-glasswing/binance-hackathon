@@ -2052,3 +2052,25 @@ are re-run with the RC4 artifact. The M3 candidate `cd0b38b8…` binds `build_id
   - Local signer `check`: UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
   - Uploaded under `releases/rehearsal-20261022t111137z/`.
 - **Still before P4:** Isaac's confirmation of the build-only approval extension (SJ-06-A2).
+
+#### LD10-P03-T1 — full-portfolio flatten test for #56 / WR14 (2026-10-22)
+
+`tests/risk/test_exit_children.py::test_full_portfolio_flatten_completes_on_the_bnb_held_at_new_risk_end`
+closes #56's remaining acceptance test. Four held names sit at 1.2 × the per-trade cap from the
+flatten start. The BNB on hand is exactly eight children's quoted gas, with no top-up, and one round
+runs every 15 minutes. The planner flattens in exactly eight balanced mandatory SELL children, each
+within the cash cap. BNB never goes negative, and the book is flat after eight rounds (2 h), before
+`signing_end`. Together with LD10-P03 (balanced children, four positions × two children reserve) and
+LD07 (initial gas only), this records the #56 decision: keep the per-trade cap for exits and size the
+reserve for the split flatten instead of adding a top-up after `new_risk_end`. Test file only; it is
+not in the 205-file runtime manifest.
+
+#### AB-REL-RC4 — `d03bbb1` qualified for the signed dev rehearsal (2026-10-22, Keegan as release owner)
+
+Keegan pushed `d03bbb1` to the accepted mirror (fast-forward from `fa1b6c9`). Run 39766825984 passes all four
+jobs: 2470 passed / 7 skipped / 3882 subtests, systemd 5/5. Original artifact 12419733594 (bundle `270fe81f…`,
+manifest `5ea11a84…`) is verified with no local rebuild. It changes only the two LV-01 files and `build_id`
+against RC3a. [Receipt](../build/evidence/ab-rel-rc4-20261022.json). The SJ-06-A1 local bundle `0286e727…` is
+a different artifact with no CI test provenance. Per the release rule, SJ-06 installs `270fe81f…`: re-run M1
+(from the Keegan4 mirror) and M2, and bind `release.json` from manifest `5ea11a84…` at M4. Signer candidate
+`cd0b38b8…` binds `build_id` only and is unaffected.
