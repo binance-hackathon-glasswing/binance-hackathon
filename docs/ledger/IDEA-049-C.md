@@ -1792,3 +1792,50 @@ decision. Not approved here: `larp.signer.service check` against RC3a, host
 installation and signer session (LD17), key placement (LD18), signing lifetime
 #27, initial gas/route-fee qualification, untrusted-policy live preflight,
 activation and the first round (LD19).
+
+#### SJ-05 — local signer `check` against the original RC3a bundle, and other-spender allowances (preregistered 2026-10-22)
+
+Two of the items SJ-04-OA01 leaves open, done read-only from Yao's Mac. No host,
+AWS, database, key, signing or wallet action. Criteria are fixed before any run.
+
+**Part A — `larp.signer.service check` against the original RC3a artifact.**
+Inputs: artifact `12365166625` (`larp-bundle-x86_64`, Keegan's mirror run
+`39640064251`), the key-free candidate `signer.json` `f632bbcb…`, and the
+Mac's copies `/etc/larp/rds-ca.pem` `d7389074…` and
+`/etc/larp/untrusted-router-policy.json` `05759e90…`. The CI manifest carries no
+host bindings, so `check` cannot pass against it directly: `verify_service_config`
+needs the signer's hash in `service_configs_sha256`. The procedure is the host's
+own (DEPLOYMENT_DAY step 7): `preflight --bind` the unchanged CI manifest with
+`--service-config signer=…` into a scratch output, then `check` against that.
+- **A1 integrity:** the downloaded zip's sha256 is `55e08862…`; the bundle is
+  `larp-fa1b6c966f18-x86_64.tar.gz` with sha256 `2200737a…`; its
+  `release-manifest.json` has sha256 `9d309d71…`, build_id `fa1b6c96…` and 205 files.
+- **A2 negative control:** `check` with the unbound CI manifest exits 4
+  (`START_REFUSED`).
+- **A3 bind:** `preflight --bind` succeeds (`manifest_bound: true`) and the output's
+  `ci_manifest_sha256` is `9d309d71…`. The registration evidence used is a
+  local-check file whose `evidence_ref` says it is not the host's registration.
+  The bound manifest stays in the session scratchpad; it is not the host's
+  `release.json`.
+- **A4 check:** `check` against the bound manifest exits 0 with
+  `configuration_valid: true`, `swap_decoder: UNTRUSTED`,
+  `untrusted_router_policy_sha256: 05759e90…`, `signing_enabled: false` and
+  `gate_b_accepted: false`.
+- **A5 tamper control:** the same check with a one-byte-changed copy of
+  `signer.json` exits 4.
+
+PASS needs A1–A5. Limits fixed in advance: the bundle's own `larp/` source runs
+under the Mac's Python 3.12, not the host's x86_64 interpreter and venv; `check`
+never opens the database or the key. This is not host installation (LD17).
+
+**Part B — no leftover allowance to another spender.** The dev wallet
+`0x62b8ed6c…d479` has nonce 4, so it has sent exactly four transactions (two
+MetaMask seed swaps). Using public BNB Chain RPC reads only:
+- **B1:** get the receipts of the two known seed swaps (`0x24683de2…`, `0xab19e680…`)
+  and every `Approval(owner = wallet)` log on any contract in a block window around
+  each, until all four nonces are accounted for or the window is exhausted.
+- **B2:** at one finalized block, read `allowance(wallet, spender)` for every
+  (token, spender) pair found, plus our pinned router for USDT and the five bStocks.
+- **PASS:** every allowance read is zero. **FINDING:** any non-zero allowance is
+  recorded with token, spender and amount; removing it needs the wallet owner's own
+  transaction. **INCOMPLETE:** any refused read, or a nonce not accounted for.
