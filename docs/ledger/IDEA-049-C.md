@@ -2211,3 +2211,32 @@ signing requests, signatures and refusals, plus reservations. It shows public va
 and swap pair against the 0.000384 BNB action budget; holdings drift against the run's own ledger; the share of
 rounds that hold or are rejected, and why; time from intent to receipt; and every alert. The strategy is
 deterministic EQUAL_WEIGHT (LD11-RH01), so these runs evaluate mechanics, cost and correctness, not alpha.
+
+#### SJ-06-RV01 — Keegan's PR244 re-review and fail-closed follow-up (2026-10-22)
+
+Keegan approved PR244 at `b0bd1a0` after SJ-06-A2 fixed his three blocking findings (CI artifact only, Keegan4
+mirror, fail-closed M4); merged at `4198b5f`. A two-part deployment review (Mac side / host side) then found gaps in
+the steps not yet run. This follow-up fixes them before P4:
+- `host/p4-init-activate-start.sh`, `host/s2-key-check-start-signer.sh`, `host/p5-start-execution.sh`: print
+  `*_DONE` only if each unit is active with zero restarts (`larp-execution` must still be inactive at P4). S2 also
+  needs the signer's `"started": true` line. Before, a refused key (exit 4, not restarted) still printed `S2_DONE`,
+  and the sheet went on to P5 and T2, which removes signer access.
+- `mac/m9-cleanup-s3-package.sh`: the artifacts bucket is versioned, so `s3 rm` left every version readable,
+  including the RPC URLs and DB host. M9 now deletes every version and delete marker under the prefix, refuses a
+  truncated listing or a key outside the prefix, and passes only when nothing remains.
+- README: stop trading with `systemctl disable --now larp-execution` (a plain `stop` restarts on reboot), K1 may run
+  before P4, and the fail-closed rule.
+
+Still open from the review, owner Yao unless noted:
+- record the execution (send) RPC qualification or its explicit acceptance before P5;
+- compare M3's reviewed holdings with M4's `initial-state.json` (done by hand in J3);
+- pin `BUILD` to `d03bbb1` for any M1 re-run;
+- test the `LoadCredential` key copy mode before S2;
+- run `checks/signer-status.sh` before T2;
+- T1's 9-resource plan is already recorded;
+- `--region` on the hosts' `aws s3 cp`;
+- the mid-run dev-wallet top-up needs an explicit decision (Keegan/Isaac);
+- Isaac's SJ-06-A2 confirmation gates P4.
+
+Checks run: `bash -n` on the four scripts, and an offline test of M9's version filter (a version plus a delete marker
+gives 2 deletions; an empty listing gives 0). No host, AWS or key action.

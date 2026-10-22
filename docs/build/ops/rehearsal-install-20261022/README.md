@@ -55,6 +55,11 @@ Why this order:
   Both hosts install the **same** `release.json`. The signer refuses unless its manifest is byte-identical to the
   one the run registered at P4.
 - **P4 before S2.** The signer's `run` checks the run's registered version, which P4 records.
+- **K1 may run before P4** (SJ-06-RV01): placing the key file does not depend on the run. A key problem is then
+  found before the run is registered; only S2's signer start needs P4.
+- **P4, S2, P5 and M9 fail closed** (SJ-06-RV01): they print their `*_DONE` line only when every unit is in the
+  expected state with zero restarts (S2 also needs the signer's `"started": true` line), and M9 only when no object
+  version or delete marker remains under the prefix.
 - **P5 after S2.** Execution waits for signatures; starting it first would only time requests out.
 
 ## Live measurement (SJ-08)
@@ -111,7 +116,9 @@ the key.
   files: move them to `/root/` first.
 - **After P4:** the run exists in `larp_rehearsal1`. `activate` refuses another build for it (never-do #5), so a new
   build needs a new database.
-- **Stop trading:** `systemctl stop larp-execution` on primary stops new submissions. The agent's own HALT and
+- **Stop trading:** `systemctl disable --now larp-execution` on primary stops new submissions and keeps them
+  stopped across a reboot (`stop` alone would restart on reboot, because P5 enabled the unit). Record it as an
+  incident. The agent's own HALT and
   quarantine paths still apply; an unresolved fill quarantines the run.
 - **Gas:** initial gas only (no agent top-ups). F-120 allows the manual MetaMask seed only before a wallet's first
   agent trade, so a mid-run top-up is a human wallet action. If the low-gas alarm fires on this dev wallet: stop

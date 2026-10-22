@@ -29,7 +29,12 @@ if not ok:
 PY
 systemctl enable --now larp-signer.service
 sleep 20
-echo "larp-signer $(systemctl is-active larp-signer || true) restarts=$(systemctl show larp-signer -p NRestarts --value)"
+state=$(systemctl is-active larp-signer || true); restarts=$(systemctl show larp-signer -p NRestarts --value)
+echo "larp-signer $state restarts=$restarts"
 # The start line is fixed JSON (started, swap_decoder, policy hash, deviation, cap_basis); never key material.
-journalctl -u larp-signer --since "-2 min" --no-pager -o cat | grep -E '^\{' | tail -3 || true
+lines=$(journalctl -u larp-signer --since "-2 min" --no-pager -o cat | grep -E '^\{' | tail -3 || true)
+echo "$lines"
+# SJ-06-RV01: fail closed. A refused key (exit 4) or quarantine (exit 3) is not restarted, so check before P5/T2.
+[[ $state == active && $restarts == 0 ]] || { echo "larp-signer is not running cleanly; stop here (no S2_DONE)"; exit 5; }
+grep -q '"started": true' <<<"$lines" || { echo "no signer start line; stop here (no S2_DONE)"; exit 5; }
 echo S2_DONE
