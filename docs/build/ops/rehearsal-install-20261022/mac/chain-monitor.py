@@ -1,6 +1,10 @@
 """Live, read-only trade monitor for the dev rehearsal wallet (IDEA-049-C SJ-08). Runs on the Mac; no host access.
 
-  <venv python from requirements.lock> mac/chain-monitor.py [--once] [--interval 60]
+  <venv python from requirements.lock> docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py [--once] [--interval 60]
+
+Anyone with a checkout can run it. Output goes to $LARP_MONITOR_DIR (default <repo>/deploy/activation/rehearsal-monitor,
+which is git-ignored). Prices need a Web3 key pair in $LARP_ENV_FILE (default <repo>/.env); without one the fill book,
+holdings, gas and alerts still work and price_error is set.
 
 Every poll: finalized block, nonce, on-chain holdings, router allowances and Web3 token prices. When the nonce
 moves, it finds the wallet's new transactions in the blocks since the last poll and decodes each receipt's
@@ -9,12 +13,14 @@ spent in BNB, and it flags anything that looks like an error. Appends to monitor
 next to this folder and prints one summary line per poll. Public chain data plus the team's read-only Web3 key
 (prices only). Nothing is signed or sent.
 """
-import argparse, json, sys, time, urllib.request
+import argparse, json, os, sys, time, urllib.request
 from fractions import Fraction
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parents[1]
-OUT = HERE / 'monitor'
+# The checkout this file sits in (docs/build/ops/... or a copy under deploy/activation/...).
+ROOT = next(p for p in Path(__file__).resolve().parents if (p / 'larp').is_dir() and (p / '.git').exists())
+OUT = Path(os.environ.get('LARP_MONITOR_DIR') or ROOT / 'deploy/activation/rehearsal-monitor')
+ENV_FILE = os.environ.get('LARP_ENV_FILE') or str(ROOT / '.env')
 RPC = 'https://bsc-dataseed.bnbchain.org'
 WALLET = '0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479'
 ROUTER = '0xb44446b0c8e56988c34f7ff73ae904982b5fdda5'
@@ -64,9 +70,9 @@ def balances(block):
 def prices():
     """Web3 Open API rwa/price, USD per token (read-only key). None when unavailable."""
     try:
-        sys.path.insert(0, str(Path('/Users/songyaozhu/binance-hackathon/.claude/worktrees/release-d03bbb1')))
+        sys.path.insert(0, str(ROOT))
         from larp.marketdata.web3 import Web3Client, Artifacts, credentials
-        k = credentials('/Users/songyaozhu/binance-hackathon/.env')
+        k = credentials(ENV_FILE)
         c = Web3Client(k['BINANCE_API_KEY'], k['BINANCE_SECRET_KEY'], artifacts=Artifacts(str(OUT / 'web3')))
         out = {}
         for s, t in STOCKS.items():
@@ -235,7 +241,7 @@ def main():
     ap.add_argument('--once', action='store_true')
     ap.add_argument('--interval', type=int, default=60)
     args = ap.parse_args()
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     s = load_state()
     while True:
         try:
