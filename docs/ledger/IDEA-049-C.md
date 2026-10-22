@@ -1594,3 +1594,27 @@ differences equal Isaac's verified post-trial dev seeds (SJ-03 receipt `ab19e680
 exactly 2 USDT net debit), which the retired run's ledger never recorded. The tool
 refused at its MATCH precondition before writing any input file, as designed.
 **R1 FAIL as preregistered.** Nothing was assembled, widened or relabeled.
+
+#### SJ-04-A1 — amendment: the new run starts from finalized chain holdings (preregistered before re-run)
+
+Decision (Yao Zhu, operator/partner, 2026-10-22): the signed run has no ledger yet,
+so in hosted mode its initial `PortfolioState` takes USDT and BNB from the packet's
+finalized chain observation, not from the retired run's ledger. Accepted deviation
+from the retired ledger, and nothing else:
+
+- every stock: `MATCH` (chain = ledger), as before;
+- USDT: `MATCH`, or `DEFICIT` of **exactly** the operator-declared
+  `--accept-usdt-deficit-units` (2,000,000 micro-USDT = the SJ-03 seed debit); any
+  other amount refuses;
+- BNB: `MATCH` or `SURPLUS` (chain above ledger); a BNB `DEFICIT` refuses;
+- nonce latest = pending, zero allowances, no reservations/commands/pending
+  executions, all unchanged.
+
+The retired ledger, chain values, classes, block, observation hash and accepted
+deficit are recorded in `portfolio-rebinding.json`. Numeric-only mode keeps strict
+`MATCH`. Default accepted deficit is 0.
+
+Amended criteria: **T3** tests: exact 2 USDT deficit accepted and the chain values
+used; 1 unit more or less, a BNB deficit, a stock mismatch and numeric-only mode
+with any deficit refuse. **R1′** on a fresh capture: the deviations above only.
+R2/R3 unchanged. The first capture's R1 FAIL stays recorded.
