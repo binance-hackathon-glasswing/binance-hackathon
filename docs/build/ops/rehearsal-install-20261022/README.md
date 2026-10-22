@@ -57,6 +57,13 @@ Why this order:
 - **P4 before S2.** The signer's `run` checks the run's registered version, which P4 records.
 - **P5 after S2.** Execution waits for signatures; starting it first would only time requests out.
 
+## Live measurement (SJ-08)
+
+- **On-chain, any time (Mac):** `<venv>/bin/python mac/chain-monitor.py` (`--once` for one poll). It writes
+  `monitor/*.jsonl`, and one line per minute shows holdings, PnL, gas and alerts.
+- **The agent's own records (primary):** `python3.12 -I ssm_run.py checks/trading-status.sh`, then read
+  `results/trading-status-stdout.txt`.
+
 ## Switching from the superseded local bundle (SJ-06-A2, once)
 
 P1–P3 first ran with the local bundle `0286e727…`. P4 did **not** run, so the run is not registered yet. To switch:

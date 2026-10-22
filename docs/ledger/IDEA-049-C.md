@@ -2170,3 +2170,44 @@ So with the approved profile, buys can start at `trade_after` 2026-10-23T00:00Z,
 Exits can run from `flatten_start` 2026-10-26T00:00Z for the full 14.75 h, as LD10-P03 assumed. Limit: underlying
 `openState` at weekends is a single class of samples not yet measured (GAP-44). The guard stays and will skip
 rounds if it reports false.
+
+### SJ-08 — live measurement of the rehearsal's trades (2026-10-22)
+
+Yao asked to measure trades live, so the strategy can be evaluated and errors found as data arrives. Both tools are
+read-only and change nothing the agent does.
+
+**1. `mac/chain-monitor.py` (Mac; public BNB Chain RPC plus the read-only Web3 key for prices).** Each poll (60 s)
+reads the finalized block, nonce, holdings, router allowances and token prices. When the nonce moves, it decodes the
+wallet's new transactions from their receipts' Transfer and Approval logs into fills, and keeps an average-cost book:
+realized and unrealized PnL in USDT, equity excluding BNB, and gas in BNB. Output goes to
+`monitor/{snapshots,transactions,alerts}.jsonl`.
+
+It raises an alert on any of these:
+- a failed transaction;
+- a transaction that is neither an approve nor a swap through the pinned router;
+- an approval to any spender other than the router;
+- a router allowance left open between polls;
+- a swap without exactly one stock leg, or a buy or sell without the matching USDT movement;
+- an unexpected token;
+- on-chain holdings that differ from the fill book;
+- nonces missing from the scan;
+- BNB below the 0.003072 exit reserve.
+
+Checked before use:
+- **Baseline at 12:04:03Z, block 129126729:** 96 USDT, 0.005325625054330011 BNB, nonce 4, no stocks, no alerts.
+  This equals the run's initial state.
+- **Decoder on the real seed transactions:** nonce 3 (swap) shows −2 USDT; nonce 2 shows the exact 2 USDT approve
+  to the MetaMask router, which the monitor would flag as another spender.
+- **Synthetic book:** buying 0.1 NVDAB for 20 USDT, then selling half for 11 USDT, gives a realized +1.0 USDT and
+  a remaining basis of 10.0.
+- **A bug the tests caught:** a mistyped Transfer topic, fixed before any live use.
+
+**2. `checks/trading-status.sh` (primary, run by Yao).** One READ ONLY transaction as `larp_execution`, the role
+with SELECT on every table read. It prints the run state and portfolio; rounds by status; event kinds and the
+reasons the agent gave (for example planner rejections); the last 15 non-routine events; execution records; and
+signing requests, signatures and refusals, plus reservations. It shows public values only.
+
+**Questions to evaluate as the data arrives:** fill price against the quote and the Web3 price; gas per approve
+and swap pair against the 0.000384 BNB action budget; holdings drift against the run's own ledger; the share of
+rounds that hold or are rejected, and why; time from intent to receipt; and every alert. The strategy is
+deterministic EQUAL_WEIGHT (LD11-RH01), so these runs evaluate mechanics, cost and correctness, not alpha.
