@@ -2022,3 +2022,16 @@ match, `release_verified`, runtime and execution `check`s valid, routes PASS (`a
 chrony in sync. **P4 did not run, so no run is registered.** The new step `host/p0-supersede-local-bundle.sh` checks
 that the run does not exist, then moves the local release and P3's configs aside (moves only). Then P2, M4 and P3
 are re-run with the RC4 artifact. The M3 candidate `cd0b38b8…` binds `build_id` only and stays valid.
+
+#### SJ-06 J1 — PASS on RC4, the original CI artifact (2026-10-22)
+
+- **CI:** `Keegan4/Keegan4-larp-ci-mirror` run 39766825984 on `d03bbb1`, all four jobs green (bootstrap,
+  AWS infrastructure, runtime, host-bundle).
+- **Artifact** 12419733594 `larp-bundle-x86_64`: the zip sha256 `efe06485…` matches GitHub's recorded digest.
+  Bundle `larp-d03bbb16cf51-x86_64.tar.gz` `270fe81f345a4d5f7aad1e47deda7cdfd54b786380e0fe85b9f5a2e8f3b96dc3`,
+  manifest `5ea11a84287e790e8d2246c76203e5f1040f6c8fd90f627e9363eaecbaa95b6a` (205 files), `provision.sh`
+  `d7905de4…`, CA `d73890748…`.
+- **Against the superseded local bundle:** the manifests differ only in `build_origin` (Keegan's mirror), and the
+  bundles only in `release-manifest.json` and `SHA256SUMS`, as expected.
+- **Next:** M2 uploads RC4 (same S3 key; the bucket is versioned). P0 sets the local install aside on primary.
+  Then P2, M4 and P3 on RC4.
