@@ -2087,3 +2087,20 @@ a different artifact with no CI test provenance. Per the release rule, SJ-06 ins
   and P2 installed.
 - **Waiting before P4 (init/activate):** Isaac's confirmation of the build-only approval extension, and Keegan's
   re-review of PR244, which is still CHANGES_REQUESTED.
+
+#### SJ-06 T1 plan — 9 to add, accepted (2026-10-22 ~11:20Z)
+
+The saved plan `signer-access-on.tfplan` (enable_signer_provisioning = true) creates the 8 IDEA-080 resources
+expected:
+- the endpoint security group;
+- ingress rules from primary and from the signer;
+- the signer egress rule;
+- endpoints `ssm`, `ssmmessages` and `ec2messages`;
+- `AmazonSSMManagedInstanceCore` on the signer role.
+
+It also creates **`aws_cloudwatch_metric_alarm.service["runtime-low-gas"]`**: the LD08 initial-only gas alarm
+from merged `1073db69` (2026-10-20), never applied before. It fires on `LARP/Runtime GasPairUnaffordable` > 0 for
+2×300 s, treats missing data as breaching like the other service alarms, and goes to the existing alarm topic.
+
+Nothing changes or is destroyed. Yao accepted all 9 in chat ("the low-gas alarm is fine") and runs the apply.
+Expect one ALARM email from the new alarm until the runtime publishes the metric after P4.
