@@ -1565,3 +1565,17 @@ Pass criteria, before running:
 Out of scope: creating `larp_rehearsal1`, `larp.signer.service check` against the
 original RC3a manifest (artifact not available locally), installation, key
 placement, activation and owner acceptance.
+
+#### SJ-04 results — T1/T2 PASS (local)
+
+`tests/signer/test_hosted_rehearsal_assembly.py`: 9 tests / 12 subtests PASS. They
+cover identity binding, the `larp_signer` role, the untrusted policy pair, the
+recorded run rebinding, every listed refusal and the non-echo of private values.
+The COVERED path patches the numeric reviewer to a fixed COVERED result, because
+numeric coverage itself is covered by `test_caps_review.py`; the uncovered case
+runs the real reviewer. Related caps/signer/collector suites: 116 passed, 56
+PostgreSQL-only skips. Full local suite, macOS arm64/Python 3.12.14 from
+`deploy/requirements-test.lock`: **1966 passed, 502 skipped, 0 failed**. All skips are
+environmental: 492 PostgreSQL, 5 systemd, 3 Linux bubblewrap, 2 opt-in external
+fixtures. No PostgreSQL was available here. This is not a release qualification:
+the tool runs on the operator's Mac, not on the host, and no runtime manifest file changed.
