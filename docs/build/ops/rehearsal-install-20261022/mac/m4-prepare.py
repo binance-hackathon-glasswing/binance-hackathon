@@ -25,20 +25,27 @@ POLICY_SHA = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'
 ADOPTION = 'IDEA-083 LD11-RH01 scoped deterministic rehearsal (Keegan 2026-10-21); IDEA-049-C SJ-06 (Yao Zhu 2026-10-22)'
 release = here / 'bundle/x' / BUNDLE
 digest = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
-assert subprocess.run(['git', '-C', str(wt), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() == BUILD
-assert not subprocess.run(['git', '-C', str(wt), 'status', '--porcelain'], capture_output=True, text=True).stdout.strip()
-assert digest(PROFILE) == PROFILE_SHA and digest(POLICY) == POLICY_SHA
-assert digest(release / 'release-manifest.json') == env['MANIFEST_SHA256']
+
+
+def require(ok, why):
+    """An explicit check: unlike assert, python -O cannot strip it (Keegan PR244 review; Keith PR239)."""
+    if not ok:
+        raise SystemExit('M4 refused: ' + str(why))
+
+require(subprocess.run(['git', '-C', str(wt), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() == BUILD, 'release checkout is not BUILD')
+require(not subprocess.run(['git', '-C', str(wt), 'status', '--porcelain'], capture_output=True, text=True).stdout.strip(), 'release checkout is not clean')
+require(digest(PROFILE) == PROFILE_SHA and digest(POLICY) == POLICY_SHA, 'profile or router policy hash differs')
+require(digest(release / 'release-manifest.json') == env['MANIFEST_SHA256'], 'bundle manifest differs from build.env')
 assembly = json.loads((private / f'assembly-{STAMP}.json').read_text().strip().splitlines()[-1])
 signer = private / f'signer-{STAMP}' / 'signer.json'
-assert assembly['status'] == 'ASSEMBLED_REQUIRES_APPROVAL' and assembly['numeric_status'] == 'COVERED'
-assert digest(signer) == assembly['signer_config_sha256']
+require(assembly['status'] == 'ASSEMBLED_REQUIRES_APPROVAL' and assembly['numeric_status'] == 'COVERED', 'assembly is not ASSEMBLED/COVERED')
+require(digest(signer) == assembly['signer_config_sha256'], 'signer.json differs from the assembly report')
 # SJ-06 J2: Yao's approval covers this candidate only if it differs from SJ-04's f632bbcb... in build_id alone.
 old = Path(os.environ['OLD_SIGNER'])
-assert digest(old) == 'f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b'
+require(digest(old) == 'f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b', 'OLD_SIGNER is not the SJ-04 candidate f632bbcb')
 old_value, new_value = json.loads(old.read_bytes()), json.loads(signer.read_bytes())
 changed = sorted(k for k in set(old_value) | set(new_value) if old_value.get(k) != new_value.get(k))
-assert changed == ['build_id'] and new_value['build_id'] == BUILD, 'signer.json differs beyond build_id: new decision needed'
+require(changed == ['build_id'] and new_value['build_id'] == BUILD, 'signer.json differs beyond build_id: new decision needed')
 print(json.dumps(dict(signer_diff_vs_f632bbcb=changed)))
 reviewed = json.loads((private / f'review-{STAMP}' / 'execution-config.json').read_text())
 results = here / 'results'; results.mkdir(exist_ok=True)
@@ -75,11 +82,11 @@ call([py, str(here / 'mac/prepare_rehearsal_db.py'), str(wt), 'prepare', '--terr
 q = json.loads(call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(out), '--ci-manifest', str(release / 'release-manifest.json'),
                      '--release-root', str(release / 'release'), '--rds-ca', str(release / 'rds-ca.pem'),
                      '--artifact-root', '/Users/songyaozhu/larp-artifacts'], allow_fail=True))
-assert all(v == 'PASS' for v in q['checks'].values()) and q['local_ready'] is True, 'package check failed'
+require(all(v == 'PASS' for v in q['checks'].values()) and q['local_ready'] is True, 'package check failed')
 rt = json.loads((out / 'runtime.json').read_text())
-assert (rt['run_id'], rt['build_id'], rt['mode'], rt['database_name']) == (RUN, BUILD, 'dev', DB)
-assert (rt['driver']['execution'], rt['driver']['assessor'], rt['driver']['intelligence_mode']) == ('service', 'deterministic', 'live')
-assert rt['driver']['strategy_profile_sha256'] == PROFILE_SHA
+require((rt['run_id'], rt['build_id'], rt['mode'], rt['database_name']) == (RUN, BUILD, 'dev', DB), 'runtime identity differs')
+require((rt['driver']['execution'], rt['driver']['assessor'], rt['driver']['intelligence_mode']) == ('service', 'deterministic', 'live'), 'runtime scope is not service/deterministic/live')
+require(rt['driver']['strategy_profile_sha256'] == PROFILE_SHA, 'runtime profile pin differs')
 # execution.json: the exact reviewed SJ-06 execution config, plus the runtime-only settings the assembly does not pin.
 sys.path.insert(0, str(wt / 'tools/deploy')); sys.path.insert(0, str(wt))
 import render_host_configs, prepare_shadow
@@ -91,9 +98,9 @@ execution = dict(reviewed, runtime_secret_id=rendered['runtime_secret_id'], mark
                  rpc_url=first['url'], rpc_source_id=first['source_id'])
 for key in ('run_id', 'build_id', 'mode', 'wallet_address', 'database_host', 'database_name', 'database_ca_file',
             'database_ca_sha256', 'region'):
-    assert execution[key] == rt[key], key
-assert (execution['untrusted_router_policy_file'], execution['untrusted_router_policy_sha256']) == ('/etc/larp/untrusted-router-policy.json', POLICY_SHA)
-assert execution['strategy_profile_sha256'] == PROFILE_SHA and execution['database_user'] == 'larp_execution'
+    require(execution[key] == rt[key], key)
+require((execution['untrusted_router_policy_file'], execution['untrusted_router_policy_sha256']) == ('/etc/larp/untrusted-router-policy.json', POLICY_SHA), 'execution router policy pair differs')
+require(execution['strategy_profile_sha256'] == PROFILE_SHA and execution['database_user'] == 'larp_execution', 'execution profile pin or database user differs')
 (out / 'execution.json').write_bytes(json.dumps(execution, indent=1, sort_keys=True).encode() + b'\n')
 (out / 'signer.json').write_bytes(signer.read_bytes())
 (out / 'untrusted-router-policy.json').write_bytes(POLICY.read_bytes())

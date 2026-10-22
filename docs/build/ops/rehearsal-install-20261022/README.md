@@ -1,7 +1,8 @@
 # Signed dev rehearsal: install run sheet (IDEA-049-C SJ-06, 2026-10-22)
 
-Installs run `larp-dev-rehearsal-20261022` (database `larp_rehearsal1`, already created in SJ-04-DB01) on the
-mirror-CI build of canonical after PR243 (LV-01), and turns signing on for the **dev wallet**. The agent makes
+Installs run `larp-dev-rehearsal-20261022` (database `larp_rehearsal1`, already created in SJ-04-DB01) from the
+**original CI artifact** of canonical `d03bbb1` (PR243, LV-01) built in Keegan's mirror (RC4), never a local rebuild
+(LD15; SJ-06-A2), and turns signing on for the **dev wallet**. The agent makes
 every trade itself: no person picks or submits a trade (never-do #1). The profile allows the first buy from
 **2026-10-23 00:00 UTC**; new risk ends Oct 25 00:00, flatten from Oct 26 00:00, signing ends Oct 26 14:45 UTC.
 
@@ -26,9 +27,9 @@ Stop at the first step that does not end with its `*_DONE` line, and keep its `r
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| 0 | Yao, Mac | `gh pr merge 243 --merge`, then `git fetch origin && git push mirror origin/codex/system-testing-20261012:refs/heads/codex/system-testing-20261012` | mirror CI run green on all four jobs |
-| M1 | Mac | `bash mac/m1-fetch-bundle.sh <mirror run id>` | `build.env` written, `M1_DONE` |
-| M1′ | Mac (instead of 0/M1 when CI is skipped, SJ-06-A1) | `PY=<venv>/bin/python RC3A=<extracted RC3a bundle> bash mac/m1-local-bundle.sh` | differs from RC3a only in files changed since `fa1b6c9`; `M1_DONE` |
+| 0 | Keegan | mirror CI for `d03bbb1` in `Keegan4/Keegan4-larp-ci-mirror` (RC4) | all four jobs green |
+| M1 | Mac | `bash mac/m1-fetch-bundle.sh <RC4 run id>` (repo defaults to Keegan's mirror) | zip matches GitHub's artifact digest; `build.env` written, `M1_DONE` |
+| M1′ | — | **superseded (SJ-06-A2): never install a local bundle.** `mac/m1-local-bundle.sh` stays only as a reproducibility check against a CI artifact | — |
 | M2 | Yao, Mac | `bash mac/m2-upload-bundle.sh` | `M2_DONE` |
 | M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=<SJ-04 bindings.json> bash mac/m3-recapture-assemble.sh` | `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp |
 | P1 | primary | `python3.12 -I ssm_run.py host/p1-preserve-trial.sh` | `P1_DONE` |
@@ -55,6 +56,16 @@ Why this order:
   one the run registered at P4.
 - **P4 before S2.** The signer's `run` checks the run's registered version, which P4 records.
 - **P5 after S2.** Execution waits for signatures; starting it first would only time requests out.
+
+## Switching from the superseded local bundle (SJ-06-A2, once)
+
+P1–P3 first ran with the local bundle `0286e727…`. P4 did **not** run, so the run is not registered yet. To switch:
+
+1. Mac: `mkdir superseded-local && mv bundle build.env superseded-local/`, then M1 (RC4 artifact) and M2.
+2. Primary: `python3.12 -I ssm_run.py host/p0-supersede-local-bundle.sh <BUILD> 339de5e60f9a79f8a9e3711d5c0bfaf828ec1ed39f216e82e7aded207bf8a621`
+   moves the local release and P3's configs aside, after checking that the run does not exist.
+3. P2 (primary) with the new `build.env` values, then M4 again (fresh capture, binds the CI manifest; same M3 stamp,
+   since `signer.json` binds `build_id` only), then P3 with the new command, then P4.
 
 ## T1 / T2: signer provisioning access (IDEA-080)
 

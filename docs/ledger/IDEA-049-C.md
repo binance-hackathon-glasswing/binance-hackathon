@@ -1999,3 +1999,26 @@ Anything else stops the sheet.
     evidence names the same build.
   - **Local signer `check`:** `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
   - **Execution RPC:** `BSC_BNBCHAIN_PUBLIC`. The package is uploaded under `releases/rehearsal-20261022t105623z/`.
+
+#### SJ-06-A2 — back to the original CI artifact (Keegan's PR244 review, 2026-10-22)
+
+Keegan's review on `4ead926` (CHANGES_REQUESTED), as release owner: the project's release rule (LD15; RC2, RC3 and
+RC3a) installs the original qualified CI artifact, never a local rebuild. A local bundle has no Linux, PostgreSQL or
+systemd test run, and its manifest differs in `build_origin`, which is the manifest P4 registers for the whole run.
+Keegan pushed `d03bbb1` to `Keegan4/Keegan4-larp-ci-mirror` (run 39766825984) and records it as **RC4**.
+
+**What changes**
+- **SJ-06-A1 is superseded.** The local bundle `0286e727…` (also uploaded to S3) must never be installed. Its J1′
+  comparison stays as a reproducibility record only.
+- **J1 is the RC4 artifact again.** `mac/m1-fetch-bundle.sh` defaults to Keegan's mirror and requires the zip to
+  match GitHub's recorded artifact digest.
+- **Fail-closed M4.** It now stops unless `gate_a_check` is 7/7 PASS with `local_ready: true`, and uses
+  `require()` instead of `assert`, so `python -O` cannot strip a check.
+- **The approval needs Isaac's confirmation.** Keegan asks Isaac, as owner of the SJ-04-OA01 policy approval, to
+  confirm that the build-only extension covers `cd0b38b8…`. P4 waits for that confirmation and for RC4.
+
+**State at the switch.** P1, P2 and P3 ran with the local bundle. P3 passed on primary at 11:0xZ: package hashes
+match, `release_verified`, runtime and execution `check`s valid, routes PASS (`a6fc1164…`, 13 destinations), and
+chrony in sync. **P4 did not run, so no run is registered.** The new step `host/p0-supersede-local-bundle.sh` checks
+that the run does not exist, then moves the local release and P3's configs aside (moves only). Then P2, M4 and P3
+are re-run with the RC4 artifact. The M3 candidate `cd0b38b8…` binds `build_id` only and stays valid.
