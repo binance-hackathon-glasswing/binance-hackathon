@@ -1618,3 +1618,16 @@ Amended criteria: **T3** tests: exact 2 USDT deficit accepted and the chain valu
 used; 1 unit more or less, a BNB deficit, a stock mismatch and numeric-only mode
 with any deficit refuse. **R1′** on a fresh capture: the deviations above only.
 R2/R3 unchanged. The first capture's R1 FAIL stays recorded.
+
+#### SJ-04-A1 results — T3 PASS (local)
+
+`chain_start` also requires compare_balances' overall status to agree with the
+per-asset classes (`DEFICIT` with the declared deficit, else `SURPLUS_ONLY` or
+`MATCH`; never `SKIPPED`). Hosted tests: 13 / 19 subtests PASS, covering: exact
+2 USDT accepted with chain values used and recorded; 1 unit more or less,
+undeclared, declared-without-deficit, BNB deficit, stock mismatch and status
+disagreement refuse; BNB surplus alone accepted; numeric-only mode stays strict
+MATCH. Full local suite: **1970 passed, 502 environmental skips, 0 failed**. A dry
+check of `chain_start` on the first real packet's holdings accepts exactly
+2,000,000 micro-USDT (cash 96,000,000) and refuses 1,999,999, 2,000,001 and 0. No
+review or assembly ran on that packet; a fresh capture is required (R1′).

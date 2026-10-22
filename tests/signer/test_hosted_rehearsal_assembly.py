@@ -49,7 +49,10 @@ class HostedRehearsalAssembly(unittest.TestCase):
         self.packet = dict(
             selected_profile_sha256=hashlib.sha256(PROFILE.read_bytes()).hexdigest(), configs_unchanged=True,
             identity=dict(run_id='larp-dev-retired-unsigned'),
-            holdings=dict(status='MATCH', latest_nonce=4, pending_nonce=4),
+            holdings=dict(status='MATCH', latest_nonce=4, pending_nonce=4, block=1, observation_sha256='0' * 64,
+                          assets=dict({s: dict(chain=0, ledger=0, cls='MATCH') for s in TOKENS},
+                                      USDT=dict(chain=portfolio['cash_units'], ledger=portfolio['cash_units'], cls='MATCH'),
+                                      BNB=dict(chain=5 * 10**15, ledger=5 * 10**15, cls='MATCH'))),
             in_flight=dict(reservations=[], execution_pending=[]),
             router=dict(allowances_to_router={s: 0 for s in TOKENS}),
             private_caps_inputs=dict(wallet=WALLET, portfolio={k: portfolio[k] for k in keys},
@@ -61,10 +64,64 @@ class HostedRehearsalAssembly(unittest.TestCase):
                              region='ap-southeast-2', untrusted_router_policy_file=str(self.policy),
                              untrusted_router_policy_sha256=hashlib.sha256(self.policy.read_bytes()).hexdigest())
 
-    def run_hosted(self, name='run', *, bindings=None, packet=None):
+    def run_hosted(self, name='run', *, bindings=None, packet=None, usdt_deficit=0):
         with patch.object(tool, 'review', covered), patch('larp.signer.assembly.review', covered):
             return tool.assemble_hosted(packet or self.packet, self.root / (name + '-private'),
-                                        bindings or self.bindings, self.root / (name + '-signer'), now=NOW)
+                                        bindings or self.bindings, self.root / (name + '-signer'), now=NOW,
+                                        usdt_deficit=usdt_deficit)
+
+    def seeded(self, deficit=2_000_000, bnb_gain=2_631_126_185_967_125):
+        """SJ-03's shape: a post-trial seed swapped USDT for BNB, unknown to the retired ledger."""
+        packet = deepcopy(self.packet)
+        holdings = packet['holdings']
+        holdings['status'] = 'DEFICIT'
+        holdings['assets']['USDT'].update(chain=holdings['assets']['USDT']['ledger'] - deficit, cls='DEFICIT')
+        holdings['assets']['BNB'].update(chain=holdings['assets']['BNB']['ledger'] + bnb_gain, cls='SURPLUS')
+        return packet
+
+    def test_new_run_starts_from_chain_holdings_with_exactly_the_declared_seed_deficit(self):
+        packet = self.seeded()
+        self.run_hosted(packet=packet, usdt_deficit=2_000_000)
+        holdings = json.loads((self.root / 'run-private/current-holdings.json').read_bytes())
+        assets = packet['holdings']['assets']
+        self.assertEqual(holdings['cash_units'], assets['USDT']['chain'])
+        self.assertEqual(holdings['bnb_units'], assets['BNB']['chain'])
+        rebinding = json.loads((self.root / 'run-private/portfolio-rebinding.json').read_bytes())
+        self.assertEqual(rebinding['accepted_usdt_deficit_units'], 2_000_000)
+        self.assertEqual(rebinding['assets'], assets)
+        self.assertTrue((self.root / 'run-signer/signer.json').exists())
+
+    def test_any_other_deficit_bnb_shortfall_or_stock_mismatch_refuses(self):
+        cases = dict(more=(self.seeded(2_000_001), 2_000_000), less=(self.seeded(1_999_999), 2_000_000),
+                     undeclared=(self.seeded(), 0), declared_without_deficit=(self.packet, 2_000_000),
+                     bnb_deficit=(self.seeded(bnb_gain=-1), 2_000_000))
+        stock = self.seeded()
+        stock['holdings']['assets']['NVDAB'].update(chain=1, cls='SURPLUS')
+        cases['stock'] = (stock, 2_000_000)
+        surplus_only = self.seeded(0)
+        surplus_only['holdings']['assets']['USDT']['cls'] = 'MATCH'
+        cases['status_disagrees'] = (surplus_only, 0)
+        for name, (packet, deficit) in cases.items():
+            with self.subTest(case=name):
+                if name == 'bnb_deficit':
+                    packet['holdings']['assets']['BNB']['cls'] = 'DEFICIT'
+                with self.assertRaises(AssertionError):
+                    self.run_hosted(name, packet=packet, usdt_deficit=deficit)
+                self.assertFalse((self.root / (name + '-signer')).exists())
+
+    def test_bnb_surplus_alone_is_accepted_with_its_overall_status(self):
+        packet = self.seeded(0)
+        packet['holdings'].update(status='SURPLUS_ONLY')
+        packet['holdings']['assets']['USDT']['cls'] = 'MATCH'
+        self.run_hosted(packet=packet)
+        holdings = json.loads((self.root / 'run-private/current-holdings.json').read_bytes())
+        self.assertEqual(holdings['bnb_units'], packet['holdings']['assets']['BNB']['chain'])
+
+    def test_numeric_only_mode_keeps_strict_match(self):
+        with self.assertRaises(AssertionError):
+            tool.collect(self.seeded(), self.root / 'numeric-private', BUILD, now=NOW)
+        with self.assertRaises(AssertionError):
+            tool.collect(self.packet, self.root / 'numeric2-private', BUILD, now=NOW, usdt_deficit=1)
 
     def test_signer_json_binds_exact_hosted_identity_and_signer_role(self):
         with patch('larp.runtime.database.open_service_store') as db, \
@@ -131,7 +188,7 @@ class HostedRehearsalAssembly(unittest.TestCase):
                 path.write_bytes(original)
 
     def test_unreconciled_or_in_flight_packets_refuse(self):
-        changes = dict(holdings=lambda p: p['holdings'].update(status='MISMATCH'),
+        changes = dict(holdings=lambda p: p['holdings'].update(status='SKIPPED'),
                        nonce=lambda p: p['holdings'].update(pending_nonce=5),
                        allowance=lambda p: p['router']['allowances_to_router'].update(NVDAB=1),
                        reservation=lambda p: p['in_flight'].update(reservations=['r']))
