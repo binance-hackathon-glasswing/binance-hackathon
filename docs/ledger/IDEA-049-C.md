@@ -2262,3 +2262,14 @@ accepted risk is that a public endpoint can rate-limit or drop a send, which was
 The rehearsal's own sends are GAP-29's first send measurement. **Fail signal for the final:** repeated send refusals or
 timeouts in `checks/trading-status.sh`, or alerts from `chain-monitor.py`. If that happens, switch providers for the
 final. Next: P5.
+
+#### SJ-06 P5 — PASS: execution service started (2026-10-22 14:14Z, Yao ran it)
+
+Primary `i-040fc5fea8b700e9a`, SSM command `934177ee…`, exit 0, 14:14:00–14:14:20Z.
+- Execution `check`: `configuration_valid: true`. Its `signing_enabled: false` is fixed; only the signer signs.
+- `larp-execution` is enabled and active with 0 restarts, with `release_verified: true` and no refusal line. No exit
+  2 or 4.
+- stderr has only systemd's "Created symlink" for the enable.
+
+**The signed dev rehearsal is now fully running:** runtime, execution and signer are all up. The profile allows no buy
+before 2026-10-23T00:00Z. Next: `checks/signer-status.sh` while signer access is still on, then T2 and M9.
