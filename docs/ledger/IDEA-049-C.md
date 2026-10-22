@@ -1523,3 +1523,16 @@ the installable candidate. Its runtime files are identical to `5bee006`. Mirror 
 and original artifact 12365166625 is verified with no local rebuild
 ([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
 `5bee006`, so the LD16 recheck binds `fa1b6c9`.
+
+## LD10-P05 — post-funding readiness check (2026-10-22, prospective)
+
+A public BSC RPC read shows the wallet changed since P04: native 5,325,625,054,330,011
+wei, USDT 96, nonce 4 (P04: 2,694,498,869,362,886 wei, 98 USDT, nonce 2). This is
+consistent with a two-transaction seeding swap. It is not yet recorded here as a
+funding note. Repeat the P04 read-only primary probe (same scope and criteria 1–4)
+to see whether the ledger reconciled. Expected outcomes, recorded either way:
+(a) holdings MATCH at the new balances: the review should then report COVERED,
+blocked only by OWNER_REVIEW_REQUIRED; (b) MISMATCH or unchanged ledger: record
+that reconciliation is pending and do not review. No reconciliation, write or
+signer assembly is attempted. The assembler also needs the LD16 hosted bindings,
+which are absent.
