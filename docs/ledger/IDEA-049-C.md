@@ -2035,3 +2035,20 @@ are re-run with the RC4 artifact. The M3 candidate `cd0b38b8…` binds `build_id
   bundles only in `release-manifest.json` and `SHA256SUMS`, as expected.
 - **Next:** M2 uploads RC4 (same S3 key; the bucket is versioned). P0 sets the local install aside on primary.
   Then P2, M4 and P3 on RC4.
+
+#### SJ-06 RC4 switch — P0, P2 and J3 PASS (2026-10-22 ~11:12Z, Yao ran M2, P0, P2 and M4)
+
+- **P0:** `run_exists: false`. Moved aside, by moving only: the local release `d03bbb1`, its downloaded bundle, and
+  P3's 11 configs (local `release.json` `aab80bb7…`). They are in
+  `/etc/larp-history/superseded-local-d03bbb1-*` and `/root/superseded/`.
+- **P2:** RC4 installed on primary; manifest `5ea11a84…`, CA `d7389074…`. `larp-execution` is disabled.
+- **M4 (package `20261022T111137Z`):** `gate_a_check` **7/7 PASS** with `local_ready: true`, now part of the
+  fail-closed path. The bind gives `release.json` `1db4571d73e49a81e4e4ce1008f49b26353103cbb0aa80708cd90f3b7cd4ab42`:
+  CI manifest `5ea11a84…`, 205 files, `build_origin` Keegan's mirror.
+  - It pins runtime, operations, uploader, execution (`96435836…`) and signer (`cd0b38b8…`), all equal to the
+    package files.
+  - The registration evidence names RC4 artifact 12419733594.
+  - Initial state: 96 USDT, BNB 5,325,625,054,330,011 wei, zero stocks.
+  - Local signer `check`: UNTRUSTED `05759e90…`, DEV-23, signing and Gate B false.
+  - Uploaded under `releases/rehearsal-20261022t111137z/`.
+- **Still before P4:** Isaac's confirmation of the build-only approval extension (SJ-06-A2).
