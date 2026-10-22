@@ -38,7 +38,7 @@ def unset_live_parameter(name="reassess_delay_ms"):
         raw = json.loads((base / "intelligence.v1.json").read_text("utf-8"))
         raw["parameters"][name]["live"] = None
         (base / "intelligence.v1.json").write_text(json.dumps(raw), "utf-8")
-        with patch.object(config, "load_config", lambda mode="development", base_dir=base: original(mode, base_dir)):
+        with patch.object(config, "load_config", lambda mode="development", base=base: original(mode, base)):
             yield
 
 AGENT = "LARP test runner ops@larp-test.invalid"  # reserved .invalid domain: never a real contact

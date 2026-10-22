@@ -1,5 +1,5 @@
 {
- "producer_commit": "2b4ea2a9f150ec9ffc87118eae8c2b0cf003d1bf",
+ "producer_commit": "c7ab76418375f3f994b67834a55b53245ba0f475",
  "request": {
   "allowed_tools": [
    "fetch_document",
@@ -70,7 +70,7 @@
   }
  },
  "result": {
-  "assessment_key": "5dcd086373e01d3b1b0639fe807499c661700b616056840293e5f70ba8d00803",
+  "assessment_key": "7530553c54b995b2835c78f8a12690d05053d2e6a309fc95f8700c1518e3ec25",
   "budget_allowed": {
    "deadline_ms": 60000,
    "tool_calls": 6
@@ -403,7 +403,7 @@
    "calibrated": false,
    "level": "LOW"
   },
-  "config_sha256": "07d629033f051db32dbfeabb5bd9188815a5dd64213f6a0f95da2f4c7a5ca051",
+  "config_sha256": "876452d577f22359045c25124d3f9feb6be2dc823e9357c33867d8019bd6eea3",
   "conflicts": [],
   "context_hash": "965e2b9456a019e007609b841911013fe5d444d4fbb9e0f3ddebe10025627046",
   "cost": {
@@ -4488,7 +4488,7 @@
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
   "request_sha256": "9810af494272a8508cac374484ef84ca1feefcea10137cc26279703ea28b3a56",
-  "result_id": "res:f91615636bcfce6c36500d71387b9c6918af88e8ac2bc7aa6f835156effb28c6",
+  "result_id": "res:04d5222326588e9f7b0c606a9caf4fa2f5e539d54f014268204805d213850dcf",
   "retained_facts": [],
   "review_requests": [
    {
@@ -4496,12 +4496,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:f3f3906caef73779584553ea8e222da4c121b148a24a9dcf71bcc82292d13130",
+     "job_id": "evidence:05b895ad0ad15cfc99df116abfa53292b6db32cc70f287909fba037f54f5fe11",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "5dcd086373e01d3b1b0639fe807499c661700b616056840293e5f70ba8d00803",
+      "after_assessment_key": "7530553c54b995b2835c78f8a12690d05053d2e6a309fc95f8700c1518e3ec25",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -4512,7 +4512,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:f3f3906caef73779584553ea8e222da4c121b148a24a9dcf71bcc82292d13130"
+    "request_id": "evidence:05b895ad0ad15cfc99df116abfa53292b6db32cc70f287909fba037f54f5fe11"
    }
   ],
   "review_scope": null,
