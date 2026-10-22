@@ -1579,3 +1579,18 @@ PostgreSQL-only skips. Full local suite, macOS arm64/Python 3.12.14 from
 environmental: 492 PostgreSQL, 5 systemd, 3 Linux bubblewrap, 2 opt-in external
 fixtures. No PostgreSQL was available here. This is not a release qualification:
 the tool runs on the operator's Mac, not on the host, and no runtime manifest file changed.
+
+#### SJ-04 R1 — first real capture: holdings DEFICIT, assembly correctly refused
+
+Yao ran the staged steps at 2026-10-22 ~02:11Z. Bindings were written privately
+(sha256 `f2a2798a…`). SSM command `b4f92f03-b9a7-4bc8-a1cf-fec466e1c38a` returned
+Success, 12,443 bytes, `692787e4…` payload. Probe identity: host build `ea25b52`,
+retired run `larp-dev-llm-trial-20261018t170339z`, DB `larp_trial2`, registered
+build/manifest match, configs unchanged. Finalized block 129047815: nonce 4/4,
+zero allowances, no reservations/commands/pending executions, all five stocks 0/0
+MATCH. **USDT is DEFICIT: chain 96.000000 vs retired ledger 98.000000. BNB is
+SURPLUS: chain 0.005325625054330011 vs ledger 0.002694498869362886.** Both
+differences equal Isaac's verified post-trial dev seeds (SJ-03 receipt `ab19e680…`:
+exactly 2 USDT net debit), which the retired run's ledger never recorded. The tool
+refused at its MATCH precondition before writing any input file, as designed.
+**R1 FAIL as preregistered.** Nothing was assembled, widened or relabeled.
