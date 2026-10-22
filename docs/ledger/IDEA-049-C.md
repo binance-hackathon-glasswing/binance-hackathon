@@ -1731,3 +1731,37 @@ unchecked allowances to other spenders, such as a MetaMask router, remain open,
 as does the optional top-up toward 0.008832 BNB. The retired run's ledger was not
 reconciled or written.
 
+
+#### SJ-04-RV01 — PR239 review fixes (2026-10-22)
+
+Pass criteria are Isaac's two P2 review asks on head `6c2ba1d` (posted before this
+fix), plus one more finding from Keith's review. All three were reproduced on
+`6c2ba1d` before the fix.
+- **Packet refusal boundary (Isaac P2).** Hosted mode read the packet outside the
+  refusal handler. A mismatched `packet_sha256`, a corrupt compressed payload
+  (`zlib.error`) or a missing packet exited with a traceback, and the missing case
+  printed the private absolute path. Fix: hosted mode reads the packet inside the
+  handler, which now also catches `zlib.error`. The CLI test covers a mismatched
+  hash, corrupt zlib, non-UTF-8 input and a missing packet: exit 4,
+  `SIGNER_ASSEMBLY_REFUSED`, no private path on stdout or stderr, no output or
+  candidate directory.
+- **Private intermediate directory (Isaac P2).** Only `--signer-out` was kept out
+  of the checkout, but `--output-dir` receives `execution-config.json` with the
+  private database host. Fix: with bindings, `collect` refuses any `--output-dir`
+  inside the checkout before writing. `assemble_hosted` also checks `--signer-out`
+  before any write. The stricter rule (outside the checkout, with no Git-ignored
+  exception) matches `write_new`. Tests cover the CLI and a direct `collect` call.
+- **Checks stripped by `python -O` (Keith).** Every packet and holdings check
+  (`chain_start`, nonce, allowances, in-flight work, profile/policy hashes) was a
+  plain `assert`. Under `-O`, a 2,000,001 deficit against a declared 2,000,000 was
+  accepted and wrote `signer.json`. Fix: `require()` raises explicitly. A test runs
+  the refusal tests under `-O`.
+
+Results: hosted suite 16 tests PASS. Every new or changed test fails on the
+`6c2ba1d` tool: 7 failures and 4 errors. Full local suite, macOS arm64 / Python
+3.12.14: 2138 run, 502 environmental skips, 1 failure. The failure was
+`test_cost_summary` q10, whose bash wrapper found a Python without `dotenv` on
+PATH. That module passes 27/27 with the env's Python on PATH. Not run:
+PostgreSQL-backed tests and mirror CI. Valid inputs give the same bytes, so the
+R3 candidate `f632bbcb…` is unaffected. A rerun now refuses if its `--output-dir`
+is inside the checkout.

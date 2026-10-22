@@ -1,11 +1,13 @@
 """SJ-04: hosted rehearsal signer assembly from one capture; synthetic, key-free, never Gate B acceptance."""
 import base64
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from copy import deepcopy
 import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -223,39 +225,80 @@ class HostedRehearsalAssembly(unittest.TestCase):
         with self.assertRaises(ContractError):
             tool.read_packet(lines[0])
 
-    def invoke(self, *extra):
-        packet = self.root / 'capture-stdout.txt'
-        packet.write_bytes(self.capture_output(self.packet))
+    def invoke(self, *extra, raw=None, packet=None):
+        packet = packet or self.root / 'capture-stdout.txt'
+        if raw is not False:
+            packet.write_bytes(raw or self.capture_output(self.packet))
         bindings = self.root / 'bindings.json'
         bindings.write_text(json.dumps(self.bindings))
-        stdout = io.StringIO()
-        with redirect_stdout(stdout), patch.object(tool, 'review', covered), \
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr), patch.object(tool, 'review', covered), \
                 patch('larp.signer.assembly.review', covered):
             code = tool.main(['--packet', str(packet), '--bindings', str(bindings), *extra])
-        return code, stdout.getvalue()
+        return code, stdout.getvalue(), stderr.getvalue()
 
     def test_cli_assembles_once_and_refusals_never_echo_private_values(self):
-        code, out = self.invoke('--output-dir', str(self.root / 'cli-private'), '--signer-out', str(self.root / 'cli'))
+        code, out, _ = self.invoke('--output-dir', str(self.root / 'cli-private'), '--signer-out', str(self.root / 'cli'))
         self.assertEqual(code, 0)
         result = json.loads(out)
         self.assertEqual(result['status'], 'ASSEMBLED_REQUIRES_APPROVAL')
         self.assertFalse(result['ready_to_install'])
         self.assertNotIn(PRIVATE_HOST, out)
         # A second run never overwrites the first private directories.
-        code, out = self.invoke('--output-dir', str(self.root / 'cli-private'), '--signer-out', str(self.root / 'cli2'))
+        code, out, _ = self.invoke('--output-dir', str(self.root / 'cli-private'), '--signer-out', str(self.root / 'cli2'))
         self.assertEqual(code, 4)
         self.assertEqual(json.loads(out)['status'], 'SIGNER_ASSEMBLY_REFUSED')
         self.ca.write_bytes(b'changed CA')
-        code, out = self.invoke('--output-dir', str(self.root / 'cli3-private'), '--signer-out', str(self.root / 'cli3'))
+        code, out, _ = self.invoke('--output-dir', str(self.root / 'cli3-private'), '--signer-out', str(self.root / 'cli3'))
         self.assertEqual(code, 4)
         self.assertNotIn(PRIVATE_HOST, out)
         self.assertFalse((self.root / 'cli3').exists())
 
     def test_cli_refuses_signer_output_inside_the_checkout(self):
-        code, _ = self.invoke('--output-dir', str(self.root / 'in-private'),
-                              '--signer-out', str(ROOT / 'must-not-create-signer-candidate'))
+        code, _, _ = self.invoke('--output-dir', str(self.root / 'in-private'),
+                                 '--signer-out', str(ROOT / 'must-not-create-signer-candidate'))
         self.assertEqual(code, 4)
         self.assertFalse((ROOT / 'must-not-create-signer-candidate').exists())
+        self.assertFalse((self.root / 'in-private').exists())
+
+    def test_cli_refuses_private_output_inside_the_checkout_before_writing(self):
+        # PR239 review: the intermediate execution-config.json names the private database host.
+        code, out, _ = self.invoke('--output-dir', str(ROOT / 'must-not-create-hosted-private'),
+                                   '--signer-out', str(self.root / 'in-signer'))
+        self.assertEqual(code, 4)
+        self.assertEqual(json.loads(out)['status'], 'SIGNER_ASSEMBLY_REFUSED')
+        self.assertFalse((ROOT / 'must-not-create-hosted-private').exists())
+        self.assertFalse((self.root / 'in-signer').exists())
+        with self.assertRaises(ContractError):
+            tool.collect(self.packet, ROOT / 'must-not-create-hosted-private', BUILD, bindings=self.bindings, now=NOW)
+        self.assertFalse((ROOT / 'must-not-create-hosted-private').exists())
+
+    def test_cli_packet_failures_refuse_without_traceback_or_private_path(self):
+        good = self.capture_output(self.packet).splitlines()
+        cases = dict(mismatched_hash=good[0] + b'\n' + json.dumps(dict(packet_sha256='0' * 64)).encode(),
+                     corrupt_compressed=base64.b64encode(b'not zlib') + b'\n' + good[1],
+                     not_utf8=b'\xff\xfe', missing=False)
+        for name, raw in cases.items():
+            with self.subTest(case=name):
+                packet = self.root / ('private-dir-' + name) / 'capture-stdout.txt'
+                packet.parent.mkdir()
+                code, out, err = self.invoke('--output-dir', str(self.root / (name + '-private')),
+                                             '--signer-out', str(self.root / (name + '-signer')),
+                                             raw=raw, packet=packet)
+                self.assertEqual(code, 4)
+                self.assertEqual(json.loads(out)['status'], 'SIGNER_ASSEMBLY_REFUSED')
+                self.assertNotIn('private-dir-', out + err)
+                self.assertFalse((self.root / (name + '-private')).exists())
+                self.assertFalse((self.root / (name + '-signer')).exists())
+
+    def test_packet_checks_still_refuse_under_python_optimize(self):
+        # The checks must not be plain asserts, which python -O strips.
+        name = 'tests.signer.test_hosted_rehearsal_assembly.HostedRehearsalAssembly.'
+        result = subprocess.run([sys.executable, '-O', '-m', 'unittest', '-q',
+                                 name + 'test_any_other_deficit_bnb_shortfall_or_stock_mismatch_refuses',
+                                 name + 'test_unreconciled_or_in_flight_packets_refuse'],
+                                cwd=ROOT, capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
 
 
 if __name__ == '__main__':

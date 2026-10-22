@@ -24,6 +24,19 @@ BINDING_KEYS = {'schema', 'run_id', 'build_id', 'database_host', 'database_name'
 SHA256 = re.compile(r'[0-9a-f]{64}')
 
 
+def require(ok):
+    """An explicit check: unlike assert, it still refuses under python -O."""
+    if not ok:
+        raise AssertionError('Rehearsal packet check failed')
+
+
+def outside_checkout(path):
+    """Hosted outputs carry the private bindings, so refuse checkout paths before writing anything."""
+    path = Path(path).resolve()
+    if path == ROOT or ROOT in path.parents:
+        raise ContractError('Hosted private outputs must remain outside the checkout')
+
+
 def read_packet(raw):
     """The decoded packet: either its JSON, or the probe's two stdout lines with a matching packet_sha256."""
     text = raw.decode().strip()
@@ -56,30 +69,32 @@ def chain_start(holdings, portfolio, usdt_deficit):
     """SJ-04-A1: a new run's holdings are the finalized chain values. Stocks must match the source ledger;
     USDT may fall short by exactly the declared seed debit; BNB may only exceed it."""
     assets = holdings['assets']
-    assert set(assets) == {'USDT', 'BNB', *portfolio['positions']}
-    assert all(assets[s]['cls'] == 'MATCH' and assets[s]['chain'] == portfolio['positions'][s]['units']
-               for s in portfolio['positions'])
+    require(set(assets) == {'USDT', 'BNB', *portfolio['positions']})
+    require(all(assets[s]['cls'] == 'MATCH' and assets[s]['chain'] == portfolio['positions'][s]['units']
+                for s in portfolio['positions']))
     usdt, bnb = assets['USDT'], assets['BNB']
-    assert usdt['ledger'] == portfolio['cash_units'] and bnb['ledger'] == portfolio['bnb_units']
-    assert usdt['ledger'] - usdt['chain'] == usdt_deficit and usdt['cls'] == ('DEFICIT' if usdt_deficit else 'MATCH')
-    assert bnb['chain'] >= bnb['ledger'] and bnb['cls'] in ('MATCH', 'SURPLUS')
+    require(usdt['ledger'] == portfolio['cash_units'] and bnb['ledger'] == portfolio['bnb_units'])
+    require(usdt['ledger'] - usdt['chain'] == usdt_deficit and usdt['cls'] == ('DEFICIT' if usdt_deficit else 'MATCH'))
+    require(bnb['chain'] >= bnb['ledger'] and bnb['cls'] in ('MATCH', 'SURPLUS'))
     # compare_balances' overall status must agree with these classes (never SKIPPED).
-    assert holdings['status'] == ('DEFICIT' if usdt_deficit else 'SURPLUS_ONLY' if bnb['cls'] == 'SURPLUS' else 'MATCH')
+    require(holdings['status'] == ('DEFICIT' if usdt_deficit else 'SURPLUS_ONLY' if bnb['cls'] == 'SURPLUS' else 'MATCH'))
     return dict(portfolio, cash_units=usdt['chain'], bnb_units=bnb['chain'])
 
 
 def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0):
+    if bindings is not None:
+        outside_checkout(output)
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     private = packet['private_caps_inputs']
     profile_path = ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/rehearsal-deterministic.json'
     profile = json.loads(profile_path.read_bytes())
-    assert hashlib.sha256(profile_path.read_bytes()).hexdigest() == packet['selected_profile_sha256']
-    assert packet['configs_unchanged']
-    assert packet['holdings']['status'] == 'MATCH' or bindings is not None
-    assert type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0)
-    assert packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce']
-    assert not packet['in_flight']['reservations'] and not packet['in_flight']['execution_pending']
-    assert not any(packet['router']['allowances_to_router'].values())
+    require(hashlib.sha256(profile_path.read_bytes()).hexdigest() == packet['selected_profile_sha256'])
+    require(packet['configs_unchanged'])
+    require(packet['holdings']['status'] == 'MATCH' or bindings is not None)
+    require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
+    require(packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce'])
+    require(not packet['in_flight']['reservations'] and not packet['in_flight']['execution_pending'])
+    require(not any(packet['router']['allowances_to_router'].values()))
     decision = json.loads((ROOT / 'docs/build/evidence/signer-numeric-ceilings-20261021.json').read_bytes())
     policy = decision['policies']['development']['signing_policy']
     portfolio = private['portfolio']
@@ -112,10 +127,10 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         (output / name).chmod(0o600)
         return dict(path=name, sha256=hashlib.sha256(raw).hexdigest())
     policy_ref = pin('signing-policy.json', policy)
-    assert policy_ref['sha256'] == decision['policies']['development']['sha256_canonical_json_lf']
+    require(policy_ref['sha256'] == decision['policies']['development']['sha256_canonical_json_lf'])
     profile_ref = pin('profile.json', profile)
     # The canonical JSON encoder above is byte-identical to this profile's file format.
-    assert profile_ref['sha256'] == config['strategy_profile_sha256']
+    require(profile_ref['sha256'] == config['strategy_profile_sha256'])
     inputs = dict(schema='GateBCapsInputs.v1', wallet=private['wallet'], run_id=config['run_id'],
         build_id=build_id, environment='REHEARSAL', max_age_seconds=300,
         files=dict(profile=profile_ref, signing_policy=policy_ref,
@@ -138,6 +153,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
 def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0):
     """SJ-04: review and assemble on one clock; a refusal writes no candidate and echoes nothing private."""
     from larp.signer.assembly import assemble, write_new
+    outside_checkout(signer_out)
     inputs, result, now = collect(packet, output, bindings['build_id'], bindings=bindings, now=now,
                                   usdt_deficit=usdt_deficit)
     if result['numeric_status'] != 'COVERED':
@@ -158,20 +174,20 @@ def main(argv=None):
     parser.add_argument('--accept-usdt-deficit-units', type=int, default=0,
                         help='hosted only: exact micro-USDT the chain may hold below the source ledger (SJ-04-A1)')
     args = parser.parse_args(argv)
-    packet = read_packet(args.packet.read_bytes())
     if args.bindings is None:
         if args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units:
             parser.error('--build-id is required; --signer-out and a USDT deficit need --bindings')
-        _, result, now = collect(packet, args.output_dir, args.build_id)
+        _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id)
         print(json.dumps(dict(numeric_status=result['numeric_status'], blockers=result['blockers'],
                              reviewed_at=now, missing=result['missing_quote_coverage'])))
         return 0
     if args.signer_out is None or args.build_id is not None:
         parser.error('hosted mode needs --signer-out and takes the build from --bindings')
     try:
+        packet = read_packet(args.packet.read_bytes())
         result, now, signer_sha256 = assemble_hosted(packet, args.output_dir, json.loads(args.bindings.read_bytes()),
                                                      args.signer_out, usdt_deficit=args.accept_usdt_deficit_units)
-    except (*ERRORS, AssertionError):
+    except (*ERRORS, AssertionError, zlib.error):
         # Never echo hostnames, paths, DSNs, raw input or exception messages.
         print(json.dumps(dict(status='SIGNER_ASSEMBLY_REFUSED', ready_to_install=False,
                               signing_enabled=False, gate_b_accepted=False)))
