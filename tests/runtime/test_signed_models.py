@@ -469,3 +469,29 @@ class ScopedDeterministicRehearsal(unittest.TestCase):
             modified['strategy-profile.json'].update(environment=env, evidence_mode=evidence)
             with self.assertRaises(ContractError):
                 gate_a_check.check_scope(modified, report)
+
+
+class LiveRehearsalSettings(unittest.TestCase):
+    def test_lv01_deterministic_signed_rehearsal_builds_with_the_real_live_settings(self):
+        """LV-01 LV4: dev/service/live builds without patching load_config (IDEA-049-A amendment 32)."""
+        from tests.runtime.test_driver import Composition, Store
+        from larp.runtime.service import build_driver
+        from larp.runtime.driver import ServiceExecution
+        from larp.strategy.profiles import build_live_profiles
+        fixture = Composition(); fixture.setUp(); self.addCleanup(fixture.doCleanups)
+        cfg = fixture.config(execution='service', intelligence_mode='live', expiry_grace_ms=5000)
+        base = json.loads((gate_a.ROOT/'config/runtime/runtime.example.json').read_bytes())['driver']
+        for key in ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps'):
+            cfg['driver'][key] = base[key]
+        cfg['driver']['balance_rpc_providers'] = [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')]
+        profiles = build_live_profiles(Document.from_dict(profile()['quote_cost_summary']),
+            Document.from_dict(json.loads((gate_a.ROOT/'config/intelligence/red_flags.v1.json').read_bytes())))
+        raw = profiles['REHEARSAL'].payload
+        (fixture.root/'profile.json').write_bytes(raw)
+        cfg['driver']['strategy_profile_sha256'] = gate_a.digest(raw)
+        cfg['mode'] = 'dev'
+        with patch('socket.create_connection', side_effect=AssertionError('No network during construction')):
+            runtime = build_driver(cfg, Store(), fixture.secrets)
+        self.addCleanup(runtime.ports['evidence'].close)
+        self.assertIsInstance(runtime.execution, ServiceExecution)
+        self.assertFalse(runtime.signing)

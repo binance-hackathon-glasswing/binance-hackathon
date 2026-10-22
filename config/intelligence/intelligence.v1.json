@@ -3,7 +3,7 @@
   "provenance": {
     "set_by": "IDEA-025 (Yao Zhu build record), 2026-10-10",
     "budget": "plan.md G-50 [POLICY], adopted: <= 6 tool calls and 60 s per decision, <= 3 tool types; PARALLEL_BUILD.md repeats it",
-    "parameters": "development values are synthetic-fixture defaults, uncalibrated; every live value is null, so live startup fails until a team decision sets it with provenance",
+    "parameters": "development values are synthetic-fixture defaults, uncalibrated. Live values: IDEA-049-A amendment 14 candidates, adopted by Yao Zhu 2026-10-22 for the development signed rehearsal only (amendment 32, LV-01); final-run confirmation remains at LD22/LD24",
     "bounds_and_lifecycle": "IDEA-031 S2.4-S2.5, 2026-10-10: work bounds (document chars, facts/statements per document, prior records, statement comparisons, model-input chars as a token proxy) and statement review lifecycle (attempts, backoff, retention). Synthetic development values chosen for offline tests, uncalibrated; live values null until a team decision",
     "severity": "mechanical 8-K item map: IDEA-007 Track A label source 1 (filer-assigned item codes) and IDEA-018's declared falsifier items {4.02, 1.05, 2.06}; keyword events cover 6-K filers, which have no item codes. Not a validated severity model"
   },
@@ -16,17 +16,17 @@
              "max_prior_records": 40, "max_statement_comparisons": 4000, "max_model_input_chars": 400000,
              "max_statements_registry": 400},
   "parameters": {
-    "initial_backfill_ms": {"development": 2592000000, "live": null},
-    "max_clock_skew_ms": {"development": 300000, "live": null},
-    "max_source_staleness_ms": {"development": 7200000, "live": null},
-    "result_ttl_ms": {"development": 3600000, "live": null},
-    "reassess_delay_ms": {"development": 21600000, "live": null},
-    "retry_delay_ms": {"development": 600000, "live": null},
-    "job_validity_ms": {"development": 86400000, "live": null},
-    "job_max_attempts": {"development": 3, "live": null},
-    "max_review_attempts": {"development": 3, "live": null},
-    "max_review_backoff_ms": {"development": 172800000, "live": null},
-    "statement_retention_ms": {"development": 7776000000, "live": null}
+    "initial_backfill_ms": {"development": 2592000000, "live": 2592000000},
+    "max_clock_skew_ms": {"development": 300000, "live": 0},
+    "max_source_staleness_ms": {"development": 7200000, "live": 1800000},
+    "result_ttl_ms": {"development": 3600000, "live": 1800000},
+    "reassess_delay_ms": {"development": 21600000, "live": 300000},
+    "retry_delay_ms": {"development": 600000, "live": 600000},
+    "job_validity_ms": {"development": 86400000, "live": 86400000},
+    "job_max_attempts": {"development": 3, "live": 3},
+    "max_review_attempts": {"development": 3, "live": 3},
+    "max_review_backoff_ms": {"development": 172800000, "live": 1800000},
+    "statement_retention_ms": {"development": 7776000000, "live": 2764800000}
   },
   "severity": {
     "items": {

@@ -186,10 +186,11 @@ class GateAInputs(unittest.TestCase):
             prepare_shadow.write_new(out, files)
             with self.assertRaises(ContractError): prepare_shadow.write_new(out, files)
 
-    def test_ga03_shadow_settings_are_explicit_and_live_still_refuses(self):
+    def test_ga03_shadow_settings_are_explicit_and_scopes_stay_separate(self):
         c = load_config('shadow')
         self.assertEqual((c.mode, c.p('initial_backfill_ms'), c.p('max_clock_skew_ms')), ('shadow', 30*86400000, 300000))
-        with self.assertRaises(ValueError): load_config('live')
+        # LV-01 sets the live values for the signed dev rehearsal; they stay distinct from the shadow ones.
+        self.assertEqual((load_config('live').p('max_clock_skew_ms'), load_config('live').p('reassess_delay_ms')), (0, 300000))
         for mode, execution, intelligence in (('live', 'shadow', 'shadow'), ('dev', 'service', 'shadow'),
                                               ('dev', 'shadow', 'development'), ('live', 'service', 'development')):
             config = json.loads(assembled()['runtime.json'])
