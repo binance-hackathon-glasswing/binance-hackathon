@@ -28,6 +28,7 @@ Stop at the first step that does not end with its `*_DONE` line, and keep its `r
 |---|---|---|---|
 | 0 | Yao, Mac | `gh pr merge 243 --merge`, then `git fetch origin && git push mirror origin/codex/system-testing-20261012:refs/heads/codex/system-testing-20261012` | mirror CI run green on all four jobs |
 | M1 | Mac | `bash mac/m1-fetch-bundle.sh <mirror run id>` | `build.env` written, `M1_DONE` |
+| M1′ | Mac (instead of 0/M1 when CI is skipped, SJ-06-A1) | `PY=<venv>/bin/python RC3A=<extracted RC3a bundle> bash mac/m1-local-bundle.sh` | differs from RC3a only in files changed since `fa1b6c9`; `M1_DONE` |
 | M2 | Yao, Mac | `bash mac/m2-upload-bundle.sh` | `M2_DONE` |
 | M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=<SJ-04 bindings.json> bash mac/m3-recapture-assemble.sh` | `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp |
 | P1 | primary | `python3.12 -I ssm_run.py host/p1-preserve-trial.sh` | `P1_DONE` |
