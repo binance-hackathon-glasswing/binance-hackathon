@@ -2187,3 +2187,12 @@ The candidate differs from `f632bbcb…` only in `build_id` (`fa1b6c9` → RC4 `
 This clears the last approval gate before P4. Install, signing and Gate B flags in the assembly report stay false;
 the run is activated only through the SJ-06 steps. Next: P4, the `LoadCredential` mode test, S2 (which must print
 `wallet_matches: true`), the send-RPC decision, P5, `signer-status` before T2, T2 and M9.
+
+#### SJ-06-RV01-S1b — `LoadCredential` key-copy test script (2026-10-22)
+
+New `host/s1b-credential-mode-test.sh` closes the RV01 open item "test the LoadCredential key-copy mode before S2". It
+runs a transient `systemd-run` unit as `larp-signer` with the same `LoadCredential=wallet.key:/etc/larp/signer/wallet.key`
+as `larp-signer.service`, and calls the real `larp.signer.keyfile.load_key_file` on systemd's copy. It prints only the
+copy's mode, owner match and loader verdict, and fails closed without `S1B_DONE`. It starts no service. Offline check
+with a random throwaway key: a 0600 copy gives PASS (`WALLET_PRIVATE_KEY`); a 0640 copy gives REFUSED, "key file mode
+allows group or other access". The README order adds S1b after K1 and before S2. Not yet run on the host.
