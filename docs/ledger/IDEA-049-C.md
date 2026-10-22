@@ -1558,3 +1558,210 @@ The chain balance covers the 0.003072 BNB exit reserve but is 0.0035063749456699
 short of the 0.008832 BNB planning target. Nonce 2→4 implies two wallet transactions
 outside the agent. Allowances to other spenders, such as a MetaMask router, are not
 checked by this probe.
+### SJ-04 — hosted signer assembly from one fresh capture (preregistered 2026-10-22)
+
+Yao Zhu, acting as approved primary operator and partner, selected run ID
+`larp-dev-rehearsal-20261022` and new database `larp_rehearsal1` for the signed
+rehearsal; build `fa1b6c966f186103c8dfaee5438e0d00e4edec9a` (RC3a). No existing tool
+turned a capture packet plus hosted bindings into `GateBCapsInputs.v1`:
+`review_rehearsal_caps.py` pins a DSN stub, which the assembler refuses by design.
+The quote age limit (300 s) applies again at assembly, so review and assembly must
+use one clock right after the capture.
+
+Change: `review_rehearsal_caps.py` gains a hosted mode (`--bindings`, `--signer-out`)
+that reads the raw two-line capture output (verifying `packet_sha256`), replaces the
+DSN stub with exact IAM database settings for `larp_execution` plus the untrusted
+router policy pair, rebinds the reconciled wallet holdings to the new run ID
+(recording the source run and `PortfolioState` digest), and calls the existing
+`larp.signer.assembly.assemble`/`write_new` at the review's timestamp. No numeric
+check, cap, policy or flag changes. The packet's portfolio run ID is the retired
+unsigned run; rebinding is declared, not hidden, and requires MATCH holdings, equal
+latest/pending nonce, zero allowances and no reservations/pending execution.
+
+Pass criteria, before running:
+
+1. **T1 (tests):** hosted mode writes `signer.json` whose run/build/wallet/database/
+   region/CA/policy fields equal the bindings, `database_user` = `larp_signer`, no
+   DSN; and refuses (no signer output, no private value echoed) on: missing or extra
+   binding key, packet hash mismatch, CA or policy hash mismatch, unsafe run ID,
+   holdings not MATCH, non-zero allowance, and numeric review not COVERED.
+2. **T2:** existing caps-review, assembly and collector tests still pass, zero
+   unexpected failures.
+3. **R1 (real run, operator):** one fresh read-only capture (`692787e4…` payload)
+   from primary; holdings MATCH, nonce latest = pending, zero allowances, no
+   reservations; all required quotes request-bound.
+4. **R2:** hosted mode run within 300 s of the newest quote: numeric status COVERED
+   with `INITIAL_BNB_EXIT_RESERVE` covered; the only remaining blocker is
+   `OWNER_REVIEW_REQUIRED`. Any other blocker is reported as is; nothing is widened.
+5. **R3:** assembly status `ASSEMBLED_REQUIRES_APPROVAL`; `ready_to_install`,
+   `signing_enabled`, `gate_b_accepted` all false. Publish only hashes and counts.
+
+Out of scope: creating `larp_rehearsal1`, `larp.signer.service check` against the
+original RC3a manifest (artifact not available locally), installation, key
+placement, activation and owner acceptance.
+
+#### SJ-04 results — T1/T2 PASS (local)
+
+`tests/signer/test_hosted_rehearsal_assembly.py`: 9 tests / 12 subtests PASS. They
+cover identity binding, the `larp_signer` role, the untrusted policy pair, the
+recorded run rebinding, every listed refusal and the non-echo of private values.
+The COVERED path patches the numeric reviewer to a fixed COVERED result, because
+numeric coverage itself is covered by `test_caps_review.py`; the uncovered case
+runs the real reviewer. Related caps/signer/collector suites: 116 passed, 56
+PostgreSQL-only skips. Full local suite, macOS arm64/Python 3.12.14 from
+`deploy/requirements-test.lock`: **1966 passed, 502 skipped, 0 failed**. All skips are
+environmental: 492 PostgreSQL, 5 systemd, 3 Linux bubblewrap, 2 opt-in external
+fixtures. No PostgreSQL was available here. This is not a release qualification:
+the tool runs on the operator's Mac, not on the host, and no runtime manifest file changed.
+
+#### SJ-04 R1 — first real capture: holdings DEFICIT, assembly correctly refused
+
+Yao ran the staged steps at 2026-10-22 ~02:11Z. Bindings were written privately
+(sha256 `f2a2798a…`). SSM command `b4f92f03-b9a7-4bc8-a1cf-fec466e1c38a` returned
+Success, 12,443 bytes, `692787e4…` payload. Probe identity: host build `ea25b52`,
+retired run `larp-dev-llm-trial-20261018t170339z`, DB `larp_trial2`, registered
+build/manifest match, configs unchanged. Finalized block 129047815: nonce 4/4,
+zero allowances, no reservations/commands/pending executions, all five stocks 0/0
+MATCH. **USDT is DEFICIT: chain 96.000000 vs retired ledger 98.000000. BNB is
+SURPLUS: chain 0.005325625054330011 vs ledger 0.002694498869362886.** Both
+differences equal Isaac's verified post-trial dev seeds (SJ-03 receipt `ab19e680…`:
+exactly 2 USDT net debit), which the retired run's ledger never recorded. The tool
+refused at its MATCH precondition before writing any input file, as designed.
+**R1 FAIL as preregistered.** Nothing was assembled, widened or relabeled.
+
+#### SJ-04-A1 — amendment: the new run starts from finalized chain holdings (preregistered before re-run)
+
+Decision (Yao Zhu, operator/partner, 2026-10-22): the signed run has no ledger yet,
+so in hosted mode its initial `PortfolioState` takes USDT and BNB from the packet's
+finalized chain observation, not from the retired run's ledger. Accepted deviation
+from the retired ledger, and nothing else:
+
+- every stock: `MATCH` (chain = ledger), as before;
+- USDT: `MATCH`, or `DEFICIT` of **exactly** the operator-declared
+  `--accept-usdt-deficit-units` (2,000,000 micro-USDT = the SJ-03 seed debit); any
+  other amount refuses;
+- BNB: `MATCH` or `SURPLUS` (chain above ledger); a BNB `DEFICIT` refuses;
+- nonce latest = pending, zero allowances, no reservations/commands/pending
+  executions, all unchanged.
+
+The retired ledger, chain values, classes, block, observation hash and accepted
+deficit are recorded in `portfolio-rebinding.json`. Numeric-only mode keeps strict
+`MATCH`. Default accepted deficit is 0.
+
+Amended criteria: **T3** tests: exact 2 USDT deficit accepted and the chain values
+used; 1 unit more or less, a BNB deficit, a stock mismatch and numeric-only mode
+with any deficit refuse. **R1′** on a fresh capture: the deviations above only.
+R2/R3 unchanged. The first capture's R1 FAIL stays recorded.
+
+#### SJ-04-A1 results — T3 PASS (local)
+
+`chain_start` also requires compare_balances' overall status to agree with the
+per-asset classes (`DEFICIT` with the declared deficit, else `SURPLUS_ONLY` or
+`MATCH`; never `SKIPPED`). Hosted tests: 13 / 19 subtests PASS, covering: exact
+2 USDT accepted with chain values used and recorded; 1 unit more or less,
+undeclared, declared-without-deficit, BNB deficit, stock mismatch and status
+disagreement refuse; BNB surplus alone accepted; numeric-only mode stays strict
+MATCH. Full local suite: **1970 passed, 502 environmental skips, 0 failed**. A dry
+check of `chain_start` on the first real packet's holdings accepts exactly
+2,000,000 micro-USDT (cash 96,000,000) and refuses 1,999,999, 2,000,001 and 0. No
+review or assembly ran on that packet; a fresh capture is required (R1′).
+
+#### SJ-04 R1′–R3 results — fresh capture COVERED; key-free candidate ASSEMBLED_REQUIRES_APPROVAL
+
+Yao ran the updated run sheet at 2026-10-22 02:28Z from pushed head `f545c2a`.
+SSM command `e43c6173-bfc2-4b34-9d5b-b1525d77635a` returned Success, 12,595 bytes,
+`692787e4…` payload, packet sha256 `62835d52…`, generated 02:28:50.035Z.
+
+- **R1′ PASS.** Finalized block 129050075, nonce 4/4, zero allowances, no
+  reservations/commands/pending executions. All stocks 0/0 MATCH; USDT DEFICIT
+  of exactly 2,000,000 (chain 96,000,000 vs retired ledger 98,000,000); BNB
+  SURPLUS (chain 5,325,625,054,330,011 vs ledger 2,694,498,869,362,886). Overall
+  status DEFICIT, consistent. Source run `larp-dev-llm-trial-20261018t170339z`,
+  rebound to `larp-dev-rehearsal-20261022`.
+- **R2 PASS.** 23 request-bound quotes, 02:29:00.471Z–02:29:08.175Z; reviewed at
+  02:29:23.564Z (oldest quote 23.1 s). Build `fa1b6c9`, REHEARSAL, gas scope
+  INITIAL_ONLY. **95/95 checks covered**, including `INITIAL_BNB_EXIT_RESERVE`
+  (5,325,625,054,330,011 ≥ 3,072,000,000,000,000 wei) and `FULL_BOOK_EXIT_RESERVE`.
+  Numeric status COVERED; the only blocker is `OWNER_REVIEW_REQUIRED`; nothing missing.
+- **R3 PASS.** `ASSEMBLED_REQUIRES_APPROVAL`; `ready_to_install`, `signing_enabled`,
+  `gate_b_accepted` false; router mode untrusted. `signer.json` sha256
+  `f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b`, report
+  `4f1ee8f2…`. The signer config's identity, database and policy fields equal the
+  bindings; `database_user` larp_signer, `key_credential` wallet.key, no key material.
+  Input hashes: profile `e95d5842…`, signing policy `3241abd3…`, execution config
+  `656e4626…`, initial state `c6455fda…`; CA `d7389074…` (RC3a bundle), router policy
+  `05759e90…`.
+
+The candidate, the inputs and the private packet stay in Yao's session folder
+(mode 0700). The signer config names the private DB host and is not committed.
+Remaining gates, as the report lists them: exact policy owner approval, signing
+lifetime #27, initial gas/route-fee qualification, registered release and host
+acceptance, approved signer session and key placement, untrusted-policy replay and
+live preflight. Also open: create `larp_rehearsal1`, run `larp.signer.service check`
+against the original RC3a manifest, installation by the partner. The candidate's
+quotes go stale within minutes; a pre-install recheck must recapture.
+
+#### SJ-04-DB01 — `larp_rehearsal1` created (2026-10-22 ~02:35Z)
+
+Yao ran a copy of the PC-DB02 setup (from `redeploy-20261018/db/setup_trial_db.py`,
+adapted only to a fixed name, build `fa1b6c9` and a release-migration check) through
+an SSM port-forward via primary. TLSv1.2. The databases before were `larp`,
+`larp_trial`, `larp_trial2`; the new database did not exist before. All 13 migrations
+applied, equal to fa1b6c9's migration files and to `larp`. 21 tables, 0 runs. All five
+service roles can connect (archive, execution, runtime, signer, uploader). Runtime can
+insert runs and cannot insert execution records. `roles.sql` sha256 `18b4a364…`
+(rewritten for the new name: `0acd9dab…`); compared with PC-DB02's ea25b52 copy, it
+adds only `GRANT SELECT (run_id,observation) ON execution_observations TO larp_signer`.
+The tunnel was closed afterwards. Existing databases were only read (`larp`) or not
+touched. **PASS.** No run was activated and no service or config changed.
+Activation will need a renderer override for this name: `prepare_trial_db.py` accepts
+only `larp_trial*`.
+
+#### SJ-04 and LD10-P05 — same post-funding state, two concurrent sessions
+
+LD10-P05 (Keegan's session, probe `cbb7adba…` at 02:37:29Z) and SJ-04 R1/R1′ (Yao's
+probes `b4f92f03…` at 02:11Z and `e43c6173…` at 02:28Z) observed the same wallet
+state: 96 USDT DEFICIT / 0.005325625054330011 BNB SURPLUS against the retired
+trial ledger, nonce 4/4, nothing in flight. They ran independently. For the new
+signed run, P05's step 2 (reconcile the old ledger to MATCH) is replaced by Yao's
+SJ-04-A1 decision: start from the finalized chain holdings with exactly the 2 USDT
+seed deficit accepted. P05's step 3 (hosted bindings) was supplied by Yao, and
+step 4 ran at 02:29Z (SJ-04 R1′–R3). P05 steps 1 (funding note F-120) and the
+unchecked allowances to other spenders, such as a MetaMask router, remain open,
+as does the optional top-up toward 0.008832 BNB. The retired run's ledger was not
+reconciled or written.
+
+
+#### SJ-04-RV01 — PR239 review fixes (2026-10-22)
+
+Pass criteria are Isaac's two P2 review asks on head `6c2ba1d` (posted before this
+fix), plus one more finding from Keith's review. All three were reproduced on
+`6c2ba1d` before the fix.
+- **Packet refusal boundary (Isaac P2).** Hosted mode read the packet outside the
+  refusal handler. A mismatched `packet_sha256`, a corrupt compressed payload
+  (`zlib.error`) or a missing packet exited with a traceback, and the missing case
+  printed the private absolute path. Fix: hosted mode reads the packet inside the
+  handler, which now also catches `zlib.error`. The CLI test covers a mismatched
+  hash, corrupt zlib, non-UTF-8 input and a missing packet: exit 4,
+  `SIGNER_ASSEMBLY_REFUSED`, no private path on stdout or stderr, no output or
+  candidate directory.
+- **Private intermediate directory (Isaac P2).** Only `--signer-out` was kept out
+  of the checkout, but `--output-dir` receives `execution-config.json` with the
+  private database host. Fix: with bindings, `collect` refuses any `--output-dir`
+  inside the checkout before writing. `assemble_hosted` also checks `--signer-out`
+  before any write. The stricter rule (outside the checkout, with no Git-ignored
+  exception) matches `write_new`. Tests cover the CLI and a direct `collect` call.
+- **Checks stripped by `python -O` (Keith).** Every packet and holdings check
+  (`chain_start`, nonce, allowances, in-flight work, profile/policy hashes) was a
+  plain `assert`. Under `-O`, a 2,000,001 deficit against a declared 2,000,000 was
+  accepted and wrote `signer.json`. Fix: `require()` raises explicitly. A test runs
+  the refusal tests under `-O`.
+
+Results: hosted suite 16 tests PASS. Every new or changed test fails on the
+`6c2ba1d` tool: 7 failures and 4 errors. Full local suite, macOS arm64 / Python
+3.12.14: 2138 run, 502 environmental skips, 1 failure. The failure was
+`test_cost_summary` q10, whose bash wrapper found a Python without `dotenv` on
+PATH. That module passes 27/27 with the env's Python on PATH. Not run:
+PostgreSQL-backed tests and mirror CI. Valid inputs give the same bytes, so the
+R3 candidate `f632bbcb…` is unaffected. A rerun now refuses if its `--output-dir`
+is inside the checkout.
