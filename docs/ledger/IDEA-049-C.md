@@ -1536,3 +1536,25 @@ blocked only by OWNER_REVIEW_REQUIRED; (b) MISMATCH or unchanged ledger: record
 that reconciliation is pending and do not review. No reconciliation, write or
 signer assembly is attempted. The assembler also needs the LD16 hosted bindings,
 which are absent.
+
+### LD10-P05 results — funded on chain, ledger not reconciled (outcome b)
+
+Read-only SSM command `cbb7adba…` on primary at 2026-10-22 02:37:29Z, same probe
+`692787e4…`. Holdings **DEFICIT**: the ledger is still 98 USDT / 2,694,498,869,362,886 wei;
+the chain has 96 USDT (DEFICIT) / 5,325,625,054,330,011 wei (SURPLUS). Nonce 4/4, configs
+unchanged, no commands, reservations or pending executions, our router's allowances all
+zero, 22/22 quotes OK. Per the criteria, no coverage review was run; packet sha
+`e0d70f0f…` is kept privately in the session scratchpad.
+
+Readiness: not ready to assemble. Remaining:
+1. Funding owner records the seeding swap as a deployment funding note (F-120).
+2. Approved operator reconciles/adopts the new balances through the existing
+   balance-adoption path, so holdings MATCH.
+3. Isaac supplies the LD16 hosted bindings: DB host/user/name/region, CA file and
+   pinned hash, run ID, build fa1b6c9, router policy file/hash.
+4. Then a fresh probe, review and assembly run within 300 s.
+
+The chain balance covers the 0.003072 BNB exit reserve but is 0.003506374945669989 BNB
+short of the 0.008832 BNB planning target. Nonce 2→4 implies two wallet transactions
+outside the agent. Allowances to other spenders, such as a MetaMask router, are not
+checked by this probe.
