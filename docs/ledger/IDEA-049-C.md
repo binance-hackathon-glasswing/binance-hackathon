@@ -1910,3 +1910,13 @@ within the cash cap. BNB never goes negative, and the book is flat after eight r
 LD07 (initial gas only), this records the #56 decision: keep the per-trade cap for exits and size the
 reserve for the split flatten instead of adding a top-up after `new_risk_end`. Test file only; it is
 not in the 205-file runtime manifest.
+
+#### AB-REL-RC4 — `d03bbb1` qualified for the signed dev rehearsal (2026-10-22, Keegan as release owner)
+
+Keegan pushed `d03bbb1` to the accepted mirror (fast-forward from `fa1b6c9`). Run 39766825984 passes all four
+jobs: 2470 passed / 7 skipped / 3882 subtests, systemd 5/5. Original artifact 12419733594 (bundle `270fe81f…`,
+manifest `5ea11a84…`) is verified with no local rebuild. It changes only the two LV-01 files and `build_id`
+against RC3a. [Receipt](../build/evidence/ab-rel-rc4-20261022.json). The SJ-06-A1 local bundle `0286e727…` is
+a different artifact with no CI test provenance. Per the release rule, SJ-06 installs `270fe81f…`: re-run M1
+(from the Keegan4 mirror) and M2, and bind `release.json` from manifest `5ea11a84…` at M4. Signer candidate
+`cd0b38b8…` binds `build_id` only and is unaffected.
