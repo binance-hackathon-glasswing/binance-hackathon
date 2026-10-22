@@ -2240,3 +2240,35 @@ Still open from the review, owner Yao unless noted:
 
 Checks run: `bash -n` on the four scripts, and an offline test of M9's version filter (a version plus a delete marker
 gives 2 deletions; an empty listing gives 0). No host, AWS or key action.
+
+### SJ-09 — plan: prepare S1 on Oct 23, swap equal weight for S1 from Oct 24 (Yao, 2026-10-22; not started)
+
+**Decision (Yao, in chat):** run the installed equal-weight rehearsal now (LD11-RH01). Prepare the real strategy, S1
+`TREND_GUARDED_VOL` (PF-01 / IDEA-084), on **Oct 23**. On **Oct 24**, after about 24 h of equal-weight trading,
+replace the equal-weight run with an S1 run so S1 is tested live before the Oct 27 cutoff.
+
+**What has to exist first (nothing is built yet):**
+1. **An S1 REHEARSAL `StrategyProfile.v1`.** It needs Keith's frozen weights, session data and measured costs
+   (IDEA-075, LD11, #120), built with the repo's profile builder (`larp/strategy/profiles.py`) and passing
+   `validate_live`. Its window must end before the cutoff: `signing_end` no later than 2026-10-26T14:45Z unless
+   re-decided, with time to flatten. No S1 profile exists in the repo today.
+2. **Its assessor and evidence scope.** S1 as decided uses an OpenAI-primary assessor with external review. Either
+   run S1 deterministic with model authority SHADOW (as LD11-RH01 does), or adopt hosted models for the rehearsal
+   (routing file, budget, `model_adoption_ref`). This is a decision for Keegan and Yao.
+3. **Coverage and approval.** A fresh M3-style capture and numeric review against S1's sizes (up to 95% gross), and
+   Isaac's approval of the new profile hash.
+
+**The swap itself (run sheet to write on Oct 23):**
+- Stop `larp-execution` at a quiet point with nothing in flight (no reservations, no pending commands).
+- Retire run `larp-dev-rehearsal-20261022` and export its evidence. Its rows stay in `larp_rehearsal1`.
+- Open a **new database** (`larp_rehearsal2`), because the run is UNIQUE per wallet and chain, and a **new run ID**.
+- Take the initial state from the finalized chain holdings, **including any open equal-weight positions**. This
+  needs a chain-start rule for stock positions, like SJ-04-A1 for USDT.
+- Reassemble `signer.json` (its `database_name` changes) and get it approved.
+- Install with P3/S1-style steps (the same RC4 build, unless S1 needs code that is not in `d03bbb1`), then
+  P4/S2/P5. Signer access (T1) has to be on again for the signer config.
+
+**Checks before the swap:**
+- Does S1 at `d03bbb1` run in `dev` / `service` with the chosen assessor (an LV4-style build test)?
+- Do the equal-weight positions carried over fit S1's caps?
+- Does the gas left after day 1 cover S1's action budget and exit reserve?
