@@ -1,0 +1,263 @@
+{
+ "schema": "SJ05Result.v1",
+ "decision_id": "IDEA-049-C SJ-05",
+ "recorded_utc": "2026-10-22",
+ "scope": "Read-only, on Yao Zhu's Mac. No host, AWS, database, key, signing, wallet transaction or funding action.",
+ "part_a": {
+  "result": "PASS",
+  "artifact": {
+   "id": 12365166625,
+   "name": "larp-bundle-x86_64",
+   "mirror_run_id": 39640064251,
+   "zip_sha256": "55e088622d32fcf432654d8164a4b4e398f750cdaf6686c01c1de816c0284c54",
+   "bundle_file": "larp-fa1b6c966f18-x86_64.tar.gz",
+   "bundle_sha256": "2200737a5d5f745061e7a6ffdcf260eca7e9f9921c1bde09a7c329dbb81e0938",
+   "ci_manifest_sha256": "9d309d7189d163fdb3da5c6a92ab46ecf9bbe5aa8884c0faf70988cadc0b3a36",
+   "build_id": "fa1b6c966f186103c8dfaee5438e0d00e4edec9a",
+   "manifest_files": 205,
+   "ci_manifest_host_bindings": "none (all null)"
+  },
+  "inputs": {
+   "signer_json_sha256": "f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b",
+   "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+   "untrusted_router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5"
+  },
+  "environment": "Bundle release/ source run under macOS arm64 Homebrew Python 3.12.14 in a fresh venv installed from the bundle's own requirements-runtime/aws/signer.lock; not the host x86_64 interpreter.",
+  "checks": {
+   "A1_integrity": "PASS: zip, bundle and manifest hashes, build_id and 205 files as recorded in ab-rel-rc3a-20261021.json",
+   "A2_unbound_ci_manifest": {
+    "exit": 4,
+    "stdout": {
+     "started": false,
+     "reason": "START_REFUSED",
+     "signing_enabled": false
+    },
+    "result": "PASS"
+   },
+   "A3_bind": {
+    "exit": 0,
+    "manifest_bound": true,
+    "ci_manifest_sha256": "9d309d7189d163fdb3da5c6a92ab46ecf9bbe5aa8884c0faf70988cadc0b3a36",
+    "service_configs_sha256": {
+     "signer": "f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b"
+    },
+    "bound_manifest_sha256_local_only": "1fde291a558bdb76520b744a54a69b99e98ace554f44ca1d0d2997497e706537",
+    "registration_evidence": "local-check file, evidence_ref marks it as not the host registration; the host binds its own at LD17",
+    "result": "PASS"
+   },
+   "extra_preflight_host_profile": {
+    "exit": 0,
+    "stdout": {
+     "release_verified": true,
+     "signing_enabled": false
+    },
+    "note": "preflight --manifest bound --profile host --service-config signer: lock pins match the venv"
+   },
+   "A4_check": {
+    "exit": 0,
+    "stdout": {
+     "configuration_valid": true,
+     "signing_enabled": false,
+     "swap_decoder": "UNTRUSTED",
+     "untrusted_router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+     "router_evidence_sha256": null,
+     "deviation": "DEV-23",
+     "scope": "LOCAL_CONFIG_AND_ROUTER_EVIDENCE_ONLY",
+     "gate_b_accepted": false
+    },
+    "result": "PASS"
+   },
+   "A5_tamper_one_byte": {
+    "exit": 4,
+    "stdout": {
+     "started": false,
+     "reason": "START_REFUSED",
+     "signing_enabled": false
+    },
+    "result": "PASS"
+   }
+  },
+  "limits": "check never opens the database or key; this is not LD17 host installation, release.json binding on the host, or Gate B."
+ },
+ "part_b": {
+  "result": "PASS",
+  "method_note": "eth_getLogs was refused by bsc-dataseed (14 windows); per B1 the four nonces were instead accounted for by scanning full blocks for transactions from the wallet.",
+  "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+  "wallet_transactions": {
+   "0": {
+    "hash": "0x3288d4eaceaf373617dcb4c73a3af5233b60d1e05f8a50c84c995d59112b3ca0",
+    "block": 127946341,
+    "to": "0x55d398326f99059ff775485246999027b3197955",
+    "selector": "0x095ea7b3",
+    "input_len": 138,
+    "approve_spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+    "approve_value": 2000000000000000000,
+    "receipt_status": "0x1"
+   },
+   "1": {
+    "hash": "0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55",
+    "block": 127946341,
+    "to": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+    "selector": "0x5f575529",
+    "input_len": 2060
+   },
+   "2": {
+    "hash": "0x2acb339f86c07352cc348c66cbeb6046877a09e91cab4918fc52add9f188dcd5",
+    "block": 128977934,
+    "to": "0x55d398326f99059ff775485246999027b3197955",
+    "selector": "0x095ea7b3",
+    "input_len": 138,
+    "approve_spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+    "approve_value": 2000000000000000000,
+    "receipt_status": "0x1"
+   },
+   "3": {
+    "hash": "0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d",
+    "block": 128977934,
+    "to": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+    "selector": "0x5f575529",
+    "input_len": 2060
+   }
+  },
+  "swap_receipt_approval_logs": "Each swap receipt emits USDT Approval(wallet, MetaMask router 0x1a1ec25d..., 0): the exact 2 USDT approve was fully used.",
+  "finalized": {
+   "number": 129111365,
+   "hash": "0x4bd858369972de5a04a7f7818b6d0439011332b2c4ec0cb5f1cfa0e1ef61598d",
+   "utc": "2026-10-22T10:08:46Z"
+  },
+  "finalized_nonce": 4,
+  "allowances_at_finalized_block": {
+   "our_router": [
+    {
+     "token": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    },
+    {
+     "token": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    },
+    {
+     "token": "0x55d398326f99059ff775485246999027b3197955",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    },
+    {
+     "token": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    },
+    {
+     "token": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    },
+    {
+     "token": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+     "spender": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+     "value": 0
+    }
+   ],
+   "metamask_router_and_permit2": [
+    {
+     "token": "USDT",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "USDT",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    },
+    {
+     "token": "GOOGLB",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "GOOGLB",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    },
+    {
+     "token": "MSFTB",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "MSFTB",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    },
+    {
+     "token": "NVDAB",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "NVDAB",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    },
+    {
+     "token": "SKHYB",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "SKHYB",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    },
+    {
+     "token": "TSLAB",
+     "spender": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+     "value": 0
+    },
+    {
+     "token": "TSLAB",
+     "spender": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+     "value": 0
+    }
+   ]
+  },
+  "usdt_permit": "USDT 0x55d3... reverts DOMAIN_SEPARATOR() and nonces(owner): no EIP-2612 permit, so a USDT allowance needs an on-chain approve from the wallet, and all four are accounted for.",
+  "reads": {
+   "first_pass": {
+    "ok": 12,
+    "refused": 14
+   },
+   "second_pass": {
+    "ok": 36,
+    "refused": 0
+   }
+  }
+ },
+ "funding_note_dev_seed_2": {
+  "tx": "0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d",
+  "approve_tx": "0x2acb339f86c07352cc348c66cbeb6046877a09e91cab4918fc52add9f188dcd5",
+  "block": 128977934,
+  "utc": "2026-10-21T17:27:41Z",
+  "usdt_paid": "2 (receipt Transfer logs, PR237 evidence)",
+  "network_gas_bnb_wei": {
+   "approve": 2309700000000,
+   "swap": 9732150000000,
+   "total": 12041850000000
+  },
+  "balance_before": {
+   "block": 128976212,
+   "bnb_wei": 2694498869362886,
+   "nonce": 2,
+   "source": "SJ-02 snapshot"
+  },
+  "balance_after": {
+   "block": 128978382,
+   "bnb_wei": 5325625054330011,
+   "nonce": 4,
+   "source": "SJ-03 snapshot"
+  },
+  "implied_native_credit_bnb_wei": 2643168034967125,
+  "derivation": "after - before + approve and swap gas; assumes no other native transfer between the two snapshot blocks (no trace RPC). Agrees with MetaMask rounded 0.00264317."
+ }
+}

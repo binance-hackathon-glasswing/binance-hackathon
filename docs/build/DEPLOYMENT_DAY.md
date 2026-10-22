@@ -85,6 +85,7 @@ context; no hosted run or Gate A pass is established by this update.
   | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
   |---|---|---|---|---|---|
   | dev | 2026-10-16 08:27:44 UTC | `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` | 2 (verified wallet net USDT debit) | 0.002684720969362886 (BscScan transfer relayed by Isaac) | Isaac identifies this as the MetaMask trial. Chain56 success, dev-wallet sender, canonical/finalized inclusion and USDT debit verified (IDEA-039 FG-01). BNB amount is attributed explorer evidence, not independently RPC-verified; additional planned dev funding and fresh opening balance remain #106. |
+  | dev | 2026-10-21 17:27:41 UTC | `0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d` | 2 (receipt Transfer logs) | 0.002643168034967125 (RPC balance change plus BNB gas; MetaMask showed 0.00264317) | Seed 2 by Isaac, nonce 3; its exact 2 USDT approve to the MetaMask router is nonce 2 (`0x2acb339f…dcd5`), gas 0.0000120418 BNB for both. Seed 1's approve was nonce 0 (`0x3288d4ea…3ca0`). All four wallet transactions are accounted for and every allowance reads 0 at finalized block 129111365 (IDEA-049-C SJ-05). Dev total 4 USDT; no more dev seed planned. |
   | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
 
   FG-01 evidence: [dev-gas-funding-20261016.json](evidence/dev-gas-funding-20261016.json).

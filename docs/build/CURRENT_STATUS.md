@@ -7,6 +7,16 @@ Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verifie
 This is a CI-qualified development rehearsal candidate; actual owner/configuration
 and host acceptance remain open. Earlier records below retain their dated scope.
 
+Signer candidate (2026-10-22, IDEA-049-C SJ-04/SJ-05): key-free `signer.json`
+`f632bbcb…` for run `larp-dev-rehearsal-20261022` / DB `larp_rehearsal1` / build
+RC3a `fa1b6c9` is owner-approved (SJ-04-OA01). `larp.signer.service check` passes
+against the original RC3a artifact `12365166625` after a local bind, and the dev
+wallet has no leftover allowance (all four transactions accounted for, 18 pairs
+read 0). [Evidence](evidence/sj05-signer-check-allowances-20261022/result.json).
+Remaining: pre-install recapture with the same hashes, then LD17 installation
+(host bind and `check`), LD18 key placement and LD19 first round. All readiness
+flags stay false.
+
 Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
 and supports the17bp MSFTB spread. RV120-RV01 addresses both findings: separate
 two-sided drift from adverse BUY-output moves and actual reverts; remove the
