@@ -2229,5 +2229,19 @@ the archive timer is active. `larp-runtime`'s only JSON line is `release_verifie
 refusal. Archive health is `healthy: true` with no reasons, and the anchor and backup tasks are both `ACK`. This
 matches every condition `P4_DONE` stands for.
 
-**Decision (Yao, in chat, 2026-10-22 ~14:12Z):** "I accept P4 on the primary-status evidence (SJ-06 P4)." P4 counts as
+**Decision (Yao, in chat, 2026-10-22 ~14:10Z, before S2):** "I accept P4 on the primary-status evidence (SJ-06 P4)." P4 counts as
 done; it is not re-run. Next: S2.
+
+#### SJ-06 S2 — PASS: the key derives the dev wallet; signer started (2026-10-22 14:10Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `d6547f26…`, exit 0, 14:10:18–14:10:39Z.
+- Files: `/etc/larp/signer` is `700 root:root`, and `wallet.key` is `600 root:root` with one link.
+- Key check: `key_loader: PASS`, `credential: WALLET_PRIVATE_KEY`, **`wallet_matches: true`**. The key Keegan placed
+  in K1 derives the `wallet_address` in `signer.json` `cd0b38b8…`. No key material was printed.
+- `larp-signer` is enabled and active with 0 restarts. Start line: `"started": true`, `"signing_enabled": true`,
+  `swap_decoder: UNTRUSTED`, router policy `05759e90…`, `router_evidence_sha256: null`, deviation DEV-23, cap basis
+  CAP-02. The earlier line `release_verified: true` confirms the release.
+- stderr has only systemd's "Created symlink" for the enable.
+
+**Signing is now on for the dev wallet.** No transaction can be sent until P5 starts `larp-execution`, and the
+profile allows no buy before 2026-10-23T00:00Z. Next: the send-RPC decision (SJ-06-RV01), then P5.
