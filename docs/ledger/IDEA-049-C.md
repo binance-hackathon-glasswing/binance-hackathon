@@ -1765,3 +1765,30 @@ PATH. That module passes 27/27 with the env's Python on PATH. Not run:
 PostgreSQL-backed tests and mirror CI. Valid inputs give the same bytes, so the
 R3 candidate `f632bbcb…` is unaffected. A rerun now refuses if its `--output-dir`
 is inside the checkout.
+
+#### SJ-04-OA01 — Isaac approves the recommended signer policy and coverage (2026-10-22)
+
+Keegan relayed Isaac's decision in Keegan's session: Isaac approves the
+recommended policy and coverage for the signer candidate. Recorded as relayed,
+not as a GitHub attestation by Isaac. Exact scope:
+
+- CAP-02 development signing policy `3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61`;
+  untrusted-router policy `05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5`;
+- LD10-P03 two-child rehearsal profile file `e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250`
+  / StrategyProfile `ddb8281374239cd5626f0b8432e7913ab44ea30ea2f2165fbbf176e47a7d8b17`;
+- SJ-04 coverage: capture `e43c6173…` (packet `62835d52…`, block 129050075), 95/95
+  checks COVERED at build `fa1b6c9`, with the SJ-04-A1 chain-holdings start
+  (exact 2 USDT seed deficit) for run `larp-dev-rehearsal-20261022`;
+- key-free candidate `signer.json` `f632bbcba22ac79d5c38590984d3250534db0aa6a4f23e21f3c38af9ca47880b`
+  (report `4f1ee8f2…`).
+
+This clears the assembler's `EXACT_POLICY_OWNER_APPROVAL` gate and the review's
+`OWNER_REVIEW_REQUIRED` for these hashes only (LD10 full owner acceptance for the
+rehearsal). It changes no limit, file or flag. `ready_to_install`,
+`signing_enabled` and `gate_b_accepted` stay false. A pre-install recapture that
+reproduces the same profile, policy, router policy, build and run bindings, with
+all checks COVERED, stays under this approval. Any different hash needs a new
+decision. Not approved here: `larp.signer.service check` against RC3a, host
+installation and signer session (LD17), key placement (LD18), signing lifetime
+#27, initial gas/route-fee qualification, untrusted-policy live preflight,
+activation and the first round (LD19).
