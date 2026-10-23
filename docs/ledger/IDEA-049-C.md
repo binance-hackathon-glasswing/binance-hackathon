@@ -3407,3 +3407,31 @@ Next: P5 (execution on primary), then C1, T2, SA5/SA9, M9.
   R1s stopped it; the later pair is run 3's S2 start. Key dir `700 root:root`, `wallet.key` `600 root:root`, 1 link.
 
 Next: T2 (signer access off), SA5/SA9, M9, then K (soak at about 1 h) and J (first S1 entry).
+
+#### SJ-11-QV01 — run 3 cannot place an order: the service wires no quote verifier (finding, 2026-10-23 17:2xZ, Claude)
+
+**Observed (read-only, `checks/trading-status.sh` 17:06Z and a read-only `checks/round-detail.sh` kept in the
+git-ignored run folder; chain read 17:11Z):** run 3 healthy (4 units, 0 restarts, not quarantined, balance check
+MATCH, health gates all true, valuation COMPLETE, `basis_verified: true`, cost MEASURED, risk day 2026-10-23, no halt).
+S1 decides correctly: trend UP, limiter NORMAL, applied target 19/20, `TARGET_WEIGHT` 19/100 for all five names. Each
+of the three rounds (filing, `cadence:1991969`, `cadence:1991972`) ends with 0 intents, 0 rejections, no errors, and one
+`quote_requests` entry: BUY SKHYB, EXACT_IN 18951721 USDT units (S1 asks for one leg's quote at a time). The S1 attempt
+budget for `DISCRETIONARY:BUY:SKHYB` reached 3 of `max_attempts_per_leg_session` 3. No execution record, signing
+request or signer refusal; wallet nonce 4, 96 USDT.
+
+**Cause (code, RC6 `9dc5edab`):** `larp/runtime/service.py` builds `MarketPort(client, wallet, quote_limits=profile,
+basis_verifier=...)` with no `quote_verifier`. `MarketPort.observe` then always returns `quotes=[]` with
+`quote_status='CAPABILITY_PROOF_REQUIRED'` (port.py: "expose no executable quote until the live venue proves them").
+The driver's quote follow-up (`driver._quotes`) sees no executable quote, clears it and returns without a child round
+or any journaled reason. So no BUY or SELL intent can be formed on this build, for S1 or equal weight. This is the
+"quote verifier" capability gate listed under GAP-29 (IDEA-050 "Still open" item 1); runs 1 and 2 never reached it
+(J8 database outage; no basis verifier).
+
+**Consequence:** run 3 cannot enter. Its only REHEARSAL entry session is today (session 203, entries 14:00–19:45Z);
+the next session (Oct 26) is after `new_risk_end` 2026-10-25 00:00Z. Fail-safe held: nothing was signed or sent.
+
+**What a fix needs (not started):** a quote verifier for the UNTRUSTED router path that, per `_executable_quote`,
+binds the response bytes, decodes the payload to `SwapEconomics` (pay/receive token, amount, recipient, minimum
+output, deadline), verifies exact gas and fee units, and passes `_quote_at_cap`; wiring in `service.py`; tests; release
+qualification; and, because a run cannot change build, a new run and database. Any later entry also needs a new
+REHEARSAL window decision (new profile hash) and Isaac's approval. Owner per GAP-29: Isaac, with Keegan review.
