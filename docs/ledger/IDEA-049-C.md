@@ -3053,6 +3053,10 @@ probe.sh` and `shasum -a 256 probe.sh`; record that hash next to the profile has
 - `docs/ledger/IDEA-049-C.md` will conflict at its end with PR262, which appends SJ-11; keep both, SJ-11 first.
 - 2026-10-23 note (Claude): PR262 merged into `codex/system-testing-20261012` first (`7560d20`). The merge into
   this branch places SJ-11-RH01 directly under SJ-11, before the later SJ-10 J6/J5 notes; no text changed.
+- 2026-10-23 post-merge check (Claude): full suite at merge `ab4c034` (this branch + PR262), same machine and
+  database: 2524 passed, 10 skipped, 1 failed (3931 subtests). Against `f886dbf`, every test keeps its outcome; the
+  20 PR262 tests pass; same 10 skips; the one failure is the same environmental `test_q10…` (`dotenv`). Hosted CI on
+  `ab4c034` was queued, with no result; PR262-RV01 records that Actions jobs cannot start under the billing limit.
 
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
