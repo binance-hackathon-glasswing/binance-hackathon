@@ -3282,3 +3282,22 @@ Next: **A1**, Isaac approves profile `6bcf1dfb…` and `signer.json` `49cb1a08�
 This clears `OWNER_REVIEW_REQUIRED` for these hashes only, and is the run-3 approval record for P4
 ("IDEA-049-C SJ-11-A1"). Any different profile, `signer.json` or coverage capture needs a new decision. No written
 statement from Isaac is in the repo; it is recorded as relayed. Next: R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5.
+
+#### SJ-10 J6 — DB login soak PASS on the login count, before run 2 is retired (Yao, 2026-10-23 16:17Z)
+
+`mac/soak-db-logins.sh 11` from the RC5 folder (`results/soak-20261023T161720Z`; an 8-file run at 16:14:52Z agrees).
+Files are RDS `error/postgresql.log.<hour>` (the `error/` prefix is the RDS log folder name, not a failure). Ends
+`SOAK_PASS`.
+
+| Hour (UTC, Oct 23) | IAM logins | Auth failures | `ERROR:`/`FATAL:`/`PANIC:` lines |
+|---|---|---|---|
+| 06, 07, 08 | 84, 82, 82 | 0 | 0 |
+| 09–13 (each) | 82 | 0 | 0 |
+| 14, 15 | 83, 82 | 0 | 0 |
+| 16 (partial, to 16:17) | 26 | 0 | 0 |
+
+That is 10 full RC5-only hours (06:00–16:00Z) at about 82 an hour, against about 45,000 an hour on RC4 and the
+pre-registered line of under 500, with no auth time-out, no "critically low on memory" line and no error lines. **The
+≥ 8 h login and auth part of J6 passes.** Not covered by this check: the services' journals for a dead-path
+`Unavailable`, and RDS backend memory with long-lived connections (CloudWatch `FreeableMemory`). Run 2 never entered
+(no basis verifier), so this measures idle-round load, not a trading load.
