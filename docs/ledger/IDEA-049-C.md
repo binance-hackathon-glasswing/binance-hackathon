@@ -2356,3 +2356,8 @@ fell low enough that the logins time out. Every service then fails together, and
 The signer cannot be reached after T2. It keeps retrying with its 10 s restart and should recover by itself once
 logins work; its next signature is the evidence. **Before the final:** reuse connections instead of an IAM login per
 transaction, or size the database for this login rate (new item, owner TBD).
+
+**Decision (Yao, in chat, 2026-10-23 ~02:45Z):** "Yes: pause the primary DB clients, resize larp-dev to db.t4g.small
+now, then resume." The spend is accepted at roughly US$20–25 a month more, inside the US$90 budget; scaling back after
+the rehearsal is a later decision. Order: pause, then `modify-db-instance --apply-immediately`, then
+`db_instance_class` in `development.tfvars` with a plan that must show no changes, then resume.
