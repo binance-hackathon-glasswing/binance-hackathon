@@ -2593,3 +2593,22 @@ Linux CI on PostgreSQL 14.24 and the systemd jobs did not run for RC5.
   `BUNDLE.env` differs only in `build_id`.
 
 Anything else stops the sheet.
+
+#### SJ-10 D1 and J0′ — PASS (2026-10-23)
+
+- **D1 (Yao, about 04:29Z):** `SJ-10-D1 PASS`. `larp_rehearsal2` was new. The databases before were `larp`,
+  `larp_rehearsal1`, `larp_trial` and `larp_trial2`. TLSv1.2; 13 migrations equal to the release and to `larp`; 21
+  tables; 0 runs. All five service roles connect. The runtime role can insert runs and cannot insert execution records.
+  `roles.sql` is `18b4a364…`, rewritten for the new name as `393c7e1e…`.
+- **J0′, M1-local (about 04:45Z, Mac):** built from the clean `codex/system-testing-20261012` worktree at the pushed
+  head `d53d1b7` (contains `eadd5d4`). `larp-d53d1b7aa8f1-x86_64.tar.gz` is sha256
+  `5764a97025a1dbde929def31012a0e48639ce73ff50be605df6793fc1ba7a686`, manifest `bc3a9838…`.
+  - The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+  - Against **CI RC4** (manifest `5ea11a84…`), only `release/larp/runtime/database.py` and
+    `release/larp/storage/postgres.py` differ, exactly the release files that `d03bbb1..d53d1b7` changed. The bundle's
+    `postgres.py` equals the source and carries the pool and `SOCKET_OPTIONS`.
+  - CPython `0e56475e…`, every wheel, `rds-ca.pem` `d7389074…` and `provision.sh` `d7905de4…` are byte-identical;
+    `BUNDLE.env` differs only in `build_id`.
+  - **PASS.**
+
+Limit (SJ-10-A2): no CI run on this commit. RC5 = `d53d1b7`. Next: M2, then M3 (before R1p).
