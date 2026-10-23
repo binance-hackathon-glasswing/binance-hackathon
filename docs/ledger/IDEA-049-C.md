@@ -3058,6 +3058,24 @@ probe.sh` and `shasum -a 256 probe.sh`; record that hash next to the profile has
   20 PR262 tests pass; same 10 skips; the one failure is the same environmental `test_q10…` (`dotenv`). Hosted CI on
   `ab4c034` was queued, with no result; PR262-RV01 records that Actions jobs cannot start under the billing limit.
 
+#### SJ-11-RH01-L1 — the S1 rehearsal builder requires `limiter_mode` DETERMINISTIC (pre-registered 2026-10-23, Claude)
+
+Requested in chat after the SJ-11-RH01 results. In the S1 limiter (`larp/strategy/s1.py` `limiter_step`), `MODEL` mode
+reads the round context's `exposure_assessment`, and nothing in `larp/` sets that key at `2e8a633` (only tests do).
+Under SJ-11-RH01's scope, with no hosted models, a `MODEL` limiter would record `NO_ASSESSMENT` every session and never
+move. `DETERMINISTIC` mode reads the verified evidence instead. Change: the S1 path of
+`tools/deploy/build_rehearsal_candidate.py` refuses any `limiter_mode` other than `DETERMINISTIC`. `validate_live`,
+`gate_a`, `build_live_profiles` and equal weight are not changed.
+
+**Pass criteria (before code; test first, shown failing at `2e8a633`):**
+- **L1:** the S1 rehearsal builder refuses a block with `limiter_mode` `MODEL` with a specific `ContractError` naming
+  `limiter_mode`, before any profile is built; the CLI refuses it too and writes no output file.
+- **L2:** a `DETERMINISTIC` block builds the same bytes as before (fixture block, two children: payload SHA-256
+  `cbdda7df…` at `2e8a633`).
+- **L3:** equal weight is unchanged (the existing byte-reproduction tests pass unmodified).
+- **L4:** the full suite on the disposable PostgreSQL 14.24 shows no new failure or skip against `2e8a633`'s merge
+  parent run (`ab4c034`: 2524 passed, 10 skipped, 1 environmental failure).
+
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
 **`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
