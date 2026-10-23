@@ -3253,3 +3253,19 @@ This clears README gates 2 and 3 of the RC6 sheet (`docs/build/ops/rehearsal-ins
 
 M4 takes this record as `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Yao Zhu 2026-10-23)"`. **Not covered:** Isaac's A1
 (profile `6bcf1dfb…` and the M3 `signer.json`) and the P4 run-3 approval.
+
+#### SJ-11 M3 — recapture and signer.json assembly for run 3: COVERED, awaiting A1 (Yao, 2026-10-23 16:11Z)
+
+Stamp `20261023T161113Z`, review at 16:11:49Z, run 2 still installed on primary (read-only probe, hash `75547c8e…`).
+- **Assembly:** `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`, only blocker `OWNER_REVIEW_REQUIRED`;
+  `ready_to_install`, `signing_enabled` and `gate_b_accepted` false.
+- **Coverage:** 89/89 checks covered against S1's sizes (`--profile`, profile `6bcf1dfb…`, gas scope INITIAL_ONLY),
+  21 quotes, no missing quote coverage. Policy `3241abd3…`.
+- **Holdings (chain start):** 96 USDT (96000000 units), 0.005325625054330011 BNB, 0 units of each of the five stocks,
+  no reservations; run ID `larp-dev-rehearsal-20261024`.
+- **Candidate `signer.json` `49cb1a08c3d2a3b3c7409ad1c3beb68e0a43e3282bd9296ad7bcec770530209a`.** Against run 2's installed
+  `1a4cda6f…` it differs in exactly three fields: `build_id` `d53d1b7…` → `9dc5edab…`, `database_name`
+  `larp_rehearsal2` → `larp_rehearsal3`, `run_id` `larp-dev-rehearsal-20261023` → `larp-dev-rehearsal-20261024`
+  (assistant check, field-by-field).
+
+Next: **A1**, Isaac approves profile `6bcf1dfb…` and `signer.json` `49cb1a08…`. Then R1p, P2, M4 (stamp above).
