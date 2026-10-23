@@ -3085,6 +3085,33 @@ RAISE ContractError"); guard `46a27ef`.
 - **L4 PASS:** full suite at `46a27ef`: 2525 passed, 10 skipped, 1 failed (3931 subtests). Against `ab4c034` the only
   difference is the new L1 test (pass); same skips; the failure is the same environmental `test_q10…` (`dotenv`).
 
+#### SJ-11-RH01-P1 — the run-3 S1 REHEARSAL profile from PF-01 values (pre-registered 2026-10-23, Claude)
+
+**Decision (Keith, in chat, 2026-10-23):** build run 3's S1 block from IDEA-084 PF-01's adopted values, with weights
+1/5 each (SJ-09-PC01 C5), `trend_start_state` UP, `max_legs_per_symbol_session` 3 and `llm_expiry_sessions` 3.
+Recorded as relayed in this session; the three last values are decided nowhere else (IDEA-076 S03: a first
+evaluation inside the band starts UP; IDEA-075 §12 proposes expiry 3).
+
+**The block** (PF-01 → `s1` field): levels 95/60/30% → `high` 19/20, `mid` 3/5, `low` 3/10; five sessions, ±1% at
+close + 15 min → `trend_window_sessions` 5, `trend_band_bps` 100, `trend_delay_seconds` 900; weight ≤ 0.30 →
+`weight_cap` 3/10; hard line 35% → `hard_name_weight` 7/20; replenish below target − 5 pp → `top_up_band` 1/20;
+open + 30 min / close − 15 min / 3 attempts → `execution` 1800 / 900 / 3; deterministic limiter → `limiter_mode`
+DETERMINISTIC. **Rehearsal deviation:** PF-01's inverse-volatility weights cannot be built at about 100 USDT (C5), so
+every weight is 1/5. The REHEARSAL window stays RV120-02's (new risk until 2026-10-25 00:00Z).
+
+**Pass criteria (before the profile exists):**
+- **P1:** `s1.config` accepts the committed block, and its values equal the mapping above.
+- **P2:** `python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --s1-config <block> --s1-decision <ID>`
+  builds the profile; it passes `validate_live`; a test rebuilds it byte for byte from the committed block.
+- **P3:** the profile's file SHA-256, `StrategyProfile.v1` digest and M3 probe SHA-256 are recorded and pinned by
+  tests; the probe differs from the reviewed `692787e4…` only in its `SELECTED_PROFILE_B64` line.
+- **P4:** a signed dev `gate_a.prepare` with no routing prepares it with the deterministic assessor;
+  `check_scope`/`check_inputs` accept the package, and a dev/service runtime builds from it with no network.
+- **P5:** `review_rehearsal_caps --profile <it>` on a synthetic flat-wallet packet with run 2's balances (96 USDT,
+  5,325,625,054,330,011 wei) covers `FULL_BOOK_EXIT_RESERVE` (10 × action) and `INITIAL_BNB_EXIT_RESERVE`, and the
+  first buy passes the planner's gas floor (BNB − action budget ≥ exit reserve).
+- **P6:** the full suite on the disposable PostgreSQL 14.24 has no new failure or skip against `46a27ef`.
+
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
 **`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
