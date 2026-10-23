@@ -3154,10 +3154,15 @@ a new decision and a new profile hash); hosted CI (Actions billing limit); LD10-
   (`test_service_configs` ×2, `test_fault_points` ×1), which he reports also fail on unchanged canonical there.
 - **Check (Claude, locked environment, PostgreSQL 14.24, merged canonical `d64e4fc`):**
   `tests/runtime/test_service_configs.py` 4 passed; the run-3 tests (`test_s1_rehearsal`, `test_s1_run3_profile`,
-  `test_run3_sheet`, `test_s1_rehearsal_caps`) 34 passed. No test named `test_fault_points` exists in `tests/`, so that
-  failure could not be located. The full suite on the same head `a5e6d1e` gave 2537 passed / 10 skipped / 0 failed
-  (SJ-11-RH01-P1). His three failures are therefore environmental to his venv, as he says; they are not evidence
-  against the merged code. Hosted CI did not run (no job started: account billing limit).
+  `test_run3_sheet`, `test_s1_rehearsal_caps`) 34 passed. The full suite on the same head `a5e6d1e` gave 2537 passed /
+  10 skipped / 0 failed (SJ-11-RH01-P1). Hosted CI did not run (no job started: account billing limit).
+- **Correction (2026-10-23, Keegan's session):** an earlier draft of this entry said no `test_fault_points` test
+  exists. That was wrong: `tests/execution/test_fault_points.py` and `tests/signer/test_fault_points.py` (RG2-H01, #222)
+  exist; the draft searched for a function, not a file. Re-run on merged canonical `d64e4fc` with
+  **PostgreSQL 16** (`LARP_TEST_DATABASE_URL` set): both fault-point files, `tests/runtime/test_faults.py` and
+  `tests/runtime/test_service_configs.py` gave 17 passed, 0 failed (7 fault-point cases use a real SIGKILL worker). So
+  PostgreSQL 16 does not reproduce his three failures; his venv without the locked packages is the likely cause, as he
+  says. They are not evidence against the merged code.
 
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
