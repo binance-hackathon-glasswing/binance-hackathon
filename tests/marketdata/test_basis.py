@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import unittest
 
-from larp.contracts import Document, TargetKind
+from larp.contracts import ContractError, Document, TargetKind
 from larp.marketdata.basis import BasisVerifier
 from larp.marketdata.port import MarketPort, TOKENS
 from larp.marketdata.web3 import encoded
@@ -328,10 +328,10 @@ class PlannerEndToEnd(unittest.TestCase):
         self.assertLessEqual(result['intents'][0]['cash_units'], c['profile']['per_trade_cap_units'])
         for reason in ('MISSING_MARKET_OR_BASIS', 'ENTRY_COST_CAP', 'ENTRY_IMPACT_CAP', 'CASH_OR_EXIT_RESERVE'):
             self.assertFalse(any(r['reason'] == reason for r in result['rejections']), result)
-        # The independent cost limit must still stop the same request if its fee alone exceeds 50 bp.
+        # The independent cost limit must still stop the same request when 30 bp of fees pushes its total cost over 50 bp.
         for m in c['markets']:
             for q in m['quotes']:
-                q['fee_units'] = q['cash_units'] // 100
+                q['fee_units'] = q['cash_units'] * 30 // 10000
         expensive_snapshot = replace(s, context=Document.from_dict(c))
         expensive = plan(expensive_snapshot, decide(expensive_snapshot, expensive_snapshot.policy_state)).read()
         self.assertFalse(expensive['intents'])
@@ -349,7 +349,9 @@ class PlannerEndToEnd(unittest.TestCase):
         c['markets'] = bad
         before = deepcopy(c['portfolio']['risk'])
         s = replace(s, context=Document.from_dict(c))
-        result = plan(s, decide(s, s.policy_state)).read()
+        with self.assertRaises(ContractError):
+            decide(s, s.policy_state)
+        result = plan(s, None).read()
         self.assertEqual(result['unvalued_symbols'], ['MSFTB'])
         self.assertEqual(result['valuation_status'], 'LOWER_BOUND')
         for key in ('day_anchor_units', 'peak_units', 'daily_halt', 'run_halt', 'deep_cut'):
