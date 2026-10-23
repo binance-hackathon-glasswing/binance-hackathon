@@ -104,6 +104,8 @@ context; no hosted run or Gate A pass is established by this update.
   it does not qualify production native tracing or complete #106.
   No new swap, hosted capture, agent round or final-wallet action occurred.
 
+  **SJ-03 subsequent update (2026-10-22 SGT):** the additional dev seed above is now verified; [receipt/current public balance](evidence/dev-gas-funding-20261022.json). The0.003072BNB signer exit floor is covered. This does not create the hosted PortfolioState or qualify all fresh quote/configuration inputs. No further wallet swap is requested to satisfy that minimum. The separate live-challenge wallet is excluded from this task.
+
   Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)

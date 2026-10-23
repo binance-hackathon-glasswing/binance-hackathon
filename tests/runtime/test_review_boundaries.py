@@ -59,10 +59,14 @@ class ArchiveAdapter(DatabaseCase):
             worker.once('run', 100)
             self.assertTrue(worker.health('run', 100).read()['healthy'])
             self.assertEqual(rds.generate_db_auth_token.call_count, transport.call_count - 1)
-            self.assertGreater(rds.generate_db_auth_token.call_count, 5)
+            # IDEA-085: one IAM login per pooled connection, not one per transaction (it was more than 5 here).
+            self.assertGreaterEqual(rds.generate_db_auth_token.call_count, 1)
+            self.assertLessEqual(rds.generate_db_auth_token.call_count, store.MAX_IDLE_CONNECTIONS)
+        store.close()
 
     def test_runtime_service_iam_store_uses_fresh_verified_tls_token_per_connection(self):
-        """IDEA-045 H03: the hosted runtime role is IAM-only; a static DSN file would expire."""
+        """IDEA-045 H03: the hosted runtime role is IAM-only; a static DSN file would expire. IDEA-085: connections
+        are pooled, and every new connection still gets a fresh token."""
         import psycopg
         from larp.runtime.service import open_store
         connect, seen = psycopg.connect, []
@@ -82,7 +86,10 @@ class ArchiveAdapter(DatabaseCase):
             store.load('run')
             store.verified_snapshot('run')
         self.assertEqual(rds.generate_db_auth_token.call_count, len(seen))
-        self.assertGreaterEqual(len(seen), 3)
+        # IDEA-085: verify, load and verified_snapshot reuse pooled connections; each new one gets its own token.
+        self.assertGreaterEqual(len(seen), 1)
+        self.assertLessEqual(len(seen), store.MAX_IDLE_CONNECTIONS)
+        store.close()
         for index, dsn in enumerate(seen, 1):
             self.assertIn('sslmode=verify-full', dsn)
             self.assertIn('sslrootcert=/synthetic/ca', dsn)

@@ -59,9 +59,27 @@ Why this order:
 - **K1 may run before P4** (SJ-06-RV01): placing the key file does not depend on the run. A key problem is then
   found before the run is registered; only S2's signer start needs P4.
 - **P4, S2, P5 and M9 fail closed** (SJ-06-RV01): they print their `*_DONE` line only when every unit is in the
-  expected state with zero restarts (S2 also needs the signer's `"started": true` line), and M9 only when no object
-  version or delete marker remains under the prefix.
+  expected state, each service with zero restarts (a timer has no restart count, so P4's archive timer only has to be
+  active; S2 also needs the signer's `"started": true` line), and M9 only when no object version or delete marker
+  remains under the prefix.
 - **P5 after S2.** Execution waits for signatures; starting it first would only time requests out.
+
+## Live measurement (SJ-08)
+
+Anyone on the team can watch the rehearsal; neither tool changes anything.
+
+- **Wallet on BscScan:** <https://bscscan.com/address/0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479>, for every
+  transaction, token transfer and approval.
+- **On-chain fill monitor (any checkout, no AWS):** with a venv from `requirements.lock`, run
+  `python docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py`. Use `--once` for one poll; it polls
+  every 60 s otherwise. It writes `deploy/activation/rehearsal-monitor/{snapshots,transactions,alerts}.jsonl`
+  (git-ignored; change it with `LARP_MONITOR_DIR`) and shows one line per poll: holdings, equity excluding BNB,
+  realized and unrealized PnL, gas and alerts. Token prices need the read-only Web3 key pair in `.env`
+  (`LARP_ENV_FILE`). Without it, everything except prices still works.
+- **The agent's own records (primary; needs AWS SSM access, so Yao or Keegan's operator team):**
+  `python3.12 -I ssm_run.py checks/trading-status.sh` from the copied folder, then read
+  `results/trading-status-stdout.txt`. It shows rounds, decisions and rejection reasons, execution records,
+  signer refusals, incidents, HALT, low gas and the run's own portfolio.
 
 ## Switching from the superseded local bundle (SJ-06-A2, once)
 

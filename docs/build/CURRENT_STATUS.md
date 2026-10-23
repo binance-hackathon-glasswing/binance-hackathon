@@ -1,5 +1,16 @@
 # Current shared build and remaining work
 
+SJ-03 (2026-10-22 SGT): Isaac's additional dev gas seed is successful/finalized,
+with2USDT net debit. [Receipt/current public snapshot](evidence/dev-gas-funding-20261022.json)
+confirms96USDT and0.005325625054330011BNB, covering the selected0.003072BNB signer
+exit floor. User dev-seeding step is complete; no further swap requested for
+that minimum. Remaining: operator actual hosted post-funding reconciliation/
+private current packet, exact input acceptance and intended signed run/config
+bindings, then offline signer assembly/local release check. No full92/92,
+installed config, native trace or final-wallet acceptance is inferred.
+Superseded (2026-10-23): the remaining steps were done in SJ-04 (capture and assembly), SJ-05
+(signer `check`) and SJ-06 (install); see the signer-candidate note above.
+
 Latest qualification (2026-10-21, AB-REL-RC2): PR231 is merged at canonical
 `b22207e`; all four mirror jobs PASS (2416 tests/3808 subtests, real-systemd5/5,
 Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verified.
@@ -16,6 +27,15 @@ read 0). [Evidence](evidence/sj05-signer-check-allowances-20261022/result.json).
 Remaining: pre-install recapture with the same hashes, then LD17 installation
 (host bind and `check`), LD18 key placement and LD19 first round. All readiness
 flags stay false.
+
+**Systems check SC-01 (2026-10-22, `d03bbb1`): the paragraph above is superseded for
+installation.** Every local check passes, matching mirror RC4: 2470 passed / 7 skipped /
+3882 subtests; systemd 5/5; demo, Docker, Terraform 19/19 + 1/1; both host-bundle roles.
+RC3a cannot start the LV-01 signed run, so `f632bbcb…` can no longer be installed. RC4
+(PR246) and the build-only `signer.json` `cd0b38b8…` (PR244) replace it. Both SC-01 findings
+are resolved: Isaac confirmed the build-only extension (SJ-06-A2, PR251) and PR244 merged
+(`4198b5f`, which also adds `prepare_rehearsal_db.py`, F2). RC4 was installed in SJ-06.
+[Report](SYSTEMS_CHECK_20261022.md). Local evidence only.
 
 Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
 and supports the17bp MSFTB spread. RV120-RV01 addresses both findings: separate
@@ -52,6 +72,10 @@ Installable candidate is `fa1b6c9` (RC3a): same runtime files, mirror run
 **RC4 (2026-10-22): `d03bbb1` (LV-01) supersedes it for the signed dev rehearsal.** Mirror run 39766825984
 passes all four jobs (2470 passed/7 skipped), and original artifact 12419733594 (bundle `270fe81f…`) is verified
 ([receipt](evidence/ab-rel-rc4-20261022.json)). Install that artifact, not SJ-06-A1's local bundle.
+**Installed and running on the dev wallet (2026-10-22 14:23Z, IDEA-049-C SJ-06):** run `larp-dev-rehearsal-20261022`,
+DB `larp_rehearsal1`, `signer.json` `cd0b38b8…`. Runtime, execution and signer were all started, signer access was torn
+down (IDEA-080 SA5) and the S3 packages were deleted. The first buy is allowed from 2026-10-23T00:00Z; J8 (the first
+logged approve/swap/ACK) is open.
 Remaining: funding, Isaac acceptance, LD16 bindings, LD17 installation.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
