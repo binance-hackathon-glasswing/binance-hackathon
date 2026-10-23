@@ -3453,3 +3453,10 @@ REHEARSAL window decision (new profile hash) and Isaac's approval. Owner per GAP
   inside the read transaction.
 
 Next: M9 on `releases/rehearsal-20261023t162318z/`; soak K at about 1 h.
+
+#### SJ-11 M9 — PASS; the RC6 run-3 install sheet is complete (Yao, 2026-10-23 ~17:3xZ)
+
+`mac/m9-cleanup-s3-package.sh releases/rehearsal-20261023t162318z/`: 12 object versions deleted, `M9_DONE`. The bundle
+under `releases/` stays. SJ-11 D1, M1-local, M2, M3, A1, R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5, C1, T2,
+SA5, SA9 and M9 all PASS. Run 3 runs as a no-trade soak (SJ-11-QV01). Open: K (login soak at about 1 h), J (no entry
+possible on this build).
