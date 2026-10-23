@@ -264,9 +264,10 @@ def model_routing_report(spec, sha256):
 
 
 def scoped_rehearsal(profile, mode):
-    """LD11-RH01: deterministic, model-shadow rehearsal only; never scored adoption."""
+    """LD11-RH01 (equal weight), SJ-11-RH01 (S1): deterministic, model-shadow rehearsal only; never scored adoption."""
     return (mode == 'dev' and profile.get('environment') == 'REHEARSAL'
-            and profile.get('baseline') == 'EQUAL_WEIGHT' and profile.get('evidence_mode') == 'SHADOW'
+            and profile.get('baseline') in ('EQUAL_WEIGHT', 'TREND_GUARDED_VOL')
+            and profile.get('evidence_mode') == 'SHADOW'
             and profile.get('falsifier_authority') == 'SHADOW' and profile.get('assessment_required') is False)
 
 

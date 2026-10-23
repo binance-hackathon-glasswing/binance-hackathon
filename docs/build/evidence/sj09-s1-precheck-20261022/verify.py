@@ -42,12 +42,16 @@ def refusal(call):
     return None
 
 
-# C0: the runtime files these checks exercise are the installed build's. Later canonical changes elsewhere in
-# larp/ (for example IDEA-085's database pooling) do not affect them.
+# C0: which runtime files these checks exercise differ from the installed build. Later canonical changes elsewhere in
+# larp/ (for example IDEA-085's database pooling) do not affect them. Since 2026-10-23 exactly two changes do:
+# PF-05 (PR256, planner.py: a stale mark never starts a cap trim) and SJ-11-RH01 (profiles.py and gate_a.py: the
+# scoped S1 rehearsal, C2/C3). Before them this check was "no difference".
 CHECKED = ['larp/contracts.py', 'larp/strategy', 'larp/risk', 'larp/runtime/gate_a.py', 'larp/runtime/gate_a_check.py',
            'larp/integration', 'config']
-diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', INSTALLED, '--', *CHECKED])
-record('C0_runtime_equals_installed_rc4', diff.returncode == 0, True)
+diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--name-only', INSTALLED, '--', *CHECKED],
+                      capture_output=True, text=True, check=True)
+record('C0_runtime_files_differing_from_installed_rc4', sorted(diff.stdout.split()),
+       ['larp/risk/planner.py', 'larp/runtime/gate_a.py', 'larp/strategy/profiles.py'])
 
 # The RC4 rehearsal gas and authority inputs (tools/deploy/build_rehearsal_candidate.py), with an S1 block.
 doc = lambda path: Document.from_dict(json.loads(path.read_bytes()))
@@ -75,12 +79,18 @@ record('C1_s1_rehearsal_builds_and_validates', dict(
          per_trade_cap_units=19100000, exit_gas_reserve_units=5 * 384000000000000,
          gas_action_budget_units=384000000000000))
 
-# C2: S1 with SHADOW evidence and falsifiers (LD11-RH01's scope) is outside validate_live's decided v1 scope.
+# C2: S1 with SHADOW evidence and falsifiers (LD11-RH01's scope). Recorded 2026-10-22 as refused ("Live profile differs
+# from decided v1 scope", re-wrapped as "Malformed or incomplete live profile"). SJ-11-RH01 admits it in REHEARSAL
+# only, and validate_live now raises the specific reason itself, so the FINAL control shows it unwrapped.
 shadow = dict(s1, evidence_mode='SHADOW', falsifier_authority='SHADOW')
-record('C2_s1_shadow_validate_live', refusal(lambda: validate_live(shadow)),
-       dict(outer='Malformed or incomplete live profile', inner='Live profile differs from decided v1 scope'))
+scope = 'Live profile differs from decided v1 scope'
+record('C2_s1_shadow_validate_live', dict(rehearsal=refusal(lambda: validate_live(shadow)),
+                                          final=refusal(lambda: validate_live(dict(shadow, environment='FINAL')))),
+       dict(rehearsal=None, final=dict(outer=scope, inner=scope)))
 
-# C3: signed preparation without reviewed routing accepts only the EQUAL_WEIGHT scoped rehearsal.
+# C3: signed preparation without reviewed routing. Recorded 2026-10-22: only the EQUAL_WEIGHT scoped rehearsal
+# passed. SJ-11-RH01: the S1 SHADOW rehearsal passes this check too (the probe's empty capture then stops it later);
+# S1 with BOUNDED_FALSIFIER evidence is still refused.
 def signed_prepare(profile):
     return lambda: gate_a.prepare({}, profile_raw=json.dumps(profile).encode(), capture_raw=b'{}', calendar_raw=b'{}',
                                   run_id='sj09-probe', build_id='0' * 40, now='2026-10-24T00:00:00Z',
@@ -88,10 +98,10 @@ def signed_prepare(profile):
 ew = json.loads(EW_PROFILE.read_bytes())
 signed = 'Signed preparation needs reviewed routing or scoped deterministic rehearsal and an adoption reference'
 record('C3_signed_prepare_without_routing', dict(
-    s1_shadow=(refusal(signed_prepare(shadow)) or {}).get('inner'),
+    s1_shadow_passes_this_check=(refusal(signed_prepare(shadow)) or {}).get('inner') != signed,
     s1_bounded=(refusal(signed_prepare(s1)) or {}).get('inner'),
     equal_weight_control_passes_this_check=(refusal(signed_prepare(ew)) or {}).get('inner') != signed),
-    dict(s1_shadow=signed, s1_bounded=signed, equal_weight_control_passes_this_check=True))
+    dict(s1_shadow_passes_this_check=True, s1_bounded=signed, equal_weight_control_passes_this_check=True))
 
 # C4: a new run cannot start from a wallet that holds stocks (gate_a.initial_state; gate_a_check recomputes it).
 from tests.runtime.test_gate_a import TOKENS, captured, profile as ga_profile, rehash
@@ -141,6 +151,8 @@ floor_units = ceil(Fraction(s1['minimum_trade_units']) / (high / 5)) + s1['cost_
 record('C6_equity_floor_for_s1_buys_units', floor_units, 98191685)
 
 # C7: exit reserve. The S1 builder still uses one child per position (LD10-P03-R1); two children need 10 actions.
+# SJ-11-RH01 adds the two-child reserve to the S1 rehearsal candidate (tools/deploy/build_rehearsal_candidate.py),
+# not to build_live_profiles, so these values are unchanged.
 bnb = 5325625054330011
 record('C7_exit_reserve_wei', dict(builder=s1['exit_gas_reserve_units'], two_child=10 * s1['gas_action_budget_units'],
                                    wallet_bnb_at_install=bnb, left_after_two_child=bnb - 10 * s1['gas_action_budget_units']),
