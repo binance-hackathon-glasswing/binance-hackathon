@@ -2966,3 +2966,59 @@ trim. It exercises S1's entries, levels, sessions and the flatten.
 **Not built here:** the S1 REHEARSAL profile. Its S1 block (levels, trend window/band/delay/start state,
 `top_up_band`, `weight_cap`, `hard_name_weight`, limiter, execution timings) must be Keith's. The repo has only the
 test fixture's block (`tests/strategy/test_s1_core.py`), which is used in tests only.
+
+#### SJ-11-RH01 results — RH1–RH8 PASS offline; draft PR, nothing merged or installed (2026-10-23, Claude)
+
+Commits on `claude/s1-rehearsal-run3-20261023`: pre-registration `0feba71`, tests `0f48ac3`, code `f886dbf`. Local
+evidence only (macOS, Python 3.12.14, disposable PostgreSQL 14.24). No hosted CI, release, host, key or wallet action.
+
+- **Red first:** at `0f48ac3` (base code plus the new tests) all 18 new tests fail, for the expected reasons: the S1
+  SHADOW scope refusal re-wrapped as "Malformed or incomplete live profile", the signed-preparation refusal, no S1 path
+  in the candidate builder, and no `--profile`. The LV4-style runtime test shows that on base even the runtime build
+  (`build_driver`) refuses the S1 SHADOW profile at startup, through `validate_live`.
+- **RH1 PASS:** the fixture S1 SHADOW REHEARSAL profile (weights 1/5) passes `validate_live`. `gate_a.prepare`
+  (`execution='service'`, `runtime_mode='dev'`, an adoption reference, no routing) prepares it with the
+  `deterministic` assessor and no `model-routing.json`; `check_scope` and `check_inputs` accept the package. A
+  dev/service runtime builds from it with no network.
+- **RH2 PASS:** `runtime_mode='live'` (REHEARSAL or FINAL profile) and a FINAL profile in dev are refused by the
+  signed-preparation check; `validate_live` refuses FINAL SHADOW with "Live profile differs from decided v1 scope";
+  `check_scope` refuses FINAL or BOUNDED_FALSIFIER; S1 with BOUNDED_FALSIFIER evidence still needs routing.
+- **RH3 PASS:** no existing test was changed. The committed equal-weight candidates reproduce byte for byte
+  (`test_gas_budget_b`), and the M3 probe for `e95d5842…` hashes to `692787e4…` (now pinned by a test).
+- **RH4 PASS:** the two-child S1 candidate reserves 3,840,000,000,000,000 wei = 5 × 2 × 384,000,000,000,000. It differs
+  from the one-child build only in `exit_gas_reserve_units`, `evidence_mode`, `falsifier_authority` and provenance.
+  The one-child S1 builds match the four base digests. `validate_live` accepts a 5 × pair reserve and refuses
+  5 × pair − 1 with its reason. Weights of 0.198/0.202 (which `build_live_profiles` accepts) are refused by the 1/5
+  rule; `--exit-children 1` is refused because the fixture's 35% hard line needs two children against a 19.1 USDT cap.
+- **RH5 PASS:** refusals carry their specific reason; a non-contract error (`impact_median_bps` not a mapping) still
+  gives "Malformed or incomplete live profile".
+- **RH6 PASS:** with `--profile`, an S1 packet is reviewed against the S1 profile, whose hash the review pins;
+  `FULL_BOOK_EXIT_RESERVE` requires 10 × action and is covered (a one-child S1 reserve is a blocker). A profile that
+  differs from `selected_profile_sha256` is refused before any directory is created, in numeric and hosted mode.
+  **Finding, fixed:** the tool re-encoded the profile as ASCII JSON and required byte equality with the selected hash.
+  S1 profiles carry UTF-8 provenance ("IDEA-075 §4-§5, §12 values", from `build_live_profiles`), so every S1 packet
+  would have been refused. It now pins the exact selected bytes; the equal-weight output is unchanged (that profile is
+  ASCII).
+- **RH7 PASS:** `verify.py` exits 0 at `f886dbf` (`result-20261023-sj11-rh01.json`). On canonical `8eb16e5` it
+  already exited 1, because PF-05 (PR256) changed `larp/risk/planner.py` (C0); C0 now lists the changed files.
+- **RH8 PASS:** base `8eb16e5`: 2486 passed, 10 skipped, 1 failed (3882 subtests); `f886dbf`: 2504 passed, 10
+  skipped, 1 failed (3884 subtests). Per-test outcomes (JUnit) are identical apart from the 18 new tests, which
+  pass; the 10 skips are the same environmental ones (systemd runner, bubblewrap, opt-in fixtures). The one
+  failure is the same on both, `test_cost_summary.py::Runner::test_q10…`: `tools/run_quote_capture.sh` calls
+  `python3` from PATH, here a system Python 3.13 without `dotenv`. With the project environment first on PATH it
+  passes on both base and branch. Nothing was installed.
+
+**M3 probe hash for S1:** not computable until the S1 profile exists. The probe embeds the profile bytes, and a test
+shows that an S1 probe differs from the reviewed equal-weight probe `692787e4…` only in its `SELECTED_PROFILE_B64`
+line. When the profile is built: `python -I tools/deploy/ld10_readonly_packet.py --profile <s1 profile> --output
+probe.sh` and `shasum -a 256 probe.sh`; record that hash next to the profile hash, and use it as run 3's `PROBE_SHA`.
+
+**For the owners (not changed here):**
+- The REHEARSAL window (`WINDOWS["REHEARSAL"]`, RV120-02) allows new risk only until 2026-10-25 00:00Z and flattens
+  from Oct 26 00:00Z. Run 3 needs PR262 and this change merged, an RC6 build and the install before then to make
+  entries at all.
+- Keith's block sets `limiter_mode`. With no hosted models, `DETERMINISTIC` is the consistent choice: nothing in
+  `larp/` fills the context's `exposure_assessment` today, so under `MODEL` the limiter would record `NO_ASSESSMENT`
+  every session and never move.
+- LD10-P03-R1 stays open for FINAL and general builds (validator floor still one child).
+- `docs/ledger/IDEA-049-C.md` will conflict at its end with PR262, which appends SJ-11; keep both, SJ-11 first.
