@@ -1,0 +1,59 @@
+{
+  "schema": "ReviewVerification.v1",
+  "id": "PR262-RV01",
+  "date_sgt": "2026-10-23",
+  "review_base": "8eb16e5e19dc78394e986adb29c7e1461652071c",
+  "tested_head": "a609b92b97ecfbeae51e8890492a73f0ebb317f9",
+  "environment": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24",
+    "database": "fresh disposable local Docker instance; single suite",
+    "requirements": "44 non-platform-conditional package versions match deploy/requirements-test.lock recursively; pip check PASS"
+  },
+  "command": "LARP_TEST_DATABASE_URL=<disposable-loopback-dsn> python -m pytest -q -rs -p no:cacheprovider --junitxml=<outside-repo.xml>",
+  "result": {
+    "passed": 2507,
+    "skipped": 10,
+    "subtests_passed": 3929,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 304.93
+  },
+  "skips": {
+    "systemd_opt_in_runner": 5,
+    "linux_bubblewrap": 3,
+    "private_source_fixture": 1,
+    "external_market_artifacts": 1
+  },
+  "log_sha256": "cf78e818aa778925b108dcf3af18f6337f6626ead6afd2d08447c634ea548299",
+  "junit_sha256": "7e17d15e61c4bca8f1e76878bbbf42e3fb136da28550475e57ce7c0f962ec041",
+  "source_file_sha256": {
+    "larp/marketdata/basis.py": "9a14d61f1036b8113eff991e23c35d7e90a8999491a92411bd82fe463e020563",
+    "larp/marketdata/port.py": "c49ea45eef436df84c96550ced24880c57e6fc4a121d0c5f45e3ca9d9e4135eb",
+    "larp/runtime/service.py": "a476d2c0f720e026c816b72c8361fd370a6318bd92b91fef69025ef53362f2e5",
+    "tests/marketdata/test_basis.py": "3f88660ff7021a99029212db59d59dde6183b722f0a7a9cab746ac545d173a1f",
+    "tests/runtime/test_driver.py": "6252c281603f69b7d1d9c28a2c87617f38f5f4676d02ab16d8adf1b957778d29"
+  },
+  "focused_basis_and_planner": {
+    "passed": 19,
+    "subtests_passed": 45,
+    "failed": 0
+  },
+  "discarded_runs": "Earlier overlapping full runs against one disposable database had connection failures and are not acceptance evidence; earlier P3 fee fixture assertions were corrected. The final run above is isolated.",
+  "github_actions": {
+    "run_id": 39914039956,
+    "url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39914039956",
+    "conclusion": "FAILURE; jobs did not start",
+    "reason": "Recent account payments failed or spending limit needs to increase (annotations for runtime, host-bundle and deploy/bootstrap); deploy/aws cancelled by matrix failure"
+  },
+  "scope": {
+    "repository_review": "PASS with R1/R2 repaired and R3 planner coverage added",
+    "linux_systemd_or_host_bundle": "NOT_RUN by this review",
+    "final_policy_adoption": "OPEN: Keith/Isaac IDEA-086 section6",
+    "run3_s1_caps_release_host_acceptance": "OPEN: IDEA-049-C SJ-11",
+    "independent_share_validation": "OPEN: GAP-22",
+    "deployment_or_wallet_or_paid_model_action": false
+  }
+}

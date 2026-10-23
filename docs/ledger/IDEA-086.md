@@ -2,7 +2,7 @@
 
 - Date / author: 2026-10-23 / Yao Zhu (request), Claude Code (analysis and draft). **Reviewers: Keith (strategy and
   market data), Isaac (risk and signing).**
-- Status: **implemented for the dev rehearsal; independent PR262 review repairs pushed (PR262-RV01 below).**
+- Status: **implemented for the dev rehearsal; independent PR262 review PASS with repairs (PR262-RV01 below).**
   Final policy adoption, release and run-3 acceptance remain open. The original pass criteria below predate code.
 - Links: IDEA-049-C SJ-10 first trading-status; `docs/INCOMPLETE_WORK.md` SJ-10-BASIS01, GAP-22, DR-09/DR-12;
   IDEA-018 §2.2; IDEA-035 item 5; IDEA-037; `larp/strategy/policy.py:154`; `larp/marketdata/port.py:66-125`;
@@ -236,3 +236,20 @@ PR262-RV01 repair details:
   class, depositary ratio, independent share price, or a transferable training label. The issuer registry's existing
   UNVERIFIED security mapping is preserved. Tolerances are accepted only within Yao's dev-rehearsal decision here;
   final adoption remains Keith/Isaac's §6 decision.
+
+
+PR262-RV01 validation and verdict: **PASS for the repository merge**, at pushed `a609b92b` (macOS/arm64,
+Python3.12.14, all44 applicable pinned package versions match, pip check PASS). A single full suite against a fresh
+isolated PostgreSQL14.24 instance passes **2507 tests /3929 subtests /10 expected skips /0 failures /0 errors** in
+304.93s. Skips: systemd5, Linux bubblewrap3, optional private source fixture1, external market artifacts1. Focused
+basis/port/planner coverage:19 tests /45 subtests PASS. [Verification receipt](../build/evidence/pr262-review-20261023.json)
+records source/log/JUnit hashes. Earlier overlapping full runs shared one disposable database and had connection
+failures; they are discarded, as are intermediate fee-fixture assertions. No application repair was needed after
+R1/R2; final planner fixtures identify the actual earlier cost-reserve gate correctly.
+
+GitHub Actions [run39914039956](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39914039956)
+could not start runtime, host-bundle or bootstrap jobs: each annotation says recent account payments failed or the
+spending limit must increase. AWS matrix job cancelled. This is **not CI PASS** and supplies no Linux/systemd/bundle
+or release qualification. The account owner retains Actions/billing restoration; the release coordinator retains
+RC6 and run3 acceptance. This review accepts the source merge using the recorded full local validation; all §6 and
+SJ-11 gates remain as stated above. Final result-record changes alter documentation/evidence only.

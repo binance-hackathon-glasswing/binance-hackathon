@@ -2,7 +2,8 @@
 
 PR262-RV01 (2026-10-23 SGT): IDEA-086 fixes the hosted entry blocker with a basis verifier and ratio-scaled token
 marks. Independent review repairs also check price-response chain/platform and exclude rejected basis inputs from
-usable valuation. Offline planner BUY/failure coverage is supplied. See [IDEA-086](../ledger/IDEA-086.md#9-pr262-rv01--independent-merge-review-isaaccodex-2026-10-23-sgt).
+usable valuation. Offline planner BUY/failure coverage and full local2507 tests/3929 subtests PASS (10 expected skips) are supplied.
+GitHub Actions run39914039956 was unable to start jobs because of account billing/spending limits; no CI pass is claimed. See [IDEA-086](../ledger/IDEA-086.md#9-pr262-rv01--independent-merge-review-isaaccodex-2026-10-23-sgt).
 Final policy adoption (Keith/Isaac), RC6 and run-3 S1/profile/gas/caps/config/host acceptance (SJ-11) remain open.
 No release was installed or wallet/model operation performed by this review.
 
