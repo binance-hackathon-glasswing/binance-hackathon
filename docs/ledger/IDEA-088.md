@@ -155,3 +155,42 @@ selection reported 13 failed / 5 passed, the passes being the unchanged-behaviou
 | Release, new run/database and REHEARSAL window decision (a run cannot change build) | Yao, Isaac, Keegan | IDEA-049-C SJ-11 / SJ-11-QV01 |
 | Reword the SJ-11-QV01 backlog line (on the unmerged docs branch `claude/sj11-a2-local-rc6-20261024`) to the remaining release/run work once both merge | whoever merges second | `docs/INCOMPLETE_WORK.md` |
 | `config/runtime/runtime.example.json` does not yet name the new optional pair | Keegan | follow-up |
+
+## Amendment A1 — live read-only acceptance check (pre-registered 2026-10-24, before any A1 code or test)
+
+Scope added by Yao through the coordinating session ("yes pls", 2026-10-24). The A1 results are recorded below; the
+QV1–QV9 results above do not change.
+
+**What.** `tools/deploy/quote_check.py`: one symbol and one side per run, which Yao runs on his Mac with the read-only
+Web3 key in `.env`. It gets a real quote through `MarketPort.observe`, with the verifier built by
+`larp.runtime.service.quote_verifier` (the service's own wiring) from:
+- the run-3 S1 profile `rehearsal-s1-deterministic.json` (`6bcf1dfb…`) as `quote_limits`;
+- the LD03 policy `05759e90…`;
+- the dev wallet `0x62b8…d479`;
+- a public read RPC.
+
+A BUY defaults to 19 USDT (the profile's `per_trade_cap_units − cost_reserve_units`, the largest BUY the planner
+requests). A SELL defaults to the token units a fresh BUY quote of that size would return; that amount is
+hypothetical, not holdings.
+
+The tool:
+- prints only public values: status and exact refusal reason, decoded economics, recipient rule, gas and fee units,
+  slippage and impact, open states, and `_quote_at_cap` at print time;
+- never prints URLs, keys, the wallet address or calldata, and a privacy scan refuses any reflection of them;
+- uses a Web3 client limited to the four read endpoints the quote path uses, and a read-only RPC;
+- has no signer, AWS, database or submit path;
+- exits 0 only for `VERIFIED_EXECUTABLE`, 2 for a refused quote and 4 for a tool or input error.
+
+**Pass criteria.**
+- **QV10 (offline):** with recorded quotes, fake RPC state and pinned files substituted, the tool behaves as follows.
+  1. A BUY and a default SELL give `VERIFIED_EXECUTABLE` and exit 0, with decoded economics matching the request.
+  2. A tampered calldata copy and a mismatched quote each give exit 2 with the port's exact `Unavailable` reason.
+  3. The output never contains a credential, the RPC URL, the wallet address or calldata, and a reflected credential
+     is refused.
+  4. A profile or policy hash mismatch exits 4.
+  5. The client refuses the approve, gas-limit and broadcast endpoints.
+- **QV11 (live, Yao):** all five names return `VERIFIED_EXECUTABLE` with `_quote_at_cap` accepted, for a BUY of about
+  19 USDT, while the US session is open (token and underlying `openState` true).
+  - The result depends on the time of day. Off-hours a refusal can be legitimate, and that run is not evidence either
+    way.
+  - A refusal while the session is open is recorded as a QV11 FAIL with its reason, even if a later rerun passes.
