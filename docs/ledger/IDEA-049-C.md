@@ -2956,3 +2956,18 @@ with **0 restarts**. Run version 16, epoch 2, not quarantined. 6 rounds, all `CL
 
 **T2 plan** `signer-access-off-run2.tfplan`: **0 to add, 0 to change, 8 to destroy**, exactly the IDEA-080 resources.
 Next: apply, SA5/SA9, M9.
+
+#### SJ-10 J5 — PASS: T2, SA5, SA9 and M9; the run-2 install is complete (2026-10-23 06:37–06:41Z, Yao)
+
+- **T2:** plan `signer-access-off-run2.tfplan` (0 add, 0 change, 8 destroy). The saved apply output shows "The given
+  plan file can no longer be applied because the state was changed", consistent with a second run after a successful
+  first apply. A fresh plan at 06:41Z (`results/t2-replan.txt`): **"found no differences, so no changes are needed"**.
+- **SA5** (`mac/signer-reach.sh`, 06:37:09Z): no `ssm`/`ssmmessages`/`ec2messages` endpoints, and no SSM policy on
+  `larp-dev-signer`. The signer's last SSM ping was 06:31:37Z; it is now unreachable, as designed. EC2 status ok/ok.
+- **SA9:** primary is `Online` (06:35:34Z). `checks/primary-status.sh` over SSM (06:37:19Z): evidence, uploader,
+  runtime and execution active with 0 restarts, archive timer active; archive health `healthy: true`, anchors 3 ACK,
+  backup 1 ACK.
+- **M9** on `releases/rehearsal-20261023t044123z/`: `M9_DONE` (reported by Yao; the output was not saved).
+
+SJ-10 J0′–J5 PASS. Open: J6 (the full RC5-only hour from 06:00Z and the ≥ 8 h soak) and J7 (the first trade, which
+waits for IDEA-086 / PR262 and run 3 on S1, SJ-11). Signer access (T1) has to be applied again for run 3.
