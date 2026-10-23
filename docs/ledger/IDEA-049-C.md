@@ -2753,3 +2753,31 @@ Next: S2 (start the signer), P5 (start execution), C1 (signer-status before T2).
 **Run 2 is fully running: runtime, execution and signer on RC5 `d53d1b7`, database `larp_rehearsal2`.** The chain
 monitor at 05:10:34Z still shows nonce 4 and 96 USDT, seconds after P5. Next: T2, SA5/SA9, M9 on
 `releases/rehearsal-20261023t044123z/`, the K soak at about 06:10Z, and J7, the first approve/swap.
+
+#### SJ-10 first trading-status — run 2 healthy, but no entry is possible: no basis verifier is wired in (2026-10-23 05:16Z)
+
+`checks/trading-status.sh` (primary, 05:16:35Z, about 33 min after P4 and 6 min after P5):
+- **Healthy:** `larp-runtime`, `larp-execution`, `larp-evidence` and `larp-uploader` are active with **0 restarts**.
+  The database errors of the J8 incident have not recurred so far; the K soak measures the login rate.
+- **Run:** `larp-dev-rehearsal-20261023`, not quarantined, epoch 2, version 11, registered build `d53d1b7`.
+  `BALANCE_CHECKED` is `MATCH` (96 USDT, 0.005325625054330011 BNB, stocks 0). No HALT.
+- **Rounds and events:** 4 rounds, all `CLOSED`/`COMPLETE`: two `filing:` evidence rounds, and cadence rounds 1991922
+  and 1991924 (decision at about 05:00:10Z). 11 events: `VERSION_REGISTERED`, `RUN_ACTIVATED`, `BALANCE_CHECKED`, 4
+  `ROUND_PLANNED`, 4 `ROUND_CLOSED`.
+- **Execution:** 0 records, 0 signing requests, 0 signatures, 0 refusals, 0 reservations.
+- **Plan:** `known_gross_units` 0 and `available_cash_units` 96000000. Target reasons: `MISSING_MARKET_OR_BASIS` ×10
+  (5 names × 2 cadence rounds), `REASSESS_AFTER_ABSTENTION` ×4, `AWAIT_COMPARISON_BASIS` ×4, `REVIEW_NEW_STATEMENT`
+  ×4, `SCALE_NOT_STATED` ×2. `instrument_scope.token_underlying_status` is `UNVERIFIED`.
+
+**Finding (code, offline trace at `d53d1b7`):**
+- `StrategyPolicy` keeps every name at its current quantity, with reason `MISSING_MARKET_OR_BASIS`, unless its market
+  view has `basis_verified` true (`larp/strategy/policy.py:154`). This is checked before the `EQUAL_WEIGHT` branch.
+- `MarketPort` sets `basis_verified` only when it is built with a `basis_verifier` (`larp/marketdata/port.py:111`).
+- The hosted runtime builds `MarketPort(client, wallet, quote_limits=profile)` without one (`larp/runtime/service.py`).
+- So every observation is `basis_verified: false`, and **no entry can be planned in service mode for any profile**.
+
+This is the known entry blocker in IDEA-035 ("`MISSING_MARKET_OR_BASIS` until the token-candle sessions are built"),
+never wired. Run 1 (RC4) had the same code, so it could not have traded either. The LD10 and LD11 rehearsal
+qualification covered quotes, sizes, signing caps and coverage, not a runtime-planned entry. **J7 cannot pass on RC5.**
+What would make it pass is a new decision: a reviewed basis-verification rule and its wiring, in a new build and
+therefore a new run.
