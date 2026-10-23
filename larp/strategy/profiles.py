@@ -105,12 +105,13 @@ def validate_live(p):
         summary = quote_summary(p["quote_cost_summary"])
         for field in ("expected_equity_units", *(TOP_UP_KEYS if not initial_only else ())):
             integer(p[field], 1)
+        # LD11-RH01 (equal weight) and SJ-11-RH01 (S1): a REHEARSAL may keep evidence and falsifiers in SHADOW.
         if (p["baseline"] not in ("EQUAL_WEIGHT", "TREND_GUARDED_VOL") or p["series_kind"] != "TOKEN"
                 or p["red_flag_policy"] != "IDEA-035-B1" or not _hash(p["predicate_registry_hash"])
                 or p["statement_authority"] != "SHADOW"
                 or (p["falsifier_authority"] != "DISCRETIONARY_EXIT" and not (
-                    p["environment"] == "REHEARSAL" and p["baseline"] == "EQUAL_WEIGHT"
-                    and p["evidence_mode"] == "SHADOW" and p["falsifier_authority"] == "SHADOW"))
+                    p["environment"] == "REHEARSAL" and p["evidence_mode"] == "SHADOW"
+                    and p["falsifier_authority"] == "SHADOW"))
                 or p["assessment_required"] is not False):
             raise ContractError("Live profile differs from decided v1 scope")
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.
@@ -167,6 +168,8 @@ def validate_live(p):
             raise ContractError("Insufficient two-transaction gas floor/top-up size")
         if not initial_only and p["gas_top_up_max_gas_bnb_units"] > p["gas_floor_bnb_units"]:
             raise ContractError("Top-up cannot be paid below trigger floor")
+    except ContractError:
+        raise  # SJ-09-PC01: keep the specific reason; ContractError is a ValueError.
     except (KeyError, TypeError, ValueError) as exc:
         raise ContractError("Malformed or incomplete live profile") from exc
 

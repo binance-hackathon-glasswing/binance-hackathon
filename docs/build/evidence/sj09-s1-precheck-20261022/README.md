@@ -56,3 +56,20 @@ RC5, which adds IDEA-085's connection pooling (PR257, merged). C2, C3, C5, C6 an
 needs reviewed model routing or a scoped deterministic S1 rehearsal decision, weights of about 1/5, the
 two-child exit reserve, and its trend guard cannot trim at this size. C0 now compares only the runtime files these
 checks exercise, since canonical's `larp/storage` and `larp/runtime/database.py` changed with IDEA-085.
+
+## Update 2026-10-23: SJ-11-RH01 changes C0, C2 and C3 (draft PR, not merged or installed)
+
+Run 3 trades S1 (IDEA-049-C SJ-11). SJ-11-RH01 admits a deterministic S1 rehearsal with SHADOW evidence and
+falsifiers in `validate_live` and `gate_a.scoped_rehearsal`, REHEARSAL and run mode `dev` only. It also makes
+`validate_live` raise the specific `ContractError` instead of re-wrapping it. `verify.py` records the new results, so it
+still exits 0 (`result-20261023-sj11-rh01.json`; `result.json` stays the 2026-10-22 output):
+- **C0** now records which checked runtime files differ from RC4: `larp/risk/planner.py` (PF-05, PR256, merged
+  2026-10-23) and `larp/runtime/gate_a.py` and `larp/strategy/profiles.py` (SJ-11-RH01). On canonical `8eb16e5`, before
+  this change, C0 already differed because of PF-05.
+- **C2:** the S1 SHADOW REHEARSAL profile passes `validate_live`. The same profile with environment FINAL is refused
+  with "Live profile differs from decided v1 scope", now unwrapped (outer = inner).
+- **C3:** the S1 SHADOW profile passes the signed-preparation scope check, like the equal-weight control. S1 with
+  BOUNDED_FALSIFIER evidence is still refused there.
+- C1 and C4–C7 are unchanged. C7 still describes `build_live_profiles`, which keeps one child per position; the
+  two-child S1 reserve lives in the rehearsal candidate builder (`tools/deploy/build_rehearsal_candidate.py
+  --s1-config … --s1-decision … --exit-children 2`).
