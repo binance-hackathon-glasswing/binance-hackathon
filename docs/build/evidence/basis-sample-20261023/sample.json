@@ -1,0 +1,296 @@
+{
+ "schema": "BasisSample.v1",
+ "note": "Read-only Web3 Open API GETs (rwa/tokens, rwa/underlying-market, rwa/price, aggregator/quote-and-swap quotes only; nothing signed or sent), 2026-10-23, from the dev wallet address. Raw responses not committed.",
+ "fields_0452Z": {
+  "NVDAB": {
+   "tokenSymbol": "NVDAB",
+   "tokenContractAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+   "binanceChainId": "56",
+   "platformId": "bstock",
+   "assetType": 1,
+   "underlyingTicker": "NVDA",
+   "underlyingName": "Nvidia Corp",
+   "tokenToShareRatio": "1.000778223752807865",
+   "tokenPrice": "213.73620524688717572805",
+   "referencePrice": "213.57",
+   "openState": true,
+   "underlying_market": {
+    "tokenContractAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+    "platformId": "bstock",
+    "assetType": 1,
+    "openState": true,
+    "marketData_keys": [
+     "amplitude",
+     "avgDailyVolume1Y",
+     "dividendYield",
+     "high52W",
+     "latestDividend",
+     "low52W",
+     "marketCap",
+     "pbRatio",
+     "peRatioTTM",
+     "referencePrice",
+     "totalShares",
+     "turnoverRate",
+     "volumeShares24H"
+    ]
+   },
+   "price_endpoint": {
+    "binanceChainId": "56",
+    "tokenContractAddress": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+    "platformId": "bstock",
+    "tokenPrice": "213.57000000",
+    "referencePrice": "213.403924",
+    "tokenPriceUpdatedAt": 1792732847632
+   },
+   "observed_at": "2026-10-23T05:20:49.720Z"
+  },
+  "GOOGLB": {
+   "tokenSymbol": "GOOGLB",
+   "tokenContractAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+   "binanceChainId": "56",
+   "platformId": "bstock",
+   "assetType": 1,
+   "underlyingTicker": "GOOGL",
+   "underlyingName": "Alphabet Inc.",
+   "tokenToShareRatio": "1.000478058978107511",
+   "tokenPrice": "324.02482896123967958757",
+   "referencePrice": "323.87",
+   "openState": true,
+   "underlying_market": {
+    "tokenContractAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+    "platformId": "bstock",
+    "assetType": 1,
+    "openState": true,
+    "marketData_keys": [
+     "amplitude",
+     "avgDailyVolume1Y",
+     "dividendYield",
+     "high52W",
+     "latestDividend",
+     "low52W",
+     "marketCap",
+     "pbRatio",
+     "peRatioTTM",
+     "referencePrice",
+     "totalShares",
+     "turnoverRate",
+     "volumeShares24H"
+    ]
+   },
+   "price_endpoint": {
+    "binanceChainId": "56",
+    "tokenContractAddress": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+    "platformId": "bstock",
+    "tokenPrice": "323.87000000",
+    "referencePrice": "323.715245",
+    "tokenPriceUpdatedAt": 1792732849670
+   },
+   "observed_at": "2026-10-23T05:20:50.423Z"
+  },
+  "SKHYB": {
+   "tokenSymbol": "SKHYB",
+   "tokenContractAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+   "binanceChainId": "56",
+   "platformId": "bstock",
+   "assetType": 1,
+   "underlyingTicker": "SKHY",
+   "underlyingName": "SK Hynix",
+   "tokenToShareRatio": "1.000000000000000000",
+   "tokenPrice": "138.01",
+   "referencePrice": "138.01",
+   "openState": true,
+   "underlying_market": {
+    "tokenContractAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+    "platformId": "bstock",
+    "assetType": 1,
+    "openState": true,
+    "marketData_keys": [
+     "amplitude",
+     "avgDailyVolume1Y",
+     "dividendYield",
+     "high52W",
+     "latestDividend",
+     "low52W",
+     "marketCap",
+     "pbRatio",
+     "peRatioTTM",
+     "referencePrice",
+     "totalShares",
+     "turnoverRate",
+     "volumeShares24H"
+    ]
+   },
+   "price_endpoint": {
+    "binanceChainId": "56",
+    "tokenContractAddress": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+    "platformId": "bstock",
+    "tokenPrice": "138.01000000",
+    "referencePrice": "138.01",
+    "tokenPriceUpdatedAt": 1792732850673
+   },
+   "observed_at": "2026-10-23T05:20:51.139Z"
+  },
+  "TSLAB": {
+   "tokenSymbol": "TSLAB",
+   "tokenContractAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+   "binanceChainId": "56",
+   "platformId": "bstock",
+   "assetType": 1,
+   "underlyingTicker": "TSLA",
+   "underlyingName": "Tesla, Inc.",
+   "tokenToShareRatio": "1.000000000000000000",
+   "tokenPrice": "375.73",
+   "referencePrice": "375.73",
+   "openState": true,
+   "underlying_market": {
+    "tokenContractAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+    "platformId": "bstock",
+    "assetType": 1,
+    "openState": true,
+    "marketData_keys": [
+     "amplitude",
+     "avgDailyVolume1Y",
+     "dividendYield",
+     "high52W",
+     "latestDividend",
+     "low52W",
+     "marketCap",
+     "pbRatio",
+     "peRatioTTM",
+     "referencePrice",
+     "totalShares",
+     "turnoverRate",
+     "volumeShares24H"
+    ]
+   },
+   "price_endpoint": {
+    "binanceChainId": "56",
+    "tokenContractAddress": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+    "platformId": "bstock",
+    "tokenPrice": "375.73",
+    "referencePrice": "375.73",
+    "tokenPriceUpdatedAt": 1792732847636
+   },
+   "observed_at": "2026-10-23T05:20:51.837Z"
+  },
+  "MSFTB": {
+   "tokenSymbol": "MSFTB",
+   "tokenContractAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+   "binanceChainId": "56",
+   "platformId": "bstock",
+   "assetType": 1,
+   "underlyingTicker": "MSFT",
+   "underlyingName": "Microsoft Corp",
+   "tokenToShareRatio": "1.001313964833366845",
+   "tokenPrice": "517.34888621045564780615",
+   "referencePrice": "516.67",
+   "openState": true,
+   "underlying_market": {
+    "tokenContractAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+    "platformId": "bstock",
+    "assetType": 1,
+    "openState": true,
+    "marketData_keys": [
+     "amplitude",
+     "avgDailyVolume1Y",
+     "dividendYield",
+     "high52W",
+     "latestDividend",
+     "low52W",
+     "marketCap",
+     "pbRatio",
+     "peRatioTTM",
+     "referencePrice",
+     "totalShares",
+     "turnoverRate",
+     "volumeShares24H"
+    ]
+   },
+   "price_endpoint": {
+    "binanceChainId": "56",
+    "tokenContractAddress": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+    "platformId": "bstock",
+    "tokenPrice": "516.67000000",
+    "referencePrice": "515.992005",
+    "tokenPriceUpdatedAt": 1792732820653
+   },
+   "observed_at": "2026-10-23T05:20:52.552Z"
+  }
+ },
+ "simultaneous_quotes": {
+  "at": "2026-10-23T05:22:51Z",
+  "rows": [
+   {
+    "symbol": "NVDAB",
+    "ratio": "1.000778223752807865",
+    "tokens_tokenPrice": "213.9463686738752653797",
+    "tokens_ref": "213.78",
+    "price_tokenPrice": "213.78000000",
+    "price_ref": "213.613761",
+    "buy": "213.8776626587407458456472828",
+    "sell": "213.9076392502464415073540670",
+    "mid_vs_ratio_mark_bps": -2.5108030444562113,
+    "mid_vs_price_endpoint_bps": 5.26948051705462,
+    "half_spread_bps": -0.7007391645277539,
+    "open": true
+   },
+   {
+    "symbol": "GOOGLB",
+    "ratio": "1.000478058978107511",
+    "tokens_tokenPrice": "324.02482896123967958757",
+    "tokens_ref": "323.87",
+    "price_tokenPrice": "323.87000000",
+    "price_ref": "323.715245",
+    "buy": "324.1485080061960316193268978",
+    "sell": "324.0976092320687040938189941",
+    "mid_vs_ratio_mark_bps": 3.031547249252268,
+    "mid_vs_price_endpoint_bps": 7.81358628870744,
+    "half_spread_bps": 0.7851766909792308,
+    "open": true
+   },
+   {
+    "symbol": "SKHYB",
+    "ratio": "1.000000000000000000",
+    "tokens_tokenPrice": "137.98",
+    "tokens_ref": "137.98",
+    "price_tokenPrice": "137.98000000",
+    "price_ref": "137.98",
+    "buy": "138.0823045342102135398327486",
+    "sell": "138.0533244494425688830647852",
+    "mid_vs_ratio_mark_bps": 6.364291333989796,
+    "mid_vs_price_endpoint_bps": 6.364291333989796,
+    "half_spread_bps": 1.049487343386618,
+    "open": true
+   },
+   {
+    "symbol": "TSLAB",
+    "ratio": "1.000000000000000000",
+    "tokens_tokenPrice": "376.04",
+    "tokens_ref": "376.04",
+    "price_tokenPrice": "376.04000000",
+    "price_ref": "376.04",
+    "buy": "376.0200692924640765737753865",
+    "sell": "376.1649242129564575499110995",
+    "mid_vs_ratio_mark_bps": 1.396041716579807,
+    "mid_vs_price_endpoint_bps": 1.396041716579807,
+    "half_spread_bps": -1.9257884927657374,
+    "open": true
+   },
+   {
+    "symbol": "MSFTB",
+    "ratio": "1.001313964833366845",
+    "tokens_tokenPrice": "517.34888621045564780615",
+    "tokens_ref": "516.67",
+    "price_tokenPrice": "516.67000000",
+    "price_ref": "515.992005",
+    "buy": "517.8248799103107660741309610",
+    "sell": "517.7523056950208676434288929",
+    "mid_vs_ratio_mark_bps": 8.499227579883065,
+    "mid_vs_price_endpoint_bps": 21.650043599702265,
+    "half_spread_bps": 0.7008093293159623,
+    "open": true
+   }
+  ]
+ }
+}

@@ -247,7 +247,9 @@ def plan(snapshot, proposal_or_none):
         else:
             name_target = fraction(p["operating_name_weight"])
         operating_cap = floor(name_target * safe_equity * 10**m["decimals"] / m["price_units"])
-        if qty + pending_buy.get(symbol, 0) > cap:
+        # PF-05 (#55): a missing mark counted as 0 overstates every other name's weight, so incomplete
+        # valuation never starts a hard-line trim. An obligation started under complete marks continues.
+        if qty + pending_buy.get(symbol, 0) > cap and not unvalued:
             name_trims.add(symbol)
         if qty + pending_buy.get(symbol, 0) <= operating_cap:
             name_trims.discard(symbol)

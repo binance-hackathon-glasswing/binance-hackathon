@@ -1,5 +1,17 @@
 # Remaining development gas funding — FG-02 / #106
 
+**Subsequent SJ-03 update (2026-10-22 SGT):** Isaac completed the additional
+2USDT dev seed. Its receipt/net debit and finalized public96USDT/
+0.005325625054330011BNB balance are verified in
+[the new record](evidence/dev-gas-funding-20261022.json). Both dev seeds now
+total4USDT net debit. The selected0.003072BNB signer exit floor is covered;
+no further swap is requested for that minimum. The still-open handoff is the
+operator's actual post-last-seed reconciliation/PortfolioState/private inputs
+and final run/config bindings. The historical preflight/status/instructions
+below remain dated evidence; do not repeat the completed seed. The separate
+live-challenge wallet must not be used in this task.
+
+
 **CONS-01 archived PR lane:** this evidence/handoff is retained on `codex/system-testing-20261012`; the separate source/funding draft is retired by consolidation. Actual missing inputs remain in the [live backlog](../INCOMPLETE_WORK.md). Use [current status](CURRENT_STATUS.md), including the conditional untrusted-router alternative. Historical observations below are not current readiness or an instruction to fund/sign.
 
 Status: **preflight recorded; remaining wallet action NOT_DONE; hosted opening

@@ -1,0 +1,114 @@
+{
+  "additional_allowance_read": "RPC_RESPONSE_REJECTED; no retry; remaining current allowances left to actual hosted packet",
+  "block": {
+    "hash": "0xa2d107a431966e3343c0a9b61eef584bbeebe4d825c10ff0ff85a8b32cb9e9a7",
+    "number": 128977934,
+    "utc": "2026-10-21T17:27:41+00:00"
+  },
+  "canonical_below_finalized_head": true,
+  "chain_id": 56,
+  "completed_at": "2026-10-21T17:34:19.422Z",
+  "full_ld10_owner_acceptance": false,
+  "host_reconciled": false,
+  "identity_rechecked": true,
+  "live_wallet_accessed": false,
+  "local_processing_correction": "Production ABI word decoder replaced quantity decoder for padded allowance; original successful reads reused",
+  "native_credit_bnb_reported": "0.00264317",
+  "native_credit_rpc_verified": false,
+  "native_credit_source": "ISAAC_SUPPLIED_METAMASK_CONFIRMED_SCREENSHOT_ROUNDED_DISPLAY",
+  "not_verified": [
+    "TRANSACTION_LOCAL_NATIVE_CREDIT_BY_RPC",
+    "UI_FEE_TOKEN_ECONOMICS",
+    "COMPLETE_CURRENT_ROUTER_ALLOWANCES",
+    "HOSTED_POST_FUNDING_RECONCILIATION_RESERVATIONS_AND_RUN_BINDINGS",
+    "CURRENT_FULL_QUOTE_AND_ASSEMBLY_INPUT_COVERAGE"
+  ],
+  "performed_by": "Isaac (user-confirmed wallet action)",
+  "post_funding": {
+    "canonical_rechecked": true,
+    "capture": {
+      "block_hash": "0x69f1792dda5fe563ddc2c89b70d89289fbc28a38140d14fd83c8d0a14f45bd37",
+      "block_number": 128978382,
+      "chain_id": 56,
+      "latest_nonce": 4,
+      "native_wei": 5325625054330011,
+      "observed_at": "2026-10-21T17:31:04.217Z",
+      "pending_nonce": 4,
+      "schema": "ChainBalances.v1",
+      "tokens": {
+        "GOOGLB": {
+          "contract": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "decimals": 18,
+          "units": 0
+        },
+        "MSFTB": {
+          "contract": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "decimals": 18,
+          "units": 0
+        },
+        "NVDAB": {
+          "contract": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "decimals": 18,
+          "units": 0
+        },
+        "SKHYB": {
+          "contract": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "decimals": 18,
+          "units": 0
+        },
+        "TSLAB": {
+          "contract": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+          "decimals": 18,
+          "units": 0
+        },
+        "USDT": {
+          "contract": "0x55d398326f99059ff775485246999027b3197955",
+          "decimals": 18,
+          "units": 96000000000000000000
+        }
+      },
+      "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479"
+    },
+    "exit_floor_covered": true,
+    "exit_floor_headroom_wei": "2253625054330011",
+    "exit_reserve_wei": "3072000000000000",
+    "finalized_nonce": 4,
+    "nonce_read_agreement": true,
+    "observed_at": "2026-10-21T17:31:04.217Z",
+    "router_allowance_status": "INCOMPLETE_PROVIDER_REFUSAL_AFTER_USDT_ZERO",
+    "selected_profile_sha256": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250",
+    "whole_rehearsal_shortfall_wei": "3506374945669989",
+    "whole_rehearsal_target_wei": "8832000000000000"
+  },
+  "private_current_quote_coverage_reviewed": false,
+  "read_call_attempts": 30,
+  "read_limit": 40,
+  "receipt_network_fee": {
+    "effective_gas_price_wei": "50000000",
+    "fee_bnb": "0.00000973215",
+    "fee_wei": "9732150000000",
+    "gas_used": 194643
+  },
+  "receipt_success": true,
+  "record_ref": "IDEA-049-C SJ-03 / GAP-49 / #106",
+  "schema": "ManualGasFundingEvidence.v2",
+  "signer_assembled": false,
+  "signing_enabled": false,
+  "status": "RECEIPT_VERIFIED_CURRENT_EXIT_FLOOR_COVERED",
+  "successful_observation_count": 29,
+  "transaction_hash": "0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d",
+  "transaction_nonce": 3,
+  "transaction_submitted_by_assistant": false,
+  "transaction_to": "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31",
+  "transaction_value_wei": "0",
+  "usdt": {
+    "decimals": 18,
+    "fee_classification": "NOT_SEPARATELY_ESTABLISHED",
+    "gross_incoming_units": "0",
+    "gross_outgoing_units": "2000000000000000000",
+    "net_debit_units": "2000000000000000000",
+    "net_debit_usdt": "2"
+  },
+  "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+  "wallet_key_accessed_by_assistant": false
+}
