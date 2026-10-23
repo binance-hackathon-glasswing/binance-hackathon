@@ -3112,6 +3112,33 @@ every weight is 1/5. The REHEARSAL window stays RV120-02's (new risk until 2026-
   first buy passes the planner's gas floor (BNB − action budget ≥ exit reserve).
 - **P6:** the full suite on the disposable PostgreSQL 14.24 has no new failure or skip against `46a27ef`.
 
+**SJ-11-RH01-P1 results — P1–P6 PASS offline (2026-10-23, Claude):** profile and tests `f1d4901`.
+- **P1–P3 PASS:** `docs/build/evidence/s1-rehearsal-profile-20261023/`: block `0ee110d4…`; profile file SHA-256
+  **`6bcf1dfbd7f0c29893dd62bf67d9bcf7a04299b1d24a29d7310b6d769f8c1526`**; `StrategyProfile.v1` digest `b2c81e99…`; M3
+  probe **`75547c8e7d3d02e977e9859665f713580f64cc935f41641a3c129edc68fd9b99`**, one line different from `692787e4…`.
+  The README command rebuilds the profile byte for byte.
+- **P4 PASS:** signed dev preparation with no routing (deterministic assessor), `check_scope`/`check_inputs` and the
+  runtime build pass with the committed profile.
+- **P5 PASS:** at run 2's balances the caps review covers `FULL_BOOK_EXIT_RESERVE` (3.84e15) and
+  `INITIAL_BNB_EXIT_RESERVE` (3.84e15 ≤ 5.3256e15); only quote coverage and owner review block (no quotes in the
+  synthetic packet). The first buy clears the planner's gas floor.
+- **P6 PASS:** full suite at `8c4f2d5`: **2537 passed, 10 skipped, 0 failed** (3931 subtests). Against `46a27ef`, the
+  only outcome change is `test_q10…` failed → passed (below); 11 new tests pass; same skips.
+
+**Also in this PR (2026-10-23, Claude):**
+- `49161586`: `test_cost_summary.py::Runner::test_q10…` runs the capture wrapper with the test interpreter
+  (`PYTHON=sys.executable`; the wrapper already honours `PYTHON`). It had failed on this Mac on base too, because
+  PATH's `python3` lacked `dotenv`. The tool is unchanged.
+- `8c4f2d5a`: the RC6 run-3 install run sheet `docs/build/ops/rehearsal-install-rc6-20261023/`, drafted before the
+  merge and the approvals. M1 requires PR262 and the pinned profile; D1 creates `larp_rehearsal3`; M3/M4 use the S1
+  profile and probe and diff against run 2's `1a4cda6f…`; M4 requires `SCOPE_CONFIRMATION`; R1 retires run 2; P4
+  takes the reviewer and approval record as arguments. The run ID `larp-dev-rehearsal-20261024` is a proposal for
+  Yao. Other scripts are byte-identical to RC5 (`tests/runtime/test_run3_sheet.py`). Nothing was run.
+
+**Still open (owners, not code):** Yao's scope and run-ID confirmation; Isaac's approval of `6bcf1dfb…` and of the
+M3 `signer.json`; merge, RC6 build and the install **before 2026-10-25 00:00Z** (the REHEARSAL window; changing it is
+a new decision and a new profile hash); hosted CI (Actions billing limit); LD10-P03-R1 for FINAL/general builds.
+
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
 **`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
