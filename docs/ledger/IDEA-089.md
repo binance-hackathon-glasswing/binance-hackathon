@@ -1,4 +1,4 @@
-# IDEA-088 — S2: weekend full-sequence trade test on the dev wallet (run 4), then back to S1 on Monday
+# IDEA-089 — S2: weekend full-sequence trade test on the dev wallet (run 4), then back to S1 on Monday
 
 - Date / author: 2026-10-23 (17:5xZ; Saturday Oct 24 morning in Singapore) / Yao Zhu (decision), Claude Code (record)
 - Status: **decided, not implemented.** This entry is the decision and its pre-registered pass criteria only. No code,
@@ -18,7 +18,7 @@ where we actually have time to go through all the errors and details"
 
 Run 3 (RC6 `9dc5edab`, S1) is installed and healthy but has never placed an order. Two things stop it:
 1. **No executable quote on the service path** (SJ-11-QV01): `service.py` wires no quote verifier, so every quote is
-   `CAPABILITY_PROOF_REQUIRED`. The fix is being built separately (the SJ-11-QV01 session).
+   `CAPABILITY_PROOF_REQUIRED`. The fix is being built separately (IDEA-088, PR268).
 2. **S1 enters only in the NYSE regular session.** Its execution bounds (`larp/strategy/execution_bounds.py`
    `interval`) allow discretionary buys from `open_delay_seconds` (1800) after the XNYS open to `close_buffer_seconds`
    (900) before the close. Run 3's REHEARSAL window also ends new risk at 2026-10-25 00:00Z. The next session (Mon
