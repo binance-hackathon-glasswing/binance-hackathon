@@ -3361,3 +3361,20 @@ Nothing started. Next: P4 with reviewer `Yao Zhu` and approval `SJ-11-A1 Isaac v
 Run 3 is now bound to RC6 `9dc5edab` and `larp_rehearsal3`. `checks/primary-status.sh` right after (SSM `2b55a1c2…`):
 same unit states, runtime `release_verified: true`, archive health `healthy: true` for run 3, anchor 1 ACK, backup 1 ACK.
 Next: T1 (signer access on), then R1s, P2s, S1, S1b, S2, P5.
+
+#### SJ-11 T1, signer reboot and R1s — PASS (2026-10-23 16:32–16:5xZ, Yao)
+
+- **T1:** `enable_signer_provisioning = true`; plan `signer-access-on-run3.tfplan` **8 to add, 0 to change, 0 to
+  destroy**, the same eight IDEA-080 resources as run 2's T1 (no update, replace or destroy). Apply
+  (`results/t1-apply.txt`): `Apply complete! Resources: 8 added, 0 changed, 0 destroyed.`; endpoints 43–66 s.
+- **SA9** (`mac/signer-reach.sh`, 16:39:26Z): both hosts `Online`, endpoints `ssm`/`ssmmessages`/`ec2messages`
+  `available` with private DNS from 16:33Z, `AmazonSSMManagedInstanceCore` on `larp-dev-signer`, EC2 ok/ok.
+- **Stale agent, as in SJ-06 J5 and SJ-10 J4:** the first R1s command `4a462966…` (16:40:27Z) stayed
+  `Pending`/`Delayed` for about 10 minutes while the signer still pinged `Online`. Yao cancelled it (`Cancelled`, never
+  delivered) and rebooted the signer once; at 16:53:07Z both hosts `Online` (signer ping 16:52:05Z).
+- **R1s** (SSM `32c19b4b-5f50-4f13-af32-400598aa9335`, Success, no stderr): `larp-signer` inactive and disabled,
+  0 restarts; 3 start lines since S2 (S2 plus the restarts after reboots). Moved to
+  `/etc/larp-history/d53d1b7-larp-dev-rehearsal-20261023/`: `release.json` `72478f9d…`, `signer.json` `1a4cda6f…`,
+  router policy `05759e90…`. Key kept: `/etc/larp/signer` `700 root:root`, `wallet.key` `600 root:root`, 1 link.
+
+Next: P2s, S1 (M4's printed command), S1b, S2.
