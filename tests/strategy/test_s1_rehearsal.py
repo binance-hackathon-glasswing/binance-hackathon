@@ -251,6 +251,20 @@ def test_rh4_s1_config_and_decision_go_together(tmp_path):
         main(['--output', str(out), '--exit-children', '2', '--s1-config', str(config), '--s1-decision', DECISION])
 
 
+def test_l1_s1_rehearsal_requires_the_deterministic_limiter(tmp_path):
+    """SJ-11-RH01-L1: no hosted models in this scope, and nothing sets exposure_assessment, so MODEL would never move."""
+    from tools.deploy.build_rehearsal_candidate import main
+    assert re.search('limiter_mode', refusal(lambda: candidate(limiter_mode='MODEL')))
+    config, out = tmp_path / 's1.json', tmp_path / 'profile.json'
+    config.write_bytes(s1_raw(limiter_mode='MODEL'))
+    with pytest.raises(ContractError):
+        main(['--output', str(out), '--exit-children', '2', '--s1-config', str(config), '--s1-decision', DECISION])
+    assert not out.exists()
+    # L2: the DETERMINISTIC fixture block builds the same bytes as before the guard (2e8a633).
+    assert hashlib.sha256(Document.from_dict(candidate()).payload).hexdigest() == \
+        'cbdda7df294bce307d57fd4d126e639d21a1d7fae4a6f78628a169ce16ab978a'
+
+
 # --- M3 probe: only the embedded profile differs ------------------------------------------------------------------
 
 def test_probe_for_an_s1_profile_differs_from_the_reviewed_probe_only_in_the_profile_line():
