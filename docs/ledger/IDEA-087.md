@@ -64,3 +64,26 @@ Offline, with synthetic monitor files only (no real wallet data, no network):
 
 Not claimed by these criteria: a live GitHub Pages site (needs a repository and a visibility decision), real monitor
 data, or hosted CI.
+
+## Results (2026-10-23, code commit `46ac41be`)
+
+All seven criteria are **supported offline**, on synthetic data only. Setup: macOS, Python 3.12.14, git 2.55.0.
+`pytest tests/test_dashboard.py tests/test_contracts.py` gives 30 passed with 44 subtests. Full collection finds 2,513
+tests with no errors.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| D1 numbers | supported | `test_d1_numbers_match_hand_computation`, `test_d1_transactions_and_alerts`. Equity 94.9, start 96, return −1.1 USDT, max drawdown 2.5/97 (peak 00:02, trough 00:04), current drawdown 2.1/97, holdings weights and fills all match to 1e-9. |
+| D2 redaction | supported | `test_d2_redacted_site_has_no_identifiers` checks that no `0x…` of 8 or more hex digits or identifier key is in any output, while `--full` keeps them. `test_d2_redaction_is_an_allow_list` puts addresses and hashes into kinds, symbols, unit keys and `price_error`; every one becomes `OTHER`. |
+| D3 determinism | supported | `test_d3_build_is_deterministic`: byte-identical output, still identical with the clock patched to fail, and the embedded data equals `data.json`. |
+| D4 robustness | supported | Four tests: a missing or empty folder; one malformed line plus a truncated last line, both counted and reported; the latest poll without prices (equity taken from the last priced poll, values blank); and 5,000 polls downsampled to at most 2,402 points with the trough kept. |
+| D5 isolation | supported | `test_d5_no_network_and_reads_only_monitor_files`: sockets blocked, and the build reads only the three monitor files and its template. A planted `.env` is not read. |
+| D6 publisher | supported | Five tests against a local bare repository: the first publish creates `gh-pages` with the three files; an unchanged rerun makes no commit; changed data gives one fast-forward commit; no force flag or `+` refspec appears in any git call; other files on the branch are kept; a diverged remote raises and leaves both sides untouched; a failed push is retried on the next run; the main repository is refused by name and by URL. |
+| D7 page renders | supported | Built-in browser on a synthetic two-day run (2,881 polls, 17 transactions, 5 alerts). Redacted dark mode at about 830 px and full light mode at 375 px both show every section with no console messages, and `scrollWidth` equals `clientWidth`. The crosshair and tooltip stay in sync across both charts. BscScan links appear only in the full build. One fix came from this check: the opening-value line was nearly invisible in dark mode and now uses the muted ink at 70%. |
+
+- Release bundle unaffected: `tools/` and `tests/` are outside `release_files` (`larp/runtime/preflight.py`). No
+  existing source file changed.
+- Not run: the full suite, which needs disposable PostgreSQL and Linux worker isolation. This change touches none of
+  its code. Hosted CI is unavailable (org billing).
+- Not done: no Pages repository exists, nothing was published, and no real monitor data was used (none is on this
+  machine). Whether to publish, and where, is `INCOMPLETE_WORK.md` IDEA-087 PAGES01. Usage: `docs/build/DASHBOARD.md`.
