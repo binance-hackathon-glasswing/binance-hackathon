@@ -2903,3 +2903,32 @@ never wired. Run 1 (RC4) had the same code, so it could not have traded either. 
 qualification covered quotes, sizes, signing caps and coverage, not a runtime-planned entry. **J7 cannot pass on RC5.**
 What would make it pass is a new decision: a reviewed basis-verification rule and its wiring, in a new build and
 therefore a new run.
+
+### SJ-11 — run 3 uses S1, not equal weight (Yao, 2026-10-23 ~06:10Z); open requirements
+
+**Decision (Yao, in chat):** "dont use equal weight anymore use S1, keith reviewed it". Run 3 trades S1
+`TREND_GUARDED_VOL` (PF-01 / IDEA-084), not the LD11-RH01 equal-weight fallback. PR260 (EXP-008) also recommends
+swapping S1 into the rehearsal: S1 trailed equal weight by 0.58 pp per 10 sessions on the underlying proxy, with no
+detectable difference on token history, and hit the 8% stop about a third as often. No written record of Keith's
+review is in the repo yet; it is recorded as relayed by Yao.
+
+**Already in place for run 3:**
+- the wallet is flat (96 USDT, about 0.0053 BNB, nonce 4), so SJ-09-PC01 C4 no longer applies;
+- the basis check (IDEA-086) gates S1 entries exactly as it gates equal weight, so it is needed either way;
+- the RC5 connection pooling (IDEA-085).
+
+**Still needed (SJ-09-PC01, re-checked on canonical `8eb16e5`):**
+- **C2/C3 (code, rehearsal scope):** `validate_live` and `gate_a.scoped_rehearsal` admit a deterministic,
+  SHADOW-evidence rehearsal only for `EQUAL_WEIGHT`. Extending both to `TREND_GUARDED_VOL` (REHEARSAL, SHADOW evidence
+  and falsifiers, `assessment_required` false) is a rehearsal-only decision. The alternative is adopted hosted models.
+- **C5 (weights):** at about 100 USDT the measured minimum trade (about 18.64 USDT) forces every frozen weight to at
+  least 0.1962, so in practice 1/5 each. Keith's inverse-volatility weights cannot be built at this size.
+- **C6 (accepted limit):** at this size the trend guard's and limiter's cuts are smaller than one minimum trade, so
+  run 3 exercises S1's entries, levels, sessions and flatten, but not a trend-guard trim.
+- **C7 (code):** the S1 builder reserves 5 × action gas, one exit child per position. The rehearsal sizing needs two
+  children per position, like the equal-weight candidate (`build_rehearsal_candidate.py`, `exit_children=2`).
+- **The S1 block** (levels, trend window/band/delay/start state, band, limiter, execution timings): Keith's B2 values
+  (IDEA-075). The repo has only the test fixture's block.
+- **Tooling:** the M3 probe and `review_rehearsal_caps` pin the equal-weight profile path and hash. Run 3 needs the S1
+  REHEARSAL profile there, a fresh coverage review against S1's sizes, and Isaac's approval of the new profile hash
+  and the resulting `signer.json`.
