@@ -3238,3 +3238,18 @@ was copied from canonical with `git archive` because the operator checkout was o
 
 Limit (SJ-11-A2): no CI run on this commit. RC6 = `9dc5edab`. Next: M2 and D1, then M3 (before R1p). Yao's scope and
 run-ID confirmation (needed by M4) and Isaac's A1 remain open.
+
+#### SJ-11-C1 — Yao confirms the run-3 scope and run ID (Yao, 2026-10-23T16:10Z)
+
+**Confirmation (Yao, in chat):** "Confirmed: run ID larp-dev-rehearsal-20261024, and run 3 is deterministic S1 with
+models and falsifiers in SHADOW and no hosted models."
+
+This clears README gates 2 and 3 of the RC6 sheet (`docs/build/ops/rehearsal-install-rc6-20261023/`):
+- **Scope (SJ-11-RH01):** run 3 trades S1 `TREND_GUARDED_VOL` REHEARSAL in `dev` with the deterministic assessor and a
+  DETERMINISTIC limiter. Model evidence and falsifiers are SHADOW: recorded, never able to change a trade. No hosted
+  model is called. Profile `6bcf1dfb…` (PF-01 values, weights 1/5), M3 probe `75547c8e…`.
+- **Run ID:** `larp-dev-rehearsal-20261024`, database `larp_rehearsal3` (created, SJ-11-D1 PASS), build RC6
+  `9dc5edab` (SJ-11-A2).
+
+M4 takes this record as `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Yao Zhu 2026-10-23)"`. **Not covered:** Isaac's A1
+(profile `6bcf1dfb…` and the M3 `signer.json`) and the P4 run-3 approval.
