@@ -2,7 +2,8 @@
 
 - Date / author: 2026-10-23 / Yao Zhu (request), Claude Code (analysis and draft). **Reviewers: Keith (strategy and
   market data), Isaac (risk and signing).**
-- Status: **open, proposal for review. Nothing is built.** The pass criteria below are written before any code.
+- Status: **implemented for the dev rehearsal; independent PR262 review repairs pushed (PR262-RV01 below).**
+  Final policy adoption, release and run-3 acceptance remain open. The original pass criteria below predate code.
 - Links: IDEA-049-C SJ-10 first trading-status; `docs/INCOMPLETE_WORK.md` SJ-10-BASIS01, GAP-22, DR-09/DR-12;
   IDEA-018 §2.2; IDEA-035 item 5; IDEA-037; `larp/strategy/policy.py:154`; `larp/marketdata/port.py:66-125`;
   `larp/runtime/service.py:288`; evidence [basis-sample-20261023/sample.json](../build/evidence/basis-sample-20261023/sample.json).
@@ -187,7 +188,8 @@ action; the recorded sample is the only live data.
   canonical `8eb16e5`; I did not run it separately here. The earlier base `f56bcf6` gave 2468/10, and canonical added
   PR256 and others since.
 
-Verdict: **P1–P5 supported (offline).** Still open: review and merge, an RC6 build, and the host check in run 3
+Original author verdict: **P1–P5 supported (offline).** PR262-RV01 below qualifies P3 as policy-only in this
+original run; it adds the missing planner check. Still open: an RC6 build and the host check in run 3
 (SJ-11).
 
 
@@ -205,7 +207,7 @@ Findings and pass criteria, recorded before repair validation:
 - **R3 (P3 evidence):** the original P3 copies only verdict booleans into a synthetic policy fixture; it does not
   satisfy §5's planner criterion. Feed real port rows and the pinned EQUAL_WEIGHT rehearsal profile through policy
   and planner, with explicitly stubbed costs/request-bound quotes. Require a BUY, no basis/cost/impact/reserve
-  rejection; no-verifier produces no BUY; excessive fees still fail the independent cost gate. This remains offline
+  rejection; no-verifier produces no BUY; excessive fees still fail the pinned cost-reserve gate before entry-cost evaluation. This remains offline
   evidence, and does not qualify S1 or actual route/gas/source/host acceptance.
 - **R4 (records):** update the stale proposal status and SJ-10-BASIS01 backlog to distinguish repository repairs
   from final policy/release/run-3 acceptance. GAP-22 remains open. Review does not adopt a final share/listing identity.
@@ -213,3 +215,24 @@ Findings and pass criteria, recorded before repair validation:
 Validation planned: focused regressions, then full suite on disposable PostgreSQL14.24; report actual environment,
 skips and failures. Final policy adoption still needs Keith/Isaac's §6 review; run-3 S1/profile/cap/host gates remain
 with their existing owners in IDEA-049-C SJ-11. The in-process ratio ratchet intentionally resets on restart (§3).
+
+
+PR262-RV01 repair details:
+- Price-row chain and platform are now required and checked; the underlying endpoint still inherits chain56 from
+  its chain-bound request when its response omits the chain (as in the recorded API sample).
+- Any failed verifier result gives `quality=INVALID`, preserving basis reason codes for diagnostics. Usable-market
+  filtering now excludes it from policy/planner/accounting marks. With a held invalid symbol, policy is unavailable;
+  the coordinator catches that and runs the risk planner without a policy proposal. The existing lower-bound path
+  defers loss stops and blocks new risk. No-verifier fixtures retain `quality=VALID` and `basis_verified=false`.
+- P3 now uses actual ratio-scaled MarketPort rows, all five tokens, the pinned EQUAL_WEIGHT rehearsal profile and
+  stock-flat96USDT/0.005325625054330011BNB. Cost values and exact-size quotes are **offline stubs**, using recorded
+  implied quote prices with synthetic timestamps; they do not prove real time availability, route validity, gas or
+  execution. A BUY reaches the planner; an added20bp fee is refused by `COST_RESERVE_INSUFFICIENT`.
+- CAP-02 ceilings are unchanged. Ratio-scaled marks reduce target BUY token quantities at fixed equity, while they
+  can raise the notional of existing holdings and change split/rounding boundaries. The planner and execution/signing
+  caps still enforce their finite limits; this review grants no blanket numeric coverage for S1 or existing holdings.
+  Re-capture exact request sizes/full exits and review the resulting profile/config hashes before run3 (SJ-11).
+- The observed ticker pins, including `SKHY`, identify Binance's API strings. They do not certify a listing, share
+  class, depositary ratio, independent share price, or a transferable training label. The issuer registry's existing
+  UNVERIFIED security mapping is preserved. Tolerances are accepted only within Yao's dev-rehearsal decision here;
+  final adoption remains Keith/Isaac's §6 decision.
