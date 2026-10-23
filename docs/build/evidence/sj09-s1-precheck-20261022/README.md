@@ -10,7 +10,7 @@ No port, key, AWS or live call was used. Reproduce with:
 
     python3.12 -I docs/build/evidence/sj09-s1-precheck-20261022/verify.py   # exit 0 = every check as recorded
 
-`result.json` is the output at `f56bcf6`. The S1 block is the test fixture (`tests/strategy/test_s1_core.py`, equal
+`result.json` is the output at `ad208e2` (this branch after merging canonical with PR249, PR253 and PR257; the first run at `f56bcf6` gave the same results). The S1 block is the test fixture (`tests/strategy/test_s1_core.py`, equal
 weights 1/5), not Keith's frozen weights. The gas, authority and cost inputs are the RC4 rehearsal ones
 (`tools/deploy/build_rehearsal_candidate.py`).
 
@@ -46,3 +46,13 @@ building the S1 profile on Oct 23 sees only that message. `verify.py` reads the 
    not C4, so it still needs RC5 or a flat wallet, and the agent cannot flatten before Oct 26.
 
 None of these is decided here. Adding capital to make S1 meaningful is not proposed: wallet funding is the owners' decision.
+
+## Update 2026-10-23: the J8 incident removes C4 as a blocker
+
+The equal-weight run never traded: from about 20:45Z on Oct 22 its database logins timed out and every service
+restart-looped (IDEA-049-C SJ-06 J8 incident). The wallet is still 96 USDT and BNB at nonce 4, with no stocks. So the
+next run starts stock-flat, and C4's refusal does not apply to it. The SJ-09 path is now also the install path for
+RC5, which adds IDEA-085's connection pooling (PR257, merged). C2, C3, C5, C6 and C7 are unchanged: an S1 run still
+needs reviewed model routing or a scoped deterministic S1 rehearsal decision, weights of about 1/5, the
+two-child exit reserve, and its trend guard cannot trim at this size. C0 now compares only the runtime files these
+checks exercise, since canonical's `larp/storage` and `larp/runtime/database.py` changed with IDEA-085.

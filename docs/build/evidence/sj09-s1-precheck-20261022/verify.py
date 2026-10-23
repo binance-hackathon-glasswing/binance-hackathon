@@ -42,8 +42,11 @@ def refusal(call):
     return None
 
 
-# C0: the runtime files checked here are the installed build's.
-diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', INSTALLED, '--', 'larp', 'config'])
+# C0: the runtime files these checks exercise are the installed build's. Later canonical changes elsewhere in
+# larp/ (for example IDEA-085's database pooling) do not affect them.
+CHECKED = ['larp/contracts.py', 'larp/strategy', 'larp/risk', 'larp/runtime/gate_a.py', 'larp/runtime/gate_a_check.py',
+           'larp/integration', 'config']
+diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', INSTALLED, '--', *CHECKED])
 record('C0_runtime_equals_installed_rc4', diff.returncode == 0, True)
 
 # The RC4 rehearsal gas and authority inputs (tools/deploy/build_rehearsal_candidate.py), with an S1 block.
