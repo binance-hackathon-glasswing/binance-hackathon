@@ -2383,3 +2383,15 @@ run time. The pressure comes from the instance's memory under the per-transactio
 in-instance auth helper and Postgres per-connection memory), and the restart storm makes it self-sustaining. This
 also makes SJ-06-DB01 a **final-contest risk**: a multi-day final on this database and code would likely fail the
 same way.
+
+**Decision (Yao, in chat, 2026-10-23 ~03:00Z):** no AWS plan upgrade. Fix the agent's login method in code instead,
+because an autonomous agent must not depend on a database size this login rate needs, and catching this is what the
+rehearsal is for. The build is **IDEA-085** (connection pooling, pre-registered R1–R7, branch
+`claude/db-connection-reuse-20261023`).
+
+**How it reaches a host:** only through a **new run**. `activate` refuses "Another build is registered for this run",
+and the signer refuses a manifest other than the one registered at P4. So RC5 (canonical plus IDEA-085) goes in
+through the SJ-09 path: a new database `larp_rehearsal2`, a new run ID and a reassembled `signer.json` approved by
+Isaac. T1 then T2 handle the signer. The equal-weight run `larp-dev-rehearsal-20261022` never traded (nonce 4, 96
+USDT), so the new run's chain start has **no stock positions to carry over**, only USDT and BNB, which removes SJ-09's
+open-position chain-start question. The `larp_rehearsal1` clients stay paused until then.
