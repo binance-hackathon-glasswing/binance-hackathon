@@ -23,8 +23,10 @@ bad=0
 for u in larp-evidence larp-uploader larp-runtime larp-execution larp-archive.timer; do
   state=$(systemctl is-active $u || true); restarts=$(systemctl show $u -p NRestarts --value)
   echo "$u $state restarts=$restarts"
-  # SJ-06-RV01: fail closed. Execution must still be off; every other unit active with no restarts.
+  # SJ-06-RV01: fail closed. Execution must still be off; every other unit active with no restarts. A timer has
+  # no NRestarts property (empty value), so it only has to be active (SJ-06 P4 finding).
   if [[ $u == larp-execution ]]; then [[ $state != active ]] || bad=1
+  elif [[ $u == *.timer ]]; then [[ $state == active ]] || bad=1
   else [[ $state == active && $restarts == 0 ]] || bad=1; fi
 done
 [[ $bad == 0 ]] || { echo "a unit is not in its expected state; stop here (no P4_DONE)"; exit 5; }

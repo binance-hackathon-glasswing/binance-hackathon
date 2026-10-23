@@ -59,8 +59,9 @@ Why this order:
 - **K1 may run before P4** (SJ-06-RV01): placing the key file does not depend on the run. A key problem is then
   found before the run is registered; only S2's signer start needs P4.
 - **P4, S2, P5 and M9 fail closed** (SJ-06-RV01): they print their `*_DONE` line only when every unit is in the
-  expected state with zero restarts (S2 also needs the signer's `"started": true` line), and M9 only when no object
-  version or delete marker remains under the prefix.
+  expected state, each service with zero restarts (a timer has no restart count, so P4's archive timer only has to be
+  active; S2 also needs the signer's `"started": true` line), and M9 only when no object version or delete marker
+  remains under the prefix.
 - **P5 after S2.** Execution waits for signatures; starting it first would only time requests out.
 
 ## Live measurement (SJ-08)

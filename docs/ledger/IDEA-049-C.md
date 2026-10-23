@@ -2290,6 +2290,205 @@ copy's mode, owner match and loader verdict, and fails closed without `S1B_DONE`
 with a random throwaway key: a 0600 copy gives PASS (`WALLET_PRIVATE_KEY`); a 0640 copy gives REFUSED, "key file mode
 allows group or other access". The README order adds S1b after K1 and before S2. Not yet run on the host.
 
+#### SJ-06 S1b — PASS: the `LoadCredential` key copy passes the signer's loader (2026-10-22 13:58Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `96912c19…`, exit 0. Output: `copy_mode` `0o400`, `copy_owner_is_me: true`,
+`credential: WALLET_PRIVATE_KEY`, `key_loader: PASS`, then `S1B_DONE`. No key material was printed. A first attempt at
+13:55Z did not reach AWS (expired `aws login`, no command ID), so nothing ran. Still not verified: that the key derives
+the configured dev wallet. S2 checks this (`wallet_matches: true`).
+
+#### SJ-06 P4 — run registered and activated; the unit check stopped on a script bug (2026-10-22 14:00–14:01Z)
+
+Primary `i-040fc5fea8b700e9a`, SSM command `141d7c8c…`, exit 5, and no `P4_DONE`. What ran:
+- `init`: `initialized: true`, run `larp-dev-rehearsal-20261022`, mode `dev`, quarantined.
+- `activate`: `activated: true`, epoch 2, `signing_enabled: false`. The runtime always reports false; the signer
+  signs. **The run is now registered and activated in `larp_rehearsal1` on build `d03bbb1`.**
+- Units 30 s later: `larp-evidence`, `larp-uploader` and `larp-runtime` all active with 0 restarts;
+  `larp-execution` inactive (expected); `larp-archive.timer` active with `restarts=` empty.
+
+The stop was a false negative from the SJ-06-RV01 fail-closed check. That check requires `NRestarts == 0` for every
+unit except execution, but a systemd timer has no `NRestarts` property, so the value is empty and the comparison fails
+even though the timer is active. S2 and P5 check only service units, so they are not affected. The fix: a `.timer`
+unit only has to be `active`. An offline test with a stubbed `systemctl` gives `P4_DONE` for the observed states, and
+still stops when a service shows a restart or is `activating`.
+
+P4 must **not** be re-run, because the run already exists and is activated. To replace the missing `P4_DONE`, the
+plan is a read-only `checks/primary-status.sh` on primary, confirming the same unit states, healthy `larp-runtime`
+JSON lines and archive health. Whether to accept P4 on that evidence and continue to S2 is Yao's decision.
+
+**Read-only check (2026-10-22 14:09Z, Yao ran `checks/primary-status.sh`, SSM `8b5ea22e…`, exit 0).** It shows the
+same unit states 8 minutes later. Evidence, uploader and runtime are active with 0 restarts, execution is inactive, and
+the archive timer is active. `larp-runtime`'s only JSON line is `release_verified: true`, with no `started: false`
+refusal. Archive health is `healthy: true` with no reasons, and the anchor and backup tasks are both `ACK`. This
+matches every condition `P4_DONE` stands for.
+
+**Decision (Yao, in chat, 2026-10-22 ~14:10Z, before S2):** "I accept P4 on the primary-status evidence (SJ-06 P4)." P4 counts as
+done; it is not re-run. Next: S2.
+
+#### SJ-06 S2 — PASS: the key derives the dev wallet; signer started (2026-10-22 14:10Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `d6547f26…`, exit 0, 14:10:18–14:10:39Z.
+- Files: `/etc/larp/signer` is `700 root:root`, and `wallet.key` is `600 root:root` with one link.
+- Key check: `key_loader: PASS`, `credential: WALLET_PRIVATE_KEY`, **`wallet_matches: true`**. The key Keegan placed
+  in K1 derives the `wallet_address` in `signer.json` `cd0b38b8…`. No key material was printed.
+- `larp-signer` is enabled and active with 0 restarts. Start line: `"started": true`, `"signing_enabled": true`,
+  `swap_decoder: UNTRUSTED`, router policy `05759e90…`, `router_evidence_sha256: null`, deviation DEV-23, cap basis
+  CAP-02. The earlier line `release_verified: true` confirms the release.
+- stderr has only systemd's "Created symlink" for the enable.
+
+**Signing is now on for the dev wallet.** No transaction can be sent until P5 starts `larp-execution`, and the
+profile allows no buy before 2026-10-23T00:00Z. Next: the send-RPC decision (SJ-06-RV01), then P5.
+
+#### SJ-06-RV01-D1 — send RPC accepted for the dev rehearsal only (Yao, 2026-10-22 ~14:12Z)
+
+**Decision (Yao, in chat):** "I accept BSC_BNBCHAIN_PUBLIC as the execution (send) RPC for the dev rehearsal
+larp-dev-rehearsal-20261022 only; GAP-29 stays open for the final contest."
+
+This closes the RV01 open item "record the execution (send) RPC qualification or its explicit acceptance before P5" by
+acceptance, not qualification. Basis: Isaac selected `BSC_BNBCHAIN_PUBLIC` on 2026-10-17 after it passed all 19
+balance reads (IDEA-055 RPC-Q01 D1). Sending (`eth_sendRawTransaction`) and finality on it were never tested. The
+accepted risk is that a public endpoint can rate-limit or drop a send, which wastes a round. Limits on that risk:
+- submission is never retried;
+- an unexplained nonce holds the wallet barrier at the next reconciliation;
+- the wallet holds about 96 USDT.
+
+The rehearsal's own sends are GAP-29's first send measurement. **Fail signal for the final:** repeated send refusals or
+timeouts in `checks/trading-status.sh`, or alerts from `chain-monitor.py`. If that happens, switch providers for the
+final. Next: P5.
+
+#### SJ-06 P5 — PASS: execution service started (2026-10-22 14:14Z, Yao ran it)
+
+Primary `i-040fc5fea8b700e9a`, SSM command `934177ee…`, exit 0, 14:14:00–14:14:20Z.
+- Execution `check`: `configuration_valid: true`. Its `signing_enabled: false` is fixed; only the signer signs.
+- `larp-execution` is enabled and active with 0 restarts, with `release_verified: true` and no refusal line. No exit
+  2 or 4.
+- stderr has only systemd's "Created symlink" for the enable.
+
+**The signed dev rehearsal is now fully running:** runtime, execution and signer are all up. The profile allows no buy
+before 2026-10-23T00:00Z. Next: `checks/signer-status.sh` while signer access is still on, then T2 and M9.
+
+#### SJ-06 signer-status before T2 — PASS (2026-10-22 14:15Z, Yao ran it)
+
+Signer `i-0f8fe5d5fe5ccba36`, SSM command `a1d6f8e9…`, exit 0, about 90 s after P5 started execution.
+- `larp-signer` active with 0 restarts.
+- Its last lines: `release_verified: true`, then one start line (`"started": true`, `"signing_enabled": true`,
+  UNTRUSTED, policy `05759e90…`, DEV-23, CAP-02). No refusal or restart line follows it.
+- `/etc/larp/signer` is `700 root:root`, and `wallet.key` is `600 root:root` with one link.
+
+This closes the RV01 item "run `checks/signer-status.sh` before T2". Next: T2 (Yao: tear down signer access, SA5) and
+M9.
+
+#### SJ-06 T2, SA5, SA9 and M9 — PASS; the install run sheet is complete (2026-10-22 14:18–14:23Z, Yao ran them)
+
+- **T2 plan:** saved plan `signer-access-off.tfplan`, with `enable_signer_provisioning = false` in the git-ignored
+  `development.tfvars`. It shows **0 to add, 0 to change, 8 to destroy**, exactly T1's IDEA-080 resources: the
+  endpoint security group, its ingress rules from primary and from the signer, the signer egress rule, endpoints
+  `ssm` / `ssmmessages` / `ec2messages`, and the signer role's SSM attachment. The LD08 low-gas alarm stays. Yao
+  applied it. Deleting the endpoints took several minutes, which is normal for interface endpoints.
+- **SA5:** at 14:23Z, `aws ec2 describe-vpc-endpoints` filtered on the three SSM service names returns nothing.
+  Signer access is off, and the signer is again reachable only from the database side.
+- **SA9:** `checks/primary-status.sh` over SSM (command `1681a6c0…`, 14:23:13Z, exit 0), so primary's SSM works on
+  its own route. Evidence, uploader, runtime and **execution** are all active with 0 restarts, and the archive timer
+  is active. Runtime and execution each print `release_verified: true` and nothing else. Archive health is
+  `healthy: true`, and the anchor and backup are `ACK`.
+- **M9:** both S3 transfer packages are gone. `releases/rehearsal-20261022t111137z/` (installed RC4) and
+  `releases/rehearsal-20261022t105623z/` (superseded earlier package) each had 12 object versions deleted. Errors
+  were `null`, and each ended with `M9_DONE`, so no version or delete marker remains under either prefix.
+
+**SJ-06 pass criteria:** J1–J6 PASS.
+- **J7:** execution and SA5 PASS. The signer can't be checked directly after T2. Its last direct check was 14:15Z,
+  active with 0 restarts. Its first signature at J8 will show that it stayed active.
+- **J8:** open. It needs the first agent round after 2026-10-23T00:00Z, with approve, swap, receipts, accounting
+  and STORED ACK. Watch it with `checks/trading-status.sh` and `chain-monitor.py` (SJ-08).
+
+Still open from SJ-06-RV01 and not gating:
+- `--region` on the hosts' `aws s3 cp`;
+- the mid-run dev-wallet top-up decision (Keegan/Isaac).
+
+To change anything on the signer again (the SJ-09 swap on Oct 24), T1 has to be applied again.
+
+#### SJ-06 J8 incident — database logins time out on the 1 GiB instance; services restart in a loop, no trades (2026-10-23)
+
+**Found (02:08Z):** no trade at nonce 4 nearly two hours after the first buy was allowed. `checks/trading-status.sh`
+showed `larp-runtime` with 203 restarts, `larp-execution` with 209 and `larp-uploader` with 201; at 14:23Z all had 0.
+Its own read failed with `Unavailable: Database transaction failed; signing blocked`. `larp-evidence` (local SQLite)
+had 0 restarts. Fail-safe held: no signature or transaction; the wallet is unchanged (`chain-monitor.py`).
+
+**Read-only diagnosis (Yao ran each step):**
+- **`checks/db-diagnose.sh` (02:11Z).** All units ran cleanly from 14:00Z to **20:43:56Z**, then failed within 3 s of
+  each other (`RUNTIME_FAILED`, `EXECUTION_FAILED`, `UPLOADER_FAILED`). Since then each start runs about 70 s, and all
+  three fail in the same second. Between failures, a direct IAM login as `larp_execution` works: 9 of 79 connections
+  in use. Clock in sync, disk 19%, instance role `larp-dev-primary`, DNS and TCP 5432 fine.
+- **RDS (`larp-dev`, `db.t4g.micro`, PostgreSQL 14.24).** Status `available`; alarm `larp-dev-archive-healthy` in
+  ALARM since 01:59:46Z. RDS events: recovery started 23:44:21Z, then at 23:47:23Z "A database workload is causing
+  the system to run critically low on memory … set the value of shared_buffers from 23081 to 11295", then a restart
+  at 23:47:41Z.
+- **Free memory (5-minute minimum).** About 60 MB at 18:15Z, 76 MB at 20:15Z, 45 MB at 20:45Z, 31 MB at 23:15Z;
+  78–100 MB after the restart.
+- **Database log, 19:00Z–02:00Z (124 MB).** No backend was killed for lack of memory; the only signal line is the
+  archiver stopped at the 23:45Z restart. From **20:45Z**, IAM logins fail for every user (`larp_execution`,
+  `larp_runtime`, `larp_uploader`, `larp_signer`, `larp_archive`): 69 "canceling authentication due to timeout" and
+  55 "PAM authentication failed". Later there are 34 statement time-outs on `archive_outbox` (pending-row select and
+  insert). The log is huge because every IAM login writes a verbose trace from RDS's auth helper.
+- **CPU.** About 7% before the services started, about 23% after (14:00Z on). Credits fell from 146 to 0 at about
+  23:11Z, but CPU stayed at about 24% afterwards, so it is not being throttled. Credits were still about 37 when the
+  failures began. Average connections 0–1.6.
+
+**Cause (assessment):** memory on the 1 GiB instance, not network, clock, credentials, CPU throttling or connection
+count. `IamPostgresStore` makes a fresh IAM token and a new TLS connection for **every transaction**, so the services
+do thousands of IAM logins an hour. RDS checks each one in an in-instance helper. After about 7 hours, free memory
+fell low enough that the logins time out. Every service then fails together, and the restart storm keeps it there.
+
+**Proposed fix (needs Yao's spend decision):**
+1. Pause the primary database clients (`host/pause-primary-db-clients.sh`).
+2. Resize `larp-dev` to `db.t4g.small` (2 GiB) with `--apply-immediately`. Terraform's `apply_immediately = false`
+   would otherwise wait for the maintenance window. Then set `db_instance_class` in `development.tfvars` so a plan
+   shows no changes. The endpoint, CA and run are unchanged.
+3. Resume (`host/resume-primary-db-clients.sh`, fail-closed on restarts during a 90 s watch).
+
+The signer cannot be reached after T2. It keeps retrying with its 10 s restart and should recover by itself once
+logins work; its next signature is the evidence. **Before the final:** reuse connections instead of an IAM login per
+transaction, or size the database for this login rate (new item, owner TBD).
+
+**Decision (Yao, in chat, 2026-10-23 ~02:45Z):** "Yes: pause the primary DB clients, resize larp-dev to db.t4g.small
+now, then resume." The spend is accepted at roughly US$20–25 a month more, inside the US$90 budget; scaling back after
+the rehearsal is a later decision. Order: pause, then `modify-db-instance --apply-immediately`, then
+`db_instance_class` in `development.tfvars` with a plan that must show no changes, then resume.
+
+**Pause PASS (02:45Z, SSM `f8ce6954…`).** Execution, runtime, uploader and the archive timer are inactive;
+`larp-archive.service` shows `failed` from its last run during the outage. `larp-evidence` is still active.
+`PAUSE_DONE`.
+
+**Resize refused (02:46Z):** `FreeTierRestrictionError`, "This instance size isn't available with free plan
+accounts. To remove all limitations, upgrade your account plan." The AWS account is on the free plan, which allows
+only the smallest classes, so `db.t4g.small` needs an account-plan upgrade first. That is an account and billing
+decision for Yao, not a configuration change. Nothing changed: `larp-dev` is still `db.t4g.micro`, and the clients
+stay paused. Next: the read-only `checks/db-sizes.sh` on the quiet database, to see whether the data has outgrown
+the 1 GiB instance, before choosing between the upgrade and staying on micro.
+
+**Size check (02:49Z, `checks/db-sizes.sh`, clients paused).** The whole database is **30 MB**. `events`: 169 rows,
+11.75 MB on disk, 27 MB of batch and receipt bytes (about 160 KB per event). `audit_events` 5 MB, `audit_chunks`
+2.7 MB, `archive_outbox` 0.7 MB, `rounds` 22 rows, `process_sessions` 60 rows. `shared_buffers` is now 88 MB (RDS's
+cut). `larp_execution` cannot read `archive_outbox` payloads (InsufficientPrivilege, expected).
+**Conclusion:** the data has not outgrown the instance; 30 MB fits in cache many times over. So a fresh, empty
+database (`larp_rehearsal2`) would not remove the cause, and the failure should be expected to recur after a similar
+run time. The pressure comes from the instance's memory under the per-transaction IAM login rate (RDS's
+in-instance auth helper and Postgres per-connection memory), and the restart storm makes it self-sustaining. This
+also makes SJ-06-DB01 a **final-contest risk**: a multi-day final on this database and code would likely fail the
+same way.
+
+**Decision (Yao, in chat, 2026-10-23 ~03:00Z):** no AWS plan upgrade. Fix the agent's login method in code instead,
+because an autonomous agent must not depend on a database size this login rate needs, and catching this is what the
+rehearsal is for. The build is **IDEA-085** (connection pooling, pre-registered R1–R7, branch
+`claude/db-connection-reuse-20261023`).
+
+**How it reaches a host:** only through a **new run**. `activate` refuses "Another build is registered for this run",
+and the signer refuses a manifest other than the one registered at P4. So RC5 (canonical plus IDEA-085) goes in
+through the SJ-09 path: a new database `larp_rehearsal2`, a new run ID and a reassembled `signer.json` approved by
+Isaac. T1 then T2 handle the signer. The equal-weight run `larp-dev-rehearsal-20261022` never traded (nonce 4, 96
+USDT), so the new run's chain start has **no stock positions to carry over**, only USDT and BNB, which removes SJ-09's
+open-position chain-start question. The `larp_rehearsal1` clients stay paused until then.
+
 ### SJ-09 — plan: prepare S1 on Oct 23, swap equal weight for S1 from Oct 24 (Yao, 2026-10-22; not started)
 
 **Decision (Yao, in chat):** run the installed equal-weight rehearsal now (LD11-RH01). Prepare the real strategy, S1
