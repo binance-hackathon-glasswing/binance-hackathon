@@ -3435,3 +3435,21 @@ binds the response bytes, decodes the payload to `SwapEconomics` (pay/receive to
 output, deadline), verifies exact gas and fee units, and passes `_quote_at_cap`; wiring in `service.py`; tests; release
 qualification; and, because a run cannot change build, a new run and database. Any later entry also needs a new
 REHEARSAL window decision (new profile hash) and Isaac's approval. Owner per GAP-29: Isaac, with Keegan review.
+
+#### SJ-11 T2, SA5 and SA9 — PASS; run 3 kept as a no-trade soak (Yao, 2026-10-23 17:2x–17:31Z)
+
+**Decision (Yao, in chat):** "Keep run 3 running as a no-trade soak" after SJ-11-QV01.
+- **T2:** plan `signer-access-off-run3.tfplan` 0 add / 0 change / 8 destroy, exactly T1's eight resources (assistant
+  check against `results/t1-plan.txt`). Apply: `Apply complete! Resources: 0 added, 0 changed, 8 destroyed.`
+- **SA5** (`mac/signer-reach.sh`, 17:29:20Z): no SSM interface endpoints; no SSM policy on `larp-dev-signer`; signer
+  `ConnectionLost` (last ping 17:12:05Z); EC2 running ok/ok.
+- **SA9** (`checks/primary-status.sh`): primary `Online`; evidence, uploader, runtime and execution active with 0
+  restarts; archive timer active; anchors 2 ACK, backup 1 ACK. The first check (17:29:38Z, SSM `dce94512…`) read
+  `healthy: false`, `CLOCK_BACKWARD`; the re-run (17:31:34Z, SSM `31249e2f…`) read `healthy: true`, no reasons.
+- **Why the first read is a check artifact, not a clock fault:** `Maintenance.health` flags `CLOCK_BACKWARD` when its
+  `now_ms` is below `archive_clock.last_ms`. The uploader sets `last_ms` to its own clock every tick
+  (`interval_seconds` 5), while `checks/primary-status.sh` samples `now` before opening its IAM/TLS connection, so a tick
+  inside that gap reads as backwards. Chrony was 0.0000026 s off at P3. Repair for the check (not made): sample `now`
+  inside the read transaction.
+
+Next: M9 on `releases/rehearsal-20261023t162318z/`; soak K at about 1 h.
