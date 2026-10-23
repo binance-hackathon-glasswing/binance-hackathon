@@ -2665,3 +2665,30 @@ so they may go first.
   `larp-execution`; nothing was started. `P2_DONE`.
 
 Next: M4, then P3. P4 waits for Isaac's confirmation of `1a4cda6f…`.
+
+#### SJ-10-A1 confirmed and SJ-10 M4 PASS (2026-10-23 04:41Z)
+
+**SJ-10-A1 (Isaac, relayed by Yao in chat, about 04:41Z):** "yes confirmed keep going". Isaac confirms that his
+approval covers run-2 `signer.json` `1a4cda6fcbad7066ddd8c9375115a5156320b629f6c81d3c0aa3a64390c2b1b1`. That file
+differs from `cd0b38b8…` only in `build_id`, `run_id` and `database_name` (SJ-10 J2). This is recorded as relayed, not
+as Isaac's own GitHub attestation. It clears the gate before P4.
+
+**M4** (Mac, package `package-20261023T044123Z`, prefix `releases/rehearsal-20261023t044123z/`):
+- Fresh capture `captured: true`.
+- `prepare` done. Its `gate_a_passed: false` and missing `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE` are
+  expected for a dev, deterministic run.
+- Package check: all 7 checks PASS, `local_ready: true`, `remote_ci_verified: false` (local bundle, SJ-10-A2).
+- Bind: `manifest_bound` to `bc3a9838…`.
+- Local signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23.
+- Identity:
+  - runtime: `larp-dev-rehearsal-20261023` / `d53d1b7` / `dev` / `larp_rehearsal2`, service / deterministic, profile
+    `e95d5842…`;
+  - execution: the same identity, `larp_execution`, send RPC `BSC_BNBCHAIN_PUBLIC` (RV01-D1's acceptance carried to
+    run 2 under the same dev-rehearsal-only terms);
+  - initial state: 96000000 USDT, 5325625054330011 BNB, five positions 0, opening equity 99845905.
+- Hashes:
+  - `release.json` `72478f9d…`, `runtime.json` `8efb54d6…`, `execution.json` `d9aa6ea1…`;
+  - `initial-state.json` `15eeba6b…`, `uploader.json` `731a044d…`, `operations.json` `525372ae…`;
+  - `signer.json` `1a4cda6f…`.
+
+Next: P3, then P4.
