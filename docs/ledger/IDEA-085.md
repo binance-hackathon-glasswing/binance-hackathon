@@ -120,3 +120,42 @@ PostgreSQL 16):
   `test_service_configs` ×2 and `test_fault_points` ×1. They fail identically on canonical `f56bcf6` in the same venv
   ("Installed operations dependency differs from manifest lock"), because that venv omits locked packages. They are
   environmental, not caused by this change.
+
+## Review RV01 (2026-10-23, Keith with Claude Code): dead-peer check of RV1, comment fix, notes
+
+An independent review of the PR head `2ba46cb` found the same dead-socket problem that RV1 fixes, and built a
+fix with the same settings. RV1 landed first, so this review keeps RV1's code and adds what RV1 left open.
+
+- **Reproduced the review base.** The 24 targeted tests pass on a fresh disposable PostgreSQL 14.24 (Python 3.12.14,
+  psycopg 3.3.6). The 8-thread test passed 30 times out of 30 with the same connection count each run, so it is not
+  flaky. No session state leaks: there is no session-level `SET`, advisory lock, `LISTEN`, `autocommit`/`row_factory`
+  change or server-side cursor in `larp/`. Every hosted service uses its store from one thread (background threads
+  never touch it), so 4 idle connections cover the nesting. Through a proxy that resets the socket with no
+  PostgreSQL error message, a pooled connection was replaced without the caller seeing it.
+- **Dead peer, the case RV1 lists as not tested: PASS on RV1's code.** Written before the run: a pooled connection
+  whose server is cut off from the network raises `Unavailable` within 60 s, while without the options it is still
+  blocked at 90 s. Method: a client container from the CI runner image (Linux, Python 3.12.15, psycopg 3.3.6) and a
+  separate disposable PostgreSQL 14.24 on their own Docker network. After one pooled transaction, PostgreSQL was
+  disconnected from the network (`docker network disconnect`, no reset) and the next transaction started:
+  - with `SOCKET_OPTIONS` at `eadd5d4`: `Unavailable` after 30.5 s (the retry on a fresh connection then failed at
+    once);
+  - control, the same code with `SOCKET_OPTIONS` cut back to `connect_timeout=5` (the behaviour before RV1): still
+    blocked at 90 s.
+  An earlier local run through a proxy that stops answering also showed the next pooled transaction still blocked
+  at 20 s without the options.
+- **Comment fix (RV01-F2).** `larp/runtime/database.py` said the IAM token is not kept after connecting. libpq
+  keeps it in memory for the connection's life (`connection.info.password`), now up to 600 s. That is still less than
+  the token's own 15-minute validity, and the token is still never logged or put in an error. Comment only; no
+  behaviour change.
+- **Noted, no change:**
+  - psycopg prepares a statement on the server after 5 runs on one connection, so prepared statements now last up to
+    600 s per pooled connection. That is harmless here (explicit column lists; the backup's `SELECT * … LIMIT 0` runs
+    once per table), but backend memory should be watched in the host soak.
+  - A server that accepts packets but stops answering (for example, memory-starved) still blocks a statement with no
+    client-side limit, as it did mid-transaction before. TCP settings cannot detect it; only the runtime's watchdog
+    bounds it.
+  - The SJ-06-DB01 item (added by PR253, now merged) is updated in `docs/INCOMPLETE_WORK.md` to this entry's open
+    items.
+
+Still open, unchanged: mirror CI on all four jobs, Keegan's review and release, and the host soak on
+`db.t4g.micro`. Add to the soak: no `Unavailable` from a dead path, and backend memory with long-lived connections.
