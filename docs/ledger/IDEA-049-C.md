@@ -2932,3 +2932,27 @@ review is in the repo yet; it is recorded as relayed by Yao.
 - **Tooling:** the M3 probe and `review_rehearsal_caps` pin the equal-weight profile path and hash. Run 3 needs the S1
   REHEARSAL profile there, a fresh coverage review against S1's sizes, and Isaac's approval of the new profile hash
   and the resulting `signer.json`.
+
+#### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
+
+**`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
+logs:
+
+| Window | IAM logins | Auth failures | Statement time-outs |
+|---|---|---|---|
+| hour 05 (05:04–05:59Z) | **625** | 0 | 0 |
+| 05:00–05:10 | 182 | | |
+| 05:10–06:00 (10-minute buckets 16, 14, 13, 6, 14) | 63, about 75 an hour | | |
+| hour 06 (06:04–06:29Z, partial) | 44, about 90 an hour | 0 | 0 |
+
+By the pre-registered per-hour line (under 500), hour 05 is **over** at 625. That hour holds the installs, the reboots,
+and run 1's RC4 signer, which logged in once per transaction until R1s retired it at 05:05:50Z. The steady state on RC5
+alone is about 75–90 an hour, roughly 500 times below RC4, with **zero** auth failures or statement time-outs. J6 is
+judged on the first full RC5-only hour (06:00Z) and the ≥ 8 h check, so it is not yet passed.
+
+**`checks/trading-status.sh`** (06:31:59Z, about 1 h 48 min after P4): runtime, execution, evidence and uploader active
+with **0 restarts**. Run version 16, epoch 2, not quarantined. 6 rounds, all `CLOSED`: cadence 1991922, 1991924,
+1991927 and 1991929, plus 2 filing rounds. No orders, as expected until IDEA-086 ships (SJ-10-BASIS01).
+
+**T2 plan** `signer-access-off-run2.tfplan`: **0 to add, 0 to change, 8 to destroy**, exactly the IDEA-080 resources.
+Next: apply, SA5/SA9, M9.
