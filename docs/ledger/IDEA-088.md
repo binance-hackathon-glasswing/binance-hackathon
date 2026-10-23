@@ -113,3 +113,45 @@ Offline only. Fixtures: the 15 recorded quotes in `docs/build/evidence/quotes-in
   `9dc5edab` does not have. Exact counts and skips recorded.
 
 A criterion that fails stays failed in the results; the design is changed only by a new dated amendment here.
+
+## Results (2026-10-24, Claude Code; offline only)
+
+Commits on `claude/sj11-qv01-quote-verifier`: pre-registration `a13ad897`; tests `fbd4fa86` (red on base: the QV1–QV5 module did not import, and the QV6–QV8
+selection reported 13 failed / 5 passed, the passes being the unchanged-behaviour checks); implementation in the following commit. 20 new tests: `tests/marketdata/test_untrusted_quote_verifier.py`
+(11), `tests/risk/test_expected_gas.py` (4), `tests/runtime/test_driver.py` (2) and
+`tests/runtime/test_round_driver_service.py` (3).
+
+| ID | Result | Evidence |
+|---|---|---|
+| QV1 | PASS | Recorded BUY (TSLAB, `0626c8a8…`) and SELL (MSFTB, `1a422811…`) quotes become `VERIFIED_EXECUTABLE`: reservation 384,000,000,000,000 wei (action budget), expected 80,004,608,000,000 wei (sizing budget), fee 0, slippage 50 bp, `expires_at` = inner deadline; `_quote_at_cap` accepts both. The fixture limits are 50 bp / 50 USDT because the recorded quotes are 40 USDT at 0.5 %; the gas budgets and BNB scale are the run-3 profile's. |
+| QV2 | PASS | All 15 calldata mutations, other router, native value, other wallet, minimum ±1, slippage echo, RFQ, execution mode, vendor, explicit fee, expired deadline and a proof bound to other bytes are refused. Each refusal was checked to come from the intended check (decoder, preflight, verifier or port binding), not an incidental one. |
+| QV3 | PASS | Other facet, router code, facet code, a dirty other-token allowance and an unavailable RPC are refused; every read after `eth_getBlockByNumber` names block `0x10`. |
+| QV4 | PASS | Top-up profile, missing sizing or action budget, sizing above action, ledger BNB scale 9 and an unbound decoder refuse construction; a fee-authority proof with no, zero or above-reservation expected gas, or an unknown basis, is refused. |
+| QV5 | PASS | `recipient = None` passes only through a verifier whose decoder mode is `untrusted`; a verifier with no decoder or a `pinned` one is refused. `tests/marketdata/test_quote_contract.py` unchanged and passing. |
+| QV6 | PASS | At the run-3 budgets valued at its BNB price (reservation ≈ 0.277 USDT, expected ≈ 0.058 USDT) the reservation alone gives `ENTRY_COST_CAP`; with the expected gas the BUY intent forms and both the intent's `gas_bnb_units` and the reservation delta's `bnb_units` are the full reservation. Expected above the reservation, 0, negative or a string rejects the quote (`QUOTE_ROUTE_OR_SLIPPAGE`); expected = reservation gives the same plan as no field. |
+| QV7 | PASS | With the pair, the port's verifier holds the pinned decoder (`mode` untrusted, `policy_sha256` = the file's) bound to a `ProviderRpc` over both balance providers in order; hash mismatch, file only, hash only, no balance providers, and a top-up profile each refuse the start; without the pair the port has no verifier. |
+| QV8 | PASS | A non-executable follow-up commits one `INCIDENT` `QUOTE_NOT_EXECUTABLE` with round ID, symbol, side, pay units and reason `CAPABILITY_PROOF_REQUIRED`; a refusal journals `Unavailable: <message>`; any other exception is journaled by class name only; an executable follow-up journals none; replay of the journal reaches the same verified head. |
+| QV9 | PASS | Python 3.12.14, Docker `postgres:14.24` on loopback, credential-free environment (`env -i`). Base `9dc5edab`: **2555 passed, 10 skipped, 0 failed**, 3931 subtests, 399 s (log SHA-256 `8f8ff8f9fcf1a8cf…`). This branch: **2575 passed, 10 skipped, 0 failed**, 3980 subtests, 396 s (log `be354d74349fa867…`), i.e. +20 tests. The skips are the same 10 environmental ones: 1 optional private source fixture, 1 opt-in recorded-market artifact, 5 opt-in systemd and 3 Linux bubblewrap. No hosted CI was run. |
+
+### What this does and does not establish
+
+- The runtime can now form BUY and SELL intents on the UNTRUSTED path offline, from real recorded quote bytes, with the
+  signer's own decoder and preflight. Nothing was installed, signed or sent; no AWS, wallet or network call was made.
+- **Finding (QV6, for Keith and Isaac):** before this change, no entry at the run-3 size could pass both the planner
+  and execution. Execution requires a reservation of at least `gas_budget` (3.84e14 wei); the planner priced that
+  same figure into the 50 bp entry-cost cap and the 0.1 USDT cost reserve. The split (expected fee for cost, full
+  authority for reservation) follows LD09-B's stated intent, but it is a planner semantics change and needs their
+  review.
+- Gas is a reserved bound, not a measurement: an exact swap estimate before approval is refused by the venue
+  (KG-DEC-01-H). Execution still estimates each payload after its approve (C8) inside `gas_budget`.
+- Fees rest on `fee_bps = 0` (#119, unverified until LD19/20 receipts); an explicit `feeAmount` is refused.
+
+### Open items
+
+| Item | Owner | Where |
+|---|---|---|
+| Review the verifier, port and planner changes; merge | Isaac (GAP-29), Keegan; Keith for QV6 | this PR |
+| Runtime config: add `untrusted_router_policy_file` / `_sha256` (LD03 policy `05759e90…`, readable by the runtime user) | Yao (host), Isaac (approval) | run sheet for the next run |
+| Release, new run/database and REHEARSAL window decision (a run cannot change build) | Yao, Isaac, Keegan | IDEA-049-C SJ-11 / SJ-11-QV01 |
+| Reword the SJ-11-QV01 backlog line (on the unmerged docs branch `claude/sj11-a2-local-rc6-20261024`) to the remaining release/run work once both merge | whoever merges second | `docs/INCOMPLETE_WORK.md` |
+| `config/runtime/runtime.example.json` does not yet name the new optional pair | Keegan | follow-up |

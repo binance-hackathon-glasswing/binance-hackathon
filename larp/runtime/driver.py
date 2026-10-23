@@ -52,6 +52,16 @@ DAY_MS = 86_400_000
 STEP_ORDER = {'approve': 0, 'swap': 1}
 
 
+def quote_drop_reason(error):
+    """A journaled reason for a refused quote: our own refusal classes carry fixed messages; any other exception is
+    named by class only, since its text may hold a provider URL or credential (IDEA-088 QV8)."""
+    from larp.marketdata.web3 import Unavailable
+    name = type(error).__name__
+    if isinstance(error, (Unavailable, Blocked, ContractError)):
+        return (name + ': ' + str(error))[:200]
+    return name
+
+
 def iso(ms):
     return datetime.fromtimestamp(ms / 1000, timezone.utc).isoformat()
 
@@ -404,11 +414,13 @@ class MarketFeed:
         return [self.quoted.get(o.get('symbol'), o) for o in value]
 
     def quote(self, request):
-        """One MarketRequest.v1 through the port's quote path; True when it returned an executable quote."""
+        """One MarketRequest.v1 through the port's quote path; True when it returned an executable quote. Otherwise
+        `refused` holds the port's quote status (IDEA-088 QV8)."""
         observation = self.port.observe(request)
         if observation.get('quotes'):
             self.quoted[observation['symbol']] = observation
             return True
+        self.refused = observation.get('quote_status') or 'NO_EXECUTABLE_QUOTE'
         return False
 
     def clear_quotes(self):
@@ -923,16 +935,25 @@ class RoundDriver:
             requests = [r for r in plan.get('quote_requests', []) if r.get('symbol') != 'BNB']
             if plan.get('intents') or not requests:
                 return
-            executable = False
+            executable, dropped = False, []
             for request in requests[:self.max_quote_requests]:
+                reason = None
                 try:
-                    executable |= self.market.quote(request)
+                    if self.market.quote(request):
+                        executable = True
+                    else:
+                        reason = getattr(self.market, 'refused', None) or 'NO_EXECUTABLE_QUOTE'
                 except Exception as error:  # an unavailable quote is a hold, never a failed round
                     summary.setdefault('quote_errors', []).append(type(error).__name__)
+                    reason = quote_drop_reason(error)
+                if reason is not None:
+                    dropped.append(dict(symbol=request.get('symbol'), side=request.get('side'),
+                                        pay_units=request.get('pay_units'), reason=reason))
             summary.setdefault('quotes_requested', 0)
             summary['quotes_requested'] += min(len(requests), self.max_quote_requests)
             if not executable:
                 self.market.clear_quotes()
+                summary['quote_incident'] = self._journal_dropped(round_id, dropped, now_ms)
                 return
             source_round = round_id
             round_id = child if (n == first and child is not None) else self.work.child_round(parent, n)
@@ -950,6 +971,20 @@ class RoundDriver:
                         **(dict(assessment_override=None, use_accepted_evidence=True) if self.assessments else {}))
             finally:
                 self.market.clear_quotes()
+
+    def _journal_dropped(self, round_id, dropped, now_ms):
+        """IDEA-088 QV8: a quote follow-up that ends without an executable quote is journaled, never silent. The
+        round's plan had no intents, so no command waits for a claim behind this commit."""
+        c = self.coordinator
+        current = c.store.load(c.run_id)
+        run = current.read()
+        incident = dict(type='QUOTE_NOT_EXECUTABLE', round_id=round_id, requests=dropped, at_ms=now_ms)
+        try:
+            c.store.commit(batch_for(current, f"incident:quote:{run['epoch']}:{run['version'] + 1}",
+                                     dict(kind='INCIDENT', incident=incident)))
+        except Conflict:
+            return 'CONFLICT'
+        return 'JOURNALED'
 
     def once(self, now_ms):
         c = self.coordinator

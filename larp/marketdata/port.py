@@ -267,10 +267,14 @@ class MarketPort:
         side = request['side']
         pay, receive = (USDT, observation['token_id']) if side == 'BUY' else (observation['token_id'], USDT)
         amount = request['pay_units'] * (10**12 if side == 'BUY' else 1)
+        # Only the untrusted-router decoder may leave the recipient unverified (IDEA-070 B02-U, DEV-23; IDEA-088),
+        # the same rule as validate_payload and the signer policy.
+        unverified = (decoded.recipient is None
+                      and getattr(getattr(self.quote_verifier, 'decoder', None), 'mode', None) == 'untrusted')
         if (payload.chain_id != 56 or payload.sender != self.wallet or payload.data != tx['data']
                 or payload.to != str(tx['to']).lower() or payload.value != integer(tx['value'])
                 or decoded.pay_token != pay or decoded.receive_token != receive
-                or decoded.amount != amount or decoded.recipient != self.wallet
+                or decoded.amount != amount or (decoded.recipient != self.wallet and not unverified)
                 or decoded.minimum_output != integer(tx['minReceiveAmount'])
                 or decoded.native_value != payload.value or proof.get('route_valid') is not True):
             raise Unavailable('decoded route does not bind quote economics')
@@ -285,7 +289,16 @@ class MarketPort:
                      slippage_bps=integer(proof['slippage_bps']), impact_bps=int(impact.to_integral_value(rounding='ROUND_CEILING')),
                      route_valid=True, quote_id=raw['artifact_sha256'], observed_at=raw['available_at'],
                      available_at=raw['available_at'], expires_at=datetime.fromtimestamp(decoded.deadline, timezone.utc).isoformat())
-        if quote['gas_bnb_units'] <= 0 or proof.get('exact_gas_verified') is not True:
+        if proof.get('gas_basis') == 'EXECUTION_FEE_AUTHORITY':
+            # IDEA-088: no swap estimate exists before its approve. gas_bnb_units reserves execution's whole fee
+            # authority; the expected fee, inside it, prices the entry (planner).
+            expected = integer(proof.get('expected_gas_bnb_units'))
+            if not 0 < expected <= quote['gas_bnb_units']:
+                raise Unavailable('expected gas must lie inside the reserved gas')
+            quote['expected_gas_bnb_units'] = expected
+        elif proof.get('exact_gas_verified') is not True:
+            raise Unavailable('exact payload gas evidence required')
+        if quote['gas_bnb_units'] <= 0:
             raise Unavailable('exact payload gas evidence required')
         now = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
         if self.quote_limits is None:
