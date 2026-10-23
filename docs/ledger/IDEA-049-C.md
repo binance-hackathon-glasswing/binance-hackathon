@@ -2903,3 +2903,66 @@ never wired. Run 1 (RC4) had the same code, so it could not have traded either. 
 qualification covered quotes, sizes, signing caps and coverage, not a runtime-planned entry. **J7 cannot pass on RC5.**
 What would make it pass is a new decision: a reviewed basis-verification rule and its wiring, in a new build and
 therefore a new run.
+
+#### SJ-11-RH01 — S1 deterministic rehearsal scope for run 3: code changes (pre-registered 2026-10-23, Claude)
+
+Under SJ-11 (run 3 uses S1, Yao 2026-10-23 ~06:10Z; that heading is recorded with PR262). This entry covers the code
+for SJ-11's C2, C3 and C7 items, the `validate_live` side finding of SJ-09-PC01, and the run-3 tooling. Branch
+`claude/s1-rehearsal-run3-20261023` from canonical `8eb16e5`, draft PR into `codex/system-testing-20261012`. Not in
+scope: the IDEA-086 basis check (PR262, needed for any entry under either baseline), hosts, AWS, Terraform, keys, the
+wallet, the CAP-02 signing caps, equal-weight or FINAL behaviour, `docs/official/kit/` and `vendor/`.
+
+**Scope assumption (to confirm with Yao in the PR):** like LD11-RH01 for equal weight, a deterministic S1 rehearsal:
+`evidence_mode` and `falsifier_authority` SHADOW, `assessment_required` false, no hosted models (no routing file),
+environment REHEARSAL, run mode `dev`. The alternative, adopted hosted models, would need none of the C2/C3 changes.
+
+**Planned changes:**
+1. C2: `validate_live` admits SHADOW evidence and falsifiers in REHEARSAL for `TREND_GUARDED_VOL`, as it already does
+   for `EQUAL_WEIGHT`. FINAL keeps `DISCRETIONARY_EXIT` only.
+2. C3: `gate_a.scoped_rehearsal` (used by `gate_a.prepare` and `gate_a_check.check_scope`) admits the same S1 scope,
+   in run mode `dev` only.
+3. C7: the rehearsal candidate builder (`tools/deploy/build_rehearsal_candidate.py`) gets an S1 path: the REHEARSAL
+   profile from `build_live_profiles(..., s1=block)`, weights 1/5 each, the same SHADOW scope as equal weight, and
+   `exit_children=2`, so the reserve is 5 positions × 2 children × the action budget. `build_live_profiles` and the
+   `validate_live` minimum (5 × pair for S1) stay as they are; LD10-P03-R1 stays open for FINAL and general builds.
+4. Side fix: `validate_live` re-raises `ContractError` unchanged. Only other `KeyError`/`TypeError`/`ValueError`s become
+   "Malformed or incomplete live profile".
+5. Tooling: `review_rehearsal_caps --profile` (default: today's equal-weight path), checked against the packet's
+   `selected_profile_sha256`. The M3 probe embeds the profile bytes, so its hash for an S1 profile is recorded when
+   that profile is built.
+6. `verify.py` (SJ-09-PC01): the recorded C2 and C3 results change; C0 lists the checked runtime files that now differ
+   from RC4.
+
+**Pass criteria (written before any code; the tests are written first and shown failing on base):**
+- **RH1:** an S1 REHEARSAL profile with SHADOW evidence and falsifiers, `assessment_required` false and 1/5 weights
+  (the test fixture block) passes `validate_live`, and `gate_a.prepare` prepares it for a signed dev run
+  (`execution='service'`, `runtime_mode='dev'`, an adoption reference, no model routing) with the deterministic
+  assessor. `gate_a_check.check_scope` accepts the prepared files.
+- **RH2:** the same profile with environment FINAL, or prepared with `runtime_mode='live'`, is still refused.
+  `check_scope` refuses the S1 files with environment FINAL or evidence `BOUNDED_FALSIFIER`.
+- **RH3:** equal weight is unchanged: every existing test passes unmodified, the committed equal-weight candidates
+  (`build()` and `build(exit_children=2)`, `e95d5842…`) reproduce byte for byte, and the M3 probe for `e95d5842…` still
+  hashes to `692787e4…`.
+- **RH4:** the two-child S1 rehearsal candidate has `exit_gas_reserve_units` = 5 × 2 × `gas_action_budget_units` and
+  passes the caps review's `FULL_BOOK_EXIT_RESERVE`. One-child S1 builds from `build_live_profiles` are byte-identical
+  to base (fixture block; payload SHA-256 at base: with the RC4 gas inputs REHEARSAL `fbecead8…`, FINAL `5425acf4…`;
+  without them REHEARSAL `e724657b…`, FINAL `28b7de10…`). `validate_live` still accepts a 5 × pair reserve and refuses
+  one below it. The S1 path refuses weights other than 1/5 and a hard name line that needs more exit children than
+  reserved.
+- **RH5:** `validate_live` refusals show their specific reason (for example "Live profile differs from decided v1
+  scope"), not "Malformed or incomplete live profile". Errors that are not `ContractError`s keep the generic message.
+- **RH6:** `review_rehearsal_caps --profile <S1 candidate>` reviews an S1 packet, and the review pins the S1 profile's
+  hash. A profile whose hash differs from the packet's `selected_profile_sha256` is refused before any private output
+  is written. Without `--profile` the tool behaves as today.
+- **RH7:** `docs/build/evidence/sj09-s1-precheck-20261022/verify.py` exits 0.
+- **RH8:** the full suite with the disposable PostgreSQL 14.24 (`deploy/compose.test.yml`,
+  `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test`) shows no new failure or skip against base
+  `8eb16e5`, both run on the same machine.
+
+**Accepted limit (C6; recorded, not fixed):** at about 100 USDT the trend guard's and the limiter's cuts are smaller
+than one minimum trade (SJ-09-PC01 C6: an UP→DOWN change holds every name), so run 3 cannot exercise a trend-guard
+trim. It exercises S1's entries, levels, sessions and the flatten.
+
+**Not built here:** the S1 REHEARSAL profile. Its S1 block (levels, trend window/band/delay/start state,
+`top_up_band`, `weight_cap`, `hard_name_weight`, limiter, execution timings) must be Keith's. The repo has only the
+test fixture's block (`tests/strategy/test_s1_core.py`), which is used in tests only.
