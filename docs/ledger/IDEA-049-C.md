@@ -3202,3 +3202,39 @@ Next: apply, SA5/SA9, M9.
 
 SJ-10 J0′–J5 PASS. Open: J6 (the full RC5-only hour from 06:00Z and the ≥ 8 h soak) and J7 (the first trade, which
 waits for IDEA-086 / PR262 and run 3 on S1, SJ-11). Signer access (T1) has to be applied again for run 3.
+
+#### SJ-11-A2 — local RC6 bundle instead of mirror CI; M1-local PASS (Yao, 2026-10-23 16:02Z)
+
+**Decision (Yao, in chat):** run the RC6 sheet's `mac/m1-local-bundle.sh` route ("steps from my friend check if we can
+proceed then give me the steps 1 at a time"). As in SJ-10-A2, J0 is a local bundle built from the pushed canonical head
+with `tools/build_release_bundle.py`, not a CI artifact. **This again reverses, for run 3 only, Keegan's PR244 release
+gate** ("install only the original CI artifact, never a local rebuild"; SJ-06-A2). The bundle has no CI test
+provenance; its test record is local only (SJ-11-RH01-P1 and -M1 on `a5e6d1e` / `d64e4fc`; GAP62-F02 V3 for PR266).
+
+**BUILD is `9dc5edab`, not `d64e4fc`.** The friend's steps named `d64e4fc` (canonical after PR263). Three PRs merged
+after it: PR265 (docs), PR260 (EXP-008 docs and `tools/exp008/`) and PR266 (GAP62-F02, DEV-25). The builder accepts
+only the pushed head of its branch, so it built `9dc5edab`. Of those three, only PR266 changes a release file:
+`config/release/deviations.v1.json` gains the DEV-25 row (FINAL) and `updated` 2026-10-23. The register checks its
+declared text at every host start; `**SEC EDGAR:** 8-K, 10-Q and 10-K filings, time-stamped by their acceptance time.`
+occurs once in `docs/proposal/proposal_answers.md` at `9dc5edab`.
+
+**Before the run (Mac, assistant read-only checks):** canonical `9dc5edab61b6bffdb3c75cc4d498bb651a91ba43`; the RC4
+reference `deploy/activation/rehearsal-install-20261022/bundle/x/larp-d03bbb16cf51-x86_64` has manifest
+`5ea11a84287e790e8d2246c76203e5f1040f6c8fd90f627e9363eaecbaa95b6a` (CI RC4, artifact 12419733594). The RC5 release
+worktree `.claude/worktrees/release-d53d1b7` held `codex/system-testing-20261012`, so Yao detached it first. The sheet
+was copied from canonical with `git archive` because the operator checkout was on another branch.
+
+**M1-local result (Yao, `PY` = `larp-test-venv`, Python 3.12.14), PASS:**
+- `larp-9dc5edab61b6-x86_64.tar.gz` sha256 `6de35254499be2d827f535f46f1e0ffe422e78cff6f7d34f48959e2a4fc3203a`,
+  manifest `184bd2cd7696c86b00d24e5dc87f73bce9060f160a8e093243e68345c5ee040f`, `build_id` `9dc5edab…`.
+- Sidecar, `SHA256SUMS`, build ID and published manifest agree.
+- Against CI RC4 the differences are exactly the nine release files that `d03bbb1..9dc5edab` changes, no more and no
+  fewer: NEW `larp/marketdata/basis.py`; CHANGED `config/release/deviations.v1.json`, `larp/marketdata/port.py`,
+  `larp/risk/planner.py`, `larp/runtime/database.py`, `larp/runtime/gate_a.py`, `larp/runtime/service.py`,
+  `larp/storage/postgres.py`, `larp/strategy/profiles.py`. A spot check of `basis.py`, `profiles.py`,
+  `deviations.v1.json` and `postgres.py` found the bundle bytes equal to the commit's.
+- CPython `0e56475e…` (3.12.15), every wheel, `rds-ca.pem` `d7389074…` and `provision.sh` `d7905de4…` are
+  byte-identical to RC4 and RC5; `BUNDLE.env` differs only in `build_id`. `MIRROR_RUN=LOCAL-BUILD-RUN3`.
+
+Limit (SJ-11-A2): no CI run on this commit. RC6 = `9dc5edab`. Next: M2 and D1, then M3 (before R1p). Yao's scope and
+run-ID confirmation (needed by M4) and Isaac's A1 remain open.
