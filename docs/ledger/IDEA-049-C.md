@@ -3139,6 +3139,26 @@ every weight is 1/5. The REHEARSAL window stays RV120-02's (new risk until 2026-
 M3 `signer.json`; merge, RC6 build and the install **before 2026-10-25 00:00Z** (the REHEARSAL window; changing it is
 a new decision and a new profile hash); hosted CI (Actions billing limit); LD10-P03-R1 for FINAL/general builds.
 
+#### SJ-11-RH01-M1 — PR264 merged; Keegan's review and a check of its test failures (2026-10-23, Claude)
+
+- **Merge:** Keegan merged PR264 into `codex/system-testing-20261012` at 10:40:20Z, at head `a5e6d1e` (the reviewed,
+  pushed head), merge commit `a11c97f`. Canonical is now `d64e4fc` (PR263 merged after it). The merge does **not**
+  approve the run-3 install: the SJ-11-RH01 scope is still unconfirmed (M4 refuses without `SCOPE_CONFIRMATION`), and
+  A1 (Isaac's approval of profile `6bcf1dfb…` and the M3 `signer.json`) is still a required step.
+- **Keegan's review** (PR comment, 10:40:48Z, offline): the REHEARSAL-only SHADOW exception (`dev` only, FINAL still
+  `DISCRETIONARY_EXIT`), the `ContractError` re-raise and the exact-bytes profile pin are correct. The RC6 sheet
+  differs from RC5 only in run identity, profile/probe pins, the PR262/PR264 build checks and P4's arguments. Open
+  items as in the PR.
+- **His test run is not the repository's environment:** PostgreSQL 16 (the pinned one is 14.24,
+  `deploy/compose.test.yml`) and a venv that "omits locked packages"; 2533 passed, 11 skipped, 3 failed
+  (`test_service_configs` ×2, `test_fault_points` ×1), which he reports also fail on unchanged canonical there.
+- **Check (Claude, locked environment, PostgreSQL 14.24, merged canonical `d64e4fc`):**
+  `tests/runtime/test_service_configs.py` 4 passed; the run-3 tests (`test_s1_rehearsal`, `test_s1_run3_profile`,
+  `test_run3_sheet`, `test_s1_rehearsal_caps`) 34 passed. No test named `test_fault_points` exists in `tests/`, so that
+  failure could not be located. The full suite on the same head `a5e6d1e` gave 2537 passed / 10 skipped / 0 failed
+  (SJ-11-RH01-P1). His three failures are therefore environmental to his venv, as he says; they are not evidence
+  against the merged code. Hosted CI did not run (no job started: account billing limit).
+
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
 **`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
