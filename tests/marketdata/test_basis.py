@@ -328,14 +328,14 @@ class PlannerEndToEnd(unittest.TestCase):
         self.assertLessEqual(result['intents'][0]['cash_units'], c['profile']['per_trade_cap_units'])
         for reason in ('MISSING_MARKET_OR_BASIS', 'ENTRY_COST_CAP', 'ENTRY_IMPACT_CAP', 'CASH_OR_EXIT_RESERVE'):
             self.assertFalse(any(r['reason'] == reason for r in result['rejections']), result)
-        # The independent cost limit must still stop the same request when 20 bp of fees pushes its total cost over 50 bp.
+        # The pinned cost reserve must still stop this request when its fee increases by 20 bp.
         for m in c['markets']:
             for q in m['quotes']:
                 q['fee_units'] = q['cash_units'] * 20 // 10000
         expensive_snapshot = replace(s, context=Document.from_dict(c))
         expensive = plan(expensive_snapshot, decide(expensive_snapshot, expensive_snapshot.policy_state)).read()
         self.assertFalse(expensive['intents'])
-        self.assertIn('ENTRY_COST_CAP', {r['reason'] for r in expensive['rejections']})
+        self.assertIn('COST_RESERVE_INSUFFICIENT', {r['reason'] for r in expensive['rejections']})
 
     def test_rejected_held_mark_defers_loss_stops_and_blocks_new_risk(self):
         s = self.sample_snapshot(BasisVerifier(EXPECTED))
