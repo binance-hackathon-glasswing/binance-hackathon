@@ -321,6 +321,7 @@ class PlannerEndToEnd(unittest.TestCase):
                 observed_at=self.NOW.isoformat(), available_at=self.NOW.isoformat(),
                 expires_at=(self.NOW + timedelta(seconds=30)).isoformat())]
         s = replace(s, context=Document.from_dict(c))
+        proposal = decide(s, s.policy_state)
         result = plan(s, proposal).read()
         self.assertTrue(result['intents'], result)
         self.assertEqual(result['intents'][0]['side'], 'BUY')
@@ -331,9 +332,30 @@ class PlannerEndToEnd(unittest.TestCase):
         for m in c['markets']:
             for q in m['quotes']:
                 q['fee_units'] = q['cash_units'] // 100
-        expensive = plan(replace(s, context=Document.from_dict(c)), proposal).read()
+        expensive_snapshot = replace(s, context=Document.from_dict(c))
+        expensive = plan(expensive_snapshot, decide(expensive_snapshot, expensive_snapshot.policy_state)).read()
         self.assertFalse(expensive['intents'])
         self.assertIn('ENTRY_COST_CAP', {r['reason'] for r in expensive['rejections']})
+
+    def test_rejected_held_mark_defers_loss_stops_and_blocks_new_risk(self):
+        s = self.sample_snapshot(BasisVerifier(EXPECTED))
+        c = s.context.read()
+        c['portfolio']['positions']['MSFTB']['units'] = 10**18
+        # A mark rejected by the verifier is retained for diagnosis, but never consumed by risk/accounting.
+        def corrupt(rows):
+            rows['MSFTB'][0]['tokenToShareRatio'] = '1.06'
+        bad = MarketPort(SampleClient(corrupt), '0x' + '1' * 40,
+                         basis_verifier=BasisVerifier(EXPECTED), cost_observation=no_cost)(0)
+        c['markets'] = bad
+        before = deepcopy(c['portfolio']['risk'])
+        s = replace(s, context=Document.from_dict(c))
+        result = plan(s, decide(s, s.policy_state)).read()
+        self.assertEqual(result['unvalued_symbols'], ['MSFTB'])
+        self.assertEqual(result['valuation_status'], 'LOWER_BOUND')
+        for key in ('day_anchor_units', 'peak_units', 'daily_halt', 'run_halt', 'deep_cut'):
+            self.assertEqual(result['risk_state'][key], before[key])
+        self.assertIn('PARTIAL_VALUATION_NEW_RISK_BLOCKED', {r['reason'] for r in result['rejections']})
+        self.assertFalse(any(i['side'] == 'BUY' for i in result['intents']))
 
     def test_p3_without_verifier_there_is_no_buy_request(self):
         s = self.sample_snapshot(None)
