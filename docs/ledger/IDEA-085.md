@@ -154,8 +154,8 @@ fix with the same settings. RV1 landed first, so this review keeps RV1's code an
   - A server that accepts packets but stops answering (for example, memory-starved) still blocks a statement with no
     client-side limit, as it did mid-transaction before. TCP settings cannot detect it; only the runtime's watchdog
     bounds it.
-  - The linked SJ-06-DB01 item is added by PR253, which is still open; it is not on this base. Once both merge, its
-    remaining work becomes this entry's open items.
+  - The SJ-06-DB01 item (added by PR253, now merged) is updated in `docs/INCOMPLETE_WORK.md` to this entry's open
+    items.
 
 Still open, unchanged: mirror CI on all four jobs, Keegan's review and release, and the host soak on
 `db.t4g.micro`. Add to the soak: no `Unavailable` from a dead path, and backend memory with long-lived connections.
