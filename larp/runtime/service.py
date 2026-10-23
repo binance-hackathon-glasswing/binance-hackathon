@@ -284,8 +284,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if not key or not secret or type(wallet) is not str or not ADDRESS.fullmatch(wallet):
         raise ContractError('Market data needs the Web3 key pair and the public wallet address')
     client = Web3Client(key, secret, artifacts=Artifacts(d['market_artifact_root']))
-    # Quotes request the profile's own slippage limit and pass its consumer check (PR #41, #40).
-    market = MarketPort(client, wallet, quote_limits=profile)
+    # Quotes request the profile's own slippage limit and pass its consumer check (PR #41, #40). The basis check uses
+    # the token -> underlying tickers this run pinned and the check above bound to the issuer registry (IDEA-086).
+    from larp.marketdata.basis import BasisVerifier
+    market = MarketPort(client, wallet, quote_limits=profile, basis_verifier=BasisVerifier(
+        {meta['token']: meta['underlying_id'] for meta in issuers.values()}))
     run = store.load(config['run_id']).read()
     gas = None
     if 'gas_floor_bnb_units' in profile:
