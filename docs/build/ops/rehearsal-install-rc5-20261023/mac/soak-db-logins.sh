@@ -19,4 +19,5 @@ for f in $("${AWS[@]}" rds describe-db-log-files --db-instance-identifier larp-d
   [[ $logins -lt 500 && $fails -eq 0 ]] || bad=1
 done
 echo "(the newest file is the current, partial hour)"
-[[ $bad == 0 ]] && echo SOAK_PASS || echo "SOAK_CHECK: a file is over 500 logins or has an auth failure"
+[[ $bad == 0 ]] || { echo "SOAK_CHECK: a file is over 500 logins or has an auth failure"; exit 1; }
+echo SOAK_PASS
