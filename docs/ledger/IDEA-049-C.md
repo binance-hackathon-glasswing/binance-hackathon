@@ -2313,3 +2313,46 @@ Still open from SJ-06-RV01 and not gating:
 - the mid-run dev-wallet top-up decision (Keegan/Isaac).
 
 To change anything on the signer again (the SJ-09 swap on Oct 24), T1 has to be applied again.
+
+#### SJ-06 J8 incident — database logins time out on the 1 GiB instance; services restart in a loop, no trades (2026-10-23)
+
+**Found (02:08Z):** no trade at nonce 4 nearly two hours after the first buy was allowed. `checks/trading-status.sh`
+showed `larp-runtime` with 203 restarts, `larp-execution` with 209 and `larp-uploader` with 201; at 14:23Z all had 0.
+Its own read failed with `Unavailable: Database transaction failed; signing blocked`. `larp-evidence` (local SQLite)
+had 0 restarts. Fail-safe held: no signature or transaction; the wallet is unchanged (`chain-monitor.py`).
+
+**Read-only diagnosis (Yao ran each step):**
+- **`checks/db-diagnose.sh` (02:11Z).** All units ran cleanly from 14:00Z to **20:43:56Z**, then failed within 3 s of
+  each other (`RUNTIME_FAILED`, `EXECUTION_FAILED`, `UPLOADER_FAILED`). Since then each start runs about 70 s, and all
+  three fail in the same second. Between failures, a direct IAM login as `larp_execution` works: 9 of 79 connections
+  in use. Clock in sync, disk 19%, instance role `larp-dev-primary`, DNS and TCP 5432 fine.
+- **RDS (`larp-dev`, `db.t4g.micro`, PostgreSQL 14.24).** Status `available`; alarm `larp-dev-archive-healthy` in
+  ALARM since 01:59:46Z. RDS events: recovery started 23:44:21Z, then at 23:47:23Z "A database workload is causing
+  the system to run critically low on memory … set the value of shared_buffers from 23081 to 11295", then a restart
+  at 23:47:41Z.
+- **Free memory (5-minute minimum).** About 60 MB at 18:15Z, 76 MB at 20:15Z, 45 MB at 20:45Z, 31 MB at 23:15Z;
+  78–100 MB after the restart.
+- **Database log, 19:00Z–02:00Z (124 MB).** No backend was killed for lack of memory; the only signal line is the
+  archiver stopped at the 23:45Z restart. From **20:45Z**, IAM logins fail for every user (`larp_execution`,
+  `larp_runtime`, `larp_uploader`, `larp_signer`, `larp_archive`): 69 "canceling authentication due to timeout" and
+  55 "PAM authentication failed". Later there are 34 statement time-outs on `archive_outbox` (pending-row select and
+  insert). The log is huge because every IAM login writes a verbose trace from RDS's auth helper.
+- **CPU.** About 7% before the services started, about 23% after (14:00Z on). Credits fell from 146 to 0 at about
+  23:11Z, but CPU stayed at about 24% afterwards, so it is not being throttled. Credits were still about 37 when the
+  failures began. Average connections 0–1.6.
+
+**Cause (assessment):** memory on the 1 GiB instance, not network, clock, credentials, CPU throttling or connection
+count. `IamPostgresStore` makes a fresh IAM token and a new TLS connection for **every transaction**, so the services
+do thousands of IAM logins an hour. RDS checks each one in an in-instance helper. After about 7 hours, free memory
+fell low enough that the logins time out. Every service then fails together, and the restart storm keeps it there.
+
+**Proposed fix (needs Yao's spend decision):**
+1. Pause the primary database clients (`host/pause-primary-db-clients.sh`).
+2. Resize `larp-dev` to `db.t4g.small` (2 GiB) with `--apply-immediately`. Terraform's `apply_immediately = false`
+   would otherwise wait for the maintenance window. Then set `db_instance_class` in `development.tfvars` so a plan
+   shows no changes. The endpoint, CA and run are unchanged.
+3. Resume (`host/resume-primary-db-clients.sh`, fail-closed on restarts during a 90 s watch).
+
+The signer cannot be reached after T2. It keeps retrying with its 10 s restart and should recover by itself once
+logins work; its next signature is the evidence. **Before the final:** reuse connections instead of an IAM login per
+transaction, or size the database for this login rate (new item, owner TBD).
