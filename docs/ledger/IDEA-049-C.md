@@ -3076,6 +3076,15 @@ move. `DETERMINISTIC` mode reads the verified evidence instead. Change: the S1 p
 - **L4:** the full suite on the disposable PostgreSQL 14.24 shows no new failure or skip against `2e8a633`'s merge
   parent run (`ab4c034`: 2524 passed, 10 skipped, 1 environmental failure).
 
+**SJ-11-RH01-L1 results — L1–L4 PASS offline (2026-10-23, Claude):** test `c448c0e` failed first at `2e8a633` ("DID NOT
+RAISE ContractError"); guard `46a27ef`.
+- **L1 PASS:** a `MODEL` block is refused with "S1 rehearsal without hosted models needs limiter_mode DETERMINISTIC
+  (SJ-11-RH01-L1)"; the CLI refuses it and writes no file.
+- **L2 PASS:** the `DETERMINISTIC` fixture candidate's payload SHA-256 is still `cbdda7df…`.
+- **L3 PASS:** the equal-weight byte-reproduction tests pass unmodified.
+- **L4 PASS:** full suite at `46a27ef`: 2525 passed, 10 skipped, 1 failed (3931 subtests). Against `ab4c034` the only
+  difference is the new L1 test (pass); same skips; the failure is the same environmental `test_q10…` (`dotenv`).
+
 #### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
 
 **`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
