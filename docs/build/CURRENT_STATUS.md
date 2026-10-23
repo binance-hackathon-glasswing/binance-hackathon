@@ -21,8 +21,9 @@ flags stay false.
 installation.** Every local check passes, matching mirror RC4: 2470 passed / 7 skipped /
 3882 subtests; systemd 5/5; demo, Docker, Terraform 19/19 + 1/1; both host-bundle roles.
 RC3a cannot start the LV-01 signed run, so `f632bbcb…` can no longer be installed. RC4
-(PR246) and the build-only `signer.json` `cd0b38b8…` (open PR244) replace it. Remaining
-(SC-01-F1): Isaac confirms the build-only extension, and PR244 merges, before P4.
+(PR246) and the build-only `signer.json` `cd0b38b8…` (PR244) replace it. Both SC-01 findings
+are resolved: Isaac confirmed the build-only extension (SJ-06-A2, PR251) and PR244 merged
+(`4198b5f`, which also adds `prepare_rehearsal_db.py`, F2). RC4 was installed in SJ-06.
 [Report](SYSTEMS_CHECK_20261022.md). Local evidence only.
 
 Keith's PR226 inline review for #120 independently reproduces the DC-01 distributions
@@ -60,6 +61,10 @@ Installable candidate is `fa1b6c9` (RC3a): same runtime files, mirror run
 **RC4 (2026-10-22): `d03bbb1` (LV-01) supersedes it for the signed dev rehearsal.** Mirror run 39766825984
 passes all four jobs (2470 passed/7 skipped), and original artifact 12419733594 (bundle `270fe81f…`) is verified
 ([receipt](evidence/ab-rel-rc4-20261022.json)). Install that artifact, not SJ-06-A1's local bundle.
+**Installed and running on the dev wallet (2026-10-22 14:23Z, IDEA-049-C SJ-06):** run `larp-dev-rehearsal-20261022`,
+DB `larp_rehearsal1`, `signer.json` `cd0b38b8…`. Runtime, execution and signer were all started, signer access was torn
+down (IDEA-080 SA5) and the S3 packages were deleted. The first buy is allowed from 2026-10-23T00:00Z; J8 (the first
+logged approve/swap/ACK) is open.
 Remaining: funding, Isaac acceptance, LD16 bindings, LD17 installation.
 
 PR204 repair candidate: [PC-AUDIT01-IMPL01](PR204_REPAIRS_20261020.md) implements
