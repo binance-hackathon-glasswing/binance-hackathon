@@ -76,6 +76,7 @@ Anyone on the team can watch the rehearsal; neither tool changes anything.
   (git-ignored; change it with `LARP_MONITOR_DIR`) and shows one line per poll: holdings, equity excluding BNB,
   realized and unrealized PnL, gas and alerts. Token prices need the read-only Web3 key pair in `.env`
   (`LARP_ENV_FILE`). Without it, everything except prices still works.
+- **Dashboard page (IDEA-087):** `python -m tools.dashboard.build --monitor-dir deploy/activation/rehearsal-monitor --out deploy/activation/dashboard-site` turns the monitor's files into one page with equity, drawdown, holdings, swaps and alerts. Publishing it to GitHub Pages waits on a team decision; see [the guide](../../DASHBOARD.md).
 - **The agent's own records (primary; needs AWS SSM access, so Yao or Keegan's operator team):**
   `python3.12 -I ssm_run.py checks/trading-status.sh` from the copied folder, then read
   `results/trading-status-stdout.txt`. It shows rounds, decisions and rejection reasons, execution records,
