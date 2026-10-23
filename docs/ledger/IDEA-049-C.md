@@ -2520,3 +2520,53 @@ replace the equal-weight run with an S1 run so S1 is tested live before the Oct 
 - Does S1 at `d03bbb1` run in `dev` / `service` with the chosen assessor (an LV4-style build test)?
 - Do the equal-weight positions carried over fit S1's caps?
 - Does the gas left after day 1 cover S1's action budget and exit reserve?
+
+### SJ-10 — signed dev rehearsal run 2 on RC5 (connection reuse), preregistered 2026-10-23
+
+**Why:** run 1 (`larp-dev-rehearsal-20261022`, RC4) never traded. Its IAM logins (about 45,000 an hour, one per
+transaction; counted in the RDS log, 19:00Z–02:00Z) exhausted `db.t4g.micro` after about 7 hours (SJ-06 J8
+incident). Yao declined an AWS plan upgrade and chose the code fix, IDEA-085: PR257 merged at `a971685e` with Keegan's
+RV1 `eadd5d4`. A run cannot change build, so RC5 goes in as a new run.
+
+**Decisions (Yao, in chat, 2026-10-23):**
+- Run 2 is `larp-dev-rehearsal-20261023` on database `larp_rehearsal2`.
+- Same dev wallet and key, equal-weight profile `e95d5842…` (LD11-RH01; first buy already allowed, new risk until
+  Oct 25 00:00Z, flatten from Oct 26 00:00Z, signing until Oct 26 14:45Z), CAP-02 policy `3241abd3…`, router policy
+  `05759e90…`, untrusted mode and initial gas only.
+- Yao relays "Isaac approves". Recorded as **SJ-10-A1 (scope):** the approval covers a reassembled `signer.json` that
+  differs from run 1's installed `cd0b38b8…` only in `build_id` (RC5), `run_id` (`larp-dev-rehearsal-20261023`) and
+  `database_name` (`larp_rehearsal2`). M4 refuses any other difference. The exact hash M3 prints is posted for Isaac's
+  confirmation, as with SJ-06-A2. If Isaac's approval was meant more narrowly or more widely, this scope is corrected
+  before M4.
+
+**What carries over:**
+- RC4 → RC5 changes only `larp/runtime/database.py` and `larp/storage/postgres.py`.
+- The migrations, `roles.sql`, the LD10 probe tool and the assembly code are byte-identical.
+- Run 1 never traded, so the chain start has no stock positions: 96 USDT, about 0.0053 BNB, nonce 4. The same exact
+  2 USDT seed deficit is accepted (SJ-04-A1).
+- The wallet key stays on the signer; K1 is not repeated.
+
+**Run sheet:** [docs/build/ops/rehearsal-install-rc5-20261023/](../build/ops/rehearsal-install-rc5-20261023/README.md).
+New steps:
+- D1: create `larp_rehearsal2`;
+- R1p and R1s: retire run 1 on each host by disabling its units and moving its configs to history; the database and
+  key stay;
+- soak check K, `mac/soak-db-logins.sh`.
+
+**Pass criteria (each recorded with its `results/` output; hashes only):**
+- **J0 build:** RC5 mirror CI green on all four jobs for a commit containing `eadd5d4`; M1 verifies the artifact.
+- **J1 database:** D1 `SJ-10-D1 PASS`: 13 migrations equal the release, 21 tables, 0 runs, five roles connect.
+- **J2 candidate:** M3 `ASSEMBLED_REQUIRES_APPROVAL` and `COVERED`. M4's diff against `cd0b38b8…` is exactly
+  `build_id`, `database_name` and `run_id`, with the new values.
+- **J3 primary:** R1p, P2, P3 and P4 each end with their `*_DONE` line. P4 activates run 2 with every unit active and 0
+  restarts.
+- **J4 signer:** T1 applies only the IDEA-080 resources. R1s, P2s, S1, S1b and S2 each end with their `*_DONE` line.
+  S2 shows `wallet_matches: true` and `started: true`.
+- **J5 execution and teardown:** P5 `P5_DONE`; signer-status before T2; T2 destroys only the 8 resources; SA5 and SA9;
+  M9.
+- **J6 soak (IDEA-085 host check):** `soak-db-logins.sh` under 500 IAM logins an hour with no auth time-out or PAM
+  failure, at about 1 h and again at 8 h or later. No unit restarts in `checks/primary-status.sh` over the same period.
+- **J7 first trade (LD19/LD20):** the agent's own round produces an approve and a swap, with canonical receipts,
+  accounting and STORED ACK.
+
+Any refusal stops the sheet at that step and is recorded as it happened. Nothing is widened to get past it.
