@@ -1,5 +1,16 @@
 # Current shared build and remaining work
 
+SJ-03 (2026-10-22 SGT): Isaac's additional dev gas seed is successful/finalized,
+with2USDT net debit. [Receipt/current public snapshot](evidence/dev-gas-funding-20261022.json)
+confirms96USDT and0.005325625054330011BNB, covering the selected0.003072BNB signer
+exit floor. User dev-seeding step is complete; no further swap requested for
+that minimum. Remaining: operator actual hosted post-funding reconciliation/
+private current packet, exact input acceptance and intended signed run/config
+bindings, then offline signer assembly/local release check. No full92/92,
+installed config, native trace or final-wallet acceptance is inferred.
+Superseded (2026-10-23): the remaining steps were done in SJ-04 (capture and assembly), SJ-05
+(signer `check`) and SJ-06 (install); see the signer-candidate note above.
+
 Latest qualification (2026-10-21, AB-REL-RC2): PR231 is merged at canonical
 `b22207e`; all four mirror jobs PASS (2416 tests/3808 subtests, real-systemd5/5,
 Docker/demo/both-role host bundle). Original artifact12352993133 is hash-verified.

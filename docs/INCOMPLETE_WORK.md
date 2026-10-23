@@ -196,7 +196,7 @@ Suggested leads follow the team's functional roles (Agent/Model: Yao Zhu; Market
 |---|---|
 | GAP-41 | Secret access reported; credential/address validation remains. Funding expected Oct 10 SGT (IDEA-013 TU-01), receipt and usable BNB unverified |
 | GAP-42, GAP-39 | Answers to the remaining questions (sending them is a start-now step) |
-| GAP-49 | First dev funding note complete (FG-01 U1; BNB amount relayed from BscScan, not RPC-verified); remaining dev funding/opening capture pending, then final-wallet funding (Isaac; Yao captures) |
+| GAP-49 | Both dev seed actions verified (4USDT total); signer exit floor covered; the hosted opening capture is done (SJ-04, run starts from chain holdings). Remaining: final-wallet funding and notes before Oct 29 (Isaac, LD23); native proof scope stays explicit |
 | GAP-43 | External data on hold (IDEA-001 §11) until GAP-56 is decided |
 
 GAP-01..GAP-40 (design and spec) are not organiser-blocked unless they cite an open Q-item (for example GAP-14 → Q-04); take them in the suggested order below.

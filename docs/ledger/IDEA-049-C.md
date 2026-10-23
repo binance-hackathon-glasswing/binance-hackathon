@@ -1524,6 +1524,128 @@ and original artifact 12365166625 is verified with no local rebuild
 ([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
 `5bee006`, so the LD16 recheck binds `fa1b6c9`.
 
+## SJ-01 — signer-only handoff and PR235 input coverage (2026-10-22, prospective)
+
+Isaac requests the four signer.json preparation tasks/owners in PR133 and work
+on task1. Scope, S1–S5 criteria before verification, sources and access boundary:
+[Signer input coverage](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+The PR133 body and comment6321601733 now carry that narrow allocation;
+installation/key/first-round/final-adoption remain outside it. Isaac identifies
+branch `capture`; audit its actual archive dates/sizes/checksums without
+claiming a fresh reconciled primary packet. The selected PR235 profile and
+approved caps/policy are unchanged. No new runtime feature or policy is adopted.
+
+### SJ-01 results — archive verified; actual coverage still needs primary data
+
+PR133 task section/comment6321601733 published. At pushed777d80e, capture archive
+identity/CRC/14,268 payloads/14,257 response bodies PASS;3,855 BUY requests are
+40USDT, zero selected18.637420/20.10USDT size matches. Newest quote Oct19
+23:57:06.475Z, not current300s evidence. All artifacts are Web3Observation.v1;
+no actual reconciled holdings/nonce/allowance/reservation/PR235 child packet.
+Existing canonical focused collector/caps/assembly:47 tests/141 subtests PASS,
+zero skips, macOS/Python3.12.14; no network/DB/host/full-release claim.
+Generated private checksummed primary-only capture package and compiled payload;
+actual capture is NOT_RUN (no local AWS credentials; Chrome access denied).
+[Exact report, hashes, operator command and remaining owner input](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+No altered cap/profile/balance/timestamp, wallet key, funding, installation,
+actual signer assembly or signing. Task1 remains open pending the real packet.
+
+### SJ-01 concurrent PR236 review — fresh quote work and RC3 delivered
+
+PR236 mergedfa1b6c9 while this task was in progress. Normal merge retains both
+its full LD10-P04 history and the dated archive audit. The new packet is22/22
+request-bound quotes,91/92 covered checks; only INITIAL_BNB_EXIT_RESERVE fails.
+Independent public receipt consistency PASS: selected profile/document/CAP02/
+router/probe hashes, counts, every published child cash amount and gas arithmetic.
+Floor3072000000000000wei minus held2694498869362886wei leaves377501130637114wei
+(0.000377501130637114BNB). Actual private packet was not replayed; no new current-
+clock pass or full/personal owner acceptance is asserted. Private input review
+and a fresh reconciled post-funding rerun remain before assembly.
+RC3 source5bee006/original artifact12363800624 is recorded qualified by PR236;
+all runtime/config/test bytes here remain identical. Current account gets404
+for mirror metadata; no independent artifact download/CI rerun is claimed.
+[Review and current scope](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+Task2 qualification is delivered; no duplicate pre-funding primary capture is
+requested. Task1 reserve/review and LD16 private bindings/assembly remain;
+installation/key/first-round tasks stay outside the user's preparation scope.
+
+## SJ-02 — Isaac's remaining signer funding work (2026-10-22, prospective)
+
+Isaac asks the assistant to help with his remaining signer-preparation tasks.
+Before new reads: use only pushed production read_balances/Rpc code against
+the existing public BNB Chain primary and registered development public wallet;
+at most25 read-only calls,20s per call,no retries/redirects/credentials/signing.
+Require chain56, finalized block/hash recheck, all six token balances/decimals
+and latest/pending nonce; compare the actual BNB balance with selected PR235
+exit reserve and the separately recorded whole-rehearsal target. Preserve public
+observations privately and report source/block/time/hash. Do not infer actual
+host reservations, unused signing authority or first-trade eligibility from
+nonce/balance reads alone. No wallet transaction, key, funding, host change,
+new paid quote or official ai-seeds log. No new trading policy or gas cap.
+Checked source_page dedicated-wallet text, verbatim kit trading guide gas text,
+SKILL F120/G13/Q03 and the FG02 handoff. The operator eligibility confirmation
+and any wallet swap remain with their human owners; never mark them complete
+from this read-only preflight. If an additional funding hash exists, verify it
+separately rather than assume another swap is needed.
+
+### SJ-02 results — current gas gap confirmed; human wallet step remains
+
+At2026-10-21T17:14:47.127Z (Oct22 01:14:47SGT), chain56 finalized128976212
+rechecked;21read-only calls. BNB2694498869362886wei,98USDT/18decimals,zero stocks,
+finalized/latest/pending nonce2/2/2. Exit-floor gap377501130637114wei unchanged;
+whole-rehearsal gap6137501130637114wei is separate. [Snapshot/human step and
+review sources](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-02--current-pre-funding-check-and-isaacs-exact-next-action).
+No new hash supplied; no wallet/host/official log action or key access. Actual
+operator pre-first-trade/in-flight confirmation, eligible human seed, receipt
+note, hosted post-funding reconciliation/private inputs and current-clock caps
+review remain incomplete; no completion line is removed. Balance/nonce reads
+do not stand in for that host or signing-authority check. Public snapshot exact
+integer/identity/false-flag checks PASS; no unrelated test rerun or release claim.
+
+SJ-02-U1 user confirmation (2026-10-22SGT): no additional dev seed; separate
+live-challenge wallet must not be used yet. Restrict current work to dev;
+no live-wallet input/access/funding/registration/activation is authorized here.
+
+## SJ-03 — verify completed additional dev gas seed (2026-10-22, prospective)
+
+Isaac supplies new hash0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d,
+reports96USDT remaining and a MetaMask confirmed screenshot:2USDT sent,
+0.00264317BNB displayed received,Oct22 01:27SGT,BNB Chain/dev account.
+Before verification: at most40 read-only calls to existing public BNB Chain
+primary,20s/no retries/redirects/credentials. Use pushed production ChainEvidence
+receipt and read_balances: require chain56, exact tx/sender/hash, successful
+canonical finalized inclusion, immutable block recheck, exact USDT Transfer-log
+net debit, actual current finalized all-asset balances/nonces, six router
+allowances and selected-profile exit-reserve comparison. Distinguish receipt
+network gas from UI fee-token economics. Treat displayed native output as
+attributed rounded UI evidence; do not infer transaction-local native credit
+from whole-block or current balance differences. No tracing qualification,
+wallet signing/key access, funding action, AWS/host/ledger or live-wallet access.
+Record actual funding note and clear only the completed dev seed/snapshot
+slice; hosted post-funding reconciliation/private current quotes/owner and
+run/config bindings remain until actually supplied. No historical quote date,
+portfolio identity or 92-check result is rewritten to claim a new full pass.
+
+### SJ-03 results — new dev seed succeeds and exit-floor gap is closed
+
+New hashab19e680…57a168d: nonce3,chain56,success/canonical/finalized at
+2026-10-21T17:27:41Z. Exactly2USDT net debit by Transfer logs; both seeds4USDT.
+Snapshot17:31:04.217Z:96USDT,5325625054330011weiBNB,zero stocks,nonces4/4/4;
+selected3072000000000000wei floor covered with2253625054330011wei headroom.
+MetaMask displayed0.00264317BNB credit is rounded attributed UI evidence,not
+transaction-local native RPC proof. Receipt gas9732150000000wei verified.
+29 successful observations/30 attempts; quantity-to-word allowance decoder
+correction reused original reads; one additional allowance RPC refusal,not
+retried. No assistant signing/key/transaction/host/live-wallet action.
+[Receipt and precise remaining owner handoff](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-03-result--dev-gas-seed-verified-signer-exit-floor-covered).
+Dev seed/floor slice complete; GAP49 now retains actual operator opening,
+future final-wallet work outside this task and other unqualified native scope.
+Current hosted reconciliation/private quotes/owner acceptance/run/config
+bindings and actual assembly remain open; no old91/92 report is relabeled.
+No further seed requested for signer minimum. Original user live-wallet
+restriction remains. RC3a/PR238 adds qualification for fa1b6c9 as recorded in
+canonical; no runtime bytes changed by this documentation/evidence branch.
+
 ## LD10-P05 — post-funding readiness check (2026-10-22, prospective)
 
 A public BSC RPC read shows the wallet changed since P04: native 5,325,625,054,330,011
