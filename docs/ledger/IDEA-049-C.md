@@ -2372,3 +2372,14 @@ only the smallest classes, so `db.t4g.small` needs an account-plan upgrade first
 decision for Yao, not a configuration change. Nothing changed: `larp-dev` is still `db.t4g.micro`, and the clients
 stay paused. Next: the read-only `checks/db-sizes.sh` on the quiet database, to see whether the data has outgrown
 the 1 GiB instance, before choosing between the upgrade and staying on micro.
+
+**Size check (02:49Z, `checks/db-sizes.sh`, clients paused).** The whole database is **30 MB**. `events`: 169 rows,
+11.75 MB on disk, 27 MB of batch and receipt bytes (about 160 KB per event). `audit_events` 5 MB, `audit_chunks`
+2.7 MB, `archive_outbox` 0.7 MB, `rounds` 22 rows, `process_sessions` 60 rows. `shared_buffers` is now 88 MB (RDS's
+cut). `larp_execution` cannot read `archive_outbox` payloads (InsufficientPrivilege, expected).
+**Conclusion:** the data has not outgrown the instance; 30 MB fits in cache many times over. So a fresh, empty
+database (`larp_rehearsal2`) would not remove the cause, and the failure should be expected to recur after a similar
+run time. The pressure comes from the instance's memory under the per-transaction IAM login rate (RDS's
+in-instance auth helper and Postgres per-connection memory), and the restart storm makes it self-sustaining. This
+also makes SJ-06-DB01 a **final-contest risk**: a multi-day final on this database and code would likely fail the
+same way.
