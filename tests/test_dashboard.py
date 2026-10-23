@@ -336,6 +336,22 @@ class PublishTest(unittest.TestCase):
             p.publish_once(self.monitor, 'team/other', clone=self.clone, remote_url='git@github.com:%s.git' % main)
         self.assertFalse(self.clone.exists())
 
+    def test_d6_refuses_the_registered_repository_without_a_github_origin(self):
+        registered = p.registered_repository()
+        self.assertEqual(registered, 'binance-hackathon-glasswing/binance-hackathon')
+        real = p.git
+
+        def proxied_origin(*args, **kwargs):
+            if args[:3] == ('remote', 'get-url', 'origin') and kwargs.get('cwd') == p.ROOT:
+                return subprocess.CompletedProcess(args, 0, 'http://127.0.0.1:9/git/mirror/larp\n', '')
+            return real(*args, **kwargs)
+        with patch.object(p, 'git', proxied_origin):
+            for repo, url in ((registered, None), ('team/other', 'https://github.com/%s.git' % registered),
+                              ('team/other', 'git@github.com:%s' % registered.upper())):
+                with self.assertRaisesRegex(p.PublishError, 'private main repository'):
+                    p.publish_once(self.monitor, repo, clone=self.clone, remote_url=url)
+        self.assertFalse(self.clone.exists())
+
     def test_rejects_bad_names(self):
         for repo, branch in (('no-slash', 'gh-pages'), ('a/b c', 'gh-pages'), ('a/b', '../main'), ('a/b', '-x')):
             with self.assertRaises(p.PublishError):

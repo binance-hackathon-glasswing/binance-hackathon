@@ -46,10 +46,19 @@ def slug(url):
     return m.group(1).lower() if m else None
 
 
+def registered_repository():
+    """owner/name of the registered challenge repository (config/release/repository.v1.json), or None."""
+    try:
+        return slug(json.loads((ROOT / 'config/release/repository.v1.json').read_text())['repository'])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def refuse_main_repository(repo, remote_url):
     origin = git('remote', 'get-url', 'origin', cwd=ROOT, check=False).stdout.strip()
-    target = slug(remote_url) or repo.lower()
-    if slug(origin) and target == slug(origin):
+    # The registered repository is refused even when origin is not a github.com URL (an SSH alias, proxy or mirror).
+    protected = {slug(origin), registered_repository()} - {None}
+    if {slug(remote_url) or repo.lower(), repo.lower()} & protected:
         raise PublishError('Refusing to publish into %s: that is the private main repository (F-24)' % repo)
     local = Path(remote_url)
     if local.exists() and local.resolve() == ROOT:

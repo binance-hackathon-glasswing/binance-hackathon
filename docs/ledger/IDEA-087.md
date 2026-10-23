@@ -87,3 +87,16 @@ tests with no errors.
   its code. Hosted CI is unavailable (org billing).
 - Not done: no Pages repository exists, nothing was published, and no real monitor data was used (none is on this
   machine). Whether to publish, and where, is `INCOMPLETE_WORK.md` IDEA-087 PAGES01. Usage: `docs/build/DASHBOARD.md`.
+
+## Review RV1 (2026-10-23, assistant review of PR263)
+
+- **Finding (medium), fixed:** `refuse_main_repository` compared the target only with `origin`'s slug, and `slug()`
+  recognises only `github.com` URLs. On a checkout whose `origin` is an SSH host alias, a proxy or a mirror,
+  `slug(origin)` is `None` and the private registered repository was not refused. The existing test skipped itself in
+  exactly that case. Now the repository named in `config/release/repository.v1.json` is always refused, as well as
+  `origin`, for both `--repo` and `--remote-url`.
+- New test `test_d6_refuses_the_registered_repository_without_a_github_origin` fakes a proxy `origin`. It fails
+  without the fix and passes with it. `tests/test_dashboard.py` and `tests/test_contracts.py`: 31 passed, 0 skipped
+  (Linux, Python 3.12).
+- Checked, no change: the template writes data only through text and attributes (no `innerHTML`); the embedded JSON
+  escapes `<`, `>` and `&`; redaction is an allow-list; publishing pushes fast-forward only and stops on divergence.
