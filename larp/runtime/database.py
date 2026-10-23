@@ -1,15 +1,16 @@
 """Hosted database connections: a fresh short-lived RDS IAM token per connection over verified TLS.
 
 Hosted SQL roles are IAM-only (`deploy/postgres/roles.sql` grants `rds_iam`), so a static DSN cannot log in for
-longer than one token lifetime. No token or DSN is ever kept, logged or included in an error.
+longer than one token lifetime. The token is needed only to open a connection; an open connection is reused by later
+transactions until it reaches the store's maximum age (IDEA-085), so a service logs in a few times an hour instead of
+once per transaction. No token or DSN is ever kept, logged or included in an error.
 """
 
-from contextlib import contextmanager
 import hashlib
 from pathlib import Path
 
 from larp.contracts import ContractError
-from larp.storage.postgres import PostgresStore
+from larp.storage.postgres import SOCKET_OPTIONS, PostgresStore
 
 IAM_SETTINGS = ('database_host', 'database_user', 'database_name', 'database_ca_file', 'database_ca_sha256', 'region')
 
@@ -53,23 +54,25 @@ def rds_client(region: str):
 
 
 class IamPostgresStore(PostgresStore):
+    # One IAM login per pooled connection, not per transaction (IDEA-085, SJ-06 J8 incident): thousands of logins an
+    # hour exhausted a db.t4g.micro's memory and every service restart-looped.
+    REUSE_CONNECTIONS = True
+
     def __init__(self, config, rds):
-        # Snapshot verification owns per-process checkpoints even though this
-        # adapter generates its DSN afresh inside every transaction.
+        # Snapshot verification owns per-process checkpoints; the DSN is built afresh for every new connection.
         super().__init__(None)
         self.config, self.rds = config, rds
 
     def __repr__(self):
         return f"IamPostgresStore({self.config['database_user']!r})"
 
-    @contextmanager
-    def transaction(self):
+    def _connect(self):
+        import psycopg
         from psycopg.conninfo import make_conninfo
         c = self.config
-        # Generate a fresh short-lived IAM token for every database connection.
+        # A fresh short-lived IAM token for every new database connection; it is not kept after connecting.
         token = self.rds.generate_db_auth_token(DBHostname=c['database_host'], Port=5432,
                                                 DBUsername=c['database_user'], Region=c['region'])
-        dsn = make_conninfo(host=c['database_host'], port=5432, user=c['database_user'], password=token,
-                            dbname=c['database_name'], sslmode='verify-full', sslrootcert=c['database_ca_file'])
-        with PostgresStore(dsn).transaction() as db:
-            yield db
+        return psycopg.connect(make_conninfo(host=c['database_host'], port=5432, user=c['database_user'],
+                                             password=token, dbname=c['database_name'], sslmode='verify-full',
+                                             sslrootcert=c['database_ca_file']), **SOCKET_OPTIONS)
