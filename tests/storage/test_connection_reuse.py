@@ -7,7 +7,7 @@ import psycopg
 from psycopg.pq import TransactionStatus
 
 from larp.runtime.database import IamPostgresStore
-from larp.storage.postgres import IntegrityError, PostgresStore, Unavailable
+from larp.storage.postgres import SOCKET_OPTIONS, IntegrityError, PostgresStore, Unavailable
 from tests.support import DatabaseCase
 
 CONFIG = dict(database_host='synthetic.rds.invalid', database_user='larp_runtime', region='synthetic',
@@ -178,6 +178,20 @@ class PoolUnit(unittest.TestCase):
         self.assertEqual(store._idle, [])
 
 
+    def test_rv1_every_connection_bounds_a_dead_socket(self):
+        """IDEA-085 RV1: a pooled connection idles up to 600 s, so a vanished server must fail it in seconds."""
+        store, _ = iam_store()
+        with store.transaction():
+            pass
+        with PostgresStore('postgresql://synthetic/larp_test').transaction():
+            pass
+        self.assertEqual(len(self.connect.call_args_list), 2)
+        for call in self.connect.call_args_list:
+            self.assertEqual(call.kwargs, SOCKET_OPTIONS)
+        self.assertEqual((SOCKET_OPTIONS['connect_timeout'], SOCKET_OPTIONS['keepalives'],
+                          SOCKET_OPTIONS['tcp_user_timeout']), (5, 1, 30000))
+        store.close()
+
 class PooledStore(PostgresStore):
     REUSE_CONNECTIONS = True
 
@@ -190,6 +204,12 @@ class PoolDatabase(DatabaseCase):
 
     def pid(self, db):
         return db.execute('SELECT pg_backend_pid()').fetchone()[0]
+
+    def test_rv1_socket_options_reach_the_real_connection(self):
+        with self.pooled.transaction() as db:
+            params = db.info.get_parameters()
+            self.assertEqual((params['keepalives'], params['keepalives_idle'], params['keepalives_count'],
+                              params['tcp_user_timeout']), ('1', '30', '3', '30000'))
 
     def test_r3_reused_connection_keeps_no_transaction_settings(self):
         with self.pooled.transaction() as db:

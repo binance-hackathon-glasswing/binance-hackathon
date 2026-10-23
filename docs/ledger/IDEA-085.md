@@ -85,3 +85,38 @@ login rate in the database log, plus no auth time-out over a soak of at least 8 
 Verdict: **R1–R7 supported (offline).** Still open: mirror CI on all four jobs, Keegan's review and release
 qualification, and the host soak on `db.t4g.micro` (database-log login rate and no auth time-out over at least 8 h)
 through a new run.
+
+## RV1 — review fix: bound a dead pooled socket (2026-10-23, assistant review of PR257)
+
+**Finding.** Before IDEA-085 every transaction opened a fresh connection with `connect_timeout=5`. A pooled
+connection can now sit idle for up to `MAX_CONNECTION_AGE_S` (600 s). If the database host vanishes without closing
+the socket, the next statement waits for the kernel's TCP retransmission timeout, which is about 15 minutes on Linux
+defaults, or longer for an idle socket with no keepalive. The service then stalls instead of failing into the
+existing `Unavailable` path. The `_begin` retry only helps once the socket actually errors.
+
+**Fix.** `SOCKET_OPTIONS` in `larp/storage/postgres.py`, used by both `PostgresStore._connect` and
+`IamPostgresStore._connect`:
+- `connect_timeout=5`, unchanged;
+- `keepalives=1`, `keepalives_idle=30`, `keepalives_interval=10`, `keepalives_count=3`: a dead idle socket is detected
+  in about 60 s;
+- `tcp_user_timeout=30000`: unacknowledged sends fail after 30 s. A healthy server ACKs at the TCP level while a
+  query runs, so this cannot cut short a statement that `statement_timeout` (15 s) allows.
+
+**Pass criteria (written before the runs):**
+- RV1-1: both connect paths pass exactly `SOCKET_OPTIONS`, and the test fails if the keepalive and user-timeout
+  options are removed.
+- RV1-2: a real PostgreSQL connection reports `keepalives=1`, `keepalives_idle=30`, `keepalives_count=3` and
+  `tcp_user_timeout=30000`.
+- RV1-3: full offline suite with no failures beyond the environment-only ones on the same machine.
+
+**Not tested:** an actual dead peer, for example a dropped route mid-idle. Only option presence and propagation are
+verified. Kernel behaviour is standard libpq/Linux semantics, and the host soak remains the real check.
+
+**RV1 results** (2026-10-23, Linux, Python 3.12 test venv without the torch/transformers stack, disposable
+PostgreSQL 16):
+- **RV1-1 and RV1-2 PASS.** `tests/storage/test_connection_reuse.py` and `tests/runtime/test_review_boundaries.py`:
+  26 passed, 0 skipped. With the keepalive and user-timeout options removed, both new tests fail (red proof).
+- **RV1-3 PASS.** Full suite: 2482 passed, 11 skipped, 3 failed. The 3 failures are
+  `test_service_configs` ×2 and `test_fault_points` ×1. They fail identically on canonical `f56bcf6` in the same venv
+  ("Installed operations dependency differs from manifest lock"), because that venv omits locked packages. They are
+  environmental, not caused by this change.

@@ -55,6 +55,13 @@ def _rollback(connection):
         pass  # a broken connection is closed by _checkin instead of being reused
 
 
+# A pooled connection can sit idle for MAX_CONNECTION_AGE_S. If the server vanishes without closing the socket, a
+# statement on it would otherwise wait for the kernel's TCP timeouts (hours): keepalives detect a dead idle socket in
+# about a minute, and tcp_user_timeout fails unacknowledged sends after 30 s (IDEA-085 RV1).
+SOCKET_OPTIONS = dict(connect_timeout=5, keepalives=1, keepalives_idle=30, keepalives_interval=10,
+                      keepalives_count=3, tcp_user_timeout=30000)
+
+
 def integer(value, minimum=0):
     if type(value) is not int or value < minimum:
         raise ContractError('Invalid integer')
@@ -80,7 +87,7 @@ class PostgresStore:
 
     def _connect(self):
         import psycopg
-        return psycopg.connect(self._dsn, connect_timeout=5)
+        return psycopg.connect(self._dsn, **SOCKET_OPTIONS)
 
     def _fresh(self):
         return self._connect(), time.monotonic()

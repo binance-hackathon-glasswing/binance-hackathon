@@ -10,7 +10,7 @@ import hashlib
 from pathlib import Path
 
 from larp.contracts import ContractError
-from larp.storage.postgres import PostgresStore
+from larp.storage.postgres import SOCKET_OPTIONS, PostgresStore
 
 IAM_SETTINGS = ('database_host', 'database_user', 'database_name', 'database_ca_file', 'database_ca_sha256', 'region')
 
@@ -75,4 +75,4 @@ class IamPostgresStore(PostgresStore):
                                                 DBUsername=c['database_user'], Region=c['region'])
         return psycopg.connect(make_conninfo(host=c['database_host'], port=5432, user=c['database_user'],
                                              password=token, dbname=c['database_name'], sslmode='verify-full',
-                                             sslrootcert=c['database_ca_file']), connect_timeout=5)
+                                             sslrootcert=c['database_ca_file']), **SOCKET_OPTIONS)
