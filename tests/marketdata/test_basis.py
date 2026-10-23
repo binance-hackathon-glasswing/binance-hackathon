@@ -2,8 +2,8 @@
 2026-10-23 Web3 responses (docs/build/evidence/basis-sample-20261023/sample.json)."""
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime, timezone
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, localcontext
 from fractions import Fraction
 import hashlib
 import json
@@ -15,6 +15,7 @@ from larp.marketdata.basis import BasisVerifier
 from larp.marketdata.port import MarketPort, TOKENS
 from larp.marketdata.web3 import encoded
 from larp.research.fixtures import snapshot
+from larp.risk.planner import plan
 from larp.strategy.policy import decide
 from larp.strategy.schema import market_view
 
@@ -65,8 +66,12 @@ class BasisChecks(unittest.TestCase):
             'symbol': (dict(r, tokenSymbol='NVDA'), u, p),
             'chain': (dict(r, binanceChainId='1'), u, p),
             'underlying chain': (r, dict(u, binanceChainId='1'), p),
+            'price chain': (r, u, dict(p, binanceChainId='1')),
+            'missing price chain': (r, u, {k: v for k, v in p.items() if k != 'binanceChainId'}),
             'platform': (dict(r, platformId='ondo'), u, p),
             'underlying platform': (r, dict(u, platformId='ondo'), p),
+            'price platform': (r, u, dict(p, platformId='ondo')),
+            'missing price platform': (r, u, {k: v for k, v in p.items() if k != 'platformId'}),
             'asset type': (r, dict(u, assetType=2), p),
         }
         for name, (row, underlying, price) in cases.items():
@@ -206,6 +211,35 @@ class PortWiring(unittest.TestCase):
         self.assertEqual((rows['GOOGLB']['basis_verified'], rows['GOOGLB']['basis_checks']), (False, ['BV2_UNDERLYING']))
         self.assertTrue(all(rows[s]['basis_verified'] for s in TOKENS if s != 'GOOGLB'))
 
+    def test_rejected_ratio_or_mark_is_not_a_usable_portfolio_valuation(self):
+        for field, bad, reason in (
+                ('tokenToShareRatio', '1.04', 'BV4_MARK'),
+                ('tokenToShareRatio', '1.06', 'BV3_RATIO_RANGE'),
+                ('tokenToShareRatio', None, 'BV3_RATIO_MISSING'),
+                ('tokenPrice', '1', 'BV4_MARK')):
+            with self.subTest(field=field, bad=bad):
+                def mutate(rows):
+                    rows['MSFTB'][0][field] = bad
+                rows = self.rows(BasisVerifier(EXPECTED), mutate)
+                self.assertIn(reason, rows['MSFTB']['basis_checks'])
+                self.assertEqual(rows['MSFTB']['quality'], 'INVALID')
+                view = market_view(list(rows.values()), tuple(TOKENS),
+                                   datetime(2026, 10, 23, 4, 52, 30, tzinfo=timezone.utc),
+                                   {'quote_age_seconds': 60})
+                self.assertIsNone(view['MSFTB'])
+                self.assertTrue(all(view[s] is not None for s in TOKENS if s != 'MSFTB'))
+
+    def test_rejected_ratio_step_cannot_change_a_usable_mark(self):
+        verifier = BasisVerifier(EXPECTED)
+        self.rows(verifier)
+        def jump(rows):
+            row = rows['MSFTB'][0]
+            ratio = Decimal(row['tokenToShareRatio']) * Decimal('1.02')
+            row.update(tokenToShareRatio=str(ratio), tokenPrice=str(Decimal(row['referencePrice']) * ratio))
+        rows = self.rows(verifier, jump)
+        self.assertEqual(rows['MSFTB']['basis_checks'], ['BV3_RATIO_STEP'])
+        self.assertEqual(rows['MSFTB']['quality'], 'INVALID')
+
 
 class PolicyEndToEnd(unittest.TestCase):
     """P3: the EQUAL_WEIGHT policy, fed the basis outcome the real port produces, enters instead of holding."""
@@ -232,6 +266,83 @@ class PolicyEndToEnd(unittest.TestCase):
         self.assertTrue(targets)
         self.assertTrue(all((t.kind, t.reason) == (TargetKind.KEEP_QUANTITY, 'MISSING_MARKET_OR_BASIS')
                             for t in targets.values()))
+
+
+class PlannerEndToEnd(unittest.TestCase):
+    """P3: actual MarketPort rows and the pinned rehearsal profile reach the real planner.
+
+    Cost and request-sized quotes below are explicit offline stubs, using recorded implied quote prices. They do
+    not qualify exact gas, route proof, a hosted feed, S1, or an executable production quote.
+    """
+    NOW = datetime(2026, 10, 23, 4, 52, 10, tzinfo=timezone.utc)
+
+    def sample_snapshot(self, verifier):
+        profile = json.loads((ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/'
+                              'rehearsal-deterministic.json').read_text())
+        def cost(symbol):
+            return dict(symbol=symbol, origin='WEB3_OPEN_API', content_hash='c' * 64,
+                        observed_at='2026-10-23T04:52:00Z', available_at='2026-10-23T04:52:00Z',
+                        measured_roundtrip_bps=20)
+        rows = MarketPort(SampleClient(), '0x' + '1' * 40, basis_verifier=verifier, cost_observation=cost)(0)
+        s = snapshot(now=self.NOW)
+        c = s.context.read()
+        c.update(profile=profile, markets=rows)
+        c['health']['new_spending_ok'] = True
+        ledger = c['portfolio']
+        ledger.update(mode='LIVE', cash_units=96_000_000, bnb_units=5325625054330011,
+                      bnb_decimals=18, bnb_price_units=profile['quote_cost_summary']['bnb_price_units'],
+                      opening_equity_units=99_845_905,
+                      positions={s: dict(units=0, decimals=18, cost_basis_units=0) for s in TOKENS})
+        ledger['risk'].update(day_anchor_units=99_845_905, peak_units=99_845_905)
+        c['red_flag_predicates'] = json.loads((ROOT / 'config/strategy/red-flag-predicates.v1.json').read_text())
+        return replace(s, universe=tuple(TOKENS), context=Document.from_dict(c),
+                       policy_profile_hash=Document.from_dict(profile).digest('StrategyProfile.v1'),
+                       policy_state=replace(s.policy_state, policy_id=profile['policy_id']))
+
+    def test_p3_real_rows_reach_exact_request_buy_without_bypassing_planner_caps(self):
+        s = self.sample_snapshot(BasisVerifier(EXPECTED))
+        proposal = decide(s, s.policy_state)
+        first = plan(s, proposal).read()
+        self.assertTrue(first['quote_requests'], first)
+        c = s.context.read()
+        quotes = json.loads((ROOT / 'docs/build/evidence/basis-sample-20261023/sample.json').read_text())
+        prices = {r['symbol']: Decimal(r['buy']) for r in quotes['simultaneous_quotes']['rows']}
+        for request in first['quote_requests']:
+            self.assertEqual(request['side'], 'BUY')
+            m = next(m for m in c['markets'] if m['symbol'] == request['symbol'])
+            pay = request['pay_units']
+            with localcontext() as context:
+                context.prec = 60
+                units = int(Decimal(pay) * 10**18 / (prices[m['symbol']] * 1000000))
+            m['quotes'] = [dict(quote_id='offline-sample-' + m['symbol'], origin='WEB3_OPEN_API',
+                amount_kind='EXACT_IN', side='BUY', pay_asset='USDT', pay_units=pay, cash_units=pay,
+                token_units=units, min_receive_units=(units * (10000 - c['profile']['slippage_bps']) + 9999) // 10000,
+                fee_units=0, gas_bnb_units=c['profile']['gas_sizing_budget_units'], route_valid=True,
+                slippage_bps=c['profile']['slippage_bps'], impact_bps=1,
+                observed_at=self.NOW.isoformat(), available_at=self.NOW.isoformat(),
+                expires_at=(self.NOW + timedelta(seconds=30)).isoformat())]
+        s = replace(s, context=Document.from_dict(c))
+        result = plan(s, proposal).read()
+        self.assertTrue(result['intents'], result)
+        self.assertEqual(result['intents'][0]['side'], 'BUY')
+        self.assertLessEqual(result['intents'][0]['cash_units'], c['profile']['per_trade_cap_units'])
+        for reason in ('MISSING_MARKET_OR_BASIS', 'ENTRY_COST_CAP', 'ENTRY_IMPACT_CAP', 'CASH_OR_EXIT_RESERVE'):
+            self.assertFalse(any(r['reason'] == reason for r in result['rejections']), result)
+        # The independent cost limit must still stop the same request if its fee alone exceeds 50 bp.
+        for m in c['markets']:
+            for q in m['quotes']:
+                q['fee_units'] = q['cash_units'] // 100
+        expensive = plan(replace(s, context=Document.from_dict(c)), proposal).read()
+        self.assertFalse(expensive['intents'])
+        self.assertIn('ENTRY_COST_CAP', {r['reason'] for r in expensive['rejections']})
+
+    def test_p3_without_verifier_there_is_no_buy_request(self):
+        s = self.sample_snapshot(None)
+        proposal = decide(s, s.policy_state)
+        self.assertTrue(all(t.reason == 'MISSING_MARKET_OR_BASIS' for t in proposal.targets))
+        result = plan(s, proposal).read()
+        self.assertFalse(result['intents'])
+        self.assertFalse(result['quote_requests'])
 
 
 if __name__ == '__main__':

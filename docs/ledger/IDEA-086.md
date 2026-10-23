@@ -189,3 +189,27 @@ action; the recorded sample is the only live data.
 
 Verdict: **P1–P5 supported (offline).** Still open: review and merge, an RC6 build, and the host check in run 3
 (SJ-11).
+
+
+## 9. PR262-RV01 — independent merge review (Isaac/Codex, 2026-10-23 SGT)
+
+Review base: canonical `8eb16e5`; PR head `a525430`. Initial focused macOS/Python3.12.14 run:
+477 passed /9 PostgreSQL-dependent skips /225 subtests. No host, wallet or model-provider call.
+
+Findings and pass criteria, recorded before repair validation:
+- **R1 (BV1):** the price response's chain/platform are unchecked. Mutating or removing either must refuse BV1.
+- **R2 (BV3/BV4 valuation):** refused ratios/marks still produce `quality=VALID` rows, so the risk planner can value
+  holdings with a rejected ratio or fall back to a per-share mark. With a verifier, any failed basis check must keep
+  its diagnostic reason but make that row unusable for valuation. Existing partial-valuation handling must block new
+  risk and defer loss stops for unvalued holdings. No-verifier fixtures keep their historical behavior.
+- **R3 (P3 evidence):** the original P3 copies only verdict booleans into a synthetic policy fixture; it does not
+  satisfy §5's planner criterion. Feed real port rows and the pinned EQUAL_WEIGHT rehearsal profile through policy
+  and planner, with explicitly stubbed costs/request-bound quotes. Require a BUY, no basis/cost/impact/reserve
+  rejection; no-verifier produces no BUY; excessive fees still fail the independent cost gate. This remains offline
+  evidence, and does not qualify S1 or actual route/gas/source/host acceptance.
+- **R4 (records):** update the stale proposal status and SJ-10-BASIS01 backlog to distinguish repository repairs
+  from final policy/release/run-3 acceptance. GAP-22 remains open. Review does not adopt a final share/listing identity.
+
+Validation planned: focused regressions, then full suite on disposable PostgreSQL14.24; report actual environment,
+skips and failures. Final policy adoption still needs Keith/Isaac's §6 review; run-3 S1/profile/cap/host gates remain
+with their existing owners in IDEA-049-C SJ-11. The in-process ratio ratchet intentionally resets on restart (§3).
