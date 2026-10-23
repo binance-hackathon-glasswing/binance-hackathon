@@ -2631,3 +2631,22 @@ exact match. M3 is re-run, and a fresh capture is needed anyway, because quotes 
 
 - 2026-10-23 correction (Claude): in SJ-10 "What carries over", "The same exact 2 USDT seed deficit is accepted
   (SJ-04-A1)" is wrong. Run 2 starts from an exact match with no deficit (above).
+
+#### SJ-10 J2 — PASS: run-2 signer candidate `1a4cda6f…` (M3 re-run, 2026-10-23 04:35Z, Yao)
+
+Fresh read-only capture on primary: SSM `415c5500…`, 04:35:30Z, probe hash `692787e4…`. Holdings are an exact `MATCH`
+with run 1's ledger: 96 USDT, 0.005325625054330011 BNB, every stock 0, nonce 4/4. The assembly ran with no declared
+USDT deficit. Report, stamp `20261023T043528Z`: `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`, no missing
+quote coverage, blockers only `OWNER_REVIEW_REQUIRED`, reviewed at 04:36:04Z. Install, signing and Gate B flags are all
+false.
+
+**Candidate** `signer.json` sha256 `1a4cda6fcbad7066ddd8c9375115a5156320b629f6c81d3c0aa3a64390c2b1b1`. A
+field-by-field diff against run 1's installed `cd0b38b8…` changes exactly three fields:
+- `build_id`: `d03bbb1…` → `d53d1b7aa8f18790f0bdde73cfdcdbed95555043` (RC5);
+- `database_name`: `larp_rehearsal1` → `larp_rehearsal2`;
+- `run_id`: `larp-dev-rehearsal-20261022` → `larp-dev-rehearsal-20261023`.
+
+`signing_policy` (the CAP-02 caps, allowed tokens and spender, fee cap) is byte-identical, as are the router policy
+pair, the wallet, the CA and every other field. This is inside SJ-10-A1's scope. **Pending:** Isaac's confirmation of
+this exact hash (relayed or on PR133), which gates P4, as SJ-06-A2 did. R1p, P2, M4 and P3 do not register anything,
+so they may go first.
