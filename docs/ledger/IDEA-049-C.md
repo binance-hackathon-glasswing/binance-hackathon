@@ -2738,3 +2738,18 @@ Next: the signer's SSM registration (a reboot if needed, as in SJ-06 J5), then R
   `S1B_DONE`.
 
 Next: S2 (start the signer), P5 (start execution), C1 (signer-status before T2).
+
+#### SJ-10 J4 and J5 (part) — S2, P5 and C1 PASS: run 2 signing and executing on RC5 (2026-10-23 05:10Z, Yao)
+
+- **S2** (signer, 05:10:06Z): key file `600 root:root`, 1 link. `key_loader: PASS`, `WALLET_PRIVATE_KEY`,
+  **`wallet_matches: true`**. `larp-signer` is enabled and active with 0 restarts. Start line `"started": true`,
+  `"signing_enabled": true`, UNTRUSTED `05759e90…`, DEV-23, CAP-02. `S2_DONE`.
+- **P5** (primary, 05:10:30Z): execution `check` `configuration_valid`. `larp-execution` is enabled and active with 0
+  restarts, `release_verified: true`, no exit 2/3/4. `P5_DONE`.
+- **C1** signer-status (05:10:53Z, before T2): active with 0 restarts. The 30-minute journal holds three start lines:
+  run 1's signer after the reboots, before R1s retired it, then run 2's. There is no refusal after the last one. Key
+  `600 root:root`.
+
+**Run 2 is fully running: runtime, execution and signer on RC5 `d53d1b7`, database `larp_rehearsal2`.** The chain
+monitor at 05:10:34Z still shows nonce 4 and 96 USDT, seconds after P5. Next: T2, SA5/SA9, M9 on
+`releases/rehearsal-20261023t044123z/`, the K soak at about 06:10Z, and J7, the first approve/swap.
