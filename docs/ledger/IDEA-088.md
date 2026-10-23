@@ -204,8 +204,8 @@ The tool:
 
 ## Amendment A2 — the live check reports openState and assumes no trading hours (pre-registered 2026-10-24, before the A2 change)
 
-Requested through the coordinating session. IDEA-088 S2 (PR269, decision only) plans a signed end-to-end dev-wallet
-test outside NYSE hours, which F-119 allows; the runtime's `openState` guard stays. Its S2-6 step needs this check to
+Requested through the coordinating session. IDEA-089 S2 (PR269, decision only; first numbered IDEA-088 S2 there, renumbered 2026-10-24) plans a signed end-to-end dev-wallet
+test outside NYSE hours, which F-119 allows; the runtime's `openState` guard stays. Its IDEA-089 S2-6 step needs this check to
 return `VERIFIED_EXECUTABLE` for all five names at about 19 USDT shortly before install.
 
 **Change.** The tool reads token and underlying `openState` from the same market observation path before quoting.
