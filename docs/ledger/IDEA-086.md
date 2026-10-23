@@ -161,3 +161,31 @@ Once approved, the build follows §4 and §5 test-first, and installs through th
 `underlying_id` pins are NVDA, GOOGL, TSLA, MSFT and SKHY. Keith's and Isaac's §6 review still decides the final.
 Anything they change goes into a later build. The build follows §4 test-first against P1–P5, then a new build (RC6) and
 run 3 through the SJ-10 run sheet.
+
+## 8. Results (offline, 2026-10-23; branch `claude/basis-verifier-20261023`, code commit `d151e210`)
+
+Local Mac, Python 3.12 with `deploy/requirements-test.lock`, disposable PostgreSQL 14.24. No host, AWS or wallet
+action; the recorded sample is the only live data.
+
+- **P1 PASS:** every BV1–BV4 failing case gives `basis_verified: false` with its reason code, and passing cases pass.
+  Cases: contract, platform, chain and asset type; pinned ticker or missing pin; ratio outside [1, 1.05], missing or
+  non-decimal; ratio decreased or stepped above +1% (a refused observation never moves the ratchet); mark off by more
+  than 1 bp; price endpoint off by more than 25 bp; missing or zero prices. Bad pins refuse construction.
+- **P2 PASS:** the five real 2026-10-23 rows give `basis_verified: true` with no reasons, both directly and through
+  `MarketPort`, and `market_view` keeps all five. The pins equal the observed tickers (NVDA, GOOGL, SKHY, TSLA, MSFT).
+  A changed ticker on one name fails only that name (`BV2_UNDERLYING`).
+- **P3 PASS:** with the verifier, the EQUAL_WEIGHT policy plans `TARGET_WEIGHT` 1/5 entries and no
+  `MISSING_MARKET_OR_BASIS`. Without it, every name is `KEEP_QUANTITY` / `MISSING_MARKET_OR_BASIS`, as in run 2. This
+  composes the real port's verdicts with the policy fixture. A planner run with the S1 profile and the host's cost
+  measurement is left to run 3 (SJ-11).
+- **P4 PASS:** `price_units` = per-share `rwa/price` × `tokenToShareRatio`; MSFTB 1.0013139648. With no verifier, the
+  valuation and the `NO_VERIFIER` reason are unchanged.
+- **Wiring:** a driver test shows `build_driver` gives the hosted `MarketPort` a `BasisVerifier` with the run's pins,
+  for shadow and service. With the `service.py` change reverted it fails (2 failed).
+- **P5 PASS:** full suite **2502 passed, 10 skipped, 3921 subtests, 0 failed**. The 10 skips are identical to the
+  base run's: bubblewrap 3, systemd runner 5, external market artifact 1, private fixture 1. The base for this branch is
+  canonical `8eb16e5`; I did not run it separately here. The earlier base `f56bcf6` gave 2468/10, and canonical added
+  PR256 and others since.
+
+Verdict: **P1–P5 supported (offline).** Still open: review and merge, an RC6 build, and the host check in run 3
+(SJ-11).
