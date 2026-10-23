@@ -108,8 +108,13 @@ class MarketPort:
             raise Unavailable('price token identity mismatch')
         stamp = min(metadata['available_at'], r['available_at'], prices['available_at'])
         available = max(metadata['available_at'], r['available_at'], prices['available_at'])
-        basis = bool(self.basis_verifier and self.basis_verifier(row, underlying) is True)
-        price = int(number(price_row['tokenPrice']) * 1000000)
+        # IDEA-086: BV1-BV4 decide basis_verified; with no verifier nothing is verified (offline, Gate A, fixtures).
+        basis, checks, ratio = (self.basis_verifier(symbol, row, underlying, price_row) if self.basis_verifier
+                                else (False, ['NO_VERIFIER'], None))
+        with localcontext() as context:
+            context.prec = 60
+            # rwa/price quotes one share; a token is worth tokenToShareRatio shares (BV5, IDEA-086 F2).
+            price = int(number(price_row['tokenPrice']) * (ratio if ratio is not None else 1) * 1000000)
         if price <= 0 or not row.get('underlyingTicker'):
             raise Unavailable('missing positive price/underlying identity')
         result = dict(schema='MarketObservation.v1', origin='WEB3_OPEN_API', symbol=symbol, underlying_id=row['underlyingTicker'],
@@ -119,8 +124,11 @@ class MarketPort:
                     observed_at=stamp, available_at=available, close_at=stamp,
                     token_open=row.get('statusInfo', {}).get('openState') is True,
                     underlying_open=underlying.get('statusInfo', {}).get('openState') is True,
-                    basis_verified=basis, quotes=[], observation_hashes=[metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']],
+                    basis_verified=basis is True, basis_checks=list(checks), quotes=[],
+                    observation_hashes=[metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']],
                     token_status=row.get('statusInfo'), underlying_status=underlying.get('statusInfo'))
+        if ratio is not None:
+            result['token_to_share_ratio'] = str(ratio)
         result.update(measured_roundtrip_bps=None, cost_status='UNAVAILABLE')
         try:
             cost = (self.cost_observation(symbol) if self.cost_observation is not None

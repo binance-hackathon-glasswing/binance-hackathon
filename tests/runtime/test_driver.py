@@ -351,6 +351,16 @@ class Composition(unittest.TestCase):
         self.assertIsInstance(shadow.execution, ShadowExecution)
         self.assertIsNone(shadow.day_roll)
 
+    def test_hosted_market_port_gets_the_basis_check_with_the_pinned_tickers(self):
+        """IDEA-086 (SJ-10-BASIS01): without a verifier every observation is unverified and no entry is planned."""
+        from larp.marketdata.basis import BasisVerifier
+        for execution in ('shadow', 'service'):
+            extra = dict(expiry_grace_ms=5000, day_roll_window_ms=900_000) if execution == 'service' else {}
+            with self.subTest(execution=execution):
+                market = build_driver(self.config(execution=execution, **extra), Store(), self.secrets).ports['market']
+                self.assertIsInstance(market.basis_verifier, BasisVerifier)
+                self.assertEqual(market.basis_verifier.expected, {'NVDAB': 'NVDA'})
+
     def test_e9_execution_mode_must_be_named_and_known(self):
         for change in (dict(execution=None), dict(execution='sign'), dict(signing=False),
                        dict(execution='service'),  # no expiry grace
