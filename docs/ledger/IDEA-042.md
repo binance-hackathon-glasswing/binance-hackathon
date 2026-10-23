@@ -666,3 +666,41 @@ register edit (V1–V5):
 - **V5.** Release-register tests pass; the full-suite result is in the PR. Final activation is still refused while
   any DRAFT row remains (9 now). The final register needs the S1 profile (#120), model adoption (LD11/LD22), the
   LD05/LD06 decisions and the actual rehearsal window before final activation (LD24).
+
+## GAP62-F02 — record the SKHYB foreign-filer coverage limit (#39, 2026-10-23; prospective)
+
+Keegan's session, under his delegation to address issues that are already solved. IDEA-084 PF-03 decided to keep
+all five names and to **accept SKHYB's asymmetric foreign-filer adverse-event coverage**. PF-03 asks for that to be
+recorded as a deviation and the manifested scope checked before #39 closes. The register (`deviations.v1.json`)
+has no such row: DEV-01..DEV-24 contain no SKHYB, foreign-filer or 6-K entry.
+
+Pass criteria, written before the change:
+- V1. Add one row, DEV-25 "Adverse-event coverage", status FINAL (decided by PF-03, 2026-10-21). `declared` quotes
+  the submitted proposal verbatim (`docs/proposal/proposal_answers.md`: SEC EDGAR 8-K, 10-Q and 10-K filings). The
+  v1.0 behaviour matches the shipped config.
+- V2. Manifested scope still matches the decision: `red_flags.v1.json` keeps Class 1/2 to domestic 8-K filers and
+  states the 6-K gap as `scope_limit`; no foreign-filer predicate exists; other statements stay SHADOW; the strategy
+  universe keeps all five names.
+- V3. `tools/render_deviations.py --write` re-renders plan.md, `--check` passes, and the JSON keeps its formatting
+  (indent 1, ASCII). Release-register, Gate A and red-flag tests pass.
+- V4. The DRAFT count is unchanged (9). No other row, config, profile or code changes.
+
+### GAP62-F02 results (2026-10-23) — PASS
+
+- **V1.** DEV-25 "Adverse-event coverage" added, FINAL, decided 2026-10-21 (PF-03). `declared` is the proposal's
+  verbatim SEC EDGAR line. The v1.0 behaviour names the three domestic 8-K exits (Item 4.02 Class 1; Items 1.05 and
+  2.06 Class 2), states that none can fire for SKHYB, and keeps Class 3 WATCH as SHADOW for every name.
+- **V2.** The manifested scope matches the decision, unchanged:
+  - `red_flags.v1.json` scopes the three Class 1/2 predicates to `filer_classes: ["DOMESTIC"]` and states the 6-K
+    gap in `scope_limit`;
+  - the only predicate covering `FOREIGN_PRIVATE` is RF3-STATEMENTS, Class 3 WATCH, with directive SHADOW;
+  - no foreign-filer predicate exists, and the universe keeps all five names.
+- **V3.** `render_deviations.py --write` re-rendered plan.md (one row); `--check` passes. The JSON diff is the new
+  row plus `updated` 2026-10-23 (indent 1, ASCII). Every test that reads the register, red flags or release
+  manifest, plus the Gate A check: 195 passed, 175 subtests (local PostgreSQL 16). A first run hit 53 connection
+  errors when the container's local PostgreSQL stopped; after a restart all passed.
+- **V4.** 16 FINAL, 9 DRAFT (unchanged DRAFT set). No other row, config, profile or code changed. This changes a
+  manifested file, so it belongs in the next release candidate (RC6 or later); installed builds are unaffected.
+
+#39 can close: acceptance 1 (decision, PF-03) and acceptance 3 (manifested scope) are met, acceptance 2 does not
+apply, and PF-03's recording step is done.
