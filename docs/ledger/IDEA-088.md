@@ -201,3 +201,24 @@ The tool:
 |---|---|---|
 | QV10 | PASS (offline) | Commit `e8e76460`, `tests/execution/test_quote_check.py`, 8 tests. Red first: with the tool module moved aside, collection failed with an import error. The tests and the tool were then committed together. Results: (1) the recorded TSLAB BUY (40 USDT, profile cap/reserve scaled to it) and the default SELL of exactly its output both exit 0 `VERIFIED_EXECUTABLE`, with matching economics and `quote_at_cap` accepted; (2) inner-amount tampering, `minReceiveAmount` mismatch and another facet each exit 2 with the port's exact reason; (3) no key, RPC URL, wallet or calldata appears in the output, and a credential reflected in a refusal exits 4 without printing it; (4) a profile or policy hash mismatch exits 4, and the shipped pins are `6bcf1dfb…` / `05759e90…` with dev wallet `0x62b8…d479`; (5) the client refuses the approve, gas-limit and broadcast endpoints, and an artifact directory inside the checkout is refused. Full suite (PG 14.24): **2583 passed, 10 skipped, 0 failed** (log SHA-256 `90a7d8ad…`), with the same 10 environmental skips. |
 | QV11 | NOT RUN | Live check owned by Yao during the US session; the command and pass shape are in the PR description. |
+
+## Amendment A2 — the live check reports openState and assumes no trading hours (pre-registered 2026-10-24, before the A2 change)
+
+Requested through the coordinating session. IDEA-088 S2 (PR269, decision only) plans a signed end-to-end dev-wallet
+test outside NYSE hours, which F-119 allows; the runtime's `openState` guard stays. Its S2-6 step needs this check to
+return `VERIFIED_EXECUTABLE` for all five names at about 19 USDT shortly before install.
+
+**Change.** The tool reads token and underlying `openState` from the same market observation path before quoting.
+It prints `token_open` and `underlying_open` on every outcome: verified, refused, or a quote error after the market
+read. It never refuses or passes because of the clock or the open state. The verdict stays the verifier's.
+`openState` is reported next to the verdict; the planner, not this tool, enforces it.
+
+**Pass criteria.**
+- **QV12 (offline):** with token and/or underlying `openState` false, a valid recorded quote still exits 0
+  `VERIFIED_EXECUTABLE` and reports the false states. A refused quote (exit 2) reports both states. No code path reads
+  the clock to decide the verdict.
+- **QV11 is restated.** Before: all five names at about 19 USDT while the US session is open. Now: all five names at
+  about 19 USDT return `VERIFIED_EXECUTABLE` with `quote_at_cap` accepted, at the time the run needs it, with both
+  `openState` values recorded per name.
+  - An S2-style off-hours run counts toward QV11 only for the verifier.
+  - Whether a closed `openState` blocks the trade is the planner's guard. That guard is out of scope here.
