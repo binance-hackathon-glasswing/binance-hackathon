@@ -2650,3 +2650,18 @@ field-by-field diff against run 1's installed `cd0b38b8…` changes exactly thre
 pair, the wallet, the CA and every other field. This is inside SJ-10-A1's scope. **Pending:** Isaac's confirmation of
 this exact hash (relayed or on PR133), which gates P4, as SJ-06-A2 did. R1p, P2, M4 and P3 do not register anything,
 so they may go first.
+
+#### SJ-10 R1p and P2 — PASS on primary (2026-10-23 04:38Z, Yao)
+
+- **R1p** (SSM, 04:38:33Z, exit 0): `larp-execution`, `larp-runtime`, `larp-uploader`, `larp-archive.timer` and
+  `larp-evidence` are inactive and disabled. `larp-archive.service` shows `failed`, from its last outage run, and is
+  disabled. Run 1's 11 configs moved to `/etc/larp-history/d03bbb1-larp-dev-rehearsal-20261022/`, including:
+  - `release.json` `1db4571d…`, `runtime.json` `a89a7088…`, `execution.json` `96435836…`;
+  - `strategy-profile.json` `e95d5842…`, router policy `05759e90…`.
+
+  `/etc/larp` keeps only `rds-ca.pem` and `role-primary`. `R1P_DONE`.
+- **P2** (04:38:41Z, exit 0): `provision.sh` installed build `d53d1b7aa8f18790f0bdde73cfdcdbed95555043` with manifest
+  `bc3a9838…`, matching the local J0′ build, and `rds-ca` `d7389074…`. It enabled the units, then P2 disabled
+  `larp-execution`; nothing was started. `P2_DONE`.
+
+Next: M4, then P3. P4 waits for Isaac's confirmation of `1a4cda6f…`.
