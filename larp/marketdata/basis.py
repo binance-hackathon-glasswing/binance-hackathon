@@ -51,7 +51,9 @@ class BasisVerifier:
         if (token is None or not (same(row) and same(underlying) and same(price_row))
                 or row.get('tokenSymbol') != symbol
                 or str(row.get('binanceChainId')) != '56' or str(underlying.get('binanceChainId', '56')) != '56'
+                or str((price_row or {}).get('binanceChainId')) != '56'
                 or row.get('platformId') != 'bstock' or underlying.get('platformId') != 'bstock'
+                or (price_row or {}).get('platformId') != 'bstock'
                 or row.get('assetType') is None or row.get('assetType') != underlying.get('assetType')):
             reasons.append('BV1_IDENTITY')
         if self.expected.get(symbol) is None or row.get('underlyingTicker') != self.expected[symbol]:

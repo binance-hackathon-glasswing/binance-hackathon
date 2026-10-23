@@ -120,7 +120,10 @@ class MarketPort:
         result = dict(schema='MarketObservation.v1', origin='WEB3_OPEN_API', symbol=symbol, underlying_id=row['underlyingTicker'],
                     token_id=TOKENS[symbol], decimals=integer(row['decimals']), currency='USDT', money_scale=1000000,
                     price_units=price, source_id='BINANCE_WEB3', content_hash=hashlib.sha256(encoded(
-                        [metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']])).hexdigest(), quality='VALID',
+                        [metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']])).hexdigest(),
+                    # Rejected basis inputs are diagnostic only. The risk planner's existing partial-valuation
+                    # path defers loss stops and blocks new risk when a held symbol has no usable mark.
+                    quality='VALID' if self.basis_verifier is None or basis is True else 'INVALID',
                     observed_at=stamp, available_at=available, close_at=stamp,
                     token_open=row.get('statusInfo', {}).get('openState') is True,
                     underlying_open=underlying.get('statusInfo', {}).get('openState') is True,

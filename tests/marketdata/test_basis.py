@@ -294,7 +294,6 @@ class PlannerEndToEnd(unittest.TestCase):
                       opening_equity_units=99_845_905,
                       positions={s: dict(units=0, decimals=18, cost_basis_units=0) for s in TOKENS})
         ledger['risk'].update(day_anchor_units=99_845_905, peak_units=99_845_905)
-        c['red_flag_predicates'] = json.loads((ROOT / 'config/strategy/red-flag-predicates.v1.json').read_text())
         return replace(s, universe=tuple(TOKENS), context=Document.from_dict(c),
                        policy_profile_hash=Document.from_dict(profile).digest('StrategyProfile.v1'),
                        policy_state=replace(s.policy_state, policy_id=profile['policy_id']))
