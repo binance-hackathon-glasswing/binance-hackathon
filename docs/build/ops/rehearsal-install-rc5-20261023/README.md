@@ -29,9 +29,10 @@ cp -R docs/build/ops/rehearsal-install-rc5-20261023 deploy/activation/ && cd dep
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| 0 | Keegan | mirror CI for the RC5 commit in `Keegan4/Keegan4-larp-ci-mirror`, plus release qualification | all four jobs green; RC5 recorded |
+| 0 | — | **skipped (SJ-10-A2, Yao):** no mirror CI for RC5; M1-local replaces M1 | — |
 | D1 | Yao, Mac | `bash mac/d1-create-db.sh` (any time; needs no RC5) | `SJ-10-D1 PASS`, `D1_DONE` |
-| M1 | Mac | `[BUILD=<RC5 sha>] bash mac/m1-fetch-bundle.sh <RC5 run id>` | digest match, `build.env`, `M1_DONE` |
+| M1-local | Mac | `PY=<venv>/bin/python RC4=$OLD/bundle/x/larp-d03bbb16cf51-x86_64 bash mac/m1-local-bundle.sh` | integrity checks pass; versus CI RC4 only `release/larp/runtime/database.py` and `release/larp/storage/postgres.py` differ; `BUNDLE.env` differs only in `build_id`; `M1_DONE` |
+| (M1) | Mac | `[BUILD=<sha>] bash mac/m1-fetch-bundle.sh <run id>`, only if a mirror run is made later | digest match, `build.env`, `M1_DONE` |
 | M2 | Yao, Mac | `bash mac/m2-upload-bundle.sh` | `M2_DONE` |
 | M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=$OLD/private/bindings-d03bbb1.json bash mac/m3-recapture-assemble.sh` | `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp |
 | A1 | Isaac (relayed) | confirm the new `signer.json` hash M3 printed | recorded in IDEA-049-C SJ-10-A1 |

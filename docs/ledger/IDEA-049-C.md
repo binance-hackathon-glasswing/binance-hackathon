@@ -2570,3 +2570,26 @@ New steps:
   accounting and STORED ACK.
 
 Any refusal stops the sheet at that step and is recorded as it happened. Nothing is widened to get past it.
+
+#### SJ-10-A2 — local RC5 bundle instead of mirror CI (Yao, 2026-10-23 ~04:40Z)
+
+**Decision (Yao, in chat):** "ya we arent gonna bother with the mirror ci just keep going". J0 changes to a local
+bundle built from the pushed canonical head with `tools/build_release_bundle.py`, the same route as SJ-06-A1 (Oct 22)
+and PC-BUILD01. **This reverses, for run 2 only, Keegan's PR244 release gate** ("install only the original CI
+artifact, never a local rebuild"; SJ-06-A2). The bundle has no CI test provenance. Its test record is local only:
+- IDEA-085 R7 on the PR257 head before RV1: 2484 passed / 10 environmental skips, against base 2468 / 10;
+- Keegan's RV1 run on Linux with PostgreSQL 16 (2482 passed, with 3 lock-check failures that also fail on base in his
+  venv).
+
+Linux CI on PostgreSQL 14.24 and the systemd jobs did not run for RC5.
+
+**J0′ pass criteria** (`mac/m1-local-bundle.sh`):
+- The builder accepts the clean worktree on `codex/system-testing-20261012` at the pushed head, which contains
+  `eadd5d4`.
+- The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- Compared file by file with the **CI-built RC4** bundle (manifest `5ea11a84…`, artifact 12419733594): the only
+  differences are release files that `d03bbb1..BUILD` changed, expected to be `release/larp/runtime/database.py` and
+  `release/larp/storage/postgres.py`. CPython, every wheel, `rds-ca.pem` and `provision.sh` are byte-identical, and
+  `BUNDLE.env` differs only in `build_id`.
+
+Anything else stops the sheet.
