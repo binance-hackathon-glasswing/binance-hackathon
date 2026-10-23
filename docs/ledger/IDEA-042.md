@@ -666,3 +666,21 @@ register edit (V1–V5):
 - **V5.** Release-register tests pass; the full-suite result is in the PR. Final activation is still refused while
   any DRAFT row remains (9 now). The final register needs the S1 profile (#120), model adoption (LD11/LD22), the
   LD05/LD06 decisions and the actual rehearsal window before final activation (LD24).
+
+## GAP62-F02 — record the SKHYB foreign-filer coverage limit (#39, 2026-10-23; prospective)
+
+Keegan's session, under his delegation to address issues that are already solved. IDEA-084 PF-03 decided to keep
+all five names and to **accept SKHYB's asymmetric foreign-filer adverse-event coverage**. PF-03 asks for that to be
+recorded as a deviation and the manifested scope checked before #39 closes. The register (`deviations.v1.json`)
+has no such row: DEV-01..DEV-24 contain no SKHYB, foreign-filer or 6-K entry.
+
+Pass criteria, written before the change:
+- V1. Add one row, DEV-25 "Adverse-event coverage", status FINAL (decided by PF-03, 2026-10-21). `declared` quotes
+  the submitted proposal verbatim (`docs/proposal/proposal_answers.md`: SEC EDGAR 8-K, 10-Q and 10-K filings). The
+  v1.0 behaviour matches the shipped config.
+- V2. Manifested scope still matches the decision: `red_flags.v1.json` keeps Class 1/2 to domestic 8-K filers and
+  states the 6-K gap as `scope_limit`; no foreign-filer predicate exists; other statements stay SHADOW; the strategy
+  universe keeps all five names.
+- V3. `tools/render_deviations.py --write` re-renders plan.md, `--check` passes, and the JSON keeps its formatting
+  (indent 1, ASCII). Release-register, Gate A and red-flag tests pass.
+- V4. The DRAFT count is unchanged (9). No other row, config, profile or code changes.
