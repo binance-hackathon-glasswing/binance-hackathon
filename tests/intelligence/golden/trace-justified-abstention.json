@@ -21,7 +21,7 @@
  "feature_row": {
   "as_of_ms": 1791590400000,
   "assessed": false,
-  "assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
+  "assessment_key": "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64",
   "available_ms": 1791590400000,
   "confidence_calibrated": false,
   "confidence_level": "UNKNOWN",
@@ -44,7 +44,7 @@
   "n_statements_repeated": 0,
   "n_unchanged": 0,
   "n_verified_claims": 0,
-  "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
+  "result_id": "res:334f53997a53b4eb9ca1c015ec1b535c2d72fed52fc8d1ddb2acad52c5bb48ae",
   "schema": "FeatureRow.v1",
   "severity": null,
   "source_stale": false,
@@ -57,10 +57,10 @@
   "decision": "ACCEPT",
   "state_after": {
    "accepted_keys": [
-    "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac"
+    "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64"
    ],
    "accepted_result_ids": [
-    "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a"
+    "res:334f53997a53b4eb9ca1c015ec1b535c2d72fed52fc8d1ddb2acad52c5bb48ae"
    ],
    "assessed_until_excluding_timed_ms": null,
    "assessed_until_ms": null,
@@ -141,19 +141,19 @@
  },
  "persisted": {
   "batch": {
-   "batch_id": "state:287946bc41d3e225ac84e07c8c061a0580934b6f06d883a9df309493b53f47ae",
+   "batch_id": "state:2f73f0ef8a50b15bd57b7e3f04b27c97182d73ce80356a94a956119b0c3cb16b",
    "expected_state_version": 0,
    "issuer_id": "FIXTURE-CIK-9900001",
    "jobs": [
     {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29",
+     "job_id": "evidence:2335452eefc172ed19669ba09fe431a6bc406217cc1c0eaeb5023eaec72b1302",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
+      "after_assessment_key": "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -163,14 +163,14 @@
      "valid_until_ms": 1791698400000
     }
    ],
-   "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
+   "result_id": "res:334f53997a53b4eb9ca1c015ec1b535c2d72fed52fc8d1ddb2acad52c5bb48ae",
    "schema": "EvidenceStateBatch.v1",
    "state": {
     "accepted_keys": [
-     "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac"
+     "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64"
     ],
     "accepted_result_ids": [
-     "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a"
+     "res:334f53997a53b4eb9ca1c015ec1b535c2d72fed52fc8d1ddb2acad52c5bb48ae"
     ],
     "assessed_until_excluding_timed_ms": null,
     "assessed_until_ms": null,
@@ -250,7 +250,7 @@
    }
   },
   "receipt": {
-   "batch_id": "state:287946bc41d3e225ac84e07c8c061a0580934b6f06d883a9df309493b53f47ae",
+   "batch_id": "state:2f73f0ef8a50b15bd57b7e3f04b27c97182d73ce80356a94a956119b0c3cb16b",
    "schema": "CommitReceipt.v1",
    "status": "COMMITTED"
   }
@@ -391,7 +391,7 @@
   }
  },
  "result": {
-  "assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
+  "assessment_key": "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64",
   "budget_allowed": {
    "deadline_ms": 60000,
    "tool_calls": 6
@@ -408,7 +408,7 @@
    "calibrated": false,
    "level": "UNKNOWN"
   },
-  "config_sha256": "080ef5cae989519079cd0a255b69e5c72cfff56b9644cbaa6701bb811c081f83",
+  "config_sha256": "876452d577f22359045c25124d3f9feb6be2dc823e9357c33867d8019bd6eea3",
   "conflicts": [
    {
     "accessions": [
@@ -2412,7 +2412,7 @@
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
   "request_sha256": "20f76f262b4090d48a69bdbea3482c51dc49f2bac3d36c28a1d78d4ffc4e44dc",
-  "result_id": "res:bed297e70377250bca620b5f8625df863113e0fe522e1d2ba3970b2f210c853a",
+  "result_id": "res:334f53997a53b4eb9ca1c015ec1b535c2d72fed52fc8d1ddb2acad52c5bb48ae",
   "retained_facts": [
    {
     "basis": "ITEM_METADATA",
@@ -2518,12 +2518,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29",
+     "job_id": "evidence:2335452eefc172ed19669ba09fe431a6bc406217cc1c0eaeb5023eaec72b1302",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "57cddcfb7fec6232dc3b8f093569fb6121742871daf75d27ecfc5e7efc2409ac",
+      "after_assessment_key": "cf503b225ef99717aea64a1c256c83a8e35a638dde248a574d3263ca5932ea64",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "CONFLICT_RESOLUTION"
@@ -2534,7 +2534,7 @@
     },
     "kind": "REASSESS",
     "reason": "CONFLICT_RESOLUTION",
-    "request_id": "evidence:2271ee315f1fc0afca634c8468119b731221ee7aebd1d051347c587274a35a29"
+    "request_id": "evidence:2335452eefc172ed19669ba09fe431a6bc406217cc1c0eaeb5023eaec72b1302"
    }
   ],
   "review_scope": null,

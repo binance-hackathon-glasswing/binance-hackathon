@@ -1,10 +1,13 @@
 """EDGAR parsing, the opt-in HTTP adapter (fake transport only), issuer mapping and configuration."""
 
 import json
+from pathlib import Path
+import shutil
+import tempfile
 import unittest
 
 from larp.intelligence.common import IntelligenceError
-from larp.intelligence.config import live_model_settings, load_config, load_registry, sec_user_agent
+from larp.intelligence.config import CONFIG_DIR, live_model_settings, load_config, load_registry, sec_user_agent
 from larp.intelligence.edgar import (
     EdgarHttpSource, check_identity, history_files, listing_rows, parse_acceptance_ms, parse_filing_index,
     select_documents,
@@ -12,6 +15,11 @@ from larp.intelligence.edgar import (
 from larp.intelligence.issuers import IssuerRegistry
 
 UA = "Glasswing research team-contact@university.edu.sg"
+# IDEA-049-A amendment 32 (LV-01): amendment 14 candidates, adopted for the development signed rehearsal only.
+LV01 = dict(initial_backfill_ms=2_592_000_000, max_clock_skew_ms=0, max_source_staleness_ms=1_800_000,
+            result_ttl_ms=1_800_000, reassess_delay_ms=300_000, retry_delay_ms=600_000, job_validity_ms=86_400_000,
+            job_max_attempts=3, max_review_attempts=3, max_review_backoff_ms=1_800_000,
+            statement_retention_ms=2_764_800_000)
 
 
 class EdgarParsingTests(unittest.TestCase):
@@ -163,8 +171,21 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(len(config.prompt_sha256), 64)
 
     def test_live_startup_fails_while_parameters_are_unset(self):
-        with self.assertRaisesRegex(IntelligenceError, "unset"):
-            load_config("live")
+        # LV-01 (IDEA-049-A amendment 32) sets the committed live values; any unset one still refuses startup.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "intelligence"
+            shutil.copytree(CONFIG_DIR, base)
+            raw = json.loads((base / "intelligence.v1.json").read_text("utf-8"))
+            raw["parameters"]["reassess_delay_ms"]["live"] = None
+            (base / "intelligence.v1.json").write_text(json.dumps(raw), "utf-8")
+            with self.assertRaisesRegex(IntelligenceError, "unset"):
+                load_config("live", base)
+
+    def test_lv01_live_values_are_the_adopted_rehearsal_values(self):
+        config = load_config("live")
+        self.assertEqual({name: config.p(name) for name in LV01}, LV01)
+        development = load_config("development")
+        self.assertEqual((development.p("max_clock_skew_ms"), development.p("reassess_delay_ms")), (300000, 21600000))
 
     def test_live_model_settings_need_explicit_provider_and_one_credential_kind(self):
         with self.assertRaises(IntelligenceError):

@@ -109,3 +109,36 @@ def test_exit_parts_boundaries():
             exit_parts(bad, 100)
     with pytest.raises((TypeError, ValueError)):
         exit_parts(1, 0)
+
+
+def test_full_portfolio_flatten_completes_on_the_bnb_held_at_new_risk_end():
+    """#56 / WR14 with LD10-P03: four positions above the split threshold, no top-up, 15-minute rounds."""
+    s = terminal(1)
+    p = s.context.read()["profile"]
+    units = cap_units(s) * 6 // 5                       # 1.2 x cap each: two balanced children per name
+    held = {sym: units for sym in ("NVDAB", "GOOGLB", "TSLAB", "MSFTB")}
+    now, rounds, children = TERMINAL, 0, []
+    bnb = 8 * 10000                                       # exactly eight children of fixture quote gas; no top-up
+    while any(held.values()):
+        snap = live_snapshot(held={k: v for k, v in held.items() if v}, now=now)
+        c = snap.context.read()
+        c["portfolio"]["bnb_units"] = bnb
+        snap = with_quotes(changed(snap, portfolio=c["portfolio"]), policy=False)
+        c = snap.context.read()
+        for m in c["markets"]:
+            for q in m["quotes"]:
+                q["origin"] = "WEB3_OPEN_API"
+        r = plan(changed(snap, markets=c["markets"]), None).read()
+        assert len(r["intents"]) == 1, r["rejections"]
+        child = r["intents"][0]
+        assert child["side"] == "SELL" and child["mandatory"]
+        assert child["cash_units"] + child["fee_units"] <= p["per_trade_cap_units"]
+        held[child["symbol"]] -= child["token_units"]
+        bnb -= child["gas_bnb_units"]
+        assert bnb >= 0
+        children.append(child)
+        rounds += 1
+        now += timedelta(minutes=15)
+        assert rounds <= 16
+    assert len(children) == 8 and sum(c["token_units"] for c in children) == 4 * units
+    assert now <= instant(p["signing_end"])

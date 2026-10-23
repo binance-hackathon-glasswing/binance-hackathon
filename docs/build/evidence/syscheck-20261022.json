@@ -1,0 +1,237 @@
+{
+ "schema": "SystemsCheckReceipt.v1",
+ "decision_id": "IDEA-043 SC-01",
+ "recorded_utc": "2026-10-22",
+ "commit": "d03bbb16cf51277c73d7f381b08f9551d0c10415",
+ "branch": "codex/system-testing-20261012",
+ "remote_head_verified": "git ls-remote / fetch of origin at ~11:00Z returned the same commit",
+ "pass_criteria": "Pre-existing: LD15_SIGNED_RELEASE_CHECKLIST.md section 3 (four CI jobs) and section 2 render_deviations --check; IDEA-043 tools/system_test.py. Added: signed-rehearsal start path (IDEA-049-A amendment 32 LV4) and signer build binding agree on one installable build.",
+ "scope": "Local/offline only. Synthetic transports, disposable PostgreSQL. Not hosted CI, not a qualified artifact, not signed-release/host/AWS/signer-session/funding/live evidence. No AWS, host, database host, key, wallet or paid-model action.",
+ "environment": {
+  "runtime_container": {
+   "image": "larp-pr70-ci-native-runner:local",
+   "image_id": "sha256:e0922601aea029638c9b98e2580ef4a164a0b196a0712007ba02195129530d58",
+   "os": "Ubuntu 22.04.5 LTS",
+   "arch": "aarch64",
+   "python": "3.12.15",
+   "systemd": "249",
+   "user": "ci (uid 1001, non-root)",
+   "packages": "identical to deploy/requirements-test.lock closure; pip check PASS"
+  },
+  "postgresql": {
+   "image": "postgres:14.24-bookworm@sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+   "version": "14.24"
+  },
+  "terraform_container": {
+   "image": "larp-pr70-ci-base:local",
+   "image_id": "sha256:b4d0bc74d273b1d84f670d1dd30a3f9f65844c05da7b28cb57982bdd540a5424",
+   "arch": "amd64 (emulated)",
+   "terraform": "1.13.5 linux_amd64, zip sha256 0dbe3fcc268eb670801af6a6456799d1ae26e72e73797f6c6167e18aafd1fd9a (CI pin)"
+  },
+  "host_bundle_container": {
+   "image": "larp-host-test:al2023 (rebuilt by the script from amazonlinux:2023@sha256:8ed3c0a996841537f75607e7d1de2114d8150391f75792e8da9268738547e73f)",
+   "image_id": "sha256:046e5086602128dd9f6b6b2ca049c70377b0bb88c3555d7f8da7f038ef03425a",
+   "arch": "amd64 (emulated)"
+  },
+  "host": "macOS arm64, Docker 29.8.2; bundle build and deviations check with Python 3.12.14"
+ },
+ "checks": [
+  {
+   "elapsed_seconds": 68.366,
+   "exit_code": 0,
+   "log_sha256": "20f452c5374a129cfba22de2d6547b773b0acecf140e95c7d395756ef8ab474f",
+   "name": "system",
+   "passed": 121,
+   "status": "PASS",
+   "subtests_passed": 230,
+   "execution": "LOCAL_LINUX_ARM64_CONTAINER"
+  },
+  {
+   "elapsed_seconds": 612.021,
+   "exit_code": 0,
+   "log_sha256": "d908da6cc9eada3d556530a0907787cd2d58c18d4b7f9b4a47149e1113290b52",
+   "name": "full_suite",
+   "passed": 2470,
+   "skipped": 7,
+   "status": "PASS",
+   "subtests_passed": 3882,
+   "execution": "LOCAL_LINUX_ARM64_CONTAINER"
+  },
+  {
+   "elapsed_seconds": 0.929,
+   "exit_code": 0,
+   "log_sha256": "99ef06b9eeb942c8e37783c49be334856b1d3d0b7ff9bd3a8fa18582baf8f4da",
+   "name": "offline_demo",
+   "status": "PASS",
+   "execution": "LOCAL_LINUX_ARM64_CONTAINER"
+  },
+  {
+   "name": "skips_explained",
+   "status": "PASS",
+   "skipped": 7,
+   "reasons": {
+    "tests/runtime/test_systemd_conditions.py": 5,
+    "tests/intelligence/test_source_link_trust.py (LARP_INJ01_SOURCE_FILE)": 1,
+    "tests/marketdata/test_recorded.py (LARP_RECORDED_MARKET_ROOT)": 1
+   }
+  },
+  {
+   "name": "real_systemd",
+   "status": "PASS",
+   "passed": 5,
+   "subtests_passed": 5,
+   "execution": "LOCAL_LINUX_ARM64_CONTAINER, systemd PID 1",
+   "log_sha256": "2f1407c99bbd46d88b828aa35b4d54e2ea2ddebc6d3dec73f27ebad8d4bb5bd1"
+  },
+  {
+   "name": "terraform",
+   "status": "PASS",
+   "execution": "LOCAL_LINUX_AMD64_EMULATED",
+   "deploy/aws": {
+    "fmt": 0,
+    "init": 0,
+    "validate": 0,
+    "test": "19 passed"
+   },
+   "deploy/bootstrap": {
+    "fmt": 0,
+    "init": 0,
+    "validate": 0,
+    "test": "1 passed"
+   },
+   "log_sha256": "633bfb9a402ea83f2191d3e50b59fdf50698ca61d9dc75683cff191df3f1dabf"
+  },
+  {
+   "name": "docker_build_and_offline_run",
+   "status": "PASS",
+   "execution": "LOCAL_DOCKER_ARM64",
+   "image_id": "sha256:84aed4cd003d7d5e47356c3e7e14d6fe91e8aaa973ef5c7feed6fd8addf22d23",
+   "build_log_sha256": "c66f453dc9492b728d51353e3e166c0f3dc12380822a788e43f2117c03173a2f",
+   "run_log_sha256": "7c187c7ce80f5dfe0de2f0feb595e12299b5121072d05972256107f11164d13a"
+  },
+  {
+   "name": "host_bundle_build",
+   "status": "PASS",
+   "execution": "LOCAL_DRY_RUN_NOT_FOR_INSTALLATION",
+   "bundle": "larp-d03bbb16cf51-x86_64.tar.gz",
+   "bundle_sha256": "0286e727838796dac9b71a90f76fc0ec6bb80da883c5db67c7faab8392f216f8",
+   "release_manifest_sha256": "339de5e60f9a79f8a9e3711d5c0bfaf828ec1ed39f216e82e7aded207bf8a621",
+   "manifest_files": 205,
+   "host_bindings": "all null",
+   "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+   "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+   "log_sha256": "49dcb082a4cb627574ec33919b11f8c20a0487ba1d34afa12ea1a05450591f57",
+   "reproducibility": "bundle and manifest bytes equal SJ-06-A1 independent local build (0286e727.../339de5e6..., recorded in ab-rel-rc4-20261022.json); installable artifact remains RC4 CI bundle 270fe81f..."
+  },
+  {
+   "name": "host_bundle_provision_both_roles",
+   "status": "PASS",
+   "execution": "LOCAL_LINUX_AMD64_EMULATED, --network none",
+   "roles": {
+    "primary": "PASS",
+    "signer": "PASS"
+   },
+   "release_verified": true,
+   "signing_enabled": false,
+   "log_sha256": "808659eb4f578de2ee4e408bc7b03ee25dbc0fd73c0ec2f237d99e3b456ad000"
+  },
+  {
+   "name": "render_deviations_check",
+   "status": "PASS",
+   "final": 15,
+   "draft": 9,
+   "draft_ids": [
+    "DEV-01",
+    "DEV-02",
+    "DEV-03",
+    "DEV-04",
+    "DEV-07",
+    "DEV-19",
+    "DEV-22",
+    "DEV-23",
+    "DEV-24"
+   ]
+  },
+  {
+   "name": "secrets_scan_tracked_files",
+   "status": "PASS",
+   "detail": "no private-key blocks, AWS key IDs, provider tokens or filled .env values"
+  },
+  {
+   "name": "history_ancestry",
+   "status": "PASS",
+   "ancestors_of_head": [
+    "b22207e",
+    "5bee006",
+    "fa1b6c9"
+   ]
+  },
+  {
+   "name": "org_actions_run",
+   "status": "UNAVAILABLE",
+   "run_id": 39764684229,
+   "detail": "four jobs, zero steps: billing/spending limit; infrastructure evidence unavailable, not a code result"
+  },
+  {
+   "name": "mirror_ci_run",
+   "status": "RECORDED_BY_RELEASE_OWNER",
+   "detail": "AB-REL-RC4 (PR246, merged after this run): all four jobs PASS, 2470 passed / 7 skipped / 3882 subtests, equal to this local run; mirror returns HTTP 404 to this account, not independently re-read",
+   "run_id": 39766825984
+  },
+  {
+   "name": "signed_rehearsal_start_path",
+   "status": "FAIL_AT_RC3A_PASS_AT_HEAD",
+   "detail": "test_lv01_deterministic_signed_rehearsal_builds_with_the_real_live_settings: PASS at d03bbb1; FAIL at fa1b6c9 (IntelligenceError: Live parameter 'initial_backfill_ms' is unset)"
+  }
+ ],
+ "manifested_files_changed_since_rc3a": [
+  "config/intelligence/intelligence.v1.json",
+  "larp/sources/live.py"
+ ],
+ "findings": [
+  {
+   "id": "SC-01-F1",
+   "severity": "P1",
+   "blocks": "LD16/LD17",
+   "summary": "The approved signer.json f632bbcb... and SJ-05 check bind build fa1b6c9 (RC3a), which cannot start a signed run; a build that can (d03bbb1+) has a different build_id, has no qualified artifact, and is refused by that signer.json.",
+   "refs": [
+    "larp/intelligence/config.py:75",
+    "larp/runtime/service.py:249",
+    "larp/signer/service.py:233"
+   ],
+   "status_update": {
+    "read_utc": "2026-10-22T11:25Z",
+    "canonical": "887dab39",
+    "done": [
+     "RC4 mirror qualification and original artifact (PR246)",
+     "signer.json cd0b38b8... build-only reassembly, 98/98 covered (PR244 SJ-06 J2)",
+     "local signer check on RC4-bound package (PR244 M4)"
+    ],
+    "remaining": [
+     "Isaac confirms build-only extension of SJ-04-OA01 for cd0b38b8...",
+     "PR244 review (CHANGES_REQUESTED) and merge",
+     "then P4 init/activate"
+    ]
+   }
+  },
+  {
+   "id": "SC-01-F2",
+   "severity": "P3",
+   "blocks": "activation tooling for larp_rehearsal1",
+   "summary": "prepare_trial_db.py asserts a larp_trial* name; the rehearsal DB larp_rehearsal1 has no tracked override, and the guard is an assert.",
+   "refs": [
+    "docs/build/ops/llm-trial-20261018/mac/prepare_trial_db.py:13"
+   ],
+   "status_update": {
+    "addressed_by": "PR244 prepare_rehearsal_db.py (fixed target, explicit refusal)",
+    "remaining": "PR244 merge"
+   }
+  }
+ ],
+ "status": "ENGINEERING_CHECKS_PASS; F1 OPEN (approval/merge pending); F2 OPEN (merge pending)",
+ "readiness_flags": {
+  "ready_to_install": false,
+  "signing_enabled": false,
+  "gate_b_accepted": false
+ }
+}
