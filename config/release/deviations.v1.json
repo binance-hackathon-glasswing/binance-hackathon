@@ -1,6 +1,6 @@
 {
  "schema": "DeviationsRegister.v1",
- "updated": "2026-10-21",
+ "updated": "2026-10-23",
  "proposal": "docs/proposal/proposal_answers.md",
  "basis": "GAP-62, F-61, G-11: every change from the submitted proposal, with the declared text, v1.0 behaviour, reason and evidence. Draft (IDEA-042 item 8) due 2026-10-19; final at the 2026-10-26 freeze. Rows requested in IDEA-040 and IDEA-041 were checked against this register on 2026-10-12 (IDEA-042 \u00a74.3); details that exist only in owner code not yet integrated are added when it is integrated.",
  "rows": [
@@ -356,6 +356,21 @@
    ],
    "decided": "2026-10-21",
    "status": "DRAFT"
+  },
+  {
+   "id": "DEV-25",
+   "area": "Adverse-event coverage",
+   "declared": "**SEC EDGAR:** 8-K, 10-Q and 10-K filings, time-stamped by their acceptance time.",
+   "v1_behaviour": "The red-flag exits (Class 1 CRITICAL, Item 4.02 restatement; Class 2 SERIOUS, Items 1.05 cybersecurity and 2.06 impairment) are read from domestic issuers' own Form 8-K and 8-K/A filings only (`red_flags.v1.json`, `filer_classes: [\"DOMESTIC\"]`). SK hynix, behind SKHYB, is a foreign private issuer with no 8-K item codes, so none of these exits can fire for SKHYB; its events stay ordinary evidence and the Class 3 WATCH statements stay SHADOW for every name. SKHYB stays in the five-name universe. No 8-K authority is inferred from foreign-filer text and no SHADOW statement is promoted.",
+   "reason": "The team chose to keep all five names, accepting SKHYB's asymmetric adverse-event coverage and common technology exposure as opportunity/coverage risk rather than build unqualified foreign-filer predicates or drop the name (IDEA-084 PF-03, the decision for #39). This is a coverage-risk acceptance, not a claim of equal protection or of outperformance.",
+   "evidence": [
+    "IDEA-084",
+    "IDEA-046",
+    "IDEA-042",
+    "GAP-62"
+   ],
+   "decided": "2026-10-21",
+   "status": "FINAL"
   }
  ]
 }
