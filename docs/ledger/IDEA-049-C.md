@@ -2719,3 +2719,22 @@ unsigned. Next: T1, then R1s, P2s, S1, S1b, S2 and P5.
   destroyed.`
 
 Next: the signer's SSM registration (a reboot if needed, as in SJ-06 J5), then R1s, P2s, S1 and S1b.
+
+#### SJ-10 J4 (part) — signer reachable; R1s, P2s, S1 and S1b PASS (2026-10-23 05:01–05:07Z, Yao)
+
+- **Reach:** after T1, the signer needed one reboot, as in SJ-06 J5. At 05:03:12Z both hosts are `Online` (signer
+  ping 05:01:37Z, primary 04:59:31Z: **SA9 PASS**). The three endpoints are `available` with private DNS from
+  04:57:54Z, and `AmazonSSMManagedInstanceCore` is on `larp-dev-signer`.
+- **R1s** (05:05:50Z): `larp-signer` inactive and disabled. Run 1's `signer.json` `cd0b38b8…`, `release.json`
+  `1db4571d…` and router policy moved to `/etc/larp-history/d03bbb1-larp-dev-rehearsal-20261022/`. The key stays,
+  `600 root:root`, one link. Run 1's signer journal shows 68 `"started": true` lines since S2, from restarts during
+  the J8 database outage and the reboot. `R1S_DONE`.
+- **P2s** (05:05:57Z): build `d53d1b7` for the signer, manifest `bc3a9838…`, `rds-ca` `d7389074…`; `larp-signer` left
+  disabled. `P2_DONE`.
+- **S1** (05:06:15Z): `release.json` `72478f9d…`, `signer.json` `1a4cda6f…`, router policy `05759e90…`. Signer `check`
+  `configuration_valid`, UNTRUSTED, DEV-23. **SA4** routes PASS (`1a284a0d…`, 6 destinations; no internet route).
+  Time sync 0.0000008 s. `S1_DONE`.
+- **S1b** (05:07:21Z): the `LoadCredential` copy is `0o400`, owned by the signer user, `key_loader: PASS`.
+  `S1B_DONE`.
+
+Next: S2 (start the signer), P5 (start execution), C1 (signer-status before T2).
