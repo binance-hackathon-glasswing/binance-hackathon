@@ -3378,3 +3378,20 @@ Next: T1 (signer access on), then R1s, P2s, S1, S1b, S2, P5.
   router policy `05759e90…`. Key kept: `/etc/larp/signer` `700 root:root`, `wallet.key` `600 root:root`, 1 link.
 
 Next: P2s, S1 (M4's printed command), S1b, S2.
+
+#### SJ-11 P2s, S1, S1b and S2 — PASS on the signer; signer started for run 3 (2026-10-23 ~17:0xZ, Yao)
+
+- **P2s** (SSM `43c9f1d3-63ab-43db-9cba-f44f8f920f0d`, Success; stderr 198 bytes of systemd symlink lines): installed
+  `/opt/larp/releases/9dc5edab61b6bffdb3c75cc4d498bb651a91ba43` for signer, manifest `184bd2cd…`, CA `d7389074…`;
+  `larp-signer` disabled until S2.
+- **S1** (SSM `271461db-a4a3-436e-9d39-e423a47b8267`, Success, no stderr): `release.json` `590edf38…` (the same bound
+  bytes as primary), `signer.json` `49cb1a08…` (SJ-11-A1), router policy `05759e90…`, CA `d7389074…`;
+  `release_verified: true`; signer `check` `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B
+  false; routes PASS `43b254b3…`, 6 destinations; chrony on Amazon Time Sync, 0.0000008 s fast.
+- **S1b** (SSM `a0bf2d1f-f061-43e4-b13b-7c29e93bb431`, Success): `LoadCredential` copy `0o400`, owned by the reading
+  process, `key_loader: PASS`.
+- **S2** (SSM `94ffd15c-72b3-4910-bbb9-4a92914cdcb3`, Success): key dir `700 root:root`, `wallet.key` `600 root:root`;
+  `key_loader: PASS`, **`wallet_matches: true`**; `larp-signer active restarts=0`; `release_verified: true`;
+  `started: true`, `signing_enabled: true`, UNTRUSTED `05759e90…`, DEV-23, cap basis CAP-02. `S2_DONE`.
+
+Next: P5 (execution on primary), then C1, T2, SA5/SA9, M9.
