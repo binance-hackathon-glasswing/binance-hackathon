@@ -3,7 +3,8 @@
 Hosted SQL roles are IAM-only (`deploy/postgres/roles.sql` grants `rds_iam`), so a static DSN cannot log in for
 longer than one token lifetime. The token is needed only to open a connection; an open connection is reused by later
 transactions until it reaches the store's maximum age (IDEA-085), so a service logs in a few times an hour instead of
-once per transaction. No token or DSN is ever kept, logged or included in an error.
+once per transaction. No token or DSN is ever logged or included in an error; libpq holds the token in memory only
+for its connection's life, which the maximum age keeps shorter than the token's own 15-minute validity.
 """
 
 import hashlib
@@ -70,7 +71,8 @@ class IamPostgresStore(PostgresStore):
         import psycopg
         from psycopg.conninfo import make_conninfo
         c = self.config
-        # A fresh short-lived IAM token for every new database connection; it is not kept after connecting.
+        # A fresh short-lived IAM token for every new database connection. Only libpq keeps it, for the
+        # connection's life (at most MAX_CONNECTION_AGE_S); this store never stores it.
         token = self.rds.generate_db_auth_token(DBHostname=c['database_host'], Port=5432,
                                                 DBUsername=c['database_user'], Region=c['region'])
         return psycopg.connect(make_conninfo(host=c['database_host'], port=5432, user=c['database_user'],
