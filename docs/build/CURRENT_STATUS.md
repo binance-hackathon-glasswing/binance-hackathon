@@ -8,6 +8,8 @@ that minimum. Remaining: operator actual hosted post-funding reconciliation/
 private current packet, exact input acceptance and intended signed run/config
 bindings, then offline signer assembly/local release check. No full92/92,
 installed config, native trace or final-wallet acceptance is inferred.
+Superseded (2026-10-23): the remaining steps were done in SJ-04 (capture and assembly), SJ-05
+(signer `check`) and SJ-06 (install); see the signer-candidate note above.
 
 Latest qualification (2026-10-21, AB-REL-RC2): PR231 is merged at canonical
 `b22207e`; all four mirror jobs PASS (2416 tests/3808 subtests, real-systemd5/5,
