@@ -3301,3 +3301,20 @@ pre-registered line of under 500, with no auth time-out, no "critically low on m
 ≥ 8 h login and auth part of J6 passes.** Not covered by this check: the services' journals for a dead-path
 `Unavailable`, and RDS backend memory with long-lived connections (CloudWatch `FreeableMemory`). Run 2 never entered
 (no basis verifier), so this measures idle-round load, not a trading load.
+
+#### SJ-11 R1p and P2 — PASS on primary; run 2 retired, RC6 installed (2026-10-23 ~16:2xZ, Yao)
+
+- **R1p** (`host/r1-retire-primary.sh`, SSM `f5cfd3dd-ebe2-42bc-b013-ea8b3f856143`, Success, no stderr): all six
+  run-2 units inactive and disabled (`larp-execution`, `larp-runtime`, `larp-uploader`, `larp-archive.timer`,
+  `larp-archive.service`, `larp-evidence`). Eleven configs moved to
+  `/etc/larp-history/d53d1b7-larp-dev-rehearsal-20261023/`, among them `runtime.json` `8efb54d6…`, `release.json`
+  `72478f9d…`, `strategy-profile.json` `e95d5842…` (run 2's equal weight), `untrusted-router-policy.json` `05759e90…`
+  and `initial-state.json` `15eeba6b…`. `/etc/larp` now holds only `rds-ca.pem` and `role-primary`. Run 2's signer
+  still polls `larp_rehearsal2` until R1s; it has nothing to sign.
+- **P2** (`host/p2-provision.sh primary`, SSM `4b169d2d-e24b-4821-a0ef-5ea38dca5199`, Success): bundle
+  `larp-9dc5edab61b6-x86_64` hash and sidecar checked, `provision.sh` `d7905de4…` checked; installed
+  `/opt/larp/releases/9dc5edab61b6bffdb3c75cc4d498bb651a91ba43`, manifest `184bd2cd…` (equals build.env), CA
+  `d7389074…`. Nothing started; `larp-execution` disabled again. The 703 bytes of stderr are systemd's
+  "Created symlink"/"Removed" lines only.
+
+Next: M4 (stamp `20261023T161113Z`, scope `IDEA-049-C SJ-11-C1`), then P3.
