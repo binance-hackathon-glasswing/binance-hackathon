@@ -150,6 +150,10 @@ def test_rh1_scope_is_dev_rehearsal_only():
 
 def test_rh1_signed_s1_rehearsal_runtime_builds_with_the_real_live_settings():
     """LV4-style: the prepared S1 profile composes a dev/service runtime without models or network."""
+    build_runtime(json.dumps(shadow()).encode())
+
+
+def build_runtime(raw):
     from tests.runtime.test_driver import Composition, Store
     from larp.runtime.service import build_driver
     from larp.runtime.driver import ServiceExecution
@@ -160,7 +164,6 @@ def test_rh1_signed_s1_rehearsal_runtime_builds_with_the_real_live_settings():
         for key in ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps'):
             cfg['driver'][key] = base[key]
         cfg['driver']['balance_rpc_providers'] = [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')]
-        raw = json.dumps(shadow()).encode()
         (fixture.root / 'profile.json').write_bytes(raw)
         cfg['driver']['strategy_profile_sha256'] = gate_a.digest(raw)
         cfg['mode'] = 'dev'
