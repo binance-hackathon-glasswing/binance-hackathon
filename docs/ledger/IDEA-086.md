@@ -153,3 +153,11 @@ shows up before a run-3 install.
    separately for labels.
 
 Once approved, the build follows §4 and §5 test-first, and installs through the SJ-10 run sheet as run 3.
+
+## 7. Decision for the dev rehearsal (Yao, in chat, 2026-10-23 ~06:00Z)
+
+"yes all bv should go in now start". Yao decides, **for the dev rehearsal only**, that BV1–BV4 define
+`basis_verified`, and that BV5 (value at the ratio-scaled mark) goes in too. The tolerances are as proposed, and the
+`underlying_id` pins are NVDA, GOOGL, TSLA, MSFT and SKHY. Keith's and Isaac's §6 review still decides the final.
+Anything they change goes into a later build. The build follows §4 test-first against P1–P5, then a new build (RC6) and
+run 3 through the SJ-10 run sheet.
