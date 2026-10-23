@@ -222,3 +222,9 @@ read. It never refuses or passes because of the clock or the open state. The ver
   `openState` values recorded per name.
   - An S2-style off-hours run counts toward QV11 only for the verifier.
   - Whether a closed `openState` blocks the trade is the planner's guard. That guard is out of scope here.
+
+### A2 results (2026-10-24, Claude Code)
+
+| ID | Result | Evidence |
+|---|---|---|
+| QV12 | PASS (offline) | Commit `dc89654b`. Red first: the refused-quote case had no `token_open` (KeyError). The closed-market pass already held, because the port does not gate on `openState`. After the change, with both states false, a valid recorded quote exits 0 `VERIFIED_EXECUTABLE` and reports `false/false`; a refused quote (exit 2) reports both states, closed or open. The clock is used only for the `started_at` stamp and quote freshness in `_quote_at_cap` (profile age 30 s, before the deadline), never for trading hours. Full suite (PG 14.24): **2585 passed, 10 skipped, 0 failed** (log `a7327bad…`). |
