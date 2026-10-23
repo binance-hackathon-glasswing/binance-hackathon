@@ -3318,3 +3318,26 @@ pre-registered line of under 500, with no auth time-out, no "critically low on m
   "Created symlink"/"Removed" lines only.
 
 Next: M4 (stamp `20261023T161113Z`, scope `IDEA-049-C SJ-11-C1`), then P3.
+
+#### SJ-11-J3 — M4 PASS: run-3 package prepared and uploaded (2026-10-23 16:23Z, Yao)
+
+M4 with stamp `20261023T161113Z` and `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Yao Zhu 2026-10-23)"`; package
+`package-20261023T162318Z`, prefix `releases/rehearsal-20261023t162318z/`.
+- Signer diff against run 2's `1a4cda6f…`: exactly `build_id`, `database_name`, `run_id`; `signer.json` `49cb1a08…`
+  (the SJ-11-A1 hash).
+- Fresh capture `captured: true`. `prepare` done; `gate_a_passed: false` with missing
+  `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE`, the same expected result as run 2 (SJ-10 M4) for a dev
+  deterministic run.
+- Package check: all 7 PASS, `local_ready: true`, `remote_ci_verified: false` (local bundle, SJ-11-A2). Bind:
+  `manifest_bound` to `184bd2cd…`. Local signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23,
+  `gate_b_accepted: false`.
+- Identity (assistant read of the package): runtime `larp-dev-rehearsal-20261024` / `9dc5eda` / `dev` /
+  `larp_rehearsal3`, service / deterministic / live, profile `6bcf1dfb…`; execution the same identity, `larp_execution`,
+  send RPC `BSC_BNBCHAIN_PUBLIC` (RV01-D1's dev-rehearsal-only acceptance carried to run 3), profile `6bcf1dfb…`.
+  Profile: `REHEARSAL`, `TREND_GUARDED_VOL`, evidence and falsifier authority `SHADOW`, `assessment_required` false.
+  Initial state: 96000000 USDT, 5325625054330011 BNB, five positions 0, no reservations, opening equity 99845905.
+- Hashes: `release.json` `590edf38…`, `runtime.json` `7dc1986f…`, `execution.json` `345a46e6…`, `initial-state.json`
+  `ec0c16b2…`, `uploader.json` `9e12ec55…`, `operations.json` `d2c902c0…`, `registration-evidence.json` `2a7d043d…`;
+  unchanged from run 2: `session-calendar.json` `bf4c2eca…`, `evidence.env` `c3add04b…`, router policy `05759e90…`.
+
+Next: P3 on primary with the printed command, then P4.
