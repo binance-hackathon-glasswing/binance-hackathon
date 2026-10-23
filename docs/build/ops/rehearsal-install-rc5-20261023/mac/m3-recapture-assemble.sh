@@ -37,7 +37,9 @@ cp "$P/capture-$STAMP.sh" "$HERE/host/capture.sh"
 /opt/homebrew/bin/python3.12 -I "$HERE/ssm_run.py" "$HERE/host/capture.sh" > /dev/null
 rm -f "$HERE/host/capture.sh"
 cd "$WT"
+# SJ-10: the source ledger is run 1, which started from the chain holdings (96 USDT), so USDT, BNB and every stock must
+# MATCH exactly. SJ-04-A1's 2 USDT seed deficit applied only against the retired trial ledger (98 USDT).
 "$PY" -m tools.deploy.review_rehearsal_caps --packet "$HERE/results/capture-stdout.txt" --bindings "$B" \
-  --output-dir "$P/review-$STAMP" --signer-out "$P/signer-$STAMP" --accept-usdt-deficit-units 2000000 \
+  --output-dir "$P/review-$STAMP" --signer-out "$P/signer-$STAMP" --accept-usdt-deficit-units 0 \
   | tee "$P/assembly-$STAMP.json"
 echo "M3 stamp $STAMP (signer candidate in private/signer-$STAMP)"

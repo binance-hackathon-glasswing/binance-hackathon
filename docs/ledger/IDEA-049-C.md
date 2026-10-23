@@ -2612,3 +2612,22 @@ Anything else stops the sheet.
   - **PASS.**
 
 Limit (SJ-10-A2): no CI run on this commit. RC5 = `d53d1b7`. Next: M2, then M3 (before R1p).
+
+#### SJ-10 M3 first run — refused on the declared USDT deficit; run-sheet error, fixed (2026-10-23 04:33Z)
+
+Yao ran M3. The probe hash matched `692787e4…`, and the read-only capture on primary succeeded (SSM `4bce1e12…`,
+04:32:53Z). The assembly then reported `SIGNER_ASSEMBLY_REFUSED`. A local diagnosis, with no AWS or host action, found
+the failing check in `review_rehearsal_caps.chain_start`: the USDT deficit must equal the declared one. The run sheet
+had copied run 1's `--accept-usdt-deficit-units 2000000`. That deficit was SJ-04-A1's: chain 96 against the retired
+trial ledger's 98 USDT. The probe now reads **run 1** as the source ledger, which started from the chain. Every holding
+is an exact `MATCH`:
+- USDT 96000000 against 96000000;
+- BNB 5325625054330011 against 5325625054330011;
+- GOOGLB, MSFTB, NVDAB, SKHYB and TSLAB all 0;
+- nonce 4/4; status `MATCH`; source run `larp-dev-rehearsal-20261022`.
+
+So the checker was right to refuse. Fix: M3 passes `--accept-usdt-deficit-units 0`, so the new run must start from an
+exact match. M3 is re-run, and a fresh capture is needed anyway, because quotes older than 300 s are refused.
+
+- 2026-10-23 correction (Claude): in SJ-10 "What carries over", "The same exact 2 USDT seed deficit is accepted
+  (SJ-04-A1)" is wrong. Run 2 starts from an exact match with no deficit (above).
