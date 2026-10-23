@@ -2127,6 +2127,99 @@ Expect one ALARM email from the new alarm until the runtime publishes the metric
 - **Left before the first agent round:** Isaac's confirmation (SJ-06-A2) and Keegan's re-review of PR244, then P4,
   K1 (Isaac), S2, P5, T2 (SA5) and M9.
 
+#### SJ-07 finding — the rehearsal window leaves too little open-market time to flatten (2026-10-22)
+
+The approved profile `e95d5842…` (RV120-02 window): `trade_after` 2026-10-23T00:00Z, `new_risk_end` 2026-10-25T00:00Z,
+`flatten_start` 2026-10-26T00:00Z, `signing_end` 2026-10-26T14:45Z.
+
+Buys and sells both need the token **and** the underlying market open (`execution.py` gates; planner
+`MARKET_CLOSED_OR_UNKNOWN`). The calendar is XNYS 09:30–16:00 New York (13:30–20:00Z), with no October holidays.
+
+- **Buys:** only one session, Fri 2026-10-23 13:30–20:00Z. Oct 23 00:00Z is before that day's open, and the window
+  closes on a Saturday.
+- **Exits:** only **Mon 2026-10-26 13:30–14:45Z**, which is 75 min or 5 rounds at the 900 s cadence. LD10-P03's
+  timing note counts the 14.75 h from 00:00Z, but most of that is before the open. Eight balanced exit children
+  at one per wallet per round need at least 8 rounds (2 h). **A full four-position flatten cannot complete before
+  `signing_end`.** About 3 children's worth would stay in the dev wallet.
+
+The final calendar does not have this problem as recorded: flatten starts Nov 10 19:00Z, inside a session.
+
+Any fix changes the profile hash. That means repeating M3 (coverage), M4 (package, `release.json`) and P3/S1 on
+both hosts, and Isaac approving the new profile hash. `signer.json` `cd0b38b8…` has no profile field and is
+unaffected. No change is made here. The decision is with Yao (the team must cut the rehearsal by Oct 27). The
+assistant's local validation of a changed profile was refused by the auto-mode classifier as weakening a
+safety gate.
+
+#### SJ-07 correction — the market gate is the live `openState`, which is open off-hours (2026-10-22 11:58Z)
+
+The SJ-07 finding above is **withdrawn**. The planner and execution gates block only when the live `openState`
+flags from `rwa/tokens` and `rwa/underlying-market` are not both true (`MarketPort.observation`, planner
+`MARKET_CLOSED_OR_UNKNOWN`, F-95). The NYSE session calendar only counts sessions; it does not gate trades. That
+matches the organisers' F-119 ("Orders can be placed 24/7").
+
+Observed, all read-only:
+- **M4's capture at 11:11:39Z** (07:11 New York, pre-market): `rwa/tokens` `openState: true`,
+  `reasonCode: TRADING` for all 46 bStocks.
+- **Underlying-market check at 11:58:39Z** (07:58 New York): `rwa/underlying-market` `openState: true`,
+  `reasonCode: TRADING` for all five rehearsal tokens (`marketStatus` and `nextOpenTime` null). This used one
+  call per token from Yao's Mac with the Web3 API key; only the status fields were printed.
+- **Quote capture `quotes-complete-20261020`:** token `openState` true in all 342 off-session samples, both weekend
+  dates included.
+
+So with the approved profile, buys can start at `trade_after` 2026-10-23T00:00Z, not at Friday's NYSE open.
+Exits can run from `flatten_start` 2026-10-26T00:00Z for the full 14.75 h, as LD10-P03 assumed. Limit: underlying
+`openState` at weekends is a single class of samples not yet measured (GAP-44). The guard stays and will skip
+rounds if it reports false.
+
+### SJ-08 — live measurement of the rehearsal's trades (2026-10-22)
+
+Yao asked to measure trades live, so the strategy can be evaluated and errors found as data arrives. Both tools are
+read-only and change nothing the agent does.
+
+**1. `mac/chain-monitor.py` (Mac; public BNB Chain RPC plus the read-only Web3 key for prices).** Each poll (60 s)
+reads the finalized block, nonce, holdings, router allowances and token prices. When the nonce moves, it decodes the
+wallet's new transactions from their receipts' Transfer and Approval logs into fills, and keeps an average-cost book:
+realized and unrealized PnL in USDT, equity excluding BNB, and gas in BNB. Output goes to the git-ignored
+`deploy/activation/rehearsal-monitor/{snapshots,transactions,alerts}.jsonl` (`LARP_MONITOR_DIR` changes it).
+
+It raises an alert on any of these:
+- a failed transaction;
+- a transaction that is neither an approve nor a swap through the pinned router;
+- an approval to any spender other than the router;
+- a router allowance left open between polls;
+- a swap without exactly one stock leg, or a buy or sell without the matching USDT movement;
+- an unexpected token;
+- on-chain holdings that differ from the fill book;
+- nonces missing from the scan;
+- BNB below the 0.003072 exit reserve.
+
+Checked before use:
+- **Baseline at 12:04:03Z, block 129126729:** 96 USDT, 0.005325625054330011 BNB, nonce 4, no stocks, no alerts.
+  This equals the run's initial state.
+- **Decoder on the real seed transactions:** nonce 3 (swap) shows −2 USDT; nonce 2 shows the exact 2 USDT approve
+  to the MetaMask router, which the monitor would flag as another spender.
+- **Synthetic book:** buying 0.1 NVDAB for 20 USDT, then selling half for 11 USDT, gives a realized +1.0 USDT and
+  a remaining basis of 10.0.
+- **A bug the tests caught:** a mistyped Transfer topic, fixed before any live use.
+- **PR249 review fix (offline, before any live fill):** a poll that found the nonces with a gap (a block the
+  public RPC did not return), or that hit a receipt error part-way, booked the transactions it had and then booked
+  them again on the next poll's rescan (trades, gas and fills counted twice), and could book a sell before its buy.
+  The monitor now books only consecutive nonces and advances its nonce per transaction. An offline harness with a
+  stubbed RPC (clean scan; a missing nonce 4 or 5 on the first poll; a balance-read error; a receipt error) gives 2
+  trades, 0.05 NVDAB, realized +1 USDT and the gas of 2 transactions in every case; before the fix 3 of the 5 cases
+  were wrong. Still open: if the monitor first starts more than 1,200 blocks after a fill, it never finds that nonce
+  and alerts `NONCES_NOT_FOUND_IN_SCAN` on every poll, so start it before `trade_after` and keep its `state.json`.
+
+**2. `checks/trading-status.sh` (primary, run by Yao).** One READ ONLY transaction as `larp_execution`, the role
+with SELECT on every table read. It prints the run state and portfolio; rounds by status; event kinds and the
+reasons the agent gave (for example planner rejections); the last 15 non-routine events; execution records; and
+signing requests, signatures and refusals, plus reservations. It shows public values only.
+
+**Questions to evaluate as the data arrives:** fill price against the quote and the Web3 price; gas per approve
+and swap pair against the 0.000384 BNB action budget; holdings drift against the run's own ledger; the share of
+rounds that hold or are rejected, and why; time from intent to receipt; and every alert. The strategy is
+deterministic EQUAL_WEIGHT (LD11-RH01), so these runs evaluate mechanics, cost and correctness, not alpha.
+
 #### SJ-06-RV01 — Keegan's PR244 re-review and fail-closed follow-up (2026-10-22)
 
 Keegan approved PR244 at `b0bd1a0` after SJ-06-A2 fixed his three blocking findings (CI artifact only, Keegan4
@@ -2196,3 +2289,35 @@ as `larp-signer.service`, and calls the real `larp.signer.keyfile.load_key_file`
 copy's mode, owner match and loader verdict, and fails closed without `S1B_DONE`. It starts no service. Offline check
 with a random throwaway key: a 0600 copy gives PASS (`WALLET_PRIVATE_KEY`); a 0640 copy gives REFUSED, "key file mode
 allows group or other access". The README order adds S1b after K1 and before S2. Not yet run on the host.
+
+### SJ-09 — plan: prepare S1 on Oct 23, swap equal weight for S1 from Oct 24 (Yao, 2026-10-22; not started)
+
+**Decision (Yao, in chat):** run the installed equal-weight rehearsal now (LD11-RH01). Prepare the real strategy, S1
+`TREND_GUARDED_VOL` (PF-01 / IDEA-084), on **Oct 23**. On **Oct 24**, after about 24 h of equal-weight trading,
+replace the equal-weight run with an S1 run so S1 is tested live before the Oct 27 cutoff.
+
+**What has to exist first (nothing is built yet):**
+1. **An S1 REHEARSAL `StrategyProfile.v1`.** It needs Keith's frozen weights, session data and measured costs
+   (IDEA-075, LD11, #120), built with the repo's profile builder (`larp/strategy/profiles.py`) and passing
+   `validate_live`. Its window must end before the cutoff: `signing_end` no later than 2026-10-26T14:45Z unless
+   re-decided, with time to flatten. No S1 profile exists in the repo today.
+2. **Its assessor and evidence scope.** S1 as decided uses an OpenAI-primary assessor with external review. Either
+   run S1 deterministic with model authority SHADOW (as LD11-RH01 does), or adopt hosted models for the rehearsal
+   (routing file, budget, `model_adoption_ref`). This is a decision for Keegan and Yao.
+3. **Coverage and approval.** A fresh M3-style capture and numeric review against S1's sizes (up to 95% gross), and
+   Isaac's approval of the new profile hash.
+
+**The swap itself (run sheet to write on Oct 23):**
+- Stop `larp-execution` at a quiet point with nothing in flight (no reservations, no pending commands).
+- Retire run `larp-dev-rehearsal-20261022` and export its evidence. Its rows stay in `larp_rehearsal1`.
+- Open a **new database** (`larp_rehearsal2`), because the run is UNIQUE per wallet and chain, and a **new run ID**.
+- Take the initial state from the finalized chain holdings, **including any open equal-weight positions**. This
+  needs a chain-start rule for stock positions, like SJ-04-A1 for USDT.
+- Reassemble `signer.json` (its `database_name` changes) and get it approved.
+- Install with P3/S1-style steps (the same RC4 build, unless S1 needs code that is not in `d03bbb1`), then
+  P4/S2/P5. Signer access (T1) has to be on again for the signer config.
+
+**Checks before the swap:**
+- Does S1 at `d03bbb1` run in `dev` / `service` with the chosen assessor (an LV4-style build test)?
+- Do the equal-weight positions carried over fit S1's caps?
+- Does the gas left after day 1 cover S1's action budget and exit reserve?
