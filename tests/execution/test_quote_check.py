@@ -162,3 +162,39 @@ def test_qv10_artifacts_stay_outside_the_checkout(pinned, capsys):
     out = capsys.readouterr().out
     assert code == 4 and json.loads(out)['status'] == 'CHECK_REFUSED'
     assert not (qc.ROOT / 'quote-check-artifacts').exists()
+
+
+class ClosedClient(FakeClient):
+    """Token and underlying both report openState false (a weekend or holiday)."""
+
+    def request(self, method, endpoint, params):
+        r = super().request(method, endpoint, params)
+        if endpoint in ('market/rwa/tokens', 'market/rwa/underlying-market'):
+            for row in r['response']['data']:
+                row['statusInfo'] = {'openState': False}
+        return r
+
+
+def closed_check(pinned, capsys, buy):
+    _, sell = tslab()
+    rpc = ChainRpc(u.UntrustedRouterDecoder(policy()), WALLET, qc.USDT, 0)
+    code = qc.main(['--symbol', 'TSLAB', '--env-file', str(pinned / '.env'), '--rpc-url', URL,
+                    '--out', str(pinned / ('artifacts-' + uuid.uuid4().hex))],
+                   client=ClosedClient(buy, sell), rpcs=[rpc], now=lambda: buy['available_at'])
+    return code, json.loads(capsys.readouterr().out)
+
+
+def test_qv12_closed_markets_are_reported_and_do_not_decide_the_verdict(pinned, capsys):
+    buy, _ = tslab()
+    code, report = closed_check(pinned, capsys, buy)
+    assert (code, report['status']) == (0, 'VERIFIED_EXECUTABLE')
+    assert (report['token_open'], report['underlying_open']) == (False, False)
+
+
+def test_qv12_a_refused_quote_still_reports_both_open_states(pinned, capsys):
+    buy, _ = tslab()
+    code, report = closed_check(pinned, capsys, changed(buy, minReceiveAmount='1'))
+    assert (code, report['status']) == (2, 'REFUSED')
+    assert (report['token_open'], report['underlying_open']) == (False, False)
+    code, out, _ = check(pinned, capsys, buy=changed(buy, minReceiveAmount='1'))
+    assert (json.loads(out)['token_open'], json.loads(out)['underlying_open']) == (True, True)

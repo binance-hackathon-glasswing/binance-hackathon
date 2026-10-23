@@ -15,7 +15,8 @@ Raw responses go to a new private directory outside the checkout. The printed JS
 scanned for the credentials, RPC URLs, wallet and calldata before printing.
 
 Exit 0 only for VERIFIED_EXECUTABLE; 2 for a refused quote (its exact reason is printed); 4 for a tool or input error.
-The result depends on the time: outside the US session a refusal can be legitimate.
+No trading hours are assumed: token and underlying `openState` are printed beside the verdict and never decide it
+(the planner enforces them). Whether the venue quotes at a given time is the venue's; a refusal is reported as such.
 """
 import argparse
 from datetime import datetime, timezone
@@ -105,7 +106,12 @@ def run(args, *, client=None, rpcs=None, now=utc):
     report = dict(schema='QuoteCheck.v1', decision_id='IDEA-088 A1', symbol=args.symbol, side=args.side,
                   profile_sha256=PROFILE_SHA, policy_sha256=POLICY_SHA, started_at=now(), signing_enabled=False)
     try:
-        decimals = integer(market.metadata()[args.symbol][0]['decimals'])
+        metadata = market.metadata()
+        decimals = integer(metadata[args.symbol][0]['decimals'])
+        # IDEA-088 A2: reported on every outcome after this read; the open state never decides the verdict (the
+        # planner's guard does), and nothing here reads the clock to decide it.
+        opened = market.observation(args.symbol, metadata[args.symbol])
+        report.update(token_open=opened['token_open'], underlying_open=opened['underlying_open'])
         if args.side == 'BUY':
             pay = args.pay_units or profile['per_trade_cap_units'] - profile['cost_reserve_units']
         elif args.pay_units:
@@ -123,7 +129,7 @@ def run(args, *, client=None, rpcs=None, now=utc):
         report.update(status='REFUSED', reason=str(error), quote_status=None)
         return 2, public_bytes(report, forbidden)
     report.update(quote_status=observation['quote_status'], token_open=observation['token_open'],
-                  underlying_open=observation['underlying_open'])
+                  underlying_open=observation['underlying_open'])  # as the verifier saw them
     measured = observation.get('quote_measurement') or {}
     report['impact_bps'] = measured.get('impact_bps')
     if observation['quote_status'] != 'VERIFIED_EXECUTABLE':
