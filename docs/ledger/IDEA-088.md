@@ -194,3 +194,10 @@ The tool:
   - The result depends on the time of day. Off-hours a refusal can be legitimate, and that run is not evidence either
     way.
   - A refusal while the session is open is recorded as a QV11 FAIL with its reason, even if a later rerun passes.
+
+### A1 results (2026-10-24, Claude Code)
+
+| ID | Result | Evidence |
+|---|---|---|
+| QV10 | PASS (offline) | Commit `e8e76460`, `tests/execution/test_quote_check.py`, 8 tests. Red first: with the tool module moved aside, collection failed with an import error. The tests and the tool were then committed together. Results: (1) the recorded TSLAB BUY (40 USDT, profile cap/reserve scaled to it) and the default SELL of exactly its output both exit 0 `VERIFIED_EXECUTABLE`, with matching economics and `quote_at_cap` accepted; (2) inner-amount tampering, `minReceiveAmount` mismatch and another facet each exit 2 with the port's exact reason; (3) no key, RPC URL, wallet or calldata appears in the output, and a credential reflected in a refusal exits 4 without printing it; (4) a profile or policy hash mismatch exits 4, and the shipped pins are `6bcf1dfb…` / `05759e90…` with dev wallet `0x62b8…d479`; (5) the client refuses the approve, gas-limit and broadcast endpoints, and an artifact directory inside the checkout is refused. Full suite (PG 14.24): **2583 passed, 10 skipped, 0 failed** (log SHA-256 `90a7d8ad…`), with the same 10 environmental skips. |
+| QV11 | NOT RUN | Live check owned by Yao during the US session; the command and pass shape are in the PR description. |
