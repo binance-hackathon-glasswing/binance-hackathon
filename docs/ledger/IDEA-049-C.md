@@ -2692,3 +2692,16 @@ as Isaac's own GitHub attestation. It clears the gate before P4.
   - `signer.json` `1a4cda6f…`.
 
 Next: P3, then P4.
+
+#### SJ-10 J3 — PASS: P3 and P4 on primary; run 2 registered and active on RC5 (2026-10-23 04:43Z, Yao)
+
+- **P3** (04:42:57Z, exit 0): all 11 package files are installed with exactly M4's hashes; `rds-ca` is `d7389074…`.
+  Preflight `release_verified: true`; runtime `service check` and execution `check` both `configuration_valid`.
+  Routes PASS (`a93eaad8…`, 13 destinations). Time sync 0.0000005 s. `P3_DONE`.
+- **P4** (04:43:17Z, exit 0): `init` gives run `larp-dev-rehearsal-20261023`, mode `dev`, quarantined; `activate`
+  gives epoch 2. **`larp_rehearsal2` is now registered to RC5 `d53d1b7`** (manifest `bc3a9838…`). Evidence, uploader
+  and runtime are active with 0 restarts, execution inactive, archive timer active. With the SJ-06 timer fix, P4 now
+  prints `P4_DONE`.
+
+The runtime now runs rounds for run 2. Until the signer (S2) and execution (P5) start, any committed intent waits
+unsigned. Next: T1, then R1s, P2s, S1, S1b, S2 and P5.
