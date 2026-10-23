@@ -3269,3 +3269,16 @@ Stamp `20261023T161113Z`, review at 16:11:49Z, run 2 still installed on primary 
   (assistant check, field-by-field).
 
 Next: **A1**, Isaac approves profile `6bcf1dfb…` and `signer.json` `49cb1a08…`. Then R1p, P2, M4 (stamp above).
+
+#### SJ-11-A1 — Isaac approves the run-3 S1 profile and signer.json (relayed by Yao, 2026-10-23T16:14Z)
+
+**Approval (Isaac, relayed by Yao in chat):** "he approves keep going", in reply to the A1 request for exactly:
+- S1 REHEARSAL profile `6bcf1dfb…` (`docs/build/evidence/s1-rehearsal-profile-20261023/rehearsal-s1-deterministic.json`,
+  PF-01 values, weights 1/5, deterministic, SHADOW models and falsifiers; scope SJ-11-C1);
+- run-3 `signer.json` `49cb1a08c3d2a3b3c7409ad1c3beb68e0a43e3282bd9296ad7bcec770530209a` (M3 stamp `20261023T161113Z`),
+  which differs from run 2's `1a4cda6f…` only in `build_id`, `database_name` and `run_id`;
+- with the M3 coverage 89/89 COVERED, CAP-02 policy `3241abd3…`, router policy `05759e90…` and the same dev wallet.
+
+This clears `OWNER_REVIEW_REQUIRED` for these hashes only, and is the run-3 approval record for P4
+("IDEA-049-C SJ-11-A1"). Any different profile, `signer.json` or coverage capture needs a new decision. No written
+statement from Isaac is in the repo; it is recorded as relayed. Next: R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5.
