@@ -3348,3 +3348,16 @@ Next: P3 on primary with the printed command, then P4.
 stderr): `release_verified: true`; runtime and execution `configuration_valid: true` (signing false); routes PASS
 `54f98814…`, 13 destinations; chrony on Amazon Time Sync (169.254.169.123), stratum 4, 0.0000026 s fast, leap Normal.
 Nothing started. Next: P4 with reviewer `Yao Zhu` and approval `SJ-11-A1 Isaac via Yao; SJ-11-C1 Yao Zhu 2026-10-23`.
+
+#### SJ-11 P4 — PASS: run 3 initialized and activated on S1 (2026-10-23 ~16:3xZ, Yao)
+
+`host/p4-init-activate-start.sh "Yao Zhu" "SJ-11-A1 Isaac via Yao; SJ-11-C1 Yao Zhu 2026-10-23"` (SSM
+`6abce702-5737-4498-a269-3434356c020e`, Success, no stderr):
+- `init`: `initialized: true`, run `larp-dev-rehearsal-20261024`, mode `dev`, quarantined (as runs 1 and 2 at init).
+- `activate`: `activated: true`, epoch 2, `signing_enabled: false`.
+- `larp-evidence`, `larp-uploader`, `larp-runtime` active with 0 restarts; `larp-execution` inactive; archive timer
+  active. `P4_DONE`.
+
+Run 3 is now bound to RC6 `9dc5edab` and `larp_rehearsal3`. `checks/primary-status.sh` right after (SSM `2b55a1c2…`):
+same unit states, runtime `release_verified: true`, archive health `healthy: true` for run 3, anchor 1 ACK, backup 1 ACK.
+Next: T1 (signer access on), then R1s, P2s, S1, S1b, S2, P5.
