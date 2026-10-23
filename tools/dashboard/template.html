@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LARP wallet dashboard</title>
+<!-- Built by tools/dashboard/build.py (IDEA-087). Self-contained: no external scripts, styles or fonts. -->
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #6f6d68;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --wash: rgba(11,11,11,0.04);
+  --series-1: #2a78d6; --series-2: #eb6834;
+  --good-text: #006300; --bad-text: #c23131;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9890;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.05);
+    --series-1: #3987e5; --series-2: #d95926;
+    --good-text: #0ca30c; --bad-text: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9890;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.05);
+  --series-1: #3987e5; --series-2: #d95926;
+  --good-text: #0ca30c; --bad-text: #e66767;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 40px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; }
+h2 { font-size: 15px; font-weight: 600; margin: 0; }
+.sub { color: var(--ink-2); margin: 2px 0 0; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink); white-space: nowrap;
+}
+.pill .age { color: var(--ink-2); }
+.sev { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.good { background: var(--good); }
+.dot.warning { background: var(--warning); border-radius: 2px; transform: rotate(45deg); width: 9px; height: 9px; }
+.dot.serious { background: var(--serious); border-radius: 2px; }
+.dot.critical { background: var(--critical); border-radius: 2px; }
+.notices { margin: 16px 0 0; display: grid; gap: 8px; }
+.notice {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.notice .dot { margin-top: 5px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 24px; }
+.hero .label { color: var(--ink-2); }
+.hero .value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.01em; }
+.hero .unit { font-size: 18px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+.delta { font-size: 15px; font-weight: 500; }
+.delta.up { color: var(--good-text); } .delta.down { color: var(--bad-text); } .delta.flat { color: var(--ink-2); }
+.delta .ctx { color: var(--ink-2); font-weight: 400; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.tile .label { color: var(--ink-2); }
+.tile .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+.tile .note { color: var(--muted); font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
+.chart { position: relative; margin-top: 8px; min-height: 220px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .base { stroke: var(--axis); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .ref { stroke: var(--muted); stroke-opacity: 0.7; stroke-width: 1; shape-rendering: crispEdges; }
+.chart text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart text.endlabel { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.chart .cross { stroke: var(--ink-2); stroke-width: 1; shape-rendering: crispEdges; pointer-events: none; }
+.chart .hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart .hit:focus-visible { stroke: var(--series-1); stroke-width: 1; }
+.empty { color: var(--ink-2); margin: 24px 0; text-align: center; }
+#tooltip {
+  position: fixed; z-index: 10; pointer-events: none; min-width: 150px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); font-size: 12px;
+}
+#tooltip .when { color: var(--ink-2); margin-bottom: 4px; }
+#tooltip .row { display: flex; align-items: center; gap: 8px; }
+#tooltip .key { width: 14px; height: 2px; border-radius: 1px; flex: none; }
+#tooltip strong { font-variant-numeric: tabular-nums; }
+#tooltip .name { color: var(--ink-2); }
+.table-wrap { overflow-x: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 500; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.muted { color: var(--ink-2); }
+td.detail { white-space: normal; min-width: 240px; color: var(--ink-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-wrap: anywhere; }
+tbody tr:hover { background: var(--wash); }
+.weight { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.track { width: 80px; height: 8px; border-radius: 4px; background: var(--wash); overflow: hidden; }
+.fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--series-1); }
+a { color: var(--series-1); }
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--ink-2); }
+footer { color: var(--ink-2); font-size: 12px; margin-top: 20px; }
+footer p { margin: 4px 0; }
+@media (max-width: 520px) { .hero .value { font-size: 40px; } }
+@media print { .chart .hit { display: none; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>LARP wallet dashboard</h1>
+      <p class="sub" id="subtitle">Read-only view of the agent's wallet from the chain monitor</p>
+    </div>
+    <div class="pill" id="status" role="status"></div>
+  </header>
+  <div class="notices" id="notices"></div>
+  <section class="card">
+    <div class="hero" id="hero"></div>
+  </section>
+  <section class="tiles" id="tiles" aria-label="Key figures"></section>
+  <section class="card">
+    <h2>Equity</h2>
+    <p class="sub">USDT, excluding BNB; the line marks the opening value</p>
+    <div class="chart" id="equity-chart"></div>
+  </section>
+  <section class="card">
+    <h2>Drawdown from peak</h2>
+    <p class="sub">Percent below the highest equity so far (the tie-break measure)</p>
+    <div class="chart" id="drawdown-chart"></div>
+    <details>
+      <summary>Show the chart data as a table</summary>
+      <div class="table-wrap"><table id="points-table"></table></div>
+    </details>
+  </section>
+  <section class="card">
+    <h2>Holdings</h2>
+    <p class="sub" id="holdings-sub"></p>
+    <div class="table-wrap"><table id="holdings"></table></div>
+  </section>
+  <section class="card">
+    <h2>Transactions</h2>
+    <p class="sub" id="tx-sub"></p>
+    <div class="table-wrap"><table id="transactions"></table></div>
+  </section>
+  <section class="card">
+    <h2>Alerts</h2>
+    <p class="sub">Monitor checks, grouped; an open condition repeats on every poll</p>
+    <div class="table-wrap"><table id="alerts"></table></div>
+  </section>
+  <footer id="footer"></footer>
+</main>
+<div id="tooltip" hidden></div>
+<script id="dashboard-data" type="application/json">__DASHBOARD_DATA__</script>
+<script>
+(function () {
+  'use strict';
+  var RAW = document.getElementById('dashboard-data').textContent + '\n';  // data.json is the same text plus a newline
+  var DATA = JSON.parse(RAW);
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function svg(tag, attrs, text) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+
+  function number(v, digits, signed) {
+    if (v == null) return '—';
+    var s = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    if (Number(s.replace(/,/g, '')) === 0) return s;
+    return (v < 0 ? '−' : signed ? '+' : '') + s;
+  }
+  var fmt = {
+    usdt: function (v, signed) { return number(v, 2, signed); },
+    pct: function (v, signed) { return v == null ? '—' : number(v, 2, signed) + '%'; },
+    bnb: function (v) { return number(v, 5); },
+    units: function (v) { return v == null ? '—' : v.toLocaleString('en-US', { maximumSignificantDigits: 6 }); },
+    price: function (v) { return v == null ? '—' : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }); }
+  };
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function parse(iso) { return iso ? Date.parse(iso) : NaN; }
+  function when(iso, withYear) {
+    var t = parse(iso);
+    if (isNaN(t)) return '—';
+    var d = new Date(t);
+    return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCDate() + (withYear ? ' ' + d.getUTCFullYear() : '') +
+      ', ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+  }
+  function age(iso) {
+    var t = parse(iso);
+    if (isNaN(t)) return null;
+    var m = Math.max(0, Math.round((Date.now() - t) / MIN));
+    if (m < 60) return m + ' min ago';
+    if (m < 48 * 60) return Math.round(m / 60) + ' h ago';
+    return Math.round(m / 1440) + ' d ago';
+  }
+  function humanize(kind) {
+    var s = String(kind || '').toLowerCase().replace(/_/g, ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function sev(level, label) {
+    var span = el('span', 'sev');
+    var dot = el('span', 'dot ' + level);
+    dot.setAttribute('aria-hidden', 'true');
+    span.appendChild(dot);
+    span.appendChild(document.createTextNode(label));
+    return span;
+  }
+
+  // ---- header, notices, hero, tiles ----
+  function renderStatus() {
+    var s = DATA.summary, node = clear($('status'));
+    var t = parse(s.as_of_utc), mins = (Date.now() - t) / MIN, level, label;
+    if (isNaN(t)) { level = 'critical'; label = 'No data'; }
+    else if (mins < 10) { level = 'good'; label = 'Live'; }
+    else if (mins < 60) { level = 'warning'; label = 'Delayed'; }
+    else { level = 'critical'; label = 'Stale'; }
+    node.appendChild(sev(level, label));
+    if (!isNaN(t)) {
+      node.appendChild(el('span', 'age', 'data ' + age(s.as_of_utc)));
+      node.title = 'Last poll ' + when(s.as_of_utc, true) + ' UTC';
+    }
+  }
+
+  function renderNotices() {
+    var box = clear($('notices')), s = DATA.summary, inputs = DATA.inputs;
+    function add(level, label, text) {
+      var n = el('div', 'notice');
+      n.appendChild(el('span', 'dot ' + level));
+      var body = el('div');
+      body.appendChild(el('strong', null, label + ' '));
+      body.appendChild(document.createTextNode(text));
+      n.appendChild(body);
+      box.appendChild(n);
+    }
+    if (!inputs['snapshots.jsonl'].present) add('critical', 'No data.', 'The monitor folder has no snapshots.jsonl yet.');
+    if (s.price_error) {
+      add('warning', 'Prices missing.', 'The latest poll could not read prices (' + s.price_error + '). Equity is from ' +
+        when(s.priced_as_of_utc) + ' UTC; holdings below show units only where prices are missing.');
+    }
+    Object.keys(inputs).sort().forEach(function (name) {
+      var r = inputs[name], parts = [];
+      if (r.malformed) parts.push(r.malformed + ' unreadable line' + (r.malformed > 1 ? 's' : ''));
+      if (r.truncated_tail) parts.push('a partly written last line');
+      if (parts.length) add('warning', 'Skipped input.', name + ': ' + parts.join(' and ') + ' (not shown).');
+    });
+  }
+
+  function renderHero() {
+    var s = DATA.summary, hero = clear($('hero'));
+    var left = el('div');
+    left.appendChild(el('div', 'label', 'Equity'));
+    var v = el('div', 'value', fmt.usdt(s.equity_usdt));
+    v.appendChild(el('span', 'unit', 'USDT'));
+    left.appendChild(v);
+    hero.appendChild(left);
+    if (s.return_usdt != null) {
+      var dir = s.return_usdt > 0 ? 'up' : s.return_usdt < 0 ? 'down' : 'flat';
+      var d = el('div', 'delta ' + dir);
+      d.appendChild(document.createTextNode((dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '') +
+        fmt.usdt(s.return_usdt, true) + ' USDT (' + fmt.pct(s.return_pct, true) + ')'));
+      d.appendChild(el('span', 'ctx', ' since the start, ' + fmt.usdt(s.start_equity_usdt) + ' USDT'));
+      hero.appendChild(d);
+    }
+  }
+
+  function renderTiles() {
+    var s = DATA.summary, box = clear($('tiles'));
+    var active = DATA.alerts.filter(function (a) { return a.active; });
+    var critical = active.filter(function (a) { return a.severity === 'critical'; }).length;
+    var tiles = [
+      ['Max drawdown', fmt.pct(s.max_drawdown_pct),
+        s.max_drawdown_trough_utc ? 'trough ' + when(s.max_drawdown_trough_utc) + ' UTC' : 'no fall from a peak yet'],
+      ['Current drawdown', fmt.pct(s.current_drawdown_pct), 'below the peak so far'],
+      ['Realized PnL', fmt.usdt(s.realized_usdt, true), 'USDT, from closed fills'],
+      ['Unrealized PnL', fmt.usdt(s.unrealized_usdt, true), 'USDT, open positions at market'],
+      ['Gas spent', fmt.bnb(s.gas_spent_bnb), 'BNB; balance ' + fmt.bnb(s.bnb)],
+      ['Swaps', s.swaps == null ? '—' : String(s.swaps),
+        (s.failed_txs || 0) + ' failed transaction' + (s.failed_txs === 1 ? '' : 's')],
+      ['Active alerts', String(active.length), critical ? critical + ' critical' : 'none critical']
+    ];
+    tiles.forEach(function (t) {
+      var tile = el('div', 'tile');
+      tile.appendChild(el('div', 'label', t[0]));
+      tile.appendChild(el('div', 'value', t[1]));
+      tile.appendChild(el('div', 'note', t[2]));
+      box.appendChild(tile);
+    });
+  }
+
+  // ---- charts ----
+  function niceStep(span, count) {
+    var raw = span / Math.max(count, 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+    return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+  }
+  function yTicks(lo, hi) {
+    var step = niceStep(hi - lo, 4), out = [];
+    for (var v = Math.floor(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toFixed(10));
+    if (out[out.length - 1] < hi) out.push(+(out[out.length - 1] + step).toFixed(10));
+    return out;
+  }
+  var STEPS = [5 * MIN, 10 * MIN, 15 * MIN, 30 * MIN, HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR,
+    DAY, 2 * DAY, 3 * DAY, 7 * DAY];
+  function xTicks(t0, t1, width) {
+    var target = Math.max(2, Math.floor(width / 90)), step = STEPS[STEPS.length - 1];
+    for (var i = 0; i < STEPS.length; i++) if ((t1 - t0) / STEPS[i] <= target) { step = STEPS[i]; break; }
+    var out = [];
+    for (var t = Math.ceil(t0 / step) * step; t <= t1; t += step) out.push(t);
+    return { ticks: out, step: step };
+  }
+  function xLabel(t, step) {
+    var d = new Date(t);
+    if (step >= DAY || (d.getUTCHours() === 0 && d.getUTCMinutes() === 0)) return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCDate();
+    return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+  }
+
+  var charts = [];
+  function drawChart(host, cfg) {
+    clear(host);
+    var pts = cfg.points;
+    if (!pts.length) { host.appendChild(el('p', 'empty', cfg.empty)); return null; }
+    var W = Math.max(host.clientWidth || 600, 280), H = 220;
+    var m = { t: 12, r: 62, b: 26, l: 52 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    if (t1 - t0 < MIN) { t0 -= 30 * MIN; t1 += 30 * MIN; }
+    var lo = Infinity, hi = -Infinity;
+    pts.forEach(function (p) { if (p.y < lo) lo = p.y; if (p.y > hi) hi = p.y; });
+    cfg.include.forEach(function (v) { if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+    if (hi - lo < cfg.minSpan) { var mid = (hi + lo) / 2; lo = mid - cfg.minSpan / 2; hi = mid + cfg.minSpan / 2; }
+    if (cfg.capTop != null && hi > cfg.capTop) { lo -= hi - cfg.capTop; hi = cfg.capTop; }
+    var ticks = yTicks(lo, hi);
+    lo = ticks[0]; hi = ticks[ticks.length - 1];
+    function x(t) { return m.l + (t - t0) / (t1 - t0) * iw; }
+    function y(v) { return m.t + (hi - v) / (hi - lo) * ih; }
+    var root = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img', 'aria-label': cfg.label });
+    ticks.forEach(function (v, i) {
+      root.appendChild(svg('line', { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), 'class': i === 0 ? 'base' : 'grid' }));
+      root.appendChild(svg('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end' }, cfg.tick(v)));
+    });
+    var xt = xTicks(t0, t1, iw);
+    xt.ticks.forEach(function (t) {
+      root.appendChild(svg('text', { x: x(t), y: H - 6, 'text-anchor': 'middle' }, xLabel(t, xt.step)));
+    });
+    if (cfg.ref != null) {
+      root.appendChild(svg('line', { x1: m.l, x2: m.l + iw, y1: y(cfg.ref), y2: y(cfg.ref), 'class': 'ref' }));
+      root.appendChild(svg('text', { x: m.l + iw + 6, y: y(cfg.ref) + 4 }, cfg.refLabel));
+    }
+    var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.y).toFixed(1); }).join('');
+    if (cfg.areaTo != null) {
+      var base = y(cfg.areaTo).toFixed(1);
+      root.appendChild(svg('path', {
+        d: 'M' + x(pts[0].t).toFixed(1) + ' ' + base + d.replace(/^M/, 'L') + 'L' + x(pts[pts.length - 1].t).toFixed(1) + ' ' + base + 'Z',
+        fill: cfg.color, 'fill-opacity': 0.1, stroke: 'none'
+      }));
+    }
+    root.appendChild(svg('path', { d: d, fill: 'none', stroke: cfg.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    var last = pts[pts.length - 1];
+    root.appendChild(svg('circle', { cx: x(last.t), cy: y(last.y), r: 4, fill: cfg.color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+    var endLabel = svg('text', { x: x(last.t) + 8, y: y(last.y) + 4, 'class': 'endlabel' }, cfg.tick(last.y, true));
+    root.appendChild(endLabel);
+    var cross = svg('line', { y1: m.t, y2: m.t + ih, 'class': 'cross', visibility: 'hidden' });
+    var marker = svg('circle', { r: 4, fill: cfg.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden', 'pointer-events': 'none' });
+    root.appendChild(cross);
+    root.appendChild(marker);
+    var hit = svg('rect', { x: m.l, y: m.t, width: iw, height: ih, 'class': 'hit', tabindex: 0,
+      'aria-label': cfg.label + '. Use the arrow keys to read values.' });
+    root.appendChild(hit);
+    host.appendChild(root);
+    var xs = pts.map(function (p) { return x(p.t); });
+    var chart = {
+      host: host, svg: root, hit: hit,
+      show: function (i) {
+        var px = xs[i], py = y(pts[i].y);
+        cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+        marker.setAttribute('cx', px); marker.setAttribute('cy', py); marker.setAttribute('visibility', 'visible');
+        endLabel.setAttribute('visibility', i === pts.length - 1 ? 'visible' : 'hidden');
+      },
+      hide: function () {
+        cross.setAttribute('visibility', 'hidden'); marker.setAttribute('visibility', 'hidden');
+        endLabel.setAttribute('visibility', 'visible');
+      },
+      nearest: function (clientX) {
+        var box = root.getBoundingClientRect(), sx = (clientX - box.left) * W / box.width;
+        var lo2 = 0, hi2 = xs.length - 1;
+        while (hi2 - lo2 > 1) { var mid2 = (lo2 + hi2) >> 1; if (xs[mid2] < sx) lo2 = mid2; else hi2 = mid2; }
+        return Math.abs(xs[lo2] - sx) <= Math.abs(xs[hi2] - sx) ? lo2 : hi2;
+      },
+      anchor: function (i) {
+        var box = root.getBoundingClientRect();
+        return { x: box.left + xs[i] * box.width / W, y: box.top + m.t * box.height / H };
+      }
+    };
+    return chart;
+  }
+
+  var focusIndex = null;
+  function showAt(i, source, clientX, clientY) {
+    focusIndex = i;
+    charts.forEach(function (c) { c.show(i); });
+    var p = DATA.equity.points[i], tip = clear($('tooltip'));
+    tip.appendChild(el('div', 'when', when(p[0]) + ' UTC'));
+    [['Equity', fmt.usdt(p[1]) + ' USDT', 'var(--series-1)'], ['Drawdown', fmt.pct(p[2] || 0), 'var(--series-2)']]
+      .forEach(function (r) {
+        var row = el('div', 'row'), key = el('span', 'key');
+        key.style.background = r[2];
+        row.appendChild(key);
+        row.appendChild(el('strong', null, r[1]));
+        row.appendChild(el('span', 'name', r[0]));
+        tip.appendChild(row);
+      });
+    tip.hidden = false;
+    var a = clientX == null ? source.anchor(i) : { x: clientX, y: clientY };
+    var w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth;
+    var left = a.x + 14 + w > vw - 8 ? a.x - 14 - w : a.x + 14;
+    tip.style.left = Math.max(8, left) + 'px';
+    tip.style.top = Math.max(8, a.y - h - 10) + 'px';
+  }
+  function hideAll() {
+    focusIndex = null;
+    charts.forEach(function (c) { c.hide(); });
+    $('tooltip').hidden = true;
+  }
+  function wire(chart) {
+    var n = DATA.equity.points.length;
+    chart.hit.addEventListener('pointermove', function (e) { showAt(chart.nearest(e.clientX), chart, e.clientX, e.clientY); });
+    chart.hit.addEventListener('pointerleave', hideAll);
+    chart.hit.addEventListener('focus', function () { showAt(focusIndex == null ? n - 1 : focusIndex, chart); });
+    chart.hit.addEventListener('blur', hideAll);
+    chart.hit.addEventListener('keydown', function (e) {
+      var i = focusIndex == null ? n - 1 : focusIndex;
+      if (e.key === 'ArrowLeft') i = Math.max(0, i - 1);
+      else if (e.key === 'ArrowRight') i = Math.min(n - 1, i + 1);
+      else if (e.key === 'Home') i = 0;
+      else if (e.key === 'End') i = n - 1;
+      else if (e.key === 'Escape') { hideAll(); return; }
+      else return;
+      e.preventDefault();
+      showAt(i, chart);
+    });
+  }
+
+  function renderCharts() {
+    var s = DATA.summary;
+    var pts = DATA.equity.points.map(function (p) { return { t: parse(p[0]), y: p[1], dd: p[2] }; });
+    charts = [
+      drawChart($('equity-chart'), {
+        points: pts, color: 'var(--series-1)', label: 'Equity in USDT over time', empty: 'No priced snapshots yet.',
+        include: [s.start_equity_usdt], minSpan: 0.2, ref: s.start_equity_usdt, refLabel: 'start',
+        tick: function (v, end) { return end ? fmt.usdt(v) : v.toLocaleString('en-US', { maximumFractionDigits: 2 }); }
+      }),
+      drawChart($('drawdown-chart'), {
+        points: pts.map(function (p) { return { t: p.t, y: p.dd }; }), color: 'var(--series-2)',
+        label: 'Drawdown from peak in percent over time', empty: 'No priced snapshots yet.',
+        include: [0], minSpan: 0.5, capTop: 0, areaTo: 0,
+        tick: function (v, end) { return end ? fmt.pct(v || 0) : (v === 0 ? '0' : number(v, Math.abs(v) < 1 ? 2 : 1)) + '%'; }
+      })
+    ].filter(Boolean);
+    charts.forEach(wire);
+    var note = DATA.equity.total > DATA.equity.points.length
+      ? DATA.equity.points.length + ' of ' + DATA.equity.total + ' polls shown (each period keeps its extremes)' : null;
+    table($('points-table'), [
+      { label: 'Time (UTC)', get: function (p) { return when(p[0], true); } },
+      { label: 'Equity (USDT)', num: true, get: function (p) { return fmt.usdt(p[1]); } },
+      { label: 'Drawdown', num: true, get: function (p) { return fmt.pct(p[2] || 0); } }
+    ], DATA.equity.points.slice().reverse(), 'No priced snapshots yet.', note);
+  }
+
+  // ---- tables ----
+  function table(node, cols, rows, empty, caption) {
+    clear(node);
+    if (caption) node.appendChild(el('caption', null, caption)).style.cssText = 'caption-side: bottom; text-align: left; color: var(--muted); padding-top: 6px;';
+    var head = el('thead'), tr = el('tr');
+    cols.forEach(function (c) { tr.appendChild(el('th', c.num ? 'num' : null, c.label)); });
+    head.appendChild(tr);
+    node.appendChild(head);
+    var body = el('tbody');
+    if (!rows.length) {
+      var r = el('tr'), td = el('td', 'muted', empty);
+      td.colSpan = cols.length;
+      r.appendChild(td);
+      body.appendChild(r);
+    }
+    rows.forEach(function (row) {
+      var r = el('tr');
+      cols.forEach(function (c) {
+        var td = el('td', c.cls || (c.num ? 'num' : null)), v = c.get(row);
+        if (v instanceof Node) td.appendChild(v); else td.textContent = v == null ? '—' : v;
+        r.appendChild(td);
+      });
+      body.appendChild(r);
+    });
+    node.appendChild(body);
+  }
+
+  function renderHoldings() {
+    var s = DATA.summary;
+    $('holdings-sub').textContent = s.as_of_utc ? 'At the last poll, ' + when(s.as_of_utc) + ' UTC. BNB (gas) is not counted in equity.' : '';
+    table($('holdings'), [
+      { label: 'Token', get: function (h) { return h.symbol; } },
+      { label: 'Units', num: true, get: function (h) { return h.symbol === 'USDT' ? fmt.usdt(h.units) : fmt.units(h.units); } },
+      { label: 'Value (USDT)', num: true, get: function (h) { return fmt.usdt(h.value_usdt); } },
+      { label: 'Weight', num: true, get: function (h) {
+        if (h.weight_pct == null) return '—';
+        var w = el('div', 'weight'), track = el('div', 'track'), fill = el('div', 'fill');
+        fill.style.width = Math.max(0, Math.min(100, h.weight_pct)) + '%';
+        track.appendChild(fill);
+        track.setAttribute('aria-hidden', 'true');
+        w.appendChild(track);
+        w.appendChild(el('span', null, fmt.pct(h.weight_pct)));
+        return w;
+      } }
+    ], DATA.holdings, 'No holdings recorded yet.');
+  }
+
+  var TX_HASH = /^0x[0-9a-fA-F]{64}$/;
+  function renderTransactions() {
+    var t = DATA.transactions;
+    $('tx-sub').textContent = t.total ? 'Newest first. ' + (t.total > t.rows.length ? t.rows.length + ' of ' + t.total + ' shown. ' : '') +
+      'Seen = the monitor poll that found it.' : '';
+    var cols = [
+      { label: 'Seen (UTC)', get: function (r) { return when(r.seen_utc); } },
+      { label: 'Type', get: function (r) {
+        if (r.side) return (r.side === 'BUY' ? 'Buy ' : 'Sell ') + (r.symbol || '');
+        return humanize(r.kind) + (r.symbol ? ' ' + r.symbol : '');
+      } },
+      { label: 'Units', num: true, get: function (r) { return r.side ? fmt.units(r.units) : '—'; } },
+      { label: 'USDT', num: true, get: function (r) { return r.side ? fmt.usdt(r.usdt) : '—'; } },
+      { label: 'Price', num: true, get: function (r) { return r.side ? fmt.price(r.price) : '—'; } },
+      { label: 'Realized', num: true, get: function (r) { return r.realized_usdt == null ? '—' : fmt.usdt(r.realized_usdt, true); } },
+      { label: 'Gas (BNB)', num: true, get: function (r) { return fmt.bnb(r.gas_bnb); } },
+      { label: 'Status', get: function (r) { return r.ok ? sev('good', 'Confirmed') : sev('critical', 'Failed'); } }
+    ];
+    if (!DATA.redacted) {
+      cols.push({ label: 'Transaction', get: function (r) {
+        if (!TX_HASH.test(r.hash || '')) return '—';
+        var a = el('a', null, r.hash.slice(0, 10) + '…');
+        a.href = 'https://bscscan.com/tx/' + r.hash;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        return a;
+      } });
+    }
+    table($('transactions'), cols, t.rows, 'No transactions yet.');
+  }
+
+  function renderAlerts() {
+    var cols = [
+      { label: 'Severity', get: function (a) { return sev(a.severity, a.severity === 'critical' ? 'Critical' : 'Warning'); } },
+      { label: 'Alert', get: function (a) { return humanize(a.kind) + (a.symbol ? ' (' + a.symbol + ')' : ''); } },
+      { label: 'Polls', num: true, get: function (a) { return String(a.count); } },
+      { label: 'First seen (UTC)', get: function (a) { return when(a.first_utc); } },
+      { label: 'Last seen (UTC)', get: function (a) { return when(a.last_utc); } },
+      { label: 'Now', get: function (a) { return a.active ? 'Active' : 'Cleared'; } }
+    ];
+    if (!DATA.redacted) cols.push({ label: 'Latest detail', cls: 'detail', get: function (a) { return a.detail; } });
+    table($('alerts'), cols, DATA.alerts, 'No alerts recorded.');
+  }
+
+  function renderFooter() {
+    var s = DATA.summary, f = clear($('footer'));
+    f.appendChild(el('p', null, 'Built from ' + s.snapshots + ' monitor poll' + (s.snapshots === 1 ? '' : 's') +
+      ' (' + s.priced_snapshots + ' with prices). All times UTC.'));
+    f.appendChild(el('p', null, 'Equity excludes BNB and uses the chain monitor\'s Web3 prices. It is not the official score: ' +
+      'the official valuation source has not been published.'));
+    f.appendChild(el('p', null, DATA.redacted
+      ? 'Redacted: no wallet address, transaction hashes, block numbers or nonces.'
+      : 'Full detail: includes transaction hashes. Do not publish this version publicly.'));
+  }
+
+  function renderAll() {
+    renderStatus(); renderNotices(); renderHero(); renderTiles(); renderCharts();
+    renderHoldings(); renderTransactions(); renderAlerts(); renderFooter();
+  }
+
+  renderAll();
+  var pending = false;
+  if (window.ResizeObserver) {
+    var lastWidth = $('equity-chart').clientWidth;
+    new ResizeObserver(function () {
+      var w = $('equity-chart').clientWidth;
+      if (pending || w === lastWidth) return;
+      pending = true;
+      requestAnimationFrame(function () { pending = false; lastWidth = w; hideAll(); renderCharts(); });
+    }).observe($('equity-chart'));
+  }
+  setInterval(renderStatus, 30000);
+  // On Pages, pick up a newer build without a reload. Opened from disk, fetch fails and the page stays as built.
+  if (/^https?:$/.test(location.protocol)) {
+    setInterval(function () {
+      fetch('data.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (text) {
+        if (!text || text === RAW) return;
+        var next = JSON.parse(text);
+        if (next.schema !== DATA.schema) return;
+        RAW = text; DATA = next; hideAll(); renderAll();
+      }).catch(function () {});
+    }, 5 * MIN);
+  }
+})();
+</script>
+</body>
+</html>

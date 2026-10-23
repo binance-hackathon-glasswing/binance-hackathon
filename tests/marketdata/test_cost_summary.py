@@ -322,10 +322,13 @@ class Runner(unittest.TestCase):
     def test_q10_the_wrapper_needs_the_key_pair_and_never_prints_it(self):
         import os
         import subprocess
+        import sys
         script = Path(__file__).resolve().parents[2] / 'tools' / 'run_quote_capture.sh'
         self.assertTrue(script.is_file())
         with tempfile.TemporaryDirectory() as tmp:
             env = {k: v for k, v in os.environ.items() if not k.startswith('BINANCE_')}
+            # The wrapper's .env parser needs the pinned python-dotenv: use this interpreter, not PATH's python3.
+            env['PYTHON'] = sys.executable
             result = subprocess.run(['bash', str(script), WALLET, '2026-10-19T00:00:00Z', tmp], cwd=tmp, env=env,
                                     capture_output=True, text=True, timeout=30)
             self.assertNotEqual(result.returncode, 0)

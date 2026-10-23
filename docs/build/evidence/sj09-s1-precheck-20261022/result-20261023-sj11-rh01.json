@@ -1,0 +1,155 @@
+{
+ "checks": {
+  "C0_runtime_files_differing_from_installed_rc4": {
+   "expected": [
+    "larp/risk/planner.py",
+    "larp/runtime/gate_a.py",
+    "larp/strategy/profiles.py"
+   ],
+   "status": "AS_EXPECTED",
+   "value": [
+    "larp/risk/planner.py",
+    "larp/runtime/gate_a.py",
+    "larp/strategy/profiles.py"
+   ]
+  },
+  "C1_s1_rehearsal_builds_and_validates": {
+   "expected": {
+    "evidence_mode": "BOUNDED_FALSIFIER",
+    "exit_gas_reserve_units": 1920000000000000,
+    "falsifier_authority": "DISCRETIONARY_EXIT",
+    "gas_action_budget_units": 384000000000000,
+    "minimum_trade_units": 18637420,
+    "per_trade_cap_units": 19100000
+   },
+   "status": "AS_EXPECTED",
+   "value": {
+    "evidence_mode": "BOUNDED_FALSIFIER",
+    "exit_gas_reserve_units": 1920000000000000,
+    "falsifier_authority": "DISCRETIONARY_EXIT",
+    "gas_action_budget_units": 384000000000000,
+    "minimum_trade_units": 18637420,
+    "per_trade_cap_units": 19100000
+   }
+  },
+  "C2_s1_shadow_validate_live": {
+   "expected": {
+    "final": {
+     "inner": "Live profile differs from decided v1 scope",
+     "outer": "Live profile differs from decided v1 scope"
+    },
+    "rehearsal": null
+   },
+   "status": "AS_EXPECTED",
+   "value": {
+    "final": {
+     "inner": "Live profile differs from decided v1 scope",
+     "outer": "Live profile differs from decided v1 scope"
+    },
+    "rehearsal": null
+   }
+  },
+  "C3_signed_prepare_without_routing": {
+   "expected": {
+    "equal_weight_control_passes_this_check": true,
+    "s1_bounded": "Signed preparation needs reviewed routing or scoped deterministic rehearsal and an adoption reference",
+    "s1_shadow_passes_this_check": true
+   },
+   "status": "AS_EXPECTED",
+   "value": {
+    "equal_weight_control_passes_this_check": true,
+    "s1_bounded": "Signed preparation needs reviewed routing or scoped deterministic rehearsal and an adoption reference",
+    "s1_shadow_passes_this_check": true
+   }
+  },
+  "C4_initial_state_with_stock_holdings": {
+   "expected": "Existing stock holdings require reviewed cost-basis history",
+   "status": "AS_EXPECTED",
+   "value": "Existing stock holdings require reviewed cost-basis history"
+  },
+  "C5_smallest_feasible_weight_at_100_usdt": {
+   "expected": "0.1962",
+   "status": "AS_EXPECTED",
+   "value": "0.1962"
+  },
+  "C5_unequal_weights_build": {
+   "expected": "Measured minimum cannot fit a full position at REHEARSAL",
+   "status": "AS_EXPECTED",
+   "value": "Measured minimum cannot fit a full position at REHEARSAL"
+  },
+  "C6_equity_floor_for_s1_buys_units": {
+   "expected": 98191685,
+   "status": "AS_EXPECTED",
+   "value": 98191685
+  },
+  "C6_policy_at_rehearsal_cost_ratio": {
+   "expected": {
+    "flat_book": "BUY",
+    "minimum_over_equity": "0.1867",
+    "start_equity_units": 99845905,
+    "up_to_down": {
+     "first_intent": null,
+     "targets": [
+      [
+       "KEEP_QUANTITY",
+       "LOW_TURNOVER_HOLD"
+      ]
+     ]
+    },
+    "up_to_down_control_minimum_1": {
+     "first_intent": "SELL",
+     "targets": [
+      [
+       "TARGET_WEIGHT",
+       "S1_LEVEL_CHANGE"
+      ]
+     ]
+    }
+   },
+   "status": "AS_EXPECTED",
+   "value": {
+    "flat_book": "BUY",
+    "minimum_over_equity": "0.1867",
+    "start_equity_units": 99845905,
+    "up_to_down": {
+     "first_intent": null,
+     "targets": [
+      [
+       "KEEP_QUANTITY",
+       "LOW_TURNOVER_HOLD"
+      ]
+     ]
+    },
+    "up_to_down_control_minimum_1": {
+     "first_intent": "SELL",
+     "targets": [
+      [
+       "TARGET_WEIGHT",
+       "S1_LEVEL_CHANGE"
+      ]
+     ]
+    }
+   }
+  },
+  "C7_exit_reserve_wei": {
+   "expected": {
+    "builder": 1920000000000000,
+    "left_after_two_child": 1485625054330011,
+    "two_child": 3840000000000000,
+    "wallet_bnb_at_install": 5325625054330011
+   },
+   "status": "AS_EXPECTED",
+   "value": {
+    "builder": 1920000000000000,
+    "left_after_two_child": 1485625054330011,
+    "two_child": 3840000000000000,
+    "wallet_bnb_at_install": 5325625054330011
+   }
+  }
+ },
+ "differs": [],
+ "head": "f886dbfc4eb3286f5f00bb48bf2af9f954f1e3d6",
+ "installed_build": "d03bbb16cf51277c73d7f381b08f9551d0c10415",
+ "record_id": "SJ-09-PC01",
+ "schema": "SJ09PreCheck.v1"
+}

@@ -1,0 +1,73 @@
+{
+  "block_hash": "0xcbcaee7fbdcd70bf4d2e9cd737cba51e760d10d77d906c2691e8aca1a42d6f06",
+  "block_number": 128976212,
+  "block_time_utc": "2026-10-21T17:14:46+00:00",
+  "canonical_rechecked": true,
+  "capture": {
+    "block_hash": "0xcbcaee7fbdcd70bf4d2e9cd737cba51e760d10d77d906c2691e8aca1a42d6f06",
+    "block_number": 128976212,
+    "chain_id": 56,
+    "latest_nonce": 2,
+    "native_wei": 2694498869362886,
+    "observed_at": "2026-10-21T17:14:47.127Z",
+    "pending_nonce": 2,
+    "schema": "ChainBalances.v1",
+    "tokens": {
+      "GOOGLB": {
+        "contract": "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+        "decimals": 18,
+        "units": 0
+      },
+      "MSFTB": {
+        "contract": "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+        "decimals": 18,
+        "units": 0
+      },
+      "NVDAB": {
+        "contract": "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+        "decimals": 18,
+        "units": 0
+      },
+      "SKHYB": {
+        "contract": "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+        "decimals": 18,
+        "units": 0
+      },
+      "TSLAB": {
+        "contract": "0x5b1910eaad6450e50f816082aa078c41f10c292f",
+        "decimals": 18,
+        "units": 0
+      },
+      "USDT": {
+        "contract": "0x55d398326f99059ff775485246999027b3197955",
+        "decimals": 18,
+        "units": 98000000000000000000
+      }
+    },
+    "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479"
+  },
+  "chain_id": 56,
+  "completed_at": "2026-10-21T17:14:53.711Z",
+  "decision_id": "IDEA-049-C SJ-02",
+  "eligible_funding_amount_authorized": false,
+  "exit_floor_shortfall_wei": 377501130637114,
+  "exit_reserve_wei": 3072000000000000,
+  "finalized_nonce": 2,
+  "first_agent_trade_eligibility_confirmed": false,
+  "funding_performed": false,
+  "host_reservations_checked": false,
+  "nonce_read_agreement": true,
+  "observed_at": "2026-10-21T17:14:47.127Z",
+  "profile_sha256": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250",
+  "read_count": 21,
+  "read_limit": 25,
+  "schema": "DevFundingPreflight.v2",
+  "scope": "PUBLIC_POINT_IN_TIME_CHAIN_READ_NOT_HOST_RECONCILIATION_OR_FUNDING_AUTHORIZATION",
+  "signing_enabled": false,
+  "source_id": "BSC_BNBCHAIN_PUBLIC",
+  "status": "READ_ONLY_CAPTURED",
+  "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+  "wallet_key_accessed": false,
+  "whole_rehearsal_shortfall_wei": 6137501130637114,
+  "whole_rehearsal_target_wei": 8832000000000000
+}

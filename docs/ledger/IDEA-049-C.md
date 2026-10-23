@@ -1524,6 +1524,128 @@ and original artifact 12365166625 is verified with no local rebuild
 ([receipt](../build/evidence/ab-rel-rc3a-20261021.json)). The P04 review bound
 `5bee006`, so the LD16 recheck binds `fa1b6c9`.
 
+## SJ-01 — signer-only handoff and PR235 input coverage (2026-10-22, prospective)
+
+Isaac requests the four signer.json preparation tasks/owners in PR133 and work
+on task1. Scope, S1–S5 criteria before verification, sources and access boundary:
+[Signer input coverage](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+The PR133 body and comment6321601733 now carry that narrow allocation;
+installation/key/first-round/final-adoption remain outside it. Isaac identifies
+branch `capture`; audit its actual archive dates/sizes/checksums without
+claiming a fresh reconciled primary packet. The selected PR235 profile and
+approved caps/policy are unchanged. No new runtime feature or policy is adopted.
+
+### SJ-01 results — archive verified; actual coverage still needs primary data
+
+PR133 task section/comment6321601733 published. At pushed777d80e, capture archive
+identity/CRC/14,268 payloads/14,257 response bodies PASS;3,855 BUY requests are
+40USDT, zero selected18.637420/20.10USDT size matches. Newest quote Oct19
+23:57:06.475Z, not current300s evidence. All artifacts are Web3Observation.v1;
+no actual reconciled holdings/nonce/allowance/reservation/PR235 child packet.
+Existing canonical focused collector/caps/assembly:47 tests/141 subtests PASS,
+zero skips, macOS/Python3.12.14; no network/DB/host/full-release claim.
+Generated private checksummed primary-only capture package and compiled payload;
+actual capture is NOT_RUN (no local AWS credentials; Chrome access denied).
+[Exact report, hashes, operator command and remaining owner input](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+No altered cap/profile/balance/timestamp, wallet key, funding, installation,
+actual signer assembly or signing. Task1 remains open pending the real packet.
+
+### SJ-01 concurrent PR236 review — fresh quote work and RC3 delivered
+
+PR236 mergedfa1b6c9 while this task was in progress. Normal merge retains both
+its full LD10-P04 history and the dated archive audit. The new packet is22/22
+request-bound quotes,91/92 covered checks; only INITIAL_BNB_EXIT_RESERVE fails.
+Independent public receipt consistency PASS: selected profile/document/CAP02/
+router/probe hashes, counts, every published child cash amount and gas arithmetic.
+Floor3072000000000000wei minus held2694498869362886wei leaves377501130637114wei
+(0.000377501130637114BNB). Actual private packet was not replayed; no new current-
+clock pass or full/personal owner acceptance is asserted. Private input review
+and a fresh reconciled post-funding rerun remain before assembly.
+RC3 source5bee006/original artifact12363800624 is recorded qualified by PR236;
+all runtime/config/test bytes here remain identical. Current account gets404
+for mirror metadata; no independent artifact download/CI rerun is claimed.
+[Review and current scope](../build/SIGNER_INPUT_COVERAGE_20261022.md).
+Task2 qualification is delivered; no duplicate pre-funding primary capture is
+requested. Task1 reserve/review and LD16 private bindings/assembly remain;
+installation/key/first-round tasks stay outside the user's preparation scope.
+
+## SJ-02 — Isaac's remaining signer funding work (2026-10-22, prospective)
+
+Isaac asks the assistant to help with his remaining signer-preparation tasks.
+Before new reads: use only pushed production read_balances/Rpc code against
+the existing public BNB Chain primary and registered development public wallet;
+at most25 read-only calls,20s per call,no retries/redirects/credentials/signing.
+Require chain56, finalized block/hash recheck, all six token balances/decimals
+and latest/pending nonce; compare the actual BNB balance with selected PR235
+exit reserve and the separately recorded whole-rehearsal target. Preserve public
+observations privately and report source/block/time/hash. Do not infer actual
+host reservations, unused signing authority or first-trade eligibility from
+nonce/balance reads alone. No wallet transaction, key, funding, host change,
+new paid quote or official ai-seeds log. No new trading policy or gas cap.
+Checked source_page dedicated-wallet text, verbatim kit trading guide gas text,
+SKILL F120/G13/Q03 and the FG02 handoff. The operator eligibility confirmation
+and any wallet swap remain with their human owners; never mark them complete
+from this read-only preflight. If an additional funding hash exists, verify it
+separately rather than assume another swap is needed.
+
+### SJ-02 results — current gas gap confirmed; human wallet step remains
+
+At2026-10-21T17:14:47.127Z (Oct22 01:14:47SGT), chain56 finalized128976212
+rechecked;21read-only calls. BNB2694498869362886wei,98USDT/18decimals,zero stocks,
+finalized/latest/pending nonce2/2/2. Exit-floor gap377501130637114wei unchanged;
+whole-rehearsal gap6137501130637114wei is separate. [Snapshot/human step and
+review sources](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-02--current-pre-funding-check-and-isaacs-exact-next-action).
+No new hash supplied; no wallet/host/official log action or key access. Actual
+operator pre-first-trade/in-flight confirmation, eligible human seed, receipt
+note, hosted post-funding reconciliation/private inputs and current-clock caps
+review remain incomplete; no completion line is removed. Balance/nonce reads
+do not stand in for that host or signing-authority check. Public snapshot exact
+integer/identity/false-flag checks PASS; no unrelated test rerun or release claim.
+
+SJ-02-U1 user confirmation (2026-10-22SGT): no additional dev seed; separate
+live-challenge wallet must not be used yet. Restrict current work to dev;
+no live-wallet input/access/funding/registration/activation is authorized here.
+
+## SJ-03 — verify completed additional dev gas seed (2026-10-22, prospective)
+
+Isaac supplies new hash0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d,
+reports96USDT remaining and a MetaMask confirmed screenshot:2USDT sent,
+0.00264317BNB displayed received,Oct22 01:27SGT,BNB Chain/dev account.
+Before verification: at most40 read-only calls to existing public BNB Chain
+primary,20s/no retries/redirects/credentials. Use pushed production ChainEvidence
+receipt and read_balances: require chain56, exact tx/sender/hash, successful
+canonical finalized inclusion, immutable block recheck, exact USDT Transfer-log
+net debit, actual current finalized all-asset balances/nonces, six router
+allowances and selected-profile exit-reserve comparison. Distinguish receipt
+network gas from UI fee-token economics. Treat displayed native output as
+attributed rounded UI evidence; do not infer transaction-local native credit
+from whole-block or current balance differences. No tracing qualification,
+wallet signing/key access, funding action, AWS/host/ledger or live-wallet access.
+Record actual funding note and clear only the completed dev seed/snapshot
+slice; hosted post-funding reconciliation/private current quotes/owner and
+run/config bindings remain until actually supplied. No historical quote date,
+portfolio identity or 92-check result is rewritten to claim a new full pass.
+
+### SJ-03 results — new dev seed succeeds and exit-floor gap is closed
+
+New hashab19e680…57a168d: nonce3,chain56,success/canonical/finalized at
+2026-10-21T17:27:41Z. Exactly2USDT net debit by Transfer logs; both seeds4USDT.
+Snapshot17:31:04.217Z:96USDT,5325625054330011weiBNB,zero stocks,nonces4/4/4;
+selected3072000000000000wei floor covered with2253625054330011wei headroom.
+MetaMask displayed0.00264317BNB credit is rounded attributed UI evidence,not
+transaction-local native RPC proof. Receipt gas9732150000000wei verified.
+29 successful observations/30 attempts; quantity-to-word allowance decoder
+correction reused original reads; one additional allowance RPC refusal,not
+retried. No assistant signing/key/transaction/host/live-wallet action.
+[Receipt and precise remaining owner handoff](../build/SIGNER_INPUT_COVERAGE_20261022.md#sj-03-result--dev-gas-seed-verified-signer-exit-floor-covered).
+Dev seed/floor slice complete; GAP49 now retains actual operator opening,
+future final-wallet work outside this task and other unqualified native scope.
+Current hosted reconciliation/private quotes/owner acceptance/run/config
+bindings and actual assembly remain open; no old91/92 report is relabeled.
+No further seed requested for signer minimum. Original user live-wallet
+restriction remains. RC3a/PR238 adds qualification for fa1b6c9 as recorded in
+canonical; no runtime bytes changed by this documentation/evidence branch.
+
 ## LD10-P05 — post-funding readiness check (2026-10-22, prospective)
 
 A public BSC RPC read shows the wallet changed since P04: native 5,325,625,054,330,011
@@ -2520,3 +2642,563 @@ replace the equal-weight run with an S1 run so S1 is tested live before the Oct 
 - Does S1 at `d03bbb1` run in `dev` / `service` with the chosen assessor (an LV4-style build test)?
 - Do the equal-weight positions carried over fit S1's caps?
 - Does the gas left after day 1 cover S1's action budget and exit reserve?
+
+### SJ-10 — signed dev rehearsal run 2 on RC5 (connection reuse), preregistered 2026-10-23
+
+**Why:** run 1 (`larp-dev-rehearsal-20261022`, RC4) never traded. Its IAM logins (about 45,000 an hour, one per
+transaction; counted in the RDS log, 19:00Z–02:00Z) exhausted `db.t4g.micro` after about 7 hours (SJ-06 J8
+incident). Yao declined an AWS plan upgrade and chose the code fix, IDEA-085: PR257 merged at `a971685e` with Keegan's
+RV1 `eadd5d4`. A run cannot change build, so RC5 goes in as a new run.
+
+**Decisions (Yao, in chat, 2026-10-23):**
+- Run 2 is `larp-dev-rehearsal-20261023` on database `larp_rehearsal2`.
+- Same dev wallet and key, equal-weight profile `e95d5842…` (LD11-RH01; first buy already allowed, new risk until
+  Oct 25 00:00Z, flatten from Oct 26 00:00Z, signing until Oct 26 14:45Z), CAP-02 policy `3241abd3…`, router policy
+  `05759e90…`, untrusted mode and initial gas only.
+- Yao relays "Isaac approves". Recorded as **SJ-10-A1 (scope):** the approval covers a reassembled `signer.json` that
+  differs from run 1's installed `cd0b38b8…` only in `build_id` (RC5), `run_id` (`larp-dev-rehearsal-20261023`) and
+  `database_name` (`larp_rehearsal2`). M4 refuses any other difference. The exact hash M3 prints is posted for Isaac's
+  confirmation, as with SJ-06-A2. If Isaac's approval was meant more narrowly or more widely, this scope is corrected
+  before M4.
+
+**What carries over:**
+- RC4 → RC5 changes only `larp/runtime/database.py` and `larp/storage/postgres.py`.
+- The migrations, `roles.sql`, the LD10 probe tool and the assembly code are byte-identical.
+- Run 1 never traded, so the chain start has no stock positions: 96 USDT, about 0.0053 BNB, nonce 4. The same exact
+  2 USDT seed deficit is accepted (SJ-04-A1).
+- The wallet key stays on the signer; K1 is not repeated.
+
+**Run sheet:** [docs/build/ops/rehearsal-install-rc5-20261023/](../build/ops/rehearsal-install-rc5-20261023/README.md).
+New steps:
+- D1: create `larp_rehearsal2`;
+- R1p and R1s: retire run 1 on each host by disabling its units and moving its configs to history; the database and
+  key stay;
+- soak check K, `mac/soak-db-logins.sh`.
+
+**Pass criteria (each recorded with its `results/` output; hashes only):**
+- **J0 build:** RC5 mirror CI green on all four jobs for a commit containing `eadd5d4`; M1 verifies the artifact.
+- **J1 database:** D1 `SJ-10-D1 PASS`: 13 migrations equal the release, 21 tables, 0 runs, five roles connect.
+- **J2 candidate:** M3 `ASSEMBLED_REQUIRES_APPROVAL` and `COVERED`. M4's diff against `cd0b38b8…` is exactly
+  `build_id`, `database_name` and `run_id`, with the new values.
+- **J3 primary:** R1p, P2, P3 and P4 each end with their `*_DONE` line. P4 activates run 2 with every unit active and 0
+  restarts.
+- **J4 signer:** T1 applies only the IDEA-080 resources. R1s, P2s, S1, S1b and S2 each end with their `*_DONE` line.
+  S2 shows `wallet_matches: true` and `started: true`.
+- **J5 execution and teardown:** P5 `P5_DONE`; signer-status before T2; T2 destroys only the 8 resources; SA5 and SA9;
+  M9.
+- **J6 soak (IDEA-085 host check):** `soak-db-logins.sh` under 500 IAM logins an hour with no auth time-out or PAM
+  failure, at about 1 h and again at 8 h or later. No unit restarts in `checks/primary-status.sh` over the same period.
+- **J7 first trade (LD19/LD20):** the agent's own round produces an approve and a swap, with canonical receipts,
+  accounting and STORED ACK.
+
+Any refusal stops the sheet at that step and is recorded as it happened. Nothing is widened to get past it.
+
+#### SJ-10-A2 — local RC5 bundle instead of mirror CI (Yao, 2026-10-23 ~04:40Z)
+
+**Decision (Yao, in chat):** "ya we arent gonna bother with the mirror ci just keep going". J0 changes to a local
+bundle built from the pushed canonical head with `tools/build_release_bundle.py`, the same route as SJ-06-A1 (Oct 22)
+and PC-BUILD01. **This reverses, for run 2 only, Keegan's PR244 release gate** ("install only the original CI
+artifact, never a local rebuild"; SJ-06-A2). The bundle has no CI test provenance. Its test record is local only:
+- IDEA-085 R7 on the PR257 head before RV1: 2484 passed / 10 environmental skips, against base 2468 / 10;
+- Keegan's RV1 run on Linux with PostgreSQL 16 (2482 passed, with 3 lock-check failures that also fail on base in his
+  venv).
+
+Linux CI on PostgreSQL 14.24 and the systemd jobs did not run for RC5.
+
+**J0′ pass criteria** (`mac/m1-local-bundle.sh`):
+- The builder accepts the clean worktree on `codex/system-testing-20261012` at the pushed head, which contains
+  `eadd5d4`.
+- The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+- Compared file by file with the **CI-built RC4** bundle (manifest `5ea11a84…`, artifact 12419733594): the only
+  differences are release files that `d03bbb1..BUILD` changed, expected to be `release/larp/runtime/database.py` and
+  `release/larp/storage/postgres.py`. CPython, every wheel, `rds-ca.pem` and `provision.sh` are byte-identical, and
+  `BUNDLE.env` differs only in `build_id`.
+
+Anything else stops the sheet.
+
+#### SJ-10 D1 and J0′ — PASS (2026-10-23)
+
+- **D1 (Yao, about 04:29Z):** `SJ-10-D1 PASS`. `larp_rehearsal2` was new. The databases before were `larp`,
+  `larp_rehearsal1`, `larp_trial` and `larp_trial2`. TLSv1.2; 13 migrations equal to the release and to `larp`; 21
+  tables; 0 runs. All five service roles connect. The runtime role can insert runs and cannot insert execution records.
+  `roles.sql` is `18b4a364…`, rewritten for the new name as `393c7e1e…`.
+- **J0′, M1-local (about 04:45Z, Mac):** built from the clean `codex/system-testing-20261012` worktree at the pushed
+  head `d53d1b7` (contains `eadd5d4`). `larp-d53d1b7aa8f1-x86_64.tar.gz` is sha256
+  `5764a97025a1dbde929def31012a0e48639ce73ff50be605df6793fc1ba7a686`, manifest `bc3a9838…`.
+  - The sidecar, `SHA256SUMS`, build ID and published manifest all agree.
+  - Against **CI RC4** (manifest `5ea11a84…`), only `release/larp/runtime/database.py` and
+    `release/larp/storage/postgres.py` differ, exactly the release files that `d03bbb1..d53d1b7` changed. The bundle's
+    `postgres.py` equals the source and carries the pool and `SOCKET_OPTIONS`.
+  - CPython `0e56475e…`, every wheel, `rds-ca.pem` `d7389074…` and `provision.sh` `d7905de4…` are byte-identical;
+    `BUNDLE.env` differs only in `build_id`.
+  - **PASS.**
+
+Limit (SJ-10-A2): no CI run on this commit. RC5 = `d53d1b7`. Next: M2, then M3 (before R1p).
+
+#### SJ-10 M3 first run — refused on the declared USDT deficit; run-sheet error, fixed (2026-10-23 04:33Z)
+
+Yao ran M3. The probe hash matched `692787e4…`, and the read-only capture on primary succeeded (SSM `4bce1e12…`,
+04:32:53Z). The assembly then reported `SIGNER_ASSEMBLY_REFUSED`. A local diagnosis, with no AWS or host action, found
+the failing check in `review_rehearsal_caps.chain_start`: the USDT deficit must equal the declared one. The run sheet
+had copied run 1's `--accept-usdt-deficit-units 2000000`. That deficit was SJ-04-A1's: chain 96 against the retired
+trial ledger's 98 USDT. The probe now reads **run 1** as the source ledger, which started from the chain. Every holding
+is an exact `MATCH`:
+- USDT 96000000 against 96000000;
+- BNB 5325625054330011 against 5325625054330011;
+- GOOGLB, MSFTB, NVDAB, SKHYB and TSLAB all 0;
+- nonce 4/4; status `MATCH`; source run `larp-dev-rehearsal-20261022`.
+
+So the checker was right to refuse. Fix: M3 passes `--accept-usdt-deficit-units 0`, so the new run must start from an
+exact match. M3 is re-run, and a fresh capture is needed anyway, because quotes older than 300 s are refused.
+
+- 2026-10-23 correction (Claude): in SJ-10 "What carries over", "The same exact 2 USDT seed deficit is accepted
+  (SJ-04-A1)" is wrong. Run 2 starts from an exact match with no deficit (above).
+
+#### SJ-10 J2 — PASS: run-2 signer candidate `1a4cda6f…` (M3 re-run, 2026-10-23 04:35Z, Yao)
+
+Fresh read-only capture on primary: SSM `415c5500…`, 04:35:30Z, probe hash `692787e4…`. Holdings are an exact `MATCH`
+with run 1's ledger: 96 USDT, 0.005325625054330011 BNB, every stock 0, nonce 4/4. The assembly ran with no declared
+USDT deficit. Report, stamp `20261023T043528Z`: `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`, no missing
+quote coverage, blockers only `OWNER_REVIEW_REQUIRED`, reviewed at 04:36:04Z. Install, signing and Gate B flags are all
+false.
+
+**Candidate** `signer.json` sha256 `1a4cda6fcbad7066ddd8c9375115a5156320b629f6c81d3c0aa3a64390c2b1b1`. A
+field-by-field diff against run 1's installed `cd0b38b8…` changes exactly three fields:
+- `build_id`: `d03bbb1…` → `d53d1b7aa8f18790f0bdde73cfdcdbed95555043` (RC5);
+- `database_name`: `larp_rehearsal1` → `larp_rehearsal2`;
+- `run_id`: `larp-dev-rehearsal-20261022` → `larp-dev-rehearsal-20261023`.
+
+`signing_policy` (the CAP-02 caps, allowed tokens and spender, fee cap) is byte-identical, as are the router policy
+pair, the wallet, the CA and every other field. This is inside SJ-10-A1's scope. **Pending:** Isaac's confirmation of
+this exact hash (relayed or on PR133), which gates P4, as SJ-06-A2 did. R1p, P2, M4 and P3 do not register anything,
+so they may go first.
+
+#### SJ-10 R1p and P2 — PASS on primary (2026-10-23 04:38Z, Yao)
+
+- **R1p** (SSM, 04:38:33Z, exit 0): `larp-execution`, `larp-runtime`, `larp-uploader`, `larp-archive.timer` and
+  `larp-evidence` are inactive and disabled. `larp-archive.service` shows `failed`, from its last outage run, and is
+  disabled. Run 1's 11 configs moved to `/etc/larp-history/d03bbb1-larp-dev-rehearsal-20261022/`, including:
+  - `release.json` `1db4571d…`, `runtime.json` `a89a7088…`, `execution.json` `96435836…`;
+  - `strategy-profile.json` `e95d5842…`, router policy `05759e90…`.
+
+  `/etc/larp` keeps only `rds-ca.pem` and `role-primary`. `R1P_DONE`.
+- **P2** (04:38:41Z, exit 0): `provision.sh` installed build `d53d1b7aa8f18790f0bdde73cfdcdbed95555043` with manifest
+  `bc3a9838…`, matching the local J0′ build, and `rds-ca` `d7389074…`. It enabled the units, then P2 disabled
+  `larp-execution`; nothing was started. `P2_DONE`.
+
+Next: M4, then P3. P4 waits for Isaac's confirmation of `1a4cda6f…`.
+
+#### SJ-10-A1 confirmed and SJ-10 M4 PASS (2026-10-23 04:41Z)
+
+**SJ-10-A1 (Isaac, relayed by Yao in chat, about 04:41Z):** "yes confirmed keep going". Isaac confirms that his
+approval covers run-2 `signer.json` `1a4cda6fcbad7066ddd8c9375115a5156320b629f6c81d3c0aa3a64390c2b1b1`. That file
+differs from `cd0b38b8…` only in `build_id`, `run_id` and `database_name` (SJ-10 J2). This is recorded as relayed, not
+as Isaac's own GitHub attestation. It clears the gate before P4.
+
+**M4** (Mac, package `package-20261023T044123Z`, prefix `releases/rehearsal-20261023t044123z/`):
+- Fresh capture `captured: true`.
+- `prepare` done. Its `gate_a_passed: false` and missing `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE` are
+  expected for a dev, deterministic run.
+- Package check: all 7 checks PASS, `local_ready: true`, `remote_ci_verified: false` (local bundle, SJ-10-A2).
+- Bind: `manifest_bound` to `bc3a9838…`.
+- Local signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23.
+- Identity:
+  - runtime: `larp-dev-rehearsal-20261023` / `d53d1b7` / `dev` / `larp_rehearsal2`, service / deterministic, profile
+    `e95d5842…`;
+  - execution: the same identity, `larp_execution`, send RPC `BSC_BNBCHAIN_PUBLIC` (RV01-D1's acceptance carried to
+    run 2 under the same dev-rehearsal-only terms);
+  - initial state: 96000000 USDT, 5325625054330011 BNB, five positions 0, opening equity 99845905.
+- Hashes:
+  - `release.json` `72478f9d…`, `runtime.json` `8efb54d6…`, `execution.json` `d9aa6ea1…`;
+  - `initial-state.json` `15eeba6b…`, `uploader.json` `731a044d…`, `operations.json` `525372ae…`;
+  - `signer.json` `1a4cda6f…`.
+
+Next: P3, then P4.
+
+#### SJ-10 J3 — PASS: P3 and P4 on primary; run 2 registered and active on RC5 (2026-10-23 04:43Z, Yao)
+
+- **P3** (04:42:57Z, exit 0): all 11 package files are installed with exactly M4's hashes; `rds-ca` is `d7389074…`.
+  Preflight `release_verified: true`; runtime `service check` and execution `check` both `configuration_valid`.
+  Routes PASS (`a93eaad8…`, 13 destinations). Time sync 0.0000005 s. `P3_DONE`.
+- **P4** (04:43:17Z, exit 0): `init` gives run `larp-dev-rehearsal-20261023`, mode `dev`, quarantined; `activate`
+  gives epoch 2. **`larp_rehearsal2` is now registered to RC5 `d53d1b7`** (manifest `bc3a9838…`). Evidence, uploader
+  and runtime are active with 0 restarts, execution inactive, archive timer active. With the SJ-06 timer fix, P4 now
+  prints `P4_DONE`.
+
+The runtime now runs rounds for run 2. Until the signer (S2) and execution (P5) start, any committed intent waits
+unsigned. Next: T1, then R1s, P2s, S1, S1b, S2 and P5.
+
+#### SJ-10 T1 — applied on the second attempt (2026-10-23 ~04:58Z, Yao)
+
+- **Plan** `signer-access-on-run2.tfplan`: **8 to add, 0 to change, 0 to destroy**, exactly the IDEA-080 resources. The
+  LD08 low-gas alarm already exists.
+- **First signer chain** (04:51Z and again at 04:53Z after a reboot): SSM `Undeliverable`, so nothing ran on the
+  signer. `mac/signer-reach.sh` at 04:55Z found that **T1 had not been applied**: no SSM endpoints, and no SSM policy
+  on `larp-dev-signer`. The signer's last ping was 2026-10-22 14:16Z, at T2, and it showed `ConnectionLost`.
+  EC2 status ok/ok; primary `Online` (SA9).
+- **Apply, re-run with output kept** (`results/t1-apply.txt`): the attachment, security group and rules took 1–3 s;
+  endpoints `ssmmessages`, `ssm` and `ec2messages` took 56–57 s. `Apply complete! Resources: 8 added, 0 changed, 0
+  destroyed.`
+
+Next: the signer's SSM registration (a reboot if needed, as in SJ-06 J5), then R1s, P2s, S1 and S1b.
+
+#### SJ-10 J4 (part) — signer reachable; R1s, P2s, S1 and S1b PASS (2026-10-23 05:01–05:07Z, Yao)
+
+- **Reach:** after T1, the signer needed one reboot, as in SJ-06 J5. At 05:03:12Z both hosts are `Online` (signer
+  ping 05:01:37Z, primary 04:59:31Z: **SA9 PASS**). The three endpoints are `available` with private DNS from
+  04:57:54Z, and `AmazonSSMManagedInstanceCore` is on `larp-dev-signer`.
+- **R1s** (05:05:50Z): `larp-signer` inactive and disabled. Run 1's `signer.json` `cd0b38b8…`, `release.json`
+  `1db4571d…` and router policy moved to `/etc/larp-history/d03bbb1-larp-dev-rehearsal-20261022/`. The key stays,
+  `600 root:root`, one link. Run 1's signer journal shows 68 `"started": true` lines since S2, from restarts during
+  the J8 database outage and the reboot. `R1S_DONE`.
+- **P2s** (05:05:57Z): build `d53d1b7` for the signer, manifest `bc3a9838…`, `rds-ca` `d7389074…`; `larp-signer` left
+  disabled. `P2_DONE`.
+- **S1** (05:06:15Z): `release.json` `72478f9d…`, `signer.json` `1a4cda6f…`, router policy `05759e90…`. Signer `check`
+  `configuration_valid`, UNTRUSTED, DEV-23. **SA4** routes PASS (`1a284a0d…`, 6 destinations; no internet route).
+  Time sync 0.0000008 s. `S1_DONE`.
+- **S1b** (05:07:21Z): the `LoadCredential` copy is `0o400`, owned by the signer user, `key_loader: PASS`.
+  `S1B_DONE`.
+
+Next: S2 (start the signer), P5 (start execution), C1 (signer-status before T2).
+
+#### SJ-10 J4 and J5 (part) — S2, P5 and C1 PASS: run 2 signing and executing on RC5 (2026-10-23 05:10Z, Yao)
+
+- **S2** (signer, 05:10:06Z): key file `600 root:root`, 1 link. `key_loader: PASS`, `WALLET_PRIVATE_KEY`,
+  **`wallet_matches: true`**. `larp-signer` is enabled and active with 0 restarts. Start line `"started": true`,
+  `"signing_enabled": true`, UNTRUSTED `05759e90…`, DEV-23, CAP-02. `S2_DONE`.
+- **P5** (primary, 05:10:30Z): execution `check` `configuration_valid`. `larp-execution` is enabled and active with 0
+  restarts, `release_verified: true`, no exit 2/3/4. `P5_DONE`.
+- **C1** signer-status (05:10:53Z, before T2): active with 0 restarts. The 30-minute journal holds three start lines:
+  run 1's signer after the reboots, before R1s retired it, then run 2's. There is no refusal after the last one. Key
+  `600 root:root`.
+
+**Run 2 is fully running: runtime, execution and signer on RC5 `d53d1b7`, database `larp_rehearsal2`.** The chain
+monitor at 05:10:34Z still shows nonce 4 and 96 USDT, seconds after P5. Next: T2, SA5/SA9, M9 on
+`releases/rehearsal-20261023t044123z/`, the K soak at about 06:10Z, and J7, the first approve/swap.
+
+#### SJ-10 first trading-status — run 2 healthy, but no entry is possible: no basis verifier is wired in (2026-10-23 05:16Z)
+
+`checks/trading-status.sh` (primary, 05:16:35Z, about 33 min after P4 and 6 min after P5):
+- **Healthy:** `larp-runtime`, `larp-execution`, `larp-evidence` and `larp-uploader` are active with **0 restarts**.
+  The database errors of the J8 incident have not recurred so far; the K soak measures the login rate.
+- **Run:** `larp-dev-rehearsal-20261023`, not quarantined, epoch 2, version 11, registered build `d53d1b7`.
+  `BALANCE_CHECKED` is `MATCH` (96 USDT, 0.005325625054330011 BNB, stocks 0). No HALT.
+- **Rounds and events:** 4 rounds, all `CLOSED`/`COMPLETE`: two `filing:` evidence rounds, and cadence rounds 1991922
+  and 1991924 (decision at about 05:00:10Z). 11 events: `VERSION_REGISTERED`, `RUN_ACTIVATED`, `BALANCE_CHECKED`, 4
+  `ROUND_PLANNED`, 4 `ROUND_CLOSED`.
+- **Execution:** 0 records, 0 signing requests, 0 signatures, 0 refusals, 0 reservations.
+- **Plan:** `known_gross_units` 0 and `available_cash_units` 96000000. Target reasons: `MISSING_MARKET_OR_BASIS` ×10
+  (5 names × 2 cadence rounds), `REASSESS_AFTER_ABSTENTION` ×4, `AWAIT_COMPARISON_BASIS` ×4, `REVIEW_NEW_STATEMENT`
+  ×4, `SCALE_NOT_STATED` ×2. `instrument_scope.token_underlying_status` is `UNVERIFIED`.
+
+**Finding (code, offline trace at `d53d1b7`):**
+- `StrategyPolicy` keeps every name at its current quantity, with reason `MISSING_MARKET_OR_BASIS`, unless its market
+  view has `basis_verified` true (`larp/strategy/policy.py:154`). This is checked before the `EQUAL_WEIGHT` branch.
+- `MarketPort` sets `basis_verified` only when it is built with a `basis_verifier` (`larp/marketdata/port.py:111`).
+- The hosted runtime builds `MarketPort(client, wallet, quote_limits=profile)` without one (`larp/runtime/service.py`).
+- So every observation is `basis_verified: false`, and **no entry can be planned in service mode for any profile**.
+
+This is the known entry blocker in IDEA-035 ("`MISSING_MARKET_OR_BASIS` until the token-candle sessions are built"),
+never wired. Run 1 (RC4) had the same code, so it could not have traded either. The LD10 and LD11 rehearsal
+qualification covered quotes, sizes, signing caps and coverage, not a runtime-planned entry. **J7 cannot pass on RC5.**
+What would make it pass is a new decision: a reviewed basis-verification rule and its wiring, in a new build and
+therefore a new run.
+
+### SJ-11 — run 3 uses S1, not equal weight (Yao, 2026-10-23 ~06:10Z); open requirements
+
+**Decision (Yao, in chat):** "dont use equal weight anymore use S1, keith reviewed it". Run 3 trades S1
+`TREND_GUARDED_VOL` (PF-01 / IDEA-084), not the LD11-RH01 equal-weight fallback. PR260 (EXP-008) also recommends
+swapping S1 into the rehearsal: S1 trailed equal weight by 0.58 pp per 10 sessions on the underlying proxy, with no
+detectable difference on token history, and hit the 8% stop about a third as often. No written record of Keith's
+review is in the repo yet; it is recorded as relayed by Yao.
+
+**Already in place for run 3:**
+- the wallet is flat (96 USDT, about 0.0053 BNB, nonce 4), so SJ-09-PC01 C4 no longer applies;
+- the basis check (IDEA-086) gates S1 entries exactly as it gates equal weight, so it is needed either way;
+- the RC5 connection pooling (IDEA-085).
+
+**Still needed (SJ-09-PC01, re-checked on canonical `8eb16e5`):**
+- **C2/C3 (code, rehearsal scope):** `validate_live` and `gate_a.scoped_rehearsal` admit a deterministic,
+  SHADOW-evidence rehearsal only for `EQUAL_WEIGHT`. Extending both to `TREND_GUARDED_VOL` (REHEARSAL, SHADOW evidence
+  and falsifiers, `assessment_required` false) is a rehearsal-only decision. The alternative is adopted hosted models.
+- **C5 (weights):** at about 100 USDT the measured minimum trade (about 18.64 USDT) forces every frozen weight to at
+  least 0.1962, so in practice 1/5 each. Keith's inverse-volatility weights cannot be built at this size.
+- **C6 (accepted limit):** at this size the trend guard's and limiter's cuts are smaller than one minimum trade, so
+  run 3 exercises S1's entries, levels, sessions and flatten, but not a trend-guard trim.
+- **C7 (code):** the S1 builder reserves 5 × action gas, one exit child per position. The rehearsal sizing needs two
+  children per position, like the equal-weight candidate (`build_rehearsal_candidate.py`, `exit_children=2`).
+- **The S1 block** (levels, trend window/band/delay/start state, band, limiter, execution timings): Keith's B2 values
+  (IDEA-075). The repo has only the test fixture's block.
+- **Tooling:** the M3 probe and `review_rehearsal_caps` pin the equal-weight profile path and hash. Run 3 needs the S1
+  REHEARSAL profile there, a fresh coverage review against S1's sizes, and Isaac's approval of the new profile hash
+  and the resulting `signer.json`.
+
+#### SJ-11-RH01 — S1 deterministic rehearsal scope for run 3: code changes (pre-registered 2026-10-23, Claude)
+
+Under SJ-11 (run 3 uses S1, Yao 2026-10-23 ~06:10Z; that heading is recorded with PR262). This entry covers the code
+for SJ-11's C2, C3 and C7 items, the `validate_live` side finding of SJ-09-PC01, and the run-3 tooling. Branch
+`claude/s1-rehearsal-run3-20261023` from canonical `8eb16e5`, draft PR into `codex/system-testing-20261012`. Not in
+scope: the IDEA-086 basis check (PR262, needed for any entry under either baseline), hosts, AWS, Terraform, keys, the
+wallet, the CAP-02 signing caps, equal-weight or FINAL behaviour, `docs/official/kit/` and `vendor/`.
+
+**Scope assumption (to confirm with Yao in the PR):** like LD11-RH01 for equal weight, a deterministic S1 rehearsal:
+`evidence_mode` and `falsifier_authority` SHADOW, `assessment_required` false, no hosted models (no routing file),
+environment REHEARSAL, run mode `dev`. The alternative, adopted hosted models, would need none of the C2/C3 changes.
+
+**Planned changes:**
+1. C2: `validate_live` admits SHADOW evidence and falsifiers in REHEARSAL for `TREND_GUARDED_VOL`, as it already does
+   for `EQUAL_WEIGHT`. FINAL keeps `DISCRETIONARY_EXIT` only.
+2. C3: `gate_a.scoped_rehearsal` (used by `gate_a.prepare` and `gate_a_check.check_scope`) admits the same S1 scope,
+   in run mode `dev` only.
+3. C7: the rehearsal candidate builder (`tools/deploy/build_rehearsal_candidate.py`) gets an S1 path: the REHEARSAL
+   profile from `build_live_profiles(..., s1=block)`, weights 1/5 each, the same SHADOW scope as equal weight, and
+   `exit_children=2`, so the reserve is 5 positions × 2 children × the action budget. `build_live_profiles` and the
+   `validate_live` minimum (5 × pair for S1) stay as they are; LD10-P03-R1 stays open for FINAL and general builds.
+4. Side fix: `validate_live` re-raises `ContractError` unchanged. Only other `KeyError`/`TypeError`/`ValueError`s become
+   "Malformed or incomplete live profile".
+5. Tooling: `review_rehearsal_caps --profile` (default: today's equal-weight path), checked against the packet's
+   `selected_profile_sha256`. The M3 probe embeds the profile bytes, so its hash for an S1 profile is recorded when
+   that profile is built.
+6. `verify.py` (SJ-09-PC01): the recorded C2 and C3 results change; C0 lists the checked runtime files that now differ
+   from RC4.
+
+**Pass criteria (written before any code; the tests are written first and shown failing on base):**
+- **RH1:** an S1 REHEARSAL profile with SHADOW evidence and falsifiers, `assessment_required` false and 1/5 weights
+  (the test fixture block) passes `validate_live`, and `gate_a.prepare` prepares it for a signed dev run
+  (`execution='service'`, `runtime_mode='dev'`, an adoption reference, no model routing) with the deterministic
+  assessor. `gate_a_check.check_scope` accepts the prepared files.
+- **RH2:** the same profile with environment FINAL, or prepared with `runtime_mode='live'`, is still refused.
+  `check_scope` refuses the S1 files with environment FINAL or evidence `BOUNDED_FALSIFIER`.
+- **RH3:** equal weight is unchanged: every existing test passes unmodified, the committed equal-weight candidates
+  (`build()` and `build(exit_children=2)`, `e95d5842…`) reproduce byte for byte, and the M3 probe for `e95d5842…` still
+  hashes to `692787e4…`.
+- **RH4:** the two-child S1 rehearsal candidate has `exit_gas_reserve_units` = 5 × 2 × `gas_action_budget_units` and
+  passes the caps review's `FULL_BOOK_EXIT_RESERVE`. One-child S1 builds from `build_live_profiles` are byte-identical
+  to base (fixture block; payload SHA-256 at base: with the RC4 gas inputs REHEARSAL `fbecead8…`, FINAL `5425acf4…`;
+  without them REHEARSAL `e724657b…`, FINAL `28b7de10…`). `validate_live` still accepts a 5 × pair reserve and refuses
+  one below it. The S1 path refuses weights other than 1/5 and a hard name line that needs more exit children than
+  reserved.
+- **RH5:** `validate_live` refusals show their specific reason (for example "Live profile differs from decided v1
+  scope"), not "Malformed or incomplete live profile". Errors that are not `ContractError`s keep the generic message.
+- **RH6:** `review_rehearsal_caps --profile <S1 candidate>` reviews an S1 packet, and the review pins the S1 profile's
+  hash. A profile whose hash differs from the packet's `selected_profile_sha256` is refused before any private output
+  is written. Without `--profile` the tool behaves as today.
+- **RH7:** `docs/build/evidence/sj09-s1-precheck-20261022/verify.py` exits 0.
+- **RH8:** the full suite with the disposable PostgreSQL 14.24 (`deploy/compose.test.yml`,
+  `LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test`) shows no new failure or skip against base
+  `8eb16e5`, both run on the same machine.
+
+**Accepted limit (C6; recorded, not fixed):** at about 100 USDT the trend guard's and the limiter's cuts are smaller
+than one minimum trade (SJ-09-PC01 C6: an UP→DOWN change holds every name), so run 3 cannot exercise a trend-guard
+trim. It exercises S1's entries, levels, sessions and the flatten.
+
+**Not built here:** the S1 REHEARSAL profile. Its S1 block (levels, trend window/band/delay/start state,
+`top_up_band`, `weight_cap`, `hard_name_weight`, limiter, execution timings) must be Keith's. The repo has only the
+test fixture's block (`tests/strategy/test_s1_core.py`), which is used in tests only.
+
+#### SJ-11-RH01 results — RH1–RH8 PASS offline; draft PR, nothing merged or installed (2026-10-23, Claude)
+
+Commits on `claude/s1-rehearsal-run3-20261023`: pre-registration `0feba71`, tests `0f48ac3`, code `f886dbf`. Local
+evidence only (macOS, Python 3.12.14, disposable PostgreSQL 14.24). No hosted CI, release, host, key or wallet action.
+
+- **Red first:** at `0f48ac3` (base code plus the new tests) all 18 new tests fail, for the expected reasons: the S1
+  SHADOW scope refusal re-wrapped as "Malformed or incomplete live profile", the signed-preparation refusal, no S1 path
+  in the candidate builder, and no `--profile`. The LV4-style runtime test shows that on base even the runtime build
+  (`build_driver`) refuses the S1 SHADOW profile at startup, through `validate_live`.
+- **RH1 PASS:** the fixture S1 SHADOW REHEARSAL profile (weights 1/5) passes `validate_live`. `gate_a.prepare`
+  (`execution='service'`, `runtime_mode='dev'`, an adoption reference, no routing) prepares it with the
+  `deterministic` assessor and no `model-routing.json`; `check_scope` and `check_inputs` accept the package. A
+  dev/service runtime builds from it with no network.
+- **RH2 PASS:** `runtime_mode='live'` (REHEARSAL or FINAL profile) and a FINAL profile in dev are refused by the
+  signed-preparation check; `validate_live` refuses FINAL SHADOW with "Live profile differs from decided v1 scope";
+  `check_scope` refuses FINAL or BOUNDED_FALSIFIER; S1 with BOUNDED_FALSIFIER evidence still needs routing.
+- **RH3 PASS:** no existing test was changed. The committed equal-weight candidates reproduce byte for byte
+  (`test_gas_budget_b`), and the M3 probe for `e95d5842…` hashes to `692787e4…` (now pinned by a test).
+- **RH4 PASS:** the two-child S1 candidate reserves 3,840,000,000,000,000 wei = 5 × 2 × 384,000,000,000,000. It differs
+  from the one-child build only in `exit_gas_reserve_units`, `evidence_mode`, `falsifier_authority` and provenance.
+  The one-child S1 builds match the four base digests. `validate_live` accepts a 5 × pair reserve and refuses
+  5 × pair − 1 with its reason. Weights of 0.198/0.202 (which `build_live_profiles` accepts) are refused by the 1/5
+  rule; `--exit-children 1` is refused because the fixture's 35% hard line needs two children against a 19.1 USDT cap.
+- **RH5 PASS:** refusals carry their specific reason; a non-contract error (`impact_median_bps` not a mapping) still
+  gives "Malformed or incomplete live profile".
+- **RH6 PASS:** with `--profile`, an S1 packet is reviewed against the S1 profile, whose hash the review pins;
+  `FULL_BOOK_EXIT_RESERVE` requires 10 × action and is covered (a one-child S1 reserve is a blocker). A profile that
+  differs from `selected_profile_sha256` is refused before any directory is created, in numeric and hosted mode.
+  **Finding, fixed:** the tool re-encoded the profile as ASCII JSON and required byte equality with the selected hash.
+  S1 profiles carry UTF-8 provenance ("IDEA-075 §4-§5, §12 values", from `build_live_profiles`), so every S1 packet
+  would have been refused. It now pins the exact selected bytes; the equal-weight output is unchanged (that profile is
+  ASCII).
+- **RH7 PASS:** `verify.py` exits 0 at `f886dbf` (`result-20261023-sj11-rh01.json`). On canonical `8eb16e5` it
+  already exited 1, because PF-05 (PR256) changed `larp/risk/planner.py` (C0); C0 now lists the changed files.
+- **RH8 PASS:** base `8eb16e5`: 2486 passed, 10 skipped, 1 failed (3882 subtests); `f886dbf`: 2504 passed, 10
+  skipped, 1 failed (3884 subtests). Per-test outcomes (JUnit) are identical apart from the 18 new tests, which
+  pass; the 10 skips are the same environmental ones (systemd runner, bubblewrap, opt-in fixtures). The one
+  failure is the same on both, `test_cost_summary.py::Runner::test_q10…`: `tools/run_quote_capture.sh` calls
+  `python3` from PATH, here a system Python 3.13 without `dotenv`. With the project environment first on PATH it
+  passes on both base and branch. Nothing was installed.
+
+**M3 probe hash for S1:** not computable until the S1 profile exists. The probe embeds the profile bytes, and a test
+shows that an S1 probe differs from the reviewed equal-weight probe `692787e4…` only in its `SELECTED_PROFILE_B64`
+line. When the profile is built: `python -I tools/deploy/ld10_readonly_packet.py --profile <s1 profile> --output
+probe.sh` and `shasum -a 256 probe.sh`; record that hash next to the profile hash, and use it as run 3's `PROBE_SHA`.
+
+**For the owners (not changed here):**
+- The REHEARSAL window (`WINDOWS["REHEARSAL"]`, RV120-02) allows new risk only until 2026-10-25 00:00Z and flattens
+  from Oct 26 00:00Z. Run 3 needs PR262 and this change merged, an RC6 build and the install before then to make
+  entries at all.
+- Keith's block sets `limiter_mode`. With no hosted models, `DETERMINISTIC` is the consistent choice: nothing in
+  `larp/` fills the context's `exposure_assessment` today, so under `MODEL` the limiter would record `NO_ASSESSMENT`
+  every session and never move.
+- LD10-P03-R1 stays open for FINAL and general builds (validator floor still one child).
+- `docs/ledger/IDEA-049-C.md` will conflict at its end with PR262, which appends SJ-11; keep both, SJ-11 first.
+- 2026-10-23 note (Claude): PR262 merged into `codex/system-testing-20261012` first (`7560d20`). The merge into
+  this branch places SJ-11-RH01 directly under SJ-11, before the later SJ-10 J6/J5 notes; no text changed.
+- 2026-10-23 post-merge check (Claude): full suite at merge `ab4c034` (this branch + PR262), same machine and
+  database: 2524 passed, 10 skipped, 1 failed (3931 subtests). Against `f886dbf`, every test keeps its outcome; the
+  20 PR262 tests pass; same 10 skips; the one failure is the same environmental `test_q10…` (`dotenv`). Hosted CI on
+  `ab4c034` was queued, with no result; PR262-RV01 records that Actions jobs cannot start under the billing limit.
+
+#### SJ-11-RH01-L1 — the S1 rehearsal builder requires `limiter_mode` DETERMINISTIC (pre-registered 2026-10-23, Claude)
+
+Requested in chat after the SJ-11-RH01 results. In the S1 limiter (`larp/strategy/s1.py` `limiter_step`), `MODEL` mode
+reads the round context's `exposure_assessment`, and nothing in `larp/` sets that key at `2e8a633` (only tests do).
+Under SJ-11-RH01's scope, with no hosted models, a `MODEL` limiter would record `NO_ASSESSMENT` every session and never
+move. `DETERMINISTIC` mode reads the verified evidence instead. Change: the S1 path of
+`tools/deploy/build_rehearsal_candidate.py` refuses any `limiter_mode` other than `DETERMINISTIC`. `validate_live`,
+`gate_a`, `build_live_profiles` and equal weight are not changed.
+
+**Pass criteria (before code; test first, shown failing at `2e8a633`):**
+- **L1:** the S1 rehearsal builder refuses a block with `limiter_mode` `MODEL` with a specific `ContractError` naming
+  `limiter_mode`, before any profile is built; the CLI refuses it too and writes no output file.
+- **L2:** a `DETERMINISTIC` block builds the same bytes as before (fixture block, two children: payload SHA-256
+  `cbdda7df…` at `2e8a633`).
+- **L3:** equal weight is unchanged (the existing byte-reproduction tests pass unmodified).
+- **L4:** the full suite on the disposable PostgreSQL 14.24 shows no new failure or skip against `2e8a633`'s merge
+  parent run (`ab4c034`: 2524 passed, 10 skipped, 1 environmental failure).
+
+**SJ-11-RH01-L1 results — L1–L4 PASS offline (2026-10-23, Claude):** test `c448c0e` failed first at `2e8a633` ("DID NOT
+RAISE ContractError"); guard `46a27ef`.
+- **L1 PASS:** a `MODEL` block is refused with "S1 rehearsal without hosted models needs limiter_mode DETERMINISTIC
+  (SJ-11-RH01-L1)"; the CLI refuses it and writes no file.
+- **L2 PASS:** the `DETERMINISTIC` fixture candidate's payload SHA-256 is still `cbdda7df…`.
+- **L3 PASS:** the equal-weight byte-reproduction tests pass unmodified.
+- **L4 PASS:** full suite at `46a27ef`: 2525 passed, 10 skipped, 1 failed (3931 subtests). Against `ab4c034` the only
+  difference is the new L1 test (pass); same skips; the failure is the same environmental `test_q10…` (`dotenv`).
+
+#### SJ-11-RH01-P1 — the run-3 S1 REHEARSAL profile from PF-01 values (pre-registered 2026-10-23, Claude)
+
+**Decision (Keith, in chat, 2026-10-23):** build run 3's S1 block from IDEA-084 PF-01's adopted values, with weights
+1/5 each (SJ-09-PC01 C5), `trend_start_state` UP, `max_legs_per_symbol_session` 3 and `llm_expiry_sessions` 3.
+Recorded as relayed in this session; the three last values are decided nowhere else (IDEA-076 S03: a first
+evaluation inside the band starts UP; IDEA-075 §12 proposes expiry 3).
+
+**The block** (PF-01 → `s1` field): levels 95/60/30% → `high` 19/20, `mid` 3/5, `low` 3/10; five sessions, ±1% at
+close + 15 min → `trend_window_sessions` 5, `trend_band_bps` 100, `trend_delay_seconds` 900; weight ≤ 0.30 →
+`weight_cap` 3/10; hard line 35% → `hard_name_weight` 7/20; replenish below target − 5 pp → `top_up_band` 1/20;
+open + 30 min / close − 15 min / 3 attempts → `execution` 1800 / 900 / 3; deterministic limiter → `limiter_mode`
+DETERMINISTIC. **Rehearsal deviation:** PF-01's inverse-volatility weights cannot be built at about 100 USDT (C5), so
+every weight is 1/5. The REHEARSAL window stays RV120-02's (new risk until 2026-10-25 00:00Z).
+
+**Pass criteria (before the profile exists):**
+- **P1:** `s1.config` accepts the committed block, and its values equal the mapping above.
+- **P2:** `python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --s1-config <block> --s1-decision <ID>`
+  builds the profile; it passes `validate_live`; a test rebuilds it byte for byte from the committed block.
+- **P3:** the profile's file SHA-256, `StrategyProfile.v1` digest and M3 probe SHA-256 are recorded and pinned by
+  tests; the probe differs from the reviewed `692787e4…` only in its `SELECTED_PROFILE_B64` line.
+- **P4:** a signed dev `gate_a.prepare` with no routing prepares it with the deterministic assessor;
+  `check_scope`/`check_inputs` accept the package, and a dev/service runtime builds from it with no network.
+- **P5:** `review_rehearsal_caps --profile <it>` on a synthetic flat-wallet packet with run 2's balances (96 USDT,
+  5,325,625,054,330,011 wei) covers `FULL_BOOK_EXIT_RESERVE` (10 × action) and `INITIAL_BNB_EXIT_RESERVE`, and the
+  first buy passes the planner's gas floor (BNB − action budget ≥ exit reserve).
+- **P6:** the full suite on the disposable PostgreSQL 14.24 has no new failure or skip against `46a27ef`.
+
+**SJ-11-RH01-P1 results — P1–P6 PASS offline (2026-10-23, Claude):** profile and tests `f1d4901`.
+- **P1–P3 PASS:** `docs/build/evidence/s1-rehearsal-profile-20261023/`: block `0ee110d4…`; profile file SHA-256
+  **`6bcf1dfbd7f0c29893dd62bf67d9bcf7a04299b1d24a29d7310b6d769f8c1526`**; `StrategyProfile.v1` digest `b2c81e99…`; M3
+  probe **`75547c8e7d3d02e977e9859665f713580f64cc935f41641a3c129edc68fd9b99`**, one line different from `692787e4…`.
+  The README command rebuilds the profile byte for byte.
+- **P4 PASS:** signed dev preparation with no routing (deterministic assessor), `check_scope`/`check_inputs` and the
+  runtime build pass with the committed profile.
+- **P5 PASS:** at run 2's balances the caps review covers `FULL_BOOK_EXIT_RESERVE` (3.84e15) and
+  `INITIAL_BNB_EXIT_RESERVE` (3.84e15 ≤ 5.3256e15); only quote coverage and owner review block (no quotes in the
+  synthetic packet). The first buy clears the planner's gas floor.
+- **P6 PASS:** full suite at `8c4f2d5`: **2537 passed, 10 skipped, 0 failed** (3931 subtests). Against `46a27ef`, the
+  only outcome change is `test_q10…` failed → passed (below); 11 new tests pass; same skips.
+
+**Also in this PR (2026-10-23, Claude):**
+- `49161586`: `test_cost_summary.py::Runner::test_q10…` runs the capture wrapper with the test interpreter
+  (`PYTHON=sys.executable`; the wrapper already honours `PYTHON`). It had failed on this Mac on base too, because
+  PATH's `python3` lacked `dotenv`. The tool is unchanged.
+- `8c4f2d5a`: the RC6 run-3 install run sheet `docs/build/ops/rehearsal-install-rc6-20261023/`, drafted before the
+  merge and the approvals. M1 requires PR262 and the pinned profile; D1 creates `larp_rehearsal3`; M3/M4 use the S1
+  profile and probe and diff against run 2's `1a4cda6f…`; M4 requires `SCOPE_CONFIRMATION`; R1 retires run 2; P4
+  takes the reviewer and approval record as arguments. The run ID `larp-dev-rehearsal-20261024` is a proposal for
+  Yao. Other scripts are byte-identical to RC5 (`tests/runtime/test_run3_sheet.py`). Nothing was run.
+
+**Still open (owners, not code):** Yao's scope and run-ID confirmation; Isaac's approval of `6bcf1dfb…` and of the
+M3 `signer.json`; merge, RC6 build and the install **before 2026-10-25 00:00Z** (the REHEARSAL window; changing it is
+a new decision and a new profile hash); hosted CI (Actions billing limit); LD10-P03-R1 for FINAL/general builds.
+
+#### SJ-11-RH01-M1 — PR264 merged; Keegan's review and a check of its test failures (2026-10-23, Claude)
+
+- **Merge:** Keegan merged PR264 into `codex/system-testing-20261012` at 10:40:20Z, at head `a5e6d1e` (the reviewed,
+  pushed head), merge commit `a11c97f`. Canonical is now `d64e4fc` (PR263 merged after it). The merge does **not**
+  approve the run-3 install: the SJ-11-RH01 scope is still unconfirmed (M4 refuses without `SCOPE_CONFIRMATION`), and
+  A1 (Isaac's approval of profile `6bcf1dfb…` and the M3 `signer.json`) is still a required step.
+- **Keegan's review** (PR comment, 10:40:48Z, offline): the REHEARSAL-only SHADOW exception (`dev` only, FINAL still
+  `DISCRETIONARY_EXIT`), the `ContractError` re-raise and the exact-bytes profile pin are correct. The RC6 sheet
+  differs from RC5 only in run identity, profile/probe pins, the PR262/PR264 build checks and P4's arguments. Open
+  items as in the PR.
+- **His test run is not the repository's environment:** PostgreSQL 16 (the pinned one is 14.24,
+  `deploy/compose.test.yml`) and a venv that "omits locked packages"; 2533 passed, 11 skipped, 3 failed
+  (`test_service_configs` ×2, `test_fault_points` ×1), which he reports also fail on unchanged canonical there.
+- **Check (Claude, locked environment, PostgreSQL 14.24, merged canonical `d64e4fc`):**
+  `tests/runtime/test_service_configs.py` 4 passed; the run-3 tests (`test_s1_rehearsal`, `test_s1_run3_profile`,
+  `test_run3_sheet`, `test_s1_rehearsal_caps`) 34 passed. The full suite on the same head `a5e6d1e` gave 2537 passed /
+  10 skipped / 0 failed (SJ-11-RH01-P1). Hosted CI did not run (no job started: account billing limit).
+- **Correction (2026-10-23, Keegan's session):** an earlier draft of this entry said no `test_fault_points` test
+  exists. That was wrong: `tests/execution/test_fault_points.py` and `tests/signer/test_fault_points.py` (RG2-H01, #222)
+  exist; the draft searched for a function, not a file. Re-run on merged canonical `d64e4fc` with
+  **PostgreSQL 16** (`LARP_TEST_DATABASE_URL` set): both fault-point files, `tests/runtime/test_faults.py` and
+  `tests/runtime/test_service_configs.py` gave 17 passed, 0 failed (7 fault-point cases use a real SIGKILL worker). So
+  PostgreSQL 16 does not reproduce his three failures; his venv without the locked packages is the likely cause, as he
+  says. They are not evidence against the merged code.
+
+#### SJ-10 J6 (first soak) and status at about 1.5 h; T2 plan (2026-10-23 06:3xZ, Yao)
+
+**`mac/soak-db-logins.sh 2`** (IAM logins per RDS log file; RC4 baseline about 45,000 an hour). Counted from the saved
+logs:
+
+| Window | IAM logins | Auth failures | Statement time-outs |
+|---|---|---|---|
+| hour 05 (05:04–05:59Z) | **625** | 0 | 0 |
+| 05:00–05:10 | 182 | | |
+| 05:10–06:00 (10-minute buckets 16, 14, 13, 6, 14) | 63, about 75 an hour | | |
+| hour 06 (06:04–06:29Z, partial) | 44, about 90 an hour | 0 | 0 |
+
+By the pre-registered per-hour line (under 500), hour 05 is **over** at 625. That hour holds the installs, the reboots,
+and run 1's RC4 signer, which logged in once per transaction until R1s retired it at 05:05:50Z. The steady state on RC5
+alone is about 75–90 an hour, roughly 500 times below RC4, with **zero** auth failures or statement time-outs. J6 is
+judged on the first full RC5-only hour (06:00Z) and the ≥ 8 h check, so it is not yet passed.
+
+**`checks/trading-status.sh`** (06:31:59Z, about 1 h 48 min after P4): runtime, execution, evidence and uploader active
+with **0 restarts**. Run version 16, epoch 2, not quarantined. 6 rounds, all `CLOSED`: cadence 1991922, 1991924,
+1991927 and 1991929, plus 2 filing rounds. No orders, as expected until IDEA-086 ships (SJ-10-BASIS01).
+
+**T2 plan** `signer-access-off-run2.tfplan`: **0 to add, 0 to change, 8 to destroy**, exactly the IDEA-080 resources.
+Next: apply, SA5/SA9, M9.
+
+#### SJ-10 J5 — PASS: T2, SA5, SA9 and M9; the run-2 install is complete (2026-10-23 06:37–06:41Z, Yao)
+
+- **T2:** plan `signer-access-off-run2.tfplan` (0 add, 0 change, 8 destroy). The saved apply output shows "The given
+  plan file can no longer be applied because the state was changed", consistent with a second run after a successful
+  first apply. A fresh plan at 06:41Z (`results/t2-replan.txt`): **"found no differences, so no changes are needed"**.
+- **SA5** (`mac/signer-reach.sh`, 06:37:09Z): no `ssm`/`ssmmessages`/`ec2messages` endpoints, and no SSM policy on
+  `larp-dev-signer`. The signer's last SSM ping was 06:31:37Z; it is now unreachable, as designed. EC2 status ok/ok.
+- **SA9:** primary is `Online` (06:35:34Z). `checks/primary-status.sh` over SSM (06:37:19Z): evidence, uploader,
+  runtime and execution active with 0 restarts, archive timer active; archive health `healthy: true`, anchors 3 ACK,
+  backup 1 ACK.
+- **M9** on `releases/rehearsal-20261023t044123z/`: `M9_DONE` (reported by Yao; the output was not saved).
+
+SJ-10 J0′–J5 PASS. Open: J6 (the full RC5-only hour from 06:00Z and the ≥ 8 h soak) and J7 (the first trade, which
+waits for IDEA-086 / PR262 and run 3 on S1, SJ-11). Signer access (T1) has to be applied again for run 3.

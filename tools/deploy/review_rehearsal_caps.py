@@ -18,6 +18,8 @@ from larp.contracts import ContractError, Document
 from larp.execution_live.caps_review import ERRORS, review
 
 ROOT = Path(__file__).resolve().parents[2]
+# The reviewed equal-weight rehearsal profile e95d5842 (LD10-P03); an S1 run names its own with --profile (SJ-11-RH01).
+DEFAULT_PROFILE = ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/rehearsal-deterministic.json'
 # SJ-04: the hosted execution role and the exact private binding fields, nothing else.
 BINDING_KEYS = {'schema', 'run_id', 'build_id', 'database_host', 'database_name', 'database_ca_file',
                 'database_ca_sha256', 'region', 'untrusted_router_policy_file', 'untrusted_router_policy_sha256'}
@@ -81,14 +83,15 @@ def chain_start(holdings, portfolio, usdt_deficit):
     return dict(portfolio, cash_units=usdt['chain'], bnb_units=bnb['chain'])
 
 
-def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0):
+def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE):
     if bindings is not None:
         outside_checkout(output)
+    # The profile must be the one the probe carried (selected_profile_sha256), checked before any output exists.
+    profile_raw = Path(profile).read_bytes()
+    require(hashlib.sha256(profile_raw).hexdigest() == packet['selected_profile_sha256'])
+    selected = json.loads(profile_raw)
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     private = packet['private_caps_inputs']
-    profile_path = ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/rehearsal-deterministic.json'
-    profile = json.loads(profile_path.read_bytes())
-    require(hashlib.sha256(profile_path.read_bytes()).hexdigest() == packet['selected_profile_sha256'])
     require(packet['configs_unchanged'])
     require(packet['holdings']['status'] == 'MATCH' or bindings is not None)
     require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
@@ -112,7 +115,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         router=policy['allowed_spenders'][0], token_decimals=private['token_decimals'],
         max_gas=decision['execution_ceiling']['max_gas'],
         max_gas_price=decision['execution_ceiling']['max_gas_price_wei'],
-        gas_budget=profile['gas_action_budget_units'], allowance_recovery=False,
+        gas_budget=selected['gas_action_budget_units'], allowance_recovery=False,
         strategy_profile_file='/etc/larp/strategy-profile.json',
         strategy_profile_sha256=packet['selected_profile_sha256'])
     if bindings is not None:
@@ -120,16 +123,17 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         config.update(connection)
     # Without bindings: proposed numeric execution scope only; actual DB/RPC/CA/run/release
     # configuration is a separate LD16/17 binding. This file is never installed by this tool.
-    def pin(name, value):
-        raw = json.dumps(value, sort_keys=True, separators=(',', ':')).encode() + b'\n'
+    def pin(name, value, raw=None):
+        raw = raw or json.dumps(value, sort_keys=True, separators=(',', ':')).encode() + b'\n'
         with (output / name).open('xb') as stream:
             stream.write(raw)
         (output / name).chmod(0o600)
         return dict(path=name, sha256=hashlib.sha256(raw).hexdigest())
     policy_ref = pin('signing-policy.json', policy)
     require(policy_ref['sha256'] == decision['policies']['development']['sha256_canonical_json_lf'])
-    profile_ref = pin('profile.json', profile)
-    # The canonical JSON encoder above is byte-identical to this profile's file format.
+    # The exact selected bytes: an S1 profile's provenance is UTF-8 (e.g. "IDEA-075 §4"), which the ASCII encoder
+    # above would escape, so re-encoding would no longer match selected_profile_sha256 (SJ-11-RH01).
+    profile_ref = pin('profile.json', selected, profile_raw)
     require(profile_ref['sha256'] == config['strategy_profile_sha256'])
     inputs = dict(schema='GateBCapsInputs.v1', wallet=private['wallet'], run_id=config['run_id'],
         build_id=build_id, environment='REHEARSAL', max_age_seconds=300,
@@ -150,12 +154,12 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
     return inputs, result, now
 
 
-def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0):
+def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE):
     """SJ-04: review and assemble on one clock; a refusal writes no candidate and echoes nothing private."""
     from larp.signer.assembly import assemble, write_new
     outside_checkout(signer_out)
     inputs, result, now = collect(packet, output, bindings['build_id'], bindings=bindings, now=now,
-                                  usdt_deficit=usdt_deficit)
+                                  usdt_deficit=usdt_deficit, profile=profile)
     if result['numeric_status'] != 'COVERED':
         return result, now, None
     files = assemble(inputs, now=now, base_dir=output)
@@ -173,11 +177,15 @@ def main(argv=None):
     parser.add_argument('--signer-out', type=Path, help='new private directory outside the checkout')
     parser.add_argument('--accept-usdt-deficit-units', type=int, default=0,
                         help='hosted only: exact micro-USDT the chain may hold below the source ledger (SJ-04-A1)')
+    parser.add_argument('--profile', type=Path, default=DEFAULT_PROFILE,
+                        help='the selected profile the probe carried; its SHA-256 must equal selected_profile_sha256 '
+                             '(default: the reviewed equal-weight profile)')
     args = parser.parse_args(argv)
     if args.bindings is None:
         if args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units:
             parser.error('--build-id is required; --signer-out and a USDT deficit need --bindings')
-        _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id)
+        _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id,
+                                 profile=args.profile)
         print(json.dumps(dict(numeric_status=result['numeric_status'], blockers=result['blockers'],
                              reviewed_at=now, missing=result['missing_quote_coverage'])))
         return 0
@@ -186,7 +194,8 @@ def main(argv=None):
     try:
         packet = read_packet(args.packet.read_bytes())
         result, now, signer_sha256 = assemble_hosted(packet, args.output_dir, json.loads(args.bindings.read_bytes()),
-                                                     args.signer_out, usdt_deficit=args.accept_usdt_deficit_units)
+                                                     args.signer_out, usdt_deficit=args.accept_usdt_deficit_units,
+                                                     profile=args.profile)
     except (*ERRORS, AssertionError, zlib.error):
         # Never echo hostnames, paths, DSNs, raw input or exception messages.
         print(json.dumps(dict(status='SIGNER_ASSEMBLY_REFUSED', ready_to_install=False,
