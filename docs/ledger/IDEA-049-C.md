@@ -3395,3 +3395,15 @@ Next: P2s, S1 (M4's printed command), S1b, S2.
   `started: true`, `signing_enabled: true`, UNTRUSTED `05759e90…`, DEV-23, cap basis CAP-02. `S2_DONE`.
 
 Next: P5 (execution on primary), then C1, T2, SA5/SA9, M9.
+
+#### SJ-11 P5 and C1 — PASS; run 3 is live on S1 (2026-10-23 ~17:1xZ, Yao)
+
+- **P5** (SSM `a69155a9-de9c-4993-ab07-bb5e567ff2d5`, Success; stderr the symlink line): execution
+  `configuration_valid: true`; `larp-execution active restarts=0`; `release_verified: true`. `P5_DONE`. From here the
+  runtime's committed S1 intents can be signed and sent (new risk until 2026-10-25 00:00Z).
+- **C1** (`checks/signer-status.sh`, SSM `185c5019-7853-4979-8c56-181edc4ae179`, before T2): `larp-signer active
+  restarts=0`; two `release_verified` / `started: true` pairs in the last 30 minutes and no refusal line. The lines
+  carry no run ID: the earlier pair fits run 2's signer starting again after the reboot (it was still enabled) before
+  R1s stopped it; the later pair is run 3's S2 start. Key dir `700 root:root`, `wallet.key` `600 root:root`, 1 link.
+
+Next: T2 (signer access off), SA5/SA9, M9, then K (soak at about 1 h) and J (first S1 entry).
