@@ -15,7 +15,7 @@ EVIDENCE = ROOT / 'docs/build/evidence'
 
 
 def s1_block(raw):
-    """The S1 block from its exact bytes. At about 100 USDT every weight must be 1/5 (SJ-09-PC01 C5)."""
+    """The S1 block from its exact bytes: weights 1/5 each at about 100 USDT (SJ-09-PC01 C5), deterministic limiter."""
     if type(raw) is not bytes:
         raise ContractError('S1 configuration must be the exact file bytes')
     try:
@@ -26,6 +26,9 @@ def s1_block(raw):
         raise ContractError('S1 configuration must be a JSON object with weights')
     if any(fraction(w) != Fraction(1, 5) for w in block['weights'].values()):
         raise ContractError('S1 rehearsal weights must be 1/5 each (SJ-09-PC01 C5)')
+    # No hosted models in this scope, and the runtime never sets exposure_assessment: a MODEL limiter would never move.
+    if block.get('limiter_mode') != 'DETERMINISTIC':
+        raise ContractError('S1 rehearsal without hosted models needs limiter_mode DETERMINISTIC (SJ-11-RH01-L1)')
     return block
 
 
