@@ -53,4 +53,35 @@ login rate in the database log, plus no auth time-out over a soak of at least 8 
 
 ## Results
 
-(none yet)
+2026-10-23, local Mac, Python 3.12 with `deploy/requirements-test.lock`, disposable PostgreSQL 14.24
+(`deploy/compose.test.yml`), code commit `31b0949`. Offline only: no host, AWS or wallet action.
+
+- **R1–R6 PASS.** `tests/storage/test_connection_reuse.py` has 16 tests: 10 with fake connections and 6 on real
+  PostgreSQL, including `pg_terminate_backend` of a pooled connection while idle and mid-transaction. Together with
+  the 8 tests in `tests/runtime/test_review_boundaries.py`, 24 passed with 0 skipped.
+  - R1: 50 transactions use 1 token and 1 connection.
+  - R2: an aged connection is replaced only at checkout, and at most 4 are kept idle.
+  - R3: statement and lock timeouts and the read-only/isolation settings are back to the server defaults on the
+    reused backend.
+  - R4: a killed idle connection is replaced; a kill mid-transaction raises `Unavailable` and is not retried;
+    SQLSTATE mapping is unchanged.
+  - R5: nested transactions use separate backends; 8 threads × 25 transactions never share one in use.
+  - R6: the plain store opens one connection per transaction.
+- **Red proof:** the same file against base `f56bcf6` gives **15 failed, 1 passed**. The one that passes is the
+  connect-error mapping, which is meant to be unchanged. R6 fails at base only because the fake connection has no
+  context-manager methods, which the old code needed. That is a test-harness artifact, not a behaviour difference.
+- **Updated tests:** the two tests in `test_review_boundaries.py` that asserted one IAM login per transaction (more
+  than 5 tokens; at least 3 connections) now assert one fresh token per pooled connection, with at most 4 connections.
+- **R7 PASS:**
+
+  | Run | Passed | Skipped | Subtests | Time |
+  |---|---|---|---|---|
+  | base `f56bcf6` | 2468 | 10 | 3882 | 301 s |
+  | branch | 2484 | 10 | 3882 | 303 s |
+
+  The branch adds exactly the 16 new tests. The 10 skips are identical, all environmental: bubblewrap 3, systemd
+  runner 5, external market artifact 1, private fixture 1. There are no failures.
+
+Verdict: **R1–R7 supported (offline).** Still open: mirror CI on all four jobs, Keegan's review and release
+qualification, and the host soak on `db.t4g.micro` (database-log login rate and no auth time-out over at least 8 h)
+through a new run.
