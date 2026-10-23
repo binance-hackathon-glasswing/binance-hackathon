@@ -2361,3 +2361,14 @@ transaction, or size the database for this login rate (new item, owner TBD).
 now, then resume." The spend is accepted at roughly US$20–25 a month more, inside the US$90 budget; scaling back after
 the rehearsal is a later decision. Order: pause, then `modify-db-instance --apply-immediately`, then
 `db_instance_class` in `development.tfvars` with a plan that must show no changes, then resume.
+
+**Pause PASS (02:45Z, SSM `f8ce6954…`).** Execution, runtime, uploader and the archive timer are inactive;
+`larp-archive.service` shows `failed` from its last run during the outage. `larp-evidence` is still active.
+`PAUSE_DONE`.
+
+**Resize refused (02:46Z):** `FreeTierRestrictionError`, "This instance size isn't available with free plan
+accounts. To remove all limitations, upgrade your account plan." The AWS account is on the free plan, which allows
+only the smallest classes, so `db.t4g.small` needs an account-plan upgrade first. That is an account and billing
+decision for Yao, not a configuration change. Nothing changed: `larp-dev` is still `db.t4g.micro`, and the clients
+stay paused. Next: the read-only `checks/db-sizes.sh` on the quiet database, to see whether the data has outgrown
+the 1 GiB instance, before choosing between the upgrade and staying on micro.
