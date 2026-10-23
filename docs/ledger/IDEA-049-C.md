@@ -3341,3 +3341,10 @@ M4 with stamp `20261023T161113Z` and `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Y
   unchanged from run 2: `session-calendar.json` `bf4c2eca…`, `evidence.env` `c3add04b…`, router policy `05759e90…`.
 
 Next: P3 on primary with the printed command, then P4.
+
+#### SJ-11 P3 — PASS on primary (2026-10-23 ~16:3xZ, Yao)
+
+`host/p3-install-primary.sh` with M4's printed hashes (SSM `1f59b1a5-dbba-483f-bfb3-0e80e9ad6a63`, Success, no
+stderr): `release_verified: true`; runtime and execution `configuration_valid: true` (signing false); routes PASS
+`54f98814…`, 13 destinations; chrony on Amazon Time Sync (169.254.169.123), stratum 4, 0.0000026 s fast, leap Normal.
+Nothing started. Next: P4 with reviewer `Yao Zhu` and approval `SJ-11-A1 Isaac via Yao; SJ-11-C1 Yao Zhu 2026-10-23`.
