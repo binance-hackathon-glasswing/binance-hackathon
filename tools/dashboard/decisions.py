@@ -31,6 +31,8 @@ def parse(text):
             report['skipped'] += 1
         elif row.get('section') == 'decisions_summary':
             report['summary'] = {k: row.get(k) for k in ('rounds', 'exported', 'closed')}
+            if 'omitted_for_size' in row:
+                report['summary']['omitted_for_size'] = row['omitted_for_size']
         elif row.get('section') == 'decision' and isinstance(row.get('round_id'), str):
             rows.append(row)
             report['decisions'] += 1

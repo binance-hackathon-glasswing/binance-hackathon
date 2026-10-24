@@ -103,3 +103,9 @@ python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc
 - The chain monitor hard-codes the dev rehearsal wallet and its opening balances (`WALLET`, `START`). For the scored
   run, a monitor copy needs the final wallet's address and opening balances. The dashboard takes the opening equity
   from the monitor's own `pnl_vs_start` and has no wallet setting.
+
+
+The decisions export is bounded to22,000 UTF-8 bytes, including its final summary, for SSM inline stdout. If requested
+rows do not fit, it keeps the newest complete rows and reports `omitted_for_size` in both the summary and merge
+report. A size-limited export is partial coverage; merging it cannot recover omitted older rounds. PAGES01 and the
+first approved read-only host export remain separate from this repository change.
