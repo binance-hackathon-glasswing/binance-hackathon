@@ -139,3 +139,36 @@ probe `14257e77…` (full hashes in the README).
 Keegan reviews code, release and GAP-62; a dev REHEARSAL with this block and 20 bp shows a post-approve swap,
 consecutive-slot rounds (IDEA-090 F7) and a sell before the freeze; Isaac approves the exact profile, final
 `signer.json` and caps/gas coverage; Yao builds and installs the final release before `trade_after`.
+
+## S4-R: a dev REHEARSAL with the S4 settings (requested 2026-10-25 SGT, pre-registered before tests or code)
+
+**Request (in chat):** "Yes, build a dev REHEARSAL profile with the S4 block and 20 bp slippage so we can run it live
+before the freeze." S4 itself is FINAL and cannot run on the dev wallet, so S4-R carries S4's strategy settings into
+S2's dev SHADOW scope (S2-1).
+
+**Design.**
+- Built by `tools/deploy/build_rehearsal_candidate.py --s4-rehearsal` from the S4 block (`s4-block.json`, the same
+  bytes as S2's block), so the strategy block is exactly the final one: `KIT_OPEN_STATE`, 5 attempts, weights 1/5.
+- `slippage_bps` 20 (S4's value); `policy_id` `larp-s4-rehearsal-v1`.
+- Everything else is S2's: REHEARSAL sizes at 100 USDT, SHADOW evidence and falsifiers, `dev` mode only, gas, caps,
+  L/m, exit reserve.
+- **Window (proposed; Yao decides the run and may rebuild it with other times):**
+  - `trade_after` 2026-10-25T16:00:00Z (Mon 00:00 SGT), one hour after run 4's `signing_end`, so run 4 can retire flat
+    first (IDEA-092 H1: a new run needs a stock-flat wallet);
+  - `new_risk_end` 2026-10-26T06:00:00Z;
+  - `flatten_start` 2026-10-26T07:00:00Z;
+  - `signing_end` 2026-10-26T12:00:00Z (Mon 20:00 SGT), before Monday's NYSE open, inside the Oct 26 freeze day.
+  - The whole window is outside the NYSE session, so every buy and sell it makes is an off-hours trade: the case S4 adds.
+- The builder refuses `--s4-rehearsal` without a `KIT_OPEN_STATE` block and together with `--scheduled-flatten-at`.
+
+**Live checks this run is for** (evaluated by the operator on the run, as IDEA-089 P1–P6): a BUY whose swap completes
+after its approve (S2-F6 with 20 bp); rounds in consecutive slots (IDEA-090 F7); the flatten sells every position
+before `signing_end`; balance check MATCH; no HALT or quarantine.
+
+| # | Pass when (offline) |
+|---|---|
+| S4R-1 | The committed S4-R profile rebuilds byte for byte from its README command and passes `validate_live`, signed dev `gate_a.prepare` with the router-policy pair, `gate_a_check` scope and inputs, and the dev runtime build |
+| S4R-2 | It differs from S2's profile `eb55d76a…` only in `slippage_bps`, the four window keys, `policy_id` and their provenance; its `s1` block equals S4's FINAL block |
+| S4R-3 | `live` mode is refused at preparation and at the runtime start (S2-1 scope); FINAL is refused for it |
+| S4R-4 | The builder refuses `--s4-rehearsal` with an NYSE-hours block and with a scheduled flatten; S2 and S3 profiles still rebuild byte for byte |
+| S4R-5 | Full local CI replica as S4-9, no new failures |
