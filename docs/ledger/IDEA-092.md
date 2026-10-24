@@ -2,7 +2,7 @@
 
 - Date / author: 2026-10-24 (~13:00Z; Saturday evening in Singapore) / team request in a Claude Code session (record
   and implementation: Claude Code)
-- Status: **requested; design and pass criteria pre-registered below, before code or tests.** Not approved,
+- Status: **implemented and tested offline 2026-10-24 (S3-1..S3-8 PASS; see the end of this entry).** Not approved,
   built into a release, or installed.
 - Related: IDEA-089 (S2, run 4), IDEA-090 (S2-F2..F6), IDEA-076 (S1), SKILL.md §0.3 #1 (no manual trading), F-95.
 
@@ -36,8 +36,9 @@ buys nothing new until the book is flat, then S2 runs as usual for the rest of i
       exactly like the terminal flatten (balanced exit children, `openState` check kept);
     - no BUY is planned (`SCHEDULED_FLATTEN_PENDING`), even when a held name cannot be sold this round (price-jump
       hold, closed market, missing mark).
-  - **DONE:** the first round at or after the time that sees no stock units and no reservations records
-    `scheduled_flatten: DONE` in the persisted risk state. DONE is never undone.
+  - **DONE:** the first round at or after the time that sees every stock at or below `dust_units` and no
+    reservations records `scheduled_flatten: DONE` in the persisted risk state. DONE is never undone. (The dust
+    tolerance was added after H2 below, before the full-suite run.)
 - **After DONE: S2 as normal, from a fresh book.**
   - S1's policy blocks re-entry into a name it has ever held unless a fresh review exists. That rule is why S2's book
     is "built once and then held" (IDEA-089 S2-4).
@@ -62,6 +63,14 @@ buys nothing new until the book is flat, then S2 runs as usual for the rest of i
   SAFETY lane. If the morning buys used most attempts, some rebuys may end in `LEG_ATTEMPT_LIMIT`.
 - **Not for the final.** Like S2, S3 is a dev REHEARSAL profile only.
 
+## Handoff notes from the requester (2026-10-24, "pass these on so the S3 install doesn't fail halfway")
+
+| # | Note | Status in this change |
+|---|---|---|
+| H1 | The wallet must hold no stocks before run 5 starts: `gate_a.initial_state` (`larp/runtime/gate_a.py:185`, called by `gate_a.prepare`) refuses any non-zero stock balance. If S3 is meant to start while run 4's stocks are still in the wallet, that check needs a REHEARSAL-only change that carries over run 4's holdings and their purchase costs. | **Open, not implemented.** A carry-over changes accounting (cost basis, opening equity, P&L) and needs Isaac's and Keegan's review. Until then, start run 5 only once the wallet is flat. |
+| H2 | Dust counts: Sunday's flatten can leave balances at or below `dust_units`, and the same check rejects those too. | **Inside S3: handled.** The switch treats balances at or below `dust_units` as flat (`scheduled_flatten.state`). **At install: open.** `gate_a.initial_state` still rejects any non-zero balance, dust included (the S2/S3 profiles have `dust_units` 0, so the planner sells every positive balance). A dust tolerance there belongs with H1. |
+| H3 | The sell-everything has to happen once: a one-time switch that turns off once the wallet is flat, with buys blocked until then; otherwise it also sells what S3 buys afterwards. | **Implemented.** `scheduled_flatten: DONE` is committed in the risk state on the first flat round and never undone. While PENDING every BUY is refused (`SCHEDULED_FLATTEN_PENDING`). Tests: S3-3, S3-4, S3-5. |
+
 ## Pre-registered pass criteria (written before code or tests)
 
 | # | Pass when | Evidence |
@@ -75,3 +84,42 @@ buys nothing new until the book is flat, then S2 runs as usual for the rest of i
 | S3-7 | The committed S3 profile rebuilds byte for byte, differs from S2's only in `scheduled_flatten_at`, `policy_id` and their provenance, and passes `validate_live` and a signed dev `gate_a.prepare` with `gate_a_check` | profile tests |
 | S3-8 | Strategy, risk, integration and runtime test suites pass with no new failures | pytest output |
 | S3-L1 (live, team) | In an installed S3 run: the first round at/after the time sells every position, round-logged with `tx_hash`; the balance check is MATCH when flat; S2 buys resume after DONE; then IDEA-089 P2–P6 | chain monitor, `checks/trading-status.sh`, BscScan |
+
+## Implementation and results (2026-10-24, assistant; branch `claude/vigilant-carson-krj1sw` from `codex/system-testing-20261012` `a0409d19`)
+
+**Code.**
+- `larp/strategy/scheduled_flatten.py` (new): the `scheduled_flatten_at` check, the scope check, and the one-time
+  switch `state()` (None/BEFORE/PENDING/DONE).
+- `larp/risk/planner.py`: from the time, every held name is capped at 0 with reason `SCHEDULED_FLATTEN` (urgency equal
+  to the terminal flatten). While PENDING a BUY is refused (`SCHEDULED_FLATTEN_PENDING`). DONE is written to `risk_state`.
+- `larp/strategy/policy.py`: after DONE, S1's re-entry gate also passes for names held before (`fresh_book`).
+- `larp/strategy/profiles.py`: `validate_live` calls the S3 scope check.
+- `tools/deploy/build_rehearsal_candidate.py`: `--scheduled-flatten-at` (bare = `2026-10-25T04:00:00Z`) builds S3 from an
+  S2 block. It refuses the option without S2's hours.
+
+**Profile.** `docs/build/evidence/s3-rehearsal-profile-20261024/`:
+- file SHA-256 `2fb32b8e9ba342192ad57b61059654409ffbe3fad04e900c1887053a263f1526`;
+- `StrategyProfile.v1` digest `127ce7968c19c8bc27ffa12c92341d2ce33a5aa71d7243c1952a32eb30157eb9`;
+- M3 probe `142e1b06eb59b985f7680cbf96a0f7ae9a58ad3089b8bcd812e99c3bcce8085e`.
+
+S2's profile still rebuilds byte for byte (`eb55d76a…`).
+
+**Results** (`tests/strategy/test_s3_scheduled_flatten.py`, 11 tests):
+
+| # | Result |
+|---|---|
+| S3-1 | PASS: before the time, intents, quote requests, rejections and requirements equal S2's (flat and held books) |
+| S3-2 | PASS: both held names get `SCHEDULED_FLATTEN` mandatory SELLs, no BUY; execution admission (`permitted`) admits the SELL through the SAFETY lane |
+| S3-3 | PASS: a held name on price-jump hold still blocks every BUY (`SCHEDULED_FLATTEN_PENDING`; S2 on the same snapshot buys); reservations or a balance above `dust_units` keep it PENDING, dust counts as flat |
+| S3-4 | PASS: a flat book records DONE and rebuys names held before; S2, or S3 before its time, keeps them in cash |
+| S3-5 | PASS: with DONE recorded, held names get no scheduled sell and the plan equals S2's |
+| S3-6 | PASS: malformed time, a time at/after the window edges, unset value, FINAL and a profile without S2's hours are refused |
+| S3-7 | PASS: profile rebuilds byte for byte; differs from S2 only in `scheduled_flatten_at`, `policy_id` and their provenance; `validate_live`, signed dev `gate_a.prepare` + `gate_a_check`, dev runtime build pass; builder refusals |
+| S3-8 | PASS (qualified): full `tests/` on this branch **2139 passed, 526 skipped, 3654 subtests, 0 failed**. The unchanged base gives 2128 passed and the same 526 skipped (+11 = the new tests). Run on Python 3.13.17 without PostgreSQL, not the pinned Python 3.12.14 / PostgreSQL 14.24, so the PostgreSQL-backed tests are among the skips. The pinned PG run is still owed before release. |
+
+Red on base: the S3 tests cannot run on base (no `scheduled_flatten` module or committed S3 profile).
+
+**Open:**
+- H1: install with run 4's holdings needs a reviewed carry-over, or a flat wallet.
+- H2 at install: `gate_a` rejects dust.
+- The run decision and window (Yao), Isaac's approval, the pinned PG suite, and S3-L1.

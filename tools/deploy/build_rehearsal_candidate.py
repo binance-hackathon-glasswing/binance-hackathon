@@ -16,6 +16,9 @@ EVIDENCE = ROOT / 'docs/build/evidence'
 S2_WINDOW = dict(trade_after='2026-10-24T01:00:00Z', new_risk_end='2026-10-25T08:00:00Z',
                  flatten_start='2026-10-25T09:00:00Z', signing_end='2026-10-25T15:00:00Z')
 S2_POLICY_ID = 'larp-s2-rehearsal-v1'
+# IDEA-092 S3: S2 plus a scheduled sell-all; the requested 12 noon is 12:00 SGT Sunday, inside S2's buy window.
+S3_FLATTEN_AT = '2026-10-25T04:00:00Z'
+S3_POLICY_ID = 'larp-s3-rehearsal-v1'
 
 
 def s1_block(raw):
@@ -45,11 +48,12 @@ def open_state(block):
     return block is not None and type(block.get('execution')) is dict and block['execution'].get('hours') == 'KIT_OPEN_STATE'
 
 
-def build(exit_children=1, *, s1_raw=None, s1_decision=None):
+def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None):
     """`exit_children=1` reproduces the historical LD10-Q01 bytes; LD10-P03 selects 2.
 
     With `s1_raw` (the exact bytes of Keith's S1 block) and `s1_decision`, the profile is TREND_GUARDED_VOL under the
-    same SHADOW scope (SJ-11-RH01), and the reserve covers five positions x `exit_children`."""
+    same SHADOW scope (SJ-11-RH01), and the reserve covers five positions x `exit_children`. With an S2 block,
+    `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again."""
     if exit_children not in (1, 2):
         raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
     if (s1_raw is None) != (s1_decision is None) or (
@@ -57,6 +61,8 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None):
         raise ContractError('An S1 block and the decision behind it go together')
     s1 = None if s1_raw is None else s1_block(s1_raw)
     s2 = open_state(s1)
+    if scheduled_flatten_at is not None and not s2:
+        raise ContractError('A scheduled flatten (S3) builds only on an S2 block (IDEA-092)')
     if s2:
         # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
         # once the SHADOW scope is.
@@ -104,6 +110,12 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None):
                 formula='Weekend window: buys Sat 09:00 to Sun 16:00 SGT, flatten from Sun 17:00 SGT, signing to Sun 23:00 SGT')
         p['provenance']['policy_id'] = dict(decision_id='IDEA-089 S2 (Yao, 2026-10-23)',
             formula='REHEARSAL-only weekend trade test on the dev wallet; never installed for the final run')
+    if scheduled_flatten_at is not None:
+        p.update(scheduled_flatten_at=scheduled_flatten_at, policy_id=S3_POLICY_ID)
+        p['provenance']['scheduled_flatten_at'] = dict(decision_id='IDEA-092 S3 (team request, 2026-10-24)',
+            formula='Sell every held name from this time, no buys until flat, then S2 resumes from a fresh book')
+        p['provenance']['policy_id'] = dict(decision_id='IDEA-092 S3 (team request, 2026-10-24)',
+            formula='S2 with a scheduled sell-all; REHEARSAL-only on the dev wallet; never installed for the final run')
     validate_live(p)
     return Document.from_dict(p)
 
@@ -115,11 +127,13 @@ def main(argv=None):
                         help='1 reproduces historical LD10-Q01; 2 is the LD10-P03 selection')
     parser.add_argument('--s1-config', type=Path, help="Keith's S1 block (JSON, weights 1/5 each); default: equal weight")
     parser.add_argument('--s1-decision', help='decision ID for the supplied S1 block; required with --s1-config')
+    parser.add_argument('--scheduled-flatten-at', nargs='?', const=S3_FLATTEN_AT,
+                        help='S3 (IDEA-092): sell everything at this UTC instant, then S2 again; default ' + S3_FLATTEN_AT)
     args = parser.parse_args(argv)
     if (args.s1_config is None) != (args.s1_decision is None):
         parser.error('--s1-config and --s1-decision must be supplied together')
     s1 = {} if args.s1_config is None else dict(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)
-    p = build(args.exit_children, **s1)
+    p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))
