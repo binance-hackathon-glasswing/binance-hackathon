@@ -75,3 +75,33 @@ the team may ask).
   assumed volatilities, not measured ones.
 - EXP-008's Yahoo data is research-only (plan D-09 forbids it as a data source); nothing here proposes it for runtime.
 - The notes were not re-verified line by line by the coordinating session beyond the `series` finding above.
+
+## PR276-RV01 — independent documentation review (Isaac/Codex, 2026-10-24 SGT)
+
+Original research head `5d5b5e28`; base canonical `59c878c0`. Review criteria before numerical or documentation
+validation: (1) each operational claim matches source at this immutable base; (2) no team policy becomes an organiser
+rule; (3) literature findings retain their population/model assumptions and access grades; (4) no unregistered,
+unreproducible simulation or stale cost statistic becomes a measured result; (5) proposed parameter, gas and strategy
+changes remain unadopted with named owners and existing qualification gates; (6) preserve original source leads and
+immutable original text, repair local links, and verify a docs-only diff. No new strategy experiment is authorized.
+
+Findings to repair:
+- R1: unsupported universal return/ranking claims, deterministic small profit-effect forecasts, and a concentration
+  recommendation inferred from assumed rival distributions; replace with conditional comparisons and uncertainty.
+- R2: code wiring findings need scope: an UP-initialized trend state with missing series is not a guarantee that a
+  fully invested95% book runs; min-trade arithmetic is conditional on equity, weights, gaps and the selected profile.
+- R3: final trade/flat gates are PF-04/IDEA-035 policy, not challenge deadlines. F-43 is proposed and F-115/Q-39 leave
+  scoring interpretation unresolved. First-BNB bootstrap is already answered by F-120; only valuation remains open.
+- R4: two notes assert200000-draw simulations without committed criteria/code/seed/receipts. These are unreproduced
+  claims, not experiments accepted by this ledger, and cannot support probability/CPPI/effect-size tables.
+- R5: the execution note mixes old13–56bp proxy estimates with current quote evidence, gives unsupported numeric
+  slippage/gas advice, suggests standing allowances/direct RPC submission, and infers too much from3/4 generic
+  mismatch errors. Preserve exact-amount approvals, authorized minima, the Web3 broadcast path, gas/cap qualification
+  and distinguish planned/approved/swap-signed/completed states.
+- R6: event confirmations and research results must come from checked primary sources; unavailable or secondary-only
+  sources remain leads, not confirmed event dates or deployable signals. Preserve every original external source URL
+  in the corresponding reviewed note's lead register; original prose is retained at immutable head `5d5b5e28`.
+
+Method: checked source/official captures and primary web sources; rewrite the synthesis and scope the notes to what
+this review can support. This is a research-document acceptance, not approval of a strategy, parameter exception,
+private-data evaluation, runtime change, live run, funding change, service use or release.
