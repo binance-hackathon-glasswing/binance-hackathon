@@ -215,3 +215,16 @@ Default redacted pages still omit round IDs. A synthetic regression verifies ord
   preview above: https://claude.ai/artifact/TvedBe3MDUf2EwTKnqgjqs (version 1, data as of 10:34Z). Only its owner can
   open it until it is shared from its Share menu. It is a snapshot: it updates when it is republished (rebuild from the
   chain monitor and the SSM export, then publish the same page again). No GitHub repository was created.
+
+### DR: hourly refresh of the private page (2026-10-24)
+
+- Requested: "refresh the dashboard every hour". `tools/dashboard/refresh.py` does one refresh: a chain-monitor poll,
+  the read-only decisions export over SSM, the merge, the redacted build, and the page adapted for the Artifact
+  (`larp-dashboard.html`, `data.json`, `refresh-state.json`). `refresh-state.json` lists the wallet's known transaction
+  blocks and is published with the page, so a new container can seed the monitor's first poll from it instead of a
+  full block scan. Publishing stays a separate Artifact step. A scheduled task wakes the Claude Code session every hour
+  to run it and republish to the same link.
+- Pass criteria (before the test ran): DR1 the built page loses its document skeleton, keeps one title, gains the
+  safe-area gutter and has no `0x…` identifier; DR2 the known blocks are the monitor's transaction blocks. Result:
+  `tests/test_dashboard_refresh.py` red on base (no module), then 2 passed; the converter reproduces the published
+  version 1 page byte for byte; a real refresh (SSM command `c060c757…`) took 5 s with an unchanged nonce.
