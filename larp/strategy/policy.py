@@ -14,6 +14,7 @@ from larp.integration.contract import accept_for_strategy, authority, red_flag_d
 from .features import declared_weight, features
 from .schema import fraction, instant, integer, markets, profile, ratio, value, equity
 from . import s1 as s1_plan
+from . import scheduled_flatten
 from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
@@ -52,6 +53,8 @@ def decide(snapshot, state):
     for symbol, a in assessments.items():
         versions[symbol] = a["state_version"]
     terminal = now >= instant(p["flatten_start"])
+    # IDEA-092 (S3): after the scheduled sell-all is DONE, S2 rebuilds its book; names held before may be bought again.
+    fresh_book = scheduled_flatten.state(p, ledger.get("risk"), ledger, now) == "DONE"
     window_open = (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
                    and c["remaining_sessions"] >= p["minimum_remaining_sessions"])
     held = [s for s, pos in ledger["positions"].items() if pos["units"]]
@@ -195,7 +198,7 @@ def decide(snapshot, state):
             gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
                      and (not p["assessment_required"] or fresh_review)
                      and not (rights["statement"] == "ENTRY_BLOCK" and pending)
-                     and (units or not old.get("ever_held", False) or fresh_review))
+                     and (units or not old.get("ever_held", False) or fresh_review or fresh_book))
             step = p["minimum_trade_units"]
             s1["seen"].add(symbol)
             if symbol in s1["rebalance"] and (gap <= -step or (gap >= step and gates)):

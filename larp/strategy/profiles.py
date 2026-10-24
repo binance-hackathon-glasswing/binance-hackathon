@@ -116,6 +116,8 @@ def validate_live(p):
             raise ContractError("Live profile differs from decided v1 scope")
         from .execution_bounds import require_open_state_scope
         require_open_state_scope(p, None)  # IDEA-089 S2-1: weekend hours only in a SHADOW REHEARSAL
+        from .scheduled_flatten import require_scope
+        require_scope(p)  # IDEA-092 S3: a scheduled sell-all only on S2's REHEARSAL, inside the buy window
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.
         # A separate stress budget may still tighten regime_gross_weight.
         decided_weights = {"operating_name_weight": Fraction(1, 5),

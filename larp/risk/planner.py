@@ -14,6 +14,7 @@ from .accounting import update_risk
 from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
 from larp.strategy import execution_bounds
+from larp.strategy import scheduled_flatten
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -203,6 +204,11 @@ def plan(snapshot, proposal_or_none):
                       else max(gross_limit, fraction(p["hard_gross_weight"])))
     positions = ledger["positions"]
     held = {s: pos["units"] for s, pos in positions.items() if pos["units"]}
+    # IDEA-092 (S3): from the scheduled time every held name is sold before any buy; DONE is committed with the risk state.
+    scheduled = scheduled_flatten.state(p, r, ledger, now)
+    if scheduled == "DONE":
+        r["scheduled_flatten"] = "DONE"
+    interim = scheduled == "PENDING"
     pending_buy = {}
     reserved_cash = reserved_bnb = 0
     for reservation in ledger["reservations"].values():
@@ -235,7 +241,8 @@ def plan(snapshot, proposal_or_none):
         m, qty = market.get(symbol), held[symbol]
         if m is None:
             result["requirements"].append({"symbol": symbol, "held_units": qty, "max_units": 0,
-                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "RISK_REEVALUATION_REQUIRED"]
+                "remaining_sell_units": qty, "reasons": ["TERMINAL_FLATTEN" if terminal else "SCHEDULED_FLATTEN"
+                                                         if interim else "RISK_REEVALUATION_REQUIRED"]
                 + (["CLASS_1_EXIT"] if symbol in latched else []),
                 "status": "BLOCKED_INPUT" if symbol in invalid else "BLOCKED_MARK"})
             continue
@@ -281,6 +288,9 @@ def plan(snapshot, proposal_or_none):
         if terminal:
             cap = 0
             reason.append("TERMINAL_FLATTEN")
+        elif interim:
+            cap = 0
+            reason.append("SCHEDULED_FLATTEN")
         for requirement in c.get("reduction_constraints", []):
             if requirement["symbol"] == symbol:
                 bound = integer(requirement["max_units"])
@@ -326,7 +336,7 @@ def plan(snapshot, proposal_or_none):
         # Class 1 / terminal first, then by notional at the current mark; token units say nothing
         # about value across decimals and prices (#64 item 3). Unmarked names go last in their class.
         m = market.get(req["symbol"])
-        return (not {"CLASS_1_EXIT", "TERMINAL_FLATTEN"} & set(req["reasons"]), m is None,
+        return (not {"CLASS_1_EXIT", "TERMINAL_FLATTEN", "SCHEDULED_FLATTEN"} & set(req["reasons"]), m is None,
                 -value(req["remaining_sell_units"], m) if m is not None else 0, req["symbol"])
 
     actions = []
@@ -355,6 +365,10 @@ def plan(snapshot, proposal_or_none):
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
             if side == "BUY":
+                if interim:
+                    # A held name that cannot be sold this round must not let the book grow before it is flat.
+                    result["rejections"].append({"symbol": symbol, "reason": "SCHEDULED_FLATTEN_PENDING"})
+                    continue
                 if (gas_short or unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
                         or c.get("health", {}).get("new_spending_ok", p.get("mode") != "LIVE") is not True
                         or now.date().isoformat() != r["day"]

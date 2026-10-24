@@ -1,5 +1,14 @@
 # Current shared build and remaining work
 
+PR277-RV01 (2026-10-24): S3 dev-rehearsal scheduled flatten reviewed with a repair bounding pre-cut BUY command
+and independent execution/signer/broadcast authority at the schedule; first flat/DONE re-entry remains allowed.
+2659 tests/4004 subtests PASS, 8 explicit skips, 3 unchanged nested-sandbox cases deselected on pinned Linux/Python3.12.15/PG14.24;
+all16 S3 cases pass, including real coordinator/restart/settlement/exact replay. GitHub Actions is billing-blocked.
+[Review/owners](../ledger/IDEA-092.md#pr277-rv01-results--pass-for-source-merge-2026-10-24-sgt) /
+[receipt](evidence/pr277-review-20261024.json). Candidate2fb32b8e unchanged; no profile/signer/host/install acceptance.
+H1/H2, full-cycle gas/exit/shared attempt coverage, working sandbox/systemd/release and live S3-L1 remain open.
+Active run4/RC7 remains unchanged.
+
 PR276-RV01 (2026-10-24): IDEA-091 strategy research reviewed and corrected against canonical `59c878c0`.
 Verified code gaps are scoped; policy/rules and primary-source checks are separated from unverified leads.
 Unsupported profit/rank forecasts and unreproduced simulation tables are withdrawn. No strategy, parameter, gas,
