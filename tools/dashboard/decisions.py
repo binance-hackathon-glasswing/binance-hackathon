@@ -13,12 +13,19 @@ import os
 from pathlib import Path
 
 FILE = 'decisions.jsonl'
+CURSOR = 'decisions-cursor.json'  # the last event sequence an incremental export covered (IDEA-091 E2)
 SCHEMA = 'LarpDecisionExport.v1'
 
 
 def parse(text):
     """Decision rows of an export's stdout, and counts of what was skipped."""
-    rows, report = [], dict(decisions=0, summary=None, skipped=0)
+    rows, _, report = parse_all(text)
+    return rows, report
+
+
+def parse_all(text):
+    """Decision rows and closure lines of an export's stdout, and counts of what was skipped."""
+    rows, closures, report = [], [], dict(decisions=0, closures=0, summary=None, skipped=0)
     for line in text.splitlines():
         line = line.strip()
         if not line:
@@ -31,14 +38,18 @@ def parse(text):
             report['skipped'] += 1
         elif row.get('section') == 'decisions_summary':
             report['summary'] = {k: row.get(k) for k in ('rounds', 'exported', 'closed')}
-            if 'omitted_for_size' in row:
-                report['summary']['omitted_for_size'] = row['omitted_for_size']
+            for key in ('omitted_for_size', 'since', 'last_seq', 'complete'):
+                if key in row:
+                    report['summary'][key] = row[key]
         elif row.get('section') == 'decision' and isinstance(row.get('round_id'), str):
             rows.append(row)
             report['decisions'] += 1
+        elif row.get('section') == 'closure' and isinstance(row.get('round_id'), str):
+            closures.append(row)
+            report['closures'] += 1
         else:
             report['skipped'] += 1
-    return rows, report
+    return rows, closures, report
 
 
 def order(row):
@@ -55,6 +66,15 @@ def newer(new, old):
     return new
 
 
+def cursor(monitor_dir):
+    """The sequence the next incremental export starts after (0 before the first)."""
+    try:
+        value = json.loads((Path(monitor_dir) / CURSOR).read_text()).get('since')
+    except (OSError, ValueError, AttributeError):
+        return 0
+    return value if type(value) is int and value >= 0 else 0
+
+
 def merge(export_text, monitor_dir):
     folder = Path(monitor_dir)
     path = folder / FILE
@@ -67,17 +87,27 @@ def merge(export_text, monitor_dir):
                 continue
             if isinstance(row, dict) and isinstance(row.get('round_id'), str):
                 current[row['round_id']] = row
-    rows, report = parse(export_text)
+    rows, closures, report = parse_all(export_text)
     before = len(current)
     for row in rows:
         current[row['round_id']] = newer(row, current.get(row['round_id']))
+    report['orphan_closures'] = 0
+    for closure in closures:  # a round planned in an earlier export closed in this one
+        planned = current.get(closure['round_id'])
+        if planned is None:
+            report['orphan_closures'] += 1
+        elif planned.get('status') is None:
+            current[closure['round_id']] = dict(planned, status=closure.get('status'))
     text = ''.join(json.dumps(r, sort_keys=True, separators=(',', ':')) + '\n'
                    for r in sorted(current.values(), key=order))
     folder.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(FILE + '.tmp')
     tmp.write_text(text)
     os.replace(tmp, path)
-    report.update(rounds=len(current), added=len(current) - before, file=str(path))
+    last = (report['summary'] or {}).get('last_seq')
+    if type(last) is int and last > cursor(folder):
+        (folder / CURSOR).write_text(json.dumps(dict(since=last), sort_keys=True) + '\n')
+    report.update(rounds=len(current), added=len(current) - before, file=str(path), since=cursor(folder))
     return report
 
 

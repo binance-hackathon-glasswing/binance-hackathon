@@ -197,7 +197,7 @@ class ExportTest(unittest.TestCase):
         db = text[text.index('# ---- database'):]
         self.assertIn("SET TRANSACTION READ ONLY", db)
         self.assertIn('with s.transaction() as db:', db)
-        self.assertEqual(re.findall(r"db\.execute\('([A-Z]+)", db), ['SET', 'SELECT'])
+        self.assertEqual(re.findall(r"(?:db|cur)\.execute\('([A-Z]+)", db), ['SET', 'SELECT'])
         self.assertIsNone(re.search(r'\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|COPY)\b', text))
 
 

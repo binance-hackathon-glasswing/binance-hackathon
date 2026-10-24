@@ -55,8 +55,8 @@ run "a2_ssm_least_privilege" {
     error_message = "Without a Web3 secret the Lambda reads no secret."
   }
   assert {
-    condition     = jsondecode(aws_ssm_document.decisions.content).mainSteps[0].inputs.runCommand[0] == "set -- {{ limit }}"
-    error_message = "The decisions document passes its limit as the script's first argument."
+    condition     = jsondecode(aws_ssm_document.decisions.content).mainSteps[0].inputs.runCommand[0] == "set -- {{ limit }} {{ since }}"
+    error_message = "The decisions document passes its limit and cursor as the script's arguments."
   }
 }
 

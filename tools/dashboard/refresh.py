@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MONITOR = ROOT / 'docs/build/ops/rehearsal-install-rc7-20261024/mac/chain-monitor.py'
 EXPORT = ROOT / 'tools/dashboard/decisions-export.sh'
 TX_EXPORT = ROOT / 'tools/dashboard/tx-export.sh'
+EXPORT_ROUNDS = 10  # incremental exports per refresh at most (about 20 rounds each)
 PRIMARY = 'i-040fc5fea8b700e9a'  # run 4's primary (ssm_run.py)
 REGION = 'ap-southeast-2'
 GUTTER = ('.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); '
@@ -181,13 +182,21 @@ def refresh(work, seed_blocks=(), *, runner=None, settings=None):
     if not seed_blocks and saved.is_file():
         seed_blocks = json.loads(saved.read_text()).get('blocks', [])
     chain = poll(monitor_dir, sorted(seed_blocks), runner=runner, settings=settings)
-    # Best effort: without the export (no SSM access, a timeout) the trades still refresh beside the last decisions.
-    try:
-        command_id, stdout = (runner or ssm_run)(EXPORT, 40)
-        export_error = None
-    except Exception as error:  # boto3 ClientError, TimeoutError, a failed command
-        command_id, stdout, export_error = None, '', type(error).__name__
-    merged = decisions.merge(stdout, monitor_dir)
+    # Incremental (IDEA-091 E1/E2): each export reads only the events after the stored cursor, so its cost follows the
+    # new events, not the run's length; a first run or a gap catches up over a few exports. Best effort: without the
+    # export (no SSM access, a timeout) the trades still refresh beside the last decisions.
+    command_id, export_error, merged = None, None, None
+    for _ in range(EXPORT_ROUNDS):
+        try:
+            command_id, stdout = (runner or ssm_run)(EXPORT, 40, decisions.cursor(monitor_dir))
+        except Exception as error:  # boto3 ClientError, TimeoutError, a failed command
+            export_error = type(error).__name__
+            break
+        merged = decisions.merge(stdout, monitor_dir)
+        if (merged.get('summary') or {}).get('complete') is not False:
+            break
+    if merged is None:
+        merged = decisions.merge('', monitor_dir)
     data = build.build(monitor_dir, site)
     (out / 'larp-dashboard.html').write_text(artifact_page((site / 'index.html').read_text()))
     (out / 'data.json').write_bytes((site / 'data.json').read_bytes())

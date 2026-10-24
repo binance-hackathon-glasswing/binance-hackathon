@@ -8,7 +8,7 @@ locals {
   primary_arn = "arn:aws:ec2:${var.region}:${var.account_id}:instance/${var.primary_instance_id}"
   bucket_arn  = "arn:aws:s3:::${var.bucket_name}"
   # The SSM document body is the script itself; `set --` passes the document parameter as its first argument.
-  decisions_lines = concat(["set -- {{ limit }}"], split("\n", trimspace(file("${path.module}/../decisions-export.sh"))))
+  decisions_lines = concat(["set -- {{ limit }} {{ since }}"], split("\n", trimspace(file("${path.module}/../decisions-export.sh"))))
   tx_lines        = split("\n", trimspace(file("${path.module}/../tx-export.sh")))
   lambda_policy = {
     Version = "2012-10-17"
@@ -118,8 +118,11 @@ resource "aws_ssm_document" "decisions" {
   content = jsonencode({
     schemaVersion = "2.2"
     description   = "IDEA-087/091: read-only decisions export for the dashboard"
-    parameters    = { limit = { type = "String", default = "40", allowedPattern = "^[0-9]{1,3}$" } }
-    mainSteps     = [{ action = "aws:runShellScript", name = "export", inputs = { runCommand = local.decisions_lines } }]
+    parameters = {
+      limit = { type = "String", default = "40", allowedPattern = "^[0-9]{1,3}$" }
+      since = { type = "String", default = "0", allowedPattern = "^[0-9]{1,12}$" }
+    }
+    mainSteps = [{ action = "aws:runShellScript", name = "export", inputs = { runCommand = local.decisions_lines } }]
   })
 }
 resource "aws_ssm_document" "tx" {

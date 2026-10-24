@@ -18,7 +18,8 @@ import time
 
 from tools.dashboard import refresh
 
-STATE_FILES = ('state.json', 'snapshots.jsonl', 'transactions.jsonl', 'alerts.jsonl', 'decisions.jsonl')
+STATE_FILES = ('state.json', 'snapshots.jsonl', 'transactions.jsonl', 'alerts.jsonl', 'decisions.jsonl',
+               'decisions-cursor.json')
 SITE = (('index.html', 'text/html; charset=utf-8'), ('data.json', 'application/json'))
 POLL_S, TIMEOUT_S = 2, 240
 
@@ -29,7 +30,7 @@ def document_runner(ssm, instance, documents):
         name = Path(script_path).name
         if name not in documents:
             raise PermissionError('No SSM document is configured for ' + name)
-        parameters = {'limit': [str(int(args[0]))]} if args else {}
+        parameters = dict(zip(('limit', 'since'), ([str(int(a))] for a in args)))
         sent = ssm.send_command(InstanceIds=[instance], DocumentName=documents[name], Parameters=parameters,
                                 TimeoutSeconds=600)
         command_id, deadline = sent['Command']['CommandId'], time.time() + TIMEOUT_S
