@@ -3202,3 +3202,261 @@ Next: apply, SA5/SA9, M9.
 
 SJ-10 J0′–J5 PASS. Open: J6 (the full RC5-only hour from 06:00Z and the ≥ 8 h soak) and J7 (the first trade, which
 waits for IDEA-086 / PR262 and run 3 on S1, SJ-11). Signer access (T1) has to be applied again for run 3.
+
+#### SJ-11-A2 — local RC6 bundle instead of mirror CI; M1-local PASS (Yao, 2026-10-23 16:02Z)
+
+**Decision (Yao, in chat):** run the RC6 sheet's `mac/m1-local-bundle.sh` route ("steps from my friend check if we can
+proceed then give me the steps 1 at a time"). As in SJ-10-A2, J0 is a local bundle built from the pushed canonical head
+with `tools/build_release_bundle.py`, not a CI artifact. **This again reverses, for run 3 only, Keegan's PR244 release
+gate** ("install only the original CI artifact, never a local rebuild"; SJ-06-A2). The bundle has no CI test
+provenance; its test record is local only (SJ-11-RH01-P1 and -M1 on `a5e6d1e` / `d64e4fc`; GAP62-F02 V3 for PR266).
+
+**BUILD is `9dc5edab`, not `d64e4fc`.** The friend's steps named `d64e4fc` (canonical after PR263). Three PRs merged
+after it: PR265 (docs), PR260 (EXP-008 docs and `tools/exp008/`) and PR266 (GAP62-F02, DEV-25). The builder accepts
+only the pushed head of its branch, so it built `9dc5edab`. Of those three, only PR266 changes a release file:
+`config/release/deviations.v1.json` gains the DEV-25 row (FINAL) and `updated` 2026-10-23. The register checks its
+declared text at every host start; `**SEC EDGAR:** 8-K, 10-Q and 10-K filings, time-stamped by their acceptance time.`
+occurs once in `docs/proposal/proposal_answers.md` at `9dc5edab`.
+
+**Before the run (Mac, assistant read-only checks):** canonical `9dc5edab61b6bffdb3c75cc4d498bb651a91ba43`; the RC4
+reference `deploy/activation/rehearsal-install-20261022/bundle/x/larp-d03bbb16cf51-x86_64` has manifest
+`5ea11a84287e790e8d2246c76203e5f1040f6c8fd90f627e9363eaecbaa95b6a` (CI RC4, artifact 12419733594). The RC5 release
+worktree `.claude/worktrees/release-d53d1b7` held `codex/system-testing-20261012`, so Yao detached it first. The sheet
+was copied from canonical with `git archive` because the operator checkout was on another branch.
+
+**M1-local result (Yao, `PY` = `larp-test-venv`, Python 3.12.14), PASS:**
+- `larp-9dc5edab61b6-x86_64.tar.gz` sha256 `6de35254499be2d827f535f46f1e0ffe422e78cff6f7d34f48959e2a4fc3203a`,
+  manifest `184bd2cd7696c86b00d24e5dc87f73bce9060f160a8e093243e68345c5ee040f`, `build_id` `9dc5edab…`.
+- Sidecar, `SHA256SUMS`, build ID and published manifest agree.
+- Against CI RC4 the differences are exactly the nine release files that `d03bbb1..9dc5edab` changes, no more and no
+  fewer: NEW `larp/marketdata/basis.py`; CHANGED `config/release/deviations.v1.json`, `larp/marketdata/port.py`,
+  `larp/risk/planner.py`, `larp/runtime/database.py`, `larp/runtime/gate_a.py`, `larp/runtime/service.py`,
+  `larp/storage/postgres.py`, `larp/strategy/profiles.py`. A spot check of `basis.py`, `profiles.py`,
+  `deviations.v1.json` and `postgres.py` found the bundle bytes equal to the commit's.
+- CPython `0e56475e…` (3.12.15), every wheel, `rds-ca.pem` `d7389074…` and `provision.sh` `d7905de4…` are
+  byte-identical to RC4 and RC5; `BUNDLE.env` differs only in `build_id`. `MIRROR_RUN=LOCAL-BUILD-RUN3`.
+
+Limit (SJ-11-A2): no CI run on this commit. RC6 = `9dc5edab`. Next: M2 and D1, then M3 (before R1p). Yao's scope and
+run-ID confirmation (needed by M4) and Isaac's A1 remain open.
+
+#### SJ-11-C1 — Yao confirms the run-3 scope and run ID (Yao, 2026-10-23T16:10Z)
+
+**Confirmation (Yao, in chat):** "Confirmed: run ID larp-dev-rehearsal-20261024, and run 3 is deterministic S1 with
+models and falsifiers in SHADOW and no hosted models."
+
+This clears README gates 2 and 3 of the RC6 sheet (`docs/build/ops/rehearsal-install-rc6-20261023/`):
+- **Scope (SJ-11-RH01):** run 3 trades S1 `TREND_GUARDED_VOL` REHEARSAL in `dev` with the deterministic assessor and a
+  DETERMINISTIC limiter. Model evidence and falsifiers are SHADOW: recorded, never able to change a trade. No hosted
+  model is called. Profile `6bcf1dfb…` (PF-01 values, weights 1/5), M3 probe `75547c8e…`.
+- **Run ID:** `larp-dev-rehearsal-20261024`, database `larp_rehearsal3` (created, SJ-11-D1 PASS), build RC6
+  `9dc5edab` (SJ-11-A2).
+
+M4 takes this record as `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Yao Zhu 2026-10-23)"`. **Not covered:** Isaac's A1
+(profile `6bcf1dfb…` and the M3 `signer.json`) and the P4 run-3 approval.
+
+#### SJ-11 M3 — recapture and signer.json assembly for run 3: COVERED, awaiting A1 (Yao, 2026-10-23 16:11Z)
+
+Stamp `20261023T161113Z`, review at 16:11:49Z, run 2 still installed on primary (read-only probe, hash `75547c8e…`).
+- **Assembly:** `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`, only blocker `OWNER_REVIEW_REQUIRED`;
+  `ready_to_install`, `signing_enabled` and `gate_b_accepted` false.
+- **Coverage:** 89/89 checks covered against S1's sizes (`--profile`, profile `6bcf1dfb…`, gas scope INITIAL_ONLY),
+  21 quotes, no missing quote coverage. Policy `3241abd3…`.
+- **Holdings (chain start):** 96 USDT (96000000 units), 0.005325625054330011 BNB, 0 units of each of the five stocks,
+  no reservations; run ID `larp-dev-rehearsal-20261024`.
+- **Candidate `signer.json` `49cb1a08c3d2a3b3c7409ad1c3beb68e0a43e3282bd9296ad7bcec770530209a`.** Against run 2's installed
+  `1a4cda6f…` it differs in exactly three fields: `build_id` `d53d1b7…` → `9dc5edab…`, `database_name`
+  `larp_rehearsal2` → `larp_rehearsal3`, `run_id` `larp-dev-rehearsal-20261023` → `larp-dev-rehearsal-20261024`
+  (assistant check, field-by-field).
+
+Next: **A1**, Isaac approves profile `6bcf1dfb…` and `signer.json` `49cb1a08…`. Then R1p, P2, M4 (stamp above).
+
+#### SJ-11-A1 — Isaac approves the run-3 S1 profile and signer.json (relayed by Yao, 2026-10-23T16:14Z)
+
+**Approval (Isaac, relayed by Yao in chat):** "he approves keep going", in reply to the A1 request for exactly:
+- S1 REHEARSAL profile `6bcf1dfb…` (`docs/build/evidence/s1-rehearsal-profile-20261023/rehearsal-s1-deterministic.json`,
+  PF-01 values, weights 1/5, deterministic, SHADOW models and falsifiers; scope SJ-11-C1);
+- run-3 `signer.json` `49cb1a08c3d2a3b3c7409ad1c3beb68e0a43e3282bd9296ad7bcec770530209a` (M3 stamp `20261023T161113Z`),
+  which differs from run 2's `1a4cda6f…` only in `build_id`, `database_name` and `run_id`;
+- with the M3 coverage 89/89 COVERED, CAP-02 policy `3241abd3…`, router policy `05759e90…` and the same dev wallet.
+
+This clears `OWNER_REVIEW_REQUIRED` for these hashes only, and is the run-3 approval record for P4
+("IDEA-049-C SJ-11-A1"). Any different profile, `signer.json` or coverage capture needs a new decision. No written
+statement from Isaac is in the repo; it is recorded as relayed. Next: R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5.
+
+#### SJ-10 J6 — DB login soak PASS on the login count, before run 2 is retired (Yao, 2026-10-23 16:17Z)
+
+`mac/soak-db-logins.sh 11` from the RC5 folder (`results/soak-20261023T161720Z`; an 8-file run at 16:14:52Z agrees).
+Files are RDS `error/postgresql.log.<hour>` (the `error/` prefix is the RDS log folder name, not a failure). Ends
+`SOAK_PASS`.
+
+| Hour (UTC, Oct 23) | IAM logins | Auth failures | `ERROR:`/`FATAL:`/`PANIC:` lines |
+|---|---|---|---|
+| 06, 07, 08 | 84, 82, 82 | 0 | 0 |
+| 09–13 (each) | 82 | 0 | 0 |
+| 14, 15 | 83, 82 | 0 | 0 |
+| 16 (partial, to 16:17) | 26 | 0 | 0 |
+
+That is 10 full RC5-only hours (06:00–16:00Z) at about 82 an hour, against about 45,000 an hour on RC4 and the
+pre-registered line of under 500, with no auth time-out, no "critically low on memory" line and no error lines. **The
+≥ 8 h login and auth part of J6 passes.** Not covered by this check: the services' journals for a dead-path
+`Unavailable`, and RDS backend memory with long-lived connections (CloudWatch `FreeableMemory`). Run 2 never entered
+(no basis verifier), so this measures idle-round load, not a trading load.
+
+#### SJ-11 R1p and P2 — PASS on primary; run 2 retired, RC6 installed (2026-10-23 ~16:2xZ, Yao)
+
+- **R1p** (`host/r1-retire-primary.sh`, SSM `f5cfd3dd-ebe2-42bc-b013-ea8b3f856143`, Success, no stderr): all six
+  run-2 units inactive and disabled (`larp-execution`, `larp-runtime`, `larp-uploader`, `larp-archive.timer`,
+  `larp-archive.service`, `larp-evidence`). Eleven configs moved to
+  `/etc/larp-history/d53d1b7-larp-dev-rehearsal-20261023/`, among them `runtime.json` `8efb54d6…`, `release.json`
+  `72478f9d…`, `strategy-profile.json` `e95d5842…` (run 2's equal weight), `untrusted-router-policy.json` `05759e90…`
+  and `initial-state.json` `15eeba6b…`. `/etc/larp` now holds only `rds-ca.pem` and `role-primary`. Run 2's signer
+  still polls `larp_rehearsal2` until R1s; it has nothing to sign.
+- **P2** (`host/p2-provision.sh primary`, SSM `4b169d2d-e24b-4821-a0ef-5ea38dca5199`, Success): bundle
+  `larp-9dc5edab61b6-x86_64` hash and sidecar checked, `provision.sh` `d7905de4…` checked; installed
+  `/opt/larp/releases/9dc5edab61b6bffdb3c75cc4d498bb651a91ba43`, manifest `184bd2cd…` (equals build.env), CA
+  `d7389074…`. Nothing started; `larp-execution` disabled again. The 703 bytes of stderr are systemd's
+  "Created symlink"/"Removed" lines only.
+
+Next: M4 (stamp `20261023T161113Z`, scope `IDEA-049-C SJ-11-C1`), then P3.
+
+#### SJ-11-J3 — M4 PASS: run-3 package prepared and uploaded (2026-10-23 16:23Z, Yao)
+
+M4 with stamp `20261023T161113Z` and `SCOPE_CONFIRMATION="IDEA-049-C SJ-11-C1 (Yao Zhu 2026-10-23)"`; package
+`package-20261023T162318Z`, prefix `releases/rehearsal-20261023t162318z/`.
+- Signer diff against run 2's `1a4cda6f…`: exactly `build_id`, `database_name`, `run_id`; `signer.json` `49cb1a08…`
+  (the SJ-11-A1 hash).
+- Fresh capture `captured: true`. `prepare` done; `gate_a_passed: false` with missing
+  `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE`, the same expected result as run 2 (SJ-10 M4) for a dev
+  deterministic run.
+- Package check: all 7 PASS, `local_ready: true`, `remote_ci_verified: false` (local bundle, SJ-11-A2). Bind:
+  `manifest_bound` to `184bd2cd…`. Local signer `check`: `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23,
+  `gate_b_accepted: false`.
+- Identity (assistant read of the package): runtime `larp-dev-rehearsal-20261024` / `9dc5eda` / `dev` /
+  `larp_rehearsal3`, service / deterministic / live, profile `6bcf1dfb…`; execution the same identity, `larp_execution`,
+  send RPC `BSC_BNBCHAIN_PUBLIC` (RV01-D1's dev-rehearsal-only acceptance carried to run 3), profile `6bcf1dfb…`.
+  Profile: `REHEARSAL`, `TREND_GUARDED_VOL`, evidence and falsifier authority `SHADOW`, `assessment_required` false.
+  Initial state: 96000000 USDT, 5325625054330011 BNB, five positions 0, no reservations, opening equity 99845905.
+- Hashes: `release.json` `590edf38…`, `runtime.json` `7dc1986f…`, `execution.json` `345a46e6…`, `initial-state.json`
+  `ec0c16b2…`, `uploader.json` `9e12ec55…`, `operations.json` `d2c902c0…`, `registration-evidence.json` `2a7d043d…`;
+  unchanged from run 2: `session-calendar.json` `bf4c2eca…`, `evidence.env` `c3add04b…`, router policy `05759e90…`.
+
+Next: P3 on primary with the printed command, then P4.
+
+#### SJ-11 P3 — PASS on primary (2026-10-23 ~16:3xZ, Yao)
+
+`host/p3-install-primary.sh` with M4's printed hashes (SSM `1f59b1a5-dbba-483f-bfb3-0e80e9ad6a63`, Success, no
+stderr): `release_verified: true`; runtime and execution `configuration_valid: true` (signing false); routes PASS
+`54f98814…`, 13 destinations; chrony on Amazon Time Sync (169.254.169.123), stratum 4, 0.0000026 s fast, leap Normal.
+Nothing started. Next: P4 with reviewer `Yao Zhu` and approval `SJ-11-A1 Isaac via Yao; SJ-11-C1 Yao Zhu 2026-10-23`.
+
+#### SJ-11 P4 — PASS: run 3 initialized and activated on S1 (2026-10-23 ~16:3xZ, Yao)
+
+`host/p4-init-activate-start.sh "Yao Zhu" "SJ-11-A1 Isaac via Yao; SJ-11-C1 Yao Zhu 2026-10-23"` (SSM
+`6abce702-5737-4498-a269-3434356c020e`, Success, no stderr):
+- `init`: `initialized: true`, run `larp-dev-rehearsal-20261024`, mode `dev`, quarantined (as runs 1 and 2 at init).
+- `activate`: `activated: true`, epoch 2, `signing_enabled: false`.
+- `larp-evidence`, `larp-uploader`, `larp-runtime` active with 0 restarts; `larp-execution` inactive; archive timer
+  active. `P4_DONE`.
+
+Run 3 is now bound to RC6 `9dc5edab` and `larp_rehearsal3`. `checks/primary-status.sh` right after (SSM `2b55a1c2…`):
+same unit states, runtime `release_verified: true`, archive health `healthy: true` for run 3, anchor 1 ACK, backup 1 ACK.
+Next: T1 (signer access on), then R1s, P2s, S1, S1b, S2, P5.
+
+#### SJ-11 T1, signer reboot and R1s — PASS (2026-10-23 16:32–16:5xZ, Yao)
+
+- **T1:** `enable_signer_provisioning = true`; plan `signer-access-on-run3.tfplan` **8 to add, 0 to change, 0 to
+  destroy**, the same eight IDEA-080 resources as run 2's T1 (no update, replace or destroy). Apply
+  (`results/t1-apply.txt`): `Apply complete! Resources: 8 added, 0 changed, 0 destroyed.`; endpoints 43–66 s.
+- **SA9** (`mac/signer-reach.sh`, 16:39:26Z): both hosts `Online`, endpoints `ssm`/`ssmmessages`/`ec2messages`
+  `available` with private DNS from 16:33Z, `AmazonSSMManagedInstanceCore` on `larp-dev-signer`, EC2 ok/ok.
+- **Stale agent, as in SJ-06 J5 and SJ-10 J4:** the first R1s command `4a462966…` (16:40:27Z) stayed
+  `Pending`/`Delayed` for about 10 minutes while the signer still pinged `Online`. Yao cancelled it (`Cancelled`, never
+  delivered) and rebooted the signer once; at 16:53:07Z both hosts `Online` (signer ping 16:52:05Z).
+- **R1s** (SSM `32c19b4b-5f50-4f13-af32-400598aa9335`, Success, no stderr): `larp-signer` inactive and disabled,
+  0 restarts; 3 start lines since S2 (S2 plus the restarts after reboots). Moved to
+  `/etc/larp-history/d53d1b7-larp-dev-rehearsal-20261023/`: `release.json` `72478f9d…`, `signer.json` `1a4cda6f…`,
+  router policy `05759e90…`. Key kept: `/etc/larp/signer` `700 root:root`, `wallet.key` `600 root:root`, 1 link.
+
+Next: P2s, S1 (M4's printed command), S1b, S2.
+
+#### SJ-11 P2s, S1, S1b and S2 — PASS on the signer; signer started for run 3 (2026-10-23 ~17:0xZ, Yao)
+
+- **P2s** (SSM `43c9f1d3-63ab-43db-9cba-f44f8f920f0d`, Success; stderr 198 bytes of systemd symlink lines): installed
+  `/opt/larp/releases/9dc5edab61b6bffdb3c75cc4d498bb651a91ba43` for signer, manifest `184bd2cd…`, CA `d7389074…`;
+  `larp-signer` disabled until S2.
+- **S1** (SSM `271461db-a4a3-436e-9d39-e423a47b8267`, Success, no stderr): `release.json` `590edf38…` (the same bound
+  bytes as primary), `signer.json` `49cb1a08…` (SJ-11-A1), router policy `05759e90…`, CA `d7389074…`;
+  `release_verified: true`; signer `check` `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, signing and Gate B
+  false; routes PASS `43b254b3…`, 6 destinations; chrony on Amazon Time Sync, 0.0000008 s fast.
+- **S1b** (SSM `a0bf2d1f-f061-43e4-b13b-7c29e93bb431`, Success): `LoadCredential` copy `0o400`, owned by the reading
+  process, `key_loader: PASS`.
+- **S2** (SSM `94ffd15c-72b3-4910-bbb9-4a92914cdcb3`, Success): key dir `700 root:root`, `wallet.key` `600 root:root`;
+  `key_loader: PASS`, **`wallet_matches: true`**; `larp-signer active restarts=0`; `release_verified: true`;
+  `started: true`, `signing_enabled: true`, UNTRUSTED `05759e90…`, DEV-23, cap basis CAP-02. `S2_DONE`.
+
+Next: P5 (execution on primary), then C1, T2, SA5/SA9, M9.
+
+#### SJ-11 P5 and C1 — PASS; run 3 is live on S1 (2026-10-23 ~17:1xZ, Yao)
+
+- **P5** (SSM `a69155a9-de9c-4993-ab07-bb5e567ff2d5`, Success; stderr the symlink line): execution
+  `configuration_valid: true`; `larp-execution active restarts=0`; `release_verified: true`. `P5_DONE`. From here the
+  runtime's committed S1 intents can be signed and sent (new risk until 2026-10-25 00:00Z).
+- **C1** (`checks/signer-status.sh`, SSM `185c5019-7853-4979-8c56-181edc4ae179`, before T2): `larp-signer active
+  restarts=0`; two `release_verified` / `started: true` pairs in the last 30 minutes and no refusal line. The lines
+  carry no run ID: the earlier pair fits run 2's signer starting again after the reboot (it was still enabled) before
+  R1s stopped it; the later pair is run 3's S2 start. Key dir `700 root:root`, `wallet.key` `600 root:root`, 1 link.
+
+Next: T2 (signer access off), SA5/SA9, M9, then K (soak at about 1 h) and J (first S1 entry).
+
+#### SJ-11-QV01 — run 3 cannot place an order: the service wires no quote verifier (finding, 2026-10-23 17:2xZ, Claude)
+
+**Observed (read-only, `checks/trading-status.sh` 17:06Z and a read-only `checks/round-detail.sh` kept in the
+git-ignored run folder; chain read 17:11Z):** run 3 healthy (4 units, 0 restarts, not quarantined, balance check
+MATCH, health gates all true, valuation COMPLETE, `basis_verified: true`, cost MEASURED, risk day 2026-10-23, no halt).
+S1 decides correctly: trend UP, limiter NORMAL, applied target 19/20, `TARGET_WEIGHT` 19/100 for all five names. Each
+of the three rounds (filing, `cadence:1991969`, `cadence:1991972`) ends with 0 intents, 0 rejections, no errors, and one
+`quote_requests` entry: BUY SKHYB, EXACT_IN 18951721 USDT units (S1 asks for one leg's quote at a time). The S1 attempt
+budget for `DISCRETIONARY:BUY:SKHYB` reached 3 of `max_attempts_per_leg_session` 3. No execution record, signing
+request or signer refusal; wallet nonce 4, 96 USDT.
+
+**Cause (code, RC6 `9dc5edab`):** `larp/runtime/service.py` builds `MarketPort(client, wallet, quote_limits=profile,
+basis_verifier=...)` with no `quote_verifier`. `MarketPort.observe` then always returns `quotes=[]` with
+`quote_status='CAPABILITY_PROOF_REQUIRED'` (port.py: "expose no executable quote until the live venue proves them").
+The driver's quote follow-up (`driver._quotes`) sees no executable quote, clears it and returns without a child round
+or any journaled reason. So no BUY or SELL intent can be formed on this build, for S1 or equal weight. This is the
+"quote verifier" capability gate listed under GAP-29 (IDEA-050 "Still open" item 1); runs 1 and 2 never reached it
+(J8 database outage; no basis verifier).
+
+**Consequence:** run 3 cannot enter. Its only REHEARSAL entry session is today (session 203, entries 14:00–19:45Z);
+the next session (Oct 26) is after `new_risk_end` 2026-10-25 00:00Z. Fail-safe held: nothing was signed or sent.
+
+**What a fix needs (not started):** a quote verifier for the UNTRUSTED router path that, per `_executable_quote`,
+binds the response bytes, decodes the payload to `SwapEconomics` (pay/receive token, amount, recipient, minimum
+output, deadline), verifies exact gas and fee units, and passes `_quote_at_cap`; wiring in `service.py`; tests; release
+qualification; and, because a run cannot change build, a new run and database. Any later entry also needs a new
+REHEARSAL window decision (new profile hash) and Isaac's approval. Owner per GAP-29: Isaac, with Keegan review.
+
+#### SJ-11 T2, SA5 and SA9 — PASS; run 3 kept as a no-trade soak (Yao, 2026-10-23 17:2x–17:31Z)
+
+**Decision (Yao, in chat):** "Keep run 3 running as a no-trade soak" after SJ-11-QV01.
+- **T2:** plan `signer-access-off-run3.tfplan` 0 add / 0 change / 8 destroy, exactly T1's eight resources (assistant
+  check against `results/t1-plan.txt`). Apply: `Apply complete! Resources: 0 added, 0 changed, 8 destroyed.`
+- **SA5** (`mac/signer-reach.sh`, 17:29:20Z): no SSM interface endpoints; no SSM policy on `larp-dev-signer`; signer
+  `ConnectionLost` (last ping 17:12:05Z); EC2 running ok/ok.
+- **SA9** (`checks/primary-status.sh`): primary `Online`; evidence, uploader, runtime and execution active with 0
+  restarts; archive timer active; anchors 2 ACK, backup 1 ACK. The first check (17:29:38Z, SSM `dce94512…`) read
+  `healthy: false`, `CLOCK_BACKWARD`; the re-run (17:31:34Z, SSM `31249e2f…`) read `healthy: true`, no reasons.
+- **Why the first read is a check artifact, not a clock fault:** `Maintenance.health` flags `CLOCK_BACKWARD` when its
+  `now_ms` is below `archive_clock.last_ms`. The uploader sets `last_ms` to its own clock every tick
+  (`interval_seconds` 5), while `checks/primary-status.sh` samples `now` before opening its IAM/TLS connection, so a tick
+  inside that gap reads as backwards. Chrony was 0.0000026 s off at P3. Repair for the check (not made): sample `now`
+  inside the read transaction.
+
+Next: M9 on `releases/rehearsal-20261023t162318z/`; soak K at about 1 h.
+
+#### SJ-11 M9 — PASS; the RC6 run-3 install sheet is complete (Yao, 2026-10-23 ~17:3xZ)
+
+`mac/m9-cleanup-s3-package.sh releases/rehearsal-20261023t162318z/`: 12 object versions deleted, `M9_DONE`. The bundle
+under `releases/` stays. SJ-11 D1, M1-local, M2, M3, A1, R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5, C1, T2,
+SA5, SA9 and M9 all PASS. Run 3 runs as a no-trade soak (SJ-11-QV01). Open: K (login soak at about 1 h), J (no entry
+possible on this build).
