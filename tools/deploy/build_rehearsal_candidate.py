@@ -12,6 +12,10 @@ from larp.strategy.schema import ceil, fraction
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / 'docs/build/evidence'
+# IDEA-089 S2-4 (Yao, 2026-10-23): Sat 09:00 SGT to Sun 23:00 SGT, flat before signing_end.
+S2_WINDOW = dict(trade_after='2026-10-24T01:00:00Z', new_risk_end='2026-10-25T08:00:00Z',
+                 flatten_start='2026-10-25T09:00:00Z', signing_end='2026-10-25T15:00:00Z')
+S2_POLICY_ID = 'larp-s2-rehearsal-v1'
 
 
 def s1_block(raw):
@@ -29,7 +33,16 @@ def s1_block(raw):
     # No hosted models in this scope, and the runtime never sets exposure_assessment: a MODEL limiter would never move.
     if block.get('limiter_mode') != 'DETERMINISTIC':
         raise ContractError('S1 rehearsal without hosted models needs limiter_mode DETERMINISTIC (SJ-11-RH01-L1)')
+    execution = block.get('execution')
+    if (type(execution) is dict and execution.get('hours') == 'KIT_OPEN_STATE'
+            and execution.get('max_attempts_per_leg_session') != 5):
+        raise ContractError('S2 sets max_attempts_per_leg_session to 5: one session spans the weekend (IDEA-089 S2-9)')
     return block
+
+
+def open_state(block):
+    """IDEA-089 S2: the block sets KIT_OPEN_STATE hours (a weekend REHEARSAL test, never a final profile)."""
+    return block is not None and type(block.get('execution')) is dict and block['execution'].get('hours') == 'KIT_OPEN_STATE'
 
 
 def build(exit_children=1, *, s1_raw=None, s1_decision=None):
@@ -43,6 +56,11 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None):
             s1_decision is not None and (type(s1_decision) is not str or not s1_decision.strip())):
         raise ContractError('An S1 block and the decision behind it go together')
     s1 = None if s1_raw is None else s1_block(s1_raw)
+    s2 = open_state(s1)
+    if s2:
+        # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
+        # once the SHADOW scope is.
+        base_s1 = dict(s1, execution={k: v for k, v in s1['execution'].items() if k != 'hours'})
     def document(path):
         return Document.from_dict(json.loads(path.read_bytes()))
     authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
@@ -53,7 +71,7 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None):
     p = build_live_profiles(document(EVIDENCE / 'quotes-complete-20261020/quote-cost-summary.json'),
         document(ROOT / 'config/intelligence/red_flags.v1.json'), initial_gas_only=True,
         authority=authority, gas_budget=budget,
-        **({} if s1 is None else dict(s1=s1, s1_decision=s1_decision)))['REHEARSAL'].read()
+        **({} if s1 is None else dict(s1=base_s1 if s2 else s1, s1_decision=s1_decision)))['REHEARSAL'].read()
     p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
     p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
     positions = 4
@@ -78,6 +96,14 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None):
             formula='Scoped TREND_GUARDED_VOL rehearsal; deterministic assessor, hosted models and discretionary '
                     'model exits deferred')
     p['provenance']['falsifier_authority'] = dict(p['provenance']['evidence_mode'])
+    if s2:
+        p['s1'] = s1
+        p.update(S2_WINDOW, policy_id=S2_POLICY_ID)
+        for key in S2_WINDOW:
+            p['provenance'][key] = dict(decision_id='IDEA-089 S2-4 (Yao, 2026-10-23)',
+                formula='Weekend window: buys Sat 09:00 to Sun 16:00 SGT, flatten from Sun 17:00 SGT, signing to Sun 23:00 SGT')
+        p['provenance']['policy_id'] = dict(decision_id='IDEA-089 S2 (Yao, 2026-10-23)',
+            formula='REHEARSAL-only weekend trade test on the dev wallet; never installed for the final run')
     validate_live(p)
     return Document.from_dict(p)
 

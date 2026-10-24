@@ -1,5 +1,7 @@
 # Current shared build and remaining work
 
+IDEA-089 S2 (2026-10-24): the weekend trade test for run 4 is implemented and tested offline (PR270): `KIT_OPEN_STATE` hours for both planner and execution/signer admission, the S2-1 scope in five places, the runtime router-policy pair (with PR268's quote verifier, merged at `398255f`), S2 profile `eb55d76a…` and the RC7 run sheet `build/ops/rehearsal-install-rc7-20261024/`. RC7 build, the Q1 live quote check, Isaac's approval and the install (Yao) remain. Run 3 (RC6 `9dc5edab`) stays a no-trade soak until R1p. See [IDEA-089](../ledger/IDEA-089.md).
+
 PR262-RV01 (2026-10-23 SGT): IDEA-086 fixes the hosted entry blocker with a basis verifier and ratio-scaled token
 marks. Independent review repairs also check price-response chain/platform and exclude rejected basis inputs from
 usable valuation. Offline planner BUY/failure coverage and full local2507 tests/3929 subtests PASS (10 expected skips) are supplied.

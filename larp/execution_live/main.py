@@ -152,6 +152,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     profile = _pinned_json(config['strategy_profile_file'], config['strategy_profile_sha256'], 'Strategy profile')
     if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('Execution needs the run\'s LIVE StrategyProfile.v1')
+    from larp.strategy.execution_bounds import require_open_state_scope
+    require_open_state_scope(profile, config.get('mode', 'offline'))  # IDEA-089 S2-1, S2-8: the admission side refuses too
     key, secret = secrets.get('BINANCE_API_KEY'), secrets.get('BINANCE_SECRET_KEY')
     if not key or not secret:
         raise ContractError('Quotes need the Web3 key pair')

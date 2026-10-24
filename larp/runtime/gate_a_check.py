@@ -63,6 +63,8 @@ def check_scope(values, report):
     driver = runtime['driver']
     signed = report.get('execution') == 'service'
     mode = report.get('runtime_mode')
+    from larp.strategy.execution_bounds import require_open_state_scope
+    require_open_state_scope(values['strategy-profile.json'], mode)  # IDEA-089 S2-1
     if (mode not in ('dev', 'live') or (not signed and mode != 'dev')
             or any(v.get('mode') != mode for v in (runtime, uploader, state))
             or driver.get('execution') != ('service' if signed else 'shadow')
@@ -73,6 +75,11 @@ def check_scope(values, report):
         raise ContractError('Preparation scope differs')
     if signed and driver.get('assessor') == 'deterministic' and not gate_a.scoped_rehearsal(values['strategy-profile.json'], mode):
         raise ContractError('Deterministic signed scope is limited to the scoped rehearsal')
+    from larp.execution_live.config import untrusted_router_settings
+    policy = untrusted_router_settings(driver)  # IDEA-089 S2-10: both or neither, absolute path and SHA-256
+    if policy is not None and (type(policy[0]) is not str or not policy[0].startswith('/')
+                               or type(policy[1]) is not str or not re.fullmatch('[0-9a-f]{64}', policy[1])):
+        raise ContractError('Untrusted-router policy pair differs')
     ref = driver.get('model_adoption_ref')
     if signed and (type(ref) is not str or not ref.strip() or report.get('model_adoption_ref') != ref):
         raise ContractError('Signed scope requires the reviewed adoption reference')
