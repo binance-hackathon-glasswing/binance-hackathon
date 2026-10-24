@@ -100,3 +100,49 @@ tests with no errors.
   (Linux, Python 3.12).
 - Checked, no change: the template writes data only through text and attributes (no `innerHTML`); the embedded JSON
   escapes `<`, `>` and `&`; redaction is an allow-list; publishing pushes fast-forward only and stops on divergence.
+
+## Extension DX: the agent's decisions on the same page (2026-10-24, pre-registered)
+
+- Request: Cookiemunchrr (on PR 272, run 4 live), "a gh pages dashboard for us to take a look at the trades and the
+  decisions for the bot". The page above shows only what the chain monitor sees (trades). The decisions (each round's
+  policy targets, planner orders, rejections and close status) exist only in the run's database on the primary.
+- What: three parts. **None of them runs on the agent's path or changes the registered build.**
+  - `docs/build/ops/rehearsal-install-rc7-20261024/checks/decisions-export.sh`: a read-only primary check, run over SSM
+    like `trading-status.sh`. It runs one READ ONLY transaction and prints one allow-listed JSON line per round (the
+    latest N, default 30, so the output stays under SSM's 24,000-character inline limit).
+  - `python -m tools.dashboard.decisions merge <ssm stdout> --monitor-dir <dir>`: merges an export into
+    `<monitor dir>/decisions.jsonl` (git-ignored), keyed by round ID, so repeated exports build up the whole run.
+  - `tools/dashboard/build.py` reads `decisions.jsonl` when present and the page gains a "Decisions" section.
+- Fields, allow-listed both on the host and in the build: round time (decision, else start), close status, round kind,
+  error codes, orders (symbol, side, amount), intents (symbol, side, mandatory, reason codes), policy targets (symbol,
+  kind, reason code, weight), planner rejections and clamps (symbol and reason code), evidence assessment (issuer,
+  status, reason codes). Never: free-text `detail`, model text or reasoning, request or quote bodies, intent or quote
+  IDs, hashes, addresses, config, DSN or URLs.
+- Visibility: on a public Pages site the decisions show the strategy's targets and reasons as well as its trades. The
+  round ID (which can name a filing job) is shown only with `--full`. Whether to publish stays PAGES01.
+
+### Pass criteria (written before any test is run)
+
+Offline, synthetic data only (no database, no network):
+
+- **DX1 export allow-list:** the export's shaping code, run on synthetic `ROUND_PLANNED`, `PLAN_REJECTED` and
+  `ROUND_CLOSED` events that plant free text, `0x` addresses, hashes, intent and quote IDs and a model reasoning text,
+  emits only the allow-listed fields. No planted value appears in its output. A code-shaped field holding anything else
+  becomes `OTHER`. The script's database part reads in a READ ONLY transaction and writes nothing (checked by reading
+  the script: `SET TRANSACTION READ ONLY`, SELECT only).
+- **DX2 merge:** merging an export creates `decisions.jsonl`; merging the same export again leaves it byte-identical;
+  a later export in which an open round has closed updates that round; non-decision lines (the summary, other
+  sections, garbage) are ignored and counted; the result is sorted and deterministic.
+- **DX3 numbers:** with a synthetic `decisions.jsonl`, `data.json` reports the hand-computed counts: rounds, rounds
+  by close status, rounds that placed orders, orders by side, and the top rejection reason codes. Rows are newest
+  first and capped.
+- **DX4 redaction:** the redacted build contains no round ID and no `0x` with 8 or more hex digits, and none of the
+  planted values from DX1/DX2 reaches any output file. The full build keeps the round ID. D2, D3 and D5 still pass with
+  a decisions file present (D5's allowed reads gain `decisions.jsonl` and nothing else).
+- **DX5 page:** in headless Chromium, the fixture site shows the Decisions section with its rows, in light and dark,
+  and at 375 px wide without horizontal scroll, with no console errors. Without a decisions file the section says no
+  decisions have been exported yet and the rest of the page is unchanged.
+- **DX6 regression:** every existing `tests/test_dashboard.py` and `tests/test_contracts.py` test still passes.
+
+Not claimed by these criteria: a run of the export on the live primary (needs an SSM operator), real decision data,
+or a published site.
