@@ -63,6 +63,36 @@ Open `deploy/activation/dashboard-site/index.html` in a browser. Add `--full` fo
    `data.json` every 5 minutes, and the status pill turns to Delayed after 10 minutes without a new poll and to Stale
    after an hour.
 
+## Decisions (IDEA-087 DX)
+
+The page also has a **Decisions** section: one row per round, with its time, source (cadence, filing, review,
+safety), outcome, the planner's orders, the policy's targets, the planner's rejection and error codes ("Why not") and
+the evidence assessment's status. The chain monitor cannot see decisions; they live in the run's database on the
+primary. So an SSM operator exports them, read-only, and the export is merged into the monitor folder:
+
+```
+primary DB ──► checks/decisions-export.sh (SSM, READ ONLY) ──► results/decisions-export-stdout.txt
+           ──► tools.dashboard.decisions merge ──► <monitor dir>/decisions.jsonl ──► build / publish (as above)
+```
+
+From the copied run folder `deploy/activation/rehearsal-install-rc7-20261024/` (copy the new
+`checks/decisions-export.sh` into it first), then from the repository root:
+
+```bash
+python3.12 -I ssm_run.py checks/decisions-export.sh 30     # the latest 30 rounds (about 7.5 h at 15-minute rounds)
+python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc7-20261024/results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
+```
+
+- Run the export at least every 7 hours, or pass a larger N. Each merge adds the rounds it has not seen and updates
+  rounds that have since closed. About 30 rounds fit SSM's 24,000-character inline output; if the summary line is
+  missing from the stdout, the output was cut, so use a smaller N.
+- The next build or publisher loop picks the file up. Without it the section says no decisions have been exported.
+- The export prints codes, symbols, amounts and times only: no free-text detail, model text, IDs, hashes, config or
+  URLs. The build allow-lists the file again. The redacted page also leaves out round IDs, because a filing round's ID
+  names its job.
+- **On a public page, the decisions show the strategy**: its targets, sizes and reasons, as well as its trades.
+  Decide on that before publishing it for the scored run (PAGES01).
+
 ## Limits
 
 - GitHub's soft limit is 10 branch-based Pages builds an hour, so `--loop` must be at least 360 s (600 s is the

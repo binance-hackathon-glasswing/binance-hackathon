@@ -107,6 +107,13 @@ tbody tr:hover { background: var(--wash); }
 a { color: var(--series-1); }
 details { margin-top: 12px; }
 summary { cursor: pointer; color: var(--ink-2); }
+td.wrap { white-space: normal; min-width: 180px; max-width: 360px; overflow-wrap: anywhere; }
+.codes { color: var(--ink-2); font-size: 12px; }
+#decisions td { vertical-align: top; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--ink-2); background: var(--page); }
+.chip strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--ink-2); cursor: pointer; }
 footer { color: var(--ink-2); font-size: 12px; margin-top: 20px; }
 footer p { margin: 4px 0; }
 @media (max-width: 520px) { .hero .value { font-size: 40px; } }
@@ -118,7 +125,7 @@ footer p { margin: 4px 0; }
   <header>
     <div>
       <h1>LARP wallet dashboard</h1>
-      <p class="sub" id="subtitle">Read-only view of the agent's wallet from the chain monitor</p>
+      <p class="sub" id="subtitle">Read-only view of the agent's wallet (chain monitor) and its decisions (round records)</p>
     </div>
     <div class="pill" id="status" role="status"></div>
   </header>
@@ -150,6 +157,13 @@ footer p { margin: 4px 0; }
     <h2>Transactions</h2>
     <p class="sub" id="tx-sub"></p>
     <div class="table-wrap"><table id="transactions"></table></div>
+  </section>
+  <section class="card">
+    <h2>Decisions</h2>
+    <p class="sub" id="decisions-sub"></p>
+    <div class="chips" id="decision-chips"></div>
+    <label class="toggle"><input type="checkbox" id="decisions-orders-only"> Only rounds that placed orders</label>
+    <div class="table-wrap"><table id="decisions"></table></div>
   </section>
   <section class="card">
     <h2>Alerts</h2>
@@ -299,6 +313,10 @@ footer p { margin: 4px 0; }
         (s.failed_txs || 0) + ' failed transaction' + (s.failed_txs === 1 ? '' : 's')],
       ['Active alerts', String(active.length), critical ? critical + ' critical' : 'none critical']
     ];
+    var dec = DATA.decisions;
+    if (dec && dec.total) {
+      tiles.push(['Decision rounds', String(dec.total), dec.with_orders + ' placed orders (' + dec.buys + ' buy, ' + dec.sells + ' sell)']);
+    }
     tiles.forEach(function (t) {
       var tile = el('div', 'tile');
       tile.appendChild(el('div', 'label', t[0]));
@@ -576,6 +594,63 @@ footer p { margin: 4px 0; }
     table($('alerts'), cols, DATA.alerts, 'No alerts recorded.');
   }
 
+  function statusCell(d) {
+    if (d.status === 'COMPLETE') return sev('good', 'Complete');
+    if (d.status === 'REJECTED') return sev('serious', 'Rejected');
+    if (d.status) return sev('warning', humanize(d.status));
+    return sev('warning', d.execution_pending ? 'Executing' : 'Open');
+  }
+  function list(parts) { return parts.length ? parts.join('; ') : '—'; }
+  function renderDecisions() {
+    var dec = DATA.decisions || { total: 0, rows: [], top_reasons: [], by_status: {} };
+    var only = $('decisions-orders-only').checked;
+    $('decisions-sub').textContent = dec.total
+      ? 'One row per round, newest first. ' + (dec.total > dec.rows.length ? dec.rows.length + ' of ' + dec.total + ' shown. ' : '') +
+        'Latest decision ' + when(dec.latest_utc) + ' UTC. Targets come from the policy, orders from the planner; ' +
+        '"Why not" lists the planner\'s rejection and error codes.'
+      : 'No decisions exported yet. An operator runs checks/decisions-export.sh over SSM and merges it with tools.dashboard.decisions.';
+    var chips = clear($('decision-chips'));
+    Object.keys(dec.by_status).sort().forEach(function (k) {
+      var c = el('span', 'chip');
+      c.appendChild(el('strong', null, String(dec.by_status[k])));
+      c.appendChild(document.createTextNode(' ' + humanize(k)));
+      chips.appendChild(c);
+    });
+    dec.top_reasons.forEach(function (r) {
+      var c = el('span', 'chip');
+      c.appendChild(el('strong', null, String(r[1])));
+      c.appendChild(document.createTextNode(' ' + r[0]));
+      c.title = 'Times cited: ' + r[0] + ' (once per symbol or error)';
+      chips.appendChild(c);
+    });
+    var cols = [
+      { label: 'Decided (UTC)', get: function (d) { return when(d.utc); } },
+      { label: 'Round', get: function (d) { return humanize(d.source) + (d.round_kind !== 'TRADE' ? ' · ' + humanize(d.round_kind) : ''); } },
+      { label: 'Outcome', get: statusCell },
+      { label: 'Orders', cls: 'wrap', get: function (d) {
+        return list(d.orders.map(function (o) { return (o.side || '?') + ' ' + o.symbol + (o.amount ? ' ' + o.amount : ''); }));
+      } },
+      { label: 'Policy targets', cls: 'wrap', get: function (d) {
+        return list(d.targets.map(function (t) {
+          return t.symbol + ' ' + (t.weight_pct != null ? fmt.pct(t.weight_pct) : humanize(t.kind)) + ' (' + t.reason + ')';
+        }));
+      } },
+      { label: 'Why not', cls: 'wrap codes', get: function (d) {
+        return list(d.rejections.map(function (r) {
+          return (r.symbol ? r.symbol + ': ' : r.symbols && r.symbols.length ? r.symbols.join(',') + ': ' : '') + r.reason +
+            (r.gates && r.gates.length ? ' [' + r.gates.join(', ') + ']' : '');
+        }).concat(d.errors));
+      } },
+      { label: 'Evidence', cls: 'wrap codes', get: function (d) {
+        var a = d.assessment;
+        return a ? (a.issuer ? a.issuer + ' ' : '') + a.status + (a.reasons.length ? ' (' + a.reasons.join(', ') + ')' : '') : '—';
+      } }
+    ];
+    if (!DATA.redacted) cols.push({ label: 'Round ID', cls: 'detail', get: function (d) { return d.round_id; } });
+    var rows = only ? dec.rows.filter(function (d) { return d.orders.length; }) : dec.rows;
+    table($('decisions'), cols, rows, dec.total ? 'No round in view placed an order.' : 'No decisions exported yet.');
+  }
+
   function renderFooter() {
     var s = DATA.summary, f = clear($('footer'));
     f.appendChild(el('p', null, 'Built from ' + s.snapshots + ' monitor poll' + (s.snapshots === 1 ? '' : 's') +
@@ -583,16 +658,17 @@ footer p { margin: 4px 0; }
     f.appendChild(el('p', null, 'Equity excludes BNB and uses the chain monitor\'s Web3 prices. It is not the official score: ' +
       'the official valuation source has not been published.'));
     f.appendChild(el('p', null, DATA.redacted
-      ? 'Redacted: no wallet address, transaction hashes, block numbers or nonces.'
-      : 'Full detail: includes transaction hashes. Do not publish this version publicly.'));
+      ? 'Redacted: no wallet address, transaction hashes, block numbers, nonces or round IDs.'
+      : 'Full detail: includes transaction hashes and round IDs. Do not publish this version publicly.'));
   }
 
   function renderAll() {
     renderStatus(); renderNotices(); renderHero(); renderTiles(); renderCharts();
-    renderHoldings(); renderTransactions(); renderAlerts(); renderFooter();
+    renderHoldings(); renderTransactions(); renderDecisions(); renderAlerts(); renderFooter();
   }
 
   renderAll();
+  $('decisions-orders-only').addEventListener('change', renderDecisions);
   var pending = false;
   if (window.ResizeObserver) {
     var lastWidth = $('equity-chart').clientWidth;

@@ -222,7 +222,7 @@ class BuildTest(unittest.TestCase):
         with patch.object(Path, 'read_bytes', recording), patch.object(socket, 'socket', no_socket), \
                 patch.object(socket, 'create_connection', no_socket):
             b.build(self.monitor, self.root / 'site')
-        allowed = {(self.monitor / f).resolve() for f in b.FILES} | {b.TEMPLATE.resolve()}
+        allowed = {(self.monitor / f).resolve() for f in b.FILES + (b.DECISIONS,)} | {b.TEMPLATE.resolve()}
         self.assertTrue(read)
         self.assertLessEqual(set(read), allowed)
 

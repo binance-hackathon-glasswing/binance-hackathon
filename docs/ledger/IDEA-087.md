@@ -1,7 +1,7 @@
 # IDEA-087 — Wallet dashboard published as a static GitHub Pages site
 
 - Date / author: 2026-10-23 / Keith (request), Claude Code (build)
-- Status: open (pre-registered below; built on branch `claude/idea087-pages-dashboard-20261023`)
+- Status: open (pre-registered below; built on branch `claude/idea087-pages-dashboard-20261023`); DX (decisions) built on branch `claude/zen-meitner-luu8xj`
 - What: two tools under `tools/dashboard/`.
   - `build` turns the SJ-08 chain monitor's output folder
     (`docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py`: `snapshots.jsonl`, `transactions.jsonl`,
@@ -146,3 +146,24 @@ Offline, synthetic data only (no database, no network):
 
 Not claimed by these criteria: a run of the export on the live primary (needs an SSM operator), real decision data,
 or a published site.
+
+### Results DX (2026-10-24)
+
+All six criteria are **supported offline**, on synthetic data only. Setup: Linux, Python 3.13 venv with pytest,
+headless Chromium (Playwright). `pytest tests/test_dashboard.py tests/test_dashboard_decisions.py tests/test_contracts.py`
+gives 40 passed with 44 subtests: 18 existing dashboard tests, 9 new, 13 contract tests.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| DX1 export allow-list | supported | `test_dx1_export_is_allow_listed` runs the script's own shaping code, taken from its heredoc up to the database part, on three rounds plus noise. Every planted value is absent from the output: addresses, hashes, intent and quote IDs, model text, a DSN and a URL. Non-codes become `OTHER`, a round ID carrying a hash is dropped, and the output keys are a subset of the allow-list. `test_dx1_export_limit` checks the latest-N cut. `test_dx1_database_part_is_read_only` finds `SET TRANSACTION READ ONLY`, only SET and SELECT statements, and no write keyword anywhere in the script. |
+| DX2 merge | supported | `test_dx2_merge_is_idempotent_and_updates_closed_rounds`: 4 noise lines skipped and counted; a re-merge is byte-identical; a later export closes the open round; an older export never reopens it; two merge orders give the same bytes. |
+| DX3 numbers | supported | `test_dx3_numbers`: 3 rounds (1 open, 1 complete, 1 rejected), 1 with orders, 1 buy, 0 sells, `NEW_RISK_HALTED` ×2 first of 8 top codes, target weight 19.00%, newest first. `test_dx3_rows_are_capped`: 305 rounds give 300 rows, newest first. |
+| DX4 redaction | supported | `test_dx4_redacted_build_has_no_round_ids_or_planted_values` checks the redacted site for round IDs, `0x…` and the planted values; the full build keeps the round IDs. `test_dx4_build_does_not_trust_the_file`: a hand-written hostile `decisions.jsonl` is reduced to `OTHER`/None in both builds. D2, D3 and D5 pass; D5's allowed reads gained only `decisions.jsonl`. |
+| DX5 page | supported | Headless Chromium on the fixture site: redacted light and dark at 1100 px, full light and redacted dark at 375 px, and a site without decisions at 900 px. Every page has `scrollWidth` = `clientWidth` and no console messages, and shows 3 decision rows, 11 chips and the "Decision rounds" tile. "Only rounds that placed orders" leaves 1 row. Without decisions there is one "No decisions exported yet" row and no tile. The browser check led to one fix: cells now align to the top. |
+| DX6 regression | supported | The existing 18 dashboard tests and 13 contract tests pass unchanged, apart from D5's allowed set. |
+
+- Release bundle unaffected: `tools/`, `tests/` and `docs/build/ops/` are outside `release_files`. No `larp/` file
+  changed.
+- Not done: the export has not been run on the live primary. Its database part copies `trading-status.sh`'s
+  read-only pattern but is untested against a real database, so the first SSM run is its check. No real decisions
+  have been seen, and nothing was published (PAGES01).
